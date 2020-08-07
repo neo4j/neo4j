@@ -48,13 +48,11 @@ import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.internal.kernel.api.procs.UserAggregator;
 import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
-import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.procedure.CallableProcedure;
@@ -357,8 +355,7 @@ public final class ProcedureCompilation
                 try ( CodeBlock method = generator.generate( USER_PROCEDURE ) )
                 {
                     method.tryCatch(
-                            body -> procedureBody( body, fieldSetters, fieldsToSet, signatureField, methodToCall,
-                                            iterator, signature.admin() ),
+                            body -> procedureBody( body, fieldSetters, fieldsToSet, signatureField, methodToCall, iterator ),
                             onError -> onError( onError, format( "procedure `%s`", signature.name() ) ),
                             param( Throwable.class, "T" )
                     );
@@ -582,20 +579,6 @@ public final class ProcedureCompilation
     }
 
     /**
-     * Used from generated code to check if a user is allowed to call a procedure
-     * @param ctx the current context
-     */
-    public static void assertAllowed( Context ctx )
-    {
-        SecurityContext securityContext = ctx.securityContext();
-        securityContext.assertCredentialsNotExpired();
-        if ( !securityContext.allowExecuteAdminProcedure() )
-        {
-            throw new AuthorizationViolationException( format("Executing admin procedure is not allowed for %s.", securityContext.description() ) );
-        }
-    }
-
-    /**
      * Generates a tailored iterator mapping from the user-stream to the internal RawIterator
      *
      * The generated iterator extends {@link BaseStreamIterator} and generates a tailored
@@ -758,7 +741,7 @@ public final class ProcedureCompilation
 
     private static void procedureBody( CodeBlock block,
             List<FieldSetter> fieldSetters, List<FieldReference> fieldsToSet,
-            FieldReference signature, Method methodToCall, Class<?> iterator, boolean isAdmin )
+            FieldReference signature, Method methodToCall, Class<?> iterator )
     {
         //generate: `UserClass userClass = new UserClass();
         block.assign( typeReference( methodToCall.getDeclaringClass() ), USER_CLASS,
@@ -766,11 +749,6 @@ public final class ProcedureCompilation
         injectFields( block, fieldSetters, fieldsToSet );
         Expression[] parameters = parameters( block, methodToCall, block.load("ctx") );
 
-        if ( isAdmin )
-        {
-            block.expression( invoke( methodReference( ProcedureCompilation.class, void.class, "assertAllowed", Context.class ),
-                    block.load( "ctx" ) ) );
-        }
         if ( iterator.equals( VOID_ITERATOR.getClass() ) )
         {   //if we are calling a void method we just need to call and return empty
             block.expression( invoke( block.load( USER_CLASS ), methodReference( methodToCall ), parameters ) );

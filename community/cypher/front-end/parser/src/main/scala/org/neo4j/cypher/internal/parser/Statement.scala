@@ -340,7 +340,8 @@ trait Statement extends Parser
   }
 
   private def QualifiedDbmsAction: Rule2[List[ast.PrivilegeQualifier], ast.AdminAction] = rule("qualified dbms action") {
-    keyword("EXECUTE") ~~ ProcedureKeyword ~~ ProcedureIdentifier ~> (_ => ast.ExecuteProcedureAction)
+    keyword("EXECUTE") ~~ ProcedureKeyword ~~ ProcedureIdentifier ~> (_ => ast.ExecuteProcedureAction) |
+    keyword("EXECUTE BOOSTED") ~~ ProcedureKeyword ~~ ProcedureIdentifier ~> (_ => ast.ExecuteBoostedProcedureAction)
   }
 
   private def ProcedureIdentifier: Rule1[List[ast.PrivilegeQualifier]] = rule("procedure identifier") {

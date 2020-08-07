@@ -27,6 +27,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.neo4j.collection.RawIterator;
+import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.FieldSignature;
 import org.neo4j.internal.kernel.api.procs.ProcedureHandle;
@@ -42,6 +43,8 @@ import org.neo4j.kernel.api.procedure.CallableUserAggregationFunction;
 import org.neo4j.kernel.api.procedure.CallableUserFunction;
 import org.neo4j.kernel.api.procedure.Context;
 import org.neo4j.values.AnyValue;
+
+import static java.lang.String.format;
 
 public class ProcedureRegistry
 {
@@ -201,6 +204,10 @@ public class ProcedureRegistry
         try
         {
             proc = procedures.get( id );
+            if ( proc.signature().admin() && !ctx.securityContext().allowExecuteAdminProcedure( id ) )
+            {
+                throw new AuthorizationViolationException( format( "Executing admin procedure is not allowed for %s.", ctx.securityContext().description() ) );
+            }
         }
         catch ( IndexOutOfBoundsException e )
         {

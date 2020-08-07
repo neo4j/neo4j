@@ -36,42 +36,23 @@ object CallSupport {
 
   def callFunction(transactionalContext: TransactionalContext, id: Int, args: Array[AnyValue],
                    allowed: Array[String]): AnyValue = {
-    if (shouldElevate(transactionalContext, allowed))
+    if (shouldBoostOldWay(transactionalContext, allowed))
       transactionalContext.kernelTransaction().procedures().functionCallOverride(id, args)
     else
       transactionalContext.kernelTransaction().procedures().functionCall(id, args)
   }
 
   def callReadOnlyProcedure(transactionalContext: TransactionalContext, id: Int, args: Array[AnyValue],
-                            allowed: Array[String], context: ProcedureCallContext): Iterator[Array[AnyValue]] = {
-    val call: KernelProcedureCall =
-      if (shouldElevate(transactionalContext, allowed))
-        transactionalContext.kernelTransaction.procedures().procedureCallReadOverride(id, _, context)
-      else
-        transactionalContext.kernelTransaction.procedures().procedureCallRead(id, _, context)
-
-    callProcedure(args, call)
-  }
+                            allowed: Array[String], context: ProcedureCallContext): Iterator[Array[AnyValue]] =
+    callProcedure(args, transactionalContext.kernelTransaction.procedures().procedureCallRead(id, _, context))
 
   def callReadWriteProcedure(transactionalContext: TransactionalContext, id: Int, args: Array[AnyValue],
-                             allowed: Array[String], context: ProcedureCallContext): Iterator[Array[AnyValue]] = {
-    val call: KernelProcedureCall =
-      if (shouldElevate(transactionalContext, allowed))
-        transactionalContext.kernelTransaction().procedures().procedureCallWriteOverride(id, _, context)
-      else
-        transactionalContext.kernelTransaction().procedures().procedureCallWrite(id, _, context)
-    callProcedure(args, call)
-  }
+                             allowed: Array[String], context: ProcedureCallContext): Iterator[Array[AnyValue]] =
+    callProcedure(args, transactionalContext.kernelTransaction().procedures().procedureCallWrite(id, _, context))
 
   def callSchemaWriteProcedure(transactionalContext: TransactionalContext, id: Int, args: Array[AnyValue],
-                               allowed: Array[String], context: ProcedureCallContext): Iterator[Array[AnyValue]] = {
-    val call: KernelProcedureCall =
-      if (shouldElevate(transactionalContext, allowed))
-        transactionalContext.kernelTransaction().procedures().procedureCallSchemaOverride(id, _, context)
-      else
-        transactionalContext.kernelTransaction().procedures().procedureCallSchema(id, _, context)
-    callProcedure(args, call)
-  }
+                               allowed: Array[String], context: ProcedureCallContext): Iterator[Array[AnyValue]] =
+    callProcedure(args, transactionalContext.kernelTransaction().procedures().procedureCallSchema(id, _, context))
 
   def callDbmsProcedure(transactionalContext: TransactionalContext, id: Int, args: Array[AnyValue],
                         allowed: Array[String], context: ProcedureCallContext): Iterator[Array[AnyValue]] =
@@ -79,7 +60,7 @@ object CallSupport {
 
   def aggregateFunction(transactionalContext: TransactionalContext, id: Int, allowed: Array[String]): UserDefinedAggregator = {
     val aggregator: UserAggregator =
-      if (shouldElevate(transactionalContext, allowed))
+      if (shouldBoostOldWay(transactionalContext, allowed))
         transactionalContext.kernelTransaction().procedures().aggregationFunctionOverride(id)
       else
         transactionalContext.kernelTransaction().procedures().aggregationFunction(id)
@@ -106,7 +87,7 @@ object CallSupport {
     }
   }
 
-  private def shouldElevate(transactionalContext: TransactionalContext, allowed: Array[String]): Boolean = {
+  private def shouldBoostOldWay(transactionalContext: TransactionalContext, allowed: Array[String]): Boolean = {
     // We have to be careful with elevation, since we cannot elevate permissions in a nested procedure call
     // above the original allowed procedure mode. We enforce this by checking if mode is already an overridden mode.
     val accessMode = transactionalContext.securityContext.mode()

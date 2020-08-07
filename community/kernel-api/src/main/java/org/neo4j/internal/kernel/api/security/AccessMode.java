@@ -194,6 +194,12 @@ public interface AccessMode
         }
 
         @Override
+        public boolean shouldBoostProcedure( int procedureId )
+        {
+            return procedureBoost;
+        }
+
+        @Override
         public boolean allowsSetLabel( long labelId )
         {
             return write;
@@ -291,10 +297,12 @@ public interface AccessMode
      * Determines whether this mode allows execution of a procedure with the parameter string array in its
      * procedure annotation.
      *
+     * @deprecated use {@link #allowsExecuteProcedure} and {@link #shouldBoostProcedure} instead
      * @param allowed An array of strings that encodes permissions that allows the execution of a procedure
      * @return {@code true} if this mode allows the execution of a procedure with the given parameter string array
      * encoding permission
      */
+    @Deprecated
     boolean shouldBoostAccessForProcedureWith( String[] allowed );
 
     /**
@@ -303,6 +311,15 @@ public interface AccessMode
      * @return true if the procedure with this id is allowed to be executed
      */
     boolean allowsExecuteProcedure( int procedureId );
+
+    /**
+     * Check if execution of a procedure should be done with boosted privileges.
+     * <p>
+     * <strong>Note: this does not check if execution is allowed</strong>
+     * @param procedureId id of the procedure
+     * @return true if the procedure with this id should be executed with boosted privileges
+     */
+    boolean shouldBoostProcedure( int procedureId );
 
     boolean allowsSetLabel( long labelId );
 

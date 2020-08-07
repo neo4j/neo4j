@@ -51,7 +51,7 @@ public class SecurityContext implements LoginContext
     /**
      * Check whether the user is allowed to execute procedure annotated with @Admin.
      */
-    public boolean allowExecuteAdminProcedure()
+    public boolean allowExecuteAdminProcedure( int procedureId )
     {
         return true;
     }

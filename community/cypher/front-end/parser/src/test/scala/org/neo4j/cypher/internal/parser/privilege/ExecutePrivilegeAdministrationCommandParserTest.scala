@@ -17,6 +17,7 @@
 package org.neo4j.cypher.internal.parser.privilege
 
 import org.neo4j.cypher.internal.ast
+import org.neo4j.cypher.internal.ast.ExecuteBoostedProcedureAction
 import org.neo4j.cypher.internal.ast.ExecuteProcedureAction
 import org.neo4j.cypher.internal.ast.ProcedureQualifier
 import org.neo4j.cypher.internal.expressions
@@ -37,7 +38,8 @@ class ExecutePrivilegeAdministrationCommandParserTest extends AdministrationComm
     case (verb: String, preposition: String, func: executePrivilegeFunc) =>
 
       Seq(
-        ("EXECUTE PROCEDURE", ExecuteProcedureAction)
+        ("EXECUTE PROCEDURE", ExecuteProcedureAction),
+        ("EXECUTE BOOSTED PROCEDURE", ExecuteBoostedProcedureAction)
       ).foreach {
         case (execute, action) =>
 

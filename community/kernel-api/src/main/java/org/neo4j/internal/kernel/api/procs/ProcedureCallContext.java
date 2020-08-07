@@ -28,13 +28,15 @@ import java.util.stream.Stream;
  */
 public class ProcedureCallContext
 {
+    private final int id;
     private final String[] outputFieldNames;
     private final boolean calledFromCypher;
     private final String database;
     private final boolean isSystemDatabase;
 
-    public ProcedureCallContext( String[] outputFieldNames, boolean calledFromCypher, String database, boolean isSystemDatabase )
+    public ProcedureCallContext( int id, String[] outputFieldNames, boolean calledFromCypher, String database, boolean isSystemDatabase )
     {
+        this.id = id;
         this.outputFieldNames = outputFieldNames;
         this.calledFromCypher = calledFromCypher;
         this.database = database;
@@ -70,5 +72,10 @@ public class ProcedureCallContext
     }
 
     /* Can be used for testing purposes */
-    public static final ProcedureCallContext EMPTY = new ProcedureCallContext( new String[]{}, false, "", false );
+    public static final ProcedureCallContext EMPTY = new ProcedureCallContext( -1, new String[]{}, false, "", false );
+
+    public int id()
+    {
+        return id;
+    }
 }

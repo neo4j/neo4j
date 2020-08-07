@@ -60,7 +60,7 @@ case class ProcedureCallPipe(source: Pipe,
     // getting the original name of the yielded variable
     val originalVariables = resultIndices.map(_._2._2).toArray
     val databaseId = qtx.transactionalContext.databaseId
-    new ProcedureCallContext( originalVariables, true, databaseId.name(), databaseId.isSystemDatabase )
+    new ProcedureCallContext( signature.id, originalVariables, true, databaseId.name(), databaseId.isSystemDatabase )
   }
 
   override protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = rowProcessor(input, state)

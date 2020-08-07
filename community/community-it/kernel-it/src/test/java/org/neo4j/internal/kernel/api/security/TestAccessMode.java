@@ -149,6 +149,12 @@ public class TestAccessMode implements AccessMode
     }
 
     @Override
+    public boolean shouldBoostProcedure( int procedureId )
+    {
+        return false;
+    }
+
+    @Override
     public boolean allowsSetLabel( long labelId )
     {
         return allowWrite;

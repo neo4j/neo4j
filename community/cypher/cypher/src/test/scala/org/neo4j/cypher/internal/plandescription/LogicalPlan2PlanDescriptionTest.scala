@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.ast.CreateNodeLabelAction
 import org.neo4j.cypher.internal.ast.DropRoleAction
 import org.neo4j.cypher.internal.ast.DumpData
 import org.neo4j.cypher.internal.ast.ElementsAllQualifier
+import org.neo4j.cypher.internal.ast.ExecuteBoostedProcedureAction
 import org.neo4j.cypher.internal.ast.ExecuteProcedureAction
 import org.neo4j.cypher.internal.ast.LabelQualifier
 import org.neo4j.cypher.internal.ast.NoResource
@@ -1167,7 +1168,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     assertGood(attach(GrantDbmsAction(privLhsLP, ExecuteProcedureAction, ProcedureAllQualifier()(pos), util.Left("role1")), 1.0), adminPlanDescription)
 
     assertGood(attach(
-      DenyDbmsAction(privLhsLP, ExecuteProcedureAction, ProcedureQualifier(Namespace(List("apoc"))(pos), ProcedureName("sin")(pos))(pos), util.Left("role1")),
+      DenyDbmsAction(privLhsLP, ExecuteBoostedProcedureAction, ProcedureQualifier(Namespace(List("apoc"))(pos), ProcedureName("sin")(pos))(pos), util.Left("role1")),
       1.0), adminPlanDescription)
 
     assertGood(attach(

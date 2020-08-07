@@ -1178,7 +1178,16 @@ class PrettifierIT extends CypherFunSuite {
             s"$action EXECUTE PROCEDURE * ON DBMS $preposition role",
 
           s"$action execute procedure math.sin, ma*.`*/a?`,math.`c%s` on dbms $preposition role" ->
-            s"$action EXECUTE PROCEDURE math.sin, ma*.`*/a?`, math.`c%s` ON DBMS $preposition role"
+            s"$action EXECUTE PROCEDURE math.sin, ma*.`*/a?`, math.`c%s` ON DBMS $preposition role",
+
+          s"$action execute boosted procedure * on dbms $preposition role" ->
+            s"$action EXECUTE BOOSTED PROCEDURE * ON DBMS $preposition role",
+
+          s"$action execute boosted procedures * on dbms $preposition role" ->
+            s"$action EXECUTE BOOSTED PROCEDURE * ON DBMS $preposition role",
+
+          s"$action execute boosted procedure math.`s/n`, `ma/*`.`*a?`,math.cos on dbms $preposition role" ->
+            s"$action EXECUTE BOOSTED PROCEDURE math.`s/n`, `ma/*`.*a?, math.cos ON DBMS $preposition role",
       )
     }
   }

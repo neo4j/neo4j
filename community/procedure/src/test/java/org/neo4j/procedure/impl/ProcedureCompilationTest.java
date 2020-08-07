@@ -41,12 +41,10 @@ import java.util.stream.Stream;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.function.ThrowingFunction;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.internal.kernel.api.procs.UserAggregator;
 import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
-import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.procedure.CallableProcedure;
 import org.neo4j.kernel.api.procedure.CallableUserAggregationFunction;
@@ -444,27 +442,6 @@ public class ProcedureCompilationTest
                 stringStream.apply( ctx, EMPTY, RESOURCE_TRACKER );
         assertArrayEquals( new AnyValue[]{stringValue( "hello" )}, iterator.next() );
         assertFalse( iterator.hasNext() );
-    }
-
-    @Test
-    void shouldCheckAccessOnAdminProcedures() throws ProcedureException
-    {
-        // Given
-        ProcedureSignature signature = ProcedureSignature.procedureSignature( "test", "foo" )
-                .admin( true )
-                .out( singletonList( inputField( "name", NTString ) ) ).build();
-        SecurityContext securityContext = mock( SecurityContext.class );
-        when( securityContext.allowExecuteAdminProcedure() ).thenReturn( false );
-        when( ctx.securityContext() ).thenReturn( securityContext );
-
-        // When
-        CallableProcedure stringStream =
-                compileProcedure( signature, emptyList(), method( InnerClass.class, "innerStream" ) );
-
-        // Then
-        ProcedureException exception = assertThrows( ProcedureException.class, () -> stringStream.apply( ctx, EMPTY, RESOURCE_TRACKER ));
-        assertTrue( exception.getCause() instanceof AuthorizationViolationException );
-        verify( securityContext ).assertCredentialsNotExpired();
     }
 
     @Test

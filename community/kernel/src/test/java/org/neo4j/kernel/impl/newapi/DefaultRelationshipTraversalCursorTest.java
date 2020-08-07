@@ -460,31 +460,13 @@ class DefaultRelationshipTraversalCursorTest
         }
 
         @Override
-        public RawIterator<AnyValue[],ProcedureException> procedureCallReadOverride( int id, AnyValue[] arguments, ProcedureCallContext context )
-        {
-            return null;
-        }
-
-        @Override
         public RawIterator<AnyValue[],ProcedureException> procedureCallWrite( int id, AnyValue[] arguments, ProcedureCallContext context )
         {
             return null;
         }
 
         @Override
-        public RawIterator<AnyValue[],ProcedureException> procedureCallWriteOverride( int id, AnyValue[] arguments, ProcedureCallContext context )
-        {
-            return null;
-        }
-
-        @Override
         public RawIterator<AnyValue[],ProcedureException> procedureCallSchema( int id, AnyValue[] arguments, ProcedureCallContext context )
-        {
-            return null;
-        }
-
-        @Override
-        public RawIterator<AnyValue[],ProcedureException> procedureCallSchemaOverride( int id, AnyValue[] arguments, ProcedureCallContext context )
         {
             return null;
         }

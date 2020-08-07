@@ -492,6 +492,8 @@ case object AllDbmsAction extends DbmsAction("ALL DBMS PRIVILEGES")
 
 case object ExecuteProcedureAction extends DbmsAction("EXECUTE PROCEDURE")
 
+case object ExecuteBoostedProcedureAction extends DbmsAction("EXECUTE BOOSTED PROCEDURE")
+
 abstract class UserManagementAction(override val name: String) extends DbmsAction(name)
 
 case object AllUserActions extends UserManagementAction("USER MANAGEMENT")

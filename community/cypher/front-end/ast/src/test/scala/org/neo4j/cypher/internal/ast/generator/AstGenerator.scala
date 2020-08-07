@@ -94,6 +94,7 @@ import org.neo4j.cypher.internal.ast.DropUserAction
 import org.neo4j.cypher.internal.ast.DumpData
 import org.neo4j.cypher.internal.ast.ElementQualifier
 import org.neo4j.cypher.internal.ast.ElementsAllQualifier
+import org.neo4j.cypher.internal.ast.ExecuteBoostedProcedureAction
 import org.neo4j.cypher.internal.ast.ExecuteProcedureAction
 import org.neo4j.cypher.internal.ast.Foreach
 import org.neo4j.cypher.internal.ast.FromGraph
@@ -1395,7 +1396,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
   } yield dbms
 
   def _qualifiedDbmsPrivilege: Gen[PrivilegeCommand] = for {
-    dbmsAction         <- ExecuteProcedureAction
+    dbmsAction         <- oneOf(ExecuteProcedureAction, ExecuteBoostedProcedureAction)
     procedureNamespace <- _namespace
     procedureName      <- _procedureName
     procedures         <- oneOrMore(ProcedureQualifier(procedureNamespace, procedureName)(pos))

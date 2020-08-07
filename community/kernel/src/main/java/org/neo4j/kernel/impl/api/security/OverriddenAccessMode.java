@@ -32,7 +32,7 @@ import org.neo4j.internal.kernel.api.security.PrivilegeAction;
  */
 public class OverriddenAccessMode extends WrappedAccessMode
 {
-    public OverriddenAccessMode( AccessMode original, AccessMode overriding )
+    public OverriddenAccessMode( AccessMode original, Static overriding )
     {
         super( original, overriding );
     }

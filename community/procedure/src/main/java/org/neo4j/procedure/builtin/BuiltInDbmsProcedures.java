@@ -271,6 +271,7 @@ public class BuiltInDbmsProcedures
         return Stream.of( new StringResult( result ) );
     }
 
+    @Admin
     @SystemProcedure
     @Description( "Report the current status of the system database sub-graph schema." )
     @Procedure( name = "dbms.upgradeStatus", mode = READ )
@@ -285,6 +286,7 @@ public class BuiltInDbmsProcedures
         return Stream.of( new SystemGraphComponentStatusResult( systemGraphComponents.detect( transaction ) ) );
     }
 
+    @Admin
     @SystemProcedure
     @Description( "Upgrade the system database schema if it is not the current schema." )
     @Procedure( name = "dbms.upgrade", mode = WRITE )
@@ -334,14 +336,6 @@ public class BuiltInDbmsProcedures
             {
                 throw new AuthorizationViolationException(
                         String.format( "%s Execution of this procedure has been restricted by the system.", PERMISSION_DENIED ) );
-            }
-        }
-        else
-        {
-            securityContext.assertCredentialsNotExpired();
-            if ( !securityContext.allowExecuteAdminProcedure() )
-            {
-                throw new AuthorizationViolationException( format("Executing admin procedure is not allowed for %s.", securityContext.description() ) );
             }
         }
     }
@@ -687,7 +681,7 @@ public class BuiltInDbmsProcedures
 
     private boolean isAdminOrSelf( String username )
     {
-        return securityContext.allowExecuteAdminProcedure() || securityContext.subject().hasUsername( username );
+        return securityContext.allowExecuteAdminProcedure( callContext.id() ) || securityContext.subject().hasUsername( username );
     }
 
     private GraphDatabaseAPI getSystemDatabase()

@@ -867,49 +867,28 @@ public class AllStoreHolder extends Read
     public RawIterator<AnyValue[],ProcedureException> procedureCallRead( int id, AnyValue[] arguments, ProcedureCallContext context )
             throws ProcedureException
     {
-        return callProcedure( id, arguments, new RestrictedAccessMode( ktx.securityContext().mode(), AccessMode.Static.READ ), context );
-    }
-
-    @Override
-    public RawIterator<AnyValue[],ProcedureException> procedureCallReadOverride( int id, AnyValue[] arguments, ProcedureCallContext context )
-            throws ProcedureException
-    {
-        return callProcedure( id, arguments, new OverriddenAccessMode( ktx.securityContext().mode(), AccessMode.Static.READ ), context );
+        return callProcedure( id, arguments, AccessMode.Static.READ, context );
     }
 
     @Override
     public RawIterator<AnyValue[],ProcedureException> procedureCallWrite( int id, AnyValue[] arguments, ProcedureCallContext context )
             throws ProcedureException
     {
-        return callProcedure( id, arguments, new RestrictedAccessMode( ktx.securityContext().mode(), AccessMode.Static.TOKEN_WRITE ), context );
-    }
-
-    @Override
-    public RawIterator<AnyValue[],ProcedureException> procedureCallWriteOverride( int id, AnyValue[] arguments, ProcedureCallContext context )
-            throws ProcedureException
-    {
-        return callProcedure( id, arguments, new OverriddenAccessMode( ktx.securityContext().mode(), AccessMode.Static.TOKEN_WRITE ), context );
+        return callProcedure( id, arguments, AccessMode.Static.TOKEN_WRITE, context );
     }
 
     @Override
     public RawIterator<AnyValue[],ProcedureException> procedureCallSchema( int id, AnyValue[] arguments, ProcedureCallContext context )
             throws ProcedureException
     {
-        return callProcedure( id, arguments, new RestrictedAccessMode( ktx.securityContext().mode(), AccessMode.Static.SCHEMA ), context );
-    }
-
-    @Override
-    public RawIterator<AnyValue[],ProcedureException> procedureCallSchemaOverride( int id, AnyValue[] arguments, ProcedureCallContext context )
-            throws ProcedureException
-    {
-        return callProcedure( id, arguments, new OverriddenAccessMode( ktx.securityContext().mode(), AccessMode.Static.SCHEMA ), context );
+        return callProcedure( id, arguments, AccessMode.Static.SCHEMA, context );
     }
 
     @Override
     public RawIterator<AnyValue[],ProcedureException> procedureCallDbms( int id, AnyValue[] arguments, ProcedureCallContext context )
             throws ProcedureException
     {
-        return callProcedure( id, arguments, new RestrictedAccessMode( ktx.securityContext().mode(), AccessMode.Static.ACCESS ), context );
+        return callProcedure( id, arguments, AccessMode.Static.ACCESS, context );
     }
 
     @Override
@@ -955,7 +934,7 @@ public class AllStoreHolder extends Read
     }
 
     private RawIterator<AnyValue[],ProcedureException> callProcedure(
-            int id, AnyValue[] input, final AccessMode override, ProcedureCallContext procedureCallContext )
+            int id, AnyValue[] input, final AccessMode.Static procedureMode, ProcedureCallContext procedureCallContext )
             throws ProcedureException
     {
         ktx.assertOpen();
@@ -965,6 +944,9 @@ public class AllStoreHolder extends Read
         {
             throw new AuthorizationViolationException( format("Executing procedure is not allowed for %s.", ktx.securityContext().description() ) );
         }
+
+        AccessMode override =
+                mode.shouldBoostProcedure( id ) ? new OverriddenAccessMode( mode, procedureMode ) : new RestrictedAccessMode( mode, procedureMode );
 
         final SecurityContext procedureSecurityContext = ktx.securityContext().withMode( override );
         final RawIterator<AnyValue[],ProcedureException> procedureCall;

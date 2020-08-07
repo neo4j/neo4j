@@ -32,7 +32,7 @@ import org.neo4j.internal.kernel.api.security.PrivilegeAction;
  */
 public class RestrictedAccessMode extends WrappedAccessMode
 {
-    public RestrictedAccessMode( AccessMode original, AccessMode restricting )
+    public RestrictedAccessMode( AccessMode original, Static restricting )
     {
         super( original, restricting );
     }

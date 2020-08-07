@@ -44,6 +44,8 @@ public enum PrivilegeAction
 
     /** Execute procedure */
     EXECUTE,
+    /** Execute procedure with elevated access */
+    EXECUTE_BOOSTED,
 
     CREATE_LABEL,
     CREATE_RELTYPE,

@@ -29,12 +29,21 @@ import org.neo4j.internal.kernel.api.security.AccessMode;
 abstract class WrappedAccessMode implements AccessMode
 {
     protected final AccessMode original;
-    protected final AccessMode wrapping;
+    protected final Static wrapping;
 
-    WrappedAccessMode( AccessMode original, AccessMode wrapping )
+    WrappedAccessMode( AccessMode original, Static wrapping )
     {
         this.original = original;
-        this.wrapping = wrapping;
+        if ( original instanceof WrappedAccessMode )
+        {
+            Static originalWrapping = ((WrappedAccessMode) original).wrapping;
+            this.wrapping = originalWrapping.ordinal() < wrapping.ordinal() ?
+                            originalWrapping : wrapping;
+        }
+        else
+        {
+            this.wrapping = wrapping;
+        }
     }
 
     @Override
@@ -47,6 +56,12 @@ abstract class WrappedAccessMode implements AccessMode
     public boolean allowsExecuteProcedure( int procedureId )
     {
         return original.allowsExecuteProcedure( procedureId );
+    }
+
+    @Override
+    public boolean shouldBoostProcedure( int procedureId )
+    {
+        return original.shouldBoostProcedure( procedureId );
     }
 
     @Override
