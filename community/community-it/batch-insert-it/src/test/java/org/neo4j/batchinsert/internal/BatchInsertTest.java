@@ -36,6 +36,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.OptionalLong;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -52,12 +53,14 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.helpers.collection.Iterables;
+import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.index.label.FullStoreChangeStream;
 import org.neo4j.internal.index.label.LabelScanReader;
@@ -79,8 +82,8 @@ import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.impl.MyRelTypes;
-import org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
+import org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeLabels;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
@@ -1389,6 +1392,69 @@ class BatchInsertTest
         inserter.shutdown();
     }
 
+    @Test
+    void shouldStartOnAndUpdateDbContainingFulltextIndex() throws Exception
+    {
+        // given
+        // this test cannot run on an impermanent db since there's a test issue causing problems when flipping/closing RAMDirectory Lucene indexes
+        boolean impermanent = false;
+        int denseNodeThreshold = GraphDatabaseSettings.dense_node_threshold.defaultValue();
+        GraphDatabaseService db = instantiateGraphDatabaseService( denseNodeThreshold );
+        String key = "key";
+        Label label = Label.label( "Label" );
+        String indexName = "ftsNodes";
+        try
+        {
+            try ( Transaction tx = db.beginTx() )
+            {
+                db.executeTransactionally( format( "CALL db.index.fulltext.createNodeIndex('%s', ['%s'], ['%s'] )", indexName, label.name(), key ) );
+                tx.commit();
+            }
+            try ( Transaction tx = db.beginTx() )
+            {
+                tx.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+                tx.commit();
+            }
+        }
+        finally
+        {
+            managementService.shutdown();
+        }
+
+        // when
+        String value = "hey";
+        BatchInserter inserter = newBatchInserter( denseNodeThreshold );
+        long node = inserter.createNode( Collections.singletonMap( key, value ), label );
+
+        // then
+        inserter.shutdown();
+        GraphDatabaseAPI dbAfterInsert = instantiateGraphDatabaseService( denseNodeThreshold );
+        try
+        {
+            try ( Transaction tx = dbAfterInsert.beginTx() )
+            {
+                // Check that the store has this node
+                ResourceIterator<Node> nodes = tx.findNodes( label, key, value );
+                Node foundNode = Iterators.single( nodes );
+                assertEquals( node, foundNode.getId() );
+
+                // Check that the fulltext index has this node
+                dbAfterInsert.executeTransactionally( format( "CALL db.index.fulltext.queryNodes('%s', '%s')", indexName, value ), new HashMap<>(), result ->
+                {
+                    assertTrue( result.hasNext() );
+                    Map<String,Object> hit = result.next();
+                    Node indexedNode = (Node) hit.get( "node" );
+                    assertFalse( result.hasNext() );
+                    return indexedNode;
+                } );
+            }
+        }
+        finally
+        {
+            managementService.shutdown();
+        }
+    }
+
     private Config configuration( int denseNodeThreshold )
     {
 
@@ -1411,15 +1477,20 @@ class BatchInsertTest
         return BatchInserters.inserter( databaseLayout, fs, configuration, singletonList( provider ) );
     }
 
-    private GraphDatabaseService switchToEmbeddedGraphDatabaseService( BatchInserter inserter, int denseNodeThreshold )
+    private GraphDatabaseAPI switchToEmbeddedGraphDatabaseService( BatchInserter inserter, int denseNodeThreshold )
     {
         inserter.shutdown();
+        return instantiateGraphDatabaseService( denseNodeThreshold );
+    }
+
+    private GraphDatabaseAPI instantiateGraphDatabaseService( int denseNodeThreshold )
+    {
         TestDatabaseManagementServiceBuilder factory = new TestDatabaseManagementServiceBuilder( databaseLayout );
         factory.setFileSystem( fs );
         managementService = factory.impermanent()
             // Shouldn't be necessary to set dense node threshold since it's a stick config
             .setConfig( configuration( denseNodeThreshold ) ).build();
-        return managementService.database( DEFAULT_DATABASE_NAME );
+        return (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
     }
 
     private LabelScanStore getLabelScanStore()
