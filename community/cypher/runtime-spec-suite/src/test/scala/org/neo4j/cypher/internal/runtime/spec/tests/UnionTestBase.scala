@@ -706,4 +706,49 @@ abstract class UnionTestBase[CONTEXT <: RuntimeContext](
     // then
     runtimeResult should beColumns("y").withRows(Seq(Array[Any](1)))
   }
+
+  test("union + unwind followed by apply") {
+    val nodes = given {
+      nodeGraph(sizeHintAlignedToMorselSize)
+    }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n", "x")
+      .apply()
+      .|.argument("n", "x")
+      .unwind("[n] AS x")
+      .union()
+      .|.nodeByLabelScan("n", "DoesNotExist", IndexOrderNone)
+      .allNodeScan("n")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+    runtimeResult should beColumns("n", "x").withRows(nodes.map(n => Array(n, n)))
+  }
+
+  test("union + unwind on RHS of apply, followed by apply") {
+    val nodes = given {
+      nodeGraph(sizeHintAlignedToMorselSize)
+    }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n", "x")
+      .apply()
+      .|.argument("n", "x")
+      .apply()
+      .|.unwind("[n] AS x")
+      .|.union()
+      .|.|.nodeByLabelScan("n", "DoesNotExist", IndexOrderNone)
+      .|.argument("n")
+      .allNodeScan("n")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+    runtimeResult should beColumns("n", "x").withRows(nodes.map(n => Array(n, n)))
+  }
+
+  private def sizeHintAlignedToMorselSize: Int = {
+    val morselSize = edition.cypherConfig().pipelinedBatchSizeSmall
+    (1 + sizeHint / morselSize) * morselSize
+  }
 }
