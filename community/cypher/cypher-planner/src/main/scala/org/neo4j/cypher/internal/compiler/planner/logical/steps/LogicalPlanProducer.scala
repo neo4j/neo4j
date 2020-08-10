@@ -742,7 +742,8 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
      Not very important at the moment, but dirty.
      */
     val solved = solveds.get(left.id)
-    solveds.set(plan.id, solved)
+    val solvedWithAllHints = solved.asSinglePlannerQuery.amendQueryGraph(qg => qg.copy(hints = qg.hints ++ solveds.get(right.id).allHints))
+    solveds.set(plan.id, solvedWithAllHints)
 
     // Even if solveds is broken, it's nice to get the cardinality correct
     val lhsCardinality = cardinalities(left.id)
