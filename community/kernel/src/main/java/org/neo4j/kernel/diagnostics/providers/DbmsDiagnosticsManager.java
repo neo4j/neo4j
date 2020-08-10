@@ -162,7 +162,7 @@ public class DbmsDiagnosticsManager
             return;
         }
 
-        StringJoiner message = new StringJoiner( System.lineSeparator(), System.lineSeparator(), "" );
+        StringJoiner message = new StringJoiner( System.lineSeparator() + " ".repeat( 64 ), System.lineSeparator() + " ".repeat( 64 ), "" );
         dumpFunction.accept( message );
         log.info( message.toString() );
     }
