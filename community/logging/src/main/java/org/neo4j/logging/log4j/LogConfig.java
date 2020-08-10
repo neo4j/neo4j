@@ -144,11 +144,20 @@ public final class LogConfig
 
     private static Appender createRollingFileAppender( Builder builder, Layout<String> layout )
     {
-        long rotationThreshold = builder.rotationThreshold == 0 ? Long.MAX_VALUE : builder.rotationThreshold;
+        long rotationThreshold = builder.rotationThreshold;
+        int maxArchives = builder.maxArchives;
+
+        if ( builder.rotationThreshold == 0 || builder.maxArchives == 0 )
+        {
+            // Should not rotate - set threshold that won't be reached.
+            rotationThreshold = Long.MAX_VALUE;
+            maxArchives = 1;
+        }
+
         SizeBasedTriggeringPolicy policy = SizeBasedTriggeringPolicy.createPolicy( String.valueOf( rotationThreshold ) );
 
         DefaultRolloverStrategy rolloverStrategy =
-                DefaultRolloverStrategy.newBuilder().withMax( String.valueOf( builder.maxArchives ) ).withFileIndex( "min" ).build();
+                DefaultRolloverStrategy.newBuilder().withMax( String.valueOf( maxArchives ) ).withFileIndex( "min" ).build();
 
         return RollingFileAppender.newBuilder()
                 .setName( APPENDER_NAME )
