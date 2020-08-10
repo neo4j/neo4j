@@ -19,16 +19,20 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
+import org.neo4j.cypher.internal.ast.UsingIndexHint
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.planner.logical.PlanMatchHelp
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.FunctionName
 import org.neo4j.cypher.internal.expressions.functions.Collect
+import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.ir.ordering.RequiredOrderCandidate
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.DoNotIncludeTies
+import org.neo4j.cypher.internal.util.Cardinality
+import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSupport2 with PlanMatchHelp{
@@ -364,6 +368,35 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       context.planningAttributes.leveragedOrders.get(p1.id) should be(true)
       context.planningAttributes.leveragedOrders.get(leaf1.id) should be(false)
       context.planningAttributes.leveragedOrders.get(leaf2.id) should be(false)
+    }
+  }
+
+  test("should retain solved hints and cardinality when planning union for leaf plans") {
+    new given().withLogicalPlanningContext { (_, context) =>
+      val lpp = LogicalPlanProducer(context.cardinality, context.planningAttributes, idGen)
+
+      val lhs = fakeLogicalPlanFor("x", "y")
+      val rhs = fakeLogicalPlanFor("x", "y")
+      val hint1 = UsingIndexHint(varFor("foo"), labelName("bar"), Seq())(InputPosition.NONE)
+      val hint2 = UsingIndexHint(varFor("blah"), labelName("meh"), Seq())(InputPosition.NONE)
+
+      val solveds = context.planningAttributes.solveds
+      val spqLhs = SinglePlannerQuery.empty.amendQueryGraph(qg => qg.copy(hints = qg.hints + hint1 ))
+      val spqRhs = SinglePlannerQuery.empty.amendQueryGraph(qg => qg.copy(hints = qg.hints + hint2 ))
+
+      solveds.set(lhs.id, spqLhs)
+      context.planningAttributes.cardinalities.set(lhs.id, 10.0)
+      context.planningAttributes.providedOrders.set(lhs.id, ProvidedOrder.empty)
+
+      solveds.set(rhs.id, spqRhs)
+      context.planningAttributes.cardinalities.set(rhs.id, 20.0)
+      context.planningAttributes.providedOrders.set(rhs.id, ProvidedOrder.empty)
+
+      val p1 = lpp.planUnionForOrLeaves(lhs, rhs, context)
+
+      solveds.get(p1.id).allHints shouldBe(Set(hint1, hint2))
+      context.planningAttributes.cardinalities.get(p1.id) shouldBe(Cardinality(30.0))
+      context.planningAttributes.providedOrders.get(p1.id) shouldBe(ProvidedOrder.empty)
     }
   }
 }
