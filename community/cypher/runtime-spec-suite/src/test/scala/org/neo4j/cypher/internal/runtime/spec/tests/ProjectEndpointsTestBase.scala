@@ -24,7 +24,12 @@ import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
+import org.neo4j.graphdb.Direction.BOTH
+import org.neo4j.graphdb.Direction.OUTGOING
+import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.RelationshipType
+
+import scala.collection.JavaConverters.iterableAsScalaIterableConverter
 
 abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
   edition: Edition[CONTEXT],
@@ -78,11 +83,8 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
       a <- aNodes
       b <- bNodes
     } yield {
-      (Array(a, b), Array(b, a))
-    }).flatten {
-      case (r1, r2) =>
-        Array(r1, r2)
-    }
+      Array(Array(a, b), Array(b, a))
+    }).flatten
 
     runtimeResult should beColumns("x", "y").withRows(expected)
   }
@@ -186,11 +188,8 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
       a <- aNodes
       b <- bNodes
     } yield {
-      (Array(a, b), Array(b, a))
-    }).flatten {
-      case (r1, r2) =>
-        Array(r1, r2)
-    }
+      Array(Array(a, b), Array(b, a))
+    }).flatten
 
     runtimeResult should beColumns("x", "y").withRows(expected)
   }
@@ -215,11 +214,8 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
       a <- aNodes
       b <- bNodes
     } yield {
-      (Array(a, b), Array(b, a))
-    }).flatten {
-      case (r1, r2) =>
-        Array(r1, r2)
-    }
+      Array(Array(a, b), Array(b, a))
+    }).flatten
 
 
     runtimeResult should beColumns("x", "y").withRows(expected)
@@ -251,11 +247,8 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
       a <- aNodes
       b <- bNodes
     } yield {
-      (Array(a, b), Array(b, a))
-    }).flatten {
-      case (r1, r2) =>
-        Array(r1, r2)
-    }
+      Array(Array(a, b), Array(b, a))
+    }).flatten
 
     runtimeResult should beColumns("x", "y").withRows(rowCount(expected.size))
   }
@@ -285,11 +278,8 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
       a <- aNodes
       b <- bNodes
     } yield {
-      (Array(a, b), Array(b, a))
-    }).flatten {
-      case (r1, r2) =>
-        Array(r1, r2)
-    }
+      Array(Array(a, b), Array(b, a))
+    }).flatten
 
     runtimeResult should beColumns("x", "y").withRows(expected)
   }
@@ -319,11 +309,8 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
       a <- aNodes
       b <- bNodes
     } yield {
-      (Array(a, b), Array(b, a))
-    }).flatten {
-      case (r1, r2) =>
-        Array(r1, r2)
-    }
+      Array(Array(a, b), Array(b, a))
+    }).flatten
 
     runtimeResult should beColumns("x", "y").withRows(expected)
   }
@@ -349,11 +336,8 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
       a <- aNodes
       b <- bNodes
     } yield {
-      (Array(a, b), Array(b, a))
-    }).flatten {
-      case (r1, r2) =>
-        Array(r1, r2)
-    }
+      Array(Array(a, b), Array(b, a))
+    }).flatten
 
     runtimeResult should beColumns("x", "y").withRows(expected)
   }
@@ -379,23 +363,17 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
       a <- aNodes
       b <- bNodes
     } yield {
-      (Array(a, b), Array(b, a))
-    }).flatten {
-      case (r1, r2) =>
-        Array(r1, r2)
-    }
+      Array(Array(a, b), Array(b, a))
+    }).flatten
 
     runtimeResult should beColumns("x", "y").withRows(expected)
   }
 
-
   test("should project endpoints - non varlenght") {
     // given
-    val (aNode, bNode) = given {
-      val a = runtimeTestSupport.tx.createNode()
-      val b = runtimeTestSupport.tx.createNode()
-      a.createRelationshipTo(b, RelationshipType.withName("R"))
-      (a, b)
+    val nNodes = Math.sqrt(sizeHint).ceil.toInt
+    val (aNodes, bNodes, _, _) = given {
+      bidirectionalBipartiteGraph(nNodes, "A", "B", "RA", "RB")
     }
 
     // when
@@ -409,311 +387,372 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    runtimeResult should beColumns("x", "y").withSingleRow(bNode, aNode)
+    val expected = (for {
+      a <- aNodes
+      b <- bNodes
+    } yield {
+      val foo: Array[Array[Node]] = Array(Array(a, b), Array(b, a))
+      foo
+    }).flatten
+    runtimeResult should beColumns("x", "y").withRows(expected)
   }
 
   test("should project endpoints - varlenght - start in scope") {
-        // given
-        val (aNode, bNode) = given {
-          val a = runtimeTestSupport.tx.createNode()
-          val b = runtimeTestSupport.tx.createNode()
-          a.createRelationshipTo(b, RelationshipType.withName("R"))
-          (a, b)
-        }
-
-        // when
-        val logicalQuery = new LogicalQueryBuilder(this)
-          .produceResults("x", "y")
-          .projectEndpoints("(x)-[r*]-(y)", startInScope = true, endInScope = false)
-          .expandAll("(x)<-[r*]-()")
-          .allNodeScan("x")
-          .build()
-
-        val runtimeResult = execute(logicalQuery, runtime)
-
-        // then
-        runtimeResult should beColumns("x", "y").withSingleRow(bNode, aNode)
-  }
-
-    test("should project endpoints - varlenght directed, start in scope") {
-          // given
-          val (aNode, bNode) = given {
-            val a = runtimeTestSupport.tx.createNode()
-            val b = runtimeTestSupport.tx.createNode()
-            a.createRelationshipTo(b, RelationshipType.withName("R"))
-            (a, b)
-          }
-
-          // when
-          val logicalQuery = new LogicalQueryBuilder(this)
-            .produceResults("x", "y")
-            .projectEndpoints("(x)-[r*]->(y)", startInScope = true, endInScope = false)
-            .expandAll("(x)-[r*]->()")
-            .allNodeScan("x")
-            .build()
-
-          val runtimeResult = execute(logicalQuery, runtime)
-
-          // then
-          runtimeResult should beColumns("x", "y").withSingleRow(aNode, bNode)
-    }
-
-  test("should project endpoints - varlenght directed with type, start in scope") {
     // given
-    val (aNode, bNode) = given {
-      val a = runtimeTestSupport.tx.createNode()
-      val b = runtimeTestSupport.tx.createNode()
-      a.createRelationshipTo(b, RelationshipType.withName("R"))
-      a.createRelationshipTo(b, RelationshipType.withName("T"))
-      (a, b)
-    }
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x", "y")
-      .projectEndpoints("(x)-[r:R*]->(y)", startInScope = true, endInScope = false)
-      .expandAll("(x)-[r*]->()")
-      .allNodeScan("x")
-      .build()
-
-    val runtimeResult = execute(logicalQuery, runtime)
-
-    // then
-    runtimeResult should beColumns("x", "y").withSingleRow(aNode, bNode)
-  }
-
-  test("should project endpoints - varlenght directed, nothing in scope") {
-    // given
-    val (aNode, bNode) = given {
-      val a = runtimeTestSupport.tx.createNode()
-      val b = runtimeTestSupport.tx.createNode()
-      a.createRelationshipTo(b, RelationshipType.withName("R"))
-      (a, b)
-    }
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x", "y")
-      .projectEndpoints("(x)-[r:*]->(y)", startInScope = false, endInScope = false)
-      .expandAll("(n)-[r*]->()")
-      .allNodeScan("n")
-      .build()
-
-    val runtimeResult = execute(logicalQuery, runtime)
-
-    // then
-    runtimeResult should beColumns("x", "y").withSingleRow(aNode, bNode)
-  }
-
-  test("should project endpoints - varlenght directed with type, nothing in scope") {
-    // given
-    val (aNode, bNode) = given {
-      val a = runtimeTestSupport.tx.createNode()
-      val b = runtimeTestSupport.tx.createNode()
-      a.createRelationshipTo(b, RelationshipType.withName("R"))
-      a.createRelationshipTo(b, RelationshipType.withName("T"))
-      (a, b)
-    }
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x", "y")
-      .projectEndpoints("(x)-[r:R*]->(y)", startInScope = false, endInScope = false)
-      .expandAll("(n)-[r*]->()")
-      .allNodeScan("n")
-      .build()
-
-    val runtimeResult = execute(logicalQuery, runtime)
-
-    // then
-    runtimeResult should beColumns("x", "y").withSingleRow(aNode, bNode)
-  }
-
-  test("should project endpoints - varlenght directed, end in scope") {
-    // given
-    val (aNode, bNode) = given {
-      val a = runtimeTestSupport.tx.createNode()
-      val b = runtimeTestSupport.tx.createNode()
-      a.createRelationshipTo(b, RelationshipType.withName("R"))
-      (a, b)
-    }
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x", "y")
-      .projectEndpoints("(x)-[r:*]->(y)", startInScope = false, endInScope = true)
-      .expandAll("(y)<-[r*]-()")
-      .allNodeScan("y")
-      .build()
-
-    val runtimeResult = execute(logicalQuery, runtime)
-
-    // then
-    runtimeResult should beColumns("x", "y").withSingleRow(aNode, bNode)
-  }
-
-  test("should project endpoints - varlenght directed with type, end in scope") {
-    // given
-    val (aNode, bNode) = given {
-      val a = runtimeTestSupport.tx.createNode()
-      val b = runtimeTestSupport.tx.createNode()
-      a.createRelationshipTo(b, RelationshipType.withName("R"))
-      a.createRelationshipTo(b, RelationshipType.withName("T"))
-      (a, b)
-    }
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x", "y")
-      .projectEndpoints("(x)-[r:R*]->(y)", startInScope = false, endInScope = true)
-      .expandAll("(y)<-[r*]-()")
-      .allNodeScan("y")
-      .build()
-
-    val runtimeResult = execute(logicalQuery, runtime)
-
-    // then
-    runtimeResult should beColumns("x", "y").withSingleRow(aNode, bNode)
-  }
-
-  test("should project endpoints - varlenght undirected, start in scope") {
-    // given
-    val (aNode, bNode) = given {
-      val a = runtimeTestSupport.tx.createNode()
-      val b = runtimeTestSupport.tx.createNode()
-      a.createRelationshipTo(b, RelationshipType.withName("R"))
-      (a, b)
+    val nNodes = Math.sqrt(sizeHint).ceil.toInt
+    val (aNodes, bNodes, _, _) = given {
+      bidirectionalBipartiteGraph(nNodes, "A", "B", "RA", "RB")
     }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
       .projectEndpoints("(x)-[r*]-(y)", startInScope = true, endInScope = false)
-      .expandAll("(x)-[r*]->()")
+      .expandAll("(x)<-[r*1..2]-()")
       .allNodeScan("x")
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    runtimeResult should beColumns("x", "y").withSingleRow(aNode, bNode)
+    val expected = (for {
+      node <- aNodes ++ bNodes
+      oneStep: Iterable[Array[Node]] = node.getRelationships(OUTGOING).asScala.map(r => Array(node, r.getOtherNode(node)))
+      twoSteps: Iterable[Array[Node]] = oneStep.flatMap {
+        case Array(_, b) => b.getRelationships(OUTGOING).asScala.map(r => Array(node, r.getOtherNode(b)))
+      }
+    } yield oneStep ++ twoSteps).flatten
+
+    runtimeResult should beColumns("x", "y").withRows(expected)
   }
 
-  test("should project endpoints - varlenght undirected with type, start in scope") {
+  test("should project endpoints - varlenght directed, start in scope") {
     // given
-    val (aNode, bNode) = given {
-      val a = runtimeTestSupport.tx.createNode()
-      val b = runtimeTestSupport.tx.createNode()
-      a.createRelationshipTo(b, RelationshipType.withName("R"))
-      a.createRelationshipTo(b, RelationshipType.withName("T"))
-      (a, b)
+    val nNodes = Math.sqrt(sizeHint).ceil.toInt
+    val (aNodes, bNodes, _, _) = given {
+      bidirectionalBipartiteGraph(nNodes, "A", "B", "RA", "RB")
     }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
-      .projectEndpoints("(x)-[r:R*]-(y)", startInScope = true, endInScope = false)
-      .expandAll("(x)-[r*]->()")
+      .projectEndpoints("(x)-[r*]->(y)", startInScope = true, endInScope = false)
+      .expandAll("(x)-[r*1..2]->()")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    //then
+    val expected = (for {
+      node <- aNodes ++ bNodes
+      oneStep: Iterable[Array[Node]] = node.getRelationships(OUTGOING).asScala.map(r => Array(node, r.getOtherNode(node)))
+      twoSteps: Iterable[Array[Node]] = oneStep.flatMap {
+        case Array(_, b) => b.getRelationships(OUTGOING).asScala.map(r => Array(node, r.getOtherNode(b)))
+      }
+    } yield oneStep ++ twoSteps).flatten
+
+    runtimeResult should beColumns("x", "y").withRows(expected)
+  }
+
+  test("should project endpoints - varlenght directed with type, start in scope") {
+    // given
+    val nNodes = Math.sqrt(sizeHint).ceil.toInt
+    val (aNodes, bNodes, _, _) = given {
+      bidirectionalBipartiteGraph(nNodes, "A", "B", "RA", "RB")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .projectEndpoints("(x)-[r:RA*]->(y)", startInScope = true, endInScope = false)
+      .expandAll("(x)-[r*1..2]->()")
       .allNodeScan("x")
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    runtimeResult should beColumns("x", "y").withSingleRow(aNode, bNode)
+    val expected = (for {
+      node <- aNodes ++ bNodes
+      oneStep: Iterable[Array[Node]] = node.getRelationships(OUTGOING, RelationshipType.withName("RA")).asScala.map(r => Array(node, r.getOtherNode(node)))
+    } yield oneStep).flatten
+
+    runtimeResult should beColumns("x", "y").withRows(expected)
+  }
+
+  test("should project endpoints - varlenght directed, nothing in scope") {
+    // given
+    val nNodes = Math.sqrt(sizeHint).ceil.toInt
+    val (aNodes, bNodes, _, _) = given {
+      bidirectionalBipartiteGraph(nNodes, "A", "B", "RA", "RB")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .projectEndpoints("(x)-[r:*]->(y)", startInScope = false, endInScope = false)
+      .expandAll("(n)-[r*1..2]->()")
+      .allNodeScan("n")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = (for {
+      node <- aNodes ++ bNodes
+      oneStep: Iterable[Array[Node]] = node.getRelationships(OUTGOING).asScala.map(r => Array(node, r.getOtherNode(node)))
+      twoSteps: Iterable[Array[Node]] = oneStep.flatMap {
+        case Array(_, b) => b.getRelationships(OUTGOING).asScala.map(r => Array(node, r.getOtherNode(b)))
+      }
+    } yield oneStep ++ twoSteps).flatten
+
+    runtimeResult should beColumns("x", "y").withRows(expected)
+  }
+
+  test("should project endpoints - varlenght directed with type, nothing in scope") {
+    // given
+    val nNodes = Math.sqrt(sizeHint).ceil.toInt
+    val (aNodes, bNodes, _, _) = given {
+      bidirectionalBipartiteGraph(nNodes, "A", "B", "RA", "RB")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .projectEndpoints("(x)-[r:RA*]->(y)", startInScope = false, endInScope = false)
+      .expandAll("(n)-[r*1..2]->()")
+      .allNodeScan("n")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = (for {
+      node <- aNodes ++ bNodes
+      oneStep: Iterable[Array[Node]] = node.getRelationships(OUTGOING, RelationshipType.withName("RA")).asScala.map(r => Array(node, r.getOtherNode(node)))
+    } yield oneStep).flatten
+
+    runtimeResult should beColumns("x", "y").withRows(expected)
+  }
+
+  test("should project endpoints - varlenght directed, end in scope") {
+    // given
+    val nNodes = Math.sqrt(sizeHint).ceil.toInt
+    val (aNodes, bNodes, _, _) = given {
+      bidirectionalBipartiteGraph(nNodes, "A", "B", "RA", "RB")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .projectEndpoints("(x)-[r:*]->(y)", startInScope = false, endInScope = true)
+      .expandAll("(y)<-[r*1..2]-()")
+      .allNodeScan("y")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = (for {
+      node <- aNodes ++ bNodes
+      oneStep: Iterable[Array[Node]] = node.getRelationships(OUTGOING).asScala.map(r => Array(node, r.getOtherNode(node)))
+      twoSteps: Iterable[Array[Node]] = oneStep.flatMap {
+        case Array(_, b) => b.getRelationships(OUTGOING).asScala.map(r => Array(node, r.getOtherNode(b)))
+      }
+    } yield oneStep ++ twoSteps).flatten
+
+    runtimeResult should beColumns("x", "y").withRows(expected)
+  }
+
+  test("should project endpoints - varlenght directed with type, end in scope") {
+    // given
+    val nNodes = Math.sqrt(sizeHint).ceil.toInt
+    val (aNodes, bNodes, _, _) = given {
+      bidirectionalBipartiteGraph(nNodes, "A", "B", "RA", "RB")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .projectEndpoints("(x)-[r:RA*]->(y)", startInScope = false, endInScope = true)
+      .expandAll("(y)<-[r*1..2]-()")
+      .allNodeScan("y")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = (for {
+      node <- aNodes ++ bNodes
+      oneStep: Iterable[Array[Node]] = node.getRelationships(OUTGOING, RelationshipType.withName("RA")).asScala.map(r => Array(node, r.getOtherNode(node)))
+    } yield oneStep).flatten
+
+    runtimeResult should beColumns("x", "y").withRows(expected)
+  }
+
+  test("should project endpoints - varlenght undirected, start in scope") {
+    // given
+    val nNodes = Math.sqrt(sizeHint).ceil.toInt
+    val (aNodes, bNodes, _, _) = given {
+      bidirectionalBipartiteGraph(nNodes, "A", "B", "RA", "RB")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .projectEndpoints("(x)-[r*]-(y)", startInScope = true, endInScope = false)
+      .expandAll("(x)-[r*1..2]->()")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = (for {
+      node <- aNodes ++ bNodes
+      oneStep: Iterable[Array[Node]] = node.getRelationships(OUTGOING).asScala.map(r => Array(node, r.getOtherNode(node)))
+      twoSteps: Iterable[Array[Node]] = oneStep.flatMap {
+        case Array(_, b) => b.getRelationships(OUTGOING).asScala.map(r => Array(node, r.getOtherNode(b)))
+      }
+    } yield oneStep ++ twoSteps).flatten
+
+    runtimeResult should beColumns("x", "y").withRows(expected)
+  }
+
+  test("should project endpoints - varlenght undirected with type, start in scope") {
+    // given
+    val nNodes = Math.sqrt(sizeHint).ceil.toInt
+    val (aNodes, bNodes, _, _) = given {
+      bidirectionalBipartiteGraph(nNodes, "A", "B", "RA", "RB")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .projectEndpoints("(x)-[r:RA*]-(y)", startInScope = true, endInScope = false)
+      .expandAll("(x)-[r*1..2]->()")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = (for {
+      node <- aNodes ++ bNodes
+      oneStep: Iterable[Array[Node]] = node.getRelationships(OUTGOING, RelationshipType.withName("RA")).asScala.map(r => Array(node, r.getOtherNode(node)))
+    } yield oneStep).flatten
+
+    runtimeResult should beColumns("x", "y").withRows(expected)
   }
 
   test("should project endpoints - varlenght undirected, nothing in scope") {
     // given
-    val (aNode, bNode) = given {
-      val a = runtimeTestSupport.tx.createNode()
-      val b = runtimeTestSupport.tx.createNode()
-      a.createRelationshipTo(b, RelationshipType.withName("R"))
-      (a, b)
+    val nNodes = Math.sqrt(sizeHint).ceil.toInt
+    val (aNodes, bNodes, _, _) = given {
+      bidirectionalBipartiteGraph(nNodes, "A", "B", "RA", "RB")
     }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
       .projectEndpoints("(x)-[r:*]-(y)", startInScope = false, endInScope = false)
-      .expandAll("(n)-[r*]->()")
+      .expandAll("(n)-[r*1..2]->()")
       .allNodeScan("n")
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    runtimeResult should beColumns("x", "y").withRows(Seq(Array(aNode, bNode), Array(bNode, aNode)))
+    val expected = (for {
+      node <- aNodes ++ bNodes
+      oneStep: Iterable[Array[Node]] = node.getRelationships(OUTGOING).asScala.map(r => Array(node, r.getOtherNode(node)))
+      twoSteps: Iterable[Array[Node]] = oneStep.flatMap {
+        case Array(_, b) => b.getRelationships(OUTGOING).asScala.map(r => Array(node, r.getOtherNode(b)))
+      }
+    } yield oneStep ++ oneStep ++ twoSteps ++ twoSteps).flatten
+
+    runtimeResult should beColumns("x", "y").withRows(expected)
   }
 
   test("should project endpoints - varlenght undirected with type, nothing in scope") {
     // given
-    val (aNode, bNode) = given {
-      val a = runtimeTestSupport.tx.createNode()
-      val b = runtimeTestSupport.tx.createNode()
-      a.createRelationshipTo(b, RelationshipType.withName("R"))
-      a.createRelationshipTo(b, RelationshipType.withName("T"))
-      (a, b)
+    val nNodes = Math.sqrt(sizeHint).ceil.toInt
+    val (aNodes, bNodes, _, _) = given {
+      bidirectionalBipartiteGraph(nNodes, "A", "B", "RA", "RB")
     }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
-      .projectEndpoints("(x)-[r:R*]-(y)", startInScope = false, endInScope = false)
-      .expandAll("(n)-[r*]->()")
+      .projectEndpoints("(x)-[r:RA*]-(y)", startInScope = false, endInScope = false)
+      .expandAll("(n)-[r*1..2]->()")
       .allNodeScan("n")
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    runtimeResult should beColumns("x", "y").withRows(Seq(Array(aNode, bNode), Array(bNode, aNode)))
+    val expected = (for {
+      node <- aNodes ++ bNodes
+      oneStep: Iterable[Array[Node]] = node.getRelationships(BOTH, RelationshipType.withName("RA")).asScala.map(r => Array(node, r.getOtherNode(node)))
+    } yield oneStep).flatten
+
+    runtimeResult should beColumns("x", "y").withRows(expected)
   }
 
   test("should project endpoints - varlenght undirected, end in scope") {
     // given
-    val (aNode, bNode) = given {
-      val a = runtimeTestSupport.tx.createNode()
-      val b = runtimeTestSupport.tx.createNode()
-      a.createRelationshipTo(b, RelationshipType.withName("R"))
-      (a, b)
+    val nNodes = Math.sqrt(sizeHint).ceil.toInt
+    val (aNodes, bNodes, _, _) = given {
+      bidirectionalBipartiteGraph(nNodes, "A", "B", "RA", "RB")
     }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
       .projectEndpoints("(x)-[r:*]-(y)", startInScope = false, endInScope = true)
-      .expandAll("(y)<-[r*]-()")
+      .expandAll("(y)<-[r*1..2]-()")
       .allNodeScan("y")
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    runtimeResult should beColumns("x", "y").withSingleRow(aNode, bNode)
+    val expected = (for {
+      node <- aNodes ++ bNodes
+      oneStep: Iterable[Array[Node]] = node.getRelationships(BOTH, RelationshipType.withName("RA")).asScala.map(r => Array(node, r.getOtherNode(node)))
+      twoSteps: Iterable[Array[Node]] = oneStep.flatMap {
+        case Array(_, b) => b.getRelationships(BOTH, RelationshipType.withName("RA")).asScala.map(r => Array(node, r.getOtherNode(b)))
+      }
+    } yield oneStep ++ twoSteps).flatten
+
+    runtimeResult should beColumns("x", "y").withRows(expected)
   }
 
   test("should project endpoints - varlenght undirected with type, end in scope") {
     // given
-    val (aNode, bNode) = given {
-      val a = runtimeTestSupport.tx.createNode()
-      val b = runtimeTestSupport.tx.createNode()
-      a.createRelationshipTo(b, RelationshipType.withName("R"))
-      a.createRelationshipTo(b, RelationshipType.withName("T"))
-      (a, b)
+    val nNodes = Math.sqrt(sizeHint).ceil.toInt
+    val (aNodes, bNodes, _, _) = given {
+      bidirectionalBipartiteGraph(nNodes, "A", "B", "RA", "RB")
     }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
-      .projectEndpoints("(x)-[r:R*]-(y)", startInScope = false, endInScope = true)
-      .expandAll("(y)<-[r*]-()")
+      .projectEndpoints("(x)-[r:RA*]-(y)", startInScope = false, endInScope = true)
+      .expandAll("(y)<-[r*1..2]-()")
       .allNodeScan("y")
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    runtimeResult should beColumns("x", "y").withSingleRow(aNode, bNode)
+    val expected = (for {
+      node <- aNodes ++ bNodes
+      oneStep: Iterable[Array[Node]] = node.getRelationships(OUTGOING, RelationshipType.withName("RA")).asScala.map(r => Array(node, r.getOtherNode(node)))
+    } yield oneStep).flatten
+
+    runtimeResult should beColumns("x", "y").withRows(expected)
   }
 }
