@@ -44,7 +44,9 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.OtherThreadExtension;
+import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.OtherThreadRule;
+import org.neo4j.test.rule.RandomRule;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.TextValue;
@@ -56,16 +58,20 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.constrained;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
+import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
 import static org.neo4j.values.storable.Values.pointValue;
 import static org.neo4j.values.storable.Values.stringValue;
 
 @ExtendWith( OtherThreadExtension.class )
+@ExtendWith( RandomExtension.class )
 public abstract class NodeIndexOrderTestBase<G extends KernelAPIWriteTestSupport>
         extends KernelAPIWriteTestBase<G>
 {
     private final String indexName = "myIndex";
     @Inject
     private OtherThreadRule otherThreadRule;
+    @Inject
+    private RandomRule random;
 
     @ParameterizedTest
     @EnumSource( value = IndexOrder.class, names = {"ASCENDING", "DESCENDING"} )
@@ -237,6 +243,75 @@ public abstract class NodeIndexOrderTestBase<G extends KernelAPIWriteTestSupport
                 expected.add( nodeWithProp( tx, pointValue( Cartesian, -400000, 400000 ) ) );
                 expected.add( nodeWithProp( tx, pointValue( Cartesian, 400000, 400000 ) ) );
                 expected.add( nodeWithProp( tx, "b" ) );
+
+                tx.dataRead().nodeIndexScan( index, cursor, constrained( indexOrder, true ) );
+
+                assertResultsInOrder( expected, cursor, indexOrder );
+            }
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource( value = IndexOrder.class, names = {"ASCENDING", "DESCENDING"} )
+    void shouldNodeIndexScanInOrderWithPointsWithinSameTile( IndexOrder indexOrder ) throws Exception
+    {
+        Config config = Config.defaults();
+        IndexSpecificSpaceFillingCurveSettings indexSettings = IndexSpecificSpaceFillingCurveSettings.fromConfig( config );
+        SpaceFillingCurve curve = indexSettings.forCrs( WGS84 );
+
+        // given
+        // Many random points that all are close enough to each other to belong to the same tile on the space filling curve.
+        int nbrOfValues = 10000;
+        PointValue origin = Values.pointValue( WGS84, 0.0, 0.0 );
+        Long derivedValueForCenterPoint = curve.derivedValueFor( origin.coordinate() );
+        double[] centerPoint = curve.centerPointFor( derivedValueForCenterPoint );
+        double xWidthMultiplier = curve.getTileWidth( 0, curve.getMaxLevel() ) / 2;
+        double yWidthMultiplier = curve.getTileWidth( 1, curve.getMaxLevel() ) / 2;
+
+        List<Pair<Long,Value>> expected = new ArrayList<>();
+
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            //NOTE: strings come after points in natural ascending sort order
+            expected.add( nodeWithProp( tx, "a" ) );
+            expected.add( nodeWithProp( tx, "b" ) );
+            for ( int i = 0; i < nbrOfValues / 8; i++ )
+            {
+                double x1 = (random.nextDouble() * 2 - 1) * xWidthMultiplier;
+                double x2 = (random.nextDouble() * 2 - 1) * xWidthMultiplier;
+                double y1 = (random.nextDouble() * 2 - 1) * yWidthMultiplier;
+                double y2 = (random.nextDouble() * 2 - 1) * yWidthMultiplier;
+                expected.add( nodeWithProp( tx, Values.pointValue( WGS84, centerPoint[0] + x1, centerPoint[1] + y1 ) ) );
+                expected.add( nodeWithProp( tx, Values.pointValue( WGS84, centerPoint[0] + x1, centerPoint[1] + y2 ) ) );
+                expected.add( nodeWithProp( tx, Values.pointValue( WGS84, centerPoint[0] + x2, centerPoint[1] + y1 ) ) );
+                expected.add( nodeWithProp( tx, Values.pointValue( WGS84, centerPoint[0] + x2, centerPoint[1] + y2 ) ) );
+            }
+
+            tx.commit();
+        }
+
+        createIndex();
+
+        // when
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            IndexReadSession index = tx.dataRead().indexReadSession( tx.schemaRead().indexGetForName( indexName ) );
+
+            try ( NodeValueIndexCursor cursor = tx.cursors().allocateNodeValueIndexCursor( tx.pageCursorTracer(), tx.memoryTracker() ) )
+            {
+                for ( int i = 0; i < nbrOfValues / 8; i++ )
+                {
+                    double x1 = (random.nextDouble() * 2 - 1) * xWidthMultiplier;
+                    double x2 = (random.nextDouble() * 2 - 1) * xWidthMultiplier;
+                    double y1 = (random.nextDouble() * 2 - 1) * yWidthMultiplier;
+                    double y2 = (random.nextDouble() * 2 - 1) * yWidthMultiplier;
+                    expected.add( nodeWithProp( tx, Values.pointValue( WGS84, centerPoint[0] + x1, centerPoint[1] + y1 ) ) );
+                    expected.add( nodeWithProp( tx, Values.pointValue( WGS84, centerPoint[0] + x1, centerPoint[1] + y2 ) ) );
+                    expected.add( nodeWithProp( tx, Values.pointValue( WGS84, centerPoint[0] + x2, centerPoint[1] + y1 ) ) );
+                    expected.add( nodeWithProp( tx, Values.pointValue( WGS84, centerPoint[0] + x2, centerPoint[1] + y2 ) ) );
+                }
+                expected.add( nodeWithProp( tx, "c" ) );
+                expected.add( nodeWithProp( tx, "d" ) );
 
                 tx.dataRead().nodeIndexScan( index, cursor, constrained( indexOrder, true ) );
 
@@ -492,7 +567,7 @@ public abstract class NodeIndexOrderTestBase<G extends KernelAPIWriteTestSupport
 
     @ParameterizedTest
     @EnumSource( value = IndexOrder.class, names = {"ASCENDING", "DESCENDING"} )
-    void shouldNodeIndexScanInOrderWithPointsAndSingleNodeAfterwardsCOmp( IndexOrder indexOrder ) throws Exception
+    void shouldNodeCompositeIndexScanInOrderWithPointsAndSingleNodeAfterwards( IndexOrder indexOrder ) throws Exception
     {
         List<Pair<Long,Value[]>> expected = new ArrayList<>();
 
