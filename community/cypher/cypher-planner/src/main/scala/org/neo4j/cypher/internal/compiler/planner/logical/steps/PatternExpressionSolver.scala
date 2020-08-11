@@ -384,7 +384,7 @@ object PatternExpressionSolver {
             }
             // Only plan if the OR contains an EXISTS.
             if (patternExpressions.nonEmpty) {
-              val (newPlan, solvedPredicates) = planPredicates(plan, patternExpressions, expressions, None, interestingOrder, context)
+              val (newPlan, solvedPredicates) = planPredicates(plan, patternExpressions.toSet, expressions.toSet, None, interestingOrder, context)
               val orsPlan = context.logicalPlanProducer.solvePredicateInHorizon(newPlan, onePredicate(solvedPredicates), context)
               (solvedExprs :+ ors, orsPlan)
             } else (solvedExprs, plan)
