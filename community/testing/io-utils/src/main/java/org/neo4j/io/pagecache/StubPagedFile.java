@@ -21,6 +21,7 @@ package org.neo4j.io.pagecache;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Optional;
 
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
@@ -103,8 +104,8 @@ public class StubPagedFile implements PagedFile
     }
 
     @Override
-    public String getDatabaseName()
+    public Optional<String> getDatabaseName()
     {
-        return null;
+        return Optional.empty();
     }
 }

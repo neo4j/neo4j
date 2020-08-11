@@ -23,6 +23,7 @@ import java.io.Flushable;
 import java.io.IOException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.file.Path;
+import java.util.Optional;
 
 import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.io.pagecache.IOLimiter;
@@ -767,9 +768,9 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
     }
 
     @Override
-    public String getDatabaseName()
+    public Optional<String> getDatabaseName()
     {
-        return databaseName;
+        return Optional.ofNullable( databaseName );
     }
 
     /**

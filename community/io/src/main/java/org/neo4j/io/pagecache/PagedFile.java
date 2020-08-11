@@ -21,6 +21,7 @@ package org.neo4j.io.pagecache;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Optional;
 
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
@@ -206,8 +207,6 @@ public interface PagedFile extends AutoCloseable
 
     /**
      * An optional name of the database the mapped file belongs to. This option associates the mapped file with a database.
-     * 
-     * @return the name of the owning database or {@code null} if the file has a DBMS scope and does not belong to any particular database.
      */
-    String getDatabaseName();
+    Optional<String> getDatabaseName();
 }

@@ -23,6 +23,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Objects;
+import java.util.Optional;
 
 import org.neo4j.adversaries.Adversary;
 import org.neo4j.io.pagecache.IOLimiter;
@@ -121,7 +122,7 @@ public class AdversarialPagedFile implements PagedFile
     }
 
     @Override
-    public String getDatabaseName()
+    public Optional<String> getDatabaseName()
     {
         return delegate.getDatabaseName();
     }

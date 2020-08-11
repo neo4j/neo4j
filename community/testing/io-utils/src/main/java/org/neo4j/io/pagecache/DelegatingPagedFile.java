@@ -21,6 +21,7 @@ package org.neo4j.io.pagecache;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Optional;
 
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
@@ -88,7 +89,7 @@ public class DelegatingPagedFile implements PagedFile
     }
 
     @Override
-    public String getDatabaseName()
+    public Optional<String> getDatabaseName()
     {
         return delegate.getDatabaseName();
     }

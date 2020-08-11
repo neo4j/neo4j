@@ -615,7 +615,7 @@ public class MuninnPageCache implements PageCache
         for ( PagedFile file : files )
         {
             flushes.add( scheduler.schedule( FILE_IO_HELPER,
-                    systemJob( file.getDatabaseName(), "Flushing changes to file '" + file.path().getFileName() + "'" ),
+                    systemJob( file.getDatabaseName().orElse( null ), "Flushing changes to file '" + file.path().getFileName() + "'" ),
                     () ->
                     {
                         try
