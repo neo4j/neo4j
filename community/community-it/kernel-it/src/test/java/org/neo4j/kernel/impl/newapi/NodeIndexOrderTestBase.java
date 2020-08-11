@@ -43,33 +43,25 @@ import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.OtherThreadExtension;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.rule.OtherThreadRule;
 import org.neo4j.test.rule.RandomRule;
-import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.PointValue;
-import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.constrained;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
 import static org.neo4j.values.storable.Values.pointValue;
 import static org.neo4j.values.storable.Values.stringValue;
 
-@ExtendWith( OtherThreadExtension.class )
 @ExtendWith( RandomExtension.class )
 public abstract class NodeIndexOrderTestBase<G extends KernelAPIWriteTestSupport>
         extends KernelAPIWriteTestBase<G>
 {
     private final String indexName = "myIndex";
-    @Inject
-    private OtherThreadRule otherThreadRule;
     @Inject
     private RandomRule random;
 
@@ -607,227 +599,6 @@ public abstract class NodeIndexOrderTestBase<G extends KernelAPIWriteTestSupport
                 assertCompositeResultsInOrder( expected, cursor, indexOrder );
             }
         }
-    }
-
-    @ParameterizedTest
-    @EnumSource( value = IndexOrder.class, names = {"ASCENDING", "DESCENDING"} )
-    void shouldNodeIndexScanInOrderWithPointsAndConcurrentUpdate( IndexOrder indexOrder ) throws Exception
-    {
-        // Create three points such that natural order of them is [p1, p2, p3] ASCENDING but indexed order is [p3, p1, p2].
-        // Index will hold p1 and p3 and while reading from index another transaction will insert p2 and
-        // we need to make sure that we don't see p2 which in that case would be out of order.
-        SpaceFillingCurve curve = getSpaceFillingCurve( Cartesian );
-        PointValue p1 = pointValue( Cartesian, 10, 9.9 );
-        PointValue p2 = pointValue( Cartesian, 10, 10 );
-        PointValue p3 = pointValue( Cartesian, 10.01, 9.9 );
-        assertTrue( Values.COMPARATOR.compare( p1, p2 ) < 0 );
-        assertTrue( Values.COMPARATOR.compare( p2, p3 ) < 0 );
-        assertTrue( curve.derivedValueFor( p1.coordinate() ) < curve.derivedValueFor( p2.coordinate() ) );
-        assertTrue( curve.derivedValueFor( p3.coordinate() ) < curve.derivedValueFor( p2.coordinate() ) );
-
-        try ( KernelTransaction tx = beginTransaction() )
-        {
-            nodeWithProp( tx, p1 );
-            nodeWithProp( tx, p3 );
-
-            tx.commit();
-        }
-
-        createIndex();
-
-        // when
-        PointValue expectedFirst = indexOrder == IndexOrder.ASCENDING ? p1 : p3;
-        PointValue expectedLast = indexOrder == IndexOrder.ASCENDING ? p3 : p1;
-        try ( KernelTransaction tx = beginTransaction() )
-        {
-            IndexReadSession index = tx.dataRead().indexReadSession( tx.schemaRead().indexGetForName( indexName ) );
-
-            try ( NodeValueIndexCursor cursor = tx.cursors().allocateNodeValueIndexCursor( tx.pageCursorTracer(), tx.memoryTracker() ) )
-            {
-                tx.dataRead().nodeIndexScan( index, cursor, constrained( indexOrder, true ) );
-
-                assertTrue( cursor.next() );
-                assertThat( cursor.propertyValue( 0 ) ).isEqualTo( expectedFirst );
-
-                assertTrue( cursor.next() );
-                assertThat( cursor.propertyValue( 0 ) ).isEqualTo( expectedLast );
-
-                // Concurrent insert
-                concurrentInsert( p2 );
-
-                // We should not see p2
-                assertFalse( cursor.next() );
-            }
-        }
-
-        // Verify we see all points in the end
-        try ( KernelTransaction tx = beginTransaction() )
-        {
-            IndexReadSession index = tx.dataRead().indexReadSession( tx.schemaRead().indexGetForName( indexName ) );
-            try ( NodeValueIndexCursor cursor = tx.cursors().allocateNodeValueIndexCursor( tx.pageCursorTracer(), tx.memoryTracker() ) )
-            {
-                tx.dataRead().nodeIndexScan( index, cursor, constrained( indexOrder, true ) );
-                assertTrue( cursor.next() );
-                assertThat( cursor.propertyValue( 0 ) ).isEqualTo( expectedFirst );
-
-                assertTrue( cursor.next() );
-                assertThat( cursor.propertyValue( 0 ) ).isEqualTo( p2 );
-
-                assertTrue( cursor.next() );
-                assertThat( cursor.propertyValue( 0 ) ).isEqualTo( expectedLast );
-
-                assertFalse( cursor.next() );
-            }
-        }
-    }
-
-    @ParameterizedTest
-    @EnumSource( value = IndexOrder.class, names = {"ASCENDING", "DESCENDING"} )
-    void shouldNodeIndexScanInOrderWithPointsInMemoryAndConcurrentUpdate( IndexOrder indexOrder ) throws Exception
-    {
-        // Create three points such that natural order of them is [p1, p2, p3] ASCENDING but indexed order is [p3, p1, p2].
-        // Transaction state will hold p1 and p3 and while reading transaction state another transaction will insert p2 and
-        // we need to make sure that we don't see p2 which in that case would be out of order.
-        SpaceFillingCurve curve = getSpaceFillingCurve( Cartesian );
-        PointValue p1 = pointValue( Cartesian, 10, 9.9 );
-        PointValue p2 = pointValue( Cartesian, 10, 10 );
-        PointValue p3 = pointValue( Cartesian, 10.01, 9.9 );
-        assertTrue( Values.COMPARATOR.compare( p1, p2 ) < 0 );
-        assertTrue( Values.COMPARATOR.compare( p2, p3 ) < 0 );
-        assertTrue( curve.derivedValueFor( p1.coordinate() ) < curve.derivedValueFor( p2.coordinate() ) );
-        assertTrue( curve.derivedValueFor( p3.coordinate() ) < curve.derivedValueFor( p2.coordinate() ) );
-
-        createIndex();
-
-        // when
-        PointValue expectedFirst = indexOrder == IndexOrder.ASCENDING ? p1 : p3;
-        PointValue expectedLast = indexOrder == IndexOrder.ASCENDING ? p3 : p1;
-        try ( KernelTransaction tx = beginTransaction() )
-        {
-            nodeWithProp( tx, p1 );
-            nodeWithProp( tx, p3 );
-
-            IndexReadSession index = tx.dataRead().indexReadSession( tx.schemaRead().indexGetForName( indexName ) );
-
-            try ( NodeValueIndexCursor cursor = tx.cursors().allocateNodeValueIndexCursor( tx.pageCursorTracer(), tx.memoryTracker() ) )
-            {
-                tx.dataRead().nodeIndexScan( index, cursor, constrained( indexOrder, true ) );
-
-                assertTrue( cursor.next() );
-                assertThat( cursor.propertyValue( 0 ) ).isEqualTo( expectedFirst );
-
-                assertTrue( cursor.next() );
-                assertThat( cursor.propertyValue( 0 ) ).isEqualTo( expectedLast );
-
-                concurrentInsert( p2 );
-
-                // We should not see p2
-                assertFalse( cursor.next(), "Did not expect to find anything more but found " + cursor.propertyValue( 0 ) );
-            }
-            tx.commit();
-        }
-
-        // Verify we see all points in the end
-        try ( KernelTransaction tx = beginTransaction() )
-        {
-            IndexReadSession index = tx.dataRead().indexReadSession( tx.schemaRead().indexGetForName( indexName ) );
-            try ( NodeValueIndexCursor cursor = tx.cursors().allocateNodeValueIndexCursor( tx.pageCursorTracer(), tx.memoryTracker() ) )
-            {
-                tx.dataRead().nodeIndexScan( index, cursor, constrained( indexOrder, true ) );
-                assertTrue( cursor.next() );
-                assertThat( cursor.propertyValue( 0 ) ).isEqualTo( expectedFirst );
-
-                assertTrue( cursor.next() );
-                assertThat( cursor.propertyValue( 0 ) ).isEqualTo( p2 );
-
-                assertTrue( cursor.next() );
-                assertThat( cursor.propertyValue( 0 ) ).isEqualTo( expectedLast );
-
-                assertFalse( cursor.next() );
-            }
-        }
-    }
-
-    @ParameterizedTest
-    @EnumSource( value = IndexOrder.class, names = {"ASCENDING", "DESCENDING"} )
-    void shouldNodeIndexScanInOrderWithStringInMemoryAndConcurrentUpdate( IndexOrder indexOrder ) throws Exception
-    {
-        String a = "a";
-        String b = "b";
-        String c = "c";
-
-        try ( KernelTransaction tx = beginTransaction() )
-        {
-            nodeWithProp( tx, a );
-            tx.commit();
-        }
-
-        createIndex();
-
-        TextValue expectedFirst = indexOrder == IndexOrder.ASCENDING ? stringValue( a ) : stringValue( c );
-        TextValue expectedLast = indexOrder == IndexOrder.ASCENDING ? stringValue( c ) : stringValue( a );
-        try ( KernelTransaction tx = beginTransaction() )
-        {
-            nodeWithProp( tx, a );
-            nodeWithProp( tx, c );
-
-            IndexReadSession index = tx.dataRead().indexReadSession( tx.schemaRead().indexGetForName( indexName ) );
-
-            try ( NodeValueIndexCursor cursor = tx.cursors().allocateNodeValueIndexCursor( tx.pageCursorTracer(), tx.memoryTracker() ) )
-            {
-                tx.dataRead().nodeIndexScan( index, cursor, constrained( indexOrder, true ) );
-
-                assertTrue( cursor.next() );
-                assertThat( cursor.propertyValue( 0 ) ).isEqualTo( expectedFirst );
-
-                assertTrue( cursor.next() );
-                assertThat( cursor.propertyValue( 0 ) ).isEqualTo( expectedLast );
-
-                concurrentInsert( b );
-
-                assertFalse( cursor.next(), "Did not expect to find anything more but found " + cursor.propertyValue( 0 ) );
-            }
-        }
-
-        // Verify we see all points in the end
-        try ( KernelTransaction tx = beginTransaction() )
-        {
-            IndexReadSession index = tx.dataRead().indexReadSession( tx.schemaRead().indexGetForName( indexName ) );
-            try ( NodeValueIndexCursor cursor = tx.cursors().allocateNodeValueIndexCursor( tx.pageCursorTracer(), tx.memoryTracker() ) )
-            {
-                tx.dataRead().nodeIndexScan( index, cursor, constrained( indexOrder, true ) );
-                assertTrue( cursor.next() );
-                assertThat( cursor.propertyValue( 0 ) ).isEqualTo( expectedFirst );
-
-                assertTrue( cursor.next() );
-                assertThat( cursor.propertyValue( 0 ) ).isEqualTo( stringValue( b ) );
-
-                assertTrue( cursor.next() );
-                assertThat( cursor.propertyValue( 0 ) ).isEqualTo( expectedLast );
-
-                assertFalse( cursor.next() );
-            }
-        }
-    }
-
-    private void concurrentInsert( Object value ) throws InterruptedException, java.util.concurrent.ExecutionException
-    {
-        otherThreadRule.execute( () ->
-        {
-            try ( KernelTransaction otherTx = beginTransaction() )
-            {
-                nodeWithProp( otherTx, value );
-                otherTx.commit();
-            }
-            return null;
-        } ).get();
-    }
-
-    private SpaceFillingCurve getSpaceFillingCurve( CoordinateReferenceSystem crs )
-    {
-        Config config = Config.defaults();
-        IndexSpecificSpaceFillingCurveSettings indexSettings = IndexSpecificSpaceFillingCurveSettings.fromConfig( config );
-        return indexSettings.forCrs( crs );
     }
 
     private void assertResultsInOrder( List<Pair<Long,Value>> expected, NodeValueIndexCursor cursor, IndexOrder indexOrder )
