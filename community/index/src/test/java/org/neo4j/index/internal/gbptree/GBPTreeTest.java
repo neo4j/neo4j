@@ -1571,7 +1571,7 @@ class GBPTreeTest
     }
 
     @Test
-    void shouldThrowIllegalStateExceptionOnCallingNextAfterClose() throws Exception
+    void shouldReturnFalseOnCallingNextAfterClose() throws Exception
     {
         // given
         try ( GBPTree<MutableLong,MutableLong> tree = index().build() )
@@ -1594,7 +1594,84 @@ class GBPTreeTest
 
             for ( int i = 0; i < 2; i++ )
             {
-                assertThrows( IllegalStateException.class, seek::next );
+                assertFalse( seek.next() );
+            }
+        }
+    }
+
+    @Test
+    void shouldReturnFalseOnCallingNextAfterExhausting() throws Exception
+    {
+        int amount = 10;
+        // given
+        try ( GBPTree<MutableLong,MutableLong> tree = index().build() )
+        {
+            try ( Writer<MutableLong,MutableLong> writer = tree.writer( NULL ) )
+            {
+                MutableLong value = new MutableLong();
+                for ( int i = 0; i < amount; i++ )
+                {
+                    value.setValue( i );
+                    writer.put( value, value );
+                }
+            }
+
+            Seeker<MutableLong,MutableLong> seek =
+                    tree.seek( new MutableLong( 0 ), new MutableLong( Long.MAX_VALUE ), NULL );
+            //noinspection StatementWithEmptyBody
+            while ( seek.next() )
+            {
+            }
+
+            try ( Writer<MutableLong,MutableLong> writer = tree.writer( NULL ) )
+            {
+                MutableLong value = new MutableLong();
+                value.setValue( amount + 1 );
+                writer.put( value, value );
+            }
+
+            for ( int i = 0; i < 2; i++ )
+            {
+                assertFalse( seek.next() );
+            }
+        }
+    }
+
+    @Test
+    void shouldReturnFalseOnCallingNextAfterExhaustingAndClose() throws Exception
+    {
+        int amount = 10;
+        // given
+        try ( GBPTree<MutableLong,MutableLong> tree = index().build() )
+        {
+            try ( Writer<MutableLong,MutableLong> writer = tree.writer( NULL ) )
+            {
+                MutableLong value = new MutableLong();
+                for ( int i = 0; i < amount; i++ )
+                {
+                    value.setValue( i );
+                    writer.put( value, value );
+                }
+            }
+
+            Seeker<MutableLong,MutableLong> seek =
+                    tree.seek( new MutableLong( 0 ), new MutableLong( Long.MAX_VALUE ), NULL );
+            //noinspection StatementWithEmptyBody
+            while ( seek.next() )
+            {
+            }
+            seek.close();
+
+            try ( Writer<MutableLong,MutableLong> writer = tree.writer( NULL ) )
+            {
+                MutableLong value = new MutableLong();
+                value.setValue( amount + 1 );
+                writer.put( value, value );
+            }
+
+            for ( int i = 0; i < 2; i++ )
+            {
+                assertFalse( seek.next() );
             }
         }
     }
