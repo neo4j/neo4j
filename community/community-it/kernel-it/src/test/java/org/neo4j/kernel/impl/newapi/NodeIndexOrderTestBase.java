@@ -43,25 +43,32 @@ import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.OtherThreadExtension;
 import org.neo4j.test.extension.RandomExtension;
+import org.neo4j.test.rule.OtherThreadRule;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.values.storable.PointValue;
+import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.constrained;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
 import static org.neo4j.values.storable.Values.pointValue;
 import static org.neo4j.values.storable.Values.stringValue;
 
+@ExtendWith( OtherThreadExtension.class )
 @ExtendWith( RandomExtension.class )
 public abstract class NodeIndexOrderTestBase<G extends KernelAPIWriteTestSupport>
         extends KernelAPIWriteTestBase<G>
 {
     private final String indexName = "myIndex";
+    @Inject
+    private OtherThreadRule otherThreadRule;
     @Inject
     private RandomRule random;
 
@@ -599,6 +606,81 @@ public abstract class NodeIndexOrderTestBase<G extends KernelAPIWriteTestSupport
                 assertCompositeResultsInOrder( expected, cursor, indexOrder );
             }
         }
+    }
+
+    @ParameterizedTest
+    @EnumSource( value = IndexOrder.class, names = {"ASCENDING", "DESCENDING"} )
+    void shouldNodeIndexScanInOrderWithStringInMemoryAndConcurrentUpdate( IndexOrder indexOrder ) throws Exception
+    {
+        String a = "a";
+        String b = "b";
+        String c = "c";
+
+        createIndex();
+
+        TextValue expectedFirst = indexOrder == IndexOrder.ASCENDING ? stringValue( a ) : stringValue( c );
+        TextValue expectedLast = indexOrder == IndexOrder.ASCENDING ? stringValue( c ) : stringValue( a );
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            int prop = tx.tokenRead().propertyKey( "prop" );
+            nodeWithProp( tx, a );
+            nodeWithProp( tx, c );
+
+            IndexReadSession index = tx.dataRead().indexReadSession( tx.schemaRead().indexGetForName( indexName ) );
+
+            try ( NodeValueIndexCursor cursor = tx.cursors().allocateNodeValueIndexCursor( tx.pageCursorTracer(), tx.memoryTracker() ) )
+            {
+
+                IndexQuery query = IndexQuery.stringPrefix( prop, stringValue( "" ) );
+                tx.dataRead().nodeIndexSeek( index, cursor, constrained( indexOrder, true ), query );
+
+                assertTrue( cursor.next() );
+                assertThat( cursor.propertyValue( 0 ) ).isEqualTo( expectedFirst );
+
+                assertTrue( cursor.next() );
+                assertThat( cursor.propertyValue( 0 ) ).isEqualTo( expectedLast );
+
+                concurrentInsert( b );
+
+                assertFalse( cursor.next(), () -> "Did not expect to find anything more but found " + cursor.propertyValue( 0 ) );
+            }
+            tx.commit();
+        }
+
+        // Verify we see all data in the end
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            int prop = tx.tokenRead().propertyKey( "prop" );
+            IndexReadSession index = tx.dataRead().indexReadSession( tx.schemaRead().indexGetForName( indexName ) );
+            try ( NodeValueIndexCursor cursor = tx.cursors().allocateNodeValueIndexCursor( tx.pageCursorTracer(), tx.memoryTracker() ) )
+            {
+                IndexQuery query = IndexQuery.stringPrefix( prop, stringValue( "" ) );
+                tx.dataRead().nodeIndexSeek( index, cursor, constrained( indexOrder, true ), query );
+                assertTrue( cursor.next() );
+                assertThat( cursor.propertyValue( 0 ) ).isEqualTo( expectedFirst );
+
+                assertTrue( cursor.next() );
+                assertThat( cursor.propertyValue( 0 ) ).isEqualTo( stringValue( b ) );
+
+                assertTrue( cursor.next() );
+                assertThat( cursor.propertyValue( 0 ) ).isEqualTo( expectedLast );
+
+                assertFalse( cursor.next() );
+            }
+        }
+    }
+
+    private void concurrentInsert( Object value ) throws InterruptedException, java.util.concurrent.ExecutionException
+    {
+        otherThreadRule.execute( () ->
+        {
+            try ( KernelTransaction otherTx = beginTransaction() )
+            {
+                nodeWithProp( otherTx, value );
+                otherTx.commit();
+            }
+            return null;
+        } ).get();
     }
 
     private void assertResultsInOrder( List<Pair<Long,Value>> expected, NodeValueIndexCursor cursor, IndexOrder indexOrder )
