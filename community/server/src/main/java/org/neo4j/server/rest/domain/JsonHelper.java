@@ -19,21 +19,28 @@
  */
 package org.neo4j.server.rest.domain;
 
+import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonLocation;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.MappingJsonFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.StringWriter;
+import java.io.UncheckedIOException;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 
 import org.neo4j.server.rest.web.PropertyValueException;
 
-public class JsonHelper
+public final class JsonHelper
 {
-    static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    private static final JsonFactory JSON_FACTORY = new MappingJsonFactory( OBJECT_MAPPER );
 
     private JsonHelper()
     {
@@ -49,6 +56,12 @@ public class JsonHelper
         {
             throw new JsonParseException( e );
         }
+    }
+
+    @SuppressWarnings( "unchecked" )
+    public static List<Map<String, Object>> jsonToList( String json ) throws JsonParseException
+    {
+        return (List<Map<String, Object>>) readJson( json );
     }
 
     @SuppressWarnings( "unchecked" )
@@ -119,5 +132,29 @@ public class JsonHelper
     public static void writeValue( JsonGenerator jgen, Object value ) throws IOException
     {
         OBJECT_MAPPER.writeValue( jgen, value );
+    }
+
+    public static String writeValueAsString( Object item )
+    {
+        try
+        {
+            return OBJECT_MAPPER.writeValueAsString( item );
+        }
+        catch ( JsonProcessingException e )
+        {
+            throw new UncheckedIOException( e );
+        }
+    }
+
+    public static JsonGenerator newJsonGenerator( OutputStream out )
+    {
+        try
+        {
+            return JSON_FACTORY.createGenerator( out );
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
     }
 }

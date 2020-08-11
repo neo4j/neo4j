@@ -51,6 +51,8 @@ import static org.neo4j.configuration.SettingValueParsers.listOf;
 @ServiceProvider
 public class ServerSettings implements SettingsDeclaration
 {
+    public static final String DBMS_MOUNT_POINT = "/dbms";
+
     @Description( "Maximum request header size" )
     @Internal
     public static final Setting<Integer> maximum_request_header_size =
@@ -195,6 +197,11 @@ public class ServerSettings implements SettingsDeclaration
     @Description( "The start endpoint of database api." )
     public static final Setting<URI> db_api_path =
             newBuilder( "unsupported.dbms.uris.db", NORMALIZED_RELATIVE_URI, NORMALIZED_RELATIVE_URI.parse( "/db" ) ).build();
+
+    @Internal
+    @Description( "The start endpoint of the dbms api." )
+    public static final Setting<URI> dbms_api_path =
+            newBuilder( "unsupported.dbms.uris.dbms", NORMALIZED_RELATIVE_URI, NORMALIZED_RELATIVE_URI.parse( "/dbms" ) ).build();
 
     @Internal
     public static final Setting<URI> browser_path =
