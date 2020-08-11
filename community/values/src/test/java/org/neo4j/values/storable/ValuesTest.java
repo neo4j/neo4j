@@ -30,7 +30,6 @@ import static java.time.ZoneOffset.UTC;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 import static org.neo4j.values.storable.DurationValue.duration;
 import static org.neo4j.values.storable.LocalTimeValue.localTime;
 import static org.neo4j.values.storable.TimeValue.time;
@@ -58,20 +57,6 @@ import static org.neo4j.values.utils.AnyValueTestUtil.assertNotEqual;
 
 class ValuesTest
 {
-    @Test
-    void foo()
-    {
-//        ByteValue byteValue = byteValue( (byte) 13 );
-//        byteValue.foo();
-        long x = shallowSizeOfInstance( Byte.class );
-        long x1 = shallowSizeOfInstance( ByteValue.class );
-//        System.out.println( x );
-//        System.out.println( x1 );
-        System.out.println( Values.byteValue( (byte) 13 ).estimatedHeapUsage());
-        System.out.println(Values.intValue( 13 ).estimatedHeapUsage());
-        System.out.println(Values.longValue( 13 ).estimatedHeapUsage());
-    }
-
     @Test
     void shouldBeEqualToItself()
     {

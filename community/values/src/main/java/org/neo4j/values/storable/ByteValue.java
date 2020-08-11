@@ -46,11 +46,6 @@ public final class ByteValue extends IntegralValue
         return value;
     }
 
-    public void foo()
-    {
-        System.out.println(SHALLOW_SIZE);
-    }
-
     @Override
     public <E extends Exception> void writeTo( ValueWriter<E> writer ) throws E
     {
