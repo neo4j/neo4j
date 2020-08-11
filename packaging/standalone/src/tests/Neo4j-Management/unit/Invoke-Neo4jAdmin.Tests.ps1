@@ -52,7 +52,31 @@ InModuleScope Neo4j-Management {
       }
     }
 
+    Context "Arguments containing spaces" {
+      Mock Get-Neo4jEnv {}
+      Mock Get-Java { @{'java' = 'java'; 'args' = @('java') } }
+      Mock Get-Neo4jServer {
+        New-Object -TypeName PSCustomObject  -Property @{}
+      }
+      Mock Start-Process { Write-Host $ArgumentList }
 
+      It "Should pass quoted arguments to Start-Process" {
+        # neo4j-admin cmd --arg1='path with spaces' --arg2 'some more spaces' --flag --arg=without-spaces
+        $testCommand = @('cmd', '--arg1=path with spaces', '--arg2', 'some more spaces', '--flag', '--arg=without-spaces')
 
+        # Redirect output from Write-Host to the success output stream to be able to capture its result.
+        # https://stackoverflow.com/a/49102708
+        [string]$result = Invoke-Neo4jUtility -Command 'admintool' -CommandArgs $testCommand 6>&1
+        $result.TrimEnd() | Should Be 'java "cmd" "--arg1=path with spaces" "--arg2" "some more spaces" "--flag" "--arg=without-spaces"'
+      }
+
+      It "Should not quote already quoted arguments" {
+        # neo4j-admin cmd --arg1='"path with spaces"' "'--arg2'" 'some more spaces' --flag --arg=without-spaces
+        $testCommand = @('cmd', '"--arg1=path with spaces"', "'--arg2'", 'some more spaces', '--flag', '--arg=without-spaces')
+
+        [string]$result = Invoke-Neo4jUtility -Command 'admintool' -CommandArgs $testCommand 6>&1
+        $result.TrimEnd() | Should Be 'java "cmd" "--arg1=path with spaces" ''--arg2'' "some more spaces" "--flag" "--arg=without-spaces"'
+      }
+    }
   }
 }
