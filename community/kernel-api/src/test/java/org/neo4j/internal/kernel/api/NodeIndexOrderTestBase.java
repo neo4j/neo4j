@@ -21,6 +21,8 @@ package org.neo4j.internal.kernel.api;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -34,18 +36,24 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.helpers.collection.Pair;
+import org.neo4j.test.rule.concurrent.OtherThreadRule;
+import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.values.storable.Values.stringValue;
 
 @RunWith( Parameterized.class )
 public abstract class NodeIndexOrderTestBase<G extends KernelAPIWriteTestSupport>
         extends KernelAPIWriteTestBase<G>
 {
+    @Rule
+    public final OtherThreadRule<Void> otherThreadRule = new OtherThreadRule<>();
+
     @Rule
     public ExpectedException exception = ExpectedException.none();
 
@@ -140,6 +148,82 @@ public abstract class NodeIndexOrderTestBase<G extends KernelAPIWriteTestSupport
                 assertResultsInOrder( expected, cursor );
             }
         }
+    }
+
+    @Test
+    public void shouldNodeIndexScanInOrderWithStringInMemoryAndConcurrentUpdate() throws Exception
+    {
+        String a = "a";
+        String b = "b";
+        String c = "c";
+
+        createIndex();
+
+        TextValue expectedFirst = indexOrder == IndexOrder.ASCENDING ? stringValue( a ) : stringValue( c );
+        TextValue expectedLast = indexOrder == IndexOrder.ASCENDING ? stringValue( c ) : stringValue( a );
+        try ( Transaction tx = beginTransaction() )
+        {
+            int prop = tx.tokenRead().propertyKey( "prop" );
+            int label = tx.tokenRead().nodeLabel( "Node" );
+            nodeWithProp( tx, a );
+            nodeWithProp( tx, c );
+
+            IndexReference index = tx.schemaRead().index( label, prop );
+
+            try ( NodeValueIndexCursor cursor = tx.cursors().allocateNodeValueIndexCursor() )
+            {
+
+                IndexQuery query = IndexQuery.stringPrefix( prop, stringValue( "" ) );
+                tx.dataRead().nodeIndexSeek( index, cursor, indexOrder, true, query );
+
+                assertTrue( cursor.next() );
+                assertThat( cursor.propertyValue( 0 ), equalTo( expectedFirst ) );
+
+                assertTrue( cursor.next() );
+                assertThat( cursor.propertyValue( 0 ), equalTo( expectedLast ) );
+
+                concurrentInsert( b );
+
+                assertFalse( cursor.next(), () -> "Did not expect to find anything more but found " + cursor.propertyValue( 0 ) );
+            }
+            tx.success();
+        }
+
+        // Verify we see all data in the end
+        try ( Transaction tx = beginTransaction() )
+        {
+            int prop = tx.tokenRead().propertyKey( "prop" );
+            int label = tx.tokenRead().nodeLabel( "Node" );
+            IndexReference index = tx.schemaRead().index( label, prop );
+            try ( NodeValueIndexCursor cursor = tx.cursors().allocateNodeValueIndexCursor() )
+            {
+                IndexQuery query = IndexQuery.stringPrefix( prop, stringValue( "" ) );
+                tx.dataRead().nodeIndexSeek( index, cursor, indexOrder, true, query );
+                assertTrue( cursor.next() );
+                assertThat( cursor.propertyValue( 0 ), equalTo( expectedFirst ) );
+
+                assertTrue( cursor.next() );
+                assertThat( cursor.propertyValue( 0 ), equalTo( stringValue( b ) ) );
+
+                assertTrue( cursor.next() );
+                assertThat( cursor.propertyValue( 0 ), equalTo( expectedLast ) );
+
+                assertFalse( cursor.next() );
+            }
+        }
+    }
+
+    private void concurrentInsert( Object value ) throws InterruptedException, java.util.concurrent.ExecutionException
+    {
+        otherThreadRule.execute( state ->
+        {
+            try ( Transaction otherTx = beginTransaction() )
+            {
+                nodeWithProp( otherTx, value );
+                otherTx.success();
+            }
+            return null;
+        } ).get();
     }
 
     private void assertResultsInOrder( List<Pair<Long,Value>> expected, NodeValueIndexCursor cursor )
