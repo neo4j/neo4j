@@ -1042,7 +1042,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     */
   private def assertNoBadExpressionsExists(root: Any): Unit = {
     AssertionRunner.runUnderAssertion(() => new FoldableAny(root).treeExists {
-      case _: PatternComprehension | _: PatternExpression | _: MapProjection =>
+      case _: PatternComprehension | _: MapProjection =>
         throw new InternalException(s"This expression should not be added to a logical plan:\n$root")
       case _ =>
         false
