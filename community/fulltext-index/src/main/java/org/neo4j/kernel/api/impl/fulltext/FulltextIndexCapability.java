@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.api.impl.fulltext;
 
-import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexBehaviour;
-import org.neo4j.internal.schema.IndexOrder;
+import org.neo4j.internal.schema.IndexCapability;
+import org.neo4j.internal.schema.IndexOrderCapability;
 import org.neo4j.internal.schema.IndexValueCapability;
 import org.neo4j.values.storable.ValueCategory;
 
@@ -38,9 +38,9 @@ class FulltextIndexCapability implements IndexCapability
     }
 
     @Override
-    public IndexOrder[] orderCapability( ValueCategory... valueCategories )
+    public IndexOrderCapability orderCapability( ValueCategory... valueCategories )
     {
-        return ORDER_NONE;
+        return IndexOrderCapability.NONE;
     }
 
     @Override

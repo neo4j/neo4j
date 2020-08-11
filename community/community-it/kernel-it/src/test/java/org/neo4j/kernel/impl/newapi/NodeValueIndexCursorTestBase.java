@@ -37,6 +37,7 @@ import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
+import org.neo4j.internal.schema.IndexOrderCapability;
 import org.neo4j.internal.schema.IndexValueCapability;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -164,14 +165,14 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
             nodeWithProp( tx, new String[]{"fourth", "fifth", "sixth", "seventh"} );
 
             MutableLongList listOfIds = LongLists.mutable.empty();
-            listOfIds.add(nodeWithWhatever( tx, "string" ));
-            listOfIds.add(nodeWithWhatever( tx, false ));
-            listOfIds.add(nodeWithWhatever( tx, 3 ));
-            listOfIds.add(nodeWithWhatever( tx, 13.0 ));
+            listOfIds.add( nodeWithWhatever( tx, "string" ) );
+            listOfIds.add( nodeWithWhatever( tx, false ) );
+            listOfIds.add( nodeWithWhatever( tx, 3 ) );
+            listOfIds.add( nodeWithWhatever( tx, 13.0 ) );
             whateverPoint = nodeWithWhatever( tx, Values.pointValue( Cartesian, 1, 0 ) );
             listOfIds.add( whateverPoint );
-            listOfIds.add(nodeWithWhatever( tx, DateValue.date( 1989, 3, 24 ) ));
-            listOfIds.add(nodeWithWhatever( tx, new String[]{"first", "second", "third"} ));
+            listOfIds.add( nodeWithWhatever( tx, DateValue.date( 1989, 3, 24 ) ) );
+            listOfIds.add( nodeWithWhatever( tx, new String[]{"first", "second", "third"} ) );
 
             nodesOfAllPropertyTypes = listOfIds.toArray();
 
@@ -538,7 +539,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
 
             // when
             read.nodeIndexSeek( index, node, constraints,
-                    IndexQuery.range( prop, DateValue.date( 1986, 11, 18 ), false, DateValue.date( 1989, 3, 24 ), false ) );
+                                IndexQuery.range( prop, DateValue.date( 1986, 11, 18 ), false, DateValue.date( 1989, 3, 24 ), false ) );
 
             // then
             assertFoundNodesAndValue( node, uniqueIds, temporalCapability, needsValues );
@@ -664,16 +665,24 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         boolean needsValues = indexProvidesNumericValues();
         int prop = token.propertyKey( "prop" );
         IndexReadSession index = read.indexReadSession( schemaRead.indexGetForName( NODE_PROP_INDEX_NAME ) );
-        IndexOrder[] orderCapabilities = index.reference().getCapability().orderCapability( ValueCategory.NUMBER );
+        IndexOrderCapability orderCapabilities = index.reference().getCapability().orderCapability( ValueCategory.NUMBER );
         try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor( NULL, tx.memoryTracker() ) )
         {
-            for ( IndexOrder orderCapability : orderCapabilities )
+            if ( orderCapabilities.supportsAsc() )
             {
                 // when
-                read.nodeIndexSeek( index, node, constrained( orderCapability, needsValues ), IndexQuery.range( prop, 1, true, 42, true ) );
+                read.nodeIndexSeek( index, node, constrained( IndexOrder.ASCENDING, needsValues ), IndexQuery.range( prop, 1, true, 42, true ) );
 
                 // then
-                assertFoundNodesInOrder( node, orderCapability );
+                assertFoundNodesInOrder( node, IndexOrder.ASCENDING );
+            }
+            if ( orderCapabilities.supportsDesc() )
+            {
+                // when
+                read.nodeIndexSeek( index, node, constrained( IndexOrder.DESCENDING, needsValues ), IndexQuery.range( prop, 1, true, 42, true ) );
+
+                // then
+                assertFoundNodesInOrder( node, IndexOrder.DESCENDING );
             }
         }
     }
@@ -685,16 +694,24 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         boolean needsValues = indexProvidesStringValues();
         int prop = token.propertyKey( "prop" );
         IndexReadSession index = read.indexReadSession( schemaRead.indexGetForName( NODE_PROP_INDEX_NAME ) );
-        IndexOrder[] orderCapabilities = index.reference().getCapability().orderCapability( ValueCategory.TEXT );
+        IndexOrderCapability orderCapabilities = index.reference().getCapability().orderCapability( ValueCategory.TEXT );
         try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor( NULL, tx.memoryTracker() ) )
         {
-            for ( IndexOrder orderCapability : orderCapabilities )
+            if ( orderCapabilities.supportsAsc() )
             {
                 // when
-                read.nodeIndexSeek( index, node, constrained( orderCapability, needsValues ), IndexQuery.range( prop, "one", true, "two", true ) );
+                read.nodeIndexSeek( index, node, constrained( IndexOrder.ASCENDING, needsValues ), IndexQuery.range( prop, "one", true, "two", true ) );
 
                 // then
-                assertFoundNodesInOrder( node, orderCapability );
+                assertFoundNodesInOrder( node, IndexOrder.ASCENDING );
+            }
+            if ( orderCapabilities.supportsDesc() )
+            {
+                // when
+                read.nodeIndexSeek( index, node, constrained( IndexOrder.DESCENDING, needsValues ), IndexQuery.range( prop, "one", true, "two", true ) );
+
+                // then
+                assertFoundNodesInOrder( node, IndexOrder.DESCENDING );
             }
         }
     }
@@ -706,17 +723,26 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         boolean needsValues = indexProvidesTemporalValues();
         int prop = token.propertyKey( "prop" );
         IndexReadSession index = read.indexReadSession( schemaRead.indexGetForName( NODE_PROP_INDEX_NAME ) );
-        IndexOrder[] orderCapabilities = index.reference().getCapability().orderCapability( ValueCategory.TEMPORAL );
+        IndexOrderCapability orderCapabilities = index.reference().getCapability().orderCapability( ValueCategory.TEMPORAL );
         try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor( NULL, tx.memoryTracker() ) )
         {
-            for ( IndexOrder orderCapability : orderCapabilities )
+            if ( orderCapabilities.supportsAsc() )
             {
                 // when
-                read.nodeIndexSeek( index, node, constrained( orderCapability, needsValues ),
-                        IndexQuery.range( prop, DateValue.date( 1986, 11, 18 ), true, DateValue.date( 1989, 3, 24 ), true ) );
+                read.nodeIndexSeek( index, node, constrained( IndexOrder.ASCENDING, needsValues ),
+                                    IndexQuery.range( prop, DateValue.date( 1986, 11, 18 ), true, DateValue.date( 1989, 3, 24 ), true ) );
 
                 // then
-                assertFoundNodesInOrder( node, orderCapability );
+                assertFoundNodesInOrder( node, IndexOrder.ASCENDING );
+            }
+            if ( orderCapabilities.supportsDesc() )
+            {
+                // when
+                read.nodeIndexSeek( index, node, constrained( IndexOrder.DESCENDING, needsValues ),
+                                    IndexQuery.range( prop, DateValue.date( 1986, 11, 18 ), true, DateValue.date( 1989, 3, 24 ), true ) );
+
+                // then
+                assertFoundNodesInOrder( node, IndexOrder.DESCENDING );
             }
         }
     }
@@ -728,16 +754,26 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         boolean needsValues = indexProvidesSpatialValues();
         int prop = token.propertyKey( "prop" );
         IndexReadSession index = read.indexReadSession( schemaRead.indexGetForName( NODE_PROP_INDEX_NAME ) );
-        IndexOrder[] orderCapabilities = index.reference().getCapability().orderCapability( ValueCategory.GEOMETRY );
+        IndexOrderCapability orderCapabilities = index.reference().getCapability().orderCapability( ValueCategory.GEOMETRY );
         try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor( NULL, tx.memoryTracker() ) )
         {
-            for ( IndexOrder orderCapability : orderCapabilities )
+            if ( orderCapabilities.supportsAsc() )
             {
                 // when
-                read.nodeIndexSeek( index, node, constrained( orderCapability, needsValues ), IndexQuery.range( prop, CoordinateReferenceSystem.Cartesian ) );
+                read.nodeIndexSeek( index, node, constrained( IndexOrder.ASCENDING, needsValues ),
+                                    IndexQuery.range( prop, CoordinateReferenceSystem.Cartesian ) );
 
                 // then
-                assertFoundNodesInOrder( node, orderCapability );
+                assertFoundNodesInOrder( node, IndexOrder.ASCENDING );
+            }
+            if ( orderCapabilities.supportsDesc() )
+            {
+                // when
+                read.nodeIndexSeek( index, node, constrained( IndexOrder.DESCENDING, needsValues ),
+                                    IndexQuery.range( prop, CoordinateReferenceSystem.Cartesian ) );
+
+                // then
+                assertFoundNodesInOrder( node, IndexOrder.DESCENDING );
             }
         }
     }
@@ -749,18 +785,28 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         boolean needsValues = indexProvidesSpatialValues();
         int prop = token.propertyKey( "prop" );
         IndexReadSession index = read.indexReadSession( schemaRead.indexGetForName( NODE_PROP_INDEX_NAME ) );
-        IndexOrder[] orderCapabilities = index.reference().getCapability().orderCapability( ValueCategory.TEXT_ARRAY );
+        IndexOrderCapability orderCapabilities = index.reference().getCapability().orderCapability( ValueCategory.TEXT_ARRAY );
         try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor( NULL, tx.memoryTracker() ) )
         {
-            for ( IndexOrder orderCapability : orderCapabilities )
+            if ( orderCapabilities.supportsAsc() )
             {
                 // when
-                read.nodeIndexSeek( index, node, constrained( orderCapability, needsValues ), IndexQuery.range( prop,
+                read.nodeIndexSeek( index, node, constrained( IndexOrder.ASCENDING, needsValues ), IndexQuery.range( prop,
                         Values.of( new String[]{"first", "second", "third"} ), true,
                         Values.of( new String[]{"fourth", "fifth", "sixth", "seventh"} ), true ) );
 
                 // then
-                assertFoundNodesInOrder( node, orderCapability );
+                assertFoundNodesInOrder( node, IndexOrder.ASCENDING );
+            }
+            if ( orderCapabilities.supportsDesc() )
+            {
+                // when
+                read.nodeIndexSeek( index, node, constrained( IndexOrder.DESCENDING, needsValues ),  IndexQuery.range( prop,
+                        Values.of( new String[]{"first", "second", "third"} ), true,
+                        Values.of( new String[]{"fourth", "fifth", "sixth", "seventh"} ), true ) );
+
+                // then
+                assertFoundNodesInOrder( node, IndexOrder.DESCENDING );
             }
         }
     }
@@ -772,16 +818,24 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         boolean needsValues = false;
         int prop = token.propertyKey( "prop" );
         IndexReadSession index = read.indexReadSession( schemaRead.indexGetForName( NODE_PROP_INDEX_NAME ) );
-        IndexOrder[] orderCapabilities = index.reference().getCapability().orderCapability( ValueCategory.UNKNOWN );
+        IndexOrderCapability orderCapabilities = index.reference().getCapability().orderCapability( ValueCategory.UNKNOWN );
         try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor( NULL, tx.memoryTracker() ) )
         {
-            for ( IndexOrder orderCapability : orderCapabilities )
+            if ( orderCapabilities.supportsAsc() )
             {
                 // when
-                read.nodeIndexSeek( index, node, constrained( orderCapability, needsValues ), IndexQuery.exists( prop ) );
+                read.nodeIndexSeek( index, node, constrained( IndexOrder.ASCENDING, needsValues ), IndexQuery.exists( prop ) );
 
                 // then
-                assertFoundNodesInOrder( node, orderCapability );
+                assertFoundNodesInOrder( node, IndexOrder.ASCENDING );
+            }
+            if ( orderCapabilities.supportsDesc() )
+            {
+                // when
+                read.nodeIndexSeek( index, node, constrained( IndexOrder.DESCENDING, needsValues ), IndexQuery.exists( prop ) );
+
+                // then
+                assertFoundNodesInOrder( node, IndexOrder.DESCENDING );
             }
         }
     }
@@ -1236,7 +1290,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         {
             // when
             tx.dataWrite().nodeDelete( strOne );
-            tx.dataRead().nodeIndexSeek( index, node, unordered( needsValues ), IndexQuery.stringPrefix( prop, stringValue( "on" )) );
+            tx.dataRead().nodeIndexSeek( index, node, unordered( needsValues ), IndexQuery.stringPrefix( prop, stringValue( "on" ) ) );
 
             // then
             assertFalse( node.next() );
@@ -1256,7 +1310,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         {
             // when
             tx.dataWrite().nodeRemoveLabel( strOne, label );
-            tx.dataRead().nodeIndexSeek( index, node, unordered( needsValues ), IndexQuery.stringPrefix( prop, stringValue( "on" )) );
+            tx.dataRead().nodeIndexSeek( index, node, unordered( needsValues ), IndexQuery.stringPrefix( prop, stringValue( "on" ) ) );
 
             // then
             assertFalse( node.next() );
@@ -1275,7 +1329,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         {
             // when
             tx.dataWrite().nodeSetProperty( strOne, prop, stringValue( "ett" ) );
-            tx.dataRead().nodeIndexSeek( index, node, unordered( needsValues ), IndexQuery.stringPrefix( prop, stringValue( "on" )) );
+            tx.dataRead().nodeIndexSeek( index, node, unordered( needsValues ), IndexQuery.stringPrefix( prop, stringValue( "on" ) ) );
 
             // then
             assertFalse( node.next() );
@@ -1316,7 +1370,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
             // when
             tx.dataWrite().nodeRemoveLabel( strOne, label );
             tx.dataWrite().nodeAddLabel( strOneNoLabel, label );
-            tx.dataRead().nodeIndexSeek( index, node, unordered( needsValues ), IndexQuery.stringPrefix( prop, stringValue( "on" )) );
+            tx.dataRead().nodeIndexSeek( index, node, unordered( needsValues ), IndexQuery.stringPrefix( prop, stringValue( "on" ) ) );
 
             // then
             assertTrue( node.next() );

@@ -42,6 +42,7 @@ import org.neo4j.cypher.internal.spi.procsHelpers.asCypherValue
 import org.neo4j.cypher.internal.spi.procsHelpers.asOption
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.PropertyKeyId
+import org.neo4j.cypher.internal.util.symbols
 import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.exceptions.KernelException
 import org.neo4j.internal.kernel.api.InternalIndexState
@@ -49,18 +50,23 @@ import org.neo4j.internal.kernel.api.procs
 import org.neo4j.internal.schema
 import org.neo4j.internal.schema.ConstraintDescriptor
 import org.neo4j.internal.schema.IndexBehaviour
-import org.neo4j.internal.schema.IndexOrder
+import org.neo4j.internal.schema.IndexOrderCapability.ASC_FULLY_SORTED
+import org.neo4j.internal.schema.IndexOrderCapability.ASC_PARTIALLY_SORTED
+import org.neo4j.internal.schema.IndexOrderCapability.BOTH_FULLY_SORTED
+import org.neo4j.internal.schema.IndexOrderCapability.BOTH_PARTIALLY_SORTED
+import org.neo4j.internal.schema.IndexOrderCapability.DESC_FULLY_SORTED
+import org.neo4j.internal.schema.IndexOrderCapability.DESC_PARTIALLY_SORTED
+import org.neo4j.internal.schema.IndexOrderCapability.NONE
 import org.neo4j.internal.schema.IndexType
 import org.neo4j.internal.schema.IndexValueCapability
 import org.neo4j.internal.schema.SchemaDescriptor
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.logging.Log
 import org.neo4j.values.storable.ValueCategory
-import org.neo4j.cypher.internal.util.symbols
 
 import scala.collection.JavaConverters.asScalaBufferConverter
-import scala.collection.JavaConverters.seqAsJavaListConverter
 import scala.collection.JavaConverters.asScalaIteratorConverter
+import scala.collection.JavaConverters.seqAsJavaListConverter
 
 object TransactionBoundPlanContext {
   def apply(tc: TransactionalContextWrapper,
@@ -150,13 +156,17 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
         val isUnique = reference.isUnique
         val behaviours = reference.getCapability.behaviours().map(kernelToCypher).toSet
         val orderCapability: OrderCapability = tps => {
+          // The Kernel index order gives additional information if all values are sorted, or if there can be geometry values which are not sorted.
+          // From Cyphers perspective, using the Kernel API, fully and partially sorted are the same, since geometry values which come out of order
+          // from the index are sorted in DefaultNodeValueIndexCursor.
           reference.getCapability.orderCapability(tps.map(typeToValueCategory): _*) match {
-            case Array() => IndexOrderCapability.NONE
-            case Array(IndexOrder.ASCENDING, IndexOrder.DESCENDING) => IndexOrderCapability.BOTH
-            case Array(IndexOrder.DESCENDING, schema.IndexOrder.ASCENDING) => IndexOrderCapability.BOTH
-            case Array(schema.IndexOrder.ASCENDING) => IndexOrderCapability.ASC
-            case Array(schema.IndexOrder.DESCENDING) => IndexOrderCapability.DESC
-            case _ => IndexOrderCapability.NONE
+            case BOTH_FULLY_SORTED => IndexOrderCapability.BOTH
+            case BOTH_PARTIALLY_SORTED => IndexOrderCapability.BOTH
+            case ASC_FULLY_SORTED => IndexOrderCapability.ASC
+            case ASC_PARTIALLY_SORTED => IndexOrderCapability.ASC
+            case DESC_FULLY_SORTED => IndexOrderCapability.DESC
+            case DESC_PARTIALLY_SORTED => IndexOrderCapability.DESC
+            case NONE => IndexOrderCapability.NONE
           }
         }
         val valueCapability: ValueCapability = tps => {

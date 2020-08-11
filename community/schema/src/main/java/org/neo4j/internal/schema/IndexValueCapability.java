@@ -24,27 +24,7 @@ package org.neo4j.internal.schema;
  */
 public enum IndexValueCapability
 {
-    YES( 3 ),     // Can provide values for the query.
-    PARTIAL( 2 ), // Can provide values for part of the query result set, often depending on what type the value has.
-    NO( 1 );      // Cannot provide values for the query.
-
-    /**
-     * Higher order indicate a higher capability.
-     */
-    private final int order;
-
-    IndexValueCapability( int order )
-    {
-        this.order = order;
-    }
-
-    /**
-     * Positive result if this capability is higher than other.
-     * Negative result if this capability is lower that other.
-     * Zero if this has same capability as other.
-     */
-    public int compare( IndexValueCapability other )
-    {
-        return Integer.compare( order, other.order );
-    }
+    YES,     // Can provide values for the query.
+    PARTIAL, // Can provide values for part of the query result set, often depending on what type the value has.
+    NO      // Cannot provide values for the query.
 }

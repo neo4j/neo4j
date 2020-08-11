@@ -36,7 +36,7 @@ import org.neo4j.internal.schema.FulltextSchemaDescriptor;
 import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexConfigCompleter;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexOrder;
+import org.neo4j.internal.schema.IndexOrderCapability;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexValueCapability;
 import org.neo4j.internal.schema.SchemaDescriptor;
@@ -541,9 +541,9 @@ class SchemaCacheTest
         IndexCapability capability = new IndexCapability()
         {
             @Override
-            public IndexOrder[] orderCapability( ValueCategory... valueCategories )
+            public IndexOrderCapability orderCapability( ValueCategory... valueCategories )
             {
-                return new IndexOrder[0];
+                return IndexOrderCapability.NONE;
             }
 
             @Override

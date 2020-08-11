@@ -30,8 +30,6 @@ import org.neo4j.values.storable.ValueCategory;
  */
 public interface IndexCapability
 {
-    IndexOrder[] ORDER_BOTH = {IndexOrder.ASCENDING, IndexOrder.DESCENDING};
-    IndexOrder[] ORDER_NONE = new IndexOrder[0];
     IndexBehaviour[] BEHAVIOURS_NONE = new IndexBehaviour[0];
 
     /**
@@ -45,7 +43,7 @@ public interface IndexCapability
      * @return {@link IndexOrder} array containing all possible orderings for provided value categories or empty array if no explicit
      * ordering is possible or if length of {@code valueCategories} and {@link SchemaDescriptor#getPropertyIds()} differ.
      */
-    IndexOrder[] orderCapability( ValueCategory... valueCategories );
+    IndexOrderCapability orderCapability( ValueCategory... valueCategories );
 
     /**
      * Is the index capable of providing values for a query on given combination of {@link ValueCategory}.
@@ -72,9 +70,9 @@ public interface IndexCapability
     IndexCapability NO_CAPABILITY = new IndexCapability()
     {
         @Override
-        public IndexOrder[] orderCapability( ValueCategory... valueCategories )
+        public IndexOrderCapability orderCapability( ValueCategory... valueCategories )
         {
-            return ORDER_NONE;
+            return IndexOrderCapability.NONE;
         }
 
         @Override

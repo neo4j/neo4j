@@ -35,6 +35,7 @@ import org.neo4j.annotations.documented.ReporterFactories;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.schema.IndexOrder;
+import org.neo4j.internal.schema.IndexOrderCapability;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
@@ -187,7 +188,7 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
         return seenIds;
     }
 
-    IndexOrder[] orderCapability( IndexQuery... predicates )
+    IndexOrderCapability orderCapability( IndexQuery... predicates )
     {
         ValueCategory[] categories = new ValueCategory[predicates.length];
         for ( int i = 0; i < predicates.length; i++ )

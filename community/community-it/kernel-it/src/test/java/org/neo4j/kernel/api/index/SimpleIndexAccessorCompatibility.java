@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.api.index;
 
-import org.apache.commons.lang3.ArrayUtils;
 import org.junit.Assume;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -45,6 +44,7 @@ import java.util.stream.Collectors;
 import org.neo4j.annotations.documented.ReporterFactories;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.schema.IndexOrder;
+import org.neo4j.internal.schema.IndexOrderCapability;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
@@ -399,9 +399,9 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
             {
                 Value from = values.get( f );
                 Value to = values.get( t );
-                for ( boolean fromInclusive : new boolean[] {true, false} )
+                for ( boolean fromInclusive : new boolean[]{true, false} )
                 {
-                    for ( boolean toInclusive : new boolean[] {true, false} )
+                    for ( boolean toInclusive : new boolean[]{true, false} )
                     {
                         assertThat( query( range( 1, from, fromInclusive, to, toInclusive ) ) ).isEqualTo( ids( f, fromInclusive, t, toInclusive ) );
                     }
@@ -911,8 +911,15 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
             throw new IllegalStateException();
         }
 
-        IndexOrder[] indexOrders = orderCapability( range );
-        Assume.assumeTrue( "Assume support for order " + order, ArrayUtils.contains( indexOrders, order ) );
+        IndexOrderCapability indexOrders = orderCapability( range );
+        if ( order == IndexOrder.ASCENDING )
+        {
+            Assume.assumeTrue( "Assume support for order " + order, indexOrders.supportsAsc() );
+        }
+        else if ( order == IndexOrder.DESCENDING )
+        {
+            Assume.assumeTrue( "Assume support for order " + order, indexOrders.supportsDesc() );
+        }
 
         List<IndexEntryUpdate<?>> additions = Arrays.stream( objects ).map( o -> add( 1, descriptor.schema(), o ) ).collect( Collectors.toList() );
         Collections.shuffle( additions, random.random() );
@@ -1093,10 +1100,10 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
         @Test
         public void testIndexRangeSeekByTimeWithZonesAndDuplicates() throws Exception
         {
-            testIndexRangeSeekWithDuplicates( time( 20, 31, 53, 4, ZoneOffset.of("+17:02") ),
-                                              time( 20, 31, 54, 3, ZoneOffset.of("+17:02") ),
+            testIndexRangeSeekWithDuplicates( time( 20, 31, 53, 4, ZoneOffset.of( "+17:02" ) ),
+                                              time( 20, 31, 54, 3, ZoneOffset.of( "+17:02" ) ),
                                               time( 19, 31, 54, 2, UTC ),
-                                              time( 18, 23, 27, 1, ZoneOffset.of("-18:00") ) );
+                                              time( 18, 23, 27, 1, ZoneOffset.of( "-18:00" ) ) );
         }
 
         @Test

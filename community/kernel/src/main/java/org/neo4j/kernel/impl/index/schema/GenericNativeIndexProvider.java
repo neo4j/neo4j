@@ -31,7 +31,7 @@ import org.neo4j.internal.schema.IndexBehaviour;
 import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexOrder;
+import org.neo4j.internal.schema.IndexOrderCapability;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexValueCapability;
@@ -196,32 +196,28 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<GenericKey,N
         private final IndexBehaviour[] behaviours = {IndexBehaviour.SLOW_CONTAINS};
 
         @Override
-        public IndexOrder[] orderCapability( ValueCategory... valueCategories )
+        public IndexOrderCapability orderCapability( ValueCategory... valueCategories )
         {
-            if ( supportOrdering( valueCategories ) )
+            var seenUnknown = false;
+            for ( ValueCategory valueCategory : valueCategories )
             {
-                return IndexCapability.ORDER_BOTH;
+                if ( valueCategory == ValueCategory.GEOMETRY ||
+                     valueCategory == ValueCategory.GEOMETRY_ARRAY )
+                {
+                    return IndexOrderCapability.NONE;
+                }
+                else if ( valueCategory == ValueCategory.UNKNOWN )
+                {
+                    seenUnknown = true;
+                }
             }
-            return IndexCapability.ORDER_NONE;
+            return seenUnknown ? IndexOrderCapability.BOTH_PARTIALLY_SORTED : IndexOrderCapability.BOTH_FULLY_SORTED;
         }
 
         @Override
         public IndexValueCapability valueCapability( ValueCategory... valueCategories )
         {
             return IndexValueCapability.YES;
-        }
-
-        private boolean supportOrdering( ValueCategory[] valueCategories )
-        {
-            for ( ValueCategory valueCategory : valueCategories )
-            {
-                if ( valueCategory == ValueCategory.GEOMETRY ||
-                     valueCategory == ValueCategory.GEOMETRY_ARRAY )
-                {
-                    return false;
-                }
-            }
-            return true;
         }
 
         @Override

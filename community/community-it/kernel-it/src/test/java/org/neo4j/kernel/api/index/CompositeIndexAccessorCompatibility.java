@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.api.index;
 
-import org.apache.commons.lang3.ArrayUtils;
 import org.junit.Assume;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -44,6 +43,7 @@ import java.util.stream.Stream;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.schema.IndexOrder;
+import org.neo4j.internal.schema.IndexOrderCapability;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
@@ -85,7 +85,6 @@ import static org.neo4j.internal.kernel.api.IndexQuery.stringSuffix;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
-import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
 import static org.neo4j.values.storable.DateTimeValue.datetime;
@@ -1122,8 +1121,15 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
         Object baseValue = 1; // Todo use random value instead
         IndexQuery exact = exact( 100, baseValue );
         IndexQuery range = range( 200, Values.of( o0 ), true, Values.of( o5 ), true );
-        IndexOrder[] indexOrders = orderCapability( exact, range );
-        Assume.assumeTrue( "Assume support for order " + order, ArrayUtils.contains( indexOrders, order ) );
+        IndexOrderCapability indexOrders = orderCapability( exact, range );
+        if ( order == IndexOrder.ASCENDING )
+        {
+            Assume.assumeTrue( "Assume support for order " + order, indexOrders.supportsAsc() );
+        }
+        else if ( order == IndexOrder.DESCENDING )
+        {
+            Assume.assumeTrue( "Assume support for order " + order, indexOrders.supportsDesc() );
+        }
 
         updateAndCommit( asList(
                 add( 1, descriptor.schema(), baseValue, o0 ),
@@ -1381,7 +1387,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
         @Test
         public void testDuplicatesInIndexSeekByTemporalArray() throws Exception
         {
-            testDuplicatesInIndexSeek( dateArray(303, 606) );
+            testDuplicatesInIndexSeek( dateArray( 303, 606 ) );
         }
 
         @Test

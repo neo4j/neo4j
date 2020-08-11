@@ -34,6 +34,7 @@ import java.util.TreeSet;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.schema.IndexOrder;
+import org.neo4j.internal.schema.IndexOrderCapability;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
@@ -45,8 +46,8 @@ import org.neo4j.values.storable.ValueType;
 import org.neo4j.values.storable.Values;
 
 import static java.util.stream.Collectors.toList;
-import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.internal.helpers.collection.Iterables.single;
 import static org.neo4j.internal.kernel.api.IndexQuery.exact;
@@ -210,10 +211,17 @@ public class CompositeRandomizedIndexAccessorCompatibility extends IndexAccessor
                         exact( 100, booleanValue ),
                         IndexQuery.range( 101, from, fromInclusive, to, toInclusive )};
                 ValueCategory[] valueCategories = getValueCategories( predicates );
-                IndexOrder[] indexOrders = descriptor.getCapability().orderCapability( valueCategories );
-                for ( IndexOrder order : indexOrders )
+                IndexOrderCapability indexOrders = descriptor.getCapability().orderCapability( valueCategories );
+                if ( indexOrders.supportsAsc() )
                 {
-                    List<Long> actualIds = assertInOrder( order, predicates );
+                    List<Long> actualIds = assertInOrder( IndexOrder.ASCENDING, predicates );
+                    actualIds.sort( Long::compare );
+                    // then
+                    assertThat( actualIds, equalTo( expectedIds ) );
+                }
+                if ( indexOrders.supportsDesc() )
+                {
+                    List<Long> actualIds = assertInOrder( IndexOrder.DESCENDING, predicates );
                     actualIds.sort( Long::compare );
                     // then
                     assertThat( actualIds, equalTo( expectedIds ) );

@@ -28,11 +28,11 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.schema.FulltextSchemaDescriptor;
+import org.neo4j.internal.schema.IndexBehaviour;
 import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexBehaviour;
-import org.neo4j.internal.schema.IndexOrder;
+import org.neo4j.internal.schema.IndexOrderCapability;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexValueCapability;
@@ -632,9 +632,9 @@ class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
         IndexCapability capability = new IndexCapability()
         {
             @Override
-            public IndexOrder[] orderCapability( ValueCategory... valueCategories )
+            public IndexOrderCapability orderCapability( ValueCategory... valueCategories )
             {
-                return new IndexOrder[0];
+                return IndexOrderCapability.NONE;
             }
 
             @Override

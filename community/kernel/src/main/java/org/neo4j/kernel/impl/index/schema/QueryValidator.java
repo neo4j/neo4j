@@ -19,14 +19,12 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.apache.commons.lang3.ArrayUtils;
-
 import java.util.Arrays;
 
-import org.neo4j.internal.helpers.ArrayUtil;
+import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexOrder;
-import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.schema.IndexOrderCapability;
 import org.neo4j.values.storable.ValueCategory;
 
 import static java.lang.String.format;
@@ -38,13 +36,14 @@ class QueryValidator
         if ( indexOrder != IndexOrder.NONE )
         {
             ValueCategory valueCategory = predicates[0].valueGroup().category();
-            IndexOrder[] orderCapability = capability.orderCapability( valueCategory );
-            if ( !ArrayUtil.contains( orderCapability, indexOrder ) )
+            IndexOrderCapability orderCapability = capability.orderCapability( valueCategory );
+
+            if ( indexOrder == IndexOrder.ASCENDING && !orderCapability.supportsAsc() ||
+                 indexOrder == IndexOrder.DESCENDING && !orderCapability.supportsDesc() )
             {
-                orderCapability = ArrayUtils.add( orderCapability, IndexOrder.NONE );
                 throw new UnsupportedOperationException(
-                        format( "Tried to query index with unsupported order %s. Supported orders for query %s are %s.", indexOrder,
-                                Arrays.toString( predicates ), Arrays.toString( orderCapability ) ) );
+                        format( "Tried to query index with unsupported order %s. For query %s supports ascending: %b, supports descending: %b.", indexOrder,
+                                Arrays.toString( predicates ), orderCapability.supportsAsc(), orderCapability.supportsDesc() ) );
             }
         }
     }

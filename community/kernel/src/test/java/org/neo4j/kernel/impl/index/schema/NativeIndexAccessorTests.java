@@ -46,6 +46,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelE
 import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
+import org.neo4j.internal.schema.IndexOrderCapability;
 import org.neo4j.internal.schema.IndexValueCapability;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
@@ -784,35 +785,43 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
             ValueGroup valueGroup = random.among( allValues ).valueGroup();
             IndexQuery.RangePredicate<?> supportedQuery = IndexQuery.range( 0, valueGroup );
 
-            IndexOrder[] supportedOrders = indexCapability().orderCapability( valueGroup.category() );
-            for ( IndexOrder supportedOrder : supportedOrders )
+            IndexOrderCapability supportedOrders = indexCapability().orderCapability( valueGroup.category() );
+            if ( supportedOrders.supportsAsc() )
             {
-                if ( supportedOrder == IndexOrder.NONE )
-                {
-                    continue;
-                }
-                Value[] expectedValues = Arrays.stream( allValues )
-                        .filter( v -> v.valueGroup() == valueGroup )
-                        .toArray( Value[]::new );
-                if ( supportedOrder == IndexOrder.ASCENDING )
-                {
-                    Arrays.sort( expectedValues, Values.COMPARATOR );
-                }
-                if ( supportedOrder == IndexOrder.DESCENDING )
-                {
-                    Arrays.sort( expectedValues, Values.COMPARATOR.reversed() );
-                }
-
-                SimpleNodeValueClient client = new SimpleNodeValueClient();
-                reader.query( NULL_CONTEXT, client, constrained( supportedOrder, true ), supportedQuery );
-                int i = 0;
-                while ( client.next() )
-                {
-                    assertEquals( expectedValues[i++], client.values[0], "values in order" );
-                }
-                assertEquals( i, expectedValues.length, "found all values" );
+                expectIndexOrder( allValues, valueGroup, reader, IndexOrder.ASCENDING, supportedQuery );
+            }
+            if ( supportedOrders.supportsDesc() )
+            {
+                expectIndexOrder( allValues, valueGroup, reader, IndexOrder.DESCENDING, supportedQuery );
             }
         }
+    }
+
+    private void expectIndexOrder( Value[] allValues,
+                                   ValueGroup valueGroup,
+                                   IndexReader reader,
+                                   IndexOrder supportedOrder,
+                                   IndexQuery.RangePredicate<?> supportedQuery ) throws IndexNotApplicableKernelException
+    {
+        Value[] expectedValues = Arrays.stream( allValues )
+                                       .filter( v -> v.valueGroup() == valueGroup )
+                                       .toArray( Value[]::new );
+        if ( supportedOrder == IndexOrder.ASCENDING )
+        {
+            Arrays.sort( expectedValues, Values.COMPARATOR );
+        }
+        else if ( supportedOrder == IndexOrder.DESCENDING )
+        {
+            Arrays.sort( expectedValues, Values.COMPARATOR.reversed() );
+        }
+        SimpleNodeValueClient client = new SimpleNodeValueClient();
+        reader.query( NULL_CONTEXT, client, constrained( supportedOrder, true ), supportedQuery );
+        int i = 0;
+        while ( client.next() )
+        {
+            assertEquals( expectedValues[i++], client.values[0], "values in order" );
+        }
+        assertEquals( i, expectedValues.length, "found all values" );
     }
 
     @Test

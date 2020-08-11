@@ -40,6 +40,7 @@ import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
+import org.neo4j.internal.schema.IndexOrderCapability;
 import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
@@ -154,40 +155,48 @@ public abstract class AbstractIndexProvidedOrderTest extends KernelAPIReadTestBa
         for ( int i = 0; i < N_ITERATIONS; i++ )
         {
             ValueType type = randomValues.among( targetedTypes );
-            IndexOrder[] order = index.reference().getCapability().orderCapability( type.valueGroup.category() );
-            for ( IndexOrder indexOrder : order )
+            IndexOrderCapability order = index.reference().getCapability().orderCapability( type.valueGroup.category() );
+            if ( order.supportsAsc() )
             {
-                if ( indexOrder == IndexOrder.NONE )
-                {
-                    continue;
-                }
-                NodeValueTuple from = new NodeValueTuple( Long.MIN_VALUE, randomValues.nextValueOfType( type ) );
-                NodeValueTuple to = new NodeValueTuple( Long.MAX_VALUE, randomValues.nextValueOfType( type ) );
-                if ( COMPARATOR.compare( from, to ) > 0 )
-                {
-                    NodeValueTuple tmp = from;
-                    from = to;
-                    to = tmp;
-                }
-                boolean fromInclusive = randomValues.nextBoolean();
-                boolean toInclusive = randomValues.nextBoolean();
-                IndexQuery.RangePredicate<?> range = IndexQuery.range( prop, from.getOnlyValue(), fromInclusive, to.getOnlyValue(), toInclusive );
-
-                try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor( NULL, tx.memoryTracker() ) )
-                {
-                    read.nodeIndexSeek( index, node, constrained( indexOrder, false ), range );
-
-                    List<Long> expectedIdsInOrder = expectedIdsInOrder( from, fromInclusive, to, toInclusive, indexOrder );
-                    List<Long> actualIdsInOrder = new ArrayList<>();
-                    while ( node.next() )
-                    {
-                        actualIdsInOrder.add( node.nodeReference() );
-                    }
-
-                    assertEquals( expectedIdsInOrder, actualIdsInOrder, "actual node ids not in same order as expected for value type " + type );
-
-                }
+                expectResultInOrder( randomValues, type, prop, index, IndexOrder.ASCENDING );
             }
+            if ( order.supportsDesc() )
+            {
+                expectResultInOrder( randomValues, type, prop, index, IndexOrder.DESCENDING );
+            }
+        }
+    }
+
+    private void expectResultInOrder( RandomValues randomValues,
+                                      ValueType type,
+                                      int prop,
+                                      IndexReadSession index,
+                                      IndexOrder indexOrder ) throws KernelException
+    {
+        NodeValueTuple from = new NodeValueTuple( Long.MIN_VALUE, randomValues.nextValueOfType( type ) );
+        NodeValueTuple to = new NodeValueTuple( Long.MAX_VALUE, randomValues.nextValueOfType( type ) );
+        if ( COMPARATOR.compare( from, to ) > 0 )
+        {
+            NodeValueTuple tmp = from;
+            from = to;
+            to = tmp;
+        }
+        boolean fromInclusive = randomValues.nextBoolean();
+        boolean toInclusive = randomValues.nextBoolean();
+        IndexQuery.RangePredicate<?> range = IndexQuery.range( prop, from.getOnlyValue(), fromInclusive, to.getOnlyValue(), toInclusive );
+
+        try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor( NULL, tx.memoryTracker() ) )
+        {
+            read.nodeIndexSeek( index, node, constrained( indexOrder, false ), range );
+
+            List<Long> expectedIdsInOrder = expectedIdsInOrder( from, fromInclusive, to, toInclusive, indexOrder );
+            List<Long> actualIdsInOrder = new ArrayList<>();
+            while ( node.next() )
+            {
+                actualIdsInOrder.add( node.nodeReference() );
+            }
+
+            assertEquals( expectedIdsInOrder, actualIdsInOrder, "actual node ids not in same order as expected for value type " + type );
         }
     }
 

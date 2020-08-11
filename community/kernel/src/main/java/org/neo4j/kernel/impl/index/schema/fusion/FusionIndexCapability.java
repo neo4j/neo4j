@@ -21,9 +21,9 @@ package org.neo4j.kernel.impl.index.schema.fusion;
 
 import java.util.function.Function;
 
-import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexBehaviour;
-import org.neo4j.internal.schema.IndexOrder;
+import org.neo4j.internal.schema.IndexCapability;
+import org.neo4j.internal.schema.IndexOrderCapability;
 import org.neo4j.internal.schema.IndexValueCapability;
 import org.neo4j.values.storable.ValueCategory;
 
@@ -56,12 +56,12 @@ public class FusionIndexCapability implements IndexCapability
     }
 
     @Override
-    public IndexOrder[] orderCapability( ValueCategory... valueCategories )
+    public IndexOrderCapability orderCapability( ValueCategory... valueCategories )
     {
         IndexSlot slot = slotSelector.selectSlot( valueCategories, categoryOf );
         if ( slot == null )
         {
-            return IndexCapability.ORDER_NONE;
+            return IndexOrderCapability.NONE;
         }
         return instanceSelector.select( slot ).orderCapability( valueCategories );
     }
