@@ -20,10 +20,19 @@
 package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.mockito.Mockito.when
-import org.neo4j.cypher.internal.runtime.spec.{Edition, LogicalQueryBuilder, RuntimeTestSuite}
-import org.neo4j.cypher.internal.{CypherRuntime, RuntimeContext}
+import org.neo4j.cypher.internal.runtime.spec.Edition
+import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
+import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
+import org.neo4j.cypher.internal.CypherRuntime
+import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.exceptions.EntityNotFoundException
-import org.neo4j.graphdb.{Label, Node, Relationship}
+import org.neo4j.graphdb.Label
+import org.neo4j.graphdb.Node
+import org.neo4j.graphdb.Relationship
+import org.neo4j.values.storable.Values.NO_VALUE
+import org.neo4j.values.storable.Values.intValue
+import org.neo4j.values.virtual.VirtualValues.list
+import scala.collection.JavaConverters._
 
 abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT],
                                                              runtime: CypherRuntime[CONTEXT]) extends RuntimeTestSuite(edition, runtime) {
@@ -336,5 +345,43 @@ trait ExpressionWithTxStateChangesTests[CONTEXT <: RuntimeContext] {
 
     // then
     an [EntityNotFoundException] should be thrownBy consume(execute(logicalQuery, runtime, input))
+  }
+
+  test("should handle IN list") {
+    // given
+    val size = 100
+    val input = for (i <- 0 until size) yield Array[Any]((0 to i).toList.asJava)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .projection("5 IN x AS y")
+      .input(variables = Seq("x"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(input:_*))
+
+    // then
+    val expected = for (i <- 0 until size) yield Array[Any]((0 to i).toArray, i >= 5)
+    runtimeResult should beColumns("x", "y").withRows(expected)
+  }
+
+  test("should handle IN list where list contains nulls") {
+    // given
+    val size = 100
+    val input = for (s <- 0 until size) yield Array[Any]((0 to s).map(i => if (i % 2 == 0) null else Int.box(i)).toList.asJava)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("y")
+      .projection("5 IN x AS y")
+      .input(variables = Seq("x"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(input:_*))
+
+    // then
+    val expected = for (i <- 0 until size) yield Array[Any](if (i >= 5) true else null)
+    runtimeResult should beColumns("y").withRows(expected)
   }
 }
