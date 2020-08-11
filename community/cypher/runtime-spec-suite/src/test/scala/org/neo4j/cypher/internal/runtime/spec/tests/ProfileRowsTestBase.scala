@@ -102,6 +102,560 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     queryProfile.operatorProfile(1).rows() shouldBe sizeHint // all nodes scan
   }
 
+  test("should profile rows with filter (fused pipelines)") {
+    // given
+    val nodesPerLabel = 20
+    given {bipartiteGraph(nodesPerLabel, "A", "B", "R")}
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nonFuseable()
+      .expand("(x)-[r]->(y)")
+      .filter("true")
+      .nodeByLabelScan("x", "A", IndexOrderNone)
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(0).rows() shouldBe (nodesPerLabel * nodesPerLabel) // produce results
+    queryProfile.operatorProfile(1).rows() shouldBe (nodesPerLabel * nodesPerLabel) // nonFuseable
+    queryProfile.operatorProfile(2).rows() shouldBe (nodesPerLabel * nodesPerLabel) // expand
+    queryProfile.operatorProfile(3).rows() shouldBe nodesPerLabel // filter
+    queryProfile.operatorProfile(4).rows() shouldBe nodesPerLabel // nodeByLabelScan
+  }
+
+  test("should profile rows with projection (fused pipelines)") {
+    // given
+    val nodesPerLabel = 20
+    given {bipartiteGraph(nodesPerLabel, "A", "B", "R")}
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nonFuseable()
+      .expand("(x)-[r]->(y)")
+      .projection("x AS x2")
+      .nodeByLabelScan("x", "A", IndexOrderNone)
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(0).rows() shouldBe (nodesPerLabel * nodesPerLabel) // produce results
+    queryProfile.operatorProfile(1).rows() shouldBe (nodesPerLabel * nodesPerLabel) // nonFuseable
+    queryProfile.operatorProfile(2).rows() shouldBe (nodesPerLabel * nodesPerLabel) // expand
+    queryProfile.operatorProfile(3).rows() shouldBe nodesPerLabel // projection
+    queryProfile.operatorProfile(4).rows() shouldBe nodesPerLabel // nodeByLabelScan
+  }
+
+  test("should profile rows with skip (fused pipelines)") {
+    // given
+    val nodesPerLabel = 20
+    given {bipartiteGraph(nodesPerLabel, "A", "B", "R")}
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nonFuseable()
+      .expand("(x)-[r]->(y)")
+      .skip(0)
+      .nodeByLabelScan("x", "A", IndexOrderNone)
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(0).rows() shouldBe (nodesPerLabel * nodesPerLabel) // produce results
+    queryProfile.operatorProfile(1).rows() shouldBe (nodesPerLabel * nodesPerLabel) // nonFuseable
+    queryProfile.operatorProfile(2).rows() shouldBe (nodesPerLabel * nodesPerLabel) // expand
+    queryProfile.operatorProfile(3).rows() shouldBe nodesPerLabel // skip
+    queryProfile.operatorProfile(4).rows() shouldBe nodesPerLabel // nodeByLabelScan
+  }
+
+  test("should profile rows with limit (fused pipelines)") {
+    // given
+    val nodesPerLabel = 20
+    given {bipartiteGraph(nodesPerLabel, "A", "B", "R")}
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nonFuseable()
+      .expand("(x)-[r]->(y)")
+      .limit(Long.MaxValue)
+      .nodeByLabelScan("x", "A", IndexOrderNone)
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(0).rows() shouldBe (nodesPerLabel * nodesPerLabel) // produce results
+    queryProfile.operatorProfile(1).rows() shouldBe (nodesPerLabel * nodesPerLabel) // nonFuseable
+    queryProfile.operatorProfile(2).rows() shouldBe (nodesPerLabel * nodesPerLabel) // expand
+    queryProfile.operatorProfile(3).rows() shouldBe nodesPerLabel // limit
+    queryProfile.operatorProfile(4).rows() shouldBe nodesPerLabel // nodeByLabelScan
+  }
+
+  test("should profile rows with argument & limit on RHS of Apply (fused pipelines)") {
+    // given
+    val nodesPerLabel = 20
+    given {bipartiteGraph(nodesPerLabel, "A", "B", "R")}
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nonFuseable()
+      .expand("(x)-[r]->(y)")
+      .apply()
+      .|.limit(Long.MaxValue)
+      .|.argument("x")
+      .nodeByLabelScan("x", "A", IndexOrderNone)
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(0).rows() shouldBe (nodesPerLabel * nodesPerLabel) // produce results
+    queryProfile.operatorProfile(1).rows() shouldBe (nodesPerLabel * nodesPerLabel) // nonFuseable
+    queryProfile.operatorProfile(2).rows() shouldBe (nodesPerLabel * nodesPerLabel) // expand
+    queryProfile.operatorProfile(3).rows() shouldBe nodesPerLabel // apply
+    queryProfile.operatorProfile(4).rows() shouldBe nodesPerLabel // limit
+    queryProfile.operatorProfile(5).rows() shouldBe nodesPerLabel // argument
+    queryProfile.operatorProfile(6).rows() shouldBe nodesPerLabel // nodeByLabelScan
+  }
+
+  test("should profile rows with cacheProperties (fused pipelines)") {
+    // given
+    val nodesPerLabel = 20
+    given {bipartiteGraph(nodesPerLabel, "A", "B", "R")}
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nonFuseable()
+      .expand("(x)-[r]->(y)")
+      .cacheProperties("x.prop")
+      .nodeByLabelScan("x", "A", IndexOrderNone)
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(0).rows() shouldBe (nodesPerLabel * nodesPerLabel) // produce results
+    queryProfile.operatorProfile(1).rows() shouldBe (nodesPerLabel * nodesPerLabel) // nonFuseable
+    queryProfile.operatorProfile(2).rows() shouldBe (nodesPerLabel * nodesPerLabel) // expand
+    queryProfile.operatorProfile(3).rows() shouldBe nodesPerLabel // cacheProperties
+    queryProfile.operatorProfile(4).rows() shouldBe nodesPerLabel // nodeByLabelScan
+  }
+
+  test("should profile rows with distinct (fused pipelines)") {
+    // given
+    val nodesPerLabel = 20
+    given {bipartiteGraph(nodesPerLabel, "A", "B", "R")}
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nonFuseable()
+      .expand("(x)-[r]->(y)")
+      .distinct("10 AS ten", "x AS x")
+      .nodeByLabelScan("x", "A", IndexOrderNone)
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(0).rows() shouldBe (nodesPerLabel * nodesPerLabel) // produce results
+    queryProfile.operatorProfile(1).rows() shouldBe (nodesPerLabel * nodesPerLabel) // nonFuseable
+    queryProfile.operatorProfile(2).rows() shouldBe (nodesPerLabel * nodesPerLabel) // expand
+    queryProfile.operatorProfile(3).rows() shouldBe nodesPerLabel // distinct
+    queryProfile.operatorProfile(4).rows() shouldBe nodesPerLabel // nodeByLabelScan
+  }
+
+  test("should profile rows with primitive distinct (fused pipelines)") {
+    // given
+    val nodesPerLabel = 20
+    given {bipartiteGraph(nodesPerLabel, "A", "B", "R")}
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nonFuseable()
+      .expand("(x)-[r]->(y)")
+      .distinct("x AS x", "x AS x2")
+      .nodeByLabelScan("x", "A", IndexOrderNone)
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(0).rows() shouldBe (nodesPerLabel * nodesPerLabel) // produce results
+    queryProfile.operatorProfile(1).rows() shouldBe (nodesPerLabel * nodesPerLabel) // nonFuseable
+    queryProfile.operatorProfile(2).rows() shouldBe (nodesPerLabel * nodesPerLabel) // expand
+    queryProfile.operatorProfile(3).rows() shouldBe nodesPerLabel // distinct
+    queryProfile.operatorProfile(4).rows() shouldBe nodesPerLabel // nodeByLabelScan
+  }
+
+  test("should profile rows with single primitive distinct (fused pipelines)") {
+    // given
+    val nodesPerLabel = 20
+    given {bipartiteGraph(nodesPerLabel, "A", "B", "R")}
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nonFuseable()
+      .expand("(x)-[r]->(y)")
+      .distinct("x AS x")
+      .nodeByLabelScan("x", "A", IndexOrderNone)
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(0).rows() shouldBe (nodesPerLabel * nodesPerLabel) // produce results
+    queryProfile.operatorProfile(1).rows() shouldBe (nodesPerLabel * nodesPerLabel) // nonFuseable
+    queryProfile.operatorProfile(2).rows() shouldBe (nodesPerLabel * nodesPerLabel) // expand
+    queryProfile.operatorProfile(3).rows() shouldBe nodesPerLabel // distinct
+    queryProfile.operatorProfile(4).rows() shouldBe nodesPerLabel // nodeByLabelScan
+  }
+
+  test("should profile rows with expand (fused pipelines)") {
+    // given
+    val nodesPerLabel = 10
+    given {
+      bipartiteGraph(nodesPerLabel, "A", "B", "R")
+    }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nonFuseable()
+      .expand("(x)-[r2]->(y2)")
+      .expand("(x)-[r]->(y)")
+      .nodeByLabelScan("x", "A", IndexOrderNone)
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(0).rows() shouldBe (nodesPerLabel * nodesPerLabel * nodesPerLabel) // produce results
+    queryProfile.operatorProfile(1).rows() shouldBe (nodesPerLabel * nodesPerLabel * nodesPerLabel) // nonFuseable
+    queryProfile.operatorProfile(2).rows() shouldBe (nodesPerLabel * nodesPerLabel * nodesPerLabel) // expand
+    queryProfile.operatorProfile(3).rows() shouldBe (nodesPerLabel * nodesPerLabel) // expand
+    queryProfile.operatorProfile(4).rows() shouldBe nodesPerLabel // nodeByLabelScan
+  }
+
+  test("should profile rows with optional expand (fused pipelines)") {
+    // given
+    val nodesPerLabel = 10
+    given{bipartiteGraph(nodesPerLabel, "A", "B", "R")}
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nonFuseable()
+      .expand("(x)-[r2]->(y2)")
+      .apply()
+      .|.optionalExpandAll("(x)-[r:R]->(y)")
+      .|.argument("x")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(0).rows() shouldBe (nodesPerLabel * nodesPerLabel * nodesPerLabel) // produce results
+    queryProfile.operatorProfile(1).rows() shouldBe (nodesPerLabel * nodesPerLabel * nodesPerLabel) // nonFuseable
+    queryProfile.operatorProfile(2).rows() shouldBe (nodesPerLabel * nodesPerLabel * nodesPerLabel) // expand
+    queryProfile.operatorProfile(3).rows() shouldBe (nodesPerLabel * nodesPerLabel + nodesPerLabel) // apply
+    queryProfile.operatorProfile(4).rows() shouldBe (nodesPerLabel * nodesPerLabel + nodesPerLabel) // optional expand
+    queryProfile.operatorProfile(5).rows() shouldBe (2 * nodesPerLabel) // argument
+    queryProfile.operatorProfile(6).rows() shouldBe (2 * nodesPerLabel) // all node scan
+  }
+  test("should profile rows with optional expand into (fused pipelines)") {
+    // given
+    val nodesPerLabel = 10
+    given{
+      bipartiteGraph(nodesPerLabel, "A", "B", "R")
+    }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nonFuseable()
+      .expand("(x)-[r2]->(y2)")
+      .apply()
+      .|.optionalExpandInto("(x)-[r:R]->(y)")
+      .|.argument("x", "y")
+      .expand("(x)-[r0]-(y)")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(0).rows() shouldBe (nodesPerLabel * nodesPerLabel * nodesPerLabel) // produce results
+    queryProfile.operatorProfile(1).rows() shouldBe (nodesPerLabel * nodesPerLabel * nodesPerLabel) // nonFuseable
+    queryProfile.operatorProfile(2).rows() shouldBe (nodesPerLabel * nodesPerLabel * nodesPerLabel) // expand
+    queryProfile.operatorProfile(3).rows() shouldBe (2 * nodesPerLabel * nodesPerLabel) // apply
+    queryProfile.operatorProfile(4).rows() shouldBe (2 * nodesPerLabel * nodesPerLabel) // optional expand
+    queryProfile.operatorProfile(5).rows() shouldBe (2 * nodesPerLabel * nodesPerLabel) // argument
+    queryProfile.operatorProfile(6).rows() shouldBe (2 * nodesPerLabel * nodesPerLabel) // expand
+    queryProfile.operatorProfile(7).rows() shouldBe (2 * nodesPerLabel) // all node scan
+  }
+
+  test("should profile rows with union (fused pipelines)") {
+    // given
+    val nodesPerLabel = 20
+    given {bipartiteGraph(nodesPerLabel, "A", "B", "R")}
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nonFuseable()
+      .expand("(x)-[r]->(y)")
+      .union()
+      .|.nodeByLabelScan("x", "A", IndexOrderNone)
+      .nodeByLabelScan("x", "A", IndexOrderNone)
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(0).rows() shouldBe (2 * nodesPerLabel * nodesPerLabel) // produce results
+    queryProfile.operatorProfile(1).rows() shouldBe (2 * nodesPerLabel * nodesPerLabel) // nonFuseable
+    queryProfile.operatorProfile(2).rows() shouldBe (2 * nodesPerLabel * nodesPerLabel) // expand
+    queryProfile.operatorProfile(3).rows() shouldBe (2 * nodesPerLabel) // union
+    queryProfile.operatorProfile(4).rows() shouldBe nodesPerLabel // nodeByLabelScan
+    queryProfile.operatorProfile(5).rows() shouldBe nodesPerLabel // nodeByLabelScan
+  }
+
+  test("should profile rows with single node by id seek (fused pipelines)") {
+    // given
+    val nodesPerLabel = 20
+    val (as, _) = given {
+      bipartiteGraph(nodesPerLabel, "A", "B", "R")
+    }
+    val id = as.head.getId
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nonFuseable()
+      .expand("(x)-[r]->(y)")
+      .nodeByIdSeek("x", Set.empty, id)
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(0).rows() shouldBe nodesPerLabel // produce results
+    queryProfile.operatorProfile(1).rows() shouldBe nodesPerLabel // nonFuseable
+    queryProfile.operatorProfile(2).rows() shouldBe nodesPerLabel // expand
+    queryProfile.operatorProfile(3).rows() shouldBe 1 // nodeByIdSeek
+  }
+
+  test("should profile rows with multiple node by id seek (fused pipelines)") {
+    // given
+    val nodesPerLabel = 20
+    val (as, _) = given {
+      bipartiteGraph(nodesPerLabel, "A", "B", "R")
+    }
+    val ids = as.map(_.getId)
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nonFuseable()
+      .expand("(x)-[r]->(y)")
+      .nodeByIdSeek("x", Set.empty, ids :_*)
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(0).rows() shouldBe (nodesPerLabel * nodesPerLabel) // produce results
+    queryProfile.operatorProfile(1).rows() shouldBe (nodesPerLabel * nodesPerLabel) // nonFuseable
+    queryProfile.operatorProfile(2).rows() shouldBe (nodesPerLabel * nodesPerLabel) // expand
+    queryProfile.operatorProfile(3).rows() shouldBe nodesPerLabel // nodeByIdSeek
+  }
+
+  test("should profile rows with single directed rel by id seek (fused pipelines)") {
+    // given
+    val nodesPerLabel = 20
+    val (_, _, rs, _) = given {
+      bidirectionalBipartiteGraph(nodesPerLabel, "A", "B", "R", "R2")
+    }
+    val id = rs.head.getId
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nonFuseable()
+      .expand("(x)-[r2]->(y2)")
+      .directedRelationshipByIdSeek("r", "x", "y", Set.empty, id)
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(0).rows() shouldBe nodesPerLabel // produce results
+    queryProfile.operatorProfile(1).rows() shouldBe nodesPerLabel // nonFuseable
+    queryProfile.operatorProfile(2).rows() shouldBe nodesPerLabel // expand
+    queryProfile.operatorProfile(3).rows() shouldBe 1 // directedRelationshipByIdSeek
+  }
+
+  test("should profile rows with multiple directed rel by id seek (fused pipelines)") {
+    // given
+    val nodesPerLabel = 20
+    val (_, _, rs, _) = given {
+      bidirectionalBipartiteGraph(nodesPerLabel, "A", "B", "R", "R2")
+    }
+    val ids = rs.map(_.getId)
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nonFuseable()
+      .expand("(x)-[r2]->(y2)")
+      .directedRelationshipByIdSeek("r", "x", "y", Set.empty, ids :_*)
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(0).rows() shouldBe (ids.size * nodesPerLabel) // produce results
+    queryProfile.operatorProfile(1).rows() shouldBe (ids.size * nodesPerLabel) // nonFuseable
+    queryProfile.operatorProfile(2).rows() shouldBe (ids.size * nodesPerLabel) // expand
+    queryProfile.operatorProfile(3).rows() shouldBe ids.size // directedRelationshipByIdSeek
+  }
+
+  test("should profile rows with single undirected rel by id seek (fused pipelines)") {
+    // given
+    val nodesPerLabel = 20
+    val (_, _, rs, _) = given {
+      bidirectionalBipartiteGraph(nodesPerLabel, "A", "B", "R", "R2")
+    }
+    val id = rs.head.getId
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nonFuseable()
+      .expand("(x)-[r2]->(y2)")
+      .undirectedRelationshipByIdSeek("r", "x", "y", Set.empty, id)
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(0).rows() shouldBe (2 * nodesPerLabel) // produce results
+    queryProfile.operatorProfile(1).rows() shouldBe (2 * nodesPerLabel) // nonFuseable
+    queryProfile.operatorProfile(2).rows() shouldBe (2 * nodesPerLabel) // expand
+    queryProfile.operatorProfile(3).rows() shouldBe 2 // undirectedRelationshipByIdSeek
+  }
+
+  test("should profile rows with multiple undirected rel by id seek (fused pipelines)") {
+    // given
+    val nodesPerLabel = 20
+    val (_, _, rs, _) = given {
+      bidirectionalBipartiteGraph(nodesPerLabel, "A", "B", "R", "R2")
+    }
+    val ids = rs.map(_.getId)
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nonFuseable()
+      .expand("(x)-[r2]->(y2)")
+      .undirectedRelationshipByIdSeek("r", "x", "y", Set.empty, ids :_*)
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(0).rows() shouldBe (2 * ids.size * nodesPerLabel) // produce results
+    queryProfile.operatorProfile(1).rows() shouldBe (2 * ids.size * nodesPerLabel) // nonFuseable
+    queryProfile.operatorProfile(2).rows() shouldBe (2 * ids.size * nodesPerLabel) // expand
+    queryProfile.operatorProfile(3).rows() shouldBe 2 * ids.size // undirectedRelationshipByIdSeek
+  }
+
+  test("should profile rows with node count from count store (fused pipelines)") {
+    // given
+    val nodesPerLabel = 20
+    given {bipartiteGraph(nodesPerLabel, "A", "B", "R")}
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nonFuseable()
+      .expand("(x)-[r]->(y)")
+      .apply()
+      .|.nodeCountFromCountStore("count", Seq(Some("A")))
+      .nodeByLabelScan("x", "A", IndexOrderNone)
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(0).rows() shouldBe (nodesPerLabel * nodesPerLabel) // produce results
+    queryProfile.operatorProfile(1).rows() shouldBe (nodesPerLabel * nodesPerLabel) // nonFuseable
+    queryProfile.operatorProfile(2).rows() shouldBe (nodesPerLabel * nodesPerLabel) // expand
+    queryProfile.operatorProfile(3).rows() shouldBe nodesPerLabel // apply
+    queryProfile.operatorProfile(4).rows() shouldBe nodesPerLabel // nodeCountFromCountStore
+    queryProfile.operatorProfile(5).rows() shouldBe nodesPerLabel // nodeByLabelScan
+  }
+
+  test("should profile rows with rel count from count store (fused pipelines)") {
+    // given
+    val nodesPerLabel = 20
+    given {bipartiteGraph(nodesPerLabel, "A", "B", "R")}
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nonFuseable()
+      .expand("(x)-[r]->(y)")
+      .apply()
+      .|.relationshipCountFromCountStore("count", None, Seq("R"), None)
+      .nodeByLabelScan("x", "A", IndexOrderNone)
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(0).rows() shouldBe (nodesPerLabel * nodesPerLabel) // produce results
+    queryProfile.operatorProfile(1).rows() shouldBe (nodesPerLabel * nodesPerLabel) // nonFuseable
+    queryProfile.operatorProfile(2).rows() shouldBe (nodesPerLabel * nodesPerLabel) // expand
+    queryProfile.operatorProfile(3).rows() shouldBe nodesPerLabel // apply
+    queryProfile.operatorProfile(4).rows() shouldBe nodesPerLabel // relationshipCountFromCountStore
+    queryProfile.operatorProfile(5).rows() shouldBe nodesPerLabel // nodeByLabelScan
+  }
+
   test("should profile rows of sort + filter") {
     given {
       nodePropertyGraph(sizeHint, {
