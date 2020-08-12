@@ -152,6 +152,33 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     queryProfile.operatorProfile(4).rows() shouldBe nodesPerLabel // nodeByLabelScan
   }
 
+  test("should profile rows with project endpoints (fused pipelines)") {
+    // given
+    val nNodes = Math.sqrt(sizeHint).ceil.toInt
+    val (aNodes, bNodes, aRels, _) = given { bidirectionalBipartiteGraph(nNodes, "A", "B", "R", "R") }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .nonFuseable()
+      .projectEndpoints("(x)-[r]-(y)", startInScope = false, endInScope = false)
+      .input(relationships = Seq("r"), nullable = false)
+      .build()
+
+    val input = aRels.map(r => Array[Any](r))
+
+    // then
+    val runtimeResult = profile(logicalQuery, runtime, inputValues(input:_*))
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(0).rows() shouldBe 2 * aRels.size // produce results
+    queryProfile.operatorProfile(1).rows() shouldBe 2 * aRels.size // non-fuseable
+    queryProfile.operatorProfile(2).rows() shouldBe 2 * aRels.size // project endpoints
+    queryProfile.operatorProfile(3).rows() shouldBe aRels.size // input
+  }
+
   test("should profile rows with skip (fused pipelines)") {
     // given
     val nodesPerLabel = 20
@@ -1612,6 +1639,31 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     result.runtimeResult.queryProfile().operatorProfile(1).rows() shouldBe size * 2 // union
     result.runtimeResult.queryProfile().operatorProfile(2).rows() shouldBe size // all node scan
     result.runtimeResult.queryProfile().operatorProfile(3).rows() shouldBe size // all node scan
+  }
+
+  test("should profile rows with project endpoints") {
+    // given
+    val nNodes = Math.sqrt(sizeHint).ceil.toInt
+    val (aNodes, bNodes, aRels, _) = given { bidirectionalBipartiteGraph(nNodes, "A", "B", "R", "R") }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .projectEndpoints("(x)-[r]-(y)", startInScope = false, endInScope = false)
+      .input(relationships = Seq("r"), nullable = false)
+      .build()
+
+    val input = aRels.map(r => Array[Any](r))
+
+    // then
+    val runtimeResult = profile(logicalQuery, runtime, inputValues(input:_*))
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(0).rows() shouldBe 2 * aRels.size // produce results
+    queryProfile.operatorProfile(1).rows() shouldBe 2 * aRels.size // project endpoints
+    queryProfile.operatorProfile(2).rows() shouldBe aRels.size // input
   }
 }
 

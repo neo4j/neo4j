@@ -473,6 +473,31 @@ abstract class ProfileTimeTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     // Should not attribute anything to the invalid id
     queryProfile.operatorProfile(Id.INVALID_ID.x) should be(NO_PROFILE)
   }
+
+  test("should profile time with project endpoints") {
+    // given
+    val nNodes = Math.sqrt(sizeHint).ceil.toInt
+    val (aNodes, bNodes, aRels, _) = given { bidirectionalBipartiteGraph(nNodes, "A", "B", "R", "R") }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .projectEndpoints("(x)-[r]-(y)", startInScope = false, endInScope = false)
+      .input(relationships = Seq("r"), nullable = false)
+      .build()
+
+    val input = aRels.map(r => Array[Any](r))
+
+    // then
+    val runtimeResult = profile(logicalQuery, runtime, inputValues(input:_*))
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(0).time() should be > 0L // produce results
+    queryProfile.operatorProfile(1).time() should be > 0L // project endpoints
+    queryProfile.operatorProfile(2).time() should be > 0L // input
+  }
 }
 
 trait NonParallelProfileTimeTestBase[CONTEXT <: RuntimeContext] {

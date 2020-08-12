@@ -502,6 +502,32 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     result.runtimeResult.queryProfile().operatorProfile(2).dbHits() should (be (size) or be (size + 1)) // all node scan
     result.runtimeResult.queryProfile().operatorProfile(3).dbHits() should (be (size) or be (size + 1)) // all node scan
   }
+
+  test("should profile dbHits with project endpoints") {
+    // given
+    val nNodes = Math.sqrt(sizeHint).ceil.toInt
+    val (aNodes, bNodes, aRels, _) = given { bidirectionalBipartiteGraph(nNodes, "A", "B", "R", "R") }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .projectEndpoints("(x)-[r]-(y)", startInScope = false, endInScope = false)
+      .input(relationships = Seq("r"), nullable = false)
+      .build()
+
+    val input = aRels.map(r => Array[Any](r))
+
+    // then
+    val runtimeResult = profile(logicalQuery, runtime, inputValues(input:_*))
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(0).dbHits() shouldBe 0 // produce results
+    //Note: in interpreted we don't count rel.getStart, rel.getEnd as dbhits
+    queryProfile.operatorProfile(1).dbHits() should (be (0) or be (aRels.size)) // project endpoints
+    queryProfile.operatorProfile(2).dbHits() shouldBe 0 // input
+  }
 }
 
 trait ProcedureCallDbHitsTestBase[CONTEXT <: RuntimeContext] {
