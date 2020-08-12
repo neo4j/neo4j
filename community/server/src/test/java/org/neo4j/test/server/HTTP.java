@@ -125,7 +125,7 @@ public class HTTP
         {
             HostnameVerifier hostnameVerifier = HttpsURLConnection.getDefaultHostnameVerifier();
             ClientConfig config = new DefaultClientConfig();
-            SSLContext ctx = SSLContext.getInstance( "TLS" );
+            SSLContext ctx = SSLContext.getInstance( "TLSv1.2" );
             ctx.init( null, new TrustManager[]{new InsecureTrustManager()}, null );
             Map<String,Object> properties = config.getProperties();
             properties.put( PROPERTY_HTTPS_PROPERTIES, new HTTPSProperties( hostnameVerifier, ctx ) );

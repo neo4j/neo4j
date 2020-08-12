@@ -28,13 +28,16 @@ import java.net.URI;
 import java.security.SecureRandom;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLServerSocketFactory;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.configuration.ConnectorPortRegister;
+import org.neo4j.kernel.configuration.ssl.SslPolicyConfig;
 import org.neo4j.server.helpers.CommunityServerBuilder;
+import org.neo4j.ssl.ClientAuth;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 import org.neo4j.test.server.HTTP;
 import org.neo4j.test.server.InsecureTrustManager;
@@ -131,7 +134,15 @@ public class HttpsAccessIT extends ExclusiveServerTestBase
             serverBuilder.withHttpsEnabled();
         }
 
-        server = serverBuilder.build();
+        SslPolicyConfig httpsPolicyConfig = new SslPolicyConfig( "default" );
+
+        server = serverBuilder
+                .withProperty( "https.ssl_policy", "default" )
+                .withProperty( httpsPolicyConfig.base_directory.name(), folder.directory( "cert" ).getAbsolutePath() )
+                .withProperty( httpsPolicyConfig.allow_key_generation.name(), "true" )
+                .withProperty( httpsPolicyConfig.client_auth.name(), ClientAuth.NONE.name() )
+                .withProperty( httpsPolicyConfig.ciphers.name(), getSupportedCipherSuites() )
+                .build();
         server.start();
 
         // Because we are generating a non-CA-signed certificate, we need to turn off verification in the client.
@@ -139,7 +150,7 @@ public class HttpsAccessIT extends ExclusiveServerTestBase
         TrustManager[] trustAllCerts = {new InsecureTrustManager()};
 
         // Install the all-trusting trust manager
-        SSLContext sc = SSLContext.getInstance( "TLS" );
+        SSLContext sc = SSLContext.getInstance( "TLSv1.2" );
         sc.init( null, trustAllCerts, new SecureRandom() );
         HttpsURLConnection.setDefaultSSLSocketFactory( sc.getSocketFactory() );
     }
@@ -162,5 +173,12 @@ public class HttpsAccessIT extends ExclusiveServerTestBase
         DependencyResolver resolver = server.database.getGraph().getDependencyResolver();
         ConnectorPortRegister portRegister = resolver.resolveDependency( ConnectorPortRegister.class );
         return portRegister.getLocalAddress( name );
+    }
+
+    private static String getSupportedCipherSuites()
+    {
+        SSLServerSocketFactory ssf = ( SSLServerSocketFactory ) SSLServerSocketFactory.getDefault();
+        String[] defaultCiphers = ssf.getDefaultCipherSuites();
+        return String.join( ",", defaultCiphers );
     }
 }
