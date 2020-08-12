@@ -58,7 +58,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.neo4j.configuration.GraphDatabaseSettings.procedure_whitelist;
+import static org.neo4j.configuration.GraphDatabaseSettings.procedure_allowlist;
 import static org.neo4j.internal.helpers.collection.Iterators.asList;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureSignature;
 import static org.neo4j.kernel.api.ResourceTracker.EMPTY_RESOURCE_TRACKER;
@@ -310,7 +310,7 @@ public class ProcedureTest
     {
         // Given
         ProcedureConfig config = new ProcedureConfig(
-                Config.defaults( procedure_whitelist, List.of( "org.neo4j.procedure.impl.listCoolPeople" ) ) );
+                Config.defaults( procedure_allowlist, List.of( "org.neo4j.procedure.impl.listCoolPeople" ) ) );
 
         Log log = mock(Log.class);
         ProcedureCompiler procedureCompiler = new ProcedureCompiler( new TypeCheckers(), components,
@@ -331,7 +331,7 @@ public class ProcedureTest
     {
         // Given
         ProcedureConfig config = new ProcedureConfig(
-                Config.defaults( procedure_whitelist, List.of( "org.neo4j.procedure.impl.NOTlistCoolPeople" ) ) );
+                Config.defaults( procedure_allowlist, List.of( "org.neo4j.procedure.impl.NOTlistCoolPeople" ) ) );
 
         Log log = mock(Log.class);
         ProcedureCompiler procedureCompiler = new ProcedureCompiler( new TypeCheckers(), components,
@@ -342,7 +342,7 @@ public class ProcedureTest
                 procedureCompiler.compileProcedure( SingleReadOnlyProcedure.class, null, false );
         // Then
         verify( log )
-                .warn( "The procedure 'org.neo4j.procedure.impl.listCoolPeople' is not on the whitelist and won't be loaded." );
+                .warn( "The procedure 'org.neo4j.procedure.impl.listCoolPeople' is not on the allowlist and won't be loaded." );
         assertThat( proc.isEmpty() ).isTrue();
     }
 
@@ -350,7 +350,7 @@ public class ProcedureTest
     void shouldIgnoreWhiteListingIfFullAccess() throws Throwable
     {
         // Given
-        ProcedureConfig config = new ProcedureConfig( Config.defaults( procedure_whitelist, List.of( "empty" ) ) );
+        ProcedureConfig config = new ProcedureConfig( Config.defaults( procedure_allowlist, List.of( "empty" ) ) );
         Log log = mock(Log.class);
         ProcedureCompiler procedureCompiler = new ProcedureCompiler( new TypeCheckers(), components,
                 components, log, config );
@@ -367,7 +367,7 @@ public class ProcedureTest
     void shouldNotLoadAnyProcedureIfConfigIsEmpty() throws Throwable
     {
         // Given
-        ProcedureConfig config = new ProcedureConfig( Config.defaults( procedure_whitelist, List.of( "" ) ) );
+        ProcedureConfig config = new ProcedureConfig( Config.defaults( procedure_allowlist, List.of( "" ) ) );
         Log log = mock(Log.class);
         ProcedureCompiler procedureCompiler = new ProcedureCompiler( new TypeCheckers(), components,
                 components, log, config );
@@ -377,7 +377,7 @@ public class ProcedureTest
                 procedureCompiler.compileProcedure( SingleReadOnlyProcedure.class, null, false );
         // Then
         verify( log )
-                .warn( "The procedure 'org.neo4j.procedure.impl.listCoolPeople' is not on the whitelist and won't be loaded." );
+                .warn( "The procedure 'org.neo4j.procedure.impl.listCoolPeople' is not on the allowlist and won't be loaded." );
         assertThat( proc.isEmpty() ).isTrue();
     }
 

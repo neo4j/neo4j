@@ -15,7 +15,7 @@ There are two configuration settings in $NEO4J_HOME/conf/neoj4.conf that are rel
 or user defined functions:
 
 * dbms.security.procedures.unrestricted
-* dbms.security.procedures.whitelist
+* dbms.security.procedures.allowlist
 
 These are described in more detail in the documentation at
 https://neo4j.com/docs/operations-manual/current/security/securing-extensions/
@@ -38,12 +38,12 @@ White listing
 -------------
 
 White listing can be used to allow loading only a few extensions from a larger library.
-The configuration setting dbms.security.procedures.whitelist is used to name certain procedures that should be
+The configuration setting dbms.security.procedures.allowlist is used to name certain procedures that should be
 available from a library. It defines a comma-separated list of procedures that are to be loaded.
 The list may contain both fully-qualified procedure names, and partial names with the wildcard *.
 
 For example, to only load a subset of the APOC library of procedures:
 
-    # Example white listing
-    dbms.security.procedures.whitelist=apoc.coll.*,apoc.load.*
+    # Example allow listing
+    dbms.security.procedures.allowlist=apoc.coll.*,apoc.load.*
 

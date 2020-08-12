@@ -137,10 +137,12 @@ org.neo4j.configuration.GraphDatabaseSettings::pagecache_scan_prefetch org.neo4j
 org.neo4j.configuration.GraphDatabaseSettings::pagecache_swapper org.neo4j.graphdb.config.Setting<java.lang.String> public static final
 org.neo4j.configuration.GraphDatabaseSettings::pagecache_warmup_enabled org.neo4j.graphdb.config.Setting<java.lang.Boolean> public static final
 org.neo4j.configuration.GraphDatabaseSettings::pagecache_warmup_prefetch org.neo4j.graphdb.config.Setting<java.lang.Boolean> public static final
+org.neo4j.configuration.GraphDatabaseSettings::pagecache_warmup_prefetch_allowlist org.neo4j.graphdb.config.Setting<java.lang.String> public static final
 org.neo4j.configuration.GraphDatabaseSettings::pagecache_warmup_prefetch_whitelist org.neo4j.graphdb.config.Setting<java.lang.String> public static final
 org.neo4j.configuration.GraphDatabaseSettings::pagecache_warmup_profiling_interval org.neo4j.graphdb.config.Setting<java.time.Duration> public static final
 org.neo4j.configuration.GraphDatabaseSettings::plugin_dir org.neo4j.graphdb.config.Setting<java.nio.file.Path> public static final
 org.neo4j.configuration.GraphDatabaseSettings::preallocate_logical_logs org.neo4j.graphdb.config.Setting<java.lang.Boolean> public static final
+org.neo4j.configuration.GraphDatabaseSettings::procedure_allowlist org.neo4j.graphdb.config.Setting<java.util.List<java.lang.String>> public static final
 org.neo4j.configuration.GraphDatabaseSettings::procedure_roles org.neo4j.graphdb.config.Setting<java.lang.String> public static final
 org.neo4j.configuration.GraphDatabaseSettings::procedure_unrestricted org.neo4j.graphdb.config.Setting<java.util.List<java.lang.String>> public static final
 org.neo4j.configuration.GraphDatabaseSettings::procedure_whitelist org.neo4j.graphdb.config.Setting<java.util.List<java.lang.String>> public static final

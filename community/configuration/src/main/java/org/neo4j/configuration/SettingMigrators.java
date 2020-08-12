@@ -48,6 +48,8 @@ import static org.neo4j.configuration.GraphDatabaseSettings.default_advertised_a
 import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_listen_address;
 import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_max_size;
+import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_warmup_prefetch_allowlist;
+import static org.neo4j.configuration.GraphDatabaseSettings.procedure_allowlist;
 import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_max_off_heap_memory;
 import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_off_heap_block_cache_size;
 import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_off_heap_max_cacheable_block_size;
@@ -388,6 +390,17 @@ public final class SettingMigrators
                             memory_transaction_max_size.name(), memory_transaction_max_size.name(), maxAllocations );
                 }
             }
+        }
+    }
+
+    @ServiceProvider
+    public static class WhitelistSettingsMigrator implements SettingMigrator
+    {
+        @Override
+        public void migrate( Map<String,String> values, Map<String,String> defaultValues, Log log )
+        {
+            migrateSettingNameChange( values, log, "dbms.memory.pagecache.warmup.preload.whitelist", pagecache_warmup_prefetch_allowlist );
+            migrateSettingNameChange( values, log, "dbms.security.procedures.whitelist", procedure_allowlist );
         }
     }
 

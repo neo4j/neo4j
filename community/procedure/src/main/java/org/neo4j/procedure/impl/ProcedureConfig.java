@@ -71,7 +71,7 @@ public class ProcedureConfig
                 } ).collect( Collectors.toList() );
 
         this.accessPatterns = parseMatchers( config.get( GraphDatabaseSettings.procedure_unrestricted ), ProcedureConfig::compilePattern );
-        this.whiteList = parseMatchers( config.get( GraphDatabaseSettings.procedure_whitelist ), ProcedureConfig::compilePattern );
+        this.whiteList = parseMatchers( config.get( GraphDatabaseSettings.procedure_allowlist ), ProcedureConfig::compilePattern );
         this.defaultTemporalTimeZone = config.get( GraphDatabaseSettings.db_temporal_timezone );
     }
 

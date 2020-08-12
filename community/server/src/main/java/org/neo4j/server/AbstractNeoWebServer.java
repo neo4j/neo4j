@@ -433,7 +433,7 @@ public abstract class AbstractNeoWebServer extends LifecycleAdapter implements N
 
     private static List<Pattern> parseAuthWhitelist( Config config )
     {
-        return config.get( ServerSettings.http_auth_whitelist )
+        return config.get( ServerSettings.http_auth_allowlist )
                 .stream()
                 .map( Pattern::compile )
                 .collect( toUnmodifiableList() );

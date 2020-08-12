@@ -586,14 +586,20 @@ public class GraphDatabaseSettings implements SettingsDeclaration
             newBuilder( "dbms.memory.pagecache.warmup.enable", BOOL, true ).build();
 
     @Description( "Page cache warmup can be configured to prefetch files, preferably when cache size is bigger than store size. " +
-            "Files to be prefetched can be filtered by 'dbms.memory.pagecache.warmup.preload.whitelist'. " +
+            "Files to be prefetched can be filtered by 'dbms.memory.pagecache.warmup.preload.allowlist'. " +
             "Enabling this disables warmup by profile " )
     public static final Setting<Boolean> pagecache_warmup_prefetch =
             newBuilder( "dbms.memory.pagecache.warmup.preload", BOOL, false ).build();
 
-    @Description( "Page cache warmup prefetch file whitelist regex. By default matches all files" )
+    @Deprecated( since = "4.2.0", forRemoval = true )
+    @Description( "Page cache warmup prefetch file whitelist regex. By default matches all files. " +
+            "Deprecated, use dbms.memory.pagecache.warmup.preload.allowlist" )
     public static final Setting<String> pagecache_warmup_prefetch_whitelist =
             newBuilder( "dbms.memory.pagecache.warmup.preload.whitelist", STRING, ".*" ).build();
+
+    @Description( "Page cache warmup prefetch file allowlist regex. By default matches all files" )
+    public static final Setting<String> pagecache_warmup_prefetch_allowlist =
+            newBuilder( "dbms.memory.pagecache.warmup.preload.allowlist", STRING, ".*" ).build();
 
     @Description( "Use direct I/O for page cache. Setting is supported only on Linux and only for a subset of record formats" +
             " that use platform aligned page size." )
@@ -729,11 +735,19 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     public static final Setting<List<String>> procedure_unrestricted =
             newBuilder( "dbms.security.procedures.unrestricted", listOf( STRING ), emptyList() ) .build();
 
+    @Deprecated( since = "4.2.0", forRemoval = true )
+    @Description( "A list of procedures (comma separated) that are to be loaded. " +
+            "The list may contain both fully-qualified procedure names, and partial names with the wildcard '*'. " +
+            "If this setting is left empty no procedures will be loaded. " +
+            "Deprecated, use dbms.security.procedures.allowlist" )
+    public static final Setting<List<String>> procedure_whitelist =
+            newBuilder( "dbms.security.procedures.whitelist", listOf( STRING ), List.of("*") ).build();
+
     @Description( "A list of procedures (comma separated) that are to be loaded. " +
             "The list may contain both fully-qualified procedure names, and partial names with the wildcard '*'. " +
             "If this setting is left empty no procedures will be loaded." )
-    public static final Setting<List<String>> procedure_whitelist =
-            newBuilder( "dbms.security.procedures.whitelist", listOf( STRING ), List.of("*") ).build();
+    public static final Setting<List<String>> procedure_allowlist =
+            newBuilder( "dbms.security.procedures.allowlist", listOf( STRING ), List.of("*") ).build();
 
     //=========================================================================
     // Procedure security settings

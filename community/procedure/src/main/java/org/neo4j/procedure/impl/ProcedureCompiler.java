@@ -134,7 +134,7 @@ class ProcedureCompiler
                 }
                 else
                 {
-                    log.warn( String.format( "The function '%s' is not on the whitelist and won't be loaded.",
+                    log.warn( String.format( "The function '%s' is not on the allowlist and won't be loaded.",
                             funcName.toString() ) );
                 }
             }
@@ -180,7 +180,7 @@ class ProcedureCompiler
                 }
                 else
                 {
-                    log.warn( String.format( "The function '%s' is not on the whitelist and won't be loaded.",
+                    log.warn( String.format( "The function '%s' is not on the allowlist and won't be loaded.",
                             funcName.toString() ) );
                 }
 
@@ -227,7 +227,7 @@ class ProcedureCompiler
                 }
                 else
                 {
-                    log.warn( String.format( "The procedure '%s' is not on the whitelist and won't be loaded.",
+                    log.warn( String.format( "The procedure '%s' is not on the allowlist and won't be loaded.",
                             procName.toString() ) );
                 }
             }

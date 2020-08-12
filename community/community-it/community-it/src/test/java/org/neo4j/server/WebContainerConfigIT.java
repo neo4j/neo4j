@@ -66,7 +66,7 @@ public class WebContainerConfigIT extends ExclusiveWebContainerTestBase
     {
         testWebContainer = serverOnRandomPorts()
                 .usingDataDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
-                .withProperty( ServerSettings.http_auth_whitelist.name(), "" )
+                .withProperty( ServerSettings.http_auth_allowlist.name(), "" )
                 .withProperty( GraphDatabaseSettings.auth_enabled.name(), TRUE )
                 .build();
 
@@ -81,7 +81,7 @@ public class WebContainerConfigIT extends ExclusiveWebContainerTestBase
     {
         testWebContainer = serverOnRandomPorts()
                 .usingDataDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
-                .withProperty( ServerSettings.http_auth_whitelist.name(), "/" )
+                .withProperty( ServerSettings.http_auth_allowlist.name(), "/" )
                 .withProperty( GraphDatabaseSettings.auth_enabled.name(), TRUE )
                 .build();
 

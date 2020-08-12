@@ -300,7 +300,7 @@ public class UserAggregationFunctionTest
     {
         // Given
         procedureCompiler = new ProcedureCompiler( new TypeCheckers(), components, new ComponentRegistry(),
-                NullLog.getInstance(), new ProcedureConfig( Config.defaults( GraphDatabaseSettings.procedure_whitelist, List.of(
+                NullLog.getInstance(), new ProcedureConfig( Config.defaults( GraphDatabaseSettings.procedure_allowlist, List.of(
                 "org.neo4j.procedure.impl.collectCool" ) ) ) );
 
         CallableUserAggregationFunction method = compile( SingleAggregationFunction.class ).get( 0 );
@@ -317,10 +317,10 @@ public class UserAggregationFunctionTest
         // Given
         Log log = spy(Log.class);
         procedureCompiler = new ProcedureCompiler( new TypeCheckers(), components, new ComponentRegistry(),
-                log, new ProcedureConfig( Config.defaults( GraphDatabaseSettings.procedure_whitelist, List.of( "WrongName" ) ) ) );
+                log, new ProcedureConfig( Config.defaults( GraphDatabaseSettings.procedure_allowlist, List.of( "WrongName" ) ) ) );
 
         List<CallableUserAggregationFunction> method = compile( SingleAggregationFunction.class );
-        verify( log ).warn( "The function 'org.neo4j.procedure.impl.collectCool' is not on the whitelist and won't be loaded." );
+        verify( log ).warn( "The function 'org.neo4j.procedure.impl.collectCool' is not on the allowlist and won't be loaded." );
         assertThat( method.size() ).isEqualTo( 0 );
     }
 
@@ -330,10 +330,10 @@ public class UserAggregationFunctionTest
         // Given
         Log log = spy(Log.class);
         procedureCompiler = new ProcedureCompiler( new TypeCheckers(), components, new ComponentRegistry(),
-                log, new ProcedureConfig( Config.defaults( GraphDatabaseSettings.procedure_whitelist, List.of( "" ) ) ) );
+                log, new ProcedureConfig( Config.defaults( GraphDatabaseSettings.procedure_allowlist, List.of( "" ) ) ) );
 
         List<CallableUserAggregationFunction> method = compile( SingleAggregationFunction.class );
-        verify( log ).warn( "The function 'org.neo4j.procedure.impl.collectCool' is not on the whitelist and won't be loaded." );
+        verify( log ).warn( "The function 'org.neo4j.procedure.impl.collectCool' is not on the allowlist and won't be loaded." );
         assertThat( method.size() ).isEqualTo( 0 );
     }
 

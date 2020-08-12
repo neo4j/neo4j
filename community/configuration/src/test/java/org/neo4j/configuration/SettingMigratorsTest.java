@@ -53,6 +53,8 @@ import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_max_size;
+import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_warmup_prefetch_allowlist;
+import static org.neo4j.configuration.GraphDatabaseSettings.procedure_allowlist;
 import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_max_off_heap_memory;
 import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_off_heap_block_cache_size;
 import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_off_heap_max_cacheable_block_size;
@@ -319,6 +321,27 @@ class SettingMigratorsTest
         tests.add( dynamicTest( "Test query log migration, disabled", () -> testQueryLogMigration( false, LogQueryLevel.OFF ) ) );
         tests.add( dynamicTest( "Test query log migration, enabled", () -> testQueryLogMigration( true, LogQueryLevel.INFO ) ) );
         return tests;
+    }
+
+    @Test
+    void testWhitelistRename() throws IOException
+    {
+        File confFile = testDirectory.createFile( "test.conf" );
+        Files.write( confFile.toPath(), List.of(
+                "dbms.memory.pagecache.warmup.preload.whitelist=a","dbms.security.procedures.whitelist=a,b" ) );
+
+        Config config = Config.newBuilder().fromFile( confFile ).build();
+        var logProvider = new AssertableLogProvider();
+        config.setLogger( logProvider.getLog( Config.class ) );
+
+        assertThat( logProvider ).forClass( Config.class ).forLevel( WARN )
+                .containsMessageWithArguments( "Use of deprecated setting %s. It is replaced by %s",
+                        "dbms.memory.pagecache.warmup.preload.whitelist", pagecache_warmup_prefetch_allowlist.name() )
+                .containsMessageWithArguments( "Use of deprecated setting %s. It is replaced by %s",
+                        "dbms.security.procedures.whitelist", procedure_allowlist.name() );
+
+        assertEquals( "a", config.get( pagecache_warmup_prefetch_allowlist ) );
+        assertEquals( List.of( "a", "b" ), config.get( procedure_allowlist ) );
     }
 
     private static void testQueryLogMigration( Boolean oldValue, LogQueryLevel newValue )

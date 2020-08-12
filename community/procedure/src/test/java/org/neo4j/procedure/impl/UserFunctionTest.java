@@ -239,7 +239,7 @@ public class UserFunctionTest
     {
         // Given
         procedureCompiler = new ProcedureCompiler( new TypeCheckers(), components, new ComponentRegistry(),
-                NullLog.getInstance(), new ProcedureConfig( Config.defaults( GraphDatabaseSettings.procedure_whitelist, List.of(
+                NullLog.getInstance(), new ProcedureConfig( Config.defaults( GraphDatabaseSettings.procedure_allowlist, List.of(
                 "org.neo4j.procedure.impl.listCoolPeople" ) ) ) );
 
         CallableUserFunction method = compile( SingleReadOnlyFunction.class ).get( 0 );
@@ -255,10 +255,10 @@ public class UserFunctionTest
         // Given
         Log log = spy(Log.class);
         procedureCompiler = new ProcedureCompiler( new TypeCheckers(), components, new ComponentRegistry(),
-                log, new ProcedureConfig( Config.defaults( GraphDatabaseSettings.procedure_whitelist, List.of( "WrongName" ) ) ) );
+                log, new ProcedureConfig( Config.defaults( GraphDatabaseSettings.procedure_allowlist, List.of( "WrongName" ) ) ) );
 
         List<CallableUserFunction> method = compile( SingleReadOnlyFunction.class );
-        verify( log ).warn( "The function 'org.neo4j.procedure.impl.listCoolPeople' is not on the whitelist and won't be loaded." );
+        verify( log ).warn( "The function 'org.neo4j.procedure.impl.listCoolPeople' is not on the allowlist and won't be loaded." );
         assertThat( method.size() ).isEqualTo( 0 );
     }
 
@@ -268,10 +268,10 @@ public class UserFunctionTest
         // Given
         Log log = spy(Log.class);
         procedureCompiler = new ProcedureCompiler( new TypeCheckers(), components, new ComponentRegistry(),
-                log, new ProcedureConfig( Config.defaults( GraphDatabaseSettings.procedure_whitelist, List.of( "" ) ) ) );
+                log, new ProcedureConfig( Config.defaults( GraphDatabaseSettings.procedure_allowlist, List.of( "" ) ) ) );
 
         List<CallableUserFunction> method = compile( SingleReadOnlyFunction.class );
-        verify( log ).warn( "The function 'org.neo4j.procedure.impl.listCoolPeople' is not on the whitelist and won't be loaded." );
+        verify( log ).warn( "The function 'org.neo4j.procedure.impl.listCoolPeople' is not on the allowlist and won't be loaded." );
         assertThat( method.size() ).isEqualTo( 0 );
     }
 
