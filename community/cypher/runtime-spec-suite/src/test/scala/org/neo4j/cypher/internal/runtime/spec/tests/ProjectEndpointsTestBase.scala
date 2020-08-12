@@ -150,7 +150,7 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
       .projectEndpoints("(x)-[r]->(y)", startInScope = false, endInScope = false)
-      .input(relationships = Seq("r"), nullable = false)
+      .input(relationships = Seq("r"))
       .build()
 
     val aRelsWithNulls = aRels.flatMap(r => Seq(null, r))
