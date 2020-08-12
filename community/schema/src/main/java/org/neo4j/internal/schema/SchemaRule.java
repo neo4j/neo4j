@@ -59,10 +59,6 @@ public interface SchemaRule extends SchemaDescriptorSupplier
                 {
                     throw new IllegalArgumentException( "Schema rule names are not allowed to contain null-bytes: '" + name + "'." );
                 }
-                else if ( ch == '`' )
-                {
-                    throw new IllegalArgumentException( "Schema rule names are not allowed to contain back-tick characters: '" + name + "'." );
-                }
             }
         }
         if ( ReservedSchemaRuleNames.contains( name ) )
