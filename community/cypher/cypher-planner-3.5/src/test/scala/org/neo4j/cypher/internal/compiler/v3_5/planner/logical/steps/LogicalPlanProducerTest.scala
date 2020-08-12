@@ -20,9 +20,12 @@
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_5.planner.LogicalPlanningTestSupport2
+import org.neo4j.cypher.internal.ir.v3_5.PlannerQuery
 import org.neo4j.cypher.internal.ir.v3_5.ProvidedOrder
+import org.neo4j.cypher.internal.v3_5.ast.UsingIndexHint
 import org.neo4j.cypher.internal.v3_5.logical.plans.CachedNodeProperty
 import org.neo4j.cypher.internal.v3_5.expressions.PropertyKeyName
+import org.neo4j.cypher.internal.v3_5.util.InputPosition
 import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
 
 class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
@@ -236,6 +239,36 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
 
       // then
       context.planningAttributes.providedOrders.get(result.id) should be(ProvidedOrder(Seq(ProvidedOrder.Asc("y.bar"))))
+    }
+  }
+
+  test("should retain solved hints when planning union for leaf plans") {
+    new given().withLogicalPlanningContext { (_, context) =>
+      // GIVEN
+      val lpp = LogicalPlanProducer(context.cardinality, context.planningAttributes, idGen)
+
+      val lhs = fakeLogicalPlanFor("x", "y")
+      val rhs = fakeLogicalPlanFor("x", "y")
+      val hint1 = UsingIndexHint(varFor("foo"), lblName("bar"), Seq())(InputPosition.NONE)
+      val hint2 = UsingIndexHint(varFor("blah"), lblName("meh"), Seq())(InputPosition.NONE)
+
+      val solveds = context.planningAttributes.solveds
+      val spqLhs = PlannerQuery.empty.amendQueryGraph(qg => qg.copy(hints = Seq(hint1) ))
+      val spqRhs = PlannerQuery.empty.amendQueryGraph(qg => qg.copy(hints = Seq(hint2) ))
+
+      solveds.set(lhs.id, spqLhs)
+      context.planningAttributes.cardinalities.set(lhs.id, 10.0)
+      context.planningAttributes.providedOrders.set(lhs.id, ProvidedOrder.empty)
+
+      solveds.set(rhs.id, spqRhs)
+      context.planningAttributes.cardinalities.set(rhs.id, 20.0)
+      context.planningAttributes.providedOrders.set(rhs.id, ProvidedOrder.empty)
+
+      // WHEN
+      val p1 = lpp.planUnion(lhs, rhs, context)
+
+      // THEN
+      solveds.get(p1.id).allHints shouldBe List(hint1, hint2)
     }
   }
 
