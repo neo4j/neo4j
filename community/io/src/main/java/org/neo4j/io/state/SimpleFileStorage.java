@@ -84,4 +84,16 @@ public class SimpleFileStorage<T> implements SimpleStorage<T>
         }
     }
 
+    @Override
+    public void removeState() throws IOException
+    {
+        if ( exists() )
+        {
+            var deleted = fileSystem.deleteFile( file );
+            if ( !deleted )
+            {
+                throw new IOException( String.format( "File %s could not be deleted", file.getName() ) );
+            }
+        }
+    }
 }

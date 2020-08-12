@@ -26,7 +26,5 @@ package org.neo4j.dbms.identity;
  */
 public interface IdentityModule
 {
-    String SERVER_ID_FILENAME = "server-id";
-
     ServerId myself();
 }

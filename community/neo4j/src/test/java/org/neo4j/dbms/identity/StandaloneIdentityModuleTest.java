@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
+import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
@@ -33,6 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATA_DIR_NAME;
 import static org.neo4j.logging.NullLogProvider.nullLogProvider;
 
 @EphemeralTestDirectoryExtension
@@ -45,26 +47,27 @@ public class StandaloneIdentityModuleTest
     void shouldCreateServerIdAndReReadIt() throws IOException
     {
         // given
-        var dataDir = testDirectory.file( "data" );
+        var dataDir = testDirectory.file( DEFAULT_DATA_DIR_NAME );
+        var layout = Neo4jLayout.of( testDirectory.homePath() );
         var fs = testDirectory.getFileSystem();
         assertFalse( fs.fileExists( dataDir ) );
 
         // when
-        var identityModule = StandaloneIdentityModule.create( nullLogProvider(), fs, dataDir, EmptyMemoryTracker.INSTANCE );
+        var identityModule = StandaloneIdentityModule.create( nullLogProvider(), fs, layout, EmptyMemoryTracker.INSTANCE );
 
         // then
         assertTrue( fs.fileExists( dataDir ) );
-        assertTrue( fs.fileExists( testDirectory.file( IdentityModule.SERVER_ID_FILENAME, "data" ) ) );
+        assertTrue( fs.fileExists( layout.serverIdFile().toFile() ) );
         assertNotNull( identityModule.myself() );
 
         // when
-        var secondIdentityModule = StandaloneIdentityModule.create( nullLogProvider(), fs, dataDir, EmptyMemoryTracker.INSTANCE );
+        var secondIdentityModule = StandaloneIdentityModule.create( nullLogProvider(), fs, layout, EmptyMemoryTracker.INSTANCE );
 
         // then
         assertEquals( identityModule.myself(), secondIdentityModule.myself() );
 
         fs.deleteRecursively( dataDir );
-        var thirdIdentityModule = StandaloneIdentityModule.create( nullLogProvider(), fs, dataDir, EmptyMemoryTracker.INSTANCE );
+        var thirdIdentityModule = StandaloneIdentityModule.create( nullLogProvider(), fs, layout, EmptyMemoryTracker.INSTANCE );
 
         // then
         assertNotEquals( secondIdentityModule.myself(), thirdIdentityModule.myself() );

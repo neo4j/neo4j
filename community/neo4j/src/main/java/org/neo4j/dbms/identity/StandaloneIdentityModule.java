@@ -19,21 +19,19 @@
  */
 package org.neo4j.dbms.identity;
 
-import java.io.File;
 import java.util.UUID;
-import java.util.function.Supplier;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.state.SimpleStorage;
+import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.memory.MemoryTracker;
 
 public class StandaloneIdentityModule extends DefaultIdentityModule
 {
-    public static StandaloneIdentityModule create( LogProvider logProvider, FileSystemAbstraction fs, File dataDir, MemoryTracker memoryTracker )
+    public static StandaloneIdentityModule create( LogProvider logProvider, FileSystemAbstraction fs, Neo4jLayout layout, MemoryTracker memoryTracker )
     {
         var log = logProvider.getLog( StandaloneIdentityModule.class );
-        var storage = createServerIdStorage( fs, dataDir, memoryTracker );
+        var storage = createServerIdStorage( fs, layout.serverIdFile(), memoryTracker );
         var myself = readOrGenerate( storage, log, ServerId.class, ServerId::of, UUID::randomUUID );
         return new StandaloneIdentityModule( myself );
     }

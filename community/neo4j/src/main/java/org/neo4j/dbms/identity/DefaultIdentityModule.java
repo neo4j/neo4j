@@ -19,8 +19,8 @@
  */
 package org.neo4j.dbms.identity;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -29,7 +29,6 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.state.SimpleFileStorage;
 import org.neo4j.io.state.SimpleStorage;
 import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
 import org.neo4j.memory.MemoryTracker;
 
 public abstract class DefaultIdentityModule implements IdentityModule
@@ -68,8 +67,8 @@ public abstract class DefaultIdentityModule implements IdentityModule
         return myself;
     }
 
-    protected static SimpleStorage<ServerId> createServerIdStorage( FileSystemAbstraction fs, File dataDir, MemoryTracker memoryTracker )
+    protected static SimpleStorage<ServerId> createServerIdStorage( FileSystemAbstraction fs, Path serverIdFile, MemoryTracker memoryTracker )
     {
-        return new SimpleFileStorage<>( fs, new File( dataDir, SERVER_ID_FILENAME ), ServerId.Marshal.INSTANCE, memoryTracker );
+        return new SimpleFileStorage<>( fs, serverIdFile.toFile(), ServerId.Marshal.INSTANCE, memoryTracker );
     }
 }

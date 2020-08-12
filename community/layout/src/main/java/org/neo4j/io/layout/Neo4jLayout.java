@@ -75,8 +75,10 @@ import static java.util.stream.Collectors.toList;
 public final class Neo4jLayout
 {
     private static final String STORE_LOCK_FILENAME = "store_lock";
+    private static final String SERVER_ID_FILENAME = "server_id";
 
     private final Path homeDirectory;
+    private final Path dataDirectory;
     private final Path databasesRootDirectory;
     private final Path txLogsRootDirectory;
 
@@ -87,26 +89,29 @@ public final class Neo4jLayout
 
     public static Neo4jLayout of( Config config )
     {
-        Path homeDirectory = config.get( GraphDatabaseSettings.neo4j_home );
-        Path databasesRootDirectory = config.get( GraphDatabaseInternalSettings.databases_root_path );
-        Path txLogsRootDirectory = config.get( GraphDatabaseSettings.transaction_logs_root_path );
-        return new Neo4jLayout( homeDirectory, databasesRootDirectory, txLogsRootDirectory );
+        var homeDirectory = config.get( GraphDatabaseSettings.neo4j_home );
+        var dataDirectory = config.get( GraphDatabaseSettings.data_directory );
+        var databasesRootDirectory = config.get( GraphDatabaseInternalSettings.databases_root_path );
+        var txLogsRootDirectory = config.get( GraphDatabaseSettings.transaction_logs_root_path );
+        return new Neo4jLayout( homeDirectory, dataDirectory, databasesRootDirectory, txLogsRootDirectory );
     }
 
     public static Neo4jLayout ofFlat( Path homeDirectory )
     {
-        Path home = homeDirectory.toAbsolutePath();
-        Config config = Config.newBuilder()
+        var home = homeDirectory.toAbsolutePath();
+        var config = Config.newBuilder()
                 .set( GraphDatabaseSettings.neo4j_home, home )
+                .set( GraphDatabaseSettings.data_directory, home )
                 .set( GraphDatabaseSettings.transaction_logs_root_path, home )
                 .set( GraphDatabaseInternalSettings.databases_root_path, home )
                 .build();
         return of( config );
     }
 
-    private Neo4jLayout( Path homeDirectory, Path databasesRootDirectory, Path txLogsRootDirectory )
+    private Neo4jLayout( Path homeDirectory, Path dataDirectory, Path databasesRootDirectory, Path txLogsRootDirectory )
     {
         this.homeDirectory = FileUtils.getCanonicalFile( homeDirectory );
+        this.dataDirectory = FileUtils.getCanonicalFile( dataDirectory );
         this.databasesRootDirectory = FileUtils.getCanonicalFile( databasesRootDirectory );
         this.txLogsRootDirectory = FileUtils.getCanonicalFile( txLogsRootDirectory );
     }
@@ -168,9 +173,19 @@ public final class Neo4jLayout
         return txLogsRootDirectory;
     }
 
+    public Path dataDirectory()
+    {
+        return dataDirectory;
+    }
+
     public Path storeLockFile()
     {
         return databasesRootDirectory.resolve( STORE_LOCK_FILENAME );
+    }
+
+    public Path serverIdFile()
+    {
+        return dataDirectory.resolve( SERVER_ID_FILENAME );
     }
 
     @Override
@@ -184,21 +199,21 @@ public final class Neo4jLayout
         {
             return false;
         }
-        Neo4jLayout that = (Neo4jLayout) o;
-        return Objects.equals( homeDirectory, that.homeDirectory ) && Objects.equals( databasesRootDirectory, that.databasesRootDirectory ) &&
-                Objects.equals( txLogsRootDirectory, that.txLogsRootDirectory );
+        var that = (Neo4jLayout) o;
+        return Objects.equals( homeDirectory, that.homeDirectory ) && Objects.equals( dataDirectory, that.dataDirectory ) &&
+               Objects.equals( databasesRootDirectory, that.databasesRootDirectory ) && Objects.equals( txLogsRootDirectory, that.txLogsRootDirectory );
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash( homeDirectory, databasesRootDirectory, txLogsRootDirectory );
+        return Objects.hash( homeDirectory, dataDirectory, databasesRootDirectory, txLogsRootDirectory );
     }
 
     @Override
     public String toString()
     {
-        return String.format( "Neo4JLayout{ homeDir=%s, databasesDir=%s, txLogsRootDir=%s}",
-                homeDirectory.toString(), databasesRootDirectory.toString(), txLogsRootDirectory.toString() );
+        return String.format( "Neo4JLayout{ homeDir=%s, dataDir=%s, databasesDir=%s, txLogsRootDir=%s}",
+                homeDirectory.toString(), dataDirectory.toString(), databasesRootDirectory.toString(), txLogsRootDirectory.toString() );
     }
 }

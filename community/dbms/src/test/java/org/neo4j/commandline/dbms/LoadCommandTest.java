@@ -145,7 +145,7 @@ class LoadCommandTest
     void shouldLoadTheDatabaseFromTheArchive() throws CommandFailedException, IOException, IncorrectFormat
     {
         execute( "foo", archive );
-        DatabaseLayout databaseLayout = createDatabaseLayout( homeDir.resolve( "data/databases" ), "foo",
+        DatabaseLayout databaseLayout = createDatabaseLayout( homeDir.resolve( "data" ), homeDir.resolve( "data/databases" ), "foo",
                 homeDir.resolve( "data/" + DEFAULT_TX_LOGS_ROOT_DIR_NAME ) );
         verify( loader ).load( archive, databaseLayout );
     }
@@ -161,7 +161,7 @@ class LoadCommandTest
         Files.write( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ), singletonList( formatProperty( data_directory, dataDir ) ) );
 
         execute( "foo", archive );
-        DatabaseLayout databaseLayout = createDatabaseLayout( databaseDir.getParent(), "foo", transactionLogsDir );
+        DatabaseLayout databaseLayout = createDatabaseLayout( dataDir, databaseDir.getParent(), "foo", transactionLogsDir );
         verify( loader ).load( any(), eq( databaseLayout ) );
     }
 
@@ -176,7 +176,7 @@ class LoadCommandTest
                         formatProperty( transaction_logs_root_path, txLogsDir ) ) );
 
         execute( "foo", archive );
-        DatabaseLayout databaseLayout = createDatabaseLayout( databaseDir.getParent(), "foo", txLogsDir );
+        DatabaseLayout databaseLayout = createDatabaseLayout( dataDir, databaseDir.getParent(), "foo", txLogsDir );
         verify( loader ).load( any(), eq( databaseLayout ) );
     }
 
@@ -200,7 +200,7 @@ class LoadCommandTest
         Files.write( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ), singletonList( formatProperty( data_directory, dataDir ) ) );
 
         execute( "foo", archive );
-        DatabaseLayout databaseLayout = createDatabaseLayout( databasesDir, "foo", txLogsDir );
+        DatabaseLayout databaseLayout = createDatabaseLayout( dataDir, databasesDir, "foo", txLogsDir );
         verify( loader ).load( any(), eq( databaseLayout ) );
     }
 
@@ -318,10 +318,11 @@ class LoadCommandTest
         assertThat( output ).contains( "ZSTD", "42", "1337" );
     }
 
-    private DatabaseLayout createDatabaseLayout( Path storePath, String databaseName, Path transactionLogsPath )
+    private DatabaseLayout createDatabaseLayout( Path dataPath, Path storePath, String databaseName, Path transactionLogsPath )
     {
         Config config = Config.newBuilder()
                 .set( neo4j_home, homeDir.toAbsolutePath() )
+                .set( data_directory, dataPath.toAbsolutePath() )
                 .set( databases_root_path, storePath.toAbsolutePath() )
                 .set( transaction_logs_root_path, transactionLogsPath.toAbsolutePath() )
                 .build();

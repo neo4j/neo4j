@@ -83,6 +83,15 @@ class Neo4jLayoutTest
     }
 
     @Test
+    void serverIdFileLocation()
+    {
+        Neo4jLayout layout = Neo4jLayout.of( testDirectory.homePath() );
+        Path serverIdFile = layout.serverIdFile();
+        assertEquals( "server_id", serverIdFile.getFileName().toString() );
+        assertEquals( testDirectory.directoryPath( DEFAULT_DATA_DIR_NAME ), serverIdFile.getParent() );
+    }
+
+    @Test
     void emptyStoreLayoutDatabasesCollection()
     {
         Neo4jLayout storeLayout = Neo4jLayout.of( testDirectory.homePath() );
