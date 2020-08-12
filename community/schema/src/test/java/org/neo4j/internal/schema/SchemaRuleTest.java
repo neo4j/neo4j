@@ -156,7 +156,7 @@ class SchemaRuleTest
     @Test
     void sanitiseNameMustRejectInvalidNames()
     {
-        List<String> invalidNames = List.of( "", "\0", "`", "``", "`a`", "a`b", "a``b" , " ", "  ", "\t", " \t ", "\n", "\r" );
+        List<String> invalidNames = List.of( "", "\0", " ", "  ", "\t", " \t ", "\n", "\r" );
 
         for ( String invalidName : invalidNames )
         {
@@ -168,7 +168,8 @@ class SchemaRuleTest
     void sanitiseNameMustAcceptValidNames()
     {
         List<String> validNames = List.of(
-                ".", ",", "'", "a", " a", "a ", "a b", "a\n", "a\nb", "\"", "@", "#", "$", "%", "{", "}", "\uD83D\uDE02", ":", ";", "[", "]", "-", "_" );
+                ".", ",", "'", "a", " a", "a ", "a b", "a\n", "a\nb", "\"", "@", "#", "$", "%", "{", "}", "\uD83D\uDE02", ":", ";", "[", "]", "-", "_", "`",
+                "``", "`a`", "a`b", "a``b"  );
 
         for ( String validName : validNames )
         {

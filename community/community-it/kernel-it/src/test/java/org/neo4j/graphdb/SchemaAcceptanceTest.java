@@ -867,35 +867,35 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
     }
 
     @Test
-    void indexNamesCannotContainBackTicks()
+    void indexNamesCanContainBackTicks()
     {
         try ( Transaction tx = db.beginTx() )
         {
             IndexCreator creator = tx.schema().indexFor( label ).withName( "a`b" ).on( propertyKey );
-            assertThrows( IllegalArgumentException.class, creator::create );
+            creator.create();
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
-            assertThat( count( tx.schema().getIndexes() ), is( 0L ) );
+            assertThat( count( tx.schema().getIndexes() ), is( 1L ) );
             assertThat( count( tx.schema().getConstraints() ), is( 0L ) );
             tx.commit();
         }
     }
 
     @Test
-    void constraintNamesCannotContainBackTicks()
+    void constraintNamesCanContainBackTicks()
     {
         try ( Transaction tx = db.beginTx() )
         {
             ConstraintCreator creator = tx.schema().constraintFor( label ).withName( "a`b" ).assertPropertyIsUnique( propertyKey );
-            assertThrows( IllegalArgumentException.class, creator::create );
+            creator.create();
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
-            assertThat( count( tx.schema().getIndexes() ), is( 0L ) );
-            assertThat( count( tx.schema().getConstraints() ), is( 0L ) );
+            assertThat( count( tx.schema().getIndexes() ), is( 1L ) );
+            assertThat( count( tx.schema().getConstraints() ), is( 1L ) );
             tx.commit();
         }
     }
