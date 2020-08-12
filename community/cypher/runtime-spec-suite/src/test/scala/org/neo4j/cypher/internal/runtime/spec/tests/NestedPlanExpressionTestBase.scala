@@ -190,6 +190,29 @@ abstract class NestedPlanExpressionTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x").withSingleRow(true)
   }
 
+  test("should support nested plan exists with index seek") {
+    // given
+    val size = Math.sqrt(sizeHint).toInt
+    given {
+      index("B", "prop")
+      bipartiteGraph(size, "A", "B", "R", PartialFunction.empty, { case i => Map("prop" -> i) })
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nestedPlanExistsExpressionProjection("x")
+      .|.expand("(b)<--(a)")
+      .|.nodeIndexOperator(s"b:B(prop > 0)")
+      .argument()
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("x").withSingleRow(true)
+  }
+
   test("should support nested plan exists with null dependency") {
     // given
     val size = Math.sqrt(sizeHint).toInt
