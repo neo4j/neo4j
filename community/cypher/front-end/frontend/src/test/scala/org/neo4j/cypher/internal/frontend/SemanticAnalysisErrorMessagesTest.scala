@@ -44,7 +44,7 @@ class SemanticAnalysisErrorMessagesTest extends CypherFunSuite {
       SemanticAnalysis(warn = true, CorrelatedSubQueries) andThen
       SemanticAnalysis(warn = false, CorrelatedSubQueries)
 
-  private val emptyTokenErrorMessage = "'' is not a valid token name. Token names cannot be empty, or contain any null-bytes or back-ticks."
+  private val emptyTokenErrorMessage = "'' is not a valid token name. Token names cannot be empty or contain any null-bytes."
 
   // positive tests that we get the error message
   // "In a WITH/RETURN with DISTINCT or an aggregation, it is not possible to access variables declared before the WITH/RETURN"
@@ -1038,4 +1038,50 @@ class SemanticAnalysisErrorMessagesTest extends CypherFunSuite {
 
   private def initStartState(query: String, initialFields: Map[String, CypherType]) =
     InitialState(query, None, NoPlannerName, initialFields)
+
+  // Escaped backticks in tokens
+
+  test("Should allow escaped backtick in node property key name") {
+    val query = "CREATE ({prop: 5, `abc``123`: 1})"
+
+    val startState = initStartState(query, Map.empty)
+    val context = new ErrorCollectingContext()
+
+    pipeline.transform(startState, context)
+
+    context.errors should be(empty)
+  }
+
+  test("Should allow escaped backtick in relationship property key name") {
+    val query = "MATCH ()-[r]->() RETURN r.`abc``123` as result"
+
+    val startState = initStartState(query, Map.empty)
+    val context = new ErrorCollectingContext()
+
+    pipeline.transform(startState, context)
+
+    context.errors should be(empty)
+  }
+
+  test("Should allow escaped backtick in label") {
+    val query = "MATCH (n) SET n:`abc``123`"
+
+    val startState = initStartState(query, Map.empty)
+    val context = new ErrorCollectingContext()
+
+    pipeline.transform(startState, context)
+
+    context.errors should be(empty)
+  }
+
+  test("Should allow escaped backtick in relationship type") {
+    val query = "MERGE ()-[r:`abc``123`]->()"
+
+    val startState = initStartState(query, Map.empty)
+    val context = new ErrorCollectingContext()
+
+    pipeline.transform(startState, context)
+
+    context.errors should be(empty)
+  }
 }
