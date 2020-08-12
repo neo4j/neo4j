@@ -239,7 +239,7 @@ public class KernelToken implements Token
 
     private static String checkValidTokenName( String name ) throws IllegalTokenNameException
     {
-        if ( name == null || name.isEmpty() || name.contains( "\0" ) || name.contains( "`" ) )
+        if ( name == null || name.isEmpty() || name.contains( "\0" ) )
         {
             throw new IllegalTokenNameException( name );
         }
