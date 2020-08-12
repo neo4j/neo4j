@@ -43,7 +43,7 @@ abstract class ClosingIterator[+T] extends Iterator[T] with AutoCloseable {
    * We expect prepend-only, traverse once, small lists, thus we decided for
    * a List implementation here.
    */
-  private var resources: List[AutoCloseable] = Nil
+  private var resources: java.util.List[AutoCloseable] = _
   private var closed = false
 
   // ABSTRACT METHODS
@@ -61,14 +61,16 @@ abstract class ClosingIterator[+T] extends Iterator[T] with AutoCloseable {
 
   // PUBLIC API
 
-  // TODO shift into closeMore where possible!
   /**
    * Adds a resource to the list of resources that are closed by this iterator.
    * @return the same instance
    */
   def closing(resource: AutoCloseable): self.type = {
     if (resource != self) {
-      resources = resource :: resources
+      if (resources == null) {
+        resources = new java.util.ArrayList[AutoCloseable](4) // We rarely add many resources to close
+      }
+      resources.add(resource)
     }
     self
   }
@@ -78,7 +80,9 @@ abstract class ClosingIterator[+T] extends Iterator[T] with AutoCloseable {
    */
   final def close(): Unit = {
     if (!closed) {
-      IOUtils.closeAll(resources: _*)
+      if (resources != null) {
+        IOUtils.closeAll(resources)
+      }
       closeMore()
       closed = true
     }
