@@ -239,7 +239,7 @@ public class Database extends LifecycleAdapter
     private final Function<DatabaseLayout,DatabaseLayoutWatcher> watcherServiceFactory;
     private final Factory<DatabaseHealth> databaseHealthFactory;
     private final QueryEngineProvider engineProvider;
-    private volatile boolean initalized;
+    private volatile boolean initialized;
     private volatile boolean started;
     private Monitors databaseMonitors;
     private DatabasePageCache databasePageCache;
@@ -314,7 +314,7 @@ public class Database extends LifecycleAdapter
     @Override
     public synchronized void init()
     {
-        if ( initalized )
+        if ( initialized )
         {
             return;
         }
@@ -370,7 +370,7 @@ public class Database extends LifecycleAdapter
 
             databaseDependencies.satisfyDependency( new DatabaseMemoryTrackers( otherDatabaseMemoryTracker ) );
 
-            initalized = true;
+            initialized = true;
         }
         catch ( Throwable e )
         {
@@ -558,7 +558,7 @@ public class Database extends LifecycleAdapter
         msgLog.warn( "Exception occurred while starting the database. Trying to stop already started components.", e );
         try
         {
-            executeAll( () -> safeLifeShutdown( life ), () -> safeStorageEngineClose( storageEngine ), () -> safePoolRelease( otherDatabasePool ) );
+            safeCleanup();
         }
         catch ( Exception closeException )
         {
@@ -848,7 +848,19 @@ public class Database extends LifecycleAdapter
         awaitAllClosingTransactions();
         life.shutdown();
         started = false;
-        initalized = false;
+        initialized = false;
+    }
+
+    @Override
+    public void shutdown() throws Exception
+    {
+        safeCleanup();
+        initialized = false;
+    }
+
+    private void safeCleanup() throws Exception
+    {
+        executeAll( () -> safeLifeShutdown( life ), () -> safeStorageEngineClose( storageEngine ), () -> safePoolRelease( otherDatabasePool ) );
     }
 
     public void prepareToDrop()
