@@ -67,10 +67,10 @@ class HeapTrackingLongIntHashMap extends LongIntHashMap implements AutoCloseable
         memoryTracker.releaseHeap( arraysHeapSize( trackedCapacity ) + SHALLOW_SIZE );
     }
 
-    private static long arraysHeapSize( int arrayLength )
+    static long arraysHeapSize( int arrayLength )
     {
-        long keyArray = alignObjectSize( ARRAY_HEADER_BYTES + arrayLength * Long.BYTES );
-        long valueArray = alignObjectSize( ARRAY_HEADER_BYTES + arrayLength * Integer.BYTES );
+        long keyArray = alignObjectSize( ARRAY_HEADER_BYTES + (long) arrayLength * Long.BYTES );
+        long valueArray = alignObjectSize( ARRAY_HEADER_BYTES + (long) arrayLength * Integer.BYTES );
         return keyArray + valueArray;
     }
 }

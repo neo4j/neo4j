@@ -76,8 +76,8 @@ class HeapTrackingUnifiedIdentityHashingSet<T> extends UnifiedSetWithHashingStra
         return index( key );
     }
 
-    private static long arrayHeapSize( int arrayLength )
+    static long arrayHeapSize( int arrayLength )
     {
-        return alignObjectSize( ARRAY_HEADER_BYTES + arrayLength * OBJECT_REFERENCE_BYTES );
+        return alignObjectSize( ARRAY_HEADER_BYTES + (long) arrayLength * OBJECT_REFERENCE_BYTES );
     }
 }

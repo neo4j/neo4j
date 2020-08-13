@@ -67,8 +67,8 @@ class HeapTrackingUnifiedSet<T> extends UnifiedSet<T> implements AutoCloseable
         memoryTracker.releaseHeap( SHALLOW_SIZE + arrayHeapSize( trackedCapacity ) );
     }
 
-    private static long arrayHeapSize( int arrayLength )
+    static long arrayHeapSize( int arrayLength )
     {
-        return alignObjectSize( ARRAY_HEADER_BYTES + arrayLength * OBJECT_REFERENCE_BYTES );
+        return alignObjectSize( ARRAY_HEADER_BYTES + (long) arrayLength * OBJECT_REFERENCE_BYTES );
     }
 }

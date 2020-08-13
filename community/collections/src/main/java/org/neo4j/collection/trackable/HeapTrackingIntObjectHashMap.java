@@ -68,10 +68,10 @@ class HeapTrackingIntObjectHashMap<V> extends IntObjectHashMap<V> implements Aut
         memoryTracker.releaseHeap( arraysHeapSize( trackedCapacity ) + SHALLOW_SIZE );
     }
 
-    private static long arraysHeapSize( int arrayLength )
+    static long arraysHeapSize( int arrayLength )
     {
-        long keyArray = alignObjectSize( ARRAY_HEADER_BYTES + arrayLength * Integer.BYTES );
-        long valueArray = alignObjectSize( ARRAY_HEADER_BYTES + arrayLength * OBJECT_REFERENCE_BYTES );
+        long keyArray = alignObjectSize( ARRAY_HEADER_BYTES + (long) arrayLength * Integer.BYTES );
+        long valueArray = alignObjectSize( ARRAY_HEADER_BYTES + (long) arrayLength * OBJECT_REFERENCE_BYTES );
         return keyArray + valueArray;
     }
 }

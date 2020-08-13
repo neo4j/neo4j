@@ -32,6 +32,7 @@ import org.neo4j.memory.MemoryTracker;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.collection.trackable.HeapTrackingUnifiedSet.arrayHeapSize;
 import static org.neo4j.collection.trackable.HeapTrackingUnifiedSet.createUnifiedSet;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 
@@ -80,6 +81,12 @@ class HeapTrackingUnifiedSetTest
 
         memoryTracker.reset();
         assertEquals( 0, memoryPool.usedHeap() );
+    }
+
+    @Test
+    void handleLargeArraysWithoutOverflowing()
+    {
+        assertThat( arrayHeapSize( 536870912 ) ).isGreaterThan( 0L );
     }
 
     private void assertExactEstimation( UnifiedSet<?> unifiedSet )

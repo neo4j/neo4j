@@ -35,6 +35,7 @@ import org.neo4j.memory.MemoryTracker;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.collections.impl.block.factory.HashingStrategies.identityStrategy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.collection.trackable.HeapTrackingUnifiedIdentityHashingSet.arrayHeapSize;
 import static org.neo4j.collection.trackable.HeapTrackingUnifiedIdentityHashingSet.createUnifiedIdentityHashingSet;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 
@@ -88,6 +89,12 @@ class HeapTrackingUnifiedIdentityHashingSetTest
 
         memoryTracker.reset();
         assertEquals( 0, memoryPool.usedHeap() );
+    }
+
+    @Test
+    void handleLargeArraysWithoutOverflowing()
+    {
+        assertThat( arrayHeapSize( 536870912 ) ).isGreaterThan( 0L );
     }
 
     private void assertExactEstimation( HeapTrackingUnifiedIdentityHashingSet<?> unifiedSet )
