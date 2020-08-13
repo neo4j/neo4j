@@ -85,8 +85,8 @@ public class HeapTrackingUnifiedMap<K, V> extends UnifiedMap<K,V> implements Aut
         memoryTracker.releaseHeap( SHALLOW_SIZE + trackedHeap );
     }
 
-    private static long arrayHeapSize( int arrayLength )
+    static long arrayHeapSize( int arrayLength )
     {
-        return alignObjectSize( ARRAY_HEADER_BYTES + arrayLength * OBJECT_REFERENCE_BYTES );
+        return alignObjectSize( ARRAY_HEADER_BYTES + (long) arrayLength * OBJECT_REFERENCE_BYTES );
     }
 }
