@@ -177,7 +177,7 @@ public class HttpsAccessIT extends ExclusiveServerTestBase
 
     private static String getSupportedCipherSuites()
     {
-        SSLServerSocketFactory ssf = ( SSLServerSocketFactory ) SSLServerSocketFactory.getDefault();
+        SSLServerSocketFactory ssf = (SSLServerSocketFactory) SSLServerSocketFactory.getDefault();
         String[] defaultCiphers = ssf.getDefaultCipherSuites();
         return String.join( ",", defaultCiphers );
     }
