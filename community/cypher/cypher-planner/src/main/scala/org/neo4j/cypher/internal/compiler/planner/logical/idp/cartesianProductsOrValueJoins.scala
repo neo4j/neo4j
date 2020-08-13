@@ -244,9 +244,10 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
       // Also keep any hints we might have gotten in the rhsQG so they get considered during planning
       val rhsQGWithLHSArguments = context.planningAttributes.solveds.get(rhsInputPlan.id).asSinglePlannerQuery.lastQueryGraph
         .addArgumentIds(lhsQG.idsWithoutOptionalMatchesOrUpdates.toIndexedSeq).addPredicates(predicate).addHints(rhsQG.hints)
-      val rhsPlan = singleComponentPlanner.planComponent(rhsQGWithLHSArguments, context, kit, interestingOrder)
+      val contextForRhs = context.withUpdatedCardinalityInformation(lhsPlan)
+      val rhsPlans = singleComponentPlanner.planComponent(rhsQGWithLHSArguments, contextForRhs, kit, interestingOrder)
       // TODO: Compare best result with best sorted result
-      val result = kit.select(context.logicalPlanProducer.planApply(lhsPlan, rhsPlan.bestResult, context), fullQG)
+      val result = kit.select(context.logicalPlanProducer.planApply(lhsPlan, rhsPlans.bestResult, context), fullQG)
 
       // If none of the leaf-plans leverages the data from the RHS to use an index, let's not use this plan at all
       // The reason is that when this happens, we are producing a cartesian product disguising as an Apply, and
