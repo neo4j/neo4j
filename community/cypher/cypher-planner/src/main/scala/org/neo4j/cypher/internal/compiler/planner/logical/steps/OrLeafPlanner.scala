@@ -33,17 +33,7 @@ case class OrLeafPlanner(inner: Seq[LeafPlanFromExpressions]) extends LeafPlanne
     qg.selections.flatPredicates.flatMap {
       case orPredicate@Ors(exprs) =>
 
-        // This is a Seq of possible solutions per expression
-        val plansPerExpression: Seq[Seq[LeafPlansForVariable]] = exprs.toSeq.map {
-          e: Expression =>
-            val plansForVariables: Seq[LeafPlansForVariable] = inner.flatMap(_.producePlanFor(Set(e), qg, interestingOrder, context))
-            val qgForExpression = qg.copy(selections = Selections.from(e))
-            val canDoIndexSeek = plansForVariables.exists(leafPlans => leafPlans.plans.exists(nodeIndexSeek))
-            val withoutIndexScans = if (canDoIndexSeek) plansForVariables.filter(x => !x.plans.exists(nodeIndexScan)) else plansForVariables
-            withoutIndexScans.map(p =>
-              p.copy(plans = p.plans.map(context.config.applySelections(_, qgForExpression, interestingOrder, context))))
-        }
-
+        val plansPerExpression: Seq[Seq[LeafPlansForVariable]] = producePlansForExpressions(exprs, qg, context, interestingOrder)
         val wasUnableToFindPlanForAtLeastOnePredicate = plansPerExpression.exists(_.isEmpty)
 
         if (wasUnableToFindPlanForAtLeastOnePredicate || hasPlanSolvingOtherVariable(plansPerExpression)) {
@@ -78,6 +68,28 @@ case class OrLeafPlanner(inner: Seq[LeafPlanFromExpressions]) extends LeafPlanne
     }
   }
 
+  private[steps] def producePlansForExpressions(exprs: Set[Expression],
+                                         qg: QueryGraph,
+                                         context: LogicalPlanningContext,
+                                         interestingOrder: InterestingOrder): Seq[Seq[LeafPlansForVariable]] = {
+
+    def filterPlans(plans: Seq[LeafPlansForVariable], findFunc: LogicalPlan => Boolean, filterFunc: LogicalPlan => Boolean): Seq[LeafPlansForVariable] =
+      if (plans.exists(leafPlans => leafPlans.plans.exists(findFunc))) plans.filter(x => !x.plans.exists(filterFunc)) else plans
+
+    // This is a Seq of possible solutions per expression
+    // We really only want the best option IndexSeek > IndexScan > LabelScan as combine() explodes to p^n
+    // (number of plans ^ number of predicates) so we really want p to be 1
+    exprs.toSeq.map {
+      e: Expression =>
+        val plansForVariables: Seq[LeafPlansForVariable] = inner.flatMap(_.producePlanFor(Set(e), qg, interestingOrder, context))
+        val qgForExpression = qg.copy(selections = Selections.from(e))
+        val withoutLabelScans = filterPlans(plansForVariables, p => nodeIndexSeek(p) || nodeIndexScan(p), nodeByLabelScan)
+        val withoutIndexScans = filterPlans(withoutLabelScans, nodeIndexSeek, nodeIndexScan)
+        withoutIndexScans.map(p =>
+          p.copy(plans = p.plans.map(context.config.applySelections(_, qgForExpression, interestingOrder, context))))
+    }
+  }
+
   private def hasPlanSolvingOtherVariable(plansPerExpression: Seq[Seq[LeafPlansForVariable]]) = {
     val id: String = plansPerExpression.head.head.id
 
@@ -102,4 +114,7 @@ case class OrLeafPlanner(inner: Seq[LeafPlanFromExpressions]) extends LeafPlanne
 
   private def nodeIndexScan(logicalPlan: LogicalPlan): Boolean =
     logicalPlan.isInstanceOf[NodeIndexScan]
+
+  private def nodeByLabelScan(logicalPlan: LogicalPlan): Boolean =
+    logicalPlan.isInstanceOf[NodeByLabelScan]
 }
