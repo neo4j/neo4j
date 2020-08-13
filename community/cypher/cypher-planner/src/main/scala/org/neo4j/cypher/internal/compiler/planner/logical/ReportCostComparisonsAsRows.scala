@@ -37,6 +37,7 @@ import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
+import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.ProduceResult
@@ -127,12 +128,14 @@ class ReportCostComparisonsAsRows extends CostComparisonListener {
       val thisPlan = current.get
       solveds.set(thisPlan.id, SinglePlannerQuery.empty)
       cardinalities.set(thisPlan.id, Cardinality.SINGLE)
+      providedOrders.set(thisPlan.id, ProvidedOrder.empty)
       current = current.get.lhs
     } while (current.nonEmpty)
 
     in.copy(maybePeriodicCommit = Some(None),
       maybeLogicalPlan = Some(plan),
       maybeStatement = Some(newStatement),
+      maybeReturnColumns = Some(List("#", "planId", "planText", "planCost", "cost", "est cardinality", "winner")),
       planningAttributes = PlanningAttributes(solveds, cardinalities, providedOrders, leveragedOrders))
   }
 
@@ -154,7 +157,7 @@ class ReportCostComparisonsAsRows extends CostComparisonListener {
   }
 
   private def asPlan(): LogicalPlan = {
-    implicit val idGen = new SequentialIdGen()
+    implicit val idGen: SequentialIdGen = new SequentialIdGen()
 
     def str(s: String): Expression = StringLiteral(s)(pos)
     def int(i: Int): Expression = SignedDecimalIntegerLiteral(i.toString)(pos)
