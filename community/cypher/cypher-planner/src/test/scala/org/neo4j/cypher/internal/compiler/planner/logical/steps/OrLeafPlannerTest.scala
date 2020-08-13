@@ -25,12 +25,26 @@ import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlanFromExpressions
 import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlansForVariable
+import org.neo4j.cypher.internal.expressions.LabelToken
+import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.ir.QueryGraph
+import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
+import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.logical.plans.Distinct
+import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
+import org.neo4j.cypher.internal.logical.plans.IndexedProperty
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
+import org.neo4j.cypher.internal.logical.plans.NodeIndexScan
+import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
+import org.neo4j.cypher.internal.logical.plans.SingleQueryExpression
 import org.neo4j.cypher.internal.logical.plans.Union
+import org.neo4j.cypher.internal.util.Cardinality
+import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.internal.schema.IndexOrder
 
 class OrLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
@@ -138,4 +152,68 @@ class OrLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
     orPlanner.apply(queryGraph, InterestingOrder.empty, context) should equal(Seq(expected1, expected2))
   }
+
+  test("test filtering of plans") {
+    val context = newMockedLogicalPlanningContext(newMockedPlanContext())
+
+    def makePlanWork(res: LogicalPlan): LogicalPlan = {
+      val planningAttributes = context.planningAttributes
+      val solved = RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes("x"))
+      planningAttributes.solveds.set(res.id, solved)
+      planningAttributes.cardinalities.set(res.id, Cardinality(1.0))
+      planningAttributes.providedOrders.set(res.id, ProvidedOrder.empty)
+      res
+    }
+
+    val inner1 = mock[LeafPlanFromExpressions]
+    val inner2 = mock[LeafPlanFromExpressions]
+    val inner3 = mock[LeafPlanFromExpressions]
+    val p1 = makePlanWork(NodeByLabelScan("x", labelName("foo"), Set(), IndexOrderNone))
+    val p2 = makePlanWork(NodeIndexScan("x", LabelToken(labelName("foo"), LabelId(1)), Seq(), Set(), IndexOrderNone))
+    val p3 = makePlanWork(NodeIndexSeek("x", LabelToken(labelName("foo"), LabelId(1)), Seq(), SingleQueryExpression(SignedDecimalIntegerLiteral("1")(pos)) , Set(), IndexOrderNone))
+
+    val e1 = varFor("e1")
+    val e2 = varFor("e2")
+    val e3 = varFor("e3")
+    val e4 = varFor("e4")
+    when(inner1.producePlanFor(ArgumentMatchers.eq(Set(e1)), any(), any(), any())).thenReturn(Set(LeafPlansForVariable("x", Set(p1))))
+    when(inner2.producePlanFor(ArgumentMatchers.eq(Set(e1)), any(), any(), any())).thenReturn(Set(LeafPlansForVariable("x", Set(p2))))
+    when(inner3.producePlanFor(ArgumentMatchers.eq(Set(e1)), any(), any(), any())).thenReturn(Set(LeafPlansForVariable("x", Set(p3))))
+
+    when(inner1.producePlanFor(ArgumentMatchers.eq(Set(e2)), any(), any(), any())).thenReturn(Set(LeafPlansForVariable("x", Set(p2))))
+    when(inner2.producePlanFor(ArgumentMatchers.eq(Set(e2)), any(), any(), any())).thenReturn(Set(LeafPlansForVariable("x", Set(p3))))
+    when(inner3.producePlanFor(ArgumentMatchers.eq(Set(e2)), any(), any(), any())).thenReturn(Set.empty[LeafPlansForVariable])
+
+    when(inner1.producePlanFor(ArgumentMatchers.eq(Set(e3)), any(), any(), any())).thenReturn(Set(LeafPlansForVariable("x", Set(p1))))
+    when(inner2.producePlanFor(ArgumentMatchers.eq(Set(e3)), any(), any(), any())).thenReturn(Set(LeafPlansForVariable("x", Set(p3))))
+    when(inner3.producePlanFor(ArgumentMatchers.eq(Set(e3)), any(), any(), any())).thenReturn(Set.empty[LeafPlansForVariable])
+
+    when(inner1.producePlanFor(ArgumentMatchers.eq(Set(e4)), any(), any(), any())).thenReturn(Set(LeafPlansForVariable("x", Set(p1))))
+    when(inner2.producePlanFor(ArgumentMatchers.eq(Set(e4)), any(), any(), any())).thenReturn(Set(LeafPlansForVariable("x", Set(p2))))
+    when(inner3.producePlanFor(ArgumentMatchers.eq(Set(e4)), any(), any(), any())).thenReturn(Set.empty[LeafPlansForVariable])
+
+    val orPlanner = OrLeafPlanner(Seq(inner1, inner2, inner3))
+
+    val queryGraph = QueryGraph.empty.withSelections(Selections.from(ors(e1,e2,e3,e4)))
+
+    val result = orPlanner.producePlansForExpressions(Set(e1,e2,e3,e4), queryGraph, context, InterestingOrder.empty )
+
+    withClue("Should drop indexscan and labelscan") {
+      result(0) should have size 1
+      result(0)(0).plans.head shouldBe a[NodeIndexSeek]
+    }
+    withClue("Should drop indexscan") {
+      result(1) should have size 1
+      result(1)(0).plans.head shouldBe a[NodeIndexSeek]
+    }
+
+    withClue("Should drop labelscan") {
+      result(2) should have size 1
+      result(2)(0).plans.head shouldBe a[NodeIndexSeek]
+      result(3) should have size 1
+      result(3)(0).plans.head shouldBe a[NodeIndexScan]
+    }
+
+  }
+
 }
