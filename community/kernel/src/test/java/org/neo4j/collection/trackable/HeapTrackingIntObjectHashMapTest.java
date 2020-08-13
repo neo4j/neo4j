@@ -31,6 +31,7 @@ import org.neo4j.memory.MemoryTracker;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.collection.trackable.HeapTrackingIntObjectHashMap.arraysHeapSize;
 import static org.neo4j.collection.trackable.HeapTrackingIntObjectHashMap.createIntObjectHashMap;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 
@@ -82,6 +83,12 @@ class HeapTrackingIntObjectHashMapTest
 
         memoryTracker.reset();
         assertEquals( 0, memoryPool.usedHeap() );
+    }
+
+    @Test
+    void handleLargeArraysWithoutOverflowing()
+    {
+        assertThat( arraysHeapSize( 536870912 ) ).isGreaterThan( 0L );
     }
 
     private void assertExactEstimation( HeapTrackingIntObjectHashMap<?> longObjectHashMap )

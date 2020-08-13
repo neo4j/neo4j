@@ -70,8 +70,8 @@ public class HeapTrackingLongObjectHashMap<V> extends LongObjectHashMap<V> imple
 
     protected static long arraysHeapSize( int arrayLength )
     {
-        long keyArray = alignObjectSize( ARRAY_HEADER_BYTES + arrayLength * Long.BYTES );
-        long valueArray = alignObjectSize( ARRAY_HEADER_BYTES + arrayLength * OBJECT_REFERENCE_BYTES );
+        long keyArray = alignObjectSize( ARRAY_HEADER_BYTES + (long) arrayLength * Long.BYTES );
+        long valueArray = alignObjectSize( ARRAY_HEADER_BYTES + (long) arrayLength * OBJECT_REFERENCE_BYTES );
         return keyArray + valueArray;
     }
 }

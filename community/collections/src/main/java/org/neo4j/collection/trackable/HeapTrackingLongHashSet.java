@@ -67,8 +67,8 @@ public class HeapTrackingLongHashSet extends LongHashSet implements AutoCloseabl
         memoryTracker.releaseHeap( arrayHeapSize( trackedCapacity ) + SHALLOW_SIZE );
     }
 
-    private static long arrayHeapSize( int arrayLength )
+    static long arrayHeapSize( int arrayLength )
     {
-        return alignObjectSize( ARRAY_HEADER_BYTES + arrayLength * Long.BYTES );
+        return alignObjectSize( ARRAY_HEADER_BYTES + (long) arrayLength * Long.BYTES );
     }
 }
