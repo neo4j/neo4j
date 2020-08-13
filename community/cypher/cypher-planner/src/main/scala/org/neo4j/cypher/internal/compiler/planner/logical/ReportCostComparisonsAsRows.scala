@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.CostComparisonListener
+import org.neo4j.cypher.internal.ir.ProvidedOrder
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.{Cardinalities, ProvidedOrders, Solveds}
@@ -102,10 +103,15 @@ class ReportCostComparisonsAsRows extends CostComparisonListener {
       val thisPlan = current.get
       solveds.set(thisPlan.id, SinglePlannerQuery.empty)
       cardinalities.set(thisPlan.id, Cardinality.SINGLE)
+      providedOrders.set(thisPlan.id, ProvidedOrder.empty)
       current = current.get.lhs
     } while (current.nonEmpty)
 
-    in.copy(maybePeriodicCommit = Some(None), maybeLogicalPlan = Some(plan), maybeStatement = Some(newStatement), planningAttributes = PlanningAttributes(solveds, cardinalities, providedOrders))
+    in.copy(maybePeriodicCommit = Some(None),
+      maybeLogicalPlan = Some(plan),
+      maybeStatement = Some(newStatement),
+      maybeReturnColumns = Some(List("#", "planId", "planText", "planCost", "cost", "est cardinality", "winner")),
+      planningAttributes = PlanningAttributes(solveds, cardinalities, providedOrders))
   }
 
   private def varFor(s: String) = Variable(s)(pos)
@@ -126,7 +132,7 @@ class ReportCostComparisonsAsRows extends CostComparisonListener {
   }
 
   private def asPlan(): LogicalPlan = {
-    implicit val idGen = new SequentialIdGen()
+    implicit val idGen: SequentialIdGen = new SequentialIdGen()
 
     def str(s: String): Expression = StringLiteral(s)(pos)
     def int(i: Int): Expression = SignedDecimalIntegerLiteral(i.toString)(pos)
