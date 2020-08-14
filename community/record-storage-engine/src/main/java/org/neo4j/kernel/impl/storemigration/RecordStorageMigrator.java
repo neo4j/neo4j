@@ -19,8 +19,12 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
+import org.apache.commons.lang3.StringUtils;
+import org.eclipse.collections.impl.factory.Sets;
+
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
+import java.io.Closeable;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -36,8 +40,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.OptionalLong;
 
-import org.apache.commons.lang3.StringUtils;
-import org.eclipse.collections.impl.factory.Sets;
 import org.neo4j.common.EntityType;
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.configuration.Config;
@@ -61,6 +63,7 @@ import org.neo4j.internal.batchimport.input.ReadableGroups;
 import org.neo4j.internal.batchimport.staging.CoarseBoundedProgressExecutionMonitor;
 import org.neo4j.internal.batchimport.staging.ExecutionMonitor;
 import org.neo4j.internal.counts.GBPTreeCountsStore;
+import org.neo4j.internal.helpers.ArrayUtil;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdGeneratorFactory;
@@ -79,6 +82,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
+import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.layout.DatabaseFile;
@@ -91,6 +95,7 @@ import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.CountsComputer;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreHeader;
 import org.neo4j.kernel.impl.store.StoreType;
@@ -224,19 +229,22 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
             }
             RecordFormats oldFormat = selectForVersion( versionToMigrateFrom );
             RecordFormats newFormat = selectForVersion( versionToMigrateTo );
+            boolean requiresDynamicStoreMigration = !newFormat.dynamic().equals( oldFormat.dynamic() );
+            boolean requiresPropertyMigration =
+                    !newFormat.property().equals( oldFormat.property() ) || requiresDynamicStoreMigration;
             if ( FormatFamily.isHigherFamilyFormat( newFormat, oldFormat ) ||
                     (FormatFamily.isSameFamily( oldFormat, newFormat ) && isDifferentCapabilities( oldFormat, newFormat )) )
             {
                 // Some form of migration is required (a fallback/catch-all option)
                 migrateWithBatchImporter( directoryLayout, migrationLayout, lastTxId, lastTxInfo.checksum(), lastTxLogPosition.getLogVersion(),
-                        lastTxLogPosition.getByteOffset(), progressReporter, oldFormat, newFormat );
+                        lastTxLogPosition.getByteOffset(), progressReporter, oldFormat, newFormat, requiresDynamicStoreMigration, requiresPropertyMigration );
             }
 
             // update necessary neostore records
             LogPosition logPosition = readLastTxLogPosition( migrationLayout );
             updateOrAddNeoStoreFieldsAsPartOfMigration( migrationLayout, directoryLayout, versionToMigrateTo, logPosition, cursorTracer );
 
-            if ( requiresSchemaStoreMigration( oldFormat, newFormat ) )
+            if ( requiresSchemaStoreMigration( oldFormat, newFormat ) || requiresPropertyMigration )
             {
                 // Migration with the batch importer would have copied the property, property key token, and property key name stores
                 // into the migration directory, which is needed for the schema store migration. However, it might choose to skip
@@ -421,17 +429,12 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
         return new LogPosition( logVersion, offset );
     }
 
-    private void migrateWithBatchImporter( DatabaseLayout sourceDirectoryStructure, DatabaseLayout migrationDirectoryStructure,
-            long lastTxId, int lastTxChecksum,
-            long lastTxLogVersion, long lastTxLogByteOffset, ProgressReporter progressReporter,
-            RecordFormats oldFormat, RecordFormats newFormat )
-            throws IOException
+    private void migrateWithBatchImporter( DatabaseLayout sourceDirectoryStructure, DatabaseLayout migrationDirectoryStructure, long lastTxId,
+            int lastTxChecksum, long lastTxLogVersion, long lastTxLogByteOffset, ProgressReporter progressReporter, RecordFormats oldFormat,
+            RecordFormats newFormat, boolean requiresDynamicStoreMigration, boolean requiresPropertyMigration ) throws IOException
     {
         prepareBatchImportMigration( sourceDirectoryStructure, migrationDirectoryStructure, oldFormat, newFormat );
 
-        boolean requiresDynamicStoreMigration = !newFormat.dynamic().equals( oldFormat.dynamic() );
-        boolean requiresPropertyMigration =
-                !newFormat.property().equals( oldFormat.property() ) || requiresDynamicStoreMigration;
         File badFile = sourceDirectoryStructure.file( BadCollector.BAD_FILE_NAME );
         try ( NeoStores legacyStore = instantiateLegacyStore( oldFormat, sourceDirectoryStructure );
               OutputStream badOutput = new BufferedOutputStream( new FileOutputStream( badFile, false ) );
@@ -715,21 +718,18 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
 
         if ( newFormat.hasCapability( RecordStorageCapability.FLEXIBLE_SCHEMA_STORE ) )
         {
-            StoreType[] sourceStoresToOpen = {
+            SchemaStorageCreator schemaStorageCreator = oldFormat.hasCapability( RecordStorageCapability.FLEXIBLE_SCHEMA_STORE ) ?
+                                                        schemaStorageCreatorFlexible() :
+                                                        schemaStorageCreator35( directoryLayout, oldFormat, srcIdGeneratorFactory );
+            // Token stores
+            StoreType[] sourceStoresToOpen = new StoreType[]{
                     StoreType.PROPERTY_KEY_TOKEN, StoreType.PROPERTY_KEY_TOKEN_NAME,
                     StoreType.LABEL_TOKEN, StoreType.LABEL_TOKEN_NAME,
                     StoreType.RELATIONSHIP_TYPE_TOKEN, StoreType.RELATIONSHIP_TYPE_TOKEN_NAME};
+            sourceStoresToOpen = ArrayUtil.concat( sourceStoresToOpen, schemaStorageCreator.additionalStoresToOpen() );
             try ( NeoStores srcStore = srcFactory.openNeoStores( sourceStoresToOpen );
-                  SchemaStore35 srcSchema = new SchemaStore35(
-                          directoryLayout.schemaStore(),
-                          directoryLayout.idSchemaStore(),
-                          config,
-                          org.neo4j.internal.id.IdType.SCHEMA,
-                          srcIdGeneratorFactory,
-                          pageCache,
-                          NullLogProvider.getInstance(),
-                          oldFormat, immutable.empty() );
-                  NeoStores dstStore = dstFactory.openNeoStores( true, StoreType.SCHEMA, StoreType.PROPERTY_KEY_TOKEN, StoreType.PROPERTY ) )
+                  NeoStores dstStore = dstFactory.openNeoStores( true, StoreType.SCHEMA, StoreType.PROPERTY_KEY_TOKEN, StoreType.PROPERTY );
+                  schemaStorageCreator )
             {
                 dstStore.start( cursorTracer );
                 TokenHolders srcTokenHolders = new TokenHolders(
@@ -737,8 +737,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
                         StoreTokens.createReadOnlyTokenHolder( TokenHolder.TYPE_LABEL ),
                         StoreTokens.createReadOnlyTokenHolder( TokenHolder.TYPE_RELATIONSHIP_TYPE ) );
                 srcTokenHolders.setInitialTokens( allTokens( srcStore ), cursorTracer );
-                srcSchema.initialise( true, cursorTracer );
-                SchemaStorage35 srcAccess = new SchemaStorage35( srcSchema );
+                SchemaStorage srcAccess = schemaStorageCreator.create( srcStore, srcTokenHolders, cursorTracer );
 
                 SchemaRuleMigrationAccess dstAccess = RecordStorageEngineFactory.createMigrationTargetSchemaRuleAccess( dstStore, cursorTracer, memoryTracker );
 
@@ -749,7 +748,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
         }
     }
 
-    static void migrateSchemaRules( TokenHolders srcTokenHolders, SchemaStorage35 srcAccess, SchemaRuleMigrationAccess dstAccess,
+    static void migrateSchemaRules( TokenHolders srcTokenHolders, SchemaStorage srcAccess, SchemaRuleMigrationAccess dstAccess,
             PageCursorTracer cursorTracer ) throws KernelException
     {
         SchemaNameGiver nameGiver = new SchemaNameGiver( srcTokenHolders );
@@ -905,6 +904,79 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
     public String toString()
     {
         return "Kernel StoreMigrator";
+    }
+
+    private SchemaStorageCreator schemaStorageCreatorFlexible()
+    {
+        return new SchemaStorageCreator()
+        {
+            private SchemaStore schemaStore;
+
+            @Override
+            public SchemaStorage create( NeoStores store, TokenHolders tokenHolders, PageCursorTracer cursorTracer )
+            {
+                schemaStore = store.getSchemaStore();
+                return new org.neo4j.internal.recordstorage.SchemaStorage( schemaStore, tokenHolders );
+            }
+
+            @Override
+            public StoreType[] additionalStoresToOpen()
+            {
+                // We need NeoStores to have those stores open so that we can get schema store out in create method.
+                return new StoreType[]{StoreType.PROPERTY, StoreType.PROPERTY_STRING, StoreType.PROPERTY_ARRAY, StoreType.SCHEMA};
+            }
+
+            @Override
+            public void close() throws IOException
+            {
+                IOUtils.closeAll( schemaStore );
+            }
+        };
+    }
+
+    private SchemaStorageCreator schemaStorageCreator35( DatabaseLayout directoryLayout, RecordFormats oldFormat,
+            IdGeneratorFactory srcIdGeneratorFactory )
+    {
+        return new SchemaStorageCreator()
+        {
+            SchemaStore35 srcSchema;
+
+            @Override
+            public SchemaStorage create( NeoStores store, TokenHolders tokenHolders, PageCursorTracer cursorTracer )
+            {
+                srcSchema = new SchemaStore35(
+                        directoryLayout.schemaStore(),
+                        directoryLayout.idSchemaStore(),
+                        config,
+                        org.neo4j.internal.id.IdType.SCHEMA,
+                        srcIdGeneratorFactory,
+                        pageCache,
+                        NullLogProvider.getInstance(),
+                        oldFormat,
+                        immutable.empty() );
+                srcSchema.initialise( true, cursorTracer );
+                return new SchemaStorage35( srcSchema );
+            }
+
+            @Override
+            public StoreType[] additionalStoresToOpen()
+            {
+                return new StoreType[0];
+            }
+
+            @Override
+            public void close() throws IOException
+            {
+                IOUtils.closeAll( srcSchema );
+            }
+        };
+    }
+
+    private interface SchemaStorageCreator extends Closeable
+    {
+        SchemaStorage create( NeoStores store, TokenHolders tokenHolders, PageCursorTracer cursorTracer );
+
+        StoreType[] additionalStoresToOpen();
     }
 
     private static class NodeRecordChunk extends StoreScanChunk<RecordNodeCursor>

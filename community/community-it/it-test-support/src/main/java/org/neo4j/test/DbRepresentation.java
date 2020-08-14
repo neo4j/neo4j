@@ -20,7 +20,6 @@
 package org.neo4j.test;
 
 import java.io.File;
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -351,7 +350,7 @@ public class DbRepresentation
 
     private static class PropertiesRep
     {
-        private final Map<String,Serializable> props = new HashMap<>();
+        private final Map<String,Object> props = new HashMap<>();
         private final String entityToString;
         private final long entityId;
 
@@ -361,7 +360,7 @@ public class DbRepresentation
             this.entityToString = entity.toString();
             for ( String key : entity.getPropertyKeys() )
             {
-                Serializable value = (Serializable) entity.getProperty( key, null );
+                Object value = entity.getProperty( key, null );
                 // We do this because the node may have changed since we did getPropertyKeys()
                 if ( value != null )
                 {
