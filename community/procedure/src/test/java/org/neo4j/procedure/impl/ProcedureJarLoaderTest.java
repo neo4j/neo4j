@@ -19,10 +19,18 @@
  */
 package org.neo4j.procedure.impl;
 
+import net.bytebuddy.ByteBuddy;
+import net.bytebuddy.NamingStrategy;
+import net.bytebuddy.description.type.TypeDescription;
+import net.bytebuddy.dynamic.DynamicType;
+import net.bytebuddy.implementation.MethodCall;
+import net.bytebuddy.implementation.bytecode.StackManipulation;
+import net.bytebuddy.implementation.bytecode.assign.Assigner;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Modifier;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Files;
@@ -37,6 +45,11 @@ import java.util.zip.ZipException;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
+import org.neo4j.cypher.internal.expressions.Expression;
+import org.neo4j.cypher.internal.expressions.Parameter;
+import org.neo4j.cypher.internal.util.InputPosition;
+import org.neo4j.cypher.internal.util.symbols.AnyType;
+import org.neo4j.cypher.internal.util.symbols.CypherType;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.kernel.api.procedure.CallableProcedure;
@@ -239,6 +252,43 @@ public class ProcedureJarLoaderTest
         assertThrows( ZipException.class, () -> jarloader.loadProceduresFromDir( parentDir( theJar ) ) );
         assertThat( logProvider ).containsMessages(
                 format( "Plugin jar file: %s corrupted.", new File( theJar.toURI() ).toPath() ) );
+    }
+
+    @Test
+    void shouldLogHelpfullyWhenJarContainsClassTriggeringVerifyError() throws Exception
+    {
+        String className = "BrokenProcedureClass";
+        DynamicType.Unloaded<Object> unloaded = new ByteBuddy()
+                .with( new NamingStrategy.AbstractBase()
+                {
+                    @Override
+                    protected String name( TypeDescription superClass )
+                    {
+                        return className;
+                    }
+                })
+                .subclass( Object.class )
+                .defineMethod( "parameter", Expression.class, Modifier.PUBLIC | Modifier.STATIC )
+                .intercept(
+                        MethodCall.invoke(
+                                Parameter.class.getMethod( "apply", String.class, CypherType.class, InputPosition.class )
+                        )
+                                .with( "", AnyType.instance(), InputPosition.NONE() )
+                                .withAssigner( ( source, target, typing ) -> StackManipulation.Trivial.INSTANCE, Assigner.Typing.STATIC )
+                )
+                .make();
+        File file = testDirectory.createFile( new Random().nextInt() + ".jar" );
+        URL jar = unloaded.toJar( file ).toURI().toURL();
+
+        AssertableLogProvider logProvider = new AssertableLogProvider( true );
+        ProcedureJarLoader jarloader = new ProcedureJarLoader(
+                new ProcedureCompiler( new TypeCheckers(), new ComponentRegistry(), registryWithUnsafeAPI(), log, procedureConfig() ),
+                logProvider.getLog( ProcedureJarLoader.class ) );
+
+        jarloader.loadProceduresFromDir( parentDir( jar ) );
+
+        assertThat( logProvider ).containsMessages(
+                format( "Failed to load `%s` from plugin jar `%s`: %s", className, jar.getFile(), "Bad return type" ) );
     }
 
     @Test

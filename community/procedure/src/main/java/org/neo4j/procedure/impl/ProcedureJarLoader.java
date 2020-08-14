@@ -170,7 +170,7 @@ class ProcedureJarLoader
                                 aClass.getDeclaredMethods();
                                 return aClass;
                             }
-                            catch ( UnsatisfiedLinkError | NoClassDefFoundError | Exception e )
+                            catch ( UnsatisfiedLinkError | NoClassDefFoundError | VerifyError | Exception e )
                             {
                                 log.warn( "Failed to load `%s` from plugin jar `%s`: %s", className, jar.getFile(), e.getMessage() );
                             }
