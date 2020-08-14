@@ -258,7 +258,9 @@ public class ProcedureJarLoaderTest
     void shouldLogHelpfullyWhenJarContainsClassTriggeringVerifyError() throws Exception
     {
         String className = "BrokenProcedureClass";
+        // generate a class that is broken and would not normally compile
         DynamicType.Unloaded<Object> unloaded = new ByteBuddy()
+                // provide a name so that we can assert on it showing up in the log
                 .with( new NamingStrategy.AbstractBase()
                 {
                     @Override
@@ -268,17 +270,17 @@ public class ProcedureJarLoaderTest
                     }
                 })
                 .subclass( Object.class )
-                .defineMethod( "parameter", Expression.class, Modifier.PUBLIC | Modifier.STATIC )
+                .defineMethod( "get", String.class )
                 .intercept(
-                        MethodCall.invoke(
-                                Parameter.class.getMethod( "apply", String.class, CypherType.class, InputPosition.class )
-                        )
-                                .with( "", AnyType.instance(), InputPosition.NONE() )
+                        // String is not assignable from int -- this triggers a VerifyError when the class is loaded
+                        MethodCall.invoke( Integer.class.getMethod( "valueOf", int.class ) )
+                                .with( 42 )
+                                  // override the assigner to circumvent ByteBuddy's validation, so the malformed class can be generated
                                 .withAssigner( ( source, target, typing ) -> StackManipulation.Trivial.INSTANCE, Assigner.Typing.STATIC )
                 )
                 .make();
-        File file = testDirectory.createFile( new Random().nextInt() + ".jar" );
-        URL jar = unloaded.toJar( file ).toURI().toURL();
+
+        URL jar = unloaded.toJar( testDirectory.createFile( new Random().nextInt() + ".jar" ) ).toURI().toURL();
 
         AssertableLogProvider logProvider = new AssertableLogProvider( true );
         ProcedureJarLoader jarloader = new ProcedureJarLoader(
