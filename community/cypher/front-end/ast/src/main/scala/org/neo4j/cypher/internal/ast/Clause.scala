@@ -463,9 +463,13 @@ case class Match(
       checkForCartesianProducts
 
   private def uniqueHints: SemanticCheck = {
-    val errors = hints.groupBy(_.variables.toIndexedSeq).collect {
-      case (variables, identHints) if identHints.size > 1 =>
-        SemanticError("Multiple hints for same variable are not supported", variables.head.position)
+    val errors = hints.groupBy {
+      case h: UsingIndexHint => ("index", h.variables.toIndexedSeq)
+      case h: UsingScanHint => ("index", h.variables.toIndexedSeq)
+      case h: UsingJoinHint => ("join", h.variables.toIndexedSeq)
+    }.collect {
+      case ((category, variables), identHints) if identHints.size > 1 =>
+        SemanticError(s"Multiple $category hints for same variable are not supported", variables.head.position)
     }.toVector
 
     state: SemanticState => semantics.SemanticCheckResult(state, errors)

@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
+import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher.beLike
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.logical.plans.AllNodesScan
@@ -164,6 +165,57 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
               )
             ), _) => ()
     }
+  }
+
+  test("should allow one join and one index hint on the same variable") {
+    val (_, plan, _, _) =
+      new given {
+        indexOn("S", "p")
+        indexOn("T", "p") // This index is enforced by hint
+        indexOn("T", "foo") // This index would normally be preferred
+      } getLogicalPlanFor(
+        s"""MATCH (s:S {p: 10})<-[r]-(t:T {foo: 2})
+           |USING JOIN ON t
+           |USING INDEX t:T(p)
+           |WHERE 0 <= t.p <= 10
+           |RETURN s, r, t
+        """.stripMargin, stripProduceResults = false)
+
+    plan should equal(
+      new LogicalPlanBuilder()
+        .produceResults("s", "r", "t")
+        .nodeHashJoin("t")
+        .|.expandAll("(s)<-[r]-(t)")
+        .|.nodeIndexOperator("s:S(p = 10)")
+        .filter("t.foo = 2")
+        .nodeIndexOperator("t:T(0 <= p <= 10)")
+        .build()
+    )
+  }
+
+  test("should allow one join and one scan hint on the same variable") {
+    val (_, plan, _, _) =
+      new given {
+        indexOn("S", "p")
+        indexOn("T", "p")
+        indexOn("T", "foo") // This index would normally be preferred
+      } getLogicalPlanFor(
+        s"""MATCH (s:S {p: 10})<-[r]-(t:T {foo: 2})
+           |USING JOIN ON t
+           |USING SCAN t:T
+           |RETURN s, r, t
+        """.stripMargin, stripProduceResults = false)
+
+    plan should equal(
+      new LogicalPlanBuilder()
+        .produceResults("s", "r", "t")
+        .nodeHashJoin("t")
+        .|.expandAll("(s)<-[r]-(t)")
+        .|.nodeIndexOperator("s:S(p = 10)")
+        .filter("t.foo = 2")
+        .nodeByLabelScan("t", "T")
+        .build()
+    )
   }
 
   test("should or-leaf-plan in reasonable time") {
