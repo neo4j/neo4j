@@ -84,7 +84,6 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
     @Inject
     private GraphDatabaseService db;
 
-    private final Label label = Label.label( "MY_LABEL" );
     private final Label otherLabel = Label.label( "MY_OTHER_LABEL" );
     private final RelationshipType relType = RelationshipType.withName( "MY_REL_TYPE" );
     private final RelationshipType otherRelType = RelationshipType.withName( "MY_OTHER_REL_TYPE" );
@@ -871,13 +870,40 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
     {
         try ( Transaction tx = db.beginTx() )
         {
-            IndexCreator creator = tx.schema().indexFor( label ).withName( "a`b" ).on( propertyKey );
+            IndexCreator creator = tx.schema().indexFor( label ).withName( "`a`b``" ).on( propertyKey );
             creator.create();
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
-            assertThat( count( tx.schema().getIndexes() ) ).isEqualTo( 1L );
+            final Iterable<IndexDefinition> indexes = tx.schema().getIndexes();
+            assertThat( count( indexes ) ).isEqualTo( 1L );
+            assertEquals( "`a`b``", indexes.iterator().next().getName() );
+
+            assertThat( count( tx.schema().getConstraints() ) ).isEqualTo( 0L );
+            tx.commit();
+        }
+    }
+
+    @Test
+    void indexTokensCanContainBackTicks()
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            IndexCreator creator = tx.schema().indexFor( labelWithBackticks ).withName( "abc" ).on( propertyKeyWithBackticks );
+            creator.create();
+            tx.commit();
+        }
+        try ( Transaction tx = db.beginTx() )
+        {
+            final Iterable<IndexDefinition> indexes = tx.schema().getIndexes();
+            assertThat( count( indexes ) ).isEqualTo( 1L );
+
+            final IndexDefinition index = indexes.iterator().next();
+            assertEquals( "abc", index.getName() );
+            assertEquals( labelWithBackticks.name(), index.getLabels().iterator().next().name() );
+            assertEquals( propertyKeyWithBackticks, index.getPropertyKeys().iterator().next() );
+
             assertThat( count( tx.schema().getConstraints() ) ).isEqualTo( 0L );
             tx.commit();
         }
@@ -888,14 +914,49 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
     {
         try ( Transaction tx = db.beginTx() )
         {
-            ConstraintCreator creator = tx.schema().constraintFor( label ).withName( "a`b" ).assertPropertyIsUnique( propertyKey );
+            ConstraintCreator creator = tx.schema().constraintFor( label ).withName( "`a`b``" ).assertPropertyIsUnique( propertyKey );
             creator.create();
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
-            assertThat( count( tx.schema().getIndexes() ) ).isEqualTo( 1L );
-            assertThat( count( tx.schema().getConstraints() ) ).isEqualTo( 1L );
+            final Iterable<IndexDefinition> indexes = tx.schema().getIndexes();
+            assertThat( count( indexes ) ).isEqualTo( 1L );
+            assertEquals( "`a`b``", indexes.iterator().next().getName() );
+
+            final Iterable<ConstraintDefinition> constraints = tx.schema().getConstraints();
+            assertThat( count( constraints ) ).isEqualTo( 1L );
+            assertEquals( "`a`b``", constraints.iterator().next().getName() );
+            tx.commit();
+        }
+    }
+
+    @Test
+    void constraintTokensCanContainBackTicks()
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            ConstraintCreator creator = tx.schema().constraintFor( labelWithBackticks ).withName( "abc" ).assertPropertyIsUnique( propertyKeyWithBackticks );
+            creator.create();
+            tx.commit();
+        }
+        try ( Transaction tx = db.beginTx() )
+        {
+            final Iterable<IndexDefinition> indexes = tx.schema().getIndexes();
+            assertThat( count( indexes ) ).isEqualTo( 1L );
+
+            final IndexDefinition index = indexes.iterator().next();
+            assertEquals( "abc", index.getName() );
+            assertEquals( labelWithBackticks.name(), index.getLabels().iterator().next().name() );
+            assertEquals( propertyKeyWithBackticks, index.getPropertyKeys().iterator().next() );
+
+            final Iterable<ConstraintDefinition> constraints = tx.schema().getConstraints();
+            assertThat( count( constraints ) ).isEqualTo( 1L );
+
+            final ConstraintDefinition constraint = constraints.iterator().next();
+            assertEquals( "abc", constraint.getName() );
+            assertEquals( labelWithBackticks.name(), constraint.getLabel().name() );
+            assertEquals( propertyKeyWithBackticks, constraint.getPropertyKeys().iterator().next() );
             tx.commit();
         }
     }
