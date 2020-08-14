@@ -30,9 +30,10 @@ public class SchemaAcceptanceTestBase
 {
     protected final String propertyKey = "my_property_key";
     protected final String secondPropertyKey = "my_second_property_key";
-    protected Label label = Labels.MY_LABEL;
-    protected Label otherLabel = Labels.MY_OTHER_LABEL;
-    protected RelationshipType relType = RelationshipType.withName( "relType" );
+    protected final String propertyKeyWithBackticks = "``backticked_property_key";
+    protected final Label label = Labels.MY_LABEL;
+    protected final Label labelWithBackticks = Label.label( "``BACKTICK`LABEL`" );
+    protected final RelationshipType relType = RelationshipType.withName( "relType" );
 
     protected <EXCEPTION extends Throwable, CAUSE extends Throwable> void assertExpectedException( Class<CAUSE> expectedCause, String expectedMessage,
             EXCEPTION exception )
