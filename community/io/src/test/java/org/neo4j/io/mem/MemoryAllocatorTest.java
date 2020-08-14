@@ -203,6 +203,21 @@ class MemoryAllocatorTest
         }
     }
 
+    @Test
+    void bufferCannotBeAlignedOutsideAllocatedSlot()
+    {
+        // This test relies on the native access bounds checks that are enabled in Unsafeutil during tests.
+        MemoryAllocator mman = createAllocator( ONE_PAGE );
+        // let's choose a really ridiculous alignment to make it very unlikely
+        // that the allocated grab will be aligned with it
+        long address = mman.allocateAligned( PageCache.PAGE_SIZE, PageCache.PAGE_SIZE - 1 );
+        assertThat( address ).isNotEqualTo( 0L );
+
+        // This must not throw any bad access exceptions.
+        UnsafeUtil.getLong( address ); // Start of allocation.
+        UnsafeUtil.getLong( address + ONE_PAGE - Long.BYTES ); // End of allocation.
+    }
+
     private void closeAllocator()
     {
         if ( allocator != null )
