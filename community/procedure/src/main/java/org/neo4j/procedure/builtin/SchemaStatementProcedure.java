@@ -187,7 +187,7 @@ public final class SchemaStatementProcedure
                 int propertyId = constraint.schema().getPropertyId();
                 String property = tokenRead.propertyKeyName( propertyId );
                 return format( CREATE_NODE_EXISTENCE_CONSTRAINT,
-                        name, label, property );
+                        escapeBackticks( name ), escapeBackticks( label ), escapeBackticks( property ) );
             }
             if ( constraint.isRelationshipPropertyExistenceConstraint() )
             {
@@ -197,7 +197,7 @@ public final class SchemaStatementProcedure
                 int propertyId = constraint.schema().getPropertyId();
                 String property = tokenRead.propertyKeyName( propertyId );
                 return format( CREATE_RELATIONSHIP_EXISTENCE_CONSTRAINT,
-                        name, relationshipType, property );
+                        escapeBackticks( name ), escapeBackticks( relationshipType ), escapeBackticks( property ) );
             }
             throw new IllegalArgumentException( "Did not recognize constraint type " + constraint );
         }
@@ -209,7 +209,7 @@ public final class SchemaStatementProcedure
 
     private static String dropStatement( ConstraintDescriptor constraint )
     {
-        return format( DROP_CONSTRAINT, constraint.getName() );
+        return format( DROP_CONSTRAINT, escapeBackticks( constraint.getName() ) );
     }
 
     public static String createStatement( TokenRead tokenRead, IndexDescriptor indexDescriptor ) throws ProcedureException
@@ -343,7 +343,7 @@ public final class SchemaStatementProcedure
 
     private static String dropStatement( IndexDescriptor indexDescriptor )
     {
-        return format( DROP_INDEX, indexDescriptor.getName() );
+        return format( DROP_INDEX, escapeBackticks( indexDescriptor.getName() ) );
     }
 
     private static StringJoiner configStringJoiner()
@@ -354,6 +354,11 @@ public final class SchemaStatementProcedure
     private static StringJoiner arrayStringJoiner()
     {
         return new StringJoiner( ", ", "[", "]" );
+    }
+
+    private static String escapeBackticks( String str )
+    {
+        return str.replaceAll( "`", "``" );
     }
 
     enum SchemaRuleType
