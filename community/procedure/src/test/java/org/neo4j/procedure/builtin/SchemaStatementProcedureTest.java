@@ -27,12 +27,15 @@ import java.util.Iterator;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.SchemaReadCore;
 import org.neo4j.internal.kernel.api.TokenRead;
+import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 
+import static java.lang.String.format;
 import static java.util.Collections.singleton;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -48,6 +51,12 @@ import static org.neo4j.procedure.builtin.SchemaStatementProcedure.createSchemaS
 class SchemaStatementProcedureTest
 {
     private static final String CONSTRAINT_NAME = "constraint name";
+    private static final String NAME_WITH_BACKTICKS = "``ugly`name`";
+    private static final String ESCAPED_NAME_WITH_BACKTICKS = "`````ugly``name```";
+    private static final String LABEL_WITH_BACKTICKS = "```label";
+    private static final String ESCAPED_LABEL_WITH_BACKTICKS = "```````label`";
+    private static final String PROPERTY_KEY_WITH_BACKTICKS = "prop`";
+    private static final String ESCAPED_PROPERTY_KEY_WITH_BACKTICKS = "`prop```";
 
     @Test
     void schemaStatementsMustIncludeOnlineIndexes() throws IndexNotFoundKernelException, ProcedureException
@@ -130,6 +139,50 @@ class SchemaStatementProcedureTest
         assertEquals( 0, result.size() );
     }
 
+    @Test
+    void schemaStatementsShouldHandleIndexWithBackticks()
+            throws IndexNotFoundKernelException, ProcedureException, LabelNotFoundKernelException, PropertyKeyIdNotFoundKernelException
+    {
+        IndexDescriptor index = forSchema( forLabel( 1, 1 ) ).withName( NAME_WITH_BACKTICKS ).materialise( 1 );
+        InternalIndexState internalIndexState = InternalIndexState.ONLINE;
+        SchemaReadCore schemaReadCore = getSchemaReadCore( index, internalIndexState );
+        TokenRead tokenRead = mock( TokenRead.class );
+        when( tokenRead.nodeLabelName( 1 )).thenReturn( LABEL_WITH_BACKTICKS );
+        when( tokenRead.propertyKeyName( 1 )).thenReturn( PROPERTY_KEY_WITH_BACKTICKS );
+
+        Collection<BuiltInProcedures.SchemaStatementResult> result = createSchemaStatementResults( schemaReadCore, tokenRead );
+        Iterator<BuiltInProcedures.SchemaStatementResult> iter = result.iterator();
+        assertTrue( iter.hasNext() );
+        BuiltInProcedures.SchemaStatementResult next = iter.next();
+        assertEquals( NAME_WITH_BACKTICKS, next.name );
+        assertEquals( format( "CALL db.createIndex('%s', ['%s'], ['%s'], 'Undecided-0', {})",
+                NAME_WITH_BACKTICKS, LABEL_WITH_BACKTICKS, PROPERTY_KEY_WITH_BACKTICKS), next.createStatement );
+        assertEquals( format( "DROP INDEX %s", ESCAPED_NAME_WITH_BACKTICKS ), next.dropStatement );
+        assertFalse( iter.hasNext() );
+    }
+
+    @Test
+    void schemaStatementsShouldHandleConstraintWithBackticks()
+            throws IndexNotFoundKernelException, ProcedureException, LabelNotFoundKernelException, PropertyKeyIdNotFoundKernelException
+    {
+        ConstraintDescriptor constraint = ConstraintDescriptorFactory.existsForSchema( forLabel( 1, 1 ) ).withName( NAME_WITH_BACKTICKS );
+        SchemaReadCore schemaReadCore = getSchemaReadCore( constraint );
+        TokenRead tokenRead = mock( TokenRead.class );
+        when( tokenRead.nodeLabelName( 1 )).thenReturn( LABEL_WITH_BACKTICKS );
+        when( tokenRead.propertyKeyName( 1 )).thenReturn( PROPERTY_KEY_WITH_BACKTICKS );
+
+        Collection<BuiltInProcedures.SchemaStatementResult> result = createSchemaStatementResults( schemaReadCore, tokenRead );
+        Iterator<BuiltInProcedures.SchemaStatementResult> iter = result.iterator();
+        assertTrue( iter.hasNext() );
+        BuiltInProcedures.SchemaStatementResult next = iter.next();
+        assertEquals( NAME_WITH_BACKTICKS, next.name );
+        assertEquals( format( "CREATE CONSTRAINT %s ON (a:%s) ASSERT exists(a.%s)",
+                ESCAPED_NAME_WITH_BACKTICKS, ESCAPED_LABEL_WITH_BACKTICKS, ESCAPED_PROPERTY_KEY_WITH_BACKTICKS), next.createStatement );
+        assertEquals( format( "DROP CONSTRAINT %s", ESCAPED_NAME_WITH_BACKTICKS ), next.dropStatement );
+        assertEquals( NAME_WITH_BACKTICKS, next.name );
+        assertFalse( iter.hasNext() );
+    }
+
     private IndexDescriptor indexBoundToConstraint( IndexDescriptor index, ConstraintDescriptor constraint )
     {
         index = index.withOwningConstraintId( constraint.getId() );
@@ -162,14 +215,24 @@ class SchemaStatementProcedureTest
         return getSchemaReadCore( null, index, indexState );
     }
 
+    private SchemaReadCore getSchemaReadCore( ConstraintDescriptor constraint ) throws IndexNotFoundKernelException
+    {
+        return getSchemaReadCore( constraint, null, null );
+    }
+
     private SchemaReadCore getSchemaReadCore( ConstraintDescriptor constraint, IndexDescriptor index, InternalIndexState indexState )
             throws IndexNotFoundKernelException
     {
         SchemaReadCore schemaReadCore = mock( SchemaReadCore.class );
-        when( schemaReadCore.indexesGetAll() ).thenReturn( singleton( index ).iterator() );
-        when( schemaReadCore.indexGetForName( index.getName() ) ).thenReturn( index );
-        when( schemaReadCore.indexGetState( index ) ).thenReturn( indexState );
+        when( schemaReadCore.indexesGetAll() ).thenReturn( iterator() );
         when( schemaReadCore.constraintsGetAll() ).thenReturn( iterator() );
+
+        if ( index != null )
+        {
+            when( schemaReadCore.indexesGetAll() ).thenReturn( singleton( index ).iterator() );
+            when( schemaReadCore.indexGetForName( index.getName() ) ).thenReturn( index );
+            when( schemaReadCore.indexGetState( index ) ).thenReturn( indexState );
+        }
 
         if ( constraint != null )
         {
