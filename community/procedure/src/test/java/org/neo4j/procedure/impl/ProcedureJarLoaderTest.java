@@ -30,7 +30,6 @@ import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Modifier;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Files;
@@ -45,11 +44,6 @@ import java.util.zip.ZipException;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
-import org.neo4j.cypher.internal.expressions.Expression;
-import org.neo4j.cypher.internal.expressions.Parameter;
-import org.neo4j.cypher.internal.util.InputPosition;
-import org.neo4j.cypher.internal.util.symbols.AnyType;
-import org.neo4j.cypher.internal.util.symbols.CypherType;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.kernel.api.procedure.CallableProcedure;
@@ -94,8 +88,7 @@ public class ProcedureJarLoaderTest
     private final Log log = mock( Log.class );
     private final DependencyResolver dependencyResolver = new Dependencies();
     private final ValueMapper<Object> valueMapper = new DefaultValueMapper( mock( InternalTransaction.class ) );
-    private final ProcedureJarLoader jarloader = new ProcedureJarLoader( new ProcedureCompiler( new TypeCheckers(), new ComponentRegistry(),
-                    registryWithUnsafeAPI(), log, procedureConfig() ), NullLog.getInstance() );
+    private final ProcedureJarLoader jarloader = new ProcedureJarLoader( procedureCompiler(), NullLog.getInstance() );
 
     @Test
     void shouldLoadProcedureFromJar() throws Throwable
@@ -244,9 +237,7 @@ public class ProcedureJarLoaderTest
 
         AssertableLogProvider logProvider = new AssertableLogProvider( true );
 
-        ProcedureJarLoader jarloader = new ProcedureJarLoader(
-                new ProcedureCompiler( new TypeCheckers(), new ComponentRegistry(), registryWithUnsafeAPI(), log, procedureConfig() ),
-                logProvider.getLog( ProcedureJarLoader.class ) );
+        ProcedureJarLoader jarloader = new ProcedureJarLoader( procedureCompiler(), logProvider.getLog( ProcedureJarLoader.class ) );
 
         // when
         assertThrows( ZipException.class, () -> jarloader.loadProceduresFromDir( parentDir( theJar ) ) );
@@ -283,9 +274,7 @@ public class ProcedureJarLoaderTest
         URL jar = unloaded.toJar( testDirectory.createFile( new Random().nextInt() + ".jar" ) ).toURI().toURL();
 
         AssertableLogProvider logProvider = new AssertableLogProvider( true );
-        ProcedureJarLoader jarloader = new ProcedureJarLoader(
-                new ProcedureCompiler( new TypeCheckers(), new ComponentRegistry(), registryWithUnsafeAPI(), log, procedureConfig() ),
-                logProvider.getLog( ProcedureJarLoader.class ) );
+        ProcedureJarLoader jarloader = new ProcedureJarLoader( procedureCompiler(), logProvider.getLog( ProcedureJarLoader.class ) );
 
         jarloader.loadProceduresFromDir( parentDir( jar ) );
 
@@ -303,9 +292,7 @@ public class ProcedureJarLoaderTest
 
         AssertableLogProvider logProvider = new AssertableLogProvider( true );
 
-        ProcedureJarLoader jarloader = new ProcedureJarLoader(
-                new ProcedureCompiler( new TypeCheckers(), new ComponentRegistry(), registryWithUnsafeAPI(), log, procedureConfig() ),
-                logProvider.getLog( ProcedureJarLoader.class ) );
+        ProcedureJarLoader jarloader = new ProcedureJarLoader( procedureCompiler(), logProvider.getLog( ProcedureJarLoader.class ) );
 
         // when
         assertThrows( ZipException.class, () -> jarloader.loadProceduresFromDir( parentDir( theJar ) ) );
@@ -316,9 +303,7 @@ public class ProcedureJarLoaderTest
     void shouldReturnEmptySetOnNullArgument() throws Exception
     {
         // given
-        ProcedureJarLoader jarloader = new ProcedureJarLoader(
-                new ProcedureCompiler( new TypeCheckers(), new ComponentRegistry(), registryWithUnsafeAPI(), log, procedureConfig() ),
-                NullLog.getInstance() );
+        ProcedureJarLoader jarloader = new ProcedureJarLoader( procedureCompiler(), NullLog.getInstance() );
 
         // when
         ProcedureJarLoader.Callables callables = jarloader.loadProceduresFromDir( null );
@@ -495,5 +480,10 @@ public class ProcedureJarLoaderTest
     {
         Config config = Config.defaults( procedure_unrestricted, List.of( "org.neo4j.kernel.impl.proc.unsafeFullAccess*" ) );
         return new ProcedureConfig( config );
+    }
+
+    private ProcedureCompiler procedureCompiler()
+    {
+        return new ProcedureCompiler( new TypeCheckers(), new ComponentRegistry(), registryWithUnsafeAPI(), log, procedureConfig() );
     }
 }
