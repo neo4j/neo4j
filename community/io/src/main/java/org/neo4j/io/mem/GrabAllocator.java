@@ -228,7 +228,7 @@ public final class GrabAllocator implements MemoryAllocator
 
             if ( head == null || !head.canAllocate( bytes, alignment ) )
             {
-                if ( grabSize < bytes )
+                if ( grabSize < maxAllocationSize )
                 {
                     grabSize = bytes;
                     Grab grab = new Grab( head, grabSize, memoryTracker );
