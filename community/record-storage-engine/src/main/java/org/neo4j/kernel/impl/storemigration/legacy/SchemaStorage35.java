@@ -33,11 +33,12 @@ import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
+import org.neo4j.kernel.impl.storemigration.SchemaStorage;
 
 /**
  * A stripped down 3.5.x version of SchemaStorage, used for schema store migration.
  */
-public class SchemaStorage35
+public class SchemaStorage35 implements SchemaStorage
 {
     private final RecordStore<DynamicRecord> schemaStore;
 

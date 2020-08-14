@@ -24,6 +24,7 @@ import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -88,7 +89,9 @@ import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.migration.MigrationProgressMonitor;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
+import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
+import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 import org.neo4j.token.TokenHolders;
@@ -106,6 +109,7 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @PageCacheExtension
 @Neo4jLayoutExtension
+@ExtendWith( RandomExtension.class )
 class RecordStorageMigratorIT
 {
     private static final String MIGRATION_DIRECTORY = "upgrade";
@@ -120,6 +124,8 @@ class RecordStorageMigratorIT
     private PageCache pageCache;
     @Inject
     private DatabaseLayout databaseLayout;
+    @Inject
+    private RandomRule randomRule;
 
     private DatabaseLayout migrationLayout;
     private BatchImporterFactory batchImporterFactory;
@@ -331,7 +337,7 @@ class RecordStorageMigratorIT
         SchemaStore35 schemaStore35 = new SchemaStore35( storeFile, idFile, CONFIG, IdType.SCHEMA, igf, pageCache, logProvider, StandardV3_4.RECORD_FORMATS,
                 immutable.empty() );
         schemaStore35.initialise( false, NULL );
-        SplittableRandom rng = new SplittableRandom();
+        SplittableRandom rng = new SplittableRandom( randomRule.seed() );
         LongHashSet indexes = new LongHashSet();
         LongHashSet constraints = new LongHashSet();
         for ( int i = 0; i < 10; i++ )
