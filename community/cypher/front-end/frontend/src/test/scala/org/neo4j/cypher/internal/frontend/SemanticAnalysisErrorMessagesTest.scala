@@ -1041,8 +1041,9 @@ class SemanticAnalysisErrorMessagesTest extends CypherFunSuite {
 
   // Escaped backticks in tokens
 
-  test("Should allow escaped backtick in node property key name") {
-    val query = "CREATE ({prop: 5, `abc``123`: 1})"
+  test("Should allow escaped backticks in node property key name") {
+    // Property without escaping: `abc123``
+    val query = "CREATE ({prop: 5, ```abc123`````: 1})"
 
     val startState = initStartState(query, Map.empty)
     val context = new ErrorCollectingContext()
@@ -1052,7 +1053,8 @@ class SemanticAnalysisErrorMessagesTest extends CypherFunSuite {
     context.errors should be(empty)
   }
 
-  test("Should allow escaped backtick in relationship property key name") {
+  test("Should allow escaped backticks in relationship property key name") {
+    // Property without escaping: abc`123
     val query = "MATCH ()-[r]->() RETURN r.`abc``123` as result"
 
     val startState = initStartState(query, Map.empty)
@@ -1063,8 +1065,9 @@ class SemanticAnalysisErrorMessagesTest extends CypherFunSuite {
     context.errors should be(empty)
   }
 
-  test("Should allow escaped backtick in label") {
-    val query = "MATCH (n) SET n:`abc``123`"
+  test("Should allow escaped backticks in label") {
+    // Label without escaping: `abc123
+    val query = "MATCH (n) SET n:```abc123`"
 
     val startState = initStartState(query, Map.empty)
     val context = new ErrorCollectingContext()
@@ -1075,7 +1078,31 @@ class SemanticAnalysisErrorMessagesTest extends CypherFunSuite {
   }
 
   test("Should allow escaped backtick in relationship type") {
-    val query = "MERGE ()-[r:`abc``123`]->()"
+    // Relationship type without escaping: abc123``
+    val query = "MERGE ()-[r:`abc123`````]->()"
+
+    val startState = initStartState(query, Map.empty)
+    val context = new ErrorCollectingContext()
+
+    pipeline.transform(startState, context)
+
+    context.errors should be(empty)
+  }
+
+    test("Should allow escaped backtick in indexes") {
+      // Query without proper escaping: CREATE INDEX `abc`123`` FOR (n:`Per`son`) ON (n.first``name`, n.``last`name)
+    val query = "CREATE INDEX ```abc``123````` FOR (n:```Per``son```) ON (n.`first````name```, n.`````last``name`)"
+    val startState = initStartState(query, Map.empty)
+    val context = new ErrorCollectingContext()
+
+    pipeline.transform(startState, context)
+
+    context.errors should be(empty)
+  }
+
+  test("Should allow escaped backtick in constraints") {
+    // Query without proper escaping: CREATE CONSTRAINT abc123` ON (n:``Label) ASSERT (n.pr``op) IS NODE KEY
+    val query = "CREATE CONSTRAINT `abc123``` ON (n:`````Label`) ASSERT (n.`pr````op`) IS NODE KEY"
 
     val startState = initStartState(query, Map.empty)
     val context = new ErrorCollectingContext()
