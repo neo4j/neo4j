@@ -226,32 +226,36 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     )
   }
 
-  test("should plan apply over cartesian product for equality predicate") {
+  test("should not plan apply where lhs and rhs are independent") {
     val plan = (new given {
       indexOn("Awesome", "prop1")
       indexOn("Awesome", "prop2")
     } getLogicalPlanFor "MATCH (n:Awesome), (m:Awesome) WHERE n.prop1 < 42 AND m.prop2 < 42 AND n.prop1 = m.prop2 RETURN n")._2
 
-    plan should beLike {
-      case Selection(_, Apply(
-      NodeIndexSeek(_, _, _, RangeQueryExpression(_), _, _),
-      NodeIndexSeek(_, _, _, SingleQueryExpression(_), _, _)
-      )) => ()
+    plan shouldNot beLike {
+      case Selection(_, Apply(_, NodeIndexSeek(_, _, _, _, args, _))) if args.isEmpty => ()
     }
   }
 
-  test("should plan nested index join with apply where rhs depends on lhs") {
+  test("should plan nested index join with apply or join where rhs depends on lhs") {
     val plan = (new given {
       indexOn("Awesome", "prop1")
       indexOn("Awesome", "prop2")
       indexOn("Awesome", "prop3")
     } getLogicalPlanFor "MATCH (n:Awesome), (m:Awesome) WHERE n.prop1 < 42 AND m.prop2 < 42 AND n.prop3 = m.prop4 RETURN n")._2
 
-    plan should beLike {
+    val beSolvedByApply = beLike {
       case Selection(_, Apply(
       NodeIndexSeek(_,_,_,RangeQueryExpression(_),_,_),
       NodeIndexSeek(_,_,_,SingleQueryExpression(_),_,_))) => ()
     }
+    val beSolvedByJoin = beLike {
+      case ValueHashJoin(
+      NodeIndexSeek(_,_,_,RangeQueryExpression(_),_,_),
+      NodeIndexSeek(_,_,_,RangeQueryExpression(_),_,_), _) => ()
+    }
+
+    plan should (beSolvedByApply or beSolvedByJoin)
   }
 
   test("should plan index seek for multiple inequality predicates and prefer the index seek with the lower cost per row") {
