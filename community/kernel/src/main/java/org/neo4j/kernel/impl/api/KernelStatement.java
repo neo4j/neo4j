@@ -222,12 +222,13 @@ public class KernelStatement extends CloseableResourceManager implements Stateme
 
     final void startQueryExecution( ExecutingQuery query )
     {
+        query.setPreviousQuery( executingQuery );
         this.executingQuery = query;
     }
 
     final void stopQueryExecution( ExecutingQuery executingQuery )
     {
-        this.executingQuery = null;
+        this.executingQuery = executingQuery.getPreviousQuery();
         transaction.getStatistics().addWaitingTime( executingQuery.reportedWaitingTimeNanos() );
     }
 

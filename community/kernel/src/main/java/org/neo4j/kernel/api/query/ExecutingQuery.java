@@ -77,6 +77,7 @@ public class ExecutingQuery
     private QueryExecutionType.QueryType queryType;
     private Supplier<ExecutionPlanDescription> planDescriptionSupplier;
     private volatile ExecutingQueryStatus status = SimpleState.parsing();
+    private volatile ExecutingQuery previousQuery;
 
     /** Updated through {@link #WAIT_TIME} */
     @SuppressWarnings( "unused" )
@@ -405,5 +406,15 @@ public class ExecutingQuery
         {
             throw new IllegalStateException( String.format( "Expected query in '%s' state, actual state is '%s'.", expectedStatus.name(), status.name() ) );
         }
+    }
+
+    public ExecutingQuery getPreviousQuery()
+    {
+        return previousQuery;
+    }
+
+    public void setPreviousQuery( ExecutingQuery previousQuery )
+    {
+        this.previousQuery = previousQuery;
     }
 }

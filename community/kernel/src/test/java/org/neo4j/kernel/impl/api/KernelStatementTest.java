@@ -26,20 +26,30 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.NotInTransactionException;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.database.TestDatabaseIdRepository;
+import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
+import org.neo4j.kernel.impl.locking.community.CommunityLockClient;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.resources.CpuClock;
+import org.neo4j.time.Clocks;
+import org.neo4j.values.virtual.MapValue;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class KernelStatementTest
 {
+    private final AtomicReference<CpuClock> cpuClockRef = new AtomicReference<>( CpuClock.NOT_AVAILABLE );
+
     @Test
     void shouldReleaseResourcesWhenForceClosed()
     {
@@ -70,8 +80,7 @@ class KernelStatementTest
     {
         KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
 
-        KernelTransactionImplementation.Statistics statistics = new KernelTransactionImplementation.Statistics( transaction,
-                new AtomicReference<>( CpuClock.NOT_AVAILABLE ) );
+        KernelTransactionImplementation.Statistics statistics = new KernelTransactionImplementation.Statistics( transaction, cpuClockRef );
         when( transaction.getStatistics() ).thenReturn( statistics );
         when( transaction.executingQuery() ).thenReturn( Optional.empty() );
 
@@ -89,10 +98,39 @@ class KernelStatementTest
         assertEquals( 3, statistics.getWaitingTimeNanos( 1 ) );
     }
 
-    private static KernelStatement createStatement( KernelTransactionImplementation transaction )
+    @Test
+    void trackSequentialQueriesInStatement()
+    {
+        var queryFactory = new ExecutingQueryFactory( Clocks.nanoClock(), cpuClockRef, Config.defaults() );
+        var transaction = mock( KernelTransactionImplementation.class, RETURNS_DEEP_STUBS );
+        var statement = createStatement( transaction );
+        statement.initialize( new SimpleStatementLocks( mock( CommunityLockClient.class ) ), PageCursorTracer.NULL, 100 );
+
+        var query1 = queryFactory.createForStatement( statement, "test1", MapValue.EMPTY );
+        var query2 = queryFactory.createForStatement( statement, "test2", MapValue.EMPTY );
+        var query3 = queryFactory.createForStatement( statement, "test3", MapValue.EMPTY );
+
+        statement.startQueryExecution( query1 );
+        statement.startQueryExecution( query2 );
+        assertSame( query2, statement.executingQuery().orElseThrow() );
+
+        statement.startQueryExecution( query3 );
+        assertSame( query3, statement.executingQuery().orElseThrow() );
+
+        statement.stopQueryExecution( query3 );
+        assertSame( query2, statement.executingQuery().orElseThrow() );
+
+        statement.stopQueryExecution( query2 );
+        assertSame( query1, statement.executingQuery().orElseThrow() );
+
+        statement.stopQueryExecution( query1 );
+        assertFalse( statement.executingQuery().isPresent() );
+    }
+
+    private KernelStatement createStatement( KernelTransactionImplementation transaction )
     {
         return new KernelStatement( transaction, LockTracer.NONE, new ClockContext(), EmptyVersionContextSupplier.EMPTY,
-                                    new AtomicReference<>( CpuClock.NOT_AVAILABLE ), new TestDatabaseIdRepository().defaultDatabase(), Config.defaults() );
+                                    cpuClockRef, new TestDatabaseIdRepository().defaultDatabase(), Config.defaults() );
     }
 
     private static ExecutingQuery getQueryWithWaitingTime()
