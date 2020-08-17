@@ -72,6 +72,7 @@ import org.neo4j.time.SystemNanoClock;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.token.api.TokenHolder;
 
+import static java.time.ZoneOffset.UTC;
 import static java.util.Collections.emptyMap;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.commons.lang3.StringUtils.EMPTY;
@@ -95,7 +96,7 @@ class TransactionStatusResultTest
     {
         snapshotsMap.put( transactionHandle, Optional.of( createQuerySnapshot( 7L ) ) );
         TransactionStatusResult statusResult =
-                new TransactionStatusResult( "my-database", transactionHandle, blockerResolver, snapshotsMap, ZoneId.of( "UTC" ) );
+                new TransactionStatusResult( "my-database", transactionHandle, blockerResolver, snapshotsMap, UTC );
 
         checkTransactionStatus( statusResult, "testQuery", "query-7", "1970-01-01T00:00:01.984Z" );
     }
@@ -105,7 +106,7 @@ class TransactionStatusResultTest
     {
         snapshotsMap.put( transactionHandle, Optional.empty() );
         TransactionStatusResult statusResult =
-                new TransactionStatusResult( "neo4j", transactionHandle, blockerResolver, snapshotsMap, ZoneId.of( "UTC" ) );
+                new TransactionStatusResult( "neo4j", transactionHandle, blockerResolver, snapshotsMap, UTC );
 
         checkTransactionStatusWithoutQueries( statusResult );
     }
@@ -124,7 +125,7 @@ class TransactionStatusResultTest
     void emptyInitialisationStacktraceWhenTraceNotAvailable() throws InvalidArgumentsException
     {
         snapshotsMap.put( transactionHandle, Optional.empty() );
-        TransactionStatusResult statusResult = new TransactionStatusResult( "neo4j", transactionHandle, blockerResolver, snapshotsMap, ZoneId.of( "UTC" ) );
+        TransactionStatusResult statusResult = new TransactionStatusResult( "neo4j", transactionHandle, blockerResolver, snapshotsMap, UTC );
         assertEquals( EMPTY, statusResult.initializationStackTrace );
     }
 
@@ -133,8 +134,20 @@ class TransactionStatusResultTest
     {
         transactionHandle = new TransactionHandleWithLocks( new StubKernelTransaction(), true );
         snapshotsMap.put( transactionHandle, Optional.empty() );
-        TransactionStatusResult statusResult = new TransactionStatusResult( "neo4j", transactionHandle, blockerResolver, snapshotsMap, ZoneId.of( "UTC" ) );
+        TransactionStatusResult statusResult = new TransactionStatusResult( "neo4j", transactionHandle, blockerResolver, snapshotsMap, UTC );
         assertThat( statusResult.initializationStackTrace ).contains( "Transaction initialization stacktrace." );
+    }
+
+    @Test
+    void emptyClientInfoForClosedTransaction() throws InvalidArgumentsException
+    {
+        var handle = new TransactionHandleWithLocks( new StubKernelTransaction(), false, false );
+        snapshotsMap.put( handle, Optional.empty() );
+        var statusResult = new TransactionStatusResult( "neo4j", handle, blockerResolver, snapshotsMap, UTC );
+        assertThat( statusResult.protocol ).isEmpty();
+        assertThat( statusResult.clientAddress ).isEmpty();
+        assertThat( statusResult.requestUri ).isEmpty();
+        assertThat( statusResult.connectionId ).isEmpty();
     }
 
     private static void checkTransactionStatusWithoutQueries( TransactionStatusResult statusResult )
@@ -218,16 +231,23 @@ class TransactionStatusResultTest
     private static class TransactionHandleWithLocks extends TestKernelTransactionHandle
     {
         boolean hasInitTrace;
+        boolean hasClientInfo;
 
         TransactionHandleWithLocks( KernelTransaction tx )
         {
-            super( tx );
+            this( tx, false, true );
         }
 
         TransactionHandleWithLocks( KernelTransaction tx, boolean hasInitTrace )
         {
+            this( tx, hasInitTrace, true );
+        }
+
+        TransactionHandleWithLocks( KernelTransaction tx, boolean hasInitTrace, boolean hasClientInfo )
+        {
             super( tx );
             this.hasInitTrace = hasInitTrace;
+            this.hasClientInfo = hasClientInfo;
         }
 
         @Override
@@ -276,9 +296,13 @@ class TransactionStatusResultTest
         }
 
         @Override
-        public ClientConnectionInfo clientInfo()
+        public Optional<ClientConnectionInfo> clientInfo()
         {
-            return getTestConnectionInfo();
+            if ( hasClientInfo )
+            {
+                return Optional.of( getTestConnectionInfo() );
+            }
+            return Optional.empty();
         }
     }
 

@@ -33,6 +33,8 @@ import org.neo4j.kernel.impl.api.transaction.trace.TransactionInitializationTrac
 import org.neo4j.kernel.impl.locking.ActiveLock;
 import org.neo4j.time.SystemNanoClock;
 
+import static java.util.Optional.ofNullable;
+
 /**
  * A {@link KernelTransactionHandle} that wraps the given {@link KernelTransactionImplementation}.
  * This handle knows that {@link KernelTransactionImplementation}s can be reused and represents a single logical
@@ -188,9 +190,9 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle
     }
 
     @Override
-    public ClientConnectionInfo clientInfo()
+    public Optional<ClientConnectionInfo> clientInfo()
     {
-        return clientInfo;
+        return ofNullable( clientInfo );
     }
 
     @Override

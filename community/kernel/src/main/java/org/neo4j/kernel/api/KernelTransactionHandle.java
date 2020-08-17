@@ -160,7 +160,7 @@ public interface KernelTransactionHandle
      * Provide underlying transaction originator details
      * @return transaction originator details
      */
-    ClientConnectionInfo clientInfo();
+    Optional<ClientConnectionInfo> clientInfo();
 
     /**
      * @return whether or not this transaction is a schema transaction. Type of transaction is decided

@@ -128,6 +128,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_m
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_sampling_percentage;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_tracing_level;
 import static org.neo4j.kernel.impl.api.transaction.trace.TraceProviderFactory.getTraceProvider;
+import static org.neo4j.kernel.impl.api.transaction.trace.TransactionInitializationTrace.NONE;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.INTERNAL;
 import static org.neo4j.util.FeatureToggles.flag;
 
@@ -194,7 +195,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private Type type;
     private long transactionId;
     private long commitTime;
-    private ClientConnectionInfo clientInfo;
+    private volatile ClientConnectionInfo clientInfo;
     private volatile int reuseCount;
     private volatile Map<String,Object> userMetaData;
     private final AllStoreHolder allStoreHolder;
@@ -1027,7 +1028,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             releaseStatementResources();
             operations.release();
             pageCursorTracer.reportEvents();
-            initializationTrace = null;
+            initializationTrace = NONE;
             pool.release( this );
             memoryTracker.reset();
         }

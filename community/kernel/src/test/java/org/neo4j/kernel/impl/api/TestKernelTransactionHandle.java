@@ -34,6 +34,8 @@ import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.impl.api.transaction.trace.TransactionInitializationTrace;
 import org.neo4j.kernel.impl.locking.ActiveLock;
 
+import static java.util.Optional.ofNullable;
+
 /**
  * A test implementation of {@link KernelTransactionHandle} that simply wraps a given {@link KernelTransaction}.
  */
@@ -151,9 +153,9 @@ public class TestKernelTransactionHandle implements KernelTransactionHandle
     }
 
     @Override
-    public ClientConnectionInfo clientInfo()
+    public Optional<ClientConnectionInfo> clientInfo()
     {
-        return tx.clientInfo();
+        return ofNullable( tx.clientInfo() );
     }
 
     @Override

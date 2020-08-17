@@ -37,7 +37,7 @@ public class TransactionId
     public TransactionId( String database, long internalId ) throws InvalidArgumentsException
     {
         this.database = new NormalizedDatabaseName( requireNonNull( database ) );
-        if ( internalId <= 0 )
+        if ( internalId < 0 )
         {
             throw new InvalidArgumentsException( "Negative ids are not supported " + EXPECTED_FORMAT_MSG );
         }

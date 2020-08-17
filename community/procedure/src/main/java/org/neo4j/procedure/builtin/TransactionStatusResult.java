@@ -19,8 +19,6 @@
  */
 package org.neo4j.procedure.builtin;
 
-import org.apache.commons.lang3.StringUtils;
-
 import java.time.ZoneId;
 import java.util.Map;
 import java.util.Optional;
@@ -32,6 +30,7 @@ import org.neo4j.kernel.api.query.QuerySnapshot;
 import org.neo4j.kernel.impl.api.TransactionExecutionStatistic;
 
 import static java.lang.String.format;
+import static org.apache.commons.lang3.StringUtils.EMPTY;
 
 @SuppressWarnings( "WeakerAccess" )
 public class TransactionStatusResult
@@ -101,14 +100,15 @@ public class TransactionStatusResult
         }
         else
         {
-            this.currentQueryId = StringUtils.EMPTY;
-            this.currentQuery = StringUtils.EMPTY;
+            this.currentQueryId = EMPTY;
+            this.currentQuery = EMPTY;
         }
-        ClientConnectionInfo clientInfo = transaction.clientInfo();
-        this.protocol = clientInfo.protocol();
-        this.clientAddress = clientInfo.clientAddress();
-        this.requestUri = clientInfo.requestURI();
-        this.connectionId = clientInfo.connectionId();
+
+        var clientInfo = transaction.clientInfo();
+        this.protocol = clientInfo.map( ClientConnectionInfo::protocol ).orElse( EMPTY );
+        this.clientAddress = clientInfo.map( ClientConnectionInfo::clientAddress ).orElse( EMPTY );
+        this.requestUri = clientInfo.map( ClientConnectionInfo::requestURI ).orElse( EMPTY ) ;
+        this.connectionId = clientInfo.map( ClientConnectionInfo::connectionId ).orElse( EMPTY );
         this.resourceInformation = transactionDependenciesResolver.describeBlockingLocks( transaction );
         this.status = getStatus( transaction, transactionDependenciesResolver );
         this.metaData = transaction.getMetaData();
