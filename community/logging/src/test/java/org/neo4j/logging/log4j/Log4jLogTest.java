@@ -19,6 +19,8 @@
  */
 package org.neo4j.logging.log4j;
 
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -36,7 +38,21 @@ import static org.neo4j.logging.log4j.LogConfigTest.DATE_PATTERN;
 class Log4jLogTest
 {
     private final ByteArrayOutputStream outContent = new ByteArrayOutputStream();
-    private final Log4jLog log = new Log4jLog( LogConfig.createBuilder( outContent, Level.DEBUG ).build().getLogger( "className" ) );
+    private Log4jLog log;
+    private Neo4jLoggerContext context;
+
+    @BeforeEach
+    void setUp()
+    {
+        context = LogConfig.createBuilder( outContent, Level.DEBUG ).build();
+        log = new Log4jLog( context.getLogger( "className" ) );
+    }
+
+    @AfterEach
+    void tearDown()
+    {
+        context.close();
+    }
 
     @ParameterizedTest( name = "{1}" )
     @MethodSource( "logMethods" )

@@ -48,7 +48,7 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.kernel.internal.locker.FileLockException;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.log4j.Log4jLogProvider;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.util.VisibleForTesting;
@@ -137,12 +137,15 @@ public class CheckConsistencyCommand extends AbstractCommand
                     progressMonitorFactory = ProgressMonitorFactory.textual( System.out );
                 }
 
-                LogProvider logProvider = Util.configuredLogProvider( config, System.out );
-                ConsistencyCheckService.Result consistencyCheckResult = consistencyCheckService
-                        .runFullConsistencyCheck( databaseLayout, config, progressMonitorFactory, logProvider, fileSystem,
-                            verbose, options.getReportDir().normalize(),
-                                new ConsistencyFlags( options.isCheckGraph(), options.isCheckIndexes(), options.isCheckIndexStructure(),
-                                        options.isCheckLabelScanStore(), options.isCheckRelationshipTypeScanStore(), options.isCheckPropertyOwners() ) );
+                ConsistencyCheckService.Result consistencyCheckResult;
+                try ( Log4jLogProvider logProvider = Util.configuredLogProvider( config, System.out ) )
+                {
+                    consistencyCheckResult = consistencyCheckService
+                            .runFullConsistencyCheck( databaseLayout, config, progressMonitorFactory, logProvider, fileSystem,
+                                    verbose, options.getReportDir().normalize(),
+                                    new ConsistencyFlags( options.isCheckGraph(), options.isCheckIndexes(), options.isCheckIndexStructure(),
+                                            options.isCheckLabelScanStore(), options.isCheckRelationshipTypeScanStore(), options.isCheckPropertyOwners() ) );
+                }
 
                 if ( !consistencyCheckResult.isSuccessful() )
                 {

@@ -27,7 +27,6 @@ import java.nio.file.Path;
 import org.neo4j.cli.CommandFailedException;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.log4j.Log4jLogProvider;
 import org.neo4j.logging.log4j.LogConfig;
 import org.neo4j.logging.log4j.Neo4jLoggerContext;
@@ -61,7 +60,7 @@ public final class Util
                 format( "Unable to load database: %s: %s", e.getClass().getSimpleName(), e.getMessage() ), e );
     }
 
-    public static LogProvider configuredLogProvider( Config config, OutputStream out )
+    public static Log4jLogProvider configuredLogProvider( Config config, OutputStream out )
     {
         Neo4jLoggerContext context = LogConfig.createBuilder( out, config.get( GraphDatabaseSettings.store_internal_log_level ) )
                 .withTimezone( config.get( GraphDatabaseSettings.db_timezone ) ).build();

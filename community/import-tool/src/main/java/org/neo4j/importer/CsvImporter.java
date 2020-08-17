@@ -62,9 +62,9 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogInitializer;
 import org.neo4j.kernel.internal.Version;
-import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.SimpleLogService;
+import org.neo4j.logging.log4j.Log4jLogProvider;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
@@ -164,10 +164,9 @@ class CsvImporter implements Importer
 
         File internalLogFile = databaseConfig.get( store_internal_log_path ).toFile();
         try ( JobScheduler jobScheduler = createInitialisedScheduler();
-                OutputStream outputStream = FileSystemUtils.createOrOpenAsOutputStream( fileSystem, internalLogFile, true ) )
+              OutputStream outputStream = FileSystemUtils.createOrOpenAsOutputStream( fileSystem, internalLogFile, true );
+              Log4jLogProvider logProvider = Util.configuredLogProvider( databaseConfig, outputStream ) )
         {
-            LogProvider logProvider = Util.configuredLogProvider( databaseConfig, outputStream );
-
             ExecutionMonitor executionMonitor = verbose ? new SpectrumExecutionMonitor( 2, TimeUnit.SECONDS, stdOut,
                     SpectrumExecutionMonitor.DEFAULT_WIDTH ) : ExecutionMonitors.defaultVisible();
 

@@ -44,7 +44,6 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
 import org.neo4j.harness.Neo4jBuilder;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
@@ -53,7 +52,6 @@ import org.neo4j.kernel.extension.context.ExtensionContext;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Level;
-import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.log4j.Log4jLogProvider;
 import org.neo4j.logging.log4j.LogConfig;
 import org.neo4j.logging.log4j.Neo4jLoggerContext;
@@ -132,60 +130,52 @@ public abstract class AbstractInProcessNeo4jBuilder implements Neo4jBuilder
         Path userLogFile = serverFolder.resolve( "neo4j.log" );
         Path internalLogFile = serverFolder.resolve( "debug.log" );
 
-        try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-              OutputStream userLogOutputStream = openStream( fileSystem, userLogFile ) )
+        config.set( ServerSettings.third_party_packages, unmanagedExtentions.toList() );
+        config.set( GraphDatabaseSettings.store_internal_log_path, internalLogFile.toAbsolutePath() );
+
+        var certificates = serverFolder.resolve( "certificates" );
+        if ( disabledServer )
         {
-            config.set( ServerSettings.third_party_packages, unmanagedExtentions.toList() );
-            config.set( GraphDatabaseSettings.store_internal_log_path, internalLogFile.toAbsolutePath() );
-
-            var certificates = serverFolder.resolve( "certificates" );
-            if ( disabledServer )
-            {
-                config.set( HttpConnector.enabled, false );
-                config.set( HttpsConnector.enabled, false );
-            }
-
-            Config dbConfig = config.build();
-            if ( dbConfig.get( HttpsConnector.enabled ) ||
-                 dbConfig.get( BoltConnector.enabled ) && dbConfig.get( BoltConnector.encryption_level ) != BoltConnector.EncryptionLevel.DISABLED )
-            {
-                SelfSignedCertificateFactory.create( certificates );
-                List<SslPolicyConfig> policies = List.of( SslPolicyConfig.forScope( HTTPS ), SslPolicyConfig.forScope( BOLT ) );
-                for ( SslPolicyConfig policy : policies )
-                {
-                    config.set( policy.enabled, Boolean.TRUE );
-                    config.set( policy.base_directory, certificates );
-                    config.set( policy.trust_all, true );
-                    config.set( policy.client_auth, ClientAuth.NONE );
-                }
-                dbConfig = config.build();
-            }
-
-            Neo4jLoggerContext loggerContext = LogConfig.createBuilder( userLogOutputStream, Level.INFO ).withTimezone( dbConfig.get( db_timezone ) ).build();
-            LogProvider userLogProvider = new Log4jLogProvider( loggerContext );
-            GraphDatabaseDependencies dependencies = GraphDatabaseDependencies.newDependencies().userLogProvider( userLogProvider );
-            dependencies = dependencies.extensions( buildExtensionList( dependencies ) );
-
-            var managementService = createNeo( dbConfig, dependencies );
-
-            InProcessNeo4j controls = new InProcessNeo4j( serverFolder, userLogFile, internalLogFile, managementService, dbConfig, userLogOutputStream );
-            controls.start();
-
-            try
-            {
-                fixtures.applyTo( controls );
-            }
-            catch ( Exception e )
-            {
-                controls.close();
-                throw e;
-            }
-            return controls;
+            config.set( HttpConnector.enabled, false );
+            config.set( HttpsConnector.enabled, false );
         }
-        catch ( IOException e )
+
+        Config dbConfig = config.build();
+        if ( dbConfig.get( HttpsConnector.enabled ) ||
+             dbConfig.get( BoltConnector.enabled ) && dbConfig.get( BoltConnector.encryption_level ) != BoltConnector.EncryptionLevel.DISABLED )
         {
-            throw new RuntimeException( e );
+            SelfSignedCertificateFactory.create( certificates );
+            List<SslPolicyConfig> policies = List.of( SslPolicyConfig.forScope( HTTPS ), SslPolicyConfig.forScope( BOLT ) );
+            for ( SslPolicyConfig policy : policies )
+            {
+                config.set( policy.enabled, Boolean.TRUE );
+                config.set( policy.base_directory, certificates );
+                config.set( policy.trust_all, true );
+                config.set( policy.client_auth, ClientAuth.NONE );
+            }
+            dbConfig = config.build();
         }
+
+        Neo4jLoggerContext loggerContext = LogConfig.createBuilder( userLogFile, Level.INFO ).withTimezone( dbConfig.get( db_timezone ) ).build();
+        var userLogProvider = new Log4jLogProvider( loggerContext );
+        GraphDatabaseDependencies dependencies = GraphDatabaseDependencies.newDependencies().userLogProvider( userLogProvider );
+        dependencies = dependencies.extensions( buildExtensionList( dependencies ) );
+
+        var managementService = createNeo( dbConfig, dependencies );
+
+        InProcessNeo4j controls = new InProcessNeo4j( serverFolder, userLogFile, internalLogFile, managementService, dbConfig, userLogProvider );
+        controls.start();
+
+        try
+        {
+            fixtures.applyTo( controls );
+        }
+        catch ( Exception e )
+        {
+            controls.close();
+            throw e;
+        }
+        return controls;
     }
 
     protected abstract DatabaseManagementService createNeo( Config config, ExternalDependencies dependencies );
