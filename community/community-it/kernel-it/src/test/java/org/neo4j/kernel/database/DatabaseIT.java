@@ -47,6 +47,10 @@ import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.LogAssertions;
 import org.neo4j.logging.internal.DatabaseLogService;
 import org.neo4j.logging.internal.LogService;
+import org.neo4j.memory.GlobalMemoryGroupTracker;
+import org.neo4j.memory.MemoryGroup;
+import org.neo4j.memory.MemoryPools;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.ExtensionCallback;
@@ -78,6 +82,8 @@ class DatabaseIT
     private DatabaseLayout databaseLayout;
     @Inject
     private Database database;
+    @Inject
+    private MemoryPools memoryPools;
 
     private PageCacheWrapper pageCacheWrapper;
     private final AssertableLogProvider logProvider = new AssertableLogProvider();
@@ -282,6 +288,67 @@ class DatabaseIT
         var logService = database.getDependencyResolver().resolveDependency( LogService.class );
         assertEquals( database.getLogService(), logService );
         assertThat( logService ).isInstanceOf( DatabaseLogService.class );
+    }
+
+    @Test
+    void stopShutdownMustOnlyReleaseMemoryOnce() throws Exception
+    {
+        MemoryTracker otherMemoryTracker = getOtherMemoryTracker();
+
+        long beforeStop = otherMemoryTracker.usedNativeMemory();
+
+        database.stop();
+        long afterStop = otherMemoryTracker.usedNativeMemory();
+        assertThat( afterStop ).isLessThan( beforeStop );
+
+        database.shutdown();
+        long afterShutdown = otherMemoryTracker.usedNativeMemory();
+        assertEquals( afterShutdown, afterStop );
+    }
+
+    @Test
+    void shutdownShutdownMustOnlyReleaseMemoryOnce() throws Exception
+    {
+        MemoryTracker otherMemoryTracker = getOtherMemoryTracker();
+
+        long beforeShutdown = otherMemoryTracker.usedNativeMemory();
+
+        database.shutdown();
+        long afterFirstShutdown = otherMemoryTracker.usedNativeMemory();
+        assertThat( afterFirstShutdown ).isLessThan( beforeShutdown );
+
+        database.shutdown();
+        long afterSecondShutdown = otherMemoryTracker.usedNativeMemory();
+        assertEquals( afterSecondShutdown, afterFirstShutdown );
+    }
+
+    @Test
+    void shutdownStopMustOnlyReleaseMemoryOnce() throws Exception
+    {
+        MemoryTracker otherMemoryTracker = getOtherMemoryTracker();
+
+        long beforeShutdown = otherMemoryTracker.usedNativeMemory();
+
+        database.shutdown();
+        long afterShutdown = otherMemoryTracker.usedNativeMemory();
+        assertThat( afterShutdown ).isLessThan( beforeShutdown );
+
+        database.stop();
+        long afterStop = otherMemoryTracker.usedNativeMemory();
+        assertEquals( afterStop, afterShutdown );
+    }
+
+    private MemoryTracker getOtherMemoryTracker()
+    {
+        for ( GlobalMemoryGroupTracker pool : memoryPools.getPools() )
+        {
+            if ( pool.group().equals( MemoryGroup.OTHER ) )
+            {
+                return pool.getPoolMemoryTracker();
+
+            }
+        }
+        throw new RuntimeException( "Could not find memory tracker for group " + MemoryGroup.OTHER );
     }
 
     private static class PageCacheWrapper extends DelegatingPageCache

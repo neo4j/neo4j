@@ -852,9 +852,10 @@ public class Database extends LifecycleAdapter
     }
 
     @Override
-    public void shutdown() throws Exception
+    public synchronized void shutdown() throws Exception
     {
         safeCleanup();
+        started = false;
         initialized = false;
     }
 
