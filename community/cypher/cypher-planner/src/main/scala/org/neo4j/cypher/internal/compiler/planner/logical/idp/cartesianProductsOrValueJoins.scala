@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
+import org.neo4j.cypher.internal.ir.ordering.InterestingOrder.FullSatisfaction
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.NodeUniqueIndexSeek
@@ -80,8 +81,18 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
       produceHashJoins(plans, qg, context, kit, singleComponentPlanner) ++
         produceNIJVariations(plans, qg, interestingOrder, context, kit, singleComponentPlanner)
 
-    if (joins.nonEmpty) {
-      pickTheBest(plans, kit, joins)
+    val (joinsSatisfyingOrder, joinsOther) = joins.partition{ case (comp, _) =>
+      val providedOrder = context.planningAttributes.providedOrders(comp.plan.id)
+      interestingOrder.satisfiedBy(providedOrder) match {
+        case FullSatisfaction() => true
+        case _ => false
+      }
+    }
+
+    if (joinsSatisfyingOrder.nonEmpty) {
+      pickTheBest(plans, kit, joinsSatisfyingOrder)
+    } else if (joinsOther.nonEmpty) {
+      pickTheBest(plans, kit, joinsOther)
     } else if (plans.size < 8) {
       val cartesianProducts = produceCartesianProducts(plans, qg, context, kit)
       pickTheBest(plans, kit, cartesianProducts)

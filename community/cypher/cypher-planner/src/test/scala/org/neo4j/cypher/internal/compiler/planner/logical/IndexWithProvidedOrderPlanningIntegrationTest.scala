@@ -21,9 +21,13 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
+import org.neo4j.cypher.internal.expressions.AndedPropertyInequalities
+import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LabelToken
 import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.ir.PlannerQueryPart
+import org.neo4j.cypher.internal.ir.Predicate
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.logical.plans.Aggregation
 import org.neo4j.cypher.internal.logical.plans.AllNodesScan
@@ -57,6 +61,7 @@ import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability.ASC
 import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability.BOTH
 import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability.DESC
 import org.neo4j.cypher.internal.util.LabelId
+import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 with PlanMatchHelp {
@@ -380,10 +385,43 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
       )
     }
 
+    /**
+     * Returns cardinalities based on matching against given patternNodes + predicates.
+     * Only matches if the patternNodes and all predicates are covered by the patternNodesPredicateSelectivity nested map.
+     * The resulting cardinality is the product of baseCardinality and the given selectivity for all matching predicates.
+     */
+    def byPredicateSelectivity(baseCardinality: Double, patternNodesPredicateSelectivity: Map[Set[String], Map[Expression, Double]]): PartialFunction[PlannerQueryPart, Double] = {
+      def mapsPatternNodes(patternNodes: Set[String]) = patternNodesPredicateSelectivity.contains(patternNodes)
+      def mapsPredicate(patternNodes: Set[String], predicate: Predicate) = patternNodesPredicateSelectivity(patternNodes).contains(predicate.expr)
+
+      {
+        case RegularSinglePlannerQuery(queryGraph, _, _, _, _)
+          if mapsPatternNodes(queryGraph.patternNodes) && queryGraph.selections.predicates.forall(mapsPredicate(queryGraph.patternNodes, _)) =>
+          val selectivityMap = patternNodesPredicateSelectivity(queryGraph.patternNodes)
+          queryGraph.selections.predicates.map(_.expr).map(selectivityMap).product * baseCardinality
+      }
+    }
+
     test(s"$cypherToken-$orderCapability: Order by index backed property in a plan with an Apply") {
       val plan = new given {
         indexOn("A", "prop").providesOrder(orderCapability)
         indexOn("B", "prop").providesOrder(orderCapability)
+        cardinality = mapCardinality(byPredicateSelectivity(10000, Map(
+          Set("a") ->  Map(
+            // 50% have :A
+            hasLabels("a", "A") -> 0.5,
+            // 10% have .prop > 'foo'
+            AndedPropertyInequalities(varFor("a"), prop("a", "prop"), NonEmptyList(greaterThan(prop("a", "prop"), literalString("foo")))) -> 0.1,
+            // 1% have .prop = <given value>
+            Equals(prop("a", "prop"), prop("b", "prop"))(pos) -> 0.01,
+          ),
+          Set("b") ->  Map(
+            // 50% have :B
+            hasLabels("b", "B") -> 0.5,
+            // 1% have .prop = <given value>
+            Equals(prop("a", "prop"), prop("b", "prop"))(pos) -> 0.01,
+          ),
+        )))
       } getLogicalPlanFor s"MATCH (a:A), (b:B) WHERE a.prop > 'foo' AND a.prop = b.prop RETURN a.prop ORDER BY a.prop $cypherToken"
 
       val expectedBIndexOrder = if (orderCapability.asc) IndexOrderAscending else IndexOrderDescending
