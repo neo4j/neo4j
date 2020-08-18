@@ -23,20 +23,24 @@ import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
+/**
+ * @param groupedPlans for each unique combination of available symbols, all plans that solve these symbols.
+ */
+case class PlansPerAvailableSymbols(groupedPlans: Iterable[Seq[LogicalPlan]])
+
 trait LeafPlannerIterable {
   def candidates(qg: QueryGraph,
                  f: (LogicalPlan, QueryGraph) => LogicalPlan = (plan, _) => plan,
                  interestingOrder: InterestingOrder,
-                 context: LogicalPlanningContext): Iterable[Seq[LogicalPlan]]
+                 context: LogicalPlanningContext): Seq[LogicalPlan]
 }
 
 case class LeafPlannerList(leafPlanners: IndexedSeq[LeafPlanner]) extends LeafPlannerIterable {
   override def candidates(qg: QueryGraph,
                           f: (LogicalPlan, QueryGraph) => LogicalPlan = (plan, _) => plan,
                           interestingOrder: InterestingOrder,
-                          context: LogicalPlanningContext): Iterable[Seq[LogicalPlan]] = {
-    val logicalPlans = leafPlanners.flatMap(_.apply(qg, interestingOrder, context)).map(f(_, qg))
-    logicalPlans.groupBy(_.availableSymbols).values
+                          context: LogicalPlanningContext): Seq[LogicalPlan] = {
+    leafPlanners.flatMap(_.apply(qg, interestingOrder, context)).map(f(_, qg))
   }
 }
 
@@ -45,7 +49,7 @@ case class PriorityLeafPlannerList(priority: LeafPlannerIterable, fallback: Leaf
   override def candidates(qg: QueryGraph,
                           f: (LogicalPlan, QueryGraph) => LogicalPlan,
                           interestingOrder: InterestingOrder,
-                          context: LogicalPlanningContext): Iterable[Seq[LogicalPlan]] = {
+                          context: LogicalPlanningContext): Seq[LogicalPlan] = {
     val priorityPlans = priority.candidates(qg, f, interestingOrder, context)
     if (priorityPlans.nonEmpty) priorityPlans
     else fallback.candidates(qg, f, interestingOrder, context)

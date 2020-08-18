@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.BestPlans
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
@@ -67,6 +68,9 @@ trait LeafPlanFromExpression extends LeafPlanFromExpressions {
   }
 }
 
+/**
+ * Finds the best sorted and unsorted plan for every unique set of available symbols.
+ */
 trait LeafPlanFinder {
-  def apply(config: QueryPlannerConfiguration, queryGraph: QueryGraph, interestingOrder: InterestingOrder, context: LogicalPlanningContext): Set[LogicalPlan]
+  def apply(config: QueryPlannerConfiguration, queryGraph: QueryGraph, interestingOrder: InterestingOrder, context: LogicalPlanningContext): Iterable[BestPlans]
 }

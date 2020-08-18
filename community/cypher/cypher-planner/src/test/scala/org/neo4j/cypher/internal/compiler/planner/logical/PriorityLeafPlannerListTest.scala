@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class PriorityLeafPlannerListTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
   private val queryGraph = QueryGraph.empty
-  private val candidates = Seq(Seq(Argument()))
+  private val candidates = Seq(Argument())
   private val context = mock[LogicalPlanningContext]
 
   test("should use the priority list if that contains result") {

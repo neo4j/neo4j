@@ -36,11 +36,19 @@ case class SortColumnsWithProjections(columnOrder: ColumnOrder, providedOrderCol
                                       projections: Map[String, Expression], unaliasedProjections: Option[(String, Expression)])
 
 object SortPlanner {
+  /**
+   * Given a plan and an interesting order, try to return a plan that satisfies the interesting order.
+   *
+   * If the interesting order is empty, return None.
+   * If the interesting order is non-empty, and the given plan already satisfies the interesting order, return the same plan.
+   * If the interesting order is non-empty, and the given plan does not already satisfies the interesting order, try to plan a Sort/PartialSort
+   * to satisfy the interesting order. If that is possible, return the new plan, otherwise None.
+   */
   def maybeSortedPlan(plan: LogicalPlan, interestingOrder: InterestingOrder, context: LogicalPlanningContext): Option[LogicalPlan] = {
     if (interestingOrder.requiredOrderCandidate.nonEmpty) {
       orderSatisfaction(interestingOrder, context, plan) match {
         case FullSatisfaction() =>
-          None
+          Some(plan)
         case NoSatisfaction() =>
           planSort(plan, Seq.empty, interestingOrder, context)
         case Satisfaction(satisfiedPrefix, _) =>
@@ -53,14 +61,11 @@ object SortPlanner {
 
   def ensureSortedPlanWithSolved(plan: LogicalPlan, interestingOrder: InterestingOrder, context: LogicalPlanningContext): LogicalPlan =
     maybeSortedPlan(plan, interestingOrder, context) match {
-      case Some(sortedPlan) => sortedPlan
+      case Some(sortedPlan) =>
+        if (sortedPlan == plan) context.logicalPlanProducer.updateSolvedForSortedItems(sortedPlan, interestingOrder, context)
+        else sortedPlan
       case _ if interestingOrder.requiredOrderCandidate.nonEmpty =>
-        orderSatisfaction(interestingOrder, context, plan) match {
-          case FullSatisfaction() =>
-            context.logicalPlanProducer.updateSolvedForSortedItems(plan, interestingOrder, context)
-          case _ =>
-            throw new AssertionError("Expected a sorted plan")
-        }
+        throw new AssertionError("Expected a sorted plan")
       case _ => plan
     }
 

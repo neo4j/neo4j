@@ -33,7 +33,7 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
-  test("should return None for an already sorted plan") {
+  test("should return the same plan for an already sorted plan") {
     new given().withLogicalPlanningContext { (_, context) =>
       val io = InterestingOrder.required(RequiredOrderCandidate.asc(prop("x", "foo")))
       val inputPlan = fakeLogicalPlanFor(context.planningAttributes, "x")
@@ -45,11 +45,11 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
       val sortedPlan = SortPlanner.maybeSortedPlan(inputPlan, io, context)
 
       // Then
-      sortedPlan should equal(None)
+      sortedPlan should equal(Some(inputPlan))
     }
   }
 
-  test("should return None for a plan with order from index") {
+  test("should return the same plan for a plan with order from index") {
     new given().withLogicalPlanningContext { (_, context) =>
       val io = InterestingOrder.required(RequiredOrderCandidate.asc(prop("x", "foo")))
       val inputPlan = fakeLogicalPlanFor(context.planningAttributes, "x")
@@ -60,7 +60,7 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
       val sortedPlan = SortPlanner.maybeSortedPlan(inputPlan, io, context)
 
       // Then
-      sortedPlan should equal(None)
+      sortedPlan should equal(Some(inputPlan))
     }
   }
 

@@ -22,22 +22,37 @@ package org.neo4j.cypher.internal.compiler.planner.logical.steps
 import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlanFinder
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.QueryPlannerConfiguration
+import org.neo4j.cypher.internal.compiler.planner.logical.SortPlanner
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
-import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
 object leafPlanOptions extends LeafPlanFinder {
 
   override def apply(config: QueryPlannerConfiguration,
                      queryGraph: QueryGraph,
                      interestingOrder: InterestingOrder,
-                     context: LogicalPlanningContext): Set[LogicalPlan] = {
+                     context: LogicalPlanningContext): Iterable[BestPlans] = {
     val queryPlannerKit = config.toKit(interestingOrder, context)
     val pickBest = config.pickBestCandidate(context)
 
     val leafPlanCandidateLists = config.leafPlanners.candidates(queryGraph, interestingOrder = interestingOrder, context = context)
     val leafPlanCandidateListsWithSelections = queryPlannerKit.select(leafPlanCandidateLists, queryGraph)
-    val bestLeafPlans: Iterable[LogicalPlan] = leafPlanCandidateListsWithSelections.flatMap(pickBest(_))
-    bestLeafPlans.map(context.leafPlanUpdater.apply).toSet
+
+    val bestPlansPerAvailableSymbols = leafPlanCandidateListsWithSelections
+      .groupBy(_.availableSymbols)
+      .values
+      .map { bucket =>
+      val bestPlan = pickBest(bucket).get
+
+      if (interestingOrder.requiredOrderCandidate.nonEmpty) {
+        val sortedLeaves = bucket.flatMap(plan => SortPlanner.maybeSortedPlan(plan, interestingOrder, context))
+        val bestSortedPlan = pickBest(sortedLeaves)
+        BestPlans(bestPlan, bestSortedPlan)
+      } else {
+        BestPlans(bestPlan, None)
+      }
+    }
+
+    bestPlansPerAvailableSymbols.map(_.map(context.leafPlanUpdater.apply))
   }
 }

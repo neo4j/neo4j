@@ -49,13 +49,11 @@ case class SingleComponentPlanner(monitor: IDPQueryGraphSolverMonitor,
                                   solverConfig: IDPSolverConfig = DefaultIDPSolverConfig,
                                   leafPlanFinder: LeafPlanFinder = leafPlanOptions) extends SingleComponentPlannerTrait {
   override def planComponent(qg: QueryGraph, context: LogicalPlanningContext, kit: QueryPlannerKit, interestingOrder: InterestingOrder): LogicalPlan = {
-    val leavesWithoutSorting = leafPlanFinder(context.config, qg, interestingOrder, context)
-    val leaves = if (interestingOrder.requiredOrderCandidate.nonEmpty)
-      leavesWithoutSorting ++ leavesWithoutSorting.flatMap(plan => SortPlanner.maybeSortedPlan(plan, interestingOrder, context))
-    else leavesWithoutSorting
+    val bestPlansPerAvailableSymbol = leafPlanFinder(context.config, qg, interestingOrder, context)
 
     val bestPlan =
       if (qg.patternRelationships.nonEmpty) {
+        val leaves = bestPlansPerAvailableSymbol.flatMap(bestPlans => bestPlans.bestSortedPlan.toSeq :+ bestPlans.bestPlan).toSet
 
         val orderRequirement = new ExtraRequirement[InterestingOrder, LogicalPlan]() {
           override def none: InterestingOrder = InterestingOrder.empty
@@ -73,7 +71,7 @@ case class SingleComponentPlanner(monitor: IDPQueryGraphSolverMonitor,
         val generators = solverConfig.solvers(qg).map(_ (qg))
         val selectingGenerators = generators.map(_.map(plan => kit.select(plan, qg)))
         val combinedGenerators = if (interestingOrder.isEmpty) selectingGenerators else {
-          val sortingGenerators = selectingGenerators.map(_.flatMap(plan => SortPlanner.maybeSortedPlan(plan, interestingOrder, context)))
+          val sortingGenerators = selectingGenerators.map(_.flatMap(plan => SortPlanner.maybeSortedPlan(plan, interestingOrder, context).filterNot(_ == plan)))
           selectingGenerators ++ sortingGenerators
         }
         val generator = combinedGenerators.foldLeft(IDPSolverStep.empty[PatternRelationship, InterestingOrder, LogicalPlan, LogicalPlanningContext])(_ ++ _)
@@ -96,12 +94,18 @@ case class SingleComponentPlanner(monitor: IDPQueryGraphSolverMonitor,
 
         result
       } else {
-        val solutionPlans = if (qg.shortestPathPatterns.isEmpty)
+        val leaves = bestPlansPerAvailableSymbol.map(bestPlans => bestPlans.bestSortedPlan.getOrElse(bestPlans.bestPlan))
+        val solutionPlans = if (qg.shortestPathPatterns.isEmpty) {
           leaves collect {
             case plan if planFullyCoversQG(qg, plan, interestingOrder, context) => kit.select(plan, qg)
           }
-        else leaves map (kit.select(_, qg)) filter (planFullyCoversQG(qg, _, interestingOrder, context))
-        val result = kit.pickBest(solutionPlans).getOrElse(throw new InternalException("Found no leaf plan for connected component. This must not happen. QG: " + qg))
+        } else leaves map (kit.select(_, qg)) filter (planFullyCoversQG(qg, _, interestingOrder, context))
+
+        if (solutionPlans.size != 1) {
+          throw new InternalException("Found no leaf plan for connected component. This must not happen. QG: " + qg)
+        }
+
+        val result = solutionPlans.head
         monitor.noIDPIterationFor(qg, result)
         result
       }
@@ -125,7 +129,7 @@ case class SingleComponentPlanner(monitor: IDPQueryGraphSolverMonitor,
           if (interestingOrder.isEmpty) {
             best
           } else {
-            val orderedPlans = plans.flatMap(plan => SortPlanner.maybeSortedPlan(plan, interestingOrder, context))
+            val orderedPlans = plans.flatMap(plan => SortPlanner.maybeSortedPlan(plan, interestingOrder, context).filterNot(_ == plan))
             val ordered = (plans ++ orderedPlans).filter{ plan =>
               SortPlanner.orderSatisfaction(interestingOrder, context, plan) match {
                 case FullSatisfaction() => true
