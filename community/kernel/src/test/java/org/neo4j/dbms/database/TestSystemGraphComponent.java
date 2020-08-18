@@ -19,8 +19,6 @@
  */
 package org.neo4j.dbms.database;
 
-import java.util.Optional;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 
@@ -52,7 +50,7 @@ public class TestSystemGraphComponent implements SystemGraphComponent
     }
 
     @Override
-    public Optional<Exception> initializeSystemGraph( GraphDatabaseService system )
+    public void initializeSystemGraph( GraphDatabaseService system ) throws Exception
     {
         if ( status == Status.UNINITIALIZED )
         {
@@ -62,14 +60,13 @@ public class TestSystemGraphComponent implements SystemGraphComponent
             }
             else
             {
-                return Optional.of( onInit );
+                throw onInit;
             }
         }
-        return Optional.empty();
     }
 
     @Override
-    public Optional<Exception> upgradeToCurrent( GraphDatabaseService system )
+    public void upgradeToCurrent( GraphDatabaseService system ) throws Exception
     {
         if ( status == Status.REQUIRES_UPGRADE )
         {
@@ -79,9 +76,8 @@ public class TestSystemGraphComponent implements SystemGraphComponent
             }
             else
             {
-                return Optional.of( onMigrate );
+                throw onMigrate;
             }
         }
-        return Optional.empty();
     }
 }

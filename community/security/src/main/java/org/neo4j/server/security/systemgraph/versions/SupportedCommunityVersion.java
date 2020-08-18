@@ -88,25 +88,17 @@ public class SupportedCommunityVersion extends KnownCommunitySecurityComponentVe
     }
 
     @Override
-    public Optional<Exception> updateInitialUserPassword( Transaction tx )
+    public void updateInitialUserPassword( Transaction tx ) throws Exception
     {
-        try
+        Optional<User> initialUser = getInitialUser();
+        if ( initialUser.isPresent() )
         {
-            Optional<User> initialUser = getInitialUser();
-            if ( initialUser.isPresent() )
-            {
-                updateInitialUserPassword( tx, initialUser.get() );
-            }
-            else
-            {
-                log.debug( "Not updating initial user password: No initial user found in `auth.ini`" );
-            }
+            updateInitialUserPassword( tx, initialUser.get() );
         }
-        catch ( Exception e )
+        else
         {
-            return Optional.of( e );
+            log.debug( "Not updating initial user password: No initial user found in `auth.ini`" );
         }
-        return Optional.empty();
     }
 
     private Optional<User> getInitialUser() throws Exception

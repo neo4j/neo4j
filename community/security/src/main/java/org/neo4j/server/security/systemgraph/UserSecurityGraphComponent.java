@@ -19,8 +19,6 @@
  */
 package org.neo4j.server.security.systemgraph;
 
-import java.util.Optional;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.AbstractSystemGraphComponent;
 import org.neo4j.dbms.database.SystemGraphComponent;
@@ -104,20 +102,16 @@ public class UserSecurityGraphComponent extends AbstractSystemGraphComponent
             {
 
                  log.info( "Updating the initial password in component '%s'  ", COMPONENT, component.version, component.getStatus() );
-                Optional<Exception> exception = component.updateInitialUserPassword( tx );
+                component.updateInitialUserPassword( tx );
                 tx.commit();
-                if ( exception.isPresent() )
-                {
-                    throw exception.get();
-                }
             }
         }
     }
 
     @Override
-    public Optional<Exception> upgradeToCurrent( GraphDatabaseService system )
+    public void upgradeToCurrent( GraphDatabaseService system ) throws Exception
     {
-        return SystemGraphComponent.executeWithFullAccess( system, tx ->
+        SystemGraphComponent.executeWithFullAccess( system, tx ->
         {
             KnownCommunitySecurityComponentVersion currentVersion = knownUserSecurityComponentVersions.detectCurrentSecurityGraphVersion( tx );
             log.debug( "Trying to upgrade component '%s' with version %d and status %s to latest version",

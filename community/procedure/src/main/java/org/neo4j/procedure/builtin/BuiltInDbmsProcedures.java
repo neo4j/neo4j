@@ -306,8 +306,14 @@ public class BuiltInDbmsProcedures
                                   SystemGraphComponent.Status initialStatus = component.detect( transaction );
                                   if ( initialStatus == REQUIRES_UPGRADE )
                                   {
-                                      Optional<Exception> error = component.upgradeToCurrent( graph );
-                                      error.ifPresent( e -> failed.add( String.format( "[%s] %s", component.component(), e.getMessage() ) ) );
+                                      try
+                                      {
+                                         component.upgradeToCurrent( graph );
+                                      }
+                                      catch ( Exception e )
+                                      {
+                                          failed.add( String.format( "[%s] %s", component.component(), e.getMessage() ) );
+                                      }
                                   }
                               } );
             String upgradeResult = failed.isEmpty() ? "Success" : "Failed: " + String.join( ", ", failed );

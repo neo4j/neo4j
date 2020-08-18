@@ -19,8 +19,6 @@
  */
 package org.neo4j.server.security.systemgraph.versions;
 
-import java.util.Optional;
-
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.logging.NullLog;
 import org.neo4j.server.security.systemgraph.UserSecurityGraphComponent;
@@ -41,8 +39,8 @@ public class NoUserSecurityGraph extends KnownCommunitySecurityComponentVersion
     }
 
     @Override
-    public Optional<Exception> updateInitialUserPassword( Transaction tx )
+    public void updateInitialUserPassword( Transaction tx )
     {
-        return Optional.of( unsupported() );
+        throw unsupported();
     }
 }

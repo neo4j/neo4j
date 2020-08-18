@@ -22,13 +22,12 @@ package org.neo4j.dbms.database;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Optional;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.internal.helpers.collection.Pair;
+import org.neo4j.internal.helpers.Exceptions;
+import org.neo4j.util.Preconditions;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 
@@ -80,62 +79,53 @@ public class SystemGraphComponents implements SystemGraphComponent
     }
 
     @Override
-    public Optional<Exception> initializeSystemGraph( GraphDatabaseService system )
+    public void initializeSystemGraph( GraphDatabaseService system )
     {
-        assert system.databaseName().equals( SYSTEM_DATABASE_NAME );
-        List<Pair<SystemGraphComponent,Exception>> errors =
-                components.stream().flatMap( c -> c.initializeSystemGraph( system ).stream().map( e -> Pair.of( c, e ) ) ).collect( Collectors.toList() );
-        if ( !errors.isEmpty() )
+        Preconditions.checkState( system.databaseName().equals( SYSTEM_DATABASE_NAME ),
+                "Cannot initialize system graph on database '" + system.databaseName() + "'" );
+
+        Exception failure = null;
+        for ( SystemGraphComponent component : components )
         {
-            if ( errors.size() == 1 )
+            try
             {
-                Pair<SystemGraphComponent,Exception> e = errors.get( 0 );
-                String componentId = e.first().component();
-                Exception cause = e.other();
-                return Optional.of( new IllegalStateException(
-                        "Failed to initialize system graph component '" + componentId + "': " + cause.getMessage(),
-                        cause ) );
+                component.initializeSystemGraph( system );
             }
-            else
+            catch ( Exception e )
             {
-                IllegalStateException exception = new IllegalStateException( "Multiple components failed to initialize the system graph" );
-                for ( Pair<SystemGraphComponent, Exception> error : errors )
-                {
-                    exception.addSuppressed( error.other() );
-                }
-                return Optional.of( exception );
+                failure = Exceptions.chain( failure, e );
             }
         }
-        return Optional.empty();
+
+        if ( failure != null )
+        {
+            throw new IllegalStateException( "Failed to initialize system graph component: " + failure.getMessage(), failure );
+        }
     }
 
     @Override
-    public Optional<Exception> upgradeToCurrent( GraphDatabaseService system )
+    public void upgradeToCurrent( GraphDatabaseService system ) throws Exception
     {
-        List<Exception> errors = new ArrayList<>();
+        Exception failure = null;
         for ( SystemGraphComponent component : componentsToUpgrade( system ) )
         {
-            Optional<Exception> exception = component.upgradeToCurrent( system );
-            exception.ifPresent( errors::add );
+            try
+            {
+                component.upgradeToCurrent( system );
+            }
+            catch ( Exception e )
+            {
+                failure = Exceptions.chain( failure, e );
+            }
         }
 
-        if ( !errors.isEmpty() )
+        if ( failure != null )
         {
-            if ( errors.size() == 1 )
-            {
-                return Optional.of( errors.get( 0 ) );
-            }
-            else
-            {
-                StringBuilder sb = new StringBuilder( String.format( "Multiple components failed to %s the system graph:", "upgrade" ) );
-                errors.forEach( e -> sb.append( "\n\t" ).append( e.toString() ) );
-                return Optional.of( new IllegalStateException( sb.toString() ) );
-            }
+            throw new IllegalStateException( "Failed to upgrade system graph:" + failure.getMessage(), failure );
         }
-        return Optional.empty();
     }
 
-    private List<SystemGraphComponent> componentsToUpgrade( GraphDatabaseService system )
+    private List<SystemGraphComponent> componentsToUpgrade( GraphDatabaseService system ) throws Exception
     {
         List<SystemGraphComponent> componentsToUpgrade = new ArrayList<>();
         SystemGraphComponent.executeWithFullAccess( system, tx -> components.stream().filter( c ->

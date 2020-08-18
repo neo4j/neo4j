@@ -19,8 +19,6 @@
  */
 package org.neo4j.dbms.database;
 
-import java.util.Optional;
-
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
@@ -114,30 +112,25 @@ public interface SystemGraphComponent
      * If the component-specific sub-graph of the system database is not initialized yet (empty), this method should populate it with the default contents for
      * the current version of the component.
      *
-     * @return Any possible error raised by the initialization process
+     * throws {@link Exception} on any possible error raised by the initialization process
      */
-    Optional<Exception> initializeSystemGraph( GraphDatabaseService system );
+    void initializeSystemGraph( GraphDatabaseService system ) throws Exception;
 
     /**
      * If the component-specific sub-graph of the system database is an older, but still supported, version, this method should upgrade it to the latest
      * supported version.
      *
-     * @return Any possible error raised by the upgrade process
+     * throws {@link Exception} on any possible error raised by the upgrade process
      */
-    Optional<Exception> upgradeToCurrent( GraphDatabaseService system );
+    void upgradeToCurrent( GraphDatabaseService system ) throws Exception;
 
-    static Optional<Exception> executeWithFullAccess( GraphDatabaseService system, ThrowingConsumer<Transaction,Exception> consumer )
+    static void executeWithFullAccess( GraphDatabaseService system, ThrowingConsumer<Transaction,Exception> consumer ) throws Exception
     {
         try ( TransactionImpl tx = (TransactionImpl) system.beginTx();
               KernelTransaction.Revertable ignore = tx.kernelTransaction().overrideWith( SecurityContext.AUTH_DISABLED ) )
         {
             consumer.accept( tx );
             tx.commit();
-            return Optional.empty();
-        }
-        catch ( Exception e )
-        {
-            return Optional.of( e );
         }
     }
 }

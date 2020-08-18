@@ -19,14 +19,13 @@
  */
 package org.neo4j.dbms.database;
 
-import java.util.Optional;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.util.Preconditions;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 
@@ -51,7 +50,7 @@ public abstract class AbstractSystemGraphComponent implements SystemGraphCompone
     {
     }
 
-    protected void assertSystemGraphIntegrity( GraphDatabaseService system ) throws Exception
+    protected void assertSystemGraphIntegrity( GraphDatabaseService system )
     {
     }
 
@@ -78,14 +77,15 @@ public abstract class AbstractSystemGraphComponent implements SystemGraphCompone
     }
 
     @Override
-    public Optional<Exception> initializeSystemGraph( GraphDatabaseService system )
+    public void initializeSystemGraph( GraphDatabaseService system ) throws Exception
     {
         boolean mayUpgrade = config.get( GraphDatabaseSettings.allow_single_automatic_upgrade );
-        assert system.databaseName().equals( SYSTEM_DATABASE_NAME );
-        try
-        {
-            Status status = detect( system );
-            if ( status == Status.UNINITIALIZED )
+
+        Preconditions.checkState( system.databaseName().equals( SYSTEM_DATABASE_NAME ),
+                "Cannot initialize system graph on database '" + system.databaseName() + "'" );
+
+        Status status = detect( system );
+        if ( status == Status.UNINITIALIZED )
             {
                 initializeSystemGraphConstraints( system );
                 initializeSystemGraphModel( system );
@@ -98,20 +98,13 @@ public abstract class AbstractSystemGraphComponent implements SystemGraphCompone
             }
             else if ( (mayUpgrade && status == Status.REQUIRES_UPGRADE) || status == Status.UNSUPPORTED_BUT_CAN_UPGRADE )
             {
-                return upgradeToCurrent( system );
+                upgradeToCurrent( system );
             }
             else
             {
-                return Optional.of(
-                        new IllegalStateException( String.format( "Unsupported component state for '%s': %s", component(), status.description() ) ) );
+                throw new IllegalStateException( String.format( "Unsupported component state for '%s': %s", component(), status.description() ) );
             }
             assertSystemGraphIntegrity( system );
-            return Optional.empty();
-        }
-        catch ( Exception e )
-        {
-            return Optional.of( e );
-        }
     }
 
     private Status detect( GraphDatabaseService system )

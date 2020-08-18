@@ -20,7 +20,6 @@
 package org.neo4j.server.security.systemgraph.versions;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.neo4j.cypher.internal.security.FormatException;
@@ -68,7 +67,7 @@ public abstract class KnownCommunitySecurityComponentVersion extends KnownSystem
         node.setProperty( "suspended", suspended );
     }
 
-    public abstract Optional<Exception> updateInitialUserPassword( Transaction tx );
+    public abstract void updateInitialUserPassword( Transaction tx ) throws Exception;
 
     void updateInitialUserPassword( Transaction tx, User initialUser ) throws FormatException
     {

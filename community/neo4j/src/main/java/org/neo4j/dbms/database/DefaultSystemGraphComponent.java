@@ -19,7 +19,6 @@
  */
 package org.neo4j.dbms.database;
 
-import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
 
@@ -96,9 +95,8 @@ public class DefaultSystemGraphComponent extends AbstractSystemGraphComponent
     }
 
     @Override
-    public Optional<Exception> upgradeToCurrent( GraphDatabaseService system )
+    public void upgradeToCurrent( GraphDatabaseService system )
     {
-        return Optional.empty();
     }
 
     private boolean hasDatabaseNode( Transaction tx )

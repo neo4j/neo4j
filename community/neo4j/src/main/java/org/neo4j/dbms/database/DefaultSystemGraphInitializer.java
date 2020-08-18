@@ -35,13 +35,9 @@ public class DefaultSystemGraphInitializer extends SystemGraphInitializer
     }
 
     @Override
-    protected void initializeSystemGraph() throws Exception
+    protected void initializeSystemGraph()
     {
         // First get a recent handle on the database representing the system graph
-        var error = systemGraphComponents.initializeSystemGraph( systemSupplier.get() );
-        if ( error.isPresent() )
-        {
-            throw error.get();
-        }
+        systemGraphComponents.initializeSystemGraph( systemSupplier.get() );
     }
 }
