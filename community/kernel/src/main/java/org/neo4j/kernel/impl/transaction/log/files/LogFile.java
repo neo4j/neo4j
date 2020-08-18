@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction.log.files;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 
 import org.neo4j.io.fs.FlushableChannel;
 import org.neo4j.io.fs.ReadableChannel;
@@ -79,5 +79,5 @@ public interface LogFile
      * @return A file object representing the file name and path of the log file rotated to.
      * @throws IOException if something goes wrong with either flushing the existing log file, or creating the new log file.
      */
-    File rotate() throws IOException;
+    Path rotate() throws IOException;
 }

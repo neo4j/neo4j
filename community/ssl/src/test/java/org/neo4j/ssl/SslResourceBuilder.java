@@ -19,11 +19,11 @@
  */
 package org.neo4j.ssl;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URL;
+import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -116,36 +116,36 @@ public class SslResourceBuilder
         return this;
     }
 
-    public SslResource install( File targetDirectory ) throws IOException
+    public SslResource install( Path targetDirectory ) throws IOException
     {
         return install( targetDirectory, CA_CERTIFICATE_NAME );
     }
 
-    public SslResource install( File targetDirectory, String trustedFileName ) throws IOException
+    public SslResource install( Path targetDirectory, String trustedFileName ) throws IOException
     {
-        File targetKey = new File( targetDirectory, PRIVATE_KEY_NAME );
-        File targetCertificate = new File( targetDirectory, PUBLIC_CERT_NAME );
-        File targetTrusted = new File( targetDirectory, TRUSTED_DIR_NAME );
-        File targetRevoked = new File( targetDirectory, REVOKED_DIR_NAME );
+        Path targetKey = targetDirectory.resolve( PRIVATE_KEY_NAME );
+        Path targetCertificate = targetDirectory.resolve( PUBLIC_CERT_NAME );
+        Path targetTrusted = targetDirectory.resolve( TRUSTED_DIR_NAME );
+        Path targetRevoked = targetDirectory.resolve( REVOKED_DIR_NAME );
 
-        fsa.mkdir( targetTrusted );
-        fsa.mkdir( targetRevoked );
+        fsa.mkdir( targetTrusted.toFile() );
+        fsa.mkdir( targetRevoked.toFile() );
 
         for ( int trustedKeyId : trusted )
         {
-            File targetTrustedCertificate = new File( targetTrusted, trustedKeyId + ".crt" );
+            Path targetTrustedCertificate = targetTrusted.resolve( trustedKeyId + ".crt" );
             copy( resource( SELF_SIGNED_NAME, trustedKeyId ), targetTrustedCertificate );
         }
 
         for ( int revokedKeyId : revoked )
         {
-            File targetRevokedCRL = new File( targetRevoked, revokedKeyId + ".crl" );
+            Path targetRevokedCRL = targetRevoked.resolve( revokedKeyId + ".crl" );
             copy( resource( REVOKED_NAME, revokedKeyId ), targetRevokedCRL );
         }
 
         if ( trustSignedByCA )
         {
-            File targetTrustedCertificate = new File( targetTrusted, trustedFileName );
+            Path targetTrustedCertificate = targetTrusted.resolve( trustedFileName );
             copy( resource( trustedFileName ), targetTrustedCertificate );
         }
 
@@ -165,10 +165,10 @@ public class SslResourceBuilder
         return SslResourceBuilder.class.getResource( CA_BASE_PATH + filename );
     }
 
-    private void copy( URL in, File outFile ) throws IOException
+    private void copy( URL in, Path outFile ) throws IOException
     {
         try ( InputStream is = in.openStream();
-              OutputStream os = fsa.openAsOutputStream( outFile, false ) )
+              OutputStream os = fsa.openAsOutputStream( outFile.toFile(), false ) )
         {
             is.transferTo( os );
         }

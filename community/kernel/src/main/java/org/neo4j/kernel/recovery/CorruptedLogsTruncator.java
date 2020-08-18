@@ -19,10 +19,12 @@
  */
 package org.neo4j.kernel.recovery;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
+import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
 import java.util.function.LongConsumer;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -51,12 +53,12 @@ public class CorruptedLogsTruncator
     public static final String CORRUPTED_TX_LOGS_BASE_NAME = "corrupted-" + TransactionLogFilesHelper.DEFAULT_NAME;
     private static final String LOG_FILE_ARCHIVE_PATTERN = CORRUPTED_TX_LOGS_BASE_NAME + "-%d-%d-%d.zip";
 
-    private final File storeDir;
+    private final Path storeDir;
     private final LogFiles logFiles;
     private final FileSystemAbstraction fs;
     private final MemoryTracker memoryTracker;
 
-    public CorruptedLogsTruncator( File storeDir, LogFiles logFiles, FileSystemAbstraction fs, MemoryTracker memoryTracker )
+    public CorruptedLogsTruncator( Path storeDir, LogFiles logFiles, FileSystemAbstraction fs, MemoryTracker memoryTracker )
     {
         this.storeDir = storeDir;
         this.logFiles = logFiles;
@@ -86,10 +88,10 @@ public class CorruptedLogsTruncator
     private void truncateLogFiles( long recoveredTransactionLogVersion, long recoveredTransactionOffset )
             throws IOException
     {
-        File lastRecoveredTransactionLog = logFiles.getLogFileForVersion( recoveredTransactionLogVersion );
-        fs.truncate( lastRecoveredTransactionLog, recoveredTransactionOffset );
+        Path lastRecoveredTransactionLog = logFiles.getLogFileForVersion( recoveredTransactionLogVersion );
+        fs.truncate( lastRecoveredTransactionLog.toFile(), recoveredTransactionOffset );
         forEachSubsequentLogFile( recoveredTransactionLogVersion,
-                fileIndex -> fs.deleteFile( logFiles.getLogFileForVersion( fileIndex ) ) );
+                fileIndex -> fs.deleteFile( logFiles.getLogFileForVersion( fileIndex ).toFile() ) );
     }
 
     private void forEachSubsequentLogFile( long recoveredTransactionLogVersion, LongConsumer action )
@@ -104,9 +106,9 @@ public class CorruptedLogsTruncator
     private void backupCorruptedContent( long recoveredTransactionLogVersion, long recoveredTransactionOffset )
             throws IOException
     {
-        File corruptedLogArchive = getArchiveFile( recoveredTransactionLogVersion, recoveredTransactionOffset );
+        Path corruptedLogArchive = getArchiveFile( recoveredTransactionLogVersion, recoveredTransactionOffset );
         try ( ZipOutputStream recoveryContent = new ZipOutputStream(
-                fs.openAsOutputStream( corruptedLogArchive, false ) );
+                fs.openAsOutputStream( corruptedLogArchive.toFile(), false ) );
                 var bufferScope = new HeapScopedBuffer(  1, MebiByte, memoryTracker ) )
         {
             copyTransactionLogContent( recoveredTransactionLogVersion, recoveredTransactionOffset, recoveryContent, bufferScope.getBuffer() );
@@ -124,12 +126,12 @@ public class CorruptedLogsTruncator
         }
     }
 
-    private File getArchiveFile( long recoveredTransactionLogVersion, long recoveredTransactionOffset )
+    private Path getArchiveFile( long recoveredTransactionLogVersion, long recoveredTransactionOffset )
             throws IOException
     {
-        File corruptedLogsFolder = new File( storeDir, CORRUPTED_TX_LOGS_BASE_NAME );
-        fs.mkdirs( corruptedLogsFolder );
-        return new File( corruptedLogsFolder,
+        Path corruptedLogsFolder = storeDir.resolve( CORRUPTED_TX_LOGS_BASE_NAME );
+        fs.mkdirs( corruptedLogsFolder.toFile() );
+        return corruptedLogsFolder.resolve(
                 format( LOG_FILE_ARCHIVE_PATTERN, recoveredTransactionLogVersion, recoveredTransactionOffset,
                         System.currentTimeMillis() ) );
     }
@@ -137,15 +139,15 @@ public class CorruptedLogsTruncator
     private void copyTransactionLogContent( long logFileIndex, long logOffset, ZipOutputStream destination,
             ByteBuffer byteBuffer ) throws IOException
     {
-        File logFile = logFiles.getLogFileForVersion( logFileIndex );
-        if ( fs.getFileSize( logFile ) == logOffset )
+        Path logFile = logFiles.getLogFileForVersion( logFileIndex );
+        if ( fs.getFileSize( logFile.toFile() ) == logOffset )
         {
             // file was recovered fully, nothing to backup
             return;
         }
-        ZipEntry zipEntry = new ZipEntry( logFile.getName() );
+        ZipEntry zipEntry = new ZipEntry( logFile.getFileName().toString() );
         destination.putNextEntry( zipEntry );
-        try ( StoreChannel transactionLogChannel = fs.read( logFile ) )
+        try ( StoreChannel transactionLogChannel = fs.read( logFile.toFile() ) )
         {
             transactionLogChannel.position( logOffset );
             while ( transactionLogChannel.read( byteBuffer ) >= 0 )
@@ -163,8 +165,15 @@ public class CorruptedLogsTruncator
         return logFiles.getHighestLogVersion() > recoveredTransactionLogVersion;
     }
 
-    private boolean isRecoveredLogCorrupted( long recoveredTransactionLogVersion, long recoveredTransactionOffset )
+    private boolean isRecoveredLogCorrupted( long recoveredTransactionLogVersion, long recoveredTransactionOffset ) throws IOException
     {
-        return logFiles.getLogFileForVersion( recoveredTransactionLogVersion ).length() > recoveredTransactionOffset;
+        try
+        {
+            return Files.size( logFiles.getLogFileForVersion( recoveredTransactionLogVersion ) ) > recoveredTransactionOffset;
+        }
+        catch ( NoSuchFileException ignored )
+        {
+            return false;
+        }
     }
 }

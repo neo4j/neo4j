@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -184,30 +184,30 @@ public class LogsUpgrader
             TransactionLogInitializer logInitializer = new TransactionLogInitializer(
                     fs, store, commandReaderFactory, tracer );
 
-            File transactionLogsDirectory = layout.getTransactionLogsDirectory().toFile();
-            File legacyLogsDirectory = legacyLogsLocator.getTransactionLogsDirectory().toFile();
+            Path transactionLogsDirectory = layout.getTransactionLogsDirectory();
+            Path legacyLogsDirectory = legacyLogsLocator.getTransactionLogsDirectory();
             boolean filesNeedsToMove = !transactionLogsDirectory.equals( legacyLogsDirectory );
 
             LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( legacyLogsDirectory, fs )
                     .withCommandReaderFactory( commandReaderFactory )
                     .build();
             // Move log files to their intended directory, if they are not there already.
-            File[] legacyFiles = logFiles.logFiles();
+            Path[] legacyFiles = logFiles.logFiles();
             if ( legacyFiles != null && legacyFiles.length > 0 )
             {
                 if ( filesNeedsToMove )
                 {
-                    for ( File legacyFile : legacyFiles )
+                    for ( Path legacyFile : legacyFiles )
                     {
-                        fs.copyFile( legacyFile, new File( transactionLogsDirectory, legacyFile.getName() ), EMPTY_COPY_OPTIONS );
+                        fs.copyFile( legacyFile.toFile(), transactionLogsDirectory.resolve( legacyFile.getFileName() ).toFile(), EMPTY_COPY_OPTIONS );
                     }
                 }
                 logInitializer.initializeExistingLogFiles( layout, transactionLogsDirectory );
                 if ( filesNeedsToMove )
                 {
-                    for ( File legacyFile : legacyFiles )
+                    for ( Path legacyFile : legacyFiles )
                     {
-                        fs.deleteFile( legacyFile );
+                        fs.deleteFile( legacyFile.toFile() );
                     }
                 }
             }

@@ -21,8 +21,8 @@ package org.neo4j.kernel.impl.transaction.log.pruning;
 
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 
 import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
 import org.neo4j.logging.AssertableLogProvider;
@@ -36,7 +36,7 @@ import static org.neo4j.logging.LogAssertions.assertThat;
 class EntryCountThresholdTest
 {
     private final LogFileInformation info = mock( LogFileInformation.class );
-    private final File file = mock( File.class );
+    private final Path file = mock( Path.class );
     private final AssertableLogProvider logProvider = new AssertableLogProvider();
 
     @Test

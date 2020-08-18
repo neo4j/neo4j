@@ -24,8 +24,8 @@ import org.junit.jupiter.api.Test;
 import picocli.CommandLine;
 
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.PrintStream;
+import java.nio.file.Path;
 
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -53,13 +53,13 @@ class SetInitialPasswordCommandTest
     private TestDirectory testDir;
 
     private SetInitialPasswordCommand command;
-    private File authInitFile;
+    private Path authInitFile;
 
     @BeforeEach
     void setup()
     {
-        command = new SetInitialPasswordCommand( new ExecutionContext( testDir.directory( "home" ).toPath(),
-                testDir.directory( "conf" ).toPath(), mock( PrintStream.class ), mock( PrintStream.class ), fileSystem ) );
+        command = new SetInitialPasswordCommand( new ExecutionContext( testDir.directoryPath( "home" ),
+                testDir.directoryPath( "conf" ), mock( PrintStream.class ), mock( PrintStream.class ), fileSystem ) );
 
         authInitFile = CommunitySecurityModule.getInitialUserRepositoryFile( command.loadNeo4jConfig() );
         CommunitySecurityModule.getUserRepositoryFile( command.loadNeo4jConfig() );
@@ -90,7 +90,7 @@ class SetInitialPasswordCommandTest
     void shouldSetInitialPassword() throws Throwable
     {
         // Given
-        assertFalse( fileSystem.fileExists( authInitFile ) );
+        assertFalse( fileSystem.fileExists( authInitFile.toFile() ) );
 
         // When
         CommandLine.populateCommand( command, "123" );
@@ -104,8 +104,8 @@ class SetInitialPasswordCommandTest
     void shouldOverwriteInitialPasswordFileIfExists() throws Throwable
     {
         // Given
-        fileSystem.mkdirs( authInitFile.getParentFile() );
-        fileSystem.write( authInitFile );
+        fileSystem.mkdirs( authInitFile.getParent().toFile() );
+        fileSystem.write( authInitFile.toFile() );
 
         // When
         CommandLine.populateCommand( command, "123" );
@@ -127,7 +127,7 @@ class SetInitialPasswordCommandTest
 
     private void assertAuthIniFile( String password ) throws Throwable
     {
-        assertTrue( fileSystem.fileExists( authInitFile ) );
+        assertTrue( fileSystem.fileExists( authInitFile.toFile() ) );
         FileUserRepository userRepository = new FileUserRepository( fileSystem, authInitFile,
                 NullLogProvider.getInstance() );
         userRepository.start();

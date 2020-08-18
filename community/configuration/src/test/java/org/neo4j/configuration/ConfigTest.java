@@ -447,7 +447,7 @@ class ConfigTest
     void shouldLogIfConfigFileCouldNotBeFound()
     {
         Log log = mock( Log.class );
-        File confFile = testDirectory.file( "test.conf" ); // Note: we don't create the file.
+        Path confFile = testDirectory.filePath( "test.conf" ); // Note: we don't create the file.
 
         Config config = Config.emptyBuilder().fromFileNoThrow( confFile ).build();
 
@@ -475,12 +475,12 @@ class ConfigTest
     @Test
     void canReadConfigFile() throws IOException
     {
-        File confFile = testDirectory.file( "test.conf" );
-        Files.write( confFile.toPath(), Collections.singletonList( GraphDatabaseSettings.default_database.name() + "=foo" ) );
+        Path confFile = testDirectory.filePath( "test.conf" );
+        Files.write( confFile, Collections.singletonList( GraphDatabaseSettings.default_database.name() + "=foo" ) );
 
         assertEquals( "foo", Config.newBuilder().fromFile( confFile ).build().get( GraphDatabaseSettings.default_database ) );
         assertEquals( "foo", Config.newBuilder().fromFileNoThrow( confFile ).build().get( GraphDatabaseSettings.default_database ) );
-        assertEquals( "foo", Config.newBuilder().fromFileNoThrow( confFile.toPath() ).build().get( GraphDatabaseSettings.default_database ) );
+        assertEquals( "foo", Config.newBuilder().fromFileNoThrow( confFile ).build().get( GraphDatabaseSettings.default_database ) );
     }
 
     @Test
@@ -508,8 +508,8 @@ class ConfigTest
     void mustWarnIfFileContainsDuplicateSettings() throws Exception
     {
         Log log = mock( Log.class );
-        File confFile = testDirectory.createFile( "test.conf" );
-        Files.write( confFile.toPath(), Arrays.asList(
+        Path confFile = testDirectory.createFilePath( "test.conf" );
+        Files.write( confFile, Arrays.asList(
                 ExternalSettings.initial_heap_size.name() + "=5g",
                 ExternalSettings.initial_heap_size.name() + "=4g",
                 ExternalSettings.initial_heap_size.name() + "=3g",
@@ -577,8 +577,8 @@ class ConfigTest
     @Test
     void testStrictValidation() throws IOException
     {
-        File confFile = testDirectory.createFile( "test.conf" );
-        Files.write( confFile.toPath(), Collections.singletonList( "some_unrecognized_garbage=true" ) );
+        Path confFile = testDirectory.createFilePath( "test.conf" );
+        Files.write( confFile, Collections.singletonList( "some_unrecognized_garbage=true" ) );
 
         Config.Builder builder = Config.newBuilder().fromFile( confFile );
         builder.set( GraphDatabaseSettings.strict_config_validation, true );
@@ -603,8 +603,8 @@ class ConfigTest
     @Test
     void testDoesNotLogChangedJvmArgs() throws IOException
     {
-        File confFile = testDirectory.createFile( "test.conf" );
-        Files.write( confFile.toPath(), List.of( "dbms.jvm.additional=-XX:+UseG1GC", "dbms.jvm.additional=-XX:+AlwaysPreTouch",
+        Path confFile = testDirectory.createFilePath( "test.conf" );
+        Files.write( confFile, List.of( "dbms.jvm.additional=-XX:+UseG1GC", "dbms.jvm.additional=-XX:+AlwaysPreTouch",
                 "dbms.jvm.additional=-XX:+UnlockExperimentalVMOptions", "dbms.jvm.additional=-XX:+TrustFinalNonStaticFields" ) );
 
         Config config = Config.newBuilder().fromFile( confFile ).build();

@@ -22,7 +22,6 @@ package org.neo4j.kernel.diagnostics;
 import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
@@ -62,7 +61,7 @@ class DiagnosticsReporterTest
     {
         DiagnosticsReporter reporter = setupDiagnosticsReporter();
 
-        Path destination = testDirectory.file( "logs.zip" ).toPath();
+        Path destination = testDirectory.filePath( "logs.zip" );
 
         reporter.dump( Collections.singleton( "logs" ), destination, mock( DiagnosticsReporterProgress.class), true );
 
@@ -79,7 +78,7 @@ class DiagnosticsReporterTest
 
         myProvider.addFile( "logs/a.txt", createNewFileWithContent( "a.txt", "file a") );
 
-        Path destination = testDirectory.file( "logs.zip" ).toPath();
+        Path destination = testDirectory.filePath( "logs.zip" );
         Set<String> classifiers = new HashSet<>();
         classifiers.add( "logs" );
         classifiers.add( "fail" );
@@ -118,18 +117,18 @@ class DiagnosticsReporterTest
     {
         DiagnosticsReporter reporter = setupDiagnosticsReporter();
 
-        Path destination = testDirectory.file( "log files.zip" ).toPath();
+        Path destination = testDirectory.filePath( "log files.zip" );
 
         reporter.dump( Collections.singleton( "logs" ), destination, mock( DiagnosticsReporterProgress.class), true );
 
         verifyContent( destination );
     }
 
-    private File createNewFileWithContent( String name, String content ) throws IOException
+    private Path createNewFileWithContent( String name, String content ) throws IOException
     {
-        Path file = testDirectory.file( name ).toPath();
+        Path file = testDirectory.filePath( name );
         Files.write( file, content.getBytes() );
-        return file.toFile();
+        return file;
     }
 
     private DiagnosticsReporter setupDiagnosticsReporter() throws IOException
@@ -170,13 +169,13 @@ class DiagnosticsReporterTest
             this.fs = fs;
         }
 
-        void addFile( String destination, File file )
+        void addFile( String destination, Path file )
         {
             logFiles.add( newDiagnosticsFile( destination, fs, file ) );
         }
 
         @Override
-        public void init( FileSystemAbstraction fs, String defaultDatabaseName, Config config, File storeDirectory )
+        public void init( FileSystemAbstraction fs, String defaultDatabaseName, Config config, Path storeDirectory )
         {
         }
 

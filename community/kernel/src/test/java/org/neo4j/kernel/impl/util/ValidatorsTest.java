@@ -22,6 +22,8 @@ package org.neo4j.kernel.impl.util;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
@@ -63,11 +65,12 @@ class ValidatorsTest
 
     private void validate( String fileByName )
     {
-        Validators.REGEX_FILE_EXISTS.validate( directory.file( fileByName ) );
+        Path home = directory.homePath();
+        Validators.REGEX_FILE_EXISTS.validate( home + home.getFileSystem().getSeparator() + fileByName );
     }
 
     private void existenceOfFile( String name ) throws IOException
     {
-        directory.file( name ).createNewFile();
+        Files.createFile( directory.filePath( name ) );
     }
 }

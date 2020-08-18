@@ -25,6 +25,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.io.UncheckedIOException;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
@@ -77,8 +78,8 @@ public class TokenScanWriteMonitor implements NativeTokenScanWriter.WriteMonitor
     private static final String ARG_TXFILTER = "txfilter";
 
     private final FileSystemAbstraction fs;
-    private final File storeDir;
-    private final File file;
+    private final Path storeDir;
+    private final Path file;
     private FlushableChannel channel;
     private final Lock lock = new ReentrantLock();
     private final LongAdder position = new LongAdder();
@@ -97,11 +98,11 @@ public class TokenScanWriteMonitor implements NativeTokenScanWriter.WriteMonitor
         this.fs = fs;
         this.rotationThreshold = rotationThresholdUnit.toBytes( rotationThreshold );
         this.pruneThreshold = pruneThresholdUnit.toMillis( pruneThreshold );
-        this.storeDir = databaseLayout.databaseDirectory().toFile();
+        this.storeDir = databaseLayout.databaseDirectory();
         this.file = writeLogBaseFile( databaseLayout, entityType );
         try
         {
-            if ( fs.fileExists( file ) )
+            if ( fs.fileExists( file.toFile() ) )
             {
                 moveAwayFile();
             }
@@ -113,15 +114,15 @@ public class TokenScanWriteMonitor implements NativeTokenScanWriter.WriteMonitor
         }
     }
 
-    static File writeLogBaseFile( DatabaseLayout databaseLayout, EntityType entityType )
+    static Path writeLogBaseFile( DatabaseLayout databaseLayout, EntityType entityType )
     {
-        File baseFile = entityType == EntityType.NODE ? databaseLayout.labelScanStore().toFile() : databaseLayout.relationshipTypeScanStore().toFile();
-        return new File( baseFile + ".writelog" );
+        Path baseFile = entityType == EntityType.NODE ? databaseLayout.labelScanStore() : databaseLayout.relationshipTypeScanStore();
+        return baseFile.resolveSibling( baseFile.getFileName() + ".writelog" );
     }
 
     private PhysicalFlushableChannel instantiateChannel() throws IOException
     {
-        return new PhysicalFlushableChannel( fs.write( file ), INSTANCE );
+        return new PhysicalFlushableChannel( fs.write( file.toFile() ), INSTANCE );
     }
 
     @Override
@@ -244,7 +245,7 @@ public class TokenScanWriteMonitor implements NativeTokenScanWriter.WriteMonitor
             // Prune
             long time = currentTimeMillis();
             long threshold = time - pruneThreshold;
-            for ( File file : fs.listFiles( storeDir, ( dir, name ) -> name.startsWith( file.getName() + "-" ) ) )
+            for ( File file : fs.listFiles( storeDir.toFile(), ( dir, name ) -> name.startsWith( file.getFileName() + "-" ) ) )
             {
                 if ( millisOf( file ) < threshold )
                 {
@@ -299,18 +300,18 @@ public class TokenScanWriteMonitor implements NativeTokenScanWriter.WriteMonitor
 
     private void moveAwayFile() throws IOException
     {
-        File to;
+        Path to;
         do
         {
             to = timestampedFile();
         }
-        while ( fs.fileExists( to ) );
-        fs.renameFile( file, to );
+        while ( fs.fileExists( to.toFile() ) );
+        fs.renameFile( file.toFile(), to.toFile() );
     }
 
-    private File timestampedFile()
+    private Path timestampedFile()
     {
-        return new File( storeDir, file.getName() + "-" + currentTimeMillis() );
+        return storeDir.resolve( file.getFileName() + "-" + currentTimeMillis() );
     }
 
     /**
@@ -391,7 +392,7 @@ public class TokenScanWriteMonitor implements NativeTokenScanWriter.WriteMonitor
             return;
         }
 
-        DatabaseLayout databaseLayout = DatabaseLayout.ofFlat( new File( arguments.orphans().get( 0 ) ).toPath() );
+        DatabaseLayout databaseLayout = DatabaseLayout.ofFlat( Path.of( arguments.orphans().get( 0 ) ) );
         FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
         TxFilter txFilter = parseTxFilter( arguments.get( ARG_TXFILTER, null ) );
         PrintStream out = System.out;
@@ -401,7 +402,7 @@ public class TokenScanWriteMonitor implements NativeTokenScanWriter.WriteMonitor
         {
             if ( redirectsToFile )
             {
-                File outFile = new File( writeLogBaseFile( databaseLayout, entityType ).getAbsolutePath() + ".txt" );
+                File outFile = new File( writeLogBaseFile( databaseLayout, entityType ).toAbsolutePath() + ".txt" );
                 System.out.println( "Redirecting output to " + outFile );
                 out = new PrintStream( new BufferedOutputStream( new FileOutputStream( outFile ) ) );
             }
@@ -417,8 +418,8 @@ public class TokenScanWriteMonitor implements NativeTokenScanWriter.WriteMonitor
     public static void dump( FileSystemAbstraction fs, DatabaseLayout databaseLayout, Dumper dumper, TxFilter txFilter, EntityType entityType )
             throws IOException
     {
-        File writeLogFile = writeLogBaseFile( databaseLayout, entityType );
-        String writeLogFileBaseName = writeLogFile.getName();
+        Path writeLogFile = writeLogBaseFile( databaseLayout, entityType );
+        String writeLogFileBaseName = writeLogFile.getFileName().toString();
         File[] files = fs.listFiles( databaseLayout.databaseDirectory().toFile(), ( dir, name ) -> name.startsWith( writeLogFileBaseName ) );
         Arrays.sort( files, comparing( file -> file.getName().equals( writeLogFileBaseName ) ? 0 : millisOf( file ) ) );
         long session = 0;

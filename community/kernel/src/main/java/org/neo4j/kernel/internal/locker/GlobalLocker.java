@@ -29,6 +29,6 @@ public class GlobalLocker extends GlobalFileLocker
 {
     public GlobalLocker( FileSystemAbstraction fileSystemAbstraction, Neo4jLayout neo4jLayout )
     {
-        super( fileSystemAbstraction, neo4jLayout.storeLockFile().toFile() );
+        super( fileSystemAbstraction, neo4jLayout.storeLockFile() );
     }
 }

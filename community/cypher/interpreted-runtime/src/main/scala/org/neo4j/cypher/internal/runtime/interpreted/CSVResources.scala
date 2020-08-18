@@ -135,7 +135,7 @@ class CSVResources(resourceManager: ResourceManager) extends ExternalCSVResource
 
   private def getReader(url: URL) = try {
     val reader = if (url.getProtocol == "file") {
-      Readables.files(StandardCharsets.UTF_8, Paths.get(url.toURI).toFile)
+      Readables.files(StandardCharsets.UTF_8, Paths.get(url.toURI))
     } else {
       val inputStream = openStream(url)
       Readables.wrap(inputStream, url.toString, StandardCharsets.UTF_8, 0 /*length doesn't matter in this context*/)

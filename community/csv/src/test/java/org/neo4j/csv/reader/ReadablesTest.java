@@ -23,9 +23,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -33,6 +30,8 @@ import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.stream.Stream;
 import java.util.zip.GZIPOutputStream;
 import java.util.zip.ZipEntry;
@@ -68,7 +67,7 @@ class ReadablesTest
         String text = "abcdefghijlkmnopqrstuvxyz";
 
         // WHEN
-        File compressed = compressWithZip( text );
+        Path compressed = compressWithZip( text );
 
         // THEN
         assertReadText( compressed, text, readMethod );
@@ -82,7 +81,7 @@ class ReadablesTest
         String text = "abcdefghijlkmnopqrstuvxyz";
 
         // WHEN
-        File compressed = compressWithGZip( text );
+        Path compressed = compressWithGZip( text );
 
         // THEN
         assertReadText( compressed, text, readMethod );
@@ -96,7 +95,7 @@ class ReadablesTest
         String text = "abcdefghijlkmnopqrstuvxyz";
 
         // WHEN
-        File plainText = write( text );
+        Path plainText = write( text );
 
         // THEN
         assertReadText( plainText, text, readMethod );
@@ -110,7 +109,7 @@ class ReadablesTest
         String text = "abcdefghijlkmnopqrstuvxyz";
 
         // WHEN
-        File compressed = compressWithZip( text, ".nothing", ".DS_Store", "__MACOSX/", "__MACOSX/file" );
+        Path compressed = compressWithZip( text, ".nothing", ".DS_Store", "__MACOSX/", "__MACOSX/file" );
 
         // THEN
         assertReadText( compressed, text, readMethod );
@@ -122,7 +121,7 @@ class ReadablesTest
     {
         // GIVEN
         String text = "abcdefghijlkmnopqrstuvxyz";
-        File compressed = compressWithZip( text, ".nothing", ".DS_Store", "somewhere/something" );
+        Path compressed = compressWithZip( text, ".nothing", ".DS_Store", "somewhere/something" );
 
         // WHEN
         IOException exception = assertThrows( IOException.class, () -> Readables.files( Charset.defaultCharset(), compressed ) );
@@ -192,7 +191,7 @@ class ReadablesTest
         String text = "abcdefghijklmnop";
 
         // WHEN
-        File file = writeToFile( text, Charset.defaultCharset() );
+        Path file = writeToFile( text, Charset.defaultCharset() );
 
         // THEN
         assertReadTextAsInputStream( file, text, readMethod );
@@ -263,7 +262,7 @@ class ReadablesTest
     {
         // GIVEN
         String data = "abcåäö[]{}";
-        File file = writeToFile( data, charset );
+        Path file = writeToFile( data, charset );
 
         // WHEN
         CharReadable reader = Readables.files( charset, file );
@@ -280,20 +279,20 @@ class ReadablesTest
         }
     }
 
-    private File writeToFile( String data, Charset charset ) throws IOException
+    private Path writeToFile( String data, Charset charset ) throws IOException
     {
-        File file = new File( directory.homeDir(), "text-" + charset.name() );
-        try ( Writer writer = new OutputStreamWriter( new FileOutputStream( file ), charset ) )
+        Path file = directory.homePath().resolve( "text-" + charset.name() );
+        try ( Writer writer = new OutputStreamWriter( Files.newOutputStream( file ), charset ) )
         {
             writer.append( data );
         }
         return file;
     }
 
-    private File writeToFile( byte[] header, String data, Charset charset ) throws IOException
+    private Path writeToFile( byte[] header, String data, Charset charset ) throws IOException
     {
-        File file = new File( directory.homeDir(), "text-" + charset.name() );
-        try ( OutputStream out = new FileOutputStream( file );
+        Path file = directory.homePath().resolve( "text-" + charset.name() );
+        try ( OutputStream out = Files.newOutputStream( file );
             Writer writer = new OutputStreamWriter( out, charset ) )
         {
             out.write( header );
@@ -302,20 +301,20 @@ class ReadablesTest
         return file;
     }
 
-    private File write( String text ) throws IOException
+    private Path write( String text ) throws IOException
     {
-        File file = directory.file( "plain-text" );
-        try ( OutputStream out = new FileOutputStream( file ) )
+        Path file = directory.filePath( "plain-text" );
+        try ( OutputStream out = Files.newOutputStream( file ) )
         {
             out.write( text.getBytes() );
         }
         return file;
     }
 
-    private File compressWithZip( String text, String... otherEntries ) throws IOException
+    private Path compressWithZip( String text, String... otherEntries ) throws IOException
     {
-        File file = directory.file( "compressed" );
-        try ( ZipOutputStream out = new ZipOutputStream( new FileOutputStream( file ) ) )
+        Path file = directory.filePath( "compressed" );
+        try ( ZipOutputStream out = new ZipOutputStream( Files.newOutputStream( file ) ) )
         {
             for ( String otherEntry : otherEntries )
             {
@@ -328,26 +327,26 @@ class ReadablesTest
         return file;
     }
 
-    private File compressWithGZip( String text ) throws IOException
+    private Path compressWithGZip( String text ) throws IOException
     {
-        File file = directory.file( "compressed" );
-        try ( GZIPOutputStream out = new GZIPOutputStream( new FileOutputStream( file ) ) )
+        Path file = directory.filePath( "compressed" );
+        try ( GZIPOutputStream out = new GZIPOutputStream( Files.newOutputStream( file ) ) )
         {
             out.write( text.getBytes() );
         }
         return file;
     }
 
-    private void assertReadText( File file, String text, ReadMethod readMethod ) throws IOException
+    private void assertReadText( Path file, String text, ReadMethod readMethod ) throws IOException
     {
         assertReadText( Readables.files( Charset.defaultCharset(), file ), text, readMethod );
     }
 
-    private void assertReadTextAsInputStream( File file, String text, ReadMethod readMethod ) throws IOException
+    private void assertReadTextAsInputStream( Path file, String text, ReadMethod readMethod ) throws IOException
     {
-        try ( InputStream stream = new FileInputStream( file ) )
+        try ( InputStream stream = Files.newInputStream( file ) )
         {
-            assertReadText( Readables.wrap( stream, file.getPath(), Charset.defaultCharset(), file.length() ), text, readMethod );
+            assertReadText( Readables.wrap( stream, file.toString(), Charset.defaultCharset(), Files.size( file ) ), text, readMethod );
         }
     }
 

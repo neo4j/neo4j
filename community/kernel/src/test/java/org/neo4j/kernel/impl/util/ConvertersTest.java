@@ -21,8 +21,8 @@ package org.neo4j.kernel.impl.util;
 
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
@@ -42,23 +42,23 @@ class ConvertersTest
     void shouldSortFilesByNumberCleverly() throws Exception
     {
         // GIVEN
-        File file1 = existenceOfFile( "file1" );
-        File file123 = existenceOfFile( "file123" );
-        File file12 = existenceOfFile( "file12" );
-        File file2 = existenceOfFile( "file2" );
-        File file32 = existenceOfFile( "file32" );
+        Path file1 = existenceOfFile( "file1" );
+        Path file123 = existenceOfFile( "file123" );
+        Path file12 = existenceOfFile( "file12" );
+        Path file2 = existenceOfFile( "file2" );
+        Path file32 = existenceOfFile( "file32" );
 
         // WHEN
-        File[] files = regexFiles( true ).apply( directory.file( "file.*" ).getAbsolutePath() );
+        Path[] files = regexFiles( true ).apply( directory.filePath( "file" ).toAbsolutePath().toString() + ".*" );
 
         // THEN
-        assertArrayEquals( new File[]{file1, file2, file12, file32, file123}, files );
+        assertArrayEquals( new Path[]{file1, file2, file12, file32, file123}, files );
     }
 
-    private File existenceOfFile( String name ) throws IOException
+    private Path existenceOfFile( String name ) throws IOException
     {
-        File file = directory.file( name );
-        assertTrue( file.createNewFile() );
+        Path file = directory.filePath( name );
+        assertTrue( file.toFile().createNewFile() );
         return file;
     }
 }

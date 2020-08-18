@@ -27,10 +27,10 @@ import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.api.parallel.Resources;
 
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.file.Files;
+import java.nio.file.Path;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.logging.FormattedLogFormat;
@@ -106,41 +106,41 @@ class LogConfigTest
     @Test
     void withRotationShouldRotateOnThreshold()
     {
-        File targetFile = new File( dir.homeDir(), "debug.log" );
-        File targetFile1 = new File( dir.homeDir(), "debug.log.1" );
-        File targetFile2 = new File( dir.homeDir(), "debug.log.2" );
+        Path targetFile = dir.homePath().resolve( "debug.log" );
+        Path targetFile1 = dir.homePath().resolve( "debug.log.1" );
+        Path targetFile2 = dir.homePath().resolve( "debug.log.2" );
 
-        ctx = LogConfig.createBuilder( targetFile.toPath(), Level.INFO )
+        ctx = LogConfig.createBuilder( targetFile, Level.INFO )
                 .withRotation( 10, 2 )
                 .build();
 
-        assertThat( fs.fileExists( targetFile ) ).isEqualTo( true );
+        assertThat( fs.fileExists( targetFile.toFile() ) ).isEqualTo( true );
 
         Logger logger = ctx.getLogger( "test" );
 
         logger.warn( "test" );
-        assertThat( fs.fileExists( targetFile ) ).isEqualTo( true );
-        assertThat( fs.fileExists( targetFile1 ) ).isEqualTo( false );
+        assertThat( fs.fileExists( targetFile.toFile() ) ).isEqualTo( true );
+        assertThat( fs.fileExists( targetFile1.toFile() ) ).isEqualTo( false );
 
         logger.warn( "test" );
-        assertThat( fs.fileExists( targetFile ) ).isEqualTo( true );
-        assertThat( fs.fileExists( targetFile1 ) ).isEqualTo( true );
-        assertThat( fs.fileExists( targetFile2 ) ).isEqualTo( false );
+        assertThat( fs.fileExists( targetFile.toFile() ) ).isEqualTo( true );
+        assertThat( fs.fileExists( targetFile1.toFile() ) ).isEqualTo( true );
+        assertThat( fs.fileExists( targetFile2.toFile() ) ).isEqualTo( false );
     }
 
     @Test
     void withRotationShouldRespectMaxArchives() throws IOException
     {
-        File targetFile = new File( dir.homeDir(), "debug.log" );
-        File targetFile1 = new File( dir.homeDir(), "debug.log.1" );
-        File targetFile2 = new File( dir.homeDir(), "debug.log.2" );
-        File targetFile3 = new File( dir.homeDir(), "debug.log.3" );
+        Path targetFile = dir.homePath().resolve( "debug.log" );
+        Path targetFile1 = dir.homePath().resolve( "debug.log.1" );
+        Path targetFile2 = dir.homePath().resolve( "debug.log.2" );
+        Path targetFile3 = dir.homePath().resolve( "debug.log.3" );
 
-        ctx = LogConfig.createBuilder( targetFile.toPath(), Level.INFO )
+        ctx = LogConfig.createBuilder( targetFile, Level.INFO )
                 .withRotation( 10, 2 )
                 .build();
 
-        assertThat( fs.fileExists( targetFile ) ).isEqualTo( true );
+        assertThat( fs.fileExists( targetFile.toFile() ) ).isEqualTo( true );
 
         Logger logger = ctx.getLogger( "test" );
 
@@ -148,23 +148,23 @@ class LogConfigTest
         logger.warn( "test2" );
         logger.warn( "test3" );
         logger.warn( "test4" );
-        assertThat( fs.fileExists( targetFile ) ).isEqualTo( true );
-        assertThat( fs.fileExists( targetFile1 ) ).isEqualTo( true );
-        assertThat( fs.fileExists( targetFile2 ) ).isEqualTo( true );
-        assertThat( fs.fileExists( targetFile3 ) ).isEqualTo( false );
+        assertThat( fs.fileExists( targetFile.toFile() ) ).isEqualTo( true );
+        assertThat( fs.fileExists( targetFile1.toFile() ) ).isEqualTo( true );
+        assertThat( fs.fileExists( targetFile2.toFile() ) ).isEqualTo( true );
+        assertThat( fs.fileExists( targetFile3.toFile() ) ).isEqualTo( false );
 
-        assertThat( Files.readString( targetFile.toPath() ) ).contains( "test4" );
-        assertThat( Files.readString( targetFile1.toPath() ) ).contains( "test3" );
-        assertThat( Files.readString( targetFile2.toPath() ) ).contains( "test2" );
+        assertThat( Files.readString( targetFile ) ).contains( "test4" );
+        assertThat( Files.readString( targetFile1 ) ).contains( "test3" );
+        assertThat( Files.readString( targetFile2 ) ).contains( "test2" );
     }
 
     @Test
     void withHeaderLoggerShouldBeUsedAsHeader() throws IOException
     {
-        File targetFile = new File( dir.homeDir(), "debug.log" );
-        File targetFile1 = new File( dir.homeDir(), "debug.log.1" );
+        Path targetFile = dir.homePath().resolve("debug.log" );
+        Path targetFile1 = dir.homePath().resolve("debug.log.1" );
 
-        ctx = LogConfig.createBuilder( targetFile.toPath(), Level.INFO )
+        ctx = LogConfig.createBuilder( targetFile, Level.INFO )
                 .withRotation( 30, 2 )
                 .withHeaderLogger( log ->
                         {
@@ -173,21 +173,21 @@ class LogConfigTest
                         }, "org.neo4j.HeaderClassName" )
                 .build();
 
-        assertThat( fs.fileExists( targetFile ) ).isEqualTo( true );
+        assertThat( fs.fileExists( targetFile.toFile() ) ).isEqualTo( true );
 
         Logger logger = ctx.getLogger( "className" );
 
         logger.warn( "Long line that will get next message to be written to next file" );
         logger.warn( "test2" );
 
-        assertThat( fs.fileExists( targetFile ) ).isEqualTo( true );
-        assertThat( fs.fileExists( targetFile1 ) ).isEqualTo( true );
+        assertThat( fs.fileExists( targetFile.toFile() ) ).isEqualTo( true );
+        assertThat( fs.fileExists( targetFile1.toFile() ) ).isEqualTo( true );
 
         // First file (the one rotated to targetFile1) should not have the header.
-        assertThat( Files.readString( targetFile1.toPath() ) )
+        assertThat( Files.readString( targetFile1 ) )
                 .matches( DATE_PATTERN + format( " %-5s \\[className\\] Long line that will get next message to be written to next file%n", Level.WARN ) );
 
-        assertThat( Files.readString( targetFile.toPath() ) )
+        assertThat( Files.readString( targetFile ) )
                 .matches( format( DATE_PATTERN + " %-5s \\[o.n.HeaderClassName\\] My Header%n" +
                                   DATE_PATTERN + " %-5s \\[o.n.HeaderClassName\\] In Two Lines%n" +
                                   DATE_PATTERN + " %-5s \\[className\\] test2%n", Level.WARN, Level.WARN, Level.WARN ) );
@@ -196,19 +196,19 @@ class LogConfigTest
     @Test
     void createOnDemandShouldCreateOnDemand()
     {
-        File targetFile = new File( dir.homeDir(), "debug.log" );
+        Path targetFile = dir.homePath().resolve( "debug.log" );
 
-        ctx = LogConfig.createBuilder( targetFile.toPath(), Level.INFO )
+        ctx = LogConfig.createBuilder( targetFile, Level.INFO )
                 .withRotation( 10, 2 )
                 .createOnDemand()
                 .build();
 
-        assertThat( fs.fileExists( targetFile ) ).isEqualTo( false );
+        assertThat( fs.fileExists( targetFile.toFile() ) ).isEqualTo( false );
 
         Logger logger = ctx.getLogger( "test" );
         logger.warn( "test" );
 
-        assertThat( fs.fileExists( targetFile ) ).isEqualTo( true );
+        assertThat( fs.fileExists( targetFile.toFile() ) ).isEqualTo( true );
     }
 
     @Test
@@ -228,29 +228,29 @@ class LogConfigTest
     @Test
     void logToSystemOutShouldOnlyLogToSystemOut()
     {
-        /* The sent in filename should be ignored if logToSystemOut is used. */
-        File targetFile = new File( dir.homeDir(), "debug.log" );
+        // The sent in filename should be ignored if logToSystemOut is used.
+        Path targetFile = dir.homePath().resolve( "debug.log" );
 
-        ctx = LogConfig.createBuilder( targetFile.toPath(), Level.INFO )
+        ctx = LogConfig.createBuilder( targetFile, Level.INFO )
                 .logToSystemOut()
                 .build();
 
         Logger logger = ctx.getLogger( "test" );
         logger.warn( "test" );
 
-        assertThat( fs.fileExists( targetFile ) ).isEqualTo( false );
+        assertThat( fs.fileExists( targetFile.toFile() ) ).isEqualTo( false );
         assertThat( suppressOutput.getOutputVoice().containsMessage( "test" ) ).isTrue();
     }
 
     @Test
     void reconfigureShouldUseNewSettings()
     {
-        File targetFile = new File( dir.homeDir(), "debug.log" );
-        File targetFile1 = new File( dir.homeDir(), "debug.log.1" );
-        File targetFile2 = new File( dir.homeDir(), "debug.log.2" );
-        File targetFile3 = new File( dir.homeDir(), "debug.log.3" );
+        Path targetFile = dir.homePath().resolve( "debug.log" );
+        Path targetFile1 = dir.homePath().resolve( "debug.log.1" );
+        Path targetFile2 = dir.homePath().resolve( "debug.log.2" );
+        Path targetFile3 = dir.homePath().resolve( "debug.log.3" );
 
-        ctx = LogConfig.createBuilder( targetFile.toPath(), Level.INFO )
+        ctx = LogConfig.createBuilder( targetFile, Level.INFO )
                 .withRotation( 100, 2 )
                 .build();
 
@@ -259,18 +259,18 @@ class LogConfigTest
         logger.warn( "test1" );
         logger.warn( "test2" );
         logger.warn( "test3" );
-        assertThat( fs.fileExists( targetFile ) ).isEqualTo( true );
-        assertThat( fs.fileExists( targetFile1 ) ).isEqualTo( false );
+        assertThat( fs.fileExists( targetFile.toFile() ) ).isEqualTo( true );
+        assertThat( fs.fileExists( targetFile1.toFile() ) ).isEqualTo( false );
 
-        LogConfig.reconfigureLogging( ctx, LogConfig.createBuilder( targetFile.toPath(), Level.INFO ).withRotation( 10, 3 ) );
+        LogConfig.reconfigureLogging( ctx, LogConfig.createBuilder( targetFile, Level.INFO ).withRotation( 10, 3 ) );
 
-        /* Should now rotate on each message with the new limit. */
+        // Should now rotate on each message with the new limit.
         logger.warn( "test4" );
         logger.warn( "test5" );
-        assertThat( fs.fileExists( targetFile ) ).isEqualTo( true );
-        assertThat( fs.fileExists( targetFile1 ) ).isEqualTo( true );
-        assertThat( fs.fileExists( targetFile2 ) ).isEqualTo( true );
-        assertThat( fs.fileExists( targetFile3 ) ).isEqualTo( false );
+        assertThat( fs.fileExists( targetFile.toFile() ) ).isEqualTo( true );
+        assertThat( fs.fileExists( targetFile1.toFile() ) ).isEqualTo( true );
+        assertThat( fs.fileExists( targetFile2.toFile() ) ).isEqualTo( true );
+        assertThat( fs.fileExists( targetFile3.toFile() ) ).isEqualTo( false );
     }
 
     @Test
@@ -371,7 +371,6 @@ class LogConfigTest
 
     static Throwable newThrowable( final String stackTrace )
     {
-
         return new Throwable()
         {
             @Override

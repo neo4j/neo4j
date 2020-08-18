@@ -22,8 +22,8 @@ package org.neo4j.recovery;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.Node;
@@ -67,7 +67,7 @@ class RecoveryLogIT
     void transactionsRecoveryLogContainsTimeSpent() throws IOException
     {
         //Create database with forced recovery
-        File tmpLogDir = testDirectory.directory("logs");
+        Path tmpLogDir = testDirectory.directoryPath("logs");
         managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homePath() ).build();
         GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         StorageEngineFactory storageEngineFactory = db.getDependencyResolver().resolveDependency( StorageEngineFactory.class );
@@ -80,26 +80,26 @@ class RecoveryLogIT
             tx.commit();
         }
 
-        File[] txLogs = LogFilesBuilder.logFilesBasedOnlyBuilder( databaseLayout.getTransactionLogsDirectory().toFile(), fileSystem )
-                .withCommandReaderFactory( storageEngineFactory.commandReaderFactory() )
-                .build().logFiles();
-        for ( File file : txLogs )
+        Path[] txLogs = LogFilesBuilder.logFilesBasedOnlyBuilder( databaseLayout.getTransactionLogsDirectory(), fileSystem )
+                                       .withCommandReaderFactory( storageEngineFactory.commandReaderFactory() )
+                                       .build().logFiles();
+        for ( Path file : txLogs )
         {
-            fileSystem.copyToDirectory( file, tmpLogDir );
+            fileSystem.copyToDirectory( file.toFile(), tmpLogDir.toFile() );
         }
 
         managementService.shutdown();
 
-        for ( File txLog : txLogs )
+        for ( Path txLog : txLogs )
         {
-            fileSystem.deleteFile( txLog );
+            fileSystem.deleteFile( txLog.toFile() );
         }
 
-        for ( File file : LogFilesBuilder.logFilesBasedOnlyBuilder( tmpLogDir, fileSystem )
+        for ( Path file : LogFilesBuilder.logFilesBasedOnlyBuilder( tmpLogDir, fileSystem )
                 .withCommandReaderFactory( storageEngineFactory.commandReaderFactory() )
                 .build().logFiles() )
         {
-            fileSystem.moveToDirectory( file, databaseLayout.getTransactionLogsDirectory().toFile() );
+            fileSystem.moveToDirectory( file.toFile(), databaseLayout.getTransactionLogsDirectory().toFile() );
         }
 
         AssertableLogProvider provider = new AssertableLogProvider();

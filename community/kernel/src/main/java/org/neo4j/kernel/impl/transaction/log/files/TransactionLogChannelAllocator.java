@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.impl.transaction.log.files;
 
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.function.LongSupplier;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -63,7 +63,7 @@ class TransactionLogChannelAllocator
     {
         AllocatedFile allocatedFile = allocateFile( version );
         var storeChannel = allocatedFile.getStoreChannel();
-        var logFile = allocatedFile.getFile();
+        var logFile = allocatedFile.getPath();
         try ( var scopedBuffer = new HeapScopedBuffer( CURRENT_FORMAT_LOG_HEADER_SIZE, logFilesContext.getMemoryTracker() ) )
         {
             var buffer = scopedBuffer.getBuffer();
@@ -87,17 +87,17 @@ class TransactionLogChannelAllocator
 
     PhysicalLogVersionedStoreChannel openLogChannel( long version ) throws IOException
     {
-        File fileToOpen = fileHelper.getLogFileForVersion( version );
+        Path fileToOpen = fileHelper.getLogFileForVersion( version );
 
-        if ( !fileSystem.fileExists( fileToOpen ) )
+        if ( !fileSystem.fileExists( fileToOpen.toFile() ) )
         {
-            throw new FileNotFoundException( fileToOpen.getCanonicalPath() );
+            throw new FileNotFoundException( fileToOpen.toAbsolutePath().toString() );
         }
 
         StoreChannel rawChannel = null;
         try
         {
-            rawChannel = fileSystem.read( fileToOpen );
+            rawChannel = fileSystem.read( fileToOpen.toFile() );
             try ( var scopedBuffer = new HeapScopedBuffer( CURRENT_FORMAT_LOG_HEADER_SIZE, logFilesContext.getMemoryTracker() ) )
             {
                 var buffer = scopedBuffer.getBuffer();
@@ -116,7 +116,7 @@ class TransactionLogChannelAllocator
         }
         catch ( FileNotFoundException cause )
         {
-            throw (FileNotFoundException) new FileNotFoundException( fileToOpen.getCanonicalPath() ).initCause( cause );
+            throw (FileNotFoundException) new FileNotFoundException( fileToOpen.toAbsolutePath().toString() ).initCause( cause );
         }
         catch ( Throwable unexpectedError )
         {
@@ -138,9 +138,9 @@ class TransactionLogChannelAllocator
 
     private AllocatedFile allocateFile( long version ) throws IOException
     {
-        File file = fileHelper.getLogFileForVersion( version );
-        boolean fileExist = fileSystem.fileExists( file );
-        StoreChannel storeChannel = fileSystem.write( file );
+        Path file = fileHelper.getLogFileForVersion( version );
+        boolean fileExist = fileSystem.fileExists( file.toFile() );
+        StoreChannel storeChannel = fileSystem.write( file.toFile() );
         if ( fileExist )
         {
             nativeChannelAccessor.adviseSequentialAccessAndKeepInCache( storeChannel, version );
@@ -154,18 +154,18 @@ class TransactionLogChannelAllocator
 
     private static class AllocatedFile
     {
-        private final File file;
+        private final Path path;
         private final StoreChannel storeChannel;
 
-        AllocatedFile( File file, StoreChannel storeChannel )
+        AllocatedFile( Path path, StoreChannel storeChannel )
         {
-            this.file = file;
+            this.path = path;
             this.storeChannel = storeChannel;
         }
 
-        public File getFile()
+        public Path getPath()
         {
-            return file;
+            return path;
         }
 
         public StoreChannel getStoreChannel()

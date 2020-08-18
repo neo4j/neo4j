@@ -19,7 +19,8 @@
  */
 package org.neo4j.server.security.auth;
 
-import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.function.Supplier;
 
 import org.neo4j.collection.Dependencies;
@@ -105,28 +106,28 @@ public class CommunitySecurityModule extends SecurityModule
         return new FileUserRepository( fileSystem, getInitialUserRepositoryFile( config ), logProvider );
     }
 
-    public static File getUserRepositoryFile( Config config )
+    public static Path getUserRepositoryFile( Config config )
     {
         // Because it contains sensitive information there is a legacy setting to configure
         // the location of the user store file that we still respect
-        File authStore = config.get( GraphDatabaseInternalSettings.auth_store ).toFile();
-        if ( authStore.isFile() )
+        Path authStore = config.get( GraphDatabaseInternalSettings.auth_store );
+        if ( Files.isRegularFile( authStore ) )
         {
             return authStore;
         }
         return getUserRepositoryFile( config, USER_STORE_FILENAME );
     }
 
-    public static File getInitialUserRepositoryFile( Config config )
+    public static Path getInitialUserRepositoryFile( Config config )
     {
         return getUserRepositoryFile( config, INITIAL_USER_STORE_FILENAME );
     }
 
-    private static File getUserRepositoryFile( Config config, String fileName )
+    private static Path getUserRepositoryFile( Config config, String fileName )
     {
         // Resolve auth store file names
-        File authStoreDir = config.get( DatabaseManagementSystemSettings.auth_store_directory ).toFile();
-        return new File( authStoreDir, fileName );
+        Path authStoreDir = config.get( DatabaseManagementSystemSettings.auth_store_directory );
+        return authStoreDir.resolve( fileName );
     }
 
     public static UserSecurityGraphComponent createSecurityComponent( Log log, Config config, FileSystemAbstraction fileSystem, LogProvider logProvider )

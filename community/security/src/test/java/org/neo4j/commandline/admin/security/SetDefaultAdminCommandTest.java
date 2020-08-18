@@ -24,9 +24,9 @@ import org.junit.jupiter.api.Test;
 import picocli.CommandLine;
 
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.nio.file.Path;
 
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.Config;
@@ -56,13 +56,13 @@ class SetDefaultAdminCommandTest
     private TestDirectory testDir;
 
     private SetDefaultAdminCommand command;
-    private File adminIniFile;
+    private Path adminIniFile;
 
     @BeforeEach
     void setup() throws IOException, InvalidArgumentsException
     {
-        command = new SetDefaultAdminCommand( new ExecutionContext( testDir.directory( "home" ).toPath(),
-            testDir.directory( "conf" ).toPath(), mock( PrintStream.class ), mock( PrintStream.class ), fileSystem ) );
+        command = new SetDefaultAdminCommand( new ExecutionContext( testDir.directoryPath( "home" ),
+            testDir.directoryPath( "conf" ), mock( PrintStream.class ), mock( PrintStream.class ), fileSystem ) );
         final Config config = command.loadNeo4jConfig();
         UserRepository users = CommunitySecurityModule.getUserRepository( config, NullLogProvider.getInstance(),
             fileSystem );
@@ -71,7 +71,7 @@ class SetDefaultAdminCommandTest
                 .withRequiredPasswordChange( false )
                 .build()
         );
-        adminIniFile = new File( CommunitySecurityModule.getUserRepositoryFile( config ).getParentFile(), "admin.ini" );
+        adminIniFile = CommunitySecurityModule.getUserRepositoryFile( config ).resolveSibling( "admin.ini" );
     }
 
     @Test
@@ -98,7 +98,7 @@ class SetDefaultAdminCommandTest
     void shouldSetDefaultAdmin() throws Throwable
     {
         // Given
-        assertFalse( fileSystem.fileExists( adminIniFile ) );
+        assertFalse( fileSystem.fileExists( adminIniFile.toFile() ) );
 
         // When
         CommandLine.populateCommand( command, "jake" );
@@ -112,7 +112,7 @@ class SetDefaultAdminCommandTest
     @SuppressWarnings( "SameParameterValue" )
     private void assertAdminIniFile( String username ) throws Throwable
     {
-        assertTrue( fileSystem.fileExists( adminIniFile ) );
+        assertTrue( fileSystem.fileExists( adminIniFile.toFile() ) );
         FileUserRepository userRepository = new FileUserRepository( fileSystem, adminIniFile,
             NullLogProvider.getInstance() );
         userRepository.start();

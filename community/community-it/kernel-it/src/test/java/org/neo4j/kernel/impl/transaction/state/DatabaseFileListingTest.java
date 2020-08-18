@@ -174,8 +174,8 @@ class DatabaseFileListingTest
     @Test
     void shouldListTransactionLogsFromCustomAbsoluteLocationWhenConfigured() throws IOException
     {
-        File customLogLocation = testDirectory.directory( "customLogLocation" );
-        verifyLogFilesWithCustomPathListing( customLogLocation.toPath().toAbsolutePath() );
+        Path customLogLocation = testDirectory.directoryPath( "customLogLocation" );
+        verifyLogFilesWithCustomPathListing( customLogLocation.toAbsolutePath() );
     }
 
     @Test
@@ -231,8 +231,8 @@ class DatabaseFileListingTest
         Database database = graphDatabase.getDependencyResolver().resolveDependency( Database.class );
         LogFiles logFiles = graphDatabase.getDependencyResolver().resolveDependency( LogFiles.class );
         assertTrue( database.listStoreFiles( true ).stream()
-                .anyMatch( metadata -> metadata.isLogFile() && logFiles.isLogFile( metadata.path().toFile() ) ) );
-        assertEquals( path.getFileName().toString(), logFiles.logFilesDirectory().getParentFile().getName() );
+                .anyMatch( metadata -> metadata.isLogFile() && logFiles.isLogFile( metadata.path() ) ) );
+        assertEquals( path.getFileName().toString(), logFiles.logFilesDirectory().getParent().getFileName().toString() );
         managementService.shutdown();
     }
 

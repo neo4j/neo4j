@@ -20,12 +20,12 @@
 package org.neo4j.internal.helpers.collection;
 
 import java.io.BufferedOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Writer;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -161,9 +161,9 @@ public final class MapUtil
      * @param file the file to store the properties in.
      * @throws IOException IO error.
      */
-    public static void store( Map<String, String> config, File file ) throws IOException
+    public static void store( Map<String, String> config, Path file ) throws IOException
     {
-        try ( OutputStream stream = new BufferedOutputStream( Files.newOutputStream( file.toPath() ) ) )
+        try ( OutputStream stream = new BufferedOutputStream( Files.newOutputStream( file ) ) )
         {
             store( config, stream );
         }

@@ -20,10 +20,10 @@
 package org.neo4j.kernel.diagnostics;
 
 import java.io.ByteArrayInputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
@@ -48,7 +48,7 @@ public final class DiagnosticsReportSources
      * @param source source file to archive
      * @return a diagnostics source consuming a file.
      */
-    public static DiagnosticsReportSource newDiagnosticsFile( String destination, FileSystemAbstraction fs, File source )
+    public static DiagnosticsReportSource newDiagnosticsFile( String destination, FileSystemAbstraction fs, Path source )
     {
         return new DiagnosticsFileReportSource( destination, fs, source );
     }
@@ -60,16 +60,16 @@ public final class DiagnosticsReportSources
      * @return a list diagnostics sources consisting of the log file including all rotated away files.
      */
     public static List<DiagnosticsReportSource> newDiagnosticsRotatingFile( String destination,
-            FileSystemAbstraction fs, File file )
+            FileSystemAbstraction fs, Path file )
     {
         List<DiagnosticsReportSource> files = new ArrayList<>();
 
         files.add( newDiagnosticsFile( destination, fs, file ) );
 
-        List<File> allArchives = getAllArchives( fs, file );
-        for ( File archive : allArchives )
+        List<Path> allArchives = getAllArchives( fs, file );
+        for ( Path archive : allArchives )
         {
-            String name = archive.getName();
+            String name = archive.getFileName().toString();
             String n = name.substring( name.lastIndexOf( '.' ) );
             files.add( newDiagnosticsFile( destination + "." + n, fs, archive ) );
         }
@@ -90,14 +90,14 @@ public final class DiagnosticsReportSources
         return new DiagnosticsStringReportSource( destination, messageSupplier );
     }
 
-    private static List<File> getAllArchives( FileSystemAbstraction fileSystem,  File outputFile )
+    private static List<Path> getAllArchives( FileSystemAbstraction fileSystem, Path outputFile )
     {
-        ArrayList<File> ret = new ArrayList<>();
+        ArrayList<Path> ret = new ArrayList<>();
         int i = 1;
         while ( true )
         {
-            File file = new File( String.format( "%s.%d", outputFile.getPath(), i ) );
-            if ( !fileSystem.fileExists( file ) )
+            Path file = outputFile.resolveSibling( outputFile.getFileName() + "." + i );
+            if ( !fileSystem.fileExists( file.toFile() ) )
             {
                 break;
             }
@@ -111,9 +111,9 @@ public final class DiagnosticsReportSources
     {
         private final String destination;
         private final FileSystemAbstraction fs;
-        private final File source;
+        private final Path source;
 
-        DiagnosticsFileReportSource( String destination, FileSystemAbstraction fs, File source )
+        DiagnosticsFileReportSource( String destination, FileSystemAbstraction fs, Path source )
         {
             this.destination = destination;
             this.fs = fs;
@@ -129,13 +129,13 @@ public final class DiagnosticsReportSources
         @Override
         public InputStream newInputStream() throws IOException
         {
-            return fs.openAsInputStream( source );
+            return fs.openAsInputStream( source.toFile() );
         }
 
         @Override
         public long estimatedSize()
         {
-            return fs.getFileSize( source );
+            return fs.getFileSize( source.toFile() );
         }
     }
 

@@ -22,8 +22,8 @@ package org.neo4j.kernel.impl.transaction.log;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.time.Clock;
 import java.util.List;
 
@@ -100,7 +100,7 @@ class BatchingTransactionAppenderRotationIT
         transactionAppender.append( transactionToApply, logAppendEvent );
 
         assertEquals( 1, logFiles.getHighestLogVersion() );
-        File highestLogFile = logFiles.getHighestLogFile();
+        Path highestLogFile = logFiles.getHighestLogFile();
         LogHeader logHeader = LogHeaderReader.readLogHeader( fileSystem, highestLogFile, INSTANCE );
         assertEquals( 2, logHeader.getLastCommittedTxId() );
     }

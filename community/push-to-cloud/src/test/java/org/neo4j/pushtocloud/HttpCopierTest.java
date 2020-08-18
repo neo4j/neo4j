@@ -30,7 +30,6 @@ import wiremock.org.hamcrest.CoreMatchers;
 import wiremock.org.hamcrest.Description;
 import wiremock.org.hamcrest.Matcher;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.Files;
@@ -907,10 +906,10 @@ class HttpCopierTest
 
     private Path createDump() throws IOException
     {
-        File file = directory.file( "something" );
-        assertTrue( file.createNewFile() );
-        Files.write( file.toPath(), "this is simply some weird dump data, but may do the trick for this test of uploading it".getBytes() );
-        return file.toPath();
+        Path file = directory.filePath( "something" );
+        Files.createFile( file );
+        Files.write( file, "this is simply some weird dump data, but may do the trick for this test of uploading it".getBytes() );
+        return file;
     }
 
     private void authenticateAndCopy( PushToCloudCommand.Copier copier, Path source, boolean sourceProvided, String username, char[] password )

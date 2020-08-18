@@ -21,7 +21,6 @@ package org.neo4j.kernel.diagnostics;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
@@ -145,7 +144,7 @@ public class DiagnosticsReporter
         return availableClassifiers;
     }
 
-    public void registerAllOfflineProviders( Config config, File storeDirectory, FileSystemAbstraction fs, String defaultDatabaseName )
+    public void registerAllOfflineProviders( Config config, Path storeDirectory, FileSystemAbstraction fs, String defaultDatabaseName )
     {
         for ( DiagnosticsOfflineReportProvider provider : Services.loadAll( DiagnosticsOfflineReportProvider.class ) )
         {

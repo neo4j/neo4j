@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.storemigration;
 
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Path;
@@ -194,9 +193,9 @@ class RecordStoreVersionCheckTest
 
     private void metaDataFileContaining( DatabaseLayout layout, FileSystemAbstraction fs, String content ) throws IOException
     {
-        File shortFile = layout.metadataStore().toFile();
-        fs.deleteFile( shortFile );
-        try ( OutputStream outputStream = fs.openAsOutputStream( shortFile, false ) )
+        Path shortFile = layout.metadataStore();
+        fs.deleteFile( shortFile.toFile() );
+        try ( OutputStream outputStream = fs.openAsOutputStream( shortFile.toFile(), false ) )
         {
             outputStream.write( UTF8.encode( content ) );
         }

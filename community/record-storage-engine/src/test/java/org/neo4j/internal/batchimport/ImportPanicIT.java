@@ -22,11 +22,11 @@ package org.neo4j.internal.batchimport;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.function.Supplier;
 
 import org.neo4j.configuration.Config;
@@ -106,13 +106,13 @@ class ImportPanicIT
         return COMMAS.toBuilder().withBufferSize( BUFFER_SIZE ).build();
     }
 
-    private static Supplier<CharReadable> fileAsCharReadable( File file )
+    private static Supplier<CharReadable> fileAsCharReadable( Path path )
     {
         return () ->
         {
             try
             {
-                return Readables.files( StandardCharsets.UTF_8, file );
+                return Readables.files( StandardCharsets.UTF_8, path );
             }
             catch ( IOException e )
             {
@@ -121,11 +121,11 @@ class ImportPanicIT
         };
     }
 
-    private File nodeCsvFileWithBrokenEntries() throws IOException
+    private Path nodeCsvFileWithBrokenEntries() throws IOException
     {
-        File file = testDirectory.file( "broken-node-data.csv" );
+        Path file = testDirectory.filePath( "broken-node-data.csv" );
         try ( PrintWriter writer = new PrintWriter(
-            testDirectory.getFileSystem().openAsWriter( file, StandardCharsets.UTF_8, false ) ) )
+            testDirectory.getFileSystem().openAsWriter( file.toFile(), StandardCharsets.UTF_8, false ) ) )
         {
             writer.println( ":ID,name" );
             int numberOfLines = BUFFER_SIZE * 10;

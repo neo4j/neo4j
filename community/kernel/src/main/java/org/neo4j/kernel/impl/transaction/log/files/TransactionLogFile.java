@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.impl.transaction.log.files;
 
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.io.ByteUnit;
@@ -179,13 +179,13 @@ class TransactionLogFile extends LifecycleAdapter implements LogFile
     }
 
     @Override
-    public synchronized File rotate() throws IOException
+    public synchronized Path rotate() throws IOException
     {
         try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( TRANSACTION_LOG_FILE_ROTATION_TAG ) )
         {
             channel = rotate( channel, cursorTracer );
             writer.setChannel( channel );
-            return channel.getFile();
+            return channel.getPath();
         }
     }
 

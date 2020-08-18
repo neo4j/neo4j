@@ -23,9 +23,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.file.Path;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 
@@ -190,15 +190,15 @@ class BadCollectorTest
 
     private OutputStream badOutputFile() throws IOException
     {
-        File badDataPath = new File( "/tmp/foo2" ).getAbsoluteFile();
-        File badDataFile = badDataFile( fs, badDataPath );
-        return fs.openAsOutputStream( badDataFile, true );
+        Path badDataPath = Path.of( "/tmp/foo2" ).toAbsolutePath();
+        Path badDataFile = badDataFile( fs, badDataPath );
+        return fs.openAsOutputStream( badDataFile.toFile(), true );
     }
 
-    private static File badDataFile( FileSystemAbstraction fileSystem, File badDataPath ) throws IOException
+    private static Path badDataFile( FileSystemAbstraction fileSystem, Path badDataPath ) throws IOException
     {
-        fileSystem.mkdir( badDataPath.getParentFile() );
-        fileSystem.write( badDataPath );
+        fileSystem.mkdir( badDataPath.getParent().toFile() );
+        fileSystem.write( badDataPath.toFile() );
         return badDataPath;
     }
 

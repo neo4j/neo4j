@@ -102,7 +102,7 @@ public class IndexWorkSyncTransactionApplicationStressIT
         PageCache pageCache = pageCacheRule.getPageCache( fs );
         CollectingIndexUpdateListener index = new CollectingIndexUpdateListener();
         RecordStorageEngine storageEngine = storageEngineRule
-                .getWith( fs, pageCache, DatabaseLayout.ofFlat( directory.directory( DEFAULT_DATABASE_NAME ).toPath() ) )
+                .getWith( fs, pageCache, DatabaseLayout.ofFlat( directory.directoryPath( DEFAULT_DATABASE_NAME ) ) )
                 .indexUpdateListener( index )
                 .build();
         storageEngine.apply( tx( singletonList( Commands.createIndexRule( DESCRIPTOR, 1, descriptor ) ) ), EXTERNAL );

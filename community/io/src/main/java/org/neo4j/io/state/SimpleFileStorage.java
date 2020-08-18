@@ -19,8 +19,8 @@
  */
 package org.neo4j.io.state;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FlushableChannel;
@@ -40,12 +40,12 @@ public class SimpleFileStorage<T> implements SimpleStorage<T>
     private final FileSystemAbstraction fileSystem;
     private final ChannelMarshal<T> marshal;
     private final MemoryTracker memoryTracker;
-    private final File file;
+    private final Path path;
 
-    public SimpleFileStorage( FileSystemAbstraction fileSystem, File file, ChannelMarshal<T> marshal, MemoryTracker memoryTracker )
+    public SimpleFileStorage( FileSystemAbstraction fileSystem, Path path, ChannelMarshal<T> marshal, MemoryTracker memoryTracker )
     {
         this.fileSystem = fileSystem;
-        this.file = file;
+        this.path = path;
         this.marshal = marshal;
         this.memoryTracker = memoryTracker;
     }
@@ -53,13 +53,14 @@ public class SimpleFileStorage<T> implements SimpleStorage<T>
     @Override
     public boolean exists()
     {
-        return fileSystem.fileExists( file );
+        return fileSystem.fileExists( path.toFile() );
     }
 
     @Override
     public T readState() throws IOException
     {
-        try ( ReadableChannel channel = new ReadAheadChannel<>( fileSystem.read( file ), new NativeScopedBuffer( DEFAULT_READ_AHEAD_SIZE, memoryTracker ) ) )
+        try ( ReadableChannel channel = new ReadAheadChannel<>( fileSystem.read( path.toFile() ),
+                new NativeScopedBuffer( DEFAULT_READ_AHEAD_SIZE, memoryTracker ) ) )
         {
             return marshal.unmarshal( channel );
         }
@@ -72,13 +73,14 @@ public class SimpleFileStorage<T> implements SimpleStorage<T>
     @Override
     public void writeState( T state ) throws IOException
     {
-        if ( file.getParentFile() != null )
+        if ( path.getParent() != null )
         {
-            fileSystem.mkdirs( file.getParentFile() );
+            fileSystem.mkdirs( path.getParent().toFile() );
         }
-        fileSystem.deleteFile( file );
+        fileSystem.deleteFile( path.toFile() );
 
-        try ( FlushableChannel channel = new PhysicalFlushableChannel( fileSystem.write( file ), new NativeScopedBuffer( kibiBytes( 512 ), memoryTracker ) ) )
+        try ( FlushableChannel channel = new PhysicalFlushableChannel( fileSystem.write( path.toFile() ),
+                new NativeScopedBuffer( kibiBytes( 512 ), memoryTracker ) ) )
         {
             marshal.marshal( state, channel );
         }
@@ -89,10 +91,10 @@ public class SimpleFileStorage<T> implements SimpleStorage<T>
     {
         if ( exists() )
         {
-            var deleted = fileSystem.deleteFile( file );
+            var deleted = fileSystem.deleteFile( path.toFile() );
             if ( !deleted )
             {
-                throw new IOException( String.format( "File %s could not be deleted", file.getName() ) );
+                throw new IOException( String.format( "File %s could not be deleted", path.getFileName() ) );
             }
         }
     }

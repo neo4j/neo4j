@@ -63,7 +63,7 @@ public class StoreInfoCommand extends AbstractCommand
     @Override
     public void execute()
     {
-        Validators.CONTAINS_EXISTING_DATABASE.validate( storePath.toFile() );
+        Validators.CONTAINS_EXISTING_DATABASE.validate( storePath );
 
         DatabaseLayout databaseLayout = DatabaseLayout.ofFlat( storePath );
         var cacheTracer = PageCacheTracer.NULL;

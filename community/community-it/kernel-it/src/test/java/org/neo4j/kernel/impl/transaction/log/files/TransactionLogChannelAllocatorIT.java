@@ -25,8 +25,8 @@ import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -64,7 +64,7 @@ class TransactionLogChannelAllocatorIT
     @BeforeEach
     void setUp()
     {
-        fileHelper = new TransactionLogFilesHelper( fileSystem, testDirectory.homeDir() );
+        fileHelper = new TransactionLogFilesHelper( fileSystem, testDirectory.homePath() );
         fileAllocator = createLogFileAllocator();
     }
 
@@ -89,8 +89,8 @@ class TransactionLogChannelAllocatorIT
     @Test
     void openExistingFileDoesNotPerformAnyAllocations() throws IOException
     {
-        File file = fileHelper.getLogFileForVersion( 11 );
-        fileSystem.write( file ).close();
+        Path file = fileHelper.getLogFileForVersion( 11 );
+        fileSystem.write( file.toFile() ).close();
 
         TransactionLogChannelAllocator fileAllocator = createLogFileAllocator();
         try ( PhysicalLogVersionedStoreChannel channel = fileAllocator.createLogChannel( 11, () -> 1L ) )

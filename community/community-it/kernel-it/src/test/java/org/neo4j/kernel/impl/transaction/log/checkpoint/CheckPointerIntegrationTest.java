@@ -22,8 +22,8 @@ package org.neo4j.kernel.impl.transaction.log.checkpoint;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -294,9 +294,9 @@ class CheckPointerIntegrationTest
         return db.getDependencyResolver().resolveDependency( CheckPointer.class );
     }
 
-    private File logsDirectory()
+    private Path logsDirectory()
     {
-        return databaseLayout.getTransactionLogsDirectory().toFile();
+        return databaseLayout.getTransactionLogsDirectory();
     }
 
     private static class CheckPointCollector
@@ -304,7 +304,7 @@ class CheckPointerIntegrationTest
         private final LogFiles logFiles;
         private final LogEntryReader logEntryReader;
 
-        CheckPointCollector( File directory, FileSystemAbstraction fileSystem, CommandReaderFactory commandReaderFactory ) throws IOException
+        CheckPointCollector( Path directory, FileSystemAbstraction fileSystem, CommandReaderFactory commandReaderFactory ) throws IOException
         {
             this.logEntryReader = new VersionAwareLogEntryReader( commandReaderFactory );
             this.logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( directory, fileSystem )

@@ -29,8 +29,6 @@ import picocli.CommandLine;
 import picocli.CommandLine.MissingParameterException;
 import picocli.CommandLine.ParameterException;
 
-import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.charset.Charset;
@@ -157,13 +155,13 @@ class ImportCommandTest
         // GIVEN
         List<String> nodeIds = nodeIds();
         Configuration config = Configuration.COMMAS;
-        File dbConfig = prepareDefaultConfigFile();
+        Path dbConfig = prepareDefaultConfigFile();
 
         // WHEN
         runImport(
-                "--additional-config", dbConfig.getAbsolutePath(),
-                "--nodes", nodeData( true, config, nodeIds, TRUE ).getAbsolutePath(),
-                "--relationships", relationshipData( true, config, nodeIds, TRUE, true ).getAbsolutePath() );
+                "--additional-config", dbConfig.toAbsolutePath().toString(),
+                "--nodes", nodeData( true, config, nodeIds, TRUE ).toAbsolutePath().toString(),
+                "--relationships", relationshipData( true, config, nodeIds, TRUE, true ).toAbsolutePath().toString() );
 
         // THEN
         assertTrue( suppressOutput.getOutputVoice().containsMessage( "IMPORT DONE" ) );
@@ -176,19 +174,19 @@ class ImportCommandTest
         // GIVEN
         List<String> nodeIds = nodeIds();
         Configuration config = Configuration.TABS;
-        File dbConfig = prepareDefaultConfigFile();
+        Path dbConfig = prepareDefaultConfigFile();
 
         // WHEN
         runImport(
-                "--additional-config", dbConfig.getAbsolutePath(),
+                "--additional-config", dbConfig.toAbsolutePath().toString(),
                 "--delimiter", "TAB",
                 "--array-delimiter", String.valueOf( config.arrayDelimiter() ),
                 "--nodes",
-                nodeHeader( config ).getAbsolutePath() + "," +
-                nodeData( false, config, nodeIds, TRUE ).getAbsolutePath(),
+                nodeHeader( config ).toAbsolutePath().toString() + "," +
+                nodeData( false, config, nodeIds, TRUE ).toAbsolutePath().toString(),
                 "--relationships",
-                relationshipHeader( config ).getAbsolutePath() + "," +
-                relationshipData( false, config, nodeIds, TRUE, true ).getAbsolutePath() );
+                relationshipHeader( config ).toAbsolutePath().toString() + "," +
+                relationshipData( false, config, nodeIds, TRUE, true ).toAbsolutePath().toString() );
 
         // THEN
         verifyData();
@@ -198,13 +196,13 @@ class ImportCommandTest
     void import4097Labels() throws Exception
     {
         // GIVEN
-        File header = file( fileName( "4097labels-header.csv" ) );
-        try ( PrintStream writer = new PrintStream( header )  )
+        Path header = file( fileName( "4097labels-header.csv" ) );
+        try ( PrintStream writer = new PrintStream( Files.newOutputStream( header ) )  )
         {
             writer.println( ":LABEL" );
         }
-        File data = file( fileName( "4097labels.csv" ) );
-        try ( PrintStream writer = new PrintStream( data ) )
+        Path data = file( fileName( "4097labels.csv" ) );
+        try ( PrintStream writer = new PrintStream( Files.newOutputStream( data ) ) )
         {
             // Need to have unique names in order to get unique ids for labels. Want 4096 unique label ids present.
             for ( int i = 0; i < 4096; i++ )
@@ -217,14 +215,14 @@ class ImportCommandTest
             writer.println( "FIRST 4096|SECOND 4096|THIRD 4096" );
         }
 
-        File dbConfig = prepareDefaultConfigFile();
+        Path dbConfig = prepareDefaultConfigFile();
 
         // WHEN
         runImport(
-                "--additional-config", dbConfig.getAbsolutePath(),
+                "--additional-config", dbConfig.toAbsolutePath().toString(),
                 "--delimiter", "TAB",
                 "--array-delimiter", "|",
-                "--nodes", header.getAbsolutePath() + "," + data.getAbsolutePath() );
+                "--nodes", header.toAbsolutePath() + "," + data.toAbsolutePath() );
 
         // THEN
         GraphDatabaseService databaseService = getDatabaseApi();
@@ -248,8 +246,8 @@ class ImportCommandTest
         // Faster to do all successful in one import than in N separate tests
         List<String> values = Arrays.asList( "17", "    21", "99   ", "  34  ", "-34", "        -12", "-92 " );
 
-        File data = file( fileName( "whitespace.csv" ) );
-        try ( PrintStream writer = new PrintStream( data ) )
+        Path data = file( fileName( "whitespace.csv" ) );
+        try ( PrintStream writer = new PrintStream( Files.newOutputStream( data ) ) )
         {
             writer.println( ":LABEL,name,s:short,b:byte,i:int,l:long,f:float,d:double" );
 
@@ -268,13 +266,13 @@ class ImportCommandTest
             }
         }
 
-        File dbConfig = prepareDefaultConfigFile();
+        Path dbConfig = prepareDefaultConfigFile();
 
         // WHEN
         runImport(
-                "--additional-config", dbConfig.getAbsolutePath(),
+                "--additional-config", dbConfig.toAbsolutePath().toString(),
                 "--quote", "'",
-                "--nodes", data.getAbsolutePath() );
+                "--nodes", data.toAbsolutePath().toString() );
 
         // THEN
         int nodeCount = 0;
@@ -319,8 +317,8 @@ class ImportCommandTest
         List<String> values = Arrays.asList( "1.0", "   3.5", "45.153    ", "   925.12   ", "-2.121", "   -3.745",
                 "-412.153    ", "   -5.12   " );
 
-        File data = file( fileName( "whitespace.csv" ) );
-        try ( PrintStream writer = new PrintStream( data ) )
+        Path data = file( fileName( "whitespace.csv" ) );
+        try ( PrintStream writer = new PrintStream( Files.newOutputStream( data ) ) )
         {
             writer.println( ":LABEL,name,f:float,d:double" );
 
@@ -339,12 +337,12 @@ class ImportCommandTest
             }
         }
 
-        File dbConfig = prepareDefaultConfigFile();
+        Path dbConfig = prepareDefaultConfigFile();
 
         // WHEN
         runImport( "--quote", "'",
-                "--additional-config", dbConfig.getAbsolutePath(),
-                "--nodes", data.getAbsolutePath() );
+                "--additional-config", dbConfig.toAbsolutePath().toString(),
+                "--nodes", data.toAbsolutePath().toString() );
 
         // THEN
         int nodeCount = 0;
@@ -380,8 +378,8 @@ class ImportCommandTest
     void shouldIgnoreWhitespaceAroundBooleans() throws Exception
     {
         // GIVEN
-        File data = file( fileName( "whitespace.csv" ) );
-        try ( PrintStream writer = new PrintStream( data ) )
+        Path data = file( fileName( "whitespace.csv" ) );
+        try ( PrintStream writer = new PrintStream( Files.newOutputStream( data ) ) )
         {
             writer.println( ":LABEL,name,adult:boolean" );
 
@@ -398,13 +396,13 @@ class ImportCommandTest
 
             writer.println( "PERSON,'f6',  non true things are interpreted as false  " );
         }
-        File dbConfig = prepareDefaultConfigFile();
+        Path dbConfig = prepareDefaultConfigFile();
 
         // WHEN
         runImport(
-                "--additional-config", dbConfig.getAbsolutePath(),
+                "--additional-config", dbConfig.toAbsolutePath().toString(),
                 "--quote", "'",
-                "--nodes", data.getAbsolutePath() );
+                "--nodes", data.toAbsolutePath().toString() );
 
         // THEN
         GraphDatabaseAPI databaseApi = getDatabaseApi();
@@ -436,15 +434,15 @@ class ImportCommandTest
         // Faster to do all successful in one import than in N separate tests
         String[] values = new String[]{ "   17", "21", "99   ", "  34  ", "-34", "        -12", "-92 " };
 
-        File data = writeArrayCsv(
+        Path data = writeArrayCsv(
                 new String[]{ "s:short[]", "b:byte[]", "i:int[]", "l:long[]", "f:float[]", "d:double[]" }, values );
-        File dbConfig = prepareDefaultConfigFile();
+        Path dbConfig = prepareDefaultConfigFile();
 
         // WHEN
         runImport(
-                "--additional-config", dbConfig.getAbsolutePath(),
+                "--additional-config", dbConfig.toAbsolutePath().toString(),
                 "--quote", "'",
-                "--nodes", data.getAbsolutePath() );
+                "--nodes", data.toAbsolutePath().toString() );
 
         // THEN
         // Expected value for integer types
@@ -515,14 +513,14 @@ class ImportCommandTest
                 new String[]{ "1.0", "   3.5", "45.153    ", "   925.12   ", "-2.121", "   -3.745", "-412.153    ",
                         "   -5.12   " };
 
-        File data = writeArrayCsv( new String[]{ "f:float[]", "d:double[]" }, values );
-        File dbConfig = prepareDefaultConfigFile();
+        Path data = writeArrayCsv( new String[]{ "f:float[]", "d:double[]" }, values );
+        Path dbConfig = prepareDefaultConfigFile();
 
         // WHEN
         runImport(
-                "--additional-config", dbConfig.getAbsolutePath(),
+                "--additional-config", dbConfig.toAbsolutePath().toString(),
                 "--quote", "'",
-                "--nodes", data.getAbsolutePath() );
+                "--nodes", data.toAbsolutePath().toString() );
 
         // THEN
         String expected = joinStringArray( values );
@@ -572,15 +570,15 @@ class ImportCommandTest
                         " false" };
         String expected = joinStringArray( values );
 
-        File data = writeArrayCsv( new String[]{ "b:boolean[]" }, values );
+        Path data = writeArrayCsv( new String[]{ "b:boolean[]" }, values );
 
-        File dbConfig = prepareDefaultConfigFile();
+        Path dbConfig = prepareDefaultConfigFile();
 
         // WHEN
         runImport(
-                "--additional-config", dbConfig.getAbsolutePath(),
+                "--additional-config", dbConfig.toAbsolutePath().toString(),
                 "--quote", "'",
-                "--nodes", data.getAbsolutePath() );
+                "--nodes", data.toAbsolutePath().toString() );
 
         // THEN
         int nodeCount = 0;
@@ -620,11 +618,11 @@ class ImportCommandTest
                 runImport(
                 "--delimiter", "TAB",
                 "--array-delimiter", String.valueOf( config.arrayDelimiter() ),
-                "--nodes", nodeHeader( config ).getAbsolutePath() + "," +
+                "--nodes", nodeHeader( config ).toAbsolutePath().toString() + "," +
                         nodeData( false, config, nodeIds, TRUE, Charset.defaultCharset(), extraColumns )
-                                .getAbsolutePath(),
-                "--relationships", relationshipHeader( config ).getAbsolutePath() + "," +
-                        relationshipData( false, config, nodeIds, TRUE, true ).getAbsolutePath() ) );
+                                .toAbsolutePath().toString(),
+                "--relationships", relationshipHeader( config ).toAbsolutePath().toString() + "," +
+                        relationshipData( false, config, nodeIds, TRUE, true ).toAbsolutePath().toString() ) );
         assertTrue( suppressOutput.getOutputVoice().containsMessage( "IMPORT FAILED" ) );
         assertFalse( suppressOutput.getErrorVoice().containsMessage( e.getClass().getName() ) );
         assertTrue( e.getMessage().contains( "Extra column not present in header on line" ) );
@@ -636,24 +634,24 @@ class ImportCommandTest
         // GIVEN
         List<String> nodeIds = nodeIds();
         Configuration config = Configuration.TABS;
-        File bad = badFile();
+        Path bad = badFile();
 
         // WHEN data file contains more columns than header file
         int extraColumns = 3;
         runImport(
-                "--report-file", bad.getAbsolutePath(),
+                "--report-file", bad.toAbsolutePath().toString(),
                 "--bad-tolerance", Integer.toString( nodeIds.size() * extraColumns ),
                 "--ignore-extra-columns",
                 "--delimiter", "TAB",
                 "--array-delimiter", String.valueOf( config.arrayDelimiter() ),
-                "--nodes=" + nodeHeader( config ).getAbsolutePath() + "," +
+                "--nodes=" + nodeHeader( config ).toAbsolutePath().toString() + "," +
                         nodeData( false, config, nodeIds, TRUE, Charset.defaultCharset(), extraColumns )
-                                .getAbsolutePath(),
-                "--relationships", relationshipHeader( config ).getAbsolutePath() + "," +
-                        relationshipData( false, config, nodeIds, TRUE, true ).getAbsolutePath() );
+                                .toAbsolutePath().toString(),
+                "--relationships", relationshipHeader( config ).toAbsolutePath().toString() + "," +
+                        relationshipData( false, config, nodeIds, TRUE, true ).toAbsolutePath().toString() );
 
         // THEN
-        String badContents = Files.readString( bad.toPath(), Charset.defaultCharset() );
+        String badContents = Files.readString( bad, Charset.defaultCharset() );
         assertTrue( badContents.contains( "Extra column not present in header on line" ) );
     }
 
@@ -664,21 +662,21 @@ class ImportCommandTest
         List<String> nodeIds = nodeIds();
         Configuration config = Configuration.COMMAS;
 
-        File dbConfig = prepareDefaultConfigFile();
+        Path dbConfig = prepareDefaultConfigFile();
 
         // WHEN
         runImport(
-                "--additional-config", dbConfig.getAbsolutePath(),
+                "--additional-config", dbConfig.toAbsolutePath().toString(),
                 "--nodes", // One group with one header file and one data file
-                nodeHeader( config ).getAbsolutePath() + "," +
-                nodeData( false, config, nodeIds, lines( 0, NODE_COUNT / 2 ) ).getAbsolutePath(),
+                nodeHeader( config ).toAbsolutePath().toString() + "," +
+                nodeData( false, config, nodeIds, lines( 0, NODE_COUNT / 2 ) ).toAbsolutePath().toString(),
                 "--nodes", // One group with two data files, where the header sits in the first file
                 nodeData( true, config, nodeIds,
-                        lines( NODE_COUNT / 2, NODE_COUNT * 3 / 4 ) ).getAbsolutePath() + "," +
-                nodeData( false, config, nodeIds, lines( NODE_COUNT * 3 / 4, NODE_COUNT ) ).getAbsolutePath(),
+                        lines( NODE_COUNT / 2, NODE_COUNT * 3 / 4 ) ).toAbsolutePath().toString() + "," +
+                nodeData( false, config, nodeIds, lines( NODE_COUNT * 3 / 4, NODE_COUNT ) ).toAbsolutePath().toString(),
                 "--relationships",
-                relationshipHeader( config ).getAbsolutePath() + "," +
-                relationshipData( false, config, nodeIds, TRUE, true ).getAbsolutePath() );
+                relationshipHeader( config ).toAbsolutePath().toString() + "," +
+                relationshipData( false, config, nodeIds, TRUE, true ).toAbsolutePath().toString() );
 
         // THEN
         verifyData();
@@ -695,20 +693,20 @@ class ImportCommandTest
         final String firstType = "TYPE_1";
         final String secondType = "TYPE_2";
 
-        File dbConfig = prepareDefaultConfigFile();
+        Path dbConfig = prepareDefaultConfigFile();
 
         // WHEN
         runImport(
-                "--additional-config", dbConfig.getAbsolutePath(),
+                "--additional-config", dbConfig.toAbsolutePath().toString(),
                 "--nodes=" + join( ":", firstLabels ) + "=" +
-                nodeData( true, config, nodeIds, lines( 0, NODE_COUNT / 2 ) ).getAbsolutePath(),
+                nodeData( true, config, nodeIds, lines( 0, NODE_COUNT / 2 ) ).toAbsolutePath().toString(),
                 "--nodes=" + join( ":", secondLabels ) + "=" +
-                nodeData( true, config, nodeIds, lines( NODE_COUNT / 2, NODE_COUNT ) ).getAbsolutePath(),
+                nodeData( true, config, nodeIds, lines( NODE_COUNT / 2, NODE_COUNT ) ).toAbsolutePath().toString(),
                 "--relationships=" + firstType + "=" +
-                relationshipData( true, config, nodeIds, lines( 0, RELATIONSHIP_COUNT / 2 ), false ).getAbsolutePath(),
+                relationshipData( true, config, nodeIds, lines( 0, RELATIONSHIP_COUNT / 2 ), false ).toAbsolutePath().toString(),
                 "--relationships=" + secondType + "=" +
                 relationshipData( true, config, nodeIds,
-                        lines( RELATIONSHIP_COUNT / 2, RELATIONSHIP_COUNT ), false ).getAbsolutePath() );
+                        lines( RELATIONSHIP_COUNT / 2, RELATIONSHIP_COUNT ), false ).toAbsolutePath().toString() );
 
         // THEN
         MutableInt numberOfNodesWithFirstSetOfLabels = new MutableInt();
@@ -780,12 +778,12 @@ class ImportCommandTest
         // GIVEN
         List<String> nodeIds = nodeIds();
         Configuration config = Configuration.COMMAS;
-        File dbConfig = prepareDefaultConfigFile();
+        Path dbConfig = prepareDefaultConfigFile();
 
         // WHEN
         runImport(
-                "--additional-config", dbConfig.getAbsolutePath(),
-                "--nodes", nodeData( true, config, nodeIds, TRUE ).getAbsolutePath() );
+                "--additional-config", dbConfig.toAbsolutePath().toString(),
+                "--nodes", nodeData( true, config, nodeIds, TRUE ).toAbsolutePath().toString() );
         // no relationships
 
         // THEN
@@ -809,12 +807,12 @@ class ImportCommandTest
     {
         List<String> nodeIds = nodeIds();
         Configuration config = Configuration.COMMAS;
-        File dbConfig = prepareDefaultConfigFile();
+        Path dbConfig = prepareDefaultConfigFile();
 
         var e = assertThrows( Exception.class,
                 () -> runImport(
-                "--additional-config", dbConfig.getAbsolutePath(),
-                "--nodes", nodeData( true, config, nodeIds, TRUE ).getAbsolutePath(),
+                "--additional-config", dbConfig.toAbsolutePath().toString(),
+                "--nodes", nodeData( true, config, nodeIds, TRUE ).toAbsolutePath().toString(),
                 "--database", "__incorrect_db__") );
         assertThat( e ).hasMessageContaining( "Invalid database name '__incorrect_db__'." );
     }
@@ -824,11 +822,11 @@ class ImportCommandTest
     {
         List<String> nodeIds = nodeIds();
         Configuration config = Configuration.COMMAS;
-        File dbConfig = prepareDefaultConfigFile();
+        Path dbConfig = prepareDefaultConfigFile();
 
         var mixedCaseDatabaseName = "TestDataBase";
-        runImport( "--additional-config", dbConfig.getAbsolutePath(),
-                    "--nodes", nodeData( true, config, nodeIds, TRUE ).getAbsolutePath(),
+        runImport( "--additional-config", dbConfig.toAbsolutePath().toString(),
+                    "--nodes", nodeData( true, config, nodeIds, TRUE ).toAbsolutePath().toString(),
                     "--database", mixedCaseDatabaseName );
 
         var db = getDatabaseApi( mixedCaseDatabaseName.toLowerCase() );
@@ -861,11 +859,11 @@ class ImportCommandTest
         Configuration config = Configuration.COMMAS;
         String groupOne = "Actor";
         String groupTwo = "Movie";
-        File dbConfig = prepareDefaultConfigFile();
+        Path dbConfig = prepareDefaultConfigFile();
 
         // WHEN
         runImport(
-                "--additional-config", dbConfig.getAbsolutePath(),
+                "--additional-config", dbConfig.toAbsolutePath().toString(),
                 "--nodes", nodeHeader( config, groupOne ) + "," +
                            nodeData( false, config, groupOneNodeIds, TRUE ),
                 "--nodes", nodeHeader( config, groupTwo ) + "," +
@@ -896,15 +894,15 @@ class ImportCommandTest
         List<String> groupOneNodeIds = asList( "1", "2", "3" );
         List<String> groupTwoNodeIds = asList( "4", "5", "2" );
         Configuration config = Configuration.COMMAS;
-        File dbConfig = prepareDefaultConfigFile();
+        Path dbConfig = prepareDefaultConfigFile();
 
         // WHEN
         runImport(
-                "--additional-config", dbConfig.getAbsolutePath(),
-                "--nodes", nodeHeader( config, "MyGroup" ).getAbsolutePath() + "," +
-                           nodeData( false, config, groupOneNodeIds, TRUE ).getAbsolutePath(),
-                "--nodes", nodeHeader( config ).getAbsolutePath() + "," +
-                           nodeData( false, config, groupTwoNodeIds, TRUE ).getAbsolutePath() );
+                "--additional-config", dbConfig.toAbsolutePath().toString(),
+                "--nodes", nodeHeader( config, "MyGroup" ).toAbsolutePath().toString() + "," +
+                           nodeData( false, config, groupOneNodeIds, TRUE ).toAbsolutePath().toString(),
+                "--nodes", nodeHeader( config ).toAbsolutePath().toString() + "," +
+                           nodeData( false, config, groupTwoNodeIds, TRUE ).toAbsolutePath().toString() );
 
         // THEN
         verifyData( 6, 0, Validators.emptyValidator(), Validators.emptyValidator() );
@@ -918,14 +916,14 @@ class ImportCommandTest
         Configuration config = Configuration.COMMAS;
         String type = randomType();
 
-        File dbConfig = prepareDefaultConfigFile();
+        Path dbConfig = prepareDefaultConfigFile();
 
         // WHEN
         runImport(
-                "--additional-config", dbConfig.getAbsolutePath(),
-                "--nodes", nodeData( true, config, nodeIds, TRUE ).getAbsolutePath(),
+                "--additional-config", dbConfig.toAbsolutePath().toString(),
+                "--nodes", nodeData( true, config, nodeIds, TRUE ).toAbsolutePath().toString(),
                 // there will be no :TYPE specified in the header of the relationships below
-                "--relationships", type + "=" + relationshipData( true, config, nodeIds, TRUE, false ).getAbsolutePath() );
+                "--relationships", type + "=" + relationshipData( true, config, nodeIds, TRUE, false ).toAbsolutePath().toString() );
 
         // THEN
         verifyData();
@@ -937,15 +935,15 @@ class ImportCommandTest
         // GIVEN
         List<String> nodeIds = asList( "a", "b", "c", "d", "e", "f", "a", "g" );
         Configuration config = Configuration.COMMAS;
-        File nodeHeaderFile = nodeHeader( config );
-        File nodeData1 = nodeData( false, config, nodeIds, lines( 0, 4 ) );
-        File nodeData2 = nodeData( false, config, nodeIds, lines( 4, nodeIds.size() ) );
+        Path nodeHeaderFile = nodeHeader( config );
+        Path nodeData1 = nodeData( false, config, nodeIds, lines( 0, 4 ) );
+        Path nodeData2 = nodeData( false, config, nodeIds, lines( 4, nodeIds.size() ) );
 
         // WHEN
         var e = assertThrows( Exception.class, () -> runImport(
-                "--nodes", nodeHeaderFile.getAbsolutePath() + "," +
-                        nodeData1.getAbsolutePath() + "," +
-                        nodeData2.getAbsolutePath() ) );
+                "--nodes", nodeHeaderFile.toAbsolutePath().toString() + "," +
+                        nodeData1.toAbsolutePath().toString() + "," +
+                        nodeData2.toAbsolutePath().toString() ) );
         assertExceptionContains( e, "'a' is defined more than once", DuplicateInputIdException.class );
     }
 
@@ -955,19 +953,19 @@ class ImportCommandTest
         // GIVEN
         List<String> nodeIds = asList( "a", "b", "c", "d", "e", "f", "a", "g" );
         Configuration config = Configuration.COMMAS;
-        File nodeHeaderFile = nodeHeader( config );
-        File nodeData1 = nodeData( false, config, nodeIds, lines( 0, 4 ) );
-        File nodeData2 = nodeData( false, config, nodeIds, lines( 4, nodeIds.size() ) );
+        Path nodeHeaderFile = nodeHeader( config );
+        Path nodeData1 = nodeData( false, config, nodeIds, lines( 0, 4 ) );
+        Path nodeData2 = nodeData( false, config, nodeIds, lines( 4, nodeIds.size() ) );
 
-        File dbConfig = prepareDefaultConfigFile();
+        Path dbConfig = prepareDefaultConfigFile();
 
         // WHEN
         runImport(
-                "--additional-config", dbConfig.getAbsolutePath(),
+                "--additional-config", dbConfig.toAbsolutePath().toString(),
                 "--skip-duplicate-nodes",
-                "--nodes", nodeHeaderFile.getAbsolutePath() + "," +
-                           nodeData1.getAbsolutePath() + "," +
-                           nodeData2.getAbsolutePath() );
+                "--nodes", nodeHeaderFile.toAbsolutePath().toString() + "," +
+                           nodeData1.toAbsolutePath().toString() + "," +
+                           nodeData2.toAbsolutePath().toString() );
 
         // THEN there should not be duplicates of any node
         GraphDatabaseService db = getDatabaseApi();
@@ -1011,7 +1009,7 @@ class ImportCommandTest
         // GIVEN
         List<String> nodeIds = asList( "a", "b", "c" );
         Configuration config = Configuration.COMMAS;
-        File nodeData = nodeData( true, config, nodeIds, TRUE );
+        Path nodeData = nodeData( true, config, nodeIds, TRUE );
         List<RelationshipDataLine> relationships = Arrays.asList(
                 // header                                   line 1 of file1
                 relationship( "a", "b", "TYPE", "aa" ), //          line 2 of file1
@@ -1019,23 +1017,23 @@ class ImportCommandTest
                 relationship( "b", "c", "KNOWS", "cc" ), //         line 1 of file2
                 relationship( "c", "a", "KNOWS", "dd" ), //         line 2 of file2
                 relationship( "missing", "a", "KNOWS", "ee" ) ); // line 3 of file2
-        File relationshipData1 = relationshipData( true, config, relationships.iterator(), lines( 0, 2 ), true );
-        File relationshipData2 = relationshipData( false, config, relationships.iterator(), lines( 2, 5 ), true );
-        File bad = badFile();
-        File dbConfig = prepareDefaultConfigFile();
+        Path relationshipData1 = relationshipData( true, config, relationships.iterator(), lines( 0, 2 ), true );
+        Path relationshipData2 = relationshipData( false, config, relationships.iterator(), lines( 2, 5 ), true );
+        Path bad = badFile();
+        Path dbConfig = prepareDefaultConfigFile();
 
         // WHEN importing data where some relationships refer to missing nodes
         runImport(
-                "--nodes", nodeData.getAbsolutePath(),
-                "--report-file", bad.getAbsolutePath(),
+                "--nodes", nodeData.toAbsolutePath().toString(),
+                "--report-file", bad.toAbsolutePath().toString(),
                 "--skip-bad-relationships",
                 "--bad-tolerance", "2",
-                "--additional-config", dbConfig.getAbsolutePath(),
-                "--relationships", relationshipData1.getAbsolutePath() + "," +
-                                   relationshipData2.getAbsolutePath() );
+                "--additional-config", dbConfig.toAbsolutePath().toString(),
+                "--relationships", relationshipData1.toAbsolutePath().toString() + "," +
+                                   relationshipData2.toAbsolutePath().toString() );
 
         // THEN
-        String badContents = Files.readString( bad.toPath(), Charset.defaultCharset() );
+        String badContents = Files.readString( bad, Charset.defaultCharset() );
         assertTrue( badContents.contains( "bogus" ), "Didn't contain first bad relationship" );
         assertTrue( badContents.contains( "missing" ), "Didn't contain second bad relationship" );
         verifyRelationships( relationships );
@@ -1047,7 +1045,7 @@ class ImportCommandTest
         // GIVEN
         List<String> nodeIds = asList( "a", "b", "c" );
         Configuration config = Configuration.COMMAS;
-        File nodeData = nodeData( true, config, nodeIds, TRUE );
+        Path nodeData = nodeData( true, config, nodeIds, TRUE );
         List<RelationshipDataLine> relationships = Arrays.asList(
                 // header                                   line 1 of file1
                 relationship( "a", "b", "TYPE", "aa" ), //          line 2 of file1
@@ -1055,21 +1053,21 @@ class ImportCommandTest
                 relationship( "b", "c", "KNOWS", "cc" ), //         line 1 of file2
                 relationship( "c", "a", "KNOWS", "dd" ), //         line 2 of file2
                 relationship( "missing", "a", "KNOWS", "ee" ) ); // line 3 of file2
-        File relationshipData1 = relationshipData( true, config, relationships.iterator(), lines( 0, 2 ), true );
-        File relationshipData2 = relationshipData( false, config, relationships.iterator(), lines( 2, 5 ), true );
+        Path relationshipData1 = relationshipData( true, config, relationships.iterator(), lines( 0, 2 ), true );
+        Path relationshipData2 = relationshipData( false, config, relationships.iterator(), lines( 2, 5 ), true );
 
-        File dbConfig = prepareDefaultConfigFile();
+        Path dbConfig = prepareDefaultConfigFile();
 
         // WHEN importing data where some relationships refer to missing nodes
         runImport(
-                "--additional-config", dbConfig.getAbsolutePath(),
-                "--nodes", nodeData.getAbsolutePath(),
+                "--additional-config", dbConfig.toAbsolutePath().toString(),
+                "--nodes", nodeData.toAbsolutePath().toString(),
                 "--bad-tolerance", "2",
                 "--skip-bad-entries-logging", "true",
-                "--relationships", relationshipData1.getAbsolutePath() + "," +
-                        relationshipData2.getAbsolutePath() );
+                "--relationships", relationshipData1.toAbsolutePath().toString() + "," +
+                        relationshipData2.toAbsolutePath().toString() );
 
-        assertFalse( badFile().exists() );
+        assertFalse( Files.exists( badFile() ) );
         verifyRelationships( relationships );
     }
 
@@ -1079,7 +1077,7 @@ class ImportCommandTest
         // GIVEN
         List<String> nodeIds = asList( "a", "b", "c" );
         Configuration config = Configuration.COMMAS;
-        File nodeData = nodeData( true, config, nodeIds, TRUE );
+        Path nodeData = nodeData( true, config, nodeIds, TRUE );
         List<RelationshipDataLine> relationships = Arrays.asList(
                 // header                                   line 1 of file1
                 relationship( "a", "b", "TYPE" ), //          line 2 of file1
@@ -1087,16 +1085,16 @@ class ImportCommandTest
                 relationship( "b", "c", "KNOWS" ), //         line 1 of file2
                 relationship( "c", "a", "KNOWS" ), //         line 2 of file2
                 relationship( "missing", "a", "KNOWS" ) ); // line 3 of file2
-        File relationshipData = relationshipData( true, config, relationships.iterator(), TRUE, true );
-        File bad = badFile();
+        Path relationshipData = relationshipData( true, config, relationships.iterator(), TRUE, true );
+        Path bad = badFile();
 
         // WHEN importing data where some relationships refer to missing nodes
         var e = assertThrows( Exception.class, () -> runImport(
-                    "--nodes", nodeData.getAbsolutePath(),
-                    "--report-file", bad.getAbsolutePath(),
+                    "--nodes", nodeData.toAbsolutePath().toString(),
+                    "--report-file", bad.toAbsolutePath().toString(),
                     "--bad-tolerance", "1",
-                    "--relationships", relationshipData.getAbsolutePath() ) );
-        assertExceptionContains( e, relationshipData.getAbsolutePath(), InputException.class );
+                    "--relationships", relationshipData.toAbsolutePath().toString() ) );
+        assertExceptionContains( e, relationshipData.toAbsolutePath().toString(), InputException.class );
     }
 
     @Test
@@ -1105,25 +1103,25 @@ class ImportCommandTest
         // GIVEN
         List<String> nodeIds = asList( "a", "b", "c" );
         Configuration config = Configuration.COMMAS;
-        File nodeData = nodeData( true, config, nodeIds, TRUE );
+        Path nodeData = nodeData( true, config, nodeIds, TRUE );
 
         List<RelationshipDataLine> relationships = Arrays.asList(
                 // header                                   line 1 of file1
                 relationship( "a", "b", "TYPE" ), //          line 2 of file1
                 relationship( "c", "bogus", "TYPE" ) ); //    line 3 of file1
 
-        File relationshipData1 = relationshipData( true, config, relationships.iterator(), lines( 0, 2 ), true );
-        File relationshipData2 = relationshipData( false, config, relationships.iterator(), lines( 2, 5 ), true );
-        File bad = badFile();
+        Path relationshipData1 = relationshipData( true, config, relationships.iterator(), lines( 0, 2 ), true );
+        Path relationshipData2 = relationshipData( false, config, relationships.iterator(), lines( 2, 5 ), true );
+        Path bad = badFile();
 
         // WHEN importing data where some relationships refer to missing nodes
         var e = assertThrows( Exception.class, () -> runImport(
-                    "--nodes", nodeData.getAbsolutePath(),
-                    "--report-file", bad.getAbsolutePath(),
+                    "--nodes", nodeData.toAbsolutePath().toString(),
+                    "--report-file", bad.toAbsolutePath().toString(),
                     "--skip-bad-relationships=false",
-                    "--relationships", relationshipData1.getAbsolutePath() + "," +
-                                       relationshipData2.getAbsolutePath() ) );
-        assertExceptionContains( e, relationshipData1.getAbsolutePath(), InputException.class );
+                    "--relationships", relationshipData1.toAbsolutePath().toString() + "," +
+                                       relationshipData2.toAbsolutePath().toString() ) );
+        assertExceptionContains( e, relationshipData1.toAbsolutePath().toString(), InputException.class );
     }
 
     @Test
@@ -1135,13 +1133,13 @@ class ImportCommandTest
         final Label label1 = label( "My First Label" );
         final Label label2 = label( "My Other Label" );
 
-        File dbConfig = prepareDefaultConfigFile();
+        Path dbConfig = prepareDefaultConfigFile();
 
         // WHEN
         runImport(
-                "--additional-config", dbConfig.getAbsolutePath(),
-                "--nodes=My First Label:My Other Label=" + nodeData( true, config, nodeIds, TRUE ).getAbsolutePath(),
-                "--relationships", relationshipData( true, config, nodeIds, TRUE, true ).getAbsolutePath() );
+                "--additional-config", dbConfig.toAbsolutePath().toString(),
+                "--nodes=My First Label:My Other Label=" + nodeData( true, config, nodeIds, TRUE ).toAbsolutePath().toString(),
+                "--relationships", relationshipData( true, config, nodeIds, TRUE, true ).toAbsolutePath().toString() );
 
         // THEN
         verifyData( node ->
@@ -1159,15 +1157,15 @@ class ImportCommandTest
         Configuration config = Configuration.COMMAS;
         Charset charset = StandardCharsets.UTF_16;
 
-        File dbConfig = prepareDefaultConfigFile();
+        Path dbConfig = prepareDefaultConfigFile();
 
         // WHEN
         runImport(
-                "--additional-config", dbConfig.getAbsolutePath(),
+                "--additional-config", dbConfig.toAbsolutePath().toString(),
                 "--input-encoding", charset.name(),
-                "--nodes", nodeData( true, config, nodeIds, TRUE, charset ).getAbsolutePath(),
+                "--nodes", nodeData( true, config, nodeIds, TRUE, charset ).toAbsolutePath().toString(),
                 "--relationships", relationshipData( true, config, nodeIds, TRUE, true, charset )
-                        .getAbsolutePath() );
+                        .toAbsolutePath().toString() );
 
         // THEN
         verifyData();
@@ -1183,7 +1181,7 @@ class ImportCommandTest
         // WHEN
         var e = assertThrows( MissingParameterException.class, () -> runImport(
                     "--relationships",
-                    relationshipData( true, config, nodeIds, TRUE, true ).getAbsolutePath() ) );
+                    relationshipData( true, config, nodeIds, TRUE, true ).toAbsolutePath().toString() ) );
         assertThat( e ).hasMessageContaining( "Missing required option: '--nodes" );
     }
 
@@ -1194,14 +1192,14 @@ class ImportCommandTest
         List<String> nodeIds = asList( "1", "", "", "", "3", "", "", "", "", "", "5" );
         Configuration config = Configuration.COMMAS;
         List<RelationshipDataLine> relationshipData = asList( relationship( "1", "3", "KNOWS" ) );
-        File dbConfig = prepareDefaultConfigFile();
+        Path dbConfig = prepareDefaultConfigFile();
 
         // WHEN
         runImport(
-                "--additional-config", dbConfig.getAbsolutePath(),
-                "--nodes", nodeData( true, config, nodeIds, TRUE ).getAbsolutePath(),
+                "--additional-config", dbConfig.toAbsolutePath().toString(),
+                "--nodes", nodeData( true, config, nodeIds, TRUE ).toAbsolutePath().toString(),
                 "--relationships", relationshipData( true, config, relationshipData.iterator(),
-                        TRUE, true ).getAbsolutePath() );
+                        TRUE, true ).toAbsolutePath().toString() );
 
         // THEN
         GraphDatabaseService db = getDatabaseApi();
@@ -1229,10 +1227,10 @@ class ImportCommandTest
     void shouldDisallowMultilineFieldsByDefault() throws Exception
     {
         // GIVEN
-        File data = data( ":ID,name", "1,\"This is a line with\nnewlines in\"" );
+        Path data = data( ":ID,name", "1,\"This is a line with\nnewlines in\"" );
 
         // WHEN
-        var e = assertThrows( Exception.class, () -> runImport( "--nodes", data.getAbsolutePath() ) );
+        var e = assertThrows( Exception.class, () -> runImport( "--nodes", data.toAbsolutePath().toString() ) );
         assertExceptionContains( e, "Multi-line", IllegalMultilineFieldException.class );
     }
 
@@ -1241,13 +1239,13 @@ class ImportCommandTest
     {
         // GIVEN
         String name = "  This is a line with leading and trailing whitespaces   ";
-        File data = data( ":ID,name", "1,\"" + name + "\"");
-        File dbConfig = prepareDefaultConfigFile();
+        Path data = data( ":ID,name", "1,\"" + name + "\"");
+        Path dbConfig = prepareDefaultConfigFile();
 
         // WHEN
         runImport(
-                "--additional-config", dbConfig.getAbsolutePath(),
-                "--nodes", data.getAbsolutePath() );
+                "--additional-config", dbConfig.toAbsolutePath().toString(),
+                "--nodes", data.toAbsolutePath().toString() );
 
         // THEN
         GraphDatabaseService db = getDatabaseApi();
@@ -1268,17 +1266,17 @@ class ImportCommandTest
     {
         // GIVEN
         String name = "  This is a line with leading and trailing whitespaces   ";
-        File data = data(
+        Path data = data(
                 ":ID,name",
                 "1,\"" + name + "\"",
                 "2," + name );
 
-        File dbConfig = prepareDefaultConfigFile();
+        Path dbConfig = prepareDefaultConfigFile();
 
         // WHEN
         runImport(
-                "--additional-config", dbConfig.getAbsolutePath(),
-                "--nodes", data.getAbsolutePath(),
+                "--additional-config", dbConfig.toAbsolutePath().toString(),
+                "--nodes", data.toAbsolutePath().toString(),
                 "--trim-strings", "true" );
 
         // THEN
@@ -1308,7 +1306,7 @@ class ImportCommandTest
 
         // WHEN
         runImport(
-                "--nodes=" + nodeData( true, Configuration.COMMAS, nodeIds, TRUE ).getAbsolutePath(),
+                "--nodes=" + nodeData( true, Configuration.COMMAS, nodeIds, TRUE ).toAbsolutePath().toString(),
                 "--skip-duplicate-nodes",
                 "--bad-tolerance=-1" );
 
@@ -1320,13 +1318,13 @@ class ImportCommandTest
     void shouldAllowMultilineFieldsWhenEnabled() throws Exception
     {
         // GIVEN
-        File data = data( ":ID,name", "1,\"This is a line with\nnewlines in\"" );
-        File dbConfig = prepareDefaultConfigFile();
+        Path data = data( ":ID,name", "1,\"This is a line with\nnewlines in\"" );
+        Path dbConfig = prepareDefaultConfigFile();
 
         // WHEN
         runImport(
-                "--nodes", data.getAbsolutePath(),
-                "--additional-config", dbConfig.getAbsolutePath(),
+                "--nodes", data.toAbsolutePath().toString(),
+                "--additional-config", dbConfig.toAbsolutePath().toString(),
                 "--multiline-fields", "true" );
 
         // THEN
@@ -1347,14 +1345,14 @@ class ImportCommandTest
     void shouldSkipEmptyFiles() throws Exception
     {
         // GIVEN
-        File data = data( "" );
+        Path data = data( "" );
 
-        File dbConfig = prepareDefaultConfigFile();
+        Path dbConfig = prepareDefaultConfigFile();
 
         // WHEN
         runImport(
-                "--additional-config", dbConfig.getAbsolutePath(),
-                "--nodes", data.getAbsolutePath() );
+                "--additional-config", dbConfig.toAbsolutePath().toString(),
+                "--nodes", data.toAbsolutePath().toString() );
 
         // THEN
         GraphDatabaseService graphDatabaseService = getDatabaseApi();
@@ -1370,15 +1368,15 @@ class ImportCommandTest
     void shouldIgnoreEmptyQuotedStringsIfConfiguredTo() throws Exception
     {
         // GIVEN
-        File data = data(
+        Path data = data(
                 ":ID,one,two,three",
                 "1,\"\",,value" );
-        File dbConfig = prepareDefaultConfigFile();
+        Path dbConfig = prepareDefaultConfigFile();
 
         // WHEN
         runImport(
-                "--additional-config", dbConfig.getAbsolutePath(),
-                "--nodes", data.getAbsolutePath(),
+                "--additional-config", dbConfig.toAbsolutePath().toString(),
+                "--nodes", data.toAbsolutePath().toString(),
                 "--ignore-empty-strings", "true" );
 
         // THEN
@@ -1397,13 +1395,13 @@ class ImportCommandTest
     void shouldPrintUserFriendlyMessageAboutUnsupportedMultilineFields() throws Exception
     {
         // GIVEN
-        File data = data(
+        Path data = data(
                 ":ID,name",
                 "1,\"one\ntwo\nthree\"",
                 "2,four" );
 
         var e = assertThrows( InputException.class, () -> runImport(
-                    "--nodes", data.getAbsolutePath(),
+                    "--nodes", data.toAbsolutePath().toString(),
                     "--multiline-fields=false" ) );
             // THEN
         assertTrue( suppressOutput.getErrorVoice().containsMessage( "Detected field which spanned multiple lines" ) );
@@ -1417,16 +1415,16 @@ class ImportCommandTest
         char weirdDelimiter = 1; // not '1', just the character represented with code 1, which seems to be SOH
         String name1 = weirdDelimiter + "Weird" + weirdDelimiter;
         String name2 = "Start " + weirdDelimiter + "middle thing" + weirdDelimiter + " end!";
-        File data = data(
+        Path data = data(
                 ":ID,name",
                 "1," + name1,
                 "2," + name2 );
-        File dbConfig = prepareDefaultConfigFile();
+        Path dbConfig = prepareDefaultConfigFile();
 
         // WHEN
         runImport(
-                "--additional-config", dbConfig.getAbsolutePath(),
-                "--nodes", data.getAbsolutePath(),
+                "--additional-config", dbConfig.toAbsolutePath().toString(),
+                "--nodes", data.toAbsolutePath().toString(),
                 "--quote", String.valueOf( weirdDelimiter ) );
 
         // THEN
@@ -1451,15 +1449,15 @@ class ImportCommandTest
         List<String> nodeIds = nodeIds();
         Configuration config = Configuration.TABS;
 
-        File dbConfig = prepareDefaultConfigFile();
+        Path dbConfig = prepareDefaultConfigFile();
 
         // WHEN
         runImport(
-                "--additional-config", dbConfig.getAbsolutePath(),
+                "--additional-config", dbConfig.toAbsolutePath().toString(),
                 "--delimiter", "\\t",
                 "--array-delimiter", String.valueOf( config.arrayDelimiter() ),
-                "--nodes", nodeData( true, config, nodeIds, TRUE ).getAbsolutePath(),
-                "--relationships", relationshipData( true, config, nodeIds, TRUE, true ).getAbsolutePath() );
+                "--nodes", nodeData( true, config, nodeIds, TRUE ).toAbsolutePath().toString(),
+                "--relationships", relationshipData( true, config, nodeIds, TRUE, true ).toAbsolutePath().toString() );
 
         // THEN
         verifyData();
@@ -1476,8 +1474,8 @@ class ImportCommandTest
         var e = assertThrows( ParameterException.class, () -> runImport(
                     "--delimiter", "\\bogus",
                     "--array-delimiter", String.valueOf( config.arrayDelimiter() ),
-                    "--nodes", nodeData( true, config, nodeIds, TRUE ).getAbsolutePath(),
-                    "--relationships", relationshipData( true, config, nodeIds, TRUE, true ).getAbsolutePath() ) );
+                    "--nodes", nodeData( true, config, nodeIds, TRUE ).toAbsolutePath().toString(),
+                    "--relationships", relationshipData( true, config, nodeIds, TRUE, true ).toAbsolutePath().toString() ) );
         assertThat( e ).hasMessageContaining( "bogus" );
     }
 
@@ -1490,7 +1488,7 @@ class ImportCommandTest
         // WHEN
         var e = assertThrows( InputException.class, () -> runImport(
                     "--nodes", nodeDataWithMissingQuote( 2 * unbalancedStartLine, unbalancedStartLine )
-                            .getAbsolutePath() ) );
+                            .toAbsolutePath().toString() ) );
         assertThat( e.getMessage() ).contains( "Multi-line fields are illegal" );
     }
 
@@ -1501,16 +1499,16 @@ class ImportCommandTest
         char weirdDelimiter = 1; // not '1', just the character represented with code 1, which seems to be SOH
         String name1 = weirdDelimiter + "Weird" + weirdDelimiter;
         String name2 = "Start " + weirdDelimiter + "middle thing" + weirdDelimiter + " end!";
-        File data = data(
+        Path data = data(
                 ":ID,name",
                 "1," + name1,
                 "2," + name2 );
-        File dbConfig = prepareDefaultConfigFile();
+        Path dbConfig = prepareDefaultConfigFile();
 
         // WHEN
         runImport(
-                "--additional-config", dbConfig.getAbsolutePath(),
-                "--nodes", data.getAbsolutePath(),
+                "--additional-config", dbConfig.toAbsolutePath().toString(),
+                "--nodes", data.toAbsolutePath().toString(),
                 "--quote", "\\1" );
 
         // THEN
@@ -1536,7 +1534,7 @@ class ImportCommandTest
 
         // WHEN
         var e = assertThrows( InputException.class, () -> runImport(
-                    "--nodes", nodeDataWithMissingQuote( unbalancedStartLine, unbalancedStartLine ).getAbsolutePath() ) );
+                    "--nodes", nodeDataWithMissingQuote( unbalancedStartLine, unbalancedStartLine ).toAbsolutePath().toString() ) );
         assertThat( e ).hasMessageContaining( "Multi-line fields" );
     }
 
@@ -1548,16 +1546,16 @@ class ImportCommandTest
         String weirdStringDelimiter = "\\126";
         String name1 = weirdDelimiter + "Weird" + weirdDelimiter;
         String name2 = "Start " + weirdDelimiter + "middle thing" + weirdDelimiter + " end!";
-        File data = data(
+        Path data = data(
                 ":ID,name",
                 "1," + name1,
                 "2," + name2 );
-        File dbConfig = prepareDefaultConfigFile();
+        Path dbConfig = prepareDefaultConfigFile();
 
         // WHEN given as raw ascii
         runImport(
-                "--additional-config", dbConfig.getAbsolutePath(),
-                "--nodes", data.getAbsolutePath(),
+                "--additional-config", dbConfig.toAbsolutePath().toString(),
+                "--nodes", data.toAbsolutePath().toString(),
                 "--quote", weirdStringDelimiter );
 
         assertEquals( "~", "" + weirdDelimiter );
@@ -1588,10 +1586,10 @@ class ImportCommandTest
         assertThrows( InputException.class, () -> runImport(
                     "--multiline-fields", "true",
                     "--nodes",
-                    nodeDataWithMissingQuote( 2 * unbalancedStartLine, unbalancedStartLine ).getAbsolutePath() ) );
+                    nodeDataWithMissingQuote( 2 * unbalancedStartLine, unbalancedStartLine ).toAbsolutePath().toString() ) );
     }
 
-    private File nodeDataWithMissingQuote( int totalLines, int unbalancedStartLine ) throws Exception
+    private Path nodeDataWithMissingQuote( int totalLines, int unbalancedStartLine ) throws Exception
     {
         String[] lines = new String[totalLines + 1];
 
@@ -1623,16 +1621,16 @@ class ImportCommandTest
         String weirdStringDelimiter = "~";
         String name1 = weirdDelimiter + "Weird" + weirdDelimiter;
         String name2 = "Start " + weirdDelimiter + "middle thing" + weirdDelimiter + " end!";
-        File data = data(
+        Path data = data(
                 ":ID,name",
                 "1," + name1,
                 "2," + name2 );
-        File dbConfig = prepareDefaultConfigFile();
+        Path dbConfig = prepareDefaultConfigFile();
 
         // WHEN given as string
         runImport(
-                "--additional-config", dbConfig.getAbsolutePath(),
-                "--nodes", data.getAbsolutePath(),
+                "--additional-config", dbConfig.toAbsolutePath().toString(),
+                "--nodes", data.toAbsolutePath().toString(),
                 "--quote", weirdStringDelimiter );
 
         // THEN
@@ -1659,7 +1657,7 @@ class ImportCommandTest
         // GIVEN
         int arrayBlockSize = 10;
         int stringBlockSize = 12;
-        File dbConfig = file( "neo4j.properties" );
+        Path dbConfig = file( "neo4j.properties" );
         store( stringMap(
                 databases_root_path.name(), databaseLayout.getNeo4jLayout().databasesDirectory().toAbsolutePath().toString(),
                 GraphDatabaseInternalSettings.array_block_size.name(), String.valueOf( arrayBlockSize ),
@@ -1669,8 +1667,8 @@ class ImportCommandTest
 
         // WHEN
         runImport(
-                "--additional-config", dbConfig.getAbsolutePath(),
-                "--nodes", nodeData( true, Configuration.COMMAS, nodeIds, value -> true ).getAbsolutePath() );
+                "--additional-config", dbConfig.toAbsolutePath().toString(),
+                "--nodes", nodeData( true, Configuration.COMMAS, nodeIds, value -> true ).toAbsolutePath().toString() );
 
         // THEN
         NeoStores stores = getDatabaseApi().getDependencyResolver()
@@ -1690,12 +1688,12 @@ class ImportCommandTest
         lines.add( ":ID,name,:LABEL" );
         lines.add( nodeId + "," + "\"abc\"\"def\\\"\"ghi\"" + "," + labelName );
 
-        File dbConfig = prepareDefaultConfigFile();
+        Path dbConfig = prepareDefaultConfigFile();
 
         // WHEN
         runImport(
-                "--additional-config", dbConfig.getAbsolutePath(),
-                "--nodes", data( lines.toArray( new String[0] ) ).getAbsolutePath(),
+                "--additional-config", dbConfig.toAbsolutePath().toString(),
+                "--nodes", data( lines.toArray( new String[0] ) ).toAbsolutePath().toString(),
                 "--legacy-style-quoting", "false");
 
         // THEN
@@ -1714,12 +1712,12 @@ class ImportCommandTest
         lines.add( ":ID,name,:LABEL" );
         lines.add( "id," + "l".repeat( 2_000 ) + ",Person" );
 
-        File dbConfig = prepareDefaultConfigFile();
+        Path dbConfig = prepareDefaultConfigFile();
 
         // WHEN
         var e = assertThrows( IllegalStateException.class, () -> runImport(
-                    "--additional-config", dbConfig.getAbsolutePath(),
-                    "--nodes", data( lines.toArray( new String[0] ) ).getAbsolutePath(),
+                    "--additional-config", dbConfig.toAbsolutePath().toString(),
+                    "--nodes", data( lines.toArray( new String[0] ) ).toAbsolutePath().toString(),
                     "--read-buffer-size", "1k"
                     ) );
         assertThat( e ).hasMessageContaining( "input data" );
@@ -1733,7 +1731,7 @@ class ImportCommandTest
 
         // WHEN
         runImport(
-                "--nodes", nodeData( true, Configuration.COMMAS, nodeIds, TRUE ).getAbsolutePath(),
+                "--nodes", nodeData( true, Configuration.COMMAS, nodeIds, TRUE ).toAbsolutePath().toString(),
                 "--max-memory", "60%" );
     }
 
@@ -1744,7 +1742,7 @@ class ImportCommandTest
         List<String> nodeIds = nodeIds( 10 );
 
         var e = assertThrows( ParameterException.class, () -> runImport( "--nodes",
-                    nodeData( true, Configuration.COMMAS, nodeIds, TRUE ).getAbsolutePath(), "--max-memory", "110%" ) );
+                    nodeData( true, Configuration.COMMAS, nodeIds, TRUE ).toAbsolutePath().toString(), "--max-memory", "110%" ) );
         assertThat( e ).hasMessageContaining( "percent" );
     }
 
@@ -1756,7 +1754,7 @@ class ImportCommandTest
 
         // WHEN
         runImport(
-                "--nodes", nodeData( true, Configuration.COMMAS, nodeIds, TRUE ).getAbsolutePath(),
+                "--nodes", nodeData( true, Configuration.COMMAS, nodeIds, TRUE ).toAbsolutePath().toString(),
                 "--max-memory", "100M" );
     }
 
@@ -1766,24 +1764,24 @@ class ImportCommandTest
         // GIVEN
         List<String> nodeIds = asList( "a", "b", "c" );
         Configuration config = Configuration.COMMAS;
-        File nodeData = nodeData( true, config, nodeIds, TRUE );
+        Path nodeData = nodeData( true, config, nodeIds, TRUE );
 
         List<RelationshipDataLine> relationships = Arrays.asList(
                 relationship( "a", null, "TYPE" ),
                 relationship( null, "b", "TYPE" ),
                 relationship( "a", "b", null ) );
 
-        File relationshipData = relationshipData( true, config, relationships.iterator(), TRUE, true );
-        File bad = badFile();
+        Path relationshipData = relationshipData( true, config, relationships.iterator(), TRUE, true );
+        Path bad = badFile();
 
         // WHEN importing data where some relationships refer to missing nodes
         runImport(
-                "--nodes", nodeData.getAbsolutePath(),
-                "--report-file", bad.getAbsolutePath(),
+                "--nodes", nodeData.toAbsolutePath().toString(),
+                "--report-file", bad.toAbsolutePath().toString(),
                 "--skip-bad-relationships", "true",
-                "--relationships", relationshipData.getAbsolutePath() );
+                "--relationships", relationshipData.toAbsolutePath().toString() );
 
-        String badContents = Files.readString( bad.toPath(), Charset.defaultCharset() );
+        String badContents = Files.readString( bad, Charset.defaultCharset() );
         assertEquals( 3, occurrencesOf( badContents, "is missing data" ), badContents );
     }
 
@@ -1798,9 +1796,9 @@ class ImportCommandTest
         // WHEN data file contains more columns than header file
         int extraColumns = 3;
         var e = assertThrows( InputException.class, () -> runImport(
-                    "--additional-config=" + configFile.getAbsolutePath(),
-                    "--nodes", nodeHeader( config ).getAbsolutePath() + "," +
-                            nodeData( false, config, nodeIds, TRUE, Charset.defaultCharset(), extraColumns ).getAbsolutePath() ) );
+                    "--additional-config=" + configFile.toAbsolutePath().toString(),
+                    "--nodes", nodeHeader( config ).toAbsolutePath().toString() + "," +
+                            nodeData( false, config, nodeIds, TRUE, Charset.defaultCharset(), extraColumns ).toAbsolutePath().toString() ) );
         // THEN the store files should be there
         for ( StoreType storeType : StoreType.values() )
         {
@@ -1817,20 +1815,20 @@ class ImportCommandTest
         // given
         List<String> nodeIds = nodeIds();
         Configuration config = Configuration.COMMAS;
-        File argumentFile = file( "args" );
-        String nodesEscapedSpaces = nodeData( true, config, nodeIds, TRUE ).getAbsolutePath();
-        String relationshipsEscapedSpaced = relationshipData( true, config, nodeIds, TRUE, true ).getAbsolutePath();
-        File dbConfig = prepareDefaultConfigFile();
+        Path argumentFile = file( "args" );
+        String nodesEscapedSpaces = nodeData( true, config, nodeIds, TRUE ).toAbsolutePath().toString();
+        String relationshipsEscapedSpaced = relationshipData( true, config, nodeIds, TRUE, true ).toAbsolutePath().toString();
+        Path dbConfig = prepareDefaultConfigFile();
         String arguments = format(
                 "--additional-config=%s%n" +
                 "--nodes=%s%n" +
                 "--relationships=%s%n",
-                dbConfig.getAbsolutePath(),
+                dbConfig.toAbsolutePath().toString(),
                 nodesEscapedSpaces, relationshipsEscapedSpaced );
-        writeToFile( argumentFile, arguments, false );
+        writeToFile( argumentFile.toFile(), arguments, false );
 
         // when
-        runImport( "@" + argumentFile.getAbsolutePath() );
+        runImport( "@" + argumentFile.toAbsolutePath().toString() );
 
         // then
         verifyData();
@@ -1840,12 +1838,12 @@ class ImportCommandTest
     void shouldCreateDebugLogInExpectedPlace() throws Exception
     {
         // given
-        runImport( "--nodes", nodeData( true, Configuration.COMMAS, nodeIds(), TRUE ).getAbsolutePath() );
+        runImport( "--nodes", nodeData( true, Configuration.COMMAS, nodeIds(), TRUE ).toAbsolutePath().toString() );
 
         // THEN go and read the debug.log where it's expected to be and see if there's an IMPORT DONE line in it
-        File internalLogFile = Config.defaults( neo4j_home, testDirectory.homePath() ).get( store_internal_log_path ).toFile();
-        assertTrue( internalLogFile.exists() );
-        List<String> lines = Files.readAllLines( internalLogFile.toPath() );
+        Path internalLogFile = Config.defaults( neo4j_home, testDirectory.homePath() ).get( store_internal_log_path );
+        assertTrue( Files.exists( internalLogFile ) );
+        List<String> lines = Files.readAllLines( internalLogFile );
         assertTrue( lines.stream().anyMatch( line -> line.contains( "Import completed successfully" ) ) );
     }
 
@@ -1853,33 +1851,37 @@ class ImportCommandTest
     void shouldNormalizeTypes() throws Exception
     {
         // GIVEN
-        File dbConfig = prepareDefaultConfigFile();
+        Path dbConfig = prepareDefaultConfigFile();
 
         // WHEN
-        File nodeData = createAndWriteFile( "nodes.csv", Charset.defaultCharset(), writer ->
+        Path nodeData = createAndWriteFile( "nodes.csv", Charset.defaultCharset(), writer ->
         {
             writer.println( "id:ID,prop1:short,prop2:float" );
             writer.println( "1,123,456.789" );
             writer.println( "2,1000000,24850457689578965796.458348570" ); // <-- short too big, float too big
         } );
-        File relationshipData = createAndWriteFile( "relationships.csv", Charset.defaultCharset(), writer ->
+        Path relationshipData = createAndWriteFile( "relationships.csv", Charset.defaultCharset(), writer ->
         {
             writer.println( ":START_ID,:END_ID,:TYPE,prop1:int,prop2:byte" );
             writer.println( "1,2,DC,123,12" );
             writer.println( "2,1,DC,9999999999,123456789" );
         } );
         runImport(
-                "--additional-config", dbConfig.getAbsolutePath(),
-                "--nodes", nodeData.getAbsolutePath(),
-                "--relationships", relationshipData.getAbsolutePath() );
+                "--additional-config", dbConfig.toAbsolutePath().toString(),
+                "--nodes", nodeData.toAbsolutePath().toString(),
+                "--relationships", relationshipData.toAbsolutePath().toString() );
 
         // THEN
         SuppressOutput.Voice out = suppressOutput.getOutputVoice();
         assertTrue( out.containsMessage( "IMPORT DONE" ) );
-        assertTrue( out.containsMessage( format( "Property type of 'prop1' normalized from 'short' --> 'long' in %s", nodeData.getAbsolutePath() ) ) );
-        assertTrue( out.containsMessage( format( "Property type of 'prop2' normalized from 'float' --> 'double' in %s", nodeData.getAbsolutePath() ) ) );
-        assertTrue( out.containsMessage( format( "Property type of 'prop1' normalized from 'int' --> 'long' in %s", relationshipData.getAbsolutePath() ) ) );
-        assertTrue( out.containsMessage( format( "Property type of 'prop2' normalized from 'byte' --> 'long' in %s", relationshipData.getAbsolutePath() ) ) );
+        assertTrue(
+                out.containsMessage( format( "Property type of 'prop1' normalized from 'short' --> 'long' in %s", nodeData.toAbsolutePath().toString() ) ) );
+        assertTrue(
+                out.containsMessage( format( "Property type of 'prop2' normalized from 'float' --> 'double' in %s", nodeData.toAbsolutePath().toString() ) ) );
+        assertTrue( out.containsMessage(
+                format( "Property type of 'prop1' normalized from 'int' --> 'long' in %s", relationshipData.toAbsolutePath().toString() ) ) );
+        assertTrue( out.containsMessage(
+                format( "Property type of 'prop2' normalized from 'byte' --> 'long' in %s", relationshipData.toAbsolutePath().toString() ) ) );
         // The properties should have been normalized, let's verify that
         GraphDatabaseService db = getDatabaseApi();
         try ( Transaction tx = db.beginTx() )
@@ -1908,24 +1910,24 @@ class ImportCommandTest
     void shouldFailParsingOnTooLargeNumbersWithoutTypeNormalization() throws Exception
     {
         // GIVEN
-        File dbConfig = prepareDefaultConfigFile();
+        Path dbConfig = prepareDefaultConfigFile();
 
         // WHEN
-        File nodeData = createAndWriteFile( "nodes.csv", Charset.defaultCharset(), writer ->
+        Path nodeData = createAndWriteFile( "nodes.csv", Charset.defaultCharset(), writer ->
         {
             writer.println( "id:ID,prop1:short,prop2:float" );
             writer.println( "1,1000000,24850457689578965796.458348570" ); // <-- short too big, float too big
         } );
-        File relationshipData = createAndWriteFile( "relationships.csv", Charset.defaultCharset(), writer ->
+        Path relationshipData = createAndWriteFile( "relationships.csv", Charset.defaultCharset(), writer ->
         {
             writer.println( ":START_ID,:END_ID,:TYPE,prop1:int,prop2:byte" );
             writer.println( "1,1,DC,9999999999,123456789" );
         } );
         var e = assertThrows( InputException.class, () -> runImport(
-                    "--additional-config", dbConfig.getAbsolutePath(),
+                    "--additional-config", dbConfig.toAbsolutePath().toString(),
                     "--normalize-types", "false",
-                    "--nodes", nodeData.getAbsolutePath(),
-                    "--relationships", relationshipData.getAbsolutePath() ) );
+                    "--nodes", nodeData.toAbsolutePath().toString(),
+                    "--relationships", relationshipData.toAbsolutePath().toString() ) );
         String message = e.getMessage();
         assertThat( message ).contains( "1000000" );
         assertThat( message ).contains( "too big" );
@@ -1957,10 +1959,10 @@ class ImportCommandTest
         return count;
     }
 
-    private File writeArrayCsv( String[] headers, String[] values ) throws FileNotFoundException
+    private Path writeArrayCsv( String[] headers, String[] values ) throws IOException
     {
-        File data = file( fileName( "whitespace.csv" ) );
-        try ( PrintStream writer = new PrintStream( data ) )
+        Path data = file( fileName( "whitespace.csv" ) );
+        try ( PrintStream writer = new PrintStream( Files.newOutputStream( data ) ) )
         {
             writer.print( ":LABEL" );
             for ( String header : headers )
@@ -2001,9 +2003,9 @@ class ImportCommandTest
         return Arrays.stream( values ).map( String::trim ).collect( joining( ", ", "[", "]" ) );
     }
 
-    private File data( String... lines ) throws Exception
+    private Path data( String... lines ) throws Exception
     {
-        File file = file( fileName( "data.csv" ) );
+        Path file = file( fileName( "data.csv" ) );
         try ( PrintStream writer = writer( file, Charset.defaultCharset() ) )
         {
             for ( String line : lines )
@@ -2128,19 +2130,19 @@ class ImportCommandTest
         return UUID.randomUUID().toString();
     }
 
-    private File nodeData( boolean includeHeader, Configuration config, List<String> nodeIds,
+    private Path nodeData( boolean includeHeader, Configuration config, List<String> nodeIds,
             IntPredicate linePredicate ) throws Exception
     {
         return nodeData( includeHeader, config, nodeIds, linePredicate, Charset.defaultCharset() );
     }
 
-    private File nodeData( boolean includeHeader, Configuration config, List<String> nodeIds,
+    private Path nodeData( boolean includeHeader, Configuration config, List<String> nodeIds,
             IntPredicate linePredicate, Charset encoding ) throws Exception
     {
         return nodeData( includeHeader, config, nodeIds, linePredicate, encoding, 0 );
     }
 
-    private File nodeData( boolean includeHeader, Configuration config, List<String> nodeIds,
+    private Path nodeData( boolean includeHeader, Configuration config, List<String> nodeIds,
             IntPredicate linePredicate, Charset encoding, int extraColumns ) throws Exception
     {
         return createAndWriteFile( "nodes.csv", encoding, writer ->
@@ -2153,9 +2155,9 @@ class ImportCommandTest
         } );
     }
 
-    private File createAndWriteFile( String name, Charset encoding, Consumer<PrintStream> dataWriter ) throws Exception
+    private Path createAndWriteFile( String name, Charset encoding, Consumer<PrintStream> dataWriter ) throws Exception
     {
-        File file = file( fileName( name ) );
+        Path file = file( fileName( name ) );
         try ( PrintStream writer = writer( file, encoding ) )
         {
             dataWriter.accept( writer );
@@ -2163,22 +2165,22 @@ class ImportCommandTest
         return file;
     }
 
-    private PrintStream writer( File file, Charset encoding ) throws Exception
+    private PrintStream writer( Path file, Charset encoding ) throws Exception
     {
-        return new PrintStream( file, encoding.name() );
+        return new PrintStream( Files.newOutputStream( file ), false, encoding.name() );
     }
 
-    private File nodeHeader( Configuration config ) throws Exception
+    private Path nodeHeader( Configuration config ) throws Exception
     {
         return nodeHeader( config, null );
     }
 
-    private File nodeHeader( Configuration config, String idGroup ) throws Exception
+    private Path nodeHeader( Configuration config, String idGroup ) throws Exception
     {
         return nodeHeader( config, idGroup, Charset.defaultCharset() );
     }
 
-    private File nodeHeader( Configuration config, String idGroup, Charset encoding ) throws Exception
+    private Path nodeHeader( Configuration config, String idGroup, Charset encoding ) throws Exception
     {
         return createAndWriteFile( "nodes-header.csv", encoding, writer -> writeNodeHeader( writer, config, idGroup ) );
     }
@@ -2252,27 +2254,27 @@ class ImportCommandTest
         return builder.toString();
     }
 
-    private File relationshipData( boolean includeHeader, Configuration config, List<String> nodeIds,
+    private Path relationshipData( boolean includeHeader, Configuration config, List<String> nodeIds,
             IntPredicate linePredicate, boolean specifyType ) throws Exception
     {
         return relationshipData( includeHeader, config, nodeIds, linePredicate, specifyType, Charset.defaultCharset() );
     }
 
-    private File relationshipData( boolean includeHeader, Configuration config, List<String> nodeIds,
+    private Path relationshipData( boolean includeHeader, Configuration config, List<String> nodeIds,
             IntPredicate linePredicate, boolean specifyType, Charset encoding ) throws Exception
     {
         return relationshipData( includeHeader, config, randomRelationships( nodeIds ), linePredicate,
                 specifyType, encoding );
     }
 
-    private File relationshipData( boolean includeHeader, Configuration config,
+    private Path relationshipData( boolean includeHeader, Configuration config,
             Iterator<RelationshipDataLine> data, IntPredicate linePredicate,
             boolean specifyType ) throws Exception
     {
         return relationshipData( includeHeader, config, data, linePredicate, specifyType, Charset.defaultCharset() );
     }
 
-    private File relationshipData( boolean includeHeader, Configuration config,
+    private Path relationshipData( boolean includeHeader, Configuration config,
             Iterator<RelationshipDataLine> data, IntPredicate linePredicate,
             boolean specifyType, Charset encoding ) throws Exception
     {
@@ -2286,23 +2288,23 @@ class ImportCommandTest
         } );
     }
 
-    private File relationshipHeader( Configuration config ) throws Exception
+    private Path relationshipHeader( Configuration config ) throws Exception
     {
         return relationshipHeader( config, Charset.defaultCharset() );
     }
 
-    private File relationshipHeader( Configuration config, Charset encoding ) throws Exception
+    private Path relationshipHeader( Configuration config, Charset encoding ) throws Exception
     {
         return relationshipHeader( config, null, null, true, encoding );
     }
 
-    private File relationshipHeader( Configuration config, String startIdGroup, String endIdGroup, boolean specifyType )
+    private Path relationshipHeader( Configuration config, String startIdGroup, String endIdGroup, boolean specifyType )
             throws Exception
     {
         return relationshipHeader( config, startIdGroup, endIdGroup, specifyType, Charset.defaultCharset() );
     }
 
-    private File relationshipHeader( Configuration config, String startIdGroup, String endIdGroup, boolean specifyType,
+    private Path relationshipHeader( Configuration config, String startIdGroup, String endIdGroup, boolean specifyType,
             Charset encoding ) throws Exception
     {
         return createAndWriteFile( "relationships-header.csv", encoding,
@@ -2314,14 +2316,14 @@ class ImportCommandTest
         return dataIndex++ + "-" + name;
     }
 
-    private File file( String localname )
+    private Path file( String localname )
     {
-        return databaseLayout.file( localname ).toFile();
+        return databaseLayout.file( localname );
     }
 
-    private File badFile()
+    private Path badFile()
     {
-        return databaseLayout.file( CsvImporter.DEFAULT_REPORT_FILE_NAME ).toFile();
+        return databaseLayout.file( CsvImporter.DEFAULT_REPORT_FILE_NAME );
     }
 
     private void writeRelationshipHeader( PrintStream writer, Configuration config,
@@ -2438,9 +2440,9 @@ class ImportCommandTest
         return databaseLayout.getTransactionLogsDirectory().toFile().getParentFile().getAbsolutePath();
     }
 
-    private File prepareDefaultConfigFile() throws IOException
+    private Path prepareDefaultConfigFile() throws IOException
     {
-        File dbConfig = file( "neo4j.properties" );
+        Path dbConfig = file( "neo4j.properties" );
         store( Map.of(
                 neo4j_home.name(), testDirectory.homeDir().getAbsolutePath(),
                 preallocate_logical_logs.name(), FALSE

@@ -22,7 +22,6 @@ package org.neo4j.harness.junit.extension;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -129,8 +128,8 @@ class Neo4jExtensionRegisterIT
     {
         GraphDatabaseAPI api = (GraphDatabaseAPI) databaseService;
         Config config = api.getDependencyResolver().resolveDependency( Config.class );
-        File homeDir = config.get( GraphDatabaseSettings.neo4j_home ).toFile();
-        return Files.readString( new File( homeDir, file ).toPath() );
+        Path homeDir = config.get( GraphDatabaseSettings.neo4j_home );
+        return Files.readString( homeDir.resolve( file ) );
     }
 
     private static Path createTempDirectory()

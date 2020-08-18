@@ -69,6 +69,6 @@ public abstract class DefaultIdentityModule implements IdentityModule
 
     protected static SimpleStorage<ServerId> createServerIdStorage( FileSystemAbstraction fs, Path serverIdFile, MemoryTracker memoryTracker )
     {
-        return new SimpleFileStorage<>( fs, serverIdFile.toFile(), ServerId.Marshal.INSTANCE, memoryTracker );
+        return new SimpleFileStorage<>( fs, serverIdFile, ServerId.Marshal.INSTANCE, memoryTracker );
     }
 }

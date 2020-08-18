@@ -19,8 +19,6 @@
  */
 package org.neo4j.csv.reader;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -28,6 +26,8 @@ import java.io.PushbackInputStream;
 import java.io.Reader;
 import java.io.StringReader;
 import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Enumeration;
@@ -43,7 +43,7 @@ import org.neo4j.function.ThrowingFunction;
 /**
  * Means of instantiating common {@link CharReadable} instances.
  *
- * There are support for compressed files as well for those methods accepting a {@link File} argument.
+ * There are support for compressed files as well for those methods accepting a {@link Path} argument.
  * <ol>
  * <li>ZIP: is both an archive and a compression format. In many cases the order of files
  * is important and for a ZIP archive with multiple files, the order of the files are whatever the order
@@ -174,7 +174,7 @@ public class Readables
         return new WrappedCharReadable( length, reader, sourceDescription );
     }
 
-    private static class FromFile implements IOFunction<File,CharReadable>
+    private static class FromFile implements IOFunction<Path,CharReadable>
     {
         private final Charset charset;
 
@@ -184,21 +184,21 @@ public class Readables
         }
 
         @Override
-        public CharReadable apply( final File file ) throws IOException
+        public CharReadable apply( final Path path ) throws IOException
         {
-            Magic magic = Magic.of( file );
+            Magic magic = Magic.of( path );
             if ( magic == Magic.ZIP )
             {   // ZIP file
-                ZipFile zipFile = new ZipFile( file );
+                ZipFile zipFile = new ZipFile( path.toFile() );
                 ZipEntry entry = getSingleSuitableEntry( zipFile );
                 return wrap( new InputStreamReader( zipFile.getInputStream( entry ), charset )
                 {
                     @Override
                     public String toString()
                     {
-                        return file.getPath();
+                        return path.toAbsolutePath().toString();
                     }
-                }, file.length() );
+                }, Files.size( path ) );
             }
             else if ( magic == Magic.GZIP )
             {   // GZIP file. GZIP isn't an archive like ZIP, so this is purely data that is compressed.
@@ -206,19 +206,19 @@ public class Readables
                 // files into one blob, which is then compressed. If that's the case then
                 // the data will look like garbage and the reader will fail for whatever it will be used for.
                 // TODO add tar support
-                GZIPInputStream zipStream = new GZIPInputStream( new FileInputStream( file ) );
+                GZIPInputStream zipStream = new GZIPInputStream( Files.newInputStream( path ) );
                 return wrap( new InputStreamReader( zipStream, charset )
                 {
                     @Override
                     public String toString()
                     {
-                        return file.getPath();
+                        return path.toAbsolutePath().toString();
                     }
-                }, file.length() );
+                }, Files.size( path ) );
             }
             else
             {
-                InputStream in = new FileInputStream( file );
+                InputStream in = Files.newInputStream( path );
                 Charset usedCharset = this.charset;
                 if ( magic.impliesEncoding() )
                 {
@@ -235,9 +235,9 @@ public class Readables
                     @Override
                     public String toString()
                     {
-                        return file.getPath();
+                        return path.toAbsolutePath().toString();
                     }
-                }, file.length() );
+                }, Files.size( path ) );
             }
         }
 
@@ -281,14 +281,14 @@ public class Readables
                name.contains( "/." );
     }
 
-    public static RawIterator<CharReadable,IOException> individualFiles( Charset charset, File... files )
+    public static RawIterator<CharReadable,IOException> individualFiles( Charset charset, Path... files )
     {
         return iterator( new FromFile( charset ), files );
     }
 
-    public static CharReadable files( Charset charset, File... files ) throws IOException
+    public static CharReadable files( Charset charset, Path... files ) throws IOException
     {
-        IOFunction<File,CharReadable> opener = new FromFile( charset );
+        IOFunction<Path,CharReadable> opener = new FromFile( charset );
         switch ( files.length )
         {
         case 0:  return EMPTY;

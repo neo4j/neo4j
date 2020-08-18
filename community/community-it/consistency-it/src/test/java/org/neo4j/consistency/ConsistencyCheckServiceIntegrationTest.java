@@ -414,8 +414,8 @@ public class ConsistencyCheckServiceIntegrationTest
 
     private void nonRecoveredDatabase() throws IOException
     {
-        File tmpLogDir = new File( testDirectory.homeDir(), "logs" );
-        fs.mkdir( tmpLogDir );
+        Path tmpLogDir = testDirectory.homePath().resolve( "logs" );
+        fs.mkdir( tmpLogDir.toFile() );
         DatabaseManagementService managementService =
                 new TestDatabaseManagementServiceBuilder( testDirectory.homePath() ).setConfig( settings() ).build();
         GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
@@ -428,22 +428,22 @@ public class ConsistencyCheckServiceIntegrationTest
             node1.createRelationshipTo( node2, relationshipType );
             tx.commit();
         }
-        File[] txLogs = LogFilesBuilder.logFilesBasedOnlyBuilder( databaseLayout.getTransactionLogsDirectory().toFile(), fs )
+        Path[] txLogs = LogFilesBuilder.logFilesBasedOnlyBuilder( databaseLayout.getTransactionLogsDirectory(), fs )
                 .withCommandReaderFactory( RecordStorageCommandReaderFactory.INSTANCE )
                 .build().logFiles();
-        for ( File file : txLogs )
+        for ( Path file : txLogs )
         {
-            fs.copyToDirectory( file, tmpLogDir );
+            fs.copyToDirectory( file.toFile(), tmpLogDir.toFile() );
         }
         managementService.shutdown();
-        for ( File txLog : txLogs )
+        for ( Path txLog : txLogs )
         {
-            fs.deleteFile( txLog );
+            fs.deleteFile( txLog.toFile() );
         }
 
-        for ( File file : LogFilesBuilder.logFilesBasedOnlyBuilder( tmpLogDir, fs ).build().logFiles() )
+        for ( Path file : LogFilesBuilder.logFilesBasedOnlyBuilder( tmpLogDir, fs ).build().logFiles() )
         {
-            fs.moveToDirectory( file, databaseLayout.getTransactionLogsDirectory().toFile() );
+            fs.moveToDirectory( file.toFile(), databaseLayout.getTransactionLogsDirectory().toFile() );
         }
     }
 

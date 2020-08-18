@@ -394,7 +394,7 @@ class RelationshipTypeScanStoreIT
             }
             if ( checkpointPosition != null )
             {
-                try ( StoreChannel storeChannel = fs.write( logFiles.getHighestLogFile() ) )
+                try ( StoreChannel storeChannel = fs.write( logFiles.getHighestLogFile().toFile() ) )
                 {
                     storeChannel.truncate( checkpointPosition.getByteOffset() );
                 }
@@ -408,7 +408,7 @@ class RelationshipTypeScanStoreIT
 
     private LogFiles buildLogFiles() throws IOException
     {
-        return LogFilesBuilder.logFilesBasedOnlyBuilder( databaseLayout.getTransactionLogsDirectory().toFile(), fs ).build();
+        return LogFilesBuilder.logFilesBasedOnlyBuilder( databaseLayout.getTransactionLogsDirectory(), fs ).build();
     }
 
     private RelationshipTypeScanStore getRelationshipTypeScanStore()

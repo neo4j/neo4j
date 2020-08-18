@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction.log.files;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.LongSupplier;
@@ -73,7 +73,7 @@ public class LogFilesBuilder
     private PageCache pageCache;
     private CommandReaderFactory commandReaderFactory = CommandReaderFactory.NO_COMMANDS;
     private DatabaseLayout databaseLayout;
-    private File logsDirectory;
+    private Path logsDirectory;
     private Config config;
     private Long rotationThreshold;
     private LogEntryReader logEntryReader;
@@ -134,7 +134,7 @@ public class LogFilesBuilder
      * @param logsDirectory log files directory
      * @param fileSystem file system
      */
-    public static LogFilesBuilder logFilesBasedOnlyBuilder( File logsDirectory, FileSystemAbstraction fileSystem )
+    public static LogFilesBuilder logFilesBasedOnlyBuilder( Path logsDirectory, FileSystemAbstraction fileSystem )
     {
         LogFilesBuilder builder = new LogFilesBuilder();
         builder.logsDirectory = logsDirectory;
@@ -233,7 +233,7 @@ public class LogFilesBuilder
         return this;
     }
 
-    public LogFilesBuilder withLogsDirectory( File logsDirectory )
+    public LogFilesBuilder withLogsDirectory( Path logsDirectory )
     {
         this.logsDirectory = logsDirectory;
         return this;
@@ -242,18 +242,18 @@ public class LogFilesBuilder
     public LogFiles build() throws IOException
     {
         TransactionLogFilesContext filesContext = buildContext();
-        File logsDirectory = getLogsDirectory();
-        filesContext.getFileSystem().mkdirs( logsDirectory );
+        Path logsDirectory = getLogsDirectory();
+        filesContext.getFileSystem().mkdirs( logsDirectory.toFile() );
         return new TransactionLogFiles( logsDirectory, logFileName, filesContext );
     }
 
-    private File getLogsDirectory()
+    private Path getLogsDirectory()
     {
         if ( logsDirectory != null )
         {
             return logsDirectory;
         }
-        return databaseLayout.getTransactionLogsDirectory().toFile();
+        return databaseLayout.getTransactionLogsDirectory();
     }
 
     TransactionLogFilesContext buildContext() throws IOException

@@ -121,7 +121,7 @@ class DatabaseManagementServiceFactoryIT
         DatabaseManagementServiceFactory databaseManagementServiceFactory =
                 new DatabaseManagementServiceFactory( DbmsInfo.COMMUNITY, CommunityEditionModule::new );
         Config cfg = Config.newBuilder()
-                .set( neo4j_home, testDirectory.absolutePath().toPath() )
+                .set( neo4j_home, testDirectory.homePath().toAbsolutePath() )
                 .set( preallocate_logical_logs, false )
                 .build();
         return databaseManagementServiceFactory.build( cfg, GraphDatabaseDependencies.newDependencies() );

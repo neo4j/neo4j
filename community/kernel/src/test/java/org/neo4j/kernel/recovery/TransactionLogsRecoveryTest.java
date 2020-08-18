@@ -24,8 +24,9 @@ import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
@@ -121,13 +122,13 @@ class TransactionLogsRecoveryTest
     private final Monitors monitors = new Monitors();
     private final SimpleLogVersionRepository versionRepository = new SimpleLogVersionRepository();
     private LogFiles logFiles;
-    private File storeDir;
+    private Path storeDir;
     private Lifecycle schemaLife;
 
     @BeforeEach
     void setUp() throws Exception
     {
-        storeDir = testDirectory.homeDir();
+        storeDir = testDirectory.homePath();
         logFiles = LogFilesBuilder.builder( databaseLayout, fileSystem )
                 .withLogVersionRepository( logVersionRepository )
                 .withTransactionIdStore( transactionIdStore )
@@ -139,7 +140,7 @@ class TransactionLogsRecoveryTest
     @Test
     void shouldRecoverExistingData() throws Exception
     {
-        File file = logFiles.getLogFileForVersion( logVersion );
+        Path file = logFiles.getLogFileForVersion( logVersion );
 
         writeSomeData( file, pair ->
         {
@@ -257,7 +258,7 @@ class TransactionLogsRecoveryTest
     @Test
     void shouldSeeThatACleanDatabaseShouldNotRequireRecovery() throws Exception
     {
-        File file = logFiles.getLogFileForVersion( logVersion );
+        Path file = logFiles.getLogFileForVersion( logVersion );
 
         writeSomeData( file, pair ->
         {
@@ -315,7 +316,7 @@ class TransactionLogsRecoveryTest
     void shouldTruncateLogAfterSinglePartialTransaction() throws Exception
     {
         // GIVEN
-        File file = logFiles.getLogFileForVersion( logVersion );
+        Path file = logFiles.getLogFileForVersion( logVersion );
         final LogPositionMarker marker = new LogPositionMarker();
 
         writeSomeData( file, pair ->
@@ -335,13 +336,13 @@ class TransactionLogsRecoveryTest
 
         // THEN
         assertTrue( recoveryRequired );
-        assertEquals( marker.getByteOffset(), file.length() );
+        assertEquals( marker.getByteOffset(), Files.size( file ) );
     }
 
     @Test
     void doNotTruncateCheckpointsAfterLastTransaction() throws IOException
     {
-        File file = logFiles.getLogFileForVersion( logVersion );
+        Path file = logFiles.getLogFileForVersion( logVersion );
         LogPositionMarker marker = new LogPositionMarker();
         writeSomeData( file, pair ->
         {
@@ -358,14 +359,14 @@ class TransactionLogsRecoveryTest
         } );
         assertTrue( recover( storeDir, logFiles ) );
 
-        assertEquals( marker.getByteOffset(), file.length() );
+        assertEquals( marker.getByteOffset(), Files.size( file ) );
     }
 
     @Test
     void shouldTruncateLogAfterLastCompleteTransactionAfterSuccessfulRecovery() throws Exception
     {
         // GIVEN
-        File file = logFiles.getLogFileForVersion( logVersion );
+        Path file = logFiles.getLogFileForVersion( logVersion );
         final LogPositionMarker marker = new LogPositionMarker();
 
         writeSomeData( file, pair ->
@@ -390,14 +391,14 @@ class TransactionLogsRecoveryTest
 
         // THEN
         assertTrue( recoveryRequired );
-        assertEquals( marker.getByteOffset(), file.length() );
+        assertEquals( marker.getByteOffset(), Files.size( file ) );
     }
 
     @Test
     void shouldTellTransactionIdStoreAfterSuccessfulRecovery() throws Exception
     {
         // GIVEN
-        File file = logFiles.getLogFileForVersion( logVersion );
+        Path file = logFiles.getLogFileForVersion( logVersion );
         final LogPositionMarker marker = new LogPositionMarker();
 
         final byte[] additionalHeaderData = new byte[0];
@@ -451,7 +452,7 @@ class TransactionLogsRecoveryTest
     @Test
     void shouldFailRecoveryWhenCanceled() throws Exception
     {
-        File file = logFiles.getLogFileForVersion( logVersion );
+        Path file = logFiles.getLogFileForVersion( logVersion );
         final LogPositionMarker marker = new LogPositionMarker();
 
         final byte[] additionalHeaderData = new byte[0];
@@ -485,12 +486,12 @@ class TransactionLogsRecoveryTest
         verify( monitor, never() ).recoveryCompleted( anyInt(), anyLong() );
     }
 
-    private boolean recover( File storeDir, LogFiles logFiles )
+    private boolean recover( Path storeDir, LogFiles logFiles )
     {
         return recover( storeDir, logFiles, EMPTY_CHECKER );
     }
 
-    private boolean recover( File storeDir, LogFiles logFiles, RecoveryStartupChecker startupChecker )
+    private boolean recover( Path storeDir, LogFiles logFiles, RecoveryStartupChecker startupChecker )
     {
         LifeSupport life = new LifeSupport();
 
@@ -531,9 +532,9 @@ class TransactionLogsRecoveryTest
         return new LogTailScanner( logFiles, reader, monitors, false, INSTANCE );
     }
 
-    private void writeSomeData( File file, Visitor<Pair<LogEntryWriter,Consumer<LogPositionMarker>>,IOException> visitor ) throws IOException
+    private void writeSomeData( Path file, Visitor<Pair<LogEntryWriter,Consumer<LogPositionMarker>>,IOException> visitor ) throws IOException
     {
-        try ( LogVersionedStoreChannel versionedStoreChannel = new PhysicalLogVersionedStoreChannel( fileSystem.write( file ), logVersion,
+        try ( LogVersionedStoreChannel versionedStoreChannel = new PhysicalLogVersionedStoreChannel( fileSystem.write( file.toFile() ), logVersion,
                 CURRENT_LOG_FORMAT_VERSION, file, logFiles.getChannelNativeAccessor() );
               PositionAwarePhysicalFlushableChecksumChannel writableLogChannel =
                       new PositionAwarePhysicalFlushableChecksumChannel( versionedStoreChannel, new HeapScopedBuffer( 1, KibiByte, INSTANCE ) ) )

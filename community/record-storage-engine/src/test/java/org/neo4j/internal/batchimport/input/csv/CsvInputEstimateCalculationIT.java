@@ -23,13 +23,11 @@ import org.apache.commons.lang3.mutable.MutableLong;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -275,11 +273,11 @@ class CsvInputEstimateCalculationIT
     private DataFactory generateData( Header.Factory factory, MutableLong start, long count,
             long nodeCount, String headerString, String fileName, Groups groups ) throws IOException
     {
-        File file = testDirectory.file( fileName );
+        Path file = testDirectory.filePath( fileName );
         Header header = factory.create( charSeeker( wrap( headerString ), COMMAS, false ), COMMAS, IdType.INTEGER, groups );
         Distribution<String> distribution = new Distribution<>( new String[] {"Token"} );
         Deserialization<String> deserialization = new StringDeserialization( COMMAS );
-        try ( PrintWriter out = new PrintWriter( new BufferedWriter( new FileWriter( file ) ) );
+        try ( PrintWriter out = new PrintWriter( Files.newBufferedWriter( file ) );
               RandomEntityDataGenerator generator = new RandomEntityDataGenerator( nodeCount, count, toIntExact( count ), random.seed(),
                       start.longValue(), header, distribution, distribution, 0, 0, 5 );
               InputChunk chunk = generator.newChunk();

@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction.log.rotation;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.time.Clock;
 
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
@@ -95,7 +95,7 @@ public class LogRotationImpl implements LogRotation
             databaseHealth.assertHealthy( IOException.class );
             long startTimeMillis = clock.millis();
             monitor.startRotation( currentVersion );
-            File newLogFile = logFile.rotate();
+            Path newLogFile = logFile.rotate();
             long lastTransactionId = logFiles.getLogFileInformation().committingEntryId();
             long millisSinceLastRotation = lastRotationCompleted == 0 ? 0 : startTimeMillis - lastRotationCompleted;
             lastRotationCompleted = clock.millis();

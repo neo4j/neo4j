@@ -47,16 +47,16 @@ public class StandaloneIdentityModuleTest
     void shouldCreateServerIdAndReReadIt() throws IOException
     {
         // given
-        var dataDir = testDirectory.file( DEFAULT_DATA_DIR_NAME );
+        var dataDir = testDirectory.filePath( DEFAULT_DATA_DIR_NAME );
         var layout = Neo4jLayout.of( testDirectory.homePath() );
         var fs = testDirectory.getFileSystem();
-        assertFalse( fs.fileExists( dataDir ) );
+        assertFalse( fs.fileExists( dataDir.toFile() ) );
 
         // when
         var identityModule = StandaloneIdentityModule.create( nullLogProvider(), fs, layout, EmptyMemoryTracker.INSTANCE );
 
         // then
-        assertTrue( fs.fileExists( dataDir ) );
+        assertTrue( fs.fileExists( dataDir.toFile() ) );
         assertTrue( fs.fileExists( layout.serverIdFile().toFile() ) );
         assertNotNull( identityModule.myself() );
 
@@ -66,7 +66,7 @@ public class StandaloneIdentityModuleTest
         // then
         assertEquals( identityModule.myself(), secondIdentityModule.myself() );
 
-        fs.deleteRecursively( dataDir );
+        fs.deleteRecursively( dataDir.toFile() );
         var thirdIdentityModule = StandaloneIdentityModule.create( nullLogProvider(), fs, layout, EmptyMemoryTracker.INSTANCE );
 
         // then

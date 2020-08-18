@@ -23,10 +23,10 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -157,7 +157,7 @@ class CsvInputBatchImportIT
         }
     }
 
-    static Input csv( File nodes, File relationships, IdType idType, Configuration configuration )
+    static Input csv( Path nodes, Path relationships, IdType idType, Configuration configuration )
     {
         return new CsvInput(
                 DataFactories.datas( DataFactories.data( InputEntityDecorators.NO_DECORATOR, defaultCharset(), nodes ) ),
@@ -218,10 +218,10 @@ class CsvInputBatchImportIT
         return org.neo4j.internal.batchimport.Configuration.withBatchSize( org.neo4j.internal.batchimport.Configuration.DEFAULT, 100 );
     }
 
-    private File relationshipDataAsFile( List<InputEntity> relationshipData ) throws IOException
+    private Path relationshipDataAsFile( List<InputEntity> relationshipData ) throws IOException
     {
-        File file = testDirectory.file( "relationships.csv" );
-        try ( Writer writer = fileSystem.openAsWriter( file, StandardCharsets.UTF_8, false ) )
+        Path file = testDirectory.filePath( "relationships.csv" );
+        try ( Writer writer = fileSystem.openAsWriter( file.toFile(), StandardCharsets.UTF_8, false ) )
         {
             // Header
             println( writer, ":start_id,:end_id,:type" );
@@ -235,10 +235,10 @@ class CsvInputBatchImportIT
         return file;
     }
 
-    private File nodeDataAsFile( List<InputEntity> nodeData ) throws IOException
+    private Path nodeDataAsFile( List<InputEntity> nodeData ) throws IOException
     {
-        File file = testDirectory.file( "nodes.csv" );
-        try ( Writer writer = fileSystem.openAsWriter( file, StandardCharsets.UTF_8, false ) )
+        Path file = testDirectory.filePath( "nodes.csv" );
+        try ( Writer writer = fileSystem.openAsWriter( file.toFile(), StandardCharsets.UTF_8, false ) )
         {
             // Header
             println( writer, "id:ID,name,pointA:Point{crs:WGS-84},pointB:Point,date:Date,time:Time,dateTime:DateTime,dateTime2:DateTime,localTime:LocalTime," +

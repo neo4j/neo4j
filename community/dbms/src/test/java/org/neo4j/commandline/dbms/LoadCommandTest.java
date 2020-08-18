@@ -86,10 +86,10 @@ class LoadCommandTest
     @BeforeEach
     void setUp() throws IOException
     {
-        homeDir = testDirectory.directory( "home-dir" ).toPath();
+        homeDir = testDirectory.directoryPath( "home-dir" );
         prepareFooDatabaseDirectory();
-        configDir = testDirectory.directory( "config-dir" ).toPath();
-        archive = testDirectory.directory( "some-archive.dump" ).toPath();
+        configDir = testDirectory.directoryPath( "config-dir" );
+        archive = testDirectory.directoryPath( "some-archive.dump" );
         loader = mock( Loader.class );
     }
 
@@ -154,7 +154,7 @@ class LoadCommandTest
     void shouldCalculateTheDatabaseDirectoryFromConfig()
             throws IOException, CommandFailedException, IncorrectFormat
     {
-        Path dataDir = testDirectory.directory( "some-other-path" ).toPath();
+        Path dataDir = testDirectory.directoryPath( "some-other-path" );
         Path databaseDir = dataDir.resolve( "databases/foo" );
         Path transactionLogsDir = dataDir.resolve( DEFAULT_TX_LOGS_ROOT_DIR_NAME );
         Files.createDirectories( databaseDir );
@@ -168,8 +168,8 @@ class LoadCommandTest
     @Test
     void shouldCalculateTheTxLogDirectoryFromConfig() throws Exception
     {
-        Path dataDir = testDirectory.directory( "some-other-path" ).toPath();
-        Path txLogsDir = testDirectory.directory( "txLogsPath" ).toPath();
+        Path dataDir = testDirectory.directoryPath( "some-other-path" );
+        Path txLogsDir = testDirectory.directoryPath( "txLogsPath" );
         Path databaseDir = dataDir.resolve( "databases/foo" );
         Files.write( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ),
                 asList( formatProperty( data_directory, dataDir ),
@@ -184,10 +184,10 @@ class LoadCommandTest
     @DisabledOnOs( OS.WINDOWS )
     void shouldHandleSymlinkToDatabaseDir() throws IOException, CommandFailedException, IncorrectFormat
     {
-        Path symDir = testDirectory.directory( "path-to-links" ).toPath();
+        Path symDir = testDirectory.directoryPath( "path-to-links" );
         Path realDatabaseDir = symDir.resolve( "foo" );
 
-        Path dataDir = testDirectory.directory( "some-other-path" ).toPath();
+        Path dataDir = testDirectory.directoryPath( "some-other-path" );
         Path databaseDir = dataDir.resolve( "databases/foo" );
         Path txLogsDir = dataDir.resolve( DEFAULT_TX_LOGS_ROOT_DIR_NAME );
         Path databasesDir = dataDir.resolve( "databases" );

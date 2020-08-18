@@ -22,11 +22,11 @@ package org.neo4j.ssl;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URL;
+import java.nio.file.Path;
 import java.security.PrivateKey;
 
 import org.neo4j.test.extension.Inject;
@@ -98,28 +98,28 @@ class PkiUtilsTest
     @Test
     void shouldReadEncryptedPrivateKey() throws Exception
     {
-        File keyFile = testDirectory.file( "private.key" );
+        Path keyFile = testDirectory.filePath( "private.key" );
         URL resource = this.getClass().getResource( "test-certificates/encrypted/private.key" );
         copy( resource, keyFile );
 
-        PrivateKey pk = PkiUtils.loadPrivateKey( keyFile.toPath(), "neo4j" );
+        PrivateKey pk = PkiUtils.loadPrivateKey( keyFile, "neo4j" );
         assertThat( pk.getAlgorithm() ).isEqualTo( "RSA" );
     }
 
     @Test
     void shouldThrowOnMissingPassphraseForEncryptedPrivateKey() throws Exception
     {
-        File keyFile = testDirectory.file( "private.key" );
+        Path keyFile = testDirectory.filePath( "private.key" );
         URL resource = this.getClass().getResource( "test-certificates/encrypted/private.key" );
         copy( resource, keyFile );
 
-        assertThrows( IOException.class, () -> PkiUtils.loadPrivateKey( keyFile.toPath(), null ) );
+        assertThrows( IOException.class, () -> PkiUtils.loadPrivateKey( keyFile, null ) );
     }
 
-    private void copy( URL in, File outFile ) throws IOException
+    private void copy( URL in, Path outFile ) throws IOException
     {
         try ( InputStream is = in.openStream();
-                OutputStream os = testDirectory.getFileSystem().openAsOutputStream( outFile, false ) )
+                OutputStream os = testDirectory.getFileSystem().openAsOutputStream( outFile.toFile(), false ) )
         {
             is.transferTo( os );
         }

@@ -60,7 +60,7 @@ public final class LockChecker implements Closeable
 
     private static Closeable check( Locker locker, FileSystemAbstraction fileSystem ) throws CannotWriteException
     {
-        var lockFile = locker.lockFile().toPath();
+        var lockFile = locker.lockFile();
 
         if ( Files.isWritable( lockFile.getParent() ) )
         {

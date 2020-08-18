@@ -21,8 +21,8 @@ package org.neo4j.kernel.impl.index.schema;
 
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -97,7 +97,7 @@ class RecoverIndexDropIT
         createIndex( db );
         StorageEngineFactory storageEngineFactory = ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( StorageEngineFactory.class );
         managementService.shutdown();
-        appendDropTransactionToTransactionLog( databaseLayout.getTransactionLogsDirectory().toFile(), dropTransaction, storageEngineFactory );
+        appendDropTransactionToTransactionLog( databaseLayout.getTransactionLogsDirectory(), dropTransaction, storageEngineFactory );
 
         // when recovering this (the drop transaction with the index file intact)
         Monitors monitors = new Monitors();
@@ -134,7 +134,7 @@ class RecoverIndexDropIT
         }
     }
 
-    private void appendDropTransactionToTransactionLog( File transactionLogsDirectory, CommittedTransactionRepresentation dropTransaction,
+    private void appendDropTransactionToTransactionLog( Path transactionLogsDirectory, CommittedTransactionRepresentation dropTransaction,
             StorageEngineFactory storageEngineFactory ) throws IOException
     {
         LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( transactionLogsDirectory, fs )
@@ -149,7 +149,7 @@ class RecoverIndexDropIT
             {
             }
             LogPosition position = logEntryReader.lastPosition();
-            StoreChannel storeChannel = fs.write( logFiles.getLogFileForVersion( logFiles.getHighestLogVersion() ) );
+            StoreChannel storeChannel = fs.write( logFiles.getLogFileForVersion( logFiles.getHighestLogVersion() ).toFile() );
             storeChannel.position( position.getByteOffset() );
             try ( PhysicalFlushableChecksumChannel writeChannel = new PhysicalFlushableChecksumChannel( storeChannel, new HeapScopedBuffer( 100, INSTANCE ) ) )
             {

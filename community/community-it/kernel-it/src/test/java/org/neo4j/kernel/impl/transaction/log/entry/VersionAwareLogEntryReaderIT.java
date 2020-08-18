@@ -27,6 +27,7 @@ import org.junit.jupiter.api.condition.OS;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.file.Files;
 
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -94,7 +95,7 @@ class VersionAwareLogEntryReaderIT
                 .build();
         try ( Lifespan lifespan = new Lifespan( logFiles ) )
         {
-            assertEquals( kibiBytes( 128 ), logFiles.getHighestLogFile().length() );
+            assertEquals( kibiBytes( 128 ), Files.size( logFiles.getHighestLogFile() ) );
             LogPosition logPosition = entryReader.lastPosition();
             assertEquals( 0L, logPosition.getLogVersion() );
             // this position in a log file before 0's are actually starting
@@ -151,9 +152,9 @@ class VersionAwareLogEntryReaderIT
             while ( positionMarker.getByteOffset() <= checkpointsEndDataOffset );
             writer.prepareForFlush().flush();
             logFiles.getLogFile().rotate();
-            fs.truncate( logFiles.getLogFileForVersion( 0 ), checkpointsEndDataOffset );
+            fs.truncate( logFiles.getLogFileForVersion( 0 ).toFile(), checkpointsEndDataOffset );
 
-            try ( StoreChannel storeChannel = fs.write( logFiles.getLogFileForVersion( 1 ) ) )
+            try ( StoreChannel storeChannel = fs.write( logFiles.getLogFileForVersion( 1 ).toFile() ) )
             {
                 storeChannel.position( CURRENT_FORMAT_LOG_HEADER_SIZE );
                 storeChannel.writeAll( ByteBuffer.wrap( new byte[]{0} ) );
@@ -198,7 +199,7 @@ class VersionAwareLogEntryReaderIT
         {
             LogPosition logPosition = entryReader.lastPosition();
             assertEquals( 0L, logPosition.getLogVersion() );
-            assertEquals( logFiles.getHighestLogFile().length(), logPosition.getByteOffset() );
+            assertEquals( Files.size( logFiles.getHighestLogFile() ), logPosition.getByteOffset() );
         }
     }
 

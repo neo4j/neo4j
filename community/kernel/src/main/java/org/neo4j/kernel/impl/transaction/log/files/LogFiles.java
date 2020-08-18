@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction.log.files;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.function.LongSupplier;
 
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
@@ -34,17 +34,17 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
  */
 public interface LogFiles extends Lifecycle
 {
-    long getLogVersion( File historyLogFile );
+    long getLogVersion( Path historyLogFile );
 
-    File[] logFiles();
+    Path[] logFiles();
 
-    boolean isLogFile( File file );
+    boolean isLogFile( Path file );
 
-    File logFilesDirectory();
+    Path logFilesDirectory();
 
-    File getLogFileForVersion( long version );
+    Path getLogFileForVersion( long version );
 
-    File getHighestLogFile();
+    Path getHighestLogFile();
 
     long getHighestLogVersion();
 

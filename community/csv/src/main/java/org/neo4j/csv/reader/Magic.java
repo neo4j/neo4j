@@ -20,12 +20,12 @@
 package org.neo4j.csv.reader;
 
 import java.io.EOFException;
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -55,7 +55,7 @@ public class Magic
     public static final Magic BOM_UTF_8 = define( "BOM_UTF8", StandardCharsets.UTF_8, 0xEF, 0xBB, 0xBF );
 
     /**
-     * Defines a magic signature which can later be detected in {@link #of(File)} and {@link #of(byte[])}.
+     * Defines a magic signature which can later be detected in {@link #of(Path)} and {@link #of(byte[])}.
      *
      * @param description description of the magic, typically which file it is.
      * @param impliesEncoding if a match for this to-be-defined magic implies that the contents in
@@ -82,13 +82,13 @@ public class Magic
      * Extracts and matches the magic of the header in the given {@code file}. If no magic matches
      * then {@link #NONE} is returned.
      *
-     * @param file {@link File} to extract the magic from.
+     * @param file {@link Path} to extract the magic from.
      * @return matching {@link Magic}, or {@link #NONE} if no match.
      * @throws IOException for errors reading from the file.
      */
-    public static Magic of( File file ) throws IOException
+    public static Magic of( Path file ) throws IOException
     {
-        try ( InputStream in = new FileInputStream( file ) )
+        try ( InputStream in = Files.newInputStream( file ) )
         {
             byte[] bytes = new byte[LONGEST];
             int read = in.read( bytes );

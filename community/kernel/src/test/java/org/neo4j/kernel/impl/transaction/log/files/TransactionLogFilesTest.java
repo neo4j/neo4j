@@ -21,9 +21,9 @@ package org.neo4j.kernel.impl.transaction.log.files;
 
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -67,10 +67,10 @@ class TransactionLogFilesTest
         final int version = 12;
 
         // when
-        final File versionFileName = files.getLogFileForVersion( version );
+        final Path versionFileName = files.getLogFileForVersion( version );
 
         // then
-        final File expected = createTransactionLogFile( databaseLayout, getVersionedLogFileName( version ) );
+        final Path expected = createTransactionLogFile( databaseLayout, getVersionedLogFileName( version ) );
         assertEquals( expected, versionFileName );
     }
 
@@ -108,13 +108,13 @@ class TransactionLogFilesTest
         // given
         LogFiles files = createLogFiles();
 
-        fileSystem.write( createTransactionLogFile( databaseLayout, getVersionedLogFileName( "1" ) ) ).close();
-        fileSystem.write( createTransactionLogFile( databaseLayout, getVersionedLogFileName( "some", "2" ) ) ).close();
-        fileSystem.write( createTransactionLogFile( databaseLayout, getVersionedLogFileName( "3" ) ) ).close();
-        fileSystem.write( createTransactionLogFile( databaseLayout, filename ) ).close();
+        fileSystem.write( createTransactionLogFile( databaseLayout, getVersionedLogFileName( "1" ) ).toFile() ).close();
+        fileSystem.write( createTransactionLogFile( databaseLayout, getVersionedLogFileName( "some", "2" ) ).toFile() ).close();
+        fileSystem.write( createTransactionLogFile( databaseLayout, getVersionedLogFileName( "3" ) ).toFile() ).close();
+        fileSystem.write( createTransactionLogFile( databaseLayout, filename ).toFile() ).close();
 
         // when
-        final List<File> seenFiles = new ArrayList<>();
+        final List<Path> seenFiles = new ArrayList<>();
         final List<Long> seenVersions = new ArrayList<>();
 
         files.accept( ( file, logVersion ) ->
@@ -136,10 +136,10 @@ class TransactionLogFilesTest
         // given
         LogFiles files = createLogFiles();
 
-        fileSystem.write( createTransactionLogFile( databaseLayout, getVersionedLogFileName( "1" ) ) ).close();
-        fileSystem.write( createTransactionLogFile( databaseLayout, getVersionedLogFileName( "some", "4" ) ) ).close();
-        fileSystem.write( createTransactionLogFile( databaseLayout, getVersionedLogFileName( "3" ) ) ).close();
-        fileSystem.write( createTransactionLogFile( databaseLayout, filename ) ).close();
+        fileSystem.write( createTransactionLogFile( databaseLayout, getVersionedLogFileName( "1" ) ).toFile() ).close();
+        fileSystem.write( createTransactionLogFile( databaseLayout, getVersionedLogFileName( "some", "4" ) ).toFile() ).close();
+        fileSystem.write( createTransactionLogFile( databaseLayout, getVersionedLogFileName( "3" ) ).toFile() ).close();
+        fileSystem.write( createTransactionLogFile( databaseLayout, filename ).toFile() ).close();
 
         // when
         final long highestLogVersion = files.getHighestLogVersion();
@@ -171,7 +171,7 @@ class TransactionLogFilesTest
     {
         // given
         LogFiles logFiles = createLogFiles();
-        final File file = new File( "v....2" );
+        final Path file = Path.of( "v....2" );
 
         // when
         long logVersion = logFiles.getLogVersion( file );
@@ -185,11 +185,11 @@ class TransactionLogFilesTest
     void shouldThrowIfThereIsNoVersionInTheFileName() throws IOException
     {
         LogFiles logFiles = createLogFiles();
-        final File file = new File( "wrong" );
+        final Path file = Path.of( "wrong" );
 
         // when
         RuntimeException exception = assertThrows( RuntimeException.class, () -> logFiles.getLogVersion( file ) );
-        assertEquals( "Invalid log file '" + file.getName() + "'", exception.getMessage() );
+        assertEquals( "Invalid log file '" + file.getFileName() + "'", exception.getMessage() );
     }
 
     @Test
@@ -197,7 +197,7 @@ class TransactionLogFilesTest
     {
         // given
         LogFiles logFiles = createLogFiles();
-        final File file = new File( getVersionedLogFileName( "aa", "A" ) );
+        final Path file = Path.of( getVersionedLogFileName( "aa", "A" ) );
 
         // when
         assertThrows( NumberFormatException.class, () -> logFiles.getLogVersion( file ) );
@@ -207,9 +207,9 @@ class TransactionLogFilesTest
     void isLogFile() throws IOException
     {
         LogFiles logFiles = createLogFiles();
-        assertFalse( logFiles.isLogFile( new File( "aaa.tx.log" ) ) );
-        assertTrue( logFiles.isLogFile( new File( "filename.0" ) ) );
-        assertTrue( logFiles.isLogFile( new File( "filename.17" ) ) );
+        assertFalse( logFiles.isLogFile( Path.of( "aaa.tx.log" ) ) );
+        assertTrue( logFiles.isLogFile( Path.of( "filename.0" ) ) );
+        assertTrue( logFiles.isLogFile( Path.of( "filename.17" ) ) );
     }
 
     @Test
@@ -217,7 +217,7 @@ class TransactionLogFilesTest
     {
         LogFiles logFiles = createLogFiles();
         String file = getVersionedLogFileName( "1" );
-        fileSystem.write( createTransactionLogFile( databaseLayout, file ) ).close();
+        fileSystem.write( createTransactionLogFile( databaseLayout, file ).toFile() ).close();
         assertFalse( logFiles.hasAnyEntries( 1 ) );
     }
 
@@ -234,7 +234,7 @@ class TransactionLogFilesTest
 
     private void create3_5FileWithHeader( DatabaseLayout databaseLayout, String version, int bytesOfData ) throws IOException
     {
-        try ( StoreChannel storeChannel = fileSystem.write( createTransactionLogFile( databaseLayout, getVersionedLogFileName( version ) ) ) )
+        try ( StoreChannel storeChannel = fileSystem.write( createTransactionLogFile( databaseLayout, getVersionedLogFileName( version ) ).toFile() ) )
         {
             ByteBuffer byteBuffer = ByteBuffers.allocate( LOG_HEADER_SIZE_3_5 + bytesOfData, INSTANCE );
             while ( byteBuffer.hasRemaining() )
@@ -251,10 +251,10 @@ class TransactionLogFilesTest
         create3_5FileWithHeader( databaseLayout, version, 0 );
     }
 
-    private File createTransactionLogFile( DatabaseLayout databaseLayout, String fileName )
+    private Path createTransactionLogFile( DatabaseLayout databaseLayout, String fileName )
     {
-        File transactionLogsDirectory = databaseLayout.getTransactionLogsDirectory().toFile();
-        return new File( transactionLogsDirectory, fileName );
+        Path transactionLogsDirectory = databaseLayout.getTransactionLogsDirectory();
+        return transactionLogsDirectory.resolve( fileName );
     }
 
     private LogFiles createLogFiles() throws IOException

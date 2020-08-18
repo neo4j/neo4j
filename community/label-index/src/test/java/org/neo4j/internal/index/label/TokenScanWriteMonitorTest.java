@@ -60,7 +60,7 @@ class TokenScanWriteMonitorTest
     @BeforeEach
     void before()
     {
-        baseName = TokenScanWriteMonitor.writeLogBaseFile( databaseLayout, NODE ).getName();
+        baseName = TokenScanWriteMonitor.writeLogBaseFile( databaseLayout, NODE ).getFileName().toString();
     }
 
     @Test

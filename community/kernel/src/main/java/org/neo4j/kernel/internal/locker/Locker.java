@@ -20,7 +20,6 @@
 package org.neo4j.kernel.internal.locker;
 
 import java.io.Closeable;
-import java.io.File;
 import java.io.IOException;
 import java.nio.channels.FileLock;
 import java.nio.channels.OverlappingFileLockException;
@@ -37,18 +36,18 @@ import org.neo4j.io.fs.StoreChannel;
 public class Locker implements Closeable
 {
     private final FileSystemAbstraction fileSystemAbstraction;
-    private final File lockFile;
+    private final Path lockFile;
 
     FileLock lockFileLock;
     private StoreChannel lockFileChannel;
 
-    public Locker( FileSystemAbstraction fileSystemAbstraction, File lockFile )
+    public Locker( FileSystemAbstraction fileSystemAbstraction, Path lockFile )
     {
         this.fileSystemAbstraction = fileSystemAbstraction;
         this.lockFile = lockFile;
     }
 
-    public final File lockFile()
+    public final Path lockFile()
     {
         return lockFile;
     }
@@ -72,9 +71,9 @@ public class Locker implements Closeable
 
         try
         {
-            if ( !fileSystemAbstraction.fileExists( lockFile ) )
+            if ( !fileSystemAbstraction.fileExists( lockFile.toFile() ) )
             {
-                fileSystemAbstraction.mkdirs( lockFile.getParentFile() );
+                fileSystemAbstraction.mkdirs( lockFile.getParent().toFile() );
             }
         }
         catch ( IOException e )
@@ -87,7 +86,7 @@ public class Locker implements Closeable
         {
             if ( lockFileChannel == null )
             {
-                lockFileChannel = fileSystemAbstraction.write( lockFile );
+                lockFileChannel = fileSystemAbstraction.write( lockFile.toFile() );
             }
             lockFileLock = lockFileChannel.tryLock();
             if ( lockFileLock == null )
@@ -115,7 +114,7 @@ public class Locker implements Closeable
         String additionalInformation = null;
         if ( processUserName != null )
         {
-            Path lockPath = lockFile.toPath();
+            Path lockPath = lockFile;
             try
             {
                 String lockFileOwner = Files.getOwner( lockPath ).getName();

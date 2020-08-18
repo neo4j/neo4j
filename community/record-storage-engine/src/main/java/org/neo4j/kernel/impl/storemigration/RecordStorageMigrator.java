@@ -319,18 +319,18 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
         return new LogPosition( counters[0], counters[1] );
     }
 
-    private static void writeTxLogCounters( FileSystemAbstraction fs, File file, long... counters ) throws IOException
+    private static void writeTxLogCounters( FileSystemAbstraction fs, Path path, long... counters ) throws IOException
     {
-        try ( Writer writer = fs.openAsWriter( file, StandardCharsets.UTF_8, false ) )
+        try ( Writer writer = fs.openAsWriter( path.toFile(), StandardCharsets.UTF_8, false ) )
         {
             writer.write( StringUtils.join( counters, TX_LOG_COUNTERS_SEPARATOR ) );
         }
     }
 
-    private static long[] readTxLogCounters( FileSystemAbstraction fs, File file, int numberOfCounters )
+    private static long[] readTxLogCounters( FileSystemAbstraction fs, Path path, int numberOfCounters )
             throws IOException
     {
-        try ( var reader = fs.openAsReader( file, StandardCharsets.UTF_8 ) )
+        try ( var reader = fs.openAsReader( path.toFile(), StandardCharsets.UTF_8 ) )
         {
             String line = lineIterator( reader ).next();
             String[] split = StringUtils.split( line, TX_LOG_COUNTERS_SEPARATOR );
@@ -348,14 +348,14 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
         }
     }
 
-    private static File lastTxInformationFile( DatabaseLayout migrationStructure )
+    private static Path lastTxInformationFile( DatabaseLayout migrationStructure )
     {
-        return migrationStructure.file( "lastxinformation" ).toFile();
+        return migrationStructure.file( "lastxinformation" );
     }
 
-    private static File lastTxLogPositionFile( DatabaseLayout migrationStructure )
+    private static Path lastTxLogPositionFile( DatabaseLayout migrationStructure )
     {
-        return migrationStructure.file( "lastxlogposition" ).toFile();
+        return migrationStructure.file( "lastxlogposition" );
     }
 
     TransactionId extractTransactionIdInformation( Path neoStore, long lastTransactionId, PageCursorTracer cursorTracer )
@@ -411,7 +411,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
             return new LogPosition( BASE_TX_LOG_VERSION, BASE_TX_LOG_BYTE_OFFSET );
         }
 
-        TransactionLogFilesHelper logFiles = new TransactionLogFilesHelper( fileSystem, sourceDirectoryStructure.getTransactionLogsDirectory().toFile() );
+        TransactionLogFilesHelper logFiles = new TransactionLogFilesHelper( fileSystem, sourceDirectoryStructure.getTransactionLogsDirectory() );
         RangeLogVersionVisitor versionVisitor = new RangeLogVersionVisitor();
         logFiles.accept( versionVisitor );
         long logVersion = versionVisitor.getHighestVersion();
@@ -419,7 +419,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
         {
             return new LogPosition( BASE_TX_LOG_VERSION, BASE_TX_LOG_BYTE_OFFSET );
         }
-        long offset = fileSystem.getFileSize( versionVisitor.getHighestFile() );
+        long offset = fileSystem.getFileSize( versionVisitor.getHighestFile().toFile() );
         return new LogPosition( logVersion, offset );
     }
 

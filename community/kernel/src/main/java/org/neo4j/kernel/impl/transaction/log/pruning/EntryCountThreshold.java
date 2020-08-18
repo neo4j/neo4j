@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction.log.pruning;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 
 import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
 import org.neo4j.logging.Log;
@@ -44,7 +44,7 @@ public final class EntryCountThreshold implements Threshold
     }
 
     @Override
-    public boolean reached( File ignored, long version, LogFileInformation source )
+    public boolean reached( Path ignored, long version, LogFileInformation source )
     {
         long nextVersion = version + 1;
         try

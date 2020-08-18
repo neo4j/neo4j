@@ -22,7 +22,6 @@ package org.neo4j.commandline.dbms;
 import org.jutils.jprocesses.JProcesses;
 import org.jutils.jprocesses.model.ProcessInfo;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -184,10 +183,10 @@ public class DiagnosticsReportCommand extends AbstractCommand
     private DiagnosticsReporter createAndRegisterSources()
     {
         DiagnosticsReporter reporter = new DiagnosticsReporter();
-        File configFile = ctx.confDir().resolve( Config.DEFAULT_CONFIG_FILE_NAME ).toFile();
+        Path configFile = ctx.confDir().resolve( Config.DEFAULT_CONFIG_FILE_NAME );
         Config config = getConfig( configFile );
 
-        File storeDirectory = config.get( databases_root_path ).toFile();
+        Path storeDirectory = config.get( databases_root_path );
 
         reporter.registerAllOfflineProviders( config, storeDirectory, ctx.fs(), config.get( GraphDatabaseSettings.default_database ) );
 
@@ -221,11 +220,11 @@ public class DiagnosticsReportCommand extends AbstractCommand
         } );
     }
 
-    private Config getConfig( File configFile )
+    private Config getConfig( Path configFile )
     {
-        if ( !ctx.fs().fileExists( configFile ) )
+        if ( !ctx.fs().fileExists( configFile.toFile() ) )
         {
-            throw new CommandFailedException( "Unable to find config file, tried: " + configFile.getAbsolutePath() );
+            throw new CommandFailedException( "Unable to find config file, tried: " + configFile.toAbsolutePath() );
         }
         try
         {
@@ -237,7 +236,7 @@ public class DiagnosticsReportCommand extends AbstractCommand
         }
         catch ( Exception e )
         {
-            throw new CommandFailedException( "Failed to read config file: " + configFile.getAbsolutePath(), e );
+            throw new CommandFailedException( "Failed to read config file: " + configFile.toAbsolutePath(), e );
         }
     }
 

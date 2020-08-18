@@ -19,7 +19,7 @@
  */
 package org.neo4j.server.diagnostics;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -45,7 +45,7 @@ public class ServerDiagnosticsOfflineReportProvider extends DiagnosticsOfflineRe
     }
 
     @Override
-    public void init( FileSystemAbstraction fs, String defaultDatabaseName, Config config, File storeDirectory )
+    public void init( FileSystemAbstraction fs, String defaultDatabaseName, Config config, Path storeDirectory )
     {
         this.fs = fs;
         this.config = config;
@@ -56,8 +56,8 @@ public class ServerDiagnosticsOfflineReportProvider extends DiagnosticsOfflineRe
     {
         if ( classifiers.contains( "logs" ) )
         {
-            File httpLog = config.get( ServerSettings.http_log_path ).toFile();
-            if ( fs.fileExists( httpLog ) )
+            Path httpLog = config.get( ServerSettings.http_log_path );
+            if ( fs.fileExists( httpLog.toFile() ) )
             {
                 return newDiagnosticsRotatingFile( "logs/http.log", fs, httpLog );
             }

@@ -19,8 +19,8 @@
  */
 package org.neo4j.commandline.admin.security;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 
 import org.neo4j.cli.AbstractCommand;
 import org.neo4j.cli.CommandFailedException;
@@ -72,15 +72,15 @@ public class SetInitialPasswordCommand extends AbstractCommand
 
         if ( realUsersExist( config ) )
         {
-            File authFile = CommunitySecurityModule.getUserRepositoryFile( config );
+            Path authFile = CommunitySecurityModule.getUserRepositoryFile( config );
             throw new CommandFailedException( realUsersExistErrorMsg( fileSystem, authFile ) );
         }
         else
         {
-            File file = CommunitySecurityModule.getInitialUserRepositoryFile( config );
-            if ( fileSystem.fileExists( file ) )
+            Path file = CommunitySecurityModule.getInitialUserRepositoryFile( config );
+            if ( fileSystem.fileExists( file.toFile() ) )
             {
-                fileSystem.deleteFile( file );
+                fileSystem.deleteFile( file.toFile() );
             }
 
             FileUserRepository userRepository =
@@ -106,9 +106,9 @@ public class SetInitialPasswordCommand extends AbstractCommand
     private boolean realUsersExist( Config config )
     {
         boolean result = false;
-        File authFile = CommunitySecurityModule.getUserRepositoryFile( config );
+        Path authFile = CommunitySecurityModule.getUserRepositoryFile( config );
 
-        if ( ctx.fs().fileExists( authFile ) )
+        if ( ctx.fs().fileExists( authFile.toFile() ) )
         {
             result = true;
 
@@ -135,13 +135,13 @@ public class SetInitialPasswordCommand extends AbstractCommand
         return result;
     }
 
-    private static String realUsersExistErrorMsg( FileSystemAbstraction fileSystem, File authFile )
+    private static String realUsersExistErrorMsg( FileSystemAbstraction fileSystem, Path authFile )
     {
         String files;
-        File parentFile = authFile.getParentFile();
-        File roles = new File( parentFile, "roles" );
+        Path parentFile = authFile.getParent();
+        Path roles = parentFile.resolve( "roles" );
 
-        if ( fileSystem.fileExists( roles ) )
+        if ( fileSystem.fileExists( roles.toFile() ) )
         {
             files = "`auth` and `roles` files";
         }
@@ -151,7 +151,7 @@ public class SetInitialPasswordCommand extends AbstractCommand
         }
 
         return  "the provided initial password was not set because existing Neo4j users were detected at `" +
-               authFile.getAbsolutePath() + "`. Please remove the existing " + files + " if you want to reset your database " +
+               authFile.toAbsolutePath() + "`. Please remove the existing " + files + " if you want to reset your database " +
                 "to only have a default user with the provided password.";
     }
 

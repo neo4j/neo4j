@@ -24,8 +24,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import picocli.CommandLine;
 
-import java.io.File;
 import java.io.PrintStream;
+import java.nio.file.Path;
 
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -40,18 +40,18 @@ import static org.mockito.Mockito.verify;
 
 class SetDefaultAdminCommandIT
 {
-    private FileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
-    private File confDir;
-    private File homeDir;
+    private final FileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
+    private Path confDir;
+    private Path homeDir;
     private PrintStream out;
     private PrintStream err;
 
     @BeforeEach
     void setup()
     {
-        File graphDir = new File( GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
-        confDir = new File( graphDir, "conf" );
-        homeDir = new File( graphDir, "home" );
+        Path graphDir = Path.of( GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
+        confDir = graphDir.resolveSibling( "conf" );
+        homeDir = graphDir.resolveSibling( "home" );
         out = mock( PrintStream.class );
         err = mock( PrintStream.class );
     }
@@ -79,8 +79,8 @@ class SetDefaultAdminCommandIT
 
     private void assertAdminIniFile( String username ) throws Throwable
     {
-        File adminIniFile = new File( new File( new File( homeDir, "data" ), "dbms" ), SetDefaultAdminCommand.ADMIN_INI );
-        Assertions.assertTrue( fileSystem.fileExists( adminIniFile ) );
+        Path adminIniFile = homeDir.resolve( "data" ).resolve( "dbms" ).resolve( SetDefaultAdminCommand.ADMIN_INI );
+        Assertions.assertTrue( fileSystem.fileExists( adminIniFile.toFile() ) );
         FileUserRepository userRepository = new FileUserRepository( fileSystem, adminIniFile,
                 NullLogProvider.getInstance() );
         userRepository.start();
@@ -91,7 +91,7 @@ class SetDefaultAdminCommandIT
 
     private void execute( String username )
     {
-        final var command = new SetDefaultAdminCommand( new ExecutionContext( homeDir.toPath(), confDir.toPath(), out, err, fileSystem ) );
+        final var command = new SetDefaultAdminCommand( new ExecutionContext( homeDir, confDir, out, err, fileSystem ) );
         CommandLine.populateCommand( command, username );
         command.execute();
     }

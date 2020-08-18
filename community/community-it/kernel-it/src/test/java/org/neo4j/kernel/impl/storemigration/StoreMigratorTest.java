@@ -173,8 +173,8 @@ class StoreMigratorTest
     @Test
     void extractTransactionInformationFromLogsInCustomAbsoluteLocation() throws Exception
     {
-        File customLogLocation = testDirectory.directory( "customLogLocation" );
-        extractTransactionalInformationFromLogs( customLogLocation.toPath().toAbsolutePath() );
+        Path customLogLocation = testDirectory.directoryPath( "customLogLocation" );
+        extractTransactionalInformationFromLogs( customLogLocation.toAbsolutePath() );
     }
 
     @Test
@@ -284,7 +284,7 @@ class StoreMigratorTest
                 .withCommandReaderFactory( storageEngineFactory.commandReaderFactory() )
                 .build();
         assertEquals( 0, logPosition.getLogVersion() );
-        assertEquals( logFiles.getHighestLogFile().length(), logPosition.getByteOffset() );
+        assertEquals( Files.size( logFiles.getHighestLogFile() ), logPosition.getByteOffset() );
     }
 
     private RecordStorageMigrator newStoreMigrator()

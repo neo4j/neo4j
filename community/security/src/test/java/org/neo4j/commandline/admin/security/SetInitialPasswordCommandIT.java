@@ -25,8 +25,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import picocli.CommandLine;
 
-import java.io.File;
 import java.io.PrintStream;
+import java.nio.file.Path;
 
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -52,17 +52,17 @@ class SetInitialPasswordCommandIT
 {
     @Inject
     private FileSystemAbstraction fileSystem;
-    private File confDir;
-    private File homeDir;
+    private Path confDir;
+    private Path homeDir;
     private PrintStream out;
     private PrintStream err;
 
     @BeforeEach
     void setup()
     {
-        File graphDir = new File( GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
-        confDir = new File( graphDir, "conf" );
-        homeDir = new File( graphDir, "home" );
+        Path graphDir = Path.of( GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
+        confDir = graphDir.resolve( "conf" );
+        homeDir = graphDir.resolve( "home" );
         out = mock( PrintStream.class );
         err = mock( PrintStream.class );
     }
@@ -126,9 +126,9 @@ class SetInitialPasswordCommandIT
     void shouldErrorIfRealUsersAlreadyExistCommunity() throws Throwable
     {
         // Given
-        File authFile = getAuthFile( "auth" );
-        fileSystem.mkdirs( authFile.getParentFile() );
-        fileSystem.write( authFile );
+        Path authFile = getAuthFile( "auth" );
+        fileSystem.mkdirs( authFile.getParent().toFile() );
+        fileSystem.write( authFile.toFile() );
 
         // When
         var e = assertThrows( Exception.class, () -> executeCommand( "will-be-ignored" ) );
@@ -142,12 +142,12 @@ class SetInitialPasswordCommandIT
     void shouldErrorIfRealUsersAlreadyExistEnterprise() throws Throwable
     {
         // Given
-        File authFile = getAuthFile( "auth" );
-        File rolesFile = getAuthFile( "roles" );
+        Path authFile = getAuthFile( "auth" );
+        Path rolesFile = getAuthFile( "roles" );
 
-        fileSystem.mkdirs( authFile.getParentFile() );
-        fileSystem.write( authFile );
-        fileSystem.write( rolesFile );
+        fileSystem.mkdirs( authFile.getParent().toFile() );
+        fileSystem.write( authFile.toFile() );
+        fileSystem.write( rolesFile.toFile() );
 
         // When
         var e = assertThrows( Exception.class, () -> executeCommand( "will-be-ignored" ) );
@@ -163,9 +163,9 @@ class SetInitialPasswordCommandIT
         // Given
         // Create an `auth` file with the default neo4j user, but not the default password
         executeCommand( "not-the-default-password" );
-        File authFile = getAuthFile( "auth" );
-        fileSystem.mkdirs( authFile.getParentFile() );
-        fileSystem.renameFile( getAuthFile( "auth.ini" ), authFile );
+        Path authFile = getAuthFile( "auth" );
+        fileSystem.mkdirs( authFile.getParent().toFile() );
+        fileSystem.renameFile( getAuthFile( "auth.ini" ).toFile(), authFile.toFile() );
 
         // When
         var e = assertThrows( Exception.class, () -> executeCommand( "will-be-ignored" ) );
@@ -182,9 +182,9 @@ class SetInitialPasswordCommandIT
         // Given
         // Create an `auth` file with the default neo4j user
         executeCommand( AuthManager.INITIAL_PASSWORD );
-        File authFile = getAuthFile( "auth" );
-        fileSystem.mkdirs( authFile.getParentFile() );
-        fileSystem.renameFile( getAuthFile( "auth.ini" ), authFile );
+        Path authFile = getAuthFile( "auth" );
+        fileSystem.mkdirs( authFile.getParent().toFile() );
+        fileSystem.renameFile( getAuthFile( "auth.ini" ).toFile(), authFile.toFile() );
 
         // When
         executeCommand( "should-not-be-ignored" );
@@ -196,8 +196,8 @@ class SetInitialPasswordCommandIT
 
     private void assertAuthIniFile( String password, boolean passwordChangeRequired ) throws Throwable
     {
-        File authIniFile = getAuthFile( "auth.ini" );
-        assertTrue( fileSystem.fileExists( authIniFile ) );
+        Path authIniFile = getAuthFile( "auth.ini" );
+        assertTrue( fileSystem.fileExists( authIniFile.toFile() ) );
         FileUserRepository userRepository = new FileUserRepository( fileSystem, authIniFile, NullLogProvider.getInstance() );
         userRepository.start();
         User neo4j = userRepository.getUserByName( AuthManager.INITIAL_USER_NAME );
@@ -208,17 +208,17 @@ class SetInitialPasswordCommandIT
 
     private void assertNoAuthIniFile()
     {
-        assertFalse( fileSystem.fileExists( getAuthFile( "auth.ini" ) ) );
+        assertFalse( fileSystem.fileExists( getAuthFile( "auth.ini" ).toFile() ) );
     }
 
-    private File getAuthFile( String name )
+    private Path getAuthFile( String name )
     {
-        return new File( new File( new File( homeDir, "data" ), "dbms" ), name );
+        return homeDir.resolve( "data" ).resolve( "dbms" ).resolve( name );
     }
 
     private void executeCommand( String... args )
     {
-        final var ctx = new ExecutionContext( homeDir.toPath(), confDir.toPath(), out, err, fileSystem );
+        final var ctx = new ExecutionContext( homeDir, confDir, out, err, fileSystem );
         final var command = new SetInitialPasswordCommand( ctx );
         CommandLine.populateCommand( command, args );
         command.execute();

@@ -22,15 +22,14 @@ package org.neo4j.kernel.impl.transaction.log;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.common.ProgressReporter;
-import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -90,13 +89,13 @@ class PhysicalLogicalTransactionStoreTest
     private TestDirectory testDirectory;
     @Inject
     private DatabaseLayout databaseLayout;
-    private File databaseDirectory;
+    private Path databaseDirectory;
     private final Monitors monitors = new Monitors();
 
     @BeforeEach
     void setup()
     {
-        databaseDirectory = testDirectory.homeDir();
+        databaseDirectory = testDirectory.homePath();
     }
 
     @Test
@@ -123,7 +122,7 @@ class PhysicalLogicalTransactionStoreTest
         }
 
         // create empty transaction log file and clear transaction cache to force re-read
-        fileSystem.write( logFiles.getLogFileForVersion( logFiles.getHighestLogVersion() + 1 ) ).close();
+        fileSystem.write( logFiles.getLogFileForVersion( logFiles.getHighestLogVersion() + 1 ).toFile() ).close();
         positionCache.clear();
 
         final LogicalTransactionStore store = new PhysicalLogicalTransactionStore( logFiles, positionCache, logEntryReader(), monitors, true );

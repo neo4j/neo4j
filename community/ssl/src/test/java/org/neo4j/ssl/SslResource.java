@@ -19,16 +19,16 @@
  */
 package org.neo4j.ssl;
 
-import java.io.File;
+import java.nio.file.Path;
 
 public class SslResource
 {
-    private final File privateKey;
-    private final File publicCertificate;
-    private final File trustedDirectory;
-    private final File revokedDirectory;
+    private final Path privateKey;
+    private final Path publicCertificate;
+    private final Path trustedDirectory;
+    private final Path revokedDirectory;
 
-    SslResource( File privateKey, File publicCertificate, File trustedDirectory, File revokedDirectory )
+    SslResource( Path privateKey, Path publicCertificate, Path trustedDirectory, Path revokedDirectory )
     {
         this.privateKey = privateKey;
         this.publicCertificate = publicCertificate;
@@ -36,22 +36,22 @@ public class SslResource
         this.revokedDirectory = revokedDirectory;
     }
 
-    public File privateKey()
+    public Path privateKey()
     {
         return privateKey;
     }
 
-    public File publicCertificate()
+    public Path publicCertificate()
     {
         return publicCertificate;
     }
 
-    public File trustedDirectory()
+    public Path trustedDirectory()
     {
         return trustedDirectory;
     }
 
-    public File revokedDirectory()
+    public Path revokedDirectory()
     {
         return revokedDirectory;
     }

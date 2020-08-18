@@ -186,24 +186,29 @@ public class Config implements Configuration
         {
             if ( path != null )
             {
-                fromFile( path.toFile(), false );
+                fromFile( path, false );
             }
             return this;
         }
 
         public Builder fromFileNoThrow( File cfg )
         {
-            return fromFile( cfg, false );
+            return fromFile( cfg.toPath(), false );
         }
 
         public Builder fromFile( File cfg )
         {
+            return fromFile( cfg.toPath(), true );
+        }
+
+        public Builder fromFile( Path cfg )
+        {
             return fromFile( cfg, true );
         }
 
-        private Builder fromFile( File file, boolean allowThrow )
+        private Builder fromFile( Path file, boolean allowThrow )
         {
-            if ( file == null || !file.exists() )
+            if ( file == null || Files.notExists( file ) )
             {
                 if ( allowThrow )
                 {
@@ -215,7 +220,7 @@ public class Config implements Configuration
 
             try
             {
-                try ( InputStream stream = Files.newInputStream( file.toPath() ) )
+                try ( InputStream stream = Files.newInputStream( file ) )
                 {
                     new Properties()
                     {

@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.internal.locker;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.channels.FileLock;
+import java.nio.file.Path;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -45,9 +45,9 @@ import org.neo4j.io.fs.FileSystemAbstraction;
  */
 class GlobalFileLocker extends Locker
 {
-    private static final Set<File> lockedFiles = ConcurrentHashMap.newKeySet();
+    private static final Set<Path> lockedFiles = ConcurrentHashMap.newKeySet();
 
-    GlobalFileLocker( FileSystemAbstraction fileSystemAbstraction, File lockFile )
+    GlobalFileLocker( FileSystemAbstraction fileSystemAbstraction, Path lockFile )
     {
         super( fileSystemAbstraction, lockFile );
     }

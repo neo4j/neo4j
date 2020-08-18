@@ -23,7 +23,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -372,7 +371,7 @@ class MultipleIndexPopulationStressIT
         {
             try
             {
-                return new BadCollector( fileSystemAbstraction.openAsOutputStream( new File( directory.homeDir(), "bad" ), false ), 0, 0 );
+                return new BadCollector( fileSystemAbstraction.openAsOutputStream( directory.homePath().resolve( "bad" ).toFile(), false ), 0, 0 );
             }
             catch ( IOException e )
             {

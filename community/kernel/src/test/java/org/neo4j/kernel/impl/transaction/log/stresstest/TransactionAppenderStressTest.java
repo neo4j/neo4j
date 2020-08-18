@@ -21,8 +21,8 @@ package org.neo4j.kernel.impl.transaction.log.stresstest;
 
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.concurrent.Callable;
 import java.util.function.BooleanSupplier;
 
@@ -67,7 +67,7 @@ public class TransactionAppenderStressTest
 
         long appendedTxs = runner.call();
 
-        assertEquals( new TransactionIdChecker( databaseLayout.getTransactionLogsDirectory().toFile() ).parseAllTxLogs(), appendedTxs );
+        assertEquals( new TransactionIdChecker( databaseLayout.getTransactionLogsDirectory() ).parseAllTxLogs(), appendedTxs );
     }
 
     public static class Builder
@@ -102,9 +102,9 @@ public class TransactionAppenderStressTest
 
     public static class TransactionIdChecker
     {
-        private final File workingDirectory;
+        private final Path workingDirectory;
 
-        public TransactionIdChecker( File workingDirectory )
+        public TransactionIdChecker( Path workingDirectory )
         {
             this.workingDirectory = workingDirectory;
         }

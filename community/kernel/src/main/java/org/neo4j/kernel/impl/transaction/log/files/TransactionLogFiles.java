@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.impl.transaction.log.files;
 
-import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.function.LongSupplier;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -50,11 +50,11 @@ public class TransactionLogFiles extends LifecycleAdapter implements LogFiles
     private final FileSystemAbstraction fileSystem;
     private final TransactionLogFilesHelper fileHelper;
     private final TransactionLogFile logFile;
-    private final File logsDirectory;
+    private final Path logsDirectory;
     private final TransactionLogChannelAllocator channelAllocator;
     private final LogFileChannelNativeAccessor nativeChannelAccessor;
 
-    TransactionLogFiles( File logsDirectory, String name, TransactionLogFilesContext context )
+    TransactionLogFiles( Path logsDirectory, String name, TransactionLogFilesContext context )
     {
         this.logFilesContext = context;
         this.logsDirectory = logsDirectory;
@@ -86,37 +86,37 @@ public class TransactionLogFiles extends LifecycleAdapter implements LogFiles
     }
 
     @Override
-    public long getLogVersion( File historyLogFile )
+    public long getLogVersion( Path historyLogFile )
     {
         return fileHelper.getLogVersion( historyLogFile );
     }
 
     @Override
-    public File[] logFiles()
+    public Path[] logFiles()
     {
         return fileHelper.getLogFiles();
     }
 
     @Override
-    public boolean isLogFile( File file )
+    public boolean isLogFile( Path file )
     {
-        return fileHelper.getLogFilenameFilter().accept( null, file.getName() );
+        return fileHelper.getLogFilenameFilter().accept( null, file.getFileName().toString() );
     }
 
     @Override
-    public File logFilesDirectory()
+    public Path logFilesDirectory()
     {
         return logsDirectory;
     }
 
     @Override
-    public File getLogFileForVersion( long version )
+    public Path getLogFileForVersion( long version )
     {
         return fileHelper.getLogFileForVersion( version );
     }
 
     @Override
-    public File getHighestLogFile()
+    public Path getHighestLogFile()
     {
         return getLogFileForVersion( getHighestLogVersion() );
     }
@@ -124,7 +124,7 @@ public class TransactionLogFiles extends LifecycleAdapter implements LogFiles
     @Override
     public boolean versionExists( long version )
     {
-        return fileSystem.fileExists( getLogFileForVersion( version ) );
+        return fileSystem.fileExists( getLogFileForVersion( version ).toFile() );
     }
 
     @Override
@@ -154,18 +154,18 @@ public class TransactionLogFiles extends LifecycleAdapter implements LogFiles
     {
         try
         {
-            File logFile = getLogFileForVersion( version );
+            Path logFile = getLogFileForVersion( version );
             var logHeader = extractHeader( version, false );
             if ( logHeader == null )
             {
                 return false;
             }
             int headerSize = Math.toIntExact( logHeader.getStartPosition().getByteOffset() );
-            if ( fileSystem.getFileSize( logFile ) <= headerSize )
+            if ( fileSystem.getFileSize( logFile.toFile() ) <= headerSize )
             {
                 return false;
             }
-            try ( StoreChannel channel = fileSystem.read( logFile ) )
+            try ( StoreChannel channel = fileSystem.read( logFile.toFile() ) )
             {
                 try ( var scopedBuffer = new HeapScopedBuffer( headerSize + 1, logFilesContext.getMemoryTracker() ) )
                 {
@@ -201,7 +201,7 @@ public class TransactionLogFiles extends LifecycleAdapter implements LogFiles
     @Override
     public void accept( LogVersionVisitor visitor )
     {
-        for ( File file : logFiles() )
+        for ( Path file : logFiles() )
         {
             visitor.visit( file, getLogVersion( file ) );
         }

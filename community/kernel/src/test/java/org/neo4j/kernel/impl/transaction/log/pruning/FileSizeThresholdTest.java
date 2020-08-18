@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.transaction.log.pruning;
 
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
+import java.nio.file.Path;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
@@ -36,7 +36,7 @@ class FileSizeThresholdTest
 
     private FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
     private final LogFileInformation source = mock( LogFileInformation.class );
-    private final File file = mock( File.class );
+    private final Path file = mock( Path.class );
     private final long version = 1;
 
     @Test
@@ -46,7 +46,7 @@ class FileSizeThresholdTest
         final long maxSize = 10;
         final FileSizeThreshold threshold = new FileSizeThreshold( fs, maxSize );
 
-        when( fs.getFileSize( file ) ).thenReturn( 5L );
+        when( fs.getFileSize( file.toFile() ) ).thenReturn( 5L );
 
         // when
         threshold.init();
@@ -64,7 +64,7 @@ class FileSizeThresholdTest
 
         final FileSizeThreshold threshold = new FileSizeThreshold( fs, sixteenGigabytes );
 
-        when( fs.getFileSize( file ) ).thenReturn( sixteenGigabytes );
+        when( fs.getFileSize( file.toFile() ) ).thenReturn( sixteenGigabytes );
 
         // when
         threshold.init();
@@ -81,7 +81,7 @@ class FileSizeThresholdTest
         final long maxSize = 10;
         final FileSizeThreshold threshold = new FileSizeThreshold( fs, maxSize );
 
-        when( fs.getFileSize( file ) ).thenReturn( 5L );
+        when( fs.getFileSize( file.toFile() ) ).thenReturn( 5L );
 
         // when
         threshold.init();
@@ -99,7 +99,7 @@ class FileSizeThresholdTest
         final long maxSize = 10;
         final FileSizeThreshold threshold = new FileSizeThreshold( fs, maxSize );
 
-        when( fs.getFileSize( file ) ).thenReturn( 5L );
+        when( fs.getFileSize( file.toFile() ) ).thenReturn( 5L );
 
         // when
         threshold.init();

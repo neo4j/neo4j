@@ -21,9 +21,9 @@ package org.neo4j.kernel.impl.transaction;
 
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.file.Path;
 
 import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -57,7 +57,7 @@ class ReadAheadLogChannelTest
     void shouldReadFromSingleChannel() throws Exception
     {
         // GIVEN
-        File file = file( 0 );
+        Path file = file( 0 );
         final byte byteValue = (byte) 5;
         final short shortValue = (short) 56;
         final int intValue = 32145;
@@ -77,7 +77,7 @@ class ReadAheadLogChannelTest
             return true;
         } );
 
-        StoreChannel storeChannel = fileSystem.read( file );
+        StoreChannel storeChannel = fileSystem.read( file.toFile() );
         PhysicalLogVersionedStoreChannel versionedStoreChannel =
                 new PhysicalLogVersionedStoreChannel( storeChannel, -1 /* ignored */, (byte) -1, file, nativeChannelAccessor );
         try ( ReadAheadLogChannel channel = new ReadAheadLogChannel( versionedStoreChannel, INSTANCE ) )
@@ -117,7 +117,7 @@ class ReadAheadLogChannelTest
             return true;
         } );
 
-        StoreChannel storeChannel = fileSystem.read( file( 0 ) );
+        StoreChannel storeChannel = fileSystem.read( file( 0 ).toFile() );
         PhysicalLogVersionedStoreChannel versionedStoreChannel =
                 new PhysicalLogVersionedStoreChannel( storeChannel, -1 /* ignored */, (byte) -1, file( 0 ), nativeChannelAccessor );
         try ( ReadAheadLogChannel channel = new ReadAheadLogChannel( versionedStoreChannel, new LogVersionBridge()
@@ -131,7 +131,7 @@ class ReadAheadLogChannelTest
                 {
                     returned = true;
                     channel.close();
-                    return new PhysicalLogVersionedStoreChannel( fileSystem.read( file( 1 ) ),
+                    return new PhysicalLogVersionedStoreChannel( fileSystem.read( file( 1 ).toFile() ),
                             -1 /* ignored */, (byte) -1, file( 1 ), nativeChannelAccessor );
                 }
                 return channel;
@@ -146,9 +146,9 @@ class ReadAheadLogChannelTest
         }
     }
 
-    private void writeSomeData( File file, Visitor<ByteBuffer, IOException> visitor ) throws IOException
+    private void writeSomeData( Path file, Visitor<ByteBuffer, IOException> visitor ) throws IOException
     {
-        try ( StoreChannel channel = fileSystem.write( file ) )
+        try ( StoreChannel channel = fileSystem.write( file.toFile() ) )
         {
             ByteBuffer buffer = ByteBuffers.allocate( 1, KibiByte, INSTANCE );
             visitor.visit( buffer );
@@ -157,8 +157,8 @@ class ReadAheadLogChannelTest
         }
     }
 
-    private File file( int index )
+    private Path file( int index )
     {
-        return new File( directory.homeDir(), "" + index );
+        return directory.homePath().resolve( "" + index );
     }
 }

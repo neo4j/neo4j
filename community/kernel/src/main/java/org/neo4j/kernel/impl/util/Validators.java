@@ -22,9 +22,12 @@ package org.neo4j.kernel.impl.util;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 import org.neo4j.common.Validator;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -33,9 +36,16 @@ import org.neo4j.io.layout.DatabaseLayout;
 
 public final class Validators
 {
-    public static final Validator<File> REGEX_FILE_EXISTS = file ->
+    public static final Validator<String> REGEX_FILE_EXISTS = fileWithRegexInName ->
     {
-        if ( matchingFiles( file ).isEmpty() )
+        File file = new File( fileWithRegexInName ); // Path can't handle regex in the name
+        File parent = file.getParentFile();
+        if ( parent == null )
+        {
+            throw new IllegalArgumentException( "Directory of " + fileWithRegexInName + " doesn't exist" );
+        }
+
+        if ( matchingFiles( parent.toPath(), file.getName() ).isEmpty() )
         {
             throw new IllegalArgumentException( "File '" + file + "' doesn't exist" );
         }
@@ -45,30 +55,36 @@ public final class Validators
     {
     }
 
-    static List<File> matchingFiles( File fileWithRegexInName )
+    static List<Path> matchingFiles( Path directory, String fileWithRegexInName )
     {
-        File parent = fileWithRegexInName.getAbsoluteFile().getParentFile();
-        if ( parent == null || !parent.exists() )
+        if ( Files.notExists( directory ) || !Files.isDirectory( directory ) )
         {
-            throw new IllegalArgumentException( "Directory of " + fileWithRegexInName + " doesn't exist" );
+            throw new IllegalArgumentException( directory + " is not a directory" );
         }
-        final Pattern pattern = Pattern.compile( fileWithRegexInName.getName() );
-        List<File> files = new ArrayList<>();
-        for ( File file : parent.listFiles() )
+        final Pattern pattern = Pattern.compile( fileWithRegexInName );
+        List<Path> files = new ArrayList<>();
+        try ( Stream<Path> list = Files.list( directory ) )
         {
-            if ( pattern.matcher( file.getName() ).matches() )
+            list.forEach( file ->
             {
-                files.add( file );
-            }
+                if ( pattern.matcher( file.getFileName().toString() ).matches() )
+                {
+                    files.add( file );
+                }
+            } );
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
         }
         return files;
     }
 
-    public static final Validator<File> CONTAINS_EXISTING_DATABASE = dbDir ->
+    public static final Validator<Path> CONTAINS_EXISTING_DATABASE = dbDir ->
     {
         try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction() )
         {
-            if ( !isExistingDatabase( fileSystem, DatabaseLayout.ofFlat( dbDir.toPath() ) ) )
+            if ( !isExistingDatabase( fileSystem, DatabaseLayout.ofFlat( dbDir ) ) )
             {
                 throw new IllegalArgumentException( "Directory '" + dbDir + "' does not contain a database" );
             }

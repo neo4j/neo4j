@@ -253,7 +253,7 @@ class ConfigLoaderTest
                 Config.newBuilder().fromFile( configFile.toFile() ).set( neo4j_home, testDirectory.homePath() ).build();
 
         assertThat( config.get( DatabaseManagementSystemSettings.auth_store_directory ) ).isEqualTo(
-                new File( testDirectory.homeDir(), "data/dbms" ).getAbsoluteFile().toPath() );
+                testDirectory.homePath().resolve( "data" ).resolve( "dbms" ).toAbsolutePath() );
     }
 
     @Test
@@ -264,7 +264,7 @@ class ConfigLoaderTest
                 Config.newBuilder().fromFile( configFile.toFile() ).set( neo4j_home, testDirectory.homePath() ).build();
 
         assertThat( config.get( DatabaseManagementSystemSettings.auth_store_directory ) ).isEqualTo(
-                new File( testDirectory.homeDir(), "the-data-dir/dbms" ).getAbsoluteFile().toPath() );
+                testDirectory.homePath().resolve( "the-data-dir" ).resolve( "dbms" ).toAbsolutePath() );
     }
 
     @Test
@@ -276,6 +276,6 @@ class ConfigLoaderTest
                 Config.newBuilder().fromFile( configFile.toFile() ).set( neo4j_home, testDirectory.homePath() ).build();
 
         assertThat( config.get( GraphDatabaseInternalSettings.auth_store ) ).isEqualTo(
-                new File( testDirectory.homeDir(), "foo/bar/auth" ).getAbsoluteFile().toPath() );
+                testDirectory.homePath().resolve( "foo" ).resolve( "bar" ).resolve( "auth" ).toAbsolutePath() );
     }
 }

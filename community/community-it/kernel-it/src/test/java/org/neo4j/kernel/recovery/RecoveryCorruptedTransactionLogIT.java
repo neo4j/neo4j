@@ -29,9 +29,9 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -309,11 +309,11 @@ class RecoveryCorruptedTransactionLogIT
 
         try ( Lifespan lifespan = new Lifespan( logFiles ) )
         {
-            File originalFile = logFiles.getHighestLogFile();
+            Path originalFile = logFiles.getHighestLogFile();
             logFiles.getLogFile().rotate();
 
             // append zeros in the end of previous file causing illegal suffix
-            try ( StoreFileChannel writeChannel = fileSystem.write( originalFile ) )
+            try ( StoreFileChannel writeChannel = fileSystem.write( originalFile.toFile() ) )
             {
                 writeChannel.position( writeChannel.size() );
                 for ( int i = 0; i < 10; i++ )
@@ -338,7 +338,7 @@ class RecoveryCorruptedTransactionLogIT
         managementService.shutdown();
 
         long originalLogDataLength;
-        File firstLogFile;
+        Path firstLogFile;
         try ( Lifespan lifespan = new Lifespan( logFiles ) )
         {
             LogFile logFile = logFiles.getLogFile();
@@ -348,7 +348,7 @@ class RecoveryCorruptedTransactionLogIT
             logFile.rotate();
 
             // append zeros in the end of previous file causing illegal suffix
-            try ( StoreFileChannel writeChannel = fileSystem.write( firstLogFile ) )
+            try ( StoreFileChannel writeChannel = fileSystem.write( firstLogFile.toFile() ) )
             {
                 writeChannel.position( writeChannel.size() );
                 for ( int i = 0; i < 10; i++ )
@@ -360,7 +360,7 @@ class RecoveryCorruptedTransactionLogIT
 
         startStopDbRecoveryOfCorruptedLogs();
 
-        assertEquals( originalLogDataLength + 2 * CHECKPOINT_COMMAND_SIZE, fileSystem.getFileSize( firstLogFile ) );
+        assertEquals( originalLogDataLength + 2 * CHECKPOINT_COMMAND_SIZE, fileSystem.getFileSize( firstLogFile.toFile() ) );
 
         assertThat( logProvider ).containsMessages( "Recovery required from position LogPosition{logVersion=0, byteOffset=" + (1018 + HEADER_OFFSET)  + "}" )
                 .assertExceptionForLogMessage( "Fail to read transaction log version 0." )
@@ -379,10 +379,10 @@ class RecoveryCorruptedTransactionLogIT
 
         try ( Lifespan lifespan = new Lifespan( logFiles ) )
         {
-            File originalFile = logFiles.getHighestLogFile();
+            Path originalFile = logFiles.getHighestLogFile();
             // append zeros in the end of file before rotation should not be problematic since rotation will prepare tx log file and truncate
             // in it its current position.
-            try ( StoreFileChannel writeChannel = fileSystem.write( originalFile ) )
+            try ( StoreFileChannel writeChannel = fileSystem.write( originalFile.toFile() ) )
             {
                 writeChannel.position( writeChannel.size() );
                 for ( int i = 0; i < 10; i++ )
@@ -408,10 +408,10 @@ class RecoveryCorruptedTransactionLogIT
 
         try ( Lifespan lifespan = new Lifespan( logFiles ) )
         {
-            File originalFile = logFiles.getHighestLogFile();
+            Path originalFile = logFiles.getHighestLogFile();
             // append zeros in the end of file before rotation should not be problematic since rotation will prepare tx log file and truncate
             // in it its current position.
-            try ( StoreFileChannel writeChannel = fileSystem.write( originalFile ) )
+            try ( StoreFileChannel writeChannel = fileSystem.write( originalFile.toFile() ) )
             {
                 writeChannel.position( writeChannel.size() );
                 for ( int i = 0; i < 10; i++ )
@@ -483,12 +483,12 @@ class RecoveryCorruptedTransactionLogIT
         long numberOfTransactions = transactionIdStore.getLastClosedTransactionId() - lastClosedTransactionBeforeStart;
         managementService.shutdown();
 
-        File highestLogFile = logFiles.getHighestLogFile();
+        Path highestLogFile = logFiles.getHighestLogFile();
         long originalFileLength = getLastReadablePosition( highestLogFile ).getByteOffset();
         removeLastCheckpointRecordFromLastLogFile();
 
         addCorruptedCommandsToLastLogFile( logEntryWriterProvider );
-        long modifiedFileLength = fileSystem.getFileSize( highestLogFile );
+        long modifiedFileLength = fileSystem.getFileSize( highestLogFile.toFile() );
 
         assertThat( modifiedFileLength ).isGreaterThan( originalFileLength );
 
@@ -505,7 +505,7 @@ class RecoveryCorruptedTransactionLogIT
         // during the setup and starting db as part of the test
         assertEquals( 3, logEntriesDistribution.get( CheckPoint.class ) );
         assertEquals( numberOfTransactions, recoveryMonitor.getNumberOfRecoveredTransactions() );
-        assertEquals( originalFileLength + CHECKPOINT_COMMAND_SIZE, highestLogFile.length() );
+        assertEquals( originalFileLength + CHECKPOINT_COMMAND_SIZE, Files.size( highestLogFile ) );
     }
 
     @ParameterizedTest( name = "[{index}] ({0})" )
@@ -525,12 +525,12 @@ class RecoveryCorruptedTransactionLogIT
         long numberOfTransactions = transactionIdStore.getLastClosedTransactionId() - lastClosedTransactionBeforeStart;
         managementService.shutdown();
 
-        File highestLogFile = logFiles.getHighestLogFile();
+        Path highestLogFile = logFiles.getHighestLogFile();
         long originalFileLength = getLastReadablePosition( highestLogFile ).getByteOffset();
         removeLastCheckpointRecordFromLastLogFile();
 
         addCorruptedCommandsToLastLogFile( logEntryWriterProvider );
-        long modifiedFileLength = highestLogFile.length();
+        long modifiedFileLength = Files.size( highestLogFile );
 
         assertThat( modifiedFileLength ).isGreaterThan( originalFileLength );
 
@@ -547,7 +547,7 @@ class RecoveryCorruptedTransactionLogIT
         // during the setup and starting db as part of the test
         assertEquals( 3, logEntriesDistribution.get( CheckPoint.class ) );
         assertEquals( numberOfTransactions, recoveryMonitor.getNumberOfRecoveredTransactions() );
-        assertEquals( originalFileLength + CHECKPOINT_COMMAND_SIZE, highestLogFile.length() );
+        assertEquals( originalFileLength + CHECKPOINT_COMMAND_SIZE, Files.size( highestLogFile ) );
     }
 
     @ParameterizedTest( name = "[{index}] ({0})" )
@@ -566,12 +566,12 @@ class RecoveryCorruptedTransactionLogIT
         }
         managementService.shutdown();
 
-        File highestLogFile = logFiles.getHighestLogFile();
+        Path highestLogFile = logFiles.getHighestLogFile();
         long originalFileLength = getLastReadablePosition( highestLogFile ).getByteOffset();
         removeLastCheckpointRecordFromLastLogFile();
 
         addCorruptedCommandsToLastLogFile( logEntryWriterProvider );
-        long modifiedFileLength = highestLogFile.length();
+        long modifiedFileLength = Files.size( highestLogFile );
 
         assertThat( modifiedFileLength ).isGreaterThan( originalFileLength );
 
@@ -586,7 +586,7 @@ class RecoveryCorruptedTransactionLogIT
         ObjectLongMap<Class<?>> logEntriesDistribution = getLogEntriesDistribution( logFiles );
         assertEquals( 6, logEntriesDistribution.get( CheckPoint.class ) );
         assertEquals( transactionsToRecover, recoveryMonitor.getNumberOfRecoveredTransactions() );
-        assertEquals( originalFileLength + CHECKPOINT_COMMAND_SIZE, highestLogFile.length() );
+        assertEquals( originalFileLength + CHECKPOINT_COMMAND_SIZE, Files.size( highestLogFile ) );
     }
 
     @ParameterizedTest( name = "[{index}] ({0})" )
@@ -599,10 +599,10 @@ class RecoveryCorruptedTransactionLogIT
         generateTransactionsAndRotate( database, 5 );
         managementService.shutdown();
 
-        File highestLogFile = logFiles.getHighestLogFile();
+        Path highestLogFile = logFiles.getHighestLogFile();
         long originalFileLength = getLastReadablePosition( highestLogFile ).getByteOffset();
         addCorruptedCommandsToLastLogFile( logEntryWriterProvider );
-        long modifiedFileLength = highestLogFile.length();
+        long modifiedFileLength = Files.size( highestLogFile );
 
         assertThat( modifiedFileLength ).isGreaterThan( originalFileLength );
 
@@ -620,7 +620,7 @@ class RecoveryCorruptedTransactionLogIT
         // 2 shutdowns will create a checkpoint and recovery that will be triggered by removing tx logs for default db
         // during the setup and starting db as part of the test
         assertEquals( 3, logEntriesDistribution.get( CheckPoint.class ) );
-        assertEquals( originalFileLength + CHECKPOINT_COMMAND_SIZE, highestLogFile.length() );
+        assertEquals( originalFileLength + CHECKPOINT_COMMAND_SIZE, Files.size( highestLogFile ) );
     }
 
     @Test
@@ -725,7 +725,7 @@ class RecoveryCorruptedTransactionLogIT
         }
         if ( checkpointPosition != null )
         {
-            try ( StoreChannel storeChannel = fileSystem.write( logFiles.getHighestLogFile() ) )
+            try ( StoreChannel storeChannel = fileSystem.write( logFiles.getHighestLogFile().toFile() ) )
             {
                 storeChannel.truncate( checkpointPosition.getByteOffset() );
             }
@@ -734,16 +734,16 @@ class RecoveryCorruptedTransactionLogIT
 
     private void truncateBytesFromLastLogFile( long bytesToTrim ) throws IOException
     {
-        File highestLogFile = logFiles.getHighestLogFile();
+        Path highestLogFile = logFiles.getHighestLogFile();
         long readableOffset = getLastReadablePosition( highestLogFile ).getByteOffset();
-        if ( fileSystem.getFileSize( highestLogFile ) > readableOffset )
+        if ( fileSystem.getFileSize( highestLogFile.toFile() ) > readableOffset )
         {
-            fileSystem.truncate( highestLogFile, readableOffset );
+            fileSystem.truncate( highestLogFile.toFile(), readableOffset );
             return;
         }
         if ( bytesToTrim > readableOffset )
         {
-            fileSystem.deleteFile( highestLogFile );
+            fileSystem.deleteFile( highestLogFile.toFile() );
             if ( logFiles.logFiles().length > 0 )
             {
                 truncateBytesFromLastLogFile( bytesToTrim ); //start truncating from next file
@@ -751,7 +751,7 @@ class RecoveryCorruptedTransactionLogIT
         }
         else
         {
-            fileSystem.truncate( highestLogFile, readableOffset - bytesToTrim );
+            fileSystem.truncate( highestLogFile.toFile(), readableOffset - bytesToTrim );
         }
     }
 
@@ -765,7 +765,7 @@ class RecoveryCorruptedTransactionLogIT
 
             LogPosition position = getLastReadablePosition( transactionLogFile );
 
-            try ( StoreFileChannel writeChannel = fileSystem.write( logFiles.getHighestLogFile() ) )
+            try ( StoreFileChannel writeChannel = fileSystem.write( logFiles.getHighestLogFile().toFile() ) )
             {
                 writeChannel.position( position.getByteOffset() + someRandomPaddingAfterEndOfDataInLogFile );
                 for ( int i = 0; i < 10; i++ )
@@ -776,7 +776,7 @@ class RecoveryCorruptedTransactionLogIT
         }
     }
 
-    private LogPosition getLastReadablePosition( File logFile ) throws IOException
+    private LogPosition getLastReadablePosition( Path logFile ) throws IOException
     {
         VersionAwareLogEntryReader entryReader = new VersionAwareLogEntryReader( storageEngineFactory.commandReaderFactory() );
         long logVersion = logFiles.getLogVersion( logFile );

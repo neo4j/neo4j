@@ -28,6 +28,8 @@ import org.junit.jupiter.api.Test;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -67,14 +69,14 @@ class CorruptedLogsTruncatorTest
 
     private final LifeSupport life = new LifeSupport();
 
-    private File databaseDirectory;
+    private Path databaseDirectory;
     private LogFiles logFiles;
     private CorruptedLogsTruncator logPruner;
 
     @BeforeEach
     void setUp() throws Exception
     {
-        databaseDirectory = testDirectory.homeDir();
+        databaseDirectory = testDirectory.homePath();
         SimpleLogVersionRepository logVersionRepository = new SimpleLogVersionRepository();
         SimpleTransactionIdStore transactionIdStore = new SimpleTransactionIdStore();
         logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( databaseDirectory, fs )
@@ -98,7 +100,7 @@ class CorruptedLogsTruncatorTest
     void doNotPruneEmptyLogs() throws IOException
     {
         logPruner.truncate( new LogPosition( 0, CURRENT_FORMAT_LOG_HEADER_SIZE ) );
-        assertTrue( FileSystemUtils.isEmptyOrNonExistingDirectory( fs, databaseDirectory ) );
+        assertTrue( FileSystemUtils.isEmptyOrNonExistingDirectory( fs, databaseDirectory.toFile() ) );
     }
 
     @Test
@@ -108,15 +110,15 @@ class CorruptedLogsTruncatorTest
         generateTransactionLogFiles( logFiles );
 
         long highestLogVersion = logFiles.getHighestLogVersion();
-        long fileSizeBeforePrune = logFiles.getHighestLogFile().length();
+        long fileSizeBeforePrune = Files.size( logFiles.getHighestLogFile() );
         LogPosition endOfLogsPosition = new LogPosition( highestLogVersion, fileSizeBeforePrune );
         assertEquals( TOTAL_NUMBER_OF_LOG_FILES - 1, highestLogVersion );
 
         logPruner.truncate( endOfLogsPosition );
 
         assertEquals( TOTAL_NUMBER_OF_LOG_FILES, logFiles.logFiles().length );
-        assertEquals( fileSizeBeforePrune, logFiles.getHighestLogFile().length() );
-        assertTrue( ArrayUtils.isEmpty( databaseDirectory.listFiles( File::isDirectory ) ) );
+        assertEquals( fileSizeBeforePrune, Files.size( logFiles.getHighestLogFile() ) );
+        assertTrue( ArrayUtils.isEmpty( databaseDirectory.toFile().listFiles( File::isDirectory ) ) );
     }
 
     @Test
@@ -126,8 +128,8 @@ class CorruptedLogsTruncatorTest
         generateTransactionLogFiles( logFiles );
 
         long highestLogVersion = logFiles.getHighestLogVersion();
-        File highestLogFile = logFiles.getHighestLogFile();
-        long fileSizeBeforePrune = highestLogFile.length();
+        Path highestLogFile = logFiles.getHighestLogFile();
+        long fileSizeBeforePrune = Files.size( highestLogFile );
         int bytesToPrune = 5;
         long byteOffset = fileSizeBeforePrune - bytesToPrune;
         LogPosition prunePosition = new LogPosition( highestLogVersion, byteOffset );
@@ -135,11 +137,11 @@ class CorruptedLogsTruncatorTest
         logPruner.truncate( prunePosition );
 
         assertEquals( TOTAL_NUMBER_OF_LOG_FILES, logFiles.logFiles().length );
-        assertEquals( byteOffset, highestLogFile.length() );
+        assertEquals( byteOffset, Files.size( highestLogFile ) );
 
-        File corruptedLogsDirectory = new File( databaseDirectory, CorruptedLogsTruncator.CORRUPTED_TX_LOGS_BASE_NAME );
-        assertTrue( corruptedLogsDirectory.exists() );
-        File[] files = corruptedLogsDirectory.listFiles();
+        Path corruptedLogsDirectory = databaseDirectory.resolve( CorruptedLogsTruncator.CORRUPTED_TX_LOGS_BASE_NAME );
+        assertTrue( Files.exists( corruptedLogsDirectory ) );
+        File[] files = corruptedLogsDirectory.toFile().listFiles();
         assertNotNull( files );
         assertEquals( 1, files.length );
 
@@ -148,7 +150,7 @@ class CorruptedLogsTruncatorTest
         try ( ZipFile zipFile = new ZipFile( corruptedLogsArchive ) )
         {
             assertEquals( 1, zipFile.size() );
-            checkEntryNameAndSize( zipFile, highestLogFile.getName(), bytesToPrune );
+            checkEntryNameAndSize( zipFile, highestLogFile.getFileName().toString(), bytesToPrune );
         }
     }
 
@@ -159,9 +161,9 @@ class CorruptedLogsTruncatorTest
         generateTransactionLogFiles( logFiles );
 
         long highestCorrectLogFileIndex = 5;
-        File highestCorrectLogFile = logFiles.getLogFileForVersion( highestCorrectLogFileIndex );
-        long fileSizeBeforePrune = highestCorrectLogFile.length();
-        long highestLogFileLength = logFiles.getHighestLogFile().length();
+        Path highestCorrectLogFile = logFiles.getLogFileForVersion( highestCorrectLogFileIndex );
+        long fileSizeBeforePrune = Files.size( highestCorrectLogFile );
+        long highestLogFileLength = Files.size( logFiles.getHighestLogFile() );
         int bytesToPrune = 7;
         long byteOffset = fileSizeBeforePrune - bytesToPrune;
         LogPosition prunePosition = new LogPosition( highestCorrectLogFileIndex, byteOffset );
@@ -171,11 +173,11 @@ class CorruptedLogsTruncatorTest
 
         life.start();
         assertEquals( 6, logFiles.logFiles().length );
-        assertEquals( byteOffset, highestCorrectLogFile.length() );
+        assertEquals( byteOffset, Files.size( highestCorrectLogFile ) );
 
-        File corruptedLogsDirectory = new File( databaseDirectory, CorruptedLogsTruncator.CORRUPTED_TX_LOGS_BASE_NAME );
-        assertTrue( corruptedLogsDirectory.exists() );
-        File[] files = corruptedLogsDirectory.listFiles();
+        Path corruptedLogsDirectory = databaseDirectory.resolve( CorruptedLogsTruncator.CORRUPTED_TX_LOGS_BASE_NAME );
+        assertTrue( Files.exists( corruptedLogsDirectory ) );
+        File[] files = corruptedLogsDirectory.toFile().listFiles();
         assertNotNull( files );
         assertEquals( 1, files.length );
 
@@ -184,7 +186,7 @@ class CorruptedLogsTruncatorTest
         try ( ZipFile zipFile = new ZipFile( corruptedLogsArchive ) )
         {
             assertEquals( 7, zipFile.size() );
-            checkEntryNameAndSize( zipFile, highestCorrectLogFile.getName(), bytesToPrune );
+            checkEntryNameAndSize( zipFile, highestCorrectLogFile.getFileName().toString(), bytesToPrune );
             long nextLogFileIndex = highestCorrectLogFileIndex + 1;
             int lastFileIndex = TOTAL_NUMBER_OF_LOG_FILES - 1;
             for ( long index = nextLogFileIndex; index < lastFileIndex; index++ )

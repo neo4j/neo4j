@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction.log.pruning;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
@@ -52,7 +52,7 @@ public final class EntryTimespanThreshold implements Threshold
     }
 
     @Override
-    public boolean reached( File file, long version, LogFileInformation source )
+    public boolean reached( Path file, long version, LogFileInformation source )
     {
         try
         {

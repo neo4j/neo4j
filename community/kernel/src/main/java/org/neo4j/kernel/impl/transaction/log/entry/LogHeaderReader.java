@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.impl.transaction.log.entry;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
+import java.nio.file.Path;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
@@ -37,20 +37,20 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.LOG_HEADER
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.LOG_VERSION_3_5;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.LOG_VERSION_4_0;
 
-public class LogHeaderReader
+public final class LogHeaderReader
 {
     private LogHeaderReader()
     {
     }
 
-    public static LogHeader readLogHeader( FileSystemAbstraction fileSystem, File file, MemoryTracker memoryTracker ) throws IOException
+    public static LogHeader readLogHeader( FileSystemAbstraction fileSystem, Path file, MemoryTracker memoryTracker ) throws IOException
     {
         return readLogHeader( fileSystem, file, true, memoryTracker );
     }
 
-    public static LogHeader readLogHeader( FileSystemAbstraction fileSystem, File file, boolean strict, MemoryTracker memoryTracker ) throws IOException
+    public static LogHeader readLogHeader( FileSystemAbstraction fileSystem, Path file, boolean strict, MemoryTracker memoryTracker ) throws IOException
     {
-        try ( StoreChannel channel = fileSystem.read( file );
+        try ( StoreChannel channel = fileSystem.read( file.toFile() );
               var scopedBuffer = new HeapScopedBuffer( CURRENT_FORMAT_LOG_HEADER_SIZE, memoryTracker ) )
         {
             return readLogHeader( scopedBuffer.getBuffer(), channel, strict, file );
@@ -74,7 +74,7 @@ public class LogHeaderReader
      * @throws IncompleteLogHeaderException if {@code strict} and not enough data could be read
      */
     public static LogHeader readLogHeader( ByteBuffer buffer, ReadableByteChannel channel, boolean strict,
-            File fileForAdditionalErrorInformationOrNull ) throws IOException
+            Path fileForAdditionalErrorInformationOrNull ) throws IOException
     {
         // Decode first part of the header that contains the version
         if ( !safeRead( buffer, channel, LOG_HEADER_VERSION_SIZE, strict, fileForAdditionalErrorInformationOrNull ) )
@@ -122,7 +122,7 @@ public class LogHeaderReader
      * @return true if all of the bytes were successfully read.
      */
     private static boolean safeRead( ByteBuffer buffer, ReadableByteChannel channel, int size, boolean strict,
-            File fileForAdditionalErrorInformationOrNull )
+            Path fileForAdditionalErrorInformationOrNull )
             throws IOException
     {
         buffer.clear();

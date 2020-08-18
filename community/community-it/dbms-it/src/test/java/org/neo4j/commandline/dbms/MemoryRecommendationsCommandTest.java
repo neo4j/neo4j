@@ -210,7 +210,7 @@ class MemoryRecommendationsCommandTest
         Path configDir = homeDir.resolve( "conf" );
         Path configFile = configDir.resolve( DEFAULT_CONFIG_FILE_NAME );
         configDir.toFile().mkdirs();
-        store( stringMap( data_directory.name(), homeDir.toString() ), configFile.toFile() );
+        store( stringMap( data_directory.name(), homeDir.toString() ), configFile );
 
         MemoryRecommendationsCommand command = new MemoryRecommendationsCommand(
                 new ExecutionContext( homeDir, configDir, output, mock( PrintStream.class ), testDirectory.getFileSystem() ) );
@@ -237,7 +237,7 @@ class MemoryRecommendationsCommandTest
         Path configFile = configDir.resolve( DEFAULT_CONFIG_FILE_NAME );
         configDir.toFile().mkdirs();
         store( stringMap( data_directory.name(), homeDir.toString(),
-                tx_state_memory_allocation.name(), TransactionStateMemoryAllocation.ON_HEAP.name() ), configFile.toFile() );
+                tx_state_memory_allocation.name(), TransactionStateMemoryAllocation.ON_HEAP.name() ), configFile );
 
         MemoryRecommendationsCommand command = new MemoryRecommendationsCommand(
                 new ExecutionContext( homeDir, configDir, output, mock( PrintStream.class ), testDirectory.getFileSystem() ) );
@@ -283,7 +283,7 @@ class MemoryRecommendationsCommandTest
         configDir.toFile().mkdirs();
         Path configFile = configDir.resolve( DEFAULT_CONFIG_FILE_NAME );
         String databaseName = "mydb";
-        store( stringMap( data_directory.name(), homeDir.toString() ), configFile.toFile() );
+        store( stringMap( data_directory.name(), homeDir.toString() ), configFile );
         DatabaseLayout databaseLayout = neo4jLayout.databaseLayout( databaseName );
         DatabaseLayout systemLayout = neo4jLayout.databaseLayout( SYSTEM_DATABASE_NAME );
         createDatabaseWithNativeIndexes( databaseLayout );
@@ -320,7 +320,7 @@ class MemoryRecommendationsCommandTest
         configDir.toFile().mkdirs();
         Path configFile = configDir.resolve( DEFAULT_CONFIG_FILE_NAME );
 
-        store( stringMap( data_directory.name(), homeDir.toString() ), configFile.toFile() );
+        store( stringMap( data_directory.name(), homeDir.toString() ), configFile );
 
         long totalPageCacheSize = 0;
         long totalLuceneIndexesSize = 0;

@@ -236,27 +236,28 @@ class ImportCommandTest
     void shouldKeepSpecifiedNeo4jHomeWhenAdditionalConfigIsPresent()
     {
         // given
-        final var homeDir = testDir.directory( "other", "place" );
-        final var additionalConfigFile = testDir.createFile( "empty.conf" );
-        final var ctx = new ExecutionContext( homeDir.toPath(), testDir.directory( "conf" ).toPath(), System.out, System.err, testDir.getFileSystem() );
+        final var homeDir = testDir.directoryPath( "other", "place" );
+        final var additionalConfigFile = testDir.createFilePath( "empty.conf" );
+        final var ctx = new ExecutionContext( homeDir, testDir.directoryPath( "conf" ), System.out, System.err, testDir.getFileSystem() );
         final var command = new ImportCommand( ctx );
-        final var foo = testDir.createFile( "foo.csv" );
+        final var foo = testDir.createFilePath( "foo.csv" );
 
-        CommandLine.populateCommand( command, "--additional-config", additionalConfigFile.getAbsolutePath(), "--nodes=" + foo.getAbsolutePath() );
+        CommandLine.populateCommand( command, "--additional-config", additionalConfigFile.toAbsolutePath().toString(),
+                "--nodes=" + foo.toAbsolutePath().toString() );
 
         // when
         Config resultingConfig = command.loadNeo4jConfig();
 
         // then
-        assertEquals( homeDir, resultingConfig.get( GraphDatabaseSettings.neo4j_home ).toFile() );
+        assertEquals( homeDir, resultingConfig.get( GraphDatabaseSettings.neo4j_home ) );
     }
 
     @Test
     void shouldKeepSpecifiedNeo4jHomeWhenNoAdditionalConfigIsPresent()
     {
         // given
-        final var homeDir = testDir.directory( "other", "place" );
-        final var ctx = new ExecutionContext( homeDir.toPath(), testDir.directory( "conf" ).toPath(), System.out, System.err, testDir.getFileSystem() );
+        final var homeDir = testDir.directoryPath( "other", "place" );
+        final var ctx = new ExecutionContext( homeDir, testDir.directoryPath( "conf" ), System.out, System.err, testDir.getFileSystem() );
         final var command = new ImportCommand( ctx );
         final var foo = testDir.createFile( "foo.csv" );
 
@@ -266,7 +267,7 @@ class ImportCommandTest
         Config resultingConfig = command.loadNeo4jConfig();
 
         // then
-        assertEquals( homeDir, resultingConfig.get( GraphDatabaseSettings.neo4j_home ).toFile() );
+        assertEquals( homeDir, resultingConfig.get( GraphDatabaseSettings.neo4j_home ) );
     }
 
     @Nested
@@ -288,9 +289,9 @@ class ImportCommandTest
         @Test
         void filesWithoutLabels()
         {
-            final var foo = testDir.createFile( "foo.csv" );
-            final var bar = testDir.createFile( "bar.csv" );
-            final var g = ImportCommand.parseNodeFilesGroup( foo.getPath() + "," + bar.getPath() );
+            final var foo = testDir.createFilePath( "foo.csv" );
+            final var bar = testDir.createFilePath( "bar.csv" );
+            final var g = ImportCommand.parseNodeFilesGroup( foo + "," + bar );
             assertThat( g.key ).isEmpty();
             assertThat( g.files ).contains( foo, bar );
         }
@@ -298,9 +299,9 @@ class ImportCommandTest
         @Test
         void singleLabel()
         {
-            final var foo = testDir.createFile( "foo.csv" );
-            final var bar = testDir.createFile( "bar.csv" );
-            final var g = ImportCommand.parseNodeFilesGroup( "BANANA=" + foo.getPath() + "," + bar.getPath() );
+            final var foo = testDir.createFilePath( "foo.csv" );
+            final var bar = testDir.createFilePath( "bar.csv" );
+            final var g = ImportCommand.parseNodeFilesGroup( "BANANA=" + foo + "," + bar );
             assertThat( g.key ).containsOnly( "BANANA" );
             assertThat( g.files ).containsOnly( foo, bar );
         }
@@ -308,9 +309,9 @@ class ImportCommandTest
         @Test
         void multipleLabels()
         {
-            final var foo = testDir.createFile( "foo.csv" );
-            final var bar = testDir.createFile( "bar.csv" );
-            final var g = ImportCommand.parseNodeFilesGroup( ":APPLE::KIWI : BANANA=" + foo.getPath() + "," + bar.getPath() );
+            final var foo = testDir.createFilePath( "foo.csv" );
+            final var bar = testDir.createFilePath( "bar.csv" );
+            final var g = ImportCommand.parseNodeFilesGroup( ":APPLE::KIWI : BANANA=" + foo + "," + bar );
             assertThat( g.key ).containsOnly( "BANANA", "KIWI", "APPLE" );
             assertThat( g.files ).containsOnly( foo, bar );
         }
@@ -318,9 +319,9 @@ class ImportCommandTest
         @Test
         void filesRegex()
         {
-            final var foo1 = testDir.createFile( "foo-1.csv" );
-            final var foo2 = testDir.createFile( "foo-2.csv" );
-            final var foo3 = testDir.createFile( "foo-X.csv" );
+            final var foo1 = testDir.createFilePath( "foo-1.csv" );
+            final var foo2 = testDir.createFilePath( "foo-2.csv" );
+            final var foo3 = testDir.createFilePath( "foo-X.csv" );
             final var g = ImportCommand.parseNodeFilesGroup( "BANANA=" + testDir.absolutePath() + File.separator + "foo-[0-9].csv" );
             assertThat( g.key ).containsOnly( "BANANA" );
             assertThat( g.files ).containsOnly( foo1, foo2 );
@@ -346,9 +347,9 @@ class ImportCommandTest
         @Test
         void filesWithoutLabels()
         {
-            final var foo = testDir.createFile( "foo.csv" );
-            final var bar = testDir.createFile( "bar.csv" );
-            final var g = ImportCommand.parseRelationshipFilesGroup( foo.getPath() + "," + bar.getPath() );
+            final var foo = testDir.createFilePath( "foo.csv" );
+            final var bar = testDir.createFilePath( "bar.csv" );
+            final var g = ImportCommand.parseRelationshipFilesGroup( foo + "," + bar );
             assertThat( g.key ).isEmpty();
             assertThat( g.files ).containsOnly( foo, bar );
         }
@@ -356,9 +357,9 @@ class ImportCommandTest
         @Test
         void withDefaultRelType()
         {
-            final var foo = testDir.createFile( "foo.csv" );
-            final var bar = testDir.createFile( "bar.csv" );
-            final var g = ImportCommand.parseRelationshipFilesGroup( "BANANA=" + foo.getPath() + "," + bar.getPath() );
+            final var foo = testDir.createFilePath( "foo.csv" );
+            final var bar = testDir.createFilePath( "bar.csv" );
+            final var g = ImportCommand.parseRelationshipFilesGroup( "BANANA=" + foo + "," + bar );
             assertThat( g.key ).isEqualTo( "BANANA" );
             assertThat( g.files ).containsOnly( foo, bar );
         }
@@ -366,9 +367,9 @@ class ImportCommandTest
         @Test
         void filesRegex()
         {
-            final var foo1 = testDir.createFile( "foo-1.csv" );
-            final var foo2 = testDir.createFile( "foo-2.csv" );
-            final var foo3 = testDir.createFile( "foo-X.csv" );
+            final var foo1 = testDir.createFilePath( "foo-1.csv" );
+            final var foo2 = testDir.createFilePath( "foo-2.csv" );
+            final var foo3 = testDir.createFilePath( "foo-X.csv" );
             final var g = ImportCommand.parseRelationshipFilesGroup( "BANANA=" + testDir.absolutePath() + File.separator + "foo-[0-9].csv" );
             assertThat( g.key ).isEqualTo( "BANANA" );
             assertThat( g.files ).containsOnly( foo1, foo2 );

@@ -24,7 +24,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runners.model.Statement;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -173,8 +172,8 @@ public class JUnitRuleTestIT
     {
         GraphDatabaseAPI api = (GraphDatabaseAPI) neo4j.defaultDatabaseService();
         Config config = api.getDependencyResolver().resolveDependency( Config.class );
-        File homeDir = config.get( GraphDatabaseSettings.neo4j_home ).toFile();
-        return Files.readString( new File( homeDir, file ).toPath() );
+        Path homeDir = config.get( GraphDatabaseSettings.neo4j_home );
+        return Files.readString( homeDir.resolve( file ) );
     }
 
     private static String currentTimeZoneOffsetString()

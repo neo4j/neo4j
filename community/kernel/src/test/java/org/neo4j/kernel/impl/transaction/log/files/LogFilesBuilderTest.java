@@ -22,8 +22,8 @@ package org.neo4j.kernel.impl.transaction.log.files;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 
 import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
@@ -63,12 +63,12 @@ class LogFilesBuilderTest
     @Inject
     private DatabaseLayout databaseLayout;
 
-    private File storeDirectory;
+    private Path storeDirectory;
 
     @BeforeEach
     void setUp()
     {
-        storeDirectory = testDirectory.homeDir();
+        storeDirectory = testDirectory.homePath();
     }
 
     @Test
@@ -151,10 +151,10 @@ class LogFilesBuilderTest
     @Test
     void buildContextWithCustomAbsoluteLogFilesLocations() throws Throwable
     {
-        File customLogDirectory = testDirectory.directory( "absoluteCustomLogDirectory" );
+        Path customLogDirectory = testDirectory.directoryPath( "absoluteCustomLogDirectory" );
         Config config = Config.newBuilder()
                 .set( neo4j_home, testDirectory.homePath() )
-                .set( transaction_logs_root_path, customLogDirectory.toPath().toAbsolutePath() )
+                .set( transaction_logs_root_path, customLogDirectory.toAbsolutePath() )
                 .build();
         LogFiles logFiles = builder( DatabaseLayout.of( config ), fileSystem )
                 .withRotationThreshold( ByteUnit.mebiBytes( 1 ) )
@@ -166,7 +166,7 @@ class LogFilesBuilderTest
         logFiles.init();
         logFiles.start();
 
-        assertEquals( new File( customLogDirectory, databaseLayout.getDatabaseName() ), logFiles.getHighestLogFile().getParentFile() );
+        assertEquals( customLogDirectory.resolve( databaseLayout.getDatabaseName() ), logFiles.getHighestLogFile().getParent() );
         logFiles.shutdown();
     }
 

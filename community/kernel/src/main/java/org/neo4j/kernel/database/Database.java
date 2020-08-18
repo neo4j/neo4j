@@ -21,7 +21,6 @@ package org.neo4j.kernel.database;
 
 import org.apache.commons.lang3.ArrayUtils;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
@@ -872,10 +871,10 @@ public class Database extends LifecycleAdapter
     {
         boolean truncateStartedDatabase = started;
         List<Path> filesToKeep = filesToKeepOnTruncation( databaseLayout );
-        File[] transactionLogsFiles = databaseDependencies != null ? databaseDependencies.resolveDependency( LogFiles.class ).logFiles()
-                : new TransactionLogFilesHelper( fs, databaseLayout.getTransactionLogsDirectory().toFile() ).getLogFiles();
+        Path[] transactionLogsFiles = databaseDependencies != null ? databaseDependencies.resolveDependency( LogFiles.class ).logFiles()
+                : new TransactionLogFilesHelper( fs, databaseLayout.getTransactionLogsDirectory() ).getLogFiles();
 
-        final Path[] transactionLogs = Arrays.stream( transactionLogsFiles ).map( File::toPath ).toArray( Path[]::new );
+        final Path[] transactionLogs = Arrays.stream( transactionLogsFiles ).toArray( Path[]::new );
         if ( truncateStartedDatabase )
         {
             prepareStop( pagedFile -> !filesToKeep.contains( pagedFile.path() ) );

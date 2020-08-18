@@ -21,9 +21,9 @@ package org.neo4j.graphdb;
 
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.stream.Stream;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -51,14 +51,14 @@ class GraphDatabaseInternalLogIT
     {
         // Given
         DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( testDir.homePath() )
-                .setConfig( GraphDatabaseSettings.logs_directory, testDir.directory("logs").toPath().toAbsolutePath() )
+                .setConfig( GraphDatabaseSettings.logs_directory, testDir.directoryPath("logs").toAbsolutePath() )
                 .build();
         managementService.shutdown();
-        File internalLog = new File( testDir.directory( "logs" ), INTERNAL_LOG_FILE );
+        Path internalLog = testDir.directoryPath( "logs" ).resolve( INTERNAL_LOG_FILE );
 
         // Then
-        assertThat( internalLog.isFile() ).isEqualTo( true );
-        assertThat( internalLog.length() ).isGreaterThan( 0L );
+        assertThat( Files.isRegularFile( internalLog ) ).isEqualTo( true );
+        assertThat( Files.size( internalLog ) ).isGreaterThan( 0L );
 
         assertEquals( 1, countOccurrences( internalLog, "Database " + DEFAULT_DATABASE_NAME + " is ready." ) );
         assertEquals( 2, countOccurrences( internalLog, "Database " + DEFAULT_DATABASE_NAME + " is unavailable." ) );
@@ -69,7 +69,7 @@ class GraphDatabaseInternalLogIT
     {
         // Given
         DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( testDir.homePath() )
-                .setConfig( GraphDatabaseSettings.logs_directory, testDir.directory("logs").toPath().toAbsolutePath() )
+                .setConfig( GraphDatabaseSettings.logs_directory, testDir.directoryPath("logs").toAbsolutePath() )
                 .build();
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
 
@@ -78,18 +78,18 @@ class GraphDatabaseInternalLogIT
         logService.getInternalLog( getClass() ).debug( "A debug entry" );
 
         managementService.shutdown();
-        File internalLog = new File( testDir.directory( "logs" ), INTERNAL_LOG_FILE );
+        Path internalLog = testDir.directoryPath( "logs" ).resolve( INTERNAL_LOG_FILE );
 
         // Then
-        assertThat( internalLog.isFile() ).isEqualTo( true );
-        assertThat( internalLog.length() ).isGreaterThan( 0L );
+        assertThat( Files.isRegularFile( internalLog ) ).isEqualTo( true );
+        assertThat( Files.size( internalLog ) ).isGreaterThan( 0L );
 
         assertEquals( 0, countOccurrences( internalLog, "A debug entry" ) );
     }
 
-    private static long countOccurrences( File file, String substring ) throws IOException
+    private static long countOccurrences( Path file, String substring ) throws IOException
     {
-        try ( Stream<String> lines = Files.lines( file.toPath() ) )
+        try ( Stream<String> lines = Files.lines( file ) )
         {
             return lines.filter( line -> line.contains( substring ) ).count();
         }

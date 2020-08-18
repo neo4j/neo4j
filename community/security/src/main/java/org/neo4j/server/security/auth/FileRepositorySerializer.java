@@ -19,9 +19,9 @@
  */
 package org.neo4j.server.security.auth;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.file.Path;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -41,53 +41,53 @@ public abstract class FileRepositorySerializer<S>
 {
     private final SecureRandom random = new SecureRandom();
 
-    public static void writeToFile( FileSystemAbstraction fs, File file, byte[] bytes ) throws IOException
+    public static void writeToFile( FileSystemAbstraction fs, Path path, byte[] bytes ) throws IOException
     {
-        try ( OutputStream o = fs.openAsOutputStream( file, false ) )
+        try ( OutputStream o = fs.openAsOutputStream( path.toFile(), false ) )
         {
             o.write( bytes );
         }
     }
 
-    private static List<String> readFromFile( FileSystemAbstraction fs, File file ) throws IOException
+    private static List<String> readFromFile( FileSystemAbstraction fs, Path path ) throws IOException
     {
-        try ( var reader = fs.openAsReader( file, UTF_8 ) )
+        try ( var reader = fs.openAsReader( path.toFile(), UTF_8 ) )
         {
             return readLines( reader );
         }
     }
 
-    public void saveRecordsToFile( FileSystemAbstraction fileSystem, File recordsFile, Collection<S> records ) throws
+    public void saveRecordsToFile( FileSystemAbstraction fileSystem, Path recordsFile, Collection<S> records ) throws
             IOException
     {
-        File tempFile = getTempFile( fileSystem, recordsFile );
+        Path tempFile = getTempFile( fileSystem, recordsFile );
 
         try
         {
             writeToFile( fileSystem, tempFile, serialize( records ) );
-            fileSystem.renameFile( tempFile, recordsFile, ATOMIC_MOVE, REPLACE_EXISTING );
+            fileSystem.renameFile( tempFile.toFile(), recordsFile.toFile(), ATOMIC_MOVE, REPLACE_EXISTING );
         }
         catch ( Throwable e )
         {
-            fileSystem.deleteFile( tempFile );
+            fileSystem.deleteFile( tempFile.toFile() );
             throw e;
         }
     }
 
-    private File getTempFile( FileSystemAbstraction fileSystem, File recordsFile ) throws IOException
+    private Path getTempFile( FileSystemAbstraction fileSystem, Path recordsFile ) throws IOException
     {
-        File directory = recordsFile.getParentFile();
-        if ( !fileSystem.fileExists( directory ) )
+        Path directory = recordsFile.getParent();
+        if ( !fileSystem.fileExists( directory.toFile() ) )
         {
-            fileSystem.mkdirs( directory );
+            fileSystem.mkdirs( directory.toFile() );
         }
 
         long n = random.nextLong();
         n = (n == Long.MIN_VALUE) ? 0 : Math.abs( n );
-        return new File( directory, n + "_" + recordsFile.getName() + ".tmp" );
+        return directory.resolve( n + "_" + recordsFile.getFileName() + ".tmp" );
     }
 
-    public List<S> loadRecordsFromFile( FileSystemAbstraction fileSystem, File recordsFile ) throws IOException, FormatException
+    public List<S> loadRecordsFromFile( FileSystemAbstraction fileSystem, Path recordsFile ) throws IOException, FormatException
     {
         return deserializeRecords( readFromFile( fileSystem, recordsFile ) );
     }

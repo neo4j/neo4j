@@ -22,7 +22,6 @@ package org.neo4j.dbms.archive;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -56,7 +55,7 @@ class ArchiveTest
     @EnumSource( CompressionFormat.class )
     void shouldRoundTripAnEmptyDirectory( CompressionFormat compressionFormat ) throws IOException, IncorrectFormat
     {
-        Path directory = testDirectory.directory( "a-directory" ).toPath();
+        Path directory = testDirectory.directoryPath( "a-directory" );
 
         assertRoundTrips( directory, compressionFormat );
     }
@@ -65,7 +64,7 @@ class ArchiveTest
     @EnumSource( CompressionFormat.class )
     void shouldRoundTripASingleFile( CompressionFormat compressionFormat ) throws IOException, IncorrectFormat
     {
-        Path directory = testDirectory.directory( "a-directory" ).toPath();
+        Path directory = testDirectory.directoryPath( "a-directory" );
         Files.createDirectories( directory );
         Files.write( directory.resolve( "a-file" ), "text".getBytes() );
 
@@ -76,7 +75,7 @@ class ArchiveTest
     @EnumSource( CompressionFormat.class )
     void shouldRoundTripAnEmptyFile( CompressionFormat compressionFormat ) throws IOException, IncorrectFormat
     {
-        Path directory = testDirectory.directory( "a-directory" ).toPath();
+        Path directory = testDirectory.directoryPath( "a-directory" );
         Files.createDirectories( directory );
         Files.write( directory.resolve( "a-file" ), new byte[0] );
 
@@ -87,7 +86,7 @@ class ArchiveTest
     @EnumSource( CompressionFormat.class )
     void shouldRoundTripFilesWithDifferentContent( CompressionFormat compressionFormat ) throws IOException, IncorrectFormat
     {
-        Path directory = testDirectory.directory( "a-directory" ).toPath();
+        Path directory = testDirectory.directoryPath( "a-directory" );
         Files.createDirectories( directory );
         Files.write( directory.resolve( "a-file" ), "text".getBytes() );
         Files.write( directory.resolve( "another-file" ), "some-different-text".getBytes() );
@@ -99,7 +98,7 @@ class ArchiveTest
     @EnumSource( CompressionFormat.class )
     void shouldRoundTripEmptyDirectories( CompressionFormat compressionFormat ) throws IOException, IncorrectFormat
     {
-        Path directory = testDirectory.directory( "a-directory" ).toPath();
+        Path directory = testDirectory.directoryPath( "a-directory" );
         Path subdir = directory.resolve( "a-subdirectory" );
         Files.createDirectories( subdir );
         assertRoundTrips( directory, compressionFormat );
@@ -109,7 +108,7 @@ class ArchiveTest
     @EnumSource( CompressionFormat.class )
     void shouldRoundTripFilesInDirectories( CompressionFormat compressionFormat ) throws IOException, IncorrectFormat
     {
-        Path directory = testDirectory.directory( "a-directory" ).toPath();
+        Path directory = testDirectory.directoryPath( "a-directory" );
         Path subdir = directory.resolve( "a-subdirectory" );
         Files.createDirectories( subdir );
         Files.write( subdir.resolve( "a-file" ), "text".getBytes() );
@@ -120,7 +119,7 @@ class ArchiveTest
     @EnumSource( CompressionFormat.class )
     void shouldCopeWithLongPaths( CompressionFormat compressionFormat ) throws IOException, IncorrectFormat
     {
-        Path directory = testDirectory.directory( "a-directory" ).toPath();
+        Path directory = testDirectory.directoryPath( "a-directory" );
         Path subdir = directory.resolve( "a/very/long/path/which/is/not/realistic/for/a/database/today/but/which" +
                 "/ensures/that/we/dont/get/caught/out/at/in/the/future/the/point/being/that/there/are/multiple/tar" +
                 "/formats/some/of/which/do/not/cope/with/long/paths" );
@@ -133,18 +132,18 @@ class ArchiveTest
     @EnumSource( CompressionFormat.class )
     void shouldExcludeFilesMatchedByTheExclusionPredicate( CompressionFormat compressionFormat ) throws IOException, IncorrectFormat
     {
-        Path directory = testDirectory.directory( "a-directory" ).toPath();
+        Path directory = testDirectory.directoryPath( "a-directory" );
         Files.createDirectories( directory );
         Files.write( directory.resolve( "a-file" ), new byte[0] );
         Files.write( directory.resolve( "another-file" ), new byte[0] );
 
-        Path archive = testDirectory.file( "the-archive.dump" ).toPath();
+        Path archive = testDirectory.filePath( "the-archive.dump" );
         new Dumper().dump( directory, directory, archive, compressionFormat, path -> path.getFileName().toString().equals( "another-file" ) );
-        File txRootDirectory = testDirectory.directory( "tx-root_directory" );
+        Path txRootDirectory = testDirectory.directoryPath( "tx-root_directory" );
         DatabaseLayout databaseLayout = layoutWithCustomTxRoot( txRootDirectory,"the-new-directory" );
         new Loader().load( archive, databaseLayout );
 
-        Path expectedOutput = testDirectory.directory( "expected-output" ).toPath();
+        Path expectedOutput = testDirectory.directoryPath( "expected-output" );
         Files.createDirectories( expectedOutput );
         Files.write( expectedOutput.resolve( "a-file" ), new byte[0] );
 
@@ -155,19 +154,19 @@ class ArchiveTest
     @EnumSource( CompressionFormat.class )
     void shouldExcludeWholeDirectoriesMatchedByTheExclusionPredicate( CompressionFormat compressionFormat ) throws IOException, IncorrectFormat
     {
-        Path directory = testDirectory.directory( "a-directory" ).toPath();
+        Path directory = testDirectory.directoryPath( "a-directory" );
         Path subdir = directory.resolve( "subdir" );
         Files.createDirectories( subdir );
         Files.write( subdir.resolve( "a-file" ), new byte[0] );
 
-        Path archive = testDirectory.file( "the-archive.dump" ).toPath();
+        Path archive = testDirectory.filePath( "the-archive.dump" );
         new Dumper().dump( directory, directory, archive, compressionFormat, path -> path.getFileName().toString().equals( "subdir" ) );
-        File txLogsRoot = testDirectory.directory( "txLogsRoot" );
+        Path txLogsRoot = testDirectory.directoryPath( "txLogsRoot" );
         DatabaseLayout databaseLayout = layoutWithCustomTxRoot( txLogsRoot,"the-new-directory" );
 
         new Loader().load( archive, databaseLayout );
 
-        Path expectedOutput = testDirectory.directory( "expected-output" ).toPath();
+        Path expectedOutput = testDirectory.directoryPath( "expected-output" );
         Files.createDirectories( expectedOutput );
 
         assertEquals( describeRecursively( expectedOutput ), describeRecursively( databaseLayout.databaseDirectory() ) );
@@ -177,7 +176,7 @@ class ArchiveTest
     @EnumSource( CompressionFormat.class )
     void dumpAndLoadTransactionLogsFromCustomLocations( CompressionFormat compressionFormat ) throws IOException, IncorrectFormat
     {
-        File txLogsRoot = testDirectory.directory( "txLogsRoot" );
+        Path txLogsRoot = testDirectory.directoryPath( "txLogsRoot" );
         DatabaseLayout testDatabaseLayout = layoutWithCustomTxRoot( txLogsRoot,"testDatabase" );
         Files.createDirectories( testDatabaseLayout.databaseDirectory() );
         Path txLogsDirectory = testDatabaseLayout.getTransactionLogsDirectory();
@@ -185,29 +184,29 @@ class ArchiveTest
         Files.write( testDatabaseLayout.databaseDirectory().resolve( "dbfile" ), new byte[0] );
         Files.write( txLogsDirectory.resolve( TransactionLogFilesHelper.DEFAULT_NAME + ".0" ), new byte[0] );
 
-        Path archive = testDirectory.file( "the-archive.dump" ).toPath();
+        Path archive = testDirectory.filePath( "the-archive.dump" );
         new Dumper().dump( testDatabaseLayout.databaseDirectory(), txLogsDirectory, archive, compressionFormat, alwaysFalse() );
 
-        File newTxLogsRoot = testDirectory.directory( "newTxLogsRoot" );
+        Path newTxLogsRoot = testDirectory.directoryPath( "newTxLogsRoot" );
         DatabaseLayout newDatabaseLayout = layoutWithCustomTxRoot( newTxLogsRoot,"the-new-database" );
 
         new Loader().load( archive, newDatabaseLayout );
 
-        Path expectedOutput = testDirectory.directory( "expected-output" ).toPath();
+        Path expectedOutput = testDirectory.directoryPath( "expected-output" );
         Files.write( expectedOutput.resolve( "dbfile" ), new byte[0] );
 
-        Path expectedTxLogs = testDirectory.directory( "expectedTxLogs" ).toPath();
+        Path expectedTxLogs = testDirectory.directoryPath( "expectedTxLogs" );
         Files.write( expectedTxLogs.resolve( TransactionLogFilesHelper.DEFAULT_NAME + ".0" ), new byte[0] );
 
         assertEquals( describeRecursively( expectedOutput ), describeRecursively( newDatabaseLayout.databaseDirectory() ) );
         assertEquals( describeRecursively( expectedTxLogs ), describeRecursively( newDatabaseLayout.getTransactionLogsDirectory() ) );
     }
 
-    private DatabaseLayout layoutWithCustomTxRoot( File txLogsRoot, String databaseName )
+    private DatabaseLayout layoutWithCustomTxRoot( Path txLogsRoot, String databaseName )
     {
         Config config = Config.newBuilder()
                 .set( neo4j_home, testDirectory.homePath() )
-                .set( transaction_logs_root_path, txLogsRoot.toPath().toAbsolutePath() )
+                .set( transaction_logs_root_path, txLogsRoot.toAbsolutePath() )
                 .set( default_database, databaseName )
                 .build();
         return DatabaseLayout.of( config );
@@ -215,13 +214,13 @@ class ArchiveTest
 
     private void assertRoundTrips( Path oldDirectory, CompressionFormat compressionFormat ) throws IOException, IncorrectFormat
     {
-        Path archive = testDirectory.file( "the-archive.dump" ).toPath();
+        Path archive = testDirectory.filePath( "the-archive.dump" );
         new Dumper().dump( oldDirectory, oldDirectory, archive, compressionFormat, alwaysFalse() );
-        File newDirectory = testDirectory.file( "the-new-directory" );
-        DatabaseLayout databaseLayout = DatabaseLayout.ofFlat( newDirectory.toPath() );
+        Path newDirectory = testDirectory.filePath( "the-new-directory" );
+        DatabaseLayout databaseLayout = DatabaseLayout.ofFlat( newDirectory );
         new Loader().load( archive, databaseLayout );
 
-        assertEquals( describeRecursively( oldDirectory ), describeRecursively( newDirectory.toPath() ) );
+        assertEquals( describeRecursively( oldDirectory ), describeRecursively( newDirectory ) );
     }
 
     private Map<Path,Description> describeRecursively( Path directory ) throws IOException

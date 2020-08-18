@@ -113,7 +113,7 @@ public abstract class BaseBootstrapperIT extends ExclusiveWebContainerTestBase
     public void canSpecifyConfigFile() throws Throwable
     {
         // Given
-        File configFile = testDirectory.file( Config.DEFAULT_CONFIG_FILE_NAME );
+        Path configFile = testDirectory.filePath( Config.DEFAULT_CONFIG_FILE_NAME );
 
         Map<String,String> properties = stringMap( forced_kernel_id.name(), "ourcustomvalue" );
         properties.putAll( getDefaultRelativeProperties( testDirectory.homePath() ) );
@@ -123,8 +123,8 @@ public abstract class BaseBootstrapperIT extends ExclusiveWebContainerTestBase
 
         // When
         NeoBootstrapper.start( bootstrapper,
-                "--home-dir", testDirectory.directory( "home-dir" ).getAbsolutePath(),
-                "--config-dir", configFile.getParentFile().getAbsolutePath() );
+                "--home-dir", testDirectory.directoryPath( "home-dir" ).toAbsolutePath().toString(),
+                "--config-dir", configFile.getParent().toAbsolutePath().toString() );
 
         // Then
         var dependencyResolver = getDependencyResolver();
@@ -135,7 +135,7 @@ public abstract class BaseBootstrapperIT extends ExclusiveWebContainerTestBase
     public void canOverrideConfigValues() throws Throwable
     {
         // Given
-        File configFile = testDirectory.file( Config.DEFAULT_CONFIG_FILE_NAME );
+        Path configFile = testDirectory.filePath( Config.DEFAULT_CONFIG_FILE_NAME );
 
         Map<String,String> properties = stringMap( forced_kernel_id.name(), "thisshouldnotshowup" );
         properties.putAll( getDefaultRelativeProperties( testDirectory.homePath() ) );
@@ -146,7 +146,7 @@ public abstract class BaseBootstrapperIT extends ExclusiveWebContainerTestBase
         // When
         NeoBootstrapper.start( bootstrapper,
                 "--home-dir", testDirectory.directory( "home-dir" ).getAbsolutePath(),
-                "--config-dir", configFile.getParentFile().getAbsolutePath(),
+                "--config-dir", configFile.getParent().toAbsolutePath().toString(),
                 "-c", configOption( forced_kernel_id, "mycustomvalue" ) );
 
         // Then

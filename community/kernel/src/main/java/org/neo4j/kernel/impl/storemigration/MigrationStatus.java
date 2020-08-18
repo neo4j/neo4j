@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.Writer;
 import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
 
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -41,7 +41,7 @@ enum MigrationStatus
         return current == null || this.ordinal() >= current.ordinal();
     }
 
-    public String maybeReadInfo( FileSystemAbstraction fs, File stateFile, String currentInfo )
+    public String maybeReadInfo( FileSystemAbstraction fs, Path stateFile, String currentInfo )
     {
         if ( currentInfo != null )
         {
@@ -52,7 +52,7 @@ enum MigrationStatus
         return data == null ? null : data.other();
     }
 
-    public static MigrationStatus readMigrationStatus( FileSystemAbstraction fs, File stateFile )
+    public static MigrationStatus readMigrationStatus( FileSystemAbstraction fs, Path stateFile )
     {
         Pair<String,String> data = readFromFile( fs, stateFile, null );
         if ( data == null )
@@ -63,9 +63,9 @@ enum MigrationStatus
         return MigrationStatus.valueOf( data.first() );
     }
 
-    private static Pair<String, String> readFromFile( FileSystemAbstraction fs, File file, MigrationStatus expectedSate )
+    private static Pair<String, String> readFromFile( FileSystemAbstraction fs, Path path, MigrationStatus expectedSate )
     {
-        try ( var reader = fs.openAsReader( file, UTF_8 ) )
+        try ( var reader = fs.openAsReader( path.toFile(), UTF_8 ) )
         {
             var lineIterator = lineIterator( reader );
             String state = lineIterator.next().trim();
@@ -87,13 +87,13 @@ enum MigrationStatus
         }
     }
 
-    public void setMigrationStatus( FileSystemAbstraction fs, File stateFile, String info )
+    public void setMigrationStatus( FileSystemAbstraction fs, Path stateFile, String info )
     {
-        if ( fs.fileExists( stateFile ) )
+        if ( fs.fileExists( stateFile.toFile() ) )
         {
             try
             {
-                fs.truncate( stateFile, 0 );
+                fs.truncate( stateFile.toFile(), 0 );
             }
             catch ( IOException e )
             {
@@ -101,7 +101,7 @@ enum MigrationStatus
             }
         }
 
-        try ( Writer writer = fs.openAsWriter( stateFile, UTF_8, false ) )
+        try ( Writer writer = fs.openAsWriter( stateFile.toFile(), UTF_8, false ) )
         {
             writer.write( name() );
             writer.write( '\n' );

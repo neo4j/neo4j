@@ -19,7 +19,7 @@
  */
 package org.neo4j.io.pagecache.stress;
 
-import java.io.File;
+import java.nio.file.Path;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -62,7 +62,7 @@ public class PageCacheStressTest
     private final PageCacheTracer tracer;
     private final Condition condition;
 
-    private final File workingDirectory;
+    private final Path workingDirectory;
 
     private PageCacheStressTest( Builder builder )
     {
@@ -102,7 +102,7 @@ public class PageCacheStressTest
         PageCacheTracer tracer = NULL;
         Condition condition;
 
-        File workingDirectory;
+        Path workingDirectory;
 
         public PageCacheStressTest build()
         {
@@ -142,7 +142,7 @@ public class PageCacheStressTest
             return this;
         }
 
-        public Builder withWorkingDirectory( File workingDirectory )
+        public Builder withWorkingDirectory( Path workingDirectory )
         {
             this.workingDirectory = workingDirectory;
             return this;

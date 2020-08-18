@@ -21,6 +21,8 @@ package org.neo4j.kernel.impl.transaction.log.files;
 
 import java.io.File;
 import java.io.FilenameFilter;
+import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.regex.Pattern;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -35,32 +37,32 @@ public class TransactionLogFilesHelper
 
     private static final String VERSION_SUFFIX = ".";
     private static final String REGEX_VERSION_SUFFIX = "\\.";
-    private static final File[] EMPTY_FILES_ARRAY = {};
+    private static final Path[] EMPTY_FILES_ARRAY = {};
 
-    private final File logBaseName;
+    private final Path logBaseName;
     private final FilenameFilter logFileFilter;
     private final FileSystemAbstraction fileSystem;
 
-    public TransactionLogFilesHelper( FileSystemAbstraction fileSystem, File directory )
+    public TransactionLogFilesHelper( FileSystemAbstraction fileSystem, Path directory )
     {
         this( fileSystem, directory, DEFAULT_NAME );
     }
 
-    public TransactionLogFilesHelper( FileSystemAbstraction fileSystem, File directory, String name )
+    public TransactionLogFilesHelper( FileSystemAbstraction fileSystem, Path directory, String name )
     {
         this.fileSystem = fileSystem;
-        this.logBaseName = new File( directory, name );
+        this.logBaseName = directory.resolve( name );
         this.logFileFilter = new LogicalLogFilenameFilter( name );
     }
 
-    public File getLogFileForVersion( long version )
+    public Path getLogFileForVersion( long version )
     {
-        return new File( logBaseName.getPath() + VERSION_SUFFIX + version );
+        return Path.of( logBaseName.toAbsolutePath().toString() + VERSION_SUFFIX + version );
     }
 
-    public long getLogVersion( File historyLogFile )
+    public long getLogVersion( Path historyLogFile )
     {
-        String historyLogFilename = historyLogFile.getName();
+        String historyLogFilename = historyLogFile.getFileName().toString();
         int index = historyLogFilename.lastIndexOf( VERSION_SUFFIX );
         if ( index == -1 )
         {
@@ -74,10 +76,11 @@ public class TransactionLogFilesHelper
         return logFileFilter;
     }
 
-    public File[] getLogFiles()
+    public Path[] getLogFiles()
     {
-        File[] files = fileSystem.listFiles( logBaseName.getParentFile(), getLogFilenameFilter() );
-        if ( files == null )
+        Path[] files =
+                Arrays.stream( fileSystem.listFiles( logBaseName.getParent().toFile(), getLogFilenameFilter() ) ).map( File::toPath ).toArray( Path[]::new );
+        if ( files.length == 0 )
         {
             return EMPTY_FILES_ARRAY;
         }
@@ -86,7 +89,7 @@ public class TransactionLogFilesHelper
 
     public void accept( LogVersionVisitor visitor )
     {
-        for ( File file : getLogFiles() )
+        for ( Path file : getLogFiles() )
         {
             visitor.visit( file, getLogVersion( file ) );
         }

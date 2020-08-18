@@ -90,7 +90,7 @@ public class DumpCommand extends AbstractCommand
 
         try
         {
-            Validators.CONTAINS_EXISTING_DATABASE.validate( databaseLayout.databaseDirectory().toFile() );
+            Validators.CONTAINS_EXISTING_DATABASE.validate( databaseLayout.databaseDirectory() );
         }
         catch ( IllegalArgumentException e )
         {

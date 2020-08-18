@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
-import java.io.File;
+import java.nio.file.Path;
 
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.rotation.monitor.LogRotationMonitor;
@@ -119,7 +119,7 @@ public class LoggingLogFileMonitor implements RecoveryMonitor, RecoveryStartInfo
     }
 
     @Override
-    public void finishLogRotation( File logFile, long logVersion, long lastTransactionId, long rotationMillis, long millisSinceLastRotation )
+    public void finishLogRotation( Path logFile, long logVersion, long lastTransactionId, long rotationMillis, long millisSinceLastRotation )
     {
         StringBuilder sb = new StringBuilder( "Rotated to transaction log [" );
         sb.append( logFile ).append( "] version=" ).append( logVersion ).append( ", last transaction in previous log=" );

@@ -123,7 +123,7 @@ public class StoreUpgradeOnStartupTest
     public void shouldAbortOnNonCleanlyShutdown() throws Throwable
     {
         // given
-        removeCheckPointFromTxLog( fileSystem, workingDatabaseLayout.databaseDirectory().toFile() );
+        removeCheckPointFromTxLog( fileSystem, workingDatabaseLayout.databaseDirectory() );
         GraphDatabaseAPI database = createGraphDatabaseService();
         try
         {

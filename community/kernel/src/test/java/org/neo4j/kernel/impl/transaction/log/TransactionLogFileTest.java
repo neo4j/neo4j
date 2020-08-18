@@ -22,9 +22,9 @@ package org.neo4j.kernel.impl.transaction.log;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.internal.nativeimpl.NativeAccess;
@@ -96,7 +96,7 @@ class TransactionLogFileTest
 
         // simulate new file without header presence
         logVersionRepository.incrementAndGetVersion( NULL );
-        fileSystem.write( logFiles.getLogFileForVersion( logVersionRepository.getCurrentLogVersion() ) ).close();
+        fileSystem.write( logFiles.getLogFileForVersion( logVersionRepository.getCurrentLogVersion() ).toFile() ).close();
         transactionIdStore.transactionCommitted( 5L, 5, 5L, NULL );
 
         PhysicalLogicalTransactionStore.LogVersionLocator versionLocator = new PhysicalLogicalTransactionStore.LogVersionLocator( 4L );
@@ -160,9 +160,9 @@ class TransactionLogFileTest
         life.shutdown();
 
         // THEN
-        File file =  LogFilesBuilder.logFilesBasedOnlyBuilder( databaseLayout.getTransactionLogsDirectory().toFile(), fileSystem )
-                .withLogEntryReader( logEntryReader() )
-                .build().getLogFileForVersion( 1L );
+        Path file =  LogFilesBuilder.logFilesBasedOnlyBuilder( databaseLayout.getTransactionLogsDirectory(), fileSystem )
+                                    .withLogEntryReader( logEntryReader() )
+                                    .build().getLogFileForVersion( 1L );
         LogHeader header = readLogHeader( fileSystem, file, INSTANCE );
         assertEquals( 1L, header.getLogVersion() );
         assertEquals( 2L, header.getLastCommittedTxId() );
@@ -297,11 +297,11 @@ class TransactionLogFileTest
                 .withLogEntryReader( logEntryReader() )
                 .build();
         int logVersion = 0;
-        File logFile = logFiles.getLogFileForVersion( logVersion );
+        Path logFile = logFiles.getLogFileForVersion( logVersion );
         StoreChannel channel = mock( StoreChannel.class );
         when( channel.read( any( ByteBuffer.class ) ) ).thenReturn( CURRENT_FORMAT_LOG_HEADER_SIZE / 2 );
-        when( fs.fileExists( logFile ) ).thenReturn( true );
-        when( fs.read( eq( logFile ) ) ).thenReturn( channel );
+        when( fs.fileExists( logFile.toFile() ) ).thenReturn( true );
+        when( fs.read( eq( logFile.toFile() ) ) ).thenReturn( channel );
 
         // WHEN
         assertThrows( IncompleteLogHeaderException.class, () -> logFiles.openForVersion( logVersion ) );
@@ -319,11 +319,11 @@ class TransactionLogFileTest
                 .withLogEntryReader( logEntryReader() )
                 .build();
         int logVersion = 0;
-        File logFile = logFiles.getLogFileForVersion( logVersion );
+        Path logFile = logFiles.getLogFileForVersion( logVersion );
         StoreChannel channel = mock( StoreChannel.class );
         when( channel.read( any( ByteBuffer.class ) ) ).thenReturn( CURRENT_FORMAT_LOG_HEADER_SIZE / 2 );
-        when( fs.fileExists( logFile ) ).thenReturn( true );
-        when( fs.read( eq( logFile ) ) ).thenReturn( channel );
+        when( fs.fileExists( logFile.toFile() ) ).thenReturn( true );
+        when( fs.read( eq( logFile.toFile() ) ) ).thenReturn( channel );
         doThrow( IOException.class ).when( channel ).close();
 
         // WHEN

@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -108,10 +107,10 @@ public class DatabaseFileListing
 
     private void gatherLogFiles( Collection<StoreFileMetadata> files )
     {
-        File[] list = this.logFiles.logFiles();
-        for ( File logFile : list )
+        Path[] list = this.logFiles.logFiles();
+        for ( Path logFile : list )
         {
-            files.add( logFileMapper.apply( logFile.toPath() ) );
+            files.add( logFileMapper.apply( logFile ) );
         }
     }
 

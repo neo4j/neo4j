@@ -21,13 +21,11 @@ package org.neo4j.configuration.ssl;
 
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -38,7 +36,6 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
-import static java.util.Collections.unmodifiableMap;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -48,7 +45,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.strict_config_validation;
 import static org.neo4j.configuration.ssl.SslPolicyScope.TESTING;
-import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
 
 @TestDirectoryExtension
 class SslPolicyConfigValidatorTest
@@ -62,23 +58,23 @@ class SslPolicyConfigValidatorTest
         // given
         SslPolicyConfig policyConfig = SslPolicyConfig.forScope( SslPolicyScope.TESTING );
 
-        File homeDir = testDirectory.directory( "home" );
+        Path homeDir = testDirectory.directoryPath( "home" );
         Config config = Config.newBuilder()
-                .set( GraphDatabaseSettings.neo4j_home, homeDir.toPath().toAbsolutePath() )
+                .set( GraphDatabaseSettings.neo4j_home, homeDir.toAbsolutePath() )
                 .set( policyConfig.base_directory, Path.of( "certificates/testing" ) )
                 .build();
 
         // derived defaults
-        File privateKey = new File( homeDir, "certificates/testing/private.key" );
-        File publicCertificate = new File( homeDir, "certificates/testing/public.crt" );
-        File trustedDir = new File( homeDir, "certificates/testing/trusted" );
-        File revokedDir = new File( homeDir, "certificates/testing/revoked" );
+        Path privateKey = homeDir.resolve( "certificates/testing/private.key" );
+        Path publicCertificate = homeDir.resolve( "certificates/testing/public.crt" );
+        Path trustedDir = homeDir.resolve( "certificates/testing/trusted" );
+        Path revokedDir = homeDir.resolve( "certificates/testing/revoked" );
 
         // when
-        File privateKeyFromConfig = config.get( policyConfig.private_key ).toFile();
-        File publicCertificateFromConfig = config.get( policyConfig.public_certificate ).toFile();
-        File trustedDirFromConfig = config.get( policyConfig.trusted_dir ).toFile();
-        File revokedDirFromConfig = config.get( policyConfig.revoked_dir ).toFile();
+        Path privateKeyFromConfig = config.get( policyConfig.private_key );
+        Path publicCertificateFromConfig = config.get( policyConfig.public_certificate );
+        Path trustedDirFromConfig = config.get( policyConfig.trusted_dir );
+        Path revokedDirFromConfig = config.get( policyConfig.revoked_dir );
         SecureString privateKeyPassword = config.get( policyConfig.private_key_password );
         boolean trustAll = config.get( policyConfig.trust_all );
         List<String> tlsVersions = config.get( policyConfig.tls_versions );
@@ -105,20 +101,20 @@ class SslPolicyConfigValidatorTest
 
         SslPolicyConfig policyConfig = SslPolicyConfig.forScope( SslPolicyScope.TESTING );
 
-        File homeDir = testDirectory.directory( "home" );
+        Path homeDir = testDirectory.directoryPath( "home" );
 
-        builder.set( GraphDatabaseSettings.neo4j_home, homeDir.toPath().toAbsolutePath() );
+        builder.set( GraphDatabaseSettings.neo4j_home, homeDir.toAbsolutePath() );
         builder.set( policyConfig.base_directory, Path.of( "certificates/testing" ) );
 
-        File privateKey = testDirectory.directory( "/path/to/my.key" );
-        File publicCertificate = testDirectory.directory( "/path/to/my.crt" );
-        File trustedDir = testDirectory.directory( "/some/other/path/to/trusted" );
-        File revokedDir = testDirectory.directory( "/some/other/path/to/revoked" );
+        Path privateKey = testDirectory.directoryPath( "/path/to/my.key" );
+        Path publicCertificate = testDirectory.directoryPath( "/path/to/my.crt" );
+        Path trustedDir = testDirectory.directoryPath( "/some/other/path/to/trusted" );
+        Path revokedDir = testDirectory.directoryPath( "/some/other/path/to/revoked" );
 
-        builder.set( policyConfig.private_key, privateKey.toPath().toAbsolutePath() );
-        builder.set( policyConfig.public_certificate, publicCertificate.toPath().toAbsolutePath() );
-        builder.set( policyConfig.trusted_dir, trustedDir.toPath().toAbsolutePath() );
-        builder.set( policyConfig.revoked_dir, revokedDir.toPath().toAbsolutePath() );
+        builder.set( policyConfig.private_key, privateKey.toAbsolutePath() );
+        builder.set( policyConfig.public_certificate, publicCertificate.toAbsolutePath() );
+        builder.set( policyConfig.trusted_dir, trustedDir.toAbsolutePath() );
+        builder.set( policyConfig.revoked_dir, revokedDir.toAbsolutePath() );
 
         builder.set( policyConfig.trust_all, true );
 
@@ -130,10 +126,10 @@ class SslPolicyConfigValidatorTest
         Config config = builder.build();
 
         // when
-        File privateKeyFromConfig = config.get( policyConfig.private_key ).toFile();
-        File publicCertificateFromConfig = config.get( policyConfig.public_certificate ).toFile();
-        File trustedDirFromConfig = config.get( policyConfig.trusted_dir ).toFile();
-        File revokedDirFromConfig = config.get( policyConfig.revoked_dir ).toFile();
+        Path privateKeyFromConfig = config.get( policyConfig.private_key );
+        Path publicCertificateFromConfig = config.get( policyConfig.public_certificate );
+        Path trustedDirFromConfig = config.get( policyConfig.trusted_dir );
+        Path revokedDirFromConfig = config.get( policyConfig.revoked_dir );
 
         SecureString privateKeyPassword = config.get( policyConfig.private_key_password );
         boolean trustAll = config.get( policyConfig.trust_all );
@@ -179,8 +175,8 @@ class SslPolicyConfigValidatorTest
     void shouldThrowOnUnknownPolicySetting() throws IOException
     {
         // given
-        File confFile = testDirectory.createFile( "test.conf" );
-        Files.write( confFile.toPath(), Arrays.asList(
+        Path confFile = testDirectory.createFilePath( "test.conf" );
+        Files.write( confFile, Arrays.asList(
                 "dbms.ssl.policy.testing.trust_all=xyz",
                 "dbms.ssl.policy.testing.color=blue"
         ) );
@@ -195,8 +191,8 @@ class SslPolicyConfigValidatorTest
     void shouldThrowOnDirectPolicySetting() throws IOException
     {
         // given
-        File confFile = testDirectory.createFile( "test.conf" );
-        Files.write( confFile.toPath(), Arrays.asList(
+        Path confFile = testDirectory.createFilePath( "test.conf" );
+        Files.write( confFile, Arrays.asList(
                 "dbms.ssl.policy.base_directory.trust_all=xyz",
                 "dbms.ssl.policy.base_directory=path"
         ) );
@@ -212,8 +208,8 @@ class SslPolicyConfigValidatorTest
     void shouldIgnoreUnknownNonPolicySettings() throws IOException
     {
         // given
-        File confFile = testDirectory.createFile( "test.conf" );
-        Files.write( confFile.toPath(), Arrays.asList(
+        Path confFile = testDirectory.createFilePath( "test.conf" );
+        Files.write( confFile, Arrays.asList(
                 "dbms.ssl.unknown=xyz",
                 "dbms.ssl.something=xyz",
                 "dbms.unrelated.totally=xyz"
@@ -224,10 +220,5 @@ class SslPolicyConfigValidatorTest
                 assertThrows( IllegalArgumentException.class, () -> Config.newBuilder().set( strict_config_validation, true ).fromFile( confFile ).build() );
 
         assertThat( exception.getMessage() ).contains( "Unrecognized setting" );
-    }
-
-    private static Map<String,String> params( String... params )
-    {
-        return unmodifiableMap( stringMap( params ) );
     }
 }

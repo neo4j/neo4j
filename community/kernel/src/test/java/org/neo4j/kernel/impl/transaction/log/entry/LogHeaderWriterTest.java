@@ -23,10 +23,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.nio.file.Path;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
@@ -103,8 +103,8 @@ class LogHeaderWriterTest
     void shouldWriteALogHeaderInAStoreChannel() throws IOException
     {
         // given
-        final File file = testDirectory.file( "WriteLogHeader" );
-        final StoreChannel channel = fileSystem.write( file );
+        final Path file = testDirectory.filePath( "WriteLogHeader" );
+        final StoreChannel channel = fileSystem.write( file.toFile() );
 
         // when
         writeLogHeader( channel, logHeader, INSTANCE );
@@ -113,7 +113,7 @@ class LogHeaderWriterTest
 
         // then
         final byte[] array = new byte[CURRENT_FORMAT_LOG_HEADER_SIZE];
-        try ( InputStream stream = fileSystem.openAsInputStream( file ) )
+        try ( InputStream stream = fileSystem.openAsInputStream( file.toFile() ) )
         {
             int read = stream.read( array );
             assertEquals( CURRENT_FORMAT_LOG_HEADER_SIZE, read );

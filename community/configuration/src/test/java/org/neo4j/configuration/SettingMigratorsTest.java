@@ -23,9 +23,9 @@ import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -72,14 +72,14 @@ class SettingMigratorsTest
     private TestDirectory testDirectory;
 
     @Test
-    void shouldRemoveAllowKeyGenerationFrom35ConfigFormat() throws Throwable
+    void shouldRemoveAllowKeyGenerationFrom35ConfigFormat()
     {
         shouldRemoveAllowKeyGeneration( "dbms.ssl.policy.default.allow_key_generation", TRUE );
         shouldRemoveAllowKeyGeneration( "dbms.ssl.policy.default.allow_key_generation", FALSE );
     }
 
     @Test
-    void shouldRemoveAllowKeyGeneration() throws Throwable
+    void shouldRemoveAllowKeyGeneration()
     {
         shouldRemoveAllowKeyGeneration( "dbms.ssl.policy.default.allow_key_generation", TRUE );
         shouldRemoveAllowKeyGeneration( "dbms.ssl.policy.default.allow_key_generation", FALSE );
@@ -129,8 +129,8 @@ class SettingMigratorsTest
     @Test
     void testDefaultDatabaseMigrator() throws IOException
     {
-        File confFile = testDirectory.createFile( "test.conf" );
-        Files.write( confFile.toPath(), List.of( "dbms.active_database=foo") );
+        Path confFile = testDirectory.createFilePath( "test.conf" );
+        Files.write( confFile, List.of( "dbms.active_database=foo") );
 
         {
             Config config = Config.newBuilder()
@@ -158,8 +158,8 @@ class SettingMigratorsTest
     @Test
     void testConnectorOldFormatMigration() throws IOException
     {
-        File confFile = testDirectory.createFile( "test.conf" );
-        Files.write( confFile.toPath(), Arrays.asList(
+        Path confFile = testDirectory.createFilePath( "test.conf" );
+        Files.write( confFile, Arrays.asList(
                 "dbms.connector.bolt.enabled=true",
                 "dbms.connector.bolt.type=BOLT",
                 "dbms.connector.http.enabled=true",
@@ -186,8 +186,8 @@ class SettingMigratorsTest
     @Test
     void testKillQueryVerbose() throws IOException
     {
-        File confFile = testDirectory.createFile( "test.conf" );
-        Files.write( confFile.toPath(), List.of( "dbms.procedures.kill_query_verbose=false" ) );
+        Path confFile = testDirectory.createFilePath( "test.conf" );
+        Files.write( confFile, List.of( "dbms.procedures.kill_query_verbose=false" ) );
 
         Config config = Config.newBuilder().fromFile( confFile ).build();
         var logProvider = new AssertableLogProvider();
@@ -201,8 +201,8 @@ class SettingMigratorsTest
     @Test
     void testMultiThreadedSchemaIndexPopulationEnabled() throws IOException
     {
-        File confFile = testDirectory.createFile( "test.conf" );
-        Files.write( confFile.toPath(), List.of( "unsupported.dbms.multi_threaded_schema_index_population_enabled=false" ) );
+        Path confFile = testDirectory.createFilePath( "test.conf" );
+        Files.write( confFile, List.of( "unsupported.dbms.multi_threaded_schema_index_population_enabled=false" ) );
 
         Config config = Config.newBuilder().fromFile( confFile ).build();
         var logProvider = new AssertableLogProvider();
@@ -223,8 +223,8 @@ class SettingMigratorsTest
                 "native-btree-1.0", "native-btree-1.0" );
         for ( String oldSchemaProvider : migrationMap.keySet() )
         {
-            File confFile = testDirectory.createFile( "test.conf" );
-            Files.write( confFile.toPath(), List.of( "dbms.index.default_schema_provider=" + oldSchemaProvider ) );
+            Path confFile = testDirectory.createFilePath( "test.conf" );
+            Files.write( confFile, List.of( "dbms.index.default_schema_provider=" + oldSchemaProvider ) );
 
             Config config = Config.newBuilder().fromFile( confFile ).build();
             var logProvider = new AssertableLogProvider();
@@ -242,8 +242,8 @@ class SettingMigratorsTest
     @Test
     void testMemorySettingsRename() throws IOException
     {
-        File confFile = testDirectory.createFile( "test.conf" );
-        Files.write( confFile.toPath(), List.of(
+        Path confFile = testDirectory.createFilePath( "test.conf" );
+        Files.write( confFile, List.of(
                 "dbms.tx_state.max_off_heap_memory=6g",
                 "dbms.tx_state.off_heap.max_cacheable_block_size=4096",
                 "dbms.tx_state.off_heap.block_cache_size=256") );
@@ -268,8 +268,8 @@ class SettingMigratorsTest
     @Test
     void transactionCypherMaxAllocations() throws IOException
     {
-        File confFile = testDirectory.createFile( "test.conf" );
-        Files.write( confFile.toPath(), List.of( "cypher.query_max_allocations=6g" ) );
+        Path confFile = testDirectory.createFilePath( "test.conf" );
+        Files.write( confFile, List.of( "cypher.query_max_allocations=6g" ) );
 
         Config config = Config.newBuilder().fromFile( confFile ).build();
         var logProvider = new AssertableLogProvider();
@@ -284,8 +284,8 @@ class SettingMigratorsTest
     @Test
     void transactionCypherMaxAllocationsConflict() throws IOException
     {
-        File confFile = testDirectory.createFile( "test.conf" );
-        Files.write( confFile.toPath(), List.of(
+        Path confFile = testDirectory.createFilePath( "test.conf" );
+        Files.write( confFile, List.of(
                 "cypher.query_max_allocations=6g",
                 memory_transaction_max_size.name() + "=7g" ) );
 
@@ -326,8 +326,8 @@ class SettingMigratorsTest
     @Test
     void testWhitelistRename() throws IOException
     {
-        File confFile = testDirectory.createFile( "test.conf" );
-        Files.write( confFile.toPath(), List.of(
+        Path confFile = testDirectory.createFilePath( "test.conf" );
+        Files.write( confFile, List.of(
                 "dbms.memory.pagecache.warmup.preload.whitelist=a","dbms.security.procedures.whitelist=a,b" ) );
 
         Config config = Config.newBuilder().fromFile( confFile ).build();

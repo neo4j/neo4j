@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Test;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.CopyOption;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Executors;
@@ -37,7 +38,6 @@ import org.neo4j.kernel.impl.security.User;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
 import org.neo4j.string.UTF8;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.extension.Inject;
@@ -62,12 +62,12 @@ class FileUserRepositoryTest
     private TestDirectory testDirectory;
 
     private final LogProvider logProvider = NullLogProvider.getInstance();
-    private File authFile;
+    private Path authFile;
 
     @BeforeEach
     void setUp()
     {
-        authFile = new File( testDirectory.directory( "dbms" ), "auth" );
+        authFile = testDirectory.directoryPath( "dbms" ).resolve( "auth" );
     }
 
     @Test
@@ -139,7 +139,7 @@ class FileUserRepositoryTest
                 @Override
                 public void renameFile( File oldLocation, File newLocation, CopyOption... copyOptions ) throws IOException
                 {
-                    if ( authFile.getName().equals( newLocation.getName() ) )
+                    if ( authFile.getFileName().toString().equals( newLocation.getName() ) )
                     {
                         throw exception;
                     }
@@ -156,8 +156,8 @@ class FileUserRepositoryTest
         assertSame( exception, e );
 
         // Then
-        assertFalse( crashingFileSystem.fileExists( authFile ) );
-        assertThat( crashingFileSystem.listFiles( authFile.getParentFile() ).length ).isEqualTo( 0 );
+        assertFalse( crashingFileSystem.fileExists( authFile.toFile() ) );
+        assertThat( crashingFileSystem.listFiles( authFile.getParent().toFile() ).length ).isEqualTo( 0 );
     }
 
     @Test
@@ -165,7 +165,7 @@ class FileUserRepositoryTest
     {
         // Given
         AssertableLogProvider logProvider = new AssertableLogProvider();
-        fs.mkdir( authFile.getParentFile() );
+        fs.mkdir( authFile.getParent().toFile() );
         // First line is correctly formatted, second line has an extra field
         FileRepositorySerializer.writeToFile( fs, authFile, UTF8.encode(
                 "admin:SHA-256,A42E541F276CF17036DB7818F8B09B1C229AAD52A17F69F4029617F3A554640F,FB7E8AE08A6A7C741F678AD22217808F:\n" +
@@ -181,7 +181,7 @@ class FileUserRepositoryTest
         assertThat( users.numberOfUsers() ).isEqualTo( 0 );
         assertThat( logProvider ).forClass( FileUserRepository.class ).forLevel( ERROR )
                 .containsMessageWithArguments(
-                        "Failed to read authentication file \"%s\" (%s)", authFile.getAbsolutePath(),
+                        "Failed to read authentication file \"%s\" (%s)", authFile.toAbsolutePath(),
                         "wrong number of line fields, expected 3, got 4 [line 2]" );
     }
 

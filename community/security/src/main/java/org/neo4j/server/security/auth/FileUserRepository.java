@@ -19,8 +19,8 @@
  */
 package org.neo4j.server.security.auth;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -36,7 +36,7 @@ import org.neo4j.logging.LogProvider;
  */
 public class FileUserRepository extends AbstractUserRepository implements FileRepository
 {
-    private final File authFile;
+    private final Path authFile;
     private final FileSystemAbstraction fileSystem;
 
     // TODO: We could improve concurrency by using a ReadWriteLock
@@ -45,10 +45,10 @@ public class FileUserRepository extends AbstractUserRepository implements FileRe
 
     private final UserSerialization serialization = new UserSerialization();
 
-    public FileUserRepository( FileSystemAbstraction fileSystem, File file, LogProvider logProvider )
+    public FileUserRepository( FileSystemAbstraction fileSystem, Path path, LogProvider logProvider )
     {
         this.fileSystem = fileSystem;
-        this.authFile = file;
+        this.authFile = path;
         this.log = logProvider.getLog( getClass() );
     }
 
@@ -69,26 +69,26 @@ public class FileUserRepository extends AbstractUserRepository implements FileRe
     @Override
     protected ListSnapshot<User> readPersistedUsers() throws IOException
     {
-        if ( fileSystem.fileExists( authFile ) )
+        if ( fileSystem.fileExists( authFile.toFile() ) )
         {
             long readTime;
             List<User> readUsers;
             try
             {
                 log.debug( "Reading users from %s", authFile );
-                readTime = fileSystem.lastModifiedTime( authFile );
+                readTime = fileSystem.lastModifiedTime( authFile.toFile() );
                 readUsers = serialization.loadRecordsFromFile( fileSystem, authFile );
             }
             catch ( FormatException e )
             {
                 log.error( "Failed to read authentication file \"%s\" (%s)",
-                        authFile.getAbsolutePath(), e.getMessage() );
+                        authFile.toAbsolutePath(), e.getMessage() );
                 throw new IllegalStateException( "Failed to read authentication file: " + authFile );
             }
 
             return new ListSnapshot<>( readTime, readUsers );
         }
-        log.debug( "Did not find any file named %s in %s", authFile.getName(), authFile.getParent() );
+        log.debug( "Did not find any file named %s in %s", authFile.getFileName(), authFile.getParent() );
         return null;
     }
 
@@ -102,7 +102,7 @@ public class FileUserRepository extends AbstractUserRepository implements FileRe
     @Override
     public ListSnapshot<User> getSnapshot() throws IOException
     {
-        if ( lastLoaded.get() < fileSystem.lastModifiedTime( authFile ) )
+        if ( lastLoaded.get() < fileSystem.lastModifiedTime( authFile.toFile() ) )
         {
             return readPersistedUsers();
         }

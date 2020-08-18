@@ -25,6 +25,7 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -94,7 +95,7 @@ class CsvImporter implements Importer
     private final Config databaseConfig;
     private final org.neo4j.csv.reader.Configuration csvConfig;
     private final org.neo4j.internal.batchimport.Configuration importConfig;
-    private final File reportFile;
+    private final Path reportFile;
     private final IdType idType;
     private final Charset inputEncoding;
     private final boolean ignoreExtraColumns;
@@ -104,8 +105,8 @@ class CsvImporter implements Importer
     private final long badTolerance;
     private final boolean normalizeTypes;
     private final boolean verbose;
-    private final Map<Set<String>, List<File[]>> nodeFiles;
-    private final Map<String, List<File[]>> relationshipFiles;
+    private final Map<Set<String>, List<Path[]>> nodeFiles;
+    private final Map<String, List<Path[]>> relationshipFiles;
     private final FileSystemAbstraction fileSystem;
     private final PrintStream stdOut;
     private final PrintStream stdErr;
@@ -140,7 +141,7 @@ class CsvImporter implements Importer
     @Override
     public void doImport() throws IOException
     {
-        try ( OutputStream badOutput = fileSystem.openAsOutputStream( reportFile, false );
+        try ( OutputStream badOutput = fileSystem.openAsOutputStream( reportFile.toFile(), false );
                 Collector badCollector = getBadCollector( skipBadEntriesLogging, badOutput ) )
         {
             // Extract the default time zone from the database configuration
@@ -205,7 +206,7 @@ class CsvImporter implements Importer
             {
                 if ( numberOfBadEntries > 0 )
                 {
-                    stdOut.println( "There were bad entries which were skipped and logged into " + reportFile.getAbsolutePath() );
+                    stdOut.println( "There were bad entries which were skipped and logged into " + reportFile.toAbsolutePath() );
                 }
             }
 
@@ -279,7 +280,7 @@ class CsvImporter implements Importer
         }
     }
 
-    private static void printOverview( File storeDir, Map<Set<String>, List<File[]>> nodesFiles, Map<String, List<File[]>> relationshipsFiles,
+    private static void printOverview( File storeDir, Map<Set<String>, List<Path[]>> nodesFiles, Map<String, List<Path[]>> relationshipsFiles,
         Configuration configuration, PrintStream out )
     {
         out.println( "Neo4j version: " + Version.getNeo4jVersion() );
@@ -297,7 +298,7 @@ class CsvImporter implements Importer
         out.println();
     }
 
-    private static void printInputFiles( String name, Map<?, List<File[]>> inputFiles, PrintStream out )
+    private static void printInputFiles( String name, Map<?, List<Path[]>> inputFiles, PrintStream out )
     {
         if ( inputFiles.isEmpty() )
         {
@@ -313,9 +314,9 @@ class CsvImporter implements Importer
                 printIndented( k + ":", out );
             }
 
-            for ( File[] arr : files )
+            for ( Path[] arr : files )
             {
-                for ( final File file : arr )
+                for ( final Path file : arr )
                 {
                     printIndented( file, out );
                 }
@@ -348,7 +349,7 @@ class CsvImporter implements Importer
         relationshipFiles.forEach( ( defaultTypeName, fileSets ) ->
         {
             final var decorator = defaultRelationshipType( defaultTypeName );
-            for ( File[] files : fileSets )
+            for ( Path[] files : fileSets )
             {
                 final var data = data( decorator, inputEncoding, files );
                 result.add( data );
@@ -363,7 +364,7 @@ class CsvImporter implements Importer
         nodeFiles.forEach( ( labels, fileSets ) ->
         {
             final var decorator = labels.isEmpty() ? NO_DECORATOR : additiveLabels( labels.toArray( new String[0] ) );
-            for ( File[] files : fileSets )
+            for ( Path[] files : fileSets )
             {
                 final var data = data( decorator, inputEncoding, files );
                 result.add( data );
@@ -395,7 +396,7 @@ class CsvImporter implements Importer
         private Config databaseConfig;
         private org.neo4j.csv.reader.Configuration csvConfig = org.neo4j.csv.reader.Configuration.COMMAS;
         private Configuration importConfig = Configuration.DEFAULT;
-        private File reportFile;
+        private Path reportFile;
         private IdType idType = IdType.STRING;
         private Charset inputEncoding = StandardCharsets.UTF_8;
         private boolean ignoreExtraColumns;
@@ -405,8 +406,8 @@ class CsvImporter implements Importer
         private long badTolerance;
         private boolean normalizeTypes;
         private boolean verbose;
-        private final Map<Set<String>, List<File[]>> nodeFiles = new HashMap<>();
-        private final Map<String, List<File[]>> relationshipFiles = new HashMap<>();
+        private final Map<Set<String>, List<Path[]>> nodeFiles = new HashMap<>();
+        private final Map<String, List<Path[]>> relationshipFiles = new HashMap<>();
         private FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
         private PageCacheTracer pageCacheTracer = PageCacheTracer.NULL;
         private MemoryTracker memoryTracker = EmptyMemoryTracker.INSTANCE;
@@ -437,7 +438,7 @@ class CsvImporter implements Importer
             return this;
         }
 
-        Builder withReportFile( File reportFile )
+        Builder withReportFile( Path reportFile )
         {
             this.reportFile = reportFile;
             return this;
@@ -497,14 +498,14 @@ class CsvImporter implements Importer
             return this;
         }
 
-        Builder addNodeFiles( Set<String> labels, File[] files )
+        Builder addNodeFiles( Set<String> labels, Path[] files )
         {
             final var list = nodeFiles.computeIfAbsent( labels, unused -> new ArrayList<>() );
             list.add( files );
             return this;
         }
 
-        Builder addRelationshipFiles( String defaultRelType, File[] files )
+        Builder addRelationshipFiles( String defaultRelType, Path[] files )
         {
             final var list = relationshipFiles.computeIfAbsent( defaultRelType, unused -> new ArrayList<>() );
             list.add( files );

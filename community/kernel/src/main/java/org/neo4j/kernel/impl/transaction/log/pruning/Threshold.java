@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.log.pruning;
 
-import java.io.File;
+import java.nio.file.Path;
 
 import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
 
@@ -34,10 +34,10 @@ public interface Threshold
      * Check if threshold is reached for provided version of transaction log file.
      * Even if file can't be read or some condition can't be evaluated threshold should not throw exception and make any assumptions about presence or
      * absence of file, correctness of information, etc. Instead threshold should not be reached as result.
-     * @param file transaction log file
+     * @param path transaction log file
      * @param version version of log file
      * @param source meta information about particular transaction file
      * @return true if reached, false otherwise
      */
-    boolean reached( File file, long version, LogFileInformation source );
+    boolean reached( Path path, long version, LogFileInformation source );
 }

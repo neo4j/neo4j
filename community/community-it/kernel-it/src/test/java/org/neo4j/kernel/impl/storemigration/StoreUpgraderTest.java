@@ -26,7 +26,6 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -195,7 +194,7 @@ public class StoreUpgraderTest
         init( formats );
         Path comparisonDirectory = testDirectory.directoryPath(
             "shouldRefuseToUpgradeIfAnyOfTheStoresWereNotShutDownCleanly-comparison" );
-        removeCheckPointFromTxLog( fileSystem, databaseLayout.databaseDirectory().toFile() );
+        removeCheckPointFromTxLog( fileSystem, databaseLayout.databaseDirectory() );
         fileSystem.deleteRecursively( comparisonDirectory.toFile() );
         fileSystem.copyRecursively( databaseLayout.databaseDirectory().toFile(), comparisonDirectory.toFile() );
         StoreVersionCheck check = getVersionCheck( pageCache );
@@ -211,7 +210,7 @@ public class StoreUpgraderTest
         init( formats );
         Path comparisonDirectory = testDirectory.directoryPath(
             "shouldRefuseToUpgradeIfAllOfTheStoresWereNotShutDownCleanly-comparison" );
-        removeCheckPointFromTxLog( fileSystem, databaseLayout.databaseDirectory().toFile() );
+        removeCheckPointFromTxLog( fileSystem, databaseLayout.databaseDirectory() );
         fileSystem.deleteRecursively( comparisonDirectory.toFile() );
         fileSystem.copyRecursively( databaseLayout.databaseDirectory().toFile(), comparisonDirectory.toFile() );
         StoreVersionCheck check = getVersionCheck( pageCache );
@@ -413,7 +412,7 @@ public class StoreUpgraderTest
             .migrateIfNeeded( migrationLayout, false );
 
         assertThat( logProvider ).containsMessages( "Starting transaction logs migration.", "Transaction logs migration completed." );
-        assertThat( getLogFiles( migrationLayout.databaseDirectory().toFile() ) ).isEmpty();
+        assertThat( getLogFiles( migrationLayout.databaseDirectory() ) ).isEmpty();
         Path databaseTransactionLogsHome = txRoot.resolve( migrationLayout.getDatabaseName() );
         assertTrue( fileSystem.fileExists( databaseTransactionLogsHome.toFile() ) );
 
@@ -428,19 +427,19 @@ public class StoreUpgraderTest
     {
         init( formats );
 
-        File txRoot = testDirectory.directory( "customTxRoot" );
+        Path txRoot = testDirectory.directoryPath( "customTxRoot" );
         AssertableLogProvider logProvider = new AssertableLogProvider();
         StoreVersionCheck check = getVersionCheck( pageCache );
 
         Config config = Config.newBuilder().fromConfig( allowMigrateConfig )
                 .set( neo4j_home, testDirectory.homePath() )
-                .set( GraphDatabaseSettings.transaction_logs_root_path, txRoot.toPath().toAbsolutePath() )
+                .set( GraphDatabaseSettings.transaction_logs_root_path, txRoot.toAbsolutePath() )
                 .set( default_database, databaseLayout.getDatabaseName() )
                 .build();
         DatabaseLayout migrationLayout = DatabaseLayout.of( config );
 
-        File databaseTransactionLogsHome = new File( txRoot, migrationLayout.getDatabaseName() );
-        assertTrue( fileSystem.mkdir( databaseTransactionLogsHome ) );
+        Path databaseTransactionLogsHome = txRoot.resolve( migrationLayout.getDatabaseName() );
+        assertTrue( fileSystem.mkdir( databaseTransactionLogsHome.toFile() ) );
         createDummyTxLogFiles( databaseTransactionLogsHome );
 
         assertThrows( StoreUpgrader.TransactionLogsRelocationException.class, () ->
@@ -459,17 +458,17 @@ public class StoreUpgraderTest
         assertThat( storeUpgrader.getParticipants() ).hasSize( 2 );
     }
 
-    private void createDummyTxLogFiles( File databaseTransactionLogsHome ) throws IOException
+    private void createDummyTxLogFiles( Path databaseTransactionLogsHome ) throws IOException
     {
         Set<String> preparedLogFiles = getLogFileNames( prepareDatabaseDirectory );
         assertThat( preparedLogFiles ).isNotEmpty();
         for ( String preparedLogFile : preparedLogFiles )
         {
-            fileSystem.write( new File( databaseTransactionLogsHome, preparedLogFile ) ).close();
+            fileSystem.write( databaseTransactionLogsHome.resolve( preparedLogFile ).toFile() ).close();
         }
     }
 
-    private File[] getLogFiles( File directory ) throws IOException
+    private Path[] getLogFiles( Path directory ) throws IOException
     {
         return LogFilesBuilder.logFilesBasedOnlyBuilder( directory, fileSystem )
                 .withCommandReaderFactory( RecordStorageCommandReaderFactory.INSTANCE )
@@ -479,11 +478,13 @@ public class StoreUpgraderTest
 
     private Set<String> getLogFileNames( Path directory ) throws IOException
     {
-        return Arrays.stream( LogFilesBuilder.logFilesBasedOnlyBuilder( directory.toFile(), fileSystem )
-                .withCommandReaderFactory( RecordStorageCommandReaderFactory.INSTANCE )
-                .build()
-                .logFiles() )
-                .map( File::getName ).collect( Collectors.toSet() );
+        return Arrays.stream( LogFilesBuilder.logFilesBasedOnlyBuilder( directory, fileSystem )
+                     .withCommandReaderFactory( RecordStorageCommandReaderFactory.INSTANCE )
+                     .build()
+                     .logFiles() )
+                         .map( Path::getFileName )
+                         .map( Path::toString )
+                         .collect( Collectors.toSet() );
     }
 
     protected void prepareSampleDatabase( String version, FileSystemAbstraction fileSystem, DatabaseLayout databaseLayout,
@@ -606,7 +607,7 @@ public class StoreUpgraderTest
         return Standard.LATEST_NAME;
     }
 
-    public static void removeCheckPointFromTxLog( FileSystemAbstraction fileSystem, File databaseDirectory )
+    public static void removeCheckPointFromTxLog( FileSystemAbstraction fileSystem, Path databaseDirectory )
             throws IOException
     {
         LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( databaseDirectory, fileSystem )
@@ -626,9 +627,9 @@ public class StoreUpgraderTest
         assertNotNull( logTailInformation.lastCheckPoint );
 
         LogPosition logPosition = logTailInformation.lastCheckPoint.getLogPosition();
-        File logFile = logFiles.getLogFileForVersion( logPosition.getLogVersion() );
+        Path logFile = logFiles.getLogFileForVersion( logPosition.getLogVersion() );
         long byteOffset = logPosition.getByteOffset();
-        fileSystem.truncate( logFile, byteOffset );
+        fileSystem.truncate( logFile.toFile(), byteOffset );
     }
 
     private void verifyStoreUpgradedWithin( long duration, TimeUnit unit )

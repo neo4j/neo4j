@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -147,9 +148,9 @@ public class StoreUpgrader
 
             cleanupLegacyLeftOverDirsIn( layout.databaseDirectory().toFile() );
 
-            File migrationStateFile = migrationStructure.file( MIGRATION_STATUS_FILE ).toFile();
+            Path migrationStateFile = migrationStructure.file( MIGRATION_STATUS_FILE );
             // if migration directory exists than we might have failed to move files into the store dir so do it again
-            if ( hasCurrentVersion( storeVersionCheck, cursorTracer ) && !fileSystem.fileExists( migrationStateFile ) )
+            if ( hasCurrentVersion( storeVersionCheck, cursorTracer ) && !fileSystem.fileExists( migrationStateFile.toFile() ) )
             {
                 // No migration needed
                 return;
@@ -194,7 +195,7 @@ public class StoreUpgrader
         return versionResult.outcome.isSuccessful() && versionResult.actualVersion.equals( configuredVersion );
     }
 
-    private void migrate( DatabaseLayout dbDirectoryLayout, DatabaseLayout migrationLayout, File migrationStateFile, PageCursorTracer cursorTracer )
+    private void migrate( DatabaseLayout dbDirectoryLayout, DatabaseLayout migrationLayout, Path migrationStateFile, PageCursorTracer cursorTracer )
     {
         // One or more participants would like to do migration
         progressMonitor.started( participants.size() );

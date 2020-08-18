@@ -67,7 +67,7 @@ class Neo4jLayoutTest
     @Test
     void storeLayoutUseCanonicalRepresentation()
     {
-        Path basePath = testDirectory.homeDir("notCanonical").toPath();
+        Path basePath = testDirectory.homePath("notCanonical");
         Path notCanonicalPath = basePath.resolve( "../anotherLocation" );
         Neo4jLayout storeLayout = Neo4jLayout.of( notCanonicalPath );
         assertEquals( testDirectory.directoryPath( "anotherLocation" ), storeLayout.homeDirectory() );

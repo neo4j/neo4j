@@ -29,6 +29,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.file.Path;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
@@ -114,7 +115,7 @@ class ReaderLogVersionBridgeTest
 
         // then
         PhysicalLogVersionedStoreChannel expected = new PhysicalLogVersionedStoreChannel( newStoreChannel, version + 1,
-                CURRENT_LOG_FORMAT_VERSION, new File( "log.file" ), logFiles.getChannelNativeAccessor() );
+                CURRENT_LOG_FORMAT_VERSION, Path.of( "log.file" ), logFiles.getChannelNativeAccessor() );
         assertEquals( expected, result );
         verify( channel ).close();
     }
@@ -158,7 +159,7 @@ class ReaderLogVersionBridgeTest
 
     private LogFiles prepareLogFiles() throws IOException
     {
-        return LogFilesBuilder.logFilesBasedOnlyBuilder( testDirectory.homeDir(), fs )
+        return LogFilesBuilder.logFilesBasedOnlyBuilder( testDirectory.homePath(), fs )
                 .withLogEntryReader( new VersionAwareLogEntryReader( new TestCommandReaderFactory() ) )
                 .build();
     }

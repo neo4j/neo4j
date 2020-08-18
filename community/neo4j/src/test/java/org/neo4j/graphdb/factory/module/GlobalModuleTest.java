@@ -72,7 +72,7 @@ class GlobalModuleTest
         assertFalse( lock.tryAcquire( 1, 1, SECONDS ) );
         assertThat( latch.getCount() ).isEqualTo( 1L );
 
-        Config cfg = Config.defaults( GraphDatabaseSettings.neo4j_home, testDirectory.absolutePath().toPath() );
+        Config cfg = Config.defaults( GraphDatabaseSettings.neo4j_home, testDirectory.homePath().toAbsolutePath() );
         var globalModule = new GlobalModule( cfg, DbmsInfo.UNKNOWN, externalDependencies );
         try
         {

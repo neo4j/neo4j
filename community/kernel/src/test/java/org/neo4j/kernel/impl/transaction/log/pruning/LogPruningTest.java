@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.stream.LongStream;
 
 import org.neo4j.configuration.Config;
@@ -60,7 +61,7 @@ class LogPruningTest
     {
         fs = mock( FileSystemAbstraction.class );
         logFiles = mock( LogFiles.class );
-        doAnswer( inv -> new File( String.valueOf( inv.getArguments()[0] ) ) )
+        doAnswer( inv -> Path.of( String.valueOf( inv.getArguments()[0] ) ) )
                 .when( logFiles ).getLogFileForVersion( anyLong() );
         logProvider = NullLogProvider.getInstance();
         clock = mock( SystemNanoClock.class );
@@ -72,7 +73,7 @@ class LogPruningTest
     {
         when( factory.strategyFromConfigValue( eq( fs ), eq( logFiles ), eq( logProvider ), eq( clock ), anyString() ) )
                 .thenReturn( upTo -> LongStream.range( 3, upTo ) );
-        LogPruning pruning = new LogPruningImpl( fs, logFiles,logProvider,factory, clock, config );
+        LogPruning pruning = new LogPruningImpl( fs, logFiles, logProvider, factory, clock, config );
         pruning.pruneLogs( 5 );
         InOrder order = inOrder( fs );
         order.verify( fs ).deleteFile( new File( "3" ) );

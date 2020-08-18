@@ -139,6 +139,7 @@ public class StoreFilesDiagnostics extends NamedDiagnosticsProvider
 
     private static String getDiskSpace( DatabaseLayout databaseLayout )
     {
+        String header = "Disk space on partition (Total / Free / Free %%):";
         try
         {
             Path directory = databaseLayout.databaseDirectory();
@@ -146,11 +147,11 @@ public class StoreFilesDiagnostics extends NamedDiagnosticsProvider
             long free = fileStore.getUnallocatedSpace();
             long total = fileStore.getTotalSpace();
             long percentage = total != 0 ? (free * 100 / total) : 0;
-            return String.format( "Disk space on partition (Total / Free / Free %%): %s / %s / %s", total, free, percentage );
+            return String.format( header + " %s / %s / %s", total, free, percentage );
         }
         catch ( IOException e )
         {
-            return "Unable to determine disk space on the partition";
+            return header + " Unable to determine disk space on the partition";
         }
     }
 

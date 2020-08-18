@@ -24,7 +24,6 @@ import picocli.CommandLine;
 import picocli.CommandLine.ITypeConverter;
 import picocli.CommandLine.Option;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.Charset;
@@ -92,7 +91,7 @@ public class ImportCommand extends AbstractCommand
 
     @Option( names = "--report-file", paramLabel = "<path>", defaultValue = DEFAULT_REPORT_FILE_NAME,
             description = "File in which to store the report of the csv-import." )
-    private File reportFile = new File( DEFAULT_REPORT_FILE_NAME );
+    private Path reportFile = Path.of( DEFAULT_REPORT_FILE_NAME );
 
     @Option( names = "--id-type", paramLabel = "<STRING|INTEGER|ACTUAL>", description = "Each node must provide a unique id. This is used to find the " +
             "correct nodes when creating relationships. Possible values are:%n" +
@@ -228,7 +227,7 @@ public class ImportCommand extends AbstractCommand
                     .withImportConfig( importConfig )
                     .withIdType( idType )
                     .withInputEncoding( inputEncoding )
-                    .withReportFile( reportFile.getAbsoluteFile() )
+                    .withReportFile( reportFile.toAbsolutePath() )
                     .withIgnoreExtraColumns( ignoreExtraColumns )
                     .withBadTolerance( badTolerance )
                     .withSkipBadRelationships( skipBadRelationships )
@@ -332,7 +331,7 @@ public class ImportCommand extends AbstractCommand
         return new NodeFilesGroup( p.getOne(), p.getTwo() );
     }
 
-    private static <T> Pair<T, File[]> parseInputFilesGroup( String str, Function<String, ? extends T> keyParser )
+    private static <T> Pair<T, Path[]> parseInputFilesGroup( String str, Function<String, ? extends T> keyParser )
     {
         final var i = str.indexOf( '=' );
         if ( i < 0 )
@@ -350,12 +349,12 @@ public class ImportCommand extends AbstractCommand
         return pair( key, files );
     }
 
-    private static File[] parseFilesList( String str )
+    private static Path[] parseFilesList( String str )
     {
         final var converter = Converters.regexFiles( true );
         return Converters.toFiles( MULTI_FILE_DELIMITER, s ->
         {
-            Validators.REGEX_FILE_EXISTS.validate( new File( s ) );
+            Validators.REGEX_FILE_EXISTS.validate( s );
             return converter.apply( s );
         } ).apply( str );
     }
@@ -425,7 +424,7 @@ public class ImportCommand extends AbstractCommand
 
     static class NodeFilesGroup extends InputFilesGroup<Set<String>>
     {
-        NodeFilesGroup( Set<String> key, File[] files )
+        NodeFilesGroup( Set<String> key, Path[] files )
         {
             super( key, files );
         }
@@ -433,7 +432,7 @@ public class ImportCommand extends AbstractCommand
 
     static class RelationshipFilesGroup extends InputFilesGroup<String>
     {
-        RelationshipFilesGroup( String key, File[] files )
+        RelationshipFilesGroup( String key, Path[] files )
         {
             super( key, files );
         }
@@ -442,9 +441,9 @@ public class ImportCommand extends AbstractCommand
     abstract static class InputFilesGroup<T>
     {
         final T key;
-        final File[] files;
+        final Path[] files;
 
-        InputFilesGroup( T key, File[] files )
+        InputFilesGroup( T key, Path[] files )
         {
             this.key = key;
             this.files = files;

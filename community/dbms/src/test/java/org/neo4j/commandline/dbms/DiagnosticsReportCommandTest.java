@@ -82,7 +82,7 @@ public class DiagnosticsReportCommandTest
         }
 
         @Override
-        public void init( FileSystemAbstraction fs, String defaultDatabaseName, Config config, File storeDirectory )
+        public void init( FileSystemAbstraction fs, String defaultDatabaseName, Config config, Path storeDirectory )
         {
         }
 
@@ -97,8 +97,8 @@ public class DiagnosticsReportCommandTest
     @BeforeEach
     void setUp() throws Exception
     {
-        homeDir = testDirectory.directory( "home-dir" ).toPath();
-        configDir = testDirectory.directory( "config-dir" ).toPath();
+        homeDir = testDirectory.directoryPath( "home-dir" );
+        configDir = testDirectory.directoryPath( "config-dir" );
 
         // Touch config
         configFile = configDir.resolve( "neo4j.conf" );

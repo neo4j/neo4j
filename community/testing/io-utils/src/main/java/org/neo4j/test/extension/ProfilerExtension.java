@@ -26,10 +26,10 @@ import org.junit.jupiter.api.extension.ExtensionContext.Namespace;
 import org.junit.platform.commons.JUnitException;
 
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.resources.Profiler;
@@ -117,10 +117,10 @@ public class ProfilerExtension extends StatefulFieldExtension<Profiler> implemen
 
                 if ( testDir != null && testDir.isInitialised() )
                 {
-                    File profileOutputFile = testDir.createFile( "profiler-output.txt" );
+                    Path profileOutputFile = testDir.createFilePath( "profiler-output.txt" );
                     FileSystemAbstraction fs = testDir.getFileSystem();
 
-                    try ( OutputStream out = fs.openAsOutputStream( profileOutputFile, false ) )
+                    try ( OutputStream out = fs.openAsOutputStream( profileOutputFile.toFile(), false ) )
                     {
                         buffer.writeTo( out );
                     }

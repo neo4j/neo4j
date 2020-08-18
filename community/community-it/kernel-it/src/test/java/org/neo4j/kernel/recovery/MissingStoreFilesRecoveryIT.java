@@ -104,7 +104,7 @@ class MissingStoreFilesRecoveryIT
     {
         LogFiles logFiles = prepareDatabaseWithTwoTxLogFiles();
 
-        fileSystem.deleteFile( logFiles.getLogFileForVersion( 0 ) );
+        fileSystem.deleteFile( logFiles.getLogFileForVersion( 0 ).toFile() );
         fileSystem.deleteFile( databaseLayout.nodeStore().toFile() );
 
         var dbStateService = getDatabaseStateService();

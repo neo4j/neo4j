@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.log.pruning;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.LongConsumer;
@@ -129,8 +129,8 @@ public class LogPruningImpl implements LogPruning
         {
             fromVersion = fromVersion == NO_VERSION ? version : Math.min( fromVersion, version );
             toVersion = toVersion == NO_VERSION ? version : Math.max( toVersion, version );
-            File logFile = logFiles.getLogFileForVersion( version );
-            fs.deleteFile( logFile );
+            Path logFile = logFiles.getLogFileForVersion( version );
+            fs.deleteFile( logFile.toFile() );
         }
 
         String describeResult( LogPruneStrategy strategy )

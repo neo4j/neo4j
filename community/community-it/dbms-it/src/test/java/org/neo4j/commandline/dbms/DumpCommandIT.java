@@ -105,8 +105,8 @@ class DumpCommandIT
     void setUp()
     {
         homeDir = testDirectory.homePath();
-        configDir = testDirectory.directory( "config-dir" ).toPath();
-        archive = testDirectory.file( "some-archive.dump" ).toPath();
+        configDir = testDirectory.directoryPath( "config-dir" );
+        archive = testDirectory.filePath( "some-archive.dump" );
         dumper = mock( Dumper.class );
         databaseLayout = neo4jLayout.databaseLayout( "foo" );
         databaseDirectory = databaseLayout.databaseDirectory();
@@ -134,7 +134,7 @@ class DumpCommandIT
     @Test
     void shouldCalculateTheDatabaseDirectoryFromConfig() throws Exception
     {
-        Path dataDir = testDirectory.directory( "some-other-path" ).toPath();
+        Path dataDir = testDirectory.directoryPath( "some-other-path" );
         Path txLogsDir = dataDir.resolve( DEFAULT_TX_LOGS_ROOT_DIR_NAME + "/foo" );
         Path databaseDir = dataDir.resolve( "databases/foo" );
         Files.write( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ), singletonList( formatProperty( data_directory, dataDir ) ) );
@@ -147,8 +147,8 @@ class DumpCommandIT
     @Test
     void shouldCalculateTheTxLogDirectoryFromConfig() throws Exception
     {
-        Path dataDir = testDirectory.directory( "some-other-path" ).toPath();
-        Path txlogsRoot = testDirectory.directory( "txLogsPath" ).toPath();
+        Path dataDir = testDirectory.directoryPath( "some-other-path" );
+        Path txlogsRoot = testDirectory.directoryPath( "txLogsPath" );
         Path databaseDir = dataDir.resolve( "databases/foo" );
         Files.write( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ),
                 asList( formatProperty( data_directory, dataDir ),
@@ -163,9 +163,9 @@ class DumpCommandIT
     @DisabledOnOs( OS.WINDOWS )
     void shouldHandleDatabaseSymlink() throws Exception
     {
-        Path realDatabaseDir = testDirectory.directory( "path-to-links/foo" ).toPath();
+        Path realDatabaseDir = testDirectory.directoryPath( "path-to-links/foo" );
 
-        Path dataDir = testDirectory.directory( "some-other-path" ).toPath();
+        Path dataDir = testDirectory.directoryPath( "some-other-path" );
         Path databaseDir = dataDir.resolve( "databases/foo" );
         Path txLogsDir = dataDir.resolve( DEFAULT_TX_LOGS_ROOT_DIR_NAME + "/foo" );
 
@@ -183,9 +183,9 @@ class DumpCommandIT
     @Test
     void shouldCalculateTheArchiveNameIfPassedAnExistingDirectory() throws Exception
     {
-        File to = testDirectory.directory( "some-dir" );
-        execute( "foo", to.toPath() );
-        verify( dumper ).dump( any( Path.class ), any( Path.class ), eq( to.toPath().resolve( "foo.dump" ) ), any(), any() );
+        Path to = testDirectory.directoryPath( "some-dir" );
+        execute( "foo", to );
+        verify( dumper ).dump( any( Path.class ), any( Path.class ), eq( to.resolve( "foo.dump" ) ), any(), any() );
     }
 
     @Test
@@ -294,7 +294,7 @@ class DumpCommandIT
     @Test
     void shouldDefaultToGraphDB() throws Exception
     {
-        Path dataDir = testDirectory.directory( "some-other-path" ).toPath();
+        Path dataDir = testDirectory.directoryPath( "some-other-path" );
         Path txLogsDir = dataDir.resolve( DEFAULT_TX_LOGS_ROOT_DIR_NAME + "/" + DEFAULT_DATABASE_NAME );
         Path databaseDir = dataDir.resolve( "databases/" + DEFAULT_DATABASE_NAME );
         Files.write( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ), singletonList( formatProperty( data_directory, dataDir ) ) );

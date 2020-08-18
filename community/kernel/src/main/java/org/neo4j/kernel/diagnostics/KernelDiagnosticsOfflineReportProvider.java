@@ -21,6 +21,7 @@ package org.neo4j.kernel.diagnostics;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -50,11 +51,11 @@ public class KernelDiagnosticsOfflineReportProvider extends DiagnosticsOfflineRe
     }
 
     @Override
-    public void init( FileSystemAbstraction fs, String defaultDatabaseName, Config config, File storeDirectory )
+    public void init( FileSystemAbstraction fs, String defaultDatabaseName, Config config, Path storeDirectory )
     {
         this.fs = fs;
         this.config = config;
-        this.databaseLayout = DatabaseLayout.ofFlat( storeDirectory.toPath() );
+        this.databaseLayout = DatabaseLayout.ofFlat( storeDirectory );
     }
 
     @Override
@@ -154,23 +155,23 @@ public class KernelDiagnosticsOfflineReportProvider extends DiagnosticsOfflineRe
     private void getLogFiles( List<DiagnosticsReportSource> sources )
     {
         // debug.log
-        File debugLogFile = config.get( GraphDatabaseSettings.store_internal_log_path ).toFile();
-        if ( fs.fileExists( debugLogFile ) )
+        Path debugLogFile = config.get( GraphDatabaseSettings.store_internal_log_path );
+        if ( fs.fileExists( debugLogFile.toFile() ) )
         {
             sources.addAll( DiagnosticsReportSources.newDiagnosticsRotatingFile( "logs/debug.log", fs, debugLogFile ) );
         }
 
         // neo4j.log
-        File logDirectory = config.get( GraphDatabaseSettings.logs_directory ).toFile();
-        File neo4jLog = new File( logDirectory, "neo4j.log" );
-        if ( fs.fileExists( neo4jLog ) )
+        Path logDirectory = config.get( GraphDatabaseSettings.logs_directory );
+        Path neo4jLog = logDirectory.resolve( "neo4j.log" );
+        if ( fs.fileExists( neo4jLog.toFile() ) )
         {
             sources.add( DiagnosticsReportSources.newDiagnosticsFile( "logs/neo4j.log", fs, neo4jLog ) );
         }
 
         // gc.log
-        File gcLog = new File( logDirectory, "gc.log" );
-        if ( fs.fileExists( gcLog ) )
+        Path gcLog = logDirectory.resolve( "gc.log" );
+        if ( fs.fileExists( gcLog.toFile() ) )
         {
             sources.add( DiagnosticsReportSources.newDiagnosticsFile( "logs/gc.log", fs, gcLog ) );
         }
@@ -178,8 +179,8 @@ public class KernelDiagnosticsOfflineReportProvider extends DiagnosticsOfflineRe
         int i = 0;
         while ( true )
         {
-            File gcRotationLog = new File( logDirectory, "gc.log." + i );
-            if ( !fs.fileExists( gcRotationLog ) )
+            Path gcRotationLog = logDirectory.resolve( "gc.log." + i );
+            if ( !fs.fileExists( gcRotationLog.toFile() ) )
             {
                 break;
             }
@@ -198,10 +199,10 @@ public class KernelDiagnosticsOfflineReportProvider extends DiagnosticsOfflineRe
     {
         try
         {
-            LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( databaseLayout.databaseDirectory().toFile(), fs ).build();
-            for ( File file : logFiles.logFiles() )
+            LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( databaseLayout.databaseDirectory(), fs ).build();
+            for ( Path file : logFiles.logFiles() )
             {
-                sources.add( DiagnosticsReportSources.newDiagnosticsFile( "tx/" + file.getName(), fs, file ) );
+                sources.add( DiagnosticsReportSources.newDiagnosticsFile( "tx/" + file.getFileName(), fs, file ) );
             }
         }
         catch ( IOException e )

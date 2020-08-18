@@ -19,8 +19,8 @@
  */
 package org.neo4j.test;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.function.Predicate;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -44,7 +44,7 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 /**
  * Utility for reading and filtering logical logs as well as tx logs.
  */
-public class LogTestUtils
+public final class LogTestUtils
 {
     private LogTestUtils()
     {
@@ -52,20 +52,20 @@ public class LogTestUtils
 
     public interface LogHook<RECORD> extends Predicate<RECORD>
     {
-        void file( File file );
+        void file( Path file );
 
-        void done( File file );
+        void done( Path file );
     }
 
     public abstract static class LogHookAdapter<RECORD> implements LogHook<RECORD>
     {
         @Override
-        public void file( File file )
+        public void file( Path file )
         {   // Do nothing
         }
 
         @Override
-        public void done( File file )
+        public void done( Path file )
         {   // Do nothing
         }
     }
@@ -87,11 +87,11 @@ public class LogTestUtils
         }
     }
 
-    public static File[] filterNeostoreLogicalLog( LogFiles logFiles, FileSystemAbstraction fileSystem,
+    public static Path[] filterNeostoreLogicalLog( LogFiles logFiles, FileSystemAbstraction fileSystem,
             LogHook<LogEntry> filter ) throws IOException
     {
-        File[] files = logFiles.logFiles();
-        for ( File file : files )
+        Path[] files = logFiles.logFiles();
+        for ( Path file : files )
         {
             filterTransactionLogFile( fileSystem, file, filter, logFiles.getChannelNativeAccessor() );
         }
@@ -99,12 +99,12 @@ public class LogTestUtils
         return files;
     }
 
-    private static void filterTransactionLogFile( FileSystemAbstraction fileSystem, File file, final LogHook<LogEntry> filter,
+    private static void filterTransactionLogFile( FileSystemAbstraction fileSystem, Path file, final LogHook<LogEntry> filter,
             LogFileChannelNativeAccessor channelNativeAccessor )
             throws IOException
     {
         filter.file( file );
-        try ( StoreChannel in = fileSystem.read( file ) )
+        try ( StoreChannel in = fileSystem.read( file.toFile() ) )
         {
             LogHeader logHeader = readLogHeader( ByteBuffers.allocate( CURRENT_FORMAT_LOG_HEADER_SIZE, INSTANCE ), in, true, file );
             assert logHeader != null : "Looks like we tried to read a log header of an empty pre-allocated file.";

@@ -21,7 +21,6 @@ package org.neo4j.graphdb;
 
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 
@@ -57,14 +56,14 @@ class TransactionLogsInSeparateLocationIT
     @Test
     void databaseWithTransactionLogsInSeparateAbsoluteLocation() throws IOException
     {
-        File txDirectory = testDirectory.directory( "transaction-logs" );
+        Path txDirectory = testDirectory.directoryPath( "transaction-logs" );
         Config config = Config.newBuilder()
                 .set( neo4j_home, testDirectory.homePath() )
-                .set( transaction_logs_root_path, txDirectory.toPath().toAbsolutePath() )
+                .set( transaction_logs_root_path, txDirectory.toAbsolutePath() )
                 .build();
         DatabaseLayout layout = DatabaseLayout.of( config );
-        StorageEngineFactory storageEngineFactory = performTransactions( txDirectory.toPath().toAbsolutePath(), layout.databaseDirectory() );
-        verifyTransactionLogs( layout.getTransactionLogsDirectory().toFile(), layout.databaseDirectory().toFile(), storageEngineFactory );
+        StorageEngineFactory storageEngineFactory = performTransactions( txDirectory.toAbsolutePath(), layout.databaseDirectory() );
+        verifyTransactionLogs( layout.getTransactionLogsDirectory(), layout.databaseDirectory(), storageEngineFactory );
     }
 
     private static StorageEngineFactory performTransactions( Path txPath, Path storeDir )
@@ -89,7 +88,7 @@ class TransactionLogsInSeparateLocationIT
         return storageEngineFactory;
     }
 
-    private void verifyTransactionLogs( File txDirectory, File storeDir, StorageEngineFactory storageEngineFactory ) throws IOException
+    private void verifyTransactionLogs( Path txDirectory, Path storeDir, StorageEngineFactory storageEngineFactory ) throws IOException
     {
         LogFiles storeDirLogs = LogFilesBuilder.logFilesBasedOnlyBuilder( storeDir, fileSystem )
                 .withCommandReaderFactory( storageEngineFactory.commandReaderFactory() )

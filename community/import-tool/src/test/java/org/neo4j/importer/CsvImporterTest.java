@@ -24,10 +24,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.api.parallel.Resources;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 
@@ -59,49 +59,49 @@ class CsvImporterTest
     void writesReportToSpecifiedReportFile() throws Exception
     {
 
-        File logDir = testDir.directory( "logs" );
-        File reportLocation = testDir.file( "the_report" );
+        Path logDir = testDir.directoryPath( "logs" );
+        Path reportLocation = testDir.filePath( "the_report" );
 
-        File inputFile = testDir.file( "foobar.csv" );
+        Path inputFile = testDir.filePath( "foobar.csv" );
         List<String> lines = Collections.singletonList( "foo\\tbar\\tbaz" );
-        Files.write( inputFile.toPath(), lines, Charset.defaultCharset() );
+        Files.write( inputFile, lines, Charset.defaultCharset() );
 
-        Config config = Config.defaults( GraphDatabaseSettings.logs_directory, logDir.toPath().toAbsolutePath() );
+        Config config = Config.defaults( GraphDatabaseSettings.logs_directory, logDir.toAbsolutePath() );
 
         CsvImporter csvImporter = CsvImporter.builder()
             .withDatabaseLayout( databaseLayout )
             .withDatabaseConfig( config )
-            .withReportFile( reportLocation.getAbsoluteFile() )
+            .withReportFile( reportLocation.toAbsolutePath() )
             .withCsvConfig( Configuration.TABS )
             .withFileSystem( testDir.getFileSystem() )
-            .addNodeFiles( emptySet(), new File[]{inputFile.getAbsoluteFile()} )
+            .addNodeFiles( emptySet(), new Path[]{inputFile.toAbsolutePath()} )
             .build();
 
         csvImporter.doImport();
 
-        assertTrue( reportLocation.exists() );
+        assertTrue( Files.exists( reportLocation ) );
     }
 
     @Test
     void tracePageCacheAccessOnCsvImport() throws IOException
     {
-        File logDir = testDir.directory( "logs" );
-        File reportLocation = testDir.file( "the_report" );
-        File inputFile = testDir.file( "foobar.csv" );
+        Path logDir = testDir.directoryPath( "logs" );
+        Path reportLocation = testDir.filePath( "the_report" );
+        Path inputFile = testDir.filePath( "foobar.csv" );
 
         List<String> lines = List.of( "foo;bar;baz" );
-        Files.write( inputFile.toPath(), lines, Charset.defaultCharset() );
+        Files.write( inputFile, lines, Charset.defaultCharset() );
 
-        Config config = Config.defaults( GraphDatabaseSettings.logs_directory, logDir.toPath().toAbsolutePath() );
+        Config config = Config.defaults( GraphDatabaseSettings.logs_directory, logDir.toAbsolutePath() );
 
         var cacheTracer = new DefaultPageCacheTracer();
         CsvImporter csvImporter = CsvImporter.builder()
                 .withDatabaseLayout( databaseLayout )
                 .withDatabaseConfig( config )
-                .withReportFile( reportLocation.getAbsoluteFile() )
+                .withReportFile( reportLocation.toAbsolutePath() )
                 .withFileSystem( testDir.getFileSystem() )
                 .withPageCacheTracer( cacheTracer )
-                .addNodeFiles( emptySet(), new File[]{inputFile.getAbsoluteFile()} )
+                .addNodeFiles( emptySet(), new Path[]{inputFile.toAbsolutePath()} )
                 .build();
 
         csvImporter.doImport();

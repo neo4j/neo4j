@@ -111,7 +111,7 @@ class LoaderTest
     }
 
     @Test
-    void shouldGiveAClearErrorMessageIfTheArchiveEntryPointsToRandomPlace() throws IOException, IncorrectFormat
+    void shouldGiveAClearErrorMessageIfTheArchiveEntryPointsToRandomPlace() throws IOException
     {
         Path archive = testDirectory.filePath( "the-archive.dump" );
 
@@ -208,10 +208,10 @@ class LoaderTest
             throws IOException
     {
         Path archive = testDirectory.filePath( "the-archive.dump" );
-        File txLogsDirectory = testDirectory.directory( "subdir/txLogs" );
+        Path txLogsDirectory = testDirectory.directoryPath( "subdir", "txLogs" );
         Config config = Config.newBuilder()
                 .set( neo4j_home, testDirectory.homePath() )
-                .set( transaction_logs_root_path, txLogsDirectory.toPath().toAbsolutePath() )
+                .set( transaction_logs_root_path, txLogsDirectory.toAbsolutePath() )
                 .set( default_database, "destination" )
                 .build();
         DatabaseLayout databaseLayout = DatabaseLayout.of( config );

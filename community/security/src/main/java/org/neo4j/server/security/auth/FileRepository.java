@@ -19,7 +19,7 @@
  */
 package org.neo4j.server.security.auth;
 
-import java.io.File;
+import java.nio.file.Path;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.logging.Log;
@@ -30,19 +30,19 @@ public interface FileRepository
      * This is used by different flavors of file repositories to agree on a naming convention
      * for repository files that are renamed after migration to prevent accidental reuse.
      */
-    static File getMigratedFile( File file )
+    static Path getMigratedFile( Path path )
     {
-        return new File( file.getParent(), file.getName() + ".migrated" );
+        return path.resolveSibling( path.getFileName() + ".migrated" );
     }
 
-    static void assertNotMigrated( File file, FileSystemAbstraction fileSystem, Log log )
+    static void assertNotMigrated( Path path, FileSystemAbstraction fileSystem, Log log )
     {
-        File migratedFile = getMigratedFile( file );
-        if ( fileSystem.fileExists( migratedFile ) )
+        Path migratedFile = getMigratedFile( path );
+        if ( fileSystem.fileExists( migratedFile.toFile() ) )
         {
-            String message = "The repository file '" + file.getAbsolutePath() + "' has been marked as migrated. " +
+            String message = "The repository file '" + path.toAbsolutePath() + "' has been marked as migrated. " +
                     "If you are sure that you want use this repository you need to manually rename the file '" +
-                    migratedFile.getAbsolutePath() + "' to '" + file.getName() + "'";
+                    migratedFile.toAbsolutePath() + "' to '" + path.getFileName() + "'";
             log.error( message );
             throw new IllegalStateException( message );
         }

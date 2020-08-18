@@ -21,8 +21,8 @@ package org.neo4j.kernel.diagnostics.providers;
 
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 
 import org.neo4j.collection.Dependencies;
 import org.neo4j.kernel.database.Database;
@@ -116,7 +116,7 @@ class TransactionRangeDiagnosticsTest
     private static LogFiles logWithTransactions( long logVersion, long headerTxId ) throws IOException
     {
         LogFiles files = mock( TransactionLogFiles.class );
-        when( files.logFilesDirectory() ).thenReturn( new File( "." ) );
+        when( files.logFilesDirectory() ).thenReturn( Path.of( "." ) );
         when( files.getLowestLogVersion() ).thenReturn( logVersion );
         when( files.hasAnyEntries( logVersion ) ).thenReturn( true );
         when( files.versionExists( logVersion ) ).thenReturn( true );
@@ -129,7 +129,7 @@ class TransactionRangeDiagnosticsTest
     {
         LogFiles files = mock( TransactionLogFiles.class );
         when( files.getLowestLogVersion() ).thenReturn( -1L );
-        when( files.logFilesDirectory() ).thenReturn( new File( "." ) );
+        when( files.logFilesDirectory() ).thenReturn( Path.of( "." ) );
         return files;
     }
 }

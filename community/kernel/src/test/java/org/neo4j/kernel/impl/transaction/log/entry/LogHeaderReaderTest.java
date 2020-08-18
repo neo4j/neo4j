@@ -25,11 +25,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
+import java.nio.file.Path;
 
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -176,7 +176,7 @@ class LogHeaderReaderTest
     void shouldReadALogHeaderFromAFile() throws IOException
     {
         // given
-        final File file = testDirectory.file( "ReadLogHeader" );
+        final Path file = testDirectory.filePath( "ReadLogHeader" );
 
         final ByteBuffer buffer = ByteBuffers.allocate( CURRENT_FORMAT_LOG_HEADER_SIZE, INSTANCE );
         buffer.putLong( encodeLogVersion( expectedLogVersion, CURRENT_LOG_FORMAT_VERSION ) );
@@ -187,7 +187,7 @@ class LogHeaderReaderTest
         buffer.putLong( expectedStoreId.getUpgradeTime() );
         buffer.putLong( expectedStoreId.getUpgradeTxId() );
 
-        try ( OutputStream stream = fileSystem.openAsOutputStream( file, false ) )
+        try ( OutputStream stream = fileSystem.openAsOutputStream( file.toFile(), false ) )
         {
             stream.write( buffer.array() );
         }
@@ -203,10 +203,10 @@ class LogHeaderReaderTest
     void shouldFailWhenUnableToReadALogHeaderFromAFile() throws IOException
     {
         // given
-        final File file = testDirectory.file( "ReadLogHeader" );
-        fileSystem.write( file ).close();
+        final Path file = testDirectory.filePath( "ReadLogHeader" );
+        fileSystem.write( file.toFile() ).close();
         IncompleteLogHeaderException exception = assertThrows( IncompleteLogHeaderException.class, () -> readLogHeader( fileSystem, file, INSTANCE ) );
-        assertThat( exception.getMessage() ).contains( file.getName() );
+        assertThat( exception.getMessage() ).contains( file.getFileName().toString() );
     }
 
     @Test

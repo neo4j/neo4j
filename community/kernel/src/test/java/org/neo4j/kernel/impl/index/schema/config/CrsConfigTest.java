@@ -22,9 +22,9 @@ package org.neo4j.kernel.impl.index.schema.config;
 import org.apache.commons.lang3.ArrayUtils;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 
@@ -46,8 +46,8 @@ class CrsConfigTest
     @Test
     void testCrsConfigMigration() throws IOException
     {
-        File confFile = testDirectory.createFile( "test.conf" );
-        Files.write( confFile.toPath(), Arrays.asList(
+        Path confFile = testDirectory.createFilePath( "test.conf" );
+        Files.write( confFile, Arrays.asList(
                 "unsupported.dbms.db.spatial.crs.cartesian-3d.min.x=1",
                 "unsupported.dbms.db.spatial.crs.cartesian-3d.min.y=2",
                 "unsupported.dbms.db.spatial.crs.cartesian-3d.min.z=3",

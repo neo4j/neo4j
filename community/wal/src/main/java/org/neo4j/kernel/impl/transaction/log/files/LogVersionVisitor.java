@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.impl.transaction.log.files;
 
-import java.io.File;
+import java.nio.file.Path;
 
 public interface LogVersionVisitor
 {
-    void visit( File file, long logVersion );
+    void visit( Path file, long logVersion );
 }

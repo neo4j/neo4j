@@ -29,7 +29,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
@@ -77,7 +76,6 @@ import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PinEvent;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
-import org.neo4j.scheduler.CallableExecutorService;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
@@ -1587,7 +1585,7 @@ class GBPTreeTest
                 tree.checkpoint( UNLIMITED, NULL );
             }
         }
-        byte[] before = fileContent( indexFile.toFile() );
+        byte[] before = fileContent( indexFile );
 
         try ( GBPTree<MutableLong,MutableLong> tree = index( pageCache ).withReadOnly( true ).build() )
         {
@@ -1601,7 +1599,7 @@ class GBPTreeTest
             }, NULL );
             assertFalse( ioLimitChecked.getValue(), "Expected checkpoint to be a no-op in read only mode." );
         }
-        byte[] after = fileContent( indexFile.toFile() );
+        byte[] after = fileContent( indexFile );
         assertArrayEquals( before, after, "Expected file content to be identical before and after opening GBPTree in read only mode." );
     }
 
@@ -1679,11 +1677,11 @@ class GBPTreeTest
         }
     }
 
-    private byte[] fileContent( File indexFile ) throws IOException
+    private byte[] fileContent( Path indexFile ) throws IOException
     {
         Set<OpenOption> options = new HashSet<>();
         options.add( StandardOpenOption.READ );
-        try ( StoreChannel storeChannel = fileSystem.open( indexFile, options ) )
+        try ( StoreChannel storeChannel = fileSystem.open( indexFile.toFile(), options ) )
         {
             int fileSize = (int) storeChannel.size();
             ByteBuffer expectedContent = ByteBuffers.allocate( fileSize, INSTANCE );

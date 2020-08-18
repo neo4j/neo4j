@@ -19,9 +19,9 @@
  */
 package org.neo4j.internal.batchimport.input.csv;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.nio.file.Path;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -80,7 +80,7 @@ public class DataFactories
      * @return {@link DataFactory} that returns a {@link CharSeeker} over all the supplied {@code files}.
      */
     public static DataFactory data( final Decorator decorator,
-            final Charset charset, final File... files )
+            final Charset charset, final Path... files )
     {
         if ( files.length == 0 )
         {

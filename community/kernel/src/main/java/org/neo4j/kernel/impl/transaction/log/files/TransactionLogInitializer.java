@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction.log.files;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -72,7 +72,7 @@ public class TransactionLogInitializer
                 TransactionLogInitializer initializer = new TransactionLogInitializer(
                         fileSystem, store, StorageEngineFactory.selectStorageEngine().commandReaderFactory(),
                         PageCacheTracer.NULL );
-                initializer.initializeEmptyLogFile( databaseLayout, databaseLayout.getTransactionLogsDirectory().toFile() );
+                initializer.initializeEmptyLogFile( databaseLayout, databaseLayout.getTransactionLogsDirectory() );
             }
             catch ( IOException e )
             {
@@ -93,7 +93,7 @@ public class TransactionLogInitializer
     /**
      * Create new empty log files in the given transaction logs directory, for a database that doesn't have any already.
      */
-    public void initializeEmptyLogFile( DatabaseLayout layout, File transactionLogsDirectory ) throws IOException
+    public void initializeEmptyLogFile( DatabaseLayout layout, Path transactionLogsDirectory ) throws IOException
     {
         try ( LogFilesSpan span = buildLogFiles( layout, transactionLogsDirectory ) )
         {
@@ -106,7 +106,7 @@ public class TransactionLogInitializer
      * Make sure that any existing log files in the given transaction logs directory are initialised.
      * This is done when we migrate 3.x stores into a 4.x world.
      */
-    public void initializeExistingLogFiles( DatabaseLayout layout, File transactionLogsDirectory ) throws Exception
+    public void initializeExistingLogFiles( DatabaseLayout layout, Path transactionLogsDirectory ) throws Exception
     {
         // If there are no transactions in any of the log files,
         // append an empty transaction, and a checkpoint, to the last log file.
@@ -133,7 +133,7 @@ public class TransactionLogInitializer
         }
     }
 
-    private LogFilesSpan buildLogFiles( DatabaseLayout layout, File transactionLogsDirectory ) throws IOException
+    private LogFilesSpan buildLogFiles( DatabaseLayout layout, Path transactionLogsDirectory ) throws IOException
     {
         LogFiles logFiles = LogFilesBuilder.builder( layout, fs )
                                            .withLogVersionRepository( store )

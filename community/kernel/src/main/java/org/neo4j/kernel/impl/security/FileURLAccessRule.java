@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.security;
 
-import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -58,12 +57,12 @@ class FileURLAccessRule implements URLAccessRule
         {
             return url;
         }
-        final File root = config.get( GraphDatabaseSettings.load_csv_file_url_root ).toFile();
+        final Path root = config.get( GraphDatabaseSettings.load_csv_file_url_root );
 
         try
         {
             final Path urlPath = Paths.get( url.toURI() );
-            final Path rootPath = root.toPath().normalize().toAbsolutePath();
+            final Path rootPath = root.normalize().toAbsolutePath();
             // Normalize to prevent dirty tricks like '..'
             final Path result =
                     rootPath.resolve( urlPath.getRoot().relativize( urlPath ) ).normalize().toAbsolutePath();

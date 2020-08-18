@@ -21,7 +21,6 @@ package org.neo4j.kernel.recovery;
 
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -444,16 +443,16 @@ class RecoveryIT
         generateSomeData( database );
         managementService.shutdown();
 
-        File[] txLogFiles = buildLogFiles().logFiles();
+        Path[] txLogFiles = buildLogFiles().logFiles();
         Path databasesDirectory = databaseLayout.getNeo4jLayout().databasesDirectory();
         DatabaseLayout legacyLayout = Neo4jLayout.ofFlat( databasesDirectory ).databaseLayout( databaseLayout.getDatabaseName() );
         LegacyTransactionLogsLocator logsLocator = new LegacyTransactionLogsLocator( Config.defaults(), legacyLayout );
-        File transactionLogsDirectory = logsLocator.getTransactionLogsDirectory().toFile();
+        Path transactionLogsDirectory = logsLocator.getTransactionLogsDirectory();
         assertNotNull( txLogFiles );
         assertTrue( txLogFiles.length > 0 );
-        for ( File logFile : txLogFiles )
+        for ( Path logFile : txLogFiles )
         {
-            fileSystem.moveToDirectory( logFile, transactionLogsDirectory );
+            fileSystem.moveToDirectory( logFile.toFile(), transactionLogsDirectory.toFile() );
         }
 
         AssertableLogProvider logProvider = new AssertableLogProvider();
@@ -466,7 +465,7 @@ class RecoveryIT
             var failure = dbStateService.causeOfFailure( restartedDb.databaseId() );
             assertTrue( failure.isPresent() );
             assertThat( failure.get() ).hasRootCauseMessage( "Transaction logs are missing and recovery is not possible." );
-            assertThat( logProvider.serialize() ).contains( txLogFiles[0].getName() );
+            assertThat( logProvider.serialize() ).contains( txLogFiles[0].getFileName().toString() );
         }
         finally
         {
@@ -790,7 +789,7 @@ class RecoveryIT
     private LogFiles buildLogFiles() throws IOException
     {
         return LogFilesBuilder
-                .logFilesBasedOnlyBuilder( databaseLayout.getTransactionLogsDirectory().toFile(), fileSystem )
+                .logFilesBasedOnlyBuilder( databaseLayout.getTransactionLogsDirectory(), fileSystem )
                 .withCommandReaderFactory( StorageEngineFactory.selectStorageEngine().commandReaderFactory() )
                 .build();
     }
@@ -798,10 +797,10 @@ class RecoveryIT
     private void removeTransactionLogs() throws IOException
     {
         LogFiles logFiles = buildLogFiles();
-        File[] txLogFiles = logFiles.logFiles();
-        for ( File logFile : txLogFiles )
+        Path[] txLogFiles = logFiles.logFiles();
+        for ( Path logFile : txLogFiles )
         {
-            fileSystem.deleteFile( logFile );
+            fileSystem.deleteFile( logFile.toFile() );
         }
     }
 
@@ -814,9 +813,9 @@ class RecoveryIT
 
     private void removeFileByVersion( LogFiles logFiles, long version )
     {
-        File versionFile = logFiles.getLogFileForVersion( version );
+        Path versionFile = logFiles.getLogFileForVersion( version );
         assertNotNull( versionFile );
-        fileSystem.deleteFile( versionFile );
+        fileSystem.deleteFile( versionFile.toFile() );
     }
 
     private int countTransactionLogFiles() throws IOException
@@ -848,7 +847,7 @@ class RecoveryIT
         }
         if ( checkpointPosition != null )
         {
-            try ( StoreChannel storeChannel = fileSystem.write( logFiles.getHighestLogFile() ) )
+            try ( StoreChannel storeChannel = fileSystem.write( logFiles.getHighestLogFile().toFile() ) )
             {
                 storeChannel.truncate( checkpointPosition.getByteOffset() );
             }

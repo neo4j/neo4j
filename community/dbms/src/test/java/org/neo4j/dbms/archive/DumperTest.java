@@ -52,8 +52,8 @@ class DumperTest
     @Test
     void shouldGiveAClearErrorIfTheArchiveAlreadyExists() throws IOException
     {
-        Path directory = testDirectory.directory( "a-directory" ).toPath();
-        Path archive = testDirectory.file( "the-archive.dump" ).toPath();
+        Path directory = testDirectory.directoryPath( "a-directory" );
+        Path archive = testDirectory.filePath( "the-archive.dump" );
         Files.write( archive, new byte[0] );
         FileAlreadyExistsException exception =
                 assertThrows( FileAlreadyExistsException.class, () -> new Dumper().dump( directory, directory, archive, GZIP, Predicates.alwaysFalse() ) );
@@ -63,8 +63,8 @@ class DumperTest
     @Test
     void shouldGiveAClearErrorMessageIfTheDirectoryDoesntExist()
     {
-        Path directory = testDirectory.file( "a-directory" ).toPath();
-        Path archive = testDirectory.file( "the-archive.dump" ).toPath();
+        Path directory = testDirectory.filePath( "a-directory" );
+        Path archive = testDirectory.filePath( "the-archive.dump" );
         NoSuchFileException exception =
                 assertThrows( NoSuchFileException.class, () -> new Dumper().dump( directory, directory, archive, GZIP, Predicates.alwaysFalse() ) );
         assertEquals( directory.toString(), exception.getMessage() );
@@ -73,8 +73,8 @@ class DumperTest
     @Test
     void shouldGiveAClearErrorMessageIfTheArchivesParentDirectoryDoesntExist()
     {
-        Path directory = testDirectory.directory( "a-directory" ).toPath();
-        Path archive = testDirectory.file( "subdir/the-archive.dump" ).toPath();
+        Path directory = testDirectory.directoryPath( "a-directory" );
+        Path archive = testDirectory.filePath( "subdir" ).resolve( "the-archive.dump" );
         NoSuchFileException exception =
                 assertThrows( NoSuchFileException.class, () -> new Dumper().dump( directory, directory, archive, GZIP, Predicates.alwaysFalse() ) );
         assertEquals( archive.getParent().toString(), exception.getMessage() );
@@ -83,8 +83,8 @@ class DumperTest
     @Test
     void shouldGiveAClearErrorMessageIfTheArchivesParentDirectoryIsAFile() throws IOException
     {
-        Path directory = testDirectory.directory( "a-directory" ).toPath();
-        Path archive = testDirectory.file( "subdir/the-archive.dump" ).toPath();
+        Path directory = testDirectory.directoryPath( "a-directory" );
+        Path archive = testDirectory.filePath( "subdir" ).resolve( "the-archive.dump" );
         Files.write( archive.getParent(), new byte[0] );
         FileSystemException exception =
                 assertThrows( FileSystemException.class, () -> new Dumper().dump( directory, directory, archive, GZIP, Predicates.alwaysFalse() ) );
@@ -96,8 +96,8 @@ class DumperTest
     @DisabledForRoot
     void shouldGiveAClearErrorMessageIfTheArchivesParentDirectoryIsNotWritable() throws IOException
     {
-        Path directory = testDirectory.directory( "a-directory" ).toPath();
-        Path archive = testDirectory.file( "subdir/the-archive.dump" ).toPath();
+        Path directory = testDirectory.directoryPath( "a-directory" );
+        Path archive = testDirectory.filePath( "subdir" ).resolve( "the-archive.dump" );
         Files.createDirectories( archive.getParent() );
         try ( Closeable ignored = TestUtils.withPermissions( archive.getParent(), emptySet() ) )
         {

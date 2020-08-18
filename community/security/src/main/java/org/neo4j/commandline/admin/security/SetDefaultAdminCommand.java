@@ -19,7 +19,7 @@
  */
 package org.neo4j.commandline.admin.security;
 
-import java.io.File;
+import java.nio.file.Path;
 
 import org.neo4j.cli.AbstractCommand;
 import org.neo4j.cli.ExecutionContext;
@@ -60,10 +60,10 @@ public class SetDefaultAdminCommand extends AbstractCommand
         Config config = loadNeo4jConfig();
         try
         {
-            File adminIniFile = new File( CommunitySecurityModule.getUserRepositoryFile( config ).getParentFile(), ADMIN_INI );
-            if ( ctx.fs().fileExists( adminIniFile ) )
+            Path adminIniFile = CommunitySecurityModule.getUserRepositoryFile( config ).getParent().resolve( ADMIN_INI );
+            if ( ctx.fs().fileExists( adminIniFile.toFile() ) )
             {
-                ctx.fs().deleteFile( adminIniFile );
+                ctx.fs().deleteFile( adminIniFile.toFile() );
             }
             UserRepository admins = new FileUserRepository( ctx.fs(), adminIniFile, NullLogProvider.getInstance() );
             admins.init();

@@ -27,12 +27,12 @@ import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.io.TempDir;
 
-import java.io.File;
 import java.io.FileDescriptor;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.file.FileStore;
 import java.nio.file.Files;
+import java.nio.file.Path;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -57,7 +57,7 @@ class LinuxNativeAccessTest
     class AccessLinuxMethodsTest
     {
         @TempDir
-        File tempFile;
+        Path tempFile;
 
         @Test
         void availableOnLinux()
@@ -68,7 +68,7 @@ class LinuxNativeAccessTest
         @Test
         void accessErrorMessageOnError() throws IOException, IllegalAccessException
         {
-            File file = new File( tempFile, "file" );
+            Path file = tempFile.resolve( "file" );
             int descriptor = getClosedDescriptor( file );
             var nativeCallResult = nativeAccess.tryPreallocateSpace( descriptor, 1024 );
             assertNotEquals( 0, nativeCallResult.getErrorCode() );
@@ -86,7 +86,7 @@ class LinuxNativeAccessTest
             assertEquals( ERROR, negativeDescriptor.getErrorCode() );
             assertTrue( negativeDescriptor.isError() );
 
-            File file = new File( tempFile, "file" );
+            Path file = tempFile.resolveSibling( "file" );
             int descriptor = getClosedDescriptor( file );
             assertNotEquals( 0, nativeAccess.tryPreallocateSpace( descriptor, 1024 ) );
         }
@@ -94,11 +94,11 @@ class LinuxNativeAccessTest
         @Test
         void preallocateCacheOnLinuxForCorrectDescriptor() throws IOException, IllegalAccessException
         {
-            FileStore fileStore = Files.getFileStore( tempFile.toPath() );
+            FileStore fileStore = Files.getFileStore( tempFile );
             long blockSize = fileStore.getBlockSize();
-            File file = new File( tempFile, "preallocated1" );
-            File file2 = new File( tempFile, "preallocated2" );
-            File file3 = new File( tempFile, "preallocated3" );
+            Path file = tempFile.resolve( "preallocated1" );
+            Path file2 = tempFile.resolve( "preallocated2" );
+            Path file3 = tempFile.resolve( "preallocated3" );
             long size1 = blockSize - 1;
             long size2 = blockSize;
             long size3 = 2 * blockSize;
@@ -107,9 +107,9 @@ class LinuxNativeAccessTest
             preallocate( file2, size2 );
             preallocate( file3, size3 );
 
-            assertEquals( size1, file.length() );
-            assertEquals( size2, file2.length() );
-            assertEquals( size3, file3.length() );
+            assertEquals( size1, Files.size( file ) );
+            assertEquals( size2, Files.size( file2 ) );
+            assertEquals( size3, Files.size( file3 ) );
         }
 
         @Test
@@ -123,7 +123,7 @@ class LinuxNativeAccessTest
             assertEquals( ERROR, negativeDescriptorResult.getErrorCode() );
             assertTrue( negativeDescriptorResult.isError() );
 
-            File file = new File( tempFile, "sequentialFile" );
+            Path file = tempFile.resolve( "sequentialFile" );
             int descriptor = getClosedDescriptor( file );
             assertNotEquals( 0, nativeAccess.tryAdviseSequentialAccess( descriptor ) );
         }
@@ -131,8 +131,8 @@ class LinuxNativeAccessTest
         @Test
         void adviseSequentialAccessOnLinuxForCorrectDescriptor() throws IOException, IllegalAccessException
         {
-            File file = new File( tempFile, "correctSequentialFile" );
-            try ( RandomAccessFile randomFile = new RandomAccessFile( file, "rw" ) )
+            Path file = tempFile.resolve( "correctSequentialFile" );
+            try ( RandomAccessFile randomFile = new RandomAccessFile( file.toFile(), "rw" ) )
             {
                 int descriptor = getDescriptor( randomFile );
                 var nativeCallResult = nativeAccess.tryAdviseSequentialAccess( descriptor );
@@ -147,7 +147,7 @@ class LinuxNativeAccessTest
             assertEquals( ERROR, nativeAccess.tryEvictFromCache( 0 ).getErrorCode() );
             assertEquals( ERROR, nativeAccess.tryEvictFromCache( -1 ).getErrorCode() );
 
-            File file = new File( tempFile, "file" );
+            Path file = tempFile.resolve( "file" );
             int descriptor = getClosedDescriptor( file );
             assertNotEquals( 0, nativeAccess.tryEvictFromCache( descriptor ) );
         }
@@ -155,8 +155,8 @@ class LinuxNativeAccessTest
         @Test
         void skipCacheOnLinuxForCorrectDescriptor() throws IOException, IllegalAccessException
         {
-            File file = new File( tempFile, "file" );
-            try ( RandomAccessFile randomFile = new RandomAccessFile( file, "rw" ) )
+            Path file = tempFile.resolve( "file" );
+            try ( RandomAccessFile randomFile = new RandomAccessFile( file.toFile(), "rw" ) )
             {
                 int descriptor = getDescriptor( randomFile );
                 assertFalse( nativeAccess.tryEvictFromCache( descriptor ).isError() );
@@ -164,18 +164,18 @@ class LinuxNativeAccessTest
         }
     }
 
-    private void preallocate( File file, long bytes ) throws IOException, IllegalAccessException
+    private void preallocate( Path file, long bytes ) throws IOException, IllegalAccessException
     {
-        try ( RandomAccessFile randomFile = new RandomAccessFile( file, "rw" ) )
+        try ( RandomAccessFile randomFile = new RandomAccessFile( file.toFile(), "rw" ) )
         {
             int descriptor = getDescriptor( randomFile );
             assertFalse( nativeAccess.tryPreallocateSpace( descriptor, bytes ).isError() );
         }
     }
 
-    private int getClosedDescriptor( File file ) throws IOException, IllegalAccessException
+    private int getClosedDescriptor( Path file ) throws IOException, IllegalAccessException
     {
-        try ( RandomAccessFile randomFile = new RandomAccessFile( file, "rw" ) )
+        try ( RandomAccessFile randomFile = new RandomAccessFile( file.toFile(), "rw" ) )
         {
             return getDescriptor( randomFile );
         }

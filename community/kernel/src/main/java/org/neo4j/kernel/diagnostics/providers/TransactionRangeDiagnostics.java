@@ -45,7 +45,7 @@ public class TransactionRangeDiagnostics extends NamedDiagnosticsProvider
         LogFiles logFiles = database.getDependencyResolver().resolveDependency( LogFiles.class );
         try
         {
-            logger.log( "Transaction log files stored on file store: " + FileUtils.getFileStoreType( logFiles.logFilesDirectory().toPath() ) );
+            logger.log( "Transaction log files stored on file store: " + FileUtils.getFileStoreType( logFiles.logFilesDirectory() ) );
             for ( long logVersion = logFiles.getLowestLogVersion(); logFiles.versionExists( logVersion ); logVersion++ )
             {
                 if ( logFiles.hasAnyEntries( logVersion ) )
