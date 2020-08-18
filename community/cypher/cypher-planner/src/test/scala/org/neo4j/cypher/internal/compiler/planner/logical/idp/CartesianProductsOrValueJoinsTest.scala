@@ -21,6 +21,8 @@ package org.neo4j.cypher.internal.compiler.planner.logical.idp
 
 import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher.beLike
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.ir.Predicate
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.BestPlans
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.LabelToken
@@ -35,12 +37,12 @@ import org.neo4j.cypher.internal.logical.plans.CartesianProduct
 import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexScan
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
-import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class CartesianProductsOrValueJoinsTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
@@ -303,6 +305,60 @@ class CartesianProductsOrValueJoinsTest extends CypherFunSuite with LogicalPlann
     // then
     result should be(List(predicate1._1))
   }
+
+  private def addComponent(component: PlannedComponent, cardinality: Cardinality, planningAttributes: PlanningAttributes = PlanningAttributes.newAttributes): PlannedComponent = {
+    planningAttributes.solveds.set(component.plan.id, RegularSinglePlannerQuery(queryGraph = component.queryGraph))
+    planningAttributes.cardinalities.set(component.plan.id, cardinality)
+    planningAttributes.providedOrders.set(component.plan.id, ProvidedOrder.empty)
+    component
+  }
+
+  test("should forward lhs cardinality as input cardinality to rhs of apply") {
+
+    val lhsCardinality = Cardinality(123)
+    var rhsInputCardinalities = Set.empty[Cardinality]
+
+    // I'm not allowed to call equals(e1, e2) inside the given {} for some reason..
+    def eql(e1: Expression, e2: Expression) = equals(e1, e2)
+
+    new given {
+
+      // MATCH (a), (b:B)
+      // WHERE a.p = b.p
+      qg = QueryGraph(
+        patternNodes = Set("a", "b"),
+        selections = Selections(Set(
+          Predicate(Set("b"), hasLabels("b", "B")),
+          Predicate(Set("a", "b"), eql(prop("a", "p"), prop("b", "p"))))))
+
+      // Make sure we consider the form Apply(AllNodesScan, NodeIndexSeek)
+      indexOn("B", "p")
+      addTypeToSemanticTable(prop("b", "p"), CTInteger.invariant)
+
+      cost = {
+        // Appears as RHS of Apply
+        case (_: NodeIndexSeek, input, _) =>
+          rhsInputCardinalities = rhsInputCardinalities + input.inboundCardinality
+          1.0
+      }
+    }.withLogicalPlanningContext { (cfg, context) =>
+      val kit = context.config.toKit(InterestingOrder.empty, context)
+
+      val givenPlans: Set[PlannedComponent] = Set(
+        addComponent(PlannedComponent(
+          QueryGraph(patternNodes = Set("a")),
+          AllNodesScan("a", Set.empty)), lhsCardinality, context.planningAttributes),
+        addComponent(PlannedComponent(
+          QueryGraph(patternNodes = Set("b"), selections = Selections(Set(Predicate(Set("b"), hasLabels("b", "B"))))),
+          AllNodesScan("b", Set.empty)), Cardinality(1), context.planningAttributes),
+      )
+
+      cartesianProductsOrValueJoins(givenPlans, cfg.qg, InterestingOrder.empty, context, kit, SingleComponentPlanner(mock[IDPQueryGraphSolverMonitor]))
+
+      rhsInputCardinalities shouldEqual Set(lhsCardinality)
+    }
+  }
+
 
   private def testThis(graph: QueryGraph, input: PlanningAttributes => Set[PlannedComponent], assertion: BestResults[LogicalPlan] => Unit): Unit = {
     new given {

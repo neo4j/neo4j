@@ -82,7 +82,8 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
         produceNIJVariations(plans, qg, interestingOrder, context, kit, singleComponentPlanner)
 
     val (joinsSatisfyingOrder, joinsOther) = joins.partition{ case (comp, _) =>
-      val providedOrder = context.planningAttributes.providedOrders(comp.plan.id)
+      require(comp.plan.bestResultFulfillingReq.isEmpty, s"Expected only bestResult for component $comp")
+      val providedOrder = context.planningAttributes.providedOrders(comp.plan.bestResult.id)
       interestingOrder.satisfiedBy(providedOrder) match {
         case FullSatisfaction() => true
         case _ => false
