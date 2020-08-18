@@ -280,29 +280,6 @@ class BatchingTransactionAppenderTest
         verify( transactionIdStore, never() ).transactionClosed( eq( txId ), anyLong(), anyLong(), any( PageCursorTracer.class ) );
     }
 
-//    @Test
-//    void shouldKernelPanicIfNotAbleToWriteACheckPoint() throws Throwable
-//    {
-//        // Given
-//        IOException ioex = new IOException( "boom!" );
-//        FlushablePositionAwareChecksumChannel channel = mock( FlushablePositionAwareChecksumChannel.class, RETURNS_MOCKS );
-//        when( channel.put( anyByte() ) ).thenReturn( channel );
-//        when( channel.putLong( anyLong() ) ).thenThrow( ioex );
-//        when( channel.put( anyByte() ) ).thenThrow( ioex );
-//        when( logFile.getWriter() ).thenReturn( channel );
-//        when( logFile.getTransactionLogWriter() ).thenReturn( new TransactionLogWriter( new LogEntryWriter( channel ) ) );
-//
-//        BatchingTransactionAppender appender = life.add( createTransactionAppender() );
-//
-//        // When
-//        var e = assertThrows( IOException.class,
-//                () -> appender.checkPoint( LogCheckPointEvent.NULL, new LogPosition( 0L, 0L ), Instant.now(), StoreId.UNKNOWN, "test" ) );
-//        assertEquals( ioex, e );
-//
-//        // Then
-//        verify( databaseHealth ).panic( ioex );
-//    }
-
     @Test
     void shouldKernelPanicIfTransactionIdsMismatch()
     {

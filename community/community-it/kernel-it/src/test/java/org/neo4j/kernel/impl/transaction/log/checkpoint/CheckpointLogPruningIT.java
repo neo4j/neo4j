@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.transaction.log.checkpoint;
 import org.assertj.core.api.Condition;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 
@@ -35,8 +34,8 @@ import org.neo4j.test.extension.Inject;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
-import static org.neo4j.configuration.GraphDatabaseSettings.checkpoint_logical_log_keep_threshold;
-import static org.neo4j.configuration.GraphDatabaseSettings.checkpoint_logical_log_rotation_threshold;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.checkpoint_logical_log_keep_threshold;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.checkpoint_logical_log_rotation_threshold;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 
 @DbmsExtension( configurationCallback = "configure" )

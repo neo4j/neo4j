@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.log.files.checkpoint;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -44,7 +43,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 
 import static java.util.Collections.emptyList;
-import static org.neo4j.configuration.GraphDatabaseSettings.checkpoint_logical_log_rotation_threshold;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.checkpoint_logical_log_rotation_threshold;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
 import static org.neo4j.kernel.impl.transaction.log.entry.CheckpointLogVersionSelector.INSTANCE;
 import static org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper.CHECKPOINT_FILE_PREFIX;

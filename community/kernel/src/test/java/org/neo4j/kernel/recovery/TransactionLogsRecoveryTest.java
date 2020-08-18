@@ -136,6 +136,7 @@ class TransactionLogsRecoveryTest
     @BeforeEach
     void setUp() throws Exception
     {
+        useSeparateLogFiles = false;
         storeDir = testDirectory.homePath();
         logFiles = LogFilesBuilder.builder( databaseLayout, fileSystem )
                 .withLogVersionRepository( logVersionRepository )

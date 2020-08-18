@@ -32,7 +32,7 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.time.SystemNanoClock;
 
 import static org.apache.commons.lang3.ArrayUtils.isNotEmpty;
-import static org.neo4j.configuration.GraphDatabaseSettings.checkpoint_logical_log_keep_threshold;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.checkpoint_logical_log_keep_threshold;
 import static org.neo4j.configuration.GraphDatabaseSettings.keep_logical_logs;
 
 /**

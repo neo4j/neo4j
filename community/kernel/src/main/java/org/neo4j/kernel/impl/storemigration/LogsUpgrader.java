@@ -42,10 +42,8 @@ import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.migration.UpgradeNotAllowedException;
 
-import static org.apache.commons.lang3.ArrayUtils.isNotEmpty;
 import static org.neo4j.configuration.GraphDatabaseSettings.fail_on_missing_files;
 import static org.neo4j.io.fs.FileSystemAbstraction.EMPTY_COPY_OPTIONS;
-import static org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper.CHECKPOINT_FILE_PREFIX;
 
 public class LogsUpgrader
 {
@@ -60,7 +58,6 @@ public class LogsUpgrader
     private final PageCacheTracer tracer;
     private final MemoryTracker memoryTracker;
     private final DatabaseHealth databaseHealth;
-    private final boolean isUpgradeAllowed;
 
     public LogsUpgrader(
             FileSystemAbstraction fs,
@@ -85,7 +82,6 @@ public class LogsUpgrader
         this.tracer = pageCacheTracer;
         this.memoryTracker = memoryTracker;
         this.databaseHealth = databaseHealth;
-        this.isUpgradeAllowed = config.get( GraphDatabaseSettings.allow_upgrade ) || forceUpgrade;
     }
 
     public void assertCleanlyShutDown( DatabaseLayout layout )
@@ -96,7 +92,7 @@ public class LogsUpgrader
             // we should not use provided database layout here since transaction log location is different compare to previous versions
             // and that's why we need to use custom transaction logs locator and database layout
             DatabaseLayout oldDatabaseLayout = buildLegacyLogsLayout( layout );
-            LogFiles logFiles = buildLogFiles( oldDatabaseLayout, false );
+            LogFiles logFiles = buildLogFiles( oldDatabaseLayout );
 
             LogTailInformation tail = logFiles.getTailInformation();
             if ( !tail.isRecoveryRequired() )
@@ -108,7 +104,7 @@ public class LogsUpgrader
             {
                 // There are no log files in the legacy logs location.
                 // Either log files are missing entirely, or they are already in their correct place.
-                logFiles = buildLogFiles( layout, haveSeparateCheckpointFile( layout ) );
+                logFiles = buildLogFiles( layout );
                 tail = logFiles.getTailInformation();
 
                 if ( !tail.isRecoveryRequired() )
@@ -136,17 +132,12 @@ public class LogsUpgrader
         throw exception;
     }
 
-    private boolean haveSeparateCheckpointFile( DatabaseLayout layout )
-    {
-        return isNotEmpty( fs.listFiles( layout.getTransactionLogsDirectory().toFile(), ( dir, name ) -> name.startsWith( CHECKPOINT_FILE_PREFIX ) ) );
-    }
-
     private DatabaseLayout buildLegacyLogsLayout( DatabaseLayout databaseLayout )
     {
         return new LegacyDatabaseLayout( databaseLayout.getNeo4jLayout(), databaseLayout.getDatabaseName(), legacyLogsLocator );
     }
 
-    private LogFiles buildLogFiles( DatabaseLayout layout, boolean useSeparateCheckpointLogs )
+    private LogFiles buildLogFiles( DatabaseLayout layout )
     {
         final LogEntryReader logEntryReader = new VersionAwareLogEntryReader( storageEngineFactory.commandReaderFactory() );
         final LogFiles logFiles;

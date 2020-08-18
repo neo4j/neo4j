@@ -100,13 +100,19 @@ class DetachedCheckpointAppenderTest
     {
         CheckpointFile checkpointFile = logFiles.getCheckpointFile();
 
-        LogPosition logPosition = new LogPosition( 0, 10 );
+        var logPosition1 = new LogPosition( 0, 10 );
+        var logPosition2 = new LogPosition( 0, 20 );
+        var logPosition3 = new LogPosition( 0, 30 );
         assertThat( checkpointFile.reachableCheckpoints() ).hasSize( 0 );
-        checkpointAppender.checkPoint( LogCheckPointEvent.NULL, logPosition, Instant.now(), "first" );
-        checkpointAppender.checkPoint( LogCheckPointEvent.NULL, logPosition, Instant.now(), "second" );
-        checkpointAppender.checkPoint( LogCheckPointEvent.NULL, logPosition, Instant.now(), "third" );
+        checkpointAppender.checkPoint( LogCheckPointEvent.NULL, logPosition1, Instant.now(), "first" );
+        checkpointAppender.checkPoint( LogCheckPointEvent.NULL, logPosition2, Instant.now(), "second" );
+        checkpointAppender.checkPoint( LogCheckPointEvent.NULL, logPosition3, Instant.now(), "third" );
 
-        assertThat( checkpointFile.reachableCheckpoints() ).hasSize( 3 );
+        var checkpoints = checkpointFile.reachableCheckpoints();
+        assertThat( checkpoints ).hasSize( 3 );
+        assertThat( checkpoints.get( 0 ) ).hasFieldOrPropertyWithValue( "logPosition", logPosition1 );
+        assertThat( checkpoints.get( 1 ) ).hasFieldOrPropertyWithValue( "logPosition", logPosition2 );
+        assertThat( checkpoints.get( 2 ) ).hasFieldOrPropertyWithValue( "logPosition", logPosition3 );
     }
 
     private LogFiles buildLogFiles() throws IOException

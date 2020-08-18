@@ -38,6 +38,7 @@ import org.neo4j.kernel.impl.transaction.log.files.LogTailInformation;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesContext;
 import org.neo4j.storageengine.api.StoreId;
 
+import static java.lang.String.format;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.files.RangeLogVersionVisitor.UNKNOWN;
@@ -74,6 +75,11 @@ public class DetachedLogTailScanner extends AbstractLogTailScanner
             if ( isValidCheckpoint( logFile, checkpoint ) )
             {
                 return validCheckpointLogTail( logFile, highestLogVersion, lowestLogVersion, checkpoint );
+            }
+            if ( failOnCorruptedLogFiles )
+            {
+                var exceptionMessage = format( "Last available %s checkpoint does not point to a valid location in transaction logs.", checkpoint );
+                throwUnableToCleanRecover( new RuntimeException( exceptionMessage ) );
             }
             // out last checkpoint is not valid (we have a pointer to non existent place) lets try to find last one that looks correct
             List<CheckpointInfo> checkpointInfos = checkPointFile.reachableCheckpoints();

@@ -116,6 +116,12 @@ class CheckpointLogFileTest
         var thirdLogPosition = new LogPosition( 3, 4 );
         checkpointAppender.checkPoint( NULL, thirdLogPosition, Instant.now(), "test" );
         assertEquals( thirdLogPosition, checkpointFile.findLatestCheckpoint().orElseThrow().getLogPosition() );
+
+        var checkpointInfos = checkpointFile.reachableCheckpoints();
+        assertThat( checkpointInfos ).hasSize( 3 );
+        assertThat( checkpointInfos.get( 0 ) ).hasFieldOrPropertyWithValue( "logPosition", firstLogPosition );
+        assertThat( checkpointInfos.get( 1 ) ).hasFieldOrPropertyWithValue( "logPosition", secondLogPosition );
+        assertThat( checkpointInfos.get( 2 ) ).hasFieldOrPropertyWithValue( "logPosition", thirdLogPosition );
     }
 
     @Test

@@ -35,6 +35,7 @@ import static org.neo4j.configuration.SettingConstraints.min;
 import static org.neo4j.configuration.SettingConstraints.range;
 import static org.neo4j.configuration.SettingImpl.newBuilder;
 import static org.neo4j.configuration.SettingValueParsers.BOOL;
+import static org.neo4j.configuration.SettingValueParsers.BYTES;
 import static org.neo4j.configuration.SettingValueParsers.DOUBLE;
 import static org.neo4j.configuration.SettingValueParsers.DURATION;
 import static org.neo4j.configuration.SettingValueParsers.INT;
@@ -43,6 +44,7 @@ import static org.neo4j.configuration.SettingValueParsers.PATH;
 import static org.neo4j.configuration.SettingValueParsers.STRING;
 import static org.neo4j.configuration.SettingValueParsers.ofEnum;
 import static org.neo4j.io.ByteUnit.kibiBytes;
+import static org.neo4j.io.ByteUnit.mebiBytes;
 
 @ServiceProvider
 public class GraphDatabaseInternalSettings implements SettingsDeclaration
@@ -509,6 +511,14 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
                   "No administration commands will be executable on the role." )
     public static final Setting<Boolean> restrict_upgrade =
             newBuilder( "unsupported.dbms.upgrade_restriction_enabled", BOOL, false ).build();
+
+    @Description( "Specifies at which file size the checkpoint log will auto-rotate. Minimum accepted value is 1 KiB. " )
+    public static final Setting<Long> checkpoint_logical_log_rotation_threshold =
+            newBuilder( "unsupported.dbms.checkpoint_log.rotation.size", BYTES, mebiBytes( 1 ) ).addConstraint( min( kibiBytes( 1 ) ) ).build();
+
+    @Description( "Number of checkpoint logs files to keep." )
+    public static final Setting<Integer> checkpoint_logical_log_keep_threshold =
+            newBuilder( "unsupported.dbms.checkpoint_log.rotation.keep.files", INT, 3 ).addConstraint( range( 2, 100 ) ).build();
 
     @Internal
     @Description( "The name of the user that should be allowed to call dbms.upgrade when `unsupported.dbms.upgrade_restriction_enabled` is enabled" )
