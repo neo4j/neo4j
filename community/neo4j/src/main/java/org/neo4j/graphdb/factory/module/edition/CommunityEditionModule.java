@@ -55,6 +55,7 @@ import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.api.security.SecurityModule;
 import org.neo4j.kernel.api.security.provider.NoAuthSecurityProvider;
+import org.neo4j.kernel.api.security.provider.SecurityProvider;
 import org.neo4j.kernel.availability.CompositeDatabaseAvailabilityGuard;
 import org.neo4j.kernel.database.DatabaseStartupController;
 import org.neo4j.kernel.database.GlobalAvailabilityGuardController;
@@ -279,21 +280,25 @@ public class CommunityEditionModule extends StandaloneEditionModule
     @Override
     public void createSecurityModule( GlobalModule globalModule )
     {
+        setSecurityProvider( makeSecurityModule( globalModule ) );
+    }
+
+    private SecurityProvider makeSecurityModule( GlobalModule globalModule )
+    {
+        SecurityProvider securityProvider;
         setupSecurityGraphInitializer( globalModule );
         if ( globalModule.getGlobalConfig().get( GraphDatabaseSettings.auth_enabled ) )
         {
-            SecurityModule securityModule = new CommunitySecurityModule(
-                    globalModule.getLogService(),
-                    globalModule.getGlobalConfig(),
-                    globalModule.getGlobalDependencies()
-            );
+            SecurityModule securityModule =
+                    new CommunitySecurityModule( globalModule.getLogService(), globalModule.getGlobalConfig(), globalModule.getGlobalDependencies() );
             securityModule.setup();
-            this.securityProvider = securityModule;
+            securityProvider = securityModule;
         }
         else
         {
-            this.securityProvider = NoAuthSecurityProvider.INSTANCE;
+            securityProvider = NoAuthSecurityProvider.INSTANCE;
         }
+        return securityProvider;
     }
 
     public static <T> T tryResolveOrCreate( Class<T> clazz, DependencyResolver dependencies, Supplier<T> newInstanceMethod )
