@@ -493,7 +493,7 @@ trait Statement extends Parser
   )
 
   def ShowDatabase: Rule1[MultiDatabaseAdministrationCommand] = rule("CATALOG SHOW DATABASE") {
-    group(keyword("SHOW DATABASE") ~~ SymbolicNameString) ~~>> (ast.ShowDatabase(_)) |
+    group(keyword("SHOW DATABASE") ~~ SymbolicDatabaseNameString) ~~>> (ast.ShowDatabase(_)) |
     group(keyword("SHOW DATABASE") ~~ Parameter) ~~>> (ast.ShowDatabaseWithUnsupportedParameter(_))
   }
 
@@ -506,27 +506,27 @@ trait Statement extends Parser
   }
 
   def CreateDatabase: Rule1[MultiDatabaseAdministrationCommand] = rule("CATALOG CREATE DATABASE") {
-    group(keyword("CREATE OR REPLACE DATABASE") ~~ SymbolicNameString ~~ keyword("IF NOT EXISTS")) ~~>> (ast.CreateDatabase(_, IfExistsInvalidSyntax())) |
-    group(keyword("CREATE OR REPLACE DATABASE") ~~ SymbolicNameString) ~~>> (ast.CreateDatabase(_, IfExistsReplace())) |
+    group(keyword("CREATE OR REPLACE DATABASE") ~~ SymbolicDatabaseNameString ~~ keyword("IF NOT EXISTS")) ~~>> (ast.CreateDatabase(_, IfExistsInvalidSyntax())) |
+    group(keyword("CREATE OR REPLACE DATABASE") ~~ SymbolicDatabaseNameString) ~~>> (ast.CreateDatabase(_, IfExistsReplace())) |
     group(keyword("CREATE OR REPLACE DATABASE") ~~ Parameter ~~ optional(keyword("IF NOT EXISTS"))) ~~>> (ast.CreateDatabaseWithUnsupportedParameter(_)) |
-    group(keyword("CREATE DATABASE") ~~ SymbolicNameString ~~ keyword("IF NOT EXISTS")) ~~>> (ast.CreateDatabase(_, IfExistsDoNothing())) |
-    group(keyword("CREATE DATABASE") ~~ SymbolicNameString) ~~>> (ast.CreateDatabase(_, IfExistsThrowError())) |
+    group(keyword("CREATE DATABASE") ~~ SymbolicDatabaseNameString ~~ keyword("IF NOT EXISTS")) ~~>> (ast.CreateDatabase(_, IfExistsDoNothing())) |
+    group(keyword("CREATE DATABASE") ~~ SymbolicDatabaseNameString) ~~>> (ast.CreateDatabase(_, IfExistsThrowError())) |
     group(keyword("CREATE DATABASE") ~~ Parameter ~~ optional(keyword("IF NOT EXISTS"))) ~~>> (ast.CreateDatabaseWithUnsupportedParameter(_))
   }
 
   def DropDatabase: Rule1[MultiDatabaseAdministrationCommand] = rule("CATALOG DROP DATABASE") {
-    group(keyword("DROP DATABASE") ~~ SymbolicNameString ~~ keyword("IF EXISTS")) ~~>> (ast.DropDatabase(_, ifExists = true)) |
-    group(keyword("DROP DATABASE") ~~ SymbolicNameString) ~~>> (ast.DropDatabase(_, ifExists = false)) |
+    group(keyword("DROP DATABASE") ~~ SymbolicDatabaseNameString ~~ keyword("IF EXISTS")) ~~>> (ast.DropDatabase(_, ifExists = true)) |
+    group(keyword("DROP DATABASE") ~~ SymbolicDatabaseNameString) ~~>> (ast.DropDatabase(_, ifExists = false)) |
     group(keyword("DROP DATABASE") ~~ Parameter ~~ optional(keyword("IF EXISTS"))) ~~>> (ast.DropDatabaseWithUnsupportedParameter(_))
   }
 
   def StartDatabase: Rule1[MultiDatabaseAdministrationCommand] = rule("CATALOG START DATABASE") {
-    group(keyword("START DATABASE") ~~ SymbolicNameString) ~~>> (ast.StartDatabase(_)) |
+    group(keyword("START DATABASE") ~~ SymbolicDatabaseNameString) ~~>> (ast.StartDatabase(_)) |
     group(keyword("START DATABASE") ~~ Parameter) ~~>> (ast.StartDatabaseWithUnsupportedParameter(_))
   }
 
   def StopDatabase: Rule1[MultiDatabaseAdministrationCommand] = rule("CATALOG STOP DATABASE") {
-    group(keyword("STOP DATABASE") ~~ SymbolicNameString) ~~>> (ast.StopDatabase(_)) |
+    group(keyword("STOP DATABASE") ~~ SymbolicDatabaseNameString) ~~>> (ast.StopDatabase(_)) |
     group(keyword("STOP DATABASE") ~~ Parameter) ~~>> (ast.StopDatabaseWithUnsupportedParameter(_))
   }
 

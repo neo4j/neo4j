@@ -93,7 +93,7 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationCommand
   }
 
   test("CREATE DATABASE foo.bar") {
-    failsToParse
+    yields(ast.CreateDatabase("foo.bar", ast.IfExistsThrowError()))
   }
 
   test("CREATE DATABASE \"foo.bar\"") {
@@ -101,7 +101,11 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationCommand
   }
 
   test("CATALOG CREATE DATABASE foo.bar") {
-    failsToParse
+    yields(ast.CreateDatabase("foo.bar", ast.IfExistsThrowError()))
+  }
+
+  test("CATALOG CREATE DATABASE `graph.db`.`db.db`") {
+    yields(ast.CreateDatabase("graph.db.db.db", ast.IfExistsThrowError()))
   }
 
   test("CATALOG CREATE DATABASE foo-bar42") {
