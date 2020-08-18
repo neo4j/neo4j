@@ -46,18 +46,6 @@ public class SupportedCommunityVersion extends KnownCommunitySecurityComponentVe
     }
 
     @Override
-    public boolean migrationSupported()
-    {
-        return true;
-    }
-
-    @Override
-    public boolean runtimeSupported()
-    {
-        return true;
-    }
-
-    @Override
     public void upgradeSecurityGraph( Transaction tx, KnownCommunitySecurityComponentVersion latest )
     {
         assert latest.version == 2;

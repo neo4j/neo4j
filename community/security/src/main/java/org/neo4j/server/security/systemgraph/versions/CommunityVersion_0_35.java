@@ -24,6 +24,7 @@ import org.neo4j.kernel.impl.security.User;
 import org.neo4j.logging.Log;
 import org.neo4j.server.security.auth.ListSnapshot;
 import org.neo4j.server.security.auth.UserRepository;
+import org.neo4j.server.security.systemgraph.UserSecurityGraphComponent;
 
 import static org.neo4j.server.security.systemgraph.SystemGraphRealmHelper.IS_SUSPENDED;
 
@@ -59,12 +60,6 @@ public class CommunityVersion_0_35 extends KnownCommunitySecurityComponentVersio
     }
 
     @Override
-    public boolean migrationSupported()
-    {
-        return true;
-    }
-
-    @Override
     public void setupUsers( Transaction tx )
     {
         throw unsupported();
@@ -79,7 +74,7 @@ public class CommunityVersion_0_35 extends KnownCommunitySecurityComponentVersio
     @Override
     public void upgradeSecurityGraph( Transaction tx, KnownCommunitySecurityComponentVersion latest ) throws Exception
     {
-        assert latest.version == 2;
+        assert latest.version == UserSecurityGraphComponent.LATEST_VERSION;
         userRepository.start();
         ListSnapshot<User> users = userRepository.getSnapshot();
 

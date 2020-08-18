@@ -19,6 +19,9 @@
  */
 package org.neo4j.server.security.systemgraph;
 
+import java.util.Arrays;
+import java.util.List;
+
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.AbstractSystemGraphComponent;
 import org.neo4j.dbms.database.SystemGraphComponent;
@@ -36,6 +39,10 @@ import static org.neo4j.server.security.systemgraph.versions.KnownCommunitySecur
 
 public class UserSecurityGraphComponent extends AbstractSystemGraphComponent
 {
+    public static final int LATEST_VERSION = 2;
+    public static final List<Integer> VERSIONS_MIGRATION_SUPPORTED = Arrays.asList(0);
+    public static final List<Integer> VERSIONS_RUNTIME_SUPPORTED = Arrays.asList(1, 2);
+
     public static final String COMPONENT = "security-users";
     private final KnownSystemComponentVersions<KnownCommunitySecurityComponentVersion> knownUserSecurityComponentVersions =
             new KnownSystemComponentVersions<>( new NoUserSecurityGraph() );

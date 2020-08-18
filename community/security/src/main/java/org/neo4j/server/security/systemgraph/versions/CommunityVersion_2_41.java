@@ -28,10 +28,4 @@ public class CommunityVersion_2_41 extends SupportedCommunityVersion
     {
         super( 2, "Neo4j 4.1", log, userRepository );
     }
-
-    @Override
-    public boolean isCurrent()
-    {
-        return true;
-    }
 }

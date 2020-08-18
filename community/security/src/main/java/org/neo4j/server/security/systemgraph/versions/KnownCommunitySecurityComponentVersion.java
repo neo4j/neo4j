@@ -49,6 +49,24 @@ public abstract class KnownCommunitySecurityComponentVersion extends KnownSystem
         super( UserSecurityGraphComponent.COMPONENT, version, description, log );
     }
 
+    @Override
+    public boolean isCurrent()
+    {
+        return version == UserSecurityGraphComponent.LATEST_VERSION;
+    }
+
+    @Override
+    public boolean migrationSupported()
+    {
+        return UserSecurityGraphComponent.VERSIONS_MIGRATION_SUPPORTED.contains( version );
+    }
+
+    @Override
+    public boolean runtimeSupported()
+    {
+        return UserSecurityGraphComponent.VERSIONS_RUNTIME_SUPPORTED.contains( version );
+    }
+
     boolean componentNotInVersionNode( Transaction tx )
     {
         return getVersion( tx ) == NoUserSecurityGraph.VERSION;
