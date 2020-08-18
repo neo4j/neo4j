@@ -67,11 +67,13 @@ public class SystemGraphComponents implements SystemGraphComponent
         components.forEach( process );
     }
 
+    @Override
     public String component()
     {
         return "system-graph";
     }
 
+    @Override
     public SystemGraphComponent.Status detect( Transaction tx )
     {
         return components.stream().map( c -> c.detect( tx ) ).reduce( SystemGraphComponent.Status::with ).orElse( SystemGraphComponent.Status.CURRENT );
@@ -107,17 +109,11 @@ public class SystemGraphComponents implements SystemGraphComponent
         return Optional.empty();
     }
 
+    @Override
     public Optional<Exception> upgradeToCurrent( GraphDatabaseService system )
     {
-        List<SystemGraphComponent> componentsToUpgrade = new ArrayList<>();
-        SystemGraphComponent.executeWithFullAccess( system, tx -> components.stream().filter( c ->
-        {
-            Status status = c.detect( tx );
-            return status == Status.UNSUPPORTED_BUT_CAN_UPGRADE || status == Status.REQUIRES_UPGRADE;
-        } ).forEach( componentsToUpgrade::add ) );
-
         List<Exception> errors = new ArrayList<>();
-        for ( SystemGraphComponent component : componentsToUpgrade )
+        for ( SystemGraphComponent component : componentsToUpgrade( system ) )
         {
             Optional<Exception> exception = component.upgradeToCurrent( system );
             exception.ifPresent( errors::add );
@@ -139,11 +135,14 @@ public class SystemGraphComponents implements SystemGraphComponent
         return Optional.empty();
     }
 
-    public static final SystemGraphComponents NO_OP = new SystemGraphComponents()
+    private List<SystemGraphComponent> componentsToUpgrade( GraphDatabaseService system )
     {
-        public void register( SystemGraphComponent initializer )
+        List<SystemGraphComponent> componentsToUpgrade = new ArrayList<>();
+        SystemGraphComponent.executeWithFullAccess( system, tx -> components.stream().filter( c ->
         {
-            // No sub-components can exist in order to disabled initialization
-        }
-    };
+                        Status status = c.detect( tx );
+            return status == Status.UNSUPPORTED_BUT_CAN_UPGRADE || status == Status.REQUIRES_UPGRADE;
+        } ).forEach( componentsToUpgrade::add ) );
+        return componentsToUpgrade;
+    }
 }
