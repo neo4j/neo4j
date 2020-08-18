@@ -115,6 +115,9 @@ trait Base extends Parser {
 
   def SymbolicNameString: Rule1[String] = UnescapedSymbolicNameString | EscapedSymbolicNameString
 
+  def SymbolicDatabaseNameString: Rule1[String] =
+    SymbolicNameString ~ zeroOrMore("." ~ SymbolicNameString) ~~>> ((firstPart, tail) => _ => (firstPart +: tail).mkString("."))
+
   def UnescapedSymbolicNameString: Rule1[String] = rule("an identifier") {
     group(IdentifierStart ~ zeroOrMore(IdentifierPart)) ~> (_.toString) ~ !IdentifierPart
   }

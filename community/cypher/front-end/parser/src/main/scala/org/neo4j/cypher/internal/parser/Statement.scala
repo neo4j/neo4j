@@ -437,7 +437,7 @@ trait Statement extends Parser
   private def Database: Rule1[List[DatabaseScope]] = rule("on a database") {
     keyword("ON DEFAULT DATABASE") ~~~> (pos => List(ast.DefaultDatabaseScope()(pos))) |
     group(keyword("ON") ~~ (keyword("DATABASE") | keyword("DATABASES"))) ~~
-      group((SymbolicNameOrStringParameterList ~~>> (params => pos => params.map(ast.NamedDatabaseScope(_)(pos)))) |
+      group((SymbolicDatabaseNameOrStringParameterList ~~>> (params => pos => params.map(ast.NamedDatabaseScope(_)(pos)))) |
       (keyword("*") ~~~> (pos => List(ast.AllDatabasesScope()(pos)))))
   }
 
@@ -541,7 +541,7 @@ trait Statement extends Parser
   private def Graph: Rule1[List[GraphScope]] = rule("on a graph")(
     keyword("ON DEFAULT GRAPH") ~~~> (pos => List(ast.DefaultGraphScope()(pos))) |
     group(keyword("ON") ~~ (keyword("GRAPH") | keyword("GRAPHS"))) ~~
-      group((SymbolicNameOrStringParameterList ~~>> (names => ipp => names.map(ast.NamedGraphScope(_)(ipp)))) |
+      group((SymbolicDatabaseNameOrStringParameterList ~~>> (names => ipp => names.map(ast.NamedGraphScope(_)(ipp)))) |
       keyword("*") ~~~> (ipp => List(ast.AllGraphsScope()(ipp))))
   )
 
@@ -557,31 +557,31 @@ trait Statement extends Parser
   }
 
   private def ScopeForShowDatabase: Rule1[DatabaseScope] = rule("show database scope")(
-    group(keyword("DATABASE") ~~ SymbolicNameOrStringParameter) ~~>> (ast.NamedDatabaseScope(_)) |
+    group(keyword("DATABASE") ~~ SymbolicDatabaseNameOrStringParameter) ~~>> (ast.NamedDatabaseScope(_)) |
     keyword("DATABASES") ~~~> (ast.AllDatabasesScope()) |
     keyword("DEFAULT DATABASE") ~~~> (ast.DefaultDatabaseScope())
   )
 
   def CreateDatabase: Rule1[CreateDatabase] = rule("CATALOG CREATE DATABASE") {
-    group(keyword("CREATE OR REPLACE DATABASE") ~~ SymbolicNameOrStringParameter ~~ keyword("IF NOT EXISTS")) ~~>> (ast.CreateDatabase(_, IfExistsInvalidSyntax)) |
-    group(keyword("CREATE OR REPLACE DATABASE") ~~ SymbolicNameOrStringParameter) ~~>> (ast.CreateDatabase(_, IfExistsReplace)) |
-    group(keyword("CREATE DATABASE") ~~ SymbolicNameOrStringParameter ~~ keyword("IF NOT EXISTS")) ~~>> (ast.CreateDatabase(_, IfExistsDoNothing)) |
-    group(keyword("CREATE DATABASE") ~~ SymbolicNameOrStringParameter) ~~>> (ast.CreateDatabase(_, IfExistsThrowError))
+    group(keyword("CREATE OR REPLACE DATABASE") ~~ SymbolicDatabaseNameOrStringParameter ~~ keyword("IF NOT EXISTS")) ~~>> (ast.CreateDatabase(_, IfExistsInvalidSyntax)) |
+    group(keyword("CREATE OR REPLACE DATABASE") ~~ SymbolicDatabaseNameOrStringParameter) ~~>> (ast.CreateDatabase(_, IfExistsReplace)) |
+    group(keyword("CREATE DATABASE") ~~ SymbolicDatabaseNameOrStringParameter ~~ keyword("IF NOT EXISTS")) ~~>> (ast.CreateDatabase(_, IfExistsDoNothing)) |
+    group(keyword("CREATE DATABASE") ~~ SymbolicDatabaseNameOrStringParameter) ~~>> (ast.CreateDatabase(_, IfExistsThrowError))
   }
 
   def DropDatabase: Rule1[DropDatabase] = rule("CATALOG DROP DATABASE") {
-    group(keyword("DROP DATABASE") ~~ SymbolicNameOrStringParameter ~~ keyword("IF EXISTS") ~~ keyword("DUMP DATA")) ~~>> (ast.DropDatabase(_, ifExists = true, DumpData)) |
-    group(keyword("DROP DATABASE") ~~ SymbolicNameOrStringParameter ~~ keyword("IF EXISTS") ~~ optional(keyword("DESTROY DATA"))) ~~>> (ast.DropDatabase(_, ifExists = true, DestroyData)) |
-    group(keyword("DROP DATABASE") ~~ SymbolicNameOrStringParameter ~~ keyword("DUMP DATA")) ~~>> (ast.DropDatabase(_, ifExists = false, DumpData)) |
-    group(keyword("DROP DATABASE") ~~ SymbolicNameOrStringParameter ~~ optional(keyword("DESTROY DATA"))) ~~>> (ast.DropDatabase(_, ifExists = false, DestroyData))
+    group(keyword("DROP DATABASE") ~~ SymbolicDatabaseNameOrStringParameter ~~ keyword("IF EXISTS") ~~ keyword("DUMP DATA")) ~~>> (ast.DropDatabase(_, ifExists = true, DumpData)) |
+    group(keyword("DROP DATABASE") ~~ SymbolicDatabaseNameOrStringParameter ~~ keyword("IF EXISTS") ~~ optional(keyword("DESTROY DATA"))) ~~>> (ast.DropDatabase(_, ifExists = true, DestroyData)) |
+    group(keyword("DROP DATABASE") ~~ SymbolicDatabaseNameOrStringParameter ~~ keyword("DUMP DATA")) ~~>> (ast.DropDatabase(_, ifExists = false, DumpData)) |
+    group(keyword("DROP DATABASE") ~~ SymbolicDatabaseNameOrStringParameter ~~ optional(keyword("DESTROY DATA"))) ~~>> (ast.DropDatabase(_, ifExists = false, DestroyData))
   }
 
   def StartDatabase: Rule1[StartDatabase] = rule("CATALOG START DATABASE") {
-    group(keyword("START DATABASE") ~~ SymbolicNameOrStringParameter) ~~>> (ast.StartDatabase(_))
+    group(keyword("START DATABASE") ~~ SymbolicDatabaseNameOrStringParameter) ~~>> (ast.StartDatabase(_))
   }
 
   def StopDatabase: Rule1[StopDatabase] = rule("CATALOG STOP DATABASE") {
-    group(keyword("STOP DATABASE") ~~ SymbolicNameOrStringParameter) ~~>> (ast.StopDatabase(_))
+    group(keyword("STOP DATABASE") ~~ SymbolicDatabaseNameOrStringParameter) ~~>> (ast.StopDatabase(_))
   }
 
   def CreateGraph: Rule1[CreateGraph] = rule("CATALOG CREATE GRAPH") {
@@ -609,8 +609,17 @@ trait Statement extends Parser
     group(SymbolicNameString) ~~>> (s => _ => Left(s)) |
       group(StringParameter) ~~>> (p => _ => Right(p))
 
+  def SymbolicDatabaseNameOrStringParameter: Rule1[Either[String, expressions.Parameter]] =
+    group(SymbolicDatabaseNameString) ~~>> (s => _ => Left(s)) |
+      group(StringParameter) ~~>> (p => _ => Right(p))
+
   def SymbolicNameOrStringParameterList: Rule1[List[Either[String, expressions.Parameter]]] =
     rule("a list of symbolic names or string parameters") {
       (oneOrMore(WS ~~ SymbolicNameOrStringParameter ~~ WS, separator = ",") memoMismatches).suppressSubnodes
+    }
+
+  def SymbolicDatabaseNameOrStringParameterList: Rule1[List[Either[String, expressions.Parameter]]] =
+    rule("a list of symbolic database names or string parameters") {
+      (oneOrMore(WS ~~ SymbolicDatabaseNameOrStringParameter ~~ WS, separator = ",") memoMismatches).suppressSubnodes
     }
 }
