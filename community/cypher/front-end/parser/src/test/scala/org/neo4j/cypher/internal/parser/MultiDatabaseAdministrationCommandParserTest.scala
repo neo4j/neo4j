@@ -151,16 +151,20 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationCommand
   }
 
   test("CREATE DATABASE foo.bar") {
-    failsToParse
+    yields(ast.CreateDatabase(literal("foo.bar"), ast.IfExistsThrowError()))
+  }
+
+
+  test("CATALOG CREATE DATABASE foo.bar") {
+    yields(ast.CreateDatabase(literal("foo.bar"), ast.IfExistsThrowError()))
+  }
+
+  test("CATALOG CREATE DATABASE `graph.db`.`db.db`") {
+    yields(ast.CreateDatabase(literal("graph.db.db.db"), ast.IfExistsThrowError()))
   }
 
   test("CREATE DATABASE \"foo.bar\"") {
-    failsToParse
-  }
-
-  test("CATALOG CREATE DATABASE foo.bar") {
-    failsToParse
-  }
+    failsToParse  }
 
   test("CATALOG CREATE DATABASE foo-bar42") {
     failsToParse
