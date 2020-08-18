@@ -57,7 +57,6 @@ public class QueryTracingIT
     private GraphDatabaseAPI databaseAPI;
     private static final List<ExecutingQuery> queries = new ArrayList<>();
 
-
     @ExtensionCallback
     protected void configure( TestDatabaseManagementServiceBuilder builder )
     {
@@ -67,8 +66,8 @@ public class QueryTracingIT
     @Test
     void chainedQueryExecution()
     {
-        try ( var transaction = databaseAPI.beginTransaction( IMPLICIT, AUTH_DISABLED);
-              var statement = (KernelStatement) transaction.kernelTransaction().acquireStatement(); )
+        try ( var transaction = databaseAPI.beginTransaction( IMPLICIT, AUTH_DISABLED );
+                var statement = (KernelStatement) transaction.kernelTransaction().acquireStatement() )
         {
             QueryRegistry queryRegistry = statement.queryRegistration();
             assertTrue( queryRegistry.executingQuery().isEmpty() );
@@ -93,7 +92,7 @@ public class QueryTracingIT
         @Context
         public Transaction transaction;
 
-        @Procedure(name = "db.testCaptureProcedure")
+        @Procedure( name = "db.testCaptureProcedure" )
         public Stream<Result> myProc()
         {
             var statement = (KernelStatement) ((InternalTransaction) transaction).kernelTransaction().acquireStatement();
@@ -111,7 +110,6 @@ public class QueryTracingIT
             public Long value = 7L;
         }
     }
-
 
     private static class CustomProcedureExtensionFactory extends ExtensionFactory<CustomProcedureExtensionFactory.Dependencies>
     {
