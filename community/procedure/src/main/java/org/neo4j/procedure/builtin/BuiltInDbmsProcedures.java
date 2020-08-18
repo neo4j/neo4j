@@ -274,7 +274,7 @@ public class BuiltInDbmsProcedures
     @SystemProcedure
     @Description( "Report the current status of the system database sub-graph schema." )
     @Procedure( name = "dbms.upgradeStatus", mode = READ )
-    public Stream<SystemGraphComponentStatusResult> systemSchemaVersion() throws ProcedureException
+    public Stream<SystemGraphComponentStatusResult> upgradeStatus() throws ProcedureException
     {
         assertAllowedUpgradeProc();
         if ( !callContext.isSystemDatabase() )
@@ -288,7 +288,7 @@ public class BuiltInDbmsProcedures
     @SystemProcedure
     @Description( "Upgrade the system database schema if it is not the current schema." )
     @Procedure( name = "dbms.upgrade", mode = WRITE )
-    public Stream<SystemGraphComponentUpgradeResult> upgradeSystemSchema() throws ProcedureException
+    public Stream<SystemGraphComponentUpgradeResult> upgrade() throws ProcedureException
     {
         assertAllowedUpgradeProc();
         if ( !callContext.isSystemDatabase() )
