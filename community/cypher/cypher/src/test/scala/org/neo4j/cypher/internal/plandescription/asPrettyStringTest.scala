@@ -40,4 +40,8 @@ class asPrettyStringTest extends CypherFunSuite {
     pretty"${p1}Foo$p2" should equal(asPrettyString("BarFooBaz"))
     pretty"Foo$p1$p2" should equal(asPrettyString("FooBarBaz"))
   }
+
+  test("should remove multiple layers of namespacer renamings") {
+    pretty"var" shouldBe asPrettyString("    var@10@20")
+  }
 }
