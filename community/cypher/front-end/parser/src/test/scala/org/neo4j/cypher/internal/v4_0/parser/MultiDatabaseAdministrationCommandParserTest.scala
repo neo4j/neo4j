@@ -39,7 +39,7 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationCommand
   }
 
   test("SHOW DATABASE foo.bar") {
-    failsToParse
+    yields(ast.ShowDatabase("foo.bar"))
   }
 
   test("SHOW DATABASE") {
@@ -96,16 +96,16 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationCommand
     yields(ast.CreateDatabase("foo.bar", ast.IfExistsThrowError()))
   }
 
-  test("CREATE DATABASE \"foo.bar\"") {
-    failsToParse
-  }
-
   test("CATALOG CREATE DATABASE foo.bar") {
     yields(ast.CreateDatabase("foo.bar", ast.IfExistsThrowError()))
   }
 
   test("CATALOG CREATE DATABASE `graph.db`.`db.db`") {
     yields(ast.CreateDatabase("graph.db.db.db", ast.IfExistsThrowError()))
+  }
+
+  test("CREATE DATABASE \"foo.bar\"") {
+    failsToParse
   }
 
   test("CATALOG CREATE DATABASE foo-bar42") {
@@ -155,7 +155,7 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationCommand
   }
 
   test("CATALOG DROP DATABASE foo.bar") {
-    failsToParse
+    yields(ast.DropDatabase("foo.bar", ifExists = false))
   }
 
   test("DROP DATABASE") {
@@ -177,7 +177,7 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationCommand
   }
 
   test("CATALOG START DATABASE foo.bar") {
-    failsToParse
+    yields(ast.StartDatabase("foo.bar"))
   }
 
   test("START DATABASE") {
@@ -195,7 +195,7 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationCommand
   }
 
   test("CATALOG STOP DATABASE foo.bar") {
-    failsToParse
+    yields(ast.StopDatabase("foo.bar"))
   }
 
   test("STOP DATABASE") {
