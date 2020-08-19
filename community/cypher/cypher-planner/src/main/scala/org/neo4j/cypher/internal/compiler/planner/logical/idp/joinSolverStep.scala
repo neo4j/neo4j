@@ -24,7 +24,6 @@ import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningSupport
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.joinSolverStep.VERBOSE
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.QueryGraph
-import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
 
@@ -34,11 +33,11 @@ object joinSolverStep {
   val VERBOSE = false
 }
 
-case class joinSolverStep(qg: QueryGraph, IGNORE_EXPAND_SOLUTIONS_FOR_TEST: Boolean = false) extends IDPSolverStep[PatternRelationship, InterestingOrder, LogicalPlan, LogicalPlanningContext] {
+case class joinSolverStep(qg: QueryGraph, IGNORE_EXPAND_SOLUTIONS_FOR_TEST: Boolean = false) extends IDPSolverStep[PatternRelationship, LogicalPlan, LogicalPlanningContext] {
   // IGNORE_EXPAND_SOLUTIONS_FOR_TEST can be used to force expandStillPossible to be false if needed
 
 
-  override def apply(registry: IdRegistry[PatternRelationship], goal: Goal, table: IDPCache[LogicalPlan, InterestingOrder], context: LogicalPlanningContext): Iterator[LogicalPlan] = {
+  override def apply(registry: IdRegistry[PatternRelationship], goal: Goal, table: IDPCache[LogicalPlan, _], context: LogicalPlanningContext): Iterator[LogicalPlan] = {
 
     if (VERBOSE) {
       println(s"\n>>>> start solving ${show(goal, goalSymbols(goal, registry))}")

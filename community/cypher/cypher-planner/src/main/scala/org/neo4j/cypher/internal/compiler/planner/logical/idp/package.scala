@@ -23,5 +23,5 @@ import scala.collection.immutable.BitSet
 
 package object idp {
   type Goal = BitSet
-  type Seed[SolvableItem, Order, Result] = Iterable[((Set[SolvableItem], Order), Result)]
+  type Seed[SolvableItem, Ordered, Result] = Iterable[((Set[SolvableItem], Ordered), Result)]
 }

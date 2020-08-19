@@ -141,7 +141,7 @@ case object planShortestPaths {
     val pathName = shortestPath.name.get
 
     // Plan a fallback branch using VarExpand(Into) (right-hand-side)
-    val rhsVarExpand = expandSolverStep.planSinglePatternSide(queryGraph, pattern, rhsArgument, from, InterestingOrder.empty, context)
+    val rhsVarExpand = expandSolverStep.planSinglePatternSide(queryGraph, pattern, rhsArgument, from, context)
       .getOrElse(throw new InternalException("Expected the nodes needed for this expansion to exist"))
 
     // Projection with path

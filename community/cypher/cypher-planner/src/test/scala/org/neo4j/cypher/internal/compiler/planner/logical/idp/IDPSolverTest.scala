@@ -29,44 +29,36 @@ import scala.collection.immutable.BitSet
 
 class IDPSolverTest extends CypherFunSuite {
 
-  private val context = ()
-
-  private val nullOrderRequirement = new ExtraRequirement[Null, String]() {
-    override def none: Null = null
-
-    override def forResult(plan: String): Null = null
-
-    override def is(requirement: Null): Boolean = true
-  }
+  private val context: Unit = ()
 
   test("Solves a small toy problem") {
     val monitor = mock[IDPSolverMonitor]
-    val solver = new IDPSolver[Char, Null, String, Unit](
+    val solver = new IDPSolver[Char, String, Unit](
       monitor = monitor,
       generator = stringAppendingSolverStep(),
       projectingSelector = firstLongest,
       maxTableSize = 16,
-      extraRequirement = nullOrderRequirement,
+      extraRequirement = ExtraRequirement.empty,
       iterationDurationLimit = Int.MaxValue
     )
 
     val seed = Seq(
-      (Set('a'), null) -> "a",
-      (Set('b'), null) -> "b",
-      (Set('c'), null) -> "c",
-      (Set('d'), null) -> "d"
+      (Set('a'), false) -> "a",
+      (Set('b'), false) -> "b",
+      (Set('c'), false) -> "c",
+      (Set('d'), false) -> "d"
     )
 
     val solution = solver(seed, Set('a', 'b', 'c', 'd'), context)
 
-    solution.toList should equal(List((Set('a', 'b', 'c', 'd'), null) -> "abcd"))
+    solution should equal(BestResults("abcd", None))
     verify(monitor).foundPlanAfter(1)
   }
 
-  test("Solves a small toy problem with an extra requirement") {
+  test("Solves a small toy problem with an extra requirement. Best overall plan fulfils requirement.") {
     val monitor = mock[IDPSolverMonitor]
     val capitalization = Capitalization(true)
-    val solver = new IDPSolver[Char, Capitalization, String, Unit](
+    val solver = new IDPSolver[Char, String, Unit](
       monitor = monitor,
       generator = stringAppendingSolverStepWithCapitalization(capitalization),
       projectingSelector = firstLongest,
@@ -76,43 +68,68 @@ class IDPSolverTest extends CypherFunSuite {
     )
 
     val seed = Seq(
-      (Set('a'), null) -> "a",
-      (Set('b'), null) -> "b",
-      (Set('c'), null) -> "c",
-      (Set('d'), null) -> "d"
+      (Set('a'), false) -> "a",
+      (Set('b'), false) -> "b",
+      (Set('c'), false) -> "c",
+      (Set('d'), false) -> "d"
     )
 
     val solution = solver(seed, Set('a', 'b', 'c', 'd'), context)
 
-    solution.toList should equal(List((Set('a', 'b', 'c', 'd'), capitalization) -> "ABCD"))
+    solution should equal(BestResults("ABCD", Some("ABCD")))
+    verify(monitor).foundPlanAfter(1)
+  }
+
+  test("Solves a small toy problem with an extra requirement. Best overall does not fulfil requirement.") {
+    val monitor = mock[IDPSolverMonitor]
+    val capitalization = Capitalization(false)
+    val solver = new IDPSolver[Char, String, Unit](
+      monitor = monitor,
+      generator = stringAppendingSolverStepWithCapitalization(capitalization),
+      projectingSelector = firstLongest,
+      maxTableSize = 16,
+      extraRequirement = CapitalizationRequirement(capitalization),
+      iterationDurationLimit = Int.MaxValue
+    )
+
+    val seed = Seq(
+      (Set('A'), false) -> "A",
+      (Set('B'), false) -> "B",
+      (Set('C'), false) -> "C",
+      (Set('D'), false) -> "D"
+    )
+
+    val solution = solver(seed, Set('A', 'B', 'C', 'D'), context)
+
+    solution should equal(BestResults("ABCD", Some("abcd")))
     verify(monitor).foundPlanAfter(1)
   }
 
   test("Compacts table at size limit") {
-    var table: IDPTable[String, Null] = null
+    var table: IDPTable[String, Boolean] = null
     val monitor = mock[IDPSolverMonitor]
-    val solver = new IDPSolver[Char, Null, String, Unit](
+    val solver = new IDPSolver[Char, String, Unit](
       monitor = monitor,
       generator = stringAppendingSolverStep(),
       projectingSelector = firstLongest,
-      tableFactory = (registry: IdRegistry[Char], seed: Seed[Char, Null, String]) => {
+      tableFactory = (registry: IdRegistry[Char], seed: Seed[Char, Boolean, String]) => {
         table = spy(IDPTable(registry, seed))
         table
       },
       maxTableSize = 4,
-      extraRequirement = nullOrderRequirement,
+      extraRequirement = ExtraRequirement.empty,
       iterationDurationLimit = Int.MaxValue
     )
 
-    val seed: Seq[((Set[Char], Null), String)] = Seq(
-      (Set('a'), null) -> "a",
-      (Set('b'), null) -> "b",
-      (Set('c'), null) -> "c",
-      (Set('d'), null) -> "d",
-      (Set('e'), null) -> "e",
-      (Set('f'), null) -> "f",
-      (Set('g'), null) -> "g",
-      (Set('h'), null) -> "h"
+    val seed: Seq[((Set[Char], Boolean), String)] = Seq(
+      (Set('a'), false) -> "a",
+      (Set('b'), false) -> "b",
+      (Set('c'), false) -> "c",
+      (Set('d'), false) -> "d",
+      (Set('e'), false) -> "e",
+      (Set('f'), false) -> "f",
+      (Set('g'), false) -> "g",
+      (Set('h'), false) -> "h"
     )
 
     solver(seed, Set('a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'), context)
@@ -151,24 +168,24 @@ class IDPSolverTest extends CypherFunSuite {
   }
 
   def runTimeLimitedSolver(iterationDuration: Int): Int = {
-    var table: IDPTable[String, Null] = null
+    var table: IDPTable[String, Boolean] = null
     val monitor = TestIDPSolverMonitor()
-    val solver = new IDPSolver[Char, Null, String, Unit](
+    val solver = new IDPSolver[Char, String, Unit](
       monitor = monitor,
       generator = stringAppendingSolverStep(),
       projectingSelector = firstLongest,
-      tableFactory = (registry: IdRegistry[Char], seed: Seed[Char, Null, String]) => {
+      tableFactory = (registry: IdRegistry[Char], seed: Seed[Char, Boolean, String]) => {
         table = spy(IDPTable(registry, seed))
         table
       },
       maxTableSize = Int.MaxValue,
-      extraRequirement = nullOrderRequirement,
+      extraRequirement = ExtraRequirement.empty,
       iterationDurationLimit = iterationDuration
     )
 
-    val seed: Seq[((Set[Char], Null), String)] = ('a'.toInt to 'm'.toInt).foldLeft(Seq.empty[((Set[Char], Null), String)]) { (acc, i) =>
+    val seed: Seq[((Set[Char], Boolean), String)] = ('a'.toInt to 'm'.toInt).foldLeft(Seq.empty[((Set[Char], Boolean), String)]) { (acc, i) =>
       val c = i.toChar
-      acc :+ ((Set(c), null) -> c.toString)
+      acc :+ ((Set(c), false) -> c.toString)
     }
     val result = seed.foldLeft(Seq.empty[Char]) { (acc, t) =>
       acc ++ t._1._1
@@ -186,6 +203,10 @@ class IDPSolverTest extends CypherFunSuite {
     shortSolverIterations should be > longSolverIterations
   }
 
+  /**
+   * Longer strings win. If they are the same length, the first in alphabetical order wins.
+   * That means upper case wins over lower case.
+   */
   private object firstLongest extends ProjectingSelector[String] {
     override def apply[X](projector: X => String, input: Iterable[X]): Option[X] = {
       val elements = input.toList.sortBy(x => projector(x))
@@ -193,8 +214,8 @@ class IDPSolverTest extends CypherFunSuite {
     }
   }
 
-  private case class stringAppendingSolverStep[O]() extends IDPSolverStep[Char, O, String, Unit] {
-    override def apply(registry: IdRegistry[Char], goal: Goal, table: IDPCache[String, O], context: Unit): Iterator[String] = {
+  private case class stringAppendingSolverStep() extends IDPSolverStep[Char, String, Unit] {
+    override def apply(registry: IdRegistry[Char], goal: Goal, table: IDPCache[String, _], context: Unit): Iterator[String] = {
       val goalSize = goal.size
       for (
         leftGoal <- goal.subsets if leftGoal.size <= goalSize;
@@ -210,20 +231,16 @@ class IDPSolverTest extends CypherFunSuite {
       (chars.length <= 1) || 0.to(chars.length - 2).forall(i => chars.charAt(i).toInt + 1 == chars.charAt(i + 1).toInt)
   }
 
-  private case class CapitalizationRequirement(capitalization: Capitalization) extends ExtraRequirement[Capitalization, String] {
-    override def none: Capitalization = null
-
-    override def forResult(result: String): Capitalization = if (result.equals(capitalization.normalize(result))) capitalization else none
-
-    override def is(requirement: Capitalization): Boolean = requirement == capitalization
+  private case class CapitalizationRequirement(capitalization: Capitalization) extends ExtraRequirement[String] {
+    override def fulfils(result: String): Boolean = result.equals(capitalization.normalize(result))
   }
 
   private case class Capitalization(upper: Boolean) {
     def normalize(string: String): String = if (upper) string.toUpperCase else string.toLowerCase
   }
 
-  private case class stringAppendingSolverStepWithCapitalization(capitalization: Capitalization) extends IDPSolverStep[Char, Capitalization, String, Unit] {
-    override def apply(registry: IdRegistry[Char], goal: Goal, table: IDPCache[String, Capitalization], context: Unit): Iterator[String] = {
+  private case class stringAppendingSolverStepWithCapitalization(capitalization: Capitalization) extends IDPSolverStep[Char, String, Unit] {
+    override def apply(registry: IdRegistry[Char], goal: Goal, table: IDPCache[String, _], context: Unit): Iterator[String] = {
       stringAppendingSolverStep()(registry, goal, table, context).flatMap { candidate =>
         if (capitalization == null)
           Seq(candidate)
