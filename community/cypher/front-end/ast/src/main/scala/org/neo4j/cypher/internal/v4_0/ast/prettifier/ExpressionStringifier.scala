@@ -18,6 +18,7 @@ package org.neo4j.cypher.internal.v4_0.ast.prettifier
 
 import org.neo4j.cypher.internal.v4_0.ast.prettifier.ExpressionStringifier._
 import org.neo4j.cypher.internal.v4_0.expressions._
+import org.neo4j.cypher.internal.v4_0.util.InputPosition
 
 case class ExpressionStringifier(
   extender: Expression => String = failingExtender,
@@ -138,6 +139,13 @@ case class ExpressionStringifier(
 
       case MapProjection(variable, items) =>
         val itemsText = items.map(apply).mkString(", ")
+        s"${apply(variable)}{$itemsText}"
+
+      case DesugaredMapProjection(variable, items, includeAllProps) =>
+        val itemsText = {
+          val allItems = if (!includeAllProps) items else items :+ AllPropertiesSelector()(InputPosition.NONE)
+          allItems.map(apply).mkString(", ")
+        }
         s"${apply(variable)}{$itemsText}"
 
       case LiteralEntry(k, e) =>
