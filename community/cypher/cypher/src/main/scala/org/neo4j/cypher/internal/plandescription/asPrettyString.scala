@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.plandescription.Arguments.Order
 import org.neo4j.cypher.internal.plandescription.renderAsTreeTable.UNNAMED_PARAMS_PATTERN
 import org.neo4j.cypher.internal.plandescription.renderAsTreeTable.UNNAMED_PATTERN
 import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.helpers.fixedPoint
 import org.neo4j.cypher.internal.util.topDown
 
 /**
@@ -97,7 +98,7 @@ object asPrettyString {
     removeGeneratedNamesRewriter.apply(a).asInstanceOf[M]
   }
 
-  private def deduplicateVariableNames(in: String): String = {
+  private val deduplicateVariableNames: String => String = fixedPoint { (in: String) =>
     val sb = new StringBuilder
     var i = 0
     for (m <- DEDUP_PATTERN.findAllMatchIn(in)) {
