@@ -18,7 +18,6 @@ package org.neo4j.cypher.internal.rewriting.rewriters
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.expressions.ExistsSubClause
-import org.neo4j.cypher.internal.expressions.MapProjection
 import org.neo4j.cypher.internal.expressions.PatternComprehension
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.topDown
@@ -32,7 +31,5 @@ case class recordScopes(semanticState: SemanticState) extends Rewriter {
       x.withOuterScope(semanticState.recordedScopes(x).symbolDefinitions.map(_.asVariable))
     case x: ExistsSubClause =>
       x.withOuterScope(semanticState.recordedScopes(x).symbolDefinitions.map(_.asVariable))
-    case x: MapProjection =>
-      x.withDefinitionPos(semanticState.recordedScopes(x).symbolTable(x.name.name).definition.position)
   })
 }

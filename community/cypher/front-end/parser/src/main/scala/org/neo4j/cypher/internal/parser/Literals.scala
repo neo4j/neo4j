@@ -107,7 +107,7 @@ trait Literals extends Parser
   def MapProjection: Rule1[expressions.MapProjection] = rule {
     group(
       Variable ~~ ch('{') ~~ zeroOrMore(LiteralEntry | PropertySelector | VariableSelector | AllPropertiesSelector, CommaSep) ~~ ch('}')
-    ) ~~>> ((a, b) => pos => expressions.MapProjection(a, b)(pos, None))
+    ) ~~>> ((a, b) => pos => expressions.MapProjection(a, b)(pos))
   }
 
   def Parameter: Rule1[expressions.Parameter] =

@@ -678,7 +678,7 @@ class Neo4jASTFactory(query: String)
   override def mapProjection(p: InputPosition,
                              v: Variable,
                              items: util.List[MapProjectionElement]): Expression =
-    MapProjection(v, items.asScala.toList)(p, None)
+    MapProjection(v, items.asScala.toList)(p)
 
   override def mapProjectionLiteralEntry(property: String,
                                          value: Expression): MapProjectionElement =

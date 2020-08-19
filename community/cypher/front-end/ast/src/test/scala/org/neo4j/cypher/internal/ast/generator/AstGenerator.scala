@@ -552,7 +552,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
   def _mapProjection: Gen[MapProjection] = for {
     name <- _variable
     items <- oneOrMore(_mapProjectionElement)
-  } yield MapProjection(name, items)(pos, None)
+  } yield MapProjection(name, items)(pos)
 
   def _list: Gen[ListLiteral] = for {
     parts <- zeroOrMore(_expression)
