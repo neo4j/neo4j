@@ -34,7 +34,6 @@ import static java.lang.Math.min;
 
 class EphemeralFileData
 {
-    private static final ThreadLocal<byte[]> SCRATCH_PAD = ThreadLocal.withInitial( () -> new byte[(int) ByteUnit.kibiBytes( 1 )] );
     private final File file;
     private final Clock clock;
     private final Collection<WeakReference<EphemeralFileChannel>> channels = new ArrayList<>();
@@ -68,7 +67,7 @@ class EphemeralFileData
         }
         long pending = available;
         // Read up until our internal size
-        byte[] scratchPad = SCRATCH_PAD.get();
+        byte[] scratchPad = new byte[(int) ByteUnit.kibiBytes( 1 )];
         while ( pending > 0 )
         {
             int howMuchToReadThisTime = Math.toIntExact( min( pending, scratchPad.length ) );
@@ -85,7 +84,7 @@ class EphemeralFileData
     {
         int wanted = src.limit() - src.position();
         int pending = wanted;
-        byte[] scratchPad = SCRATCH_PAD.get();
+        byte[] scratchPad = new byte[(int) ByteUnit.kibiBytes( 1 )];
 
         while ( pending > 0 )
         {
