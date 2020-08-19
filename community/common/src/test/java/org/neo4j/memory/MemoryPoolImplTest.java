@@ -80,6 +80,22 @@ class MemoryPoolImplTest
     }
 
     @Test
+    void freeShouldNotBeNegativeWhenPoolUsingMoreThenALimit()
+    {
+        var memoryPool = new MemoryPoolImpl( 10, false, null );
+
+        memoryPool.reserveHeap( 9 );
+        assertEquals( 1, memoryPool.free() );
+
+        memoryPool.reserveHeap( 1 );
+        assertEquals( 0, memoryPool.free() );
+
+        memoryPool.reserveHeap( 10 );
+        assertEquals( 0, memoryPool.free() );
+        assertEquals( 20, memoryPool.usedHeap() );
+    }
+
+    @Test
     void imposeLimit()
     {
         final long limit = 10;

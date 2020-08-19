@@ -61,7 +61,7 @@ class MemoryPoolImpl implements MemoryPool
     @Override
     public long free()
     {
-        return totalSize() - totalUsed();
+        return Math.max( 0, totalSize() - totalUsed() );
     }
 
     @Override
