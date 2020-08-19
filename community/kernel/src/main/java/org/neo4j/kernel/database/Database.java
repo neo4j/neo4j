@@ -739,7 +739,6 @@ public class Database extends LifecycleAdapter
 
         final BatchingTransactionAppender appender = life.add( new BatchingTransactionAppender(
                 logFiles, logRotation, transactionMetadataCache, metadataProvider, databaseHealth ) );
-        databaseDependencies.satisfyDependency( appender );
 
         final LogicalTransactionStore logicalTransactionStore =
                 new PhysicalLogicalTransactionStore( logFiles, transactionMetadataCache, logEntryReader, monitors, true );
@@ -758,7 +757,7 @@ public class Database extends LifecycleAdapter
         life.add( checkPointer );
         life.add( checkPointScheduler );
 
-        databaseDependencies.satisfyDependencies( checkPointer, logFiles, logicalTransactionStore, logRotation );
+        databaseDependencies.satisfyDependencies( checkPointer, logFiles, logicalTransactionStore, logRotation, appender );
 
         return new DatabaseTransactionLogModule( checkPointer, appender );
     }

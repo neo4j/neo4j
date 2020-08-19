@@ -67,6 +67,12 @@ public class TransactionLogFiles extends LifecycleAdapter implements LogFiles
     }
 
     @Override
+    public void stop() throws IOException
+    {
+        logFilesLife.stop();
+    }
+
+    @Override
     public void shutdown()
     {
         logFilesLife.shutdown();

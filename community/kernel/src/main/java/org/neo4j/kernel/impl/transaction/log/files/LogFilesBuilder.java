@@ -393,8 +393,7 @@ public class LogFilesBuilder
             return () ->
             {
                 throw new UnsupportedOperationException( "Current version of log files can't perform any " +
-                    "operation that require availability of log version repository. Please build full version of log " +
-                    "files. Please build full version of log files to be able to use them." );
+                    "operation that require availability of log version repository. Please build full version of log files to be able to use them." );
             };
         }
         if ( readOnly )
