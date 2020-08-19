@@ -328,9 +328,28 @@ setup_java_opts() {
   fi
 }
 
+setup_additional_arguments() {
+  ARGS_LIST=()
+  while [[ $# -gt 0 ]]
+  do
+  key="$1"
+  case $key in
+      --expand-commands)
+        shift
+        ARGS_LIST+=("${key}")
+      ;;
+      *)
+        echo "Unknown argument ${key}"
+        exit 1
+      ;;
+  esac
+  done
+  ADDITIONAL_ARGS="${ARGS_LIST[@]}"
+}
+
 assemble_command_line() {
   retval=("${JAVA_CMD}" "-cp" "${CLASSPATH}" "${JAVA_OPTS[@]}" "-Dfile.encoding=UTF-8" "${MAIN_CLASS}" \
-          "--home-dir=${NEO4J_HOME}" "--config-dir=${NEO4J_CONF}")
+          "--home-dir=${NEO4J_HOME}" "--config-dir=${NEO4J_CONF}" "${ADDITIONAL_ARGS:=}")
 }
 
 do_console() {
@@ -457,7 +476,13 @@ main() {
   NEO4J_PIDFILE="${NEO4J_RUN}/neo4j.pid"
   readonly CONSOLE_LOG NEO4J_PIDFILE
 
-  case "${1:-}" in
+  cmd="${1:-}"
+  if [ "$#" != "0" ]; then
+    shift
+    setup_additional_arguments "$@"
+  fi
+
+  case "$cmd" in
     console)
       setup_java
       print_configurable_paths

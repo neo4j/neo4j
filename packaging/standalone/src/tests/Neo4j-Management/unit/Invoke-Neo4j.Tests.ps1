@@ -105,5 +105,22 @@ InModuleScope Neo4j-Management {
       }
     }
 
+    Context "Additional arguments passthrough" {
+      It "returns exitcode from start command with invalid argument" {
+        Invoke-Neo4j ('start', 'foo') | Should Be 1
+      }
+
+      It "returns exitcode from start command with valid argument" {
+        Invoke-Neo4j ('start', '--expand-commands') | Should Be 3
+      }
+
+      It "pass valid argument to start command" {
+        Mock Start-Neo4jServer {
+          $a = $Neo4jServer.AdditionalArguments | Should Be ("--expand-commands");
+          return 7;
+        } -ParameterFilter {  $Service -eq $true }
+        Invoke-Neo4j ('start', '--expand-commands') | Should Be 7
+      }
+    }
   }
 }

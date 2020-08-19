@@ -26,7 +26,9 @@ import java.nio.file.Path;
 import org.neo4j.configuration.Config;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.internal.helpers.ArrayUtil.array;
 import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
 
@@ -115,6 +117,32 @@ public class CommandLineArgsTest
                         "myoptionenabled", Boolean.TRUE.toString(),
                        "my_second_option", "second" ),
                 parsed.configOverrides() );
+    }
+
+    @Test
+    void shouldPickUpExpandCommandsArgument()
+    {
+        // GIVEN
+        String[] args = array( "--expand-commands");
+
+        // WHEN
+        CommandLineArgs parsed = CommandLineArgs.parse( args );
+
+        // THEN
+        assertTrue( parsed.expandCommands() );
+    }
+
+    @Test
+    void expandCommandsShouldBeDisabledByDefault()
+    {
+        // GIVEN
+        String[] args = array( "foo" );
+
+        // WHEN
+        CommandLineArgs parsed = CommandLineArgs.parse( args );
+
+        // THEN
+        assertFalse( parsed.expandCommands() );
     }
 
     private CommandLineArgs parse( String... args )

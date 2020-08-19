@@ -26,5 +26,5 @@ catch
 
 Import-Module "$PSScriptRoot\Neo4j-Management.psd1"
 $Arguments = Get-Args $args
-Exit (Invoke-Neo4j -Verbose:$Arguments.Verbose -Command $Arguments.ArgsAsStr)
+Exit (Invoke-Neo4j -Verbose:$Arguments.Verbose -Command $Arguments.Args)
 

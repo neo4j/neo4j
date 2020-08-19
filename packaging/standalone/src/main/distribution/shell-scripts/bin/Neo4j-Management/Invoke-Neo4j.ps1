@@ -53,7 +53,7 @@ function Invoke-Neo4j
   [CmdletBinding(SupportsShouldProcess = $false,ConfirmImpact = 'Low')]
   param(
     [Parameter(Mandatory = $false,ValueFromPipeline = $false,Position = 0)]
-    [string]$Command = ''
+    [string[]]$Command = $()
   )
 
   begin
@@ -64,6 +64,32 @@ function Invoke-Neo4j
   {
     try
     {
+      $cmd = ""
+      $AdditionalArguments = $()
+      if ( $Command.Count -ne 0 )
+      {
+        $cmd = $Command[0].Trim().ToLower()
+        if ( $Command.Count -gt 1 )
+        {
+          foreach ($arg in $Command[1..($Command.Length-1)])
+          {
+            switch ($arg)
+            {
+              "--expand-commands"
+              {
+                $AdditionalArguments += $arg
+                break;
+              }
+              default
+              {
+                Write-Host "Unknown argument" $arg
+                return 1
+              }
+            }
+          }
+        }
+      }
+
       $HelpText = "Usage: neo4j { console | start | stop | restart | status | install-service | uninstall-service | update-service } < -Verbose >"
 
       # Determine the Neo4j Home Directory.  Uses the NEO4J_HOME environment variable or a parent directory of this script
@@ -75,12 +101,13 @@ function Invoke-Neo4j
       Write-Verbose "Neo4j Root is '$Neo4jHome'"
 
       $thisServer = Get-Neo4jServer -Neo4jHome $Neo4jHome -ErrorAction Stop
+      $thisServer.AdditionalArguments = $AdditionalArguments
       if ($thisServer -eq $null) { throw "Unable to determine the Neo4j Server installation information" }
       Write-Verbose "Neo4j Server Type is '$($thisServer.ServerType)'"
       Write-Verbose "Neo4j Version is '$($thisServer.ServerVersion)'"
       Write-Verbose "Neo4j Database Mode is '$($thisServer.DatabaseMode)'"
 
-      switch ($Command.Trim().ToLower())
+      switch ($cmd)
       {
         "help" {
           Write-Host $HelpText

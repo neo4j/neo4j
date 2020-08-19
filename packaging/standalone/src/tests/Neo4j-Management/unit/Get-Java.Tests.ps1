@@ -333,5 +333,13 @@ InModuleScope Neo4j-Management {
         "-Xlog:gc*,safepoint,age*=trace:file=\""TestDrive:\Neo4j Home\logs/gc.log\""::filecount=5,filesize=20m"| Should Be True
       }
     }
+
+    Context "Additional Arguments test" {
+      It "Should add additional argument to java arguments" {
+        $serverObject = global:New-MockNeo4jInstall -AdditionalArguments @("foo")
+        $result = Get-Java -ForServer -Neo4jServer $serverObject
+        $result.args -contains "foo" | Should Be True
+      }
+    }
   }
 }

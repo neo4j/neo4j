@@ -26,4 +26,12 @@ test_expect_success "should include --version in java args when version given" "
   neo4j-home/bin/neo4j version && test_expect_java_arg '--version'
 "
 
+test_expect_success "should fail on invalid argument to start " "
+  test_expect_code 1 neo4j-home/bin/neo4j start --foo
+"
+
+test_expect_success "should pass accepted argument to java" "
+  neo4j-home/bin/neo4j start --expand-commands &&
+  test_expect_java_arg '--expand-commands'
+"
 test_done

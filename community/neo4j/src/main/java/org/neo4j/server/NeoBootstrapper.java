@@ -84,21 +84,22 @@ public abstract class NeoBootstrapper implements Bootstrapper
             throw new ServerStartupException( "Argument --home-dir is required and was not provided." );
         }
 
-        return boot.start( args.homeDir(), args.configFile(), args.configOverrides() );
+        return boot.start( args.homeDir(), args.configFile(), args.configOverrides(), args.expandCommands() );
     }
 
     @VisibleForTesting
     public final int start( Path homeDir, Map<String, String> configOverrides )
     {
-        return start( homeDir, null, configOverrides );
+        return start( homeDir, null, configOverrides, false );
     }
 
     @Override
-    public final int start( Path homeDir, Path configFile, Map<String, String> configOverrides )
+    public final int start( Path homeDir, Path configFile, Map<String,String> configOverrides, boolean expandCommands )
     {
         addShutdownHook();
         installSignalHandlers();
         Config config = Config.newBuilder()
+                .commandExpansion( expandCommands )
                 .setDefaults( GraphDatabaseSettings.SERVER_DEFAULTS )
                 .fromFileNoThrow( configFile )
                 .setRaw( configOverrides )

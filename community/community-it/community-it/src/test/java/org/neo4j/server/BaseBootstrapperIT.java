@@ -20,10 +20,13 @@
 package org.neo4j.server;
 
 import org.apache.commons.lang3.ArrayUtils;
+import org.bouncycastle.util.Arrays;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 
 import java.nio.file.Path;
 import java.util.Map;
@@ -32,6 +35,7 @@ import java.util.stream.Stream;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.SettingValueParsers;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.HttpConnector;
@@ -50,11 +54,14 @@ import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.server.ExclusiveWebContainerTestBase;
 import org.neo4j.test.ssl.SelfSignedCertificateFactory;
 
+import static org.apache.commons.lang3.SystemUtils.IS_OS_WINDOWS;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.forced_kernel_id;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.data_directory;
+import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_rotation_threshold;
 import static org.neo4j.configuration.GraphDatabaseSettings.logs_directory;
 import static org.neo4j.configuration.SettingValueParsers.FALSE;
 import static org.neo4j.internal.helpers.collection.Iterators.single;
@@ -213,6 +220,24 @@ public abstract class BaseBootstrapperIT extends ExclusiveWebContainerTestBase
         assertEquals( serverDir.relativize( serverLayout.databasesDirectory() ), embeddedDir.relativize( embeddedLayout.databasesDirectory() ) );
         assertEquals( serverDir.relativize( serverLayout.transactionLogsRootDirectory() ),
                 embeddedDir.relativize( embeddedLayout.transactionLogsRootDirectory() ) );
+    }
+
+    public void shouldOnlyAllowCommandExpansionWhenProvidedAsArgument()
+    {
+        //Given
+        String setting = String.format( "%s=$(%s 100 * 1000)", log_queries_rotation_threshold.name(), IS_OS_WINDOWS ? "cmd.exe /c set /a" : "expr" );
+        String[] args = withConnectorsOnRandomPortsConfig( "--home-dir", testDirectory.homePath().toString(), "-c", setting );
+
+        //Then
+        assertThatThrownBy( () -> NeoBootstrapper.start( bootstrapper, args ) )
+                .hasMessageContaining( "is a command, but config is not explicitly told to expand it" );
+
+        //Also then
+        NeoBootstrapper.start( bootstrapper, Arrays.append( args, "--expand-commands" ) );
+
+        GraphDatabaseAPI db = (GraphDatabaseAPI) bootstrapper.getDatabaseManagementService().database( DEFAULT_DATABASE_NAME );
+        Config config = db.getDependencyResolver().resolveDependency( Config.class );
+        assertThat( config.get( log_queries_rotation_threshold ) ).isEqualTo( 100000L );
     }
 
     protected abstract DatabaseManagementService newEmbeddedDbms( Path homeDir );

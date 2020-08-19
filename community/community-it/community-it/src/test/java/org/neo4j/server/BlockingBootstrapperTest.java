@@ -53,7 +53,7 @@ class BlockingBootstrapperTest
         BlockingBootstrapper bootstrapper = new BlockingBootstrapper( new Bootstrapper()
         {
             @Override
-            public int start( Path homeDir, Path configFile, Map<String, String> configOverrides )
+            public int start( Path homeDir, Path configFile, Map<String,String> configOverrides, boolean expandCommands )
             {
                 running.set( true );
                 return 0;
@@ -92,7 +92,7 @@ class BlockingBootstrapperTest
         BlockingBootstrapper bootstrapper = new BlockingBootstrapper( new Bootstrapper()
         {
             @Override
-            public int start( Path homeDir, Path configFile, Map<String, String> configOverrides )
+            public int start( Path homeDir, Path configFile, Map<String,String> configOverrides, boolean expandCommands )
             {
                 return 1;
             }
@@ -106,7 +106,7 @@ class BlockingBootstrapperTest
 
         new Thread( () ->
         {
-            status.set( bootstrapper.start( homeDir.directoryPath( "home-dir" ), null, Collections.emptyMap() ) );
+            status.set( bootstrapper.start( homeDir.directoryPath( "home-dir" ), null, Collections.emptyMap(), false ) );
             exited.set( true );
         } ).start();
 

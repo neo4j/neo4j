@@ -265,7 +265,12 @@ public class Config implements Configuration
 
         public Builder allowCommandExpansion()
         {
-            expandCommands = true;
+            return commandExpansion( true );
+        }
+
+        public Builder commandExpansion( boolean expandCommands )
+        {
+            this.expandCommands = expandCommands;
             return this;
         }
 

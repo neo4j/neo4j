@@ -24,7 +24,7 @@ import java.util.Map;
 
 public interface Bootstrapper
 {
-    int start( Path homeDir, Path configFile, Map<String, String> configOverrides );
+    int start( Path homeDir, Path configFile, Map<String,String> configOverrides, boolean expandCommands );
 
     int stop();
 }

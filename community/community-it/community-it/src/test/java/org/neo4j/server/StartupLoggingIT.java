@@ -63,7 +63,7 @@ public class StartupLoggingIT extends ExclusiveWebContainerTestBase
         CommunityBootstrapper bootstrapper = new CommunityBootstrapper();
         Map<String,String> propertyPairs = getPropertyPairs();
 
-        bootstrapper.start( testDir.homePath(), Path.of( "nonexistent-file.conf" ), propertyPairs );
+        bootstrapper.start( testDir.homePath(), Path.of( "nonexistent-file.conf" ), propertyPairs, false);
         var resolver = getDependencyResolver( bootstrapper.getDatabaseManagementService() );
         URI uri = resolver.resolveDependency( AbstractNeoWebServer.class ).getBaseUri();
         bootstrapper.stop();

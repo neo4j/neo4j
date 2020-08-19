@@ -36,13 +36,13 @@ public class BlockingBootstrapper implements Bootstrapper
 
     public final int start( Path homeDir, Map<String, String> configOverrides )
     {
-        return start( homeDir, null, configOverrides );
+        return start( homeDir, null, configOverrides, false );
     }
 
     @Override
-    public final int start( Path homeDir, Path configFile, Map<String, String> configOverrides )
+    public final int start( Path homeDir, Path configFile, Map<String,String> configOverrides, boolean expandCommands )
     {
-        int status = wrapped.start( homeDir, configFile, configOverrides );
+        int status = wrapped.start( homeDir, configFile, configOverrides, expandCommands );
         if ( status != NeoBootstrapper.OK )
         {
             return status;

@@ -47,6 +47,7 @@ public class CommandLineArgs
     public static final String CONFIG_DIR_ARG = "config-dir";
     public static final String HOME_DIR_ARG = "home-dir";
     public static final String VERSION_ARG = "version";
+    public static final String EXPAND_COMMAND_ARG = "expand-commands";
     private final Args args;
     private final Map<String, String> configOverrides;
 
@@ -106,5 +107,10 @@ public class CommandLineArgs
     public boolean version()
     {
         return args.getBoolean( VERSION_ARG, FALSE );
+    }
+
+    public boolean expandCommands()
+    {
+        return args.getBoolean( EXPAND_COMMAND_ARG, FALSE );
     }
 }
