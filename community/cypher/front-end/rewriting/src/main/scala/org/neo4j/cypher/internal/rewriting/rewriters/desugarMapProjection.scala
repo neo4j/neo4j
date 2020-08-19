@@ -47,9 +47,7 @@ case class desugarMapProjection(state: SemanticState) extends Rewriter {
 
       def propertySelect(propertyPosition: InputPosition, name: String): LiteralEntry = {
         val key = PropertyKeyName(name)(propertyPosition)
-        val idPos = e.definitionPos.getOrElse(throw new IllegalStateException("MapProjection definition pos is not known"))
-        val newIdentifier = Variable(id.name)(idPos)
-        val value = Property(newIdentifier, key)(propertyPosition)
+        val value = Property(id.copyId, key)(propertyPosition)
         LiteralEntry(key, value)(propertyPosition)
       }
 

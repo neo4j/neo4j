@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.expressions.CoerceTo
 import org.neo4j.cypher.internal.expressions.ContainerIndex
 import org.neo4j.cypher.internal.expressions.Contains
 import org.neo4j.cypher.internal.expressions.CountStar
+import org.neo4j.cypher.internal.expressions.DesugaredMapProjection
 import org.neo4j.cypher.internal.expressions.Divide
 import org.neo4j.cypher.internal.expressions.EndsWith
 import org.neo4j.cypher.internal.expressions.Equals
@@ -86,6 +87,7 @@ import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.VariableSelector
 import org.neo4j.cypher.internal.expressions.Xor
 import org.neo4j.cypher.internal.expressions.functions.UserDefinedFunctionInvocation
+import org.neo4j.cypher.internal.util.InputPosition
 
 case class ExpressionStringifier(
   extension: ExpressionStringifier.Extension,
@@ -215,6 +217,13 @@ case class ExpressionStringifier(
 
       case MapProjection(variable, items) =>
         val itemsText = items.map(apply).mkString(", ")
+        s"${apply(variable)}{$itemsText}"
+
+      case DesugaredMapProjection(variable, items, includeAllProps) =>
+        val itemsText = {
+          val allItems = if (!includeAllProps) items else items :+ AllPropertiesSelector()(InputPosition.NONE)
+          allItems.map(apply).mkString(", ")
+        }
         s"${apply(variable)}{$itemsText}"
 
       case LiteralEntry(k, e) =>
