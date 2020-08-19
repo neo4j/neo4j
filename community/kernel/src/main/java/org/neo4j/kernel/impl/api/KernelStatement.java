@@ -72,6 +72,7 @@ import static org.neo4j.util.FeatureToggles.toggle;
  */
 public class KernelStatement extends CloseableResourceManager implements Statement, AssertOpen
 {
+    private static final int EMPTY_COUNTER = 0;
     private static final boolean TRACK_STATEMENTS = flag( KernelStatement.class, "trackStatements", false );
     private static final boolean RECORD_STATEMENTS_TRACES = flag( KernelStatement.class, "recordStatementsTraces", false );
     private static final int STATEMENT_TRACK_HISTORY_MAX_SIZE = 100;
@@ -161,12 +162,12 @@ public class KernelStatement extends CloseableResourceManager implements Stateme
 
     public long getHits()
     {
-        return subtractExact( pageCursorTracer.hits(), initialStatementHits );
+        return isAcquired() ? subtractExact( pageCursorTracer.hits(), initialStatementHits ) : EMPTY_COUNTER;
     }
 
     public long getFaults()
     {
-        return subtractExact( pageCursorTracer.faults(), initialStatementFaults );
+        return isAcquired() ? subtractExact( pageCursorTracer.faults(), initialStatementFaults ) : EMPTY_COUNTER;
     }
 
     public final void acquire()
@@ -237,6 +238,8 @@ public class KernelStatement extends CloseableResourceManager implements Stateme
         // closing is done by KTI
         transaction.releaseStatementResources();
         executingQuery = null;
+        initialStatementHits = EMPTY_COUNTER;
+        initialStatementFaults = EMPTY_COUNTER;
         closeAllCloseableResources();
     }
 

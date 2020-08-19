@@ -20,17 +20,21 @@
 package org.neo4j.kernel.impl.api;
 
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.NotInTransactionException;
+import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
+import org.neo4j.kernel.impl.locking.StatementLocks;
 import org.neo4j.kernel.impl.locking.community.CommunityLockClient;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.resources.CpuClock;
@@ -96,6 +100,29 @@ class KernelStatementTest
         statement.stopQueryExecution( query3 );
 
         assertEquals( 3, statistics.getWaitingTimeNanos( 1 ) );
+    }
+
+    @Test
+    void emptyPageCacheStatisticOnClosedStatement()
+    {
+        var transaction = mock( KernelTransactionImplementation.class, RETURNS_DEEP_STUBS );
+        try ( var statement = createStatement( transaction ) )
+        {
+            var cursorTracer = new DefaultPageCursorTracer( new DefaultPageCacheTracer(), "test" );
+            statement.initialize( Mockito.mock( StatementLocks.class ), cursorTracer, 100 );
+            statement.acquire();
+
+            cursorTracer.beginPin( false, 1, null ).hit();
+            cursorTracer.beginPin( false, 1, null ).hit();
+            cursorTracer.beginPin( false, 1, null ).beginPageFault().done();
+            assertEquals( 2, statement.getHits() );
+            assertEquals( 1, statement.getFaults() );
+
+            statement.close();
+
+            assertEquals( 0, statement.getHits() );
+            assertEquals( 0, statement.getFaults() );
+        }
     }
 
     @Test
