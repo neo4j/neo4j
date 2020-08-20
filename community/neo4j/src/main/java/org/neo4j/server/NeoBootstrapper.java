@@ -22,24 +22,30 @@ package org.neo4j.server;
 import sun.misc.Signal;
 
 import java.io.Closeable;
+import java.lang.management.MemoryUsage;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.ExternalSettings;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
+import org.neo4j.io.ByteUnit;
 import org.neo4j.io.IOUtils;
+import org.neo4j.io.os.OsBeanUtil;
+import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.log4j.Log4jLogProvider;
 import org.neo4j.logging.log4j.LogConfig;
 import org.neo4j.logging.log4j.Neo4jLoggerContext;
+import org.neo4j.memory.MachineMemory;
 import org.neo4j.server.logging.JULBridge;
 import org.neo4j.server.logging.JettyLogBridge;
 import org.neo4j.util.VisibleForTesting;
@@ -51,6 +57,7 @@ public abstract class NeoBootstrapper implements Bootstrapper
     public static final int OK = 0;
     private static final int WEB_SERVER_STARTUP_ERROR_CODE = 1;
     private static final int GRAPH_DATABASE_STARTUP_ERROR_CODE = 2;
+    private static final int INVALID_CONFIGURATION_ERROR_CODE = 3;
     private static final String SIGTERM = "TERM";
     private static final String SIGINT = "INT";
 
@@ -60,6 +67,7 @@ public abstract class NeoBootstrapper implements Bootstrapper
     private GraphDatabaseDependencies dependencies = GraphDatabaseDependencies.newDependencies();
     private Log log;
     private String serverAddress = "unknown address";
+    private MachineMemory machineMemory = MachineMemory.DEFAULT;
 
     public static int start( Bootstrapper boot, String... argv )
     {
@@ -103,6 +111,13 @@ public abstract class NeoBootstrapper implements Bootstrapper
         log = userLogProvider.getLog( getClass() );
         config.setLogger( log );
 
+        if ( requestedMemoryExceedsAvailable( config ) )
+        {
+            log.error( format( "Invalid memory configuration - exceeds available physical memory. Check the configured values for %s and %s",
+                    GraphDatabaseSettings.pagecache_memory.name(), ExternalSettings.max_heap_size.name() ) );
+            return INVALID_CONFIGURATION_ERROR_CODE;
+        }
+
         try
         {
             serverAddress = HttpConnector.listen_address.toString();
@@ -130,6 +145,18 @@ public abstract class NeoBootstrapper implements Bootstrapper
             log.error( format( "Failed to start Neo4j on %s.", serverAddress ), e );
             return WEB_SERVER_STARTUP_ERROR_CODE;
         }
+    }
+
+    private boolean requestedMemoryExceedsAvailable( Config config )
+    {
+        String pageCacheMemory = config.get( GraphDatabaseSettings.pagecache_memory );
+        long pageCacheSize =
+                pageCacheMemory == null ? ConfiguringPageCacheFactory.defaultHeuristicPageCacheMemory( machineMemory ) : ByteUnit.parse( pageCacheMemory );
+        MemoryUsage heapMemoryUsage = machineMemory.getHeapMemoryUsage();
+        long freePhysicalMemory = machineMemory.getFreePhysicalMemory();
+
+        return freePhysicalMemory != OsBeanUtil.VALUE_UNAVAILABLE  &&
+             pageCacheSize + ( heapMemoryUsage.getMax() - heapMemoryUsage.getUsed() ) > freePhysicalMemory;
     }
 
     @Override
@@ -257,5 +284,11 @@ public abstract class NeoBootstrapper implements Bootstrapper
                 log.warn( "Unable to remove shutdown hook" );
             }
         }
+    }
+
+    @VisibleForTesting
+    void setMachineMemory( MachineMemory machineMemory )
+    {
+        this.machineMemory = machineMemory;
     }
 }

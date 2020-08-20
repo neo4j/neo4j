@@ -32,6 +32,7 @@ import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.logging.Log;
+import org.neo4j.memory.MachineMemory;
 import org.neo4j.memory.MemoryPools;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
@@ -108,7 +109,7 @@ public class ConfiguringPageCacheFactory
         String pageCacheMemorySetting = config.get( pagecache_memory );
         if ( pageCacheMemorySetting == null )
         {
-            long heuristic = defaultHeuristicPageCacheMemory();
+            long heuristic = defaultHeuristicPageCacheMemory( MachineMemory.DEFAULT );
             log.warn( "The " + pagecache_memory.name() + " setting has not been configured. It is recommended that this " +
                       "setting is always explicitly configured, to ensure the system has a balanced configuration. " +
                       "Until then, a computed heuristic value of " + heuristic + " bytes will be used instead. " +
@@ -118,7 +119,7 @@ public class ConfiguringPageCacheFactory
         return ByteUnit.parse( pageCacheMemorySetting );
     }
 
-    public static long defaultHeuristicPageCacheMemory()
+    public static long defaultHeuristicPageCacheMemory( MachineMemory machineMemory )
     {
         // First check if we have a default override...
         String defaultMemoryOverride = System.getProperty( "dbms.pagecache.memory.default.override" );
@@ -135,12 +136,12 @@ public class ConfiguringPageCacheFactory
         }
 
         // Try to compute (RAM - maxheap) * 0.50 if we can get reliable numbers...
-        long maxHeapMemory = Runtime.getRuntime().maxMemory();
+        long maxHeapMemory = machineMemory.getHeapMemoryUsage().getMax();
         if ( 0 < maxHeapMemory && maxHeapMemory < Long.MAX_VALUE )
         {
             try
             {
-                long physicalMemory = OsBeanUtil.getTotalPhysicalMemory();
+                long physicalMemory = machineMemory.getTotalPhysicalMemory();
                 if ( 0 < physicalMemory && physicalMemory < Long.MAX_VALUE && maxHeapMemory < physicalMemory )
                 {
                     long heuristic = (long) ((physicalMemory - maxHeapMemory) * ratioOfFreeMem);
