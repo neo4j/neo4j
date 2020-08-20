@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import org.neo4j.common.TokenNameLookup;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -41,16 +42,19 @@ class GenericIndexKeyValidator implements IndexValueValidator
     private final IndexDescriptor descriptor;
     private final int maxLength;
     private final Layout<GenericKey,NativeIndexValue> layout;
+    private final TokenNameLookup tokenNameLookup;
 
-    GenericIndexKeyValidator( int maxLength, IndexDescriptor descriptor, Layout<GenericKey,NativeIndexValue> layout )
+    GenericIndexKeyValidator( int maxLength, IndexDescriptor descriptor, Layout<GenericKey,NativeIndexValue> layout,
+            TokenNameLookup tokenNameLookup )
     {
         this.maxLength = maxLength;
         this.descriptor = descriptor;
         this.layout = layout;
+        this.tokenNameLookup = tokenNameLookup;
     }
 
     @Override
-    public void validate( Value... values )
+    public void validate( long entityId, Value... values )
     {
         int worstCaseSize = worstCaseLength( values );
         if ( worstCaseSize > maxLength )
@@ -58,7 +62,7 @@ class GenericIndexKeyValidator implements IndexValueValidator
             int size = actualLength( values );
             if ( size > maxLength )
             {
-                IndexValueValidator.throwSizeViolationException( descriptor, size, values );
+                IndexValueValidator.throwSizeViolationException( descriptor, tokenNameLookup, entityId, size, values );
             }
         }
     }

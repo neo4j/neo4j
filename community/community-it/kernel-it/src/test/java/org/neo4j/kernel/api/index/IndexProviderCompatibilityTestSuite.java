@@ -39,11 +39,13 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Callable;
 
+import org.neo4j.common.TokenNameLookup;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.api.schema.SchemaTestUtil;
 import org.neo4j.kernel.impl.api.index.PhaseTracker;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.scheduler.Group;
@@ -148,6 +150,7 @@ public abstract class IndexProviderCompatibilityTestSuite
         protected IndexProvider indexProvider;
         private final IndexPrototype incompleteIndexPrototype;
         protected IndexDescriptor descriptor;
+        protected TokenNameLookup tokenNameLookup;
         final IndexProviderCompatibilityTestSuite testSuite;
         final List<NodeAndValue> valueSet1;
         final List<NodeAndValue> valueSet2;
@@ -310,6 +313,7 @@ public abstract class IndexProviderCompatibilityTestSuite
             pageCacheAndDependenciesRule = new PageCacheAndDependenciesRule().with( new DefaultFileSystemRule() ).with( testSuite.getClass() );
             random = new RandomRule();
             ruleChain = RuleChain.outerRule( pageCacheAndDependenciesRule ).around( random );
+            tokenNameLookup = SchemaTestUtil.SIMPLE_NAME_LOOKUP;
         }
 
         void withPopulator( IndexPopulator populator, ThrowingConsumer<IndexPopulator,Exception> runWithPopulator ) throws Exception

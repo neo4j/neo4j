@@ -46,6 +46,7 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.kernel.api.schema.SchemaTestUtil.SIMPLE_NAME_LOOKUP;
 
 @DbmsExtension
 class PropertyAndNodeIndexedCheckIT
@@ -75,7 +76,7 @@ class PropertyAndNodeIndexedCheckIT
         storeAccess.initialize();
         propertyReader = new PropertyReader( storeAccess );
         recordAccess = new DirectRecordAccess( storeAccess, CacheAccess.EMPTY );
-        indexAccessors = new IndexAccessors( providerMap, neoStores, new IndexSamplingConfig( config ), pageCacheTracer );
+        indexAccessors = new IndexAccessors( providerMap, neoStores, new IndexSamplingConfig( config ), pageCacheTracer, SIMPLE_NAME_LOOKUP );
     }
 
     @Test

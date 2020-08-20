@@ -80,12 +80,13 @@ import static org.neo4j.values.storable.Values.stringValue;
 @ExtendWith( RandomExtension.class )
 abstract class FusionIndexAccessorTest
 {
-    private static final long indexId = 0;
+    private static final long INDEX_ID = 0;
+    private static final long ENTITY_ID = 42;
     private FusionIndexAccessor fusionIndexAccessor;
     private EnumMap<IndexSlot,IndexAccessor> accessors;
     private IndexAccessor[] aliveAccessors;
     private IndexDescriptor indexDescriptor =
-            IndexPrototype.forSchema( SchemaDescriptor.forLabel( 1, 42 ) ).withName( "index" ).materialise( indexId );
+            IndexPrototype.forSchema( SchemaDescriptor.forLabel( 1, 42 ) ).withName( "index" ).materialise( INDEX_ID );
     private FileSystemAbstraction fs;
     private IndexDirectoryStructure directoryStructure;
 
@@ -156,7 +157,7 @@ abstract class FusionIndexAccessorTest
         {
             verify( accessor ).drop();
         }
-        verify( fs ).deleteRecursively( directoryStructure.directoryForIndex( indexId ) );
+        verify( fs ).deleteRecursively( directoryStructure.directoryForIndex( INDEX_ID ) );
     }
 
     @Test
@@ -409,18 +410,18 @@ abstract class FusionIndexAccessorTest
             {
                 if ( i == j )
                 {
-                    doThrow( failure ).when( aliveAccessors[i] ).validateBeforeCommit( ArgumentMatchers.any( Value[].class ) );
+                    doThrow( failure ).when( aliveAccessors[i] ).validateBeforeCommit( anyLong(), ArgumentMatchers.any( Value[].class ) );
                 }
                 else
                 {
-                    doAnswer( invocation -> null ).when( aliveAccessors[i] ).validateBeforeCommit( any( Value[].class ) );
+                    doAnswer( invocation -> null ).when( aliveAccessors[i] ).validateBeforeCommit( anyLong(), any( Value[].class ) );
                 }
             }
 
             // when
             try
             {
-                fusionIndexAccessor.validateBeforeCommit( new Value[] {stringValue( "something" )} );
+                fusionIndexAccessor.validateBeforeCommit( ENTITY_ID, new Value[] {stringValue( "something" )} );
             }
             catch ( IllegalArgumentException e )
             {
@@ -434,7 +435,7 @@ abstract class FusionIndexAccessorTest
     void shouldSucceedValueValidationIfAllSucceed()
     {
         // when
-        fusionIndexAccessor.validateBeforeCommit( new Value[] {stringValue( "test value" )} );
+        fusionIndexAccessor.validateBeforeCommit( ENTITY_ID, new Value[] {stringValue( "test value" )} );
 
         // then no exception was thrown
     }

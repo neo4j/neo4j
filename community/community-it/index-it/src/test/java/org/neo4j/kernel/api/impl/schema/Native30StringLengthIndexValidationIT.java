@@ -21,6 +21,7 @@ package org.neo4j.kernel.api.impl.schema;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.kernel.impl.api.LuceneIndexValueValidator;
+import org.neo4j.test.rule.RandomRule;
 
 public class Native30StringLengthIndexValidationIT extends StringLengthIndexValidationIT
 {
@@ -31,15 +32,21 @@ public class Native30StringLengthIndexValidationIT extends StringLengthIndexVali
     }
 
     @Override
+    protected String getString( RandomRule random, int keySize )
+    {
+        return random.nextAlphaNumericString( keySize, keySize );
+    }
+
+    @Override
     protected GraphDatabaseSettings.SchemaIndex getSchemaIndex()
     {
         return GraphDatabaseSettings.SchemaIndex.NATIVE30;
     }
 
     @Override
-    protected String expectedPopulationFailureMessage()
+    protected String expectedPopulationFailureCauseMessage()
     {
-        return "Document contains at least one immense term in field=\"string\" (whose UTF8 encoding is longer than the max length 32766), all of which were " +
-                "skipped.  Please correct the analyzer to not produce such terms.";
+        return "Document contains at least one immense term in field=\"string\" (whose UTF8 encoding is longer than the max length 32766), " +
+                "all of which were skipped.  Please correct the analyzer to not produce such terms.";
     }
 }

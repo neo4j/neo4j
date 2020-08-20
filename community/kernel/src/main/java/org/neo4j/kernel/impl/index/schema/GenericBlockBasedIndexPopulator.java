@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.index.schema;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.common.TokenNameLookup;
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurveConfiguration;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.memory.ByteBufferFactory;
@@ -34,14 +35,16 @@ class GenericBlockBasedIndexPopulator extends BlockBasedIndexPopulator<GenericKe
 {
     private final IndexSpecificSpaceFillingCurveSettings spatialSettings;
     private final SpaceFillingCurveConfiguration configuration;
+    private final TokenNameLookup tokenNameLookup;
 
     GenericBlockBasedIndexPopulator( DatabaseIndexContext databaseIndexContext, IndexFiles indexFiles, IndexLayout<GenericKey,NativeIndexValue> layout,
             IndexDescriptor descriptor, IndexSpecificSpaceFillingCurveSettings spatialSettings, SpaceFillingCurveConfiguration configuration,
-            boolean archiveFailedIndex, ByteBufferFactory bufferFactory, MemoryTracker memoryTracker )
+            boolean archiveFailedIndex, ByteBufferFactory bufferFactory, MemoryTracker memoryTracker, TokenNameLookup tokenNameLookup )
     {
         super( databaseIndexContext, indexFiles, layout, descriptor, archiveFailedIndex, bufferFactory, memoryTracker );
         this.spatialSettings = spatialSettings;
         this.configuration = configuration;
+        this.tokenNameLookup = tokenNameLookup;
     }
 
     @Override
@@ -61,6 +64,6 @@ class GenericBlockBasedIndexPopulator extends BlockBasedIndexPopulator<GenericKe
     @Override
     protected IndexValueValidator instantiateValueValidator()
     {
-        return new GenericIndexKeyValidator( tree.keyValueSizeCap(), descriptor, layout );
+        return new GenericIndexKeyValidator( tree.keyValueSizeCap(), descriptor, layout, tokenNameLookup );
     }
 }

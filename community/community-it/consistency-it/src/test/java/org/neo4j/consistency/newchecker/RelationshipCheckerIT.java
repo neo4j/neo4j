@@ -51,6 +51,7 @@ import static org.mockito.Mockito.mock;
 import static org.neo4j.consistency.newchecker.ParallelExecution.NOOP_EXCEPTION_HANDLER;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
+import static org.neo4j.kernel.api.schema.SchemaTestUtil.SIMPLE_NAME_LOOKUP;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @DbmsExtension
@@ -123,7 +124,7 @@ class RelationshipCheckerIT
     private void prepareContext() throws Exception
     {
         var neoStores = storageEngine.testAccessNeoStores();
-        var indexAccessors = new IndexAccessors( providerMap, neoStores, new IndexSamplingConfig( config ), PageCacheTracer.NULL );
+        var indexAccessors = new IndexAccessors( providerMap, neoStores, new IndexSamplingConfig( config ), PageCacheTracer.NULL, SIMPLE_NAME_LOOKUP );
         context = new CheckerContext( neoStores, indexAccessors, labelScanStore, relationshipTypeScanStore,
                 execution, mock( ConsistencyReport.Reporter.class, RETURNS_MOCKS ), CacheAccess.EMPTY,
                 tokenHolders, mock( RecordLoading.class ), mock( CountsState.class ), mock( NodeBasedMemoryLimiter.class ),

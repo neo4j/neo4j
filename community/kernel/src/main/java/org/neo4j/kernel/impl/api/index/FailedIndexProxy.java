@@ -102,7 +102,7 @@ public class FailedIndexProxy extends AbstractSwallowingIndexProxy
     }
 
     @Override
-    public void validateBeforeCommit( Value[] tuple )
+    public void validateBeforeCommit( Value[] tuple, long entityId )
     {
     }
 

@@ -61,7 +61,7 @@ public class RecoveringIndexProxy extends AbstractSwallowingIndexProxy
     }
 
     @Override
-    public void validateBeforeCommit( Value[] tuple )
+    public void validateBeforeCommit( Value[] tuple, long entityId )
     {
         throw unsupportedOperation( "Unexpected call for validating value while recovering." );
     }

@@ -46,7 +46,8 @@ class NativeIndexAccessorTest extends NativeIndexAccessorTests<GenericKey,Native
     {
         RecoveryCleanupWorkCollector cleanup = RecoveryCleanupWorkCollector.immediate();
         DatabaseIndexContext context = DatabaseIndexContext.builder( pageCache, fs ).withMonitor( monitor ).withReadOnly( false ).build();
-        return new GenericNativeIndexAccessor( context, indexFiles, layout, cleanup, indexDescriptor, spaceFillingCurveSettings, configuration );
+        return new GenericNativeIndexAccessor( context, indexFiles, layout, cleanup, indexDescriptor, spaceFillingCurveSettings, configuration,
+                tokenNameLookup );
     }
 
     @Override

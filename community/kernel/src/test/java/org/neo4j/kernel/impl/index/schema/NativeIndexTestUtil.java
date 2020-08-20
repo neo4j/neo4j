@@ -32,6 +32,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.Callable;
 
+import org.neo4j.common.TokenNameLookup;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.GBPTreeBuilder;
 import org.neo4j.index.internal.gbptree.Layout;
@@ -42,6 +43,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.api.schema.SchemaTestUtil;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
@@ -89,6 +91,7 @@ public abstract class NativeIndexTestUtil<KEY extends NativeIndexKey<KEY>,VALUE 
     IndexProvider.Monitor monitor = IndexProvider.Monitor.EMPTY;
     JobScheduler jobScheduler;
     IndexPopulator.PopulationWorkScheduler populationWorkScheduler;
+    TokenNameLookup tokenNameLookup;
 
     @BeforeEach
     void setup() throws IOException
@@ -99,6 +102,7 @@ public abstract class NativeIndexTestUtil<KEY extends NativeIndexKey<KEY>,VALUE 
         indexDirectoryStructure = directoriesByProvider( directory.directory( "root" ) ).forProvider( indexDescriptor.getIndexProvider() );
         this.indexFiles = new IndexFiles( fs, indexDirectoryStructure, indexDescriptor.getId() );
         fs.mkdirs( indexFiles.getStoreFile().getParent() );
+        tokenNameLookup = SchemaTestUtil.SIMPLE_NAME_LOOKUP;
         jobScheduler = JobSchedulerFactory.createInitialisedScheduler();
         populationWorkScheduler = new IndexPopulator.PopulationWorkScheduler()
         {

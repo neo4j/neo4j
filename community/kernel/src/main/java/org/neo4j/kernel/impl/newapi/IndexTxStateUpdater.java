@@ -94,7 +94,7 @@ public class IndexTxStateUpdater
                 switch ( changeType )
                 {
                 case ADDED_LABEL:
-                    indexingService.validateBeforeCommit( index, values );
+                    indexingService.validateBeforeCommit( index, values, node.nodeReference() );
                     read.txState().indexDoUpdateEntry( index.schema(), node.nodeReference(), null, valueTuple );
                     break;
                 case REMOVED_LABEL:
@@ -128,7 +128,7 @@ public class IndexTxStateUpdater
                         SchemaDescriptor schema = index.schema();
                         Value[] values = getValueTuple( node, propertyCursor, propertyKeyId, value, schema.getPropertyIds(), materializedProperties,
                                                         memoryTracker );
-                        indexingService.validateBeforeCommit( index, values );
+                        indexingService.validateBeforeCommit( index, values, node.nodeReference() );
                         ValueTuple valueTuple = ValueTuple.of( values );
                         memoryTracker.allocateHeap( valueTuple.getShallowSize() );
                         read.txState().indexDoUpdateEntry( schema, node.nodeReference(), null, valueTuple );
@@ -179,7 +179,7 @@ public class IndexTxStateUpdater
                         int k = ArrayUtils.indexOf( propertyIds, propertyKeyId );
                         valuesBefore[k] = beforeValue;
 
-                        indexingService.validateBeforeCommit( index, valuesAfter );
+                        indexingService.validateBeforeCommit( index, valuesAfter, node.nodeReference() );
                         ValueTuple valuesTupleBefore = ValueTuple.of( valuesBefore );
                         ValueTuple valuesTupleAfter = ValueTuple.of( valuesAfter );
                         memoryTracker.allocateHeap( valuesTupleBefore.getShallowSize() * 2 ); // They are copies and same shallow size

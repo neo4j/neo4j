@@ -82,13 +82,13 @@ public class IndexMapReference implements IndexMapSnapshotProvider
         return new IndexUpdaterMap( indexMap, mode );
     }
 
-    public void validateBeforeCommit( IndexDescriptor index, Value[] tuple )
+    public void validateBeforeCommit( IndexDescriptor index, Value[] tuple, long entityId )
     {
         IndexProxy proxy = indexMap.getIndexProxy( index );
         if ( proxy != null )
         {
             // Do this null-check since from the outside there's a best-effort matching going on between updates and actual indexes backing those.
-            proxy.validateBeforeCommit( tuple );
+            proxy.validateBeforeCommit( tuple, entityId );
         }
     }
 }

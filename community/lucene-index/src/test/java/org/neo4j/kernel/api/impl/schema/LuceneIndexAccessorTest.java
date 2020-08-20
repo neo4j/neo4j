@@ -35,6 +35,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.kernel.api.impl.schema.LuceneTestTokenNameLookup.SIMPLE_TOKEN_LOOKUP;
 
 class LuceneIndexAccessorTest
 {
@@ -45,7 +46,7 @@ class LuceneIndexAccessorTest
     @BeforeEach
     void setUp()
     {
-        accessor = new LuceneIndexAccessor( schemaIndex, IndexPrototype.forSchema( forLabel( 1, 2 ) ).withName( "a" ).materialise( 1 ) );
+        accessor = new LuceneIndexAccessor( schemaIndex, IndexPrototype.forSchema( forLabel( 1, 2 ) ).withName( "a" ).materialise( 1 ), SIMPLE_TOKEN_LOOKUP );
     }
 
     @Test

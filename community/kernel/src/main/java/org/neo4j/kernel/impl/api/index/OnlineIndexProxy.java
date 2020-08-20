@@ -180,9 +180,9 @@ public class OnlineIndexProxy implements IndexProxy
     }
 
     @Override
-    public void validateBeforeCommit( Value[] tuple )
+    public void validateBeforeCommit( Value[] tuple, long entityId )
     {
-        accessor.validateBeforeCommit( tuple );
+        accessor.validateBeforeCommit( entityId, tuple );
     }
 
     @Override

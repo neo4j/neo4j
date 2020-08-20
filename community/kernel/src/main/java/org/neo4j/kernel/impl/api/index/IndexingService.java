@@ -536,9 +536,9 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
     }
 
     @Override
-    public void validateBeforeCommit( IndexDescriptor index, Value[] tuple )
+    public void validateBeforeCommit( IndexDescriptor index, Value[] tuple, long entityId )
     {
-        indexMapRef.validateBeforeCommit( index, tuple );
+        indexMapRef.validateBeforeCommit( index, tuple, entityId );
     }
 
     @Override

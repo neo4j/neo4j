@@ -27,6 +27,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
 
+import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.FulltextSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -224,7 +225,7 @@ public class FulltextIndexProvider extends IndexProvider implements FulltextAdap
 
     @Override
     public IndexPopulator getPopulator( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig,
-            ByteBufferFactory bufferFactory, MemoryTracker memoryTracker )
+            ByteBufferFactory bufferFactory, MemoryTracker memoryTracker, TokenNameLookup tokenNameLookup )
     {
         if ( isReadOnly() )
         {
@@ -233,8 +234,8 @@ public class FulltextIndexProvider extends IndexProvider implements FulltextAdap
         try
         {
             PartitionedIndexStorage indexStorage = getIndexStorage( descriptor.getId() );
-            Analyzer analyzer = createAnalyzer( descriptor, tokenHolders );
-            String[] propertyNames = createPropertyNames( descriptor, tokenHolders );
+            Analyzer analyzer = createAnalyzer( descriptor, tokenNameLookup );
+            String[] propertyNames = createPropertyNames( descriptor, tokenNameLookup );
             DatabaseIndex<FulltextIndexReader> fulltextIndex = FulltextIndexBuilder
                     .create( descriptor, config, tokenHolders.propertyKeyTokens(), analyzer, propertyNames )
                     .withFileSystem( fileSystem )
@@ -256,7 +257,7 @@ public class FulltextIndexProvider extends IndexProvider implements FulltextAdap
     }
 
     @Override
-    public IndexAccessor getOnlineAccessor( IndexDescriptor index, IndexSamplingConfig samplingConfig ) throws IOException
+    public IndexAccessor getOnlineAccessor( IndexDescriptor index, IndexSamplingConfig samplingConfig, TokenNameLookup tokenNameLookup ) throws IOException
     {
         PartitionedIndexStorage indexStorage = getIndexStorage( index.getId() );
         Analyzer analyzer = createAnalyzer( index, tokenHolders );

@@ -22,6 +22,7 @@ package org.neo4j.kernel.api.impl.schema;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 
+import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
@@ -38,10 +39,10 @@ public class LuceneIndexAccessor extends AbstractLuceneIndexAccessor<IndexReader
 {
     private final LuceneIndexValueValidator valueValidator;
 
-    public LuceneIndexAccessor( SchemaIndex luceneIndex, IndexDescriptor descriptor )
+    public LuceneIndexAccessor( SchemaIndex luceneIndex, IndexDescriptor descriptor, TokenNameLookup tokenNameLookup )
     {
         super( luceneIndex, descriptor );
-        this.valueValidator = new LuceneIndexValueValidator( descriptor );
+        this.valueValidator = new LuceneIndexValueValidator( descriptor, tokenNameLookup );
     }
 
     @Override
@@ -71,9 +72,9 @@ public class LuceneIndexAccessor extends AbstractLuceneIndexAccessor<IndexReader
     }
 
     @Override
-    public void validateBeforeCommit( Value[] tuple )
+    public void validateBeforeCommit( long entityId, Value[] tuple )
     {
-        valueValidator.validate( tuple );
+        valueValidator.validate( entityId, tuple );
     }
 
     private class LuceneSchemaIndexUpdater extends AbstractLuceneIndexUpdater

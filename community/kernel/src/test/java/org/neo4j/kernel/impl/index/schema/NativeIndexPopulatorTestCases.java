@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.index.schema;
 
 import java.io.IOException;
 
+import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.gis.spatial.index.curves.StandardConfiguration;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -37,15 +38,15 @@ class NativeIndexPopulatorTestCases
 
     static PopulatorFactory<GenericKey,NativeIndexValue> genericBlockBasedPopulatorFactory()
     {
-        return ( nativeIndexContext, storeFile, layout, descriptor ) ->
+        return ( nativeIndexContext, storeFile, layout, descriptor, tokenNameLookup ) ->
                 new GenericBlockBasedIndexPopulator( nativeIndexContext, storeFile, layout, descriptor, spaceFillingCurveSettings, configuration, false,
-                        heapBufferFactory( 10 * 1024 ), INSTANCE );
+                        heapBufferFactory( 10 * 1024 ), INSTANCE, tokenNameLookup );
     }
 
     @FunctionalInterface
     public interface PopulatorFactory<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue>
     {
         NativeIndexPopulator<KEY,VALUE> create( DatabaseIndexContext databaseIndexContext, IndexFiles indexFiles, IndexLayout<KEY,VALUE> layout,
-                IndexDescriptor descriptor ) throws IOException;
+                IndexDescriptor descriptor, TokenNameLookup tokenNameLookup ) throws IOException;
     }
 }

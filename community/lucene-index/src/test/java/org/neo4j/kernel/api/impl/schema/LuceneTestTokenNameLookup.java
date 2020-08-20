@@ -17,29 +17,29 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.index.schema.tracking;
-
-import java.io.IOException;
+package org.neo4j.kernel.api.impl.schema;
 
 import org.neo4j.common.TokenNameLookup;
-import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.kernel.api.index.IndexAccessor;
-import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 
-public class TrackingReadersIndexProvider extends IndexProvider.Delegating
+public class LuceneTestTokenNameLookup implements TokenNameLookup
 {
-    private final IndexProvider indexProvider;
+    public static final LuceneTestTokenNameLookup SIMPLE_TOKEN_LOOKUP = new LuceneTestTokenNameLookup();
 
-    TrackingReadersIndexProvider( IndexProvider copySource )
+    @Override
+    public String labelGetName( int labelId )
     {
-        super( copySource );
-        this.indexProvider = copySource;
+        return "Label" + labelId;
     }
 
     @Override
-    public IndexAccessor getOnlineAccessor( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, TokenNameLookup tokenNameLookup ) throws IOException
+    public String relationshipTypeGetName( int relationshipTypeId )
     {
-        return new TrackingReadersIndexAccessor( indexProvider.getOnlineAccessor( descriptor, samplingConfig, tokenNameLookup ) );
+        return "RelType" + relationshipTypeId;
+    }
+
+    @Override
+    public String propertyKeyGetName( int propertyKeyId )
+    {
+        return "property" + propertyKeyId;
     }
 }

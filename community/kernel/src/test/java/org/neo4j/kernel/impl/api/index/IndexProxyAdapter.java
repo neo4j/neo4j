@@ -104,7 +104,7 @@ public class IndexProxyAdapter implements IndexProxy
     }
 
     @Override
-    public void validateBeforeCommit( Value[] tuple )
+    public void validateBeforeCommit( Value[] tuple, long entityId )
     {
     }
 

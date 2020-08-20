@@ -160,9 +160,9 @@ class FusionIndexAccessor extends FusionIndexBase<IndexAccessor> implements Inde
     }
 
     @Override
-    public void validateBeforeCommit( Value[] tuple )
+    public void validateBeforeCommit( long entityId, Value[] tuple )
     {
-        instanceSelector.select( slotSelector.selectSlot( tuple, CATEGORY_OF ) ).validateBeforeCommit( tuple );
+        instanceSelector.select( slotSelector.selectSlot( tuple, CATEGORY_OF ) ).validateBeforeCommit( entityId, tuple );
     }
 
     @Override

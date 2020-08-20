@@ -174,7 +174,7 @@ public interface IndexAccessor extends Closeable, ConsistencyCheckable, MinimalI
     /**
      * Validates the {@link Value value tuple} before transaction determines that it can commit.
      */
-    default void validateBeforeCommit( Value[] tuple )
+    default void validateBeforeCommit( long entityId, Value[] tuple )
     {
         // For most value types there are no specific validations to be made.
     }
@@ -350,9 +350,9 @@ public interface IndexAccessor extends Closeable, ConsistencyCheckable, MinimalI
         }
 
         @Override
-        public void validateBeforeCommit( Value[] tuple )
+        public void validateBeforeCommit( long entityId, Value[] tuple )
         {
-            delegate.validateBeforeCommit( tuple );
+            delegate.validateBeforeCommit( entityId, tuple );
         }
 
         @Override

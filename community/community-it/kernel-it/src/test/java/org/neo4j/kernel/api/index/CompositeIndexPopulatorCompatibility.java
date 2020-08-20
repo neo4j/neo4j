@@ -72,13 +72,13 @@ public class CompositeIndexPopulatorCompatibility extends IndexProviderCompatibi
         {
             // when
             IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.defaults() );
-            withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ), INSTANCE ),
+            withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup ),
                     p -> p.add( Arrays.asList(
                     add( 1, descriptor.schema(), Values.of( "v1" ), Values.of( "v2" ) ),
                     add( 2, descriptor.schema(), Values.of( "v1" ), Values.of( "v2" ) ) ), NULL ) );
 
             // then
-            try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( descriptor, indexSamplingConfig ) )
+            try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( descriptor, indexSamplingConfig, tokenNameLookup ) )
             {
                 try ( IndexReader reader = accessor.newReader();
                       NodeValueIterator nodes = new NodeValueIterator() )
@@ -110,7 +110,7 @@ public class CompositeIndexPopulatorCompatibility extends IndexProviderCompatibi
         {
             // when
             IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.defaults() );
-            withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ), INSTANCE ), p ->
+            withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup ), p ->
             {
                 try
                 {
@@ -140,7 +140,7 @@ public class CompositeIndexPopulatorCompatibility extends IndexProviderCompatibi
         {
             // given
             IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.defaults() );
-            withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ), INSTANCE ), p ->
+            withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup ), p ->
             {
                 // when
                 p.add( Arrays.asList(

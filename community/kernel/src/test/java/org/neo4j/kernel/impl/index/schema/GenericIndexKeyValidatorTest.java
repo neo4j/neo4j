@@ -43,6 +43,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.kernel.api.schema.SchemaTestUtil.SIMPLE_NAME_LOOKUP;
 import static org.neo4j.values.storable.DateValue.epochDate;
 import static org.neo4j.values.storable.Values.intValue;
 import static org.neo4j.values.storable.Values.stringValue;
@@ -62,10 +63,10 @@ class GenericIndexKeyValidatorTest
         // given
         Layout<GenericKey,NativeIndexValue> layout = mock( Layout.class );
         doThrow( RuntimeException.class ).when( layout ).newKey();
-        GenericIndexKeyValidator validator = new GenericIndexKeyValidator( 120, descriptor, layout );
+        GenericIndexKeyValidator validator = new GenericIndexKeyValidator( 120, descriptor, layout, SIMPLE_NAME_LOOKUP );
 
         // when
-        validator.validate( intValue( 10 ), epochDate( 100 ), stringValue( "abc" ) );
+        validator.validate( 42, intValue( 10 ), epochDate( 100 ), stringValue( "abc" ) );
 
         // then no exception should have been thrown
     }
@@ -76,11 +77,11 @@ class GenericIndexKeyValidatorTest
         // given
         Layout<GenericKey,NativeIndexValue> layout = mock( Layout.class );
         when( layout.newKey() ).thenReturn( new CompositeGenericKey( 3, spatialSettings() ) );
-        GenericIndexKeyValidator validator = new GenericIndexKeyValidator( 48, descriptor, layout );
+        GenericIndexKeyValidator validator = new GenericIndexKeyValidator( 48, descriptor, layout, SIMPLE_NAME_LOOKUP );
 
         // when
         var e = assertThrows( IllegalArgumentException.class,
-                () -> validator.validate( intValue( 10 ), epochDate( 100 ), stringValue( "abcdefghijklmnopqrstuvw" ) ) );
+                () -> validator.validate( 42, intValue( 10 ), epochDate( 100 ), stringValue( "abcdefghijklmnopqrstuvw" ) ) );
         assertThat( e.getMessage() ).contains( "abcdefghijklmnopqrstuvw" );
         verify( layout ).newKey();
     }
@@ -92,7 +93,7 @@ class GenericIndexKeyValidatorTest
         int slots = random.nextInt( 1, 6 );
         int maxLength = random.nextInt( 15, 30 ) * slots;
         GenericLayout layout = new GenericLayout( slots, spatialSettings() );
-        GenericIndexKeyValidator validator = new GenericIndexKeyValidator( maxLength, descriptor, layout );
+        GenericIndexKeyValidator validator = new GenericIndexKeyValidator( maxLength, descriptor, layout, SIMPLE_NAME_LOOKUP );
         GenericKey key = layout.newKey();
 
         for ( int i = 0; i < 100; i++ )
@@ -102,7 +103,7 @@ class GenericIndexKeyValidatorTest
             boolean isOk;
             try
             {
-                validator.validate( tuple );
+                validator.validate( 42, tuple );
                 isOk = true;
             }
             catch ( IllegalArgumentException e )

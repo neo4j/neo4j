@@ -46,6 +46,7 @@ import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.api.impl.schema.LuceneIndexProvider.DESCRIPTOR;
+import static org.neo4j.kernel.api.impl.schema.LuceneTestTokenNameLookup.SIMPLE_TOKEN_LOOKUP;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
@@ -74,7 +75,7 @@ class LuceneIndexProviderTest
                 getLuceneIndexProvider( readOnlyConfig, new DirectoryFactory.InMemoryDirectoryFactory(), fileSystem, graphDbDir );
         assertThrows( UnsupportedOperationException.class,
                 () -> readOnlyIndexProvider.getPopulator( descriptor, new IndexSamplingConfig( readOnlyConfig ),
-                        heapBufferFactory( 1024 ), INSTANCE ) );
+                        heapBufferFactory( 1024 ), INSTANCE, SIMPLE_TOKEN_LOOKUP ) );
     }
 
     @Test
@@ -92,7 +93,7 @@ class LuceneIndexProviderTest
     }
 
     @Test
-    void indexUpdateNotAllowedInReadOnlyMode() throws Exception
+    void indexUpdateNotAllowedInReadOnlyMode()
     {
         Config readOnlyConfig = Config.defaults( GraphDatabaseSettings.read_only, true );
         LuceneIndexProvider readOnlyIndexProvider = getLuceneIndexProvider( readOnlyConfig,
@@ -127,7 +128,7 @@ class LuceneIndexProviderTest
     private IndexAccessor getIndexAccessor( Config readOnlyConfig, LuceneIndexProvider indexProvider )
             throws IOException
     {
-        return indexProvider.getOnlineAccessor( descriptor, new IndexSamplingConfig( readOnlyConfig ) );
+        return indexProvider.getOnlineAccessor( descriptor, new IndexSamplingConfig( readOnlyConfig ), SIMPLE_TOKEN_LOOKUP );
     }
 
     private LuceneIndexProvider getLuceneIndexProvider( Config config, DirectoryFactory directoryFactory,

@@ -143,7 +143,7 @@ public class PopulatingIndexProxy implements IndexProxy
     }
 
     @Override
-    public void validateBeforeCommit( Value[] tuple )
+    public void validateBeforeCommit( Value[] tuple, long entityId )
     {
         // It's OK to put whatever values in while populating because it will take the natural path of failing the population.
     }
