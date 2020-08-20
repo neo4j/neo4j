@@ -225,6 +225,7 @@ MORE : { < STRING2_OPEN: "\"" > : STRING2 }
 
 MORE : { < ESCAPED_SYMBOLIC_NAME_OPEN: "`" > : ESC_SYMB_NAME }
 <ESC_SYMB_NAME> MORE: { < ~["`"] > }
+<ESC_SYMB_NAME> MORE: { "``" { image.delete(image.length()-2, image.length()); image.append("`"); } }
 <ESC_SYMB_NAME> TOKEN: { <ESCAPED_SYMBOLIC_NAME: "`"> {matchedToken.image = image.substring(1, image.length()-1); } : DEFAULT }
 
 

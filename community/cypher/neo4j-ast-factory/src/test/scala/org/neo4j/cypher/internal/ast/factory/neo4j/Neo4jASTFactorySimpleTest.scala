@@ -95,6 +95,26 @@ class Neo4jASTFactorySimpleTest extends ParsingTestBase with FunSuiteLike with T
       |RETURN `This isn\'t a common variable`.happy""".stripMargin)
   }
 
+  test("allow escaped symbolic name") {
+    // The parsed label should be Label
+    assertSameAST("CREATE (n:`Label`)")
+  }
+
+  test("allow escaped backticks inside escaped symbolic name") {
+    // The parsed label should be Label`123
+    assertSameAST("CREATE (n:`Label``123`)")
+  }
+
+  test("allow escaped backticks first and last in escaped symbolic name") {
+    // The parsed label should be ``Label`
+    assertSameAST("CREATE (n:`````Label```)")
+  }
+
+  test("disallow unescaped backticks in escaped symbolic name") {
+    // Should throw error on same position in both parsers
+    assertSameAST("CREATE (n:`L`abel`)")
+  }
+
   // extra spaces tests
 
   private def assertSameASTWithExtraSpaces(query: String) = {
