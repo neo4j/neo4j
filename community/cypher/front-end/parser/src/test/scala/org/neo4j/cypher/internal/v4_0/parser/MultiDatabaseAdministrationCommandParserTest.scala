@@ -30,16 +30,16 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationCommand
     yields(ast.ShowDatabase("foo.bar"))
   }
 
+  test("SHOW DATABASE foo.bar") {
+    yields(ast.ShowDatabase("foo.bar"))
+  }
+
   test("SHOW DATABASES") {
     yields(ast.ShowDatabases())
   }
 
   test("SHOW DEFAULT DATABASE") {
     yields(ast.ShowDefaultDatabase())
-  }
-
-  test("SHOW DATABASE foo.bar") {
-    yields(ast.ShowDatabase("foo.bar"))
   }
 
   test("SHOW DATABASE") {
@@ -150,12 +150,12 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationCommand
     yields(ast.DropDatabase("foo.bar", ifExists = false))
   }
 
-  test("DROP DATABASE foo IF EXISTS") {
-    yields(ast.DropDatabase("foo", ifExists = true))
-  }
-
   test("CATALOG DROP DATABASE foo.bar") {
     yields(ast.DropDatabase("foo.bar", ifExists = false))
+  }
+
+  test("DROP DATABASE foo IF EXISTS") {
+    yields(ast.DropDatabase("foo", ifExists = true))
   }
 
   test("DROP DATABASE") {

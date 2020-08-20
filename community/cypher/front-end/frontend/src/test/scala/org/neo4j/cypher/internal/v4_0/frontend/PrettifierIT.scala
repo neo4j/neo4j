@@ -501,6 +501,9 @@ class PrettifierIT extends CypherFunSuite {
       "catalog create database `graph.db`" ->
         "CREATE DATABASE `graph.db`",
 
+      "catalog create database graph.db" ->
+        "CREATE DATABASE `graph.db`",
+
       "catalog DROP database foO_Bar_42" ->
         "DROP DATABASE foO_Bar_42",
 
@@ -512,6 +515,9 @@ class PrettifierIT extends CypherFunSuite {
 
       "start database foO_Bar_42" ->
         "START DATABASE foO_Bar_42",
+
+      "catalog start database graph.db" ->
+        "START DATABASE `graph.db`",
 
       "catalog stop database foO_Bar_42" ->
         "STOP DATABASE foO_Bar_42",
@@ -689,6 +695,9 @@ class PrettifierIT extends CypherFunSuite {
 
           s"$action stop on databases FoO $preposition role" ->
             s"$action STOP ON DATABASE FoO $preposition role",
+
+          s"$action stop on databases F.o.O $preposition role" ->
+            s"$action STOP ON DATABASE `F.o.O` $preposition role",
 
           s"$action create index on database * $preposition role" ->
             s"$action CREATE INDEX ON DATABASE * $preposition role",
