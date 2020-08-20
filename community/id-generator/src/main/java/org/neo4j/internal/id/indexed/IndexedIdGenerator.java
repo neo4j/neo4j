@@ -196,9 +196,9 @@ public class IndexedIdGenerator implements IdGenerator
 
     /**
      * Default value whether or not to strictly prioritize ids from freelist, as opposed to allocating from high id.
-     * Given a scenario where there are multiple concurrent calls to {@link #nextId(PageCursorTracer)} or {@link #nextIdBatch(int, PageCursorTracer)} and there
-     * are free ids on the freelist, some perhaps cached, some not. Thread noticing that there are no free ids cached will try to acquire scanner lock and if
-     * it succeeds it will perform a scan and place found free ids in the cache and return. Otherwise:
+     * Given a scenario where there are multiple concurrent calls to {@link #nextId(PageCursorTracer)} or {@link #nextIdBatch(int, boolean, PageCursorTracer)}
+     * and there are free ids on the freelist, some perhaps cached, some not. Thread noticing that there are no free ids cached will try to acquire
+     * scanner lock and if it succeeds it will perform a scan and place found free ids in the cache and return. Otherwise:
      * <ul>
      *     <li>If {@code false}: thread will allocate from high id and return, to not block id allocation request.</li>
      *     <li>If {@code true}: thread will await lock released and check cache afterwards. If no id is cached even then it will allocate from high id.</li>
@@ -441,8 +441,22 @@ public class IndexedIdGenerator implements IdGenerator
     }
 
     @Override
-    public org.neo4j.internal.id.IdRange nextIdBatch( int size, PageCursorTracer cursorTracer )
+    public org.neo4j.internal.id.IdRange nextIdBatch( int size, boolean forceConsecutiveAllocation, PageCursorTracer cursorTracer )
     {
+        assertNotReadOnly();
+        maintenance( cursorTracer );
+
+        if ( forceConsecutiveAllocation )
+        {
+            long startId;
+            do
+            {
+                startId = highId.getAndAdd( size );
+            }
+            while ( IdValidator.hasReservedIdInRange( startId, startId + size ) );
+            return new org.neo4j.internal.id.IdRange( EMPTY_LONG_ARRAY, startId, size );
+        }
+
         long prev = -1;
         long startOfRange = -1;
         int rangeLength = 0;

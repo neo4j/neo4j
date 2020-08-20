@@ -28,15 +28,23 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.function.Executable;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.Random;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.LongSupplier;
 import java.util.stream.Stream;
@@ -46,6 +54,7 @@ import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.id.FreeIds;
 import org.neo4j.internal.id.IdCapacityExceededException;
 import org.neo4j.internal.id.IdGenerator.Marker;
+import org.neo4j.internal.id.IdRange;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.id.IdValidator;
 import org.neo4j.io.pagecache.PageCache;
@@ -760,6 +769,56 @@ class IndexedIdGeneratorTest
                 assertThat( cursorTracer.unpins() ).isOne();
                 assertThat( cursorTracer.hits() ).isOne();
             }
+        }
+    }
+
+    @Test
+    void shouldAllocateConsecutiveIdBatches()
+    {
+        // given
+        AtomicInteger numAllocations = new AtomicInteger();
+        Race race = new Race().withEndCondition( () -> numAllocations.get() >= 10_000 );
+        Collection<IdRange> allocations = ConcurrentHashMap.newKeySet();
+        race.addContestants( 4, () ->
+        {
+            int size = ThreadLocalRandom.current().nextInt( 10, 1_000 );
+            IdRange idRange = idGenerator.nextIdBatch( size, true, NULL );
+            assertEquals( 0, idRange.getDefragIds().length );
+            assertEquals( size, idRange.getRangeLength() );
+            allocations.add( idRange );
+            numAllocations.incrementAndGet();
+        } );
+
+        // when
+        race.goUnchecked();
+
+        // then
+        IdRange[] sortedAllocations = allocations.toArray( new IdRange[allocations.size()] );
+        Arrays.sort( sortedAllocations, Comparator.comparingLong( IdRange::getRangeStart ) );
+        long prevEndExclusive = 0;
+        for ( IdRange allocation : sortedAllocations )
+        {
+            assertEquals( prevEndExclusive, allocation.getRangeStart() );
+            prevEndExclusive = allocation.getRangeStart() + allocation.getRangeLength();
+        }
+    }
+
+    @ValueSource( booleans = {true, false} )
+    @ParameterizedTest
+    void shouldNotAllocateReservedIdsInBatchedAllocation( boolean consecutive ) throws IOException
+    {
+        // given
+        idGenerator.start( NO_FREE_IDS, NULL );
+        idGenerator.setHighId( IdValidator.INTEGER_MINUS_ONE - 100 );
+
+        // when
+        IdRange batch = idGenerator.nextIdBatch( 200, consecutive, NULL );
+
+        // then
+        assertFalse( IdValidator.hasReservedIdInRange( batch.getRangeStart(), batch.getRangeStart() + batch.getRangeLength() ) );
+        for ( long defragId : batch.getDefragIds() )
+        {
+            assertFalse( IdValidator.isReservedId( defragId ) );
         }
     }
 

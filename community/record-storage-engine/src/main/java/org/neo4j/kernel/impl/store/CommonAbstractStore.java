@@ -39,7 +39,6 @@ import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.internal.id.FreeIds;
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdGeneratorFactory;
-import org.neo4j.internal.id.IdRange;
 import org.neo4j.internal.id.IdSequence;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.id.IdValidator;
@@ -490,13 +489,6 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         {
             throw new IllegalStateException( "IdGenerator is not initialized" );
         }
-    }
-
-    @Override
-    public IdRange nextIdBatch( int size, PageCursorTracer cursorTracer )
-    {
-        assertIdGeneratorInitialized();
-        return idGenerator.nextIdBatch( size, cursorTracer );
     }
 
     /**

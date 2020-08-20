@@ -23,9 +23,6 @@ import java.util.Arrays;
 
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
-import static java.lang.Integer.min;
-import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
-
 public class IdRangeIterator implements IdSequence
 {
     public static final long VALUE_REPRESENTING_NULL = -1;
@@ -63,33 +60,6 @@ public class IdRangeIterator implements IdSequence
         {
             ++position;
         }
-    }
-
-    @Override
-    public IdRange nextIdBatch( int size, PageCursorTracer ignored )
-    {
-        int sizeLeft = size;
-        long[] rangeDefrag = EMPTY_LONG_ARRAY;
-        if ( position < defrag.length )
-        {
-            // There are defragged ids to grab
-            int numberOfDefrags = min( sizeLeft, defrag.length - position );
-            rangeDefrag = Arrays.copyOfRange( defrag, position, numberOfDefrags + position );
-            position += numberOfDefrags;
-            sizeLeft -= numberOfDefrags;
-        }
-
-        long rangeStart = 0;
-        int rangeLength = 0;
-        int rangeOffset = currentRangeOffset();
-        int rangeAvailable = length - rangeOffset;
-        if ( sizeLeft > 0 && rangeAvailable > 0 )
-        {
-            rangeStart = start + rangeOffset;
-            rangeLength = min( rangeAvailable, sizeLeft );
-            position += rangeLength;
-        }
-        return new IdRange( rangeDefrag, rangeStart, rangeLength );
     }
 
     private long nextRangeCandidate()
