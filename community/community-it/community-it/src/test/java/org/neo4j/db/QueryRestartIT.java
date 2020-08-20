@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.collection.Dependencies;
 import org.neo4j.dbms.api.DatabaseManagementService;
@@ -34,15 +35,20 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.scheduler.Group;
+import org.neo4j.scheduler.JobHandle;
+import org.neo4j.scheduler.JobMonitoringParams;
 import org.neo4j.snapshot.TestTransactionVersionContextSupplier;
 import org.neo4j.snapshot.TestVersionContext;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.time.Clocks;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -174,6 +180,7 @@ class QueryRestartIT
         // Inject TransactionVersionContextSupplier
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependencies( testContextSupplier );
+        dependencies.satisfyDependency( new LimitedJobScheduler() );
 
         managementService = new TestDatabaseManagementServiceBuilder( storeDir )
                 .setExternalDependencies( dependencies )
@@ -191,6 +198,29 @@ class QueryRestartIT
             Node node = transaction.createNode( label );
             node.setProperty( "c", "d" );
             transaction.commit();
+        }
+    }
+
+    private static class LimitedJobScheduler extends CentralJobScheduler
+    {
+        protected LimitedJobScheduler()
+        {
+            super( Clocks.nanoClock() );
+        }
+
+        @Override
+        public JobHandle<?> scheduleRecurring( Group group, JobMonitoringParams monitoredJobParams, Runnable runnable, long period, TimeUnit timeUnit )
+        {
+            if ( isRestricted( group ) )
+            {
+                return JobHandle.EMPTY;
+            }
+            return super.scheduleRecurring( group, monitoredJobParams, runnable, period, timeUnit );
+        }
+
+        private boolean isRestricted( Group group )
+        {
+            return Group.STORAGE_MAINTENANCE == group;
         }
     }
 }

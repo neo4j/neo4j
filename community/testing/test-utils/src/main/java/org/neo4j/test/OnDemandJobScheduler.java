@@ -35,7 +35,7 @@ import org.neo4j.test.scheduler.JobSchedulerAdapter;
 
 public class OnDemandJobScheduler extends JobSchedulerAdapter
 {
-    private List<OnDemandJobHandle<?>> jobs = new CopyOnWriteArrayList<>();
+    private final List<OnDemandJobHandle<?>> jobs = new CopyOnWriteArrayList<>();
 
     private final boolean removeJobsAfterExecution;
 
