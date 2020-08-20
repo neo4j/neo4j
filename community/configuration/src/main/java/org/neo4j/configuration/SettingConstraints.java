@@ -26,6 +26,8 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Function;
+import java.util.function.LongFunction;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -415,12 +417,13 @@ public final class SettingConstraints
         };
     }
 
-    public static SettingConstraint<Integer> lessThanOrEqual( Setting<Integer> other )
+    public static <T> SettingConstraint<T> lessThanOrEqual( Function<T, Long> converter, Setting<T> other, LongFunction<Long> otherModifier,
+                                                            String modifierDescription )
     {
         return new SettingConstraint<>()
         {
             @Override
-            public void validate( Integer value, Configuration config )
+            public void validate( T value, Configuration config )
             {
                 var otherValue = config.get( other );
                 if ( value == null )
@@ -431,18 +434,49 @@ public final class SettingConstraints
                 {
                     throw new IllegalArgumentException( other.name() + " can not be null" );
                 }
-                if ( value > otherValue )
+
+                var thisAsLong = converter.apply( value );
+                var otherAsLong = converter.apply( otherValue );
+                if ( thisAsLong == null )
                 {
-                    throw new IllegalArgumentException( getDescription() + format( "was %d, which is not less than or equal to %d", value, otherValue ) );
+                    throw new IllegalStateException( "Result of " + converter.toString() + " on " + value.toString() + " can not be null" );
+                }
+                if ( otherAsLong == null )
+                {
+                    throw new IllegalStateException(
+                            "Result of " + converter.toString() + " on " + other.name() + " (" + otherValue.toString() + ") can not be null"
+                    );
+                }
+
+                var modifiedOther = otherModifier.apply( otherAsLong );
+                if ( modifiedOther == null )
+                {
+                    throw new IllegalStateException( "Result of " + otherModifier.toString() + " on " + other.name() + " (" + otherAsLong + ") was null" );
+                }
+
+                if ( thisAsLong > modifiedOther )
+                {
+                    throw new IllegalArgumentException( getDescription() + format( "was %d, which is not less than or equal to %d from %s",
+                                                                                   thisAsLong, modifiedOther, other.name() ) );
                 }
             }
 
             @Override
             public String getDescription()
             {
-                return format( "Must be set less than or equal to value of '%s'", other.name() );
+                return format( "Must be set less than or equal to value of '%s' %s", other.name(), modifierDescription );
             }
         };
+    }
+
+    public static <T> SettingConstraint<T> lessThanOrEqual( Function<T,Long> converter, Setting<T> other )
+    {
+        return lessThanOrEqual( converter, other, s -> s, "" );
+    }
+
+    public static SettingConstraint<Integer> lessThanOrEqual( Setting<Integer> other )
+    {
+        return lessThanOrEqual( Long::valueOf, other );
     }
 
     public static <T> SettingConstraint<T> ifCluster( SettingConstraint<T> settingConstraint )

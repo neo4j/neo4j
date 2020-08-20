@@ -58,6 +58,7 @@ import static org.neo4j.configuration.SettingConstraints.any;
 import static org.neo4j.configuration.SettingConstraints.dependency;
 import static org.neo4j.configuration.SettingConstraints.except;
 import static org.neo4j.configuration.SettingConstraints.is;
+import static org.neo4j.configuration.SettingConstraints.lessThanOrEqual;
 import static org.neo4j.configuration.SettingConstraints.matches;
 import static org.neo4j.configuration.SettingConstraints.max;
 import static org.neo4j.configuration.SettingConstraints.min;
@@ -421,6 +422,65 @@ class SettingTest
         assertThrows( IllegalArgumentException.class, () -> setting.validate( 20.01, EMPTY ) );
         assertDoesNotThrow( () -> setting.validate( 10.1, EMPTY ) );
         assertDoesNotThrow( () -> setting.validate( 19.9999, EMPTY ) );
+    }
+
+    @Test
+    void testLessThanOrEqualConstraint()
+    {
+        // Given
+        var intLimit = (SettingImpl<Integer>) settingBuilder( "limit.int", INT ).build();
+        var durationLimit = (SettingImpl<Duration>) settingBuilder( "limit.duration", DURATION ).build();
+
+        Map<Setting<?>,Object> settings = new HashMap<>();
+        Configuration simpleConfig = new Configuration()
+        {
+            @Override
+            public <T> T get( Setting<T> setting )
+            {
+                return (T) settings.get( setting );
+            }
+        };
+
+        settings.put( intLimit, 5 );
+        settings.put( durationLimit, Duration.ofSeconds( 123 ) );
+
+        // When
+        var mustBeLessSetting = (SettingImpl<Integer>) settingBuilder( "less.than.duration", INT ).addConstraint( lessThanOrEqual( intLimit ) ).build();
+        // Then
+        assertDoesNotThrow( () -> mustBeLessSetting.validate( -1, simpleConfig ) );
+        assertDoesNotThrow( () -> mustBeLessSetting.validate( 0, simpleConfig ) );
+        assertDoesNotThrow( () -> mustBeLessSetting.validate( 1, simpleConfig ) );
+        assertDoesNotThrow( () -> mustBeLessSetting.validate( 5, simpleConfig ) );
+        assertThrows( IllegalArgumentException.class, () -> mustBeLessSetting.validate( 6, simpleConfig ) );
+
+        // When
+        var mustBeLessThanHalfSetting = (SettingImpl<Integer>) settingBuilder( "less.than.half.int", INT )
+                .addConstraint( lessThanOrEqual( i -> (long) i, intLimit, i -> i / 2, "divided by 2" ) ).build();
+        // Then
+        assertDoesNotThrow( () -> mustBeLessThanHalfSetting.validate( -1, simpleConfig ) );
+        assertDoesNotThrow( () -> mustBeLessThanHalfSetting.validate( 0, simpleConfig ) );
+        assertDoesNotThrow( () -> mustBeLessThanHalfSetting.validate( 2, simpleConfig ) );
+        assertThrows( IllegalArgumentException.class, () -> mustBeLessThanHalfSetting.validate( 3, simpleConfig ) );
+
+        // When
+        var mustBeLessDuration = (SettingImpl<Duration>) settingBuilder( "less.than.duration", DURATION )
+                .addConstraint( lessThanOrEqual( Duration::toMillis, durationLimit ) ).build();
+        // Then
+        assertDoesNotThrow( () -> mustBeLessDuration.validate( Duration.ofSeconds( -1 ), simpleConfig ) );
+        assertDoesNotThrow( () -> mustBeLessDuration.validate( Duration.ofSeconds( 0 ), simpleConfig ) );
+        assertDoesNotThrow( () -> mustBeLessDuration.validate( Duration.ofMinutes( 1 ), simpleConfig ) );
+        assertDoesNotThrow( () -> mustBeLessDuration.validate( Duration.ofSeconds( 123 ), simpleConfig ) );
+        assertThrows( IllegalArgumentException.class, () -> mustBeLessDuration.validate( Duration.ofMillis( 123001 ), simpleConfig ) );
+
+        // When
+        var mustBeLessThanHalfDuration = (SettingImpl<Duration>) settingBuilder( "less.than.duration", DURATION )
+                .addConstraint( lessThanOrEqual( Duration::toMillis, durationLimit, i -> i / 2, "divided by 2" ) ).build();
+        // Then
+        assertDoesNotThrow( () -> mustBeLessThanHalfDuration.validate( Duration.ofSeconds( -1 ), simpleConfig ) );
+        assertDoesNotThrow( () -> mustBeLessThanHalfDuration.validate( Duration.ofSeconds( 0 ), simpleConfig ) );
+        assertDoesNotThrow( () -> mustBeLessThanHalfDuration.validate( Duration.ofMinutes( 1 ), simpleConfig ) );
+        assertDoesNotThrow( () -> mustBeLessThanHalfDuration.validate( Duration.ofSeconds( 61 ), simpleConfig ) );
+        assertThrows( IllegalArgumentException.class, () -> mustBeLessThanHalfDuration.validate( Duration.ofMillis( 61501 ), simpleConfig ) );
     }
 
     @Test
