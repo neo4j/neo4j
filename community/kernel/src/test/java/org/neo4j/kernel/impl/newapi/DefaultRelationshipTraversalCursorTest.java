@@ -20,18 +20,44 @@
 package org.neo4j.kernel.impl.newapi;
 
 import org.junit.jupiter.api.Test;
-import org.mockito.internal.util.reflection.FieldSetter;
 
+import java.util.Iterator;
+import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.LongStream;
 
+import org.neo4j.collection.RawIterator;
+import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.Direction;
+import org.neo4j.internal.index.label.TokenScanReader;
+import org.neo4j.internal.kernel.api.IndexReadSession;
+import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.internal.kernel.api.PopulationProgress;
+import org.neo4j.internal.kernel.api.SchemaReadCore;
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
+import org.neo4j.internal.kernel.api.procs.ProcedureHandle;
+import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
+import org.neo4j.internal.kernel.api.procs.QualifiedName;
+import org.neo4j.internal.kernel.api.procs.UserAggregator;
+import org.neo4j.internal.kernel.api.procs.UserFunctionHandle;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.internal.schema.ConstraintDescriptor;
+import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.kernel.api.index.IndexReader;
+import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.state.TxState;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.RelationshipDirection;
 import org.neo4j.storageengine.api.RelationshipSelection;
 import org.neo4j.storageengine.api.StoragePropertyCursor;
+import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StorageRelationshipTraversalCursor;
+import org.neo4j.values.AnyValue;
+import org.neo4j.values.storable.Value;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -52,7 +78,7 @@ class DefaultRelationshipTraversalCursorTest
     // Regular traversal of a sparse chain
 
     @Test
-    void regularTraversal() throws NoSuchFieldException
+    void regularTraversal()
     {
         // given
         StorageRelationshipTraversalCursor storeCursor = storeCursor( 100, 102, 104 );
@@ -67,7 +93,7 @@ class DefaultRelationshipTraversalCursorTest
     }
 
     @Test
-    void regularTraversalWithTxState() throws NoSuchFieldException
+    void regularTraversalWithTxState()
     {
         // given
         StorageRelationshipTraversalCursor storeCursor = storeCursor( 100, 102, 104 );
@@ -84,7 +110,7 @@ class DefaultRelationshipTraversalCursorTest
     // Sparse traversal but with tx-state filtering
 
     @Test
-    void traversalWithTxStateFiltering() throws NoSuchFieldException
+    void traversalWithTxStateFiltering()
     {
         // given
         StorageRelationshipTraversalCursor storeCursor =
@@ -114,7 +140,7 @@ class DefaultRelationshipTraversalCursorTest
     // Empty store, but filter tx-state
 
     @Test
-    void emptyStoreOutgoingOfType() throws NoSuchFieldException
+    void emptyStoreOutgoingOfType()
     {
         // given
         StorageRelationshipTraversalCursor storeCursor = emptyStoreCursor();
@@ -136,7 +162,7 @@ class DefaultRelationshipTraversalCursorTest
     }
 
     @Test
-    void emptyStoreIncomingOfType() throws NoSuchFieldException
+    void emptyStoreIncomingOfType()
     {
         // given
         StorageRelationshipTraversalCursor storeCursor = emptyStoreCursor();
@@ -159,7 +185,7 @@ class DefaultRelationshipTraversalCursorTest
     }
 
     @Test
-    void emptyStoreAllOfType() throws NoSuchFieldException
+    void emptyStoreAllOfType()
     {
         // given
         StorageRelationshipTraversalCursor storeCursor = emptyStoreCursor();
@@ -183,25 +209,24 @@ class DefaultRelationshipTraversalCursorTest
 
     // HELPERS
 
-    private static Read emptyTxState() throws NoSuchFieldException
+    private static Read emptyTxState()
     {
-        Read read = mock( Read.class );
         KernelTransactionImplementation ktx = mock( KernelTransactionImplementation.class );
-        FieldSetter.setField(read, Read.class.getDeclaredField("ktx"), ktx);
+        Read read = new TestRead( ktx );
         when( ktx.securityContext() ).thenReturn( SecurityContext.AUTH_DISABLED );
         return read;
     }
 
-    private static Read txState( long... ids ) throws NoSuchFieldException
+    private static Read txState( long... ids )
     {
         return txState( LongStream.of( ids ).mapToObj( id -> rel( id, node, node, type ) ).toArray( Rel[]::new ) );
     }
 
-    private static Read txState( Rel... rels ) throws NoSuchFieldException
+    private static Read txState( Rel... rels )
     {
-        Read read = mock( Read.class );
         KernelTransactionImplementation ktx = mock( KernelTransactionImplementation.class );
-        FieldSetter.setField(read, Read.class.getDeclaredField("ktx"), ktx);
+        Read read = new TestRead( ktx );
+
         when( ktx.securityContext() ).thenReturn( SecurityContext.AUTH_DISABLED );
         if ( rels.length > 0 )
         {
@@ -377,5 +402,355 @@ class DefaultRelationshipTraversalCursorTest
             {
             }
         };
+    }
+
+    private static class TestRead extends Read
+    {
+        TestRead( KernelTransactionImplementation ktx )
+        {
+            super( mock( StorageReader.class ), mock( DefaultPooledCursors.class ), PageCursorTracer.NULL, ktx, Config.defaults() );
+        }
+
+        @Override
+        public IndexReader indexReader( IndexDescriptor index, boolean fresh )
+        {
+            return null;
+        }
+
+        @Override
+        TokenScanReader labelScanReader()
+        {
+            return null;
+        }
+
+        @Override
+        TokenScanReader relationshipTypeScanReader()
+        {
+            return null;
+        }
+
+        @Override
+        public UserFunctionHandle functionGet( QualifiedName name )
+        {
+            return null;
+        }
+
+        @Override
+        public UserFunctionHandle aggregationFunctionGet( QualifiedName name )
+        {
+            return null;
+        }
+
+        @Override
+        public ProcedureHandle procedureGet( QualifiedName name )
+        {
+            return null;
+        }
+
+        @Override
+        public Set<ProcedureSignature> proceduresGetAll()
+        {
+            return null;
+        }
+
+        @Override
+        public RawIterator<AnyValue[],ProcedureException> procedureCallRead( int id, AnyValue[] arguments, ProcedureCallContext context )
+        {
+            return null;
+        }
+
+        @Override
+        public RawIterator<AnyValue[],ProcedureException> procedureCallReadOverride( int id, AnyValue[] arguments, ProcedureCallContext context )
+        {
+            return null;
+        }
+
+        @Override
+        public RawIterator<AnyValue[],ProcedureException> procedureCallWrite( int id, AnyValue[] arguments, ProcedureCallContext context )
+        {
+            return null;
+        }
+
+        @Override
+        public RawIterator<AnyValue[],ProcedureException> procedureCallWriteOverride( int id, AnyValue[] arguments, ProcedureCallContext context )
+        {
+            return null;
+        }
+
+        @Override
+        public RawIterator<AnyValue[],ProcedureException> procedureCallSchema( int id, AnyValue[] arguments, ProcedureCallContext context )
+        {
+            return null;
+        }
+
+        @Override
+        public RawIterator<AnyValue[],ProcedureException> procedureCallSchemaOverride( int id, AnyValue[] arguments, ProcedureCallContext context )
+        {
+            return null;
+        }
+
+        @Override
+        public AnyValue functionCall( int id, AnyValue[] arguments )
+        {
+            return null;
+        }
+
+        @Override
+        public AnyValue functionCallOverride( int id, AnyValue[] arguments )
+        {
+            return null;
+        }
+
+        @Override
+        public UserAggregator aggregationFunction( int id )
+        {
+            return null;
+        }
+
+        @Override
+        public UserAggregator aggregationFunctionOverride( int id )
+        {
+            return null;
+        }
+
+        @Override
+        public PageCursorTracer cursorTracer()
+        {
+            return null;
+        }
+
+        @Override
+        public MemoryTracker memoryTracker()
+        {
+            return null;
+        }
+
+        @Override
+        public IndexReadSession indexReadSession( IndexDescriptor index )
+        {
+            return null;
+        }
+
+        @Override
+        public void prepareForLabelScans()
+        {
+
+        }
+
+        @Override
+        public boolean nodeExists( long reference )
+        {
+            return false;
+        }
+
+        @Override
+        public long countsForNode( int labelId )
+        {
+            return 0;
+        }
+
+        @Override
+        public long countsForNodeWithoutTxState( int labelId )
+        {
+            return 0;
+        }
+
+        @Override
+        public long countsForRelationship( int startLabelId, int typeId, int endLabelId )
+        {
+            return 0;
+        }
+
+        @Override
+        public long countsForRelationshipWithoutTxState( int startLabelId, int typeId, int endLabelId )
+        {
+            return 0;
+        }
+
+        @Override
+        public long nodesGetCount()
+        {
+            return 0;
+        }
+
+        @Override
+        public long relationshipsGetCount()
+        {
+            return 0;
+        }
+
+        @Override
+        public boolean relationshipExists( long reference )
+        {
+            return false;
+        }
+
+        @Override
+        public boolean nodeDeletedInTransaction( long node )
+        {
+            return false;
+        }
+
+        @Override
+        public boolean relationshipDeletedInTransaction( long relationship )
+        {
+            return false;
+        }
+
+        @Override
+        public Value nodePropertyChangeInTransactionOrNull( long node, int propertyKeyId )
+        {
+            return null;
+        }
+
+        @Override
+        public Value relationshipPropertyChangeInTransactionOrNull( long relationship, int propertyKeyId )
+        {
+            return null;
+        }
+
+        @Override
+        public boolean transactionStateHasChanges()
+        {
+            return false;
+        }
+
+        @Override
+        public Iterator<IndexDescriptor> indexForSchemaNonTransactional( SchemaDescriptor schema )
+        {
+            return null;
+        }
+
+        @Override
+        public double indexUniqueValuesSelectivity( IndexDescriptor index )
+        {
+            return 0;
+        }
+
+        @Override
+        public long indexSize( IndexDescriptor index )
+        {
+            return 0;
+        }
+
+        @Override
+        public long nodesCountIndexed( IndexDescriptor index, long nodeId, int propertyKeyId, Value value )
+        {
+            return 0;
+        }
+
+        @Override
+        public IndexSample indexSample( IndexDescriptor index )
+        {
+            return null;
+        }
+
+        @Override
+        public Iterator<ConstraintDescriptor> constraintsGetForSchema( SchemaDescriptor descriptor )
+        {
+            return null;
+        }
+
+        @Override
+        public boolean constraintExists( ConstraintDescriptor descriptor )
+        {
+            return false;
+        }
+
+        @Override
+        public SchemaReadCore snapshot()
+        {
+            return null;
+        }
+
+        @Override
+        public Long indexGetOwningUniquenessConstraintId( IndexDescriptor index )
+        {
+            return null;
+        }
+
+        @Override
+        public <K, V> V schemaStateGetOrCreate( K key, Function<K,V> creator )
+        {
+            return null;
+        }
+
+        @Override
+        public void schemaStateFlush()
+        {
+
+        }
+
+        @Override
+        public IndexDescriptor indexGetForName( String name )
+        {
+            return null;
+        }
+
+        @Override
+        public ConstraintDescriptor constraintGetForName( String name )
+        {
+            return null;
+        }
+
+        @Override
+        public Iterator<IndexDescriptor> index( SchemaDescriptor schema )
+        {
+            return null;
+        }
+
+        @Override
+        public Iterator<IndexDescriptor> indexesGetForLabel( int labelId )
+        {
+            return null;
+        }
+
+        @Override
+        public Iterator<IndexDescriptor> indexesGetForRelationshipType( int relationshipType )
+        {
+            return null;
+        }
+
+        @Override
+        public Iterator<IndexDescriptor> indexesGetAll()
+        {
+            return null;
+        }
+
+        @Override
+        public InternalIndexState indexGetState( IndexDescriptor index )
+        {
+            return null;
+        }
+
+        @Override
+        public PopulationProgress indexGetPopulationProgress( IndexDescriptor index )
+        {
+            return null;
+        }
+
+        @Override
+        public String indexGetFailure( IndexDescriptor index )
+        {
+            return null;
+        }
+
+        @Override
+        public Iterator<ConstraintDescriptor> constraintsGetForLabel( int labelId )
+        {
+            return null;
+        }
+
+        @Override
+        public Iterator<ConstraintDescriptor> constraintsGetForRelationshipType( int typeId )
+        {
+            return null;
+        }
+
+        @Override
+        public Iterator<ConstraintDescriptor> constraintsGetAll()
+        {
+            return null;
+        }
     }
 }
