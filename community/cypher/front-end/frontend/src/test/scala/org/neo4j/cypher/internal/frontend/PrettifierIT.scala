@@ -616,6 +616,9 @@ class PrettifierIT extends CypherFunSuite {
       "catalog create database `graph.db`" ->
         "CREATE DATABASE `graph.db`",
 
+      "catalog create database graph.db" ->
+        "CREATE DATABASE `graph.db`",
+
       "catalog DROP database foO_Bar_42" ->
         "DROP DATABASE foO_Bar_42 DESTROY DATA",
 
@@ -639,6 +642,9 @@ class PrettifierIT extends CypherFunSuite {
 
       "start database foO_Bar_42" ->
         "START DATABASE foO_Bar_42",
+
+      "catalog start database graph.db" ->
+        "START DATABASE `graph.db`",
 
       "catalog stop database foO_Bar_42" ->
         "STOP DATABASE foO_Bar_42",
@@ -1019,6 +1025,9 @@ class PrettifierIT extends CypherFunSuite {
 
               s"$action $databaseAction on databases FoO $preposition role" ->
                 s"$action $prettifiedDatabaseAction ON DATABASE FoO $preposition role",
+
+              s"$action $databaseAction on databases F.o.O $preposition role" ->
+                s"$action $prettifiedDatabaseAction ON DATABASE `F.o.O` $preposition role",
 
               s"$action $databaseAction on default database $preposition role" ->
                 s"$action $prettifiedDatabaseAction ON DEFAULT DATABASE $preposition role",

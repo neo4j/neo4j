@@ -121,6 +121,18 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationCommand
     yields(ast.CreateDatabase(literal("foo.bar"), ast.IfExistsThrowError))
   }
 
+  test("CREATE DATABASE foo.bar") {
+    yields(ast.CreateDatabase(literal("foo.bar"), ast.IfExistsThrowError()))
+  }
+
+  test("CATALOG CREATE DATABASE foo.bar") {
+    yields(ast.CreateDatabase(literal("foo.bar"), ast.IfExistsThrowError()))
+  }
+
+  test("CATALOG CREATE DATABASE `graph.db`.`db.db`") {
+    yields(ast.CreateDatabase(literal("graph.db.db.db"), ast.IfExistsThrowError()))
+  }
+
   test("CATALOG CREATE DATABASE `foo-bar42`") {
     yields(ast.CreateDatabase(literal("foo-bar42"), ast.IfExistsThrowError))
   }
@@ -151,19 +163,6 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationCommand
 
   test("CREATE OR REPLACE DATABASE foo IF NOT EXISTS") {
     yields(ast.CreateDatabase(literal("foo"), ast.IfExistsInvalidSyntax))
-  }
-
-  test("CREATE DATABASE foo.bar") {
-    yields(ast.CreateDatabase(literal("foo.bar"), ast.IfExistsThrowError()))
-  }
-
-
-  test("CATALOG CREATE DATABASE foo.bar") {
-    yields(ast.CreateDatabase(literal("foo.bar"), ast.IfExistsThrowError()))
-  }
-
-  test("CATALOG CREATE DATABASE `graph.db`.`db.db`") {
-    yields(ast.CreateDatabase(literal("graph.db.db.db"), ast.IfExistsThrowError()))
   }
 
   test("CREATE DATABASE \"foo.bar\"") {
@@ -219,12 +218,12 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationCommand
     yields(ast.DropDatabase(literal("foo.bar"), ifExists = false, DestroyData))
   }
 
-  test("DROP DATABASE foo IF EXISTS") {
-    yields(ast.DropDatabase(literal("foo"), ifExists = true, DestroyData))
-  }
-
   test("CATALOG DROP DATABASE foo.bar") {
     yields(ast.DropDatabase(literal("foo.bar"), ifExists = false, DestroyData))
+  }
+
+  test("DROP DATABASE foo IF EXISTS") {
+    yields(ast.DropDatabase(literal("foo"), ifExists = true, DestroyData))
   }
 
   test("DROP DATABASE") {
