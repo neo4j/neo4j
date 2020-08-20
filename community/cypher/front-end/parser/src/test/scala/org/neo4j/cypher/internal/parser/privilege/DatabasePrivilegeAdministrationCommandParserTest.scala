@@ -90,6 +90,10 @@ class DatabasePrivilegeAdministrationCommandParserTest extends AdministrationCom
             yields(privilegeFunc(action, List(ast.NamedGraphScope(literal("fo:o")) _), Seq(literal("role"))))
           }
 
+          test(s"$command $privilege ON DATABASE more.Dots.more.Dots $preposition role") {
+            yields(privilegeFunc(action, List(ast.NamedGraphScope(literal("more.Dots.more.Dots")) _), Seq(literal("role"))))
+          }
+
           test(s"$command $privilege ON DATABASE foo $preposition `r:ole`") {
             yields(privilegeFunc(action, List(ast.NamedGraphScope(literal("foo")) _), Seq(literal("r:ole"))))
           }
