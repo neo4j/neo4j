@@ -21,7 +21,6 @@ package org.neo4j.internal.batchimport.store;
 
 import java.util.function.LongFunction;
 
-import org.neo4j.internal.id.IdRange;
 import org.neo4j.internal.id.IdSequence;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
@@ -65,12 +64,6 @@ public class SecondaryUnitPrepareIdSequence implements PrepareIdSequence
             {
                 returned = true;
             }
-        }
-
-        @Override
-        public IdRange nextIdBatch( int size, PageCursorTracer cursorTracer )
-        {
-            throw new UnsupportedOperationException();
         }
     }
 }

@@ -24,6 +24,4 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 public interface IdSequence
 {
     long nextId( PageCursorTracer cursorTracer );
-
-    IdRange nextIdBatch( int size, PageCursorTracer cursorTracer );
 }
