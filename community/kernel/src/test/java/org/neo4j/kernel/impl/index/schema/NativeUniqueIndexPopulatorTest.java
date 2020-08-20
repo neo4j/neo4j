@@ -59,7 +59,7 @@ abstract class NativeUniqueIndexPopulatorTest<KEY extends NativeIndexKey<KEY>, V
     @Override
     NativeIndexPopulator<KEY,VALUE> createPopulator() throws IOException
     {
-        return populatorFactory.create( pageCache, fs, indexFiles, layout, monitor, indexDescriptor );
+        return populatorFactory.create( pageCache, fs, indexFiles, layout, monitor, indexDescriptor, tokenNameLookup );
     }
 
     @Override

@@ -22,26 +22,42 @@ package org.neo4j.kernel.api.impl.schema;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.index.internal.gbptree.TreeNodeDynamicSize;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.impl.index.schema.GenericKey;
+import org.neo4j.kernel.impl.index.schema.LayoutTestUtil;
+import org.neo4j.test.rule.RandomRule;
+
+import static java.lang.String.format;
+import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10;
 
 public class GenericStringLengthIndexValidationIT extends StringLengthIndexValidationIT
 {
     @Override
     protected int getSingleKeySizeLimit()
     {
-        int overhead = GenericKey.ENTITY_ID_SIZE + GenericKey.TYPE_ID_SIZE + GenericKey.SIZE_STRING_LENGTH;
-        return TreeNodeDynamicSize.keyValueSizeCapFromPageSize( PageCache.PAGE_SIZE ) - overhead;
+        return TreeNodeDynamicSize.keyValueSizeCapFromPageSize( PageCache.PAGE_SIZE );
+    }
+
+    @Override
+    protected String getString( RandomRule random, int keySize )
+    {
+        return LayoutTestUtil.generateStringResultingInSizeForIndexProvider( keySize, NATIVE_BTREE10 );
     }
 
     @Override
     protected GraphDatabaseSettings.SchemaIndex getSchemaIndex()
     {
-        return GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10;
+        return NATIVE_BTREE10;
     }
 
     @Override
     protected String expectedPopulationFailureMessage()
     {
         return "Index key-value size it to large. Please see index documentation for limitations.";
+    }
+
+    @Override
+    protected String expectedPopulationFailureCauseMessage()
+    {
+        return format( "Failed while trying to write to index, targetIndex=Index( 1, 'index_71616483', GENERAL BTREE, :LABEL_ONE(largeString), %s ), " +
+                "nodeId=0", NATIVE_BTREE10.providerName() );
     }
 }

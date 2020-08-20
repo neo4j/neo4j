@@ -60,6 +60,7 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
+import static org.neo4j.common.TokenNameLookup.idTokenNameLookup;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
@@ -93,7 +94,7 @@ class LuceneSchemaIndexPopulatorTest
         propertyAccessor = mock( NodePropertyAccessor.class );
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );
         index = IndexPrototype.forSchema( forLabel( 42, propertyKeyId ), provider.getProviderDescriptor() ).withName( "index" ).materialise( 0 );
-        indexPopulator = provider.getPopulator( index, samplingConfig, heapBufferFactory( 1024 ) );
+        indexPopulator = provider.getPopulator( index, samplingConfig, heapBufferFactory( 1024 ), idTokenNameLookup );
         indexPopulator.create();
     }
 

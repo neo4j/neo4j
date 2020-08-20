@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.index.schema;
 import java.io.File;
 import java.util.Map;
 
+import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurveConfiguration;
@@ -166,23 +167,25 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<GenericKey,N
     }
 
     @Override
-    protected IndexPopulator newIndexPopulator( IndexFiles indexFiles, GenericLayout layout, IndexDescriptor descriptor, ByteBufferFactory bufferFactory )
+    protected IndexPopulator newIndexPopulator( IndexFiles indexFiles, GenericLayout layout, IndexDescriptor descriptor, ByteBufferFactory bufferFactory,
+            TokenNameLookup tokenNameLookup )
     {
         if ( blockBasedPopulation )
         {
             return new GenericBlockBasedIndexPopulator( pageCache, fs, indexFiles, layout, monitor, descriptor, layout.getSpaceFillingCurveSettings(),
-                    configuration, archiveFailedIndex, bufferFactory );
+                    configuration, archiveFailedIndex, bufferFactory, tokenNameLookup );
         }
         return new WorkSyncedNativeIndexPopulator<>(
                 new GenericNativeIndexPopulator( pageCache, fs, indexFiles, layout, monitor, descriptor, layout.getSpaceFillingCurveSettings(), configuration,
-                        archiveFailedIndex ) );
+                        archiveFailedIndex, tokenNameLookup ) );
     }
 
     @Override
-    protected IndexAccessor newIndexAccessor( IndexFiles indexFiles, GenericLayout layout, IndexDescriptor descriptor, boolean readOnly )
+    protected IndexAccessor newIndexAccessor( IndexFiles indexFiles, GenericLayout layout, IndexDescriptor descriptor, boolean readOnly,
+            TokenNameLookup tokenNameLookup )
     {
         return new GenericNativeIndexAccessor( pageCache, fs, indexFiles, layout, recoveryCleanupWorkCollector, monitor, descriptor,
-                layout.getSpaceFillingCurveSettings(), configuration, readOnly );
+                layout.getSpaceFillingCurveSettings(), configuration, readOnly, tokenNameLookup );
     }
 
     @Override

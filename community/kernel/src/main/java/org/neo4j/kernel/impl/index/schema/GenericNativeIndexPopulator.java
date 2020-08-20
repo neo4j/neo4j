@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.index.schema;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.common.TokenNameLookup;
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurveConfiguration;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -40,9 +41,9 @@ public class GenericNativeIndexPopulator extends NativeIndexPopulator<GenericKey
 
     GenericNativeIndexPopulator( PageCache pageCache, FileSystemAbstraction fs, IndexFiles indexFiles, IndexLayout<GenericKey,NativeIndexValue> layout,
             IndexProvider.Monitor monitor, IndexDescriptor descriptor, IndexSpecificSpaceFillingCurveSettings spatialSettings,
-            SpaceFillingCurveConfiguration configuration, boolean archiveFailedIndex )
+            SpaceFillingCurveConfiguration configuration, boolean archiveFailedIndex, TokenNameLookup tokenNameLookup )
     {
-        super( pageCache, fs, indexFiles, layout, monitor, descriptor, NO_HEADER_WRITER );
+        super( pageCache, fs, indexFiles, layout, monitor, descriptor, NO_HEADER_WRITER, tokenNameLookup );
         this.spatialSettings = spatialSettings;
         this.configuration = configuration;
         this.archiveFailedIndex = archiveFailedIndex;

@@ -19,15 +19,15 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.apache.commons.lang3.RandomStringUtils;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.Collection;
 
+import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurveConfiguration;
-import org.neo4j.index.internal.gbptree.TreeNodeDynamicSize;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
@@ -49,11 +49,11 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static java.util.Collections.singleton;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
 import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.internal.schema.IndexPrototype.uniqueForSchema;
@@ -62,6 +62,7 @@ import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.kernel.api.index.IndexProvider.Monitor.EMPTY;
+import static org.neo4j.kernel.api.schema.SchemaTestUtil.SIMPLE_NAME_LOOKUP;
 import static org.neo4j.kernel.impl.api.index.PhaseTracker.nullInstance;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.add;
 import static org.neo4j.values.storable.Values.stringValue;
@@ -71,7 +72,7 @@ class GenericBlockBasedIndexPopulatorTest
 {
     private static final IndexDescriptor INDEX_DESCRIPTOR = forSchema( forLabel( 1, 1 ) ).withName( "index" ).materialise( 1 );
     private static final IndexDescriptor UNIQUE_INDEX_DESCRIPTOR = uniqueForSchema( forLabel( 1, 1 ) ).withName( "constrain" ).materialise( 1 );
-
+    private final TokenNameLookup tokenNameLookup = SIMPLE_NAME_LOOKUP;
     @Inject
     private FileSystemAbstraction fs;
     @Inject
@@ -119,7 +120,7 @@ class GenericBlockBasedIndexPopulatorTest
     void shouldThrowOnDuplicatedValuesFromScan()
     {
         // given
-        BlockBasedIndexPopulator<GenericKey, NativeIndexValue> populator = instantiatePopulator( UNIQUE_INDEX_DESCRIPTOR );
+        BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( UNIQUE_INDEX_DESCRIPTOR );
         try
         {
             // when
@@ -143,7 +144,7 @@ class GenericBlockBasedIndexPopulatorTest
     void shouldThrowOnDuplicatedValuesFromExternalUpdates()
     {
         // given
-        BlockBasedIndexPopulator<GenericKey, NativeIndexValue> populator = instantiatePopulator( UNIQUE_INDEX_DESCRIPTOR );
+        BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( UNIQUE_INDEX_DESCRIPTOR );
         try
         {
             // when
@@ -170,7 +171,7 @@ class GenericBlockBasedIndexPopulatorTest
     void shouldThrowOnDuplicatedValuesFromScanAndExternalUpdates()
     {
         // given
-        BlockBasedIndexPopulator<GenericKey, NativeIndexValue> populator = instantiatePopulator( UNIQUE_INDEX_DESCRIPTOR );
+        BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( UNIQUE_INDEX_DESCRIPTOR );
         try
         {
             // when
@@ -197,7 +198,7 @@ class GenericBlockBasedIndexPopulatorTest
     void shouldNotThrowOnDuplicationsLaterFixedByExternalUpdates() throws IndexEntryConflictException
     {
         // given
-        BlockBasedIndexPopulator<GenericKey, NativeIndexValue> populator = instantiatePopulator( UNIQUE_INDEX_DESCRIPTOR );
+        BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( UNIQUE_INDEX_DESCRIPTOR );
         try
         {
             // when
@@ -228,26 +229,20 @@ class GenericBlockBasedIndexPopulatorTest
     void shouldHandleEntriesOfMaxSize() throws IndexEntryConflictException
     {
         // given
-        int sizeOfEntityId = NativeIndexKey.ENTITY_ID_SIZE;
-        int sizeOfType = GenericKey.TYPE_ID_SIZE;
-        int sizeOfStringLength = GenericKey.SIZE_STRING_LENGTH;
-        int keySizeLimit = TreeNodeDynamicSize.keyValueSizeCapFromPageSize( PageCache.PAGE_SIZE );
-        int stringKeyOverhead = sizeOfEntityId + sizeOfType + sizeOfStringLength;
-
-        String largestString = RandomStringUtils.randomAlphabetic( keySizeLimit - stringKeyOverhead );
-        TextValue largestStringValue = stringValue( largestString );
-        IndexEntryUpdate<IndexDescriptor> update = add( 1, INDEX_DESCRIPTOR, largestStringValue );
-
         BlockBasedIndexPopulator<GenericKey, NativeIndexValue> populator = instantiatePopulator( INDEX_DESCRIPTOR );
         try
         {
+            int maxKeyValueSize = populator.tree.keyValueSizeCap();
+            IndexEntryUpdate<IndexDescriptor> update =
+                    add( 1, INDEX_DESCRIPTOR, LayoutTestUtil.generateStringValueResultingInSize( populator.layout, maxKeyValueSize ) );
+
             // when
             Collection<IndexEntryUpdate<?>> updates = singleton( update );
             populator.add( updates );
             populator.scanCompleted( nullInstance );
 
             // then
-            assertHasEntry( populator, largestStringValue, 1 );
+            assertHasEntry( populator, update.values()[0], 1 );
         }
         finally
         {
@@ -259,28 +254,22 @@ class GenericBlockBasedIndexPopulatorTest
     void shouldThrowForEntriesLargerThanMaxSize() throws IndexEntryConflictException
     {
         // given
-        int sizeOfEntityId = NativeIndexKey.ENTITY_ID_SIZE;
-        int sizeOfType = GenericKey.TYPE_ID_SIZE;
-        int sizeOfStringLength = GenericKey.SIZE_STRING_LENGTH;
-        int keySizeLimit = TreeNodeDynamicSize.keyValueSizeCapFromPageSize( PageCache.PAGE_SIZE );
-        int stringKeyOverhead = sizeOfEntityId + sizeOfType + sizeOfStringLength;
-
-        String largestString = RandomStringUtils.randomAlphabetic( keySizeLimit - stringKeyOverhead + 1 );
-        TextValue largestStringValue = stringValue( largestString );
-        IndexEntryUpdate<IndexDescriptor> update = add( 1, INDEX_DESCRIPTOR, largestStringValue );
-
-        BlockBasedIndexPopulator<GenericKey, NativeIndexValue> populator = instantiatePopulator( INDEX_DESCRIPTOR );
+        BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( INDEX_DESCRIPTOR );
+        int maxKeyValueSize = populator.tree.keyValueSizeCap();
+        IndexEntryUpdate<IndexDescriptor> update =
+                add( 1, INDEX_DESCRIPTOR, LayoutTestUtil.generateStringValueResultingInSize( populator.layout, maxKeyValueSize + 1 ) );
         try
         {
-            assertThrows( IllegalArgumentException.class, () ->
+            IllegalArgumentException e = assertThrows( IllegalArgumentException.class, () ->
             {
                 Collection<IndexEntryUpdate<?>> updates = singleton( update );
                 populator.add( updates );
                 populator.scanCompleted( nullInstance );
-
-                // if not
-                fail( "Expected to throw for value larger than max size." );
             } );
+            // then
+            assertThat( e.getMessage(), Matchers.containsString(
+                    "Failed while trying to write to index, targetIndex=Index( 1, 'index', GENERAL BTREE, :Label1(property1), Undecided-0 ), nodeId=1" ) );
+
         }
         finally
         {
@@ -331,8 +320,8 @@ class GenericBlockBasedIndexPopulatorTest
         GenericLayout layout = new GenericLayout( 1, spatialSettings );
         SpaceFillingCurveConfiguration configuration = SpaceFillingCurveSettingsFactory.getConfiguredSpaceFillingCurveConfiguration( config );
         GenericBlockBasedIndexPopulator populator =
-            new GenericBlockBasedIndexPopulator( pageCache, fs, indexFiles, layout, EMPTY, indexDescriptor, spatialSettings, configuration, false,
-                heapBufferFactory( (int) kibiBytes( 40 ) ) );
+                new GenericBlockBasedIndexPopulator( pageCache, fs, indexFiles, layout, EMPTY, indexDescriptor, spatialSettings, configuration, false,
+                        heapBufferFactory( (int) kibiBytes( 40 ) ), tokenNameLookup );
         populator.create();
         return populator;
     }

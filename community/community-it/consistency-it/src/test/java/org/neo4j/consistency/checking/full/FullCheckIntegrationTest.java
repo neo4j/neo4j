@@ -43,6 +43,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.consistency.RecordType;
@@ -145,6 +146,7 @@ import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.internal.schema.IndexPrototype.uniqueForSchema;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
+import static org.neo4j.kernel.api.schema.SchemaTestUtil.SIMPLE_NAME_LOOKUP;
 import static org.neo4j.kernel.impl.store.AbstractDynamicStore.readFullByteArrayFromHeavyRecords;
 import static org.neo4j.kernel.impl.store.DynamicArrayStore.allocateFromNumbers;
 import static org.neo4j.kernel.impl.store.DynamicArrayStore.getRightArray;
@@ -170,6 +172,7 @@ public class FullCheckIntegrationTest
     private static final String PROP2 = "key2";
     private static final Object VALUE1 = "value1";
     private static final Object VALUE2 = "value2";
+    private final TokenNameLookup tokenNameLookup = SIMPLE_NAME_LOOKUP;
 
     @Inject
     private PageCache pageCache;
@@ -367,7 +370,8 @@ public class FullCheckIntegrationTest
         {
             IndexDescriptor rule = rules.next();
             IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );
-            IndexPopulator populator = storeAccess.indexes().lookup( rule.getIndexProvider() ).getPopulator( rule, samplingConfig, heapBufferFactory( 1024 ) );
+            IndexPopulator populator =
+                    storeAccess.indexes().lookup( rule.getIndexProvider() ).getPopulator( rule, samplingConfig, heapBufferFactory( 1024 ), tokenNameLookup );
             populator.markAsFailed( "Oh noes! I was a shiny index and then I was failed" );
             populator.close( false );
         }
@@ -472,7 +476,7 @@ public class FullCheckIntegrationTest
         {
             IndexDescriptor indexDescriptor = indexDescriptorIterator.next();
             IndexAccessor accessor = fixture.directStoreAccess().indexes().
-                    lookup( indexDescriptor.getIndexProvider() ).getOnlineAccessor( indexDescriptor, samplingConfig );
+                    lookup( indexDescriptor.getIndexProvider() ).getOnlineAccessor( indexDescriptor, samplingConfig, tokenNameLookup );
             try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE ) )
             {
                 for ( long nodeId : indexedNodes )
@@ -521,7 +525,7 @@ public class FullCheckIntegrationTest
         {
             IndexDescriptor indexRule = indexRuleIterator.next();
             try ( IndexAccessor accessor = fixture.directStoreAccess().indexes().lookup( indexRule.getIndexProvider() ).getOnlineAccessor( indexRule,
-                    samplingConfig ) )
+                    samplingConfig, tokenNameLookup ) )
             {
                 try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE ) )
                 {

@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.index.schema;
 
 import java.io.IOException;
 
+import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.gis.spatial.index.curves.StandardConfiguration;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -39,21 +40,22 @@ class NativeIndexPopulatorTestCases
 
     static PopulatorFactory<GenericKey,NativeIndexValue> genericPopulatorFactory()
     {
-        return ( pageCache, fs, storeFile, layout, monitor, descriptor ) ->
-                new GenericNativeIndexPopulator( pageCache, fs, storeFile, layout, monitor, descriptor, spaceFillingCurveSettings, configuration, false );
+        return ( pageCache, fs, storeFile, layout, monitor, descriptor, tokenNameLookup ) ->
+                new GenericNativeIndexPopulator( pageCache, fs, storeFile, layout, monitor, descriptor, spaceFillingCurveSettings, configuration, false,
+                        tokenNameLookup );
     }
 
     static PopulatorFactory<GenericKey,NativeIndexValue> genericBlockBasedPopulatorFactory()
     {
-        return ( pageCache, fs, storeFile, layout, monitor, descriptor ) ->
+        return ( pageCache, fs, storeFile, layout, monitor, descriptor, tokenNameLookup ) ->
                 new GenericBlockBasedIndexPopulator( pageCache, fs, storeFile, layout, monitor, descriptor, spaceFillingCurveSettings, configuration, false,
-                        heapBufferFactory( 10 * 1024 ) );
+                        heapBufferFactory( 10 * 1024 ), tokenNameLookup );
     }
 
     @FunctionalInterface
     public interface PopulatorFactory<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue>
     {
         NativeIndexPopulator<KEY,VALUE> create( PageCache pageCache, FileSystemAbstraction fs, IndexFiles indexFiles, IndexLayout<KEY,VALUE> layout,
-                IndexProvider.Monitor monitor, IndexDescriptor descriptor ) throws IOException;
+                IndexProvider.Monitor monitor, IndexDescriptor descriptor, TokenNameLookup tokenNameLookup ) throws IOException;
     }
 }

@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.annotations.documented.ReporterFactory;
+import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.checking.CheckDecorator;
@@ -62,6 +63,7 @@ import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.logging.Log;
+import org.neo4j.token.NonTransactionalTokenNameLookup;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.experimental_consistency_checker;
 import static org.neo4j.consistency.report.ConsistencyReporter.NO_MONITOR;
@@ -139,7 +141,9 @@ public class FullCheck
     void execute( PageCache pageCache, final DirectStoreAccess directStoreAccess, final InconsistencyReport report, CountsStore countsStore )
             throws ConsistencyCheckIncompleteException
     {
-        try ( IndexAccessors indexes = new IndexAccessors( directStoreAccess.indexes(), directStoreAccess.nativeStores().getRawNeoStores(), samplingConfig ) )
+        TokenNameLookup tokenNameLookup = new NonTransactionalTokenNameLookup( directStoreAccess.tokenHolders(), true /*include token ids too*/ );
+        try ( IndexAccessors indexes = new IndexAccessors( directStoreAccess.indexes(), directStoreAccess.nativeStores().getRawNeoStores(), samplingConfig,
+                tokenNameLookup ) )
         {
             if ( flags.isCheckIndexStructure() )
             {
@@ -163,7 +167,7 @@ public class FullCheck
                 MultiPassStore.Factory multiPass = new MultiPassStore.Factory( decorator, recordAccess, cacheAccess, report, NO_MONITOR );
                 ConsistencyCheckTasks taskCreator =
                         new ConsistencyCheckTasks( progress, processEverything, nativeStores, statistics, cacheAccess, directStoreAccess.labelScanStore(),
-                                indexes, multiPass, reporter, threads );
+                                indexes, tokenNameLookup, multiPass, reporter, threads );
                 List<ConsistencyCheckerTask> tasks = taskCreator.createTasksForFullCheck( flags.isCheckLabelScanStore(), flags.isCheckIndexes(),
                         flags.isCheckGraph() );
                 progress.build();

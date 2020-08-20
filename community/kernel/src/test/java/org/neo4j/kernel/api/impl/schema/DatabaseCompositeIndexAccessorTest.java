@@ -96,6 +96,7 @@ import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.kernel.api.IndexQuery.exact;
 import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
 import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
+import static org.neo4j.kernel.api.schema.SchemaTestUtil.SIMPLE_NAME_LOOKUP;
 import static org.neo4j.test.rule.concurrent.ThreadingRule.waitingWhileIn;
 
 @RunWith( Parameterized.class )
@@ -166,11 +167,11 @@ public class DatabaseCompositeIndexAccessorTest
     {
         IOFunction function = dirFactory1 ->
         {
-            IndexPopulator populator = provider.getPopulator( descriptor, SAMPLING_CONFIG, heapBufferFactory( 1024 ) );
+            IndexPopulator populator = provider.getPopulator( descriptor, SAMPLING_CONFIG, heapBufferFactory( 1024 ), SIMPLE_NAME_LOOKUP );
             populator.create();
             populator.close( true );
 
-            return provider.getOnlineAccessor( descriptor, SAMPLING_CONFIG );
+            return provider.getOnlineAccessor( descriptor, SAMPLING_CONFIG, SIMPLE_NAME_LOOKUP );
         };
         return new Object[]{ provider.getClass().getSimpleName() + " / " + descriptor, function};
     }

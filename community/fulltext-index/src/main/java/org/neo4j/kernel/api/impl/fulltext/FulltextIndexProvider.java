@@ -27,6 +27,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
 
+import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.schema.AnalyzerProvider;
@@ -61,7 +62,6 @@ import org.neo4j.service.Services;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.migration.SchemaIndexMigrator;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
-import org.neo4j.token.NonTransactionalTokenNameLookup;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.token.api.NamedToken;
 import org.neo4j.token.api.TokenHolder;
@@ -202,7 +202,7 @@ public class FulltextIndexProvider extends IndexProvider implements FulltextAdap
     }
 
     @Override
-    public IndexDropper getDropper( IndexDescriptor descriptor )
+    public IndexDropper getDropper( IndexDescriptor descriptor, TokenNameLookup tokenNameLookup )
     {
         PartitionedIndexStorage indexStorage = getIndexStorage( descriptor.getId() );
         DatabaseIndex<FulltextIndexReader> fulltextIndex = new DroppableFulltextIndex(
@@ -218,7 +218,7 @@ public class FulltextIndexProvider extends IndexProvider implements FulltextAdap
 
     @Override
     public IndexPopulator getPopulator( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig,
-            ByteBufferFactory bufferFactory )
+            ByteBufferFactory bufferFactory, TokenNameLookup tokenNameLookup )
     {
         if ( isReadOnly() )
         {
@@ -227,7 +227,6 @@ public class FulltextIndexProvider extends IndexProvider implements FulltextAdap
         try
         {
             PartitionedIndexStorage indexStorage = getIndexStorage( descriptor.getId() );
-            NonTransactionalTokenNameLookup tokenNameLookup = new NonTransactionalTokenNameLookup( tokenHolders );
             Analyzer analyzer = createAnalyzer( descriptor, tokenNameLookup );
             String[] propertyNames = createPropertyNames( descriptor, tokenNameLookup );
             DatabaseIndex<FulltextIndexReader> fulltextIndex = FulltextIndexBuilder
@@ -251,10 +250,9 @@ public class FulltextIndexProvider extends IndexProvider implements FulltextAdap
     }
 
     @Override
-    public IndexAccessor getOnlineAccessor( IndexDescriptor index, IndexSamplingConfig samplingConfig ) throws IOException
+    public IndexAccessor getOnlineAccessor( IndexDescriptor index, IndexSamplingConfig samplingConfig, TokenNameLookup tokenNameLookup ) throws IOException
     {
         PartitionedIndexStorage indexStorage = getIndexStorage( index.getId() );
-        NonTransactionalTokenNameLookup tokenNameLookup = new NonTransactionalTokenNameLookup( tokenHolders );
         Analyzer analyzer = createAnalyzer( index, tokenNameLookup );
         String[] propertyNames = createPropertyNames( index, tokenNameLookup );
         FulltextIndexBuilder fulltextIndexBuilder = FulltextIndexBuilder

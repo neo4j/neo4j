@@ -36,6 +36,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import org.neo4j.common.TokenNameLookup;
 import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.index.internal.gbptree.Writer;
 import org.neo4j.internal.helpers.Exceptions;
@@ -108,17 +109,18 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
 
     BlockBasedIndexPopulator( PageCache pageCache, FileSystemAbstraction fs, IndexFiles indexFiles, IndexLayout<KEY,VALUE> layout,
                               IndexProvider.Monitor monitor, IndexDescriptor descriptor,
-                              boolean archiveFailedIndex, ByteBufferFactory bufferFactory )
+                              boolean archiveFailedIndex, ByteBufferFactory bufferFactory, TokenNameLookup tokenNameLookup )
     {
-        this( pageCache, fs, indexFiles, layout, monitor, descriptor, archiveFailedIndex, bufferFactory,
+        this( pageCache, fs, indexFiles, layout, monitor, descriptor, archiveFailedIndex, bufferFactory, tokenNameLookup,
               FeatureToggles.getInteger( BlockBasedIndexPopulator.class, "mergeFactor", 8 ), NO_MONITOR );
     }
 
     BlockBasedIndexPopulator( PageCache pageCache, FileSystemAbstraction fs, IndexFiles indexFiles, IndexLayout<KEY,VALUE> layout,
                               IndexProvider.Monitor monitor, IndexDescriptor descriptor,
-                              boolean archiveFailedIndex, ByteBufferFactory bufferFactory, int mergeFactor, BlockStorage.Monitor blockStorageMonitor )
+                              boolean archiveFailedIndex, ByteBufferFactory bufferFactory, TokenNameLookup tokenNameLookup,
+                              int mergeFactor, BlockStorage.Monitor blockStorageMonitor )
     {
-        super( pageCache, fs, indexFiles, layout, monitor, descriptor, NO_HEADER_WRITER );
+        super( pageCache, fs, indexFiles, layout, monitor, descriptor, NO_HEADER_WRITER, tokenNameLookup );
         this.archiveFailedIndex = archiveFailedIndex;
         this.mergeFactor = mergeFactor;
         this.blockStorageMonitor = blockStorageMonitor;
@@ -577,9 +579,19 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
     private void writeToTree( Writer<KEY,VALUE> writer, RecordingConflictDetector<KEY,VALUE> recordingConflictDetector, KEY key, VALUE value )
             throws IndexEntryConflictException
     {
-        recordingConflictDetector.controlConflictDetection( key );
-        writer.merge( key, value, recordingConflictDetector );
-        handleMergeConflict( writer, recordingConflictDetector, key, value );
+        try
+        {
+            recordingConflictDetector.controlConflictDetection( key );
+            writer.merge( key, value, recordingConflictDetector );
+            handleMergeConflict( writer, recordingConflictDetector, key, value );
+        }
+        catch ( Exception e )
+        {
+            Exceptions.withMessage( e,
+                    String.format( "Failed while trying to write to index, targetIndex=%s, nodeId=%d. Cause: %s",
+                            descriptor.userDescription( tokenNameLookup ), key.getEntityId(), e.getMessage() ) );
+            throw e;
+        }
     }
 
     /**

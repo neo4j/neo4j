@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Test;
 import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -51,6 +52,7 @@ import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByPr
 class LuceneIndexProviderTest
 {
     private static final IndexDescriptor descriptor = forSchema( forLabel( 1, 1 ), DESCRIPTOR ).withName( "index_1" ).materialise( 1 );
+    private final TokenNameLookup tokenNameLookup = TokenNameLookup.idTokenNameLookup;
 
     @Inject
     private DefaultFileSystemAbstraction fileSystem;
@@ -71,7 +73,7 @@ class LuceneIndexProviderTest
         LuceneIndexProvider readOnlyIndexProvider =
                 getLuceneIndexProvider( readOnlyConfig, new DirectoryFactory.InMemoryDirectoryFactory(), fileSystem, graphDbDir );
         assertThrows( UnsupportedOperationException.class,
-                () -> readOnlyIndexProvider.getPopulator( descriptor, new IndexSamplingConfig( readOnlyConfig ), heapBufferFactory( 1024 ) ) );
+                () -> readOnlyIndexProvider.getPopulator( descriptor, new IndexSamplingConfig( readOnlyConfig ), heapBufferFactory( 1024 ), tokenNameLookup ) );
     }
 
     @Test
@@ -89,7 +91,7 @@ class LuceneIndexProviderTest
     }
 
     @Test
-    void indexUpdateNotAllowedInReadOnlyMode() throws Exception
+    void indexUpdateNotAllowedInReadOnlyMode()
     {
         Config readOnlyConfig = Config.defaults( GraphDatabaseSettings.read_only, true );
         LuceneIndexProvider readOnlyIndexProvider = getLuceneIndexProvider( readOnlyConfig,
@@ -124,7 +126,7 @@ class LuceneIndexProviderTest
     private IndexAccessor getIndexAccessor( Config readOnlyConfig, LuceneIndexProvider indexProvider )
             throws IOException
     {
-        return indexProvider.getOnlineAccessor( descriptor, new IndexSamplingConfig( readOnlyConfig ) );
+        return indexProvider.getOnlineAccessor( descriptor, new IndexSamplingConfig( readOnlyConfig ), tokenNameLookup );
     }
 
     private LuceneIndexProvider getLuceneIndexProvider( Config config, DirectoryFactory directoryFactory,

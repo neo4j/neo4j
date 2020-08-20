@@ -25,6 +25,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.function.Consumer;
 
+import org.neo4j.common.TokenNameLookup;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.index.internal.gbptree.Writer;
@@ -63,6 +64,7 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
     private final VALUE treeValue;
     private final UniqueIndexSampler uniqueSampler;
     private final Consumer<PageCursor> additionalHeaderWriter;
+    final TokenNameLookup tokenNameLookup;
 
     private ConflictDetectingValueMerger<KEY,VALUE,Value[]> mainConflictDetector;
     private ConflictDetectingValueMerger<KEY,VALUE,Value[]> updatesConflictDetector;
@@ -72,13 +74,14 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
     private boolean closed;
 
     NativeIndexPopulator( PageCache pageCache, FileSystemAbstraction fs, IndexFiles indexFiles, IndexLayout<KEY,VALUE> layout, IndexProvider.Monitor monitor,
-            IndexDescriptor descriptor, Consumer<PageCursor> additionalHeaderWriter )
+            IndexDescriptor descriptor, Consumer<PageCursor> additionalHeaderWriter, TokenNameLookup tokenNameLookup )
     {
         super( pageCache, fs, indexFiles, layout, monitor, descriptor, false );
         this.treeKey = layout.newKey();
         this.treeValue = layout.newValue();
         this.additionalHeaderWriter = additionalHeaderWriter;
         this.uniqueSampler = descriptor.isUnique() ? new UniqueIndexSampler() : null;
+        this.tokenNameLookup = tokenNameLookup;
     }
 
     public void clear()
@@ -135,7 +138,7 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
     }
 
     @Override
-    public void verifyDeferredConstraints( NodePropertyAccessor nodePropertyAccessor ) throws IndexEntryConflictException
+    public void verifyDeferredConstraints( NodePropertyAccessor nodePropertyAccessor )
     {
         // No-op, uniqueness is checked for each update in add(IndexEntryUpdate)
     }
@@ -253,7 +256,7 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
         {
             for ( IndexEntryUpdate<?> indexEntryUpdate : indexEntryUpdates )
             {
-                NativeIndexUpdater.processUpdate( treeKey, treeValue, indexEntryUpdate, writer, conflictDetector );
+                NativeIndexUpdater.processUpdate( treeKey, treeValue, indexEntryUpdate, writer, conflictDetector, descriptor, tokenNameLookup );
             }
         }
         catch ( IOException e )

@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.function.Consumer;
 
+import org.neo4j.common.TokenNameLookup;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.index.internal.gbptree.TreeInconsistencyException;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
@@ -32,7 +33,6 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexReader;
@@ -50,10 +50,11 @@ public abstract class NativeIndexAccessor<KEY extends NativeIndexKey<KEY>, VALUE
     final NativeIndexHeaderWriter headerWriter;
 
     NativeIndexAccessor( PageCache pageCache, FileSystemAbstraction fs, IndexFiles indexFiles, IndexLayout<KEY,VALUE> layout,
-            IndexProvider.Monitor monitor, IndexDescriptor descriptor, Consumer<PageCursor> additionalHeaderWriter, boolean readOnly )
+            IndexProvider.Monitor monitor, IndexDescriptor descriptor, Consumer<PageCursor> additionalHeaderWriter, boolean readOnly,
+            TokenNameLookup tokenNameLookup )
     {
         super( pageCache, fs, indexFiles, layout, monitor, descriptor, readOnly );
-        singleUpdater = new NativeIndexUpdater<>( layout.newKey(), layout.newValue() );
+        singleUpdater = new NativeIndexUpdater<>( layout.newKey(), layout.newValue(), descriptor, tokenNameLookup );
         headerWriter = new NativeIndexHeaderWriter( BYTE_ONLINE, additionalHeaderWriter );
     }
 
@@ -118,7 +119,7 @@ public abstract class NativeIndexAccessor<KEY extends NativeIndexKey<KEY>, VALUE
     }
 
     @Override
-    public void verifyDeferredConstraints( NodePropertyAccessor nodePropertyAccessor ) throws IndexEntryConflictException
+    public void verifyDeferredConstraints( NodePropertyAccessor nodePropertyAccessor )
     {   // Not needed since uniqueness is verified automatically w/o cost for every update.
     }
 

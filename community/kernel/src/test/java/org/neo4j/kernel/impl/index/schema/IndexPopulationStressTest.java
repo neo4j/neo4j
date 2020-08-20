@@ -36,6 +36,7 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Function;
 
+import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -80,6 +81,7 @@ import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesBySubProvider;
+import static org.neo4j.kernel.api.schema.SchemaTestUtil.SIMPLE_NAME_LOOKUP;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.add;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.change;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.remove;
@@ -114,6 +116,7 @@ abstract class IndexPopulationStressTest
     private final NodePropertyAccessor nodePropertyAccessor = mock( NodePropertyAccessor.class );
     private IndexPopulator populator;
     private IndexProvider indexProvider;
+    private TokenNameLookup tokenNameLookup;
     private boolean prevAccessCheck;
 
     IndexPopulationStressTest( String name, boolean hasValues,
@@ -136,10 +139,11 @@ abstract class IndexPopulationStressTest
     void setup() throws IOException, EntityNotFoundException
     {
         indexProvider = providerCreator.apply( this );
+        tokenNameLookup = SIMPLE_NAME_LOOKUP;
         descriptor = indexProvider.completeConfiguration( forSchema( forLabel( 0, 0 ), PROVIDER ).withName( "index_0" ).materialise( 0 ) );
         descriptor2 = indexProvider.completeConfiguration( forSchema( forLabel( 1, 0 ), PROVIDER ).withName( "index_1" ).materialise( 1 ) );
         fs.mkdirs( indexProvider.directoryStructure().rootDirectory() );
-        populator = indexProvider.getPopulator( descriptor, samplingConfig, heapBufferFactory( (int) kibiBytes( 40 ) ) );
+        populator = indexProvider.getPopulator( descriptor, samplingConfig, heapBufferFactory( (int) kibiBytes( 40 ) ), tokenNameLookup );
         when( nodePropertyAccessor.getNodePropertyValue( anyLong(), anyInt() ) ).thenThrow( UnsupportedOperationException.class );
         prevAccessCheck = UnsafeUtil.exchangeNativeAccessCheckEnabled( false );
     }
@@ -177,10 +181,10 @@ abstract class IndexPopulationStressTest
 
         // then assert that a tree built by a single thread ends up exactly the same
         buildReferencePopulatorSingleThreaded( generators, updates );
-        try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( descriptor, samplingConfig );
-            IndexAccessor referenceAccessor = indexProvider.getOnlineAccessor( descriptor2, samplingConfig );
-            IndexReader reader = accessor.newReader();
-            IndexReader referenceReader = referenceAccessor.newReader() )
+        try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( descriptor, samplingConfig, tokenNameLookup );
+              IndexAccessor referenceAccessor = indexProvider.getOnlineAccessor( descriptor2, samplingConfig, tokenNameLookup );
+              IndexReader reader = accessor.newReader();
+              IndexReader referenceReader = referenceAccessor.newReader() )
         {
             SimpleNodeValueClient entries = new SimpleNodeValueClient();
             SimpleNodeValueClient referenceEntries = new SimpleNodeValueClient();
@@ -292,7 +296,8 @@ abstract class IndexPopulationStressTest
     private void buildReferencePopulatorSingleThreaded( Generator[] generators, Collection<IndexEntryUpdate<?>> updates )
         throws IndexEntryConflictException
     {
-        IndexPopulator referencePopulator = indexProvider.getPopulator( descriptor2, samplingConfig, heapBufferFactory( (int) kibiBytes( 40 ) ) );
+        IndexPopulator referencePopulator =
+                indexProvider.getPopulator( descriptor2, samplingConfig, heapBufferFactory( (int) kibiBytes( 40 ) ), tokenNameLookup );
         referencePopulator.create();
         boolean referenceSuccess = false;
         try

@@ -39,6 +39,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.kernel.api.index.IndexProvider.Monitor.EMPTY;
+import static org.neo4j.kernel.api.schema.SchemaTestUtil.SIMPLE_NAME_LOOKUP;
 
 @PageCacheExtension
 class GenericNativeIndexPopulatorTest
@@ -63,7 +64,7 @@ class GenericNativeIndexPopulatorTest
         IndexFiles.Directory indexFiles = new IndexFiles.Directory( fs, directoryStructure, indexId );
         GenericLayout layout = new GenericLayout( 1, spatialSettings );
         GenericNativeIndexPopulator populator = new GenericNativeIndexPopulator( pageCache, fs, indexFiles, layout,
-                EMPTY, descriptor, spatialSettings, mock( SpaceFillingCurveConfiguration.class ), false );
+                EMPTY, descriptor, spatialSettings, mock( SpaceFillingCurveConfiguration.class ), false, SIMPLE_NAME_LOOKUP );
         populator.create();
 
         // when

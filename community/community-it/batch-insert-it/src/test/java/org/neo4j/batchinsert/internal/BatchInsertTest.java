@@ -43,6 +43,7 @@ import java.util.stream.Stream;
 import org.neo4j.batchinsert.BatchInserter;
 import org.neo4j.batchinsert.BatchInserters;
 import org.neo4j.collection.PrimitiveLongResourceIterator;
+import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
@@ -873,9 +874,11 @@ class BatchInsertTest
         IndexAccessor accessor = mock( IndexAccessor.class );
 
         when( provider.getProviderDescriptor() ).thenReturn( DESCRIPTOR );
-        when( provider.getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any() ) ).thenReturn( populator );
+        when( provider.getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any(), any( TokenNameLookup.class ) ) )
+                .thenReturn( populator );
         when( populator.sampleResult() ).thenReturn( new IndexSample() );
-        when( provider.getOnlineAccessor( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ) ) ).thenReturn( accessor );
+        when( provider.getOnlineAccessor( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any( TokenNameLookup.class ) ) )
+                .thenReturn( accessor );
         when( provider.completeConfiguration( any( IndexDescriptor.class ) ) ).then( inv -> inv.getArgument( 0 ) );
 
         BatchInserter inserter = newBatchInserterWithIndexProvider(
@@ -891,7 +894,7 @@ class BatchInsertTest
         // THEN
         verify( provider ).init();
         verify( provider ).start();
-        verify( provider ).getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any() );
+        verify( provider ).getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any(), any( TokenNameLookup.class ) );
         verify( populator ).create();
         verify( populator ).add( argThat( matchesCollection( add( nodeId, internalIndex.schema(), Values.of( "Jakewins" ) ) ) ) );
         verify( populator ).verifyDeferredConstraints( any( NodePropertyAccessor.class ) );
@@ -910,9 +913,11 @@ class BatchInsertTest
         IndexAccessor accessor = mock( IndexAccessor.class );
 
         when( provider.getProviderDescriptor() ).thenReturn( DESCRIPTOR );
-        when( provider.getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any() ) ).thenReturn( populator );
+        when( provider.getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any(), any( TokenNameLookup.class ) ) )
+                .thenReturn( populator );
         when( populator.sampleResult() ).thenReturn( new IndexSample() );
-        when( provider.getOnlineAccessor( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ) ) ).thenReturn( accessor );
+        when( provider.getOnlineAccessor( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any( TokenNameLookup.class ) ) )
+                .thenReturn( accessor );
         when( provider.completeConfiguration( any( IndexDescriptor.class ) ) ).then( inv -> inv.getArgument( 0 ) );
 
         BatchInserter inserter = newBatchInserterWithIndexProvider(
@@ -928,7 +933,7 @@ class BatchInsertTest
         // THEN
         verify( provider ).init();
         verify( provider ).start();
-        verify( provider ).getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any() );
+        verify( provider ).getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any(), any( TokenNameLookup.class ) );
         verify( populator ).create();
         verify( populator ).add( argThat( matchesCollection( add( nodeId, internalUniqueIndex.schema(), Values.of( "Jakewins" ) ) ) ) );
         verify( populator ).verifyDeferredConstraints( any( NodePropertyAccessor.class ) );
@@ -950,9 +955,11 @@ class BatchInsertTest
 
         when( provider.getProviderDescriptor() ).thenReturn( DESCRIPTOR );
         when( provider.completeConfiguration( any( IndexDescriptor.class ) ) ).then( inv -> inv.getArgument( 0 ) );
-        when( provider.getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any() ) ).thenReturn( populator );
+        when( provider.getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any(), any( TokenNameLookup.class ) ) )
+                .thenReturn( populator );
         when( populator.sampleResult() ).thenReturn( new IndexSample() );
-        when( provider.getOnlineAccessor( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ) ) ).thenReturn( accessor );
+        when( provider.getOnlineAccessor( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any( TokenNameLookup.class ) ) )
+                .thenReturn( accessor );
 
         BatchInserter inserter = newBatchInserterWithIndexProvider(
                 singleInstanceIndexProviderFactory( KEY, provider ), provider.getProviderDescriptor(), denseNodeThreshold );
@@ -965,7 +972,7 @@ class BatchInsertTest
         // THEN
         verify( provider ).init();
         verify( provider ).start();
-        verify( provider ).getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any() );
+        verify( provider ).getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any(), any( TokenNameLookup.class ) );
         verify( populator ).create();
         verify( populator ).add( argThat( matchesCollection(
                 add( jakewins, internalIndex.schema(), Values.of( "Jakewins" ) ),
@@ -1543,7 +1550,7 @@ class BatchInsertTest
         IndexProvider provider = mock( IndexProvider.class );
 
         when( provider.getProviderDescriptor() ).thenReturn( DESCRIPTOR );
-        when( provider.getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any() ) )
+        when( provider.getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any(), any( TokenNameLookup.class ) ) )
                 .thenReturn( populator );
         when( provider.completeConfiguration( any( IndexDescriptor.class ) ) ).then( inv -> inv.getArgument( 0 ) );
 

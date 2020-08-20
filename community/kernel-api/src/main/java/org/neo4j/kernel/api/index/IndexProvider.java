@@ -24,6 +24,7 @@ import org.apache.commons.lang3.StringUtils;
 import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.schema.IndexConfigCompleter;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -48,7 +49,7 @@ import org.neo4j.storageengine.migration.StoreMigrationParticipant;
  *
  * When an index rule is added, the IndexingService is notified. It will, in turn, ask
  * your {@link IndexProvider} for a
- * {@link #getPopulator(IndexDescriptor, IndexSamplingConfig, ByteBufferFactory) batch index writer}.
+ * {@link #getPopulator(IndexDescriptor, IndexSamplingConfig, ByteBufferFactory, TokenNameLookup) batch index writer}.
  *
  * A background index job is triggered, and all existing data that applies to the new rule, as well as new data
  * from the "outside", will be inserted using the writer. You are guaranteed that usage of this writer,
@@ -93,7 +94,7 @@ import org.neo4j.storageengine.migration.StoreMigrationParticipant;
  * <h3>Online operation</h3>
  *
  * Once the index is online, the database will move to using the
- * {@link #getOnlineAccessor(IndexDescriptor, IndexSamplingConfig) online accessor} to
+ * {@link #getOnlineAccessor(IndexDescriptor, IndexSamplingConfig, TokenNameLookup) online accessor} to
  * write to the index.
  */
 public abstract class IndexProvider extends LifecycleAdapter implements IndexConfigCompleter
@@ -163,13 +164,14 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
                 private final IndexPopulator singlePopulator = IndexPopulator.EMPTY;
 
                 @Override
-                public IndexAccessor getOnlineAccessor( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
+                public IndexAccessor getOnlineAccessor( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, TokenNameLookup tokenNameLookup )
                 {
                     return singleWriter;
                 }
 
                 @Override
-                public IndexPopulator getPopulator( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory )
+                public IndexPopulator getPopulator( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory,
+                        TokenNameLookup tokenNameLookup )
                 {
                     return singlePopulator;
                 }
@@ -211,20 +213,22 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
         this.directoryStructure = directoryStructureFactory.forProvider( descriptor );
     }
 
-    public IndexDropper getDropper( IndexDescriptor descriptor )
+    public IndexDropper getDropper( IndexDescriptor descriptor, TokenNameLookup tokenNameLookup )
     {
-        return getPopulator( descriptor, new IndexSamplingConfig( 1, 0.1, false ), ByteBufferFactory.heapBufferFactory( 0 ) );
+        return getPopulator( descriptor, new IndexSamplingConfig( 1, 0.1, false ), ByteBufferFactory.heapBufferFactory( 0 ), tokenNameLookup );
     }
 
     /**
      * Used for initially populating a created index, using batch insertion.
      */
-    public abstract IndexPopulator getPopulator( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory );
+    public abstract IndexPopulator getPopulator( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory,
+            TokenNameLookup tokenNameLookup );
 
     /**
      * Used for updating an index once initial population has completed.
      */
-    public abstract IndexAccessor getOnlineAccessor( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException;
+    public abstract IndexAccessor getOnlineAccessor( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, TokenNameLookup tokenNameLookup )
+            throws IOException;
 
     /**
      * Returns a failure previously gotten from {@link IndexPopulator#markAsFailed(String)}
@@ -311,13 +315,15 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
         }
 
         @Override
-        public IndexPopulator getPopulator( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory )
+        public IndexPopulator getPopulator( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory,
+                TokenNameLookup tokenNameLookup )
         {
             return null;
         }
 
         @Override
-        public IndexAccessor getOnlineAccessor( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException
+        public IndexAccessor getOnlineAccessor( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, TokenNameLookup tokenNameLookup )
+                throws IOException
         {
             return null;
         }
@@ -358,15 +364,17 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
         }
 
         @Override
-        public IndexPopulator getPopulator( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory )
+        public IndexPopulator getPopulator( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory,
+                TokenNameLookup tokenNameLookup )
         {
-            return provider.getPopulator( descriptor, samplingConfig, bufferFactory );
+            return provider.getPopulator( descriptor, samplingConfig, bufferFactory, tokenNameLookup );
         }
 
         @Override
-        public IndexAccessor getOnlineAccessor( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException
+        public IndexAccessor getOnlineAccessor( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, TokenNameLookup tokenNameLookup )
+                throws IOException
         {
-            return provider.getOnlineAccessor( descriptor, samplingConfig );
+            return provider.getOnlineAccessor( descriptor, samplingConfig, tokenNameLookup );
         }
 
         @Override

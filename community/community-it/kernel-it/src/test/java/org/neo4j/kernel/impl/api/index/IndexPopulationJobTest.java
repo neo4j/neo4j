@@ -34,6 +34,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.IntPredicate;
 
 import org.neo4j.common.EntityType;
+import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.exceptions.KernelException;
@@ -102,6 +103,7 @@ import static org.neo4j.internal.helpers.collection.MapUtil.map;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
 import static org.neo4j.kernel.api.KernelTransaction.Type.implicit;
+import static org.neo4j.kernel.api.schema.SchemaTestUtil.SIMPLE_NAME_LOOKUP;
 import static org.neo4j.kernel.impl.api.index.IndexingService.NO_MONITOR;
 import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
@@ -117,6 +119,7 @@ class IndexPopulationJobTest
     private static final String age = "age";
     private static final RelationshipType likes = RelationshipType.withName( "likes" );
     private static final RelationshipType knows = RelationshipType.withName( "knows" );
+    private final TokenNameLookup tokenNameLookup = SIMPLE_NAME_LOOKUP;
 
     private Kernel kernel;
     private IndexStoreView indexStoreView;
@@ -758,7 +761,7 @@ class IndexPopulationJobTest
         IndexProvider indexProvider = db.getDependencyResolver().resolveDependency( DefaultIndexProviderMap.class ).getDefaultProvider();
         IndexDescriptor indexDescriptor = prototype.withName( "index_21" ).materialise( 21 );
         indexDescriptor = indexProvider.completeConfiguration( indexDescriptor );
-        return indexProvider.getPopulator( indexDescriptor, samplingConfig, heapBufferFactory( 1024 ) );
+        return indexProvider.getPopulator( indexDescriptor, samplingConfig, heapBufferFactory( 1024 ), tokenNameLookup );
     }
 
     private IndexPopulationJob newIndexPopulationJob( IndexPopulator populator, FlippableIndexProxy flipper, EntityType type, IndexPrototype prototype )

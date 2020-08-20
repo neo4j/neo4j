@@ -145,18 +145,18 @@ class IndexProxyCreator
     private IndexPopulator populatorFromProvider( IndexDescriptor index, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory )
     {
         IndexProvider provider = providerMap.lookup( index.getIndexProvider() );
-        return provider.getPopulator( index, samplingConfig, bufferFactory );
+        return provider.getPopulator( index, samplingConfig, bufferFactory, tokenNameLookup );
     }
 
     private IndexDropper dropperFromProvider( IndexDescriptor index )
     {
         IndexProvider provider = providerMap.lookup( index.getIndexProvider() );
-        return provider.getDropper( index );
+        return provider.getDropper( index, tokenNameLookup );
     }
 
     private IndexAccessor onlineAccessorFromProvider( IndexDescriptor index, IndexSamplingConfig samplingConfig ) throws IOException
     {
         IndexProvider provider = providerMap.lookup( index.getIndexProvider() );
-        return provider.getOnlineAccessor( index, samplingConfig );
+        return provider.getOnlineAccessor( index, samplingConfig, tokenNameLookup );
     }
 }

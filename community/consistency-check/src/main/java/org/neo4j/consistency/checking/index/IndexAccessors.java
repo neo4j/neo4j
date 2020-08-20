@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.neo4j.common.EntityType;
+import org.neo4j.common.TokenNameLookup;
 import org.neo4j.function.ThrowingFunction;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.recordstorage.SchemaRuleAccess;
@@ -54,16 +55,18 @@ public class IndexAccessors implements Closeable
     public IndexAccessors(
             IndexProviderMap providers,
             NeoStores neoStores,
-            IndexSamplingConfig samplingConfig )
+            IndexSamplingConfig samplingConfig,
+            TokenNameLookup tokenNameLookup )
             throws IOException
     {
-        this( providers, neoStores, samplingConfig, null /*we'll use a default below, if this is null*/ );
+        this( providers, neoStores, samplingConfig, tokenNameLookup, null /*we'll use a default below, if this is null*/ );
     }
 
     public IndexAccessors(
             IndexProviderMap providers,
             NeoStores neoStores,
             IndexSamplingConfig samplingConfig,
+            TokenNameLookup tokenNameLookup,
             ThrowingFunction<IndexDescriptor,IndexAccessor,IOException> accessorLookup )
             throws IOException
     {
@@ -107,7 +110,8 @@ public class IndexAccessors implements Closeable
         }
 
         // Default to the instantiate new accessors
-        accessorLookup = accessorLookup != null ? accessorLookup : index -> provider( providers, index ).getOnlineAccessor( index, samplingConfig );
+        accessorLookup = accessorLookup != null ? accessorLookup
+                                                : index -> provider( providers, index ).getOnlineAccessor( index, samplingConfig, tokenNameLookup );
         for ( IndexDescriptor indexRule : onlineIndexRules )
         {
             long indexId = indexRule.getId();
