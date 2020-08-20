@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexValueValidator;
 import org.neo4j.util.Preconditions;
@@ -40,45 +41,47 @@ public class LuceneIndexValueValidator implements IndexValueValidator
     public static final int MAX_TERM_LENGTH = (1 << 15) - 2;
 
     private final IndexDescriptor descriptor;
+    private final TokenNameLookup tokenNameLookup;
     private final int checkThreshold;
 
-    public LuceneIndexValueValidator( IndexDescriptor descriptor )
+    public LuceneIndexValueValidator( IndexDescriptor descriptor, TokenNameLookup tokenNameLookup )
     {
         this.descriptor = descriptor;
+        this.tokenNameLookup = tokenNameLookup;
         // This check threshold is for not having to check every value that comes in, only those that may have a chance to exceed the max length.
         // The value 5 comes from a safer 4, which is the number of bytes that a max size UTF-8 code point needs.
         this.checkThreshold = MAX_TERM_LENGTH / 5;
     }
 
     @Override
-    public void validate( Value... values )
+    public void validate( long entityId, Value... values )
     {
         // In Lucene all values in a tuple (composite index) will be placed in a separate field, so validate their fields individually.
         for ( Value value : values )
         {
-            validate( value );
+            validate( entityId, value );
         }
     }
 
-    private void validate( Value value )
+    private void validate( long entityId, Value value )
     {
         Preconditions.checkArgument( value != null && value != Values.NO_VALUE, "Null value" );
         if ( Values.isTextValue( value ) && ((TextValue)value).length() >= checkThreshold )
         {
             int length = ((TextValue)value).stringValue().getBytes().length;
-            validateActualLength( value, length );
+            validateActualLength( entityId, value, length );
         }
         if ( Values.isArrayValue( value ) )
         {
-            validateActualLength( value, ArrayEncoder.encode( value ).getBytes().length );
+            validateActualLength( entityId, value, ArrayEncoder.encode( value ).getBytes().length );
         }
     }
 
-    private void validateActualLength( Value value, int length )
+    private void validateActualLength( long entityId, Value value, int length )
     {
         if ( length > MAX_TERM_LENGTH )
         {
-            IndexValueValidator.throwSizeViolationException( descriptor, length, value );
+            IndexValueValidator.throwSizeViolationException( descriptor, tokenNameLookup, entityId, length, value );
         }
     }
 }

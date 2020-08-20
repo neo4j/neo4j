@@ -38,6 +38,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.schema.IndexPrototype.forSchema;
+import static org.neo4j.kernel.api.schema.SchemaTestUtil.SIMPLE_NAME_LOOKUP;
 
 @PageCacheExtension
 class GenericNativeIndexAccessorTest
@@ -62,7 +63,7 @@ class GenericNativeIndexAccessorTest
         DatabaseIndexContext databaseIndexContext = DatabaseIndexContext.builder( pageCache, fs ).build();
         GenericNativeIndexAccessor accessor =
                 new GenericNativeIndexAccessor( databaseIndexContext, indexFiles, new GenericLayout( 1, spatialSettings ), immediate(), descriptor,
-                        spatialSettings, mock( SpaceFillingCurveConfiguration.class ) );
+                        spatialSettings, mock( SpaceFillingCurveConfiguration.class ), SIMPLE_NAME_LOOKUP );
 
         // when
         accessor.drop();

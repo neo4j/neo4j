@@ -119,11 +119,12 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
             IndexDescriptor descriptor, boolean archiveFailedIndex, ByteBufferFactory bufferFactory, MemoryTracker memoryTracker )
     {
         this( databaseIndexContext, indexFiles, layout, descriptor, archiveFailedIndex, bufferFactory, memoryTracker,
-              FeatureToggles.getInteger( BlockBasedIndexPopulator.class, "mergeFactor", 8 ), NO_MONITOR, GBPTree.NO_MONITOR );
+                FeatureToggles.getInteger( BlockBasedIndexPopulator.class, "mergeFactor", 8 ), NO_MONITOR, GBPTree.NO_MONITOR );
     }
 
     BlockBasedIndexPopulator( DatabaseIndexContext databaseIndexContext, IndexFiles indexFiles, IndexLayout<KEY,VALUE> layout, IndexDescriptor descriptor,
-            boolean archiveFailedIndex, ByteBufferFactory bufferFactory, MemoryTracker memoryTracker, int mergeFactor, BlockStorage.Monitor blockStorageMonitor,
+            boolean archiveFailedIndex, ByteBufferFactory bufferFactory, MemoryTracker memoryTracker, int mergeFactor,
+            BlockStorage.Monitor blockStorageMonitor,
             GBPTree.Monitor treeMonitor )
     {
         super( databaseIndexContext, indexFiles, layout, descriptor, NO_HEADER_WRITER, treeMonitor );
@@ -208,7 +209,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
     {
         try
         {
-            validator.validate( values );
+            validator.validate( entityId, values );
             KEY key = layout.newKey();
             VALUE value = layout.newValue();
             initializeKeyFromUpdate( key, entityId, values );
@@ -501,7 +502,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
     {
         if ( update.updateMode() != UpdateMode.REMOVED )
         {
-            validator.validate( update.values() );
+            validator.validate( update.getEntityId(), update.values() );
         }
     }
 

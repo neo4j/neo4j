@@ -107,6 +107,7 @@ import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.kernel.api.KernelTransaction.Type.IMPLICIT;
+import static org.neo4j.kernel.api.schema.SchemaTestUtil.SIMPLE_NAME_LOOKUP;
 import static org.neo4j.kernel.impl.api.index.IndexingService.NO_MONITOR;
 import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 import static org.neo4j.logging.AssertableLogProvider.Level.ERROR;
@@ -125,6 +126,7 @@ class IndexPopulationJobTest
     private static final String age = "age";
     private static final RelationshipType likes = RelationshipType.withName( "likes" );
     private static final RelationshipType knows = RelationshipType.withName( "knows" );
+    private final TokenNameLookup tokenNameLookup = SIMPLE_NAME_LOOKUP;
 
     private Kernel kernel;
     private TokenNameLookup tokens;
@@ -824,7 +826,7 @@ class IndexPopulationJobTest
         IndexProvider indexProvider = db.getDependencyResolver().resolveDependency( DefaultIndexProviderMap.class ).getDefaultProvider();
         IndexDescriptor indexDescriptor = prototype.withName( "index_21" ).materialise( 21 );
         indexDescriptor = indexProvider.completeConfiguration( indexDescriptor );
-        return indexProvider.getPopulator( indexDescriptor, samplingConfig, heapBufferFactory( 1024 ), INSTANCE );
+        return indexProvider.getPopulator( indexDescriptor, samplingConfig, heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup );
     }
 
     private IndexPopulationJob newIndexPopulationJob( IndexPopulator populator, FlippableIndexProxy flipper, EntityType type, IndexPrototype prototype )

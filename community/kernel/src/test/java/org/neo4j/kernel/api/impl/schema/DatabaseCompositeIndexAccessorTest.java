@@ -100,6 +100,7 @@ import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
 import static org.neo4j.io.IOUtils.closeAll;
 import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.kernel.api.schema.SchemaTestUtil.SIMPLE_NAME_LOOKUP;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.test.rule.concurrent.ThreadingRule.waitingWhileIn;
 
@@ -171,11 +172,11 @@ public class DatabaseCompositeIndexAccessorTest
     {
         IOFunction function = dirFactory1 ->
         {
-            IndexPopulator populator = provider.getPopulator( descriptor, SAMPLING_CONFIG, heapBufferFactory( 1024 ), INSTANCE );
+            IndexPopulator populator = provider.getPopulator( descriptor, SAMPLING_CONFIG, heapBufferFactory( 1024 ), INSTANCE, SIMPLE_NAME_LOOKUP );
             populator.create();
             populator.close( true, NULL );
 
-            return provider.getOnlineAccessor( descriptor, SAMPLING_CONFIG );
+            return provider.getOnlineAccessor( descriptor, SAMPLING_CONFIG, SIMPLE_NAME_LOOKUP );
         };
         return new Object[]{ provider.getClass().getSimpleName() + " / " + descriptor, function};
     }

@@ -24,6 +24,7 @@ import org.apache.commons.lang3.StringUtils;
 import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.common.TokenNameLookup;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.MetadataMismatchException;
@@ -72,8 +73,8 @@ abstract class NativeIndexProvider<KEY extends NativeIndexKey<KEY>,VALUE extends
      * Instantiates the {@link Layout} which is used in the index backing this native index provider.
      *
      * @param descriptor the {@link IndexDescriptor} for this index.
-     * @param storeFile index store file, since some layouts may depend on contents of the header.
-     * If {@code null} it means that nothing must be read from the file before or while instantiating the layout.
+     * @param storeFile  index store file, since some layouts may depend on contents of the header. If {@code null} it means that nothing must be read from the
+     *                   file before or while instantiating the layout.
      * @return the correct {@link Layout} for the index.
      */
     abstract LAYOUT layout( IndexDescriptor descriptor, File storeFile );
@@ -86,7 +87,7 @@ abstract class NativeIndexProvider<KEY extends NativeIndexKey<KEY>,VALUE extends
 
     @Override
     public IndexPopulator getPopulator( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory,
-            MemoryTracker memoryTracker )
+            MemoryTracker memoryTracker, TokenNameLookup tokenNameLookup )
     {
         if ( databaseIndexContext.readOnly )
         {
@@ -95,20 +96,21 @@ abstract class NativeIndexProvider<KEY extends NativeIndexKey<KEY>,VALUE extends
 
         IndexFiles indexFiles = indexFiles( descriptor );
         return newIndexPopulator( indexFiles, layout( descriptor, null /*meaning don't read from this file since we're recreating it anyway*/ ), descriptor,
-                bufferFactory, memoryTracker );
+                bufferFactory, memoryTracker, tokenNameLookup );
     }
 
     protected abstract IndexPopulator newIndexPopulator( IndexFiles indexFiles, LAYOUT layout, IndexDescriptor descriptor,
-            ByteBufferFactory bufferFactory, MemoryTracker memoryTracker );
+            ByteBufferFactory bufferFactory, MemoryTracker memoryTracker, TokenNameLookup tokenNameLookup );
 
     @Override
-    public IndexAccessor getOnlineAccessor( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException
+    public IndexAccessor getOnlineAccessor( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, TokenNameLookup tokenNameLookup ) throws IOException
     {
         IndexFiles indexFiles = indexFiles( descriptor );
-        return newIndexAccessor( indexFiles, layout( descriptor, indexFiles.getStoreFile() ), descriptor );
+        return newIndexAccessor( indexFiles, layout( descriptor, indexFiles.getStoreFile() ), descriptor, tokenNameLookup );
     }
 
-    protected abstract IndexAccessor newIndexAccessor( IndexFiles indexFiles, LAYOUT layout, IndexDescriptor descriptor ) throws IOException;
+    protected abstract IndexAccessor newIndexAccessor( IndexFiles indexFiles, LAYOUT layout, IndexDescriptor descriptor, TokenNameLookup tokenNameLookup )
+            throws IOException;
 
     @Override
     public String getPopulationFailure( IndexDescriptor descriptor, PageCursorTracer cursorTracer )

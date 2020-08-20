@@ -26,6 +26,7 @@ import org.junit.jupiter.api.Test;
 import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.InternalIndexState;
@@ -39,6 +40,7 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.LoggingMonitor;
+import org.neo4j.kernel.api.schema.SchemaTestUtil;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.logging.AssertableLogProvider;
@@ -80,6 +82,7 @@ abstract class NativeIndexProviderTests
     private final ProviderFactory factory;
     private final InternalIndexState expectedStateOnNonExistingSubIndex;
     private final Value someValue;
+    private final TokenNameLookup tokenNameLookup = SchemaTestUtil.SIMPLE_NAME_LOOKUP;
     private IndexProvider provider;
 
     NativeIndexProviderTests( ProviderFactory factory, InternalIndexState expectedStateOnNonExistingSubIndex, Value someValue )
@@ -105,7 +108,7 @@ abstract class NativeIndexProviderTests
         provider = newReadOnlyProvider();
 
         assertThrows( UnsupportedOperationException.class, () -> provider.getPopulator( descriptor(), samplingConfig(),
-                heapBufferFactory( 1024 ), INSTANCE ) );
+                heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup ) );
     }
 
     /* getOnlineAccessor */
@@ -118,8 +121,8 @@ abstract class NativeIndexProviderTests
 
         // when
         IndexDescriptor descriptor = descriptorUnique();
-        try ( IndexAccessor accessor = provider.getOnlineAccessor( descriptor, samplingConfig() );
-            IndexUpdater indexUpdater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
+        try ( IndexAccessor accessor = provider.getOnlineAccessor( descriptor, samplingConfig(), tokenNameLookup );
+              IndexUpdater indexUpdater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
         {
             indexUpdater.process( IndexEntryUpdate.add( 1, descriptor.schema(), someValue ) );
 
@@ -136,7 +139,7 @@ abstract class NativeIndexProviderTests
     {
         // given
         provider = newProvider();
-        IndexPopulator populator = provider.getPopulator( descriptor(), samplingConfig(), heapBufferFactory( 1024 ), INSTANCE );
+        IndexPopulator populator = provider.getPopulator( descriptor(), samplingConfig(), heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup );
         populator.create();
         populator.close( true, NULL );
 
@@ -154,13 +157,13 @@ abstract class NativeIndexProviderTests
 
         int nonFailedIndexId = NativeIndexProviderTests.indexId;
         IndexPopulator nonFailedPopulator = provider.getPopulator( descriptor( nonFailedIndexId ), samplingConfig(),
-                heapBufferFactory( 1024 ), INSTANCE );
+                heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup );
         nonFailedPopulator.create();
         nonFailedPopulator.close( true, NULL );
 
         int failedIndexId = 2;
         IndexPopulator failedPopulator = provider.getPopulator( descriptor( failedIndexId ), samplingConfig(),
-                heapBufferFactory( 1024 ), INSTANCE );
+                heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup );
         failedPopulator.create();
 
         // when
@@ -177,7 +180,7 @@ abstract class NativeIndexProviderTests
         // given
         provider = newProvider();
         IndexPopulator populator = provider.getPopulator( descriptor(), samplingConfig(),
-                heapBufferFactory( 1024 ), INSTANCE );
+                heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup );
         populator.create();
 
         // when
@@ -199,13 +202,13 @@ abstract class NativeIndexProviderTests
         int second = 2;
         int third = 3;
         IndexPopulator firstPopulator = provider.getPopulator( descriptor( first ), samplingConfig(),
-                heapBufferFactory( 1024 ), INSTANCE );
+                heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup );
         firstPopulator.create();
         IndexPopulator secondPopulator = provider.getPopulator( descriptor( second ), samplingConfig(),
-                heapBufferFactory( 1024 ), INSTANCE );
+                heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup );
         secondPopulator.create();
         IndexPopulator thirdPopulator = provider.getPopulator( descriptor( third ), samplingConfig(),
-                heapBufferFactory( 1024 ), INSTANCE );
+                heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup );
         thirdPopulator.create();
 
         // when
@@ -229,7 +232,7 @@ abstract class NativeIndexProviderTests
         // given
         provider = newProvider();
         IndexPopulator populator = provider.getPopulator( descriptor(), samplingConfig(),
-                heapBufferFactory( 1024 ), INSTANCE );
+                heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup );
         populator.create();
 
         // when
@@ -274,7 +277,7 @@ abstract class NativeIndexProviderTests
         // given
         provider = newProvider();
         IndexPopulator populator = provider.getPopulator( descriptor(), samplingConfig(),
-                heapBufferFactory( 1024 ), INSTANCE );
+                heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup );
         populator.create();
 
         // when
@@ -290,7 +293,7 @@ abstract class NativeIndexProviderTests
     {
         // given
         provider = newProvider();
-        IndexPopulator populator = provider.getPopulator( descriptor(), samplingConfig(), heapBufferFactory( 1024 ), INSTANCE );
+        IndexPopulator populator = provider.getPopulator( descriptor(), samplingConfig(), heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup );
         populator.create();
         populator.markAsFailed( "Just some failure" );
         populator.close( false, NULL );
@@ -307,7 +310,7 @@ abstract class NativeIndexProviderTests
     {
         // given
         provider = newProvider();
-        IndexPopulator populator = provider.getPopulator( descriptor(), samplingConfig(), heapBufferFactory( 1024 ), INSTANCE );
+        IndexPopulator populator = provider.getPopulator( descriptor(), samplingConfig(), heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup );
         populator.create();
         populator.close( true, NULL );
 

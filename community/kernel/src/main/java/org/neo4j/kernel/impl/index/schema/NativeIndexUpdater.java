@@ -124,8 +124,7 @@ class NativeIndexUpdater<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIn
     }
 
     private static <KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue> void processAdd( KEY treeKey, VALUE treeValue, IndexEntryUpdate<?> update,
-            Writer<KEY,VALUE> writer, ConflictDetectingValueMerger<KEY,VALUE,Value[]> conflictDetectingValueMerger )
-            throws IndexEntryConflictException
+            Writer<KEY,VALUE> writer, ConflictDetectingValueMerger<KEY,VALUE,Value[]> conflictDetectingValueMerger ) throws IndexEntryConflictException
     {
         initializeKeyAndValueFromUpdate( treeKey, treeValue, update.getEntityId(), update.values() );
         conflictDetectingValueMerger.controlConflictDetection( treeKey );

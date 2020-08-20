@@ -31,6 +31,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 
+import org.neo4j.common.TokenNameLookup;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.GBPTreeBuilder;
 import org.neo4j.index.internal.gbptree.Layout;
@@ -40,6 +41,7 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.api.schema.SchemaTestUtil;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
@@ -83,6 +85,7 @@ public abstract class NativeIndexTestUtil<KEY extends NativeIndexKey<KEY>,VALUE 
     IndexFiles indexFiles;
     IndexProvider.Monitor monitor = IndexProvider.Monitor.EMPTY;
     JobScheduler jobScheduler;
+    TokenNameLookup tokenNameLookup;
 
     @BeforeEach
     void setup() throws IOException
@@ -93,6 +96,7 @@ public abstract class NativeIndexTestUtil<KEY extends NativeIndexKey<KEY>,VALUE 
         indexDirectoryStructure = directoriesByProvider( directory.directory( "root" ) ).forProvider( indexDescriptor.getIndexProvider() );
         this.indexFiles = new IndexFiles( fs, indexDirectoryStructure, indexDescriptor.getId() );
         fs.mkdirs( indexFiles.getStoreFile().getParentFile() );
+        tokenNameLookup = SchemaTestUtil.SIMPLE_NAME_LOOKUP;
         jobScheduler = JobSchedulerFactory.createInitialisedScheduler();
     }
 

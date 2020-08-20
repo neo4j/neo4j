@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.index.schema;
 import java.io.File;
 import java.util.Map;
 
+import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurveConfiguration;
@@ -162,17 +163,17 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<GenericKey,N
 
     @Override
     protected IndexPopulator newIndexPopulator( IndexFiles indexFiles, GenericLayout layout, IndexDescriptor descriptor, ByteBufferFactory bufferFactory,
-            MemoryTracker memoryTracker )
+            MemoryTracker memoryTracker, TokenNameLookup tokenNameLookup )
     {
         return new GenericBlockBasedIndexPopulator( databaseIndexContext, indexFiles, layout, descriptor, layout.getSpaceFillingCurveSettings(),
-                configuration, archiveFailedIndex, bufferFactory, memoryTracker );
+                configuration, archiveFailedIndex, bufferFactory, memoryTracker, tokenNameLookup );
     }
 
     @Override
-    protected IndexAccessor newIndexAccessor( IndexFiles indexFiles, GenericLayout layout, IndexDescriptor descriptor )
+    protected IndexAccessor newIndexAccessor( IndexFiles indexFiles, GenericLayout layout, IndexDescriptor descriptor, TokenNameLookup tokenNameLookup )
     {
         return new GenericNativeIndexAccessor( databaseIndexContext, indexFiles, layout, recoveryCleanupWorkCollector, descriptor,
-                layout.getSpaceFillingCurveSettings(), configuration );
+                layout.getSpaceFillingCurveSettings(), configuration, tokenNameLookup );
     }
 
     @Override

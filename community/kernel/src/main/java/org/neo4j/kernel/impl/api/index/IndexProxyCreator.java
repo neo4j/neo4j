@@ -139,7 +139,7 @@ class IndexProxyCreator
             MemoryTracker memoryTracker )
     {
         IndexProvider provider = providerMap.lookup( index.getIndexProvider() );
-        return provider.getPopulator( index, samplingConfig, bufferFactory, memoryTracker );
+        return provider.getPopulator( index, samplingConfig, bufferFactory, memoryTracker, tokenNameLookup );
     }
 
     private MinimalIndexAccessor minimalIndexAccessorFromProvider( IndexDescriptor index )
@@ -151,6 +151,6 @@ class IndexProxyCreator
     private IndexAccessor onlineAccessorFromProvider( IndexDescriptor index, IndexSamplingConfig samplingConfig ) throws IOException
     {
         IndexProvider provider = providerMap.lookup( index.getIndexProvider() );
-        return provider.getOnlineAccessor( index, samplingConfig );
+        return provider.getOnlineAccessor( index, samplingConfig, tokenNameLookup );
     }
 }

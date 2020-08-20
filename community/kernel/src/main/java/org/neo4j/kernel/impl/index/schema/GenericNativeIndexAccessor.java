@@ -26,6 +26,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.common.TokenNameLookup;
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurveConfiguration;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
@@ -45,22 +46,24 @@ class GenericNativeIndexAccessor extends NativeIndexAccessor<GenericKey,NativeIn
 {
     private final IndexSpecificSpaceFillingCurveSettings spaceFillingCurveSettings;
     private final SpaceFillingCurveConfiguration configuration;
+    private final TokenNameLookup tokenNameLookup;
     private IndexValueValidator validator;
 
     GenericNativeIndexAccessor( DatabaseIndexContext databaseIndexContext, IndexFiles indexFiles,
             IndexLayout<GenericKey,NativeIndexValue> layout, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IndexDescriptor descriptor,
-            IndexSpecificSpaceFillingCurveSettings spaceFillingCurveSettings, SpaceFillingCurveConfiguration configuration )
+            IndexSpecificSpaceFillingCurveSettings spaceFillingCurveSettings, SpaceFillingCurveConfiguration configuration, TokenNameLookup tokenNameLookup )
     {
         super( databaseIndexContext, indexFiles, layout, descriptor, NO_HEADER_WRITER );
         this.spaceFillingCurveSettings = spaceFillingCurveSettings;
         this.configuration = configuration;
+        this.tokenNameLookup = tokenNameLookup;
         instantiateTree( recoveryCleanupWorkCollector, headerWriter );
     }
 
     @Override
     protected void afterTreeInstantiation( GBPTree<GenericKey,NativeIndexValue> tree )
     {
-        validator = new GenericIndexKeyValidator( tree.keyValueSizeCap(), descriptor, layout );
+        validator = new GenericIndexKeyValidator( tree.keyValueSizeCap(), descriptor, layout, tokenNameLookup );
     }
 
     @Override
@@ -71,9 +74,9 @@ class GenericNativeIndexAccessor extends NativeIndexAccessor<GenericKey,NativeIn
     }
 
     @Override
-    public void validateBeforeCommit( Value[] tuple )
+    public void validateBeforeCommit( long entityId, Value[] tuple )
     {
-        validator.validate( tuple );
+        validator.validate( entityId, tuple );
     }
 
     @Override

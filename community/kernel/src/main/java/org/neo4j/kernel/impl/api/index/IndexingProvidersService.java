@@ -38,11 +38,11 @@ public interface IndexingProvidersService extends IndexConfigCompleter
 
     /**
      * Validate that the given value tuple can be stored in the index associated with the given schema.
-     *
      * @param index the target index
      * @param tuple value tuple to validate
+     * @param entityId the id of the entity being validated
      */
-    void validateBeforeCommit( IndexDescriptor index, Value[] tuple );
+    void validateBeforeCommit( IndexDescriptor index, Value[] tuple, long entityId );
 
     /**
      * Validate the given index prototype, or throw an {@link IllegalArgumentException}.

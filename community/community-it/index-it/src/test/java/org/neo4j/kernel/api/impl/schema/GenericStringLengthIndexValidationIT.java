@@ -22,26 +22,35 @@ package org.neo4j.kernel.api.impl.schema;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.index.internal.gbptree.TreeNodeDynamicSize;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.impl.index.schema.GenericKey;
+import org.neo4j.kernel.impl.index.schema.LayoutTestUtil;
+import org.neo4j.test.rule.RandomRule;
+
+import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10;
 
 public class GenericStringLengthIndexValidationIT extends StringLengthIndexValidationIT
 {
     @Override
     protected int getSingleKeySizeLimit()
     {
-        int overhead = GenericKey.ENTITY_ID_SIZE + GenericKey.TYPE_ID_SIZE + GenericKey.SIZE_STRING_LENGTH;
-        return TreeNodeDynamicSize.keyValueSizeCapFromPageSize( PageCache.PAGE_SIZE ) - overhead;
+        return TreeNodeDynamicSize.keyValueSizeCapFromPageSize( PageCache.PAGE_SIZE );
+    }
+
+    @Override
+    protected String getString( RandomRule random, int keySize )
+    {
+        return LayoutTestUtil.generateStringResultingInSizeForIndexProvider( keySize, NATIVE_BTREE10 );
     }
 
     @Override
     protected GraphDatabaseSettings.SchemaIndex getSchemaIndex()
     {
-        return GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10;
+        return NATIVE_BTREE10;
     }
 
     @Override
-    protected String expectedPopulationFailureMessage()
+    protected String expectedPopulationFailureCauseMessage()
     {
-        return "Property value is too large to index into";
+        return "Property value is too large to index, please see index documentation for limitations. Index: Index( id=1, name='index_71616483', " +
+                "type='GENERAL BTREE', schema=(:LABEL_ONE {largeString}), indexProvider='native-btree-1.0' ), entity id: 0";
     }
 }

@@ -32,6 +32,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;
 
+import org.neo4j.common.TokenNameLookup;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -140,7 +141,8 @@ class IndexRecoveryIT
         Future<Void> killFuture;
         try
         {
-            when( mockedIndexProvider.getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any(), any() ) ).thenReturn(
+            when( mockedIndexProvider
+                    .getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any(), any(), any( TokenNameLookup.class ) ) ).thenReturn(
                     indexPopulatorWithControlledCompletionTiming( populationSemaphore ) );
             createIndex( myLabel );
 
@@ -164,7 +166,8 @@ class IndexRecoveryIT
         Semaphore recoverySemaphore = new Semaphore( 0 );
         try
         {
-            when( mockedIndexProvider.getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any(), any() ) ).thenReturn(
+            when( mockedIndexProvider
+                    .getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any(), any(), any( TokenNameLookup.class ) ) ).thenReturn(
                     indexPopulatorWithControlledCompletionTiming( recoverySemaphore ) );
             boolean recoveryRequired = Recovery.isRecoveryRequired( testDirectory.getFileSystem(), databaseLayout, defaults(), INSTANCE );
             monitors.addMonitorListener( new MyRecoveryMonitor( recoverySemaphore ) );
@@ -180,8 +183,9 @@ class IndexRecoveryIT
             // in case if kill was not that fast and killed db after flush there will be no need to do recovery and
             // we will not gonna need to get index populators during recovery index service start
             verify( mockedIndexProvider, times( recoveryRequired ? 3 : 2 ) ).getPopulator( any( IndexDescriptor.class ),
-                    any( IndexSamplingConfig.class ), any(), any() );
-            verify( mockedIndexProvider, never() ).getOnlineAccessor( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ) );
+                    any( IndexSamplingConfig.class ), any(), any(), any( TokenNameLookup.class ) );
+            verify( mockedIndexProvider, never() )
+                    .getOnlineAccessor( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any( TokenNameLookup.class ) );
         }
         finally
         {
@@ -198,7 +202,8 @@ class IndexRecoveryIT
         {
             startDb();
 
-            when( mockedIndexProvider.getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any(), any() ) ).thenReturn(
+            when( mockedIndexProvider
+                    .getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any(), any(), any( TokenNameLookup.class ) ) ).thenReturn(
                     indexPopulatorWithControlledCompletionTiming( populationSemaphore ) );
             createIndex( myLabel );
 
@@ -217,7 +222,8 @@ class IndexRecoveryIT
         populationSemaphore = new Semaphore( 1 );
         try
         {
-            when( mockedIndexProvider.getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any(), any() ) ).thenReturn(
+            when( mockedIndexProvider
+                    .getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any(), any(), any( TokenNameLookup.class ) ) ).thenReturn(
                     indexPopulatorWithControlledCompletionTiming( populationSemaphore ) );
             startDb();
 
@@ -228,8 +234,9 @@ class IndexRecoveryIT
                         .extracting( i -> transaction.schema().getIndexState( i ) ).containsOnly( Schema.IndexState.POPULATING );
             }
             verify( mockedIndexProvider, times( 3 ) ).getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ),
-                    any(), any() );
-            verify( mockedIndexProvider, never() ).getOnlineAccessor( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ) );
+                    any(), any(), any( TokenNameLookup.class ) );
+            verify( mockedIndexProvider, never() )
+                    .getOnlineAccessor( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any( TokenNameLookup.class ) );
         }
         finally
         {
@@ -245,12 +252,13 @@ class IndexRecoveryIT
 
         IndexPopulator populator = mock( IndexPopulator.class );
         when( mockedIndexProvider
-                .getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any(), any() ) )
+                .getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any(), any(), any( TokenNameLookup.class ) ) )
                 .thenReturn( populator );
         when( populator.sample( any( PageCursorTracer.class ) ) ).thenReturn( new IndexSample() );
         IndexAccessor mockedAccessor = mock( IndexAccessor.class );
         when( mockedAccessor.newUpdater( any( IndexUpdateMode.class ), any( PageCursorTracer.class ) ) ).thenReturn( SwallowingIndexUpdater.INSTANCE );
-        when( mockedIndexProvider.getOnlineAccessor( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ) ) ).thenReturn( mockedAccessor );
+        when( mockedIndexProvider.getOnlineAccessor( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any( TokenNameLookup.class ) ) )
+                .thenReturn( mockedAccessor );
         createIndexAndAwaitPopulation( myLabel );
         // rotate logs
         rotateLogsAndCheckPoint();
@@ -261,7 +269,8 @@ class IndexRecoveryIT
         killDb();
         when( mockedIndexProvider.getInitialState( any( IndexDescriptor.class ), any( PageCursorTracer.class ) ) ).thenReturn( ONLINE );
         GatheringIndexWriter writer = new GatheringIndexWriter();
-        when( mockedIndexProvider.getOnlineAccessor( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ) ) ).thenReturn( writer );
+        when( mockedIndexProvider.getOnlineAccessor( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any( TokenNameLookup.class ) ) )
+                .thenReturn( writer );
 
         // When
         startDb();
@@ -274,10 +283,10 @@ class IndexRecoveryIT
                     .extracting( i -> transaction.schema().getIndexState( i ) ).containsOnly( Schema.IndexState.ONLINE );
         }
         verify( mockedIndexProvider )
-                .getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any(), any() );
+                .getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any(), any(), any( TokenNameLookup.class ) );
         int onlineAccessorInvocationCount = 3; // once when we create the index, and once when we restart the db
         verify( mockedIndexProvider, times( onlineAccessorInvocationCount ) )
-                .getOnlineAccessor( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ) );
+                .getOnlineAccessor( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any( TokenNameLookup.class ) );
         assertEquals( expectedUpdates, writer.batchedUpdates );
     }
 
@@ -286,10 +295,10 @@ class IndexRecoveryIT
     {
         // Given
         IndexPopulator indexPopulator = mock( IndexPopulator.class );
-        when( mockedIndexProvider.getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any(), any() ) )
+        when( mockedIndexProvider.getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any(), any(), any( TokenNameLookup.class ) ) )
                 .thenReturn( indexPopulator );
         IndexAccessor indexAccessor = mock( IndexAccessor.class );
-        when( mockedIndexProvider.getOnlineAccessor( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
+        when( mockedIndexProvider.getOnlineAccessor( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any( TokenNameLookup.class ) ) )
                 .thenReturn( indexAccessor );
         startDb();
         createIndex( myLabel );
@@ -309,7 +318,8 @@ class IndexRecoveryIT
             assertThat( transaction.schema().getIndexes( myLabel ) )
                     .extracting( i -> transaction.schema().getIndexState( i ) ).containsOnly( Schema.IndexState.FAILED );
         }
-        verify( mockedIndexProvider ).getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any(), any() );
+        verify( mockedIndexProvider )
+                .getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any(), any(), any( TokenNameLookup.class ) );
         verify( mockedIndexProvider ).getMinimalIndexAccessor( any( IndexDescriptor.class ) );
     }
 

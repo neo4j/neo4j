@@ -71,6 +71,7 @@ import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.io.IOUtils.closeAll;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.kernel.api.impl.schema.LuceneTestTokenNameLookup.SIMPLE_TOKEN_LOOKUP;
 import static org.neo4j.test.rule.concurrent.ThreadingRule.waitingWhileIn;
 
 @RunWith( Parameterized.class )
@@ -113,7 +114,7 @@ public class DatabaseIndexAccessorTest
 
                     index.create();
                     index.open();
-                    return new LuceneIndexAccessor( index, GENERAL_INDEX );
+                    return new LuceneIndexAccessor( index, GENERAL_INDEX, SIMPLE_TOKEN_LOOKUP );
                 } ),
                 arg( UNIQUE_INDEX, dirFactory1 ->
                 {
@@ -125,7 +126,7 @@ public class DatabaseIndexAccessorTest
 
                     index.create();
                     index.open();
-                    return new LuceneIndexAccessor( index, UNIQUE_INDEX );
+                    return new LuceneIndexAccessor( index, UNIQUE_INDEX, SIMPLE_TOKEN_LOOKUP );
                 } )
         );
     }

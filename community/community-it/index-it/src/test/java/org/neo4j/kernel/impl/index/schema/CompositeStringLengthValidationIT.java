@@ -52,8 +52,8 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 
 @ExtendWith( RandomExtension.class )
@@ -135,7 +135,7 @@ class CompositeStringLengthValidationIT
         // given
         createIndex( KEY, KEY2 );
 
-        try
+        IllegalArgumentException e = assertThrows( IllegalArgumentException.class, () ->
         {
             try ( Transaction tx = db.beginTx() )
             {
@@ -144,13 +144,8 @@ class CompositeStringLengthValidationIT
                 node.setProperty( KEY2, secondSlot );
                 tx.commit();
             }
-            fail( "Should have failed" );
-        }
-        catch ( IllegalArgumentException e )
-        {
-            // then good
-            assertThat( e.getMessage() ).contains( "Property value is too large to index into" );
-        }
+        } );
+        assertThat( e.getMessage() ).contains( "Property value is too large to index, please see index documentation for limitations." );
     }
 
     private IndexDescriptor createIndex( String... keys )

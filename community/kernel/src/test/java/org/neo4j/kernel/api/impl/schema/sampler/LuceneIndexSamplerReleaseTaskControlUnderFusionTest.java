@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
+import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.helpers.TaskControl;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -71,6 +72,7 @@ class LuceneIndexSamplerReleaseTaskControlUnderFusionTest
     private static final Config config = Config.defaults();
     private static final IndexSamplingConfig samplingConfig = new IndexSamplingConfig( config );
     private static final RuntimeException sampleException = new RuntimeException( "Killroy messed with your index sample." );
+    private static final TokenNameLookup tokenNameLookup = SIMPLE_NAME_LOOKUP;
 
     @Inject
     private FileSystemAbstraction fs;
@@ -106,7 +108,7 @@ class LuceneIndexSamplerReleaseTaskControlUnderFusionTest
 
         IndexProvider failingProvider = failingProvider();
         FusionIndexProvider fusionProvider = createFusionProvider( luceneProvider, failingProvider );
-        try ( IndexAccessor fusionAccessor = fusionProvider.getOnlineAccessor( descriptor, samplingConfig ) )
+        try ( IndexAccessor fusionAccessor = fusionProvider.getOnlineAccessor( descriptor, samplingConfig, tokenNameLookup ) )
         {
             IndexSamplingJob indexSamplingJob = createIndexSamplingJob( fusionAccessor );
 
@@ -128,7 +130,7 @@ class LuceneIndexSamplerReleaseTaskControlUnderFusionTest
 
     private void makeSureIndexHasSomeData( IndexProvider provider ) throws IOException, IndexEntryConflictException
     {
-        try ( IndexAccessor accessor = provider.getOnlineAccessor( descriptor, samplingConfig );
+        try ( IndexAccessor accessor = provider.getOnlineAccessor( descriptor, samplingConfig, tokenNameLookup );
               IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, PageCursorTracer.NULL ) )
         {
             updater.process( IndexEntryUpdate.add( 1, descriptor, Values.of( "some string" ) ) );
@@ -177,7 +179,7 @@ class LuceneIndexSamplerReleaseTaskControlUnderFusionTest
         return new IndexProvider.Adaptor( providerDescriptor, directoryFactory )
         {
             @Override
-            public IndexAccessor getOnlineAccessor( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
+            public IndexAccessor getOnlineAccessor( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, TokenNameLookup tokenNameLookup )
             {
                 return failingIndexAccessor();
             }

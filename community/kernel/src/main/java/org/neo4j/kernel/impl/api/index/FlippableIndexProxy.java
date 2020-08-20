@@ -330,12 +330,12 @@ public class FlippableIndexProxy extends AbstractDelegatingIndexProxy
     }
 
     @Override
-    public void validateBeforeCommit( Value[] tuple )
+    public void validateBeforeCommit( Value[] tuple, long entityId )
     {
         lock.readLock().lock();
         try
         {
-            delegate.validateBeforeCommit( tuple );
+            delegate.validateBeforeCommit( tuple, entityId );
         }
         finally
         {

@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.util.EnumMap;
 import java.util.List;
 
+import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.schema.IndexCapability;
@@ -128,18 +129,18 @@ public class FusionIndexProvider extends IndexProvider
 
     @Override
     public IndexPopulator getPopulator( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory,
-            MemoryTracker memoryTracker )
+            MemoryTracker memoryTracker, TokenNameLookup tokenNameLookup )
     {
         EnumMap<IndexSlot,IndexPopulator> populators = providers.map( provider -> provider.getPopulator( descriptor, samplingConfig, bufferFactory,
-                memoryTracker ) );
+                memoryTracker, tokenNameLookup ) );
         IndexFiles indexFiles = indexFiles( descriptor );
         return new FusionIndexPopulator( slotSelector, new InstanceSelector<>( populators ), indexFiles, archiveFailedIndex );
     }
 
     @Override
-    public IndexAccessor getOnlineAccessor( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException
+    public IndexAccessor getOnlineAccessor( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, TokenNameLookup tokenNameLookup ) throws IOException
     {
-        EnumMap<IndexSlot,IndexAccessor> accessors = providers.map( provider -> provider.getOnlineAccessor( descriptor, samplingConfig ) );
+        EnumMap<IndexSlot,IndexAccessor> accessors = providers.map( provider -> provider.getOnlineAccessor( descriptor, samplingConfig, tokenNameLookup ) );
         IndexFiles indexFiles = indexFiles( descriptor );
         return new FusionIndexAccessor( slotSelector, new InstanceSelector<>( accessors ), descriptor, indexFiles );
     }

@@ -152,7 +152,7 @@ public class FullCheck
             PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker ) throws ConsistencyCheckIncompleteException
     {
         try ( IndexAccessors indexes = new IndexAccessors( directStoreAccess.indexes(), directStoreAccess.nativeStores().getRawNeoStores(),
-                samplingConfig, pageCacheTracer ) )
+                samplingConfig, pageCacheTracer, directStoreAccess.tokenHolders().lookupWithIds() ) )
         {
             if ( !config.get( RelationshipTypeScanStoreSettings.enable_relationship_type_scan_store ) && flags.isCheckRelationshipTypeScanStore() )
             {

@@ -32,6 +32,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.function.Supplier;
 
+import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
 import org.neo4j.graphdb.Node;
@@ -206,7 +207,7 @@ public class IndexPopulationMissConcurrentUpdateIT
             {
                 @Override
                 public IndexPopulator getPopulator( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory,
-                        MemoryTracker memoryTracker )
+                        MemoryTracker memoryTracker, TokenNameLookup tokenNameLookup )
                 {
                     return new IndexPopulator.Adapter()
                     {
@@ -259,7 +260,7 @@ public class IndexPopulationMissConcurrentUpdateIT
                 }
 
                 @Override
-                public IndexAccessor getOnlineAccessor( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
+                public IndexAccessor getOnlineAccessor( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, TokenNameLookup tokenNameLookup )
                 {
                     return mock( IndexAccessor.class );
                 }

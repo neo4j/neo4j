@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.EnumSet;
 
+import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.memory.ByteBufferFactory;
@@ -97,9 +98,9 @@ public class FailingGenericNativeIndexProviderFactory extends ExtensionFactory<A
         {
             @Override
             public IndexPopulator getPopulator( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory,
-                    MemoryTracker memoryTracker )
+                    MemoryTracker memoryTracker, TokenNameLookup tokenNameLookup )
             {
-                IndexPopulator actualPopulator = actualProvider.getPopulator( descriptor, samplingConfig, bufferFactory, memoryTracker );
+                IndexPopulator actualPopulator = actualProvider.getPopulator( descriptor, samplingConfig, bufferFactory, memoryTracker, tokenNameLookup );
                 if ( failureTypes.contains( FailureType.POPULATION ) )
                 {
                     return new IndexPopulator.Delegating( actualPopulator )
@@ -115,9 +116,10 @@ public class FailingGenericNativeIndexProviderFactory extends ExtensionFactory<A
             }
 
             @Override
-            public IndexAccessor getOnlineAccessor( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException
+            public IndexAccessor getOnlineAccessor( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, TokenNameLookup tokenNameLookup )
+                    throws IOException
             {
-                IndexAccessor actualAccessor = actualProvider.getOnlineAccessor( descriptor, samplingConfig );
+                IndexAccessor actualAccessor = actualProvider.getOnlineAccessor( descriptor, samplingConfig, tokenNameLookup );
                 return new IndexAccessor.Delegating( actualAccessor )
                 {
                     @Override

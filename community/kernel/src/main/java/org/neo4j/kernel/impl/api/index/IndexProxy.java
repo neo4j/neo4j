@@ -107,8 +107,9 @@ public interface IndexProxy extends MinimalIndexAccessor
      * called before committing a transaction as to prevent exception during applying that transaction.
      *
      * @param tuple {@link Value value tuple} to validate.
+     * @param entityId id of the entity being validated
      */
-    void validateBeforeCommit( Value[] tuple );
+    void validateBeforeCommit( Value[] tuple, long entityId );
 
     ResourceIterator<File> snapshotFiles() throws IOException;
 

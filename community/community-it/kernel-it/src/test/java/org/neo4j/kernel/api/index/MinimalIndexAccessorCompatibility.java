@@ -35,6 +35,7 @@ import org.neo4j.values.storable.Value;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.kernel.api.schema.SchemaTestUtil.SIMPLE_NAME_LOOKUP;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @Ignore( "Not a test. This is a compatibility suite that provides test cases for verifying" +
@@ -55,7 +56,7 @@ public class MinimalIndexAccessorCompatibility extends IndexProviderCompatibilit
     public void before()
     {
         IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.defaults() );
-        IndexPopulator populator = indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ), INSTANCE );
+        IndexPopulator populator = indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ), INSTANCE, SIMPLE_NAME_LOOKUP );
         populator.create();
         populator.close( true, NULL );
         minimalIndexAccessor = indexProvider.getMinimalIndexAccessor( descriptor );

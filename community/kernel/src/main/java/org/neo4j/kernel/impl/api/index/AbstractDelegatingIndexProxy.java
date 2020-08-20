@@ -117,9 +117,9 @@ public abstract class AbstractDelegatingIndexProxy implements IndexProxy
     }
 
     @Override
-    public void validateBeforeCommit( Value[] tuple )
+    public void validateBeforeCommit( Value[] tuple, long entityId )
     {
-        getDelegate().validateBeforeCommit( tuple );
+        getDelegate().validateBeforeCommit( tuple, entityId );
     }
 
     @Override
