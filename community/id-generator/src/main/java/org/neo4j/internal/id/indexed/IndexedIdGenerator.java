@@ -191,7 +191,7 @@ public class IndexedIdGenerator implements IdGenerator
 
     /**
      * Default value whether or not to strictly prioritize ids from freelist, as opposed to allocating from high id.
-     * Given a scenario where there are multiple concurrent calls to {@link #nextId()} or {@link #nextIdBatch(int)} and there are
+     * Given a scenario where there are multiple concurrent calls to {@link #nextId()} or {@link #nextIdBatch(int, boolean)} and there are
      * free ids on the freelist, some perhaps cached, some not. Thread noticing that there are no free ids cached will try to acquire scanner lock and if
      * it succeeds it will perform a scan and place found free ids in the cache and return. Otherwise:
      * <ul>
@@ -424,8 +424,22 @@ public class IndexedIdGenerator implements IdGenerator
     }
 
     @Override
-    public org.neo4j.internal.id.IdRange nextIdBatch( int size )
+    public org.neo4j.internal.id.IdRange nextIdBatch( int size, boolean forceConsecutiveAllocation )
     {
+        assertNotReadOnly();
+        maintenance();
+
+        if ( forceConsecutiveAllocation )
+        {
+            long startId;
+            do
+            {
+                startId = highId.getAndAdd( size );
+            }
+            while ( IdValidator.hasReservedIdInRange( startId, startId + size ) );
+            return new org.neo4j.internal.id.IdRange( EMPTY_LONG_ARRAY, startId, size );
+        }
+
         long prev = -1;
         long startOfRange = -1;
         int rangeLength = 0;

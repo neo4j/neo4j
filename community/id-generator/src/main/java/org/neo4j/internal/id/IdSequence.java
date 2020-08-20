@@ -22,6 +22,4 @@ package org.neo4j.internal.id;
 public interface IdSequence
 {
     long nextId();
-
-    IdRange nextIdBatch( int size );
 }

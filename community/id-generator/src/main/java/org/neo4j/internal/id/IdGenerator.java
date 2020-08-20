@@ -29,6 +29,17 @@ import org.neo4j.kernel.impl.index.schema.ConsistencyCheckable;
 public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
 {
     /**
+     * Allocates multiple IDs in one call.
+     *
+     * @param size the number of IDs to allocate.
+     * @param forceConsecutiveAllocation if {@code true} the returned {@link IdRange} will guarantee that the allocation is a range of IDs
+     * where all IDs are consecutive, i.e. an empty {@link IdRange#getDefragIds()}. If {@code false} there may be some of the allocated IDs
+     * non-consecutive, i.e. returned as part of {@link IdRange#getDefragIds()}.
+     * @return an {@link IdRange} containing the allocated IDs.
+     */
+    IdRange nextIdBatch( int size, boolean forceConsecutiveAllocation );
+
+    /**
      * @param id the highest in use + 1
      */
     void setHighId( long id );
@@ -89,9 +100,9 @@ public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
         }
 
         @Override
-        public IdRange nextIdBatch( int size )
+        public IdRange nextIdBatch( int size, boolean forceConsecutiveAllocation )
         {
-            return delegate.nextIdBatch( size );
+            return delegate.nextIdBatch( size, forceConsecutiveAllocation );
         }
 
         @Override

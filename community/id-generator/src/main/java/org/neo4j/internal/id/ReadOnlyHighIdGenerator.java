@@ -108,7 +108,7 @@ class ReadOnlyHighIdGenerator implements IdGenerator
     }
 
     @Override
-    public IdRange nextIdBatch( int size )
+    public IdRange nextIdBatch( int size, boolean forceConsecutiveAllocation )
     {
         throw new UnsupportedOperationException( "Should not be required" );
     }

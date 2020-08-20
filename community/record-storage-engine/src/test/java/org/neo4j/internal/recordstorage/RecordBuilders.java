@@ -26,7 +26,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-import org.neo4j.internal.id.IdRange;
 import org.neo4j.internal.id.IdSequence;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -219,12 +218,6 @@ public class RecordBuilders
             public long nextId()
             {
                 return nextId++;
-            }
-
-            @Override
-            public IdRange nextIdBatch( int size )
-            {
-                throw new UnsupportedOperationException();
             }
         } );
     }

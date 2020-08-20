@@ -23,10 +23,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Execution;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
-import static org.neo4j.internal.id.IdValidator.hasReservedIdInRange;
-import static org.neo4j.internal.id.IdValidator.isReservedId;
 
 @Execution( CONCURRENT )
 class BatchingIdSequenceTest
@@ -71,32 +68,5 @@ class BatchingIdSequenceTest
         assertEquals( 0L, idSequence.peek() );
         assertEquals( 0L, idSequence.nextId() );
         assertEquals( 1L, idSequence.peek() );
-    }
-
-    @Test
-    void shouldSkipReservedIdWhenGettingBatches()
-    {
-        // GIVEN
-        int batchSize = 10;
-        BatchingIdSequence idSequence = new BatchingIdSequence(
-                INTEGER_MINUS_ONE - batchSize - batchSize / 2 );
-
-        // WHEN
-        IdRange range1 = idSequence.nextIdBatch( batchSize );
-        IdRange range2 = idSequence.nextIdBatch( batchSize );
-
-        // THEN
-        assertNoReservedId( range1 );
-        assertNoReservedId( range2 );
-    }
-
-    private static void assertNoReservedId( IdRange range )
-    {
-        for ( long id : range.getDefragIds() )
-        {
-            assertFalse( isReservedId( id ) );
-        }
-
-        assertFalse( hasReservedIdInRange( range.getRangeStart(), range.getRangeStart() + range.getRangeLength() ) );
     }
 }

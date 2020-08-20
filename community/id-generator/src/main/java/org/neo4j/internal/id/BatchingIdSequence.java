@@ -19,8 +19,6 @@
  */
 package org.neo4j.internal.id;
 
-import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
-
 /**
  * {@link IdSequence} w/o any synchronization, purely a long incrementing.
  */
@@ -46,19 +44,6 @@ public class BatchingIdSequence implements IdSequence
         long result = peek();
         nextId++;
         return result;
-    }
-
-    @Override
-    public IdRange nextIdBatch( int size )
-    {
-        while ( IdValidator.hasReservedIdInRange( nextId, nextId + size ) )
-        {
-            nextId += size;
-        }
-
-        long startId = nextId;
-        nextId += size;
-        return new IdRange( EMPTY_LONG_ARRAY, startId, size );
     }
 
     public void reset()
