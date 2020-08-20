@@ -315,6 +315,21 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
       )
     }
 
+    test(s"$cypherToken-$orderCapability: Cannot order by index when ordering is on same property name, but different node with relaltionship") {
+      // With two relationships we use IDP to get the best plan.
+      // By keeping the best overall and the best sorted plan, we should only have one sort.
+      val plan = new given {
+        indexOn("Awesome", "prop").providesOrder(orderCapability)
+      } getLogicalPlanFor s"MATCH (m:Awesome)--()--(), (n:Awesome) WHERE n.prop > 'foo' RETURN m.prop ORDER BY m.prop $cypherToken"
+
+      val expectedIndexOrder = if (orderCapability.asc) IndexOrderAscending else IndexOrderDescending
+
+      plan._2 shouldBe a[Sort]
+      plan._2.treeCount {
+        case _: Sort => true
+      } shouldBe 1
+    }
+
     test(s"$cypherToken-$orderCapability: Order by index backed property should plan with provided order (starts with scan)") {
       val plan = new given {
         indexOn("Awesome", "prop").providesOrder(orderCapability)

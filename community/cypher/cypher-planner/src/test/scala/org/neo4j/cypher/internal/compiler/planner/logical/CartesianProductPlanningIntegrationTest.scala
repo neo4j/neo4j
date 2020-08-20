@@ -21,15 +21,35 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher.beLike
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
+import org.neo4j.cypher.internal.compiler.planner.logical.idp.cartesianProductsOrValueJoins.COMPONENT_THRESHOLD_FOR_CARTESIAN_PRODUCT
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.logical.plans.AllNodesScan
 import org.neo4j.cypher.internal.logical.plans.CartesianProduct
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
+import org.neo4j.cypher.internal.logical.plans.NodeIndexScan
 import org.neo4j.cypher.internal.logical.plans.Selection
+import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class CartesianProductPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
+
+  test("should build cartesian product with sorted plan left for many disconnected components") {
+    val nodes = (0 until COMPONENT_THRESHOLD_FOR_CARTESIAN_PRODUCT).map(i => s"(n$i:Few)").mkString(",")
+    val orderedNode = s"n${COMPONENT_THRESHOLD_FOR_CARTESIAN_PRODUCT}"
+
+    val plan = new given {
+      labelCardinality = Map("Few" -> 1.0, "Many" -> 1000.0)
+      indexOn("Many", "prop").providesOrder(IndexOrderCapability.BOTH)
+    }.getLogicalPlanFor(s"MATCH $nodes, ($orderedNode:Many) WHERE exists($orderedNode.prop) RETURN * ORDER BY $orderedNode.prop")._2
+
+    // We do not want a Sort
+    plan shouldBe a[CartesianProduct]
+    // Sorted index should be placed on the left of the cartesian products
+    plan.leftmostLeaf should beLike {
+      case NodeIndexScan(`orderedNode`, _, _, _, _) => ()
+    }
+  }
 
   test("should build plans for simple cartesian product") {
     planFor("MATCH (n), (m) RETURN n, m")._2 should equal(

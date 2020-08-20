@@ -17,18 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.planner.logical.steps
+package org.neo4j.cypher.internal.compiler.planner.logical
 
+import org.neo4j.cypher.internal.compiler.planner.logical.idp.BestResults
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
-/**
- * @param bestPlan The best overall plan, disregarding any interesting order.
- * @param bestSortedPlan if there is an interesting order, and if at the current stage there are plans that satisfy that interesting order,
- *                       this will be the best sorted plan.
- */
-case class BestPlans(bestPlan: LogicalPlan,
-                     bestSortedPlan: Option[LogicalPlan]) {
-
-  def map(f: LogicalPlan => LogicalPlan): BestPlans = BestPlans(f(bestPlan), bestSortedPlan.map(f))
-
+package object steps {
+  type BestPlans = BestResults[LogicalPlan]
 }

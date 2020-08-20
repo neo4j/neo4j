@@ -19,19 +19,29 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.idp
 
+import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher.beLike
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.BestPlans
+import org.neo4j.cypher.internal.expressions.LabelName
+import org.neo4j.cypher.internal.expressions.LabelToken
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
+import org.neo4j.cypher.internal.ir.ordering.RequiredOrderCandidate
 import org.neo4j.cypher.internal.logical.plans.AllNodesScan
 import org.neo4j.cypher.internal.logical.plans.CartesianProduct
+import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
+import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
+import org.neo4j.cypher.internal.logical.plans.NodeIndexScan
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
 import org.neo4j.cypher.internal.util.Cardinality
+import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class CartesianProductsOrValueJoinsTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
@@ -39,50 +49,68 @@ class CartesianProductsOrValueJoinsTest extends CypherFunSuite with LogicalPlann
   private val planB = allNodesScan("b")
   private val planC = allNodesScan("c")
 
+  private def setPlanningAttributes(qg: QueryGraph, plan: LogicalPlan, cardinality: Double, planningAttributes: PlanningAttributes): Unit = {
+    val solved = RegularSinglePlannerQuery(queryGraph = qg)
+    planningAttributes.solveds.set(plan.id, solved)
+    planningAttributes.cardinalities.set(plan.id, cardinality)
+    planningAttributes.providedOrders.set(plan.id, ProvidedOrder.empty)
+  }
+
   private def allNodesScan(n: String, planningAttributes: PlanningAttributes = PlanningAttributes.newAttributes): LogicalPlan = {
-    val solved = RegularSinglePlannerQuery(queryGraph = QueryGraph(patternNodes = Set(n)))
-    val cardinality = Cardinality(0)
-    val res = AllNodesScan(n, Set.empty)
-    planningAttributes.solveds.set(res.id, solved)
-    planningAttributes.cardinalities.set(res.id, cardinality)
-    planningAttributes.providedOrders.set(res.id, ProvidedOrder.empty)
-    res
+    val plan = AllNodesScan(n, Set.empty)
+    setPlanningAttributes(QueryGraph(patternNodes = Set(n)), plan, 0.0, planningAttributes)
+    plan
+  }
+
+  private def nodeIndexScan(n: String, label: String, cardinality: Double, planningAttributes: PlanningAttributes = PlanningAttributes.newAttributes): LogicalPlan = {
+    val plan = NodeIndexScan(n, LabelToken(label, LabelId(0)), Seq.empty, Set.empty, IndexOrderAscending)
+    setPlanningAttributes(QueryGraph(patternNodes = Set(n)), plan, cardinality, planningAttributes)
+    plan
+  }
+
+  private def nodeByLabelScan(n: String, label: String, cardinality: Double, planningAttributes: PlanningAttributes = PlanningAttributes.newAttributes): LogicalPlan = {
+    val plan = NodeByLabelScan(n, LabelName(label)(pos), Set.empty, IndexOrderNone)
+    setPlanningAttributes(QueryGraph(patternNodes = Set(n)), plan, cardinality, planningAttributes)
+    plan
   }
 
   test("should plan cartesian product between 2 pattern nodes") {
+    val expectedPlans: Seq[BestResults[LogicalPlan]] = List(planA, planB).permutations.map { l =>
+      val (a, b) = (l.head, l(1))
+      CartesianProduct(
+        a,
+        b
+      )
+    }
+      .map(BestResults(_, None))
+      .toSeq
     testThis(
       graph = QueryGraph(patternNodes = Set("a", "b")),
       input = (planningAttributes: PlanningAttributes) => Set(
-        PlannedComponent(QueryGraph(patternNodes = Set("a")), allNodesScan("a", planningAttributes)),
-        PlannedComponent(QueryGraph(patternNodes = Set("b")), allNodesScan("b", planningAttributes))),
-      expectedPlans =
-        List(planA, planB).permutations.map { l =>
-          val (a, b) = (l.head, l(1))
-          CartesianProduct(
-            a,
-            b
-          )
-        }.toSeq: _*)
+        PlannedComponent(QueryGraph(patternNodes = Set("a")), BestResults(allNodesScan("a", planningAttributes), None)),
+        PlannedComponent(QueryGraph(patternNodes = Set("b")), BestResults(allNodesScan("b", planningAttributes), None))),
+      expectedPlans = expectedPlans :_*)
   }
 
   test("should plan cartesian product between 3 pattern nodes") {
     testThis(
       graph = QueryGraph(patternNodes = Set("a", "b", "c")),
-      input = (planningAttributes: PlanningAttributes) =>  Set(
-        PlannedComponent(QueryGraph(patternNodes = Set("a")), allNodesScan("a", planningAttributes)),
-        PlannedComponent(QueryGraph(patternNodes = Set("b")), allNodesScan("b", planningAttributes)),
-        PlannedComponent(QueryGraph(patternNodes = Set("c")), allNodesScan("c", planningAttributes))),
-      expectedPlans =
-        List(planA, planB, planC).permutations.map { l =>
-          val (a, b, c) = (l.head, l(1), l(2))
+      input = (planningAttributes: PlanningAttributes) => Set(
+        PlannedComponent(QueryGraph(patternNodes = Set("a")), BestResults(allNodesScan("a", planningAttributes), None)),
+        PlannedComponent(QueryGraph(patternNodes = Set("b")), BestResults(allNodesScan("b", planningAttributes), None)),
+        PlannedComponent(QueryGraph(patternNodes = Set("c")), BestResults(allNodesScan("c", planningAttributes), None))),
+      expectedPlans = List(planA, planB, planC).permutations.map { l =>
+        val (a, b, c) = (l.head, l(1), l(2))
+        CartesianProduct(
+          b,
           CartesianProduct(
-            b,
-            CartesianProduct(
-              a,
-              c
-            )
+            a,
+            c
           )
-        }.toSeq : _*)
+        )
+      }
+        .map(BestResults(_, None))
+        .toSeq: _*)
   }
 
   test("should plan cartesian product between lots of pattern nodes") {
@@ -90,16 +118,66 @@ class CartesianProductsOrValueJoinsTest extends CypherFunSuite with LogicalPlann
     testThis(
       graph = QueryGraph(patternNodes = Set("a", "b", "c")),
       input = (planningAttributes: PlanningAttributes) => (chars map { x =>
-        PlannedComponent(QueryGraph(patternNodes = Set(x.toString)), allNodesScan(x.toString, planningAttributes))
+        PlannedComponent(QueryGraph(patternNodes = Set(x.toString)), BestResults(allNodesScan(x.toString, planningAttributes), None))
       }).toSet,
-      assertion = (x: LogicalPlan) => {
-        val leaves = x.leaves
-        leaves.toSet should equal((chars map { x =>
-          PlannedComponent(QueryGraph(patternNodes = Set(x.toString)), allNodesScan(x.toString))
-        }).map(_.plan).toSet)
+      assertion = (x: BestPlans) => {
+        val leaves = x.bestResult.leaves
+        leaves.toSet should equal((chars map { x => allNodesScan(x.toString) }).toSet)
         leaves.size should equal(chars.size)
       }
     )
+  }
+
+  test("should plan cartesian product between lots of pattern nodes where one node ordered") {
+    val nodesWithCardinality = (0 until 3).map(i => (s"n$i", 10.0 - i)).toSet
+    val orderedNode = "n3"
+    val graph = QueryGraph()
+
+    new given {
+      qg = graph
+    }.withLogicalPlanningContext { (cfg, context) =>
+      val kit = context.config.toKit(InterestingOrder.required(RequiredOrderCandidate.asc(varFor(orderedNode))), context)
+      val nodeIndexScanPlan = nodeIndexScan(orderedNode, "MANY", 1000.0, context.planningAttributes)
+
+      val bestSortedPlanComponent = PlannedComponent(
+        QueryGraph(patternNodes = Set(orderedNode)),
+        BestResults(nodeByLabelScan(orderedNode, "MANY", 1000.0,
+          context.planningAttributes),
+          Some(nodeIndexScanPlan)
+        ))
+      val bestPlanComponents = nodesWithCardinality
+        .map { case (n, c) => nodeByLabelScan(n, "FEW", c, context.planningAttributes) }
+        .map(plan => PlannedComponent(QueryGraph(patternNodes = plan.availableSymbols), BestResults(plan, None)))
+      val plans: Set[PlannedComponent] = bestPlanComponents + bestSortedPlanComponent
+
+      val result = cartesianProductsOrValueJoins.planLotsOfCartesianProducts(plans, cfg.qg, context, kit)
+
+      result.plan.bestResult should beLike {
+         case CartesianProduct(
+                 CartesianProduct(
+                   CartesianProduct(
+                     NodeByLabelScan("n2", _, _, _),
+                     NodeByLabelScan("n1", _, _, _)
+                   ),
+                   NodeByLabelScan("n0", _, _, _)
+                 ),
+                 NodeByLabelScan("n3", _, _, _)
+         ) => {}
+      }
+
+      result.plan.bestSortedResult.get should beLike {
+        case CartesianProduct(
+          CartesianProduct(
+            CartesianProduct(
+              NodeIndexScan("n3", _, _, _, _),
+              NodeByLabelScan("n2", _, _, _)
+            ),
+            NodeByLabelScan("n1", _, _, _)
+          ),
+          NodeByLabelScan("n0", _, _, _)
+        ) => {}
+      }
+    }
   }
 
   test("should plan hash join between 2 pattern nodes") {
@@ -108,13 +186,15 @@ class CartesianProductsOrValueJoinsTest extends CypherFunSuite with LogicalPlann
         patternNodes = Set("a", "b"),
         selections = Selections.from(equals(prop("a", "id"), prop("b", "id")))),
       input = (planningAttributes: PlanningAttributes) =>  Set(
-        PlannedComponent(QueryGraph(patternNodes = Set("a")), allNodesScan("a", planningAttributes)),
-        PlannedComponent(QueryGraph(patternNodes = Set("b")), allNodesScan("b", planningAttributes))),
+        PlannedComponent(QueryGraph(patternNodes = Set("a")), BestResults(allNodesScan("a", planningAttributes), None)),
+        PlannedComponent(QueryGraph(patternNodes = Set("b")), BestResults(allNodesScan("b", planningAttributes), None))),
       expectedPlans =
         List((planA, "a"), (planB, "b")).permutations.map { l =>
           val ((a, aName), (b, bName)) = (l.head, l(1))
           ValueHashJoin(a, b, equals(prop(aName, "id"), prop(bName, "id")))
-        }.toSeq : _*)
+        }
+          .map(BestResults(_, None))
+          .toSeq: _*)
   }
 
   test("should plan hash joins between 3 pattern nodes") {
@@ -127,9 +207,9 @@ class CartesianProductsOrValueJoinsTest extends CypherFunSuite with LogicalPlann
         patternNodes = Set("a", "b", "c"),
         selections = Selections.from(Seq(eq1, eq2, eq3))),
       input = (planningAttributes: PlanningAttributes) =>  Set(
-        PlannedComponent(QueryGraph(patternNodes = Set("a")), allNodesScan("a", planningAttributes)),
-        PlannedComponent(QueryGraph(patternNodes = Set("b")), allNodesScan("b", planningAttributes)),
-        PlannedComponent(QueryGraph(patternNodes = Set("c")), allNodesScan("c", planningAttributes))),
+        PlannedComponent(QueryGraph(patternNodes = Set("a")), BestResults(allNodesScan("a", planningAttributes), None)),
+        PlannedComponent(QueryGraph(patternNodes = Set("b")), BestResults(allNodesScan("b", planningAttributes), None)),
+        PlannedComponent(QueryGraph(patternNodes = Set("c")), BestResults(allNodesScan("c", planningAttributes), None))),
       expectedPlans =
         List((planA, "a"), (planB, "b"), (planC, "c")).permutations.flatMap { l =>
           val ((a, aName), (b, bName), (c, cName)) = (l.head, l(1), l(2))
@@ -145,7 +225,9 @@ class CartesianProductsOrValueJoinsTest extends CypherFunSuite with LogicalPlann
               )
             )
           }
-        }.toSeq : _*)
+        }
+          .map(BestResults(_, None))
+          .toSeq: _*)
   }
 
   test("should recognize value joins") {
@@ -221,7 +303,7 @@ class CartesianProductsOrValueJoinsTest extends CypherFunSuite with LogicalPlann
     result should be(List(predicate1._1))
   }
 
-  private def testThis(graph: QueryGraph, input: PlanningAttributes => Set[PlannedComponent], assertion: LogicalPlan => Unit): Unit = {
+  private def testThis(graph: QueryGraph, input: PlanningAttributes => Set[PlannedComponent], assertion: BestResults[LogicalPlan] => Unit): Unit = {
     new given {
       qg = graph
       cardinality = mapCardinality {
@@ -244,6 +326,6 @@ class CartesianProductsOrValueJoinsTest extends CypherFunSuite with LogicalPlann
     }
   }
 
-  private def testThis(graph: QueryGraph, input: PlanningAttributes => Set[PlannedComponent], expectedPlans: LogicalPlan*): Unit =
-    testThis(graph, input, (result: LogicalPlan) => {expectedPlans should contain(result);()})
+  private def testThis(graph: QueryGraph, input: PlanningAttributes => Set[PlannedComponent], expectedPlans: BestPlans*): Unit =
+    testThis(graph, input, (result: BestPlans) => {expectedPlans should contain(result);()})
 }

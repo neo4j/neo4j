@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.CandidateSelector
 import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlannerList
 import org.neo4j.cypher.internal.compiler.planner.logical.QueryPlannerConfiguration
+import org.neo4j.cypher.internal.compiler.planner.logical.idp.BestResults
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
@@ -98,7 +99,7 @@ class leafPlanOptionsTest extends CypherFunSuite with LogicalPlanningTestSupport
         ctx
       )
 
-      options.shouldEqual(List(BestPlans(AllNodesScan("a", Set.empty), None)))
+      options.shouldEqual(List(BestResults(AllNodesScan("a", Set.empty), None)))
     }
   }
 
@@ -111,7 +112,7 @@ class leafPlanOptionsTest extends CypherFunSuite with LogicalPlanningTestSupport
         ctx
       )
 
-      options.shouldEqual(List(BestPlans(AllNodesScan("a", Set.empty), Some(Sort(AllNodesScan("a", Set.empty), List(Ascending("a")))))))
+      options.shouldEqual(List(BestResults(AllNodesScan("a", Set.empty), Some(Sort(AllNodesScan("a", Set.empty), List(Ascending("a")))))))
     }
   }
 
@@ -124,7 +125,7 @@ class leafPlanOptionsTest extends CypherFunSuite with LogicalPlanningTestSupport
         ctx
       )
 
-      options.shouldEqual(List(BestPlans(AllNodesScan("a", Set.empty), None)))
+      options.shouldEqual(List(BestResults(AllNodesScan("a", Set.empty), None)))
     }
   }
 
@@ -138,7 +139,7 @@ class leafPlanOptionsTest extends CypherFunSuite with LogicalPlanningTestSupport
       )
 
       options.shouldEqual(List(
-        BestPlans(AllNodesScan("a", Set.empty), Some(NodeByLabelScan("a", LabelName("A")(pos), Set.empty, IndexOrderAscending)))
+        BestResults(AllNodesScan("a", Set.empty), Some(NodeByLabelScan("a", LabelName("A")(pos), Set.empty, IndexOrderAscending)))
       ))
     }
   }
@@ -153,8 +154,8 @@ class leafPlanOptionsTest extends CypherFunSuite with LogicalPlanningTestSupport
       )
 
       options.shouldEqual(List(
-        BestPlans(AllNodesScan("a", Set.empty), None),
-        BestPlans(AllNodesScan("b", Set.empty), None))
+        BestResults(AllNodesScan("a", Set.empty), None),
+        BestResults(AllNodesScan("b", Set.empty), None))
       )
     }
   }
@@ -169,8 +170,8 @@ class leafPlanOptionsTest extends CypherFunSuite with LogicalPlanningTestSupport
       )
 
       options.shouldEqual(List(
-        BestPlans(AllNodesScan("a", Set.empty), Some(NodeByLabelScan("a", LabelName("A")(pos), Set.empty, IndexOrderAscending))),
-        BestPlans(AllNodesScan("b", Set.empty), None)
+        BestResults(AllNodesScan("a", Set.empty), Some(NodeByLabelScan("a", LabelName("A")(pos), Set.empty, IndexOrderAscending))),
+        BestResults(AllNodesScan("b", Set.empty), None)
       ))
     }
   }
@@ -198,7 +199,7 @@ class leafPlanOptionsTest extends CypherFunSuite with LogicalPlanningTestSupport
       )
 
       options.shouldEqual(List(
-        BestPlans(plan, None)
+        BestResults(plan, None)
       ))
     }
   }

@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.idp
 
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.QueryPlannerKit
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.BestPlans
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.ir.QueryGraph
@@ -38,7 +39,9 @@ trait JoinDisconnectedQueryGraphComponents {
             singleComponentPlanner: SingleComponentPlannerTrait): Set[PlannedComponent]
 }
 
-case class PlannedComponent(queryGraph: QueryGraph, plan: LogicalPlan)
+case class PlannedComponent(queryGraph: QueryGraph, plan: BestPlans)
+
+case class Component(queryGraph: QueryGraph, plan: LogicalPlan)
 
 /*
 This class is responsible for connecting two disconnected logical plans, which can be
@@ -50,6 +53,8 @@ cheapest connection that can be done replace the two input plans with the connec
 one. This process can then be repeated until a single plan remains.
  */
 case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComponents {
+
+  val COMPONENT_THRESHOLD_FOR_CARTESIAN_PRODUCT = 8
 
   def apply(plans: Set[PlannedComponent],
             qg: QueryGraph,
@@ -82,12 +87,12 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
       pickTheBest(plans, kit, cartesianProducts)
     }
     else {
-      planLotsOfCartesianProducts(plans, qg, context, kit)
+      Set(planLotsOfCartesianProducts(plans, qg, context, kit))
     }
   }
 
   private def pickTheBest(plans: Set[PlannedComponent], kit: QueryPlannerKit, joins: Map[PlannedComponent, (PlannedComponent, PlannedComponent)]): Set[PlannedComponent] = {
-    val bestPlan = kit.pickBest(joins.map(_._1.plan)).get
+    val bestPlan = kit.pickBest.ofBestResults(joins.map(_._1.plan)).get
     val bestQG: QueryGraph = joins.collectFirst {
       case (PlannedComponent(fqg, pl), _) if bestPlan == pl => fqg
     }.get
@@ -96,24 +101,55 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
     plans - p1 - p2 + PlannedComponent(bestQG, bestPlan)
   }
 
+  private def theSortedComponent(components: Set[PlannedComponent]): Option[PlannedComponent] = {
+    val allSorted = components.collect {
+      case pc@PlannedComponent(_, BestResults(_, Some(_))) => pc
+    }
+
+    if (allSorted.size > 1) {
+      throw new IllegalStateException(s"There can be no more than 1 sorted component. Got: $components")
+    }
+
+    allSorted.headOption
+  }
+
   /**
    * Plans a large amount of query parts together. Produces a left deep tree sorted by the cost of the query parts.
    */
-  private def planLotsOfCartesianProducts(plans: Set[PlannedComponent], qg: QueryGraph, context: LogicalPlanningContext, kit: QueryPlannerKit) = {
-    val allPlans = plans.toList.sortBy(c => context.cost.apply(c.plan, context.input, context.planningAttributes.cardinalities))
-    val onePlanToRuleThemAll = allPlans.tail.foldLeft(allPlans.head) {
+  private[idp] def planLotsOfCartesianProducts(plans: Set[PlannedComponent],
+                                          qg: QueryGraph,
+                                          context: LogicalPlanningContext,
+                                          kit: QueryPlannerKit): PlannedComponent = {
+    val maybeSortedComponent = theSortedComponent(plans)
+
+    val bestPlans: Seq[Component] = plans.toList.map {
+      case PlannedComponent(queryGraph, BestResults(bestResult, _)) => Component(queryGraph, bestResult)
+    }.sortBy(c => context.cost.apply(c.plan, context.input, context.planningAttributes.cardinalities))
+
+    val bestSortedPlans = maybeSortedComponent.map {
+      // If we have a sorted component, that should go to the very left of the cartesian products to keep the sort order
+      sortedComponent =>
+        val c = Component(sortedComponent.queryGraph, sortedComponent.plan.bestSortedResult.get)
+        c +: bestPlans.filterNot(comp => c.queryGraph == comp.queryGraph)
+    }
+
+    def cross(allPlans: Seq[Component]): Component = allPlans.tail.foldLeft(allPlans.head) {
       case (l, r) =>
         val crossProduct = kit.select(context.logicalPlanProducer.planCartesianProduct(l.plan, r.plan, context), qg)
-        PlannedComponent(l.queryGraph ++ r.queryGraph, crossProduct)
+        Component(l.queryGraph ++ r.queryGraph, crossProduct)
     }
-    Set(onePlanToRuleThemAll)
+
+    val bestPlan = cross(bestPlans)
+    val bestSortedPlan = bestSortedPlans.map(cross).map(_.plan)
+    PlannedComponent(bestPlan.queryGraph, BestResults(bestPlan.plan, bestSortedPlan))
   }
 
   private def produceCartesianProducts(plans: Set[PlannedComponent], qg: QueryGraph, context: LogicalPlanningContext, kit: QueryPlannerKit):
   Map[PlannedComponent, (PlannedComponent, PlannedComponent)] = {
     (for (t1@PlannedComponent(qg1, p1) <- plans; t2@PlannedComponent(qg2, p2) <- plans if p1 != p2) yield {
-      val crossProduct = kit.select(context.logicalPlanProducer.planCartesianProduct(p1, p2, context), qg)
-      (PlannedComponent(qg1 ++ qg2, crossProduct), (t1, t2))
+      // TODO: Compare best result with best sorted result
+      val crossProduct = kit.select(context.logicalPlanProducer.planCartesianProduct(p1.bestResult, p2.bestResult, context), qg)
+      (PlannedComponent(qg1 ++ qg2, BestResults(crossProduct, None)), (t1, t2))
     }).toMap
   }
 
@@ -143,9 +179,10 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
         val qgA = planArray(a).queryGraph
         val qgB = planArray(b).queryGraph
 
+        // TODO: Compare best result with best sorted result
         for (predicate <- this.predicatesDependendingOnBothSides(predicatesWithDependencies, allCoveredIds(a), allCoveredIds(b))) {
-          val nestedIndexJoinAB = planNIJ(planA, planB, qgA, qgB, qg, interestingOrder, predicate, context, kit, singleComponentPlanner)
-          val nestedIndexJoinBA = planNIJ(planB, planA, qgB, qgA, qg, interestingOrder, predicate, context, kit, singleComponentPlanner)
+          val nestedIndexJoinAB = planNIJ(planA.bestResult, planB.bestResult, qgA, qgB, qg, interestingOrder, predicate, context, kit, singleComponentPlanner)
+          val nestedIndexJoinBA = planNIJ(planB.bestResult, planA.bestResult, qgB, qgA, qg, interestingOrder, predicate, context, kit, singleComponentPlanner)
 
           nestedIndexJoinAB.foreach(x => result += ((x, planArray(a) -> planArray(b))))
           nestedIndexJoinBA.foreach(x => result += ((x, planArray(a) -> planArray(b))))
@@ -163,17 +200,18 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
                                context: LogicalPlanningContext,
                                kit: QueryPlannerKit,
                                singleComponentPlanner: SingleComponentPlannerTrait): Map[PlannedComponent, (PlannedComponent, PlannedComponent)]  = {
+    // TODO: Compare best result with best sorted result
     (for {
       join <- valueJoins(qg.selections.flatPredicates)
-      t1@PlannedComponent(_, planA) <- plans if planA.satisfiesExpressionDependencies(join.lhs) && !planA.satisfiesExpressionDependencies(join.rhs)
-      t2@PlannedComponent(_, planB) <- plans if planB.satisfiesExpressionDependencies(join.rhs) && !planB.satisfiesExpressionDependencies(join.lhs) && planA != planB
+      t1@PlannedComponent(_, planA) <- plans if planA.bestResult.satisfiesExpressionDependencies(join.lhs) && !planA.bestResult.satisfiesExpressionDependencies(join.rhs)
+      t2@PlannedComponent(_, planB) <- plans if planB.bestResult.satisfiesExpressionDependencies(join.rhs) && !planB.bestResult.satisfiesExpressionDependencies(join.lhs) && planA != planB
     } yield {
-      val hashJoinAB = kit.select(context.logicalPlanProducer.planValueHashJoin(planA, planB, join, join, context), qg)
-      val hashJoinBA = kit.select(context.logicalPlanProducer.planValueHashJoin(planB, planA, join.switchSides, join, context), qg)
+      val hashJoinAB = kit.select(context.logicalPlanProducer.planValueHashJoin(planA.bestResult, planB.bestResult, join, join, context), qg)
+      val hashJoinBA = kit.select(context.logicalPlanProducer.planValueHashJoin(planB.bestResult, planA.bestResult, join.switchSides, join, context), qg)
 
       Set(
-        (PlannedComponent(context.planningAttributes.solveds.get(hashJoinAB.id).asSinglePlannerQuery.lastQueryGraph, hashJoinAB), t1 -> t2),
-        (PlannedComponent(context.planningAttributes.solveds.get(hashJoinBA.id).asSinglePlannerQuery.lastQueryGraph, hashJoinBA), t1 -> t2)
+        (PlannedComponent(context.planningAttributes.solveds.get(hashJoinAB.id).asSinglePlannerQuery.lastQueryGraph, BestResults(hashJoinAB, None)), t1 -> t2),
+        (PlannedComponent(context.planningAttributes.solveds.get(hashJoinBA.id).asSinglePlannerQuery.lastQueryGraph, BestResults(hashJoinBA, None)), t1 -> t2)
       )
 
     }).flatten.toMap
@@ -207,7 +245,8 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
       val rhsQGWithLHSArguments = context.planningAttributes.solveds.get(rhsInputPlan.id).asSinglePlannerQuery.lastQueryGraph
         .addArgumentIds(lhsQG.idsWithoutOptionalMatchesOrUpdates.toIndexedSeq).addPredicates(predicate).addHints(rhsQG.hints)
       val rhsPlan = singleComponentPlanner.planComponent(rhsQGWithLHSArguments, context, kit, interestingOrder)
-      val result = kit.select(context.logicalPlanProducer.planApply(lhsPlan, rhsPlan, context), fullQG)
+      // TODO: Compare best result with best sorted result
+      val result = kit.select(context.logicalPlanProducer.planApply(lhsPlan, rhsPlan.bestResult, context), fullQG)
 
       // If none of the leaf-plans leverages the data from the RHS to use an index, let's not use this plan at all
       // The reason is that when this happens, we are producing a cartesian product disguising as an Apply, and
@@ -220,7 +259,7 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
       }.flatten
 
       if (indexWithDependency.nonEmpty)
-        Some(PlannedComponent(context.planningAttributes.solveds.get(result.id).asSinglePlannerQuery.lastQueryGraph, result))
+        Some(PlannedComponent(context.planningAttributes.solveds.get(result.id).asSinglePlannerQuery.lastQueryGraph, BestResults(result, None)))
       else
         None
     }

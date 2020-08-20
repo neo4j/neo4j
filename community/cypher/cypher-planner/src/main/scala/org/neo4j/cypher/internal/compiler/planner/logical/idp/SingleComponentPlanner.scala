@@ -48,12 +48,12 @@ import org.neo4j.exceptions.InternalException
 case class SingleComponentPlanner(monitor: IDPQueryGraphSolverMonitor,
                                   solverConfig: IDPSolverConfig = DefaultIDPSolverConfig,
                                   leafPlanFinder: LeafPlanFinder = leafPlanOptions) extends SingleComponentPlannerTrait {
-  override def planComponent(qg: QueryGraph, context: LogicalPlanningContext, kit: QueryPlannerKit, interestingOrder: InterestingOrder): LogicalPlan = {
+  override def planComponent(qg: QueryGraph, context: LogicalPlanningContext, kit: QueryPlannerKit, interestingOrder: InterestingOrder): BestPlans = {
     val bestPlansPerAvailableSymbol = leafPlanFinder(context.config, qg, interestingOrder, context)
 
     val bestPlans =
       if (qg.patternRelationships.nonEmpty) {
-        val leaves = bestPlansPerAvailableSymbol.flatMap(bestPlans => bestPlans.bestSortedPlan.toSeq :+ bestPlans.bestPlan).toSet
+        val leaves = bestPlansPerAvailableSymbol.flatMap(bestPlans => bestPlans.bestSortedResult.toSeq :+ bestPlans.bestResult).toSet
 
         val orderRequirement = if (interestingOrder.isEmpty) {
           ExtraRequirement.empty
@@ -89,29 +89,28 @@ case class SingleComponentPlanner(monitor: IDPQueryGraphSolverMonitor,
         val result = solver(seed, qg.patternRelationships, context)
         monitor.endIDPIterationFor(qg, result.bestResult)
 
-        BestPlans(result.bestResult, result.bestResultWithExtraRequirement)
+        BestResults(result.bestResult, result.bestSortedResult)
       } else {
         val solutionPlans = bestPlansPerAvailableSymbol
-          .filter(bestPlans => planFullyCoversQG(qg, bestPlans.bestPlan))
+          .filter(bestPlans => planFullyCoversQG(qg, bestPlans.bestResult))
         if (solutionPlans.size != 1) {
           throw new InternalException("Found no leaf plan for connected component. This must not happen. QG: " + qg)
         }
 
         val result = solutionPlans.head
 
-        monitor.noIDPIterationFor(qg, result.bestPlan)
+        monitor.noIDPIterationFor(qg, result.bestResult)
         result
       }
 
     if (IDPQueryGraphSolver.VERBOSE) {
-      println(s"Result (picked best plan):\n\tPlan #${bestPlans.bestPlan.debugId}\n\t${bestPlans.bestPlan.toString}")
-      bestPlans.bestSortedPlan.foreach { bSP =>
+      println(s"Result (picked best plan):\n\tPlan #${bestPlans.bestResult.debugId}\n\t${bestPlans.bestResult.toString}")
+      bestPlans.bestSortedResult.foreach { bSP =>
         println(s"Result (picked best sorted plan):\n\tPlan #${bSP.debugId}\n\t${bSP.toString}")
       }
       println("\n")
     }
-    // Take the best sorted plan, if there is one, otherwise the best plan.
-    bestPlans.bestSortedPlan.getOrElse(bestPlans.bestPlan)
+    bestPlans
   }
 
   private def planFullyCoversQG(qg: QueryGraph, plan: LogicalPlan) =
@@ -151,7 +150,7 @@ case class SingleComponentPlanner(monitor: IDPQueryGraphSolverMonitor,
 }
 
 trait SingleComponentPlannerTrait {
-  def planComponent(qg: QueryGraph, context: LogicalPlanningContext, kit: QueryPlannerKit, interestingOrder: InterestingOrder): LogicalPlan
+  def planComponent(qg: QueryGraph, context: LogicalPlanningContext, kit: QueryPlannerKit, interestingOrder: InterestingOrder): BestPlans
 }
 
 

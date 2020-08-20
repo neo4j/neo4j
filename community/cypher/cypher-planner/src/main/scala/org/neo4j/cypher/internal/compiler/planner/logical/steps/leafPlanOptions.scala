@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlanFinder
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.QueryPlannerConfiguration
 import org.neo4j.cypher.internal.compiler.planner.logical.SortPlanner
+import org.neo4j.cypher.internal.compiler.planner.logical.idp.BestResults
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 
@@ -47,9 +48,9 @@ object leafPlanOptions extends LeafPlanFinder {
       if (interestingOrder.requiredOrderCandidate.nonEmpty) {
         val sortedLeaves = bucket.flatMap(plan => SortPlanner.maybeSortedPlan(plan, interestingOrder, context))
         val bestSortedPlan = pickBest(sortedLeaves)
-        BestPlans(bestPlan, bestSortedPlan)
+        BestResults(bestPlan, bestSortedPlan)
       } else {
-        BestPlans(bestPlan, None)
+        BestResults(bestPlan, None)
       }
     }
 

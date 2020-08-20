@@ -86,7 +86,7 @@ case class IDPQueryGraphSolver(singleComponentSolver: SingleComponentPlannerTrai
     val plan = context.logicalPlanProducer.planQueryArgument(queryGraph, context)
     val result: LogicalPlan = kit.select(plan, queryGraph)
     monitor.emptyComponentPlanned(queryGraph, result)
-    Seq(PlannedComponent(queryGraph, result))
+    Seq(PlannedComponent(queryGraph, BestResults(result, None)))
   }
 
   private def connectComponentsAndSolveOptionalMatch(plans: Set[PlannedComponent], qg: QueryGraph, interestingOrder: InterestingOrder, context: LogicalPlanningContext, kit: QueryPlannerKit): LogicalPlan = {
@@ -96,13 +96,14 @@ case class IDPQueryGraphSolver(singleComponentSolver: SingleComponentPlannerTrai
       if (optionalMatches.nonEmpty) {
         // If we have optional matches left to solve - start with that
         val firstOptionalMatch = optionalMatches.head
-        val applicablePlan = plans.find(p => firstOptionalMatch.argumentIds subsetOf p.plan.availableSymbols)
+        val applicablePlan = plans.find(p => firstOptionalMatch.argumentIds subsetOf p.plan.bestResult.availableSymbols)
 
         applicablePlan match {
           case Some(t@PlannedComponent(solvedQg, p)) =>
-            val candidates = context.config.optionalSolvers.flatMap(solver => solver(firstOptionalMatch, p, interestingOrder, context))
+            // TODO: Compare best plan with best sorted plan, instead of just returning the best plan
+          val candidates = context.config.optionalSolvers.flatMap(solver => solver(firstOptionalMatch, p.bestResult, interestingOrder, context))
             val best = kit.pickBest(candidates).get
-            recurse(plans - t + PlannedComponent(solvedQg, best), optionalMatches.tail)
+            recurse(plans - t + PlannedComponent(solvedQg, BestResults(best, None)), optionalMatches.tail)
 
           case None =>
             // If we couldn't find any optional match we can take on, produce the best cartesian product possible
@@ -117,7 +118,9 @@ case class IDPQueryGraphSolver(singleComponentSolver: SingleComponentPlannerTrai
     val (resultingPlans, optionalMatches) = recurse(plans, qg.optionalMatches)
     require(resultingPlans.size == 1)
     require(optionalMatches.isEmpty)
-    resultingPlans.head.plan
+    // Best sorted plan, if available, otherwise best overall plan
+    val bestPlans = resultingPlans.head.plan
+    bestPlans.bestSortedResult.getOrElse(bestPlans.bestResult)
   }
 }
 

@@ -48,8 +48,10 @@ object ExtraRequirement {
   val empty: ExtraRequirement[Any] = (_: Any) => false
 }
 
-case class BestResults[Result](bestResult: Result,
-                     bestResultWithExtraRequirement: Option[Result])
+case class BestResults[+Result](bestResult: Result,
+                               bestSortedResult: Option[Result]) {
+  def map[B](f: Result => B): BestResults[B] = BestResults(f(bestResult), bestSortedResult.map(f))
+}
 
 /**
  * Based on the main loop of the IDP1 algorithm described in the paper
@@ -59,13 +61,13 @@ case class BestResults[Result](bestResult: Result,
  * written by Donald Kossmann and Konrad Stocker
  */
 class IDPSolver[Solvable, Result, Context](generator: IDPSolverStep[Solvable, Result, Context], // generates candidates at each step
-                                                        projectingSelector: ProjectingSelector[Result], // pick best from a set of candidates
-                                                        registryFactory: () => IdRegistry[Solvable] = () => IdRegistry[Solvable], // maps from Set[S] to BitSet
-                                                        tableFactory: (IdRegistry[Solvable], Seed[Solvable, Boolean, Result]) => IDPTable[Result, Boolean] = (registry: IdRegistry[Solvable], seed: Seed[Solvable, Boolean, Result]) => IDPTable(registry, seed),
-                                                        maxTableSize: Int, // limits computation effort, reducing result quality
-                                                        iterationDurationLimit: Long, // limits computation effort, reducing result quality
-                                                        extraRequirement: ExtraRequirement[Result],
-                                                        monitor: IDPSolverMonitor) {
+                                           projectingSelector: ProjectingSelector[Result], // pick best from a set of candidates
+                                           registryFactory: () => IdRegistry[Solvable] = () => IdRegistry[Solvable], // maps from Set[S] to BitSet
+                                           tableFactory: (IdRegistry[Solvable], Seed[Solvable, Boolean, Result]) => IDPTable[Result, Boolean] = (registry: IdRegistry[Solvable], seed: Seed[Solvable, Boolean, Result]) => IDPTable(registry, seed),
+                                           maxTableSize: Int, // limits computation effort, reducing result quality
+                                           iterationDurationLimit: Long, // limits computation effort, reducing result quality
+                                           extraRequirement: ExtraRequirement[Result],
+                                           monitor: IDPSolverMonitor) {
 
   def apply(seed: Seed[Solvable, Boolean, Result], initialToDo: Set[Solvable], context: Context): BestResults[Result] = {
     val registry = registryFactory()

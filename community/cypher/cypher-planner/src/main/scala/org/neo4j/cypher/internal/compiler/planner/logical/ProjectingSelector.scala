@@ -19,7 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
+import org.neo4j.cypher.internal.compiler.planner.logical.idp.BestResults
+
 trait ProjectingSelector[P] {
   def apply(plans: Iterable[P]): Option[P] = apply[P](identity, plans)
   def apply[X](projector: X => P, input: Iterable[X]): Option[X]
+
+  def ofBestResults(plans: Iterable[BestResults[P]]): Option[BestResults[P]] = {
+    val best = apply(plans.map(_.bestResult))
+    val bestSorted = apply(plans.flatMap(_.bestSortedResult))
+    best.map(BestResults(_, bestSorted))
+  }
 }
