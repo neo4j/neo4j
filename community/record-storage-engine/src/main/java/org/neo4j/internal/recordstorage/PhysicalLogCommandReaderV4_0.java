@@ -741,10 +741,6 @@ public class PhysicalLogCommandReaderV4_0 extends BaseCommandReader
                 return null;
             }
             record.addPropertyBlock( block );
-            for ( long valueBlock : block.getValueBlocks() )
-            {
-                record.addLoadedBlock( valueBlock );
-            }
         }
         int deletedRecords = readDynamicRecords( channel, record, PROPERTY_DELETED_DYNAMIC_RECORD_ADDER );
         if ( deletedRecords == -1 )
