@@ -31,14 +31,12 @@ import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.dbms.DbmsOperations;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 
 public class GraphDatabaseCypherService implements GraphDatabaseQueryService
 {
     private final GraphDatabaseFacade graph;
-    private final DbmsOperations dbmsOperations;
     private final URLAccessRule urlAccessRule;
     private final Config config;
 
@@ -46,7 +44,6 @@ public class GraphDatabaseCypherService implements GraphDatabaseQueryService
     {
         this.graph = (GraphDatabaseFacade) graph;
         DependencyResolver dependencyResolver = getDependencyResolver();
-        this.dbmsOperations = dependencyResolver.resolveDependency( DbmsOperations.class );
         this.urlAccessRule = dependencyResolver.resolveDependency( URLAccessRule.class );
         this.config = dependencyResolver.resolveDependency( Config.class );
     }
@@ -80,12 +77,6 @@ public class GraphDatabaseCypherService implements GraphDatabaseQueryService
     public URL validateURLAccess( URL url ) throws URLAccessValidationError
     {
         return urlAccessRule.validate( config, url );
-    }
-
-    @Override
-    public DbmsOperations getDbmsOperations()
-    {
-        return dbmsOperations;
     }
 
     // This provides backwards compatibility to the older API for places that cannot (yet) stop using it.

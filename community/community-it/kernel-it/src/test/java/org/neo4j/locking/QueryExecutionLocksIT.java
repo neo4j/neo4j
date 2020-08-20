@@ -61,7 +61,6 @@ import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.dbms.DbmsOperations;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.database.NamedDatabaseId;
@@ -228,12 +227,6 @@ class QueryExecutionLocksIT
         public ExecutingQuery executingQuery()
         {
             return delegate.executingQuery();
-        }
-
-        @Override
-        public DbmsOperations dbmsOperations()
-        {
-            return delegate.dbmsOperations();
         }
 
         @Override

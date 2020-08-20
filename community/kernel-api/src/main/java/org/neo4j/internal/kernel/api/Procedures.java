@@ -130,6 +130,17 @@ public interface Procedures
     RawIterator<AnyValue[], ProcedureException> procedureCallSchemaOverride( int id, AnyValue[] arguments, ProcedureCallContext context )
             throws ProcedureException;
 
+    /**
+     * Invoke a dbms procedure by id.
+     * @param id the id of the procedure.
+     * @param arguments the procedure arguments.
+     * @param context the procedure call context.
+     * @return an iterator containing the procedure results.
+     * @throws ProcedureException if there was an exception thrown during procedure execution.
+     */
+    RawIterator<AnyValue[], ProcedureException> procedureCallDbms( int id, AnyValue[] arguments, ProcedureCallContext context )
+            throws ProcedureException;
+
     /** Invoke a read-only function by id
      * @param id the id of the function.
      * @param arguments the function arguments.

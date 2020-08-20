@@ -24,7 +24,6 @@ import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.dbms.DbmsOperations;
 import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
@@ -36,8 +35,6 @@ public interface TransactionalContext
     ValueMapper<Object> valueMapper();
 
     ExecutingQuery executingQuery();
-
-    DbmsOperations dbmsOperations();
 
     KernelTransaction kernelTransaction();
 

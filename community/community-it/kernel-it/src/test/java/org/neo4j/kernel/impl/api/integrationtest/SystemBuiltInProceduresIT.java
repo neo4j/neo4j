@@ -27,12 +27,9 @@ import org.neo4j.collection.RawIterator;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
-import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
-import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.security.AnonymousContext;
-import org.neo4j.kernel.impl.util.DefaultValueMapper;
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.virtual.VirtualValues;
@@ -50,7 +47,6 @@ import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureNa
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.internal.schema.IndexPrototype.uniqueForSchema;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
-import static org.neo4j.kernel.api.ResourceTracker.EMPTY_RESOURCE_TRACKER;
 import static org.neo4j.values.storable.Values.stringValue;
 
 class SystemBuiltInProceduresIT extends CommunityProcedureITBase
@@ -146,8 +142,7 @@ class SystemBuiltInProceduresIT extends CommunityProcedureITBase
 
         // When
         RawIterator<AnyValue[],ProcedureException> stream =
-                procs().procedureCallRead( procs().procedureGet( procedureName( "dbms", "components" ) ).id(), new AnyValue[0],
-                        ProcedureCallContext.EMPTY );
+                procs().procedureCallRead( procs().procedureGet( procedureName( "dbms", "components" ) ).id(), new AnyValue[0], EMPTY );
 
         // Then
         assertThat( asList( stream ) ).containsExactly(
@@ -463,10 +458,7 @@ class SystemBuiltInProceduresIT extends CommunityProcedureITBase
     @Test
     void failWhenCallingNonExistingProcedures()
     {
-        assertThrows( ProcedureException.class,
-                () -> dbmsOperations().procedureCallDbms( -1, new AnyValue[0], transaction,
-                        dependencyResolver, AnonymousContext.access().authorize(
-                        LoginContext.IdLookup.EMPTY, getDatabaseName() ), EMPTY_RESOURCE_TRACKER, new DefaultValueMapper( transaction ) ) );
+        assertThrows( ProcedureException.class, () -> procs().procedureCallDbms( -1, new AnyValue[0], EMPTY ) );
     }
 
     @Test

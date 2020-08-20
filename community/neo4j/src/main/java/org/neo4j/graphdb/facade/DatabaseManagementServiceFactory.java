@@ -60,7 +60,6 @@ import org.neo4j.kernel.api.procedure.Context;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.api.security.provider.SecurityProvider;
 import org.neo4j.kernel.database.DatabaseIdRepository;
-import org.neo4j.kernel.impl.api.dbms.TransactionalDbmsOperations;
 import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -135,8 +134,7 @@ public class DatabaseManagementServiceFactory
 
         edition.bootstrapFabricServices();
 
-        GlobalProcedures globalProcedures = setupProcedures( globalModule, edition, databaseManager );
-        globalDependencies.satisfyDependency( new TransactionalDbmsOperations( globalProcedures ) );
+        setupProcedures( globalModule, edition, databaseManager );
 
         globalLife.add( edition.createSystemGraphInitializer( globalModule, databaseManager ) );
         edition.createSecurityModule( globalModule );
@@ -248,7 +246,7 @@ public class DatabaseManagementServiceFactory
      * order to enforce that the databaseManager must be constructed first.
      */
     @SuppressWarnings( "unused" )
-    private static GlobalProcedures setupProcedures( GlobalModule globalModule, AbstractEditionModule editionModule, DatabaseManager<?> databaseManager )
+    private static void setupProcedures( GlobalModule globalModule, AbstractEditionModule editionModule, DatabaseManager<?> databaseManager )
     {
         Supplier<GlobalProcedures> procedureInitializer = () ->
         {
@@ -317,7 +315,6 @@ public class DatabaseManagementServiceFactory
             ((Consumer) procedures).accept( procedureInitializer );
         }
         globalModule.getGlobalDependencies().satisfyDependency( procedures );
-        return procedures;
     }
 
     private static BoltServer createBoltServer( GlobalModule globalModule, AbstractEditionModule edition,

@@ -75,14 +75,7 @@ object CallSupport {
 
   def callDbmsProcedure(transactionalContext: TransactionalContext, id: Int, args: Array[AnyValue],
                         allowed: Array[String], context: ProcedureCallContext): Iterator[Array[AnyValue]] =
-    callProcedure(args,
-                  transactionalContext.dbmsOperations.procedureCallDbms(id,
-                                                                        _,
-                                                                        transactionalContext.transaction(),
-                                                                        transactionalContext.graph.getDependencyResolver,
-                                                                        transactionalContext.securityContext,
-                                                                        transactionalContext.resourceTracker,
-                                                                        transactionalContext.valueMapper))
+    callProcedure(args, transactionalContext.kernelTransaction().procedures().procedureCallDbms(id, _, context))
 
   def aggregateFunction(transactionalContext: TransactionalContext, id: Int, allowed: Array[String]): UserDefinedAggregator = {
     val aggregator: UserAggregator =

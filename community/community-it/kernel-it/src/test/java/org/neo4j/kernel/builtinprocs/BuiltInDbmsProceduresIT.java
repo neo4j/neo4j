@@ -28,9 +28,9 @@ import org.neo4j.collection.RawIterator;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.kernel.impl.api.integrationtest.KernelIntegrationTest;
-import org.neo4j.kernel.impl.util.DefaultValueMapper;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.BooleanValue;
 import org.neo4j.values.storable.TextValue;
@@ -45,8 +45,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.SettingValueParsers.FALSE;
 import static org.neo4j.internal.helpers.collection.Iterators.asList;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureName;
-import static org.neo4j.internal.kernel.api.security.SecurityContext.AUTH_DISABLED;
-import static org.neo4j.kernel.api.ResourceTracker.EMPTY_RESOURCE_TRACKER;
 import static org.neo4j.values.storable.Values.stringValue;
 
 class BuiltInDbmsProceduresIT extends KernelIntegrationTest
@@ -92,9 +90,7 @@ class BuiltInDbmsProceduresIT extends KernelIntegrationTest
         QualifiedName procedureName = procedureName( "dbms", "clientConfig" );
         int procedureId = procs().procedureGet( procedureName ).id();
         RawIterator<AnyValue[],ProcedureException> callResult =
-                dbmsOperations()
-                        .procedureCallDbms( procedureId, new AnyValue[]{}, transaction, dependencyResolver,
-                                            AUTH_DISABLED, EMPTY_RESOURCE_TRACKER, new DefaultValueMapper( transaction ) );
+                procs().procedureCallDbms( procedureId, new AnyValue[]{}, ProcedureCallContext.EMPTY );
         List<AnyValue[]> config = asList( callResult );
         assertEquals( 4, config.size());
 
@@ -140,9 +136,7 @@ class BuiltInDbmsProceduresIT extends KernelIntegrationTest
         QualifiedName procedureName = procedureName( "dbms", "listConfig" );
         int procedureId = procs().procedureGet( procedureName ).id();
         RawIterator<AnyValue[],ProcedureException> callResult =
-                dbmsOperations()
-                        .procedureCallDbms( procedureId, toArray( stringValue( searchString ) ), transaction, dependencyResolver,
-                                AUTH_DISABLED, EMPTY_RESOURCE_TRACKER, new DefaultValueMapper( transaction ) );
+                procs().procedureCallDbms( procedureId, toArray( stringValue( searchString ) ), ProcedureCallContext.EMPTY );
         return asList( callResult );
     }
 }

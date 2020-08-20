@@ -28,7 +28,6 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.QueryRegistry;
 import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.dbms.DbmsOperations;
 import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.api.KernelStatement;
@@ -85,12 +84,6 @@ public class Neo4jTransactionalContext implements TransactionalContext
     public ExecutingQuery executingQuery()
     {
         return executingQuery;
-    }
-
-    @Override
-    public DbmsOperations dbmsOperations()
-    {
-        return graph.getDbmsOperations();
     }
 
     @Override

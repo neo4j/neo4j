@@ -28,7 +28,6 @@ import org.neo4j.internal.kernel.api.TokenRead
 import org.neo4j.internal.kernel.api.Write
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.KernelTransaction
-import org.neo4j.kernel.api.dbms.DbmsOperations
 import org.neo4j.kernel.database.NamedDatabaseId
 import org.neo4j.kernel.impl.api.SchemaStateKey
 import org.neo4j.kernel.impl.factory.DbmsInfo
@@ -56,8 +55,6 @@ case class TransactionalContextWrapper(tc: TransactionalContext, threadSafeCurso
   override def schemaRead: SchemaRead = tc.kernelTransaction().schemaRead()
 
   override def dataWrite: Write = tc.kernelTransaction().dataWrite()
-
-  override def dbmsOperations: DbmsOperations = tc.dbmsOperations()
 
   override def commitAndRestartTx() { tc.commitAndRestartTx() }
 

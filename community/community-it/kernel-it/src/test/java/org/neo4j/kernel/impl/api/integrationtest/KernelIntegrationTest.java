@@ -41,7 +41,6 @@ import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.dbms.DbmsOperations;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.impl.api.KernelImpl;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -74,7 +73,6 @@ public abstract class KernelIntegrationTest
 
     protected InternalTransaction transaction;
     protected KernelTransaction kernelTransaction;
-    private DbmsOperations dbmsOperations;
     protected DependencyResolver dependencyResolver;
     private DatabaseManagementService managementService;
 
@@ -140,11 +138,6 @@ public abstract class KernelIntegrationTest
         };
     }
 
-    protected DbmsOperations dbmsOperations()
-    {
-        return dbmsOperations;
-    }
-
     protected void commit()
     {
         transaction.commit();
@@ -189,7 +182,6 @@ public abstract class KernelIntegrationTest
         dependencyResolver = db.getDependencyResolver();
         kernel = dependencyResolver.resolveDependency( Kernel.class );
         indexingService = dependencyResolver.resolveDependency( IndexingService.class );
-        dbmsOperations = dependencyResolver.resolveDependency( DbmsOperations.class );
     }
 
     protected GraphDatabaseAPI openDatabase( String databaseName )

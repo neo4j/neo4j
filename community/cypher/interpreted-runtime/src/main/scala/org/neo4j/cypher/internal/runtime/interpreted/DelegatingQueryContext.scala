@@ -54,7 +54,6 @@ import org.neo4j.internal.kernel.api.procs.ProcedureCallContext
 import org.neo4j.internal.schema.ConstraintDescriptor
 import org.neo4j.internal.schema.IndexDescriptor
 import org.neo4j.kernel.api.KernelTransaction
-import org.neo4j.kernel.api.dbms.DbmsOperations
 import org.neo4j.kernel.database.NamedDatabaseId
 import org.neo4j.kernel.impl.core.TransactionalEntityFactory
 import org.neo4j.kernel.impl.factory.DbmsInfo
@@ -360,8 +359,6 @@ class DelegatingOperations[T, CURSOR](protected val inner: Operations[T, CURSOR]
 }
 
 class DelegatingQueryTransactionalContext(val inner: QueryTransactionalContext) extends QueryTransactionalContext {
-
-  override def dbmsOperations: DbmsOperations = inner.dbmsOperations
 
   override def commitAndRestartTx() { inner.commitAndRestartTx() }
 
