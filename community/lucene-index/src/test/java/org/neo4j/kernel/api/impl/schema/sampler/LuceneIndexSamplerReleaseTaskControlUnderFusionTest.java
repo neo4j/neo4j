@@ -26,6 +26,7 @@ import org.junit.Test;
 import java.io.IOException;
 
 import org.neo4j.helpers.TaskCoordinator;
+import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.internal.kernel.api.schema.IndexProviderDescriptor;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
@@ -79,6 +80,7 @@ public class LuceneIndexSamplerReleaseTaskControlUnderFusionTest
     private static final Config config = Config.defaults();
     private static final IndexSamplingConfig samplingConfig = new IndexSamplingConfig( config );
     private static final RuntimeException sampleException = new RuntimeException( "Killroy messed with your index sample." );
+    private final TokenNameLookup tokenNameLookup = simpleNameLookup;
     private IndexDirectoryStructure.Factory directoryFactory;
 
     @Before
@@ -108,7 +110,7 @@ public class LuceneIndexSamplerReleaseTaskControlUnderFusionTest
 
         IndexProvider failingProvider = failingProvider();
         FusionIndexProvider fusionProvider = createFusionProvider( luceneProvider, failingProvider );
-        try ( IndexAccessor fusionAccessor = fusionProvider.getOnlineAccessor( storeIndexDescriptor, samplingConfig ) )
+        try ( IndexAccessor fusionAccessor = fusionProvider.getOnlineAccessor( storeIndexDescriptor, samplingConfig, tokenNameLookup ) )
         {
             IndexSamplingJob indexSamplingJob = createIndexSamplingJob( fusionAccessor );
 
@@ -130,7 +132,7 @@ public class LuceneIndexSamplerReleaseTaskControlUnderFusionTest
 
     private void makeSureIndexHasSomeData( IndexProvider provider ) throws IOException, IndexEntryConflictException
     {
-        try ( IndexAccessor accessor = provider.getOnlineAccessor(storeIndexDescriptor, samplingConfig );
+        try ( IndexAccessor accessor = provider.getOnlineAccessor(storeIndexDescriptor, samplingConfig, tokenNameLookup );
               IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE ) )
         {
             updater.process( IndexEntryUpdate.add( 1, storeIndexDescriptor, Values.of( "some string" ) ) );
@@ -180,7 +182,8 @@ public class LuceneIndexSamplerReleaseTaskControlUnderFusionTest
         return new IndexProvider.Adaptor( providerDescriptor, directoryFactory )
         {
             @Override
-            public IndexAccessor getOnlineAccessor( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
+            public IndexAccessor getOnlineAccessor( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig,
+                    TokenNameLookup tokenNameLookup )
             {
                 return failingIndexAccessor();
             }

@@ -19,17 +19,20 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
+import java.util.Collection;
 import java.util.HashMap;
 
 import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurveConfiguration;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.internal.kernel.api.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -40,6 +43,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.index.schema.config.ConfiguredSpaceFillingCurveSettingsCache;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
 import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettingsFactory;
+import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.SimpleNodeValueClient;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 import org.neo4j.test.rule.PageCacheAndDependenciesRule;
@@ -50,12 +54,15 @@ import org.neo4j.values.storable.Values;
 import static java.util.Collections.singleton;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.kernel.api.index.IndexEntryUpdate.add;
 import static org.neo4j.kernel.api.index.IndexProvider.Monitor.EMPTY;
 import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
+import static org.neo4j.kernel.api.schema.SchemaTestUtil.simpleNameLookup;
 import static org.neo4j.kernel.impl.api.index.PhaseTracker.nullInstance;
 import static org.neo4j.kernel.impl.index.schema.ByteBufferFactory.heapBufferFactory;
 import static org.neo4j.storageengine.api.schema.IndexDescriptorFactory.forSchema;
@@ -67,6 +74,7 @@ public class GenericBlockBasedIndexPopulatorTest
     private static final StoreIndexDescriptor INDEX_DESCRIPTOR = forSchema( forLabel( 1, 1 ) ).withId( 1 );
     private static final StoreIndexDescriptor UNIQUE_INDEX_DESCRIPTOR = uniqueForSchema( forLabel( 1, 1 ) ).withId( 1 );
 
+    private final TokenNameLookup tokenNameLookup = simpleNameLookup;
     private IndexDirectoryStructure directoryStructure;
     private File indexFile;
     private FileSystemAbstraction fs;
@@ -117,7 +125,6 @@ public class GenericBlockBasedIndexPopulatorTest
     {
         // given
         BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( UNIQUE_INDEX_DESCRIPTOR );
-        boolean closed = false;
         try
         {
             // when
@@ -139,10 +146,7 @@ public class GenericBlockBasedIndexPopulatorTest
         }
         finally
         {
-            if ( !closed )
-            {
-                populator.close( true );
-            }
+            populator.close( true );
         }
     }
 
@@ -151,7 +155,6 @@ public class GenericBlockBasedIndexPopulatorTest
     {
         // given
         BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( UNIQUE_INDEX_DESCRIPTOR );
-        boolean closed = false;
         try
         {
             // when
@@ -176,10 +179,7 @@ public class GenericBlockBasedIndexPopulatorTest
         }
         finally
         {
-            if ( !closed )
-            {
-                populator.close( true );
-            }
+            populator.close( true );
         }
     }
 
@@ -188,7 +188,6 @@ public class GenericBlockBasedIndexPopulatorTest
     {
         // given
         BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( UNIQUE_INDEX_DESCRIPTOR );
-        boolean closed = false;
         try
         {
             // when
@@ -213,10 +212,7 @@ public class GenericBlockBasedIndexPopulatorTest
         }
         finally
         {
-            if ( !closed )
-            {
-                populator.close( true );
-            }
+            populator.close( true );
         }
     }
 
@@ -225,7 +221,6 @@ public class GenericBlockBasedIndexPopulatorTest
     {
         // given
         BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( UNIQUE_INDEX_DESCRIPTOR );
-        boolean closed = false;
         try
         {
             // when
@@ -248,10 +243,64 @@ public class GenericBlockBasedIndexPopulatorTest
         }
         finally
         {
-            if ( !closed )
+            populator.close( true );
+        }
+    }
+
+    @Test
+    public void shouldHandleEntriesOfMaxSize() throws IndexEntryConflictException
+    {
+        // given
+        BlockBasedIndexPopulator<GenericKey, NativeIndexValue> populator = instantiatePopulator( INDEX_DESCRIPTOR );
+        try
+        {
+            int maxKeyValueSize = populator.tree.keyValueSizeCap();
+            IndexEntryUpdate<IndexDescriptor> update =
+                    add( 1, INDEX_DESCRIPTOR, LayoutTestUtil.generateStringValueResultingInSize( populator.layout, maxKeyValueSize ) );
+
+            // when
+            Collection<IndexEntryUpdate<?>> updates = singleton( update );
+            populator.add( updates );
+            populator.scanCompleted( nullInstance );
+
+            // then
+            assertHasEntry( populator, update.values()[0], 1 );
+        }
+        finally
+        {
+            populator.close( true );
+        }
+    }
+
+    @Test
+    public void shouldThrowForEntriesLargerThanMaxSize() throws IndexEntryConflictException
+    {
+        // given
+        BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( INDEX_DESCRIPTOR );
+        try
+        {
+            int maxKeyValueSize = populator.tree.keyValueSizeCap();
+            IndexEntryUpdate<IndexDescriptor> update =
+                    add( 1, INDEX_DESCRIPTOR, LayoutTestUtil.generateStringValueResultingInSize( populator.layout, maxKeyValueSize + 1 ) );
+            try
             {
-                populator.close( true );
+                Collection<IndexEntryUpdate<?>> updates = singleton( update );
+                populator.add( updates );
+                populator.scanCompleted( nullInstance );
+
+                // if not
+                fail( "Expected to throw for value larger than max size." );
             }
+            catch ( IllegalArgumentException e )
+            {
+                // then
+                assertThat( e.getMessage(),
+                        Matchers.containsString( "Failed while trying to write to index, targetIndex=Index( GENERAL, :Label1(property1) ), nodeId=1" ) );
+            }
+        }
+        finally
+        {
+            populator.close( true );
         }
     }
 
@@ -299,7 +348,7 @@ public class GenericBlockBasedIndexPopulatorTest
                 SpaceFillingCurveSettingsFactory.getConfiguredSpaceFillingCurveConfiguration( config );
         GenericBlockBasedIndexPopulator populator =
                 new GenericBlockBasedIndexPopulator( storage.pageCache(), fs, indexFile, layout, EMPTY, indexDescriptor, spatialSettings, directoryStructure,
-                        configuration, dropAction, false, heapBufferFactory( 1024 ) );
+                        configuration, dropAction, false, heapBufferFactory( (int) kibiBytes( 40 ) ), tokenNameLookup );
         populator.create();
         return populator;
     }

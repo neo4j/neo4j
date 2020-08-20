@@ -30,6 +30,7 @@ import java.util.function.Consumer;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.index.internal.gbptree.Writer;
+import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
@@ -67,6 +68,7 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
     private final VALUE treeValue;
     private final UniqueIndexSampler uniqueSampler;
     private final Consumer<PageCursor> additionalHeaderWriter;
+    final TokenNameLookup tokenNameLookup;
 
     private ConflictDetectingValueMerger<KEY,VALUE,Value[]> mainConflictDetector;
     private ConflictDetectingValueMerger<KEY,VALUE,Value[]> updatesConflictDetector;
@@ -76,12 +78,13 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
     private boolean closed;
 
     NativeIndexPopulator( PageCache pageCache, FileSystemAbstraction fs, File storeFile, IndexLayout<KEY,VALUE> layout, IndexProvider.Monitor monitor,
-            StoreIndexDescriptor descriptor, Consumer<PageCursor> additionalHeaderWriter )
+            StoreIndexDescriptor descriptor, Consumer<PageCursor> additionalHeaderWriter, TokenNameLookup tokenNameLookup )
     {
         super( pageCache, fs, storeFile, layout, monitor, descriptor, false );
         this.treeKey = layout.newKey();
         this.treeValue = layout.newValue();
         this.additionalHeaderWriter = additionalHeaderWriter;
+        this.tokenNameLookup = tokenNameLookup;
         switch ( descriptor.type() )
         {
         case GENERAL:
@@ -267,7 +270,7 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
         {
             for ( IndexEntryUpdate<?> indexEntryUpdate : indexEntryUpdates )
             {
-                NativeIndexUpdater.processUpdate( treeKey, treeValue, indexEntryUpdate, writer, conflictDetector );
+                NativeIndexUpdater.processUpdate( treeKey, treeValue, indexEntryUpdate, writer, conflictDetector, descriptor, tokenNameLookup );
             }
         }
         catch ( IOException e )

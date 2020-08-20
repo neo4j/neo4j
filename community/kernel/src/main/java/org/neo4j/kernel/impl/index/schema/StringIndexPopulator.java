@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.index.schema;
 
 import java.io.File;
 
+import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexProvider;
@@ -31,9 +32,9 @@ import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
 public class StringIndexPopulator extends NativeIndexPopulator<StringIndexKey,NativeIndexValue>
 {
     StringIndexPopulator( PageCache pageCache, FileSystemAbstraction fs, File storeFile, IndexLayout<StringIndexKey,NativeIndexValue> layout,
-            IndexProvider.Monitor monitor, StoreIndexDescriptor descriptor )
+            IndexProvider.Monitor monitor, StoreIndexDescriptor descriptor, TokenNameLookup tokenNameLookup )
     {
-        super( pageCache, fs, storeFile, layout, monitor, descriptor, NO_HEADER_WRITER );
+        super( pageCache, fs, storeFile, layout, monitor, descriptor, NO_HEADER_WRITER, tokenNameLookup );
     }
 
     @Override

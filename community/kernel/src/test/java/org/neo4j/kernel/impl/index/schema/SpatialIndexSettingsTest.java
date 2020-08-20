@@ -29,6 +29,7 @@ import java.io.IOException;
 
 import org.neo4j.gis.spatial.index.curves.StandardConfiguration;
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -58,6 +59,7 @@ import static org.junit.Assert.fail;
 import static org.junit.rules.RuleChain.outerRule;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
+import static org.neo4j.kernel.api.schema.SchemaTestUtil.simpleNameLookup;
 import static org.neo4j.kernel.impl.api.index.IndexUpdateMode.ONLINE;
 import static org.neo4j.kernel.impl.index.schema.ByteBufferFactory.heapBufferFactory;
 import static org.neo4j.test.rule.PageCacheRule.config;
@@ -85,6 +87,7 @@ public class SpatialIndexSettingsTest
     @Rule
     public final RuleChain rules = outerRule( fs ).around( directory ).around( pageCacheRule ).around( randomRule );
 
+    private final TokenNameLookup tokenNameLookup = simpleNameLookup;
     private PageCache pageCache;
     private IndexProvider.Monitor monitor = IndexProvider.Monitor.EMPTY;
 
@@ -181,7 +184,7 @@ public class SpatialIndexSettingsTest
     private void addUpdates( SpatialIndexProvider provider, StoreIndexDescriptor schemaIndexDescriptor,
             ValueCreatorUtil<SpatialIndexKey,NativeIndexValue> layoutUtil ) throws IOException, IndexEntryConflictException
     {
-        IndexAccessor accessor = provider.getOnlineAccessor( schemaIndexDescriptor, samplingConfig() );
+        IndexAccessor accessor = provider.getOnlineAccessor( schemaIndexDescriptor, samplingConfig(), tokenNameLookup );
         try ( IndexUpdater updater = accessor.newUpdater( ONLINE ) )
         {
             // when
@@ -220,14 +223,15 @@ public class SpatialIndexSettingsTest
     {
         SpatialIndexFiles.SpatialFileLayout fileLayout = makeIndexFile( schemaIndexDescriptor.getId(), configuredSettings ).getLayoutForNewIndex();
         SpatialIndexPopulator.PartPopulator populator =
-                new SpatialIndexPopulator.PartPopulator( pageCache, fs, fileLayout, monitor, schemaIndexDescriptor, new StandardConfiguration() );
+                new SpatialIndexPopulator.PartPopulator( pageCache, fs, fileLayout, monitor, schemaIndexDescriptor, new StandardConfiguration(),
+                        tokenNameLookup );
         populator.create();
         populator.close( true );
     }
 
     private void createEmptyIndex( StoreIndexDescriptor schemaIndexDescriptor, SpatialIndexProvider provider ) throws IOException
     {
-        IndexPopulator populator = provider.getPopulator( schemaIndexDescriptor, samplingConfig(), heapBufferFactory( 1024 ) );
+        IndexPopulator populator = provider.getPopulator( schemaIndexDescriptor, samplingConfig(), heapBufferFactory( 1024 ), tokenNameLookup );
         populator.create();
         populator.close( true );
     }

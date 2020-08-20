@@ -35,6 +35,7 @@ import java.util.Set;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.schema.MisconfiguredIndexException;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
@@ -46,7 +47,6 @@ import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
@@ -54,6 +54,7 @@ import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.index.schema.CollectingIndexUpdater;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
@@ -187,8 +188,10 @@ public class IndexCRUDIT
     private GatheringIndexWriter newWriter() throws IOException
     {
         GatheringIndexWriter writer = new GatheringIndexWriter();
-        when( mockedIndexProvider.getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ), any() ) ).thenReturn( writer );
-        when( mockedIndexProvider.getOnlineAccessor( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) ).thenReturn( writer );
+        when( mockedIndexProvider.getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ), any(), any( TokenNameLookup.class ) ) )
+                .thenReturn( writer );
+        when( mockedIndexProvider.getOnlineAccessor( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ), any( TokenNameLookup.class ) ) )
+                .thenReturn( writer );
         return writer;
     }
 

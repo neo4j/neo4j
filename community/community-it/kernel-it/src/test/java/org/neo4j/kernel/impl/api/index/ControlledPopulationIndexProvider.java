@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.internal.kernel.api.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -90,14 +91,16 @@ public class ControlledPopulationIndexProvider extends IndexProvider
     }
 
     @Override
-    public IndexPopulator getPopulator( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory )
+    public IndexPopulator getPopulator( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory,
+            TokenNameLookup tokenNameLookup )
     {
         populatorCallCount.incrementAndGet();
         return mockedPopulator;
     }
 
     @Override
-    public IndexAccessor getOnlineAccessor( StoreIndexDescriptor indexConfig, IndexSamplingConfig samplingConfig )
+    public IndexAccessor getOnlineAccessor( StoreIndexDescriptor indexConfig, IndexSamplingConfig samplingConfig,
+            TokenNameLookup tokenNameLookup )
     {
         writerCallCount.incrementAndGet();
         writerLatch.countDown();

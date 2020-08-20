@@ -40,6 +40,7 @@ import java.util.function.Function;
 
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.schema.IndexProviderDescriptor;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -79,6 +80,7 @@ import static org.neo4j.kernel.api.index.IndexEntryUpdate.change;
 import static org.neo4j.kernel.api.index.IndexEntryUpdate.remove;
 import static org.neo4j.kernel.api.index.IndexProvider.Monitor.EMPTY;
 import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
+import static org.neo4j.kernel.api.schema.SchemaTestUtil.simpleNameLookup;
 import static org.neo4j.kernel.configuration.Config.defaults;
 import static org.neo4j.kernel.impl.index.schema.ByteBufferFactory.heapBufferFactory;
 import static org.neo4j.storageengine.api.schema.IndexDescriptorFactory.forSchema;
@@ -140,6 +142,7 @@ public class IndexPopulationStressTest
 
     private IndexPopulator populator;
     private IndexProvider indexProvider;
+    private TokenNameLookup tokenNameLookup;
     private boolean prevAccessCheck;
 
     private IndexDirectoryStructure.Factory directory()
@@ -153,7 +156,8 @@ public class IndexPopulationStressTest
     {
         indexProvider = providerCreator.apply( this );
         rules.fileSystem().mkdirs( indexProvider.directoryStructure().rootDirectory() );
-        populator = indexProvider.getPopulator( descriptor, samplingConfig, heapBufferFactory( 1024 ) );
+        tokenNameLookup = simpleNameLookup;
+        populator = indexProvider.getPopulator( descriptor, samplingConfig, heapBufferFactory( 1024 ), tokenNameLookup );
         when( nodePropertyAccessor.getNodePropertyValue( anyLong(), anyInt() ) ).thenThrow( UnsupportedOperationException.class );
         prevAccessCheck = UnsafeUtil.exchangeNativeAccessCheckEnabled( false );
     }
@@ -191,8 +195,8 @@ public class IndexPopulationStressTest
 
         // then assert that a tree built by a single thread ends up exactly the same
         buildReferencePopulatorSingleThreaded( generators, updates );
-        try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( descriptor, samplingConfig );
-              IndexAccessor referenceAccessor = indexProvider.getOnlineAccessor( descriptor2, samplingConfig );
+        try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( descriptor, samplingConfig, tokenNameLookup );
+              IndexAccessor referenceAccessor = indexProvider.getOnlineAccessor( descriptor2, samplingConfig, tokenNameLookup );
               IndexReader reader = accessor.newReader();
               IndexReader referenceReader = referenceAccessor.newReader() )
         {
@@ -306,7 +310,7 @@ public class IndexPopulationStressTest
     private void buildReferencePopulatorSingleThreaded( Generator[] generators, Collection<IndexEntryUpdate<?>> updates )
             throws IndexEntryConflictException
     {
-        IndexPopulator referencePopulator = indexProvider.getPopulator( descriptor2, samplingConfig, heapBufferFactory( 1024 ) );
+        IndexPopulator referencePopulator = indexProvider.getPopulator( descriptor2, samplingConfig, heapBufferFactory( 1024 ), tokenNameLookup );
         referencePopulator.create();
         boolean referenceSuccess = false;
         try

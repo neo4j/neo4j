@@ -38,6 +38,7 @@ import static org.junit.Assert.assertFalse;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.kernel.api.index.IndexProvider.Monitor.EMPTY;
+import static org.neo4j.kernel.api.schema.SchemaTestUtil.simpleNameLookup;
 
 public class GenericNativeIndexAccessorTest
 {
@@ -58,7 +59,7 @@ public class GenericNativeIndexAccessorTest
         FileSystemAbstraction fs = storage.fileSystem();
         IndexDropAction dropAction = new FileSystemIndexDropAction( fs, directoryStructure );
         GenericNativeIndexAccessor accessor = new GenericNativeIndexAccessor( storage.pageCache(), fs, indexFile, new GenericLayout( 1, spatialSettings ),
-                immediate(), EMPTY, descriptor, spatialSettings, mock( SpaceFillingCurveConfiguration.class ), dropAction, false );
+                immediate(), EMPTY, descriptor, spatialSettings, mock( SpaceFillingCurveConfiguration.class ), dropAction, false, simpleNameLookup );
 
         // when
         accessor.drop();

@@ -822,8 +822,8 @@ public class IndexingServiceTest
         IndexUpdater updater2 = mock( IndexUpdater.class );
         when( accessor2.newUpdater( any( IndexUpdateMode.class ) ) ).thenReturn( updater2 );
 
-        when( indexProvider.getOnlineAccessor( eq( index1 ), any( IndexSamplingConfig.class ) ) ).thenReturn( accessor1 );
-        when( indexProvider.getOnlineAccessor( eq( index2 ), any( IndexSamplingConfig.class ) ) ).thenReturn( accessor2 );
+        when( indexProvider.getOnlineAccessor( eq( index1 ), any( IndexSamplingConfig.class ), any( TokenNameLookup.class ) ) ).thenReturn( accessor1 );
+        when( indexProvider.getOnlineAccessor( eq( index2 ), any( IndexSamplingConfig.class ), any( TokenNameLookup.class ) ) ).thenReturn( accessor2 );
 
         life.start();
 
@@ -1002,11 +1002,11 @@ public class IndexingServiceTest
 
         // THEN
         verify( indexProvider ).getPopulator( eq( forSchema( forLabel( 0, 0 ), PROVIDER_DESCRIPTOR ).withId( 0 ) ),
-                any( IndexSamplingConfig.class ), any() );
+                any( IndexSamplingConfig.class ), any(), any( TokenNameLookup.class ) );
         verify( indexProvider ).getPopulator( eq( forSchema( forLabel( 0, 1 ), PROVIDER_DESCRIPTOR ).withId( 1 ) ),
-                any( IndexSamplingConfig.class ), any() );
+                any( IndexSamplingConfig.class ), any(), any( TokenNameLookup.class ) );
         verify( indexProvider ).getPopulator( eq( forSchema( forLabel( 1, 0 ), PROVIDER_DESCRIPTOR ).withId( 2 ) ),
-                any( IndexSamplingConfig.class ), any() );
+                any( IndexSamplingConfig.class ), any(), any( TokenNameLookup.class ) );
 
         waitForIndexesToComeOnline( indexing, 0, 1, 2 );
     }
@@ -1022,7 +1022,7 @@ public class IndexingServiceTest
         when( nameLookup.labelGetName( labelId ) ).thenReturn( "TheLabel" );
         when( nameLookup.propertyKeyGetName( propertyKeyId ) ).thenReturn( "propertyKey" );
 
-        when( indexProvider.getOnlineAccessor( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
+        when( indexProvider.getOnlineAccessor( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ), any( TokenNameLookup.class ) ) )
                 .thenThrow( exception );
 
         life.start();
@@ -1058,7 +1058,7 @@ public class IndexingServiceTest
         when( nameLookup.propertyKeyGetName( propertyKeyId ) ).thenReturn( "propertyKey" );
 
         when( indexProvider.getInitialState( indexRule ) ).thenReturn( POPULATING );
-        when( indexProvider.getOnlineAccessor( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
+        when( indexProvider.getOnlineAccessor( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ), any( TokenNameLookup.class ) ) )
                 .thenThrow( exception );
 
         life.start();
@@ -1314,7 +1314,7 @@ public class IndexingServiceTest
         IndexUpdater updater = mock( IndexUpdater.class );
         when( accessor.newUpdater( any( IndexUpdateMode.class ) ) ).thenReturn( updater );
         when( indexProvider.getOnlineAccessor( any( StoreIndexDescriptor.class ),
-                any( IndexSamplingConfig.class ) ) ).thenReturn( accessor );
+                any( IndexSamplingConfig.class ), any( TokenNameLookup.class ) ) ).thenReturn( accessor );
 
         life.init();
 
@@ -1522,10 +1522,10 @@ public class IndexingServiceTest
     {
         when( indexProvider.getInitialState( any( StoreIndexDescriptor.class ) ) ).thenReturn( ONLINE );
         when( indexProvider.getProviderDescriptor() ).thenReturn( PROVIDER_DESCRIPTOR );
-        when( indexProvider.getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ), any() ) )
+        when( indexProvider.getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ), any(), any( TokenNameLookup.class ) ) )
                 .thenReturn( populator );
         data.getsProcessedByStoreScanFrom( storeView );
-        when( indexProvider.getOnlineAccessor( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
+        when( indexProvider.getOnlineAccessor( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ), any( TokenNameLookup.class ) ) )
                 .thenReturn( accessor );
         when( indexProvider.storeMigrationParticipant( any( FileSystemAbstraction.class ), any( PageCache.class ) ) )
                 .thenReturn( StoreMigrationParticipant.NOT_PARTICIPATING );
@@ -1728,7 +1728,7 @@ public class IndexingServiceTest
         IndexProvider provider = mock( IndexProvider.class );
         when( provider.getProviderDescriptor() ).thenReturn( descriptor );
         IndexAccessor indexAccessor = mock( IndexAccessor.class );
-        when( provider.getOnlineAccessor( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
+        when( provider.getOnlineAccessor( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ), any( TokenNameLookup.class ) ) )
                 .thenReturn( indexAccessor );
         return provider;
     }

@@ -45,8 +45,6 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
-import org.neo4j.kernel.impl.api.NonTransactionalTokenNameLookup;
-import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStore;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.Scanner;
@@ -72,7 +70,7 @@ public class ConsistencyCheckTasks
     private final StoreProcessor defaultProcessor;
     private final StoreAccess nativeStores;
     private final Statistics statistics;
-    private final TokenHolders tokenHolders;
+    private final TokenNameLookup tokenNameLookup;
     private final MultiPassStore.Factory multiPass;
     private final ConsistencyReporter reporter;
     private final LabelScanStore labelScanStore;
@@ -83,14 +81,14 @@ public class ConsistencyCheckTasks
     ConsistencyCheckTasks( ProgressMonitorFactory.MultiPartBuilder multiPartBuilder,
             StoreProcessor defaultProcessor, StoreAccess nativeStores, Statistics statistics,
             CacheAccess cacheAccess, LabelScanStore labelScanStore,
-            IndexAccessors indexes, TokenHolders tokenHolders, MultiPassStore.Factory multiPass, ConsistencyReporter reporter, int numberOfThreads )
+            IndexAccessors indexes, TokenNameLookup tokenNameLookup, MultiPassStore.Factory multiPass, ConsistencyReporter reporter, int numberOfThreads )
     {
         this.multiPartBuilder = multiPartBuilder;
         this.defaultProcessor = defaultProcessor;
         this.nativeStores = nativeStores;
         this.statistics = statistics;
         this.cacheAccess = cacheAccess;
-        this.tokenHolders = tokenHolders;
+        this.tokenNameLookup = tokenNameLookup;
         this.multiPass = multiPass;
         this.reporter = reporter;
         this.labelScanStore = labelScanStore;
@@ -212,7 +210,6 @@ public class ConsistencyCheckTasks
         if ( checkIndexes )
         {
             tasks.add( new IndexDirtyCheckTask() );
-            TokenNameLookup tokenNameLookup = new NonTransactionalTokenNameLookup( tokenHolders, true /*include token ids too*/ );
             for ( StoreIndexDescriptor indexRule : indexes.onlineRules() )
             {
                 tasks.add( recordScanner( format( "Index_%d", indexRule.getId() ),

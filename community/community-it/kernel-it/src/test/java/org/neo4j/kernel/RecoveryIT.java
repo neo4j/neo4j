@@ -57,6 +57,7 @@ import org.neo4j.helpers.collection.BoundedIterable;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -854,16 +855,17 @@ public class RecoveryIT
         }
 
         @Override
-        public IndexPopulator getPopulator( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory )
+        public IndexPopulator getPopulator( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory,
+                TokenNameLookup tokenNameLookup )
         {
-            return actual.getPopulator( descriptor, samplingConfig, bufferFactory );
+            return actual.getPopulator( descriptor, samplingConfig, bufferFactory, tokenNameLookup );
         }
 
         @Override
-        public IndexAccessor getOnlineAccessor( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
-                throws IOException
+        public IndexAccessor getOnlineAccessor( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig,
+                TokenNameLookup tokenNameLookup ) throws IOException
         {
-            IndexAccessor actualAccessor = actual.getOnlineAccessor( descriptor, samplingConfig );
+            IndexAccessor actualAccessor = actual.getOnlineAccessor( descriptor, samplingConfig, tokenNameLookup );
             return indexes.computeIfAbsent( descriptor.getId(), id -> new UpdateCapturingIndexAccessor( actualAccessor, initialUpdates.get( id ) ) );
         }
 

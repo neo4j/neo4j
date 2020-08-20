@@ -41,6 +41,7 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.kernel.api.index.IndexProvider.Monitor.EMPTY;
+import static org.neo4j.kernel.api.schema.SchemaTestUtil.simpleNameLookup;
 
 public class GenericNativeIndexPopulatorTest
 {
@@ -64,7 +65,7 @@ public class GenericNativeIndexPopulatorTest
         RecoveryCleanupWorkCollector immediate = immediate();
         IndexDropAction dropAction = new FileSystemIndexDropAction( fs, directoryStructure );
         GenericNativeIndexPopulator populator = new GenericNativeIndexPopulator( pageCache, fs, indexFile, layout,
-                EMPTY, descriptor, spatialSettings, directoryStructure, mock( SpaceFillingCurveConfiguration.class ), dropAction, false );
+                EMPTY, descriptor, spatialSettings, directoryStructure, mock( SpaceFillingCurveConfiguration.class ), dropAction, false, simpleNameLookup );
         populator.create();
 
         // when

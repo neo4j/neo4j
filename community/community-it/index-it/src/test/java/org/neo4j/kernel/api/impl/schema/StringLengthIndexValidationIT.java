@@ -19,14 +19,19 @@
  */
 package org.neo4j.kernel.api.impl.schema;
 
-import org.apache.commons.lang3.RandomStringUtils;
 import org.hamcrest.Matchers;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -34,23 +39,73 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.index.internal.gbptree.TreeNodeDynamicSize;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.test.rule.DatabaseRule;
-import org.neo4j.test.rule.EmbeddedDatabaseRule;
+import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.index.schema.LayoutTestUtil;
+import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.test.Barrier;
+import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.rule.TestDirectory;
 
+import static java.lang.String.format;
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.test.TestLabels.LABEL_ONE;
 
+@RunWith( Parameterized.class )
 public class StringLengthIndexValidationIT
 {
+    @Parameterized.Parameters( name = "{0}" )
+    public static GraphDatabaseSettings.SchemaIndex[] parameters()
+    {
+        return new GraphDatabaseSettings.SchemaIndex[]{
+                GraphDatabaseSettings.SchemaIndex.NATIVE20,
+                GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10
+        };
+    }
+
+    @Parameterized.Parameter()
+    public static GraphDatabaseSettings.SchemaIndex schemaIndex;
+
     @Rule
-    public DatabaseRule db = new EmbeddedDatabaseRule()
-            .withSetting( GraphDatabaseSettings.default_schema_provider, GraphDatabaseSettings.SchemaIndex.NATIVE20.providerName() );
+    public TestDirectory testDirectory = TestDirectory.testDirectory();
 
     private static final String propKey = "largeString";
-    private static final int keySizeLimit = TreeNodeDynamicSize.keyValueSizeCapFromPageSize( PageCache.PAGE_SIZE ) - Long.BYTES;
+    private static final int keySizeLimit = TreeNodeDynamicSize.keyValueSizeCapFromPageSize( PageCache.PAGE_SIZE );
+    private static final AtomicBoolean trapPopulation = new AtomicBoolean();
+    private static final Barrier.Control populationScanFinished = new Barrier.Control();
+    private GraphDatabaseService db;
+
+    @Before
+    public void setup()
+    {
+        TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory();
+        Monitors monitors = new Monitors();
+        IndexingService.MonitorAdapter trappingMonitor = new IndexingService.MonitorAdapter()
+        {
+            @Override
+            public void indexPopulationScanComplete()
+            {
+                if ( trapPopulation.get() )
+                {
+                    populationScanFinished.reached();
+                }
+            }
+        };
+        monitors.addMonitorListener( trappingMonitor );
+        factory.setMonitors( monitors );
+        db = factory.newEmbeddedDatabaseBuilder( testDirectory.storeDir() )
+                .setConfig( GraphDatabaseSettings.default_schema_provider, schemaIndex.providerName() )
+                .newGraphDatabase();
+    }
+
+    @After
+    public void tearDown()
+    {
+        db.shutdown();
+    }
 
     @Test
     public void shouldSuccessfullyWriteAndReadWithinIndexKeySizeLimit()
@@ -96,8 +151,7 @@ public class StringLengthIndexValidationIT
         }
         catch ( IllegalArgumentException e )
         {
-            assertThat( e.getMessage(),
-                    Matchers.containsString( "Property value size is too large for index. Please see index documentation for limitations." ) );
+            assertThat( e.getMessage(), containsString( "Please see index documentation for limitations." ) );
         }
     }
 
@@ -114,7 +168,70 @@ public class StringLengthIndexValidationIT
             db.schema().indexFor( LABEL_ONE ).on( propKey ).create();
             tx.success();
         }
+        assertIndexFailToComeOnline();
+        assertIndexInFailedState();
+    }
 
+    @Test
+    public void externalUpdatesMustNotFailIndexPopulationIfWithinIndexKeySizeLimit() throws InterruptedException
+    {
+        trapPopulation.set( true );
+
+        // Create index should be fine
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.schema().indexFor( LABEL_ONE ).on( propKey ).create();
+            tx.success();
+        }
+
+        // Wait for index population to start
+        populationScanFinished.await();
+
+        // External update to index while population has not yet finished
+        String propValue = getString( keySizeLimit );
+        long nodeId = createNode( propValue );
+
+        // Continue index population
+        populationScanFinished.release();
+
+        // Waiting for it to come online should succeed
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+            tx.success();
+        }
+
+        assertReadNode( propValue, nodeId );
+    }
+
+    @Test
+    public void externalUpdatesMustFailIndexPopulationIfExceedingIndexKeySizeLimit() throws InterruptedException
+    {
+        trapPopulation.set( true );
+
+        // Create index should be fine
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.schema().indexFor( LABEL_ONE ).on( propKey ).create();
+            tx.success();
+        }
+
+        // Wait for index population to start
+        populationScanFinished.await();
+
+        // External update to index while population has not yet finished
+        String propValue = getString( keySizeLimit + 1 );
+        createNode( propValue );
+
+        // Continue index population
+        populationScanFinished.release();
+
+        assertIndexFailToComeOnline();
+        assertIndexInFailedState();
+    }
+
+    public void assertIndexFailToComeOnline()
+    {
         // Waiting for it to come online should fail
         try ( Transaction tx = db.beginTx() )
         {
@@ -123,11 +240,18 @@ public class StringLengthIndexValidationIT
         }
         catch ( IllegalStateException e )
         {
-            assertThat( e.getMessage(), Matchers.containsString(
-                    "Index IndexDefinition[label:LABEL_ONE on:largeString] (IndexRule[id=1, descriptor=Index( GENERAL, :label[0](property[0]) ), " +
-                            "provider={key=lucene+native, version=2.0}]) entered a FAILED state." ) );
+            assertThat( e.getMessage(), Matchers.allOf(
+                    containsString(
+                            format( "Index IndexDefinition[label:LABEL_ONE on:largeString] " +
+                                    "(IndexRule[id=1, descriptor=Index( GENERAL, :label[0](property[0]) ), provider={key=%s, version=%s}]) " +
+                                    "entered a FAILED state.", schemaIndex.providerKey(), schemaIndex.providerVersion() ) ),
+                    containsString( "Failed while trying to write to index, targetIndex=Index( GENERAL, :LABEL_ONE(largeString) ), nodeId=0" )
+            ) );
         }
+    }
 
+    public void assertIndexInFailedState()
+    {
         // Index should be in failed state
         try ( Transaction tx = db.beginTx() )
         {
@@ -136,15 +260,18 @@ public class StringLengthIndexValidationIT
             IndexDefinition next = iterator.next();
             assertEquals( "state is FAILED", Schema.IndexState.FAILED, db.schema().getIndexState( next ) );
             assertThat( db.schema().getIndexFailure( next ),
-                    Matchers.containsString( "Index key-value size it to large. Please see index documentation for limitations." ) );
+                    Matchers.allOf(
+                            containsString( "Index key-value size it to large. Please see index documentation for limitations." ),
+                            containsString( "Failed while trying to write to index, targetIndex=Index( GENERAL, :LABEL_ONE(largeString) ), nodeId=0" )
+                    ) );
             tx.success();
         }
     }
 
     // Each char in string need to fit in one byte
-    private String getString( int byteArraySize )
+    private String getString( int keySize )
     {
-        return RandomStringUtils.randomAlphabetic( byteArraySize );
+        return LayoutTestUtil.generateStringResultingInSizeForIndexProvider( keySize, schemaIndex );
     }
 
     private void createIndex()
