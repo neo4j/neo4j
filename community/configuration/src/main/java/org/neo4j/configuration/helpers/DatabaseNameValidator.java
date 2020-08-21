@@ -72,4 +72,31 @@ public class DatabaseNameValidator
                     "Database name '" + name + "' contains illegal characters. Use simple ascii characters, numbers, dots and dashes." );
         }
     }
+
+    private static final Pattern DATABASE_NAME_GLOBBING_PATTERN = Pattern.compile( "^[a-z0-9-.*?]+$" );
+
+    public static String validateDatabaseNamePattern( String name )
+    {
+        Objects.requireNonNull( name, "The provided database name is empty." );
+
+        if ( name.trim().isEmpty() )
+        {
+            throw new IllegalArgumentException( "The provided database name is empty." );
+        }
+        name = name.toLowerCase();
+        if ( name.length() > MAXIMUM_DATABASE_NAME_LENGTH )
+        {
+            throw new IllegalArgumentException( "The provided database name must have a length between " + 1 +
+                                                " and " + MAXIMUM_DATABASE_NAME_LENGTH + " characters." );
+        }
+
+        if ( !DATABASE_NAME_GLOBBING_PATTERN.matcher( name ).matches() )
+        {
+            throw new IllegalArgumentException(
+                    "Database name '" + name + "' contains illegal characters. Use simple ascii characters, numbers, dots," +
+                    " question marks, asterisk and dashes." );
+        }
+
+        return name;
+    }
 }

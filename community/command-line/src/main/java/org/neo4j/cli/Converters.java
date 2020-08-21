@@ -22,6 +22,7 @@ package org.neo4j.cli;
 import picocli.CommandLine.ITypeConverter;
 import picocli.CommandLine.TypeConversionException;
 
+import org.neo4j.configuration.helpers.DatabaseNamePattern;
 import org.neo4j.configuration.helpers.NormalizedDatabaseName;
 import org.neo4j.io.ByteUnit;
 
@@ -61,6 +62,23 @@ public interface Converters
             catch ( Exception e )
             {
                 throw new TypeConversionException( format( "Invalid database name '%s'. (%s)", name, e ) );
+            }
+        }
+    }
+
+    class DatabaseNamePatternConverter implements ITypeConverter<DatabaseNamePattern>
+    {
+
+        @Override
+        public DatabaseNamePattern convert( String name )
+        {
+            try
+            {
+                return new DatabaseNamePattern( name );
+            }
+            catch ( Exception ex )
+            {
+                throw new TypeConversionException( format( "Invalid database name '%s'. (%s)", name, ex ) );
             }
         }
     }
