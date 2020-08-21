@@ -22,6 +22,7 @@ package org.neo4j.procedure.impl;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -259,6 +260,15 @@ public class ProcedureRegistry
     public Set<ProcedureSignature> getAllProcedures()
     {
         return procedures.all().stream().map( CallableProcedure::signature ).collect( Collectors.toSet());
+    }
+
+    int[] getIdsOfProceduresMatching( Pattern regex )
+    {
+        var predicate = regex.asMatchPredicate();
+        return procedures.all().stream()
+                         .filter( p -> predicate.test( p.signature().name().toString() ) )
+                         .mapToInt( p -> procedures.idOf( p.signature().name() ) )
+                         .toArray();
     }
 
     public Stream<UserFunctionSignature> getAllNonAggregatingFunctions()

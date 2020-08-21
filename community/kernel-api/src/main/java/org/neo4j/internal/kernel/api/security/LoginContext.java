@@ -57,11 +57,15 @@ public interface LoginContext
 
     interface IdLookup
     {
+        int[] NO_SUCH_PROCEDURE = new int[0];
+
         int getPropertyKeyId( String name );
 
         int getLabelId( String name );
 
         int getRelTypeId( String name );
+
+        int[] getProcedureIds( String procedureGlobbing );
 
         IdLookup EMPTY = new IdLookup()
         {
@@ -81,6 +85,12 @@ public interface LoginContext
             public int getRelTypeId( String name )
             {
                 return -1;
+            }
+
+            @Override
+            public int[] getProcedureIds( String procedureGlobbing )
+            {
+                return NO_SUCH_PROCEDURE;
             }
         };
     }

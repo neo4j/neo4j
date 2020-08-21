@@ -36,10 +36,13 @@ import org.neo4j.cypher.internal.ast.NamedDatabaseScope
 import org.neo4j.cypher.internal.ast.NamedGraphScope
 import org.neo4j.cypher.internal.ast.NoResource
 import org.neo4j.cypher.internal.ast.PrivilegeQualifier
+import org.neo4j.cypher.internal.ast.ProcedurePrivilegeQualifier
+import org.neo4j.cypher.internal.ast.ProcedureQualifier
 import org.neo4j.cypher.internal.ast.PropertyResource
 import org.neo4j.cypher.internal.ast.UserAllQualifier
 import org.neo4j.cypher.internal.ast.UserQualifier
 import org.neo4j.cypher.internal.ast.Where
+import org.neo4j.cypher.internal.ast.prettifier.Prettifier
 import org.neo4j.cypher.internal.ast.prettifier.Prettifier
 import org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.expressions.Expression
@@ -730,13 +733,23 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
       case RevokeRoleFromUser(_, roleName, userName) =>
         PlanDescriptionImpl(id, "RevokeRoleFromUser", children, Seq(Details(Seq(getRoleInfo(roleName), getUserInfo(userName)))), variables)
 
-      case GrantDbmsAction(_, action, roleName) =>
+      case GrantDbmsAction(_, action, qualifier: ProcedurePrivilegeQualifier, roleName) =>
+        PlanDescriptionImpl(id, "GrantDbmsAction", children, Seq(Details(asPrettyString.raw(action.name) +: extractQualifierSeq(qualifier) :+ getRoleInfo(roleName))), variables)
+
+      case GrantDbmsAction(_, action, _, roleName) =>
         PlanDescriptionImpl(id, "GrantDbmsAction", children, Seq(Details(Seq(asPrettyString.raw(action.name), getRoleInfo(roleName)))), variables)
 
-      case DenyDbmsAction(_, action, roleName) =>
+      case DenyDbmsAction(_, action, qualifier: ProcedurePrivilegeQualifier, roleName) =>
+        PlanDescriptionImpl(id, "DenyDbmsAction", children, Seq(Details(asPrettyString.raw(action.name) +: extractQualifierSeq(qualifier) :+ getRoleInfo(roleName))), variables)
+
+      case DenyDbmsAction(_, action, _, roleName) =>
         PlanDescriptionImpl(id, "DenyDbmsAction", children, Seq(Details(Seq(asPrettyString.raw(action.name), getRoleInfo(roleName)))), variables)
 
-      case RevokeDbmsAction(_, action, roleName, revokeType) =>
+      case RevokeDbmsAction(_, action, qualifier: ProcedurePrivilegeQualifier, roleName, revokeType) =>
+        val details = Details(asPrettyString.raw(action.name) +: extractQualifierSeq(qualifier) :+ getRoleInfo(roleName))
+        PlanDescriptionImpl(id, Prettifier.revokeOperation("RevokeDbmsAction", revokeType), children, Seq(details), variables)
+
+      case RevokeDbmsAction(_, action, _, roleName, revokeType) =>
         val details = Details(Seq(asPrettyString.raw(action.name), getRoleInfo(roleName)))
         PlanDescriptionImpl(id, Prettifier.revokeOperation("RevokeDbmsAction", revokeType), children, Seq(details), variables)
 

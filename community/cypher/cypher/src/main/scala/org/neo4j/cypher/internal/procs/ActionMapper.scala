@@ -51,6 +51,7 @@ import org.neo4j.cypher.internal.ast.DropDatabaseAction
 import org.neo4j.cypher.internal.ast.DropIndexAction
 import org.neo4j.cypher.internal.ast.DropRoleAction
 import org.neo4j.cypher.internal.ast.DropUserAction
+import org.neo4j.cypher.internal.ast.ExecuteProcedureAction
 import org.neo4j.cypher.internal.ast.MatchAction
 import org.neo4j.cypher.internal.ast.MergeAdminAction
 import org.neo4j.cypher.internal.ast.ReadAction
@@ -134,6 +135,8 @@ object ActionMapper {
     case ShowPrivilegeAction => security.PrivilegeAction.SHOW_PRIVILEGE
     case AssignPrivilegeAction => security.PrivilegeAction.ASSIGN_PRIVILEGE
     case RemovePrivilegeAction => security.PrivilegeAction.REMOVE_PRIVILEGE
+
+    case ExecuteProcedureAction => security.PrivilegeAction.EXECUTE
 
     case AllDbmsAction => security.PrivilegeAction.DBMS_ACTIONS
     case AllAdminAction => security.PrivilegeAction.ADMIN

@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.ast.GraphPrivilegeQualifier
 import org.neo4j.cypher.internal.ast.GraphScope
 import org.neo4j.cypher.internal.ast.PrivilegeQualifier
 import org.neo4j.cypher.internal.ast.PrivilegeType
+import org.neo4j.cypher.internal.ast.ProcedurePrivilegeQualifier
 import org.neo4j.cypher.internal.ast.RevokeBothType
 import org.neo4j.cypher.internal.ast.RevokeDenyType
 import org.neo4j.cypher.internal.ast.RevokeGrantType
@@ -59,6 +60,7 @@ class AdministrationCommandParserTestBase
   type databasePrivilegeFunc = (DatabaseAction, List[DatabaseScope], Seq[Either[String, Parameter]]) => InputPosition => ast.Statement
   type transactionPrivilegeFunc = (DatabaseAction, List[DatabaseScope], List[DatabasePrivilegeQualifier], Seq[Either[String, Parameter]]) => InputPosition => ast.Statement
   type dbmsPrivilegeFunc = (AdminAction, Seq[Either[String, Parameter]]) => InputPosition => ast.Statement
+  type executePrivilegeFunc = (AdminAction, List[ProcedurePrivilegeQualifier], Seq[Either[String, Parameter]]) => InputPosition => ast.Statement
 
   def grantGraphPrivilege(p: PrivilegeType, a: ActionResource, s: List[GraphScope], q: List[PrivilegeQualifier], r: Seq[Either[String, Parameter]]): InputPosition => ast.Statement =
     ast.GrantPrivilege(p, Some(a), s, q, r)
@@ -75,6 +77,9 @@ class AdministrationCommandParserTestBase
   def grantDbmsPrivilege(a: AdminAction, r: Seq[Either[String, Parameter]]): InputPosition => ast.Statement =
     ast.GrantPrivilege.dbmsAction(a, r)
 
+  def grantExecutePrivilege(a: AdminAction, q: List[ProcedurePrivilegeQualifier], r: Seq[Either[String, Parameter]]): InputPosition => ast.Statement =
+    ast.GrantPrivilege.dbmsAction(a, r, q)
+
   def denyGraphPrivilege(p: PrivilegeType, a: ActionResource, s: List[GraphScope], q: List[PrivilegeQualifier], r: Seq[Either[String, Parameter]]): InputPosition => ast.Statement =
     ast.DenyPrivilege(p, Some(a), s, q, r)
 
@@ -89,6 +94,9 @@ class AdministrationCommandParserTestBase
 
   def denyDbmsPrivilege(a: AdminAction, r: Seq[Either[String, Parameter]]): InputPosition => ast.Statement =
     ast.DenyPrivilege.dbmsAction(a, r)
+
+  def denyExecutePrivilege(a: AdminAction, q: List[ProcedurePrivilegeQualifier], r: Seq[Either[String, Parameter]]): InputPosition => ast.Statement =
+    ast.DenyPrivilege.dbmsAction(a, r, q)
 
   def revokeGrantGraphPrivilege(p: PrivilegeType, a: ActionResource, s: List[GraphScope], q: List[PrivilegeQualifier], r: Seq[Either[String, Parameter]]): InputPosition => ast.Statement =
     ast.RevokePrivilege(p, Some(a), s, q, r, RevokeGrantType()(pos))
@@ -105,6 +113,9 @@ class AdministrationCommandParserTestBase
   def revokeGrantDbmsPrivilege(a: AdminAction, r: Seq[Either[String, Parameter]]): InputPosition => ast.Statement =
     ast.RevokePrivilege.dbmsAction(a, r, RevokeGrantType()(pos))
 
+  def revokeGrantExecutePrivilege(a: AdminAction, q: List[ProcedurePrivilegeQualifier], r: Seq[Either[String, Parameter]]): InputPosition => ast.Statement =
+    ast.RevokePrivilege.dbmsAction(a, r, RevokeGrantType()(pos), q)
+
   def revokeDenyGraphPrivilege(p: PrivilegeType, a: ActionResource, s: List[GraphScope], q: List[PrivilegeQualifier], r: Seq[Either[String, Parameter]]): InputPosition => ast.Statement =
     ast.RevokePrivilege(p, Some(a), s, q, r, RevokeDenyType()(pos))
 
@@ -120,6 +131,9 @@ class AdministrationCommandParserTestBase
   def revokeDenyDbmsPrivilege(a: AdminAction, r: Seq[Either[String, Parameter]]): InputPosition => ast.Statement =
     ast.RevokePrivilege.dbmsAction(a, r, RevokeDenyType()(pos))
 
+  def revokeDenyExecutePrivilege(a: AdminAction, q: List[ProcedurePrivilegeQualifier], r: Seq[Either[String, Parameter]]): InputPosition => ast.Statement =
+    ast.RevokePrivilege.dbmsAction(a, r, RevokeDenyType()(pos), q)
+
   def revokeGraphPrivilege(p: PrivilegeType, a: ActionResource, s: List[GraphScope], q: List[PrivilegeQualifier], r: Seq[Either[String, Parameter]]): InputPosition => ast.Statement =
     ast.RevokePrivilege(p, Some(a), s, q, r, RevokeBothType()(pos))
 
@@ -134,4 +148,7 @@ class AdministrationCommandParserTestBase
 
   def revokeDbmsPrivilege(a: AdminAction, r: Seq[Either[String, Parameter]]): InputPosition => ast.Statement =
     ast.RevokePrivilege.dbmsAction(a, r, RevokeBothType()(pos))
+
+  def revokeExecutePrivilege(a: AdminAction, q: List[ProcedurePrivilegeQualifier], r: Seq[Either[String, Parameter]]): InputPosition => ast.Statement =
+    ast.RevokePrivilege.dbmsAction(a, r, RevokeBothType()(pos), q)
 }

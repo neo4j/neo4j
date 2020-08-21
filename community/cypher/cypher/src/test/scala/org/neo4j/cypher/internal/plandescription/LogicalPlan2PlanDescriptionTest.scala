@@ -27,8 +27,11 @@ import org.neo4j.cypher.internal.ast.CreateNodeLabelAction
 import org.neo4j.cypher.internal.ast.CreateUserAction
 import org.neo4j.cypher.internal.ast.DestroyData
 import org.neo4j.cypher.internal.ast.DumpData
+import org.neo4j.cypher.internal.ast.ExecuteProcedureAction
 import org.neo4j.cypher.internal.ast.LabelQualifier
 import org.neo4j.cypher.internal.ast.NoResource
+import org.neo4j.cypher.internal.ast.ProcedureAllQualifier
+import org.neo4j.cypher.internal.ast.ProcedureQualifier
 import org.neo4j.cypher.internal.ast.ProcedureResultItem
 import org.neo4j.cypher.internal.ast.PropertyResource
 import org.neo4j.cypher.internal.ast.ReadAction
@@ -1164,14 +1167,23 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     assertGood(attach(RevokeRoleFromUser(privLhsLP, util.Left("role"), util.Left("user")), 1.0),
       planDescription(id, "RevokeRoleFromUser", SingleChild(privLhsPD), Seq(details(Seq("ROLE role", "USER user"))), Set.empty))
 
-    assertGood(attach(GrantDbmsAction(privLhsLP, CreateUserAction, util.Left("role1")), 1.0),
+    assertGood(attach(GrantDbmsAction(privLhsLP, CreateUserAction, ast.AllQualifier()(pos), util.Left("role1")), 1.0),
       planDescription(id, "GrantDbmsAction", SingleChild(privLhsPD), Seq(details(Seq("CREATE USER", "ROLE role1"))), Set.empty))
 
-    assertGood(attach(DenyDbmsAction(privLhsLP, CreateUserAction, util.Left("user")), 1.0),
+    assertGood(attach(DenyDbmsAction(privLhsLP, CreateUserAction, ast.AllQualifier()(pos), util.Left("user")), 1.0),
       planDescription(id, "DenyDbmsAction", SingleChild(privLhsPD), Seq(details(Seq("CREATE USER", "ROLE user"))), Set.empty))
 
-    assertGood(attach(RevokeDbmsAction(privLhsLP, CreateUserAction, util.Left("role1"), "revokeType"), 1.0),
+    assertGood(attach(RevokeDbmsAction(privLhsLP, CreateUserAction, ast.AllQualifier()(pos), util.Left("role1"), "revokeType"), 1.0),
       planDescription(id, "RevokeDbmsAction(revokeType)", SingleChild(privLhsPD), Seq(details(Seq("CREATE USER", "ROLE role1"))), Set.empty))
+
+    assertGood(attach(GrantDbmsAction(privLhsLP, ExecuteProcedureAction, ProcedureAllQualifier()(pos), util.Left("role1")), 1.0),
+      planDescription(id, "GrantDbmsAction", SingleChild(privLhsPD), Seq(details(Seq("EXECUTE PROCEDURE", "*", "ROLE role1"))), Set.empty))
+
+    assertGood(attach(DenyDbmsAction(privLhsLP, ExecuteProcedureAction, ProcedureQualifier(Namespace(List("apoc"))(pos), ProcedureName("sin")(pos))(pos), util.Left("role1")), 1.0),
+      planDescription(id, "DenyDbmsAction", SingleChild(privLhsPD), Seq(details(Seq("EXECUTE PROCEDURE", "apoc.sin", "ROLE role1"))), Set.empty))
+
+    assertGood(attach(RevokeDbmsAction(privLhsLP, ExecuteProcedureAction, ProcedureAllQualifier()(pos), util.Left("role1"), "revokeType"), 1.0),
+      planDescription(id, "RevokeDbmsAction(revokeType)", SingleChild(privLhsPD), Seq(details(Seq("EXECUTE PROCEDURE", "*", "ROLE role1"))), Set.empty))
 
     assertGood(attach(GrantDatabaseAction(privLhsLP, CreateNodeLabelAction, ast.NamedDatabaseScope(util.Left("foo"))(pos), UserAllQualifier()(pos), util.Left("role1")), 1.0),
       planDescription(id, "GrantDatabaseAction", SingleChild(privLhsPD), Seq(details(Seq("CREATE NEW NODE LABEL", "DATABASE foo", "ALL USERS", "ROLE role1"))), Set.empty))

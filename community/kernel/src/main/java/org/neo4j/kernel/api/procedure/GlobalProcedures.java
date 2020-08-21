@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api.procedure;
 
 import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import org.neo4j.collection.RawIterator;
@@ -77,6 +78,8 @@ public interface GlobalProcedures
     UserFunctionHandle aggregationFunction( QualifiedName name );
 
     Set<ProcedureSignature> getAllProcedures();
+
+    int[] getIdsOfProceduresMatching( Pattern regex );
 
     Stream<UserFunctionSignature> getAllNonAggregatingFunctions();
 

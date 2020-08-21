@@ -65,6 +65,8 @@ public interface AccessMode
         WRITE( true, true, false, false, false ),
         /** Allows reading and writing data and creating new tokens, but not schema. */
         TOKEN_WRITE( true, true, true, false, false ),
+        /** Allows reading and writing data and creating new tokens and changing schema. */
+        SCHEMA( true, true, true, true, false ),
         /** Allows all operations. */
         FULL( true, true, true, true, true );
 
@@ -72,15 +74,15 @@ public interface AccessMode
         private final boolean write;
         private final boolean token;
         private final boolean schema;
-        private final boolean procedure;
+        private final boolean procedureBoost;
 
-        Static( boolean read, boolean write, boolean token, boolean schema, boolean procedure )
+        Static( boolean read, boolean write, boolean token, boolean schema, boolean procedureBoost )
         {
             this.read = read;
             this.write = write;
             this.token = token;
             this.schema = schema;
-            this.procedure = procedure;
+            this.procedureBoost = procedureBoost;
         }
 
         @Override
@@ -180,9 +182,15 @@ public interface AccessMode
         }
 
         @Override
-        public boolean allowsProcedureWith( String[] allowed )
+        public boolean shouldBoostAccessForProcedureWith( String[] allowed )
         {
-            return procedure;
+            return procedureBoost;
+        }
+
+        @Override
+        public boolean allowsExecuteProcedure( int procedureId )
+        {
+            return true;
         }
 
         @Override
@@ -287,7 +295,14 @@ public interface AccessMode
      * @return {@code true} if this mode allows the execution of a procedure with the given parameter string array
      * encoding permission
      */
-    boolean allowsProcedureWith( String[] allowed );
+    boolean shouldBoostAccessForProcedureWith( String[] allowed );
+
+    /**
+     * Check if execution of a procedure is allowed
+     * @param procedureId id of the procedure
+     * @return true if the procedure with this id is allowed to be executed
+     */
+    boolean allowsExecuteProcedure( int procedureId );
 
     boolean allowsSetLabel( long labelId );
 

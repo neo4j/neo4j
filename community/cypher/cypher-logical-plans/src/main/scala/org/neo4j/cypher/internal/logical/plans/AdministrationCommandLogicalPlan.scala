@@ -99,9 +99,9 @@ case class AssertDbmsAdminOrSelf(user: Either[String, Parameter], actions: Seq[A
 case class AssertDatabaseAdmin(action: AdminAction, database: Either[String, Parameter])(implicit idGen: IdGen) extends PrivilegePlan
 case class AssertNotCurrentUser(source: PrivilegePlan, userName: Either[String, Parameter], verb: String, violationMessage: String)(implicit idGen: IdGen) extends PrivilegePlan(Some(source))
 
-case class GrantDbmsAction(source: PrivilegePlan, action: AdminAction, roleName: Either[String, Parameter])(implicit idGen: IdGen) extends PrivilegePlan(Some(source))
-case class DenyDbmsAction(source: PrivilegePlan, action: AdminAction, roleName: Either[String, Parameter])(implicit idGen: IdGen) extends PrivilegePlan(Some(source))
-case class RevokeDbmsAction(source: PrivilegePlan, action: AdminAction, roleName: Either[String, Parameter], revokeType: String)(implicit idGen: IdGen) extends PrivilegePlan(Some(source))
+case class GrantDbmsAction(source: PrivilegePlan, action: AdminAction, qualifier: PrivilegeQualifier, roleName: Either[String, Parameter])(implicit idGen: IdGen) extends PrivilegePlan(Some(source))
+case class DenyDbmsAction(source: PrivilegePlan, action: AdminAction, qualifier: PrivilegeQualifier, roleName: Either[String, Parameter])(implicit idGen: IdGen) extends PrivilegePlan(Some(source))
+case class RevokeDbmsAction(source: PrivilegePlan, action: AdminAction, qualifier: PrivilegeQualifier, roleName: Either[String, Parameter], revokeType: String)(implicit idGen: IdGen) extends PrivilegePlan(Some(source))
 
 case class GrantDatabaseAction(source: PrivilegePlan, action: AdminAction, database: DatabaseScope, qualifier: PrivilegeQualifier, roleName: Either[String, Parameter])(implicit idGen: IdGen) extends PrivilegePlan(Some(source))
 case class DenyDatabaseAction(source: PrivilegePlan, action: AdminAction, database: DatabaseScope, qualifier: PrivilegeQualifier, roleName: Either[String, Parameter])(implicit idGen: IdGen) extends PrivilegePlan(Some(source))

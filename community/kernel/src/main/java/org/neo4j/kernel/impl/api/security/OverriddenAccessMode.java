@@ -134,7 +134,7 @@ public class OverriddenAccessMode extends WrappedAccessMode
     }
 
     @Override
-    public boolean allowsProcedureWith( String[] allowed )
+    public boolean shouldBoostAccessForProcedureWith( String[] allowed )
     {
         return false;
     }

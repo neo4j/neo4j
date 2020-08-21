@@ -1142,8 +1142,17 @@ class PrettifierIT extends CypherFunSuite {
             s"$action REMOVE PRIVILEGE ON DBMS $preposition $$role",
 
           s"$action all on dbms $preposition role" ->
-            s"$action ALL DBMS PRIVILEGES ON DBMS $preposition role"
-        )
+            s"$action ALL DBMS PRIVILEGES ON DBMS $preposition role",
+
+          s"$action execute procedure * on dbms $preposition role" ->
+            s"$action EXECUTE PROCEDURE * ON DBMS $preposition role",
+
+          s"$action execute procedures * on dbms $preposition role" ->
+            s"$action EXECUTE PROCEDURE * ON DBMS $preposition role",
+
+          s"$action execute procedure math.sin,math.cos on dbms $preposition role" ->
+            s"$action EXECUTE PROCEDURE math.sin, math.cos ON DBMS $preposition role"
+      )
     }
   }
 

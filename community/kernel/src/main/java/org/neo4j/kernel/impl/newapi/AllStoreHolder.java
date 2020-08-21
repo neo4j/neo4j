@@ -30,6 +30,7 @@ import org.neo4j.collection.Dependencies;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.index.label.LabelScanStore;
 import org.neo4j.internal.index.label.RelationshipTypeScanStore;
@@ -963,6 +964,12 @@ public class AllStoreHolder extends Read
             throws ProcedureException
     {
         ktx.assertOpen();
+
+        AccessMode mode = ktx.securityContext().mode();
+        if ( !mode.allowsExecuteProcedure( id ) )
+        {
+            throw new AuthorizationViolationException( AuthorizationViolationException.PERMISSION_DENIED );
+        }
 
         final SecurityContext procedureSecurityContext = ktx.securityContext().withMode( override );
         final RawIterator<AnyValue[],ProcedureException> procedureCall;

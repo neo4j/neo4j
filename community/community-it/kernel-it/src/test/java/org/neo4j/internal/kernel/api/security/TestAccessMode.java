@@ -137,9 +137,15 @@ public class TestAccessMode implements AccessMode
     }
 
     @Override
-    public boolean allowsProcedureWith( String[] allowed )
+    public boolean shouldBoostAccessForProcedureWith( String[] allowed )
     {
         return false;
+    }
+
+    @Override
+    public boolean allowsExecuteProcedure( int procedureId )
+    {
+        return true;
     }
 
     @Override

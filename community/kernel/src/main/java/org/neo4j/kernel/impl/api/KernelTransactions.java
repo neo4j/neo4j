@@ -167,7 +167,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
         this.cpuClockRef = cpuClockRef;
         this.accessCapability = accessCapability;
         this.tokenHolders = tokenHolders;
-        this.tokenHoldersIdLookup = new TokenHoldersIdLookup( tokenHolders );
+        this.tokenHoldersIdLookup = new TokenHoldersIdLookup( tokenHolders, globalProcedures );
         this.namedDatabaseId = namedDatabaseId;
         this.indexingService = indexingService;
         this.labelScanStore = labelScanStore;

@@ -19,16 +19,23 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import java.util.regex.Pattern;
+
 import org.neo4j.internal.kernel.api.security.LoginContext;
+import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.token.TokenHolders;
+
+import static java.util.regex.Pattern.CASE_INSENSITIVE;
 
 class TokenHoldersIdLookup implements LoginContext.IdLookup
 {
     private final TokenHolders tokens;
+    private final GlobalProcedures globalProcedures;
 
-    TokenHoldersIdLookup( TokenHolders tokens )
+    TokenHoldersIdLookup( TokenHolders tokens, GlobalProcedures globalProcedures )
     {
         this.tokens = tokens;
+        this.globalProcedures = globalProcedures;
     }
 
     @Override
@@ -47,5 +54,12 @@ class TokenHoldersIdLookup implements LoginContext.IdLookup
     public int getRelTypeId( String name )
     {
         return tokens.relationshipTypeTokens().getIdByName( name );
+    }
+
+    @Override
+    public int[] getProcedureIds( String procedureGlobbing )
+    {
+        String escapedString = procedureGlobbing.replaceAll( "\\.", "\\\\." ).replaceAll( "\\*", ".*" );
+        return globalProcedures.getIdsOfProceduresMatching( Pattern.compile( escapedString, CASE_INSENSITIVE ) );
     }
 }

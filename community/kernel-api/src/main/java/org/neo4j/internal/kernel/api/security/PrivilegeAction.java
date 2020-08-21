@@ -42,7 +42,7 @@ public enum PrivilegeAction
 
     SET_PROPERTY,
 
-    /** Execute procedure/view with elevated access */
+    /** Execute procedure */
     EXECUTE,
 
     CREATE_LABEL,

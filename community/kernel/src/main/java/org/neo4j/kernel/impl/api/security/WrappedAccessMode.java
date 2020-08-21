@@ -44,6 +44,12 @@ abstract class WrappedAccessMode implements AccessMode
     }
 
     @Override
+    public boolean allowsExecuteProcedure( int procedureId )
+    {
+        return original.allowsExecuteProcedure( procedureId );
+    }
+
+    @Override
     public boolean isOverridden()
     {
         return true;

@@ -222,23 +222,29 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // GRANT _ ON DBMS TO role
-      case c@GrantPrivilege(DbmsPrivilege(action), _, _, _, roleNames) =>
-        val plan = roleNames.foldLeft(plans.AssertDbmsAdmin(AssignPrivilegeAction).asInstanceOf[PrivilegePlan]) {
-          case (source, roleName) => plans.GrantDbmsAction(source, action, roleName)
+      case c@GrantPrivilege(DbmsPrivilege(action), _, _, qualifiers, roleNames) =>
+        val plan = (for (roleName <- roleNames; qualifier <- qualifiers; simpleQualifier <- qualifier.simplify) yield {
+          (roleName, simpleQualifier)
+        }).foldLeft(plans.AssertDbmsAdmin(AssignPrivilegeAction).asInstanceOf[PrivilegePlan]) {
+          case (source, (roleName, simpleQualifier)) => plans.GrantDbmsAction(source, action, simpleQualifier, roleName)
         }
         Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // DENY _ ON DBMS TO role
-      case c@DenyPrivilege(DbmsPrivilege(action), _, _, _, roleNames) =>
-        val plan = roleNames.foldLeft(plans.AssertDbmsAdmin(AssignPrivilegeAction).asInstanceOf[PrivilegePlan]) {
-          case (source, roleName) => plans.DenyDbmsAction(source, action, roleName)
+      case c@DenyPrivilege(DbmsPrivilege(action), _, _, qualifiers, roleNames) =>
+        val plan = (for (roleName <- roleNames; qualifier <- qualifiers; simpleQualifier <- qualifier.simplify) yield {
+          (roleName, simpleQualifier)
+        }).foldLeft(plans.AssertDbmsAdmin(AssignPrivilegeAction).asInstanceOf[PrivilegePlan]) {
+          case (source, (roleName, simpleQualifier)) => plans.DenyDbmsAction(source, action, simpleQualifier, roleName)
         }
         Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // REVOKE _ ON DBMS FROM role
-      case c@RevokePrivilege(DbmsPrivilege(action), _, _, _, roleNames, revokeType) =>
-        val plan = roleNames.foldLeft(plans.AssertDbmsAdmin(RemovePrivilegeAction).asInstanceOf[PrivilegePlan]) {
-          case (previous, roleName) => planRevokes(previous, revokeType, (s, r) => plans.RevokeDbmsAction(s, action, roleName, r))
+      case c@RevokePrivilege(DbmsPrivilege(action), _, _, qualifiers, roleNames, revokeType) =>
+        val plan = (for (roleName <- roleNames; qualifier <- qualifiers; simpleQualifier <- qualifier.simplify) yield {
+          (roleName, simpleQualifier)
+        }).foldLeft(plans.AssertDbmsAdmin(RemovePrivilegeAction).asInstanceOf[PrivilegePlan]) {
+          case (previous, (roleName, simpleQualifier)) => planRevokes(previous, revokeType, (s, r) => plans.RevokeDbmsAction(s, action, simpleQualifier, roleName, r))
         }
         Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
 

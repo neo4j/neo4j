@@ -46,6 +46,7 @@ import org.neo4j.cypher.internal.ast.IfExistsDoNothing
 import org.neo4j.cypher.internal.ast.IfExistsInvalidSyntax
 import org.neo4j.cypher.internal.ast.IfExistsReplace
 import org.neo4j.cypher.internal.ast.IfExistsThrowError
+import org.neo4j.cypher.internal.ast.PrivilegeQualifier
 import org.neo4j.cypher.internal.ast.Return
 import org.neo4j.cypher.internal.ast.RevokeBothType
 import org.neo4j.cypher.internal.ast.RevokeDenyType
@@ -258,27 +259,37 @@ trait Statement extends Parser
   //` ... ON DBMS TO role`
   def GrantDbmsPrivilege: Rule1[GrantPrivilege] = rule("CATALOG GRANT dbms privileges") {
     group(keyword("GRANT") ~~ DbmsAction ~~ keyword("ON DBMS TO") ~~ SymbolicNameOrStringParameterList) ~~>>
-      ((dbmsAction, grantees) => ast.GrantPrivilege.dbmsAction( dbmsAction, grantees ))
+      ((dbmsAction, grantees) => pos => ast.GrantPrivilege.dbmsAction(dbmsAction, grantees, List(ast.AllQualifier()(pos)))(pos)) |
+    group(keyword("GRANT") ~~ QualifiedDbmsAction ~~ keyword("ON DBMS TO") ~~ SymbolicNameOrStringParameterList) ~~>>
+      ((qualifier, dbmsAction, grantees) => ast.GrantPrivilege.dbmsAction( dbmsAction, grantees, qualifier ))
   }
 
   def DenyDbmsPrivilege: Rule1[DenyPrivilege] = rule("CATALOG DENY dbms privileges") {
     group(keyword("DENY") ~~ DbmsAction ~~ keyword("ON DBMS TO") ~~ SymbolicNameOrStringParameterList) ~~>>
-      ((dbmsAction, grantees) => ast.DenyPrivilege.dbmsAction( dbmsAction, grantees ))
+      ((dbmsAction, grantees) => ast.DenyPrivilege.dbmsAction( dbmsAction, grantees )) |
+    group(keyword("DENY") ~~ QualifiedDbmsAction ~~ keyword("ON DBMS TO") ~~ SymbolicNameOrStringParameterList) ~~>>
+      ((qualifier, dbmsAction, grantees) => ast.DenyPrivilege.dbmsAction( dbmsAction, grantees, qualifier ))
   }
 
   def RevokeDbmsPrivilege: Rule1[RevokePrivilege] = rule("CATALOG REVOKE dbms privileges") {
     group(keyword("REVOKE") ~~ DbmsAction ~~ keyword("ON DBMS FROM") ~~ SymbolicNameOrStringParameterList) ~~>>
-      ((dbmsAction, grantees) => pos => ast.RevokePrivilege.dbmsAction(dbmsAction, grantees, RevokeBothType()(pos))(pos))
+      ((dbmsAction, grantees) => pos => ast.RevokePrivilege.dbmsAction(dbmsAction, grantees, RevokeBothType()(pos))(pos)) |
+    group(keyword("REVOKE") ~~ QualifiedDbmsAction ~~ keyword("ON DBMS FROM") ~~ SymbolicNameOrStringParameterList) ~~>>
+      ((qualifier, dbmsAction, grantees) => pos => ast.RevokePrivilege.dbmsAction(dbmsAction, grantees, RevokeBothType()(pos), qualifier)(pos))
   }
 
   def RevokeGrantDbmsPrivilege: Rule1[RevokePrivilege] = rule("CATALOG REVOKE GRANT dbms privileges") {
     group(keyword("REVOKE GRANT") ~~ DbmsAction ~~ keyword("ON DBMS FROM") ~~ SymbolicNameOrStringParameterList) ~~>>
-      ((dbmsAction, grantees) => pos => ast.RevokePrivilege.dbmsAction(dbmsAction, grantees, RevokeGrantType()(pos))(pos))
+      ((dbmsAction, grantees) => pos => ast.RevokePrivilege.dbmsAction(dbmsAction, grantees, RevokeGrantType()(pos))(pos)) |
+    group(keyword("REVOKE GRANT") ~~ QualifiedDbmsAction ~~ keyword("ON DBMS FROM") ~~ SymbolicNameOrStringParameterList) ~~>>
+      ((qualifier, dbmsAction, grantees) => pos => ast.RevokePrivilege.dbmsAction(dbmsAction, grantees, RevokeGrantType()(pos), qualifier)(pos))
   }
 
   def RevokeDenyDbmsPrivilege: Rule1[RevokePrivilege] = rule("CATALOG REVOKE DENY dbms privileges") {
     group(keyword("REVOKE DENY") ~~ DbmsAction ~~ keyword("ON DBMS FROM") ~~ SymbolicNameOrStringParameterList) ~~>>
-      ((dbmsAction, grantees) => pos => ast.RevokePrivilege.dbmsAction(dbmsAction, grantees, RevokeDenyType()(pos))(pos))
+      ((dbmsAction, grantees) => pos => ast.RevokePrivilege.dbmsAction(dbmsAction, grantees, RevokeDenyType()(pos))(pos)) |
+    group(keyword("REVOKE DENY") ~~ QualifiedDbmsAction ~~ keyword("ON DBMS FROM") ~~ SymbolicNameOrStringParameterList) ~~>>
+      ((qualifier, dbmsAction, grantees) => pos => ast.RevokePrivilege.dbmsAction(dbmsAction, grantees, RevokeDenyType()(pos), qualifier)(pos))
   }
 
   //` ... ON DATABASE foo TO role`
@@ -520,6 +531,19 @@ trait Statement extends Parser
     group(keyword("ALL") ~~ optional(optional(keyword("DBMS")) ~~ keyword("PRIVILEGES")))~~~> (_ => ast.AllDbmsAction)
   }
 
+  private def QualifiedDbmsAction: Rule2[List[PrivilegeQualifier], AdminAction] = rule("qualified dbms action") {
+    keyword("EXECUTE") ~~ ProcedureKeyword ~~ ProcedureIdentifier ~> (_ => ast.ExecuteProcedureAction)
+  }
+
+  private def ProcedureIdentifier: Rule1[List[PrivilegeQualifier]] = rule("") {
+    keyword("*") ~~~> (pos => List(ast.ProcedureAllQualifier()(pos))) |
+    oneOrMore(NamedProcedure, separator = CommaSep) ~~>> { procedures => pos => procedures.map(p => ast.ProcedureQualifier(p._1, p._2)(pos)) }
+  }
+
+  def NamedProcedure: Rule2[expressions.Namespace, expressions.ProcedureName] = rule("") {
+    Namespace ~ group(ProcedureName | keyword("*") ~~~> (pos => expressions.ProcedureName("*")(pos)))
+  }
+
   private def IndexKeyword: Rule0 = keyword("INDEXES") | keyword("INDEX")
 
   private def ConstraintKeyword: Rule0 = keyword("CONSTRAINTS") | keyword("CONSTRAINT")
@@ -537,6 +561,8 @@ trait Statement extends Parser
   private def RoleKeyword: Rule0 = keyword("ROLES") | keyword("ROLE")
 
   private def UserKeyword: Rule0 = keyword("USERS") | keyword("USER")
+
+  private def ProcedureKeyword: Rule0 = keyword("PROCEDURE") | keyword("PROCEDURES")
 
   private def Graph: Rule1[List[GraphScope]] = rule("on a graph")(
     keyword("ON DEFAULT GRAPH") ~~~> (pos => List(ast.DefaultGraphScope()(pos))) |
