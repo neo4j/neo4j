@@ -24,6 +24,8 @@ import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningSupport.RichHint
 import org.neo4j.cypher.internal.compiler.planner.logical.QueryPlannerKit
 import org.neo4j.cypher.internal.compiler.planner.logical.SortPlanner
+import org.neo4j.cypher.internal.compiler.planner.logical.SortPlanner.SatisfiedForPlan
+import org.neo4j.cypher.internal.compiler.planner.logical.SortPlanner.orderSatisfaction
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.SingleComponentPlanner.planSinglePattern
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.expandSolverStep.planSinglePatternSide
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.expandSolverStep.planSingleProjectEndpoints
@@ -32,7 +34,6 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.leafPlanOptions
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
-import org.neo4j.cypher.internal.ir.ordering.InterestingOrder.FullSatisfaction
 import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.exceptions.InternalException
@@ -60,9 +61,12 @@ case class SingleComponentPlanner(monitor: IDPQueryGraphSolverMonitor,
           ExtraRequirement.empty
         } else {
           new ExtraRequirement[LogicalPlan]() {
-            override def fulfils(plan: LogicalPlan): Boolean = SortPlanner.orderSatisfaction(interestingOrder, context, plan) match {
-              case FullSatisfaction() => true
-              case _ => false
+            override def fulfils(plan: LogicalPlan): Boolean = {
+              val asSortedAsPossible = SatisfiedForPlan(plan)
+              orderSatisfaction(interestingOrder, context, plan) match {
+                case asSortedAsPossible() => true
+                case _ => false
+              }
             }
           }
         }
@@ -137,13 +141,7 @@ case class SingleComponentPlanner(monitor: IDPQueryGraphSolverMonitor,
           if (interestingOrder.isEmpty) {
             best
           } else {
-            val orderedPlans = plans.flatMap(plan => SortPlanner.maybeSortedPlan(plan, interestingOrder, context).filterNot(_ == plan))
-            val ordered = (plans ++ orderedPlans).filter { plan =>
-              SortPlanner.orderSatisfaction(interestingOrder, context, plan) match {
-                case FullSatisfaction() => true
-                case _ => false
-              }
-            }
+            val ordered = plans.flatMap(plan => SortPlanner.planIfAsSortedAsPossible(plan, interestingOrder, context))
             // Also add the best sorted plan into the seed with `true`.
             val bestWithSort = kit.pickBest(ordered).map(p => ((Set(pattern), /* ordered = */true), p))
             best ++ bestWithSort

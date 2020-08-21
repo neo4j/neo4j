@@ -36,7 +36,7 @@ object leafPlanOptions extends LeafPlanFinder {
     val queryPlannerKit = config.toKit(interestingOrder, context)
     val pickBest = config.pickBestCandidate(context)
 
-    val leafPlanCandidateLists = config.leafPlanners.candidates(queryGraph, interestingOrder = interestingOrder, context = context)
+    val leafPlanCandidateLists = config.leafPlanners.candidates(queryGraph, interestingOrder = interestingOrder, context = context).toSet
     val leafPlanCandidateListsWithSelections = queryPlannerKit.select(leafPlanCandidateLists, queryGraph)
 
     val bestPlansPerAvailableSymbols = leafPlanCandidateListsWithSelections
@@ -46,7 +46,7 @@ object leafPlanOptions extends LeafPlanFinder {
       val bestPlan = pickBest(bucket).get
 
       if (interestingOrder.requiredOrderCandidate.nonEmpty) {
-        val sortedLeaves = bucket.flatMap(plan => SortPlanner.maybeSortedPlan(plan, interestingOrder, context))
+        val sortedLeaves = bucket.flatMap(plan => SortPlanner.planIfAsSortedAsPossible(plan, interestingOrder, context))
         val bestSortedPlan = pickBest(sortedLeaves)
         BestResults(bestPlan, bestSortedPlan)
       } else {

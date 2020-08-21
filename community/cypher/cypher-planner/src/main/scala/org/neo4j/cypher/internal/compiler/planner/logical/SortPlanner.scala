@@ -59,6 +59,16 @@ object SortPlanner {
     }
   }
 
+  def planIfAsSortedAsPossible(plan: LogicalPlan, interestingOrder: InterestingOrder, context: LogicalPlanningContext): Option[LogicalPlan] = {
+    // This plan will be fully sorted if possible, but even otherwise it might be as sorted as currently possible.
+    val newPlan = maybeSortedPlan(plan, interestingOrder, context).getOrElse(plan)
+    val asSortedAsPossible = SatisfiedForPlan(plan)
+    orderSatisfaction(interestingOrder, context, newPlan) match {
+      case asSortedAsPossible() => Some(newPlan)
+      case _ => None
+    }
+  }
+
   def ensureSortedPlanWithSolved(plan: LogicalPlan, interestingOrder: InterestingOrder, context: LogicalPlanningContext): LogicalPlan =
     maybeSortedPlan(plan, interestingOrder, context) match {
       case Some(sortedPlan) =>
@@ -71,6 +81,18 @@ object SortPlanner {
 
   def orderSatisfaction(interestingOrder: InterestingOrder, context: LogicalPlanningContext, plan: LogicalPlan): Satisfaction =
     interestingOrder.satisfiedBy(context.planningAttributes.providedOrders.get(plan.id))
+
+  case class SatisfiedForPlan(plan: LogicalPlan) {
+    def unapply(arg: Satisfaction): Boolean = {
+      arg.satisfiedPrefix.nonEmpty && {
+        val dependencies: Set[String] = for {
+          columnOrder <- arg.missingSuffix.toSet[InterestingOrder.ColumnOrder]
+          dependency <- columnOrder.expression.dependencies
+        } yield dependency.name
+        !plan.availableSymbols.exists(dependencies.contains)
+      }
+    }
+  }
 
   private def planSort(plan: LogicalPlan,
                        satisfiedPrefix: Seq[InterestingOrder.ColumnOrder],

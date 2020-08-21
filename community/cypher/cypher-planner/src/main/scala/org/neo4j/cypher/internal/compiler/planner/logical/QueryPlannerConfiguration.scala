@@ -114,6 +114,6 @@ case class QueryPlannerConfiguration(leafPlanners: LeafPlannerIterable,
 case class QueryPlannerKit(select: (LogicalPlan, QueryGraph) => LogicalPlan,
                            pickBest: CandidateSelector,
                            interestingOrder: InterestingOrder) {
-  def select(plans: Seq[LogicalPlan], qg: QueryGraph): Seq[LogicalPlan] =
+  def select(plans: Iterable[LogicalPlan], qg: QueryGraph): Iterable[LogicalPlan] =
     plans.map(plan => select(plan, qg))
 }
