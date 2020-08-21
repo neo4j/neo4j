@@ -77,7 +77,7 @@ object CardinalityCostModel extends CostModel {
   private val PROBE_SEARCH_COST: CostPerRow = 2.4
   private val EAGERNESS_MULTIPLIER: Multiplier = 2.0
 
-  private def costPerRow(plan: LogicalPlan): CostPerRow = plan match {
+  private def costPerRow(plan: LogicalPlan, cardinality: Cardinality): CostPerRow = plan match {
     /*
      * These constants are approximations derived from test runs,
      * see ActualCostCalculationTest
@@ -133,13 +133,20 @@ object CardinalityCostModel extends CostModel {
          _: RightOuterHashJoin |
          _: AbstractSemiApply |
          _: Skip |
-         _: Sort |
          _: Union |
          _: Selection |
          _: ValueHashJoin |
          _: UnwindCollection |
          _: ProcedureCall
     => DEFAULT_COST_PER_ROW
+
+    case _:Sort =>
+      // Sorting is O(n * log(n)). Therefore the cost per row is O(log(n))
+      // This means:
+      // Sorting 1 row has cost 0.03 per row.
+      // Sorting 9 rows has cost 0.1 per row (DEFAULT_COST_PER_ROW).
+      // Sorting 99 rows has cost 0.2 per row.
+      DEFAULT_COST_PER_ROW * Math.log(cardinality.amount + 1)
 
     case _: FindShortestPaths
     => 12.0
@@ -180,7 +187,7 @@ object CardinalityCostModel extends CostModel {
         val lhsCost = plan.lhs.map(p => apply(p, input, cardinalities)).getOrElse(Cost(0))
         val rhsCost = plan.rhs.map(p => apply(p, input, cardinalities)).getOrElse(Cost(0))
         val planCardinality = cardinalityForPlan(plan, cardinalities)
-        val rowCost = costPerRow(plan)
+        val rowCost = costPerRow(plan, planCardinality)
         val costForThisPlan = planCardinality * rowCost
         val totalCost = costForThisPlan + lhsCost + rhsCost
         totalCost
