@@ -60,7 +60,8 @@ object IdRegistry {
 }
 
 class DefaultIdRegistry[I] extends IdRegistry[I] {
-  private var count = -1
+  // Index 0 is reserved for "sorted", so we start with index 1, after incrementing count once.
+  private var count = 0
   private val map = new mutable.HashMap[I, Int]
   private val reverseMap = new mutable.HashMap[Int, I]
   private val compactionMap = new mutable.HashMap[Int, BitSet]
@@ -115,7 +116,7 @@ class DefaultIdRegistry[I] extends IdRegistry[I] {
     target.result()
   }
 
-  override def compacted() = compactionMap.nonEmpty
+  override def compacted(): Boolean = compactionMap.nonEmpty
 }
 
 

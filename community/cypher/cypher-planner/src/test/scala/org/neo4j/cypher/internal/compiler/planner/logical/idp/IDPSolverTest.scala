@@ -24,12 +24,15 @@ import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoMoreInteractions
 import org.neo4j.cypher.internal.compiler.planner.logical.ProjectingSelector
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.time.FakeClock
+import org.neo4j.time.Stopwatch
 
 import scala.collection.immutable.BitSet
 
 class IDPSolverTest extends CypherFunSuite {
 
   private val context: Unit = ()
+  private val neverTimesOut = () => new FakeClock().startStopWatch()
 
   test("Solves a small toy problem") {
     val monitor = mock[IDPSolverMonitor]
@@ -39,7 +42,8 @@ class IDPSolverTest extends CypherFunSuite {
       projectingSelector = firstLongest,
       maxTableSize = 16,
       extraRequirement = ExtraRequirement.empty,
-      iterationDurationLimit = Int.MaxValue
+      iterationDurationLimit = Int.MaxValue,
+      stopWatchFactory = neverTimesOut
     )
 
     val seed = Seq(
@@ -64,7 +68,8 @@ class IDPSolverTest extends CypherFunSuite {
       projectingSelector = firstLongest,
       maxTableSize = 16,
       extraRequirement = CapitalizationRequirement(capitalization),
-      iterationDurationLimit = Int.MaxValue
+      iterationDurationLimit = Int.MaxValue,
+      stopWatchFactory = neverTimesOut
     )
 
     val seed = Seq(
@@ -89,7 +94,8 @@ class IDPSolverTest extends CypherFunSuite {
       projectingSelector = firstLongest,
       maxTableSize = 16,
       extraRequirement = CapitalizationRequirement(capitalization),
-      iterationDurationLimit = Int.MaxValue
+      iterationDurationLimit = Int.MaxValue,
+      stopWatchFactory = neverTimesOut
     )
 
     val seed = Seq(
@@ -106,19 +112,20 @@ class IDPSolverTest extends CypherFunSuite {
   }
 
   test("Compacts table at size limit") {
-    var table: IDPTable[String, Boolean] = null
+    var table: IDPTable[String] = null
     val monitor = mock[IDPSolverMonitor]
     val solver = new IDPSolver[Char, String, Unit](
       monitor = monitor,
       generator = stringAppendingSolverStep(),
       projectingSelector = firstLongest,
-      tableFactory = (registry: IdRegistry[Char], seed: Seed[Char, Boolean, String]) => {
+      tableFactory = (registry: IdRegistry[Char], seed: Seed[Char, String]) => {
         table = spy(IDPTable(registry, seed))
         table
       },
       maxTableSize = 4,
       extraRequirement = ExtraRequirement.empty,
-      iterationDurationLimit = Int.MaxValue
+      iterationDurationLimit = Int.MaxValue,
+      stopWatchFactory = neverTimesOut
     )
 
     val seed: Seq[((Set[Char], Boolean), String)] = Seq(
@@ -136,22 +143,22 @@ class IDPSolverTest extends CypherFunSuite {
 
     verify(monitor).startIteration(1)
     verify(monitor).endIteration(1, 2, 16)
-    verify(table).removeAllTracesOf(BitSet(0, 1))
+    verify(table).removeAllTracesOf(BitSet(1, 2))
     verify(monitor).startIteration(2)
     verify(monitor).endIteration(2, 2, 14)
-    verify(table).removeAllTracesOf(BitSet(2, 8))
+    verify(table).removeAllTracesOf(BitSet(3, 9))
     verify(monitor).startIteration(3)
     verify(monitor).endIteration(3, 2, 12)
-    verify(table).removeAllTracesOf(BitSet(3, 9))
+    verify(table).removeAllTracesOf(BitSet(4, 10))
     verify(monitor).startIteration(4)
     verify(monitor).endIteration(4, 2, 10)
-    verify(table).removeAllTracesOf(BitSet(4, 10))
+    verify(table).removeAllTracesOf(BitSet(5, 11))
     verify(monitor).startIteration(5)
     verify(monitor).endIteration(5, 2, 8)
-    verify(table).removeAllTracesOf(BitSet(5, 11))
+    verify(table).removeAllTracesOf(BitSet(6, 12))
     verify(monitor).startIteration(6)
     verify(monitor).endIteration(6, 3, 6)
-    verify(table).removeAllTracesOf(BitSet(6, 7, 12))
+    verify(table).removeAllTracesOf(BitSet(7, 8, 13))
     verify(monitor).foundPlanAfter(6)
     verifyNoMoreInteractions(monitor)
   }
@@ -168,19 +175,20 @@ class IDPSolverTest extends CypherFunSuite {
   }
 
   def runTimeLimitedSolver(iterationDuration: Int): Int = {
-    var table: IDPTable[String, Boolean] = null
+    var table: IDPTable[String] = null
     val monitor = TestIDPSolverMonitor()
     val solver = new IDPSolver[Char, String, Unit](
       monitor = monitor,
       generator = stringAppendingSolverStep(),
       projectingSelector = firstLongest,
-      tableFactory = (registry: IdRegistry[Char], seed: Seed[Char, Boolean, String]) => {
+      tableFactory = (registry: IdRegistry[Char], seed: Seed[Char, String]) => {
         table = spy(IDPTable(registry, seed))
         table
       },
       maxTableSize = Int.MaxValue,
       extraRequirement = ExtraRequirement.empty,
-      iterationDurationLimit = iterationDuration
+      iterationDurationLimit = iterationDuration,
+      stopWatchFactory = () => Stopwatch.start()
     )
 
     val seed: Seq[((Set[Char], Boolean), String)] = ('a'.toInt to 'm'.toInt).foldLeft(Seq.empty[((Set[Char], Boolean), String)]) { (acc, i) =>
@@ -215,16 +223,15 @@ class IDPSolverTest extends CypherFunSuite {
   }
 
   private case class stringAppendingSolverStep() extends IDPSolverStep[Char, String, Unit] {
-    override def apply(registry: IdRegistry[Char], goal: Goal, table: IDPCache[String, _], context: Unit): Iterator[String] = {
+    override def apply(registry: IdRegistry[Char], goal: Goal, table: IDPCache[String], context: Unit): Iterator[String] = {
       val goalSize = goal.size
-      for (
-        leftGoal <- goal.subsets if leftGoal.size <= goalSize;
-        (_, lhs) <- table(leftGoal);
-        rightGoal = goal &~ leftGoal; // bit set -- operator
-        (_, rhs) <- table(rightGoal);
+      for {
+        leftGoal <- goal.subsets if leftGoal.size <= goalSize
+        lhs <- table(leftGoal).iterator
+        rightGoal = goal &~ leftGoal // bit set -- operator
+        rhs <- table(rightGoal).iterator
         candidate = lhs ++ rhs if isSorted(candidate)
-      )
-        yield candidate
+      } yield candidate
     }
 
     def isSorted(chars: String): Boolean =
@@ -240,7 +247,7 @@ class IDPSolverTest extends CypherFunSuite {
   }
 
   private case class stringAppendingSolverStepWithCapitalization(capitalization: Capitalization) extends IDPSolverStep[Char, String, Unit] {
-    override def apply(registry: IdRegistry[Char], goal: Goal, table: IDPCache[String, _], context: Unit): Iterator[String] = {
+    override def apply(registry: IdRegistry[Char], goal: Goal, table: IDPCache[String], context: Unit): Iterator[String] = {
       stringAppendingSolverStep()(registry, goal, table, context).flatMap { candidate =>
         if (capitalization == null)
           Seq(candidate)

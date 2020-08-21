@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.idp
 
 import org.neo4j.cypher.internal.compiler.planner.logical.idp
-import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -29,21 +28,23 @@ import scala.collection.immutable.BitSet
 class IDPTableTest extends CypherFunSuite {
 
   test("removes all traces of a goal") {
-    val table = new IDPTable[LogicalPlan, InterestingOrder]()
+    val table = new IDPTable[LogicalPlan]()
 
-    addTo(table, BitSet(0))
+    // 0 is the sorted bit
     addTo(table, BitSet(1))
     addTo(table, BitSet(2))
-    addTo(table, BitSet(0, 1))
+    addTo(table, BitSet(3))
     addTo(table, BitSet(1, 2))
-    addTo(table, BitSet(0, 2))
+    addTo(table, BitSet(2, 3))
+    addTo(table, BitSet(1, 3))
 
-    table.removeAllTracesOf(BitSet(0, 1))
+    table.removeAllTracesOf(BitSet(1, 2))
 
-    table.plans.map(_._1._1).toSet should equal(Set(BitSet(2)))
+    table.plans.map(_._1).toSet should equal(Set((BitSet(3), true), (BitSet(3), false)))
   }
 
-  private def addTo(table: IDPTable[LogicalPlan, InterestingOrder], goal: idp.Goal): Unit = {
-    table.put(goal, InterestingOrder.empty, mock[LogicalPlan])
+  private def addTo(table: IDPTable[LogicalPlan], goal: idp.Goal): Unit = {
+    table.put(goal, sorted = false, mock[LogicalPlan])
+    table.put(goal, sorted = true, mock[LogicalPlan])
   }
 }

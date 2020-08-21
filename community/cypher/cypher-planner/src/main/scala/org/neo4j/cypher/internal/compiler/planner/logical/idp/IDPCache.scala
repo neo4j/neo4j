@@ -19,15 +19,29 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.idp
 
+import org.neo4j.cypher.internal.compiler.planner.logical.idp.IDPCache.Results
+
 // Read-only interface to IDPTable
-trait IDPCache[Result,Attribute] {
+trait IDPCache[Result] {
   def size: Int
 
-  def apply(goal: Goal): Seq[(Attribute, Result)]
+  /**
+   * Returns a tuple of a result and a sorted result, if they are in the table.
+   */
+  def apply(goal: Goal): Results[Result]
 
-  def contains(goal: Goal, o: Attribute): Boolean
+  def contains(goal: Goal, sorted: Boolean): Boolean
 
-  def plansOfSize(k: Int): Iterator[((Goal, Attribute), Result)]
+  /**
+   * All plans of size k, which do not have the SORTED_BIT set
+   */
+  def unsortedPlansOfSize(k: Int): Iterator[(Goal, Result)]
 
-  def plans: Iterator[((Goal, Attribute), Result)]
+  def plans: Iterator[((Goal, Boolean), Result)]
+}
+
+object IDPCache {
+  case class Results[Result](result: Option[Result], sortedResult: Option[Result]) {
+    def iterator: Iterator[Result] = result.iterator ++ sortedResult.iterator
+  }
 }

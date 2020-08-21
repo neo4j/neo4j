@@ -22,6 +22,9 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 import scala.collection.immutable.BitSet
 
 package object idp {
+  // Goal with and without sort should really be two different types.
+  // Without opaque types (scala 3), this would have quite the runtime overhead, unfortunately.
   type Goal = BitSet
-  type Seed[SolvableItem, Ordered, Result] = Iterable[((Set[SolvableItem], Ordered), Result)]
+  type SortedGoal = BitSet
+  type Seed[SolvableItem, Result] = Iterable[((Set[SolvableItem], Boolean), Result)]
 }

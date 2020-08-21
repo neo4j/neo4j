@@ -79,7 +79,7 @@ case class AdaptiveSolverStep(qg: QueryGraph, predicate: (QueryGraph, Goal) => B
   private val join = joinSolverStep(qg)
   private val expand = expandSolverStep(qg)
 
-  override def apply(registry: IdRegistry[PatternRelationship], goal: Goal, table: IDPCache[LogicalPlan, _], context: LogicalPlanningContext): Iterator[LogicalPlan] = {
+  override def apply(registry: IdRegistry[PatternRelationship], goal: Goal, table: IDPCache[LogicalPlan], context: LogicalPlanningContext): Iterator[LogicalPlan] = {
     if (!registry.compacted() && predicate(qg, goal))
       expand(registry, goal, table, context)
     else

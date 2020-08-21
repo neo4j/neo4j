@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.ir.SimplePatternLength
-import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NodeHashJoin
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -39,7 +38,7 @@ class JoinSolverStepTest extends CypherFunSuite with LogicalPlanningTestSupport2
   val pattern1 = PatternRelationship("r1", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
   val pattern2 = PatternRelationship("r2", ("b", "c"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
 
-  val table = new IDPTable[LogicalPlan, InterestingOrder]()
+  val table = new IDPTable[LogicalPlan]()
 
   test("does not join based on empty table") {
     implicit val registry: DefaultIdRegistry[PatternRelationship] = IdRegistry[PatternRelationship]
@@ -60,8 +59,8 @@ class JoinSolverStepTest extends CypherFunSuite with LogicalPlanningTestSupport2
 
       val qg = QueryGraph.empty.addPatternNodes("a", "b", "c")
 
-      table.put(register(pattern1), InterestingOrder.empty, plan1)
-      table.put(register(pattern2), InterestingOrder.empty, plan2)
+      table.put(register(pattern1), sorted = false, plan1)
+      table.put(register(pattern2), sorted = false, plan2)
 
       joinSolverStep(qg)(registry, register(pattern1, pattern2), table, ctx).toSet should equal(Set(
         NodeHashJoin(Set("b"), plan1, plan2),
@@ -80,8 +79,8 @@ class JoinSolverStepTest extends CypherFunSuite with LogicalPlanningTestSupport2
 
       val qg = QueryGraph.empty.addPatternNodes("a", "b")
 
-      table.put(register(pattern1), InterestingOrder.empty, plan1)
-      table.put(register(pattern2), InterestingOrder.empty, plan2)
+      table.put(register(pattern1), sorted = false, plan1)
+      table.put(register(pattern2), sorted = false, plan2)
 
       joinSolverStep(qg)(registry, register(pattern1, pattern2), table, ctx).toSet should equal(Set(
         NodeHashJoin(Set("b"), plan1, plan2),
@@ -100,8 +99,8 @@ class JoinSolverStepTest extends CypherFunSuite with LogicalPlanningTestSupport2
 
       val qg = QueryGraph.empty.addPatternNodes("a", "b", "c", "d")
 
-      table.put(register(pattern1), InterestingOrder.empty, plan1)
-      table.put(register(pattern2), InterestingOrder.empty, plan2)
+      table.put(register(pattern1), sorted = false, plan1)
+      table.put(register(pattern2), sorted = false, plan2)
 
       joinSolverStep(qg)(registry, register(pattern1, pattern2), table, ctx) should be(empty)
     }
@@ -119,8 +118,8 @@ class JoinSolverStepTest extends CypherFunSuite with LogicalPlanningTestSupport2
 
       val qg = QueryGraph.empty.addPatternNodes("a", "b", "c")
 
-      table.put(register(pattern1), InterestingOrder.empty, plan1)
-      table.put(register(pattern2), InterestingOrder.empty, plan2)
+      table.put(register(pattern1), sorted = false, plan1)
+      table.put(register(pattern2), sorted = false, plan2)
 
       joinSolverStep(qg, IGNORE_EXPAND_SOLUTIONS_FOR_TEST = true)(registry, register(pattern1, pattern2), table, ctx).toSet should equal(Set(
         NodeHashJoin(Set("b"), plan1, plan2),
@@ -140,8 +139,8 @@ class JoinSolverStepTest extends CypherFunSuite with LogicalPlanningTestSupport2
 
       val qg = QueryGraph.empty.addPatternNodes("a", "b", "c", "d")
 
-      table.put(register(pattern1), InterestingOrder.empty, plan1)
-      table.put(register(pattern2), InterestingOrder.empty, plan2)
+      table.put(register(pattern1), sorted = false, plan1)
+      table.put(register(pattern2), sorted = false, plan2)
 
       joinSolverStep(qg)(registry, register(pattern1, pattern2), table, ctx) should be(empty)
     }
@@ -157,8 +156,8 @@ class JoinSolverStepTest extends CypherFunSuite with LogicalPlanningTestSupport2
 
       val qg = QueryGraph.empty.addPatternNodes("a", "b", "c", "d").addArgumentIds(Seq('x))
 
-      table.put(register(pattern1), InterestingOrder.empty, plan1)
-      table.put(register(pattern2), InterestingOrder.empty, plan2)
+      table.put(register(pattern1), sorted = false, plan1)
+      table.put(register(pattern2), sorted = false, plan2)
 
       joinSolverStep(qg)(registry, register(pattern1, pattern2), table, ctx) should be(empty)
     }
@@ -183,9 +182,9 @@ class JoinSolverStepTest extends CypherFunSuite with LogicalPlanningTestSupport2
       table.removeAllTracesOf(id1)
 
       // Table is not completely compacted
-      table.put(id2, InterestingOrder.empty, plan2)
-      table.put(compactedId1, InterestingOrder.empty, plan1)
-      table.put(compactedId2, InterestingOrder.empty, plan2)
+      table.put(id2, sorted = false, plan2)
+      table.put(compactedId1, sorted = false, plan1)
+      table.put(compactedId2, sorted = false, plan2)
 
       // Goal is completely compacted - should result in expandStillPossible == false
       joinSolverStep(qg)(registry, compactedId1 ++ compactedId2, table, ctx).toSet should equal(Set(

@@ -38,11 +38,11 @@ import org.neo4j.cypher.internal.util.InputPosition
 case class expandSolverStep(qg: QueryGraph) extends IDPSolverStep[PatternRelationship, LogicalPlan, LogicalPlanningContext] {
 
 
-  override def apply(registry: IdRegistry[PatternRelationship], goal: Goal, table: IDPCache[LogicalPlan, _], context: LogicalPlanningContext): Iterator[LogicalPlan] = {
+  override def apply(registry: IdRegistry[PatternRelationship], goal: Goal, table: IDPCache[LogicalPlan], context: LogicalPlanningContext): Iterator[LogicalPlan] = {
     val result: Iterator[Iterator[LogicalPlan]] =
       for {
         patternId <- goal.iterator
-        (interestingOrder, plan) <- table(goal - patternId)
+        plan <- table(goal - patternId).iterator
         pattern <- registry.lookup(patternId)
       } yield {
         if (plan.availableSymbols.contains(pattern.name))

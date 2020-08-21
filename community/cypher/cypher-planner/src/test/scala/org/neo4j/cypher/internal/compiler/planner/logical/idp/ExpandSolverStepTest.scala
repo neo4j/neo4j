@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.ir.SimplePatternLength
-import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.ExpandInto
@@ -41,7 +40,7 @@ class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanningTestSuppor
   private val pattern1 = PatternRelationship("r1", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
   private val pattern2 = PatternRelationship("r2", ("b", "c"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
 
-  private val table = new IDPTable[LogicalPlan, InterestingOrder]()
+  private val table = new IDPTable[LogicalPlan]()
   private val qg = mock[QueryGraph]
 
   test("does not expand based on empty table") {
@@ -57,7 +56,7 @@ class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanningTestSuppor
     new given().withLogicalPlanningContext { (cfg, ctx) =>
       val plan1 = fakeLogicalPlanFor(ctx.planningAttributes, "a", "r1", "b")
       ctx.planningAttributes.solveds.set(plan1.id, RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes("a", "b")))
-      table.put(register(pattern1), InterestingOrder.empty, plan1)
+      table.put(register(pattern1), sorted = false, plan1)
 
       expandSolverStep(qg)(registry, register(pattern1, pattern2), table, ctx).toSet should equal(Set(
         Expand(plan1, "b", SemanticDirection.OUTGOING, Seq.empty, "c", "r2", ExpandAll)
@@ -71,7 +70,7 @@ class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanningTestSuppor
     new given().withLogicalPlanningContext { (cfg, ctx) =>
       val plan1 = fakeLogicalPlanFor(ctx.planningAttributes, "a", "r1", "b")
       ctx.planningAttributes.solveds.set(plan1.id, RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes("a", "b")))
-      table.put(register(pattern1), InterestingOrder.empty, plan1)  // a - [r1] - b
+      table.put(register(pattern1), sorted = false, plan1)  // a - [r1] - b
 
       val patternX = PatternRelationship("r2", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength) // a - [r2] -> b
 
@@ -87,7 +86,7 @@ class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanningTestSuppor
     new given().withLogicalPlanningContext { (cfg, ctx) =>
       val plan1 = fakeLogicalPlanFor(ctx.planningAttributes, "a", "r1", "b")
       ctx.planningAttributes.solveds.set(plan1.id, RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes("a", "b")))
-      table.put(register(pattern1), InterestingOrder.empty, plan1)
+      table.put(register(pattern1), sorted = false, plan1)
 
       val patternX = PatternRelationship("r2", ("x", "y"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
 
@@ -102,7 +101,7 @@ class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanningTestSuppor
     new given().withLogicalPlanningContext { (cfg, ctx) =>
       val plan1 = fakeLogicalPlanFor(ctx.planningAttributes, "a", "r1", "b", "c", "r2", "d")
       ctx.planningAttributes.solveds.set(plan1.id, RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes("a", "b", "c", "d")))
-      table.put(register(pattern1, pattern2), InterestingOrder.empty, plan1)
+      table.put(register(pattern1, pattern2), sorted = false, plan1)
 
       val pattern3 = PatternRelationship("r3", ("b", "c"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
 
@@ -123,7 +122,7 @@ class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanningTestSuppor
       val compactedPattern1 = BitSet(registry.compact(register(pattern1)))
       val compactedPattern2 = BitSet(registry.compact(register(pattern2)))
 
-      table.put(compactedPattern1, InterestingOrder.empty, plan1)
+      table.put(compactedPattern1, sorted = false, plan1)
 
       expandSolverStep(qg)(registry, compactedPattern1 ++ compactedPattern2, table, ctx).toSet should be(empty)
     }

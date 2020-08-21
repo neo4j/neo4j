@@ -19,55 +19,69 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.idp
 
+import org.neo4j.cypher.internal.compiler.planner.logical.idp.IDPCache.Results
+import org.neo4j.cypher.internal.compiler.planner.logical.idp.IDPTable.SORTED_BIT
+import org.neo4j.cypher.internal.compiler.planner.logical.idp.IDPTable.asGoal
+import org.neo4j.cypher.internal.compiler.planner.logical.idp.IDPTable.extractSort
+import org.neo4j.cypher.internal.compiler.planner.logical.idp.IDPTable.incorporateSort
+
 import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
 
 // Table used by IDPSolver to record optimal plans found so far
 //
-class IDPTable[Result, Attribute](private val map: mutable.Map[(Goal, Attribute), Result] = mutable.Map.empty[(Goal, Attribute), Result]) extends IDPCache[Result, Attribute] {
+class IDPTable[Result](private val map: mutable.Map[SortedGoal, Result] = mutable.Map.empty[SortedGoal, Result]) extends IDPCache[Result] {
 
   def size: Int = map.size
 
-  def put(goal: Goal, attribute: Attribute, result: Result): Unit = {
-    map.put((goal, attribute), result)
+  def put(goal: Goal, sorted: Boolean, result: Result): Unit = {
+    map.put(incorporateSort(goal, sorted), result)
   }
 
-  def apply(goal: Goal): Seq[(Attribute, Result)] = {
-    val buffer = new ArrayBuffer[(Attribute, Result)]()
-    map.foreach {
-      goal_attr_result =>
-        if (sameGoal(goal, goal_attr_result._1._1)) {
-          buffer += ((goal_attr_result._1._2, goal_attr_result._2))
-        }
-    }
-    buffer
+  def apply(goal: Goal): Results[Result] = {
+    Results(map.get(goal), map.get(goal + SORTED_BIT))
   }
 
-  def contains(goal: Goal, attribute: Attribute): Boolean = map.contains((goal, attribute))
+  def contains(goal: Goal, sorted: Boolean): Boolean = map.contains(incorporateSort(goal, sorted))
 
-  def plansOfSize(k: Int): Iterator[((Goal, Attribute), Result)] = map.iterator.filter(_._1._1.size == k)
+  def unsortedPlansOfSize(k: Int): Iterator[(Goal, Result)] = map.iterator.collect {
+    case (sortedGoal, result) if !sortedGoal(SORTED_BIT) && sortedGoal.size == k => (asGoal(sortedGoal), result)
+  }
 
-  def plans: Iterator[((Goal, Attribute), Result)] = map.iterator
+  def plans: Iterator[((Goal, Boolean), Result)] = map.iterator.map {
+    case (sortedGoal, result) => (extractSort(sortedGoal), result)
+  }
 
   def removeAllTracesOf(goal: Goal): Unit = {
-    val toDrop = map.keysIterator.filter { case (entry, _) => (entry & goal).nonEmpty }
+    // It is OK and required not to convert the goal to a sorted goal here.
+    // We want to drop the entries which solve a subset of what goal solves,
+    // regardless ordering.
+    val toDrop = map.keysIterator.filter { entry => (entry & goal).nonEmpty }
     toDrop.foreach(map.remove)
   }
 
-  private def sameGoal(goalA: Goal, goalB: Goal) = {
-    (goalA eq goalB) ||
-      (goalA.size == goalB.size && goalA.subsetOf(goalB))
-  }
-
-  override def toString: String = s"IDPPlanTable(numberOfPlans=$size, largestSolved=${map.keySet.map(_._1.size).max})"
+  override def toString: String = s"IDPPlanTable(numberOfPlans=$size, largestSolved=${map.keySet.map(sortedGoal => asGoal(sortedGoal).size).max})"
 }
 
 object IDPTable {
-  def apply[X, O, P](registry: IdRegistry[X], seed: Seed[X, O, P]): IDPTable[P, O] = {
-    val builder = mutable.Map.newBuilder[(Goal, O), P]
+  val SORTED_BIT = 0
+
+  def apply[Solvable, Result](registry: IdRegistry[Solvable], seed: Seed[Solvable, Result]): IDPTable[Result] = {
+    val builder = mutable.Map.newBuilder[Goal, Result]
     if (seed.hasDefiniteSize)
       builder.sizeHint(seed.size)
-    seed.foreach { case ((goal, o), product) => builder += (registry.registerAll(goal), o) -> product }
-    new IDPTable[P, O](builder.result())
+    seed.foreach { case ((goal, sorted), product) => builder += incorporateSort(registry.registerAll(goal), sorted) -> product }
+    new IDPTable[Result](builder.result())
+  }
+
+  private def incorporateSort(goal: Goal, sorted: Boolean): SortedGoal = {
+    if (sorted) goal + SORTED_BIT else goal
+  }
+
+  private def extractSort(goal: SortedGoal): (Goal, Boolean) = {
+    (asGoal(goal), goal(SORTED_BIT))
+  }
+
+  private def asGoal(goal: SortedGoal): Goal = {
+    goal - SORTED_BIT
   }
 }

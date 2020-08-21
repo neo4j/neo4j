@@ -63,25 +63,26 @@ case class BestResults[+Result](bestResult: Result,
 class IDPSolver[Solvable, Result, Context](generator: IDPSolverStep[Solvable, Result, Context], // generates candidates at each step
                                            projectingSelector: ProjectingSelector[Result], // pick best from a set of candidates
                                            registryFactory: () => IdRegistry[Solvable] = () => IdRegistry[Solvable], // maps from Set[S] to BitSet
-                                           tableFactory: (IdRegistry[Solvable], Seed[Solvable, Boolean, Result]) => IDPTable[Result, Boolean] = (registry: IdRegistry[Solvable], seed: Seed[Solvable, Boolean, Result]) => IDPTable(registry, seed),
+                                           tableFactory: (IdRegistry[Solvable], Seed[Solvable, Result]) => IDPTable[Result] = (registry: IdRegistry[Solvable], seed: Seed[Solvable, Result]) => IDPTable(registry, seed),
                                            maxTableSize: Int, // limits computation effort, reducing result quality
                                            iterationDurationLimit: Long, // limits computation effort, reducing result quality
                                            extraRequirement: ExtraRequirement[Result],
-                                           monitor: IDPSolverMonitor) {
+                                           monitor: IDPSolverMonitor,
+                                           stopWatchFactory: () => Stopwatch) {
 
-  def apply(seed: Seed[Solvable, Boolean, Result], initialToDo: Set[Solvable], context: Context): BestResults[Result] = {
+  def apply(seed: Seed[Solvable, Result], initialToDo: Set[Solvable], context: Context): BestResults[Result] = {
     val registry = registryFactory()
     val table = tableFactory(registry, seed)
     var toDo = registry.registerAll(initialToDo)
 
     // utility functions
-    val goalSelector: Selector[((Goal, Boolean), Result)] = projectingSelector.apply[((Goal, Boolean), Result)](_._2, _)
+    val goalSelector: Selector[(Goal, Result)] = projectingSelector.apply[(Goal, Result)](_._2, _)
 
     def generateBestCandidates(maxBlockSize: Int): Int = {
       var largestFinishedIteration = 0
       var blockSize = 1
       var keepGoing = true
-      val start = Stopwatch.start()
+      val start = stopWatchFactory()
 
       while (keepGoing && blockSize <= maxBlockSize) {
         var foundNoCandidate = true
@@ -89,7 +90,7 @@ class IDPSolver[Solvable, Result, Context](generator: IDPSolverStep[Solvable, Re
         val goals = toDo.subsets(blockSize)
         while (keepGoing && goals.hasNext) {
           val goal = goals.next()
-          if (table(goal).isEmpty) {
+          if (table(goal).result.isEmpty) {
             val candidates = LazyIterable(generator(registry, goal, table, context))
             val (extraCandidates, baseCandidates) = candidates.partition(extraRequirement.fulfils)
             val bestExtraCandidate = projectingSelector(extraCandidates)
@@ -100,13 +101,13 @@ class IDPSolver[Solvable, Result, Context](generator: IDPSolverStep[Solvable, Re
             // therefore it is enough to cost estimate the bestExtraCandidate against all baseCandidates.
             projectingSelector(baseCandidates ++ bestExtraCandidate.toIterable).foreach { candidate =>
               foundNoCandidate = false
-              table.put(goal, false, candidate)
+              table.put(goal, sorted = false, candidate)
             }
             // Also add the best candidate from all candidates that fulfil the requirement into the table
             // with `true`.
             bestExtraCandidate.foreach { candidate =>
               foundNoCandidate = false
-              table.put(goal, true, candidate)
+              table.put(goal, sorted = true, candidate)
             }
             keepGoing = blockSize == 2 ||
               (table.size <= maxTableSize && !start.hasTimedOut(iterationDurationLimit, TimeUnit.MILLISECONDS))
@@ -118,9 +119,12 @@ class IDPSolver[Solvable, Result, Context](generator: IDPSolverStep[Solvable, Re
     }
 
     def findBestCandidateInBlock(blockSize: Int): Goal = {
-      val blockCandidates: Iterable[((Goal, Boolean), Result)] = LazyIterable(table.plansOfSize(blockSize)).toIndexedSeq
-      val bestInBlock: Option[((Goal, Boolean), Result)] = goalSelector(blockCandidates)
-      val ((goal, _), _) = bestInBlock.getOrElse {
+      // Find all candidates that solve the highest number of relationships, ignoring sorted plans.
+      val blockCandidates: Iterable[(Goal, Result)] = LazyIterable(table.unsortedPlansOfSize(blockSize)).toIndexedSeq
+      // Select the best of those. These candidates solve different things.
+      // The best of the candidates is likely to appear in larger plans, so it is a good idea to compact that one.
+      val bestInBlock: Option[(Goal, Result)] = goalSelector(blockCandidates)
+      val (goal, _) = bestInBlock.getOrElse {
         throw new IllegalStateException(
           s"""Found no solution for block with size $blockSize,
              |$blockCandidates were the selected candidates from the table $table""".stripMargin)
@@ -130,10 +134,9 @@ class IDPSolver[Solvable, Result, Context](generator: IDPSolverStep[Solvable, Re
 
     def compactBlock(original: Goal): Unit = {
       val newId = registry.compact(original)
-      table(original).foreach {
-        case (fulfilsReq, result) =>
-          table.put(BitSet.empty + newId, fulfilsReq, result)
-      }
+      val IDPCache.Results(result, sortedResult) = table(original)
+      result.foreach { table.put(BitSet.empty + newId, sorted = false, _) }
+      sortedResult.foreach { table.put(BitSet.empty + newId, sorted = true, _) }
       toDo = toDo -- original + newId
       table.removeAllTracesOf(original)
     }
@@ -153,6 +156,10 @@ class IDPSolver[Solvable, Result, Context](generator: IDPSolverStep[Solvable, Re
            |for a larger sub-plan table and longer planning time.""".stripMargin)
       val bestGoal = findBestCandidateInBlock(largestFinished)
       monitor.endIteration(iterations, largestFinished, table.size)
+      // Compaction is either done at the very end of the algorithm, or when we hit a table size or time limit.
+      // In the latter case, the goal is the one with the best (unsorted) result.
+      // In the view of compaction, it does not matter which goal we compact, but is important to keep both the sorted and unsorted
+      // results of that goal.
       compactBlock(bestGoal)
     }
     monitor.foundPlanAfter(iterations)

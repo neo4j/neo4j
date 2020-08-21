@@ -36,6 +36,7 @@ import org.neo4j.cypher.internal.ir.ordering.InterestingOrder.FullSatisfaction
 import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.exceptions.InternalException
+import org.neo4j.time.Stopwatch
 
 /**
  * This class contains the main IDP loop in the cost planner.
@@ -80,7 +81,8 @@ case class SingleComponentPlanner(monitor: IDPQueryGraphSolverMonitor,
           maxTableSize = solverConfig.maxTableSize,
           iterationDurationLimit = solverConfig.iterationDurationLimit,
           extraRequirement = orderRequirement,
-          monitor = monitor
+          monitor = monitor,
+          stopWatchFactory = Stopwatch.start
         )
 
         monitor.initTableFor(qg)
@@ -122,7 +124,7 @@ case class SingleComponentPlanner(monitor: IDPQueryGraphSolverMonitor,
   private def planFullyCoversQG(qg: QueryGraph, plan: LogicalPlan) =
     (qg.idsWithoutOptionalMatchesOrUpdates -- plan.availableSymbols -- qg.argumentIds).isEmpty
 
-  private def initTable(qg: QueryGraph, kit: QueryPlannerKit, leaves: Set[LogicalPlan], context: LogicalPlanningContext, interestingOrder: InterestingOrder): Set[((Set[PatternRelationship], Boolean), LogicalPlan)] = {
+  private def initTable(qg: QueryGraph, kit: QueryPlannerKit, leaves: Set[LogicalPlan], context: LogicalPlanningContext, interestingOrder: InterestingOrder): Seed[PatternRelationship, LogicalPlan] = {
     for (pattern <- qg.patternRelationships)
       yield {
         val plans = planSinglePattern(qg, pattern, leaves, interestingOrder, context).map(plan => kit.select(plan, qg))
