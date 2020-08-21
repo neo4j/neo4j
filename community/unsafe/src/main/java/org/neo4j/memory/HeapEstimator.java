@@ -407,6 +407,11 @@ public final class HeapEstimator
         return alignObjectSize( size );
     }
 
+    public static long sizeOf( Object o )
+    {
+        return sizeOfObject( o, 0, 0 );
+    }
+
     /**
      * Returns the shallow size in bytes of the Object[] object.
      */

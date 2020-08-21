@@ -63,6 +63,7 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.memory.HeapEstimator;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
@@ -71,12 +72,15 @@ import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
+import org.neo4j.storageengine.api.UpdateMode;
 import org.neo4j.util.FeatureToggles;
 import org.neo4j.util.VisibleForTesting;
+import org.neo4j.values.storable.Value;
 
 import static java.lang.String.format;
 import static java.util.stream.Collectors.joining;
 import static org.eclipse.collections.impl.utility.ArrayIterate.contains;
+import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
 
 /**
@@ -119,17 +123,20 @@ public class MultipleIndexPopulator
     private static final String POPULATION_WORK_FLUSH_TAG = "populationWorkFlush";
     public static final String QUEUE_THRESHOLD_NAME = "queue_threshold";
     public static final String BATCH_SIZE_NAME = "batch_size";
+    public static final String BATCH_MAX_BYTE_SIZE_NAME = "batch_max_byte_size";
     static final String AWAIT_TIMEOUT_MINUTES_NAME = "await_timeout_minutes";
     private static final String EOL = System.lineSeparator();
 
     private final int QUEUE_THRESHOLD = FeatureToggles.getInteger( MultipleIndexPopulator.class, QUEUE_THRESHOLD_NAME, 20_000 );
     private final int BATCH_SIZE_SCAN = FeatureToggles.getInteger( MultipleIndexPopulator.class, BATCH_SIZE_NAME, 10_000 );
+    final int BATCH_MAX_BYTE_SIZE_SCAN = FeatureToggles.getInteger( MultipleIndexPopulator.class, BATCH_MAX_BYTE_SIZE_NAME, (int) mebiBytes( 10 ) );
     private final boolean PRINT_DEBUG = FeatureToggles.flag( MultipleIndexPopulator.class, "print_debug", false );
     private final int AWAIT_TIMEOUT_MINUTES = FeatureToggles.getInteger( MultipleIndexPopulator.class, AWAIT_TIMEOUT_MINUTES_NAME, 30 );
 
     // Concurrency queue since multiple concurrent threads may enqueue updates into it. It is important for this queue
     // to have fast #size() method since it might be drained in batches
     private final Queue<IndexEntryUpdate<?>> concurrentUpdateQueue = new LinkedBlockingQueue<>();
+    private final AtomicLong concurrentUpdateQueueByteSize = new AtomicLong();
 
     // Populators are added into this list. The same thread adding populators will later call #createStoreScan.
     // Multiple concurrent threads might fail individual populations.
@@ -241,6 +248,7 @@ public class MultipleIndexPopulator
     void queueConcurrentUpdate( IndexEntryUpdate<?> update )
     {
         concurrentUpdateQueue.add( update );
+        concurrentUpdateQueueByteSize.addAndGet( roughSizeOfUpdate( update ) );
     }
 
     /**
@@ -476,7 +484,7 @@ public class MultipleIndexPopulator
     private boolean applyConcurrentUpdateQueue( int queueThreshold, long currentlyIndexedNodeId )
     {
         int queueSize = concurrentUpdateQueue.size();
-        if ( queueSize > 0 && queueSize >= queueThreshold )
+        if ( (queueSize > 0 && queueSize >= queueThreshold) || concurrentUpdateQueueByteSize.get() >= BATCH_MAX_BYTE_SIZE_SCAN )
         {
             if ( PRINT_DEBUG )
             {
@@ -486,12 +494,17 @@ public class MultipleIndexPopulator
             // This is because 'currentlyIndexedNodeId' is based on how far the scan has come.
             flushAll();
 
+            long updateByteSizeDrained = 0;
             try ( MultipleIndexUpdater updater = newPopulatingUpdater( propertyAccessor, cursorTracer ) )
             {
                 do
                 {
                     // no need to check for null as nobody else is emptying this queue
                     IndexEntryUpdate<?> update = concurrentUpdateQueue.poll();
+                    // Since updates can be added concurrently with us draining the queue simply setting the value to 0
+                    // after drained will not be 100% synchronized with the queue contents and could potentially cause a large
+                    // drift over time. Therefore each update polled from the queue will subtract its size instead.
+                    updateByteSizeDrained += update != null ? roughSizeOfUpdate( update ) : 0;
                     storeScan.acceptUpdate( updater, update, currentlyIndexedNodeId );
                     if ( PRINT_DEBUG )
                     {
@@ -499,6 +512,7 @@ public class MultipleIndexPopulator
                     }
                 }
                 while ( !concurrentUpdateQueue.isEmpty() );
+                concurrentUpdateQueueByteSize.addAndGet( -updateByteSizeDrained );
             }
             if ( PRINT_DEBUG )
             {
@@ -658,6 +672,7 @@ public class MultipleIndexPopulator
         private final ReentrantLock populatorLock = new ReentrantLock();
 
         List<IndexEntryUpdate<?>> batchedUpdatesFromScan;
+        private long sizeOfBatchedUpdates;
 
         IndexPopulation( IndexPopulator populator, IndexDescriptor indexDescriptor, FlippableIndexProxy flipper,
                 FailedIndexProxyFactory failedIndexProxyFactory, String indexUserDescription )
@@ -797,7 +812,8 @@ public class MultipleIndexPopulator
         boolean addToBatchFromScan( IndexEntryUpdate<?> update )
         {
             batchedUpdatesFromScan.add( update );
-            return batchedUpdatesFromScan.size() >= BATCH_SIZE_SCAN;
+            sizeOfBatchedUpdates += roughSizeOfUpdate( update );
+            return batchedUpdatesFromScan.size() >= BATCH_SIZE_SCAN || sizeOfBatchedUpdates >= BATCH_MAX_BYTE_SIZE_SCAN;
         }
 
         List<IndexEntryUpdate<?>> takeCurrentBatchFromScan()
@@ -808,6 +824,7 @@ public class MultipleIndexPopulator
             }
             List<IndexEntryUpdate<?>> batch = batchedUpdatesFromScan;
             batchedUpdatesFromScan = new ArrayList<>( BATCH_SIZE_SCAN );
+            sizeOfBatchedUpdates = 0;
             return batch;
         }
 
@@ -832,6 +849,29 @@ public class MultipleIndexPopulator
         {
             return populator.progress( storeScanProgress );
         }
+    }
+
+    private static long roughSizeOfUpdate( IndexEntryUpdate<?> update )
+    {
+        return heapSizeOf( update.values() ) + (update.updateMode() == UpdateMode.CHANGED ? heapSizeOf( update.beforeValues() ) : 0);
+    }
+
+    private static long heapSizeOf( Value[] values )
+    {
+        long size = 0;
+        if ( values != null )
+        {
+            for ( Value value : values )
+            {
+                size += heapSizeOf( value );
+            }
+        }
+        return size;
+    }
+
+    private static long heapSizeOf( Value value )
+    {
+        return HeapEstimator.sizeOf( value.asObject() );
     }
 
     private class EntityPopulationVisitor implements Visitor<EntityUpdates,

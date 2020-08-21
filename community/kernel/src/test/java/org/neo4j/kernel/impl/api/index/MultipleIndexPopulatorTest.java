@@ -28,7 +28,6 @@ import java.util.concurrent.Callable;
 import java.util.function.IntPredicate;
 
 import org.neo4j.common.EntityType;
-import org.neo4j.common.Subject;
 import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -40,17 +39,22 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.exceptions.index.FlipFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.api.index.MultipleIndexPopulator.IndexPopulation;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.memory.HeapEstimator;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.test.InMemoryTokens;
+import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.Values;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -68,7 +72,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
-import static org.neo4j.common.Subject.ANONYMOUS;
 import static org.neo4j.common.Subject.AUTH_DISABLED;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.api.index.IndexQueryHelper.add;
@@ -517,6 +520,67 @@ class MultipleIndexPopulatorTest
 
         verify( indexStatisticsStore ).replaceStats( 1, sample );
         verify( schemaState ).clear();
+    }
+
+    @Test
+    void shouldFlushScanBatchesEarlierWhenHittingMaxBatchByteSize() throws FlipFailedKernelException, IndexPopulationFailedKernelException
+    {
+        // given
+        IndexPopulator populator = createIndexPopulator();
+        IndexPopulation population = addPopulator( populator, 1 );
+        multipleIndexPopulator.create( NULL );
+        String largeString = new String( characters( 100_000 ) );
+        int roughlyNumUpdates = (int) (multipleIndexPopulator.BATCH_MAX_BYTE_SIZE_SCAN / HeapEstimator.sizeOf( largeString ));
+        Value largeStringValue = Values.stringValue( largeString );
+        IndexDescriptor indexDescriptor = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 0, 1 ) ).withName( "name" ).materialise( 99 );
+        boolean full = false;
+
+        // when
+        for ( int i = 0; !full && i < roughlyNumUpdates * 2; i++ )
+        {
+            IndexEntryUpdate<IndexDescriptor> largeUpdate = IndexEntryUpdate.add( i, indexDescriptor, largeStringValue );
+            full = population.addToBatchFromScan( largeUpdate );
+        }
+
+        // then
+        assertThat( full ).isTrue();
+        multipleIndexPopulator.flipAfterStoreScan( false, NULL );
+    }
+
+    @Test
+    void shouldApplyConcurrentUpdatesEarlierWhenHittingMaxBatchByteSize() throws FlipFailedKernelException
+    {
+        // given
+        IndexPopulator populator = createIndexPopulator();
+        multipleIndexPopulator.create( NULL );
+        String largeString = new String( characters( 100_000 ) );
+        int roughlyNumUpdates = (int) (multipleIndexPopulator.BATCH_MAX_BYTE_SIZE_SCAN / HeapEstimator.sizeOf( largeString ));
+        Value largeStringValue = Values.stringValue( largeString );
+        IndexDescriptor indexDescriptor = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 0, 1 ) ).withName( "name" ).materialise( 99 );
+        multipleIndexPopulator.createStoreScan( NULL );
+        boolean full = false;
+
+        // when
+        for ( int i = 0; !full && i < roughlyNumUpdates * 2; i++ )
+        {
+            IndexEntryUpdate<IndexDescriptor> largeUpdate = IndexEntryUpdate.add( i, indexDescriptor, largeStringValue );
+            multipleIndexPopulator.queueConcurrentUpdate( largeUpdate );
+            full = multipleIndexPopulator.applyConcurrentUpdateQueueBatched( Long.MAX_VALUE );
+        }
+
+        // then
+        assertThat( full ).isTrue();
+    }
+
+    private static char[] characters( int count )
+    {
+        char[] chars = new char[count];
+        for ( int i = 0; i < chars.length; i++ )
+        {
+            // abcabcabc...
+            chars[i] = (char) ('a' + i % 3);
+        }
+        return chars;
     }
 
     private static IndexEntryUpdate<?> createIndexEntryUpdate( LabelSchemaDescriptor schemaDescriptor )
