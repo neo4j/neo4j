@@ -490,6 +490,12 @@ class DefaultRelationshipTraversalCursorTest
         }
 
         @Override
+        public RawIterator<AnyValue[],ProcedureException> procedureCallDbms( int id, AnyValue[] arguments, ProcedureCallContext context )
+        {
+            return null;
+        }
+
+        @Override
         public AnyValue functionCall( int id, AnyValue[] arguments )
         {
             return null;
