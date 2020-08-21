@@ -106,10 +106,10 @@ class SslPolicyConfigValidatorTest
         builder.set( GraphDatabaseSettings.neo4j_home, homeDir.toAbsolutePath() );
         builder.set( policyConfig.base_directory, Path.of( "certificates/testing" ) );
 
-        Path privateKey = testDirectory.directoryPath( "/path/to/my.key" );
-        Path publicCertificate = testDirectory.directoryPath( "/path/to/my.crt" );
-        Path trustedDir = testDirectory.directoryPath( "/some/other/path/to/trusted" );
-        Path revokedDir = testDirectory.directoryPath( "/some/other/path/to/revoked" );
+        Path privateKey = testDirectory.directoryPath( "path/to/my.key" );
+        Path publicCertificate = testDirectory.directoryPath( "path/to/my.crt" );
+        Path trustedDir = testDirectory.directoryPath( "some/other/path/to/trusted" );
+        Path revokedDir = testDirectory.directoryPath( "some/other/path/to/revoked" );
 
         builder.set( policyConfig.private_key, privateKey.toAbsolutePath() );
         builder.set( policyConfig.public_certificate, publicCertificate.toAbsolutePath() );
