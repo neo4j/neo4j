@@ -322,8 +322,6 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
         indexOn("Awesome", "prop").providesOrder(orderCapability)
       } getLogicalPlanFor s"MATCH (m:Awesome)--()--(), (n:Awesome) WHERE n.prop > 'foo' RETURN m.prop ORDER BY m.prop $cypherToken"
 
-      val expectedIndexOrder = if (orderCapability.asc) IndexOrderAscending else IndexOrderDescending
-
       plan._2 shouldBe a[Sort]
       plan._2.treeCount {
         case _: Sort => true
