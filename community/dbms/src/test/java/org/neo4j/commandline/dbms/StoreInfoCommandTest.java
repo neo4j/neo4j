@@ -21,23 +21,23 @@ package org.neo4j.commandline.dbms;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import picocli.CommandLine;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 
+import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.ExecutionContext;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
-import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_4;
 import org.neo4j.kernel.internal.locker.DatabaseLocker;
 import org.neo4j.kernel.internal.locker.Locker;
@@ -50,7 +50,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.STORE_VERSION;
 
@@ -63,18 +62,19 @@ class StoreInfoCommandTest
     private FileSystemAbstraction fileSystem;
     @Inject
     private PageCache pageCache;
-    private Path databaseDirectory;
+    private Path fooDbDirectory;
     private StoreInfoCommand command;
     private PrintStream out;
-    private DatabaseLayout databaseLayout;
+    private DatabaseLayout fooDbLayout;
+    private Path homeDir;
 
     @BeforeEach
     void setUp() throws Exception
     {
-        Path homeDir = testDirectory.directoryPath( "home-dir" );
-        databaseDirectory = homeDir.resolve( "data/databases/foo" );
-        databaseLayout = DatabaseLayout.ofFlat( databaseDirectory );
-        Files.createDirectories( databaseDirectory );
+        homeDir = testDirectory.directoryPath( "home-dir" );
+        fooDbDirectory = homeDir.resolve( "data/databases/foo" );
+        fooDbLayout = DatabaseLayout.ofFlat( fooDbDirectory );
+        fileSystem.mkdirs( fooDbDirectory.toFile() );
 
         out = mock( PrintStream.class );
         command = new StoreInfoCommand( new ExecutionContext( homeDir, homeDir, out, mock( PrintStream.class ), testDirectory.getFileSystem() ) );
@@ -93,7 +93,7 @@ class StoreInfoCommandTest
                         "%n" +
                         "USAGE%n" +
                         "%n" +
-                        "store-info [--verbose] <storePath>%n" +
+                        "store-info [--all] [--structured] [--verbose] <path>%n" +
                         "%n" +
                         "DESCRIPTION%n" +
                         "%n" +
@@ -102,54 +102,66 @@ class StoreInfoCommandTest
                         "%n" +
                         "PARAMETERS%n" +
                         "%n" +
-                        "      <storePath>   Path to database store.%n" +
+                        "      <path>         Path to database store files, or databases directory if%n" +
+                        "                       --all option is used%n" +
                         "%n" +
                         "OPTIONS%n" +
                         "%n" +
-                        "      --verbose     Enable verbose output."
+                        "      --verbose      Enable verbose output.%n" +
+                        "      --structured   Return result structured as json%n" +
+                        "      --all          Return store info for all databases at provided path"
         ) );
     }
 
     @Test
     void nonExistingDatabaseShouldThrow()
     {
-        CommandLine.populateCommand( command, Paths.get( "yaba", "daba", "doo" ).toFile().getAbsolutePath() );
-        IllegalArgumentException exception = assertThrows( IllegalArgumentException.class, () -> command.execute() );
-        assertThat( exception.getMessage() ).contains( "does not contain a database" );
+        var notADirArgs = args( Paths.get( "yaba", "daba", "doo" ), false, false );
+        CommandLine.populateCommand( command, notADirArgs );
+        var notADirException = assertThrows( CommandFailedException.class, () -> command.execute() );
+        assertThat( notADirException.getMessage() ).contains( "must point to a directory" );
+
+        var dir = testDirectory.directoryPath( "not-a-db" );
+        var notADbArgs = args( dir, false, false );
+        CommandLine.populateCommand( command, notADbArgs );
+        var notADbException = assertThrows( CommandFailedException.class, () -> command.execute() );
+        assertThat( notADbException.getMessage() ).contains( "does not contain the store files of a database" );
     }
 
     @Test
     void readsLatestStoreVersionCorrectly() throws Exception
     {
-        RecordFormats currentFormat = RecordFormatSelector.defaultFormat();
-        prepareNeoStoreFile( currentFormat.storeVersion() );
-        CommandLine.populateCommand( command, databaseDirectory.toFile().getAbsolutePath() );
+        var currentFormat = RecordFormatSelector.defaultFormat();
+        prepareNeoStoreFile( currentFormat.storeVersion(), fooDbLayout );
+        CommandLine.populateCommand( command, fooDbDirectory.toFile().getAbsolutePath() );
         command.execute();
 
-        verify( out ).println( String.format( "Store format version:         %s", currentFormat.storeVersion() ) );
-        verify( out ).println( String.format( "Store format introduced in:   %s", currentFormat.introductionVersion() ) );
-        verifyNoMoreInteractions( out );
+        verify( out ).print( Mockito.<String>argThat( result ->
+            result.contains( String.format( "Store format version:         %s", currentFormat.storeVersion() ) ) &&
+            result.contains( String.format( "Store format introduced in:   %s", currentFormat.introductionVersion() ) )
+        ) );
     }
 
     @Test
     void readsOlderStoreVersionCorrectly() throws Exception
     {
-        prepareNeoStoreFile( StandardV3_4.RECORD_FORMATS.storeVersion() );
-        CommandLine.populateCommand( command, databaseDirectory.toFile().getAbsolutePath() );
+        prepareNeoStoreFile( StandardV3_4.RECORD_FORMATS.storeVersion(), fooDbLayout );
+        CommandLine.populateCommand( command, fooDbDirectory.toFile().getAbsolutePath() );
         command.execute();
 
-        verify( out ).println( "Store format version:         v0.A.9" );
-        verify( out ).println( "Store format introduced in:   3.4.0" );
-        verify( out ).println( "Store format superseded in:   4.0.0" );
-        verifyNoMoreInteractions( out );
+        verify( out ).print( Mockito.<String>argThat( result ->
+            result.contains( "Store format version:         v0.A.9" ) &&
+            result.contains( "Store format introduced in:   3.4.0" ) &&
+            result.contains( "Store format superseded in:   4.0.0" )
+        ) );
     }
 
     @Test
     void throwsOnUnknownVersion() throws Exception
     {
-        prepareNeoStoreFile( "v9.9.9" );
-        CommandLine.populateCommand( command, databaseDirectory.toFile().getAbsolutePath() );
-        Exception exception = assertThrows( Exception.class, () -> command.execute() );
+        prepareNeoStoreFile( "v9.9.9", fooDbLayout );
+        CommandLine.populateCommand( command, fooDbDirectory.toFile().getAbsolutePath() );
+        var exception = assertThrows( Exception.class, () -> command.execute() );
         assertThat( exception ).hasRootCauseInstanceOf( IllegalArgumentException.class );
         assertThat( exception.getMessage() ).contains( "Unknown store version 'v9.9.9'" );
     }
@@ -157,30 +169,150 @@ class StoreInfoCommandTest
     @Test
     void respectLockFiles() throws IOException
     {
-        RecordFormats currentFormat = RecordFormatSelector.defaultFormat();
-        prepareNeoStoreFile( currentFormat.storeVersion() );
+        var currentFormat = RecordFormatSelector.defaultFormat();
+        prepareNeoStoreFile( currentFormat.storeVersion(), fooDbLayout );
 
-        try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-              Locker locker = new DatabaseLocker( fileSystem, databaseLayout ) )
+        try ( Locker locker = new DatabaseLocker( fileSystem, fooDbLayout ) )
         {
             locker.checkLock();
-            CommandLine.populateCommand( command, databaseDirectory.toFile().getAbsolutePath() );
-            Exception exception = assertThrows( Exception.class, () -> command.execute() );
-            assertEquals( "The database is in use. Stop database 'foo' and try again.", exception.getMessage() );
+            CommandLine.populateCommand( command, fooDbDirectory.toFile().getAbsolutePath() );
+            var exception = assertThrows( Exception.class, () -> command.execute() );
+            assertEquals( "Failed to execute command as the database 'foo' is in use. Please stop it and try again.", exception.getMessage() );
         }
     }
 
-    private void prepareNeoStoreFile( String storeVersion ) throws IOException
+    @Test
+    void doesNotThrowWhenUsingAllAndSomeDatabasesLocked() throws IOException
     {
-        Path neoStoreFile = createNeoStoreFile();
-        long value = MetaDataStore.versionStringToLong( storeVersion );
+        // given
+        var currentFormat = RecordFormatSelector.defaultFormat();
+
+        var barDbDirectory = homeDir.resolve( "data/databases/bar" );
+        var barDbLayout = DatabaseLayout.ofFlat( barDbDirectory );
+        fileSystem.mkdirs( barDbDirectory.toFile() );
+
+        prepareNeoStoreFile( currentFormat.storeVersion(), fooDbLayout );
+        prepareNeoStoreFile( currentFormat.storeVersion(), barDbLayout );
+        var databasesRoot = homeDir.resolve( "data/databases" );
+
+        var expectedBar = expectedStructuredResult( "bar", false, currentFormat.storeVersion(), currentFormat.introductionVersion(), "N/A" );
+
+        var expectedFoo = expectedStructuredResult( "foo", true, "N/A", "N/A", "N/A" );
+
+        var expected = String.format( "[%s,%s]", expectedFoo, expectedBar );
+
+        // when
+        try ( Locker locker = new DatabaseLocker( fileSystem, fooDbLayout ) )
+        {
+            locker.checkLock();
+
+            CommandLine.populateCommand( command, args( databasesRoot, true, true ) );
+            command.execute();
+        }
+
+        verify( out ).print( expected );
+    }
+
+    @Test
+    void retunsInfoForAllDatabasesInDirectory() throws IOException
+    {
+        // given
+        var currentFormat = RecordFormatSelector.defaultFormat();
+
+        var barDbDirectory = homeDir.resolve( "data/databases/bar" );
+        var barDbLayout = DatabaseLayout.ofFlat( barDbDirectory );
+        fileSystem.mkdirs( barDbDirectory.toFile() );
+
+        prepareNeoStoreFile( currentFormat.storeVersion(), fooDbLayout );
+        prepareNeoStoreFile( currentFormat.storeVersion(), barDbLayout );
+        var databasesRoot = homeDir.resolve( "data/databases" );
+
+        var expectedBar = expectedPrettyResult( "bar", false, currentFormat.storeVersion(), currentFormat.introductionVersion(), "N/A" );
+
+        var expectedFoo = expectedPrettyResult( "foo", false, currentFormat.storeVersion(), currentFormat.introductionVersion(), "N/A" );
+
+        var expected = expectedFoo +
+                       System.lineSeparator() +
+                       System.lineSeparator() +
+                       expectedBar;
+
+        // when
+        CommandLine.populateCommand( command, args( databasesRoot, true, false ) );
+        command.execute();
+
+        // then
+        verify( out ).print( expected );
+    }
+
+    @Test
+    void returnsInfoStructuredAsJson() throws IOException
+    {
+        //given
+        var currentFormat = RecordFormatSelector.defaultFormat();
+        prepareNeoStoreFile( currentFormat.storeVersion(), fooDbLayout );
+        var expectedFoo = expectedStructuredResult( "foo", false, currentFormat.storeVersion(), currentFormat.introductionVersion(), "N/A" );
+
+        // when
+        CommandLine.populateCommand( command, args( fooDbDirectory, false, true ) );
+        command.execute();
+
+        // then
+        verify( out ).print( expectedFoo );
+    }
+
+    private String expectedPrettyResult( String databaseName, boolean inUse, String version, String introduced, String superseded )
+    {
+        return "Database name:                " + databaseName + System.lineSeparator() +
+               "Database in use:              " + inUse + System.lineSeparator() +
+               "Store format version:         " + version + System.lineSeparator() +
+               "Store format introduced in:   " + introduced + System.lineSeparator() +
+               "Store format superseded in:   " + superseded + System.lineSeparator() +
+               "Last committed transaction id:-1" + System.lineSeparator() +
+               "Store needs recovery:         true";
+    }
+
+    private String expectedStructuredResult( String databaseName, boolean inUse, String version, String introduced, String superseded )
+    {
+        return "{" +
+               "\"databaseName\":\"" + databaseName + "\"," +
+               "\"inUse\":\"" + inUse + "\"," +
+               "\"storeFormat\":\"" + version + "\"," +
+               "\"storeFormatIntroduced\":\"" + introduced + "\"," +
+               "\"storeFormatSuperseded\":\"" + superseded + "\"," +
+               "\"lastCommittedTransaction\":\"-1\"," +
+               "\"recoveryRequired\":\"true\"" +
+               "}";
+    }
+
+    private void prepareNeoStoreFile( String storeVersion, DatabaseLayout dbLayout ) throws IOException
+    {
+        var neoStoreFile = createNeoStoreFile( dbLayout );
+        var value = MetaDataStore.versionStringToLong( storeVersion );
         MetaDataStore.setRecord( pageCache, neoStoreFile, STORE_VERSION, value, NULL );
     }
 
-    private Path createNeoStoreFile() throws IOException
+    private Path createNeoStoreFile( DatabaseLayout dbLayout ) throws IOException
     {
-        Path neoStoreFile = databaseLayout.metadataStore();
+        var neoStoreFile = dbLayout.metadataStore();
         fileSystem.write( neoStoreFile ).close();
         return neoStoreFile;
+    }
+
+    private String[] args( Path path, boolean all, boolean structured )
+    {
+        var args = new ArrayList<String>();
+        args.add( path.toFile().getAbsolutePath() );
+
+        if ( all )
+        {
+            args.add( "--all" );
+        }
+
+        if ( structured )
+        {
+            args.add( "--structured" );
+        }
+
+        return args.toArray( new String[0] );
     }
 }

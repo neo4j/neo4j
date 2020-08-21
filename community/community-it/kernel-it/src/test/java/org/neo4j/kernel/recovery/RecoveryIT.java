@@ -127,7 +127,7 @@ class RecoveryIT
         GraphDatabaseService database = createDatabase();
         generateSomeData( database );
         managementService.shutdown();
-        removeLastCheckpointRecordFromLastLogFile();
+        RecoveryHelpers.removeLastCheckpointRecordFromLastLogFile( databaseLayout, fileSystem, useSeparateCheckpointFiles );
 
         assertTrue( isRecoveryRequired( databaseLayout ) );
     }
@@ -144,7 +144,7 @@ class RecoveryIT
     {
         createDatabase();
         managementService.shutdown();
-        removeLastCheckpointRecordFromLastLogFile();
+        RecoveryHelpers.removeLastCheckpointRecordFromLastLogFile( databaseLayout, fileSystem, useSeparateCheckpointFiles );
 
         assertFalse( isRecoveryRequired( databaseLayout, defaults() ) );
     }
@@ -160,7 +160,7 @@ class RecoveryIT
             createSingleNode( database );
         }
         managementService.shutdown();
-        removeLastCheckpointRecordFromLastLogFile();
+        RecoveryHelpers.removeLastCheckpointRecordFromLastLogFile( databaseLayout, fileSystem, useSeparateCheckpointFiles );
 
         recoverDatabase();
 
@@ -186,7 +186,7 @@ class RecoveryIT
             createSingleNode( database );
         }
         managementService.shutdown();
-        removeLastCheckpointRecordFromLastLogFile();
+        RecoveryHelpers.removeLastCheckpointRecordFromLastLogFile( databaseLayout, fileSystem, useSeparateCheckpointFiles );
 
         var pageCacheTracer = new DefaultPageCacheTracer();
         var tracers = new DatabaseTracers( DatabaseTracer.NULL, LockTracer.NONE, pageCacheTracer );
@@ -224,7 +224,7 @@ class RecoveryIT
             }
         }
         managementService.shutdown();
-        removeLastCheckpointRecordFromLastLogFile();
+        RecoveryHelpers.removeLastCheckpointRecordFromLastLogFile( databaseLayout, fileSystem, useSeparateCheckpointFiles );
 
         recoverDatabase();
 
@@ -261,7 +261,7 @@ class RecoveryIT
             }
         }
         managementService.shutdown();
-        removeLastCheckpointRecordFromLastLogFile();
+        RecoveryHelpers.removeLastCheckpointRecordFromLastLogFile( databaseLayout, fileSystem, useSeparateCheckpointFiles );
 
         recoverDatabase();
 
@@ -318,7 +318,7 @@ class RecoveryIT
             numberOfPropertyKeys = count( transaction.getAllPropertyKeys() );
         }
         managementService.shutdown();
-        removeLastCheckpointRecordFromLastLogFile();
+        RecoveryHelpers.removeLastCheckpointRecordFromLastLogFile( databaseLayout, fileSystem, useSeparateCheckpointFiles );
 
         recoverDatabase();
 
@@ -365,7 +365,7 @@ class RecoveryIT
             transaction.commit();
         }
         managementService.shutdown();
-        removeLastCheckpointRecordFromLastLogFile();
+        RecoveryHelpers.removeLastCheckpointRecordFromLastLogFile( databaseLayout, fileSystem, useSeparateCheckpointFiles );
 
         recoverDatabase();
 
@@ -399,7 +399,7 @@ class RecoveryIT
         generateSomeData( database );
         managementService.shutdown();
         assertEquals( 1, countCheckPointsInTransactionLogs() );
-        removeLastCheckpointRecordFromLastLogFile();
+        RecoveryHelpers.removeLastCheckpointRecordFromLastLogFile( databaseLayout, fileSystem, useSeparateCheckpointFiles );
 
         assertEquals( 0, countCheckPointsInTransactionLogs() );
         assertTrue( isRecoveryRequired( databaseLayout ) );
@@ -533,7 +533,7 @@ class RecoveryIT
 
         assertEquals( useSeparateCheckpointFiles ? 2 : 1, countTransactionLogFiles() );
         assertEquals( 2, countCheckPointsInTransactionLogs() );
-        removeLastCheckpointRecordFromLastLogFile();
+        RecoveryHelpers.removeLastCheckpointRecordFromLastLogFile( databaseLayout, fileSystem, useSeparateCheckpointFiles );
 
         startStopDatabase();
 
@@ -560,8 +560,7 @@ class RecoveryIT
 
         startStopDatabase();
         assertEquals( 2, countCheckPointsInTransactionLogs() );
-        removeLastCheckpointRecordFromLastLogFile();
-        removeLastCheckpointRecordFromLastLogFile();
+        RecoveryHelpers.removeLastCheckpointRecordFromLastLogFile( databaseLayout, fileSystem, useSeparateCheckpointFiles );
 
         startStopDatabase();
 
@@ -589,7 +588,7 @@ class RecoveryIT
 
         startStopDatabase();
         assertEquals( 2, countCheckPointsInTransactionLogs() );
-        removeLastCheckpointRecordFromLastLogFile();
+        RecoveryHelpers.removeLastCheckpointRecordFromLastLogFile( databaseLayout, fileSystem, useSeparateCheckpointFiles );
 
         startStopDatabase();
 
@@ -598,13 +597,13 @@ class RecoveryIT
         // and 2 will be truncated instead since truncation is based on position
         // next start-stop cycle will have transaction between so we will have 3 checkpoints as expected.
         assertEquals( 2, countCheckPointsInTransactionLogs() );
-        removeLastCheckpointRecordFromLastLogFile();
+        RecoveryHelpers.removeLastCheckpointRecordFromLastLogFile( databaseLayout, fileSystem, useSeparateCheckpointFiles );
         builder = null; // Reset log rotation threshold setting to avoid immediate rotation on `createSingleNode()`.
 
         GraphDatabaseService service = createDatabase( logThreshold * 2 ); // Bigger log, to avoid rotation.
         createSingleNode( service );
         this.managementService.shutdown();
-        removeLastCheckpointRecordFromLastLogFile();
+        RecoveryHelpers.removeLastCheckpointRecordFromLastLogFile( databaseLayout, fileSystem, useSeparateCheckpointFiles );
         startStopDatabase();
 
         assertFalse( isRecoveryRequired( databaseLayout ) );
@@ -659,7 +658,7 @@ class RecoveryIT
         DatabaseLayout layout = db.databaseLayout();
         managementService.shutdown();
 
-        removeLastCheckpointRecordFromLastLogFile();
+        RecoveryHelpers.removeLastCheckpointRecordFromLastLogFile( databaseLayout, fileSystem, useSeparateCheckpointFiles );
         assertTrue( isRecoveryRequired( layout ) );
 
         Monitors monitors = new Monitors();

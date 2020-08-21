@@ -95,7 +95,7 @@ public final class Validators
         }
     };
 
-    private static boolean isExistingDatabase( FileSystemAbstraction fileSystem, DatabaseLayout layout )
+    public static boolean isExistingDatabase( FileSystemAbstraction fileSystem, DatabaseLayout layout )
     {
         return fileSystem.fileExists( layout.metadataStore() );
     }

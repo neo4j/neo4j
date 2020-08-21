@@ -85,7 +85,7 @@ public class DumpCommand extends AbstractCommand
         Path archive = calculateArchive( databaseName, to.toAbsolutePath() );
         var memoryTracker =  EmptyMemoryTracker.INSTANCE;
 
-        Config config = buildConfig();
+        Config config = CommandHelpers.buildConfig( ctx );
         DatabaseLayout databaseLayout = Neo4jLayout.of( config ).databaseLayout( databaseName );
 
         try
@@ -114,15 +114,6 @@ public class DumpCommand extends AbstractCommand
         {
             throw new CommandFailedException( "You do not have permission to dump the database.", e );
         }
-    }
-
-    private Config buildConfig()
-    {
-        Config cfg = Config.newBuilder()
-                .fromFileNoThrow( ctx.confDir().resolve( Config.DEFAULT_CONFIG_FILE_NAME ) )
-                .set( GraphDatabaseSettings.neo4j_home, ctx.homeDir() ).build();
-        ConfigUtils.disableAllConnectors( cfg );
-        return cfg;
     }
 
     private static Path calculateArchive( String database, Path to )

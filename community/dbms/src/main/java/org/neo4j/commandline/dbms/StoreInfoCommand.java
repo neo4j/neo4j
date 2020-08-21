@@ -19,15 +19,21 @@
  */
 package org.neo4j.commandline.dbms;
 
+import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 
-import java.io.Closeable;
+import java.io.File;
 import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import org.neo4j.cli.AbstractCommand;
 import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.Config;
+import org.neo4j.internal.helpers.collection.Pair;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory;
@@ -36,13 +42,14 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.kernel.internal.locker.FileLockException;
 import org.neo4j.logging.internal.NullLogService;
-import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.memory.EmptyMemoryTracker;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StoreVersion;
-import org.neo4j.storageengine.api.StoreVersionCheck;
 
 import static java.lang.String.format;
 import static org.neo4j.kernel.impl.scheduler.JobSchedulerFactory.createInitialisedScheduler;
+import static org.neo4j.kernel.recovery.Recovery.isRecoveryRequired;
 import static picocli.CommandLine.Command;
 
 @Command(
@@ -52,8 +59,14 @@ import static picocli.CommandLine.Command;
 )
 public class StoreInfoCommand extends AbstractCommand
 {
-    @Parameters( description = "Path to database store." )
-    private Path storePath;
+    @Option( names = "--structured", arity = "0", description = "Return result structured as json" )
+    private boolean structured;
+
+    @Option( names = "--all", arity = "0", description = "Return store info for all databases at provided path" )
+    private boolean all;
+
+    @Parameters( description = "Path to database store files, or databases directory if --all option is used" )
+    private Path path;
 
     public StoreInfoCommand( ExecutionContext ctx )
     {
@@ -63,37 +76,205 @@ public class StoreInfoCommand extends AbstractCommand
     @Override
     public void execute()
     {
-        Validators.CONTAINS_EXISTING_DATABASE.validate( storePath );
-
-        DatabaseLayout databaseLayout = DatabaseLayout.ofFlat( storePath );
-        var cacheTracer = PageCacheTracer.NULL;
-        try ( Closeable ignored = LockChecker.checkDatabaseLock( databaseLayout );
-              JobScheduler jobScheduler = createInitialisedScheduler();
-              PageCache pageCache = StandalonePageCacheFactory.createPageCache( ctx.fs(), jobScheduler, cacheTracer ) )
+        var storageEngineFactory = StorageEngineFactory.selectStorageEngine();
+        var config = CommandHelpers.buildConfig( ctx );
+        try ( var fs = ctx.fs();
+              var jobScheduler = createInitialisedScheduler();
+              var pageCache = StandalonePageCacheFactory.createPageCache( fs, jobScheduler, PageCacheTracer.NULL ) )
         {
-            StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine();
-            StoreVersionCheck storeVersionCheck = storageEngineFactory.versionCheck( ctx.fs(), databaseLayout, Config.defaults(), pageCache,
-                    NullLogService.getInstance(), cacheTracer );
-            String storeVersion = storeVersionCheck.storeVersion( PageCursorTracer.NULL )
-                    .orElseThrow( () -> new CommandFailedException( format( "Could not find version metadata in store '%s'", storePath ) ) );
-
-            final String fmt = "%-30s%s";
-            ctx.out().println( format( fmt, "Store format version:", storeVersion ) );
-
-            StoreVersion versionInformation = storageEngineFactory.versionInformation( storeVersion );
-            ctx.out().println( format( fmt, "Store format introduced in:", versionInformation.introductionNeo4jVersion() ) );
-
-            versionInformation.successor()
-                    .map( next -> format( fmt, "Store format superseded in:", next.introductionNeo4jVersion() ) )
-                    .ifPresent( ctx.out()::println );
+            validatePath( fs, all, path );
+            if ( all )
+            {
+                var collector = structured ?
+                                Collectors.joining( ",", "[", "]" ) :
+                                Collectors.joining( System.lineSeparator() + System.lineSeparator() );
+                var result = Arrays.stream( fs.listFiles( path.toFile() ) )
+                                   .map( File::toPath )
+                                   .filter( dbPath -> Validators.isExistingDatabase( fs, DatabaseLayout.ofFlat( dbPath ) ) )
+                                   .map( dbPath -> printInfo( fs, dbPath, pageCache, storageEngineFactory, config, structured, true ) )
+                                   .collect( collector );
+                ctx.out().print( result );
+            }
+            else
+            {
+                ctx.out().print( printInfo( fs, path, pageCache, storageEngineFactory, config, structured, false ) );
+            }
         }
-        catch ( FileLockException e )
+        catch ( CommandFailedException e )
         {
-            throw new CommandFailedException( "The database is in use. Stop database '" + databaseLayout.getDatabaseName() + "' and try again.", e );
+            throw e;
         }
         catch ( Exception e )
         {
-            throw new RuntimeException( e );
+            throw new CommandFailedException( format( "Failed to execute command: '%s'.", e.getMessage() ), e );
+        }
+    }
+
+    private static void validatePath( FileSystemAbstraction fs, boolean all, Path storePath )
+    {
+        if ( !fs.isDirectory( storePath.toFile() ) )
+        {
+            throw new IllegalArgumentException( format( "Provided path %s must point to a directory.", storePath.toAbsolutePath() ) );
+        }
+
+        var pathIsDatabase = Validators.isExistingDatabase( fs, DatabaseLayout.ofFlat( storePath ) );
+        if ( all && pathIsDatabase )
+        {
+            throw new IllegalArgumentException( format( "You used the --all option but directory %s contains the store files of a single database, " +
+                                                "rather than several database directories.", storePath.toAbsolutePath() ) );
+        }
+        else if ( !all && !pathIsDatabase )
+        {
+            throw new IllegalArgumentException( format( "Directory %s does not contain the store files of a database, but you did not use the --all option.",
+                                                        storePath.toAbsolutePath() ) );
+        }
+    }
+
+    private static String printInfo( FileSystemAbstraction fs, Path dbPath, PageCache pageCache, StorageEngineFactory storageEngineFactory,
+            Config config, boolean structured, boolean failSilently )
+    {
+        var databaseLayout = DatabaseLayout.ofFlat( dbPath );
+        var memoryTracker = EmptyMemoryTracker.INSTANCE;
+        try ( var ignored = LockChecker.checkDatabaseLock( databaseLayout ) )
+        {
+            var storeVersionCheck = storageEngineFactory.versionCheck( fs, databaseLayout, Config.defaults(), pageCache,
+                                                                       NullLogService.getInstance(), PageCacheTracer.NULL );
+            var storeVersion = storeVersionCheck.storeVersion( PageCursorTracer.NULL )
+                                                .orElseThrow( () ->
+                                                    new CommandFailedException( format( "Could not find version metadata in store '%s'", dbPath ) ) );
+
+            var versionInformation = storageEngineFactory.versionInformation( storeVersion );
+
+            var recoveryRequired = checkRecoveryState( fs, databaseLayout, config, memoryTracker );
+            var txIdStore = storageEngineFactory.readOnlyTransactionIdStore( fs, databaseLayout, pageCache, PageCursorTracer.NULL );
+            var lastTxId = txIdStore.getLastCommittedTransactionId(); // Latest committed tx id found in metadata store. May be behind if recovery is required.
+            var successorString = versionInformation.successor().map( StoreVersion::introductionNeo4jVersion ).orElse( null );
+
+            var storeInfo = new StoreInfo( databaseLayout.getDatabaseName(),
+                                           false,
+                                           storeVersion,
+                                           versionInformation.introductionNeo4jVersion(),
+                                           successorString,
+                                           lastTxId,
+                                           recoveryRequired );
+
+            return storeInfo.print( structured );
+        }
+        catch ( FileLockException e )
+        {
+            if ( !failSilently )
+            {
+                throw new CommandFailedException( format( "Failed to execute command as the database '%s' is in use. " +
+                                                          "Please stop it and try again.", databaseLayout.getDatabaseName() ), e );
+            }
+            return inUseResult( databaseLayout.getDatabaseName() ).print( structured );
+        }
+        catch ( CommandFailedException e )
+        {
+            throw e;
+        }
+        catch ( Exception e )
+        {
+            throw new CommandFailedException( format( "Failed to execute command: '%s'.", e.getMessage() ), e );
+        }
+    }
+
+    private static boolean checkRecoveryState( FileSystemAbstraction fs, DatabaseLayout databaseLayout, Config config, MemoryTracker memoryTracker )
+    {
+        try
+        {
+            return isRecoveryRequired( fs, databaseLayout, config, memoryTracker );
+        }
+        catch ( Exception e )
+        {
+            throw new CommandFailedException( format( "Failed to execute command when checking for recovery state: '%s'.", e.getMessage() ), e );
+        }
+    }
+
+    private static StoreInfo inUseResult( String databaseName )
+    {
+        return new StoreInfo( databaseName, true, null, null, null, -1, true );
+    }
+
+    private static class StoreInfo
+    {
+        private final String databaseName;
+        private final String storeFormat;
+        private final String storeFormatIntroduced;
+        private final String storeFormatSuperseded;
+        private final long lastCommittedTransaction;
+        private final boolean recoveryRequired;
+        private final boolean inUse;
+
+        StoreInfo( String databaseName, boolean inUse, String storeFormat, String storeFormatIntroduced, String storeFormatSuperseded,
+                long lastCommittedTransaction, boolean recoveryRequired )
+        {
+            this.databaseName = databaseName;
+            this.storeFormat = storeFormat;
+            this.storeFormatIntroduced = storeFormatIntroduced;
+            this.storeFormatSuperseded = storeFormatSuperseded;
+            this.lastCommittedTransaction = lastCommittedTransaction;
+            this.recoveryRequired = recoveryRequired;
+            this.inUse = inUse;
+        }
+
+        List<Pair<InfoType,String>> printFields()
+        {
+            return List.of(
+                    Pair.of( InfoType.DatabaseName, databaseName ),
+                    Pair.of( InfoType.InUse, Boolean.toString( inUse ) ),
+                    Pair.of( InfoType.StoreFormat, storeFormat ),
+                    Pair.of( InfoType.StoreFormatIntroduced, storeFormatIntroduced ),
+                    Pair.of( InfoType.StoreFormatSuperseded, storeFormatSuperseded ),
+                    Pair.of( InfoType.LastCommittedTransaction, Long.toString( lastCommittedTransaction ) ),
+                    Pair.of( InfoType.RecoveryRequired, Boolean.toString( recoveryRequired ) ) );
+        }
+
+        String print( boolean structured )
+        {
+            if ( !structured )
+            {
+                return printFields().stream()
+                                    .map( p -> p.first().justifiedPretty( p.other() ) )
+                                    .collect( Collectors.joining( System.lineSeparator() ) );
+            }
+            return printFields().stream()
+                                .map( p -> p.first().structuredJson( p.other() ) )
+                                .collect( Collectors.joining( ",", "{", "}" ) );
+        }
+    }
+
+    private enum InfoType
+    {
+        InUse( "Database in use", "inUse" ),
+        DatabaseName( "Database name", "databaseName" ),
+        StoreFormat( "Store format version", "storeFormat" ),
+        StoreFormatIntroduced( "Store format introduced in", "storeFormatIntroduced" ),
+        StoreFormatSuperseded( "Store format superseded in", "storeFormatSuperseded" ),
+        LastCommittedTransaction( "Last committed transaction id", "lastCommittedTransaction" ),
+        RecoveryRequired( "Store needs recovery", "recoveryRequired" );
+
+        private final String prettyPrint;
+        private final String jsonKey;
+
+        InfoType( String prettyPrint, String jsonKey )
+        {
+            this.prettyPrint = prettyPrint;
+            this.jsonKey = jsonKey;
+        }
+
+        String justifiedPretty( String value )
+        {
+            var nullSafeValue = value == null ? "N/A" : value;
+            var leftJustifiedFmt = "%-30s%s";
+            return String.format( leftJustifiedFmt, prettyPrint + ":", nullSafeValue );
+        }
+
+        String structuredJson( String value )
+        {
+            var nullSafeValue = value == null ? "N/A" : value;
+            var kvFmt = "\"%s\":\"%s\"";
+            return String.format( kvFmt, jsonKey, nullSafeValue );
         }
     }
 }
