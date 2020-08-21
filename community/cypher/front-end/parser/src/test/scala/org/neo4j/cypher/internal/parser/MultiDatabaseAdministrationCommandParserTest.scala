@@ -91,7 +91,7 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationCommand
   }
 
   test("SHOW DATABASE foo.bar") {
-    yields(ast.ShowDatabase(literal("foo.bar"), None, None, None))
+    yields(ast.ShowDatabase(NamedDatabaseScope(literal("foo.bar"))(pos), None, None, None))
   }
 
   test("SHOW DATABASE") {
@@ -122,15 +122,15 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationCommand
   }
 
   test("CREATE DATABASE foo.bar") {
-    yields(ast.CreateDatabase(literal("foo.bar"), ast.IfExistsThrowError()))
+    yields(ast.CreateDatabase(literal("foo.bar"), ast.IfExistsThrowError))
   }
 
   test("CATALOG CREATE DATABASE foo.bar") {
-    yields(ast.CreateDatabase(literal("foo.bar"), ast.IfExistsThrowError()))
+    yields(ast.CreateDatabase(literal("foo.bar"), ast.IfExistsThrowError))
   }
 
   test("CATALOG CREATE DATABASE `graph.db`.`db.db`") {
-    yields(ast.CreateDatabase(literal("graph.db.db.db"), ast.IfExistsThrowError()))
+    yields(ast.CreateDatabase(literal("graph.db.db.db"), ast.IfExistsThrowError))
   }
 
   test("CATALOG CREATE DATABASE `foo-bar42`") {
