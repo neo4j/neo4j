@@ -27,11 +27,6 @@ import org.neo4j.io.os.OsBeanUtil;
 public interface MachineMemory
 {
     /**
-     * @return amount of free physical memory in bytes, or -1 if the functionality is not supported.
-     */
-    long getFreePhysicalMemory();
-
-    /**
      * @return total amount of physical memory in bytes, or -1 if the functionality is not supported.
      */
     long getTotalPhysicalMemory();
@@ -44,12 +39,6 @@ public interface MachineMemory
 
     MachineMemory DEFAULT = new MachineMemory()
     {
-        @Override
-        public long getFreePhysicalMemory()
-        {
-            return OsBeanUtil.getFreePhysicalMemory();
-        }
-
         @Override
         public long getTotalPhysicalMemory()
         {

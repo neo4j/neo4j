@@ -80,7 +80,7 @@ class NeoBootstrapperTest
     }
 
     @Test
-    void shouldFailToStartIfRequestedPageCacheMemoryExceedsAvailable() throws Exception
+    void shouldFailToStartIfRequestedPageCacheMemoryExceedsTotal() throws Exception
     {
         // given
         neoBootstrapper = new CommunityBootstrapper();
@@ -91,17 +91,17 @@ class NeoBootstrapperTest
         // Mock heap usage and free memory.
         MachineMemory mockedMemory = mock( MachineMemory.class );
         MemoryUsage heapMemory = new MemoryUsage( 0, 1, 1, 1 );
-        when( mockedMemory.getFreePhysicalMemory() ).thenReturn( 8L );
+        when( mockedMemory.getTotalPhysicalMemory() ).thenReturn( 8L );
         when( mockedMemory.getHeapMemoryUsage() ).thenReturn( heapMemory );
         neoBootstrapper.setMachineMemory( mockedMemory );
 
         assertThat( neoBootstrapper.start( dir, config ) ).isNotEqualTo( NeoBootstrapper.OK );
         assertThat( suppress.getOutputVoice().lines() )
-                .anySatisfy( line -> assertThat( line ).containsSubsequence( "Invalid memory configuration - exceeds available physical memory." ) );
+                .anySatisfy( line -> assertThat( line ).containsSubsequence( "Invalid memory configuration - exceeds physical memory." ) );
     }
 
     @Test
-    void shouldFailToStartIfRequestedHeapMemoryExceedsAvailable() throws Exception
+    void shouldFailToStartIfRequestedHeapMemoryExceedsTotal() throws Exception
     {
         // given
         neoBootstrapper = new CommunityBootstrapper();
@@ -113,17 +113,17 @@ class NeoBootstrapperTest
         // Mock heap usage and free memory.
         MachineMemory mockedMemory = mock( MachineMemory.class );
         MemoryUsage heapMemory = new MemoryUsage( 0, 1, 1, 10 );
-        when( mockedMemory.getFreePhysicalMemory() ).thenReturn( 8L );
+        when( mockedMemory.getTotalPhysicalMemory() ).thenReturn( 8L );
         when( mockedMemory.getHeapMemoryUsage() ).thenReturn( heapMemory );
         neoBootstrapper.setMachineMemory( mockedMemory );
 
         assertThat( neoBootstrapper.start( dir, config ) ).isNotEqualTo( NeoBootstrapper.OK );
         assertThat( suppress.getOutputVoice().lines() )
-                .anySatisfy( line -> assertThat( line ).containsSubsequence( "Invalid memory configuration - exceeds available physical memory." ) );
+                .anySatisfy( line -> assertThat( line ).containsSubsequence( "Invalid memory configuration - exceeds physical memory." ) );
     }
 
     @Test
-    void shouldFailToStartIfRequestedHeapAndPageCacheMemoryExceedsAvailable() throws Exception
+    void shouldFailToStartIfRequestedHeapAndPageCacheMemoryExceedsTotal() throws Exception
     {
         // given
         neoBootstrapper = new CommunityBootstrapper();
@@ -135,17 +135,17 @@ class NeoBootstrapperTest
         // Mock heap usage and free memory.
         MachineMemory mockedMemory = mock( MachineMemory.class );
         MemoryUsage heapMemory = new MemoryUsage( 0, 1, 1, 10 );
-        when( mockedMemory.getFreePhysicalMemory() ).thenReturn( 18L );
+        when( mockedMemory.getTotalPhysicalMemory() ).thenReturn( 18L );
         when( mockedMemory.getHeapMemoryUsage() ).thenReturn( heapMemory );
         neoBootstrapper.setMachineMemory( mockedMemory );
 
         assertThat( neoBootstrapper.start( dir, config ) ).isNotEqualTo( NeoBootstrapper.OK );
         assertThat( suppress.getOutputVoice().lines() )
-                .anySatisfy( line -> assertThat( line ).containsSubsequence( "Invalid memory configuration - exceeds available physical memory." ) );
+                .anySatisfy( line -> assertThat( line ).containsSubsequence( "Invalid memory configuration - exceeds physical memory." ) );
     }
 
     @Test
-    void shouldFailToStartIfCalculatedPageCacheSizeExceedsAvailableMemory() throws Exception
+    void shouldFailToStartIfCalculatedPageCacheSizeExceedsTotalMemory() throws Exception
     {
         // given
         neoBootstrapper = new CommunityBootstrapper();
@@ -156,13 +156,12 @@ class NeoBootstrapperTest
         // Mock heap usage and free memory.
         MachineMemory mockedMemory = mock( MachineMemory.class );
         MemoryUsage heapMemory = new MemoryUsage( 0, 1, 1, 10 );
-        when( mockedMemory.getFreePhysicalMemory() ).thenReturn( 1000L );
-        when( mockedMemory.getTotalPhysicalMemory() ).thenReturn( 2000L );
+        when( mockedMemory.getTotalPhysicalMemory() ).thenReturn( 1000L );
         when( mockedMemory.getHeapMemoryUsage() ).thenReturn( heapMemory );
         neoBootstrapper.setMachineMemory( mockedMemory );
 
         assertThat( neoBootstrapper.start( dir, config ) ).isNotEqualTo( NeoBootstrapper.OK );
         assertThat( suppress.getOutputVoice().lines() )
-                .anySatisfy( line -> assertThat( line ).containsSubsequence( "Invalid memory configuration - exceeds available physical memory." ) );
+                .anySatisfy( line -> assertThat( line ).containsSubsequence( "Invalid memory configuration - exceeds physical memory." ) );
     }
 }

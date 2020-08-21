@@ -113,7 +113,7 @@ public abstract class NeoBootstrapper implements Bootstrapper
 
         if ( requestedMemoryExceedsAvailable( config ) )
         {
-            log.error( format( "Invalid memory configuration - exceeds available physical memory. Check the configured values for %s and %s",
+            log.error( format( "Invalid memory configuration - exceeds physical memory. Check the configured values for %s and %s",
                     GraphDatabaseSettings.pagecache_memory.name(), ExternalSettings.max_heap_size.name() ) );
             return INVALID_CONFIGURATION_ERROR_CODE;
         }
@@ -153,10 +153,9 @@ public abstract class NeoBootstrapper implements Bootstrapper
         long pageCacheSize =
                 pageCacheMemory == null ? ConfiguringPageCacheFactory.defaultHeuristicPageCacheMemory( machineMemory ) : ByteUnit.parse( pageCacheMemory );
         MemoryUsage heapMemoryUsage = machineMemory.getHeapMemoryUsage();
-        long freePhysicalMemory = machineMemory.getFreePhysicalMemory();
+        long totalPhysicalMemory = machineMemory.getTotalPhysicalMemory();
 
-        return freePhysicalMemory != OsBeanUtil.VALUE_UNAVAILABLE  &&
-             pageCacheSize + ( heapMemoryUsage.getMax() - heapMemoryUsage.getUsed() ) > freePhysicalMemory;
+        return totalPhysicalMemory != OsBeanUtil.VALUE_UNAVAILABLE  && pageCacheSize + heapMemoryUsage.getMax() > totalPhysicalMemory;
     }
 
     @Override
