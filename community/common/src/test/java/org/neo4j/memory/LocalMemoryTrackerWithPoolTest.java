@@ -123,6 +123,18 @@ class LocalMemoryTrackerWithPoolTest
         memoryTracker.allocateHeap( 0 );
     }
 
+    @Test
+    void releaseToParentIfLocalPoolMuchLargerThanUsed()
+    {
+        memoryTracker.allocateHeap( 10 );
+        assertThat( memoryTracker.estimatedHeapMemory() ).isEqualTo( 10 );
+        assertThat( memoryPool.usedHeap() ).isEqualTo( 10 );
+
+        memoryTracker.releaseHeap( 8 );
+        assertThat( memoryTracker.estimatedHeapMemory() ).isEqualTo( 2 );
+        assertThat( memoryPool.usedHeap() ).isLessThan( 10 );
+    }
+
     private void assertReserved( long i )
     {
         assertEquals( i, memoryPool.usedHeap() );

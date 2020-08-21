@@ -162,6 +162,14 @@ public class LocalMemoryTracker implements LimitedMemoryTracker
     {
         requireNonNegative( bytes );
         allocatedBytesHeap -= bytes;
+
+        // If the localHeapPool has reserved a lot more memory than is being used release part of it again.
+        if ( localHeapPool > grabSize && (localHeapPool / 2) > allocatedBytesHeap )
+        {
+            long memoryToRelease = localHeapPool / 4;
+            memoryPool.releaseHeap( memoryToRelease );
+            localHeapPool -= memoryToRelease;
+        }
     }
 
     @Override
