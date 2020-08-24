@@ -94,9 +94,12 @@ public class VersionAwareLogEntryReader implements LogEntryReader
                     parserSet = selector.select( versionCode );
                     // Since checksum is calculated over the whole entry we need to rewind and begin
                     // a new checksum segment if we change version parser.
-                    resetChannelPosition( channel );
-                    channel.beginChecksum();
-                    channel.get();
+                    if ( channel instanceof PositionableChannel )
+                    {
+                        resetChannelPosition( channel );
+                        channel.beginChecksum();
+                        channel.get();
+                    }
                 }
 
                 byte typeCode = channel.get();
