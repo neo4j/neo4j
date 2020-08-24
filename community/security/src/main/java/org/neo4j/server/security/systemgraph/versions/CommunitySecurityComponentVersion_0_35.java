@@ -28,11 +28,11 @@ import org.neo4j.server.security.systemgraph.UserSecurityGraphComponent;
 
 import static org.neo4j.server.security.systemgraph.SystemGraphRealmHelper.IS_SUSPENDED;
 
-public class CommunityVersion_0_35 extends KnownCommunitySecurityComponentVersion
+public class CommunitySecurityComponentVersion_0_35 extends KnownCommunitySecurityComponentVersion
 {
     private final UserRepository userRepository;
 
-    public CommunityVersion_0_35( Log log, UserRepository userRepository )
+    public CommunitySecurityComponentVersion_0_35( Log log, UserRepository userRepository )
     {
         super( 0, "Neo4j 3.5", log );
         this.userRepository = userRepository;
@@ -41,7 +41,7 @@ public class CommunityVersion_0_35 extends KnownCommunitySecurityComponentVersio
     @Override
     public boolean detected( Transaction tx )
     {
-        if ( nodesWithLabelExist( tx, USER_LABEL ) || getVersion( tx ) != NoUserSecurityGraph.VERSION )
+        if ( nodesWithLabelExist( tx, USER_LABEL ) || getVersion( tx ) != NoCommunitySecurityComponentVersion.VERSION )
         {
             return false;
         }

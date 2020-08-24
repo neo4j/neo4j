@@ -19,20 +19,16 @@
  */
 package org.neo4j.server.security.systemgraph.versions;
 
-import org.neo4j.graphdb.Transaction;
 import org.neo4j.logging.Log;
 import org.neo4j.server.security.auth.UserRepository;
 
-public class CommunityVersion_1_40 extends SupportedCommunityVersion
+/**
+ * Version 2 of the security model is identical to version 1, but with the Version node now existing and containing the correct version information.
+ */
+public class CommunitySecurityComponentVersion_2_41 extends SupportedCommunitySecurityComponentVersion
 {
-    public CommunityVersion_1_40( Log log, UserRepository userRepository )
+    public CommunitySecurityComponentVersion_2_41( Log log, UserRepository userRepository )
     {
-        super( 2, "Neo4j 4.0", log, userRepository );
-    }
-
-    @Override
-    public boolean detected( Transaction tx )
-    {
-        return componentNotInVersionNode( tx ) && nodesWithLabelExist( tx, USER_LABEL );
+        super( 2, "Neo4j 4.1", log, userRepository );
     }
 }

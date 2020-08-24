@@ -29,11 +29,11 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.logging.Log;
 import org.neo4j.server.security.auth.UserRepository;
-import org.neo4j.server.security.systemgraph.versions.CommunityVersion_0_35;
-import org.neo4j.server.security.systemgraph.versions.CommunityVersion_1_40;
-import org.neo4j.server.security.systemgraph.versions.CommunityVersion_2_41;
+import org.neo4j.server.security.systemgraph.versions.CommunitySecurityComponentVersion_0_35;
+import org.neo4j.server.security.systemgraph.versions.CommunitySecurityComponentVersion_1_40;
+import org.neo4j.server.security.systemgraph.versions.CommunitySecurityComponentVersion_2_41;
 import org.neo4j.server.security.systemgraph.versions.KnownCommunitySecurityComponentVersion;
-import org.neo4j.server.security.systemgraph.versions.NoUserSecurityGraph;
+import org.neo4j.server.security.systemgraph.versions.NoCommunitySecurityComponentVersion;
 
 import static org.neo4j.server.security.systemgraph.versions.KnownCommunitySecurityComponentVersion.USER_LABEL;
 
@@ -50,16 +50,16 @@ public class UserSecurityGraphComponent extends AbstractSystemGraphComponent
 
     public static final String COMPONENT = "security-users";
     private final KnownSystemComponentVersions<KnownCommunitySecurityComponentVersion> knownUserSecurityComponentVersions =
-            new KnownSystemComponentVersions<>( new NoUserSecurityGraph() );
+            new KnownSystemComponentVersions<>( new NoCommunitySecurityComponentVersion() );
     private final Log log;
 
     public UserSecurityGraphComponent( Log log, UserRepository userRepository, UserRepository initialPasswordRepo, Config config )
     {
         super( config );
         this.log = log;
-        knownUserSecurityComponentVersions.add( new CommunityVersion_0_35( log, userRepository ) );
-        knownUserSecurityComponentVersions.add( new CommunityVersion_1_40( log, initialPasswordRepo ) );
-        knownUserSecurityComponentVersions.add( new CommunityVersion_2_41( log, initialPasswordRepo ) );
+        knownUserSecurityComponentVersions.add( new CommunitySecurityComponentVersion_0_35( log, userRepository ) );
+        knownUserSecurityComponentVersions.add( new CommunitySecurityComponentVersion_1_40( log, initialPasswordRepo ) );
+        knownUserSecurityComponentVersions.add( new CommunitySecurityComponentVersion_2_41( log, initialPasswordRepo ) );
     }
 
     @Override
@@ -128,7 +128,7 @@ public class UserSecurityGraphComponent extends AbstractSystemGraphComponent
             KnownCommunitySecurityComponentVersion currentVersion = knownUserSecurityComponentVersions.detectCurrentSecurityGraphVersion( tx );
             log.debug( "Trying to upgrade component '%s' with version %d and status %s to latest version",
                     COMPONENT, currentVersion.version, currentVersion.getStatus() );
-            if ( currentVersion.version == NoUserSecurityGraph.VERSION )
+            if ( currentVersion.version == NoCommunitySecurityComponentVersion.VERSION )
             {
                 log.debug( "The current version does not have a security graph, doing a full initialization" );
                 initializeLatestSystemGraph( tx );

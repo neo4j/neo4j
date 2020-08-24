@@ -19,13 +19,28 @@
  */
 package org.neo4j.server.security.systemgraph.versions;
 
-import org.neo4j.logging.Log;
-import org.neo4j.server.security.auth.UserRepository;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.logging.NullLog;
+import org.neo4j.server.security.systemgraph.UserSecurityGraphComponent;
 
-public class CommunityVersion_2_41 extends SupportedCommunityVersion
+public class NoCommunitySecurityComponentVersion extends KnownCommunitySecurityComponentVersion
 {
-    public CommunityVersion_2_41( Log log, UserRepository userRepository )
+    public static final int VERSION = -1;
+
+    public NoCommunitySecurityComponentVersion()
     {
-        super( 2, "Neo4j 4.1", log, userRepository );
+        super( VERSION, String.format( "no '%s' graph found", UserSecurityGraphComponent.COMPONENT ), NullLog.getInstance() );
+    }
+
+    @Override
+    public void setupUsers( Transaction tx )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void updateInitialUserPassword( Transaction tx )
+    {
+        throw unsupported();
     }
 }

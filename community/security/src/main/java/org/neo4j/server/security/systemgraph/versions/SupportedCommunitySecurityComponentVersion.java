@@ -33,12 +33,12 @@ import static org.neo4j.kernel.api.security.AuthManager.INITIAL_PASSWORD;
 import static org.neo4j.kernel.api.security.AuthManager.INITIAL_USER_NAME;
 import static org.neo4j.server.security.systemgraph.SystemGraphRealmHelper.IS_SUSPENDED;
 
-public class SupportedCommunityVersion extends KnownCommunitySecurityComponentVersion
+public class SupportedCommunitySecurityComponentVersion extends KnownCommunitySecurityComponentVersion
 {
     private final UserRepository userRepository;
     private SecureHasher secureHasher;
 
-    SupportedCommunityVersion( int version, String description, Log log, UserRepository userRepository )
+    SupportedCommunitySecurityComponentVersion( int version, String description, Log log, UserRepository userRepository )
     {
         super( version, description, log );
         this.userRepository = userRepository;

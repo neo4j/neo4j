@@ -25,8 +25,14 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.logging.Log;
-import org.neo4j.server.security.systemgraph.versions.NoUserSecurityGraph;
+import org.neo4j.server.security.systemgraph.versions.NoCommunitySecurityComponentVersion;
 
+/***
+ * Version of a system graph component.
+ * Components that due to breaking schema changes requires migrations also needs versions.
+ * Each component has its own version scheme starting at 0 and increasing each release with breaking changes.
+ * The versions should be on the format [component]Version_[versionNbr]_[neo4jRelease].
+ */
 public abstract class KnownSystemComponentVersion
 {
     private final Label versionLabel = Label.label( "Version" );
@@ -60,7 +66,7 @@ public abstract class KnownSystemComponentVersion
 
     protected int getVersion( Transaction tx )
     {
-        int result = NoUserSecurityGraph.VERSION;
+        int result = NoCommunitySecurityComponentVersion.VERSION;
         ResourceIterator<Node> nodes = tx.findNodes( versionLabel );
         if ( nodes.hasNext() )
         {
@@ -88,7 +94,7 @@ public abstract class KnownSystemComponentVersion
 
     public SystemGraphComponent.Status getStatus()
     {
-        if ( this.version == NoUserSecurityGraph.VERSION )
+        if ( this.version == NoCommunitySecurityComponentVersion.VERSION )
         {
             return SystemGraphComponent.Status.UNINITIALIZED;
         }
