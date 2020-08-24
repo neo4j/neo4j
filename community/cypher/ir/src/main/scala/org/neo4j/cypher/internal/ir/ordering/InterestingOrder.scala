@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.ir.ordering
 
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder.Asc
@@ -27,6 +28,7 @@ import org.neo4j.cypher.internal.ir.ordering.InterestingOrder.ColumnOrder
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder.Desc
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder.FullSatisfaction
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder.Satisfaction
+import org.neo4j.cypher.internal.ir.ordering.InterestingOrder.projectExpression
 
 import scala.annotation.tailrec
 
@@ -38,6 +40,37 @@ object InterestingOrder {
 
     // Projections needed to apply the sort of the expression
     def projections: Map[String, Expression]
+
+    // Returns all dependencies from the expression, and previous expressions that we're projected to form this expression.
+    def dependencies: Set[LogicalVariable] = {
+      var dep = expression.dependencies
+      var currExpr = expression
+      var prevExpr = projectExpression(expression, projections)
+      while(currExpr != prevExpr) {
+        currExpr = prevExpr
+        dep = dep ++ currExpr.dependencies
+        prevExpr = projectExpression(currExpr, projections)
+      }
+
+      dep
+    }
+
+  }
+
+  // finds the projected expression if it exists, otherwise returns expression
+  private def projectExpression(expression: Expression, projections: Map[String, Expression]): Expression = {
+    expression match {
+      case Variable(varName) =>
+        projections.getOrElse(varName, expression)
+
+      case Property(Variable(varName), propertyKeyName) =>
+        if (projections.contains(varName))
+          Property(projections(varName), propertyKeyName)(expression.position)
+        else
+          expression
+
+      case _ => expression
+    }
   }
 
   case class Asc(expression: Expression, projections: Map[String, Expression] = Map.empty) extends ColumnOrder
@@ -119,21 +152,6 @@ case class InterestingOrder(requiredOrderCandidate: RequiredOrderCandidate,
 
     InterestingOrder(requiredOrderCandidate.renameColumns(rename),
       interestingOrderCandidates.map(_.renameColumns(rename)).filter(!_.isEmpty))
-  }
-
-  private def projectExpression(expression: Expression, projections: Map[String, Expression]): Expression = {
-    expression match {
-      case Variable(varName) =>
-        projections.getOrElse(varName, expression)
-
-      case Property(Variable(varName), propertyKeyName) =>
-        if (projections.contains(varName))
-          Property(projections(varName), propertyKeyName)(expression.position)
-        else
-          expression
-
-      case _ => expression
-    }
   }
 
   /**

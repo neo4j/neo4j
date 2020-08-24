@@ -20,9 +20,12 @@
 package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
+import org.neo4j.cypher.internal.compiler.planner.logical.SortPlanner.SatisfiedForPlan
+import org.neo4j.cypher.internal.compiler.planner.logical.SortPlanner.planIfAsSortedAsPossible
 import org.neo4j.cypher.internal.ir.RegularQueryProjection
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
+import org.neo4j.cypher.internal.ir.ordering.InterestingOrder.Satisfaction
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.ir.ordering.RequiredOrderCandidate
 import org.neo4j.cypher.internal.logical.plans.Ascending
@@ -128,6 +131,145 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
       sortedPlan should equal(Some(Sort(Projection(inputPlan, Map("a" -> prop("x", "foo"))), Seq(Ascending("a")))))
       context.planningAttributes.solveds.get(sortedPlan.get.id) should equal(
         RegularSinglePlannerQuery(interestingOrder = io, horizon = RegularQueryProjection(Map("a" -> prop("x", "foo")))))
+    }
+  }
+
+  test("SatisfiedForPlan should return false when both satisfied prefix and missing suffix are empty") {
+    val plan = fakeLogicalPlanFor("x")
+    val asSortedAsPossible = SatisfiedForPlan(plan).unapply(Satisfaction(Seq.empty, Seq.empty))
+
+    asSortedAsPossible shouldBe false
+  }
+
+  test("SatisfiedForPlan should return false when satisfied prefix is empty") {
+    val plan = fakeLogicalPlanFor("x")
+    val interestingOrder = Seq(InterestingOrder.Asc(varFor("x")))
+    val asSortedAsPossible = SatisfiedForPlan(plan).unapply(Satisfaction(Seq.empty, interestingOrder))
+
+    asSortedAsPossible shouldBe false
+  }
+
+  test("SatisfiedForPlan should return true when satisfied prefix is non empty and missing suffix is empty") {
+    val plan = fakeLogicalPlanFor("x")
+    val interestingOrder = Seq(InterestingOrder.Asc(varFor("x")))
+    val asSortedAsPossible = SatisfiedForPlan(plan).unapply(Satisfaction(interestingOrder, Seq.empty))
+
+    asSortedAsPossible shouldBe true
+  }
+
+  test("SatisfiedForPlan should return false when both prefix and suffix are non empty and suffix depends on available symbol") {
+    val plan = fakeLogicalPlanFor("x", "y")
+    val interestingOrderOnX = Seq(InterestingOrder.Asc(varFor("x")))
+    val interestingOrderOnY = Seq(InterestingOrder.Asc(varFor("y")))
+    val asSortedAsPossible = SatisfiedForPlan(plan).unapply(Satisfaction(interestingOrderOnX, interestingOrderOnY))
+
+    asSortedAsPossible shouldBe false
+  }
+
+  test("SatisfiedForPlan should return true when both prefix and suffix are non empty and suffix doesn't depend on available symbol") {
+    val plan = fakeLogicalPlanFor("x")
+    val interestingOrderOnX = Seq(InterestingOrder.Asc(varFor("x")))
+    val interestingOrderOnY = Seq(InterestingOrder.Asc(varFor("y")))
+    val asSortedAsPossible = SatisfiedForPlan(plan).unapply(Satisfaction(interestingOrderOnX, interestingOrderOnY))
+
+    asSortedAsPossible shouldBe true
+  }
+
+  test("planIfAsSortedAsPossible should sort if possible") {
+    val sortExpr = prop("x", "foo")
+    val io = InterestingOrder.required(RequiredOrderCandidate.asc(sortExpr))
+
+    new given().withLogicalPlanningContext { (_, context) =>
+      val plan = fakeLogicalPlanFor(context.planningAttributes, "x")
+
+      // When
+      val sortedPlan = planIfAsSortedAsPossible(plan, io, context)
+
+      // Then
+      sortedPlan.get shouldBe a[Sort]
+    }
+  }
+
+  test("planIfAsSortedAsPossible should return sorted plan if already sorted") {
+    val sortExpr = prop("x", "foo")
+    val io = InterestingOrder.required(RequiredOrderCandidate.asc(sortExpr))
+
+    new given().withLogicalPlanningContext { (_, context) =>
+      val plan = fakeLogicalPlanFor(context.planningAttributes, "x")
+      context.planningAttributes.providedOrders.set(plan.id, ProvidedOrder.asc(sortExpr))
+
+      // When
+      val sortedPlan = planIfAsSortedAsPossible(plan, io, context)
+
+      // Then
+      sortedPlan should equal(Some(plan))
+    }
+  }
+
+  test("planIfAsSortedAsPossible should return plan if partially sorted, but non-sorted columns not in available symbols") {
+    val sortExprX = prop("x", "foo")
+    val sortExprY = prop("y", "foo")
+    val io = InterestingOrder.required(RequiredOrderCandidate.asc(sortExprX).asc(sortExprY))
+
+    new given().withLogicalPlanningContext { (_, context) =>
+      val plan = fakeLogicalPlanFor(context.planningAttributes, "x")
+      context.planningAttributes.providedOrders.set(plan.id, ProvidedOrder.asc(sortExprX))
+
+      // When
+      val sortedPlan = planIfAsSortedAsPossible(plan, io, context)
+
+      // Then
+      sortedPlan should equal(Some(plan))
+    }
+  }
+
+  test("planIfAsSortedAsPossible should plan partial sort, when non-sorted columns dependencies in available symbols") {
+    val sortExprX = varFor("x")
+    val sortExprY = varFor("y")
+    val io = InterestingOrder.required(RequiredOrderCandidate.asc(sortExprX).asc(sortExprY))
+
+    new given().withLogicalPlanningContext { (_, context) =>
+      val plan = fakeLogicalPlanFor(context.planningAttributes, "x", "y")
+      context.planningAttributes.providedOrders.set(plan.id, ProvidedOrder.asc(sortExprX))
+
+      // When
+      val sortedPlan = planIfAsSortedAsPossible(plan, io, context)
+
+      // Then
+      sortedPlan should equal(Some(
+        PartialSort(plan, Seq(Ascending("x")), Seq(Ascending("y")))
+      ))
+    }
+  }
+
+  test("planIfAsSortedAsPossible should return None when not possible to sort, plan not partially sorted.") {
+    val sortExprX = varFor("x")
+    val io = InterestingOrder.required(RequiredOrderCandidate.asc(sortExprX))
+
+    new given().withLogicalPlanningContext { (_, context) =>
+      val plan = fakeLogicalPlanFor(context.planningAttributes, "y")
+
+      // When
+      val sortedPlan = planIfAsSortedAsPossible(plan, io, context)
+
+      // Then
+      sortedPlan should equal(None)
+    }
+  }
+
+  test("planIfAsSortedAsPossible should return None when not possible to sort, plan not partially sorted but same prefix.") {
+    val sortExprX = varFor("x")
+    val sortExprY = varFor("y")
+    val io = InterestingOrder.required(RequiredOrderCandidate.asc(sortExprX).asc(sortExprY))
+
+    new given().withLogicalPlanningContext { (_, context) =>
+      val plan = fakeLogicalPlanFor(context.planningAttributes, "x")
+
+      // When
+      val sortedPlan = planIfAsSortedAsPossible(plan, io, context)
+
+      // Then
+      sortedPlan should equal(None)
     }
   }
 

@@ -35,6 +35,35 @@ import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class InterestingOrderTest extends CypherFunSuite {
+
+  test("Column Order should return correct dependencies when no projections") {
+    val columnOrder = InterestingOrder.Asc(varFor("a"), projections = Map.empty)
+
+    columnOrder.dependencies shouldBe Set(varFor("a"))
+  }
+
+  test("Column Order on variable, with non empty projection list, should return correct dependencies") {
+    val projections = Map(
+      "a3" -> varFor("a2"),
+      "a2" -> prop("a1", "prop1"),
+      "b" -> varFor("b1")
+    )
+    val columnOrder = InterestingOrder.Asc(varFor("a3"), projections)
+
+    columnOrder.dependencies shouldBe Set(varFor("a1"), varFor("a2"), varFor("a3"))
+  }
+
+  test("Column Order on property, with non empty projection list, should return correct dependencies") {
+    val projections = Map(
+      "a3" -> varFor("a2"),
+      "a2" -> varFor("a1"),
+      "b" -> varFor("b1")
+    )
+    val columnOrder = InterestingOrder.Asc(prop("a3", "prop1"), projections)
+
+    columnOrder.dependencies shouldBe Set(varFor("a1"), varFor("a2"), varFor("a3"))
+  }
+
   test("should reverse project property to variable") {
     val io = InterestingOrder.required(RequiredOrderCandidate.asc(varFor("xfoo")))
     // projection

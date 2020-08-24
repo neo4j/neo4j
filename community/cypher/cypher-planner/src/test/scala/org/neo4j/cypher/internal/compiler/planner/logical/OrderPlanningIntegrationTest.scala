@@ -697,13 +697,13 @@ class OrderPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
     }.getLogicalPlanFor(query)._2
 
     // Different join and expand variants are OK, but it should maintain the
-    // order from a and only need to partially sort c
+    // order from a and only need to partially sort e
     plan.treeCount {
       case _: Sort => true
     } shouldBe 0
-    plan.treeCount {
-      case PartialSort(_, Seq(Ascending("a.prop")), Seq(Ascending("e.prop"))) => true
-    } shouldBe 1
+    plan should beLike {
+      case PartialSort(_, Seq(Ascending("a.prop")), Seq(Ascending("e.prop"))) => ()
+    }
   }
 
   test("Should choose larger index on the same variable, if sorting can be avoided, when sorting on 2 variables.") {
@@ -737,9 +737,80 @@ class OrderPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
     plan.treeCount {
       case _: Sort => true
     } shouldBe 0
+    plan should beLike {
+      case PartialSort(_, Seq(Ascending("a.prop")), Seq(Ascending("c.prop"))) => ()
+    }
+  }
+
+  test("Should choose larger index on the same variable, if sorting can be avoided, when sorting on 2 variables, with projection.") {
+    val query =
+      """MATCH (a:A)-->(b)-->(c)
+        |WHERE exists(a.prop) AND exists(a.foo)
+        |RETURN a.prop AS first, c.prop AS second
+        |ORDER BY first, second""".stripMargin
+
+    val selectivities = Map[Expression, Double](
+      hasLabels("a", "A") -> 1.0,
+      Exists(prop("a", "prop"))(pos) -> 0.5,
+      Exists(prop("a", "foo"))(pos) -> 0.1
+    ).withDefaultValue(1.0)
+
+    val plan = new given {
+      // Make it cheapest to start on a.foo.
+      cardinality = mapCardinality {
+        case RegularSinglePlannerQuery(queryGraph, _, _, _, _) =>
+          // The more nodes, the more row
+          val preSelectionCardinality = Math.pow(100.0, queryGraph.patternNodes.size)
+          queryGraph.selections.predicates.foldLeft(preSelectionCardinality){ case (rows, predicate) => rows * selectivities(predicate.expr)}
+      }
+      indexOn("A", "prop").providesOrder(IndexOrderCapability.BOTH)
+      indexOn("A", "foo")
+    }.getLogicalPlanFor(query)._2
+
+    // Different join and expand variants are OK, but it should maintain the
+    // order from a and only need to partially sort c.
+    // If this were to disregard sorting, the index on a.foo would be more selective and thus a better choice than a.prop.
     plan.treeCount {
-      case PartialSort(_, Seq(Ascending("a.prop")), Seq(Ascending("c.prop"))) => true
+      case _: Sort => true
+    } shouldBe 0
+    plan should beLike {
+      case PartialSort(_, Seq(Ascending("first")), Seq(Ascending("second"))) => ()
+    }
+  }
+
+  test("Should plan Partial Sort in between Expands, when sorting on 2 variables with projection.") {
+    val query =
+      """MATCH (a:A)-->(b)-->(c)
+        |WHERE exists(a.prop)
+        |RETURN a.prop AS first, b.prop AS second
+        |ORDER BY first, second""".stripMargin
+
+    val selectivities = Map[Expression, Double](
+      hasLabels("a", "A") -> 1.0,
+      Exists(prop("a", "prop"))(pos) -> 0.5
+    ).withDefaultValue(1.0)
+
+    val plan = new given {
+      // Make it cheapest to start on a.foo.
+      cardinality = mapCardinality {
+        case RegularSinglePlannerQuery(queryGraph, _, _, _, _) =>
+          // The more nodes, the more row
+          val preSelectionCardinality = Math.pow(100.0, queryGraph.patternNodes.size)
+          queryGraph.selections.predicates.foldLeft(preSelectionCardinality){ case (rows, predicate) => rows * selectivities(predicate.expr)}
+      }
+      indexOn("A", "prop").providesOrder(IndexOrderCapability.BOTH)
+    }.getLogicalPlanFor(query)._2
+
+    // Different join and expand variants are OK, but it should maintain the
+    // order from a and only need to partially sort b.
+    plan.treeCount {
+      case _: Sort => true
+    } shouldBe 0
+    plan.treeCount {
+      case PartialSort(_, Seq(Ascending("first")), Seq(Ascending("second"))) => true
     } shouldBe 1
+    // The PartialSort should be between the expands, not at the end.
+    plan should not be a[PartialSort]
   }
 
   test("Should plan sort last when sorting on a property in last node in the expand") {

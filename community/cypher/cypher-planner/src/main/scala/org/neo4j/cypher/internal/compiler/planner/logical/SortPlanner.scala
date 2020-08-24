@@ -41,7 +41,7 @@ object SortPlanner {
    *
    * If the interesting order is empty, return None.
    * If the interesting order is non-empty, and the given plan already satisfies the interesting order, return the same plan.
-   * If the interesting order is non-empty, and the given plan does not already satisfies the interesting order, try to plan a Sort/PartialSort
+   * If the interesting order is non-empty, and the given plan does not already satisfy the interesting order, try to plan a Sort/PartialSort
    * to satisfy the interesting order. If that is possible, return the new plan, otherwise None.
    */
   def maybeSortedPlan(plan: LogicalPlan, interestingOrder: InterestingOrder, context: LogicalPlanningContext): Option[LogicalPlan] = {
@@ -59,6 +59,14 @@ object SortPlanner {
     }
   }
 
+  /**
+   * Given a plan and an interesting order, try to return a plan that satisfies the interesting order for the current available symbols.
+   *
+   * Tries to sort with `maybeSortedPlan`. If plan after sorting is:
+   * - Fully sorted: return plan
+   * - No sorted columns: return None
+   * - Partially sorted, but the non-sorted expressions aren't in scope yet: return plan
+   */
   def planIfAsSortedAsPossible(plan: LogicalPlan, interestingOrder: InterestingOrder, context: LogicalPlanningContext): Option[LogicalPlan] = {
     // This plan will be fully sorted if possible, but even otherwise it might be as sorted as currently possible.
     val newPlan = maybeSortedPlan(plan, interestingOrder, context).getOrElse(plan)
@@ -87,7 +95,7 @@ object SortPlanner {
       arg.satisfiedPrefix.nonEmpty && {
         val dependencies: Set[String] = for {
           columnOrder <- arg.missingSuffix.toSet[InterestingOrder.ColumnOrder]
-          dependency <- columnOrder.expression.dependencies
+          dependency <- columnOrder.dependencies
         } yield dependency.name
         !plan.availableSymbols.exists(dependencies.contains)
       }
