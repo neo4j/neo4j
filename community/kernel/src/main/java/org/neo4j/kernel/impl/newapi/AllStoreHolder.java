@@ -895,19 +895,14 @@ public class AllStoreHolder extends Read
     public RawIterator<AnyValue[],ProcedureException> procedureCallSchema( int id, AnyValue[] arguments, ProcedureCallContext context )
             throws ProcedureException
     {
-        AccessMode accessMode = ktx.securityContext().mode();
-        if ( !accessMode.allowsSchemaWrites() )
-        {
-            throw accessMode.onViolation( format( "Schema operations are not allowed for %s.", ktx.securityContext().description() ) );
-        }
-        return callProcedure( id, arguments, new RestrictedAccessMode( ktx.securityContext().mode(), AccessMode.Static.FULL ), context );
+        return callProcedure( id, arguments, new RestrictedAccessMode( ktx.securityContext().mode(), AccessMode.Static.SCHEMA ), context );
     }
 
     @Override
     public RawIterator<AnyValue[],ProcedureException> procedureCallSchemaOverride( int id, AnyValue[] arguments, ProcedureCallContext context )
             throws ProcedureException
     {
-        return callProcedure( id, arguments, new OverriddenAccessMode( ktx.securityContext().mode(), AccessMode.Static.FULL ), context );
+        return callProcedure( id, arguments, new OverriddenAccessMode( ktx.securityContext().mode(), AccessMode.Static.SCHEMA ), context );
     }
 
     @Override
