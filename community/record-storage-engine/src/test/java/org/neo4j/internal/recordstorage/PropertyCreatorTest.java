@@ -38,7 +38,6 @@ import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
@@ -72,7 +71,7 @@ class PropertyCreatorTest
     private NeoStores neoStores;
     private PropertyStore propertyStore;
     private PropertyCreator creator;
-    private DirectRecordAccess<PropertyRecord,PrimitiveRecord> records;
+    private DirectRecordAccess<PropertyRecord> records;
     private PageCursorTracer cursorTracer;
 
     @BeforeEach
@@ -376,7 +375,7 @@ class PropertyCreatorTest
         PropertyRecord prev = null;
         for ( ExpectedRecord initialRecord : initialRecords )
         {
-            PropertyRecord record = this.records.create( propertyStore.nextId( cursorTracer ), primitive.record, NULL ).forChangingData();
+            PropertyRecord record = this.records.create( propertyStore.nextId( cursorTracer ), NULL ).forChangingData();
             record.setInUse( true );
             existingRecord( record, initialRecord );
 
@@ -490,7 +489,7 @@ class PropertyCreatorTest
         return new ExpectedRecord( properties );
     }
 
-    private static class MyPrimitiveProxy implements RecordProxy<NodeRecord,Void>
+    private static class MyPrimitiveProxy implements RecordProxy<NodeRecord>
     {
         private final NodeRecord record = new NodeRecord( 5 );
         private boolean changed;
@@ -530,12 +529,6 @@ class PropertyCreatorTest
         public NodeRecord forReadingData()
         {
             return record;
-        }
-
-        @Override
-        public Void getAdditionalData()
-        {
-            return null;
         }
 
         @Override

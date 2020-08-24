@@ -30,16 +30,16 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 class RecordChangesTest
 {
-    private final RecordAccess.Loader<Object, Object> loader = new RecordAccess.Loader<>()
+    private final RecordAccess.Loader<Object> loader = new RecordAccess.Loader<>()
     {
         @Override
-        public Object newUnused( long o, Object additionalData )
+        public Object newUnused( long o )
         {
             return o;
         }
 
         @Override
-        public Object load( long o, Object additionalData, PageCursorTracer cursorTracer )
+        public Object load( long o, PageCursorTracer cursorTracer )
         {
             return o;
         }
@@ -61,13 +61,13 @@ class RecordChangesTest
     void shouldCountChanges()
     {
         // Given
-        RecordChanges<Object, Object> change = new RecordChanges<>( loader, new MutableInt(), INSTANCE );
+        RecordChanges<Object> change = new RecordChanges<>( loader, new MutableInt(), INSTANCE );
 
         // When
-        change.getOrLoad( 1, null, NULL ).forChangingData();
-        change.getOrLoad( 1, null, NULL ).forChangingData();
-        change.getOrLoad( 2, null, NULL ).forChangingData();
-        change.getOrLoad( 3, null, NULL ).forReadingData();
+        change.getOrLoad( 1, NULL ).forChangingData();
+        change.getOrLoad( 1, NULL ).forChangingData();
+        change.getOrLoad( 2, NULL ).forChangingData();
+        change.getOrLoad( 3, NULL ).forReadingData();
 
         // Then
         assertThat( change.changeSize() ).isEqualTo( 2 );

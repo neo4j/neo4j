@@ -47,7 +47,6 @@ import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -99,7 +98,7 @@ class OnlineIndexUpdatesTest
     private NeoStores neoStores;
     private LifeSupport life;
     private PropertyCreator propertyCreator;
-    private DirectRecordAccess<PropertyRecord,PrimitiveRecord> recordAccess;
+    private DirectRecordAccess<PropertyRecord> recordAccess;
 
     @BeforeEach
     void setUp() throws IOException

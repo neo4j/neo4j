@@ -42,7 +42,7 @@ public abstract class PropertyBasedSchemaRecordChangeTranslator implements Schem
     @Override
     public void dropSchemaRule( TransactionRecordState recordState, SchemaRule rule )
     {
-        recordState.schemaRuleDelete( rule.getId(), rule );
+        recordState.schemaRuleDelete( rule.getId() );
     }
 
     @Override

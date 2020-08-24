@@ -25,40 +25,40 @@ import org.neo4j.internal.recordstorage.RecordAccess;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.transaction.state.RelationshipCreatorTest.Tracker;
 
-public class TrackingRecordAccess<RECORD, ADDITIONAL> implements RecordAccess<RECORD, ADDITIONAL>
+public class TrackingRecordAccess<RECORD> implements RecordAccess<RECORD>
 {
-    private final RecordAccess<RECORD, ADDITIONAL> delegate;
+    private final RecordAccess<RECORD> delegate;
     private final Tracker tracker;
 
-    public TrackingRecordAccess( RecordAccess<RECORD, ADDITIONAL> delegate, Tracker tracker )
+    public TrackingRecordAccess( RecordAccess<RECORD> delegate, Tracker tracker )
     {
         this.delegate = delegate;
         this.tracker = tracker;
     }
 
     @Override
-    public RecordProxy<RECORD, ADDITIONAL> getOrLoad( long key, ADDITIONAL additionalData, PageCursorTracer cursorTracer )
+    public RecordProxy<RECORD> getOrLoad( long key, PageCursorTracer cursorTracer )
     {
-        return new TrackingRecordProxy<>( delegate.getOrLoad( key, additionalData, cursorTracer ), false, tracker );
+        return new TrackingRecordProxy<>( delegate.getOrLoad( key, cursorTracer ), false, tracker );
     }
 
     @Override
-    public RecordProxy<RECORD, ADDITIONAL> create( long key, ADDITIONAL additionalData, PageCursorTracer cursorTracer )
+    public RecordProxy<RECORD> create( long key, PageCursorTracer cursorTracer )
     {
-        return new TrackingRecordProxy<>( delegate.create( key, additionalData, cursorTracer ), true, tracker );
+        return new TrackingRecordProxy<>( delegate.create( key, cursorTracer ), true, tracker );
     }
 
     @Override
-    public RecordProxy<RECORD,ADDITIONAL> getIfLoaded( long key )
+    public RecordProxy<RECORD> getIfLoaded( long key )
     {
-        RecordProxy<RECORD,ADDITIONAL> actual = delegate.getIfLoaded( key );
+        RecordProxy<RECORD> actual = delegate.getIfLoaded( key );
         return actual == null ? null : new TrackingRecordProxy<>( actual, false, tracker );
     }
 
     @Override
-    public RecordProxy<RECORD,ADDITIONAL> setRecord( long key, RECORD record, ADDITIONAL additionalData, PageCursorTracer cursorTracer )
+    public RecordProxy<RECORD> setRecord( long key, RECORD record, PageCursorTracer cursorTracer )
     {
-        return delegate.setRecord( key, record, additionalData, cursorTracer );
+        return delegate.setRecord( key, record, cursorTracer );
     }
 
     @Override
@@ -68,7 +68,7 @@ public class TrackingRecordAccess<RECORD, ADDITIONAL> implements RecordAccess<RE
     }
 
     @Override
-    public Collection<? extends RecordProxy<RECORD,ADDITIONAL>> changes()
+    public Collection<? extends RecordProxy<RECORD>> changes()
     {
         return delegate.changes();
     }

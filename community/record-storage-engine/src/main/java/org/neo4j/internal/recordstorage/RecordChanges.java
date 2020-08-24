@@ -36,15 +36,14 @@ import static org.neo4j.collection.trackable.HeapTrackingCollections.newLongObje
  * transaction as a command.
  *
  * @param <RECORD> type of record
- * @param <ADDITIONAL> additional payload
  */
-public class RecordChanges<RECORD,ADDITIONAL> implements RecordAccess<RECORD,ADDITIONAL>
+public class RecordChanges<RECORD> implements RecordAccess<RECORD>
 {
-    private final MutableLongObjectMap<RecordProxy<RECORD, ADDITIONAL>> recordChanges;
-    private final Loader<RECORD,ADDITIONAL> loader;
+    private final MutableLongObjectMap<RecordProxy<RECORD>> recordChanges;
+    private final Loader<RECORD> loader;
     private final MutableInt changeCounter;
 
-    public RecordChanges( Loader<RECORD,ADDITIONAL> loader, MutableInt globalCounter, MemoryTracker memoryTracker )
+    public RecordChanges( Loader<RECORD> loader, MutableInt globalCounter, MemoryTracker memoryTracker )
     {
         this.loader = loader;
         this.recordChanges = newLongObjectMap( memoryTracker );
@@ -60,28 +59,27 @@ public class RecordChanges<RECORD,ADDITIONAL> implements RecordAccess<RECORD,ADD
     }
 
     @Override
-    public RecordProxy<RECORD, ADDITIONAL> getIfLoaded( long key )
+    public RecordProxy<RECORD> getIfLoaded( long key )
     {
         return recordChanges.get( key );
     }
 
     @Override
-    public RecordProxy<RECORD, ADDITIONAL> getOrLoad( long key, ADDITIONAL additionalData, PageCursorTracer cursorTracer )
+    public RecordProxy<RECORD> getOrLoad( long key, PageCursorTracer cursorTracer )
     {
-        RecordProxy<RECORD, ADDITIONAL> result = recordChanges.get( key );
+        RecordProxy<RECORD> result = recordChanges.get( key );
         if ( result == null )
         {
-            RECORD record = loader.load( key, additionalData, cursorTracer );
-            result = new RecordChange<>( recordChanges, changeCounter, key, record, loader, false, additionalData, cursorTracer );
+            RECORD record = loader.load( key, cursorTracer );
+            result = new RecordChange<>( recordChanges, changeCounter, key, record, loader, false, cursorTracer );
         }
         return result;
     }
 
     @Override
-    public RecordProxy<RECORD,ADDITIONAL> setRecord( long key, RECORD record, ADDITIONAL additionalData, PageCursorTracer cursorTracer )
+    public RecordProxy<RECORD> setRecord( long key, RECORD record, PageCursorTracer cursorTracer )
     {
-        RecordChange<RECORD, ADDITIONAL> recordChange =
-                new RecordChange<>( recordChanges, changeCounter, key, record, loader, false, additionalData, cursorTracer );
+        RecordChange<RECORD> recordChange = new RecordChange<>( recordChanges, changeCounter, key, record, loader, false, cursorTracer );
         recordChanges.put( key, recordChange );
         return recordChange;
     }
@@ -93,33 +91,31 @@ public class RecordChanges<RECORD,ADDITIONAL> implements RecordAccess<RECORD,ADD
     }
 
     @Override
-    public RecordProxy<RECORD, ADDITIONAL> create( long key, ADDITIONAL additionalData, PageCursorTracer cursorTracer )
+    public RecordProxy<RECORD> create( long key, PageCursorTracer cursorTracer )
     {
         if ( recordChanges.containsKey( key ) )
         {
             throw new IllegalStateException( key + " already exists" );
         }
 
-        RECORD record = loader.newUnused( key, additionalData );
-        RecordChange<RECORD,ADDITIONAL> change =
-                new RecordChange<>( recordChanges, changeCounter, key, record, loader, true, additionalData, cursorTracer );
+        RECORD record = loader.newUnused( key );
+        RecordChange<RECORD> change = new RecordChange<>( recordChanges, changeCounter, key, record, loader, true, cursorTracer );
         recordChanges.put( key, change );
         return change;
     }
 
     @Override
-    public Collection<RecordProxy<RECORD,ADDITIONAL>> changes()
+    public Collection<RecordProxy<RECORD>> changes()
     {
         return recordChanges.values();
     }
 
-    public static class RecordChange<RECORD,ADDITIONAL> implements RecordProxy<RECORD, ADDITIONAL>
+    public static class RecordChange<RECORD> implements RecordProxy<RECORD>
     {
-        private final MutableLongObjectMap<RecordProxy<RECORD, ADDITIONAL>> allChanges;
+        private final MutableLongObjectMap<RecordProxy<RECORD>> allChanges;
         private final MutableInt changeCounter;
-        private final Loader<RECORD,ADDITIONAL> loader;
+        private final Loader<RECORD> loader;
 
-        private final ADDITIONAL additionalData;
         private final PageCursorTracer cursorTracer;
         private final RECORD record;
         private final boolean created;
@@ -128,8 +124,8 @@ public class RecordChanges<RECORD,ADDITIONAL> implements RecordAccess<RECORD,ADD
         private RECORD before;
         private boolean changed;
 
-        public RecordChange( MutableLongObjectMap<RecordProxy<RECORD, ADDITIONAL>> allChanges, MutableInt changeCounter,
-                long key, RECORD record, Loader<RECORD,ADDITIONAL> loader, boolean created, ADDITIONAL additionalData, PageCursorTracer cursorTracer )
+        public RecordChange( MutableLongObjectMap<RecordProxy<RECORD>> allChanges, MutableInt changeCounter,
+                long key, RECORD record, Loader<RECORD> loader, boolean created, PageCursorTracer cursorTracer )
         {
             this.allChanges = allChanges;
             this.changeCounter = changeCounter;
@@ -137,7 +133,6 @@ public class RecordChanges<RECORD,ADDITIONAL> implements RecordAccess<RECORD,ADD
             this.record = record;
             this.loader = loader;
             this.created = created;
-            this.additionalData = additionalData;
             this.cursorTracer = cursorTracer;
         }
 
@@ -171,7 +166,7 @@ public class RecordChanges<RECORD,ADDITIONAL> implements RecordAccess<RECORD,ADD
             ensureHasBeforeRecordImage();
             if ( !this.changed )
             {
-                RecordProxy<RECORD,ADDITIONAL> previous = this.allChanges.put( key, this );
+                RecordProxy<RECORD> previous = this.allChanges.put( key, this );
 
                 if ( previous == null || !previous.isChanged() )
                 {
@@ -233,12 +228,6 @@ public class RecordChanges<RECORD,ADDITIONAL> implements RecordAccess<RECORD,ADD
         public boolean isCreated()
         {
             return created;
-        }
-
-        @Override
-        public ADDITIONAL getAdditionalData()
-        {
-            return additionalData;
         }
     }
 }

@@ -55,7 +55,7 @@ class RelationshipDeleter
      */
     void relDelete( long id, RecordAccessSet recordChanges, ResourceLocker locks )
     {
-        RelationshipRecord record = recordChanges.getRelRecords().getOrLoad( id, null, cursorTracer ).forChangingLinkage();
+        RelationshipRecord record = recordChanges.getRelRecords().getOrLoad( id, cursorTracer ).forChangingLinkage();
         propertyChainDeleter.deletePropertyChain( record, recordChanges.getPropertyRecords() );
         disconnectRelationship( record, recordChanges, locks );
         updateNodesForDeletedRelationship( record, recordChanges, locks );
@@ -72,7 +72,7 @@ class RelationshipDeleter
     }
 
     private void disconnect( RelationshipRecord rel, RelationshipConnection pointer,
-            RecordAccess<RelationshipRecord, Void> relChanges, ResourceLocker locks )
+            RecordAccess<RelationshipRecord> relChanges, ResourceLocker locks )
     {
         long otherRelId = pointer.otherSide().get( rel );
         if ( otherRelId == Record.NO_NEXT_RELATIONSHIP.intValue() )
@@ -81,7 +81,7 @@ class RelationshipDeleter
         }
 
         locks.acquireExclusive( LockTracer.NONE, ResourceTypes.RELATIONSHIP, otherRelId );
-        RelationshipRecord otherRel = relChanges.getOrLoad( otherRelId, null, cursorTracer ).forChangingLinkage();
+        RelationshipRecord otherRel = relChanges.getOrLoad( otherRelId, cursorTracer ).forChangingLinkage();
         boolean changed = false;
         long newId = pointer.get( rel );
         boolean newIsFirst = pointer.isFirstInChain( rel );
@@ -104,11 +104,11 @@ class RelationshipDeleter
     private void updateNodesForDeletedRelationship( RelationshipRecord rel, RecordAccessSet recordChanges,
             ResourceLocker locks )
     {
-        RecordProxy<NodeRecord, Void> startNodeChange = recordChanges.getNodeRecords().getOrLoad( rel.getFirstNode(), null, cursorTracer );
-        RecordProxy<NodeRecord, Void> endNodeChange = recordChanges.getNodeRecords().getOrLoad( rel.getSecondNode(), null, cursorTracer );
+        RecordProxy<NodeRecord> startNodeChange = recordChanges.getNodeRecords().getOrLoad( rel.getFirstNode(), cursorTracer );
+        RecordProxy<NodeRecord> endNodeChange = recordChanges.getNodeRecords().getOrLoad( rel.getSecondNode(), cursorTracer );
 
-        NodeRecord startNode = recordChanges.getNodeRecords().getOrLoad( rel.getFirstNode(), null, cursorTracer ).forReadingLinkage();
-        NodeRecord endNode = recordChanges.getNodeRecords().getOrLoad( rel.getSecondNode(), null, cursorTracer ).forReadingLinkage();
+        NodeRecord startNode = recordChanges.getNodeRecords().getOrLoad( rel.getFirstNode(), cursorTracer ).forReadingLinkage();
+        NodeRecord endNode = recordChanges.getNodeRecords().getOrLoad( rel.getSecondNode(), cursorTracer ).forReadingLinkage();
         boolean loop = startNode.getId() == endNode.getId();
 
         if ( !startNode.isDense() )
@@ -123,7 +123,7 @@ class RelationshipDeleter
         }
         else
         {
-            RecordProxy<RelationshipGroupRecord, Integer> groupChange =
+            RecordProxy<RelationshipGroupRecord> groupChange =
                     relGroupGetter.getRelationshipGroup( startNode, rel.getType(),
                             recordChanges.getRelGroupRecords() ).group();
             assert groupChange != null : "Relationship group " + rel.getType() + " should have existed here";
@@ -157,7 +157,7 @@ class RelationshipDeleter
         }
         else
         {
-            RecordProxy<RelationshipGroupRecord, Integer> groupChange =
+            RecordProxy<RelationshipGroupRecord> groupChange =
                     relGroupGetter.getRelationshipGroup( endNode, rel.getType(),
                             recordChanges.getRelGroupRecords() ).group();
             DirectionWrapper dir = DirectionIdentifier.wrapDirection( rel, endNode );
@@ -184,7 +184,7 @@ class RelationshipDeleter
     }
 
     private void decrementTotalRelationshipCount( long nodeId, RelationshipRecord rel, long firstRelId,
-            RecordAccess<RelationshipRecord, Void> relRecords, ResourceLocker locks )
+            RecordAccess<RelationshipRecord> relRecords, ResourceLocker locks )
     {
         if ( firstRelId == Record.NO_PREV_RELATIONSHIP.intValue() )
         {
@@ -195,7 +195,7 @@ class RelationshipDeleter
         {
             locks.acquireExclusive( LockTracer.NONE, ResourceTypes.RELATIONSHIP, firstRelId );
         }
-        RelationshipRecord firstRel = relRecords.getOrLoad( firstRelId, null, cursorTracer ).forChangingLinkage();
+        RelationshipRecord firstRel = relRecords.getOrLoad( firstRelId, cursorTracer ).forChangingLinkage();
         if ( nodeId == firstRel.getFirstNode() )
         {
             firstRel.setFirstPrevRel( firstInChain ? relCount( nodeId, rel ) - 1 : relCount( nodeId, firstRel ) - 1 );
@@ -208,9 +208,9 @@ class RelationshipDeleter
         }
     }
 
-    private void deleteGroup( RecordProxy<NodeRecord, Void> nodeChange,
+    private void deleteGroup( RecordProxy<NodeRecord> nodeChange,
                               RelationshipGroupRecord group,
-                              RecordAccess<RelationshipGroupRecord, Integer> relGroupRecords )
+                              RecordAccess<RelationshipGroupRecord> relGroupRecords )
     {
         long previous = group.getPrev();
         long next = group.getNext();
@@ -220,13 +220,13 @@ class RelationshipDeleter
         }
         else
         {   // There are others before it, point the previous to the next group
-            RelationshipGroupRecord previousRecord = relGroupRecords.getOrLoad( previous, null, cursorTracer ).forChangingLinkage();
+            RelationshipGroupRecord previousRecord = relGroupRecords.getOrLoad( previous, cursorTracer ).forChangingLinkage();
             previousRecord.setNext( next );
         }
 
         if ( next != Record.NO_NEXT_RELATIONSHIP.intValue() )
         {   // There are groups after this one, point that next group to the previous of the group to be deleted
-            RelationshipGroupRecord nextRecord = relGroupRecords.getOrLoad( next, null, cursorTracer ).forChangingLinkage();
+            RelationshipGroupRecord nextRecord = relGroupRecords.getOrLoad( next, cursorTracer ).forChangingLinkage();
             nextRecord.setPrev( previous );
         }
         group.setInUse( false );

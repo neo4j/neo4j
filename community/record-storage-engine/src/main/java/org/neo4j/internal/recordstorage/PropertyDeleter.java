@@ -39,12 +39,12 @@ public class PropertyDeleter
     }
 
     public void deletePropertyChain( PrimitiveRecord primitive,
-            RecordAccess<PropertyRecord, PrimitiveRecord> propertyRecords )
+            RecordAccess<PropertyRecord> propertyRecords )
     {
         long nextProp = primitive.getNextProp();
         while ( nextProp != Record.NO_NEXT_PROPERTY.intValue() )
         {
-            RecordProxy<PropertyRecord, PrimitiveRecord> propertyChange = propertyRecords.getOrLoad( nextProp, primitive, cursorTracer );
+            RecordProxy<PropertyRecord> propertyChange = propertyRecords.getOrLoad( nextProp, cursorTracer );
 
             // TODO forChanging/forReading piggy-backing
             PropertyRecord propRecord = propertyChange.forChangingData();
@@ -79,8 +79,8 @@ public class PropertyDeleter
      * @param propertyRecords access to records.
      * @return {@code true} if the property was found and removed, otherwise {@code false}.
      */
-    public <P extends PrimitiveRecord> boolean removePropertyIfExists( RecordProxy<P,Void> primitiveProxy,
-            int propertyKey, RecordAccess<PropertyRecord,PrimitiveRecord> propertyRecords )
+    public <P extends PrimitiveRecord> boolean removePropertyIfExists( RecordProxy<P> primitiveProxy,
+            int propertyKey, RecordAccess<PropertyRecord> propertyRecords )
     {
         PrimitiveRecord primitive = primitiveProxy.forReadingData();
         long propertyId = // propertyData.getId();
@@ -102,8 +102,8 @@ public class PropertyDeleter
      * @param propertyRecords access to records.
      * @throws IllegalStateException if property key was not found in the property chain.
      */
-    public <P extends PrimitiveRecord> void removeProperty( RecordProxy<P,Void> primitiveProxy, int propertyKey,
-            RecordAccess<PropertyRecord,PrimitiveRecord> propertyRecords )
+    public <P extends PrimitiveRecord> void removeProperty( RecordProxy<P> primitiveProxy, int propertyKey,
+            RecordAccess<PropertyRecord> propertyRecords )
     {
         PrimitiveRecord primitive = primitiveProxy.forReadingData();
         long propertyId = // propertyData.getId();
@@ -111,11 +111,11 @@ public class PropertyDeleter
         removeProperty( primitiveProxy, propertyKey, propertyRecords, primitive, propertyId );
     }
 
-    private <P extends PrimitiveRecord> void removeProperty( RecordProxy<P,Void> primitiveProxy, int propertyKey,
-            RecordAccess<PropertyRecord,PrimitiveRecord> propertyRecords, PrimitiveRecord primitive,
+    private <P extends PrimitiveRecord> void removeProperty( RecordProxy<P> primitiveProxy, int propertyKey,
+            RecordAccess<PropertyRecord> propertyRecords, PrimitiveRecord primitive,
             long propertyId )
     {
-        RecordProxy<PropertyRecord, PrimitiveRecord> recordChange = propertyRecords.getOrLoad( propertyId, primitive, cursorTracer );
+        RecordProxy<PropertyRecord> recordChange = propertyRecords.getOrLoad( propertyId, cursorTracer );
         PropertyRecord propRecord = recordChange.forChangingData();
         if ( !propRecord.inUse() )
         {
@@ -153,8 +153,8 @@ public class PropertyDeleter
     }
 
     private <P extends PrimitiveRecord> void unlinkPropertyRecord( PropertyRecord propRecord,
-            RecordAccess<PropertyRecord,PrimitiveRecord> propertyRecords,
-            RecordProxy<P, Void> primitiveRecordChange )
+            RecordAccess<PropertyRecord> propertyRecords,
+            RecordProxy<P> primitiveRecordChange )
     {
         P primitive = primitiveRecordChange.forReadingLinkage();
         assert traverser.assertPropertyChain( primitive, propertyRecords );
@@ -170,7 +170,7 @@ public class PropertyDeleter
         }
         if ( prevProp != Record.NO_PREVIOUS_PROPERTY.intValue() )
         {
-            PropertyRecord prevPropRecord = propertyRecords.getOrLoad( prevProp, primitive, cursorTracer ).forChangingLinkage();
+            PropertyRecord prevPropRecord = propertyRecords.getOrLoad( prevProp, cursorTracer ).forChangingLinkage();
             assert prevPropRecord.inUse() : prevPropRecord + "->" + propRecord
             + " for " + primitive;
             prevPropRecord.setNextProp( nextProp );
@@ -178,7 +178,7 @@ public class PropertyDeleter
         }
         if ( nextProp != Record.NO_NEXT_PROPERTY.intValue() )
         {
-            PropertyRecord nextPropRecord = propertyRecords.getOrLoad( nextProp, primitive, cursorTracer ).forChangingLinkage();
+            PropertyRecord nextPropRecord = propertyRecords.getOrLoad( nextProp, cursorTracer ).forChangingLinkage();
             assert nextPropRecord.inUse() : propRecord + "->" + nextPropRecord
             + " for " + primitive;
             nextPropRecord.setPrevProp( prevProp );

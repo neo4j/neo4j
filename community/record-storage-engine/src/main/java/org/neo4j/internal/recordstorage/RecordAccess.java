@@ -26,7 +26,7 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 /**
  * Provides access to records, both for reading and for writing.
  */
-public interface RecordAccess<RECORD,ADDITIONAL>
+public interface RecordAccess<R>
 {
     /**
      * Gets an already loaded record, or loads it as part of this call if it wasn't. The {@link RecordProxy}
@@ -35,34 +35,32 @@ public interface RecordAccess<RECORD,ADDITIONAL>
      * use case (implementation).
      *
      * @param key the record key.
-     * @param additionalData additional data to put in the record after loaded.
      * @return a {@link RecordProxy} for the record for {@code key}.
      */
-    RecordProxy<RECORD, ADDITIONAL> getOrLoad( long key, ADDITIONAL additionalData, PageCursorTracer cursorTracer );
+    RecordProxy<R> getOrLoad( long key, PageCursorTracer cursorTracer );
 
-    RecordProxy<RECORD, ADDITIONAL> getIfLoaded( long key );
+    RecordProxy<R> getIfLoaded( long key );
 
-    RecordProxy<RECORD,ADDITIONAL> setRecord( long key, RECORD record, ADDITIONAL additionalData, PageCursorTracer cursorTracer );
+    RecordProxy<R> setRecord( long key, R record, PageCursorTracer cursorTracer );
 
     /**
      * Creates a new record with the given {@code key}. Any {@code additionalData} is set in the
      * record before returning.
      *
      * @param key the record key.
-     * @param additionalData additional data to put in the record after loaded.
      * @return a {@link RecordProxy} for the record for {@code key}.
      */
-    RecordProxy<RECORD, ADDITIONAL> create( long key, ADDITIONAL additionalData, PageCursorTracer cursorTracer );
+    RecordProxy<R> create( long key, PageCursorTracer cursorTracer );
 
     int changeSize();
 
-    Collection<? extends RecordProxy<RECORD,ADDITIONAL>> changes();
+    Collection<? extends RecordProxy<R>> changes();
 
     /**
      * A proxy for a record that encapsulates load/store actions to take, knowing when the underlying record is
      * requested for reading or for writing.
      */
-    interface RecordProxy<RECORD, ADDITIONAL>
+    interface RecordProxy<RECORD>
     {
         long getKey();
 
@@ -74,8 +72,6 @@ public interface RecordAccess<RECORD,ADDITIONAL>
 
         RECORD forReadingData();
 
-        ADDITIONAL getAdditionalData();
-
         RECORD getBefore();
 
         boolean isChanged();
@@ -86,11 +82,11 @@ public interface RecordAccess<RECORD,ADDITIONAL>
     /**
      * Hook for loading and creating records.
      */
-    interface Loader<RECORD,ADDITIONAL>
+    interface Loader<RECORD>
     {
-        RECORD newUnused( long key, ADDITIONAL additionalData );
+        RECORD newUnused( long key );
 
-        RECORD load( long key, ADDITIONAL additionalData, PageCursorTracer cursorTracer );
+        RECORD load( long key, PageCursorTracer cursorTracer );
 
         void ensureHeavy( RECORD record, PageCursorTracer cursorTracer );
 

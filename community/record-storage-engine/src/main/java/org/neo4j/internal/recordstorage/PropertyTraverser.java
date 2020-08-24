@@ -54,13 +54,13 @@ public class PropertyTraverser
      * {@code strict} is false value of {@link Record#NO_NEXT_PROPERTY}.
      */
     public long findPropertyRecordContaining( PrimitiveRecord primitive, int propertyKey,
-            RecordAccess<PropertyRecord, PrimitiveRecord> propertyRecords, boolean strict )
+            RecordAccess<PropertyRecord> propertyRecords, boolean strict )
     {
         long propertyRecordId = primitive.getNextProp();
         while ( !Record.NO_NEXT_PROPERTY.is( propertyRecordId ) )
         {
             PropertyRecord propertyRecord =
-                    propertyRecords.getOrLoad( propertyRecordId, primitive, cursorTracer ).forReadingLinkage();
+                    propertyRecords.getOrLoad( propertyRecordId, cursorTracer ).forReadingLinkage();
             if ( propertyRecord.getPropertyBlock( propertyKey ) != null )
             {
                 return propertyRecordId;
@@ -77,13 +77,11 @@ public class PropertyTraverser
         return Record.NO_NEXT_PROPERTY.intValue();
     }
 
-    public void getPropertyChain( long nextProp,
-            RecordAccess<PropertyRecord, PrimitiveRecord> propertyRecords,
-            Consumer<PropertyBlock> collector )
+    public void getPropertyChain( long nextProp, RecordAccess<PropertyRecord> propertyRecords, Consumer<PropertyBlock> collector )
     {
         while ( nextProp != Record.NO_NEXT_PROPERTY.intValue() )
         {
-            PropertyRecord propRecord = propertyRecords.getOrLoad( nextProp, null, cursorTracer ).forReadingData();
+            PropertyRecord propRecord = propertyRecords.getOrLoad( nextProp, cursorTracer ).forReadingData();
             for ( PropertyBlock propBlock : propRecord )
             {
                 collector.accept( propBlock );
@@ -92,14 +90,13 @@ public class PropertyTraverser
         }
     }
 
-    public boolean assertPropertyChain( PrimitiveRecord primitive,
-            RecordAccess<PropertyRecord, PrimitiveRecord> propertyRecords )
+    public boolean assertPropertyChain( PrimitiveRecord primitive, RecordAccess<PropertyRecord> propertyRecords )
     {
         List<PropertyRecord> toCheck = new LinkedList<>();
         long nextIdToFetch = primitive.getNextProp();
         while ( nextIdToFetch != Record.NO_NEXT_PROPERTY.intValue() )
         {
-            PropertyRecord propRecord = propertyRecords.getOrLoad( nextIdToFetch, primitive, cursorTracer ).forReadingLinkage();
+            PropertyRecord propRecord = propertyRecords.getOrLoad( nextIdToFetch, cursorTracer ).forReadingLinkage();
             toCheck.add( propRecord );
             assert propRecord.inUse() : primitive + "->"
                                         + Arrays.toString( toCheck.toArray() );

@@ -21,8 +21,8 @@ package org.neo4j.internal.recordstorage;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.function.BiFunction;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -40,7 +40,7 @@ import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 /** Test utility DSL for creating store records */
 public class RecordBuilders
 {
-    public static <R extends AbstractBaseRecord, A> List<R> records( Collection<? extends RecordAccess.RecordProxy<R,A>> changes )
+    public static <R extends AbstractBaseRecord, A> List<R> records( Collection<? extends RecordAccess.RecordProxy<R>> changes )
     {
         return changes.stream().map( RecordAccess.RecordProxy::forChangingData ).collect( Collectors.toList() );
     }
@@ -196,15 +196,14 @@ public class RecordBuilders
     {
         return new RecordChangeSet(
                 new Loader( filterType( records, NodeRecord.class ).collect( Collectors.toList() ),
-                        (BiFunction<Long,Object,NodeRecord>) ( key, extra ) -> new NodeRecord( key ) ),
+                        (Function<Long,NodeRecord>) NodeRecord::new ),
                 null,
                 new Loader( filterType( records, RelationshipRecord.class ).collect( Collectors.toList() ),
-                        (BiFunction<Long,Object,RelationshipRecord>) ( key, extra ) -> new RelationshipRecord( key ) ),
+                        (Function<Long,RelationshipRecord>) RelationshipRecord::new ),
                 new Loader( filterType( records, RelationshipGroupRecord.class ).collect( Collectors.toList() ),
-                        (BiFunction<Long,Integer,RelationshipGroupRecord>) ( key, extra ) -> {
-                            RelationshipGroupRecord group =
-                                    new RelationshipGroupRecord( key );
-                            group.setType( extra );
+                        (Function<Long,RelationshipGroupRecord>)  key -> {
+                            RelationshipGroupRecord group = new RelationshipGroupRecord( key );
+//                            group.setType( extra );
                             return group;
                         } ),
                 null, null, null, null, EmptyMemoryTracker.INSTANCE );
@@ -224,25 +223,25 @@ public class RecordBuilders
         }, NULL );
     }
 
-    private static class Loader<T extends AbstractBaseRecord, E> implements RecordAccess.Loader<T,E>
+    private static class Loader<T extends AbstractBaseRecord> implements RecordAccess.Loader<T>
     {
         private final List<T> records;
-        private final BiFunction<Long, E, T> newRecord;
+        private final Function<Long, T> newRecord;
 
-        Loader( List<T> records, BiFunction<Long,E,T> newRecord )
+        Loader( List<T> records, Function<Long,T> newRecord )
         {
             this.records = records;
             this.newRecord = newRecord;
         }
 
         @Override
-        public T newUnused( long key, E additionalData )
+        public T newUnused( long key )
         {
-            return newRecord.apply( key, additionalData );
+            return newRecord.apply( key );
         }
 
         @Override
-        public T load( long key, E additionalData, PageCursorTracer cursorTracer )
+        public T load( long key, PageCursorTracer cursorTracer )
         {
             return records.stream().filter( r -> r.getId() == key ).findFirst().get();
         }
