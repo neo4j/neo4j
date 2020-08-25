@@ -24,7 +24,6 @@ import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RecordStore;
-import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
@@ -55,9 +54,7 @@ public class DirectRecordAccessSet implements RecordAccessSet
         RecordStore<PropertyKeyTokenRecord> propertyKeyTokenStore = neoStores.getPropertyKeyTokenStore();
         RecordStore<RelationshipTypeTokenRecord> relationshipTypeTokenStore = neoStores.getRelationshipTypeTokenStore();
         RecordStore<LabelTokenRecord> labelTokenStore = neoStores.getLabelTokenStore();
-        SchemaStore schemaStore = neoStores.getSchemaStore();
-        Loaders loaders = new Loaders( nodeStore, propertyStore, relationshipStore, relationshipGroupStore,
-                propertyKeyTokenStore, relationshipTypeTokenStore, labelTokenStore, schemaStore );
+        Loaders loaders = new Loaders( neoStores );
         nodeRecords = new DirectRecordAccess<>( nodeStore, loaders.nodeLoader() );
         propertyRecords = new DirectRecordAccess<>( propertyStore, loaders.propertyLoader() );
         relationshipRecords = new DirectRecordAccess<>( relationshipStore, loaders.relationshipLoader() );

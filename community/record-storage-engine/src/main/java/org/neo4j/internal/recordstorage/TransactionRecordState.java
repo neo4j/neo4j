@@ -19,6 +19,8 @@
  */
 package org.neo4j.internal.recordstorage;
 
+import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -95,6 +97,7 @@ public class TransactionRecordState implements RecordState
     private final PropertyDeleter propertyDeleter;
     private final PageCursorTracer cursorTracer;
     private final MemoryTracker memoryTracker;
+    private LongObjectHashMap<SchemaRule> schemaRulesMap;
 
     private boolean prepared;
 
@@ -247,13 +250,13 @@ public class TransactionRecordState implements RecordState
         for ( RecordProxy<SchemaRecord> change : schemaRuleChange )
         {
             SchemaRecord schemaRecord = change.forReadingLinkage();
-//            SchemaRule rule = change.getAdditionalData();
-//            if ( schemaRecord.inUse() )
-//            {
-//                integrityValidator.validateSchemaRule( rule );
-//            }
-//            Command.SchemaRuleCommand cmd = new Command.SchemaRuleCommand( change.getBefore(), change.forChangingData(), rule );
-//            schemaChangeByMode.computeIfAbsent( cmd.getMode(), MODE_TO_ARRAY_LIST ).add( cmd );
+            SchemaRule rule = schemaRulesMap.get( schemaRecord.getId() );
+            if ( schemaRecord.inUse() )
+            {
+                integrityValidator.validateSchemaRule( rule );
+            }
+            Command.SchemaRuleCommand cmd = new Command.SchemaRuleCommand( change.getBefore(), change.forChangingData(), rule );
+            schemaChangeByMode.computeIfAbsent( cmd.getMode(), MODE_TO_ARRAY_LIST ).add( cmd );
         }
 
         commands.addAll( schemaChangeByMode.getOrDefault( Mode.DELETE, Collections.emptyList() ) );
@@ -499,15 +502,26 @@ public class TransactionRecordState implements RecordState
     void schemaRuleCreate( long ruleId, boolean isConstraint, SchemaRule rule )
     {
         SchemaRecord record = recordChangeSet.getSchemaRuleChanges().create( ruleId, cursorTracer ).forChangingData();
+        mapSchemaRecordRule( rule, ruleId );
         record.setInUse( true );
         record.setCreated();
         record.setConstraint( isConstraint );
     }
 
-    void schemaRuleDelete( long ruleId )
+    private void mapSchemaRecordRule( SchemaRule rule, long recordId )
     {
-        RecordProxy<SchemaRecord> proxy = recordChangeSet.getSchemaRuleChanges().getOrLoad( ruleId, cursorTracer );
+        if ( schemaRulesMap == null )
+        {
+            schemaRulesMap = LongObjectHashMap.newMap();
+        }
+        schemaRulesMap.put( recordId, rule );
+    }
+
+    void schemaRuleDelete( SchemaRule rule )
+    {
+        RecordProxy<SchemaRecord> proxy = recordChangeSet.getSchemaRuleChanges().getOrLoad( rule.getId(), cursorTracer );
         SchemaRecord record = proxy.forReadingData();
+        mapSchemaRecordRule( rule, rule.getId() );
         if ( record.inUse() )
         {
             record = proxy.forChangingData();
@@ -521,6 +535,7 @@ public class TransactionRecordState implements RecordState
     void schemaRuleSetProperty( long ruleId, int propertyKeyId, Value value, SchemaRule rule )
     {
         RecordProxy<SchemaRecord> record = recordChangeSet.getSchemaRuleChanges().getOrLoad( ruleId, cursorTracer );
+        mapSchemaRecordRule( rule, ruleId );
         propertyCreator.primitiveSetProperty( record, propertyKeyId, value, recordChangeSet.getPropertyRecords() );
     }
 
@@ -535,6 +550,7 @@ public class TransactionRecordState implements RecordState
         RecordAccess<SchemaRecord> changes = recordChangeSet.getSchemaRuleChanges();
         RecordProxy<SchemaRecord> record = changes.getOrLoad( ruleId, cursorTracer );
         changes.setRecord( ruleId, record.forReadingData(), cursorTracer ).forChangingData();
+        mapSchemaRecordRule( rule, ruleId );
         propertyCreator.primitiveSetProperty( record, propertyKeyId, value, recordChangeSet.getPropertyRecords() );
     }
 

@@ -201,11 +201,7 @@ public class RecordBuilders
                 new Loader( filterType( records, RelationshipRecord.class ).collect( Collectors.toList() ),
                         (Function<Long,RelationshipRecord>) RelationshipRecord::new ),
                 new Loader( filterType( records, RelationshipGroupRecord.class ).collect( Collectors.toList() ),
-                        (Function<Long,RelationshipGroupRecord>)  key -> {
-                            RelationshipGroupRecord group = new RelationshipGroupRecord( key );
-//                            group.setType( extra );
-                            return group;
-                        } ),
+                        (Function<Long,RelationshipGroupRecord>) RelationshipGroupRecord::new ),
                 null, null, null, null, EmptyMemoryTracker.INSTANCE );
     }
 
