@@ -335,7 +335,7 @@ public class BuiltInDbmsProcedures
             securityContext.assertCredentialsNotExpired();
             if ( !securityContext.allowExecuteAdminProcedure() )
             {
-                throw new AuthorizationViolationException( PERMISSION_DENIED );
+                throw new AuthorizationViolationException( format("Executing admin procedure is not allowed for %s.", securityContext.description() ) );
             }
         }
     }
@@ -593,7 +593,7 @@ public class BuiltInDbmsProcedures
                 connection.close();
                 return new ConnectionTerminationResult( id, connection.username() );
             }
-            throw new AuthorizationViolationException( PERMISSION_DENIED );
+            throw new AuthorizationViolationException( format("Executing admin procedure is not allowed for %s.", securityContext.description() ) );
         }
         return new ConnectionTerminationFailedResult( id );
     }

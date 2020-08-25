@@ -114,7 +114,6 @@ import static org.neo4j.codegen.TypeReference.typeReference;
 import static org.neo4j.codegen.bytecode.ByteCode.BYTECODE;
 import static org.neo4j.codegen.source.SourceCode.PRINT_SOURCE;
 import static org.neo4j.codegen.source.SourceCode.SOURCECODE;
-import static org.neo4j.graphdb.security.AuthorizationViolationException.PERMISSION_DENIED;
 import static org.neo4j.values.SequenceValue.IterationPreference.RANDOM_ACCESS;
 
 /**
@@ -590,7 +589,7 @@ public final class ProcedureCompilation
         securityContext.assertCredentialsNotExpired();
         if ( !securityContext.allowExecuteAdminProcedure() )
         {
-            throw new AuthorizationViolationException( PERMISSION_DENIED );
+            throw new AuthorizationViolationException( format("Executing admin procedure is not allowed for %s.", securityContext.description() ) );
         }
     }
 

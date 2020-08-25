@@ -963,7 +963,7 @@ public class AllStoreHolder extends Read
         AccessMode mode = ktx.securityContext().mode();
         if ( !mode.allowsExecuteProcedure( id ) )
         {
-            throw new AuthorizationViolationException( AuthorizationViolationException.PERMISSION_DENIED );
+            throw new AuthorizationViolationException( format("Executing procedure is not allowed for %s.", ktx.securityContext().description() ) );
         }
 
         final SecurityContext procedureSecurityContext = ktx.securityContext().withMode( override );

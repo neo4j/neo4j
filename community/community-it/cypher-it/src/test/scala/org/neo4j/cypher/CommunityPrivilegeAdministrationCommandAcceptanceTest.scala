@@ -99,7 +99,8 @@ class CommunityPrivilegeAdministrationCommandAcceptanceTest extends CommunityAdm
     "REMOVE PRIVILEGE ON DBMS",
     "ALL ON DBMS",
     "ALL PRIVILEGES ON DBMS",
-    "ALL DBMS PRIVILEGES ON DBMS"
+    "ALL DBMS PRIVILEGES ON DBMS",
+    "EXECUTE PROCEDURE * ON DBMS"
   )
 
   private val grantPrivilegeTypes = Seq(
@@ -125,7 +126,7 @@ class CommunityPrivilegeAdministrationCommandAcceptanceTest extends CommunityAdm
       }
   }
 
-  (grantPrivilegeTypes).foreach {
+  grantPrivilegeTypes.foreach {
     case (privilegeType, preposition) =>
       test(s"should fail on $privilegeType MERGE {*} ON GRAPH * from community") {
         val command = s"$privilegeType MERGE {*} ON GRAPH * $preposition custom"
