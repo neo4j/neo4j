@@ -100,7 +100,11 @@ class Neo4jASTFactorySimpleTest extends ParsingTestBase with FunSuiteLike with T
     assertSameAST("CREATE (n:`Label`)")
   }
 
-  test("allow escaped backticks inside escaped symbolic name") {
+  test("allow escaped backticks inside escaped simple symbolic name") {
+    assertSameAST("RETURN 1 AS `a``b`")
+  }
+
+  test("allow escaped backticks inside escaped token symbolic name") {
     // The parsed label should be Label`123
     assertSameAST("CREATE (n:`Label``123`)")
   }
