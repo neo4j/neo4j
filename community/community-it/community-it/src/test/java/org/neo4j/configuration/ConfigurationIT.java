@@ -20,26 +20,26 @@
 package org.neo4j.configuration;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledOnOs;
-import org.junit.jupiter.api.condition.OS;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.server.helpers.CommunityWebContainerBuilder;
 import org.neo4j.server.helpers.TestWebContainer;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.configuration.SettingImpl.newBuilder;
 import static org.neo4j.configuration.SettingValueParsers.STRING;
 
 public class ConfigurationIT
 {
     @Test
-    @DisabledOnOs( OS.WINDOWS )
     void shouldBeAbleToEvaluateSettingFromWebServer() throws IOException
     {
+        assumeTrue( curlAvailable(), "Curl required" );
         TestWebContainer testWebContainer = CommunityWebContainerBuilder.serverOnRandomPorts().build();
 
         try
@@ -54,6 +54,22 @@ public class ConfigurationIT
         {
             testWebContainer.shutdown();
         }
+    }
+
+    private static boolean curlAvailable()
+    {
+        try
+        {
+            Process process = Runtime.getRuntime().exec( "curl --help" );
+            if ( process.waitFor( 10, TimeUnit.SECONDS ) )
+            {
+                return process.exitValue() == 0;
+            }
+        }
+        catch ( IOException | InterruptedException ignored )
+        {
+        }
+        return false;
     }
 
     private static final class TestSettings implements SettingsDeclaration
