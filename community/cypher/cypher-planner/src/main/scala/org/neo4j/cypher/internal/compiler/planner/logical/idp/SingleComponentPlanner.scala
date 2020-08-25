@@ -91,8 +91,14 @@ case class SingleComponentPlanner(monitor: IDPQueryGraphSolverMonitor,
 
         BestResults(result.bestResult, result.bestSortedResult)
       } else {
-        val solutionPlans = bestPlansPerAvailableSymbol
-          .filter(bestPlans => planFullyCoversQG(qg, bestPlans.bestResult))
+        val solutionPlans =
+          if (qg.shortestPathPatterns.isEmpty) {
+            bestPlansPerAvailableSymbol
+              .filter(bestPlans => planFullyCoversQG(qg, bestPlans.bestResult))
+          } else {
+            bestPlansPerAvailableSymbol.map(_.map(kit.select(_, qg)))
+              .filter(bestPlans => planFullyCoversQG(qg, bestPlans.bestResult))
+          }
         if (solutionPlans.size != 1) {
           throw new InternalException("Found no leaf plan for connected component. This must not happen. QG: " + qg)
         }
