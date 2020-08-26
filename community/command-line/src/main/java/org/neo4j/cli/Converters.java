@@ -23,6 +23,7 @@ import picocli.CommandLine.ITypeConverter;
 import picocli.CommandLine.TypeConversionException;
 
 import org.neo4j.configuration.helpers.DatabaseNamePattern;
+import org.neo4j.configuration.helpers.FromPaths;
 import org.neo4j.configuration.helpers.NormalizedDatabaseName;
 import org.neo4j.io.ByteUnit;
 
@@ -62,6 +63,23 @@ public interface Converters
             catch ( Exception e )
             {
                 throw new TypeConversionException( format( "Invalid database name '%s'. (%s)", name, e ) );
+            }
+        }
+    }
+
+    class FromPathConverter implements ITypeConverter<FromPaths>
+    {
+
+        @Override
+        public FromPaths convert( String value ) throws Exception
+        {
+            try
+            {
+                return new FromPaths( value );
+            }
+            catch ( Exception ex )
+            {
+                throw new TypeConversionException( format( "Invalid from parameter '%s'. (%s)", value, ex ) );
             }
         }
     }
