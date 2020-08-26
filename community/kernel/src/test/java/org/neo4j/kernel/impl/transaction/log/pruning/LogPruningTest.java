@@ -81,8 +81,8 @@ class LogPruningTest
         LogPruning pruning = new LogPruningImpl( fs, logFiles, logProvider, factory, clock, config );
         pruning.pruneLogs( 5 );
         InOrder order = inOrder( fs );
-        order.verify( fs ).deleteFile( new File( "3" ) );
-        order.verify( fs ).deleteFile( new File( "4" ) );
+        order.verify( fs ).deleteFile( new File( "3" ).toPath() );
+        order.verify( fs ).deleteFile( new File( "4" ).toPath() );
         // Log file 5 is not deleted; it's the lowest version expected to remain after pruning.
         verifyNoMoreInteractions( fs );
     }

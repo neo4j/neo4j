@@ -50,7 +50,7 @@ public final class LogHeaderReader
 
     public static LogHeader readLogHeader( FileSystemAbstraction fileSystem, Path file, boolean strict, MemoryTracker memoryTracker ) throws IOException
     {
-        try ( StoreChannel channel = fileSystem.read( file.toFile() );
+        try ( StoreChannel channel = fileSystem.read( file );
               var scopedBuffer = new HeapScopedBuffer( CURRENT_FORMAT_LOG_HEADER_SIZE, memoryTracker ) )
         {
             return readLogHeader( scopedBuffer.getBuffer(), channel, strict, file );

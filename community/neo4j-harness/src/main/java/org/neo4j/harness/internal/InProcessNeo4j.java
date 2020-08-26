@@ -126,7 +126,7 @@ public class InProcessNeo4j implements Neo4j
         {
             if ( looksLikeMd5Hash( serverFolder.getFileName().toString() ) )
             {
-                FileUtils.deletePathRecursively( serverFolder );
+                FileUtils.deleteDirectory( serverFolder );
             }
         }
         catch ( IOException e )

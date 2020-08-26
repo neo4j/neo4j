@@ -23,8 +23,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Random;
 import java.util.stream.Stream;
@@ -97,7 +97,7 @@ public class UniqueIndexRecoveryTest
         dropConstraints();
 
         // when - perform recovery
-        restart( snapshot( storeDir.absolutePath() ), schemaIndex );
+        restart( snapshot( storeDir.homePath().toAbsolutePath() ), schemaIndex );
 
         // then - just make sure the constraint is gone
         try ( Transaction tx = db.beginTx() )
@@ -124,7 +124,7 @@ public class UniqueIndexRecoveryTest
         flushAll(); // persist - recovery will do everything since last log rotate
 
         // WHEN recovery is triggered
-        restart( snapshot( storeDir.absolutePath() ), schemaIndex );
+        restart( snapshot( storeDir.homePath().toAbsolutePath() ), schemaIndex );
 
         // THEN
         // it should just not blow up!
@@ -135,7 +135,7 @@ public class UniqueIndexRecoveryTest
         }
     }
 
-    private void restart( File newStore, SchemaIndex schemaIndex )
+    private void restart( Path newStore, SchemaIndex schemaIndex )
     {
         managementService.shutdown();
         db = (GraphDatabaseAPI) newDb( schemaIndex );
@@ -149,12 +149,12 @@ public class UniqueIndexRecoveryTest
         return managementService.database( DEFAULT_DATABASE_NAME );
     }
 
-    private static File snapshot( final File path ) throws IOException
+    private static Path snapshot( final Path path ) throws IOException
     {
-        File snapshotDir = new File( path, "snapshot-" + new Random().nextInt() );
-        FileUtils.copyRecursively( path, snapshotDir, pathName ->
+        Path snapshotDir = path.resolve( "snapshot-" + new Random().nextInt() );
+        FileUtils.copyDirectory( path, snapshotDir, pathName ->
         {
-            String subPath = pathName.getAbsolutePath().substring( path.getPath().length() + 1 );
+            String subPath = pathName.toFile().getAbsolutePath().substring( path.toFile().getPath().length() + 1 );
             // since the db is running, exclude the lock files
             return !"store_lock".equals( subPath ) && !subPath.endsWith( "write.lock" );
         } );

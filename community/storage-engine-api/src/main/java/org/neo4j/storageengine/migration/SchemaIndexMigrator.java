@@ -88,6 +88,6 @@ public class SchemaIndexMigrator extends AbstractStoreMigrationParticipant
 
     private void deleteIndexes( Path indexRootDirectory ) throws IOException
     {
-        fileSystem.deleteRecursively( indexRootDirectory.toFile() );
+        fileSystem.deleteRecursively( indexRootDirectory );
     }
 }

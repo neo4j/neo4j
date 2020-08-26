@@ -66,9 +66,9 @@ public class FailureStorage
      */
     public synchronized void reserveForIndex() throws IOException
     {
-        fs.mkdirs( folderLayout.getIndexFolder().toFile() );
+        fs.mkdirs( folderLayout.getIndexFolder() );
         Path failureFile = failureFile();
-        try ( StoreChannel channel = fs.write( failureFile.toFile() ) )
+        try ( StoreChannel channel = fs.write( failureFile ) )
         {
             channel.writeAll( ByteBuffer.wrap( new byte[MAX_FAILURE_SIZE] ) );
             channel.force( true );
@@ -81,7 +81,7 @@ public class FailureStorage
      */
     public synchronized void clearForIndex()
     {
-        fs.deleteFile( failureFile().toFile() );
+        fs.deleteFile( failureFile() );
     }
 
     /**
@@ -92,7 +92,7 @@ public class FailureStorage
         Path failureFile = failureFile();
         try
         {
-            if ( !fs.fileExists( failureFile.toFile() ) || !isFailed( failureFile ) )
+            if ( !fs.fileExists( failureFile ) || !isFailed( failureFile ) )
             {
                 return null;
             }
@@ -113,7 +113,7 @@ public class FailureStorage
     public synchronized void storeIndexFailure( String failure ) throws IOException
     {
         Path failureFile = failureFile();
-        try ( StoreChannel channel = fs.write( failureFile.toFile() ) )
+        try ( StoreChannel channel = fs.write( failureFile ) )
         {
             byte[] existingData = new byte[(int) channel.size()];
             channel.readAll( ByteBuffer.wrap( existingData ) );
@@ -133,7 +133,7 @@ public class FailureStorage
 
     private String readFailure( Path failureFile ) throws IOException
     {
-        try ( StoreChannel channel = fs.read( failureFile.toFile() ) )
+        try ( StoreChannel channel = fs.read( failureFile ) )
         {
             byte[] data = new byte[(int) channel.size()];
             channel.readAll( ByteBuffer.wrap( data ) );
@@ -162,7 +162,7 @@ public class FailureStorage
 
     private boolean isFailed( Path failureFile ) throws IOException
     {
-        try ( StoreChannel channel = fs.read( failureFile.toFile() ) )
+        try ( StoreChannel channel = fs.read( failureFile ) )
         {
             byte[] data = new byte[(int) channel.size()];
             channel.readAll( ByteBuffer.wrap( data ) );

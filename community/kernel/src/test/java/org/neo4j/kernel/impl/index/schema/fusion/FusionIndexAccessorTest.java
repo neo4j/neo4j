@@ -156,7 +156,7 @@ abstract class FusionIndexAccessorTest
         {
             verify( accessor ).drop();
         }
-        verify( fs ).deleteRecursively( directoryStructure.directoryForIndex( indexId ).toFile() );
+        verify( fs ).deleteRecursively( directoryStructure.directoryForIndex( indexId ) );
     }
 
     @Test

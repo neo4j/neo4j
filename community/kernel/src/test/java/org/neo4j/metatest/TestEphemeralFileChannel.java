@@ -24,15 +24,16 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.nio.ByteBuffer;
+import java.nio.file.Path;
 
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.test.extension.EphemeralFileSystemExtension;
 import org.neo4j.test.extension.Inject;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.io.memory.ByteBuffers.allocate;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
@@ -46,14 +47,14 @@ class TestEphemeralFileChannel
     @Test
     void smoke() throws Exception
     {
-        StoreChannel channel = fileSystem.write( new File( "yo" ) );
+        StoreChannel channel = fileSystem.write( new File( "yo" ).toPath() );
 
         // Clear it because we depend on it to be zeros where we haven't written
         ByteBuffer buffer = allocate( 23, INSTANCE );
         buffer.put( new byte[23] ); // zeros
         buffer.flip();
         channel.write( buffer );
-        channel = fileSystem.write( new File( "yo" ) );
+        channel = fileSystem.write( new File( "yo" ).toPath() );
         long longValue = 1234567890L;
 
         // [1].....[2]........[1234567890L]...
@@ -109,13 +110,13 @@ class TestEphemeralFileChannel
     {
         // GIVEN
         File file = new File( "myfile" );
-        StoreChannel channel = fileSystem.write( file );
+        StoreChannel channel = fileSystem.write( file.toPath() );
         byte[] bytes = "test".getBytes();
         channel.write( ByteBuffer.wrap( bytes ) );
         channel.close();
 
         // WHEN
-        channel = fileSystem.read( new File( file.getAbsolutePath() ) );
+        channel = fileSystem.read( new File( file.getAbsolutePath() ).toPath() );
         byte[] readBytes = new byte[bytes.length];
         channel.readAll( ByteBuffer.wrap( readBytes ) );
 
@@ -135,14 +136,14 @@ class TestEphemeralFileChannel
          *       |
          *     file
          */
-        File root = new File( "/root" ).getCanonicalFile();
-        File dir1 = new File( root, "dir1" );
-        File dir2 = new File( root, "dir2" );
-        File subdir1 = new File( dir1, "sub" );
-        File file1 = new File( dir1, "file" );
-        File file2 = new File( dir1, "file2" );
-        File file3 = new File( dir2, "file" );
-        File file4 = new File( subdir1, "file" );
+        Path root = Path.of( "/root" ).toAbsolutePath().normalize();
+        Path dir1 = root.resolve( "dir1" );
+        Path dir2 = root.resolve( "dir2" );
+        Path subdir1 = dir1.resolve( "sub" );
+        Path file1 = dir1.resolve( "file" );
+        Path file2 = dir1.resolve( "file2" );
+        Path file3 = dir2.resolve( "file" );
+        Path file4 = subdir1.resolve( "file" );
 
         fileSystem.mkdirs( dir2 );
         fileSystem.mkdirs( dir1 );
@@ -154,9 +155,9 @@ class TestEphemeralFileChannel
         fileSystem.write( file4 );
 
         // THEN
-        assertEquals( asSet( dir1, dir2 ), asSet( fileSystem.listFiles( root ) ) );
-        assertEquals( asSet( subdir1, file1, file2 ), asSet( fileSystem.listFiles( dir1 ) ) );
-        assertEquals( asSet( file3 ), asSet( fileSystem.listFiles( dir2 ) ) );
-        assertEquals( asSet( file4 ), asSet( fileSystem.listFiles( subdir1 ) ) );
+        assertThat( fileSystem.listFiles( root ) ).containsExactlyInAnyOrder( dir1, dir2 );
+        assertThat( fileSystem.listFiles( dir1 ) ).containsExactlyInAnyOrder( subdir1, file1, file2 );
+        assertThat( fileSystem.listFiles( dir2 ) ).containsExactly( file3 );
+        assertThat( fileSystem.listFiles( subdir1 ) ).containsExactly( file4 );
     }
 }

@@ -166,8 +166,8 @@ public abstract class PageCacheTestSupport<T extends PageCache>
 
     protected void ensureExists( Path file ) throws IOException
     {
-        fs.mkdirs( file.getParent().toFile() );
-        fs.write( file.toFile() ).close();
+        fs.mkdirs( file.getParent() );
+        fs.write( file ).close();
     }
 
     protected Path existingFile( String name ) throws IOException
@@ -271,7 +271,7 @@ public abstract class PageCacheTestSupport<T extends PageCache>
             int recordCount,
             int recordSize ) throws IOException
     {
-        try ( StoreChannel channel = fs.write( file.toFile() ) )
+        try ( StoreChannel channel = fs.write( file ) )
         {
             generateFileWithRecords( channel, recordCount, recordSize );
         }
@@ -308,7 +308,7 @@ public abstract class PageCacheTestSupport<T extends PageCache>
 
     protected void verifyRecordsInFile( Path file, int recordCount ) throws IOException
     {
-        try ( StoreChannel channel = fs.read( file.toFile() ) )
+        try ( StoreChannel channel = fs.read( file ) )
         {
             verifyRecordsInFile( channel, recordCount );
         }

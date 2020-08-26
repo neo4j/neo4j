@@ -353,8 +353,8 @@ class IndexStatisticsStoreTest
 
     byte[] readAll( Path file ) throws IOException
     {
-        ByteBuffer buffer = ByteBuffer.wrap( new byte[(int) (fs.getFileSize( file.toFile() ) + ByteUnit.mebiBytes( 1 ))] );
-        try ( StoreChannel channel = fs.read( file.toFile() ) )
+        ByteBuffer buffer = ByteBuffer.wrap( new byte[(int) (fs.getFileSize( file ) + ByteUnit.mebiBytes( 1 ))] );
+        try ( StoreChannel channel = fs.read( file ) )
         {
             channel.read( buffer );
         }

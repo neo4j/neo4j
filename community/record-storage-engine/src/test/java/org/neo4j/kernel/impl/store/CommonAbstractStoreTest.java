@@ -199,15 +199,15 @@ class CommonAbstractStoreTest
                         NullLogProvider.getInstance(), recordFormat, immutable.with( DELETE_ON_CLOSE ) );
         store.initialise( true, NULL );
         store.start( NULL );
-        assertTrue( fs.fileExists( nodeStore.toFile() ) );
-        assertTrue( fs.fileExists( idFile.toFile() ) );
+        assertTrue( fs.fileExists( nodeStore ) );
+        assertTrue( fs.fileExists( idFile ) );
 
         // WHEN
         store.close();
 
         // THEN
-        assertFalse( fs.fileExists( nodeStore.toFile() ) );
-        assertFalse( fs.fileExists( idFile.toFile() ) );
+        assertFalse( fs.fileExists( nodeStore ) );
+        assertFalse( fs.fileExists( idFile ) );
     }
 
     @Test

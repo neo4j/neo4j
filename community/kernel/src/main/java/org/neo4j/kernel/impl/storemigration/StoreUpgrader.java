@@ -149,7 +149,7 @@ public class StoreUpgrader
 
             Path migrationStateFile = migrationStructure.file( MIGRATION_STATUS_FILE );
             // if migration directory exists than we might have failed to move files into the store dir so do it again
-            if ( hasCurrentVersion( storeVersionCheck, cursorTracer ) && !fileSystem.fileExists( migrationStateFile.toFile() ) )
+            if ( hasCurrentVersion( storeVersionCheck, cursorTracer ) && !fileSystem.fileExists( migrationStateFile ) )
             {
                 // No migration needed
                 return;
@@ -208,7 +208,7 @@ public class StoreUpgrader
             StoreVersionCheck.Result upgradeCheck = storeVersionCheck.checkUpgrade( storeVersionCheck.configuredVersion(), cursorTracer );
             versionToMigrateFrom = getVersionFromResult( upgradeCheck );
             logsUpgrader.assertCleanlyShutDown( dbDirectoryLayout );
-            cleanMigrationDirectory( migrationLayout.databaseDirectory().toFile() );
+            cleanMigrationDirectory( migrationLayout.databaseDirectory() );
             MigrationStatus.migrating.setMigrationStatus( fileSystem, migrationStateFile, versionToMigrateFrom );
             migrateToIsolatedDirectory( dbDirectoryLayout, migrationLayout, versionToMigrateFrom );
             MigrationStatus.moving.setMigrationStatus( fileSystem, migrationStateFile, versionToMigrateFrom );
@@ -326,7 +326,7 @@ public class StoreUpgrader
         }
     }
 
-    private void cleanMigrationDirectory( File migrationDirectory )
+    private void cleanMigrationDirectory( Path migrationDirectory )
     {
         try
         {
@@ -346,7 +346,7 @@ public class StoreUpgrader
     {
         try
         {
-            fileSystem.deleteRecursively( dir );
+            fileSystem.deleteRecursively( dir.toPath() );
         }
         catch ( IOException e )
         {

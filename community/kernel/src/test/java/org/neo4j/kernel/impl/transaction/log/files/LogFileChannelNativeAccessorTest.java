@@ -68,7 +68,7 @@ class LogFileChannelNativeAccessorTest
 
         channelNativeAccessor = new LogFileChannelNativeAccessor( fileSystem, filesContext );
         File originalFile = testDirectory.file( "test" );
-        testStoreChannel = fileSystem.write( originalFile );
+        testStoreChannel = fileSystem.write( originalFile.toPath() );
     }
 
     @AfterEach

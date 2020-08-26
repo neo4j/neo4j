@@ -28,6 +28,7 @@ import java.nio.file.Path;
 import java.util.zip.ZipInputStream;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
@@ -50,7 +51,7 @@ class ZipUtilsTest
     {
         Path archiveFile = testDirectory.filePath( "archive.zip" );
         ZipUtils.zip( fileSystem, testDirectory.filePath( "doesNotExist" ), archiveFile );
-        assertFalse( fileSystem.fileExists( archiveFile.toFile() ) );
+        assertFalse( fileSystem.fileExists( archiveFile ) );
     }
 
     @Test
@@ -59,7 +60,7 @@ class ZipUtilsTest
         Path archiveFile = testDirectory.filePath( "archive.zip" );
         Path emptyDirectory = testDirectory.directoryPath( "emptyDirectory" );
         ZipUtils.zip( fileSystem, emptyDirectory, archiveFile );
-        assertFalse( fileSystem.fileExists( archiveFile.toFile() ) );
+        assertFalse( fileSystem.fileExists( archiveFile ) );
     }
 
     @Test
@@ -67,11 +68,11 @@ class ZipUtilsTest
     {
         Path archiveFile = testDirectory.filePath( "directoryArchive.zip" );
         Path directory = testDirectory.directoryPath( "directory" );
-        fileSystem.write( directory.resolve( "a" ).toFile() ).close();
-        fileSystem.write( directory.resolve( "b" ).toFile() ).close();
+        ((StoreChannel) fileSystem.write( directory.resolve( "a" ) )).close();
+        ((StoreChannel) fileSystem.write( directory.resolve( "b" ) )).close();
         ZipUtils.zip( fileSystem, directory, archiveFile );
 
-        assertTrue( fileSystem.fileExists( archiveFile.toFile() ) );
+        assertTrue( fileSystem.fileExists( archiveFile ) );
         assertEquals( 2, countArchiveEntries( archiveFile ) );
     }
 
@@ -82,16 +83,16 @@ class ZipUtilsTest
         Path directoryArchive = testDirectory.directoryPath( "directoryWithSubdirs" );
         Path subdir1 = directoryArchive.resolve( "subdir1" );
         Path subdir2 = directoryArchive.resolve( "subdir" );
-        fileSystem.mkdir( subdir1.toFile() );
-        fileSystem.mkdir( subdir2.toFile() );
-        fileSystem.write( directoryArchive.resolve( "a" ).toFile() ).close();
-        fileSystem.write( directoryArchive.resolve( "b" ).toFile() ).close();
-        fileSystem.write( subdir1.resolve( "c" ).toFile() ).close();
-        fileSystem.write( subdir2.resolve( "d" ).toFile() ).close();
+        fileSystem.mkdir( subdir1 );
+        fileSystem.mkdir( subdir2 );
+        ((StoreChannel) fileSystem.write( directoryArchive.resolve( "a" ) )).close();
+        ((StoreChannel) fileSystem.write( directoryArchive.resolve( "b" ) )).close();
+        ((StoreChannel) fileSystem.write( subdir1.resolve( "c" ) )).close();
+        ((StoreChannel) fileSystem.write( subdir2.resolve( "d" ) )).close();
 
         ZipUtils.zip( fileSystem, directoryArchive, archiveFile );
 
-        assertTrue( fileSystem.fileExists( archiveFile.toFile() ) );
+        assertTrue( fileSystem.fileExists( archiveFile ) );
         assertEquals( 6, countArchiveEntries( archiveFile ) );
     }
 
@@ -100,10 +101,10 @@ class ZipUtilsTest
     {
         Path archiveFile = testDirectory.filePath( "fileArchive.zip" );
         Path aFile = testDirectory.filePath( "a" );
-        fileSystem.write( aFile.toFile() ).close();
+        ((StoreChannel) fileSystem.write( aFile )).close();
         ZipUtils.zip( fileSystem, aFile, archiveFile );
 
-        assertTrue( fileSystem.fileExists( archiveFile.toFile() ) );
+        assertTrue( fileSystem.fileExists( archiveFile ) );
         assertEquals( 1, countArchiveEntries( archiveFile ) );
     }
 
@@ -112,7 +113,7 @@ class ZipUtilsTest
     {
         Path archiveFile = testDirectory.filePath( "file archive.zip" );
         Path aFile = testDirectory.filePath( "a" );
-        fileSystem.write( aFile.toFile() ).close();
+        ((StoreChannel) fileSystem.write( aFile )).close();
         ZipUtils.zip( fileSystem, aFile, archiveFile );
     }
 

@@ -20,13 +20,13 @@
 package org.neo4j.io.compress;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URL;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.Enumeration;
 import java.util.List;
@@ -52,7 +52,7 @@ public class ZipUtils
      */
     public static void zip( FileSystemAbstraction fileSystem, Path sourceToCompress, Path destinationZip ) throws IOException
     {
-        if ( !fileSystem.fileExists( sourceToCompress.toFile() ) )
+        if ( !fileSystem.fileExists( sourceToCompress ) )
         {
             return;
         }
@@ -65,11 +65,11 @@ public class ZipUtils
 
         try ( FileSystem zipFs = FileSystems.newFileSystem( archiveAbsoluteURI, env ) )
         {
-            List<FileHandle> fileHandles = fileSystem.streamFilesRecursive( sourceToCompress.toFile() ).collect( toList() );
+            List<FileHandle> fileHandles = fileSystem.streamFilesRecursive( sourceToCompress ).collect( toList() );
             for ( FileHandle fileHandle : fileHandles )
             {
-                Path sourcePath = fileHandle.getFile().toPath();
-                Path zipFsPath = fileSystem.isDirectory( sourceToCompress.toFile() ) ? zipFs.getPath( sourceToCompress.relativize( sourcePath ).toString() )
+                Path sourcePath = fileHandle.getPath();
+                Path zipFsPath = fileSystem.isDirectory( sourceToCompress ) ? zipFs.getPath( sourceToCompress.relativize( sourcePath ).toString() )
                                                                             : zipFs.getPath( sourcePath.getFileName().toString() );
                 if ( zipFsPath.getParent() != null )
                 {
@@ -95,7 +95,7 @@ public class ZipUtils
         URL resource = klass.getResource( zipName );
         if ( resource == null )
         {
-            throw new FileNotFoundException();
+            throw new NoSuchFileException( zipName );
         }
         unzip( resource.getFile(), targetFile );
     }
@@ -127,9 +127,9 @@ public class ZipUtils
 
     private static boolean isEmptyDirectory( FileSystemAbstraction fileSystem, Path sourceToCompress )
     {
-        if ( fileSystem.isDirectory( sourceToCompress.toFile() ) )
+        if ( fileSystem.isDirectory( sourceToCompress ) )
         {
-            File[] files = fileSystem.listFiles( sourceToCompress.toFile() );
+            Path[] files = fileSystem.listFiles( sourceToCompress );
             return files == null || files.length == 0;
         }
         return false;

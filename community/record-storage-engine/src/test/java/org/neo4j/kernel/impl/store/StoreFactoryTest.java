@@ -24,8 +24,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
 import java.nio.file.OpenOption;
+import java.nio.file.Path;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
@@ -146,18 +146,18 @@ class StoreFactoryTest
 
         // WHEN
         neoStores = storeFactory.openAllNeoStores( true );
-        assertTrue( fileSystem.listFiles( databaseLayout.databaseDirectory().toFile() ).length >= StoreType.values().length );
+        assertTrue( fileSystem.listFiles( databaseLayout.databaseDirectory() ).length >= StoreType.values().length );
 
         // THEN
         neoStores.close();
-        assertEquals( 0, fileSystem.listFiles( databaseLayout.databaseDirectory().toFile() ).length );
+        assertEquals( 0, fileSystem.listFiles( databaseLayout.databaseDirectory() ).length );
     }
 
     @Test
     void shouldHandleStoreConsistingOfOneEmptyFile() throws Exception
     {
         StoreFactory storeFactory = storeFactory( defaults(), NULL );
-        fileSystem.write( databaseLayout.file( "neostore.nodestore.db.labels" ).toFile() );
+        fileSystem.write( databaseLayout.file( "neostore.nodestore.db.labels" ) );
         storeFactory.openAllNeoStores( true ).close();
     }
 
@@ -166,9 +166,9 @@ class StoreFactoryTest
     {
         StoreFactory storeFactory = storeFactory( defaults(), NULL );
         storeFactory.openAllNeoStores( true ).close();
-        for ( File f : fileSystem.listFiles( databaseLayout.databaseDirectory().toFile() ) )
+        for ( Path f : fileSystem.listFiles( databaseLayout.databaseDirectory() ) )
         {
-            if ( !f.getName().endsWith( ".id" ) )
+            if ( !f.getFileName().toString().endsWith( ".id" ) )
             {
                 fileSystem.truncate( f, 0 );
             }

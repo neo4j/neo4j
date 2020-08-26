@@ -102,7 +102,7 @@ public class TokenScanWriteMonitor implements NativeTokenScanWriter.WriteMonitor
         this.file = writeLogBaseFile( databaseLayout, entityType );
         try
         {
-            if ( fs.fileExists( file.toFile() ) )
+            if ( fs.fileExists( file ) )
             {
                 moveAwayFile();
             }
@@ -122,7 +122,7 @@ public class TokenScanWriteMonitor implements NativeTokenScanWriter.WriteMonitor
 
     private PhysicalFlushableChannel instantiateChannel() throws IOException
     {
-        return new PhysicalFlushableChannel( fs.write( file.toFile() ), INSTANCE );
+        return new PhysicalFlushableChannel( fs.write( file ), INSTANCE );
     }
 
     @Override
@@ -245,7 +245,7 @@ public class TokenScanWriteMonitor implements NativeTokenScanWriter.WriteMonitor
             // Prune
             long time = currentTimeMillis();
             long threshold = time - pruneThreshold;
-            for ( File file : fs.listFiles( storeDir.toFile(), ( dir, name ) -> name.startsWith( file.getFileName() + "-" ) ) )
+            for ( Path file : fs.listFiles( storeDir, ( dir, name ) -> name.startsWith( file.getFileName() + "-" ) ) )
             {
                 if ( millisOf( file ) < threshold )
                 {
@@ -255,9 +255,9 @@ public class TokenScanWriteMonitor implements NativeTokenScanWriter.WriteMonitor
         }
     }
 
-    static long millisOf( File file )
+    static long millisOf( Path file )
     {
-        String name = file.getName();
+        String name = file.getFileName().toString();
         int dashIndex = name.lastIndexOf( '-' );
         if ( dashIndex == -1 )
         {
@@ -305,8 +305,8 @@ public class TokenScanWriteMonitor implements NativeTokenScanWriter.WriteMonitor
         {
             to = timestampedFile();
         }
-        while ( fs.fileExists( to.toFile() ) );
-        fs.renameFile( file.toFile(), to.toFile() );
+        while ( fs.fileExists( to ) );
+        fs.renameFile( file, to );
     }
 
     private Path timestampedFile()
@@ -420,17 +420,17 @@ public class TokenScanWriteMonitor implements NativeTokenScanWriter.WriteMonitor
     {
         Path writeLogFile = writeLogBaseFile( databaseLayout, entityType );
         String writeLogFileBaseName = writeLogFile.getFileName().toString();
-        File[] files = fs.listFiles( databaseLayout.databaseDirectory().toFile(), ( dir, name ) -> name.startsWith( writeLogFileBaseName ) );
-        Arrays.sort( files, comparing( file -> file.getName().equals( writeLogFileBaseName ) ? 0 : millisOf( file ) ) );
+        Path[] files = fs.listFiles( databaseLayout.databaseDirectory(), ( dir, name ) -> name.startsWith( writeLogFileBaseName ) );
+        Arrays.sort( files, comparing( file -> file.getFileName().toString().equals( writeLogFileBaseName ) ? 0 : millisOf( file ) ) );
         long session = 0;
-        for ( File file : files )
+        for ( Path file : files )
         {
             dumper.file( file );
             session = dumpFile( fs, file, dumper, txFilter, session );
         }
     }
 
-    private static long dumpFile( FileSystemAbstraction fs, File file, Dumper dumper, TxFilter txFilter, long session ) throws IOException
+    private static long dumpFile( FileSystemAbstraction fs, Path file, Dumper dumper, TxFilter txFilter, long session ) throws IOException
     {
         try ( ReadableChannel channel = new ReadAheadChannel<>( fs.read( file ), new NativeScopedBuffer( DEFAULT_READ_AHEAD_SIZE, INSTANCE ) ) )
         {
@@ -567,7 +567,7 @@ public class TokenScanWriteMonitor implements NativeTokenScanWriter.WriteMonitor
 
     public interface Dumper
     {
-        void file( File file );
+        void file( Path file );
 
         void prepare( boolean add, long session, long flush, long txId, long entityId, int tokenId );
 
@@ -586,9 +586,9 @@ public class TokenScanWriteMonitor implements NativeTokenScanWriter.WriteMonitor
         }
 
         @Override
-        public void file( File file )
+        public void file( Path file )
         {
-            out.println( "=== " + file.getAbsolutePath() + " ===" );
+            out.println( "=== " + file.toAbsolutePath() + " ===" );
         }
 
         @Override

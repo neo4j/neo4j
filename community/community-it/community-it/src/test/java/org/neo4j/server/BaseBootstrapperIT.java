@@ -25,7 +25,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.io.File;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -61,7 +60,6 @@ import static org.neo4j.configuration.SettingValueParsers.FALSE;
 import static org.neo4j.internal.helpers.collection.Iterators.single;
 import static org.neo4j.internal.helpers.collection.MapUtil.store;
 import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.io.fs.FileUtils.relativePath;
 import static org.neo4j.server.WebContainerTestUtils.getDefaultRelativeProperties;
 import static org.neo4j.server.WebContainerTestUtils.verifyConnector;
 import static org.neo4j.test.assertion.Assert.assertEventually;
@@ -199,8 +197,8 @@ public abstract class BaseBootstrapperIT extends ExclusiveWebContainerTestBase
     @Test
     public void shouldHaveSameLayoutAsEmbedded() throws Exception
     {
-        File serverDir = testDirectory.directory( "server-dir" );
-        NeoBootstrapper.start( bootstrapper, withConnectorsOnRandomPortsConfig( "--home-dir", serverDir.getAbsolutePath() ) );
+        Path serverDir = testDirectory.directoryPath( "server-dir" );
+        NeoBootstrapper.start( bootstrapper, withConnectorsOnRandomPortsConfig( "--home-dir", serverDir.toAbsolutePath().toString() ) );
         assertEventually( "Server was not started", bootstrapper::isRunning, Conditions.TRUE, 1, TimeUnit.MINUTES );
         var databaseAPI = (GraphDatabaseAPI) bootstrapper.getDatabaseManagementService().database( DEFAULT_DATABASE_NAME );
         var serverLayout = databaseAPI.databaseLayout().getNeo4jLayout();
@@ -211,12 +209,10 @@ public abstract class BaseBootstrapperIT extends ExclusiveWebContainerTestBase
         Neo4jLayout embeddedLayout = ((GraphDatabaseAPI) dbms.database( DEFAULT_DATABASE_NAME )).databaseLayout().getNeo4jLayout();
         dbms.shutdown();
 
-        assertEquals( relativePath( serverDir, serverLayout.homeDirectory().toFile() ),
-                relativePath( embeddedDir.toFile(), embeddedLayout.homeDirectory().toFile() ) );
-        assertEquals( relativePath( serverDir, serverLayout.databasesDirectory().toFile() ),
-                relativePath( embeddedDir.toFile(), embeddedLayout.databasesDirectory().toFile() ) );
-        assertEquals( relativePath( serverDir, serverLayout.transactionLogsRootDirectory().toFile() ),
-                relativePath( embeddedDir.toFile(), embeddedLayout.transactionLogsRootDirectory().toFile() ) );
+        assertEquals( serverDir.relativize( serverLayout.homeDirectory() ), embeddedDir.relativize( embeddedLayout.homeDirectory() ) );
+        assertEquals( serverDir.relativize( serverLayout.databasesDirectory() ), embeddedDir.relativize( embeddedLayout.databasesDirectory() ) );
+        assertEquals( serverDir.relativize( serverLayout.transactionLogsRootDirectory() ),
+                embeddedDir.relativize( embeddedLayout.transactionLogsRootDirectory() ) );
     }
 
     protected abstract DatabaseManagementService newEmbeddedDbms( Path homeDir );

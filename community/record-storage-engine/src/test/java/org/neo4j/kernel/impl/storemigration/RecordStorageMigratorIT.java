@@ -141,7 +141,7 @@ class RecordStorageMigratorIT
     {
         migrationLayout = Neo4jLayout.of( testDirectory.homePath( MIGRATION_DIRECTORY ) ).databaseLayout( GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
         batchImporterFactory = BatchImporterFactory.withHighestPriority();
-        testDirectory.getFileSystem().mkdirs( migrationLayout.databaseDirectory().toFile() );
+        testDirectory.getFileSystem().mkdirs( migrationLayout.databaseDirectory() );
     }
 
     @AfterEach

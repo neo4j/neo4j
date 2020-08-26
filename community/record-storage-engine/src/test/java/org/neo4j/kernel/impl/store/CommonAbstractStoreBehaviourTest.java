@@ -265,7 +265,7 @@ class CommonAbstractStoreBehaviourTest
 
         // when
         store.close();
-        fs.deleteFile( new File( MyStore.ID_FILENAME ) );
+        fs.deleteFile( new File( MyStore.ID_FILENAME ).toPath() );
         createStore();
         store.start( NULL );
 
@@ -294,7 +294,7 @@ class CommonAbstractStoreBehaviourTest
 
         // when
         store.close();
-        fs.deleteFile( new File( MyStore.STORE_FILENAME ) );
+        fs.deleteFile( new File( MyStore.STORE_FILENAME ).toPath() );
         createStore();
         store.start( NULL );
 

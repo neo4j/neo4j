@@ -19,7 +19,6 @@
  */
 package org.neo4j.commandline;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Path;
@@ -40,18 +39,11 @@ public final class Util
     {
     }
 
-    public static boolean isSameOrChildFile( File parent, File candidate )
+    public static boolean isSameOrChildFile( Path parent, Path candidate )
     {
-        Path canonicalCandidate = getCanonicalFile( candidate ).toPath();
-        Path canonicalParentPath = getCanonicalFile( parent ).toPath();
+        Path canonicalCandidate = getCanonicalFile( candidate );
+        Path canonicalParentPath = getCanonicalFile( parent );
         return canonicalCandidate.startsWith( canonicalParentPath );
-    }
-
-    public static boolean isSameOrChildPath( Path parent, Path candidate )
-    {
-        Path normalizedCandidate = candidate.normalize();
-        Path normalizedParent = parent.normalize();
-        return normalizedCandidate.startsWith( normalizedParent );
     }
 
     public static void wrapIOException( IOException e ) throws CommandFailedException

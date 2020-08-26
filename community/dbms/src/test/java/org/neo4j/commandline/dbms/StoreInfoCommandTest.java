@@ -180,7 +180,7 @@ class StoreInfoCommandTest
     private Path createNeoStoreFile() throws IOException
     {
         Path neoStoreFile = databaseLayout.metadataStore();
-        fileSystem.write( neoStoreFile.toFile() ).close();
+        fileSystem.write( neoStoreFile ).close();
         return neoStoreFile;
     }
 }

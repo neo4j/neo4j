@@ -112,7 +112,7 @@ public class GBPTreeCountsStore implements CountsStore
         catch ( MetadataMismatchException e )
         {
             // Corrupt, delete and rebuild
-            fileSystem.deleteFileOrThrow( file.toFile() );
+            fileSystem.deleteFileOrThrow( file );
             header = new CountsHeader( NEEDS_REBUILDING_HIGH_ID );
             instantiatedTree = instantiateTree( pageCache, file, recoveryCollector, readOnly, header, pageCacheTracer );
         }

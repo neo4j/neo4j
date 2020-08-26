@@ -1825,7 +1825,7 @@ class ImportCommandTest
                 "--relationships=%s%n",
                 dbConfig.toAbsolutePath().toString(),
                 nodesEscapedSpaces, relationshipsEscapedSpaced );
-        writeToFile( argumentFile.toFile(), arguments, false );
+        writeToFile( argumentFile, arguments, false );
 
         // when
         runImport( "@" + argumentFile.toAbsolutePath().toString() );

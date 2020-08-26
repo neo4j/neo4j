@@ -135,14 +135,14 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
     @Override
     public List<Path> listStorageFiles( FileSystemAbstraction fileSystem, DatabaseLayout databaseLayout ) throws IOException
     {
-        if ( !fileSystem.fileExists( databaseLayout.metadataStore().toFile() ) )
+        if ( !fileSystem.fileExists( databaseLayout.metadataStore() ) )
         {
             throw new IOException( "No storage present at " + databaseLayout + " on " + fileSystem );
         }
 
         return Arrays.stream( StoreType.values() )
-                .map( t -> databaseLayout.file( t.getDatabaseFile() ) )
-                .filter( path -> fileSystem.fileExists( path.toFile() ) ).collect( toList() );
+                     .map( t -> databaseLayout.file( t.getDatabaseFile() ) )
+                     .filter( fileSystem::fileExists ).collect( toList() );
     }
 
     @Override
@@ -217,7 +217,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
     @Override
     public StorageFilesState checkRecoveryRequired( FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache )
     {
-        boolean allIdFilesExist = databaseLayout.idFiles().stream().map( Path::toFile ).allMatch( fs::fileExists );
+        boolean allIdFilesExist = databaseLayout.idFiles().stream().allMatch( fs::fileExists );
         if ( !allIdFilesExist )
         {
             return StorageFilesState.recoverableState();
@@ -229,10 +229,10 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
         storeFiles.remove( databaseLayout.indexStatisticsStore() );
         storeFiles.remove( databaseLayout.labelScanStore() );
         storeFiles.remove( databaseLayout.relationshipTypeScanStore() );
-        boolean allStoreFilesExist = storeFiles.stream().map( Path::toFile ).allMatch( fs::fileExists );
+        boolean allStoreFilesExist = storeFiles.stream().allMatch( fs::fileExists );
         if ( !allStoreFilesExist )
         {
-            return StorageFilesState.unrecoverableState( storeFiles.stream().map( Path::toFile ).filter( file -> !fs.fileExists( file ) ).collect( toList() ) );
+            return StorageFilesState.unrecoverableState( storeFiles.stream().filter( file -> !fs.fileExists( file ) ).collect( toList() ) );
         }
 
         return StorageFilesState.recoveredState();

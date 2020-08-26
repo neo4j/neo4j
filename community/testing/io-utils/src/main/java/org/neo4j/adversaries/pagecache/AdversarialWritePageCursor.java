@@ -19,8 +19,8 @@
  */
 package org.neo4j.adversaries.pagecache;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.Objects;
 
@@ -34,7 +34,7 @@ import org.neo4j.io.pagecache.impl.DelegatingPageCursor;
  * to provide a misbehaving page cursor implementation for testing.
  * <p>
  * Depending on the adversary each read and write operation can throw either {@link RuntimeException} like
- * {@link SecurityException} or {@link IOException} like {@link FileNotFoundException}.
+ * {@link SecurityException} or {@link IOException} like {@link NoSuchFileException}.
  * <p>
  * Read operations will always return a consistent value because the underlying page is write locked.
  * See {@link org.neo4j.io.pagecache.PagedFile#PF_SHARED_WRITE_LOCK} flag.
@@ -231,7 +231,7 @@ class AdversarialWritePageCursor extends DelegatingPageCursor
     @Override
     public boolean next() throws IOException
     {
-        adversary.injectFailure( FileNotFoundException.class, IOException.class, SecurityException.class,
+        adversary.injectFailure( NoSuchFileException.class, IOException.class, SecurityException.class,
                 IllegalStateException.class );
         return delegate.next();
     }
@@ -239,7 +239,7 @@ class AdversarialWritePageCursor extends DelegatingPageCursor
     @Override
     public boolean next( long pageId ) throws IOException
     {
-        adversary.injectFailure( FileNotFoundException.class, IOException.class, SecurityException.class,
+        adversary.injectFailure( NoSuchFileException.class, IOException.class, SecurityException.class,
                 IllegalStateException.class );
         return delegate.next( pageId );
     }
@@ -254,7 +254,7 @@ class AdversarialWritePageCursor extends DelegatingPageCursor
     @Override
     public boolean shouldRetry() throws IOException
     {
-        adversary.injectFailure( FileNotFoundException.class, IOException.class, SecurityException.class,
+        adversary.injectFailure( NoSuchFileException.class, IOException.class, SecurityException.class,
                 IllegalStateException.class );
         boolean retry = delegate.shouldRetry();
         return retry || (linkedCursor != null && linkedCursor.shouldRetry());

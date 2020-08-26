@@ -23,7 +23,6 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import java.io.File;
 import java.nio.file.Path;
 import java.util.Map;
 
@@ -67,14 +66,14 @@ public class MinimalIndexAccessorCompatibility extends IndexProviderCompatibilit
     {
         // given
         Path rootDirectory = indexProvider.directoryStructure().rootDirectory();
-        File[] files = fs.listFiles( rootDirectory.toFile() );
+        Path[] files = fs.listFiles( rootDirectory );
         assertEquals( 1, files.length );
 
         // when
         minimalIndexAccessor.drop();
 
         // then
-        files = fs.listFiles( rootDirectory.toFile() );
+        files = fs.listFiles( rootDirectory );
         assertEquals( 0, files.length );
     }
 

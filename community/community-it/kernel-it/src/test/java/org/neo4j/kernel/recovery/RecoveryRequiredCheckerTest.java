@@ -145,7 +145,7 @@ class RecoveryRequiredCheckerTest
         RecoveryRequiredChecker checker = getRecoveryCheckerWithDefaultConfig( fileSystem, pageCache, storageEngineFactory );
         assertFalse( checker.isRecoveryRequiredAt( databaseLayout, INSTANCE ) );
 
-        fileSystem.deleteFileOrThrow( databaseLayout.idNodeStore().toFile() );
+        fileSystem.deleteFileOrThrow( databaseLayout.idNodeStore() );
 
         assertTrue( checker.isRecoveryRequiredAt( databaseLayout, INSTANCE ) );
     }
@@ -162,7 +162,7 @@ class RecoveryRequiredCheckerTest
 
         for ( Path idFile : databaseLayout.idFiles() )
         {
-            fileSystem.deleteFileOrThrow( idFile.toFile() );
+            fileSystem.deleteFileOrThrow( idFile );
         }
 
         assertTrue( checker.isRecoveryRequiredAt( databaseLayout, INSTANCE ) );
@@ -179,7 +179,7 @@ class RecoveryRequiredCheckerTest
         RecoveryRequiredChecker checker = getRecoveryCheckerWithDefaultConfig( fileSystem, pageCache, storageEngineFactory );
         assertFalse( checker.isRecoveryRequiredAt( databaseLayout, INSTANCE ) );
 
-        fileSystem.deleteFileOrThrow( databaseLayout.nodeStore().toFile() );
+        fileSystem.deleteFileOrThrow( databaseLayout.nodeStore() );
 
         assertTrue( checker.isRecoveryRequiredAt( databaseLayout, INSTANCE ) );
     }
@@ -195,9 +195,9 @@ class RecoveryRequiredCheckerTest
         RecoveryRequiredChecker checker = getRecoveryCheckerWithDefaultConfig( fileSystem, pageCache, storageEngineFactory );
         assertFalse( checker.isRecoveryRequiredAt( databaseLayout, INSTANCE ) );
 
-        fileSystem.deleteFileOrThrow( databaseLayout.relationshipStore().toFile() );
-        fileSystem.deleteFileOrThrow( databaseLayout.propertyStore().toFile() );
-        fileSystem.deleteFileOrThrow( databaseLayout.relationshipTypeTokenStore().toFile() );
+        fileSystem.deleteFileOrThrow( databaseLayout.relationshipStore() );
+        fileSystem.deleteFileOrThrow( databaseLayout.propertyStore() );
+        fileSystem.deleteFileOrThrow( databaseLayout.relationshipTypeTokenStore() );
 
         assertTrue( checker.isRecoveryRequiredAt( databaseLayout, INSTANCE ) );
     }
@@ -213,7 +213,7 @@ class RecoveryRequiredCheckerTest
         RecoveryRequiredChecker checker = getRecoveryCheckerWithDefaultConfig( fileSystem, pageCache, storageEngineFactory );
         assertFalse( checker.isRecoveryRequiredAt( databaseLayout, INSTANCE ) );
 
-        fileSystem.deleteFileOrThrow( databaseLayout.countStore().toFile() );
+        fileSystem.deleteFileOrThrow( databaseLayout.countStore() );
 
         assertFalse( checker.isRecoveryRequiredAt( databaseLayout, INSTANCE ) );
     }
@@ -229,7 +229,7 @@ class RecoveryRequiredCheckerTest
         RecoveryRequiredChecker checker = getRecoveryCheckerWithDefaultConfig( fileSystem, pageCache, storageEngineFactory );
         assertFalse( checker.isRecoveryRequiredAt( databaseLayout, INSTANCE ) );
 
-        fileSystem.deleteFileOrThrow( databaseLayout.indexStatisticsStore().toFile() );
+        fileSystem.deleteFileOrThrow( databaseLayout.indexStatisticsStore() );
 
         assertFalse( checker.isRecoveryRequiredAt( databaseLayout, INSTANCE ) );
     }
@@ -263,7 +263,7 @@ class RecoveryRequiredCheckerTest
     {
         for ( Path idFile : databaseLayout.idFiles() )
         {
-            assertTrue( fileSystem.fileExists( idFile.toFile() ), "ID file " + idFile + " does not exist" );
+            assertTrue( fileSystem.fileExists( idFile ), "ID file " + idFile + " does not exist" );
         }
     }
 
@@ -277,7 +277,7 @@ class RecoveryRequiredCheckerTest
                 // Skip
                 continue;
             }
-            assertTrue( fileSystem.fileExists( file.toFile() ), "Store file " + file + " does not exist" );
+            assertTrue( fileSystem.fileExists( file ), "Store file " + file + " does not exist" );
         }
     }
 

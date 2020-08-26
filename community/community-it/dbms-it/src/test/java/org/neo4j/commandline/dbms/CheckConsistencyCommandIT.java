@@ -183,7 +183,7 @@ class CheckConsistencyCommandIT
                 new CheckConsistencyCommand( new ExecutionContext( homeDir, confPath ), consistencyCheckService );
         DatabaseLayout databaseLayout = neo4jLayout.databaseLayout( "mydb" );
 
-        testDirectory.getFileSystem().mkdirs( databaseLayout.databaseDirectory().toFile() );
+        testDirectory.getFileSystem().mkdirs( databaseLayout.databaseDirectory() );
 
         try ( Closeable ignored = LockChecker.checkDatabaseLock( databaseLayout ) )
         {
@@ -398,7 +398,7 @@ class CheckConsistencyCommandIT
 
     private void prepareBackupDatabase( DatabaseLayout backupLayout ) throws IOException
     {
-        testDirectory.getFileSystem().deleteRecursively( homeDir.toFile() );
+        testDirectory.getFileSystem().deleteRecursively( homeDir );
         prepareDatabase( backupLayout );
     }
 

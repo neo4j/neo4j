@@ -22,13 +22,13 @@ package org.neo4j.consistency.checking;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import java.io.FileFilter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.consistency.ConsistencyCheckService;
@@ -57,7 +57,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.logs_directory;
 import static org.neo4j.internal.helpers.progress.ProgressMonitorFactory.NONE;
-import static org.neo4j.io.fs.FileUtils.copyRecursively;
+import static org.neo4j.io.fs.FileUtils.copyDirectory;
 import static org.neo4j.test.TestLabels.LABEL_ONE;
 import static org.neo4j.test.TestLabels.LABEL_THREE;
 import static org.neo4j.test.TestLabels.LABEL_TWO;
@@ -84,7 +84,7 @@ class IndexConsistencyIT
     private static final double DELETE_RATIO = 0.2;
     private static final double UPDATE_RATIO = 0.2;
     private static final int NODE_COUNT_BASELINE = 10;
-    private final FileFilter SOURCE_COPY_FILE_FILTER = file -> file.isDirectory() || file.getName().startsWith( "index" );
+    private final Predicate<Path> SOURCE_COPY_FILE_FILTER = path -> Files.isDirectory( path ) || path.getFileName().toString().startsWith( "index" );
 
     @Test
     void reportNotCleanNativeIndex() throws IOException, ConsistencyCheckIncompleteException
@@ -94,7 +94,7 @@ class IndexConsistencyIT
         checkPointer.forceCheckPoint( new SimpleTriggerInfo( "forcedCheckpoint" ) );
         Path indexesCopy = databaseLayout.file( "indexesCopy" );
         Path indexSources = indexProviderMap.getDefaultProvider().directoryStructure().rootDirectory();
-        copyRecursively( indexSources.toFile(), indexesCopy.toFile(), SOURCE_COPY_FILE_FILTER );
+        copyDirectory( indexSources, indexesCopy, SOURCE_COPY_FILE_FILTER );
 
         try ( Transaction tx = db.beginTx() )
         {
@@ -104,7 +104,7 @@ class IndexConsistencyIT
 
         managementService.shutdown();
 
-        copyRecursively( indexesCopy.toFile(), indexSources.toFile() );
+        copyDirectory( indexesCopy, indexSources );
 
         ConsistencyCheckService.Result result = fullConsistencyCheck();
         assertFalse( result.isSuccessful(), "Expected consistency check to fail" );
@@ -120,11 +120,11 @@ class IndexConsistencyIT
         checkPointer.forceCheckPoint( new SimpleTriggerInfo( "forcedCheckpoint" ) );
         Path indexesCopy = databaseLayout.file( "indexesCopy" );
         Path indexSources = indexProviderMap.getDefaultProvider().directoryStructure().rootDirectory();
-        copyRecursively( indexSources.toFile(), indexesCopy.toFile(), SOURCE_COPY_FILE_FILTER );
+        copyDirectory( indexSources, indexesCopy, SOURCE_COPY_FILE_FILTER );
 
         managementService.shutdown();
 
-        copyRecursively( indexesCopy.toFile(), indexSources.toFile() );
+        copyDirectory( indexesCopy, indexSources );
 
         ConsistencyCheckService.Result result = fullConsistencyCheck();
         assertTrue( result.isSuccessful(), "Expected consistency check to fail" );

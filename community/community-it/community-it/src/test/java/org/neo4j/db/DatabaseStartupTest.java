@@ -212,7 +212,7 @@ class DatabaseStartupTest
         }
         managementService.shutdown();
 
-        fs.deleteRecursively( databaseLayout.databaseDirectory().toFile() );
+        fs.deleteRecursively( databaseLayout.databaseDirectory() );
 
         // Try to start
         managementService = new TestDatabaseManagementServiceBuilder( databaseLayout ).build();

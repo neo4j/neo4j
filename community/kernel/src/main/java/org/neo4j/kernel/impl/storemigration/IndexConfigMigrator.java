@@ -130,7 +130,7 @@ public class IndexConfigMigrator extends AbstractStoreMigrationParticipant
             {
                 for ( Path nonRetiredRootDirectory : indexMigration.providerRootDirectories( directoryLayout ) )
                 {
-                    fs.deleteRecursively( nonRetiredRootDirectory.toFile() );
+                    fs.deleteRecursively( nonRetiredRootDirectory );
                 }
             }
         }

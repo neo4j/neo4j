@@ -576,7 +576,7 @@ class GBPTreeCountsStoreTest
         assertThrows( NoSuchFileException.class, () -> GBPTreeCountsStore.dump( pageCache, file, System.out, NULL ) );
 
         // then
-        assertFalse( fs.fileExists( file.toFile() ) );
+        assertFalse( fs.fileExists( file ) );
     }
 
     @Test
@@ -588,7 +588,7 @@ class GBPTreeCountsStoreTest
             updater.incrementNodeCount( LABEL_ID_1, 9 );
         }
         closeCountsStore();
-        try ( StoreChannel channel = fs.open( countsStoreFile().toFile(), Set.of( StandardOpenOption.WRITE ) ) )
+        try ( StoreChannel channel = fs.open( countsStoreFile(), Set.of( StandardOpenOption.WRITE ) ) )
         {
             ByteBuffer buffer = ByteBuffer.wrap( new byte[8192] );
             for ( int i = 0; buffer.hasRemaining(); i++ )
@@ -725,7 +725,7 @@ class GBPTreeCountsStoreTest
 
     private void deleteCountsStore()
     {
-        directory.getFileSystem().deleteFile( countsStoreFile().toFile() );
+        directory.getFileSystem().deleteFile( countsStoreFile() );
     }
 
     private Path countsStoreFile()

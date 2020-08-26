@@ -21,8 +21,8 @@ package org.neo4j.adversaries.pagecache;
 
 import org.eclipse.collections.api.set.ImmutableSet;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.List;
@@ -43,7 +43,7 @@ import static java.nio.file.StandardOpenOption.CREATE;
  * a misbehaving page cache implementation for testing.
  * <p>
  * Depending on the adversary each operation can throw either {@link RuntimeException} like {@link SecurityException}
- * or {@link IOException} like {@link FileNotFoundException}.
+ * or {@link IOException} like {@link NoSuchFileException}.
  */
 @SuppressWarnings( "unchecked" )
 public class AdversarialPageCache implements PageCache
@@ -67,7 +67,7 @@ public class AdversarialPageCache implements PageCache
         }
         else
         {
-            adversary.injectFailure( FileNotFoundException.class, IOException.class, SecurityException.class );
+            adversary.injectFailure( NoSuchFileException.class, IOException.class, SecurityException.class );
         }
         PagedFile pagedFile = delegate.map( path, versionContextSupplier, pageSize, openOptions, databaseName );
         return new AdversarialPagedFile( pagedFile, adversary );
@@ -96,14 +96,14 @@ public class AdversarialPageCache implements PageCache
     @Override
     public void flushAndForce() throws IOException
     {
-        adversary.injectFailure( FileNotFoundException.class, IOException.class, SecurityException.class );
+        adversary.injectFailure( NoSuchFileException.class, IOException.class, SecurityException.class );
         delegate.flushAndForce();
     }
 
     @Override
     public void flushAndForce( IOLimiter limiter ) throws IOException
     {
-        adversary.injectFailure( FileNotFoundException.class, IOException.class, SecurityException.class );
+        adversary.injectFailure( NoSuchFileException.class, IOException.class, SecurityException.class );
         delegate.flushAndForce( limiter );
     }
 

@@ -171,7 +171,7 @@ public class TokenScanStoreTest
     {
         // given
         File labelScanStoreFile = databaseLayout.labelScanStore().toFile();
-        fileSystem.write( labelScanStoreFile ).close();
+        fileSystem.write( labelScanStoreFile.toPath() ).close();
         TrackingMonitor monitor = new TrackingMonitor();
         LifeSupport life = new LifeSupport();
 
@@ -643,7 +643,7 @@ public class TokenScanStoreTest
         relationshipTypeScanStore.init();
         relationshipTypeScanStore.start();
         relationshipTypeScanStore.shutdown();
-        assertThat( fileSystem.fileExists( databaseLayout.relationshipTypeScanStore().toFile() ) ).as( "relationship type scan store exists" ).isTrue();
+        assertThat( fileSystem.fileExists( databaseLayout.relationshipTypeScanStore() ) ).as( "relationship type scan store exists" ).isTrue();
 
         // when
         Config config = Config.defaults();
@@ -659,7 +659,7 @@ public class TokenScanStoreTest
         assertThat( e.getMessage() ).contains( "Database was started in read only mode and with relationship type scan store turned OFF",
                 "Note that consistency check use read only mode.",
                 "Use setting 'unsupported.dbms.enable_relationship_type_scan_store' to turn relationship type scan store ON or OFF." );
-        assertThat( fileSystem.fileExists( databaseLayout.relationshipTypeScanStore().toFile() ) )
+        assertThat( fileSystem.fileExists( databaseLayout.relationshipTypeScanStore() ) )
                 .as( "relationship type scan store was not deleted in read only mode and does still exists" ).isTrue();
     }
 

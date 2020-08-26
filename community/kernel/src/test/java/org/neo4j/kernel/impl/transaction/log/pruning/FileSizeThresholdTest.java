@@ -46,7 +46,7 @@ class FileSizeThresholdTest
         final long maxSize = 10;
         final FileSizeThreshold threshold = new FileSizeThreshold( fs, maxSize );
 
-        when( fs.getFileSize( file.toFile() ) ).thenReturn( 5L );
+        when( fs.getFileSize( file ) ).thenReturn( 5L );
 
         // when
         threshold.init();
@@ -64,7 +64,7 @@ class FileSizeThresholdTest
 
         final FileSizeThreshold threshold = new FileSizeThreshold( fs, sixteenGigabytes );
 
-        when( fs.getFileSize( file.toFile() ) ).thenReturn( sixteenGigabytes );
+        when( fs.getFileSize( file ) ).thenReturn( sixteenGigabytes );
 
         // when
         threshold.init();
@@ -81,7 +81,7 @@ class FileSizeThresholdTest
         final long maxSize = 10;
         final FileSizeThreshold threshold = new FileSizeThreshold( fs, maxSize );
 
-        when( fs.getFileSize( file.toFile() ) ).thenReturn( 5L );
+        when( fs.getFileSize( file ) ).thenReturn( 5L );
 
         // when
         threshold.init();
@@ -99,7 +99,7 @@ class FileSizeThresholdTest
         final long maxSize = 10;
         final FileSizeThreshold threshold = new FileSizeThreshold( fs, maxSize );
 
-        when( fs.getFileSize( file.toFile() ) ).thenReturn( 5L );
+        when( fs.getFileSize( file ) ).thenReturn( 5L );
 
         // when
         threshold.init();

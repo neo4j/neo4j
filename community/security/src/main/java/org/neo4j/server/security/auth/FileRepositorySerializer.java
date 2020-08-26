@@ -43,7 +43,7 @@ public abstract class FileRepositorySerializer<S>
 
     public static void writeToFile( FileSystemAbstraction fs, Path path, byte[] bytes ) throws IOException
     {
-        try ( OutputStream o = fs.openAsOutputStream( path.toFile(), false ) )
+        try ( OutputStream o = fs.openAsOutputStream( path, false ) )
         {
             o.write( bytes );
         }
@@ -51,7 +51,7 @@ public abstract class FileRepositorySerializer<S>
 
     private static List<String> readFromFile( FileSystemAbstraction fs, Path path ) throws IOException
     {
-        try ( var reader = fs.openAsReader( path.toFile(), UTF_8 ) )
+        try ( var reader = fs.openAsReader( path, UTF_8 ) )
         {
             return readLines( reader );
         }
@@ -65,11 +65,11 @@ public abstract class FileRepositorySerializer<S>
         try
         {
             writeToFile( fileSystem, tempFile, serialize( records ) );
-            fileSystem.renameFile( tempFile.toFile(), recordsFile.toFile(), ATOMIC_MOVE, REPLACE_EXISTING );
+            fileSystem.renameFile( tempFile, recordsFile, ATOMIC_MOVE, REPLACE_EXISTING );
         }
         catch ( Throwable e )
         {
-            fileSystem.deleteFile( tempFile.toFile() );
+            fileSystem.deleteFile( tempFile );
             throw e;
         }
     }
@@ -77,9 +77,9 @@ public abstract class FileRepositorySerializer<S>
     private Path getTempFile( FileSystemAbstraction fileSystem, Path recordsFile ) throws IOException
     {
         Path directory = recordsFile.getParent();
-        if ( !fileSystem.fileExists( directory.toFile() ) )
+        if ( !fileSystem.fileExists( directory ) )
         {
-            fileSystem.mkdirs( directory.toFile() );
+            fileSystem.mkdirs( directory );
         }
 
         long n = random.nextLong();

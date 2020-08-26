@@ -28,6 +28,8 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.Files;
+import java.nio.file.attribute.PosixFilePermission;
+import java.util.EnumSet;
 
 import org.neo4j.test.extension.DisabledForRoot;
 
@@ -36,7 +38,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.internal.helpers.Numbers.isPowerOfTwo;
 import static org.neo4j.io.fs.DefaultFileSystemAbstraction.UNABLE_TO_CREATE_DIRECTORY_FORMAT;
 import static org.neo4j.io.fs.FileSystemAbstraction.INVALID_FILE_DESCRIPTOR;
@@ -54,7 +55,7 @@ public class DefaultFileSystemAbstractionTest extends FileSystemAbstractionTest
     void retrieveFileDescriptor() throws IOException
     {
         File testFile = testDirectory.file( "testFile" );
-        try ( StoreChannel storeChannel = fsa.write( testFile ) )
+        try ( StoreChannel storeChannel = fsa.write( testFile.toPath() ) )
         {
             int fileDescriptor = fsa.getFileDescriptor( storeChannel );
             assertThat( fileDescriptor ).isGreaterThan( 0 );
@@ -66,7 +67,7 @@ public class DefaultFileSystemAbstractionTest extends FileSystemAbstractionTest
     void retrieveWindowsFileDescriptor() throws IOException
     {
         File testFile = testDirectory.file( "testFile" );
-        try ( StoreChannel storeChannel = fsa.write( testFile ) )
+        try ( StoreChannel storeChannel = fsa.write( testFile.toPath() ) )
         {
             int fileDescriptor = fsa.getFileDescriptor( storeChannel );
             assertThat( fileDescriptor ).isEqualTo( INVALID_FILE_DESCRIPTOR );
@@ -78,7 +79,7 @@ public class DefaultFileSystemAbstractionTest extends FileSystemAbstractionTest
     {
         File testFile = testDirectory.file( "testFile" );
         StoreChannel escapedChannel = null;
-        try ( StoreChannel storeChannel = fsa.write( testFile ) )
+        try ( StoreChannel storeChannel = fsa.write( testFile.toPath() ) )
         {
             escapedChannel = storeChannel;
         }
@@ -90,7 +91,7 @@ public class DefaultFileSystemAbstractionTest extends FileSystemAbstractionTest
     void retrieveBlockSize() throws IOException
     {
         var testFile = testDirectory.createFile( "testBlock" );
-        long blockSize = fsa.getBlockSize( testFile );
+        long blockSize = fsa.getBlockSize( testFile.toPath() );
         assertTrue( isPowerOfTwo( blockSize ), "Observed block size: " + blockSize );
         assertThat( blockSize ).isGreaterThanOrEqualTo( 512L );
     }
@@ -101,10 +102,10 @@ public class DefaultFileSystemAbstractionTest extends FileSystemAbstractionTest
     @DisabledForRoot
     void shouldFailGracefullyWhenPathCannotBeCreated() throws Exception
     {
-        Files.createDirectories( path.toPath() );
+        Files.createDirectories( path );
         assertTrue( fsa.fileExists( path ) );
-        assumeTrue( path.setWritable( false ) );
-        path = new File( path, "some_file" );
+        Files.setPosixFilePermissions( path, EnumSet.of( PosixFilePermission.OWNER_READ, PosixFilePermission.GROUP_READ, PosixFilePermission.OTHERS_READ ) );
+        path = path.resolve( "some_file" );
 
         IOException exception = assertThrows( IOException.class, () -> fsa.mkdirs( path ) );
         assertFalse( fsa.isDirectory( path ) );

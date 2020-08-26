@@ -102,7 +102,7 @@ class GenericConfigExtractorTest
         AssertableLogProvider logProvider = new AssertableLogProvider();
         Log myLog = logProvider.getLog( getClass() );
         Path genericFile = directory.filePath( "genericFile" );
-        assertFalse( fs.fileExists( genericFile.toFile() ) );
+        assertFalse( fs.fileExists( genericFile ) );
 
         // when
         GenericConfigExtractor.indexConfigFromGenericFile( fs, pageCache, genericFile, NULL, myLog );
@@ -122,7 +122,7 @@ class GenericConfigExtractorTest
         Log myLog = logProvider.getLog( getClass() );
 
         // and
-        assertTrue( fs.fileExists( genericFile.toFile() ) );
+        assertTrue( fs.fileExists( genericFile ) );
 
         // when
         GenericConfigExtractor.indexConfigFromGenericFile( fs, pageCache, genericFile, NULL, myLog );
@@ -157,7 +157,7 @@ class GenericConfigExtractorTest
         Path genericFile = directory.filePath( HEALTHY_GENERIC_35_FILE );
 
         // and
-        assertTrue( fs.fileExists( genericFile.toFile() ) );
+        assertTrue( fs.fileExists( genericFile ) );
 
         // when
         IndexConfig indexConfig = GenericConfigExtractor.indexConfigFromGenericFile( fs, pageCache, genericFile, NULL, NullLog.getInstance() );
@@ -175,7 +175,7 @@ class GenericConfigExtractorTest
 
     private static void corruptFile( FileSystemAbstraction fs, Path genericFile ) throws IOException
     {
-        try ( StoreChannel write = fs.write( genericFile.toFile() ) )
+        try ( StoreChannel write = fs.write( genericFile ) )
         {
             int size = 100;
             byte[] bytes = new byte[size];
@@ -184,7 +184,7 @@ class GenericConfigExtractorTest
             byteBuffer.put( bytes );
             write.writeAll( byteBuffer );
         }
-        assertTrue( fs.fileExists( genericFile.toFile() ) );
+        assertTrue( fs.fileExists( genericFile ) );
     }
 
     private static void assertExpectedIndexConfig( IndexConfig indexConfig )

@@ -103,7 +103,7 @@ public class IndexProviderMigrator extends AbstractStoreMigrationParticipant
             {
                 for ( Path retiredRootDirectory : indexMigration.providerRootDirectories( directoryLayout ) )
                 {
-                    fs.deleteRecursively( retiredRootDirectory.toFile() );
+                    fs.deleteRecursively( retiredRootDirectory );
                 }
             }
         }

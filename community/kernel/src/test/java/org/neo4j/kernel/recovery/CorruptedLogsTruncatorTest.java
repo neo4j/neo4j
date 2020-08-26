@@ -100,7 +100,7 @@ class CorruptedLogsTruncatorTest
     void doNotPruneEmptyLogs() throws IOException
     {
         logPruner.truncate( new LogPosition( 0, CURRENT_FORMAT_LOG_HEADER_SIZE ) );
-        assertTrue( FileSystemUtils.isEmptyOrNonExistingDirectory( fs, databaseDirectory.toFile() ) );
+        assertTrue( FileSystemUtils.isEmptyOrNonExistingDirectory( fs, databaseDirectory ) );
     }
 
     @Test

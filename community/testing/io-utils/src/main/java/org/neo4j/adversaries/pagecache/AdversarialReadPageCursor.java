@@ -19,10 +19,10 @@
  */
 package org.neo4j.adversaries.pagecache;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -42,7 +42,7 @@ import org.neo4j.util.FeatureToggles;
  * to provide a misbehaving page cursor implementation for testing.
  * <p>
  * Depending on the adversary each read operation can throw either {@link RuntimeException} like
- * {@link SecurityException} or {@link IOException} like {@link FileNotFoundException}.
+ * {@link SecurityException} or {@link IOException} like {@link NoSuchFileException}.
  * <p>
  * Depending on the adversary each read operation can produce an inconsistent read and require caller to retry using
  * while loop with {@link PageCursor#shouldRetry()} as a condition.
@@ -379,7 +379,7 @@ class AdversarialReadPageCursor extends DelegatingPageCursor
     private void prepareNext()
     {
         boolean currentReadIsPreparingInconsistent =
-                state.injectFailureOrMischief( FileNotFoundException.class, IOException.class, SecurityException.class, IllegalStateException.class );
+                state.injectFailureOrMischief( NoSuchFileException.class, IOException.class, SecurityException.class, IllegalStateException.class );
         state.reset( currentReadIsPreparingInconsistent );
     }
 
@@ -393,7 +393,7 @@ class AdversarialReadPageCursor extends DelegatingPageCursor
     @Override
     public boolean shouldRetry() throws IOException
     {
-        state.injectFailure( FileNotFoundException.class, IOException.class, SecurityException.class, IllegalStateException.class );
+        state.injectFailure( NoSuchFileException.class, IOException.class, SecurityException.class, IllegalStateException.class );
         if ( state.hasPreparedInconsistentRead() )
         {
             resetDelegate();

@@ -50,7 +50,7 @@ public class SingleFilePageSwapperFactory implements PageSwapperFactory
             boolean createIfNotExist,
             boolean useDirectIO ) throws IOException
     {
-        if ( !createIfNotExist && !fs.fileExists( file.toFile() ) )
+        if ( !createIfNotExist && !fs.fileExists( file ) )
         {
             throw new NoSuchFileException( file.toString(), null, "Cannot map non-existing file" );
         }

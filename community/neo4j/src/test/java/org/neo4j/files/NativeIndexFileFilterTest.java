@@ -27,6 +27,7 @@ import java.nio.file.Path;
 
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.api.impl.schema.LuceneIndexProvider;
 import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;
 import org.neo4j.kernel.impl.index.schema.fusion.NativeLuceneFusionIndexProviderFactory30;
@@ -152,7 +153,7 @@ class NativeIndexFileFilterTest
 
     private void createFile( Path file ) throws IOException
     {
-        fs.mkdirs( file.getParent().toFile() );
-        fs.write( file.toFile() ).close();
+        fs.mkdirs( file.getParent() );
+        ((StoreChannel) fs.write( file )).close();
     }
 }

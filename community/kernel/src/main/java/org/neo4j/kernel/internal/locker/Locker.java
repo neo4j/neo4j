@@ -71,9 +71,9 @@ public class Locker implements Closeable
 
         try
         {
-            if ( !fileSystemAbstraction.fileExists( lockFile.toFile() ) )
+            if ( !fileSystemAbstraction.fileExists( lockFile ) )
             {
-                fileSystemAbstraction.mkdirs( lockFile.getParent().toFile() );
+                fileSystemAbstraction.mkdirs( lockFile.getParent() );
             }
         }
         catch ( IOException e )
@@ -86,7 +86,7 @@ public class Locker implements Closeable
         {
             if ( lockFileChannel == null )
             {
-                lockFileChannel = fileSystemAbstraction.write( lockFile.toFile() );
+                lockFileChannel = fileSystemAbstraction.write( lockFile );
             }
             lockFileLock = lockFileChannel.tryLock();
             if ( lockFileLock == null )

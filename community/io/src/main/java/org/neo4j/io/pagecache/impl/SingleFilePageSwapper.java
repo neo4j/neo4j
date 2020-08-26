@@ -140,7 +140,7 @@ public class SingleFilePageSwapper implements PageSwapper
 
     private StoreChannel createStoreChannel() throws IOException
     {
-        var storeChannel = fs.open( path.toFile(), openOptions );
+        var storeChannel = fs.open( path, openOptions );
         storeChannel.tryMakeUninterruptible();
         return storeChannel;
     }
@@ -151,7 +151,7 @@ public class SingleFilePageSwapper implements PageSwapper
         {
             throw new IllegalArgumentException( "DirectIO support is available only on Linux." );
         }
-        final long blockSize = fs.getBlockSize( file.toFile() );
+        final long blockSize = fs.getBlockSize( file );
         long value = filePageSize / blockSize;
         if ( value * blockSize != filePageSize )
         {
@@ -648,7 +648,7 @@ public class SingleFilePageSwapper implements PageSwapper
     public synchronized void closeAndDelete() throws IOException
     {
         close();
-        fs.deleteFile( path.toFile() );
+        fs.deleteFile( path );
     }
 
     @Override

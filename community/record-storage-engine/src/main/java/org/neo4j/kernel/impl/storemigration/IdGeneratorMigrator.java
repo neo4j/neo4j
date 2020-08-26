@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.storemigration;
 
 import org.apache.commons.lang3.tuple.Pair;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -110,7 +109,7 @@ public class IdGeneratorMigrator extends AbstractStoreMigrationParticipant
         for ( StoreType storeType : StoreType.values() )
         {
             // See if it exists in migration directory, otherwise it must be in the db directory
-            List<StoreType> list = fileSystem.fileExists( migrationLayout.file( storeType.getDatabaseFile() ).toFile() )
+            List<StoreType> list = fileSystem.fileExists( migrationLayout.file( storeType.getDatabaseFile() ) )
                                    ? storesInMigrationDirectory
                                    : storesInDbDirectory;
             list.add( storeType );
@@ -132,31 +131,31 @@ public class IdGeneratorMigrator extends AbstractStoreMigrationParticipant
         // that we need to open will complain because some of their "sub-stores" doesn't exist. They will be empty, it's fine...
         // and we will not read from them at all. They will just sit there and allow their parent store to be opened.
         // We'll remove them after we have built the id files
-        Set<File> placeHolderStoreFiles = createEmptyPlaceHolderStoreFiles( migrationLayout, newFormat );
+        Set<Path> placeHolderStoreFiles = createEmptyPlaceHolderStoreFiles( migrationLayout, newFormat );
         try ( NeoStores stores = createStoreFactory( migrationLayout, newFormat, new ScanOnOpenReadOnlyIdGeneratorFactory() )
                 .openNeoStores( storesInMigrationDirectory.toArray( StoreType[]::new ) ) )
         {
             stores.start( cursorTracer );
             buildIdFiles( migrationLayout, storesInMigrationDirectory, rebuiltIdGenerators, renameList, stores, cursorTracer );
         }
-        for ( File emptyPlaceHolderStoreFile : placeHolderStoreFiles )
+        for ( Path emptyPlaceHolderStoreFile : placeHolderStoreFiles )
         {
             fileSystem.deleteFile( emptyPlaceHolderStoreFile );
         }
         // Renamed the built id files (they're called what they should be called, except with a '.new' in the end) by removing the suffix
         for ( Pair<Path,Path> rename : renameList )
         {
-            fileSystem.deleteFile( rename.getRight().toFile() );
-            fileSystem.renameFile( rename.getLeft().toFile(), rename.getRight().toFile() );
+            fileSystem.deleteFile( rename.getRight() );
+            fileSystem.renameFile( rename.getLeft(), rename.getRight() );
         }
     }
 
-    private Set<File> createEmptyPlaceHolderStoreFiles( DatabaseLayout layout, RecordFormats format )
+    private Set<Path> createEmptyPlaceHolderStoreFiles( DatabaseLayout layout, RecordFormats format )
     {
-        Set<File> createdStores = new HashSet<>();
+        Set<Path> createdStores = new HashSet<>();
         StoreType[] storesToCreate = Stream.of( StoreType.values() ).filter( t ->
         {
-            File file = layout.file( t.getDatabaseFile() ).toFile();
+            Path file = layout.file( t.getDatabaseFile() );
             boolean exists = fileSystem.fileExists( file );
             if ( !exists )
             {

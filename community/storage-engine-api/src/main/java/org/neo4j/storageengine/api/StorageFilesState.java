@@ -19,7 +19,7 @@
  */
 package org.neo4j.storageengine.api;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;
 
@@ -31,9 +31,9 @@ import java.util.Collections;
 public class StorageFilesState
 {
     private final RecoveryState recoveryState;
-    private final Collection<File> missingFiles;
+    private final Collection<Path> missingFiles;
 
-    private StorageFilesState( RecoveryState recoveryState, Collection<File> missingFiles )
+    private StorageFilesState( RecoveryState recoveryState, Collection<Path> missingFiles )
     {
         this.recoveryState = recoveryState;
         this.missingFiles = missingFiles;
@@ -44,7 +44,7 @@ public class StorageFilesState
         return recoveryState;
     }
 
-    public Collection<File> getMissingFiles()
+    public Collection<Path> getMissingFiles()
     {
         return missingFiles;
     }
@@ -59,7 +59,7 @@ public class StorageFilesState
         return new StorageFilesState( RecoveryState.RECOVERED, Collections.emptyList() );
     }
 
-    public static StorageFilesState unrecoverableState( Collection<File> missingFiles )
+    public static StorageFilesState unrecoverableState( Collection<Path> missingFiles )
     {
         return new StorageFilesState( RecoveryState.UNRECOVERABLE, missingFiles );
     }

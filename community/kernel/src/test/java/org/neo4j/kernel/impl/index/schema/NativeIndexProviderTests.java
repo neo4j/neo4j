@@ -93,7 +93,7 @@ abstract class NativeIndexProviderTests
     void setup() throws IOException
     {
         Path nativeSchemaIndexStoreDirectory = newProvider().directoryStructure().rootDirectory();
-        fs.mkdirs( nativeSchemaIndexStoreDirectory.toFile() );
+        fs.mkdirs( nativeSchemaIndexStoreDirectory );
     }
 
     /* getPopulator */

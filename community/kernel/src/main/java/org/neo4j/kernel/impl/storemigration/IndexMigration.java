@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -252,19 +251,19 @@ enum IndexMigration
     public static List<SpatialFile> getSpatialFiles( FileSystemAbstraction fs, Path spatialDirectory )
     {
         List<SpatialFile> spatialFiles = new ArrayList<>();
-        File[] files = fs.listFiles( spatialDirectory.toFile() );
+        Path[] files = fs.listFiles( spatialDirectory );
         if ( files != null )
         {
-            for ( File file : files )
+            for ( Path file : files )
             {
-                String name = file.toPath().getFileName().toString();
+                String name = file.getFileName().toString();
                 Matcher matcher = CRS_FILE_PATTERN.matcher( name );
                 if ( matcher.matches() )
                 {
                     int tableId = Integer.parseInt( matcher.group( 1 ) );
                     int code = Integer.parseInt( matcher.group( 2 ) );
                     CoordinateReferenceSystem crs = CoordinateReferenceSystem.get( tableId, code );
-                    spatialFiles.add( new SpatialFile( crs, file.toPath() ) );
+                    spatialFiles.add( new SpatialFile( crs, file ) );
                 }
             }
         }

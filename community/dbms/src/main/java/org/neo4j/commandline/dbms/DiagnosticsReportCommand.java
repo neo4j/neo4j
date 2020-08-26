@@ -222,7 +222,7 @@ public class DiagnosticsReportCommand extends AbstractCommand
 
     private Config getConfig( Path configFile )
     {
-        if ( !ctx.fs().fileExists( configFile.toFile() ) )
+        if ( !ctx.fs().fileExists( configFile ) )
         {
             throw new CommandFailedException( "Unable to find config file, tried: " + configFile.toAbsolutePath() );
         }

@@ -107,7 +107,7 @@ class GBPTreePartialCreateFuzzIT
             SingleFilePageSwapperFactory swapper = new SingleFilePageSwapperFactory( fs );
             try ( PageCache pageCache = new MuninnPageCache( swapper, 10, PageCacheTracer.NULL, EmptyVersionContextSupplier.EMPTY, jobScheduler ) )
             {
-                fs.deleteFile( file.toFile() );
+                fs.deleteFile( file );
                 new GBPTreeBuilder<>( pageCache, file, longLayout().build() ).build().close();
             }
         }

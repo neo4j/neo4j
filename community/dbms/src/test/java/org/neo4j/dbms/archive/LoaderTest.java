@@ -165,7 +165,7 @@ class LoaderTest
                 .set( default_database, "destination" )
                 .build();
         DatabaseLayout databaseLayout = DatabaseLayout.of( config );
-        fileSystem.deleteRecursively( txLogsDestination.toFile() );
+        fileSystem.deleteRecursively( txLogsDestination );
         NoSuchFileException noSuchFileException = assertThrows( NoSuchFileException.class, () -> new Loader().load( archive, databaseLayout ) );
         assertEquals( txLogsDestination.toString(), noSuchFileException.getMessage() );
     }
@@ -226,7 +226,7 @@ class LoaderTest
 
     private void deleteLayoutFolders( DatabaseLayout databaseLayout ) throws IOException
     {
-        fileSystem.deleteRecursively( databaseLayout.databaseDirectory().toFile() );
-        fileSystem.deleteRecursively( databaseLayout.getTransactionLogsDirectory().toFile() );
+        fileSystem.deleteRecursively( databaseLayout.databaseDirectory() );
+        fileSystem.deleteRecursively( databaseLayout.getTransactionLogsDirectory() );
     }
 }

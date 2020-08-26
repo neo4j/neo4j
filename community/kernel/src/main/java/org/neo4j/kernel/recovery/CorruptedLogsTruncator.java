@@ -90,9 +90,9 @@ public class CorruptedLogsTruncator
     {
         var logFile = logFiles.getLogFile();
         Path lastRecoveredTransactionLog = logFile.getLogFileForVersion( recoveredTransactionLogVersion );
-        fs.truncate( lastRecoveredTransactionLog.toFile(), recoveredTransactionOffset );
+        fs.truncate( lastRecoveredTransactionLog, recoveredTransactionOffset );
         forEachSubsequentLogFile( recoveredTransactionLogVersion,
-                fileIndex -> fs.deleteFile( logFile.getLogFileForVersion( fileIndex ).toFile() ) );
+                fileIndex -> fs.deleteFile( logFile.getLogFileForVersion( fileIndex ) ) );
     }
 
     private void forEachSubsequentLogFile( long recoveredTransactionLogVersion, LongConsumer action )
@@ -109,7 +109,7 @@ public class CorruptedLogsTruncator
     {
         Path corruptedLogArchive = getArchiveFile( recoveredTransactionLogVersion, recoveredTransactionOffset );
         try ( ZipOutputStream recoveryContent = new ZipOutputStream(
-                fs.openAsOutputStream( corruptedLogArchive.toFile(), false ) );
+                fs.openAsOutputStream( corruptedLogArchive, false ) );
                 var bufferScope = new HeapScopedBuffer(  1, MebiByte, memoryTracker ) )
         {
             copyTransactionLogContent( recoveredTransactionLogVersion, recoveredTransactionOffset, recoveryContent, bufferScope.getBuffer() );
@@ -131,7 +131,7 @@ public class CorruptedLogsTruncator
             throws IOException
     {
         Path corruptedLogsFolder = storeDir.resolve( CORRUPTED_TX_LOGS_BASE_NAME );
-        fs.mkdirs( corruptedLogsFolder.toFile() );
+        fs.mkdirs( corruptedLogsFolder );
         return corruptedLogsFolder.resolve(
                 format( LOG_FILE_ARCHIVE_PATTERN, recoveredTransactionLogVersion, recoveredTransactionOffset,
                         System.currentTimeMillis() ) );
@@ -141,14 +141,14 @@ public class CorruptedLogsTruncator
             ByteBuffer byteBuffer ) throws IOException
     {
         Path logFile = logFiles.getLogFile().getLogFileForVersion( logFileIndex );
-        if ( fs.getFileSize( logFile.toFile() ) == logOffset )
+        if ( fs.getFileSize( logFile ) == logOffset )
         {
             // file was recovered fully, nothing to backup
             return;
         }
         ZipEntry zipEntry = new ZipEntry( logFile.getFileName().toString() );
         destination.putNextEntry( zipEntry );
-        try ( StoreChannel transactionLogChannel = fs.read( logFile.toFile() ) )
+        try ( StoreChannel transactionLogChannel = fs.read( logFile ) )
         {
             transactionLogChannel.position( logOffset );
             while ( transactionLogChannel.read( byteBuffer ) >= 0 )

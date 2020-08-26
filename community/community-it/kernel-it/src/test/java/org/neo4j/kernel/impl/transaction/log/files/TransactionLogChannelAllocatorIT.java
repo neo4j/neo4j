@@ -96,7 +96,7 @@ class TransactionLogChannelAllocatorIT
     void openExistingFileDoesNotPerformAnyAllocations() throws IOException
     {
         Path file = fileHelper.getLogFileForVersion( 11 );
-        fileSystem.write( file.toFile() ).close();
+        fileSystem.write( file ).close();
 
         TransactionLogChannelAllocator fileAllocator = createLogFileAllocator();
         try ( PhysicalLogVersionedStoreChannel channel = fileAllocator.createLogChannel( 11, () -> 1L ) )

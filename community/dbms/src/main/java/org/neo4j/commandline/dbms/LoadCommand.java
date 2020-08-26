@@ -37,6 +37,7 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.helpers.NormalizedDatabaseName;
 import org.neo4j.dbms.archive.IncorrectFormat;
 import org.neo4j.dbms.archive.Loader;
+import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.kernel.internal.locker.FileLockException;
@@ -44,8 +45,7 @@ import org.neo4j.kernel.internal.locker.FileLockException;
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.commandline.Util.wrapIOException;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.io.fs.FileUtils.deletePathRecursively;
-import static org.neo4j.io.fs.FileUtils.deleteRecursively;
+import static org.neo4j.io.fs.FileUtils.deleteDirectory;
 import static picocli.CommandLine.Command;
 import static picocli.CommandLine.Option;
 
@@ -148,8 +148,8 @@ public class LoadCommand extends AbstractCommand
             if ( force )
             {
                 // we remove everything except our database lock
-                deletePathRecursively( databaseLayout.databaseDirectory(), path -> !path.equals( databaseLayout.databaseLockFile() ) );
-                deleteRecursively( databaseLayout.getTransactionLogsDirectory().toFile() );
+                deleteDirectory( databaseLayout.databaseDirectory(), path -> !path.equals( databaseLayout.databaseLockFile() ) );
+                FileUtils.deleteDirectory( databaseLayout.getTransactionLogsDirectory() );
             }
         }
         catch ( IOException e )

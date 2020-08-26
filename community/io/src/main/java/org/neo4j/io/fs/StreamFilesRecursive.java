@@ -21,6 +21,7 @@ package org.neo4j.io.fs;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -34,7 +35,7 @@ public final class StreamFilesRecursive
     }
 
     /**
-     * Static implementation of {@link FileSystemAbstraction#streamFilesRecursive(File)} that does not require
+     * Static implementation of {@link FileSystemAbstraction#streamFilesRecursive(Path)} that does not require
      * any external state, other than what is presented through the given {@link FileSystemAbstraction}.
      *
      * Return a stream of {@link FileHandle file handles} for every file in the given directory, and its
@@ -56,17 +57,17 @@ public final class StreamFilesRecursive
      * @return A {@link Stream} of {@link FileHandle}s
      * @throws IOException If an I/O error occurs, possibly with the canonicalisation of the paths.
      */
-    public static Stream<FileHandle> streamFilesRecursive( File directory, FileSystemAbstraction fs ) throws IOException
+    public static Stream<FileHandle> streamFilesRecursive( Path directory, FileSystemAbstraction fs ) throws IOException
     {
-        File canonicalizedDirectory = directory.getCanonicalFile();
+        Path canonicalizedDirectory = directory.toAbsolutePath().normalize();
         // We grab a snapshot of the file tree to avoid seeing the same file twice or more due to renames.
-        List<File> snapshot = streamFilesRecursiveInner( canonicalizedDirectory, fs ).collect( toList() );
+        List<Path> snapshot = streamFilesRecursiveInner( canonicalizedDirectory, fs ).collect( toList() );
         return snapshot.stream().map( f -> new WrappingFileHandle( f, canonicalizedDirectory, fs ) );
     }
 
-    private static Stream<File> streamFilesRecursiveInner( File directory, FileSystemAbstraction fs )
+    private static Stream<Path> streamFilesRecursiveInner( Path directory, FileSystemAbstraction fs )
     {
-        File[] files = fs.listFiles( directory );
+        Path[] files = fs.listFiles( directory );
         if ( files == null )
         {
             if ( !fs.fileExists( directory ) )

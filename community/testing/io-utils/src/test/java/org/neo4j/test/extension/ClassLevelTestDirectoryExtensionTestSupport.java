@@ -49,7 +49,7 @@ class ClassLevelTestDirectoryExtensionTestSupport
     void setUp() throws IOException
     {
         File file = testDirectory.createFile( "f" );
-        channel = fs.write( file );
+        channel = fs.write( file.toPath() );
     }
 
     @AfterAll

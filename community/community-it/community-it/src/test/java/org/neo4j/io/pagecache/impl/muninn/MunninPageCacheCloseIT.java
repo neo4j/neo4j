@@ -59,7 +59,7 @@ class MunninPageCacheCloseIT
         void shouldBeAbleToShutDownWhenInterrupted() throws Exception
         {
             Path file = directory.filePath( "file" );
-            try ( StoreChannel channel = fs.write( file.toFile() ) )
+            try ( StoreChannel channel = fs.write( file ) )
             {
                 channel.writeAll( ByteBuffer.wrap( new byte[100] ) );
             }

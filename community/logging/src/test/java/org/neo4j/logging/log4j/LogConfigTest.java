@@ -114,18 +114,18 @@ class LogConfigTest
                 .withRotation( 10, 2 )
                 .build();
 
-        assertThat( fs.fileExists( targetFile.toFile() ) ).isEqualTo( true );
+        assertThat( fs.fileExists( targetFile ) ).isEqualTo( true );
 
         Logger logger = ctx.getLogger( "test" );
 
         logger.warn( "test" );
-        assertThat( fs.fileExists( targetFile.toFile() ) ).isEqualTo( true );
-        assertThat( fs.fileExists( targetFile1.toFile() ) ).isEqualTo( false );
+        assertThat( fs.fileExists( targetFile ) ).isEqualTo( true );
+        assertThat( fs.fileExists( targetFile1 ) ).isEqualTo( false );
 
         logger.warn( "test" );
-        assertThat( fs.fileExists( targetFile.toFile() ) ).isEqualTo( true );
-        assertThat( fs.fileExists( targetFile1.toFile() ) ).isEqualTo( true );
-        assertThat( fs.fileExists( targetFile2.toFile() ) ).isEqualTo( false );
+        assertThat( fs.fileExists( targetFile ) ).isEqualTo( true );
+        assertThat( fs.fileExists( targetFile1 ) ).isEqualTo( true );
+        assertThat( fs.fileExists( targetFile2 ) ).isEqualTo( false );
     }
 
     @Test
@@ -140,7 +140,7 @@ class LogConfigTest
                 .withRotation( 10, 2 )
                 .build();
 
-        assertThat( fs.fileExists( targetFile.toFile() ) ).isEqualTo( true );
+        assertThat( fs.fileExists( targetFile ) ).isEqualTo( true );
 
         Logger logger = ctx.getLogger( "test" );
 
@@ -148,10 +148,10 @@ class LogConfigTest
         logger.warn( "test2" );
         logger.warn( "test3" );
         logger.warn( "test4" );
-        assertThat( fs.fileExists( targetFile.toFile() ) ).isEqualTo( true );
-        assertThat( fs.fileExists( targetFile1.toFile() ) ).isEqualTo( true );
-        assertThat( fs.fileExists( targetFile2.toFile() ) ).isEqualTo( true );
-        assertThat( fs.fileExists( targetFile3.toFile() ) ).isEqualTo( false );
+        assertThat( fs.fileExists( targetFile ) ).isEqualTo( true );
+        assertThat( fs.fileExists( targetFile1 ) ).isEqualTo( true );
+        assertThat( fs.fileExists( targetFile2 ) ).isEqualTo( true );
+        assertThat( fs.fileExists( targetFile3 ) ).isEqualTo( false );
 
         assertThat( Files.readString( targetFile ) ).contains( "test4" );
         assertThat( Files.readString( targetFile1 ) ).contains( "test3" );
@@ -173,15 +173,15 @@ class LogConfigTest
                         }, "org.neo4j.HeaderClassName" )
                 .build();
 
-        assertThat( fs.fileExists( targetFile.toFile() ) ).isEqualTo( true );
+        assertThat( fs.fileExists( targetFile ) ).isEqualTo( true );
 
         Logger logger = ctx.getLogger( "className" );
 
         logger.warn( "Long line that will get next message to be written to next file" );
         logger.warn( "test2" );
 
-        assertThat( fs.fileExists( targetFile.toFile() ) ).isEqualTo( true );
-        assertThat( fs.fileExists( targetFile1.toFile() ) ).isEqualTo( true );
+        assertThat( fs.fileExists( targetFile ) ).isEqualTo( true );
+        assertThat( fs.fileExists( targetFile1 ) ).isEqualTo( true );
 
         // First file (the one rotated to targetFile1) should not have the header.
         assertThat( Files.readString( targetFile1 ) )
@@ -203,12 +203,12 @@ class LogConfigTest
                 .createOnDemand()
                 .build();
 
-        assertThat( fs.fileExists( targetFile.toFile() ) ).isEqualTo( false );
+        assertThat( fs.fileExists( targetFile ) ).isEqualTo( false );
 
         Logger logger = ctx.getLogger( "test" );
         logger.warn( "test" );
 
-        assertThat( fs.fileExists( targetFile.toFile() ) ).isEqualTo( true );
+        assertThat( fs.fileExists( targetFile ) ).isEqualTo( true );
     }
 
     @Test
@@ -238,7 +238,7 @@ class LogConfigTest
         Logger logger = ctx.getLogger( "test" );
         logger.warn( "test" );
 
-        assertThat( fs.fileExists( targetFile.toFile() ) ).isEqualTo( false );
+        assertThat( fs.fileExists( targetFile ) ).isEqualTo( false );
         assertThat( suppressOutput.getOutputVoice().containsMessage( "test" ) ).isTrue();
     }
 
@@ -259,18 +259,18 @@ class LogConfigTest
         logger.warn( "test1" );
         logger.warn( "test2" );
         logger.warn( "test3" );
-        assertThat( fs.fileExists( targetFile.toFile() ) ).isEqualTo( true );
-        assertThat( fs.fileExists( targetFile1.toFile() ) ).isEqualTo( false );
+        assertThat( fs.fileExists( targetFile ) ).isEqualTo( true );
+        assertThat( fs.fileExists( targetFile1 ) ).isEqualTo( false );
 
         LogConfig.reconfigureLogging( ctx, LogConfig.createBuilder( targetFile, Level.INFO ).withRotation( 10, 3 ) );
 
         // Should now rotate on each message with the new limit.
         logger.warn( "test4" );
         logger.warn( "test5" );
-        assertThat( fs.fileExists( targetFile.toFile() ) ).isEqualTo( true );
-        assertThat( fs.fileExists( targetFile1.toFile() ) ).isEqualTo( true );
-        assertThat( fs.fileExists( targetFile2.toFile() ) ).isEqualTo( true );
-        assertThat( fs.fileExists( targetFile3.toFile() ) ).isEqualTo( false );
+        assertThat( fs.fileExists( targetFile ) ).isEqualTo( true );
+        assertThat( fs.fileExists( targetFile1 ) ).isEqualTo( true );
+        assertThat( fs.fileExists( targetFile2 ) ).isEqualTo( true );
+        assertThat( fs.fileExists( targetFile3 ) ).isEqualTo( false );
     }
 
     @Test

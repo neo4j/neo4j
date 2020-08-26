@@ -111,10 +111,10 @@ class TransactionLogFilesTest
         // given
         LogFiles files = createLogFiles();
 
-        fileSystem.write( createTransactionLogFile( databaseLayout, getVersionedLogFileName( "1" ) ).toFile() ).close();
-        fileSystem.write( createTransactionLogFile( databaseLayout, getVersionedLogFileName( "some", "2" ) ).toFile() ).close();
-        fileSystem.write( createTransactionLogFile( databaseLayout, getVersionedLogFileName( "3" ) ).toFile() ).close();
-        fileSystem.write( createTransactionLogFile( databaseLayout, DEFAULT_NAME ).toFile() ).close();
+        fileSystem.write( createTransactionLogFile( databaseLayout, getVersionedLogFileName( "1" ) ) ).close();
+        fileSystem.write( createTransactionLogFile( databaseLayout, getVersionedLogFileName( "some", "2" ) ) ).close();
+        fileSystem.write( createTransactionLogFile( databaseLayout, getVersionedLogFileName( "3" ) ) ).close();
+        fileSystem.write( createTransactionLogFile( databaseLayout, DEFAULT_NAME ) ).close();
 
         // when
         final List<Path> seenFiles = new ArrayList<>();
@@ -139,10 +139,10 @@ class TransactionLogFilesTest
         // given
         LogFiles files = createLogFiles();
 
-        fileSystem.write( createTransactionLogFile( databaseLayout, getVersionedLogFileName( "1" ) ).toFile() ).close();
-        fileSystem.write( createTransactionLogFile( databaseLayout, getVersionedLogFileName( "some", "4" ) ).toFile() ).close();
-        fileSystem.write( createTransactionLogFile( databaseLayout, getVersionedLogFileName( "3" ) ).toFile() ).close();
-        fileSystem.write( createTransactionLogFile( databaseLayout, DEFAULT_NAME ).toFile() ).close();
+        fileSystem.write( createTransactionLogFile( databaseLayout, getVersionedLogFileName( "1" ) ) ).close();
+        fileSystem.write( createTransactionLogFile( databaseLayout, getVersionedLogFileName( "some", "4" ) ) ).close();
+        fileSystem.write( createTransactionLogFile( databaseLayout, getVersionedLogFileName( "3" ) ) ).close();
+        fileSystem.write( createTransactionLogFile( databaseLayout, DEFAULT_NAME ) ).close();
 
         // when
         final long highestLogVersion = files.getLogFile().getHighestLogVersion();
@@ -157,10 +157,10 @@ class TransactionLogFilesTest
     {
         LogFiles files = createLogFiles( true );
 
-        fileSystem.write( createTransactionLogFile( databaseLayout, getVersionedLogFileName( 1 ) ).toFile() ).close();
-        fileSystem.write( createTransactionLogFile( databaseLayout, getVersionedLogFileName(  2 ) ).toFile() ).close();
-        fileSystem.write( createTransactionLogFile( databaseLayout, getVersionedCheckpointLogFileName( 3 ) ).toFile() ).close();
-        fileSystem.write( createTransactionLogFile( databaseLayout, getVersionedCheckpointLogFileName( 4 ) ).toFile() ).close();
+        fileSystem.write( createTransactionLogFile( databaseLayout, getVersionedLogFileName( 1 ) ) ).close();
+        fileSystem.write( createTransactionLogFile( databaseLayout, getVersionedLogFileName(  2 ) ) ).close();
+        fileSystem.write( createTransactionLogFile( databaseLayout, getVersionedCheckpointLogFileName( 3 ) ) ).close();
+        fileSystem.write( createTransactionLogFile( databaseLayout, getVersionedCheckpointLogFileName( 4 ) ) ).close();
 
         var logFiles = files.logFiles();
         assertThat( logFiles ).hasSize( 4 );
@@ -172,8 +172,8 @@ class TransactionLogFilesTest
         // given
         LogFiles files = createLogFiles();
 
-        fileSystem.write( databaseLayout.file( getVersionedLogFileName( "some", "4" ) ).toFile() ).close();
-        fileSystem.write( databaseLayout.file( DEFAULT_NAME ).toFile() ).close();
+        fileSystem.write( databaseLayout.file( getVersionedLogFileName( "some", "4" ) ) ).close();
+        fileSystem.write( databaseLayout.file( DEFAULT_NAME ) ).close();
 
         // when
         final long highestLogVersion = files.getLogFile().getHighestLogVersion();
@@ -236,7 +236,7 @@ class TransactionLogFilesTest
     {
         LogFiles logFiles = createLogFiles();
         String file = getVersionedLogFileName( "1" );
-        fileSystem.write( createTransactionLogFile( databaseLayout, file ).toFile() ).close();
+        fileSystem.write( createTransactionLogFile( databaseLayout, file ) ).close();
         assertFalse( logFiles.getLogFile().hasAnyEntries( 1 ) );
     }
 
@@ -253,7 +253,7 @@ class TransactionLogFilesTest
 
     private void create3_5FileWithHeader( DatabaseLayout databaseLayout, String version, int bytesOfData ) throws IOException
     {
-        try ( StoreChannel storeChannel = fileSystem.write( createTransactionLogFile( databaseLayout, getVersionedLogFileName( version ) ).toFile() ) )
+        try ( StoreChannel storeChannel = fileSystem.write( createTransactionLogFile( databaseLayout, getVersionedLogFileName( version ) ) ) )
         {
             ByteBuffer byteBuffer = ByteBuffers.allocate( LOG_HEADER_SIZE_3_5 + bytesOfData, INSTANCE );
             while ( byteBuffer.hasRemaining() )

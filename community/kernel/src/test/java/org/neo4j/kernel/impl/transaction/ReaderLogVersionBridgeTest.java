@@ -25,10 +25,9 @@ import org.mockito.ArgumentMatchers;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
-import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -81,8 +80,8 @@ class ReaderLogVersionBridgeTest
 
         when( channel.getVersion() ).thenReturn( version );
         when( channel.getLogFormatVersion() ).thenReturn( CURRENT_LOG_FORMAT_VERSION );
-        when( fs.fileExists( any( File.class ) ) ).thenReturn( true );
-        when( fs.read( any( File.class ) ) ).thenReturn( newStoreChannel );
+        when( fs.fileExists( any( Path.class ) ) ).thenReturn( true );
+        when( fs.read( any( Path.class ) ) ).thenReturn( newStoreChannel );
         when( newStoreChannel.read( ArgumentMatchers.<ByteBuffer>any() ) ).then( new Answer<>()
         {
             private int count;
@@ -128,7 +127,7 @@ class ReaderLogVersionBridgeTest
         final ReaderLogVersionBridge bridge = new ReaderLogVersionBridge( logFiles.getLogFile() );
 
         when( channel.getVersion() ).thenReturn( version );
-        when( fs.read( any( File.class ) ) ).thenThrow( new FileNotFoundException() );
+        when( fs.read( any( Path.class ) ) ).thenThrow( new NoSuchFileException( "mock" ) );
 
         // when
         final LogVersionedStoreChannel result = bridge.next( channel );
@@ -147,8 +146,8 @@ class ReaderLogVersionBridgeTest
         when( nextVersionWithIncompleteHeader.read( any( ByteBuffer.class ) ) ).thenReturn( CURRENT_FORMAT_LOG_HEADER_SIZE / 2 );
 
         when( channel.getVersion() ).thenReturn( version );
-        when( fs.fileExists( any( File.class ) ) ).thenReturn( true );
-        when( fs.read( any( File.class ) ) ).thenReturn( nextVersionWithIncompleteHeader );
+        when( fs.fileExists( any( Path.class ) ) ).thenReturn( true );
+        when( fs.read( any( Path.class ) ) ).thenReturn( nextVersionWithIncompleteHeader );
 
         // when
         final LogVersionedStoreChannel result = bridge.next( channel );

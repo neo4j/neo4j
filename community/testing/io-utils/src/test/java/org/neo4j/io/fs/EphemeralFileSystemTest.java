@@ -65,7 +65,7 @@ class EphemeralFileSystemTest
     void allowStoreThatExceedDefaultSize() throws IOException
     {
         File aFile = new File( "test" );
-        StoreChannel channel = fs.write( aFile );
+        StoreChannel channel = fs.write( aFile.toPath() );
 
         ByteBuffer buffer = allocate( Long.BYTES, INSTANCE );
         int mebiBytes = (int) ByteUnit.mebiBytes( 1 );
@@ -89,7 +89,7 @@ class EphemeralFileSystemTest
 
             File aFile = new File( "yo" );
 
-            StoreChannel channel = fs.write( aFile );
+            StoreChannel channel = fs.write( aFile.toPath() );
             writeLong( channel, 1111 );
 
             // when
@@ -98,7 +98,7 @@ class EphemeralFileSystemTest
             fs.crash();
 
             // then
-            StoreChannel readChannel = fs.read( aFile );
+            StoreChannel readChannel = fs.read( aFile.toPath() );
             assertEquals( numberOfBytesForced, readChannel.size() );
 
             assertEquals( 1111, readLong( readChannel ).getLong() );
@@ -121,7 +121,7 @@ class EphemeralFileSystemTest
                     {
                         try
                         {
-                            StoreChannel channel = fs.write( aFile );
+                            StoreChannel channel = fs.write( aFile.toPath() );
                             channel.position( 0 );
                             writeLong( channel, 1 );
                         }
@@ -141,7 +141,7 @@ class EphemeralFileSystemTest
 
                 List<Future<Void>> futures = executorService.invokeAll( workers );
                 Futures.getAllResults( futures );
-                verifyFileIsEitherEmptyOrContainsLongIntegerValueOne( fs.write( aFile ) );
+                verifyFileIsEitherEmptyOrContainsLongIntegerValueOne( fs.write( aFile.toPath() ) );
             }
         }
         finally
@@ -170,7 +170,7 @@ class EphemeralFileSystemTest
                         {
                             try
                             {
-                                StoreChannel channel = fs.write( aFile );
+                                StoreChannel channel = fs.write( aFile.toPath() );
                                 channel.position( channel.size() );
                                 writeLong( channel, 1 );
                             }
@@ -183,7 +183,7 @@ class EphemeralFileSystemTest
 
                         workers.add( () ->
                         {
-                            StoreChannel channel = fs.write( aFile );
+                            StoreChannel channel = fs.write( aFile.toPath() );
                             channel.force( true );
                             return null;
                         } );
@@ -193,7 +193,7 @@ class EphemeralFileSystemTest
                     Futures.getAllResults( futures );
 
                     fs.crash();
-                    verifyFileIsFullOfLongIntegerOnes( fs.write( aFile ) );
+                    verifyFileIsFullOfLongIntegerOnes( fs.write( aFile.toPath() ) );
                 }
             }
         }
@@ -210,17 +210,17 @@ class EphemeralFileSystemTest
         {
             File testDir = new File( "testDir" );
             File testFile = new File( "testFile" );
-            fileSystemAbstraction.mkdir( testDir );
-            fileSystemAbstraction.write( testFile );
+            fileSystemAbstraction.mkdir( testDir.toPath() );
+            fileSystemAbstraction.write( testFile.toPath() );
 
-            assertTrue( fileSystemAbstraction.fileExists( testFile ) );
-            assertTrue( fileSystemAbstraction.fileExists( testFile ) );
+            assertTrue( fileSystemAbstraction.fileExists( testFile.toPath() ) );
+            assertTrue( fileSystemAbstraction.fileExists( testFile.toPath() ) );
 
             fileSystemAbstraction.close();
 
             assertTrue( fileSystemAbstraction.isClosed() );
-            assertFalse( fileSystemAbstraction.fileExists( testFile ) );
-            assertFalse( fileSystemAbstraction.fileExists( testFile ) );
+            assertFalse( fileSystemAbstraction.fileExists( testFile.toPath() ) );
+            assertFalse( fileSystemAbstraction.fileExists( testFile.toPath() ) );
         }
     }
 

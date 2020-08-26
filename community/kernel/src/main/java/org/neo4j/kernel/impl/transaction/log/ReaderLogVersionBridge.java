@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.NoSuchFileException;
 
 import org.neo4j.kernel.impl.transaction.log.entry.IncompleteLogHeaderException;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
@@ -46,7 +46,7 @@ public class ReaderLogVersionBridge implements LogVersionBridge
         {
             nextChannel = logFile.openForVersion( channel.getVersion() + 1 );
         }
-        catch ( FileNotFoundException | IncompleteLogHeaderException e )
+        catch ( NoSuchFileException | IncompleteLogHeaderException e )
         {
             // See PhysicalLogFile#rotate() for description as to why these exceptions are OK
             return channel;

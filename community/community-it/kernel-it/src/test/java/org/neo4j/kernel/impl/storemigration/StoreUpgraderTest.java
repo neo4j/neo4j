@@ -197,8 +197,8 @@ public class StoreUpgraderTest
         Path comparisonDirectory = testDirectory.directoryPath(
             "shouldRefuseToUpgradeIfAnyOfTheStoresWereNotShutDownCleanly-comparison" );
         removeCheckPointFromTxLog( fileSystem, databaseLayout.databaseDirectory() );
-        fileSystem.deleteRecursively( comparisonDirectory.toFile() );
-        fileSystem.copyRecursively( databaseLayout.databaseDirectory().toFile(), comparisonDirectory.toFile() );
+        fileSystem.deleteRecursively( comparisonDirectory );
+        fileSystem.copyRecursively( databaseLayout.databaseDirectory(), comparisonDirectory );
         StoreVersionCheck check = getVersionCheck( pageCache );
 
         assertThrows( StoreUpgrader.UnableToUpgradeException.class, () -> newUpgrader( check, pageCache ).migrateIfNeeded( databaseLayout, false ) );
@@ -213,8 +213,8 @@ public class StoreUpgraderTest
         Path comparisonDirectory = testDirectory.directoryPath(
             "shouldRefuseToUpgradeIfAllOfTheStoresWereNotShutDownCleanly-comparison" );
         removeCheckPointFromTxLog( fileSystem, databaseLayout.databaseDirectory() );
-        fileSystem.deleteRecursively( comparisonDirectory.toFile() );
-        fileSystem.copyRecursively( databaseLayout.databaseDirectory().toFile(), comparisonDirectory.toFile() );
+        fileSystem.deleteRecursively( comparisonDirectory );
+        fileSystem.copyRecursively( databaseLayout.databaseDirectory(), comparisonDirectory );
         StoreVersionCheck check = getVersionCheck( pageCache );
 
         assertThrows( StoreUpgrader.UnableToUpgradeException.class, () -> newUpgrader( check, pageCache ).migrateIfNeeded( databaseLayout, false ) );
@@ -269,7 +269,7 @@ public class StoreUpgraderTest
         init( formats );
 
         // Given
-        fileSystem.deleteFile( databaseLayout.file( INTERNAL_LOG_FILE ).toFile() );
+        fileSystem.deleteFile( databaseLayout.file( INTERNAL_LOG_FILE ) );
         StoreVersionCheck check = getVersionCheck( pageCache );
 
         // When
@@ -285,7 +285,7 @@ public class StoreUpgraderTest
     {
         init( formats );
 
-        fileSystem.deleteFile( databaseLayout.file( INTERNAL_LOG_FILE ).toFile() );
+        fileSystem.deleteFile( databaseLayout.file( INTERNAL_LOG_FILE ) );
         StoreVersionCheck check = getVersionCheck( pageCache );
 
         var pageCacheTracer = new DefaultPageCacheTracer();
@@ -312,7 +312,7 @@ public class StoreUpgraderTest
     {
         init( formats );
 
-        fileSystem.deleteFile( databaseLayout.file( INTERNAL_LOG_FILE ).toFile() );
+        fileSystem.deleteFile( databaseLayout.file( INTERNAL_LOG_FILE ) );
         var pageCacheTracer = new DefaultPageCacheTracer();
         new RecordStoreVersionCheck( fileSystem, pageCache, databaseLayout, NullLogProvider.getInstance(), Config.defaults(), pageCacheTracer );
 
@@ -329,7 +329,7 @@ public class StoreUpgraderTest
         init( formats );
 
         // Given
-        fileSystem.deleteFile( databaseLayout.file( INTERNAL_LOG_FILE ).toFile() );
+        fileSystem.deleteFile( databaseLayout.file( INTERNAL_LOG_FILE ) );
         StoreVersionCheck check = getVersionCheck( pageCache );
 
         // When
@@ -364,12 +364,12 @@ public class StoreUpgraderTest
         init( formats );
 
         // Given
-        fileSystem.deleteFile( databaseLayout.file( INTERNAL_LOG_FILE ).toFile() );
-        fileSystem.mkdir( databaseLayout.file( StoreUpgrader.MIGRATION_DIRECTORY ).toFile() );
-        fileSystem.mkdir( databaseLayout.file( StoreUpgrader.MIGRATION_LEFT_OVERS_DIRECTORY ).toFile() );
-        fileSystem.mkdir( databaseLayout.file( StoreUpgrader.MIGRATION_LEFT_OVERS_DIRECTORY + "_1" ).toFile() );
-        fileSystem.mkdir( databaseLayout.file( StoreUpgrader.MIGRATION_LEFT_OVERS_DIRECTORY + "_2" ).toFile() );
-        fileSystem.mkdir( databaseLayout.file( StoreUpgrader.MIGRATION_LEFT_OVERS_DIRECTORY + "_42" ).toFile() );
+        fileSystem.deleteFile( databaseLayout.file( INTERNAL_LOG_FILE ) );
+        fileSystem.mkdir( databaseLayout.file( StoreUpgrader.MIGRATION_DIRECTORY ) );
+        fileSystem.mkdir( databaseLayout.file( StoreUpgrader.MIGRATION_LEFT_OVERS_DIRECTORY ) );
+        fileSystem.mkdir( databaseLayout.file( StoreUpgrader.MIGRATION_LEFT_OVERS_DIRECTORY + "_1" ) );
+        fileSystem.mkdir( databaseLayout.file( StoreUpgrader.MIGRATION_LEFT_OVERS_DIRECTORY + "_2" ) );
+        fileSystem.mkdir( databaseLayout.file( StoreUpgrader.MIGRATION_LEFT_OVERS_DIRECTORY + "_42" ) );
 
         // When
         StoreVersionCheck check = getVersionCheck( pageCache );
@@ -416,7 +416,7 @@ public class StoreUpgraderTest
         assertThat( logProvider ).containsMessages( "Starting transaction logs migration.", "Transaction logs migration completed." );
         assertThat( getLogFiles( migrationLayout.databaseDirectory() ) ).isEmpty();
         Path databaseTransactionLogsHome = txRoot.resolve( migrationLayout.getDatabaseName() );
-        assertTrue( fileSystem.fileExists( databaseTransactionLogsHome.toFile() ) );
+        assertTrue( fileSystem.fileExists( databaseTransactionLogsHome ) );
 
         Set<String> logFileNames = getLogFileNames( databaseTransactionLogsHome );
         assertThat( logFileNames ).isNotEmpty();
@@ -441,7 +441,7 @@ public class StoreUpgraderTest
         DatabaseLayout migrationLayout = DatabaseLayout.of( config );
 
         Path databaseTransactionLogsHome = txRoot.resolve( migrationLayout.getDatabaseName() );
-        assertTrue( fileSystem.mkdir( databaseTransactionLogsHome.toFile() ) );
+        assertTrue( fileSystem.mkdir( databaseTransactionLogsHome ) );
         createDummyTxLogFiles( databaseTransactionLogsHome );
 
         assertThrows( StoreUpgrader.TransactionLogsRelocationException.class, () ->
@@ -466,7 +466,7 @@ public class StoreUpgraderTest
         assertThat( preparedLogFiles ).isNotEmpty();
         for ( String preparedLogFile : preparedLogFiles )
         {
-            fileSystem.write( databaseTransactionLogsHome.resolve( preparedLogFile ).toFile() ).close();
+            fileSystem.write( databaseTransactionLogsHome.resolve( preparedLogFile ) ).close();
         }
     }
 
@@ -624,7 +624,7 @@ public class StoreUpgraderTest
         LogPosition logPosition = logTailInformation.lastCheckPoint.getLogPosition();
         Path logFile = logFiles.getLogFile().getLogFileForVersion( logPosition.getLogVersion() );
         long byteOffset = logPosition.getByteOffset();
-        fileSystem.truncate( logFile.toFile(), byteOffset );
+        fileSystem.truncate( logFile, byteOffset );
     }
 
     private void verifyStoreUpgradedWithin( long duration, TimeUnit unit )

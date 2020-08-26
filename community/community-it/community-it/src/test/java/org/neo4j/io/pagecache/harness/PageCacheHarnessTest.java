@@ -216,7 +216,7 @@ abstract class PageCacheHarnessTest<T extends PageCache> extends PageCacheTestSu
                         }
                     }
                 }
-                try ( StoreChannel channel = fs1.read( file.toFile() ) )
+                try ( StoreChannel channel = fs1.read( file ) )
                 {
                     recordFormat.assertRecordsWrittenCorrectly( file, channel );
                 }

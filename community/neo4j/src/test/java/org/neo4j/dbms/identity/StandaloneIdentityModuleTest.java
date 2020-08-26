@@ -50,14 +50,14 @@ public class StandaloneIdentityModuleTest
         var dataDir = testDirectory.filePath( DEFAULT_DATA_DIR_NAME );
         var layout = Neo4jLayout.of( testDirectory.homePath() );
         var fs = testDirectory.getFileSystem();
-        assertFalse( fs.fileExists( dataDir.toFile() ) );
+        assertFalse( fs.fileExists( dataDir ) );
 
         // when
         var identityModule = StandaloneIdentityModule.create( nullLogProvider(), fs, layout, EmptyMemoryTracker.INSTANCE );
 
         // then
-        assertTrue( fs.fileExists( dataDir.toFile() ) );
-        assertTrue( fs.fileExists( layout.serverIdFile().toFile() ) );
+        assertTrue( fs.fileExists( dataDir ) );
+        assertTrue( fs.fileExists( layout.serverIdFile() ) );
         assertNotNull( identityModule.myself() );
 
         // when
@@ -66,7 +66,7 @@ public class StandaloneIdentityModuleTest
         // then
         assertEquals( identityModule.myself(), secondIdentityModule.myself() );
 
-        fs.deleteRecursively( dataDir.toFile() );
+        fs.deleteRecursively( dataDir );
         var thirdIdentityModule = StandaloneIdentityModule.create( nullLogProvider(), fs, layout, EmptyMemoryTracker.INSTANCE );
 
         // then

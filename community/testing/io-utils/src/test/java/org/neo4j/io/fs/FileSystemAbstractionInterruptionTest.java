@@ -69,9 +69,9 @@ public class FileSystemAbstractionInterruptionTest
     @Before
     public void createWorkingDirectoryAndTestFile() throws IOException
     {
-        fs.mkdirs( testdir.homeDir() );
+        fs.mkdirs( testdir.homePath() );
         file = testdir.file( "a" );
-        fs.write( file ).close();
+        fs.write( file.toPath() ).close();
         channel = null;
         channelShouldBeClosed = false;
         Thread.currentThread().interrupt();
@@ -107,7 +107,7 @@ public class FileSystemAbstractionInterruptionTest
     private StoreChannel chan( boolean channelShouldBeClosed ) throws IOException
     {
         this.channelShouldBeClosed = channelShouldBeClosed;
-        channel = fs.write( file );
+        channel = fs.write( file.toPath() );
         return channel;
     }
 

@@ -100,7 +100,7 @@ class LoadCommandTest
                 .set( default_database, "foo" )
                 .build();
         File databaseDirectory  = DatabaseLayout.of( config ).databaseDirectory().toFile();
-        testDirectory.getFileSystem().mkdirs( databaseDirectory );
+        testDirectory.getFileSystem().mkdirs( databaseDirectory.toPath() );
     }
 
     @Test

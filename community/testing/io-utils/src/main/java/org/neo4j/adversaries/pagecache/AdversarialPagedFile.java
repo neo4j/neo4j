@@ -19,8 +19,8 @@
  */
 package org.neo4j.adversaries.pagecache;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.Objects;
 import java.util.Optional;
@@ -36,7 +36,7 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
  * a misbehaving paged file implementation for testing.
  * <p>
  * Depending on the adversary each operation can throw either {@link RuntimeException} like {@link SecurityException}
- * or {@link IOException} like {@link FileNotFoundException}.
+ * or {@link IOException} like {@link NoSuchFileException}.
  */
 @SuppressWarnings( "unchecked" )
 public class AdversarialPagedFile implements PagedFile
@@ -84,14 +84,14 @@ public class AdversarialPagedFile implements PagedFile
     @Override
     public void flushAndForce() throws IOException
     {
-        adversary.injectFailure( FileNotFoundException.class, IOException.class, SecurityException.class );
+        adversary.injectFailure( NoSuchFileException.class, IOException.class, SecurityException.class );
         delegate.flushAndForce();
     }
 
     @Override
     public void flushAndForce( IOLimiter limiter ) throws IOException
     {
-        adversary.injectFailure( FileNotFoundException.class, IOException.class, SecurityException.class );
+        adversary.injectFailure( NoSuchFileException.class, IOException.class, SecurityException.class );
         delegate.flushAndForce( limiter );
     }
 
@@ -105,7 +105,7 @@ public class AdversarialPagedFile implements PagedFile
     @Override
     public void close()
     {
-        adversary.injectFailure( FileNotFoundException.class, SecurityException.class );
+        adversary.injectFailure( NoSuchFileException.class, SecurityException.class );
         delegate.close();
     }
 

@@ -145,7 +145,7 @@ class RelationshipTypeScanStoreIT
         ResourceIterator<Path> files = getRelationshipTypeScanStoreFiles();
         dbmsController.restartDbms( builder ->
         {
-            files.forEachRemaining( file -> fs.deleteFile( file.toFile() ) );
+            files.forEachRemaining( file -> fs.deleteFile( file ) );
             return builder;
         });
 
@@ -374,7 +374,7 @@ class RelationshipTypeScanStoreIT
             Optional<CheckpointInfo> latestCheckpoint = logFiles.getCheckpointFile().findLatestCheckpoint();
             if ( latestCheckpoint.isPresent() )
             {
-                try ( StoreChannel storeChannel = fs.write( logFile.getHighestLogFile().toFile() ) )
+                try ( StoreChannel storeChannel = fs.write( logFile.getHighestLogFile() ) )
                 {
                     storeChannel.truncate( latestCheckpoint.get().getEntryPosition().getByteOffset() );
                 }

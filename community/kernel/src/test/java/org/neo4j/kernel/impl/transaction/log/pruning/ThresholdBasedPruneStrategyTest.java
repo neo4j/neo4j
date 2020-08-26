@@ -67,15 +67,15 @@ class ThresholdBasedPruneStrategyTest
         when( logFile.getLogFileForVersion( 0 ) ).thenReturn( fileName0 );
         when( logFile.getLowestLogVersion() ).thenReturn( 0L );
 
-        when( fileSystem.fileExists( fileName6.toFile() ) ).thenReturn( true );
-        when( fileSystem.fileExists( fileName5.toFile() ) ).thenReturn( true );
-        when( fileSystem.fileExists( fileName4.toFile() ) ).thenReturn( true );
-        when( fileSystem.fileExists( fileName3.toFile() ) ).thenReturn( true );
-        when( fileSystem.fileExists( fileName2.toFile() ) ).thenReturn( true );
-        when( fileSystem.fileExists( fileName1.toFile() ) ).thenReturn( true );
-        when( fileSystem.fileExists( fileName0.toFile() ) ).thenReturn( true );
+        when( fileSystem.fileExists( fileName6 ) ).thenReturn( true );
+        when( fileSystem.fileExists( fileName5 ) ).thenReturn( true );
+        when( fileSystem.fileExists( fileName4 ) ).thenReturn( true );
+        when( fileSystem.fileExists( fileName3 ) ).thenReturn( true );
+        when( fileSystem.fileExists( fileName2 ) ).thenReturn( true );
+        when( fileSystem.fileExists( fileName1 ) ).thenReturn( true );
+        when( fileSystem.fileExists( fileName0 ) ).thenReturn( true );
 
-        when( fileSystem.getFileSize( any() ) ).thenReturn( CURRENT_FORMAT_LOG_HEADER_SIZE + 1L );
+        when( fileSystem.getFileSize( any( Path.class ) ) ).thenReturn( CURRENT_FORMAT_LOG_HEADER_SIZE + 1L );
 
         when( threshold.reached( any(), anyLong(), any() ) ).thenReturn( false );
 
@@ -83,11 +83,11 @@ class ThresholdBasedPruneStrategyTest
 
         // When
         strategy.findLogVersionsToDelete( 7L ).forEachOrdered(
-                v -> fileSystem.deleteFile( logFile.getLogFileForVersion( v ).toFile() ) );
+                v -> fileSystem.deleteFile( logFile.getLogFileForVersion( v ) ) );
 
         // Then
         verify( threshold ).init();
-        verify( fileSystem, never() ).deleteFile( any() );
+        verify( fileSystem, never() ).deleteFile( any( Path.class ) );
     }
 
     @Test
@@ -118,22 +118,22 @@ class ThresholdBasedPruneStrategyTest
         when( logFile.getLogFileForVersion( 1 ) ).thenReturn( fileName1 );
         when( logFile.getLowestLogVersion() ).thenReturn( 1L );
 
-        when( fileSystem.getFileSize( any() ) ).thenReturn( CURRENT_FORMAT_LOG_HEADER_SIZE + 1L );
+        when( fileSystem.getFileSize( any( Path.class ) ) ).thenReturn( CURRENT_FORMAT_LOG_HEADER_SIZE + 1L );
 
         ThresholdBasedPruneStrategy strategy = new ThresholdBasedPruneStrategy( logFile, threshold );
 
         // When
         strategy.findLogVersionsToDelete( 7L ).forEachOrdered(
-                v -> fileSystem.deleteFile( logFile.getLogFileForVersion( v ).toFile() ) );
+                v -> fileSystem.deleteFile( logFile.getLogFileForVersion( v ) ) );
 
         // Then
         verify( threshold ).init();
-        verify( fileSystem ).deleteFile( fileName1.toFile() );
-        verify( fileSystem ).deleteFile( fileName2.toFile() );
-        verify( fileSystem ).deleteFile( fileName3.toFile() );
-        verify( fileSystem, never() ).deleteFile( fileName4.toFile() );
-        verify( fileSystem, never() ).deleteFile( fileName5.toFile() );
-        verify( fileSystem, never() ).deleteFile( fileName6.toFile() );
+        verify( fileSystem ).deleteFile( fileName1 );
+        verify( fileSystem ).deleteFile( fileName2 );
+        verify( fileSystem ).deleteFile( fileName3 );
+        verify( fileSystem, never() ).deleteFile( fileName4 );
+        verify( fileSystem, never() ).deleteFile( fileName5 );
+        verify( fileSystem, never() ).deleteFile( fileName6 );
     }
 
     @Test
@@ -152,7 +152,7 @@ class ThresholdBasedPruneStrategyTest
     {
         when( logFile.getLowestLogVersion() ).thenReturn( 10L );
         when( threshold.reached( any(), anyLong(), any() ) ).thenReturn( true );
-        when( fileSystem.fileExists( any() ) ).thenReturn( false );
+        when( fileSystem.fileExists( any( Path.class ) ) ).thenReturn( false );
 
         ThresholdBasedPruneStrategy strategy = new ThresholdBasedPruneStrategy( logFile, threshold );
 

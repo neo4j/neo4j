@@ -241,7 +241,7 @@ class LoggingIndexedIdGeneratorMonitorTest
             public void path( Path dumpFile )
             {
                 assertFalse( lastFileWasTheBaseFile );
-                long timestamp = LoggingIndexedIdGeneratorMonitor.millisOf( dumpFile.toFile() );
+                long timestamp = LoggingIndexedIdGeneratorMonitor.millisOf( dumpFile );
                 if ( lastFileMillis != -1 )
                 {
                     assertTrue( timestamp > lastFileMillis );

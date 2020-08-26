@@ -101,7 +101,7 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory
     {
         // For the potential scenario where there's no store (of course this is where this method will be called),
         // but there's a naked id generator, then delete the id generator so that it too starts from a clean state.
-        fs.deleteFile( fileName.toFile() );
+        fs.deleteFile( fileName );
 
         IndexedIdGenerator generator =
                 new IndexedIdGenerator( pageCache, fileName, recoveryCleanupWorkCollector, idType, allowLargeIdCaches, () -> highId, maxId, readOnly,

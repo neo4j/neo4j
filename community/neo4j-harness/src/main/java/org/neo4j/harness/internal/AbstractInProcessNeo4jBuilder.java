@@ -300,7 +300,7 @@ public abstract class AbstractInProcessNeo4jBuilder implements Neo4jBuilder
     {
         try
         {
-            return createOrOpenAsOutputStream( fs, file.toFile(), true );
+            return createOrOpenAsOutputStream( fs, file, true );
         }
         catch ( IOException e )
         {

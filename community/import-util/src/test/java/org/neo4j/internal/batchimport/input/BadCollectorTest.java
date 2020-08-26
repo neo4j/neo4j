@@ -192,13 +192,13 @@ class BadCollectorTest
     {
         Path badDataPath = Path.of( "/tmp/foo2" ).toAbsolutePath();
         Path badDataFile = badDataFile( fs, badDataPath );
-        return fs.openAsOutputStream( badDataFile.toFile(), true );
+        return fs.openAsOutputStream( badDataFile, true );
     }
 
     private static Path badDataFile( FileSystemAbstraction fileSystem, Path badDataPath ) throws IOException
     {
-        fileSystem.mkdir( badDataPath.getParent().toFile() );
-        fileSystem.write( badDataPath.toFile() );
+        fileSystem.mkdir( badDataPath.getParent() );
+        fileSystem.write( badDataPath );
         return badDataPath;
     }
 

@@ -23,8 +23,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
@@ -335,7 +335,7 @@ class IndexRecoveryIT
     {
         if ( db != null )
         {
-            File snapshotDir = testDirectory.directory( "snapshot" );
+            Path snapshotDir = testDirectory.directoryPath( "snapshot" );
             synchronized ( lock )
             {
                 snapshotFs( snapshotDir );
@@ -345,13 +345,13 @@ class IndexRecoveryIT
         }
     }
 
-    private void snapshotFs( File snapshotDir )
+    private void snapshotFs( Path snapshotDir )
     {
         try
         {
             DatabaseLayout layout = databaseLayout;
-            FileUtils.copyRecursively( layout.databaseDirectory().toFile(), new File( snapshotDir, "data" ) );
-            FileUtils.copyRecursively( layout.getTransactionLogsDirectory().toFile(), new File( snapshotDir, "transactions" ) );
+            FileUtils.copyDirectory( layout.databaseDirectory(), snapshotDir.resolve( "data" ) );
+            FileUtils.copyDirectory( layout.getTransactionLogsDirectory(), snapshotDir.resolve( "transactions" ) );
         }
         catch ( IOException e )
         {
@@ -359,16 +359,16 @@ class IndexRecoveryIT
         }
     }
 
-    private void restoreSnapshot( File snapshotDir )
+    private void restoreSnapshot( Path snapshotDir )
     {
         try
         {
             DatabaseLayout layout = databaseLayout;
-            FileUtils.deleteRecursively( layout.databaseDirectory().toFile() );
-            FileUtils.deleteRecursively( layout.getTransactionLogsDirectory().toFile() );
-            FileUtils.copyRecursively( new File( snapshotDir, "data" ), layout.databaseDirectory().toFile() );
-            FileUtils.copyRecursively( new File( snapshotDir, "transactions" ), layout.getTransactionLogsDirectory().toFile() );
-            FileUtils.deleteRecursively( snapshotDir );
+            FileUtils.deleteDirectory( layout.databaseDirectory() );
+            FileUtils.deleteDirectory( layout.getTransactionLogsDirectory() );
+            FileUtils.copyDirectory( snapshotDir.resolve( "data" ), layout.databaseDirectory() );
+            FileUtils.copyDirectory( snapshotDir.resolve( "transactions" ), layout.getTransactionLogsDirectory() );
+            FileUtils.deleteDirectory( snapshotDir );
         }
         catch ( IOException e )
         {

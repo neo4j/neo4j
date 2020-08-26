@@ -85,11 +85,11 @@ class DatabaseManagementServiceBuilderIT
                 .build();
         try
         {
-            assertTrue( isEmptyOrNonExistingDirectory( fs, storeDir.resolve( DEFAULT_DATABASE_NAME ).toFile() ) );
-            assertTrue( isEmptyOrNonExistingDirectory( fs, storeDir.resolve( SYSTEM_DATABASE_NAME ).toFile() ) );
+            assertTrue( isEmptyOrNonExistingDirectory( fs, storeDir.resolve( DEFAULT_DATABASE_NAME ) ) );
+            assertTrue( isEmptyOrNonExistingDirectory( fs, storeDir.resolve( SYSTEM_DATABASE_NAME ) ) );
 
-            assertFalse( isEmptyOrNonExistingDirectory( fs, databasesDir.resolve( DEFAULT_DATABASE_NAME ).toFile() ) );
-            assertFalse( isEmptyOrNonExistingDirectory( fs, databasesDir.resolve( SYSTEM_DATABASE_NAME ).toFile() ) );
+            assertFalse( isEmptyOrNonExistingDirectory( fs, databasesDir.resolve( DEFAULT_DATABASE_NAME ) ) );
+            assertFalse( isEmptyOrNonExistingDirectory( fs, databasesDir.resolve( SYSTEM_DATABASE_NAME ) ) );
         }
         finally
         {
@@ -105,8 +105,8 @@ class DatabaseManagementServiceBuilderIT
         DatabaseManagementService managementService = getDbmsBuilderWithLimitedTxLogSize( layout.homeDirectory() ).build();
         try
         {
-            assertFalse( isEmptyOrNonExistingDirectory( fs, layout.databaseLayout( DEFAULT_DATABASE_NAME ).databaseDirectory().toFile() ) );
-            assertFalse( isEmptyOrNonExistingDirectory( fs, layout.databaseLayout( SYSTEM_DATABASE_NAME ).databaseDirectory().toFile() ) );
+            assertFalse( isEmptyOrNonExistingDirectory( fs, layout.databaseLayout( DEFAULT_DATABASE_NAME ).databaseDirectory() ) );
+            assertFalse( isEmptyOrNonExistingDirectory( fs, layout.databaseLayout( SYSTEM_DATABASE_NAME ).databaseDirectory() ) );
         }
         finally
         {

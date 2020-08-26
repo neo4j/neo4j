@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.impl.transaction.log.files.checkpoint;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.channels.ClosedByInterruptException;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.ListIterator;
 
@@ -135,7 +135,7 @@ public class DetachedLogTailScanner extends AbstractLogTailScanner
         {
             return false;
         }
-        File logFileForVersion = logFile.getLogFileForVersion( logVersion ).toFile();
+        Path logFileForVersion = logFile.getLogFileForVersion( logVersion );
         if ( fileSystem.getFileSize( logFileForVersion ) < logPosition.getByteOffset() )
         {
             return false;

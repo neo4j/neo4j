@@ -65,7 +65,7 @@ enum MigrationStatus
 
     private static Pair<String, String> readFromFile( FileSystemAbstraction fs, Path path, MigrationStatus expectedSate )
     {
-        try ( var reader = fs.openAsReader( path.toFile(), UTF_8 ) )
+        try ( var reader = fs.openAsReader( path, UTF_8 ) )
         {
             var lineIterator = lineIterator( reader );
             String state = lineIterator.next().trim();
@@ -89,11 +89,11 @@ enum MigrationStatus
 
     public void setMigrationStatus( FileSystemAbstraction fs, Path stateFile, String info )
     {
-        if ( fs.fileExists( stateFile.toFile() ) )
+        if ( fs.fileExists( stateFile ) )
         {
             try
             {
-                fs.truncate( stateFile.toFile(), 0 );
+                fs.truncate( stateFile, 0 );
             }
             catch ( IOException e )
             {
@@ -101,7 +101,7 @@ enum MigrationStatus
             }
         }
 
-        try ( Writer writer = fs.openAsWriter( stateFile.toFile(), UTF_8, false ) )
+        try ( Writer writer = fs.openAsWriter( stateFile, UTF_8, false ) )
         {
             writer.write( name() );
             writer.write( '\n' );

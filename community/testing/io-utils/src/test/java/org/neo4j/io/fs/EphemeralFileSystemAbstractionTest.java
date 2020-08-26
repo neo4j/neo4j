@@ -21,7 +21,6 @@ package org.neo4j.io.fs;
 
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
 import java.io.IOException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -41,7 +40,7 @@ public class EphemeralFileSystemAbstractionTest extends FileSystemAbstractionTes
     {
         fsa.mkdirs( path );
         assertTrue( fsa.fileExists( path ) );
-        path = new File( path, "some_file" );
+        path = path.resolve( "some_file" );
         try ( StoreChannel channel = fsa.write( path ) )
         {
             assertEquals( INVALID_FILE_DESCRIPTOR, fsa.getFileDescriptor( channel ) );

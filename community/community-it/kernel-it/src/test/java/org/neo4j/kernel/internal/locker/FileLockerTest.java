@@ -24,7 +24,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.channels.FileLock;
 import java.nio.file.Path;
@@ -130,7 +129,7 @@ class FileLockerTest
         FileSystemAbstraction fileSystemAbstraction = new DelegatingFileSystemAbstraction( fileSystem )
         {
             @Override
-            public boolean fileExists( File file )
+            public boolean fileExists( Path file )
             {
                 return fileSystem.fileExists( file );
             }
@@ -152,7 +151,7 @@ class FileLockerTest
         FileSystemAbstraction fileSystemAbstraction = new DelegatingFileSystemAbstraction( fileSystem )
         {
             @Override
-            public boolean fileExists( File file )
+            public boolean fileExists( Path file )
             {
                 return false;
             }
@@ -171,13 +170,13 @@ class FileLockerTest
         FileSystemAbstraction fileSystemAbstraction = new DelegatingFileSystemAbstraction( fileSystem )
         {
             @Override
-            public void mkdirs( File fileName ) throws IOException
+            public void mkdirs( Path fileName ) throws IOException
             {
                 throw new IOException( "store dir could not be created" );
             }
 
             @Override
-            public boolean fileExists( File file )
+            public boolean fileExists( Path file )
             {
                 return false;
             }
@@ -200,13 +199,13 @@ class FileLockerTest
         FileSystemAbstraction fileSystemAbstraction = new DelegatingFileSystemAbstraction( fileSystem )
         {
             @Override
-            public StoreChannel write( File fileName ) throws IOException
+            public StoreChannel write( Path fileName ) throws IOException
             {
                 throw new IOException( "cannot open lock file" );
             }
 
             @Override
-            public boolean fileExists( File file )
+            public boolean fileExists( Path file )
             {
                 return false;
             }
@@ -229,13 +228,13 @@ class FileLockerTest
         FileSystemAbstraction fileSystemAbstraction = new DelegatingFileSystemAbstraction( fileSystem )
         {
             @Override
-            public boolean fileExists( File file )
+            public boolean fileExists( Path file )
             {
                 return false;
             }
 
             @Override
-            public StoreChannel write( File fileName ) throws IOException
+            public StoreChannel write( Path fileName ) throws IOException
             {
                 return new DelegatingStoreChannel( super.write( fileName ) )
                 {
@@ -295,7 +294,7 @@ class FileLockerTest
         }
 
         @Override
-        public StoreChannel write( File fileName )
+        public StoreChannel write( Path fileName )
         {
             numberOfCallsToOpen++;
             return channel;

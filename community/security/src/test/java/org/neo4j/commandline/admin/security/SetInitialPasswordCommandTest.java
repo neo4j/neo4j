@@ -90,7 +90,7 @@ class SetInitialPasswordCommandTest
     void shouldSetInitialPassword() throws Throwable
     {
         // Given
-        assertFalse( fileSystem.fileExists( authInitFile.toFile() ) );
+        assertFalse( fileSystem.fileExists( authInitFile ) );
 
         // When
         CommandLine.populateCommand( command, "123" );
@@ -104,8 +104,8 @@ class SetInitialPasswordCommandTest
     void shouldOverwriteInitialPasswordFileIfExists() throws Throwable
     {
         // Given
-        fileSystem.mkdirs( authInitFile.getParent().toFile() );
-        fileSystem.write( authInitFile.toFile() );
+        fileSystem.mkdirs( authInitFile.getParent() );
+        fileSystem.write( authInitFile );
 
         // When
         CommandLine.populateCommand( command, "123" );
@@ -127,7 +127,7 @@ class SetInitialPasswordCommandTest
 
     private void assertAuthIniFile( String password ) throws Throwable
     {
-        assertTrue( fileSystem.fileExists( authInitFile.toFile() ) );
+        assertTrue( fileSystem.fileExists( authInitFile ) );
         FileUserRepository userRepository = new FileUserRepository( fileSystem, authInitFile,
                 NullLogProvider.getInstance() );
         userRepository.start();

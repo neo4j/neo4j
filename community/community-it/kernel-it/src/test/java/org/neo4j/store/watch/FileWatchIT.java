@@ -25,8 +25,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.nio.file.WatchKey;
 import java.util.ArrayList;
 import java.util.List;
@@ -106,7 +106,7 @@ class FileWatchIT
         }
         while ( !deletionListener.awaitModificationNotification() );
 
-        deleteFile( databaseLayout.databaseDirectory().toFile(), fileName );
+        deleteFile( databaseLayout.databaseDirectory(), fileName );
         deletionListener.awaitDeletionNotification();
 
         assertThat( logProvider ).containsMessages( "'" + fileName + "' which belongs to the '" + databaseLayout.databaseDirectory().getFileName().toString() +
@@ -193,7 +193,7 @@ class FileWatchIT
         String fileName = TransactionLogFilesHelper.DEFAULT_NAME + ".0";
         DeletionLatchEventListener deletionListener = new DeletionLatchEventListener( fileName );
         fileWatcher.addFileWatchEventListener( deletionListener );
-        deleteFile( databaseLayout.getTransactionLogsDirectory().toFile(), fileName );
+        deleteFile( databaseLayout.getTransactionLogsDirectory(), fileName );
         deletionListener.awaitDeletionNotification();
 
         assertThat( logProvider ).forClass( DefaultFileDeletionEventListener.class ).forLevel( INFO ).doesNotContainMessage( fileName );
@@ -219,7 +219,7 @@ class FileWatchIT
         String storeDirectoryName = databaseLayout.databaseDirectory().getFileName().toString();
         DeletionLatchEventListener eventListener = new DeletionLatchEventListener( storeDirectoryName );
         fileWatcher.addFileWatchEventListener( eventListener );
-        FileUtils.deleteRecursively( databaseLayout.databaseDirectory().toFile() );
+        FileUtils.deleteDirectory( databaseLayout.databaseDirectory() );
 
         eventListener.awaitDeletionNotification();
 
@@ -316,9 +316,9 @@ class FileWatchIT
         return dependencyResolver.resolveDependency( FileSystemWatcherService.class ).getFileWatcher();
     }
 
-    private static void deleteFile( File storeDir, String fileName )
+    private static void deleteFile( Path storeDir, String fileName ) throws IOException
     {
-        File metadataStore = new File( storeDir, fileName );
+        Path metadataStore = storeDir.resolve( fileName );
         FileUtils.deleteFile( metadataStore );
     }
 

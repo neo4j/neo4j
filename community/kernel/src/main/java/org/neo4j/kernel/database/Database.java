@@ -908,7 +908,7 @@ public class Database extends LifecycleAdapter
         {
             for ( Path fileToDelete : files )
             {
-                FileSystemUtils.deleteFile( fs, fileToDelete.toFile() );
+                FileSystemUtils.deleteFile( fs, fileToDelete );
             }
         }
         catch ( IOException e )

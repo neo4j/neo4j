@@ -19,7 +19,6 @@
  */
 package org.neo4j.index;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 
@@ -58,15 +57,15 @@ public class SetInitialStateInNativeIndex extends NativeIndexRestartAction
 
     private int setInitialState( FileSystemAbstraction fs, Path fileOrDir, PageCache pageCache ) throws IOException
     {
-        if ( fs.isDirectory( fileOrDir.toFile() ) )
+        if ( fs.isDirectory( fileOrDir ) )
         {
             int count = 0;
-            File[] children = fs.listFiles( fileOrDir.toFile() );
+            Path[] children = fs.listFiles( fileOrDir );
             if ( children != null )
             {
-                for ( File child : children )
+                for ( Path child : children )
                 {
-                    count += setInitialState( fs, child.toPath(), pageCache );
+                    count += setInitialState( fs, child, pageCache );
                 }
             }
             return count;

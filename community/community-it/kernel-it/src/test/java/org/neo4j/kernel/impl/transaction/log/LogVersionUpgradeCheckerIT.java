@@ -22,8 +22,8 @@ package org.neo4j.kernel.impl.transaction.log;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -120,7 +120,7 @@ class LogVersionUpgradeCheckerIT
 
         if ( removeCheckpointFile )
         {
-            for ( File file : fileSystem.listFiles( logFiles.logFilesDirectory().toFile(), ( dir, name ) -> name.startsWith( CHECKPOINT_FILE_PREFIX ) ) )
+            for ( Path file : fileSystem.listFiles( logFiles.logFilesDirectory(), ( dir, name ) -> name.startsWith( CHECKPOINT_FILE_PREFIX ) ) )
             {
                 fileSystem.deleteFile( file );
             }

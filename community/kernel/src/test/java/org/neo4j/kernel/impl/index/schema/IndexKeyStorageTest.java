@@ -138,11 +138,11 @@ class IndexKeyStorageTest
         Path makeSureImDeleted = directory.filePath( "makeSureImDeleted" );
         try ( IndexKeyStorage<GenericKey> keyStorage = keyStorage( makeSureImDeleted ) )
         {
-            assertFalse( fs.fileExists( makeSureImDeleted.toFile() ), "Expected this file to exist now so that we can assert deletion later." );
+            assertFalse( fs.fileExists( makeSureImDeleted ), "Expected this file to exist now so that we can assert deletion later." );
             keyStorage.doneAdding();
-            assertFalse( fs.fileExists( makeSureImDeleted.toFile() ), "Expected this file to exist now so that we can assert deletion later." );
+            assertFalse( fs.fileExists( makeSureImDeleted ), "Expected this file to exist now so that we can assert deletion later." );
         }
-        assertFalse( fs.fileExists( makeSureImDeleted.toFile() ), "Expected this file to be deleted on close." );
+        assertFalse( fs.fileExists( makeSureImDeleted ), "Expected this file to be deleted on close." );
     }
 
     @Test
@@ -154,9 +154,9 @@ class IndexKeyStorageTest
         {
             keyStorage.add( randomKey( 1 ) );
             keyStorage.doneAdding();
-            assertTrue( fs.fileExists( makeSureImDeleted.toFile() ), "Expected this file to exist now so that we can assert deletion later." );
+            assertTrue( fs.fileExists( makeSureImDeleted ), "Expected this file to exist now so that we can assert deletion later." );
         }
-        assertFalse( fs.fileExists( makeSureImDeleted.toFile() ), "Expected this file to be deleted on close." );
+        assertFalse( fs.fileExists( makeSureImDeleted ), "Expected this file to be deleted on close." );
     }
 
     @Test
@@ -167,9 +167,9 @@ class IndexKeyStorageTest
         try ( IndexKeyStorage<GenericKey> keyStorage = keyStorage( makeSureImDeleted ) )
         {
             keyStorage.add( randomKey( 1 ) );
-            assertTrue( fs.fileExists( makeSureImDeleted.toFile() ), "Expected this file to exist now so that we can assert deletion later." );
+            assertTrue( fs.fileExists( makeSureImDeleted ), "Expected this file to exist now so that we can assert deletion later." );
         }
-        assertFalse( fs.fileExists( makeSureImDeleted.toFile() ), "Expected this file to be deleted on close." );
+        assertFalse( fs.fileExists( makeSureImDeleted ), "Expected this file to be deleted on close." );
     }
 
     @Test
@@ -182,12 +182,12 @@ class IndexKeyStorageTest
               IndexKeyStorage<GenericKey> keyStorage = keyStorage( file, bufferFactory, allocationTracker ) )
         {
             assertEquals( 0, allocationTracker.usedNativeMemory(), "Expected to not have any buffers allocated yet" );
-            assertFalse( fs.fileExists( file.toFile() ), "Expected file to be created lazily" );
+            assertFalse( fs.fileExists( file ), "Expected file to be created lazily" );
             keyStorage.add( randomKey( 1 ) );
             assertEquals( BLOCK_SIZE, allocationTracker.usedNativeMemory(), "Expected to have exactly one buffer allocated by now" );
-            assertTrue( fs.fileExists( file.toFile() ), "Expected file to be created by now" );
+            assertTrue( fs.fileExists( file ), "Expected file to be created by now" );
         }
-        assertFalse( fs.fileExists( file.toFile() ), "Expected file to be deleted on close" );
+        assertFalse( fs.fileExists( file ), "Expected file to be deleted on close" );
     }
 
     @Test

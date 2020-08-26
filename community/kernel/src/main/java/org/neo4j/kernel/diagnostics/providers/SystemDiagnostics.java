@@ -34,6 +34,7 @@ import java.net.SocketException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.ByteOrder;
+import java.nio.file.Path;
 import java.time.ZoneId;
 import java.time.zone.ZoneRulesProvider;
 import java.util.ArrayList;
@@ -307,11 +308,11 @@ public enum SystemDiagnostics implements DiagnosticsProvider
     {
         try
         {
-            return FileUtils.getCanonicalFile( new File( path ) ).getAbsolutePath();
+            return FileUtils.getCanonicalFile( Path.of( path ) ).toAbsolutePath().toString();
         }
         catch ( UncheckedIOException e )
         {
-            return new File( path ).getAbsolutePath();
+            return Path.of( path ).toAbsolutePath().toString();
         }
     }
 

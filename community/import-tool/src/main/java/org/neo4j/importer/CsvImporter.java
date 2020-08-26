@@ -141,7 +141,7 @@ class CsvImporter implements Importer
     @Override
     public void doImport() throws IOException
     {
-        try ( OutputStream badOutput = fileSystem.openAsOutputStream( reportFile.toFile(), false );
+        try ( OutputStream badOutput = fileSystem.openAsOutputStream( reportFile, false );
                 Collector badCollector = getBadCollector( skipBadEntriesLogging, badOutput ) )
         {
             // Extract the default time zone from the database configuration
@@ -163,7 +163,7 @@ class CsvImporter implements Importer
     {
         boolean success = false;
 
-        File internalLogFile = databaseConfig.get( store_internal_log_path ).toFile();
+        Path internalLogFile = databaseConfig.get( store_internal_log_path );
         try ( JobScheduler jobScheduler = createInitialisedScheduler();
               OutputStream outputStream = FileSystemUtils.createOrOpenAsOutputStream( fileSystem, internalLogFile, true );
               Log4jLogProvider logProvider = Util.configuredLogProvider( databaseConfig, outputStream ) )

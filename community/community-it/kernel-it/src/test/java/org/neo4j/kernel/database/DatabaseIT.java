@@ -116,13 +116,13 @@ class DatabaseIT
         database.stop();
 
         assertNotEquals( databaseLayout.databaseDirectory(), databaseLayout.getTransactionLogsDirectory() );
-        assertTrue( fs.fileExists( databaseLayout.databaseDirectory().toFile() ) );
-        assertTrue( fs.fileExists( databaseLayout.getTransactionLogsDirectory().toFile() ) );
+        assertTrue( fs.fileExists( databaseLayout.databaseDirectory() ) );
+        assertTrue( fs.fileExists( databaseLayout.getTransactionLogsDirectory() ) );
 
         database.drop();
 
-        assertFalse( fs.fileExists( databaseLayout.databaseDirectory().toFile() ) );
-        assertFalse( fs.fileExists( databaseLayout.getTransactionLogsDirectory().toFile() ) );
+        assertFalse( fs.fileExists( databaseLayout.databaseDirectory() ) );
+        assertFalse( fs.fileExists( databaseLayout.getTransactionLogsDirectory() ) );
     }
 
     @Test
@@ -132,15 +132,15 @@ class DatabaseIT
 
         File databaseDirectory = databaseLayout.databaseDirectory().toFile();
         File transactionLogsDirectory = databaseLayout.getTransactionLogsDirectory().toFile();
-        assertTrue( fs.fileExists( databaseDirectory ) );
-        assertTrue( fs.fileExists( transactionLogsDirectory ) );
+        assertTrue( fs.fileExists( databaseDirectory.toPath() ) );
+        assertTrue( fs.fileExists( transactionLogsDirectory.toPath() ) );
 
         File[] databaseFilesShouldExist = filesToKeepOnTruncation( databaseLayout ).stream().map( Path::toFile ).filter( File::exists ).toArray( File[]::new );
 
         database.truncate();
 
-        assertTrue( fs.fileExists( databaseDirectory ) );
-        assertTrue( fs.fileExists( transactionLogsDirectory ) );
+        assertTrue( fs.fileExists( databaseDirectory.toPath() ) );
+        assertTrue( fs.fileExists( transactionLogsDirectory.toPath() ) );
         File[] currentDatabaseFiles = databaseDirectory.listFiles();
         assertThat( currentDatabaseFiles ).contains( databaseFilesShouldExist );
     }
@@ -169,19 +169,19 @@ class DatabaseIT
     {
         File databaseDirectory = databaseLayout.databaseDirectory().toFile();
         File transactionLogsDirectory = databaseLayout.getTransactionLogsDirectory().toFile();
-        assertTrue( fs.fileExists( databaseDirectory ) );
-        assertTrue( fs.fileExists( transactionLogsDirectory ) );
+        assertTrue( fs.fileExists( databaseDirectory.toPath() ) );
+        assertTrue( fs.fileExists( transactionLogsDirectory.toPath() ) );
 
-        File[] databaseFilesBeforeTruncate = fs.listFiles( databaseDirectory );
-        File[] logFilesBeforeTruncate = fs.listFiles( transactionLogsDirectory );
+        Path[] databaseFilesBeforeTruncate = fs.listFiles( databaseDirectory.toPath() );
+        Path[] logFilesBeforeTruncate = fs.listFiles( transactionLogsDirectory.toPath() );
 
         database.truncate();
 
-        assertTrue( fs.fileExists( databaseDirectory ) );
-        assertTrue( fs.fileExists( transactionLogsDirectory ) );
+        assertTrue( fs.fileExists( databaseDirectory.toPath() ) );
+        assertTrue( fs.fileExists( transactionLogsDirectory.toPath() ) );
 
-        File[] databaseFiles = fs.listFiles( databaseDirectory );
-        File[] logFiles = fs.listFiles( transactionLogsDirectory );
+        Path[] databaseFiles = fs.listFiles( databaseDirectory.toPath() );
+        Path[] logFiles = fs.listFiles( transactionLogsDirectory.toPath() );
 
         // files are equal by name - every store file is recreated as result
         assertThat( databaseFilesBeforeTruncate ).contains( databaseFiles );
@@ -203,13 +203,13 @@ class DatabaseIT
     void removeDatabaseDataAndLogsOnDrop()
     {
         assertNotEquals( databaseLayout.databaseDirectory(), databaseLayout.getTransactionLogsDirectory() );
-        assertTrue( fs.fileExists( databaseLayout.databaseDirectory().toFile() ) );
-        assertTrue( fs.fileExists( databaseLayout.getTransactionLogsDirectory().toFile() ) );
+        assertTrue( fs.fileExists( databaseLayout.databaseDirectory() ) );
+        assertTrue( fs.fileExists( databaseLayout.getTransactionLogsDirectory() ) );
 
         database.drop();
 
-        assertFalse( fs.fileExists( databaseLayout.databaseDirectory().toFile() ) );
-        assertFalse( fs.fileExists( databaseLayout.getTransactionLogsDirectory().toFile() ) );
+        assertFalse( fs.fileExists( databaseLayout.databaseDirectory() ) );
+        assertFalse( fs.fileExists( databaseLayout.getTransactionLogsDirectory() ) );
     }
 
     @Test

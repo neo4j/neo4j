@@ -104,7 +104,7 @@ class LogHeaderWriterTest
     {
         // given
         final Path file = testDirectory.filePath( "WriteLogHeader" );
-        final StoreChannel channel = fileSystem.write( file.toFile() );
+        final StoreChannel channel = fileSystem.write( file );
 
         // when
         writeLogHeader( channel, logHeader, INSTANCE );
@@ -113,7 +113,7 @@ class LogHeaderWriterTest
 
         // then
         final byte[] array = new byte[CURRENT_FORMAT_LOG_HEADER_SIZE];
-        try ( InputStream stream = fileSystem.openAsInputStream( file.toFile() ) )
+        try ( InputStream stream = fileSystem.openAsInputStream( file ) )
         {
             int read = stream.read( array );
             assertEquals( CURRENT_FORMAT_LOG_HEADER_SIZE, read );

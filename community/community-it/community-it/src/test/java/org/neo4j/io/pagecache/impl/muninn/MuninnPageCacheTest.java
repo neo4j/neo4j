@@ -22,7 +22,6 @@ package org.neo4j.io.pagecache.impl.muninn;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.OpenOption;
@@ -145,7 +144,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
                 }
                 pagedFile.setDeleteOnClose( true );
             }
-            assertFalse( fs.fileExists( fileForDeletion.toFile() ) );
+            assertFalse( fs.fileExists( fileForDeletion ) );
             assertEquals( 0, defaultPageCacheTracer.flushes() - initialFlushes );
         }
     }
@@ -1150,7 +1149,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
             FileSystemAbstraction fs = new DelegatingFileSystemAbstraction( this.fs )
             {
                 @Override
-                public StoreChannel open( File fileName, Set<OpenOption> options ) throws IOException
+                public StoreChannel open( Path fileName, Set<OpenOption> options ) throws IOException
                 {
                     return new DelegatingStoreChannel( super.open( fileName, options ) )
                     {
@@ -1203,7 +1202,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
             FileSystemAbstraction fs = new DelegatingFileSystemAbstraction( this.fs )
             {
                 @Override
-                public StoreChannel open( File fileName, Set<OpenOption> options ) throws IOException
+                public StoreChannel open( Path fileName, Set<OpenOption> options ) throws IOException
                 {
                     return new DelegatingStoreChannel( super.open( fileName, options ) )
                     {
@@ -1366,7 +1365,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
 
     private void writeInitialDataTo( Path path ) throws IOException
     {
-        try ( StoreChannel channel = fs.write( path.toFile() ) )
+        try ( StoreChannel channel = fs.write( path ) )
         {
             ByteBuffer buf = ByteBuffers.allocate( 16, INSTANCE );
             buf.putLong( x );
@@ -1379,7 +1378,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     private ByteBuffer readIntoBuffer( String fileName ) throws IOException
     {
         ByteBuffer buffer = ByteBuffers.allocate( 16, INSTANCE );
-        try ( StoreChannel channel = fs.read( file( fileName ).toFile() ) )
+        try ( StoreChannel channel = fs.read( file( fileName ) ) )
         {
             channel.readAll( buffer );
         }

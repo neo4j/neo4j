@@ -25,10 +25,10 @@ import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.TestInstances;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.reflect.Field;
+import java.nio.file.Path;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -91,14 +91,14 @@ public class Neo4jLayoutSupportExtension implements BeforeAllCallback, BeforeEac
 
     private static void createDirectories( FileSystemAbstraction fs, Neo4jLayout neo4jLayout, DatabaseLayout databaseLayout )
     {
-        createDirectory( fs, neo4jLayout.homeDirectory().toFile() );
-        createDirectory( fs, neo4jLayout.databasesDirectory().toFile() );
-        createDirectory( fs, neo4jLayout.transactionLogsRootDirectory().toFile() );
-        createDirectory( fs, databaseLayout.databaseDirectory().toFile() );
-        createDirectory( fs, databaseLayout.getTransactionLogsDirectory().toFile() );
+        createDirectory( fs, neo4jLayout.homeDirectory() );
+        createDirectory( fs, neo4jLayout.databasesDirectory() );
+        createDirectory( fs, neo4jLayout.transactionLogsRootDirectory() );
+        createDirectory( fs, databaseLayout.databaseDirectory() );
+        createDirectory( fs, databaseLayout.getTransactionLogsDirectory() );
     }
 
-    private static void createDirectory( FileSystemAbstraction fs, File directory )
+    private static void createDirectory( FileSystemAbstraction fs, Path directory )
     {
         try
         {

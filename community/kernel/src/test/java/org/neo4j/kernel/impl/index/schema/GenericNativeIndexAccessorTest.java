@@ -68,6 +68,6 @@ class GenericNativeIndexAccessorTest
         accessor.drop();
 
         // then
-        assertFalse( fs.fileExists( indexFiles.getBase().toFile() ) );
+        assertFalse( fs.fileExists( indexFiles.getBase() ) );
     }
 }

@@ -125,7 +125,7 @@ class ImportPanicIT
     {
         Path file = testDirectory.filePath( "broken-node-data.csv" );
         try ( PrintWriter writer = new PrintWriter(
-            testDirectory.getFileSystem().openAsWriter( file.toFile(), StandardCharsets.UTF_8, false ) ) )
+                testDirectory.getFileSystem().openAsWriter( file, StandardCharsets.UTF_8, false ) ) )
         {
             writer.println( ":ID,name" );
             int numberOfLines = BUFFER_SIZE * 10;

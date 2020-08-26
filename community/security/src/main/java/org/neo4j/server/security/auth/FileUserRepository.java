@@ -69,14 +69,14 @@ public class FileUserRepository extends AbstractUserRepository implements FileRe
     @Override
     protected ListSnapshot<User> readPersistedUsers() throws IOException
     {
-        if ( fileSystem.fileExists( authFile.toFile() ) )
+        if ( fileSystem.fileExists( authFile ) )
         {
             long readTime;
             List<User> readUsers;
             try
             {
                 log.debug( "Reading users from %s", authFile );
-                readTime = fileSystem.lastModifiedTime( authFile.toFile() );
+                readTime = fileSystem.lastModifiedTime( authFile );
                 readUsers = serialization.loadRecordsFromFile( fileSystem, authFile );
             }
             catch ( FormatException e )
@@ -102,7 +102,7 @@ public class FileUserRepository extends AbstractUserRepository implements FileRe
     @Override
     public ListSnapshot<User> getSnapshot() throws IOException
     {
-        if ( lastLoaded.get() < fileSystem.lastModifiedTime( authFile.toFile() ) )
+        if ( lastLoaded.get() < fileSystem.lastModifiedTime( authFile ) )
         {
             return readPersistedUsers();
         }

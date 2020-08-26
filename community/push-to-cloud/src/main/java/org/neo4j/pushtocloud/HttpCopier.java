@@ -174,7 +174,7 @@ public class HttpCopier implements PushToCloudCommand.Copier
             long crc32Sum = calculateCrc32HashOfFile( source );
             URL signedURL = initiateCopy( verbose, safeUrl( consoleURL + "/import" ), crc32Sum, source.toFile().length(), bearerTokenHeader );
             URL uploadLocation = initiateResumableUpload( verbose, signedURL );
-            long sourceLength = ctx.fs().getFileSize( source.toFile() );
+            long sourceLength = ctx.fs().getFileSize( source );
 
             // Enter the resume:able upload loop
             long position = 0;

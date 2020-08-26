@@ -25,9 +25,9 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.Path;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
@@ -305,7 +305,7 @@ abstract class AbstractLogTailScannerTest
     {
         setupLogFiles( endLogVersion, logFile( checkPoint() ), logFile( start(), commit( 2 ) ) );
 
-        File highestLogFile = logFiles.getLogFile().getHighestLogFile().toFile();
+        Path highestLogFile = logFiles.getLogFile().getHighestLogFile();
         fs.truncate( highestLogFile, fs.getFileSize( highestLogFile ) - 3 );
 
         // when
@@ -322,7 +322,7 @@ abstract class AbstractLogTailScannerTest
         int firstTxId = 2;
         setupLogFiles( endLogVersion, logFile( checkPoint() ), logFile( start(), commit( firstTxId ), start(), commit( 3 ) ) );
 
-        File highestLogFile = logFiles.getLogFile().getHighestLogFile().toFile();
+        Path highestLogFile = logFiles.getLogFile().getHighestLogFile();
         fs.truncate( highestLogFile, fs.getFileSize( highestLogFile ) - 3 );
 
         // when

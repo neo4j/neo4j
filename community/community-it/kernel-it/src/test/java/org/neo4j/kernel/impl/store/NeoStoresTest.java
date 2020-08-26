@@ -413,7 +413,7 @@ public class NeoStoresTest
         }
 
         Path file = databaseLayout.metadataStore();
-        try ( StoreChannel channel = fs.write( file.toFile() ) )
+        try ( StoreChannel channel = fs.write( file ) )
         {
             channel.position( 0 );
             channel.writeAll( ByteBuffer.wrap( UTF8.encode( "This is some data that is not a record." ) ) );
@@ -493,7 +493,7 @@ public class NeoStoresTest
             neoStores.getMetaDataStore();
         }
         File file = databaseLayout.metadataStore().toFile();
-        fileSystem.deleteFile( file );
+        fileSystem.deleteFile( file.toPath() );
 
         assertThrows( StoreNotFoundException.class, () ->
         {
@@ -653,7 +653,7 @@ public class NeoStoresTest
     void isPresentAfterCreatingAllStores() throws Exception
     {
         // given
-        fs.deleteRecursively( databaseLayout.databaseDirectory().toFile() );
+        fs.deleteRecursively( databaseLayout.databaseDirectory() );
         DefaultIdGeneratorFactory idFactory = new DefaultIdGeneratorFactory( fs, immediate() );
         StoreFactory factory = new StoreFactory( databaseLayout, Config.defaults(), idFactory, pageCache, fs, LOG_PROVIDER, PageCacheTracer.NULL );
 
@@ -669,7 +669,7 @@ public class NeoStoresTest
     void isPresentFalseAfterCreatingAllButLastStoreType() throws Exception
     {
         // given
-        fs.deleteRecursively( databaseLayout.databaseDirectory().toFile() );
+        fs.deleteRecursively( databaseLayout.databaseDirectory() );
         DefaultIdGeneratorFactory idFactory = new DefaultIdGeneratorFactory( fs, immediate() );
         StoreFactory factory = new StoreFactory( databaseLayout, Config.defaults(), idFactory, pageCache, fs, LOG_PROVIDER, PageCacheTracer.NULL );
         StoreType[] allStoreTypes = StoreType.values();

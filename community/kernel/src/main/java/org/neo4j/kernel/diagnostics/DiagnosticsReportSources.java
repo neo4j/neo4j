@@ -97,7 +97,7 @@ public final class DiagnosticsReportSources
         while ( true )
         {
             Path file = outputFile.resolveSibling( outputFile.getFileName() + "." + i );
-            if ( !fileSystem.fileExists( file.toFile() ) )
+            if ( !fileSystem.fileExists( file ) )
             {
                 break;
             }
@@ -129,13 +129,13 @@ public final class DiagnosticsReportSources
         @Override
         public InputStream newInputStream() throws IOException
         {
-            return fs.openAsInputStream( source.toFile() );
+            return fs.openAsInputStream( source );
         }
 
         @Override
         public long estimatedSize()
         {
-            return fs.getFileSize( source.toFile() );
+            return fs.getFileSize( source );
         }
     }
 

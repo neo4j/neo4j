@@ -180,7 +180,8 @@ public class LogsUpgrader
                 {
                     for ( Path legacyFile : legacyFiles )
                     {
-                        fs.copyFile( legacyFile.toFile(), transactionLogsDirectory.resolve( legacyFile.getFileName() ).toFile(), EMPTY_COPY_OPTIONS );
+                        fs.copyFile( legacyFile, transactionLogsDirectory.resolve( legacyFile.getFileName() ),
+                                EMPTY_COPY_OPTIONS );
                     }
                 }
                 logInitializer.initializeExistingLogFiles( layout, transactionLogsDirectory, UPGRADE_CHECKPOINT );
@@ -188,7 +189,7 @@ public class LogsUpgrader
                 {
                     for ( Path legacyFile : legacyFiles )
                     {
-                        fs.deleteFile( legacyFile.toFile() );
+                        fs.deleteFile( legacyFile );
                     }
                 }
             }

@@ -46,7 +46,7 @@ public final class FileSizeThreshold implements Threshold
     @Override
     public boolean reached( Path file, long version, LogFileInformation source )
     {
-        currentSize += fileSystem.getFileSize( file.toFile() );
+        currentSize += fileSystem.getFileSize( file );
         return currentSize >= maxSize;
     }
 

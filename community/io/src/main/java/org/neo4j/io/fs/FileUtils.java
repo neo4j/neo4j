@@ -22,12 +22,8 @@ package org.neo4j.io.fs;
 import org.apache.commons.lang3.SystemUtils;
 
 import java.io.File;
-import java.io.FileFilter;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.RandomAccessFile;
 import java.io.UncheckedIOException;
@@ -40,6 +36,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.CopyOption;
 import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.DirectoryStream;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileStore;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
@@ -64,6 +61,7 @@ import static java.nio.file.FileVisitResult.SKIP_SUBTREE;
 import static java.nio.file.Files.createDirectory;
 import static java.nio.file.Files.exists;
 import static java.nio.file.Files.isDirectory;
+import static java.nio.file.Files.notExists;
 import static java.nio.file.Files.walkFileTree;
 import static java.nio.file.StandardCopyOption.COPY_ATTRIBUTES;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
@@ -74,7 +72,7 @@ import static org.neo4j.function.Predicates.alwaysTrue;
 import static org.neo4j.util.Preconditions.checkArgument;
 
 /**
- * Set of utility methods to work with {@link File} and {@link Path} using the {@link DefaultFileSystemAbstraction default file system}.
+ * Set of utility methods to work with {@link Path} using the {@link DefaultFileSystemAbstraction default file system}.
  * This class is used by {@link DefaultFileSystemAbstraction} and its methods should not take {@link FileSystemAbstraction} as a parameter.
  * Consider using {@link FileSystemUtils} when a helper method needs to work with different file systems.
  *
@@ -89,30 +87,76 @@ public final class FileUtils
         throw new AssertionError();
     }
 
-    public static void deleteRecursively( File directory ) throws IOException
+    /**
+     * For the lazy people out there that don't know if they are working on a file or a directory.
+     * If the path points to a directory that will be deleted recursively.
+     * @param path a file or a directory
+     * @throws IOException if an I/O error occurs.
+     */
+    public static void delete( Path path ) throws IOException
     {
-        deletePathRecursively( directory.toPath() );
+        if ( Files.isDirectory( path ) )
+        {
+            deleteDirectory( path );
+        }
+        else
+        {
+            deleteFile( path );
+        }
     }
 
-    public static void deletePathRecursively( Path path ) throws IOException
+    /**
+     * Delete a directory recursively.
+     * @param path directory to delete.
+     * @throws IOException if an I/O error occurs.
+     */
+    public static void deleteDirectory( Path path ) throws IOException
     {
-        deletePathRecursively( path, alwaysTrue() );
+        deleteDirectory( path, alwaysTrue() );
     }
 
-    public static void deletePathRecursively( Path path, Predicate<Path> removeFilePredicate ) throws IOException
+    /**
+     * Delete a directory recursively with a filter.
+     * @param path directory to traverse.
+     * @param removeFilePredicate filter for files to remove.
+     * @throws IOException if an I/O error occurs.
+     */
+    public static void deleteDirectory( Path path, Predicate<Path> removeFilePredicate ) throws IOException
     {
-        if ( Files.notExists( path ) )
+        if ( notExists( path ) )
         {
             return;
+        }
+        if ( !isDirectory( path ) )
+        {
+            throw new NotDirectoryException( path.toString() );
         }
         windowsSafeIOOperation( () -> walkFileTree( path, new DeletingFileVisitor( removeFilePredicate ) ) );
     }
 
-    public static long blockSize( File file ) throws IOException
+    /**
+     * Delete a file or an empty directory.
+     * @param file to delete.
+     * @throws IOException if an I/O error occurs.
+     */
+    public static void deleteFile( Path file ) throws IOException
+    {
+        if ( notExists( file ) )
+        {
+            return;
+        }
+        if ( isDirectory( file ) && !isDirectoryEmpty( file ) )
+        {
+            throw new DirectoryNotEmptyException( file.toString() );
+        }
+        windowsSafeIOOperation( () -> Files.delete( file ) );
+    }
+
+    public static long blockSize( Path file ) throws IOException
     {
         requireNonNull( file );
-        var path = file.toPath();
-        while ( path != null && !Files.exists( path ) )
+        var path = file;
+        while ( path != null && !exists( path ) )
         {
             path = path.getParent();
         }
@@ -123,77 +167,43 @@ public final class FileUtils
         return Files.getFileStore( path ).getBlockSize();
     }
 
-    public static boolean deleteFile( File file )
-    {
-        if ( !file.exists() )
-        {
-            return true;
-        }
-        else if ( file.isDirectory() )
-        {
-            File[] files = file.listFiles();
-            if ( files == null )
-            {
-                // should typically mean IOException because we already confirmed existence, however code is not thread-safe
-                return false;
-            }
-            else if ( files.length > 0 )
-            {
-                return false;
-            }
-        }
-        int count = 0;
-        boolean deleted;
-        do
-        {
-            deleted = file.delete();
-            if ( !deleted )
-            {
-                count++;
-                waitAndThenTriggerGC();
-            }
-        }
-        while ( !deleted && count <= NUMBER_OF_RETRIES );
-        return deleted;
-    }
-
     /**
      * Utility method that moves a file from its current location to the
      * new target location. If rename fails (for example if the target is
      * another disk) a copy/delete will be performed instead.
      *
-     * @param toMove The File object to move.
-     * @param target Target file to move to.
+     * @param toMove The file to move.
+     * @param target Target directory to move to.
      * @throws IOException if an IO error occurs.
      */
-    public static void moveFile( File toMove, File target ) throws IOException
+    public static void moveFile( Path toMove, Path target ) throws IOException
     {
-        if ( !toMove.exists() )
+        if ( notExists( toMove ) )
         {
-            throw new FileNotFoundException( "Source file[" + toMove.getAbsolutePath()
-                                             + "] not found" );
+            throw new NoSuchFileException( toMove.toString() );
         }
-        if ( target.exists() )
+        if ( exists( target ) )
         {
-            throw new IOException( "Target file[" + target.getAbsolutePath()
-                                   + "] already exists" );
+            throw new FileAlreadyExistsException( target.toString() );
         }
 
-        if ( toMove.renameTo( target ) )
+        try
         {
-            return;
+            Files.move( toMove, target );
         }
-
-        if ( toMove.isDirectory() )
+        catch ( IOException e )
         {
-            Files.createDirectories( target.toPath() );
-            copyRecursively( toMove, target );
-            deleteRecursively( toMove );
-        }
-        else
-        {
-            copyFile( toMove, target );
-            deleteFile( toMove );
+            if ( isDirectory( toMove ) )
+            {
+                Files.createDirectories( target );
+                copyDirectory( toMove, target );
+                deleteDirectory( toMove );
+            }
+            else
+            {
+                copyFile( toMove, target );
+                deleteFile( toMove );
+            }
         }
     }
 
@@ -207,19 +217,18 @@ public final class FileUtils
      * @return the new file, null iff the move was unsuccessful
      * @throws IOException if an IO error occurs.
      */
-    public static File moveFileToDirectory( File toMove, File targetDirectory ) throws IOException
+    public static Path moveFileToDirectory( Path toMove, Path targetDirectory ) throws IOException
     {
-        if ( !targetDirectory.exists() )
+        if ( notExists( targetDirectory ) )
         {
-            Files.createDirectories( targetDirectory.toPath() );
+            Files.createDirectories( targetDirectory );
         }
-        if ( !targetDirectory.isDirectory() )
+        if ( !isDirectory( targetDirectory ) )
         {
-            throw new IllegalArgumentException(
-                    "Move target must be a directory, not " + targetDirectory );
+            throw new NotDirectoryException( targetDirectory.toString() );
         }
 
-        File target = new File( targetDirectory, toMove.getName() );
+        Path target = targetDirectory.resolve( toMove.getFileName() );
         moveFile( toMove, target );
         return target;
     }
@@ -232,25 +241,24 @@ public final class FileUtils
      * @param targetDirectory the destination directory
      * @throws IOException if an IO error occurs.
      */
-    public static void copyFileToDirectory( File file, File targetDirectory ) throws IOException
+    public static void copyFileToDirectory( Path file, Path targetDirectory ) throws IOException
     {
-        if ( !targetDirectory.exists() )
+        if ( notExists( targetDirectory ) )
         {
-            Files.createDirectories( targetDirectory.toPath() );
+            Files.createDirectories( targetDirectory );
         }
-        if ( !targetDirectory.isDirectory() )
+        if ( !isDirectory( targetDirectory ) )
         {
-            throw new IllegalArgumentException(
-                    "Move target must be a directory, not " + targetDirectory );
+            throw new NotDirectoryException( targetDirectory.toString() );
         }
 
-        File target = new File( targetDirectory, file.getName() );
+        Path target = targetDirectory.resolve( file.getFileName() );
         copyFile( file, target );
     }
 
-    public static void truncateFile( File file, long position ) throws IOException
+    public static void truncateFile( Path file, long position ) throws IOException
     {
-        try ( RandomAccessFile access = new RandomAccessFile( file, "rw" ) )
+        try ( RandomAccessFile access = new RandomAccessFile( file.toFile(), "rw" ) )
         {
             windowsSafeIOOperation( () -> ((SeekableByteChannel) access.getChannel()).truncate( position ) );
         }
@@ -285,50 +293,23 @@ public final class FileUtils
         return path;
     }
 
-    public static void copyFile( File srcFile, File dstFile ) throws IOException
+    public static void copyFile( Path srcFile, Path dstFile ) throws IOException
     {
         copyFile( srcFile, dstFile, StandardCopyOption.REPLACE_EXISTING );
     }
 
-    public static void copyFile( File srcFile, File dstFile, CopyOption... copyOptions ) throws IOException
+    public static void copyFile( Path srcFile, Path dstFile, CopyOption... copyOptions ) throws IOException
     {
-        //noinspection ResultOfMethodCallIgnored
-        dstFile.getParentFile().mkdirs();
-        Files.copy( srcFile.toPath(), dstFile.toPath(), copyOptions );
-    }
-
-    public static void copyFile( Path srcFile, Path dstFile ) throws IOException
-    {
-        copyFile( srcFile.toFile(), dstFile.toFile(), StandardCopyOption.REPLACE_EXISTING );
-    }
-
-    public static void copyRecursively( File fromDirectory, File toDirectory ) throws IOException
-    {
-        copyRecursively( fromDirectory, toDirectory, null );
-    }
-
-    public static void copyRecursively( File fromDirectory, File toDirectory, FileFilter filter ) throws IOException
-    {
-        File[] files = fromDirectory.listFiles( filter );
-        if ( files != null )
-        {
-            for ( File fromFile : files )
-            {
-                File toFile = new File( toDirectory, fromFile.getName() );
-                if ( fromFile.isDirectory() )
-                {
-                    Files.createDirectories( toFile.toPath() );
-                    copyRecursively( fromFile, toFile, filter );
-                }
-                else
-                {
-                    copyFile( fromFile, toFile );
-                }
-            }
-        }
+        Files.createDirectories( dstFile.getParent() );
+        Files.copy( srcFile, dstFile, copyOptions );
     }
 
     public static void copyDirectory( Path from, Path to ) throws IOException
+    {
+        copyDirectory( from, to, alwaysTrue() );
+    }
+
+    public static void copyDirectory( Path from, Path to, Predicate<Path> filter ) throws IOException
     {
         requireNonNull( from );
         requireNonNull( to );
@@ -337,43 +318,42 @@ public final class FileUtils
         checkArgument( isDirectory( from ), "From is not a directory" );
         checkArgument( !from.normalize().equals( to.normalize() ), "From and to directories are the same" );
 
-        if ( Files.notExists( to.getParent() ) )
+        if ( notExists( to.getParent() ) )
         {
             Files.createDirectories( to.getParent() );
         }
-        walkFileTree( from, new CopyingFileVisitor( from, to, REPLACE_EXISTING, COPY_ATTRIBUTES ) );
+        walkFileTree( from, new CopyingFileVisitor( from, to, filter, REPLACE_EXISTING, COPY_ATTRIBUTES ) );
     }
 
-    public static void writeToFile( File target, String text, boolean append ) throws IOException
+    public static void writeToFile( Path target, String text, boolean append ) throws IOException
     {
-        if ( !target.exists() )
+        if ( notExists( target ) )
         {
-            Files.createDirectories( target.getParentFile().toPath() );
-            //noinspection ResultOfMethodCallIgnored
-            target.createNewFile();
+            Files.createDirectories( target.getParent() );
+            Files.createFile( target );
         }
 
-        try ( Writer out = new OutputStreamWriter( new FileOutputStream( target, append ), StandardCharsets.UTF_8 ) )
+        try ( Writer out = Files.newBufferedWriter( target, StandardCharsets.UTF_8, StandardOpenOption.APPEND ) )
         {
             out.write( text );
         }
     }
 
-    public static PrintWriter newFilePrintWriter( File file, Charset charset ) throws FileNotFoundException
+    public static PrintWriter newFilePrintWriter( Path file, Charset charset ) throws IOException
     {
-        return new PrintWriter( new OutputStreamWriter( new FileOutputStream( file, true ), charset ) );
+        return new PrintWriter( Files.newBufferedWriter( file, charset, StandardOpenOption.APPEND ) );
     }
 
-    public static File path( String root, String... path )
+    public static Path path( String root, String... path )
     {
-        return path( new File( root ), path );
+        return path( Path.of( root ), path );
     }
 
-    public static File path( File root, String... path )
+    public static Path path( Path root, String... path )
     {
         for ( String part : path )
         {
-            root = new File( root, part );
+            root = root.resolve( part );
         }
         return root;
     }
@@ -412,7 +392,7 @@ public final class FileUtils
                 Path deviceName = device.getName( device.getNameCount() - 1 );
 
                 Path rotational = rotationalPathFor( deviceName );
-                if ( Files.exists( rotational ) )
+                if ( exists( rotational ) )
                 {
                     return readFirstCharacter( rotational ) == '0';
                 }
@@ -426,7 +406,7 @@ public final class FileUtils
                     }
                     deviceName = Paths.get( namePart.substring( 0, len ) );
                     rotational = rotationalPathFor( deviceName );
-                    if ( Files.exists( rotational ) )
+                    if ( exists( rotational ) )
                     {
                         return readFirstCharacter( rotational ) == '0';
                     }
@@ -457,38 +437,6 @@ public final class FileUtils
         {
             return in.read();
         }
-    }
-
-    /**
-     * Useful when you want to move a file from one directory to another by renaming the file
-     * and keep eventual sub directories. Example:
-     * <p>
-     * You want to move file /a/b1/c/d/file from /a/b1 to /a/b2 and keep the sub path /c/d/file.
-     * <pre>
-     * <code>fileToMove = new File( "/a/b1/c/d/file" );
-     * fromDir = new File( "/a/b1" );
-     * toDir = new File( "/a/b2" );
-     * fileToMove.rename( pathToFileAfterMove( fromDir, toDir, fileToMove ) );
-     * // fileToMove.getAbsolutePath() -> /a/b2/c/d/file</code>
-     * </pre>
-     * Calls {@link #pathToFileAfterMove(Path, Path, Path)} after
-     * transforming given files to paths by calling {@link File#toPath()}.
-     * <p>
-     * NOTE: This that this does not perform the move, it only calculates the new file name.
-     * <p>
-     * Throws {@link IllegalArgumentException} is fileToMove is not a sub path to fromDir.
-     *
-     * @param fromDir Current parent directory for fileToMove
-     * @param toDir Directory denoting new parent directory for fileToMove after move
-     * @param fileToMove File denoting current location for fileToMove
-     * @return {@link File} denoting new abstract path for file after move.
-     */
-    public static File pathToFileAfterMove( File fromDir, File toDir, File fileToMove )
-    {
-        final Path fromDirPath = fromDir.toPath();
-        final Path toDirPath = toDir.toPath();
-        final Path fileToMovePath = fileToMove.toPath();
-        return pathToFileAfterMove( fromDirPath, toDirPath, fileToMovePath ).toFile();
     }
 
     /**
@@ -556,60 +504,19 @@ public final class FileUtils
     }
 
     /**
-     * Given a directory and a path under it, return filename of the path
-     * relative to the directory.
-     *
-     * @param baseDir The base directory, containing the storeFile
-     * @param storeFile The store file path, must be contained under
-     * <code>baseDir</code>
-     * @return The relative path of <code>storeFile</code> to
-     * <code>baseDir</code>
-     * @throws IOException As per {@link File#getCanonicalPath()}
-     */
-    public static String relativePath( File baseDir, File storeFile )
-            throws IOException
-    {
-        String prefix = baseDir.getCanonicalPath();
-        String path = storeFile.getCanonicalPath();
-        if ( !path.startsWith( prefix ) )
-        {
-            throw new FileNotFoundException();
-        }
-        path = path.substring( prefix.length() );
-        if ( path.startsWith( File.separator ) )
-        {
-            return path.substring( 1 );
-        }
-        return path;
-    }
-
-    /**
      * Canonical file resolution on windows does not resolve links.
      * Real paths on windows can be resolved only using {@link Path#toRealPath(LinkOption...)}, but file should exist in that case.
      * We will try to do as much as possible and will try to use {@link Path#toRealPath(LinkOption...)} when file exist and will fallback to only
-     * use {@link File#getCanonicalFile()} if file does not exist.
+     * use {@link Path#normalize()} if file does not exist.
      * see JDK-8003887 for details
      * @param file - file to resolve canonical representation
      * @return canonical file representation.
      */
-    public static File getCanonicalFile( File file )
-    {
-        try
-        {
-            File fileToResolve = file.exists() ? file.toPath().toRealPath().toFile() : file;
-            return fileToResolve.getCanonicalFile();
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
-        }
-    }
-
     public static Path getCanonicalFile( Path file )
     {
         try
         {
-            return Files.exists( file ) ? file.toRealPath().normalize() : file.normalize();
+            return exists( file ) ? file.toRealPath().normalize() : file.normalize();
         }
         catch ( IOException e )
         {
@@ -662,15 +569,15 @@ public final class FileUtils
         }
     }
 
-    public static void tryForceDirectory( File directory ) throws IOException
+    public static void tryForceDirectory( Path directory ) throws IOException
     {
-        if ( !directory.exists() )
+        if ( notExists( directory ) )
         {
-            throw new NoSuchFileException( format( "The directory %s does not exist!", directory.getAbsolutePath() ) );
+            throw new NoSuchFileException( format( "The directory %s does not exist!", directory.toAbsolutePath() ) );
         }
-        else if ( !directory.isDirectory() )
+        else if ( !isDirectory( directory ) )
         {
-            throw new IllegalArgumentException( format( "The path %s must refer to a directory!", directory.getAbsolutePath() ) );
+            throw new NotDirectoryException( format( "The path %s must refer to a directory!", directory.toAbsolutePath() ) );
         }
 
         if ( SystemUtils.IS_OS_WINDOWS )
@@ -682,7 +589,7 @@ public final class FileUtils
         // Attempts to fsync the directory, guaranting e.g. file creation/deletion/rename events are durable
         // See http://mail.openjdk.java.net/pipermail/nio-dev/2015-May/003140.html
         // See also https://github.com/apache/lucene-solr/commit/7bea628bf3961a10581833935e4c1b61ad708c5c
-        FileChannel directoryChannel = FileChannel.open( directory.toPath(), singleton( READ ) );
+        FileChannel directoryChannel = FileChannel.open( directory, singleton( READ ) );
         directoryChannel.force( true );
     }
 
@@ -703,6 +610,7 @@ public final class FileUtils
      */
     public static Path[] listPaths( Path dir )
     {
+         // TODO we should stop using this!
         try
         {
             try ( Stream<Path> list = Files.list( dir ) )
@@ -780,19 +688,26 @@ public final class FileUtils
     {
         private final Path from;
         private final Path to;
+        private final Predicate<Path> filter;
         private final CopyOption[] copyOption;
         private final Set<Path> copiedPathsInDestination = new HashSet<>();
 
-        CopyingFileVisitor( Path from, Path to, CopyOption... copyOption )
+        CopyingFileVisitor( Path from, Path to, Predicate<Path> filter, CopyOption... copyOption )
         {
             this.from = from.normalize();
             this.to = to.normalize();
+            this.filter = filter;
             this.copyOption = copyOption;
         }
 
         @Override
         public FileVisitResult preVisitDirectory( Path dir, BasicFileAttributes attrs ) throws IOException
         {
+            if ( !from.equals( dir ) && !filter.test( dir ) )
+            {
+                return SKIP_SUBTREE;
+            }
+
             if ( copiedPathsInDestination.contains( dir ) )
             {
                 return SKIP_SUBTREE;
@@ -813,6 +728,10 @@ public final class FileUtils
         @Override
         public FileVisitResult visitFile( Path file, BasicFileAttributes attrs ) throws IOException
         {
+            if ( !filter.test( file ) )
+            {
+                return CONTINUE;
+            }
             if ( !copiedPathsInDestination.contains( file ) )
             {
                 Path target = to.resolve( from.relativize( file ) );

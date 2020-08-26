@@ -34,6 +34,7 @@ import java.nio.file.Path;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.IoPrimitiveUtils;
+import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 import org.neo4j.storageengine.api.StoreId;
@@ -187,7 +188,7 @@ class LogHeaderReaderTest
         buffer.putLong( expectedStoreId.getUpgradeTime() );
         buffer.putLong( expectedStoreId.getUpgradeTxId() );
 
-        try ( OutputStream stream = fileSystem.openAsOutputStream( file.toFile(), false ) )
+        try ( OutputStream stream = fileSystem.openAsOutputStream( file, false ) )
         {
             stream.write( buffer.array() );
         }
@@ -204,7 +205,7 @@ class LogHeaderReaderTest
     {
         // given
         final Path file = testDirectory.filePath( "ReadLogHeader" );
-        fileSystem.write( file.toFile() ).close();
+        ((StoreChannel) fileSystem.write( file )).close();
         IncompleteLogHeaderException exception = assertThrows( IncompleteLogHeaderException.class, () -> readLogHeader( fileSystem, file, INSTANCE ) );
         assertThat( exception.getMessage() ).contains( file.getFileName().toString() );
     }

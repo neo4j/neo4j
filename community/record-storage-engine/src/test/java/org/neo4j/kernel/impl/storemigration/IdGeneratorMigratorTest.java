@@ -88,12 +88,12 @@ class IdGeneratorMigratorTest
             createSomeRecordsAndSomeHoles( neoStores.getRelationshipStore(), 600, 3, 1 );
             relationshipStoreStartId = neoStores.getRelationshipStore().getNumberOfReservedLowIds();
         }
-        fs.deleteFile( upgrade.nodeStore().toFile() );
-        fs.deleteFile( upgrade.idNodeStore().toFile() );
-        fs.deleteFile( upgrade.propertyStringStore().toFile() );
-        fs.deleteFile( upgrade.idPropertyStringStore().toFile() );
-        fs.deleteFile( db.relationshipStore().toFile() );
-        fs.deleteFile( db.idRelationshipStore().toFile() );
+        fs.deleteFile( upgrade.nodeStore() );
+        fs.deleteFile( upgrade.idNodeStore() );
+        fs.deleteFile( upgrade.propertyStringStore() );
+        fs.deleteFile( upgrade.idPropertyStringStore() );
+        fs.deleteFile( db.relationshipStore() );
+        fs.deleteFile( db.idRelationshipStore() );
 
         // when
         IdGeneratorMigrator migrator = new IdGeneratorMigrator( fs, pageCache, defaults(), PageCacheTracer.NULL );

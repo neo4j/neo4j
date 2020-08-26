@@ -51,9 +51,9 @@ class FulltextConfigExtractor
     {
         Path settingsFile = fulltextIndexDirectory.resolve( INDEX_CONFIG_FILE );
         Properties settings = new Properties();
-        if ( fs.fileExists( settingsFile.toFile() ) )
+        if ( fs.fileExists( settingsFile ) )
         {
-            try ( Reader reader = fs.openAsReader( settingsFile.toFile(), UTF_8 ) )
+            try ( Reader reader = fs.openAsReader( settingsFile, UTF_8 ) )
             {
                 settings.load( reader );
             }

@@ -108,8 +108,8 @@ class SpatialConfigExtractorTest
 
         // and
         Path spatialDirectory = directory.homePath().resolve( FAILED_SPATIAL_35_DIR );
-        assertTrue( fs.fileExists( spatialDirectory.toFile() ) );
-        assertTrue( fs.isDirectory( spatialDirectory.toFile() ) );
+        assertTrue( fs.fileExists( spatialDirectory ) );
+        assertTrue( fs.isDirectory( spatialDirectory ) );
 
         // when
         List<SpatialFile> spatialFiles = IndexMigration.getSpatialFiles( fs, spatialDirectory );
@@ -145,7 +145,7 @@ class SpatialConfigExtractorTest
         Path spatialDir = directory.filePath( HEALTHY_SPATIAL_35_DIR );
 
         // and
-        assertTrue( fs.fileExists( spatialDir.toFile() ) );
+        assertTrue( fs.fileExists( spatialDir ) );
 
         // when
         List<SpatialFile> spatialFiles = IndexMigration.getSpatialFiles( fs, spatialDir );
@@ -164,7 +164,7 @@ class SpatialConfigExtractorTest
 
     private static void corruptFile( FileSystemAbstraction fs, File spatialFile ) throws IOException
     {
-        try ( StoreChannel write = fs.write( spatialFile ) )
+        try ( StoreChannel write = fs.write( spatialFile.toPath() ) )
         {
             int size = 100;
             byte[] bytes = new byte[size];
@@ -173,7 +173,7 @@ class SpatialConfigExtractorTest
             byteBuffer.put( bytes );
             write.writeAll( byteBuffer );
         }
-        assertTrue( fs.fileExists( spatialFile ) );
+        assertTrue( fs.fileExists( spatialFile.toPath() ) );
     }
 
     private static void assertExpectedIndexConfig( IndexConfig indexConfig )

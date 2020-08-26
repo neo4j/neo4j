@@ -23,9 +23,9 @@ import org.apache.lucene.index.CorruptIndexException;
 import org.junit.jupiter.api.Test;
 
 import java.io.EOFException;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -89,7 +89,7 @@ class LuceneSchemaIndexCorruptionTest
     {
         // Given
         long faultyIndexId = 1;
-        FileNotFoundException error = new FileNotFoundException( "/some/path/somewhere" );
+        NoSuchFileException error = new NoSuchFileException( "/some/path/somewhere" );
 
         LuceneIndexProvider provider = newFaultyIndexProvider( faultyIndexId, error );
 

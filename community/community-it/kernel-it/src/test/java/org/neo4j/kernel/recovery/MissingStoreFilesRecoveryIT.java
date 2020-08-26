@@ -91,8 +91,8 @@ class MissingStoreFilesRecoveryIT
     @Test
     void databaseStartFailingOnMissingFilesAndMissedTxLogs() throws IOException
     {
-        fileSystem.deleteFile( databaseLayout.nodeStore().toFile() );
-        fileSystem.deleteRecursively( databaseLayout.getTransactionLogsDirectory().toFile() );
+        fileSystem.deleteFile( databaseLayout.nodeStore() );
+        fileSystem.deleteRecursively( databaseLayout.getTransactionLogsDirectory() );
 
         managementService = serviceBuilder.build();
         var dbStateService = getDatabaseStateService();
@@ -104,13 +104,13 @@ class MissingStoreFilesRecoveryIT
     {
         LogFiles logFiles = prepareDatabaseWithTwoTxLogFiles();
 
-        fileSystem.deleteFile( logFiles.getLogFile().getLogFileForVersion( 0 ).toFile() );
-        fileSystem.deleteFile( databaseLayout.nodeStore().toFile() );
+        fileSystem.deleteFile( logFiles.getLogFile().getLogFileForVersion( 0 ) );
+        fileSystem.deleteFile( databaseLayout.nodeStore() );
 
         var dbStateService = getDatabaseStateService();
         var failure = dbStateService.causeOfFailure( defaultNamedDatabaseId );
         assertFalse( failure.isPresent() );
-        assertFalse( fileSystem.fileExists( databaseLayout.nodeStore().toFile() ) );
+        assertFalse( fileSystem.fileExists( databaseLayout.nodeStore() ) );
     }
 
     private LogFiles prepareDatabaseWithTwoTxLogFiles() throws IOException

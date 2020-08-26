@@ -131,7 +131,7 @@ class GBPTreeTest
     {
         executor = Executors.newFixedThreadPool( Runtime.getRuntime().availableProcessors() );
         indexFile = testDirectory.filePath( "index" );
-        defaultPageSize = toIntExact( blockSize( testDirectory.homeDir() ) );
+        defaultPageSize = toIntExact( blockSize( testDirectory.homePath() ) );
     }
 
     @AfterEach
@@ -292,11 +292,11 @@ class GBPTreeTest
         try ( GBPTree<MutableLong,MutableLong> ignored = index().with( immutable.of( DELETE_ON_CLOSE ) ).build() )
         {
             // when just closing it with the deletion flag
-            assertTrue( fileSystem.fileExists( indexFile.toFile() ) );
+            assertTrue( fileSystem.fileExists( indexFile ) );
         }
 
         // then
-        assertFalse( fileSystem.fileExists( indexFile.toFile() ) );
+        assertFalse( fileSystem.fileExists( indexFile ) );
     }
 
     /* Lifecycle tests */
@@ -650,7 +650,8 @@ class GBPTreeTest
         // given an existing index with only the first page in it
         PageCache pageCache = createPageCache( defaultPageSize );
         index( pageCache ).build().close();
-        fileSystem.truncate( indexFile.toFile(), defaultPageSize /*truncate right after the first page*/ );
+        /*truncate right after the first page*/
+        fileSystem.truncate( indexFile, defaultPageSize );
 
         assertThrows( MetadataMismatchException.class, () -> opener.accept( pageCache ) );
     }
@@ -673,8 +674,9 @@ class GBPTreeTest
         // given an existing index with all-zero state pages
         PageCache pageCache = createPageCache( defaultPageSize );
         index( pageCache ).build().close();
-        fileSystem.truncate( indexFile.toFile(), defaultPageSize /*truncate right after the first page*/ );
-        try ( OutputStream out = fileSystem.openAsOutputStream( indexFile.toFile(), true ) )
+        /*truncate right after the first page*/
+        fileSystem.truncate( indexFile, defaultPageSize );
+        try ( OutputStream out = fileSystem.openAsOutputStream( indexFile, true ) )
         {
             byte[] allZeroPage = new byte[defaultPageSize];
             out.write( allZeroPage ); // page A
@@ -1222,7 +1224,7 @@ class GBPTreeTest
     void indexMustBeCleanOnFirstInitialization() throws Exception
     {
         // GIVEN
-        assertFalse( fileSystem.fileExists( indexFile.toFile() ) );
+        assertFalse( fileSystem.fileExists( indexFile ) );
         MonitorDirty monitorDirty = new MonitorDirty();
 
         // WHEN
@@ -1290,7 +1292,7 @@ class GBPTreeTest
         // GIVEN
         try ( EphemeralFileSystemAbstraction ephemeralFs = new EphemeralFileSystemAbstraction() )
         {
-            ephemeralFs.mkdirs( indexFile.toFile().getParentFile() );
+            ephemeralFs.mkdirs( indexFile.toFile().getParentFile().toPath() );
             PageCache pageCache = pageCacheExtension.getPageCache( ephemeralFs );
             EphemeralFileSystemAbstraction snapshot;
             try ( GBPTree<MutableLong, MutableLong> index = index( pageCache ).build() )
@@ -1758,7 +1760,7 @@ class GBPTreeTest
     {
         Set<OpenOption> options = new HashSet<>();
         options.add( StandardOpenOption.READ );
-        try ( StoreChannel storeChannel = fileSystem.open( indexFile.toFile(), options ) )
+        try ( StoreChannel storeChannel = fileSystem.open( indexFile, options ) )
         {
             int fileSize = (int) storeChannel.size();
             ByteBuffer expectedContent = ByteBuffers.allocate( fileSize, INSTANCE );

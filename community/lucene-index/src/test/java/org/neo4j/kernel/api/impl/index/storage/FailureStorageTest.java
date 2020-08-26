@@ -47,7 +47,7 @@ class FailureStorageTest
     void before() throws Exception
     {
         Path rootDirectory = Path.of( "dir" );
-        fs.mkdirs( rootDirectory.toFile() );
+        fs.mkdirs( rootDirectory );
         indexFolderLayout = new IndexFolderLayout( rootDirectory );
     }
 
@@ -62,8 +62,8 @@ class FailureStorageTest
 
         // THEN
         Path failureFile = storage.failureFile();
-        assertTrue( fs.fileExists( failureFile.toFile() ) );
-        assertTrue( fs.getFileSize( failureFile.toFile() ) > 100 );
+        assertTrue( fs.fileExists( failureFile ) );
+        assertTrue( fs.getFileSize( failureFile ) > 100 );
     }
 
     @Test
@@ -79,8 +79,8 @@ class FailureStorageTest
 
         // THEN
         Path failureFile = storage.failureFile();
-        assertTrue( fs.fileExists( failureFile.toFile() ) );
-        assertTrue( fs.getFileSize( failureFile.toFile() ) > 100 );
+        assertTrue( fs.fileExists( failureFile ) );
+        assertTrue( fs.getFileSize( failureFile ) > 100 );
         assertEquals( failure, storage.loadIndexFailure() );
     }
 
@@ -93,14 +93,14 @@ class FailureStorageTest
         String failure = format( "A failure message%nspanning%nmultiple lines." );
         storage.storeIndexFailure( failure );
         Path failureFile = storage.failureFile();
-        assertTrue( fs.fileExists( failureFile.toFile() ) );
-        assertTrue( fs.getFileSize( failureFile.toFile() ) > 100 );
+        assertTrue( fs.fileExists( failureFile ) );
+        assertTrue( fs.getFileSize( failureFile ) > 100 );
 
         // WHEN
         storage.clearForIndex();
 
         // THEN
-        assertFalse( fs.fileExists( failureFile.toFile() ) );
+        assertFalse( fs.fileExists( failureFile ) );
     }
 
     @Test

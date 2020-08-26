@@ -21,7 +21,6 @@ package org.neo4j.io.fs;
 
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 
@@ -40,7 +39,7 @@ class SelectiveFileSystemAbstractionTest
     void shouldUseCorrectFileSystemForChosenFile() throws Exception
     {
         // given
-        File specialFile = new File( "special" );
+        Path specialFile = Path.of( "special" );
         FileSystemAbstraction normal = mock( FileSystemAbstraction.class );
         FileSystemAbstraction special = mock( FileSystemAbstraction.class );
 
@@ -61,8 +60,8 @@ class SelectiveFileSystemAbstractionTest
     void shouldUseDefaultFileSystemForOtherFiles() throws Exception
     {
         // given
-        File specialFile = new File( "special" );
-        File otherFile = new File( "other" );
+        Path specialFile = Path.of( "special" );
+        Path otherFile = Path.of( "other" );
 
         FileSystemAbstraction normal = mock( FileSystemAbstraction.class );
         FileSystemAbstraction special = mock( FileSystemAbstraction.class );
@@ -100,7 +99,7 @@ class SelectiveFileSystemAbstractionTest
         when( specialWatcher.watch( specialFile ) ).thenReturn( specialResource );
         when( normalWatcher.watch( otherFile ) ).thenReturn( normalResource );
 
-        try ( SelectiveFileSystemAbstraction fs = new SelectiveFileSystemAbstraction( specialFile.toFile(), special, normal ) )
+        try ( SelectiveFileSystemAbstraction fs = new SelectiveFileSystemAbstraction( specialFile, special, normal ) )
         {
             FileWatcher fileWatcher = fs.fileWatcher();
             assertSame( specialResource, fileWatcher.watch( specialFile ) );

@@ -116,7 +116,7 @@ public class JMXDumper
     private Optional<Long> getPid()
     {
         Path pidFile = this.homeDir.resolve( "run/neo4j.pid" );
-        if ( this.fs.fileExists( pidFile.toFile() ) )
+        if ( this.fs.fileExists( pidFile ) )
         {
             // The file cannot be opened with write permissions on Windows
             try ( InputStream inputStream = Files.newInputStream( pidFile, StandardOpenOption.READ );

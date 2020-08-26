@@ -43,7 +43,7 @@ trait CreateTempFileTestSupport extends CypherTestSupport {
   override protected def stopTest(): Unit = {
     try {
       paths.filter(Files.exists(_)).foreach { p =>
-        if (Files.isRegularFile(p)) p.toFile.delete() else FileUtils.deletePathRecursively(p)
+        if (Files.isRegularFile(p)) p.toFile.delete() else FileUtils.deleteDirectory(p)
       }
     } finally {
       super.stopTest()

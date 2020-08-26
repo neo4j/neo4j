@@ -21,7 +21,6 @@ package org.neo4j.kernel.api.impl.schema;
 
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
 import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 
@@ -142,8 +141,8 @@ public class FusionIndexIT
     {
         Path databaseDirectory = db.databaseLayout().databaseDirectory();
         Path rootDirectory = subProviderDirectoryStructure( databaseDirectory ).forProvider( descriptor ).rootDirectory();
-        File[] files = fs.listFiles( rootDirectory.toFile() );
-        for ( File indexFile : files )
+        Path[] files = fs.listFiles( rootDirectory );
+        for ( Path indexFile : files )
         {
             fs.deleteFile( indexFile );
         }

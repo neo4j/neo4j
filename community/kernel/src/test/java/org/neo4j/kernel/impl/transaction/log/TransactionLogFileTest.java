@@ -23,7 +23,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
@@ -113,7 +112,7 @@ class TransactionLogFileTest
 
         // simulate new file without header presence
         logVersionRepository.incrementAndGetVersion( NULL );
-        fileSystem.write( logFiles.getLogFile().getLogFileForVersion( logVersionRepository.getCurrentLogVersion() ).toFile() ).close();
+        fileSystem.write( logFiles.getLogFile().getLogFileForVersion( logVersionRepository.getCurrentLogVersion() ) ).close();
         transactionIdStore.transactionCommitted( 5L, 5, 5L, NULL );
 
         PhysicalLogicalTransactionStore.LogVersionLocator versionLocator = new PhysicalLogicalTransactionStore.LogVersionLocator( 4L );
@@ -292,8 +291,8 @@ class TransactionLogFileTest
         Path logFile = logFiles.getLogFile().getLogFileForVersion( logVersion );
         StoreChannel channel = mock( StoreChannel.class );
         when( channel.read( any( ByteBuffer.class ) ) ).thenReturn( CURRENT_FORMAT_LOG_HEADER_SIZE / 2 );
-        when( fs.fileExists( logFile.toFile() ) ).thenReturn( true );
-        when( fs.read( eq( logFile.toFile() ) ) ).thenReturn( channel );
+        when( fs.fileExists( logFile ) ).thenReturn( true );
+        when( fs.read( eq( logFile ) ) ).thenReturn( channel );
 
         // WHEN
         assertThrows( IncompleteLogHeaderException.class, () -> logFiles.getLogFile().openForVersion( logVersion ) );
@@ -314,8 +313,8 @@ class TransactionLogFileTest
         Path logFile = logFiles.getLogFile().getLogFileForVersion( logVersion );
         StoreChannel channel = mock( StoreChannel.class );
         when( channel.read( any( ByteBuffer.class ) ) ).thenReturn( CURRENT_FORMAT_LOG_HEADER_SIZE / 2 );
-        when( fs.fileExists( logFile.toFile() ) ).thenReturn( true );
-        when( fs.read( eq( logFile.toFile() ) ) ).thenReturn( channel );
+        when( fs.fileExists( logFile ) ).thenReturn( true );
+        when( fs.read( eq( logFile ) ) ).thenReturn( channel );
         doThrow( IOException.class ).when( channel ).close();
 
         // WHEN
@@ -579,7 +578,7 @@ class TransactionLogFileTest
         }
 
         @Override
-        public StoreChannel write( File fileName ) throws IOException
+        public StoreChannel write( Path fileName ) throws IOException
         {
             capturingChannel = new CapturingStoreChannel( super.write( fileName ) );
             return capturingChannel;

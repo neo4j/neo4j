@@ -38,6 +38,7 @@ import java.nio.file.CopyOption;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.OpenOption;
+import java.nio.file.Path;
 import java.nio.file.WatchService;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -70,65 +71,73 @@ public class DefaultFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
-    public StoreFileChannel open( File fileName, Set<OpenOption> options ) throws IOException
+    public StoreFileChannel open( Path fileName, Set<OpenOption> options ) throws IOException
     {
-        FileChannel channel = FileChannel.open( fileName.toPath(), options );
+        FileChannel channel = FileChannel.open( fileName, options );
         return getStoreFileChannel( channel );
     }
 
     @Override
-    public OutputStream openAsOutputStream( File fileName, boolean append ) throws IOException
+    public OutputStream openAsOutputStream( Path fileName, boolean append ) throws IOException
     {
         return new BufferedOutputStream( openFileOutputStream( fileName, append ) );
     }
 
     @Override
-    public InputStream openAsInputStream( File fileName ) throws IOException
+    public InputStream openAsInputStream( Path fileName ) throws IOException
     {
         return new BufferedInputStream( openFileInputStream( fileName ) );
     }
 
     @Override
-    public Reader openAsReader( File fileName, Charset charset ) throws IOException
+    public Reader openAsReader( Path fileName, Charset charset ) throws IOException
     {
         return new BufferedReader( new InputStreamReader( openFileInputStream( fileName ), charset ) );
     }
 
     @Override
-    public Writer openAsWriter( File fileName, Charset charset, boolean append ) throws IOException
+    public Writer openAsWriter( Path fileName, Charset charset, boolean append ) throws IOException
     {
         return new BufferedWriter( new OutputStreamWriter( openFileOutputStream( fileName, append ), charset ) );
     }
 
     @Override
-    public StoreFileChannel write( File fileName ) throws IOException
+    public StoreFileChannel write( Path fileName ) throws IOException
     {
         return open( fileName, WRITE_OPTIONS );
     }
 
     @Override
-    public StoreFileChannel read( File fileName ) throws IOException
+    public StoreFileChannel read( Path fileName ) throws IOException
     {
         return open( fileName, READ_OPTIONS );
     }
 
     @Override
-    public boolean mkdir( File fileName )
+    public boolean mkdir( Path fileName )
     {
-        return fileName.mkdir();
+        try
+        {
+            Files.createDirectories( fileName );
+        }
+        catch ( IOException e )
+        {
+            return false;
+        }
+        return true;
     }
 
     @Override
-    public void mkdirs( File file ) throws IOException
+    public void mkdirs( Path file ) throws IOException
     {
-        if ( file.exists() && file.isDirectory() )
+        if ( Files.exists( file ) && Files.isDirectory( file ) )
         {
             return;
         }
 
         try
         {
-            Files.createDirectories( file.toPath() );
+            Files.createDirectories( file );
         }
         catch ( IOException e )
         {
@@ -137,109 +146,158 @@ public class DefaultFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
-    public boolean fileExists( File file )
+    public boolean fileExists( Path file )
     {
-        return file.exists();
+        return Files.exists( file );
+    }
+
+    /**
+     * @return 0 on IO exception to preserve behaviour of {@link File#length()}
+     */
+    @Override
+    public long getFileSize( Path file )
+    {
+        try
+        {
+            return Files.size( file );
+        }
+        catch ( IOException e )
+        {
+            return 0;
+        }
     }
 
     @Override
-    public long getFileSize( File file )
-    {
-        return file.length();
-    }
-
-    @Override
-    public long getBlockSize( File file ) throws IOException
+    public long getBlockSize( Path file ) throws IOException
     {
         return FileUtils.blockSize( file );
     }
 
     @Override
-    public boolean deleteFile( File fileName )
+    public boolean deleteFile( Path fileName )
     {
-        return FileUtils.deleteFile( fileName );
+        try
+        {
+            FileUtils.deleteFile( fileName );
+            return true;
+        }
+        catch ( IOException e )
+        {
+            return false;
+        }
     }
 
     @Override
-    public void deleteRecursively( File directory ) throws IOException
+    public void deleteRecursively( Path directory ) throws IOException
     {
-        FileUtils.deleteRecursively( directory );
+        FileUtils.deleteDirectory( directory );
     }
 
     @Override
-    public void renameFile( File from, File to, CopyOption... copyOptions ) throws IOException
+    public void renameFile( Path from, Path to, CopyOption... copyOptions ) throws IOException
     {
-        Files.move( from.toPath(), to.toPath(), copyOptions );
+        Files.move( from, to, copyOptions );
     }
 
     @Override
-    public File[] listFiles( File directory )
+    public Path[] listFiles( Path directory )
     {
-        return directory.listFiles();
+        try
+        {
+            try ( Stream<Path> list = Files.list( directory ) )
+            {
+                return list.toArray( Path[]::new );
+            }
+        }
+        catch ( IOException ignored )
+        {
+            return null; // Preserve behaviour of File.listFiles()
+        }
     }
 
     @Override
-    public File[] listFiles( File directory, FilenameFilter filter )
+    public Path[] listFiles( Path directory, FilenameFilter filter )
     {
-        return directory.listFiles( filter );
+        try
+        {
+            final File filterDir = directory.toFile();
+            try ( Stream<Path> list = Files.list( directory ) )
+            {
+                return list.filter( file -> filter.accept( filterDir, file.getFileName().toString() ) ).toArray( Path[]::new );
+            }
+        }
+        catch ( IOException ignored )
+        {
+            return null; // Preserve behaviour of File.listFiles()
+        }
     }
 
     @Override
-    public boolean isDirectory( File file )
+    public boolean isDirectory( Path file )
     {
-        return file.isDirectory();
+        return Files.isDirectory( file );
     }
 
     @Override
-    public void moveToDirectory( File file, File toDirectory ) throws IOException
+    public void moveToDirectory( Path file, Path toDirectory ) throws IOException
     {
         FileUtils.moveFileToDirectory( file, toDirectory );
     }
 
     @Override
-    public void copyToDirectory( File file, File toDirectory ) throws IOException
+    public void copyToDirectory( Path file, Path toDirectory ) throws IOException
     {
         FileUtils.copyFileToDirectory( file, toDirectory );
     }
 
     @Override
-    public void copyFile( File from, File to ) throws IOException
+    public void copyFile( Path from, Path to ) throws IOException
     {
         FileUtils.copyFile( from, to );
     }
 
     @Override
-    public void copyFile( File from, File to, CopyOption... copyOptions ) throws IOException
+    public void copyFile( Path from, Path to, CopyOption... copyOptions ) throws IOException
     {
         FileUtils.copyFile( from, to, copyOptions );
     }
 
     @Override
-    public void copyRecursively( File fromDirectory, File toDirectory ) throws IOException
+    public void copyRecursively( Path fromDirectory, Path toDirectory ) throws IOException
     {
-        FileUtils.copyRecursively( fromDirectory, toDirectory );
+        FileUtils.copyDirectory( fromDirectory, toDirectory );
     }
 
     @Override
-    public void truncate( File path, long size ) throws IOException
+    public void truncate( Path path, long size ) throws IOException
     {
         FileUtils.truncateFile( path, size );
     }
 
+    /**
+     * @return 0 on IO exception to preserve behaviour of {@link File#lastModified()}
+     */
     @Override
-    public long lastModifiedTime( File file )
+    public long lastModifiedTime( Path file )
     {
-        return file.lastModified();
+        try
+        {
+            return Files.getLastModifiedTime( file ).toMillis();
+        }
+        catch ( IOException e )
+        {
+            return 0;
+        }
     }
 
     @Override
-    public void deleteFileOrThrow( File file ) throws IOException
+    public void deleteFileOrThrow( Path file ) throws IOException
     {
-        Files.delete( file.toPath() );
+        Files.delete( file );
     }
 
     @Override
-    public Stream<FileHandle> streamFilesRecursive( File directory ) throws IOException
+    public Stream<FileHandle> streamFilesRecursive( Path directory ) throws IOException
     {
         return StreamFilesRecursive.streamFilesRecursive( directory, this );
     }
@@ -261,13 +319,13 @@ public class DefaultFileSystemAbstraction implements FileSystemAbstraction
         return new StoreFileChannel( channel );
     }
 
-    private static InputStream openFileInputStream( File fileName ) throws IOException
+    private static InputStream openFileInputStream( Path fileName ) throws IOException
     {
-        return Files.newInputStream( fileName.toPath() );
+        return Files.newInputStream( fileName );
     }
 
-    private OutputStream openFileOutputStream( File fileName, boolean append ) throws IOException
+    private OutputStream openFileOutputStream( Path fileName, boolean append ) throws IOException
     {
-        return Files.newOutputStream( fileName.toPath(), append ? APPEND_OPTIONS : DEFAULT_OUTPUT_OPTIONS );
+        return Files.newOutputStream( fileName, append ? APPEND_OPTIONS : DEFAULT_OUTPUT_OPTIONS );
     }
 }

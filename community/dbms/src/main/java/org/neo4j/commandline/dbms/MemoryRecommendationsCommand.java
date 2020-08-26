@@ -305,7 +305,7 @@ class MemoryRecommendationsCommand extends AbstractCommand
         return ( dir, name ) ->
         {
             File file = new File( dir, name );
-            if ( ctx.fs().isDirectory( file ) )
+            if ( ctx.fs().isDirectory( file.toPath() ) )
             {
                 // Always go down directories
                 return true;
@@ -327,7 +327,8 @@ class MemoryRecommendationsCommand extends AbstractCommand
         try
         {
             long total =
-                    storageEngineFactory.listStorageFiles( fileSystem, databaseLayout ).stream().map( Path::toFile ).mapToLong( fileSystem::getFileSize ).sum();
+                    storageEngineFactory.listStorageFiles( fileSystem, databaseLayout ).stream().mapToLong(
+                            fileSystem::getFileSize ).sum();
 
             // Include label index
             total += sizeOfFileIfExists( databaseLayout.labelScanStore() );
@@ -342,33 +343,33 @@ class MemoryRecommendationsCommand extends AbstractCommand
     private long sizeOfFileIfExists( Path file )
     {
         FileSystemAbstraction fileSystem = ctx.fs();
-        return fileSystem.fileExists( file.toFile() ) ? fileSystem.getFileSize( file.toFile() ) : 0;
+        return fileSystem.fileExists( file ) ? fileSystem.getFileSize( file ) : 0;
     }
 
     private long sumIndexFiles( Path file, FilenameFilter filter )
     {
         long total = 0;
-        if ( ctx.fs().isDirectory( file.toFile() ) )
+        if ( ctx.fs().isDirectory( file ) )
         {
-            File[] children = ctx.fs().listFiles( file.toFile(), filter );
+            Path[] children = ctx.fs().listFiles( file, filter );
             if ( children != null )
             {
-                for ( File child : children )
+                for ( Path child : children )
                 {
-                    total += sumIndexFiles( child.toPath(), filter );
+                    total += sumIndexFiles( child, filter );
                 }
             }
         }
         else
         {
-            total += ctx.fs().getFileSize( file.toFile() );
+            total += ctx.fs().getFileSize( file );
         }
         return total;
     }
 
     private Config getConfig( Path configFile )
     {
-        if ( !ctx.fs().fileExists( configFile.toFile() ) )
+        if ( !ctx.fs().fileExists( configFile ) )
         {
             throw new CommandFailedException( "Unable to find config file, tried: " + configFile.toAbsolutePath() );
         }

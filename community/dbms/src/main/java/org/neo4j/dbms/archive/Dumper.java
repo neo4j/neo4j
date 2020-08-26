@@ -70,7 +70,7 @@ public class Dumper
         operations.clear();
 
         visitPath( dbPath, exclude );
-        if ( !Util.isSameOrChildPath( dbPath, transactionalLogsPath ) )
+        if ( !Util.isSameOrChildFile( dbPath, transactionalLogsPath ) )
         {
             visitPath( transactionalLogsPath, exclude );
         }

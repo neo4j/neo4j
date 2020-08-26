@@ -67,8 +67,8 @@ class TokenScanStoreRebuildIT
         AssertableLogProvider logProvider = new AssertableLogProvider();
         controller.restartDbms( builder ->
         {
-            fs.deleteFile( layout.labelScanStore().toFile() );
-            fs.deleteFile( layout.relationshipTypeScanStore().toFile() );
+            fs.deleteFile( layout.labelScanStore() );
+            fs.deleteFile( layout.relationshipTypeScanStore() );
             builder.setInternalLogProvider( logProvider );
             return builder;
         } );

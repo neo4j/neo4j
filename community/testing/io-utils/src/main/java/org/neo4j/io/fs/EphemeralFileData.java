@@ -19,9 +19,9 @@
  */
 package org.neo4j.io.fs;
 
-import java.io.File;
 import java.lang.ref.WeakReference;
 import java.nio.ByteBuffer;
+import java.nio.file.Path;
 import java.time.Clock;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -34,7 +34,7 @@ import static java.lang.Math.min;
 
 class EphemeralFileData
 {
-    private final File file;
+    private final Path file;
     private final Clock clock;
     private final Collection<WeakReference<EphemeralFileChannel>> channels = new ArrayList<>();
     private EphemeralDynamicByteBuffer fileAsBuffer;
@@ -42,12 +42,12 @@ class EphemeralFileData
     private long lastModified;
     private int locked; // Guarded by lock on 'channels'
 
-    EphemeralFileData( File file, Clock clock )
+    EphemeralFileData( Path file, Clock clock )
     {
         this( file, new EphemeralDynamicByteBuffer(), clock );
     }
 
-    private EphemeralFileData( File file, EphemeralDynamicByteBuffer data, Clock clock )
+    private EphemeralFileData( Path file, EphemeralDynamicByteBuffer data, Clock clock )
     {
         this.file = file;
         this.fileAsBuffer = data;

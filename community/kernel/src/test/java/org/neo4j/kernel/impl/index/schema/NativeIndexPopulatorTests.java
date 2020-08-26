@@ -110,7 +110,7 @@ abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,VALUE e
         populator.create();
 
         // then
-        try ( StoreChannel r = fs.read( indexFiles.getStoreFile().toFile() ) )
+        try ( StoreChannel r = fs.read( indexFiles.getStoreFile() ) )
         {
             byte[] firstBytes = new byte[someBytes.length];
             r.readAll( ByteBuffer.wrap( firstBytes ) );
@@ -140,11 +140,11 @@ abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,VALUE e
         populator.create();
 
         // when
-        assertTrue( fs.fileExists( indexFiles.getBase().toFile() ) );
+        assertTrue( fs.fileExists( indexFiles.getBase() ) );
         populator.drop();
 
         // then
-        assertFalse( fs.fileExists( indexFiles.getBase().toFile() ), "expected drop to delete index base" );
+        assertFalse( fs.fileExists( indexFiles.getBase() ), "expected drop to delete index base" );
     }
 
     @Test
@@ -608,8 +608,8 @@ abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,VALUE e
     private byte[] fileWithContent() throws IOException
     {
         int size = 1000;
-        fs.mkdirs( indexFiles.getStoreFile().getParent().toFile() );
-        try ( StoreChannel storeChannel = fs.write( indexFiles.getStoreFile().toFile() ) )
+        fs.mkdirs( indexFiles.getStoreFile().getParent() );
+        try ( StoreChannel storeChannel = fs.write( indexFiles.getStoreFile() ) )
         {
             byte[] someBytes = new byte[size];
             random.nextBytes( someBytes );

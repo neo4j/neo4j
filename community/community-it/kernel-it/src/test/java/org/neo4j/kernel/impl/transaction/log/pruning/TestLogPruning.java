@@ -95,7 +95,7 @@ class TestLogPruning
         long currentVersion = logFile.getHighestLogVersion();
         for ( long version = 0; version < currentVersion; version++ )
         {
-            assertTrue( fs.fileExists( logFile.getLogFileForVersion( version ).toFile() ), "Version " + version + " has been unexpectedly pruned" );
+            assertTrue( fs.fileExists( logFile.getLogFileForVersion( version ) ), "Version " + version + " has been unexpectedly pruned" );
         }
     }
 
@@ -219,7 +219,7 @@ class TestLogPruning
         db = newDb( "true", 5 );
         doTransaction();
         managementService.shutdown();
-        return (int) fs.getFileSize( files.getLogFile().getLogFileForVersion( 0 ).toFile() );
+        return (int) fs.getFileSize( files.getLogFile().getLogFileForVersion( 0 ) );
     }
 
     private int aggregateLogData( Extractor extractor ) throws IOException
@@ -247,7 +247,7 @@ class TestLogPruning
 
     private int logFileSize() throws IOException
     {
-        return aggregateLogData( from -> (int) fs.getFileSize( files.getLogFile().getLogFileForVersion( from ).toFile() ) );
+        return aggregateLogData( from -> (int) fs.getFileSize( files.getLogFile().getLogFileForVersion( from ) ) );
     }
 
     private int transactionCount() throws IOException

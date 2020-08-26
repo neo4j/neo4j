@@ -21,9 +21,9 @@ package org.neo4j.io.fs;
 
 import org.apache.commons.lang3.ArrayUtils;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.file.Path;
 
 /**
  * This class consists exclusively of static methods that operate on files, directories, or other types of files.
@@ -45,11 +45,11 @@ public final class FileSystemUtils
      * @return An output stream.
      * @throws IOException If an error occurs creating directories or opening the file.
      */
-    public static OutputStream createOrOpenAsOutputStream( FileSystemAbstraction fs, File file, boolean append ) throws IOException
+    public static OutputStream createOrOpenAsOutputStream( FileSystemAbstraction fs, Path file, boolean append ) throws IOException
     {
-        if ( file.getParentFile() != null )
+        if ( file.getParent() != null )
         {
-            fs.mkdirs( file.getParentFile() );
+            fs.mkdirs( file.getParent() );
         }
         return fs.openAsOutputStream( file, append );
     }
@@ -61,11 +61,11 @@ public final class FileSystemUtils
      * @param directory directory to check.
      * @return {@code true} when directory does not exist or exists and is empty, {@code false} otherwise.
      */
-    public static boolean isEmptyOrNonExistingDirectory( FileSystemAbstraction fs, File directory )
+    public static boolean isEmptyOrNonExistingDirectory( FileSystemAbstraction fs, Path directory )
     {
         if ( fs.isDirectory( directory ) )
         {
-            File[] files = fs.listFiles( directory );
+            Path[] files = fs.listFiles( directory );
             return ArrayUtils.isEmpty( files );
         }
         return !fs.fileExists( directory );
@@ -79,17 +79,17 @@ public final class FileSystemUtils
      * @return the size, in bytes, of the file or the total size of the content in the directory, including
      * subdirectories.
      */
-    public static long size( FileSystemAbstraction fs, File file )
+    public static long size( FileSystemAbstraction fs, Path file )
     {
         if ( fs.isDirectory( file ) )
         {
-            File[] files = fs.listFiles( file );
+            Path[] files = fs.listFiles( file );
             if ( files == null )
             {
                 return 0L;
             }
             long size = 0L;
-            for ( File child : files )
+            for ( Path child : files )
             {
                 size += size( fs, child );
             }
@@ -101,7 +101,7 @@ public final class FileSystemUtils
         }
     }
 
-    public static void deleteFile( FileSystemAbstraction fs, File fileToDelete ) throws IOException
+    public static void deleteFile( FileSystemAbstraction fs, Path fileToDelete ) throws IOException
     {
         if ( fs.isDirectory( fileToDelete ) )
         {

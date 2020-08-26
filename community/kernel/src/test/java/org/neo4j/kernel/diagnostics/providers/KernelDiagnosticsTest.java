@@ -107,14 +107,14 @@ class KernelDiagnosticsTest
     private Path directory( Path parent, String name ) throws IOException
     {
         Path dir = parent.resolve( name );
-        fs.mkdirs( dir.toFile() );
+        fs.mkdirs( dir );
         return dir;
     }
 
     private Path file( Path parent, String name, int size ) throws IOException
     {
         Path file = parent.resolve( name );
-        try ( StoreChannel channel = fs.write( file.toFile() ) )
+        try ( StoreChannel channel = fs.write( file ) )
         {
             ByteBuffer buffer = ByteBuffers.allocate( size, INSTANCE );
             buffer.position( size ).flip();

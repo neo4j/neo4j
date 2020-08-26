@@ -19,7 +19,6 @@
  */
 package org.neo4j.io.fs;
 
-import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
@@ -29,6 +28,7 @@ import java.io.Writer;
 import java.nio.charset.Charset;
 import java.nio.file.CopyOption;
 import java.nio.file.OpenOption;
+import java.nio.file.Path;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -50,61 +50,61 @@ public class DelegatingFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
-    public StoreChannel open( File fileName, Set<OpenOption> options ) throws IOException
+    public StoreChannel open( Path fileName, Set<OpenOption> options ) throws IOException
     {
         return delegate.open( fileName, options );
     }
 
     @Override
-    public void moveToDirectory( File file, File toDirectory ) throws IOException
+    public void moveToDirectory( Path file, Path toDirectory ) throws IOException
     {
         delegate.moveToDirectory( file, toDirectory );
     }
 
     @Override
-    public void copyToDirectory( File file, File toDirectory ) throws IOException
+    public void copyToDirectory( Path file, Path toDirectory ) throws IOException
     {
         delegate.copyToDirectory( file, toDirectory );
     }
 
     @Override
-    public boolean mkdir( File fileName )
+    public boolean mkdir( Path fileName )
     {
         return delegate.mkdir( fileName );
     }
 
     @Override
-    public void copyFile( File from, File to ) throws IOException
+    public void copyFile( Path from, Path to ) throws IOException
     {
         delegate.copyFile( from, to );
     }
 
     @Override
-    public void copyFile( File from, File to, CopyOption... copyOptions ) throws IOException
+    public void copyFile( Path from, Path to, CopyOption... copyOptions ) throws IOException
     {
         delegate.copyFile( from, to, copyOptions );
     }
 
     @Override
-    public void truncate( File path, long size ) throws IOException
+    public void truncate( Path path, long size ) throws IOException
     {
         delegate.truncate( path, size );
     }
 
     @Override
-    public long lastModifiedTime( File file )
+    public long lastModifiedTime( Path file )
     {
         return delegate.lastModifiedTime( file );
     }
 
     @Override
-    public void deleteFileOrThrow( File file ) throws IOException
+    public void deleteFileOrThrow( Path file ) throws IOException
     {
         delegate.deleteFileOrThrow( file );
     }
 
     @Override
-    public Stream<FileHandle> streamFilesRecursive( File directory ) throws IOException
+    public Stream<FileHandle> streamFilesRecursive( Path directory ) throws IOException
     {
         return StreamFilesRecursive.streamFilesRecursive( directory, this );
     }
@@ -116,103 +116,103 @@ public class DelegatingFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
-    public void renameFile( File from, File to, CopyOption... copyOptions ) throws IOException
+    public void renameFile( Path from, Path to, CopyOption... copyOptions ) throws IOException
     {
         delegate.renameFile( from, to, copyOptions );
     }
 
     @Override
-    public StoreChannel read( File fileName ) throws IOException
+    public StoreChannel read( Path fileName ) throws IOException
     {
         return delegate.read( fileName );
     }
 
     @Override
-    public StoreChannel write( File fileName ) throws IOException
+    public StoreChannel write( Path fileName ) throws IOException
     {
         return delegate.write( fileName );
     }
 
     @Override
-    public void mkdirs( File fileName ) throws IOException
+    public void mkdirs( Path fileName ) throws IOException
     {
         delegate.mkdirs( fileName );
     }
 
     @Override
-    public boolean deleteFile( File fileName )
+    public boolean deleteFile( Path fileName )
     {
         return delegate.deleteFile( fileName );
     }
 
     @Override
-    public InputStream openAsInputStream( File fileName ) throws IOException
+    public InputStream openAsInputStream( Path fileName ) throws IOException
     {
         return delegate.openAsInputStream( fileName );
     }
 
     @Override
-    public boolean fileExists( File file )
+    public boolean fileExists( Path file )
     {
         return delegate.fileExists( file );
     }
 
     @Override
-    public File[] listFiles( File directory, FilenameFilter filter )
+    public Path[] listFiles( Path directory, FilenameFilter filter )
     {
         return delegate.listFiles( directory, filter );
     }
 
     @Override
-    public boolean isDirectory( File file )
+    public boolean isDirectory( Path file )
     {
         return delegate.isDirectory( file );
     }
 
     @Override
-    public long getFileSize( File fileName )
+    public long getFileSize( Path fileName )
     {
         return delegate.getFileSize( fileName );
     }
 
     @Override
-    public long getBlockSize( File file ) throws IOException
+    public long getBlockSize( Path file ) throws IOException
     {
         return delegate.getBlockSize( file );
     }
 
     @Override
-    public Writer openAsWriter( File fileName, Charset charset, boolean append ) throws IOException
+    public Writer openAsWriter( Path fileName, Charset charset, boolean append ) throws IOException
     {
         return delegate.openAsWriter( fileName, charset, append );
     }
 
     @Override
-    public File[] listFiles( File directory )
+    public Path[] listFiles( Path directory )
     {
         return delegate.listFiles( directory );
     }
 
     @Override
-    public void deleteRecursively( File directory ) throws IOException
+    public void deleteRecursively( Path directory ) throws IOException
     {
         delegate.deleteRecursively( directory );
     }
 
     @Override
-    public OutputStream openAsOutputStream( File fileName, boolean append ) throws IOException
+    public OutputStream openAsOutputStream( Path fileName, boolean append ) throws IOException
     {
         return delegate.openAsOutputStream( fileName, append );
     }
 
     @Override
-    public Reader openAsReader( File fileName, Charset charset ) throws IOException
+    public Reader openAsReader( Path fileName, Charset charset ) throws IOException
     {
         return delegate.openAsReader( fileName, charset );
     }
 
     @Override
-    public void copyRecursively( File fromDirectory, File toDirectory ) throws IOException
+    public void copyRecursively( Path fromDirectory, Path toDirectory ) throws IOException
     {
         delegate.copyRecursively( fromDirectory, toDirectory );
     }

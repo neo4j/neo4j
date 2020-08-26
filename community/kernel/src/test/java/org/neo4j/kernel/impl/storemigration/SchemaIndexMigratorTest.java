@@ -86,6 +86,6 @@ class SchemaIndexMigratorTest
         migrator.migrate( databaseLayout, migrationLayout, progressReporter, "from", "to" );
         migrator.moveMigratedFiles( migrationLayout, databaseLayout, "from", "to" );
 
-        verify( fs ).deleteRecursively( indexProviderRootDirectory.toFile() );
+        verify( fs ).deleteRecursively( indexProviderRootDirectory );
     }
 }

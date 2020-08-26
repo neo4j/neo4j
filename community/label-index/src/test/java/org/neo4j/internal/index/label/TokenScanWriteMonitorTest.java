@@ -21,14 +21,19 @@ package org.neo4j.internal.index.label;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -201,16 +206,17 @@ class TokenScanWriteMonitorTest
         writeMonitor.close();
         for ( File file : requireNonNull( storeDir.listFiles( ( dir, name ) -> !name.equals( baseName ) ) ) )
         {
-            long sizeDiff = abs( rotationThreshold - fs.getFileSize( file ) );
+            long sizeDiff = abs( rotationThreshold - fs.getFileSize( file.toPath() ) );
             assertTrue( sizeDiff < rotationThreshold / 10D );
         }
     }
 
     @Test
-    void shouldPruneAtConfiguredThreshold()
+    @DisabledOnOs( OS.WINDOWS )
+    void shouldPruneAtConfiguredThreshold() throws IOException
     {
         // given
-        File storeDir = databaseLayout.databaseDirectory().toFile();
+        Path storeDir = databaseLayout.databaseDirectory();
         long pruneThreshold = 200;
         TokenScanWriteMonitor writeMonitor =
                 new TokenScanWriteMonitor( fs, databaseLayout, 1_000, ByteUnit.Byte, pruneThreshold, TimeUnit.MILLISECONDS, NODE );
@@ -229,11 +235,14 @@ class TokenScanWriteMonitorTest
 
         // then
         writeMonitor.close();
-        for ( File file : requireNonNull( storeDir.listFiles( ( dir, name ) -> !name.equals( baseName ) ) ) )
+        try ( Stream<Path> list = Files.list( storeDir ) )
         {
-            long timestamp = TokenScanWriteMonitor.millisOf( file );
-            long diff = endTime - timestamp;
-            assertThat( diff ).isLessThan( (loopEnded - endTime) + pruneThreshold * 2 );
+            list.filter( p -> !p.getFileName().toString().equals( baseName ) ).forEach( file ->
+            {
+                long timestamp = TokenScanWriteMonitor.millisOf( file );
+                long diff = endTime - timestamp;
+                assertThat( diff ).isLessThan( (loopEnded - endTime) + pruneThreshold * 2 );
+            } );
         }
     }
 
@@ -241,11 +250,11 @@ class TokenScanWriteMonitorTest
     void shouldUseTargetRelationshipTypeScanStoreIfEntityTypeRelationship()
     {
         // given
-        assertThat( fs.listFiles( databaseLayout.databaseDirectory().toFile() ).length ).isEqualTo( 0 );
+        assertThat( fs.listFiles( databaseLayout.databaseDirectory() ).length ).isEqualTo( 0 );
         TokenScanWriteMonitor writeMonitor = new TokenScanWriteMonitor( fs, databaseLayout, RELATIONSHIP );
         writeMonitor.close();
-        List<File> filesAfter = Arrays.asList( fs.listFiles( databaseLayout.databaseDirectory().toFile() ) );
+        List<Path> filesAfter = Arrays.asList( fs.listFiles( databaseLayout.databaseDirectory() ) );
         assertThat( filesAfter.size() ).isEqualTo( 1 );
-        assertThat( filesAfter.get( 0 ).getName() ).contains( databaseLayout.relationshipTypeScanStore().getFileName().toString() );
+        assertThat( filesAfter.get( 0 ).getFileName().toString() ).contains( databaseLayout.relationshipTypeScanStore().getFileName().toString() );
     }
 }

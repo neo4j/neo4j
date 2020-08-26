@@ -104,7 +104,7 @@ public final class LogTestUtils
             ChannelNativeAccessor channelNativeAccessor ) throws IOException
     {
         filter.file( file );
-        try ( StoreChannel in = fileSystem.read( file.toFile() ) )
+        try ( StoreChannel in = fileSystem.read( file ) )
         {
             LogHeader logHeader = readLogHeader( ByteBuffers.allocate( CURRENT_FORMAT_LOG_HEADER_SIZE, INSTANCE ), in, true, file );
             assert logHeader != null : "Looks like we tried to read a log header of an empty pre-allocated file.";

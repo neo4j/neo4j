@@ -51,7 +51,7 @@ class ConfigurableStandalonePageCacheFactoryTest
               JobScheduler jobScheduler = new ThreadPoolJobScheduler() )
         {
             Path file = testDirectory.homePath().resolve( "a" ).normalize();
-            fs.write( file.toFile() ).close();
+            fs.write( file ).close();
 
             try ( PageCache cache = ConfigurableStandalonePageCacheFactory.createPageCache( fs, jobScheduler, PageCacheTracer.NULL );
                     PagedFile pf = cache.map( file, 4096 );

@@ -94,7 +94,7 @@ class TestDirectoryExtensionTestSupport
     {
         File file = testDirectory.createFile( "a" );
         assertEquals( "a", file.getName() );
-        assertTrue( fileSystem.fileExists( file ) );
+        assertTrue( fileSystem.fileExists( file.toPath() ) );
     }
 
     @Test
@@ -129,7 +129,7 @@ class TestDirectoryExtensionTestSupport
 
         assertNotNull( lockedFile );
         assertTrue( lockedFile.setReadable( true, true ) );
-        FileUtils.deleteRecursively( lockedFile );
+        FileUtils.deleteDirectory( lockedFile.toPath() );
         failedTestListener.assertTestObserver();
     }
 

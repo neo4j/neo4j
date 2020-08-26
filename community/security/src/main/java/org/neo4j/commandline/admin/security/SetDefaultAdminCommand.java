@@ -61,9 +61,9 @@ public class SetDefaultAdminCommand extends AbstractCommand
         try
         {
             Path adminIniFile = CommunitySecurityModule.getUserRepositoryFile( config ).getParent().resolve( ADMIN_INI );
-            if ( ctx.fs().fileExists( adminIniFile.toFile() ) )
+            if ( ctx.fs().fileExists( adminIniFile ) )
             {
-                ctx.fs().deleteFile( adminIniFile.toFile() );
+                ctx.fs().deleteFile( adminIniFile );
             }
             UserRepository admins = new FileUserRepository( ctx.fs(), adminIniFile, NullLogProvider.getInstance() );
             admins.init();

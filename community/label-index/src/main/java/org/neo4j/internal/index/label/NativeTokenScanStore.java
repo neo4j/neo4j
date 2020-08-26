@@ -411,7 +411,7 @@ public abstract class NativeTokenScanStore implements TokenScanStore, EntityToke
 
     private boolean hasStore()
     {
-        return fileSystem.fileExists( storeFile.toFile() );
+        return fileSystem.fileExists( storeFile );
     }
 
     /**
@@ -463,7 +463,7 @@ public abstract class NativeTokenScanStore implements TokenScanStore, EntityToke
             index.close();
             index = null;
         }
-        fileSystem.deleteFileOrThrow( storeFile.toFile() );
+        fileSystem.deleteFileOrThrow( storeFile );
     }
 
     /**

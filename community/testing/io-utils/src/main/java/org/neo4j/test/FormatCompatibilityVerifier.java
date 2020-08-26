@@ -24,11 +24,12 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 
 import org.neo4j.io.compress.ZipUtils;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
@@ -73,14 +74,15 @@ public abstract class FormatCompatibilityVerifier
         {
             ZipUtils.unzipResource( getClass(), zipName, storeFile );
         }
-        catch ( FileNotFoundException e )
+        catch ( NoSuchFileException e )
         {
             // First time this test is run, eh?
             createStoreFile( storeFile );
             ZipUtils.zip( globalFs.get(), storeFile, globalDir.filePath( zipName ) );
             tellDeveloperToCommitThisFormatVersion( zipName );
         }
-        assertTrue( zipName + " seems to be missing from resources directory", globalFs.get().fileExists( storeFile.toFile() ) );
+        assertTrue( zipName + " seems to be missing from resources directory",
+                ((FileSystemAbstraction) globalFs.get()).fileExists( storeFile ) );
 
         // Verify format
         try
@@ -92,7 +94,7 @@ public abstract class FormatCompatibilityVerifier
             // Good actually, or?
             assertThat( e.getMessage() ).contains( "format version" );
 
-            globalFs.get().deleteFile( storeFile.toFile() );
+            ((FileSystemAbstraction) globalFs.get()).deleteFile( storeFile );
             createStoreFile( storeFile );
             ZipUtils.zip( globalFs.get(), storeFile, globalDir.filePath( zipName ) );
 

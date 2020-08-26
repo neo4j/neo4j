@@ -53,7 +53,7 @@ final class GenericConfigExtractor
             PageCursorTracer cursorTracer, Log log ) throws IOException
     {
         Map<String,Value> indexConfig = new HashMap<>();
-        if ( fs.fileExists( genericFile.toFile() ) )
+        if ( fs.fileExists( genericFile ) )
         {
             try
             {

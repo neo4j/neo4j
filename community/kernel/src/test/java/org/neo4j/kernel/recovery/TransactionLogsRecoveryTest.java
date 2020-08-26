@@ -553,7 +553,7 @@ class TransactionLogsRecoveryTest
 
     private void writeSomeData( Path file, Visitor<Pair<LogEntryWriter,Consumer<LogPositionMarker>>,IOException> visitor ) throws IOException
     {
-        try ( LogVersionedStoreChannel versionedStoreChannel = new PhysicalLogVersionedStoreChannel( fileSystem.write( file.toFile() ), logVersion,
+        try ( LogVersionedStoreChannel versionedStoreChannel = new PhysicalLogVersionedStoreChannel( fileSystem.write( file ), logVersion,
                 CURRENT_LOG_FORMAT_VERSION, file, EMPTY_ACCESSOR );
               PositionAwarePhysicalFlushableChecksumChannel writableLogChannel =
                       new PositionAwarePhysicalFlushableChecksumChannel( versionedStoreChannel, new HeapScopedBuffer( 1, KibiByte, INSTANCE ) ) )

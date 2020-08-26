@@ -64,7 +64,7 @@ public class IndexFiles
     {
         try
         {
-            fs.deleteRecursively( directory.toFile() );
+            fs.deleteRecursively( directory );
         }
         catch ( IOException e )
         {
@@ -74,7 +74,8 @@ public class IndexFiles
 
     public void archiveIndex()
     {
-        if ( fs.isDirectory( directory.toFile() ) && fs.fileExists( directory.toFile() ) && fs.listFiles( directory.toFile() ).length > 0 )
+        if ( fs.isDirectory( directory ) &&
+                fs.fileExists( directory ) && fs.listFiles( directory ).length > 0 )
         {
             try
             {
@@ -92,7 +93,7 @@ public class IndexFiles
     {
         try
         {
-            fs.mkdirs( directory.toFile() );
+            fs.mkdirs( directory );
         }
         catch ( IOException e )
         {

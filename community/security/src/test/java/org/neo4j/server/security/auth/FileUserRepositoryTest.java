@@ -22,7 +22,6 @@ package org.neo4j.server.security.auth;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.CopyOption;
 import java.nio.file.Path;
@@ -137,9 +136,9 @@ class FileUserRepositoryTest
             new DelegatingFileSystemAbstraction( fs )
             {
                 @Override
-                public void renameFile( File oldLocation, File newLocation, CopyOption... copyOptions ) throws IOException
+                public void renameFile( Path oldLocation, Path newLocation, CopyOption... copyOptions ) throws IOException
                 {
-                    if ( authFile.getFileName().toString().equals( newLocation.getName() ) )
+                    if ( authFile.getFileName().equals( newLocation.getFileName() ) )
                     {
                         throw exception;
                     }
@@ -156,8 +155,8 @@ class FileUserRepositoryTest
         assertSame( exception, e );
 
         // Then
-        assertFalse( crashingFileSystem.fileExists( authFile.toFile() ) );
-        assertThat( crashingFileSystem.listFiles( authFile.getParent().toFile() ).length ).isEqualTo( 0 );
+        assertFalse( crashingFileSystem.fileExists( authFile ) );
+        assertThat( crashingFileSystem.listFiles( authFile.getParent() ).length ).isEqualTo( 0 );
     }
 
     @Test
@@ -165,7 +164,7 @@ class FileUserRepositoryTest
     {
         // Given
         AssertableLogProvider logProvider = new AssertableLogProvider();
-        fs.mkdir( authFile.getParent().toFile() );
+        fs.mkdir( authFile.getParent() );
         // First line is correctly formatted, second line has an extra field
         FileRepositorySerializer.writeToFile( fs, authFile, UTF8.encode(
                 "admin:SHA-256,A42E541F276CF17036DB7818F8B09B1C229AAD52A17F69F4029617F3A554640F,FB7E8AE08A6A7C741F678AD22217808F:\n" +

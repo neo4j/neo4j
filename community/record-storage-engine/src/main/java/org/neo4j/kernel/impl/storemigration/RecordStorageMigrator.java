@@ -322,7 +322,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
 
     private static void writeTxLogCounters( FileSystemAbstraction fs, Path path, long... counters ) throws IOException
     {
-        try ( Writer writer = fs.openAsWriter( path.toFile(), StandardCharsets.UTF_8, false ) )
+        try ( Writer writer = fs.openAsWriter( path, StandardCharsets.UTF_8, false ) )
         {
             writer.write( StringUtils.join( counters, TX_LOG_COUNTERS_SEPARATOR ) );
         }
@@ -331,7 +331,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
     private static long[] readTxLogCounters( FileSystemAbstraction fs, Path path, int numberOfCounters )
             throws IOException
     {
-        try ( var reader = fs.openAsReader( path.toFile(), StandardCharsets.UTF_8 ) )
+        try ( var reader = fs.openAsReader( path, StandardCharsets.UTF_8 ) )
         {
             String line = lineIterator( reader ).next();
             String[] split = StringUtils.split( line, TX_LOG_COUNTERS_SEPARATOR );
@@ -420,7 +420,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
         {
             return new LogPosition( BASE_TX_LOG_VERSION, BASE_TX_LOG_BYTE_OFFSET );
         }
-        long offset = fileSystem.getFileSize( versionVisitor.getHighestFile().toFile() );
+        long offset = fileSystem.getFileSize( versionVisitor.getHighestFile() );
         return new LogPosition( logVersion, offset );
     }
 
@@ -652,8 +652,8 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
         if ( requiresCountsStoreMigration( oldFormat, newFormat ) )
         {
             // Delete the old counts store
-            fileSystem.deleteFile( new File( directoryLayout.databaseDirectory().toFile(), "neostore.counts.db.a" ) );
-            fileSystem.deleteFile( new File( directoryLayout.databaseDirectory().toFile(), "neostore.counts.db.b" ) );
+            fileSystem.deleteFile( directoryLayout.databaseDirectory().resolve( "neostore.counts.db.a" ) );
+            fileSystem.deleteFile( directoryLayout.databaseDirectory().resolve( "neostore.counts.db.b" ) );
         }
     }
 
@@ -903,7 +903,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
     @Override
     public void cleanup( DatabaseLayout migrationLayout ) throws IOException
     {
-        fileSystem.deleteRecursively( migrationLayout.databaseDirectory().toFile() );
+        fileSystem.deleteRecursively( migrationLayout.databaseDirectory() );
     }
 
     @Override

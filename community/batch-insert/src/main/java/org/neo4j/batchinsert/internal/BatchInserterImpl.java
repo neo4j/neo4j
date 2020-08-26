@@ -629,7 +629,7 @@ public class BatchInserterImpl implements BatchInserter
     private void rebuildCounts( PageCacheTracer cacheTracer, MemoryTracker memoryTracker ) throws IOException
     {
         Path countsStoreFile = databaseLayout.countStore();
-        fileSystem.deleteRecursively( countsStoreFile.toFile() );
+        fileSystem.deleteFile( countsStoreFile );
         CountsComputer initialCountsBuilder = new CountsComputer( neoStores, pageCache, cacheTracer, databaseLayout, memoryTracker );
         try ( GBPTreeCountsStore countsStore = new GBPTreeCountsStore( pageCache, countsStoreFile, fileSystem, immediate(), initialCountsBuilder,
                 false, cacheTracer, GBPTreeCountsStore.NO_MONITOR ) )

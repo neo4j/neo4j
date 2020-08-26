@@ -98,7 +98,7 @@ public abstract class NativeIndexTestUtil<KEY extends NativeIndexKey<KEY>,VALUE 
         layout = createLayout();
         indexDirectoryStructure = directoriesByProvider( directory.directoryPath( "root" ) ).forProvider( indexDescriptor.getIndexProvider() );
         this.indexFiles = new IndexFiles( fs, indexDirectoryStructure, indexDescriptor.getId() );
-        fs.mkdirs( indexFiles.getStoreFile().getParent().toFile() );
+        fs.mkdirs( indexFiles.getStoreFile().getParent() );
         jobScheduler = JobSchedulerFactory.createInitialisedScheduler();
         populationWorkScheduler = new IndexPopulator.PopulationWorkScheduler()
         {
@@ -219,12 +219,12 @@ public abstract class NativeIndexTestUtil<KEY extends NativeIndexKey<KEY>,VALUE 
 
     void assertFilePresent()
     {
-        assertTrue( fs.fileExists( indexFiles.getStoreFile().toFile() ) );
+        assertTrue( fs.fileExists( indexFiles.getStoreFile() ) );
     }
 
     void assertFileNotPresent()
     {
-        assertFalse( fs.fileExists( indexFiles.getStoreFile().toFile() ) );
+        assertFalse( fs.fileExists( indexFiles.getStoreFile() ) );
     }
 
     // Useful when debugging

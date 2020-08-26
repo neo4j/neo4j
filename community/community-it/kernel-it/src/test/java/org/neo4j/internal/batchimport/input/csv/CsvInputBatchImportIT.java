@@ -221,7 +221,7 @@ class CsvInputBatchImportIT
     private Path relationshipDataAsFile( List<InputEntity> relationshipData ) throws IOException
     {
         Path file = testDirectory.filePath( "relationships.csv" );
-        try ( Writer writer = fileSystem.openAsWriter( file.toFile(), StandardCharsets.UTF_8, false ) )
+        try ( Writer writer = fileSystem.openAsWriter( file, StandardCharsets.UTF_8, false ) )
         {
             // Header
             println( writer, ":start_id,:end_id,:type" );
@@ -238,7 +238,7 @@ class CsvInputBatchImportIT
     private Path nodeDataAsFile( List<InputEntity> nodeData ) throws IOException
     {
         Path file = testDirectory.filePath( "nodes.csv" );
-        try ( Writer writer = fileSystem.openAsWriter( file.toFile(), StandardCharsets.UTF_8, false ) )
+        try ( Writer writer = fileSystem.openAsWriter( file, StandardCharsets.UTF_8, false ) )
         {
             // Header
             println( writer, "id:ID,name,pointA:Point{crs:WGS-84},pointB:Point,date:Date,time:Time,dateTime:DateTime,dateTime2:DateTime,localTime:LocalTime," +

@@ -80,7 +80,7 @@ class SetDefaultAdminCommandIT
     private void assertAdminIniFile( String username ) throws Throwable
     {
         Path adminIniFile = homeDir.resolve( "data" ).resolve( "dbms" ).resolve( SetDefaultAdminCommand.ADMIN_INI );
-        Assertions.assertTrue( fileSystem.fileExists( adminIniFile.toFile() ) );
+        Assertions.assertTrue( fileSystem.fileExists( adminIniFile ) );
         FileUserRepository userRepository = new FileUserRepository( fileSystem, adminIniFile,
                 NullLogProvider.getInstance() );
         userRepository.start();

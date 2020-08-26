@@ -66,8 +66,8 @@ class Neo4jLayoutSupportExtensionTest
         assertTrue( Files.exists( neo4jLayout.databasesDirectory() ) );
         assertTrue( Files.exists( neo4jLayout.transactionLogsRootDirectory() ) );
 
-        assertTrue( fs.fileExists( databaseLayout.databaseDirectory().toFile() ) );
-        assertTrue( fs.fileExists( databaseLayout.getTransactionLogsDirectory().toFile() ) );
+        assertTrue( fs.fileExists( databaseLayout.databaseDirectory() ) );
+        assertTrue( fs.fileExists( databaseLayout.getTransactionLogsDirectory() ) );
     }
 
     @Test

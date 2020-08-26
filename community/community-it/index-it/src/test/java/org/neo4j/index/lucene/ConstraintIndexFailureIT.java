@@ -74,7 +74,7 @@ class ConstraintIndexFailureIT
         }
 
         // Remove the indexes offline and start up with an index provider which reports FAILED as initial state. An ordeal, I know right...
-        FileUtils.deleteRecursively( IndexDirectoryStructure.baseSchemaIndexFolder( dir ).toFile() );
+        FileUtils.deleteDirectory( IndexDirectoryStructure.baseSchemaIndexFolder( dir ) );
         managementService = new TestDatabaseManagementServiceBuilder( dir )
                 .removeExtensions( INDEX_PROVIDERS_FILTER )
                 .addExtension( new FailingGenericNativeIndexProviderFactory( INITIAL_STATE ) )

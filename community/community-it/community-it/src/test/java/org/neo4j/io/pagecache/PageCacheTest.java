@@ -25,7 +25,6 @@ import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -433,7 +432,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
 
                     // Race or not, a flush should still put all changes in storage,
                     // so we should be able to verify the contents of the file.
-                    try ( DataInputStream stream = new DataInputStream( fs.openAsInputStream( file( "a" ).toFile() ) ) )
+                    try ( DataInputStream stream = new DataInputStream( fs.openAsInputStream( file( "a" ) ) ) )
                     {
                         for ( int j = 0; j < shortsPerPage; j++ )
                         {
@@ -586,7 +585,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             }
 
             // Then check that none of those writes ended up in adjacent pages
-            InputStream inputStream = fs.openAsInputStream( file( "a" ).toFile() );
+            InputStream inputStream = fs.openAsInputStream( file( "a" ) );
             for ( int i = 1; i <= 100; i++ )
             {
                 for ( int j = 0; j < filePageSize; j++ )
@@ -723,7 +722,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         return new DelegatingFileSystemAbstraction( fs )
         {
             @Override
-            public StoreChannel open( File fileName, Set<OpenOption> options ) throws IOException
+            public StoreChannel open( Path fileName, Set<OpenOption> options ) throws IOException
             {
                 return new DelegatingStoreChannel( super.open( fileName, options ) )
                 {
@@ -964,7 +963,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             FileSystemAbstraction fs = new DelegatingFileSystemAbstraction( this.fs )
             {
                 @Override
-                public StoreChannel open( File fileName, Set<OpenOption> options ) throws IOException
+                public StoreChannel open( Path fileName, Set<OpenOption> options ) throws IOException
                 {
                     return new DelegatingStoreChannel( super.open( fileName, options ) )
                     {
@@ -2122,7 +2121,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             }
 
             ByteBuffer buf = ByteBuffers.allocate( 23, INSTANCE );
-            try ( StoreChannel channel = fs.read( file( "a" ).toFile() ) )
+            try ( StoreChannel channel = fs.read( file( "a" ) ) )
             {
                 channel.readAll( buf );
             }
@@ -2370,7 +2369,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             FileSystemAbstraction fs = new DelegatingFileSystemAbstraction( this.fs )
             {
                 @Override
-                public StoreChannel open( File fileName, Set<OpenOption> options ) throws IOException
+                public StoreChannel open( Path fileName, Set<OpenOption> options ) throws IOException
                 {
                     StoreChannel channel = super.open( fileName, options );
                     return new DelegatingStoreChannel( channel )
@@ -2440,7 +2439,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             long maxPageIdCursor1 = recordCount / recordsPerFilePage;
             Path file2 = file( "b" );
             long file2sizeBytes = (maxPageIdCursor1 + 17) * filePageSize2;
-            try ( OutputStream outputStream = fs.openAsOutputStream( file2.toFile(), false ) )
+            try ( OutputStream outputStream = fs.openAsOutputStream( file2, false ) )
             {
                 for ( int i = 0; i < file2sizeBytes; i++ )
                 {
@@ -2491,8 +2490,8 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             }
 
             // Verify the file contents
-            assertThat( fs.getFileSize( file2.toFile() ) ).isEqualTo( file2sizeBytes );
-            try ( InputStream inputStream = fs.openAsInputStream( file2.toFile() ) )
+            assertThat( fs.getFileSize( file2 ) ).isEqualTo( file2sizeBytes );
+            try ( InputStream inputStream = fs.openAsInputStream( file2 ) )
             {
                 for ( int i = 0; i < file2sizeBytes; i++ )
                 {
@@ -2502,7 +2501,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 assertThat( inputStream.read() ).isEqualTo( -1 );
             }
 
-            try ( StoreChannel channel = fs.read( file( "a" ).toFile() ) )
+            try ( StoreChannel channel = fs.read( file( "a" ) ) )
             {
                 ByteBuffer bufB = ByteBuffers.allocate( recordSize, INSTANCE );
                 for ( int i = 0; i < recordCount; i++ )
@@ -2777,7 +2776,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void lastPageIdOfFileWithOneByteIsZero() throws IOException
     {
-        StoreChannel channel = fs.write( file( "a" ).toFile() );
+        StoreChannel channel = fs.write( file( "a" ) );
         channel.write( ByteBuffer.wrap( new byte[]{1} ) );
         channel.close();
 
@@ -2810,7 +2809,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
 
         int twoPagesWorthOfRecords = recordsPerFilePage * 2;
         generateFileWithRecords( file( "a" ), twoPagesWorthOfRecords, recordSize );
-        OutputStream outputStream = fs.openAsOutputStream( file( "a" ).toFile(), true );
+        OutputStream outputStream = fs.openAsOutputStream( file( "a" ), true );
         outputStream.write( 'a' );
         outputStream.close();
 
@@ -3909,7 +3908,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 private final List<StoreChannel> channels = new CopyOnWriteArrayList<>();
 
                 @Override
-                public StoreChannel open( File fileName, Set<OpenOption> options ) throws IOException
+                public StoreChannel open( Path fileName, Set<OpenOption> options ) throws IOException
                 {
                     StoreChannel channel = new DelegatingStoreChannel( super.open( fileName, options ) )
                     {
@@ -3935,7 +3934,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 }
             };
 
-            fs.write( file( "a" ).toFile() ).close();
+            fs.write( file( "a" ) ).close();
 
             getPageCache( fs, maxPages, PageCacheTracer.NULL );
             PagedFile pagedFile = map( file( "a" ), filePageSize );
@@ -3975,7 +3974,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                     private final List<StoreChannel> channels = new CopyOnWriteArrayList<>();
 
                     @Override
-                    public StoreChannel open( File fileName, Set<OpenOption> options ) throws IOException
+                    public StoreChannel open( Path fileName, Set<OpenOption> options ) throws IOException
                     {
                         StoreChannel channel = new DelegatingStoreChannel( super.open( fileName, options ) )
                         {
@@ -4051,7 +4050,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             FileSystemAbstraction fs = new DelegatingFileSystemAbstraction( this.fs )
             {
                 @Override
-                public StoreChannel open( File fileName, Set<OpenOption> options ) throws IOException
+                public StoreChannel open( Path fileName, Set<OpenOption> options ) throws IOException
                 {
                     return new DelegatingStoreChannel( super.open( fileName, options ) )
                     {
@@ -4068,7 +4067,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 }
             };
 
-            fs.write( file( "a" ).toFile() ).close();
+            fs.write( file( "a" ) ).close();
 
             getPageCache( fs, maxPages, PageCacheTracer.NULL );
             PagedFile pagedFile = map( file( "a" ), filePageSize );
@@ -4110,7 +4109,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         FileSystemAbstraction fs = new DelegatingFileSystemAbstraction( this.fs )
         {
             @Override
-            public StoreChannel open( File fileName, Set<OpenOption> options ) throws IOException
+            public StoreChannel open( Path fileName, Set<OpenOption> options ) throws IOException
             {
                 return new DelegatingStoreChannel( super.open( fileName, options ) )
                 {
@@ -4128,7 +4127,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             }
         };
 
-        fs.write( file( "a" ).toFile() ).close();
+        fs.write( file( "a" ) ).close();
 
         getPageCache( fs, maxPages, PageCacheTracer.NULL );
         PagedFile pagedFile = map( file( "a" ), filePageSize );
@@ -4205,7 +4204,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             pagedFileA.close();
             pagedFileB.close();
 
-            InputStream inputStream = fs.openAsInputStream( fileB.toFile() );
+            InputStream inputStream = fs.openAsInputStream( fileB );
             assertThat( inputStream.read() ).as( "first page first byte" ).isEqualTo( 63 );
             for ( int i = 0; i < filePageSizeB - 1; i++ )
             {
@@ -4479,7 +4478,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             for ( int fileId = 0; fileId < files.length; fileId++ )
             {
                 Path file = files[fileId];
-                StoreChannel channel = fs.write( file.toFile() );
+                StoreChannel channel = fs.write( file );
                 for ( int recordId = 0; recordId < fileId + 1; recordId++ )
                 {
                     Record record = recordFormat.createRecord( file, recordId, (int) (channel.position() / PAGE_SIZE),

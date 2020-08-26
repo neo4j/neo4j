@@ -19,9 +19,9 @@
  */
 package cypher.features
 
-import java.io.FileNotFoundException
 import java.net.URI
 import java.nio.charset.StandardCharsets
+import java.nio.file.NoSuchFileException
 import java.util
 
 import cypher.features.Neo4jAdapter.defaultTestConfig
@@ -134,7 +134,7 @@ object ScenarioTestHelper {
 
     val uri = new URI("/blacklists/" + blacklistFile)
     val url = getClass.getResource(uri.getPath)
-    if (url == null) throw new FileNotFoundException(s"Blacklist file not found at: $blacklistFile")
+    if (url == null) throw new NoSuchFileException(s"Blacklist file not found at: $blacklistFile")
     val lines = Source.fromFile(url.toURI, StandardCharsets.UTF_8.name()).getLines()
     val scenarios = lines.filterNot(line => line.startsWith("//") || line.isEmpty).toList // comments in blacklist are being ignored
     scenarios.foreach(validate)

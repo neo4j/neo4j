@@ -22,8 +22,8 @@ package org.neo4j.kernel.impl.transaction.log;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;
@@ -123,7 +123,7 @@ class PhysicalLogicalTransactionStoreTest
 
         // create empty transaction log file and clear transaction cache to force re-read
         LogFile logFile = logFiles.getLogFile();
-        fileSystem.write( logFile.getLogFileForVersion( logFile.getHighestLogVersion() + 1 ).toFile() ).close();
+        fileSystem.write( logFile.getLogFileForVersion( logFile.getHighestLogVersion() + 1 ) ).close();
         positionCache.clear();
 
         final LogicalTransactionStore store = new PhysicalLogicalTransactionStore( logFiles, positionCache, logEntryReader(), monitors, true );
@@ -257,7 +257,7 @@ class PhysicalLogicalTransactionStoreTest
         LogFiles logFiles = mock( LogFiles.class );
         // a missing file
         when( logFiles.getLogFile() ).thenReturn( logFile );
-        when( logFile.getReader( any( LogPosition.class) ) ).thenThrow( new FileNotFoundException() );
+        when( logFile.getReader( any( LogPosition.class) ) ).thenThrow( new NoSuchFileException( "mock" ) );
         // Which is nevertheless in the metadata cache
         TransactionMetadataCache cache = new TransactionMetadataCache();
         cache.cacheTransactionMetadata( 10, new LogPosition( 2, 130 ), 100, System.currentTimeMillis() );

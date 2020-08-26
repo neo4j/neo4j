@@ -127,8 +127,8 @@ class SetInitialPasswordCommandIT
     {
         // Given
         Path authFile = getAuthFile( "auth" );
-        fileSystem.mkdirs( authFile.getParent().toFile() );
-        fileSystem.write( authFile.toFile() );
+        fileSystem.mkdirs( authFile.getParent() );
+        fileSystem.write( authFile );
 
         // When
         var e = assertThrows( Exception.class, () -> executeCommand( "will-be-ignored" ) );
@@ -145,9 +145,9 @@ class SetInitialPasswordCommandIT
         Path authFile = getAuthFile( "auth" );
         Path rolesFile = getAuthFile( "roles" );
 
-        fileSystem.mkdirs( authFile.getParent().toFile() );
-        fileSystem.write( authFile.toFile() );
-        fileSystem.write( rolesFile.toFile() );
+        fileSystem.mkdirs( authFile.getParent() );
+        fileSystem.write( authFile );
+        fileSystem.write( rolesFile );
 
         // When
         var e = assertThrows( Exception.class, () -> executeCommand( "will-be-ignored" ) );
@@ -164,8 +164,8 @@ class SetInitialPasswordCommandIT
         // Create an `auth` file with the default neo4j user, but not the default password
         executeCommand( "not-the-default-password" );
         Path authFile = getAuthFile( "auth" );
-        fileSystem.mkdirs( authFile.getParent().toFile() );
-        fileSystem.renameFile( getAuthFile( "auth.ini" ).toFile(), authFile.toFile() );
+        fileSystem.mkdirs( authFile.getParent() );
+        fileSystem.renameFile( getAuthFile( "auth.ini" ), authFile );
 
         // When
         var e = assertThrows( Exception.class, () -> executeCommand( "will-be-ignored" ) );
@@ -183,8 +183,8 @@ class SetInitialPasswordCommandIT
         // Create an `auth` file with the default neo4j user
         executeCommand( AuthManager.INITIAL_PASSWORD );
         Path authFile = getAuthFile( "auth" );
-        fileSystem.mkdirs( authFile.getParent().toFile() );
-        fileSystem.renameFile( getAuthFile( "auth.ini" ).toFile(), authFile.toFile() );
+        fileSystem.mkdirs( authFile.getParent() );
+        fileSystem.renameFile( getAuthFile( "auth.ini" ), authFile );
 
         // When
         executeCommand( "should-not-be-ignored" );
@@ -197,7 +197,7 @@ class SetInitialPasswordCommandIT
     private void assertAuthIniFile( String password, boolean passwordChangeRequired ) throws Throwable
     {
         Path authIniFile = getAuthFile( "auth.ini" );
-        assertTrue( fileSystem.fileExists( authIniFile.toFile() ) );
+        assertTrue( fileSystem.fileExists( authIniFile ) );
         FileUserRepository userRepository = new FileUserRepository( fileSystem, authIniFile, NullLogProvider.getInstance() );
         userRepository.start();
         User neo4j = userRepository.getUserByName( AuthManager.INITIAL_USER_NAME );
@@ -208,7 +208,7 @@ class SetInitialPasswordCommandIT
 
     private void assertNoAuthIniFile()
     {
-        assertFalse( fileSystem.fileExists( getAuthFile( "auth.ini" ).toFile() ) );
+        assertFalse( fileSystem.fileExists( getAuthFile( "auth.ini" ) ) );
     }
 
     private Path getAuthFile( String name )

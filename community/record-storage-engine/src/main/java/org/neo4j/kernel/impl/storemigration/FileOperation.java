@@ -54,7 +54,7 @@ enum FileOperation
                 File toFile = toFile( fs, toDirectory, fileName, existingTargetStrategy );
                 if ( toFile != null )
                 {
-                    fs.copyFile( fromFile, toFile );
+                    fs.copyFile( fromFile.toPath(), toFile.toPath() );
                 }
             }
         }
@@ -81,7 +81,7 @@ enum FileOperation
             {
                 if ( toFile( fs, toDirectory, fileName, existingTargetStrategy ) != null )
                 {
-                    fs.moveToDirectory( fromFile, toDirectory );
+                    fs.moveToDirectory( fromFile.toPath(), toDirectory.toPath() );
                 }
             }
         }
@@ -96,7 +96,7 @@ enum FileOperation
             File file = fromFile( fs, directory, fileName, skipNonExistentFromFile );
             if ( file != null )
             {
-                fs.deleteFile( file );
+                fs.deleteFile( file.toPath() );
             }
         }
     };
@@ -108,7 +108,7 @@ enum FileOperation
     private static File fromFile( FileSystemAbstraction fs, File directory, String name, boolean skipNonExistent )
     {
         File fromFile = new File( directory, name );
-        if ( skipNonExistent && !fs.fileExists( fromFile ) )
+        if ( skipNonExistent && !fs.fileExists( fromFile.toPath() ) )
         {
             return null;
         }
@@ -121,14 +121,14 @@ enum FileOperation
             ExistingTargetStrategy existingTargetStrategy ) throws FileAlreadyExistsException
     {
         File file = new File( directory, name );
-        if ( fs.fileExists( file ) )
+        if ( fs.fileExists( file.toPath() ) )
         {
             switch ( existingTargetStrategy )
             {
             case FAIL:
                 throw new FileAlreadyExistsException( file.getAbsolutePath() );
             case OVERWRITE:
-                fs.deleteFile( file );
+                fs.deleteFile( file.toPath() );
                 return file;
             case SKIP:
                 return null;

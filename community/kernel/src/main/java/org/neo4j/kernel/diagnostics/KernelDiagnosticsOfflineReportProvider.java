@@ -99,7 +99,7 @@ public class KernelDiagnosticsOfflineReportProvider extends DiagnosticsOfflineRe
      */
     private void listPlugins( List<DiagnosticsReportSource> sources )
     {
-        File pluginDirectory = config.get( GraphDatabaseSettings.plugin_dir ).toFile();
+        Path pluginDirectory = config.get( GraphDatabaseSettings.plugin_dir );
         if ( fs.fileExists( pluginDirectory ) )
         {
             StringBuilder sb = new StringBuilder();
@@ -110,23 +110,23 @@ public class KernelDiagnosticsOfflineReportProvider extends DiagnosticsOfflineRe
         }
     }
 
-    private void listContentOfDirectory( File directory, String prefix, StringBuilder sb )
+    private void listContentOfDirectory( Path directory, String prefix, StringBuilder sb )
     {
         if ( !fs.isDirectory( directory ) )
         {
             return;
         }
 
-        File[] files = fs.listFiles( directory );
-        for ( File file : files )
+        Path[] files = fs.listFiles( directory );
+        for ( Path file : files )
         {
             if ( fs.isDirectory( file ) )
             {
-                listContentOfDirectory( file, prefix + File.separator + file.getName(), sb );
+                listContentOfDirectory( file, prefix + File.separator + file.getFileName(), sb );
             }
             else
             {
-                sb.append( prefix ).append( file.getName() ).append( System.lineSeparator() );
+                sb.append( prefix ).append( file.getFileName() ).append( System.lineSeparator() );
             }
         }
     }
@@ -156,7 +156,7 @@ public class KernelDiagnosticsOfflineReportProvider extends DiagnosticsOfflineRe
     {
         // debug.log
         Path debugLogFile = config.get( GraphDatabaseSettings.store_internal_log_path );
-        if ( fs.fileExists( debugLogFile.toFile() ) )
+        if ( fs.fileExists( debugLogFile ) )
         {
             sources.addAll( DiagnosticsReportSources.newDiagnosticsRotatingFile( "logs/debug.log", fs, debugLogFile ) );
         }
@@ -164,14 +164,14 @@ public class KernelDiagnosticsOfflineReportProvider extends DiagnosticsOfflineRe
         // neo4j.log
         Path logDirectory = config.get( GraphDatabaseSettings.logs_directory );
         Path neo4jLog = logDirectory.resolve( "neo4j.log" );
-        if ( fs.fileExists( neo4jLog.toFile() ) )
+        if ( fs.fileExists( neo4jLog ) )
         {
             sources.add( DiagnosticsReportSources.newDiagnosticsFile( "logs/neo4j.log", fs, neo4jLog ) );
         }
 
         // gc.log
         Path gcLog = logDirectory.resolve( "gc.log" );
-        if ( fs.fileExists( gcLog.toFile() ) )
+        if ( fs.fileExists( gcLog ) )
         {
             sources.add( DiagnosticsReportSources.newDiagnosticsFile( "logs/gc.log", fs, gcLog ) );
         }
@@ -180,7 +180,7 @@ public class KernelDiagnosticsOfflineReportProvider extends DiagnosticsOfflineRe
         while ( true )
         {
             Path gcRotationLog = logDirectory.resolve( "gc.log." + i );
-            if ( !fs.fileExists( gcRotationLog.toFile() ) )
+            if ( !fs.fileExists( gcRotationLog ) )
             {
                 break;
             }

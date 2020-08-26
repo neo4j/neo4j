@@ -21,7 +21,6 @@ package org.neo4j.kernel.recovery;
 
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
@@ -443,16 +442,16 @@ class RecoveryIT
         generateSomeData( database );
         managementService.shutdown();
 
-        File[] txLogFiles = fileSystem.listFiles( buildLogFiles().logFilesDirectory().toFile(), ( dir, name ) -> name.startsWith( DEFAULT_NAME ) );
+        Path[] txLogFiles = fileSystem.listFiles( buildLogFiles().logFilesDirectory(), ( dir, name ) -> name.startsWith( DEFAULT_NAME ) );
         Path databasesDirectory = databaseLayout.getNeo4jLayout().databasesDirectory();
         DatabaseLayout legacyLayout = Neo4jLayout.ofFlat( databasesDirectory ).databaseLayout( databaseLayout.getDatabaseName() );
         LegacyTransactionLogsLocator logsLocator = new LegacyTransactionLogsLocator( Config.defaults(), legacyLayout );
         Path transactionLogsDirectory = logsLocator.getTransactionLogsDirectory();
         assertNotNull( txLogFiles );
         assertTrue( txLogFiles.length > 0 );
-        for ( File logFile : txLogFiles )
+        for ( Path logFile : txLogFiles )
         {
-            fileSystem.moveToDirectory( logFile, transactionLogsDirectory.toFile() );
+            fileSystem.moveToDirectory( logFile, transactionLogsDirectory );
         }
 
         AssertableLogProvider logProvider = new AssertableLogProvider();
@@ -465,7 +464,7 @@ class RecoveryIT
             var failure = dbStateService.causeOfFailure( restartedDb.databaseId() );
             assertTrue( failure.isPresent() );
             assertThat( failure.get() ).hasRootCauseMessage( "Transaction logs are missing and recovery is not possible." );
-            assertThat( logProvider.serialize() ).contains( txLogFiles[0].getName() );
+            assertThat( logProvider.serialize() ).contains( txLogFiles[0].getFileName().toString() );
         }
         finally
         {
@@ -620,13 +619,13 @@ class RecoveryIT
         DatabaseLayout layout = db.databaseLayout();
         managementService.shutdown();
 
-        fileSystem.deleteFileOrThrow( layout.idRelationshipStore().toFile() );
+        fileSystem.deleteFileOrThrow( layout.idRelationshipStore() );
         assertTrue( isRecoveryRequired( layout ) );
 
         performRecovery( fileSystem, pageCache, EMPTY, defaults(), layout, INSTANCE );
         assertFalse( isRecoveryRequired( layout ) );
 
-        assertTrue( fileSystem.fileExists( layout.idRelationshipStore().toFile() ) );
+        assertTrue( fileSystem.fileExists( layout.idRelationshipStore() ) );
     }
 
     @Test
@@ -639,7 +638,7 @@ class RecoveryIT
 
         for ( Path idFile : layout.idFiles() )
         {
-            fileSystem.deleteFileOrThrow( idFile.toFile() );
+            fileSystem.deleteFileOrThrow( idFile );
         }
         assertTrue( isRecoveryRequired( layout ) );
 
@@ -648,7 +647,7 @@ class RecoveryIT
 
         for ( Path idFile : layout.idFiles() )
         {
-            assertTrue( fileSystem.fileExists( idFile.toFile() ) );
+            assertTrue( fileSystem.fileExists( idFile ) );
         }
     }
 
@@ -781,7 +780,7 @@ class RecoveryIT
     private void removeTransactionLogs() throws IOException
     {
         LogFiles logFiles = buildLogFiles();
-        for ( File logFile : fileSystem.listFiles( logFiles.logFilesDirectory().toFile() ) )
+        for ( Path logFile : fileSystem.listFiles( logFiles.logFilesDirectory() ) )
         {
             fileSystem.deleteFile( logFile );
         }
@@ -790,7 +789,7 @@ class RecoveryIT
     private void removeFileWithCheckpoint() throws IOException
     {
         LogFiles logFiles = buildLogFiles();
-        fileSystem.deleteFileOrThrow( logFiles.getCheckpointFile().getCurrentFile().toFile() );
+        fileSystem.deleteFileOrThrow( logFiles.getCheckpointFile().getCurrentFile() );
     }
 
     private int countTransactionLogFiles() throws IOException
@@ -807,7 +806,7 @@ class RecoveryIT
         latestCheckpoint.ifPresent( checkpointInfo ->
         {
             LogPosition entryPosition = useSeparateCheckpointFiles ? checkpointInfo.getEntryPosition() : checkpointInfo.getLogPosition();
-            try ( StoreChannel storeChannel = fileSystem.write( checkpointFile.getCurrentFile().toFile() ) )
+            try ( StoreChannel storeChannel = fileSystem.write( checkpointFile.getCurrentFile() ) )
             {
                 storeChannel.truncate( entryPosition.getByteOffset() );
             }

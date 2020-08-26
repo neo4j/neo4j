@@ -85,7 +85,7 @@ class BlockStorage<KEY, VALUE> implements Closeable
         this.bufferedEntries = Lists.mutable.empty();
         this.bufferFactory = bufferFactory;
         this.comparator = ( e0, e1 ) -> layout.compare( e0.key(), e1.key() );
-        this.storeChannel = fs.write( blockFile.toFile() );
+        this.storeChannel = fs.write( blockFile );
         resetBufferedEntries();
     }
 
@@ -176,7 +176,7 @@ class BlockStorage<KEY, VALUE> implements Closeable
                 // Perform one complete merge iteration, merging all blocks from source into target.
                 // After this step, target will contain fewer blocks than source, but may need another merge iteration.
                 try ( BlockReader<KEY,VALUE> reader = reader( sourceFile );
-                      StoreChannel targetChannel = fs.write( targetFile.toFile() ) )
+                      StoreChannel targetChannel = fs.write( targetFile ) )
                 {
                     long blocksMergedSoFar = 0;
                     long blocksInMergedFile = 0;
@@ -200,12 +200,12 @@ class BlockStorage<KEY, VALUE> implements Closeable
         {
             if ( sourceFile == blockFile )
             {
-                fs.deleteFile( tempFile.toFile() );
+                fs.deleteFile( tempFile );
             }
             else
             {
-                fs.deleteFile( blockFile.toFile() );
-                fs.renameFile( tempFile.toFile(), blockFile.toFile() );
+                fs.deleteFile( blockFile );
+                fs.renameFile( tempFile, blockFile );
             }
         }
     }
@@ -361,7 +361,7 @@ class BlockStorage<KEY, VALUE> implements Closeable
     public void close() throws IOException
     {
         IOUtils.closeAll( storeChannel );
-        fs.deleteFile( blockFile.toFile() );
+        fs.deleteFile( blockFile );
     }
 
     BlockReader<KEY,VALUE> reader() throws IOException

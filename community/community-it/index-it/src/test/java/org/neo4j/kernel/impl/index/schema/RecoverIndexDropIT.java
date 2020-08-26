@@ -149,7 +149,7 @@ class RecoverIndexDropIT
             {
             }
             LogPosition position = logEntryReader.lastPosition();
-            StoreChannel storeChannel = fs.write( logFile.getLogFileForVersion( logFile.getHighestLogVersion() ).toFile() );
+            StoreChannel storeChannel = fs.write( logFile.getLogFileForVersion( logFile.getHighestLogVersion() ) );
             storeChannel.position( position.getByteOffset() );
             try ( PhysicalFlushableChecksumChannel writeChannel = new PhysicalFlushableChecksumChannel( storeChannel, new HeapScopedBuffer( 100, INSTANCE ) ) )
             {

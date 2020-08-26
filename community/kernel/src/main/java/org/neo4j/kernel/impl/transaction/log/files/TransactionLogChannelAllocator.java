@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction.log.files;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.function.LongSupplier;
 
@@ -89,15 +89,15 @@ public class TransactionLogChannelAllocator
     {
         Path fileToOpen = fileHelper.getLogFileForVersion( version );
 
-        if ( !fileSystem.fileExists( fileToOpen.toFile() ) )
+        if ( !fileSystem.fileExists( fileToOpen ) )
         {
-            throw new FileNotFoundException( fileToOpen.toAbsolutePath().toString() );
+            throw new NoSuchFileException( fileToOpen.toAbsolutePath().toString() );
         }
 
         StoreChannel rawChannel = null;
         try
         {
-            rawChannel = fileSystem.read( fileToOpen.toFile() );
+            rawChannel = fileSystem.read( fileToOpen );
             try ( var scopedBuffer = new HeapScopedBuffer( CURRENT_FORMAT_LOG_HEADER_SIZE, logFilesContext.getMemoryTracker() ) )
             {
                 var buffer = scopedBuffer.getBuffer();
@@ -114,9 +114,9 @@ public class TransactionLogChannelAllocator
                 return versionedStoreChannel;
             }
         }
-        catch ( FileNotFoundException cause )
+        catch ( NoSuchFileException cause )
         {
-            throw (FileNotFoundException) new FileNotFoundException( fileToOpen.toAbsolutePath().toString() ).initCause( cause );
+            throw (NoSuchFileException) new NoSuchFileException( fileToOpen.toAbsolutePath().toString() ).initCause( cause );
         }
         catch ( Throwable unexpectedError )
         {
@@ -139,8 +139,8 @@ public class TransactionLogChannelAllocator
     private AllocatedFile allocateFile( long version ) throws IOException
     {
         Path file = fileHelper.getLogFileForVersion( version );
-        boolean fileExist = fileSystem.fileExists( file.toFile() );
-        StoreChannel storeChannel = fileSystem.write( file.toFile() );
+        boolean fileExist = fileSystem.fileExists( file );
+        StoreChannel storeChannel = fileSystem.write( file );
         if ( fileExist )
         {
             nativeChannelAccessor.adviseSequentialAccessAndKeepInCache( storeChannel, version );

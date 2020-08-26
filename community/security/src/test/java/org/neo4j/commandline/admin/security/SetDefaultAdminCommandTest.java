@@ -98,7 +98,7 @@ class SetDefaultAdminCommandTest
     void shouldSetDefaultAdmin() throws Throwable
     {
         // Given
-        assertFalse( fileSystem.fileExists( adminIniFile.toFile() ) );
+        assertFalse( fileSystem.fileExists( adminIniFile ) );
 
         // When
         CommandLine.populateCommand( command, "jake" );
@@ -112,7 +112,7 @@ class SetDefaultAdminCommandTest
     @SuppressWarnings( "SameParameterValue" )
     private void assertAdminIniFile( String username ) throws Throwable
     {
-        assertTrue( fileSystem.fileExists( adminIniFile.toFile() ) );
+        assertTrue( fileSystem.fileExists( adminIniFile ) );
         FileUserRepository userRepository = new FileUserRepository( fileSystem, adminIniFile,
             NullLogProvider.getInstance() );
         userRepository.start();

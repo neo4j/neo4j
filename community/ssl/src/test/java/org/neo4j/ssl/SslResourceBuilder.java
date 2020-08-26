@@ -128,8 +128,8 @@ public class SslResourceBuilder
         Path targetTrusted = targetDirectory.resolve( TRUSTED_DIR_NAME );
         Path targetRevoked = targetDirectory.resolve( REVOKED_DIR_NAME );
 
-        fsa.mkdir( targetTrusted.toFile() );
-        fsa.mkdir( targetRevoked.toFile() );
+        fsa.mkdir( targetTrusted );
+        fsa.mkdir( targetRevoked );
 
         for ( int trustedKeyId : trusted )
         {
@@ -168,7 +168,7 @@ public class SslResourceBuilder
     private void copy( URL in, Path outFile ) throws IOException
     {
         try ( InputStream is = in.openStream();
-              OutputStream os = fsa.openAsOutputStream( outFile.toFile(), false ) )
+              OutputStream os = fsa.openAsOutputStream( outFile, false ) )
         {
             is.transferTo( os );
         }

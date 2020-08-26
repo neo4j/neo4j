@@ -27,7 +27,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -90,12 +89,12 @@ class BlockStorageTest
     void shouldCreateAndCloseTheBlockFile() throws IOException
     {
         // given
-        assertFalse( fileSystem.fileExists( file.toFile() ) );
+        assertFalse( fileSystem.fileExists( file ) );
         try ( BlockStorage<MutableLong,MutableLong> ignored = new BlockStorage<>( layout, heapBufferFactory( 100 ), fileSystem, file,
                 NO_MONITOR, INSTANCE ) )
         {
             // then
-            assertTrue( fileSystem.fileExists( file.toFile() ) );
+            assertTrue( fileSystem.fileExists( file ) );
         }
     }
 
@@ -246,7 +245,7 @@ class BlockStorageTest
             storage.merge( 2, NOT_CANCELLABLE );
 
             // then
-            File[] files = fileSystem.listFiles( directory.homeDir() );
+            Path[] files = fileSystem.listFiles( directory.homePath() );
             assertEquals( 1, files.length, "Expected only a single file to exist after merge." );
         }
     }

@@ -96,7 +96,7 @@ public abstract class SimpleEntryStorage<ENTRY, CURSOR> implements Closeable
         }
 
         // Reuse the existing buffer because we're not writing while reading anyway
-        ReadAheadChannel<StoreChannel> channel = new ReadAheadChannel<>( fs.read( file.toFile() ), byteBufferFactory.allocate( blockSize, memoryTracker ) );
+        ReadAheadChannel<StoreChannel> channel = new ReadAheadChannel<>( fs.read( file ), byteBufferFactory.allocate( blockSize, memoryTracker ) );
         PageCursor pageCursor = new ReadableChannelPageCursor( channel );
         return reader( pageCursor );
     }
@@ -127,12 +127,12 @@ public abstract class SimpleEntryStorage<ENTRY, CURSOR> implements Closeable
         {
             runAll( "Failed while trying to close " + getClass().getSimpleName(),
                     () -> closeAllUnchecked( pageCursor, storeChannel, scopedBuffer ),
-                    () -> fs.deleteFile( file.toFile() )
+                    () -> fs.deleteFile( file )
             );
         }
         else
         {
-            fs.deleteFile( file.toFile() );
+            fs.deleteFile( file );
         }
     }
 
@@ -173,7 +173,7 @@ public abstract class SimpleEntryStorage<ENTRY, CURSOR> implements Closeable
             this.scopedBuffer = byteBufferFactory.allocate( blockSize, memoryTracker );
             this.buffer = scopedBuffer.getBuffer();
             this.pageCursor = new ByteArrayPageCursor( buffer );
-            this.storeChannel = fs.write( file.toFile() );
+            this.storeChannel = fs.write( file );
             this.allocated = true;
         }
     }

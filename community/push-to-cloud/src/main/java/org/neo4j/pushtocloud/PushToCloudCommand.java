@@ -245,7 +245,7 @@ public class PushToCloudCommand extends AbstractCommand
 
     private Config getConfig( File configFile )
     {
-        if ( !ctx.fs().fileExists( configFile ) )
+        if ( !ctx.fs().fileExists( configFile.toPath() ) )
         {
             throw new CommandFailedException( "Unable to find config file, tried: " + configFile.getAbsolutePath() );
         }

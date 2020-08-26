@@ -48,8 +48,8 @@ import static java.util.stream.Collectors.toList;
  */
 public class PartitionedIndexStorage
 {
-    private static final Comparator<File> FILE_COMPARATOR =
-            ( o1, o2 ) -> NumberAwareStringComparator.INSTANCE.compare( o1.getName(), o2.getName() );
+    private static final Comparator<Path> FILE_COMPARATOR =
+            ( o1, o2 ) -> NumberAwareStringComparator.INSTANCE.compare( o1.getFileName().toString(), o2.getFileName().toString() );
 
     private final DirectoryFactory directoryFactory;
     private final FileSystemAbstraction fileSystem;
@@ -141,7 +141,7 @@ public class PartitionedIndexStorage
     public void prepareFolder( Path folder ) throws IOException
     {
         cleanupFolder( folder );
-        fileSystem.mkdirs( folder.toFile() );
+        fileSystem.mkdirs( folder );
     }
 
     /**
@@ -161,7 +161,7 @@ public class PartitionedIndexStorage
                 cleanupLuceneDirectory( partitionFolder );
             }
         }
-        fileSystem.deleteRecursively( folder.toFile() );
+        fileSystem.deleteRecursively( folder );
     }
 
     /**
@@ -208,14 +208,12 @@ public class PartitionedIndexStorage
 
     private List<Path> listFolders( Path rootFolder )
     {
-        File[] files = fileSystem.listFiles( rootFolder.toFile() );
+        Path[] files = fileSystem.listFiles( rootFolder );
         return files == null ? Collections.emptyList()
                              : Stream.of( files )
-                               .filter( f -> fileSystem.isDirectory( f ) && StringUtils.isNumeric( f.getName() ) )
+                               .filter( f -> fileSystem.isDirectory( f ) && StringUtils.isNumeric( f.getFileName().toString() ) )
                                .sorted( FILE_COMPARATOR )
-                               .map( File::toPath )
                                .collect( toList() );
-
     }
 
     /**

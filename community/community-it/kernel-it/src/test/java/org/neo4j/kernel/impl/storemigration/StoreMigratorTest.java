@@ -243,7 +243,7 @@ class StoreMigratorTest
         MyProgressReporter progressReporter = new MyProgressReporter();
         // Migrate with two storeversions that have the same FORMAT capabilities
         DatabaseLayout migrationLayout = neo4jLayout.databaseLayout( "migrationDir" );
-        fileSystem.mkdirs( migrationLayout.databaseDirectory().toFile() );
+        fileSystem.mkdirs( migrationLayout.databaseDirectory() );
         migrator.migrate( dbLayout, migrationLayout, progressReporter,
                 StandardV4_0.STORE_VERSION, StandardV4_0.STORE_VERSION );
 

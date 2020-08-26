@@ -150,7 +150,7 @@ public class RecordFormatSelector
             PageCacheTracer pageCacheTracer )
     {
         Path neoStoreFile = databaseLayout.metadataStore();
-        if ( fs.fileExists( neoStoreFile.toFile() ) )
+        if ( fs.fileExists( neoStoreFile ) )
         {
             try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( STORE_SELECTION_TAG ) )
             {

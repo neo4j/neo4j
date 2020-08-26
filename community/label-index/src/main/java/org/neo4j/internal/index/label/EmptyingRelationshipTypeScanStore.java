@@ -125,7 +125,7 @@ public final class EmptyingRelationshipTypeScanStore implements RelationshipType
     @Override
     public void init()
     {
-        if ( readOnly && fileSystem.fileExists( directoryStructure.relationshipTypeScanStore().toFile() ) )
+        if ( readOnly && fileSystem.fileExists( directoryStructure.relationshipTypeScanStore() ) )
         {
             throw new IllegalStateException(
                     "Database was started in read only mode and with relationship type scan store turned OFF, " +
@@ -135,7 +135,7 @@ public final class EmptyingRelationshipTypeScanStore implements RelationshipType
                             "Note that consistency check use read only mode. " +
                             "Use setting 'unsupported.dbms.enable_relationship_type_scan_store' to turn relationship type scan store ON or OFF." );
         }
-        fileSystem.deleteFile( directoryStructure.relationshipTypeScanStore().toFile() );
+        fileSystem.deleteFile( directoryStructure.relationshipTypeScanStore() );
     }
 
     @Override

@@ -21,8 +21,8 @@ package org.neo4j.io.fs;
 
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.rule.TestDirectory;
@@ -43,7 +43,7 @@ abstract class FileSystemUtilsTest
     @Test
     void shouldCheckNonExistingDirectory()
     {
-        File nonExistingDir = new File( "nonExistingDir" );
+        Path nonExistingDir = Path.of( "nonExistingDir" );
 
         assertTrue( FileSystemUtils.isEmptyOrNonExistingDirectory( fs, nonExistingDir ) );
     }
@@ -51,7 +51,7 @@ abstract class FileSystemUtilsTest
     @Test
     void shouldCheckExistingEmptyDirectory()
     {
-        File existingEmptyDir = testDirectory.directory( "existingEmptyDir" );
+        Path existingEmptyDir = testDirectory.directoryPath( "existingEmptyDir" );
 
         assertTrue( FileSystemUtils.isEmptyOrNonExistingDirectory( fs, existingEmptyDir ) );
     }
@@ -59,8 +59,8 @@ abstract class FileSystemUtilsTest
     @Test
     void dropDirectoryWithFile() throws IOException
     {
-        File directory = testDirectory.directory( "directory" );
-        fs.openAsOutputStream( new File( directory, "a" ), false ).close();
+        Path directory = testDirectory.directoryPath( "directory" );
+        fs.openAsOutputStream( directory.resolve( "a" ), false ).close();
 
         assertEquals( 1, fs.listFiles( directory ).length );
 
@@ -72,8 +72,8 @@ abstract class FileSystemUtilsTest
     @Test
     void shouldCheckExistingNonEmptyDirectory() throws Exception
     {
-        File existingEmptyDir = testDirectory.directory( "existingEmptyDir" );
-        fs.write( new File( existingEmptyDir, "someFile" ) ).close();
+        Path existingEmptyDir = testDirectory.directoryPath( "existingEmptyDir" );
+        fs.write( existingEmptyDir.resolve( "someFile" ) ).close();
 
         assertFalse( FileSystemUtils.isEmptyOrNonExistingDirectory( fs, existingEmptyDir ) );
     }
@@ -81,7 +81,7 @@ abstract class FileSystemUtilsTest
     @Test
     void shouldCheckExistingFile()
     {
-        File existingFile = testDirectory.createFile( "existingFile" );
+        Path existingFile = testDirectory.createFilePath( "existingFile" );
 
         assertFalse( FileSystemUtils.isEmptyOrNonExistingDirectory( fs, existingFile ) );
     }
@@ -89,7 +89,7 @@ abstract class FileSystemUtilsTest
     @Test
     void shouldCheckSizeOfFile() throws Exception
     {
-        File file = testDirectory.createFile( "a" );
+        Path file = testDirectory.createFilePath( "a" );
 
         try ( var fileWriter = fs.openAsWriter( file, UTF_8, false ) )
         {
@@ -102,9 +102,9 @@ abstract class FileSystemUtilsTest
     @Test
     void shouldCheckSizeOfDirectory() throws Exception
     {
-        File dir = testDirectory.directory( "dir" );
-        File file1 = new File( dir, "file1" );
-        File file2 = new File( dir, "file2" );
+        Path dir = testDirectory.directoryPath( "dir" );
+        Path file1 = dir.resolve( "file1" );
+        Path file2 = dir.resolve( "file2" );
 
         try ( var fileWriter = fs.openAsWriter( file1, UTF_8, false ) )
         {

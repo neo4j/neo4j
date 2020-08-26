@@ -20,7 +20,6 @@
 package org.neo4j.io.fs;
 
 import java.io.Closeable;
-import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
@@ -31,6 +30,7 @@ import java.nio.charset.Charset;
 import java.nio.file.CopyOption;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.OpenOption;
+import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.util.Set;
@@ -52,15 +52,15 @@ public interface FileSystemAbstraction extends Closeable
      */
     FileWatcher fileWatcher() throws IOException;
 
-    StoreChannel open( File fileName, Set<OpenOption> options ) throws IOException;
+    StoreChannel open( Path fileName, Set<OpenOption> options ) throws IOException;
 
-    OutputStream openAsOutputStream( File fileName, boolean append ) throws IOException;
+    OutputStream openAsOutputStream( Path fileName, boolean append ) throws IOException;
 
-    InputStream openAsInputStream( File fileName ) throws IOException;
+    InputStream openAsInputStream( Path fileName ) throws IOException;
 
-    Reader openAsReader( File fileName, Charset charset ) throws IOException;
+    Reader openAsReader( Path fileName, Charset charset ) throws IOException;
 
-    Writer openAsWriter( File fileName, Charset charset, boolean append ) throws IOException;
+    Writer openAsWriter( Path fileName, Charset charset, boolean append ) throws IOException;
 
     /**
      * Open channel for user provided file in a write mode.
@@ -70,7 +70,7 @@ public interface FileSystemAbstraction extends Closeable
      * @return write channel for requested file
      * @throws IOException
      */
-    StoreChannel write( File fileName ) throws IOException;
+    StoreChannel write( Path fileName ) throws IOException;
 
     /**
      * Open channel for user provided file in a read mode.
@@ -79,33 +79,45 @@ public interface FileSystemAbstraction extends Closeable
      * @return read channel for requested file
      * @throws IOException
      */
-    StoreChannel read( File fileName ) throws IOException;
+    StoreChannel read( Path fileName ) throws IOException;
 
-    boolean fileExists( File file );
+    boolean fileExists( Path file );
 
-    boolean mkdir( File fileName );
+    boolean mkdir( Path fileName );
 
-    void mkdirs( File fileName ) throws IOException;
+    void mkdirs( Path fileName ) throws IOException;
 
-    long getFileSize( File fileName );
+    long getFileSize( Path fileName );
 
-    long getBlockSize( File file ) throws IOException;
+    long getBlockSize( Path file ) throws IOException;
 
-    boolean deleteFile( File fileName );
+    default void delete( Path path ) throws IOException
+    {
+        if ( isDirectory( path ) )
+        {
+            deleteRecursively( path );
+        }
+        else
+        {
+            deleteFile( path );
+        }
+    }
 
-    void deleteRecursively( File directory ) throws IOException;
+    boolean deleteFile( Path fileName );
 
-    void renameFile( File from, File to, CopyOption... copyOptions ) throws IOException;
+    void deleteRecursively( Path directory ) throws IOException;
 
-    File[] listFiles( File directory );
+    void renameFile( Path from, Path to, CopyOption... copyOptions ) throws IOException;
 
-    File[] listFiles( File directory, FilenameFilter filter );
+    Path[] listFiles( Path directory );
 
-    boolean isDirectory( File file );
+    Path[] listFiles( Path directory, FilenameFilter filter );
 
-    void moveToDirectory( File file, File toDirectory ) throws IOException;
+    boolean isDirectory( Path file );
 
-    void copyToDirectory( File file, File toDirectory ) throws IOException;
+    void moveToDirectory( Path file, Path toDirectory ) throws IOException;
+
+    void copyToDirectory( Path file, Path toDirectory ) throws IOException;
 
     /**
      * Copies file, allowing overwrite.
@@ -114,7 +126,7 @@ public interface FileSystemAbstraction extends Closeable
      * @param to File location to copy file to, overwritten if exists.
      * @throws IOException on I/O error.
      */
-    default void copyFile( File from, File to ) throws IOException
+    default void copyFile( Path from, Path to ) throws IOException
     {
         copyFile( from, to, StandardCopyOption.REPLACE_EXISTING );
     }
@@ -126,21 +138,21 @@ public interface FileSystemAbstraction extends Closeable
      * @param to File location to copy file to.
      * @throws IOException on I/O error.
      */
-    void copyFile( File from, File to, CopyOption... copyOptions ) throws IOException;
+    void copyFile( Path from, Path to, CopyOption... copyOptions ) throws IOException;
 
-    void copyRecursively( File fromDirectory, File toDirectory ) throws IOException;
+    void copyRecursively( Path fromDirectory, Path toDirectory ) throws IOException;
 
-    void truncate( File file, long size ) throws IOException;
+    void truncate( Path file, long size ) throws IOException;
 
-    long lastModifiedTime( File file );
+    long lastModifiedTime( Path file );
 
-    void deleteFileOrThrow( File file ) throws IOException;
+    void deleteFileOrThrow( Path file ) throws IOException;
 
     /**
      * Return a stream of {@link FileHandle file handles} for every file in the given directory, and its
      * sub-directories.
      * <p>
-     * Alternatively, if the {@link File} given as an argument refers to a file instead of a directory, then a stream
+     * Alternatively, if the {@link Path} given as an argument refers to a file instead of a directory, then a stream
      * will be returned with a file handle for just that file.
      * <p>
      * The stream is based on a snapshot of the file tree, so changes made to the tree using the returned file handles
@@ -156,7 +168,7 @@ public interface FileSystemAbstraction extends Closeable
      * @throws NoSuchFileException If the given base directory or file does not exists.
      * @throws IOException If an I/O error occurs, possibly with the canonicalisation of the paths.
      */
-    Stream<FileHandle> streamFilesRecursive( File directory ) throws IOException;
+    Stream<FileHandle> streamFilesRecursive( Path directory ) throws IOException;
 
     /**
      * Get underlying store channel file descriptor.

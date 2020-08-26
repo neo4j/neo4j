@@ -150,9 +150,9 @@ class VersionAwareLogEntryReaderIT
             while ( positionMarker.getByteOffset() <= checkpointsEndDataOffset );
             logFile.flush();
             logFiles.getLogFile().rotate();
-            fs.truncate( logFiles.getLogFile().getLogFileForVersion( 0 ).toFile(), checkpointsEndDataOffset );
+            fs.truncate( logFiles.getLogFile().getLogFileForVersion( 0 ), checkpointsEndDataOffset );
 
-            try ( StoreChannel storeChannel = fs.write( logFiles.getLogFile().getLogFileForVersion( 1 ).toFile() ) )
+            try ( StoreChannel storeChannel = fs.write( logFiles.getLogFile().getLogFileForVersion( 1 ) ) )
             {
                 storeChannel.position( CURRENT_FORMAT_LOG_HEADER_SIZE );
                 storeChannel.writeAll( ByteBuffer.wrap( new byte[]{0} ) );

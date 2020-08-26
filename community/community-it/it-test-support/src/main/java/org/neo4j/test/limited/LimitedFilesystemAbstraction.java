@@ -19,7 +19,6 @@
  */
 package org.neo4j.test.limited;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -31,6 +30,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.CopyOption;
 import java.nio.file.OpenOption;
+import java.nio.file.Path;
 import java.util.Set;
 
 import org.neo4j.io.fs.DelegatingFileSystemAbstraction;
@@ -51,51 +51,51 @@ public class LimitedFilesystemAbstraction extends DelegatingFileSystemAbstractio
     }
 
     @Override
-    public StoreChannel open( File fileName, Set<OpenOption> options ) throws IOException
+    public StoreChannel open( Path fileName, Set<OpenOption> options ) throws IOException
     {
         return new LimitedFileChannel( super.open( fileName, options ), this );
     }
 
     @Override
-    public OutputStream openAsOutputStream( File fileName, boolean append ) throws IOException
+    public OutputStream openAsOutputStream( Path fileName, boolean append ) throws IOException
     {
         return new ChannelOutputStream( write( fileName ), append, INSTANCE );
     }
 
     @Override
-    public InputStream openAsInputStream( File fileName ) throws IOException
+    public InputStream openAsInputStream( Path fileName ) throws IOException
     {
         return new ChannelInputStream( read( fileName ), INSTANCE );
     }
 
     @Override
-    public Reader openAsReader( File fileName, Charset charset ) throws IOException
+    public Reader openAsReader( Path fileName, Charset charset ) throws IOException
     {
         return new InputStreamReader( openAsInputStream( fileName ), charset );
     }
 
     @Override
-    public Writer openAsWriter( File fileName, Charset charset, boolean append ) throws IOException
+    public Writer openAsWriter( Path fileName, Charset charset, boolean append ) throws IOException
     {
         return new OutputStreamWriter( openAsOutputStream( fileName, append ), StandardCharsets.UTF_8 );
     }
 
     @Override
-    public StoreChannel write( File fileName ) throws IOException
+    public StoreChannel write( Path fileName ) throws IOException
     {
         ensureHasSpace();
         return new LimitedFileChannel( super.write( fileName ), this );
     }
 
     @Override
-    public void mkdirs( File fileName ) throws IOException
+    public void mkdirs( Path fileName ) throws IOException
     {
         ensureHasSpace();
         super.mkdirs( fileName );
     }
 
     @Override
-    public void renameFile( File from, File to, CopyOption... copyOptions ) throws IOException
+    public void renameFile( Path from, Path to, CopyOption... copyOptions ) throws IOException
     {
         ensureHasSpace();
         super.renameFile( from, to, copyOptions );

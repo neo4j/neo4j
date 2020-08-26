@@ -53,13 +53,13 @@ public class SimpleFileStorage<T> implements SimpleStorage<T>
     @Override
     public boolean exists()
     {
-        return fileSystem.fileExists( path.toFile() );
+        return fileSystem.fileExists( path );
     }
 
     @Override
     public T readState() throws IOException
     {
-        try ( ReadableChannel channel = new ReadAheadChannel<>( fileSystem.read( path.toFile() ),
+        try ( ReadableChannel channel = new ReadAheadChannel<>( fileSystem.read( path ),
                 new NativeScopedBuffer( DEFAULT_READ_AHEAD_SIZE, memoryTracker ) ) )
         {
             return marshal.unmarshal( channel );
@@ -75,11 +75,11 @@ public class SimpleFileStorage<T> implements SimpleStorage<T>
     {
         if ( path.getParent() != null )
         {
-            fileSystem.mkdirs( path.getParent().toFile() );
+            fileSystem.mkdirs( path.getParent() );
         }
-        fileSystem.deleteFile( path.toFile() );
+        fileSystem.deleteFile( path );
 
-        try ( FlushableChannel channel = new PhysicalFlushableChannel( fileSystem.write( path.toFile() ),
+        try ( FlushableChannel channel = new PhysicalFlushableChannel( fileSystem.write( path ),
                 new NativeScopedBuffer( kibiBytes( 512 ), memoryTracker ) ) )
         {
             marshal.marshal( state, channel );
@@ -91,7 +91,7 @@ public class SimpleFileStorage<T> implements SimpleStorage<T>
     {
         if ( exists() )
         {
-            var deleted = fileSystem.deleteFile( path.toFile() );
+            var deleted = fileSystem.deleteFile( path );
             if ( !deleted )
             {
                 throw new IOException( String.format( "File %s could not be deleted", path.getFileName() ) );

@@ -22,7 +22,6 @@ package org.neo4j.recovery;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 
@@ -86,12 +85,12 @@ class RecoveryLogIT
                                        .build().logFiles();
         for ( Path file : txLogs )
         {
-            fileSystem.copyToDirectory( file.toFile(), tmpLogDir.toFile() );
+            fileSystem.copyToDirectory( file, tmpLogDir );
         }
 
         managementService.shutdown();
 
-        for ( File txLog : fileSystem.listFiles( databaseLayout.getTransactionLogsDirectory().toFile() ) )
+        for ( Path txLog : fileSystem.listFiles( databaseLayout.getTransactionLogsDirectory() ) )
         {
             fileSystem.deleteFile( txLog );
         }
@@ -100,7 +99,7 @@ class RecoveryLogIT
                 .withCommandReaderFactory( storageEngineFactory.commandReaderFactory() )
                 .build().logFiles() )
         {
-            fileSystem.moveToDirectory( file.toFile(), databaseLayout.getTransactionLogsDirectory().toFile() );
+            fileSystem.moveToDirectory( file, databaseLayout.getTransactionLogsDirectory() );
         }
 
         AssertableLogProvider provider = new AssertableLogProvider();

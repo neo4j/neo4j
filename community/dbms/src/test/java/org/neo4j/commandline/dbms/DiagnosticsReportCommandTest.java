@@ -242,11 +242,11 @@ public class DiagnosticsReportCommandTest
         diagnosticsReportCommand.execute();
 
         File other = testDirectory.directory( "other" );
-        assertThat( ctx.fs().fileExists( other ) ).isEqualTo( true );
-        assertThat( ctx.fs().listFiles( other ).length ).isEqualTo( 1 );
+        assertThat( ctx.fs().fileExists( other.toPath() ) ).isEqualTo( true );
+        assertThat( ctx.fs().listFiles( other.toPath() ).length ).isEqualTo( 1 );
 
         // Default should be empty
         File reports = new File( testDirectory.homeDir(), "reports" );
-        assertThat( ctx.fs().fileExists( reports ) ).isEqualTo( false );
+        assertThat( ctx.fs().fileExists( reports.toPath() ) ).isEqualTo( false );
     }
 }

@@ -26,8 +26,8 @@ import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.concurrent.TimeUnit;
@@ -87,8 +87,8 @@ public class IndexCleanupIT
         configureDb( schemaIndex );
         createIndex( db, true );
 
-        File[] providerDirectories = providerDirectories( fs, db );
-        for ( File providerDirectory : providerDirectories )
+        Path[] providerDirectories = providerDirectories( fs, db );
+        for ( Path providerDirectory : providerDirectories )
         {
             assertTrue( fs.listFiles( providerDirectory ).length > 0, "expected there to be at least one index per existing provider map" );
         }
@@ -144,8 +144,8 @@ public class IndexCleanupIT
         createIndex( db, false );
 
         midPopulation.await();
-        File[] providerDirectories = providerDirectories( fs, db );
-        for ( File providerDirectory : providerDirectories )
+        Path[] providerDirectories = providerDirectories( fs, db );
+        for ( Path providerDirectory : providerDirectories )
         {
             assertTrue( fs.listFiles( providerDirectory ).length > 0, "expected there to be at least one index per existing provider map" );
         }
@@ -157,9 +157,9 @@ public class IndexCleanupIT
         assertNoIndexFilesExisting( providerDirectories );
     }
 
-    private void assertNoIndexFilesExisting( File[] providerDirectories )
+    private void assertNoIndexFilesExisting( Path[] providerDirectories )
     {
-        for ( File providerDirectory : providerDirectories )
+        for ( Path providerDirectory : providerDirectories )
         {
             assertEquals( 0, fs.listFiles( providerDirectory ).length, "expected there to be no index files" );
         }
@@ -196,12 +196,12 @@ public class IndexCleanupIT
         }
     }
 
-    private File[] providerDirectories( FileSystemAbstraction fs, DbmsRule db )
+    private Path[] providerDirectories( FileSystemAbstraction fs, DbmsRule db )
     {
         DatabaseLayout databaseLayout = db.databaseLayout();
-        File dbDir = databaseLayout.databaseDirectory().toFile();
-        File schemaDir = new File( dbDir, "schema" );
-        File indexDir = new File( schemaDir, "index" );
+        Path dbDir = databaseLayout.databaseDirectory();
+        Path schemaDir = dbDir.resolve( "schema" );
+        Path indexDir = schemaDir.resolve( "index" );
         return fs.listFiles( indexDir );
     }
 }

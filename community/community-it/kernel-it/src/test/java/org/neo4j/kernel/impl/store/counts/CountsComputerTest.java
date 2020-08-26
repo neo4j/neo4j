@@ -353,7 +353,7 @@ class CountsComputerTest
 
     private void cleanupCountsForRebuilding()
     {
-        fileSystem.deleteFile( countsStoreFile() );
+        fileSystem.deleteFile( countsStoreFile().toPath() );
     }
 
     private GBPTreeCountsStore createCountsStore() throws IOException

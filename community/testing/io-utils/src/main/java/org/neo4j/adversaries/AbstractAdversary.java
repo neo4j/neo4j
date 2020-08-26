@@ -49,11 +49,27 @@ public abstract class AbstractAdversary implements Adversary
         {
             adversaryException = type.getDeclaredConstructor().newInstance();
         }
+        catch ( NoSuchMethodException e )
+        {
+            try
+            {
+                adversaryException = type.getDeclaredConstructor( String.class ).newInstance( "Injected failure" );
+            }
+            catch ( Exception e1 )
+            {
+                throw failToInjectError( e1 );
+            }
+        }
         catch ( Exception e )
         {
-            throw new AssertionError( new Exception( "Failed to instantiate failure", e ) );
+            throw failToInjectError( e );
         }
         rethrow( adversaryException );
+    }
+
+    private AssertionError failToInjectError( Exception e )
+    {
+        return new AssertionError( new Exception( "Failed to instantiate failure", e ) );
     }
 
     @Override

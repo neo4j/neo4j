@@ -19,11 +19,10 @@
  */
 package org.neo4j.kernel.impl.transaction.log.files;
 
-import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.Flushable;
 import java.io.IOException;
 import java.nio.channels.ClosedChannelException;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -245,7 +244,7 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile
     @Override
     public boolean versionExists( long version )
     {
-        return fileSystem.fileExists( getLogFileForVersion( version ).toFile() );
+        return fileSystem.fileExists( getLogFileForVersion( version ) );
     }
 
     @Override
@@ -259,7 +258,7 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile
     {
         try
         {
-            File logFile = getLogFileForVersion( version ).toFile();
+            Path logFile = getLogFileForVersion( version );
             var logHeader = extractHeader( version, false );
             if ( logHeader == null )
             {
@@ -429,7 +428,7 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile
      * <ol>
      * <li>1-2: Reader bridge will see that there's a new version (when asking {@link LogVersionRepository}
      * and try to open it. The log file doesn't exist yet though. The bridge can parry for this by catching
-     * {@link FileNotFoundException} and tell the reader that the stream has ended</li>
+     * {@link NoSuchFileException} and tell the reader that the stream has ended</li>
      * <li>2-3: Same as (1-2)</li>
      * <li>3-4: Here the new log file exists, but the header may not be fully written yet.
      * the reader will fail when trying to read the header since it's reading it strictly and bridge

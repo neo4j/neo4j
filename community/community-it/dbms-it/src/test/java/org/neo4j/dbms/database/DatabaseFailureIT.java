@@ -27,6 +27,7 @@ import java.io.IOException;
 
 import org.neo4j.dbms.DatabaseStateService;
 import org.neo4j.dbms.api.DatabaseManagementService;
+import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -41,7 +42,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
-import static org.neo4j.io.fs.FileUtils.deletePathRecursively;
 import static org.neo4j.kernel.database.DatabaseIdRepository.NAMED_SYSTEM_DATABASE_ID;
 import static org.neo4j.kernel.database.TestDatabaseIdRepository.noOpSystemGraphInitializer;
 
@@ -73,7 +73,7 @@ class DatabaseFailureIT
     void startWhenDefaultDatabaseFailedToStart() throws IOException
     {
         managementService.shutdown();
-        deletePathRecursively( databaseLayout.getTransactionLogsDirectory() );
+        FileUtils.deleteDirectory( databaseLayout.getTransactionLogsDirectory() );
 
         database = startDatabase();
         DatabaseStateService databaseStateService = database.getDependencyResolver().resolveDependency( DatabaseStateService.class );
@@ -85,7 +85,7 @@ class DatabaseFailureIT
     void failToStartWhenSystemDatabaseFailedToStart() throws IOException
     {
         managementService.shutdown();
-        deletePathRecursively( neo4jLayout.databaseLayout( SYSTEM_DATABASE_NAME ).getTransactionLogsDirectory() );
+        FileUtils.deleteDirectory( neo4jLayout.databaseLayout( SYSTEM_DATABASE_NAME ).getTransactionLogsDirectory() );
 
         Exception startException = assertThrows( Exception.class, this::startDatabase );
         assertThat( startException ).hasCauseInstanceOf( UnableToStartDatabaseException.class );

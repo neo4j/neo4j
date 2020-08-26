@@ -77,7 +77,7 @@ class ReadAheadLogChannelTest
             return true;
         } );
 
-        StoreChannel storeChannel = fileSystem.read( file.toFile() );
+        StoreChannel storeChannel = fileSystem.read( file );
         PhysicalLogVersionedStoreChannel versionedStoreChannel =
                 new PhysicalLogVersionedStoreChannel( storeChannel, -1 /* ignored */, (byte) -1, file, nativeChannelAccessor );
         try ( ReadAheadLogChannel channel = new ReadAheadLogChannel( versionedStoreChannel, INSTANCE ) )
@@ -117,7 +117,7 @@ class ReadAheadLogChannelTest
             return true;
         } );
 
-        StoreChannel storeChannel = fileSystem.read( file( 0 ).toFile() );
+        StoreChannel storeChannel = fileSystem.read( file( 0 ) );
         PhysicalLogVersionedStoreChannel versionedStoreChannel =
                 new PhysicalLogVersionedStoreChannel( storeChannel, -1 /* ignored */, (byte) -1, file( 0 ), nativeChannelAccessor );
         try ( ReadAheadLogChannel channel = new ReadAheadLogChannel( versionedStoreChannel, new LogVersionBridge()
@@ -131,7 +131,7 @@ class ReadAheadLogChannelTest
                 {
                     returned = true;
                     channel.close();
-                    return new PhysicalLogVersionedStoreChannel( fileSystem.read( file( 1 ).toFile() ),
+                    return new PhysicalLogVersionedStoreChannel( fileSystem.read( file( 1 ) ),
                             -1 /* ignored */, (byte) -1, file( 1 ), nativeChannelAccessor );
                 }
                 return channel;
@@ -148,7 +148,7 @@ class ReadAheadLogChannelTest
 
     private void writeSomeData( Path file, Visitor<ByteBuffer, IOException> visitor ) throws IOException
     {
-        try ( StoreChannel channel = fileSystem.write( file.toFile() ) )
+        try ( StoreChannel channel = fileSystem.write( file ) )
         {
             ByteBuffer buffer = ByteBuffers.allocate( 1, KibiByte, INSTANCE );
             visitor.visit( buffer );

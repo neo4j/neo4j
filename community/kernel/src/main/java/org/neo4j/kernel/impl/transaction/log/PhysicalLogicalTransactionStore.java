@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.NoSuchFileException;
 
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
@@ -95,7 +95,7 @@ public class PhysicalLogicalTransactionStore implements LogicalTransactionStore
             LogPosition position = transactionPositionLocator.getAndCacheFoundLogPosition( transactionMetadataCache );
             return new PhysicalTransactionCursor( logFile.getReader( position ), logEntryReader );
         }
-        catch ( FileNotFoundException e )
+        catch ( NoSuchFileException e )
         {
             throw new NoSuchTransactionException(
                     transactionIdToStartFrom,

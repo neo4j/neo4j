@@ -20,11 +20,11 @@
 package org.neo4j.test;
 
 import java.io.BufferedOutputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -40,7 +40,7 @@ public final class Unzip
         InputStream source = testClass.getResourceAsStream( resource );
         if ( source == null )
         {
-            throw new FileNotFoundException( "Could not find resource '" + resource + "' to unzip" );
+            throw new NoSuchFileException( "Could not find resource '" + resource + "' to unzip" );
         }
 
         try ( ZipInputStream zipStream = new ZipInputStream( source ) )

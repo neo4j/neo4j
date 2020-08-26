@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
@@ -52,9 +51,9 @@ public final class MigrationTestUtils
             throws IOException
     {
         byte[] versionBytes = UTF8.encode( versionString );
-        try ( StoreChannel fileChannel = fileSystem.write( storeFile ) )
+        try ( StoreChannel fileChannel = fileSystem.write( storeFile.toPath() ) )
         {
-            fileChannel.position( fileSystem.getFileSize( storeFile ) - versionBytes.length );
+            fileChannel.position( fileSystem.getFileSize( storeFile.toPath() ) - versionBytes.length );
             fileChannel.writeAll( ByteBuffer.wrap( versionBytes ) );
         }
     }
@@ -67,9 +66,9 @@ public final class MigrationTestUtils
             throw new IllegalArgumentException( "bad prepare directory" );
         }
         Path resourceDirectory = findFormatStoreDirectoryForVersion( version, prepareDirectory );
-        workingFs.deleteRecursively( workingDirectory.toFile() );
-        workingFs.mkdirs( workingDirectory.toFile() );
-        workingFs.copyRecursively( resourceDirectory.toFile(), workingDirectory.toFile() );
+        workingFs.deleteRecursively( workingDirectory );
+        workingFs.mkdirs( workingDirectory );
+        workingFs.copyRecursively( resourceDirectory, workingDirectory );
     }
 
     public static Path findFormatStoreDirectoryForVersion( String version, Path targetDir ) throws IOException
@@ -106,14 +105,14 @@ public final class MigrationTestUtils
             throws IOException
     {
         final int bufferBatchSize = 32 * 1024;
-        Path[] files = Arrays.stream( fileSystem.listFiles( original.toFile() ) ).map( File::toPath ).toArray( Path[]::new );
+        Path[] files = fileSystem.listFiles( original );
         for ( Path originalFile : files )
         {
             Path otherFile = other.resolve( originalFile.getFileName() );
-            if ( !fileSystem.isDirectory( originalFile.toFile() ) )
+            if ( !fileSystem.isDirectory( originalFile ) )
             {
-                try ( StoreChannel originalChannel = fileSystem.read( originalFile.toFile() );
-                      StoreChannel otherChannel = fileSystem.read( otherFile.toFile() ) )
+                try ( StoreChannel originalChannel = fileSystem.read( originalFile );
+                      StoreChannel otherChannel = fileSystem.read( otherFile ) )
                 {
                     ByteBuffer buffer = ByteBuffers.allocate( bufferBatchSize, INSTANCE );
                     while ( true )

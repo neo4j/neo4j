@@ -137,7 +137,7 @@ abstract class IndexPopulationStressTest
         indexProvider = providerCreator.apply( this );
         descriptor = indexProvider.completeConfiguration( forSchema( forLabel( 0, 0 ), PROVIDER ).withName( "index_0" ).materialise( 0 ) );
         descriptor2 = indexProvider.completeConfiguration( forSchema( forLabel( 1, 0 ), PROVIDER ).withName( "index_1" ).materialise( 1 ) );
-        fs.mkdirs( indexProvider.directoryStructure().rootDirectory().toFile() );
+        fs.mkdirs( indexProvider.directoryStructure().rootDirectory() );
         populator = indexProvider.getPopulator( descriptor, samplingConfig, heapBufferFactory( (int) kibiBytes( 40 ) ), INSTANCE );
         when( nodePropertyAccessor.getNodePropertyValue( anyLong(), anyInt(), any( PageCursorTracer.class ) ) ).thenThrow(
                 UnsupportedOperationException.class );

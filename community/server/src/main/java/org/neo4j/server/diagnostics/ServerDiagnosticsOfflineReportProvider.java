@@ -57,7 +57,7 @@ public class ServerDiagnosticsOfflineReportProvider extends DiagnosticsOfflineRe
         if ( classifiers.contains( "logs" ) )
         {
             Path httpLog = config.get( ServerSettings.http_log_path );
-            if ( fs.fileExists( httpLog.toFile() ) )
+            if ( fs.fileExists( httpLog ) )
             {
                 return newDiagnosticsRotatingFile( "logs/http.log", fs, httpLog );
             }

@@ -192,7 +192,7 @@ public class TestDirectory extends ExternalResource
 
     public File directory( String name, String... path )
     {
-        File dir = new File( FileUtils.path( homeDir(), path ), name );
+        File dir = FileUtils.path( homePath(), path ).resolve( name ).toFile();
         createDirectory( dir );
         return dir;
     }
@@ -211,7 +211,7 @@ public class TestDirectory extends ExternalResource
 
     public File file( String name, String... path )
     {
-        return new File( FileUtils.path( homeDir(), path ), name );
+        return FileUtils.path( homePath(), path ).resolve( name ).toFile();
     }
 
     public Path filePath( String name, String... path )
@@ -266,7 +266,7 @@ public class TestDirectory extends ExternalResource
         {
             if ( success && isInitialised() && !keepDirectoryAfterSuccessfulTest )
             {
-                fileSystem.deleteRecursively( directory );
+                fileSystem.deleteRecursively( directory.toPath() );
             }
             directory = null;
         }
@@ -313,9 +313,9 @@ public class TestDirectory extends ExternalResource
     {
         try
         {
-            if ( !fileSystem.fileExists( file ) )
+            if ( !fileSystem.fileExists( file.toPath() ) )
             {
-                fileSystem.write( file ).close();
+                fileSystem.write( file.toPath() ).close();
             }
         }
         catch ( IOException e )
@@ -328,7 +328,7 @@ public class TestDirectory extends ExternalResource
     {
         try
         {
-            fileSystem.mkdirs( directory );
+            fileSystem.mkdirs( directory.toPath() );
         }
         catch ( IOException e )
         {
@@ -340,7 +340,7 @@ public class TestDirectory extends ExternalResource
     {
         try
         {
-            fileSystem.mkdirs( directory.toFile() );
+            fileSystem.mkdirs( directory );
         }
         catch ( IOException e )
         {
@@ -350,21 +350,21 @@ public class TestDirectory extends ExternalResource
 
     private static File clean( FileSystemAbstraction fs, File dir ) throws IOException
     {
-        if ( fs.fileExists( dir ) )
+        if ( fs.fileExists( dir.toPath() ) )
         {
-            fs.deleteRecursively( dir );
+            fs.deleteRecursively( dir.toPath() );
         }
-        fs.mkdirs( dir );
+        fs.mkdirs( dir.toPath() );
         return dir;
     }
 
     private static Path cleanPath( FileSystemAbstraction fs, Path dir ) throws IOException
     {
-        if ( fs.fileExists( dir.toFile() ) )
+        if ( fs.fileExists( dir ) )
         {
-            fs.deleteRecursively( dir.toFile() );
+            fs.deleteRecursively( dir );
         }
-        fs.mkdirs( dir.toFile() );
+        fs.mkdirs( dir );
         return dir;
     }
 
@@ -401,7 +401,7 @@ public class TestDirectory extends ExternalResource
     private void register( String test, String dir )
     {
         try ( PrintStream printStream =
-                new PrintStream( fileSystem.openAsOutputStream( new File( ensureBase(), ".register" ), true ), false, StandardCharsets.UTF_8 ) )
+                new PrintStream( fileSystem.openAsOutputStream( new File( ensureBase(), ".register" ).toPath(), true ), false, StandardCharsets.UTF_8 ) )
         {
             printStream.print( format( "%s = %s%n", dir, test ) );
         }
@@ -417,14 +417,14 @@ public class TestDirectory extends ExternalResource
         {
             evaluateClassBaseTestFolder();
         }
-        if ( fileSystem.fileExists( testClassBaseFolder ) && !fileSystem.isDirectory( testClassBaseFolder ) )
+        if ( fileSystem.fileExists( testClassBaseFolder.toPath() ) && !fileSystem.isDirectory( testClassBaseFolder.toPath() ) )
         {
             throw new IllegalStateException( testClassBaseFolder + " exists and is not a directory!" );
         }
 
         try
         {
-            fileSystem.mkdirs( testClassBaseFolder );
+            fileSystem.mkdirs( testClassBaseFolder.toPath() );
         }
         catch ( IOException e )
         {

@@ -119,7 +119,7 @@ class PkiUtilsTest
     private void copy( URL in, Path outFile ) throws IOException
     {
         try ( InputStream is = in.openStream();
-                OutputStream os = testDirectory.getFileSystem().openAsOutputStream( outFile.toFile(), false ) )
+                OutputStream os = testDirectory.getFileSystem().openAsOutputStream( outFile, false ) )
         {
             is.transferTo( os );
         }

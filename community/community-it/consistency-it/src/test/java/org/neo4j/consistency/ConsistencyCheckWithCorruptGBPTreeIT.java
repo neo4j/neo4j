@@ -31,7 +31,6 @@ import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.api.parallel.Resources;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.StringWriter;
@@ -121,7 +120,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT
     {
         neo4jHome = testDirectory.homePath();
         final EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
-        fs.mkdirs( neo4jHome.toFile() );
+        fs.mkdirs( neo4jHome );
 
         dbmsAction( neo4jHome, fs, NATIVE_BTREE10, db ->
         {
@@ -819,11 +818,10 @@ class ConsistencyCheckWithCorruptGBPTreeIT
     {
         final String fileNameFriendlyProviderName = IndexDirectoryStructure.fileNameFriendly( schemaIndex.providerName() );
         Path indexDir = databaseDir.resolve( "schema/index/" );
-        return fs.streamFilesRecursive( indexDir.toFile() )
-                .map( FileHandle::getFile )
-                .map( File::toPath )
-                .filter( path -> path.toAbsolutePath().toString().contains( fileNameFriendlyProviderName ) )
-                .toArray( Path[]::new );
+        return fs.streamFilesRecursive( indexDir )
+                 .map( FileHandle::getPath )
+                 .filter( path -> path.toAbsolutePath().toString().contains( fileNameFriendlyProviderName ) )
+                 .toArray( Path[]::new );
     }
 
     private List<Path> corruptIndexes( boolean readOnly, CorruptionInject corruptionInject, Path... targetFiles ) throws Exception

@@ -21,7 +21,6 @@ package org.neo4j.internal.id.indexed;
 
 import java.io.BufferedOutputStream;
 import java.io.Closeable;
-import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.io.UncheckedIOException;
@@ -103,7 +102,7 @@ public class LoggingIndexedIdGeneratorMonitor implements IndexedIdGenerator.Moni
         this.pruneThreshold = pruneThresholdUnit.toMillis( pruneThreshold );
         try
         {
-            if ( fs.fileExists( path.toFile() ) )
+            if ( fs.fileExists( path ) )
             {
                 moveAwayFile();
             }
@@ -261,7 +260,7 @@ public class LoggingIndexedIdGeneratorMonitor implements IndexedIdGenerator.Moni
             // Prune
             long time = clock.millis();
             long threshold = time - pruneThreshold;
-            for ( File file : fs.listFiles( path.getParent().toFile(), ( dir, name ) -> name.startsWith( path.getFileName() + "-" ) ) )
+            for ( Path file : fs.listFiles( path.getParent(), ( dir, name ) -> name.startsWith( path.getFileName() + "-" ) ) )
             {
                 if ( millisOf( file ) < threshold )
                 {
@@ -321,13 +320,13 @@ public class LoggingIndexedIdGeneratorMonitor implements IndexedIdGenerator.Moni
 
             to = timestampedFile();
         }
-        while ( fs.fileExists( to.toFile() ) );
-        fs.renameFile( path.toFile(), to.toFile() );
+        while ( fs.fileExists( to ) );
+        fs.renameFile( path, to );
     }
 
     private PhysicalFlushableChannel instantiateChannel() throws IOException
     {
-        return new PhysicalFlushableChannel( fs.write( path.toFile() ), INSTANCE );
+        return new PhysicalFlushableChannel( fs.write( path ), INSTANCE );
     }
 
     private Path timestampedFile()
@@ -335,9 +334,9 @@ public class LoggingIndexedIdGeneratorMonitor implements IndexedIdGenerator.Moni
         return path.resolveSibling( path.getFileName() + "-" + clock.millis() );
     }
 
-    static long millisOf( File file )
+    static long millisOf( Path file )
     {
-        String name = file.getName();
+        String name = file.getFileName().toString();
         int dashIndex = name.lastIndexOf( '-' );
         if ( dashIndex == -1 )
         {
@@ -379,19 +378,19 @@ public class LoggingIndexedIdGeneratorMonitor implements IndexedIdGenerator.Moni
 
     static void dump( FileSystemAbstraction fs, Path baseFile, Dumper dumper ) throws IOException
     {
-        File[] files = fs.listFiles( baseFile.getParent().toFile(),
+        Path[] files = fs.listFiles( baseFile.getParent(),
                 ( dir, name ) -> name.startsWith( baseFile.getFileName().toString() ) && !name.endsWith( ".txt" ) );
         Arrays.sort( files, comparing( LoggingIndexedIdGeneratorMonitor::millisOf ) );
-        for ( File file : files )
+        for ( Path file : files )
         {
-            dumpFile( fs, file.toPath(), dumper );
+            dumpFile( fs, file, dumper );
         }
     }
 
     private static void dumpFile( FileSystemAbstraction fs, Path path, Dumper dumper ) throws IOException
     {
         dumper.path( path );
-        try ( var channel = new ReadAheadChannel<>( fs.read( path.toFile() ), new NativeScopedBuffer( DEFAULT_READ_AHEAD_SIZE, INSTANCE ) ) )
+        try ( var channel = new ReadAheadChannel<>( fs.read( path ), new NativeScopedBuffer( DEFAULT_READ_AHEAD_SIZE, INSTANCE ) ) )
         {
             while ( true )
             {

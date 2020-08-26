@@ -112,7 +112,7 @@ public class LogPruningImpl implements LogPruning
             {
                 if ( checkpointFile.getCheckpointLogFileVersion( file ) <= highestVersionToRemove )
                 {
-                    fs.deleteFile( file.toFile() );
+                    fs.deleteFile( file );
                     filesDeleted++;
                 }
             }
@@ -154,7 +154,7 @@ public class LogPruningImpl implements LogPruning
             fromVersion = fromVersion == NO_VERSION ? version : Math.min( fromVersion, version );
             toVersion = toVersion == NO_VERSION ? version : Math.max( toVersion, version );
             Path logFile = logFiles.getLogFile().getLogFileForVersion( version );
-            fs.deleteFile( logFile.toFile() );
+            fs.deleteFile( logFile );
         }
 
         String describeResult( LogPruneStrategy strategy )

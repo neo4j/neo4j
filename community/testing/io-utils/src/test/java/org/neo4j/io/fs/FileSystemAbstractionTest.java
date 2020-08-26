@@ -23,12 +23,12 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -71,13 +71,13 @@ public abstract class FileSystemAbstractionTest
     private final int recordsPerFilePage = pageCachePageSize / recordSize;
     private final int recordCount = 25 * maxPages * recordsPerFilePage;
     protected FileSystemAbstraction fsa;
-    protected File path;
+    protected Path path;
 
     @BeforeEach
     void before()
     {
         fsa = buildFileSystemAbstraction();
-        path = new File( testDirectory.homeDir(), UUID.randomUUID().toString() );
+        path = testDirectory.homePath().resolve( UUID.randomUUID().toString() );
     }
 
     @AfterEach
@@ -99,7 +99,7 @@ public abstract class FileSystemAbstractionTest
     @Test
     void shouldCreateDeepPath() throws Exception
     {
-        path = new File( path, UUID.randomUUID() + "/" + UUID.randomUUID() );
+        path = path.resolve( UUID.randomUUID() + "/" + UUID.randomUUID() );
 
         fsa.mkdirs( path );
 
@@ -122,21 +122,21 @@ public abstract class FileSystemAbstractionTest
     {
         fsa.mkdirs( path );
         assertTrue( fsa.fileExists( path ) );
-        path = new File( path, "some_file" );
+        path = path.resolve( "some_file" );
         try ( StoreChannel channel = fsa.write( path ) )
         {
             assertThat( channel ).isNotNull();
-            assertThrows(IOException.class, () -> fsa.mkdirs( path ));
+            assertThrows(IOException.class, () -> fsa.mkdirs( path ) );
         }
     }
 
     @Test
     void moveToDirectoryMustMoveFile() throws Exception
     {
-        File source = new File( path, "source" );
-        File target = new File( path, "target" );
-        File file = new File( source, "file" );
-        File fileAfterMove = new File( target, "file" );
+        Path source = path.resolve( "source" );
+        Path target = path.resolve( "target" );
+        Path file = source.resolve( "file" );
+        Path fileAfterMove = target.resolve( "file" );
         fsa.mkdirs( source );
         fsa.mkdirs( target );
         fsa.write( file ).close();
@@ -150,10 +150,10 @@ public abstract class FileSystemAbstractionTest
     @Test
     void copyToDirectoryCopiesFile() throws IOException
     {
-        File source = new File( path, "source" );
-        File target = new File( path, "target" );
-        File file = new File( source, "file" );
-        File fileAfterCopy = new File( target, "file" );
+        Path source = path.resolve( "source" );
+        Path target = path.resolve( "target" );
+        Path file = source.resolve(  "file" );
+        Path fileAfterCopy = target.resolve( "file" );
         fsa.mkdirs( source );
         fsa.mkdirs( target );
         fsa.write( file ).close();
@@ -167,10 +167,10 @@ public abstract class FileSystemAbstractionTest
     @Test
     void copyToDirectoryReplaceExistingFile() throws Exception
     {
-        File source = new File( path, "source" );
-        File target = new File( path, "target" );
-        File file = new File( source, "file" );
-        File targetFile = new File( target, "file" );
+        Path source = path.resolve( "source" );
+        Path target = path.resolve( "target" );
+        Path file = source.resolve( "file" );
+        Path targetFile = target.resolve( "file" );
         fsa.mkdirs( source );
         fsa.mkdirs( target );
         fsa.write( file ).close();
@@ -188,8 +188,8 @@ public abstract class FileSystemAbstractionTest
     {
         // given
         fsa.mkdirs( path );
-        File source = new File( path, "source" );
-        File target = new File( path, "target" );
+        Path source = path.resolve( "source" );
+        Path target = path.resolve( "target" );
         fsa.write( source ).close();
         fsa.write( target ).close();
 
@@ -201,13 +201,13 @@ public abstract class FileSystemAbstractionTest
     void deleteRecursivelyMustDeleteAllFilesInDirectory() throws Exception
     {
         fsa.mkdirs( path );
-        File a = new File( path, "a" );
+        Path a = path.resolve( "a" );
         fsa.write( a ).close();
-        File b = new File( path, "b" );
+        Path b = path.resolve( "b" );
         fsa.write( b ).close();
-        File c = new File( path, "c" );
+        Path c = path.resolve( "c" );
         fsa.write( c ).close();
-        File d = new File( path, "d" );
+        Path d = path.resolve( "d" );
         fsa.write( d ).close();
 
         fsa.deleteRecursively( path );
@@ -230,9 +230,9 @@ public abstract class FileSystemAbstractionTest
     void deleteRecursivelyMustDeleteGivenFile() throws Exception
     {
         fsa.mkdirs( path );
-        File file = new File( path, "file" );
+        Path file = path.resolve( "file" );
         fsa.write( file ).close();
-        fsa.deleteRecursively( file );
+        fsa.delete( file );
         assertFalse( fsa.fileExists( file ) );
     }
 
@@ -240,13 +240,13 @@ public abstract class FileSystemAbstractionTest
     void deleteRecursivelyMustDeleteAllSubDirectoriesInDirectory() throws IOException
     {
         fsa.mkdirs( path );
-        File a = new File( path, "a" );
+        Path a = path.resolve( "a" );
         fsa.mkdirs( a );
-        File aa = new File( a, "a" );
+        Path aa = a.resolve( "a" );
         fsa.write( aa ).close();
-        File b = new File( path, "b" );
+        Path b = path.resolve( "b" );
         fsa.mkdirs( b );
-        File c = new File( path, "c" );
+        Path c = path.resolve( "c" );
         fsa.write( c ).close();
         fsa.deleteRecursively( path );
 
@@ -262,13 +262,13 @@ public abstract class FileSystemAbstractionTest
     void deleteRecursivelyMustNotDeleteSiblingDirectories() throws IOException
     {
         fsa.mkdirs( path );
-        File a = new File( path, "a" );
+        Path a = path.resolve( "a" );
         fsa.mkdirs( a );
-        File b = new File( path, "b" );
+        Path b = path.resolve( "b" );
         fsa.mkdirs( b );
-        File bb = new File( b, "b" );
+        Path bb = b.resolve( "b" );
         fsa.write( bb ).close();
-        File c = new File( path, "c" );
+        Path c = path.resolve( "c" );
         fsa.write( c ).close();
         fsa.deleteRecursively( a );
 
@@ -296,7 +296,7 @@ public abstract class FileSystemAbstractionTest
         buf.position( 1 );
 
         fsa.mkdirs( path );
-        File file = new File( path, "file" );
+        Path file = path.resolve( "file" );
         try ( StoreChannel channel = fsa.write( file ) )
         {
             assertThat( channel.write( buf ) ).isEqualTo( 4 );
@@ -326,79 +326,79 @@ public abstract class FileSystemAbstractionTest
     @Test
     void streamFilesRecursiveMustBeEmptyForEmptyBaseDirectory() throws Exception
     {
-        File dir = existingDirectory( "dir" );
+        Path dir = existingDirectory( "dir" );
         assertThat( fsa.streamFilesRecursive( dir ).count() ).isEqualTo( 0L );
     }
 
     @Test
     void streamFilesRecursiveMustListAllFilesInBaseDirectory() throws Exception
     {
-        File a = existingFile( "a" );
-        File b = existingFile( "b" );
-        File c = existingFile( "c" );
-        Stream<FileHandle> stream = fsa.streamFilesRecursive( a.getParentFile() );
-        List<File> filepaths = stream.map( FileHandle::getFile ).collect( toList() );
-        assertThat( filepaths ).contains( a.getCanonicalFile(), b.getCanonicalFile(), c.getCanonicalFile() );
+        Path a = existingFile( "a" );
+        Path b = existingFile( "b" );
+        Path c = existingFile( "c" );
+        Stream<FileHandle> stream = fsa.streamFilesRecursive( a.getParent() );
+        List<Path> filepaths = stream.map( FileHandle::getPath ).collect( toList() );
+        assertThat( filepaths ).contains( a.toAbsolutePath().normalize(), b.toAbsolutePath().normalize(), c.toAbsolutePath().normalize() );
     }
 
     @Test
     void streamFilesRecursiveMustListAllFilesInSubDirectories() throws Exception
     {
-        File sub1 = existingDirectory( "sub1" );
-        File sub2 = existingDirectory( "sub2" );
-        File a = existingFile( "a" );
-        File b = new File( sub1, "b" );
-        File c = new File( sub2, "c" );
+        Path sub1 = existingDirectory( "sub1" );
+        Path sub2 = existingDirectory( "sub2" );
+        Path a = existingFile( "a" );
+        Path b = sub1.resolve( "b" );
+        Path c = sub2.resolve( "c" );
         ensureExists( b );
         ensureExists( c );
 
-        Stream<FileHandle> stream = fsa.streamFilesRecursive( a.getParentFile() );
-        List<File> filepaths = stream.map( FileHandle::getFile ).collect( toList() );
-        assertThat( filepaths ).contains( a.getCanonicalFile(), b.getCanonicalFile(), c.getCanonicalFile() );
+        Stream<FileHandle> stream = fsa.streamFilesRecursive( a.getParent() );
+        List<Path> filepaths = stream.map( FileHandle::getPath ).collect( toList() );
+        assertThat( filepaths ).contains( a.toAbsolutePath().normalize(), b.toAbsolutePath().normalize(), c.toAbsolutePath().normalize() );
     }
 
     @Test
     void streamFilesRecursiveMustNotListSubDirectories() throws Exception
     {
-        File sub1 = existingDirectory( "sub1" );
-        File sub2 = existingDirectory( "sub2" );
-        File sub2sub1 = new File( sub2, "sub1" );
+        Path sub1 = existingDirectory( "sub1" );
+        Path sub2 = existingDirectory( "sub2" );
+        Path sub2sub1 = sub2.resolve( "sub1" );
         ensureDirectoryExists( sub2sub1 );
         existingDirectory( "sub3" ); // must not be observed in the stream
-        File a = existingFile( "a" );
-        File b = new File( sub1, "b" );
-        File c = new File( sub2, "c" );
+        Path a = existingFile( "a" );
+        Path b = sub1.resolve( "b" );
+        Path c = sub2.resolve( "c" );
         ensureExists( b );
         ensureExists( c );
 
-        Stream<FileHandle> stream = fsa.streamFilesRecursive( a.getParentFile() );
-        List<File> filepaths = stream.map( FileHandle::getFile ).collect( toList() );
-        assertThat( filepaths ).contains( a.getCanonicalFile(), b.getCanonicalFile(), c.getCanonicalFile() );
+        Stream<FileHandle> stream = fsa.streamFilesRecursive( a.getParent() );
+        List<Path> filepaths = stream.map( FileHandle::getPath ).collect( toList() );
+        assertThat( filepaths ).contains( a.toAbsolutePath().normalize(), b.toAbsolutePath().normalize(), c.toAbsolutePath().normalize() );
     }
 
     @Test
     void streamFilesRecursiveFilePathsMustBeCanonical() throws Exception
     {
-        File sub = existingDirectory( "sub" );
-        File a = new File( new File( new File( sub, ".." ), "sub" ), "a" );
+        Path sub = existingDirectory( "sub" );
+        Path a = sub.resolve( ".." ).resolve( "sub" ).resolve( "a" );
         ensureExists( a );
 
-        Stream<FileHandle> stream = fsa.streamFilesRecursive( sub.getParentFile() );
-        List<File> filepaths = stream.map( FileHandle::getFile ).collect( toList() );
-        assertThat( filepaths ).contains( a.getCanonicalFile() );// file in our sub directory
+        Stream<FileHandle> stream = fsa.streamFilesRecursive( sub.getParent() );
+        List<Path> filepaths = stream.map( FileHandle::getPath ).collect( toList() );
+        assertThat( filepaths ).contains( a.toAbsolutePath().normalize() );// file in our sub directory
 
     }
 
     @Test
     void streamFilesRecursiveMustBeAbleToGivePathRelativeToBase() throws Exception
     {
-        File sub = existingDirectory( "sub" );
-        File a = existingFile( "a" );
-        File b = new File( sub, "b" );
+        Path sub = existingDirectory( "sub" );
+        Path a = existingFile( "a" );
+        Path b = sub.resolve( "b" );
         ensureExists( b );
-        File base = a.getParentFile();
-        Set<File> set = fsa.streamFilesRecursive( base ).map( FileHandle::getRelativeFile ).collect( toSet() );
-        assertThat( set ).as( "Files relative to base directory " + base ).contains( new File( "a" ), new File( "sub" + File.separator + "b" ) );
+        Path base = a.getParent();
+        Set<Path> set = fsa.streamFilesRecursive( base ).map( FileHandle::getRelativePath ).collect( toSet() );
+        assertThat( set ).as( "Files relative to base directory " + base ).contains( Path.of( "a" ), Path.of( "sub", "b" ) );
     }
 
     @Test
@@ -406,52 +406,52 @@ public abstract class FileSystemAbstractionTest
     {
         existingDirectory( "sub" ); // must not be observed
         existingFile( "sub/x" ); // must not be observed
-        File a = existingFile( "a" );
+        Path a = existingFile( "a" );
 
         Stream<FileHandle> stream = fsa.streamFilesRecursive( a );
-        List<File> filepaths = stream.map( FileHandle::getFile ).collect( toList() );
+        List<Path> filepaths = stream.map( FileHandle::getPath ).collect( toList() );
         assertThat( filepaths ).contains( a ); // note that we don't go into 'sub'
     }
 
     @Test
     void streamFilesRecursiveListedSingleFileMustHaveCanonicalPath() throws Exception
     {
-        File sub = existingDirectory( "sub" );
+        Path sub = existingDirectory( "sub" );
         existingFile( "sub/x" ); // we query specifically for 'a', so this must not be listed
-        File a = existingFile( "a" );
-        File queryForA = new File( new File( sub, ".." ), "a" );
+        Path a = existingFile( "a" );
+        Path queryForA = sub.resolve( ".." ).resolve( "a" );
 
         Stream<FileHandle> stream = fsa.streamFilesRecursive( queryForA );
-        List<File> filepaths = stream.map( FileHandle::getFile ).collect( toList() );
-        assertThat( filepaths ).contains( a.getCanonicalFile() ); // note that we don't go into 'sub'
+        List<Path> filepaths = stream.map( FileHandle::getPath ).collect( toList() );
+        assertThat( filepaths ).contains( a.toAbsolutePath().normalize() ); // note that we don't go into 'sub'
     }
 
     @Test
     void streamFilesRecursiveMustReturnEmptyStreamForNonExistingBasePath() throws Exception
     {
-        File nonExisting = new File( "nonExisting" );
+        Path nonExisting = Path.of( "nonExisting" );
         assertFalse( fsa.streamFilesRecursive( nonExisting ).anyMatch( Predicates.alwaysTrue() ) );
     }
 
     @Test
     void streamFilesRecursiveMustRenameFiles() throws Exception
     {
-        File a = existingFile( "a" );
-        File b = nonExistingFile( "b" ); // does not yet exist
-        File base = a.getParentFile();
+        Path a = existingFile( "a" );
+        Path b = nonExistingFile( "b" ); // does not yet exist
+        Path base = a.getParent();
         fsa.streamFilesRecursive( base ).forEach( handleRename( b ) );
-        List<File> filepaths = fsa.streamFilesRecursive( base ).map( FileHandle::getFile ).collect( toList() );
-        assertThat( filepaths ).contains( b.getCanonicalFile() );
+        List<Path> filepaths = fsa.streamFilesRecursive( base ).map( FileHandle::getPath ).collect( toList() );
+        assertThat( filepaths ).contains( b.toAbsolutePath().normalize() );
     }
 
     @Test
     void streamFilesRecursiveMustDeleteFiles() throws Exception
     {
-        File a = existingFile( "a" );
-        File b = existingFile( "b" );
-        File c = existingFile( "c" );
+        Path a = existingFile( "a" );
+        Path b = existingFile( "b" );
+        Path c = existingFile( "c" );
 
-        File base = a.getParentFile();
+        Path base = a.getParent();
         fsa.streamFilesRecursive( base ).forEach( HANDLE_DELETE );
 
         assertFalse( fsa.fileExists( a ) );
@@ -462,7 +462,7 @@ public abstract class FileSystemAbstractionTest
     @Test
     void streamFilesRecursiveMustThrowWhenDeletingNonExistingFile() throws Exception
     {
-        File a = existingFile( "a" );
+        Path a = existingFile( "a" );
         FileHandle handle = fsa.streamFilesRecursive( a ).findAny().get();
         fsa.deleteFile( a );
         assertThrows( NoSuchFileException.class, handle::delete );
@@ -471,8 +471,8 @@ public abstract class FileSystemAbstractionTest
     @Test
     void streamFilesRecursiveMustThrowWhenTargetFileOfRenameAlreadyExists() throws Exception
     {
-        File a = existingFile( "a" );
-        File b = existingFile( "b" );
+        Path a = existingFile( "a" );
+        Path b = existingFile( "b" );
         FileHandle handle = fsa.streamFilesRecursive( a ).findAny().get();
         assertThrows( FileAlreadyExistsException.class, () -> handle.rename( b ) );
     }
@@ -481,8 +481,8 @@ public abstract class FileSystemAbstractionTest
     void streamFilesRecursiveMustNotThrowWhenTargetFileOfRenameAlreadyExistsAndUsingReplaceExisting()
             throws Exception
     {
-        File a = existingFile( "a" );
-        File b = existingFile( "b" );
+        Path a = existingFile( "a" );
+        Path b = existingFile( "b" );
         FileHandle handle = fsa.streamFilesRecursive( a ).findAny().get();
         handle.rename( b, StandardCopyOption.REPLACE_EXISTING );
     }
@@ -490,10 +490,10 @@ public abstract class FileSystemAbstractionTest
     @Test
     void streamFilesRecursiveMustDeleteSubDirectoriesEmptiedByFileRename() throws Exception
     {
-        File sub = existingDirectory( "sub" );
-        File x = new File( sub, "x" );
+        Path sub = existingDirectory( "sub" );
+        Path x = sub.resolve( "x" );
         ensureExists( x );
-        File target = nonExistingFile( "target" );
+        Path target = nonExistingFile( "target" );
 
         fsa.streamFilesRecursive( sub ).forEach( handleRename( target ) );
 
@@ -504,12 +504,12 @@ public abstract class FileSystemAbstractionTest
     @Test
     void streamFilesRecursiveMustDeleteMultipleLayersOfSubDirectoriesIfTheyBecomeEmptyByRename() throws Exception
     {
-        File sub = existingDirectory( "sub" );
-        File subsub = new File( sub, "subsub" );
+        Path sub = existingDirectory( "sub" );
+        Path subsub = sub.resolve( "subsub" );
         ensureDirectoryExists( subsub );
-        File x = new File( subsub, "x" );
+        Path x = subsub.resolve( "x" );
         ensureExists( x );
-        File target = nonExistingFile( "target" );
+        Path target = nonExistingFile( "target" );
 
         fsa.streamFilesRecursive( sub ).forEach( handleRename( target ) );
 
@@ -523,14 +523,14 @@ public abstract class FileSystemAbstractionTest
     void streamFilesRecursiveMustNotDeleteDirectoriesAboveBaseDirectoryIfTheyBecomeEmptyByRename()
             throws Exception
     {
-        File sub = existingDirectory( "sub" );
-        File subsub = new File( sub, "subsub" );
-        File subsubsub = new File( subsub, "subsubsub" );
+        Path sub = existingDirectory( "sub" );
+        Path subsub = sub.resolve( "subsub" );
+        Path subsubsub = subsub.resolve( "subsubsub" );
         ensureDirectoryExists( subsub );
         ensureDirectoryExists( subsubsub );
-        File x = new File( subsubsub, "x" );
+        Path x = subsubsub.resolve( "x" );
         ensureExists( x );
-        File target = nonExistingFile( "target" );
+        Path target = nonExistingFile( "target" );
 
         fsa.streamFilesRecursive( subsub ).forEach( handleRename( target ) );
 
@@ -545,8 +545,8 @@ public abstract class FileSystemAbstractionTest
     @Test
     void streamFilesRecursiveMustDeleteSubDirectoriesEmptiedByFileDelete() throws Exception
     {
-        File sub = existingDirectory( "sub" );
-        File x = new File( sub, "x" );
+        Path sub = existingDirectory( "sub" );
+        Path x = sub.resolve( "x" );
         ensureExists( x );
 
         fsa.streamFilesRecursive( sub ).forEach( HANDLE_DELETE );
@@ -558,10 +558,10 @@ public abstract class FileSystemAbstractionTest
     @Test
     void streamFilesRecursiveMustDeleteMultipleLayersOfSubDirectoriesIfTheyBecomeEmptyByDelete() throws Exception
     {
-        File sub = existingDirectory( "sub" );
-        File subsub = new File( sub, "subsub" );
+        Path sub = existingDirectory( "sub" );
+        Path subsub = sub.resolve( "subsub" );
         ensureDirectoryExists( subsub );
-        File x = new File( subsub, "x" );
+        Path x = subsub.resolve( "x" );
         ensureExists( x );
 
         fsa.streamFilesRecursive( sub ).forEach( HANDLE_DELETE );
@@ -576,12 +576,12 @@ public abstract class FileSystemAbstractionTest
     void streamFilesRecursiveMustNotDeleteDirectoriesAboveBaseDirectoryIfTheyBecomeEmptyByDelete()
             throws Exception
     {
-        File sub = existingDirectory( "sub" );
-        File subsub = new File( sub, "subsub" );
-        File subsubsub = new File( subsub, "subsubsub" );
+        Path sub = existingDirectory( "sub" );
+        Path subsub = sub.resolve( "subsub" );
+        Path subsubsub = subsub.resolve( "subsubsub" );
         ensureDirectoryExists( subsub );
         ensureDirectoryExists( subsubsub );
-        File x = new File( subsubsub, "x" );
+        Path x = subsubsub.resolve( "x" );
         ensureExists( x );
 
         fsa.streamFilesRecursive( subsub ).forEach( HANDLE_DELETE );
@@ -597,9 +597,9 @@ public abstract class FileSystemAbstractionTest
     @Test
     void streamFilesRecursiveMustCreateMissingPathDirectoriesImpliedByFileRename() throws Exception
     {
-        File a = existingFile( "a" );
-        File sub = new File( path, "sub" ); // does not exists
-        File target = new File( sub, "b" );
+        Path a = existingFile( "a" );
+        Path sub = path.resolve( "sub" ); // does not exists
+        Path target = sub.resolve( "b" );
 
         FileHandle handle = fsa.streamFilesRecursive( a ).findAny().get();
         handle.rename( target );
@@ -611,10 +611,10 @@ public abstract class FileSystemAbstractionTest
     @Test
     void streamFilesRecursiveMustNotSeeFilesLaterCreatedBaseDirectory() throws Exception
     {
-        File a = existingFile( "a" );
-        Stream<FileHandle> stream = fsa.streamFilesRecursive( a.getParentFile() );
-        File b = existingFile( "b" );
-        Set<File> files = stream.map( FileHandle::getFile ).collect( toSet() );
+        Path a = existingFile( "a" );
+        Stream<FileHandle> stream = fsa.streamFilesRecursive( a.getParent() );
+        Path b = existingFile( "b" );
+        Set<Path> files = stream.map( FileHandle::getPath ).collect( toSet() );
         assertThat( files ).containsExactly( a );
         assertThat( files ).doesNotContain( b );
     }
@@ -622,15 +622,15 @@ public abstract class FileSystemAbstractionTest
     @Test
     void streamFilesRecursiveMustNotSeeFilesRenamedIntoBaseDirectory() throws Exception
     {
-        File a = existingFile( "a" );
-        File sub = existingDirectory( "sub" );
-        File x = new File( sub, "x" );
+        Path a = existingFile( "a" );
+        Path sub = existingDirectory( "sub" );
+        Path x = sub.resolve( "x" );
         ensureExists( x );
-        File target = nonExistingFile( "target" );
-        Set<File> observedFiles = new HashSet<>();
-        fsa.streamFilesRecursive( a.getParentFile() ).forEach( fh ->
+        Path target = nonExistingFile( "target" );
+        Set<Path> observedFiles = new HashSet<>();
+        fsa.streamFilesRecursive( a.getParent() ).forEach( fh ->
         {
-            File file = fh.getFile();
+            Path file = fh.getPath();
             observedFiles.add( file );
             if ( file.equals( x ) )
             {
@@ -643,13 +643,13 @@ public abstract class FileSystemAbstractionTest
     @Test
     void streamFilesRecursiveMustNotSeeFilesRenamedIntoSubDirectory() throws Exception
     {
-        File a = existingFile( "a" );
-        File sub = existingDirectory( "sub" );
-        File target = new File( sub, "target" );
-        Set<File> observedFiles = new HashSet<>();
-        fsa.streamFilesRecursive( a.getParentFile() ).forEach( fh ->
+        Path a = existingFile( "a" );
+        Path sub = existingDirectory( "sub" );
+        Path target = sub.resolve( "target" );
+        Set<Path> observedFiles = new HashSet<>();
+        fsa.streamFilesRecursive( a.getParent() ).forEach( fh ->
         {
-            File file = fh.getFile();
+            Path file = fh.getPath();
             observedFiles.add( file );
             if ( file.equals( a ) )
             {
@@ -662,10 +662,10 @@ public abstract class FileSystemAbstractionTest
     @Test
     void streamFilesRecursiveRenameMustCanonicaliseSourceFile() throws Exception
     {
-        // File 'a' should canonicalise from 'a/poke/..' to 'a', which is a file that exists.
+        // Path 'a' should canonicalise from 'a/poke/..' to 'a', which is a file that exists.
         // Thus, this should not throw a NoSuchFileException.
-        File a = new File( new File( existingFile( "a" ), "poke" ), ".." );
-        File b = nonExistingFile( "b" );
+        Path a = existingFile( "a" ).resolve( "poke" ).resolve( ".." );
+        Path b = nonExistingFile( "b" );
 
         FileHandle handle = fsa.streamFilesRecursive( a ).findAny().get();
         handle.rename( b ); // must not throw
@@ -674,10 +674,10 @@ public abstract class FileSystemAbstractionTest
     @Test
     void streamFilesRecursiveRenameMustCanonicaliseTargetFile() throws Exception
     {
-        // File 'b' should canonicalise from 'b/poke/..' to 'b', which is a file that doesn't exists.
+        // Path 'b' should canonicalise from 'b/poke/..' to 'b', which is a file that doesn't exists.
         // Thus, this should not throw a NoSuchFileException for the 'poke' directory.
-        File a = existingFile( "a" );
-        File b = new File( new File( new File( path, "b" ), "poke" ), ".." );
+        Path a = existingFile( "a" );
+        Path b = path.resolve( "b" ).resolve( "poke" ).resolve( ".." );
         FileHandle handle = fsa.streamFilesRecursive( a ).findAny().get();
         handle.rename( b );
     }
@@ -685,8 +685,8 @@ public abstract class FileSystemAbstractionTest
     @Test
     void streamFilesRecursiveRenameTargetFileMustBeRenamed() throws Exception
     {
-        File a = existingFile( "a" );
-        File b = nonExistingFile( "b" );
+        Path a = existingFile( "a" );
+        Path b = nonExistingFile( "b" );
         FileHandle handle = fsa.streamFilesRecursive( a ).findAny().get();
         handle.rename( b );
         assertTrue( fsa.fileExists( b ) );
@@ -695,8 +695,8 @@ public abstract class FileSystemAbstractionTest
     @Test
     void streamFilesRecursiveSourceFileMustNotBeMappableAfterRename() throws Exception
     {
-        File a = existingFile( "a" );
-        File b = nonExistingFile( "b" );
+        Path a = existingFile( "a" );
+        Path b = nonExistingFile( "b" );
         FileHandle handle = fsa.streamFilesRecursive( a ).findAny().get();
         handle.rename( b );
         assertFalse( fsa.fileExists( a ) );
@@ -706,8 +706,8 @@ public abstract class FileSystemAbstractionTest
     @Test
     void streamFilesRecursiveRenameMustNotChangeSourceFileContents() throws Exception
     {
-        File a = existingFile( "a" );
-        File b = nonExistingFile( "b" );
+        Path a = existingFile( "a" );
+        Path b = nonExistingFile( "b" );
         generateFileWithRecords( a, recordCount );
         FileHandle handle = fsa.streamFilesRecursive( a ).findAny().get();
         handle.rename( b );
@@ -717,8 +717,8 @@ public abstract class FileSystemAbstractionTest
     @Test
     void streamFilesRecursiveRenameMustNotChangeSourceFileContentsWithReplaceExisting() throws Exception
     {
-        File a = existingFile( "a" );
-        File b = existingFile( "b" );
+        Path a = existingFile( "a" );
+        Path b = existingFile( "b" );
         generateFileWithRecords( a, recordCount );
         generateFileWithRecords( b, recordCount + recordsPerFilePage );
 
@@ -755,17 +755,17 @@ public abstract class FileSystemAbstractionTest
     @Test
     void shouldHandlePathThatLooksVeryDifferentWhenCanonicalized() throws Exception
     {
-        File dir = existingDirectory( "/././home/.././././home/././.././././././././././././././././././home/././" );
-        File a = existingFile( "/home/a" );
+        Path dir = existingDirectory( "./././home/.././././home/././.././././././././././././././././././home/././" );
+        Path a = existingFile( "./home/a" );
 
-        List<File> filepaths = fsa.streamFilesRecursive( dir ).map( FileHandle::getRelativeFile ).collect( toList() );
-        assertThat( filepaths ).contains( new File( a.getName() ) );
+        List<Path> filepaths = fsa.streamFilesRecursive( dir ).map( FileHandle::getRelativePath ).collect( toList() );
+        assertThat( filepaths ).contains( a.getFileName() );
     }
 
     @Test
     void truncationMustReduceFileSize() throws Exception
     {
-        File a = existingFile( "a" );
+        Path a = existingFile( "a" );
         try ( StoreChannel channel = fsa.write( a ) )
         {
             channel.position( 0 );
@@ -786,7 +786,7 @@ public abstract class FileSystemAbstractionTest
         }
     }
 
-    private void generateFileWithRecords( File file, int recordCount ) throws IOException
+    private void generateFileWithRecords( Path file, int recordCount ) throws IOException
     {
         try ( StoreChannel channel = fsa.write( file ) )
         {
@@ -804,7 +804,7 @@ public abstract class FileSystemAbstractionTest
         }
     }
 
-    private void verifyRecordsInFile( File file, int recordCount ) throws IOException
+    private void verifyRecordsInFile( Path file, int recordCount ) throws IOException
     {
         try ( StoreChannel channel = fsa.write( file ) )
         {
@@ -847,38 +847,38 @@ public abstract class FileSystemAbstractionTest
         buf.position( 0 );
     }
 
-    private File existingFile( String fileName ) throws IOException
+    private Path existingFile( String fileName ) throws IOException
     {
-        File file = new File( path, fileName );
+        Path file = path.resolve( fileName );
         fsa.mkdirs( path );
         fsa.write( file ).close();
         return file;
     }
 
-    private File nonExistingFile( String fileName )
+    private Path nonExistingFile( String fileName )
     {
-        return new File( path, fileName );
+        return path.resolve( fileName );
     }
 
-    private File existingDirectory( String dir ) throws IOException
+    private Path existingDirectory( String dir ) throws IOException
     {
-        File directory = new File( path, dir );
+        Path directory = path.resolve( dir );
         fsa.mkdirs( directory );
         return directory;
     }
 
-    private void ensureExists( File file ) throws IOException
+    private void ensureExists( Path file ) throws IOException
     {
-        fsa.mkdirs( file.getParentFile() );
+        fsa.mkdirs( file.getParent() );
         fsa.write( file ).close();
     }
 
-    private void ensureDirectoryExists( File directory ) throws IOException
+    private void ensureDirectoryExists( Path directory ) throws IOException
     {
         fsa.mkdirs( directory );
     }
 
-    private void writeIntegerIntoFile( File targetFile ) throws IOException
+    private void writeIntegerIntoFile( Path targetFile ) throws IOException
     {
         StoreChannel storeChannel = fsa.write( targetFile );
         ByteBuffer byteBuffer = ByteBuffers.allocate( Integer.SIZE, INSTANCE ).putInt( 7 );

@@ -281,8 +281,8 @@ class AllNodesInStoreExistInLabelIndexTest
         managementService.shutdown();
 
         DatabaseLayout databaseLayout = db.databaseLayout();
-        fs.deleteFile( databaseLayout.labelScanStore().toFile() );
-        fs.copyFile( labelIndexFileCopy, databaseLayout.labelScanStore().toFile() );
+        fs.deleteFile( databaseLayout.labelScanStore() );
+        fs.copyFile( labelIndexFileCopy.toPath(), databaseLayout.labelScanStore() );
     }
 
     private File copyLabelIndexFile() throws IOException
@@ -290,7 +290,7 @@ class AllNodesInStoreExistInLabelIndexTest
         DatabaseLayout databaseLayout = db.databaseLayout();
         File labelIndexFileCopy = databaseLayout.file( "label_index_copy" ).toFile();
         database.stop();
-        fs.copyFile( databaseLayout.labelScanStore().toFile(), labelIndexFileCopy );
+        fs.copyFile( databaseLayout.labelScanStore(), labelIndexFileCopy.toPath() );
         database.start();
         return labelIndexFileCopy;
     }

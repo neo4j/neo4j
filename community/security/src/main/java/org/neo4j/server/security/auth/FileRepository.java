@@ -38,7 +38,7 @@ public interface FileRepository
     static void assertNotMigrated( Path path, FileSystemAbstraction fileSystem, Log log )
     {
         Path migratedFile = getMigratedFile( path );
-        if ( fileSystem.fileExists( migratedFile.toFile() ) )
+        if ( fileSystem.fileExists( migratedFile ) )
         {
             String message = "The repository file '" + path.toAbsolutePath() + "' has been marked as migrated. " +
                     "If you are sure that you want use this repository you need to manually rename the file '" +

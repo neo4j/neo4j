@@ -21,40 +21,23 @@ package org.neo4j.commandline.dbms;
 
 import org.junit.jupiter.api.Test;
 
-import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
-import org.neo4j.test.rule.TestDirectory;
+import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.commandline.Util.isSameOrChildFile;
-import static org.neo4j.commandline.Util.isSameOrChildPath;
 
-@TestDirectoryExtension
 class UtilTest
 {
-    @Inject
-    private TestDirectory directory;
-
     @Test
     void correctlyIdentifySameOrChildFile()
     {
-        assertTrue( isSameOrChildFile( directory.homeDir(), directory.directory( "a" ) ) );
-        assertTrue( isSameOrChildFile( directory.homeDir(), directory.homeDir() ) );
-        assertTrue( isSameOrChildFile( directory.directory( "/a/./b" ), directory.directory( "a/b" ) ) );
-        assertTrue( isSameOrChildFile( directory.directory( "a/b" ), directory.directory( "/a/./b" ) ) );
+        Path home = Path.of( "." ).toAbsolutePath();
+        assertTrue( isSameOrChildFile( home, home ) );
+        assertTrue( isSameOrChildFile( home, home.resolve( "a" ) ) );
+        assertTrue( isSameOrChildFile( home.resolve( "a/./b" ), home.resolve( "a/b" ) ) );
+        assertTrue( isSameOrChildFile( home.resolve( "a/b" ), home.resolve( "a/./b" ) ) );
 
-        assertFalse( isSameOrChildFile( directory.directory( "a" ), directory.directory( "b" ) ) );
-    }
-
-    @Test
-    void correctlyIdentifySameOrChildPath()
-    {
-        assertTrue( isSameOrChildPath( directory.homePath(), directory.directory( "a" ).toPath() ) );
-        assertTrue( isSameOrChildPath( directory.homePath(), directory.homePath() ) );
-        assertTrue( isSameOrChildPath( directory.directory( "/a/./b" ).toPath(), directory.directory( "a/b" ).toPath() ) );
-        assertTrue( isSameOrChildPath( directory.directory( "a/b" ).toPath(), directory.directory( "/a/./b" ).toPath() ) );
-
-        assertFalse( isSameOrChildPath( directory.directory( "a" ).toPath(), directory.directory( "b" ).toPath() ) );
+        assertFalse( isSameOrChildFile( home.resolve( "a" ), home.resolve( "b" ) ) );
     }
 }

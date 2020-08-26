@@ -47,7 +47,7 @@ public class BlockReader<KEY,VALUE> implements Closeable
         this.fs = fs;
         this.path = path;
         this.layout = layout;
-        this.channel = fs.read( path.toFile() );
+        this.channel = fs.read( path );
     }
 
     BlockEntryReader<KEY,VALUE> nextBlock( ScopedBuffer blockBuffer ) throws IOException
@@ -57,7 +57,7 @@ public class BlockReader<KEY,VALUE> implements Closeable
         {
             return null;
         }
-        StoreChannel blockChannel = fs.read( path.toFile() );
+        StoreChannel blockChannel = fs.read( path );
         blockChannel.position( position );
         PageCursor pageCursor = new ReadableChannelPageCursor( new ReadAheadChannel<>( blockChannel, blockBuffer.getBuffer() ) );
         BlockEntryReader<KEY,VALUE> blockEntryReader = new BlockEntryReader<>( pageCursor, layout );

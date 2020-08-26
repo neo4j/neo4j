@@ -793,8 +793,8 @@ class DatabaseRecoveryIT
     private DatabaseLayout copyStore() throws IOException
     {
         DatabaseLayout restoreDbLayout = Neo4jLayout.of( directory.homePath( "restore-db" ) ).databaseLayout( DEFAULT_DATABASE_NAME );
-        fileSystem.mkdirs( restoreDbLayout.databaseDirectory().toFile() );
-        fileSystem.mkdirs( restoreDbLayout.getTransactionLogsDirectory().toFile() );
+        fileSystem.mkdirs( restoreDbLayout.databaseDirectory() );
+        fileSystem.mkdirs( restoreDbLayout.getTransactionLogsDirectory() );
         copy( fileSystem, databaseLayout.getTransactionLogsDirectory().toFile(), restoreDbLayout.getTransactionLogsDirectory().toFile() );
         copy( fileSystem, databaseLayout.databaseDirectory().toFile(), restoreDbLayout.databaseDirectory().toFile() );
         return restoreDbLayout;
@@ -802,9 +802,9 @@ class DatabaseRecoveryIT
 
     private static void copy( FileSystemAbstraction fs, File fromDirectory, File toDirectory ) throws IOException
     {
-        assertTrue( fs.isDirectory( fromDirectory ) );
-        assertTrue( fs.isDirectory( toDirectory ) );
-        fs.copyRecursively( fromDirectory, toDirectory );
+        assertTrue( fs.isDirectory( fromDirectory.toPath() ) );
+        assertTrue( fs.isDirectory( toDirectory.toPath() ) );
+        fs.copyRecursively( fromDirectory.toPath(), toDirectory.toPath() );
     }
 
     private GraphDatabaseAPI startDatabase( Path homeDir, EphemeralFileSystemAbstraction fs, UpdateCapturingIndexProvider indexProvider )

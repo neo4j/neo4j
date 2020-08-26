@@ -21,7 +21,6 @@ package org.neo4j.internal.batchimport.store;
 
 import org.eclipse.collections.api.set.ImmutableSet;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.OpenOption;
@@ -194,7 +193,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
         // There may have been a previous import which was killed before it even started, where the label scan store could
         // be in a semi-initialized state. Better to be on the safe side and deleted it. We get her after determining that
         // the db is either completely empty or non-existent anyway, so deleting this file is OK.
-        fileSystem.deleteFile( databaseLayout.labelScanStore().toFile() );
+        fileSystem.deleteFile( databaseLayout.labelScanStore() );
         deleteCountsStore();
 
         instantiateStores();
@@ -202,7 +201,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
 
     private void deleteCountsStore()
     {
-        fileSystem.deleteFile( databaseLayout.countStore().toFile() );
+        fileSystem.deleteFile( databaseLayout.countStore() );
     }
 
     public void assertDatabaseIsEmptyOrNonExistent()
@@ -234,7 +233,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
             if ( !storesToKeep.test( type ) )
             {
                 DatabaseFile databaseFile = type.getDatabaseFile();
-                databaseLayout.allFiles( databaseFile ).forEach( fileName -> fileSystem.deleteFile( fileName.toFile() ) );
+                databaseLayout.allFiles( databaseFile ).forEach( fileName -> fileSystem.deleteFile( fileName ) );
             }
         }
     }
@@ -430,8 +429,8 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
 
     private void cleanup() throws IOException
     {
-        File tempDbDirectory = temporaryDatabaseLayout.databaseDirectory().toFile();
-        if ( !tempDbDirectory.getParentFile().equals( databaseLayout.databaseDirectory().toFile() ) )
+        Path tempDbDirectory = temporaryDatabaseLayout.databaseDirectory();
+        if ( !tempDbDirectory.getParent().equals( databaseLayout.databaseDirectory() ) )
         {
             throw new IllegalStateException( "Temporary store is dislocated. It should be located under current database directory but instead located in: " +
                     tempDbDirectory.getParent() );

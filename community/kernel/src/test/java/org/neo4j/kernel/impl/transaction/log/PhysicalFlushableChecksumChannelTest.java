@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
+import org.junit.jupiter.api.Test;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -26,7 +28,6 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.zip.Checksum;
 
-import org.junit.jupiter.api.Test;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.PhysicalFlushableChecksumChannel;
 import org.neo4j.io.fs.StoreChannel;
@@ -52,7 +53,7 @@ class PhysicalFlushableChecksumChannelTest
     void calculateChecksum() throws IOException
     {
         final File firstFile = new File( directory.homeDir(), "file1" );
-        StoreChannel storeChannel = fileSystem.write( firstFile );
+        StoreChannel storeChannel = fileSystem.write( firstFile.toPath() );
         int channelChecksum;
         try ( PhysicalFlushableChecksumChannel channel = new PhysicalFlushableChecksumChannel( storeChannel, new HeapScopedBuffer( 100, INSTANCE ) ) )
         {
@@ -61,7 +62,7 @@ class PhysicalFlushableChecksumChannelTest
             channelChecksum = channel.putChecksum();
         }
 
-        int fileSize = (int) fileSystem.getFileSize( firstFile );
+        int fileSize = (int) fileSystem.getFileSize( firstFile.toPath() );
         assertEquals( Byte.BYTES + Integer.BYTES, fileSize );
         byte[] writtenBytes = new byte[fileSize];
         try ( InputStream in = new FileInputStream( firstFile ) )
@@ -82,7 +83,7 @@ class PhysicalFlushableChecksumChannelTest
     void beginCehcksumShouldResetCalculations() throws IOException
     {
         final File firstFile = new File( directory.homeDir(), "file1" );
-        StoreChannel storeChannel = fileSystem.write( firstFile );
+        StoreChannel storeChannel = fileSystem.write( firstFile.toPath() );
         int channelChecksum;
         try ( PhysicalFlushableChecksumChannel channel = new PhysicalFlushableChecksumChannel( storeChannel, new HeapScopedBuffer( 100, INSTANCE ) ) )
         {
@@ -92,7 +93,7 @@ class PhysicalFlushableChecksumChannelTest
             channelChecksum = channel.putChecksum();
         }
 
-        int fileSize = (int) fileSystem.getFileSize( firstFile );
+        int fileSize = (int) fileSystem.getFileSize( firstFile.toPath() );
         assertEquals( Byte.BYTES + Byte.BYTES + Integer.BYTES, fileSize );
         byte[] writtenBytes = new byte[fileSize];
         try ( InputStream in = new FileInputStream( firstFile ) )

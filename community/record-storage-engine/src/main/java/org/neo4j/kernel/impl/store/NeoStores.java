@@ -166,7 +166,7 @@ public class NeoStores implements AutoCloseable
     {
         String expectedStoreVersion = recordFormats.storeVersion();
         long existingFormat;
-        if ( !fileSystem.fileExists( layout.metadataStore().toFile() ) )
+        if ( !fileSystem.fileExists( layout.metadataStore() ) )
         {
             // If the meta data store doesn't even exist then look no further, there's nothing to verify
             return;
@@ -569,6 +569,6 @@ public class NeoStores implements AutoCloseable
 
     public static boolean isStorePresent( FileSystemAbstraction fs, DatabaseLayout databaseLayout )
     {
-        return fs.fileExists( databaseLayout.metadataStore().toFile() );
+        return fs.fileExists( databaseLayout.metadataStore() );
     }
 }

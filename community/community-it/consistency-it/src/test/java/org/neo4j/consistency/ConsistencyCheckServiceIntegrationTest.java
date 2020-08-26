@@ -27,7 +27,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.api.parallel.Resources;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -286,8 +285,8 @@ public class ConsistencyCheckServiceIntegrationTest
         managementService.shutdown();
 
         // when
-        File schemaDir = findFile( databaseLayout, "schema" );
-        FileUtils.deleteRecursively( schemaDir );
+        Path schemaDir = findFile( databaseLayout, "schema" );
+        FileUtils.deleteDirectory( schemaDir );
 
         ConsistencyCheckService service = new ConsistencyCheckService();
         Config configuration = Config.defaults( settings() );
@@ -344,10 +343,10 @@ public class ConsistencyCheckServiceIntegrationTest
         }
     }
 
-    private static File findFile( DatabaseLayout databaseLayout, String targetFile )
+    private static Path findFile( DatabaseLayout databaseLayout, String targetFile )
     {
-        File file = databaseLayout.file( targetFile ).toFile();
-        if ( !file.exists() )
+        Path file = databaseLayout.file( targetFile );
+        if ( Files.notExists( file ) )
         {
             fail( "Could not find file " + targetFile );
         }
@@ -409,7 +408,7 @@ public class ConsistencyCheckServiceIntegrationTest
     private void nonRecoveredDatabase() throws IOException
     {
         Path tmpLogDir = testDirectory.homePath().resolve( "logs" );
-        fs.mkdir( tmpLogDir.toFile() );
+        fs.mkdir( tmpLogDir );
         DatabaseManagementService managementService =
                 new TestDatabaseManagementServiceBuilder( testDirectory.homePath() ).setConfig( settings() ).build();
         GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
@@ -422,15 +421,15 @@ public class ConsistencyCheckServiceIntegrationTest
             node1.createRelationshipTo( node2, relationshipType );
             tx.commit();
         }
-        File[] txLogs = fs.listFiles( LogFilesBuilder.logFilesBasedOnlyBuilder( databaseLayout.getTransactionLogsDirectory(), fs )
+        Path[] txLogs = fs.listFiles( LogFilesBuilder.logFilesBasedOnlyBuilder( databaseLayout.getTransactionLogsDirectory(), fs )
                                                       .withCommandReaderFactory( RecordStorageCommandReaderFactory.INSTANCE )
-                                                      .build().logFilesDirectory().toFile() );
-        for ( File file : txLogs )
+                                                      .build().logFilesDirectory() );
+        for ( Path file : txLogs )
         {
-            fs.copyToDirectory( file, tmpLogDir.toFile() );
+            fs.copyToDirectory( file, tmpLogDir );
         }
         managementService.shutdown();
-        for ( File txLog : txLogs )
+        for ( Path txLog : txLogs )
         {
             fs.deleteFile( txLog );
         }
@@ -438,7 +437,7 @@ public class ConsistencyCheckServiceIntegrationTest
         for ( Path file : LogFilesBuilder.logFilesBasedOnlyBuilder( tmpLogDir, fs )
                 .build().logFiles() )
         {
-            fs.moveToDirectory( file.toFile(), databaseLayout.getTransactionLogsDirectory().toFile() );
+            fs.moveToDirectory( file, databaseLayout.getTransactionLogsDirectory() );
         }
     }
 

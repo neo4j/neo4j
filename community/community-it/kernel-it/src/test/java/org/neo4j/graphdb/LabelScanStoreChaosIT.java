@@ -85,7 +85,7 @@ public class LabelScanStoreChaosIT
 
     private static DbmsRule.RestartAction deleteTheLabelScanStoreIndex()
     {
-        return ( fs, directory ) -> fs.deleteFile( storeFile( directory ) );
+        return ( fs, directory ) -> fs.deleteFile( storeFile( directory ).toPath() );
     }
 
     private Node createLabeledNode( Label... labels )

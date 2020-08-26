@@ -44,8 +44,8 @@ class ChannelOutputStreamTest
         try ( EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction() )
         {
             Path workFile = testDirectory.filePath( "a" );
-            fs.mkdirs( testDirectory.homePath().toFile() );
-            OutputStream out = fs.openAsOutputStream( workFile.toFile(), false );
+            fs.mkdirs( testDirectory.homePath() );
+            OutputStream out = fs.openAsOutputStream( workFile, false );
 
             // When I write a byte[] that is larger than the internal buffer in
             // ChannelOutputStream..
@@ -55,7 +55,7 @@ class ChannelOutputStreamTest
             out.flush();
 
             // Then it should get cleanly written and be readable
-            InputStream in = fs.openAsInputStream( workFile.toFile() );
+            InputStream in = fs.openAsInputStream( workFile );
             in.skip( 8096 );
             assertEquals( 7, in.read() );
         }

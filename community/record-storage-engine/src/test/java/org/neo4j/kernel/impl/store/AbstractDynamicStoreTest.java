@@ -73,7 +73,7 @@ class AbstractDynamicStoreTest
     @BeforeEach
     void before() throws IOException
     {
-        try ( StoreChannel channel = fs.write( storeFile.toFile() ) )
+        try ( StoreChannel channel = fs.write( storeFile ) )
         {
             ByteBuffer buffer = ByteBuffers.allocate( 4, INSTANCE );
             buffer.putInt( BLOCK_SIZE );

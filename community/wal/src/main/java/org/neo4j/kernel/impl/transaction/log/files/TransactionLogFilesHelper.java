@@ -82,8 +82,7 @@ public class TransactionLogFilesHelper
 
     public Path[] getMatchedFiles()
     {
-        Path[] files =
-                Arrays.stream( fileSystem.listFiles( logBaseName.getParent().toFile(), getLogFilenameFilter() ) ).map( File::toPath ).toArray( Path[]::new );
+        Path[] files = fileSystem.listFiles( logBaseName.getParent(), getLogFilenameFilter() );
         if ( files.length == 0 )
         {
             return EMPTY_FILES_ARRAY;

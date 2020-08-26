@@ -156,7 +156,7 @@ class HttpCopierTest
         {
         }, ( name, length ) -> progressListener );
 
-        long sourceLength = fs.getFileSize( source.toFile() );
+        long sourceLength = fs.getFileSize( source );
 
         String authorizationTokenResponse = "abc";
         String signedURIPath = "/signed";
@@ -194,7 +194,7 @@ class HttpCopierTest
         {
         }, ( name, length ) -> progressListener );
         Path source = createDump();
-        long sourceLength = fs.getFileSize( source.toFile() );
+        long sourceLength = fs.getFileSize( source );
 
         String authorizationTokenResponse = "abc";
         String signedURIPath = "/signed";
@@ -219,7 +219,7 @@ class HttpCopierTest
         {
         }, ( name, length ) -> progressListener );
         Path source = createDump();
-        long sourceLength = fs.getFileSize( source.toFile() );
+        long sourceLength = fs.getFileSize( source );
 
         String authorizationTokenResponse = "abc";
         String signedURIPath = "/signed";
@@ -293,7 +293,7 @@ class HttpCopierTest
         // given
         HttpCopier copier = new HttpCopier( ctx );
         Path source = createDump();
-        long sourceLength = fs.getFileSize( source.toFile() );
+        long sourceLength = fs.getFileSize( source );
 
         String authorizationTokenResponse = "abc";
         String signedURIPath = "/signed";
@@ -574,7 +574,7 @@ class HttpCopierTest
         {
         }, ( name, length ) -> progressListener );
         Path source = createDump();
-        long sourceLength = fs.getFileSize( source.toFile() );
+        long sourceLength = fs.getFileSize( source );
         long firstUploadLength = sourceLength / 3;
         String authorizationTokenResponse = "abc";
         String signedURIPath = "/signed";
@@ -621,7 +621,7 @@ class HttpCopierTest
         {
         }, ( name, length ) -> progressListener );
         Path source = createDump();
-        long sourceLength = fs.getFileSize( source.toFile() );
+        long sourceLength = fs.getFileSize( source );
         String authorizationTokenResponse = "abc";
         String signedURIPath = "/signed";
         String uploadLocationPath = "/upload";
@@ -664,7 +664,7 @@ class HttpCopierTest
         {
         }, NO_OP_PROGRESS );
         Path source = createDump();
-        long sourceLength = fs.getFileSize( source.toFile() );
+        long sourceLength = fs.getFileSize( source );
         String authorizationTokenResponse = "abc";
         String signedURIPath = "/signed";
         String uploadLocationPath = "/upload";
@@ -698,7 +698,7 @@ class HttpCopierTest
         // given
         HttpCopier copier = new HttpCopier( ctx );
         Path source = createDump();
-        long sourceLength = fs.getFileSize( source.toFile() );
+        long sourceLength = fs.getFileSize( source );
         String authorizationTokenResponse = "abc";
         String signedURIPath = "/signed";
         String uploadLocationPath = "/upload";
@@ -722,7 +722,7 @@ class HttpCopierTest
         HttpCopier.Sleeper sleeper = mock( HttpCopier.Sleeper.class );
         HttpCopier copier = new HttpCopier( ctx, sleeper, NO_OP_PROGRESS );
         Path source = createDump();
-        long sourceLength = fs.getFileSize( source.toFile() );
+        long sourceLength = fs.getFileSize( source );
         String authorizationTokenResponse = "abc";
         String signedURIPath = "/signed";
         String uploadLocationPath = "/upload";

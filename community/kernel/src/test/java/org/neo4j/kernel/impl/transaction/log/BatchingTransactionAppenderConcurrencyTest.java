@@ -25,10 +25,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import java.io.File;
 import java.io.IOException;
 import java.lang.StackWalker.StackFrame;
 import java.nio.ByteBuffer;
+import java.nio.file.Path;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -261,7 +261,7 @@ public class BatchingTransactionAppenderConcurrencyTest
         private volatile boolean shouldOOM;
 
         @Override
-        public synchronized StoreChannel write( File fileName ) throws IOException
+        public synchronized StoreChannel write( Path fileName ) throws IOException
         {
             return new DelegatingStoreChannel( super.write( fileName ) )
             {

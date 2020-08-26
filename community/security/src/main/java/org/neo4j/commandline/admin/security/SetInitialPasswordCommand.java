@@ -78,9 +78,9 @@ public class SetInitialPasswordCommand extends AbstractCommand
         else
         {
             Path file = CommunitySecurityModule.getInitialUserRepositoryFile( config );
-            if ( fileSystem.fileExists( file.toFile() ) )
+            if ( fileSystem.fileExists( file ) )
             {
-                fileSystem.deleteFile( file.toFile() );
+                fileSystem.deleteFile( file );
             }
 
             FileUserRepository userRepository =
@@ -108,7 +108,7 @@ public class SetInitialPasswordCommand extends AbstractCommand
         boolean result = false;
         Path authFile = CommunitySecurityModule.getUserRepositoryFile( config );
 
-        if ( ctx.fs().fileExists( authFile.toFile() ) )
+        if ( ctx.fs().fileExists( authFile ) )
         {
             result = true;
 
@@ -141,7 +141,7 @@ public class SetInitialPasswordCommand extends AbstractCommand
         Path parentFile = authFile.getParent();
         Path roles = parentFile.resolve( "roles" );
 
-        if ( fileSystem.fileExists( roles.toFile() ) )
+        if ( fileSystem.fileExists( roles ) )
         {
             files = "`auth` and `roles` files";
         }

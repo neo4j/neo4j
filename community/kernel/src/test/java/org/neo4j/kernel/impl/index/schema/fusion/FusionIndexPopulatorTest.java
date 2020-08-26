@@ -132,7 +132,7 @@ abstract class FusionIndexPopulatorTest
     {
         fusionIndexPopulator.create();
 
-        verify( fs ).deleteRecursively( directoryStructure.directoryForIndex( indexId ).toFile() );
+        verify( fs ).deleteRecursively( directoryStructure.directoryForIndex( indexId ) );
     }
 
     @Test
@@ -168,7 +168,7 @@ abstract class FusionIndexPopulatorTest
         {
             verify( alivePopulator ).drop();
         }
-        verify( fs ).deleteRecursively( directoryStructure.directoryForIndex( indexId ).toFile() );
+        verify( fs ).deleteRecursively( directoryStructure.directoryForIndex( indexId ) );
     }
 
     @Test
