@@ -669,7 +669,7 @@ sealed trait ProjectionClause extends HorizonClause {
       // can see both variables from before the WITH and variables introduced by the WITH
       // (SKIP and LIMIT clauses are not allowed to access variables anyway, so they do not need to be included in this condition even when they are standalone)
       val specialScopeForSubClausesNeeded = orderBy.isDefined || where.isDefined
-      val canSeePreviousScope = !(returnItems.containsAggregate | distinct)
+      val canSeePreviousScope = (!(returnItems.containsAggregate || distinct)) || returnItems.includeExisting
 
       if (specialScopeForSubClausesNeeded && canSeePreviousScope) {
         /*
