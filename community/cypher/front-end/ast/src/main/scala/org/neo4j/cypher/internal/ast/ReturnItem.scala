@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticCheckable
 import org.neo4j.cypher.internal.ast.semantics.SemanticError
 import org.neo4j.cypher.internal.ast.semantics.SemanticExpressionCheck
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
+import org.neo4j.cypher.internal.expressions.ExistsSubClause
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.MapProjection
@@ -87,7 +88,12 @@ sealed trait ReturnItem extends ASTNode with SemanticCheckable {
   def makeSureIsNotUnaliased(state: SemanticState): SemanticCheckResult
   def isPassThrough: Boolean = alias.contains(expression)
 
-  def semanticCheck: SemanticCheck = SemanticExpressionCheck.check(Expression.SemanticContext.Results, expression)
+  def semanticCheck: SemanticCheck = SemanticExpressionCheck.check(Expression.SemanticContext.Results, expression) chain checkForExists
+
+  private def checkForExists: SemanticCheck = {
+    val invalid: Option[Expression] = expression.treeFind[Expression] { case _: ExistsSubClause => true }
+    invalid.map(exp => SemanticError("The EXISTS subclause is not valid inside a WITH or RETURN clause.", exp.position))
+  }
 }
 
 case class UnaliasedReturnItem(expression: Expression, inputText: String)(val position: InputPosition) extends ReturnItem {

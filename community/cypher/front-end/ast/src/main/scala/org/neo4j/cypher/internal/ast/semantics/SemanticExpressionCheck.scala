@@ -115,6 +115,7 @@ import org.neo4j.cypher.internal.util.symbols.CTTime
 import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.cypher.internal.util.symbols.TypeSpec
 
+import scala.annotation.tailrec
 import scala.util.Try
 
 object SemanticExpressionCheck extends SemanticAnalysisTooling {
@@ -135,65 +136,65 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
   /**
    * Build a semantic check for the given expression and context.
    */
-  def check(ctx: SemanticContext, expression: Expression): SemanticCheck =
+  def check(ctx: SemanticContext, expression: Expression, parents: Seq[Expression] = Seq()): SemanticCheck =
     expression match {
 
         // ARITHMETICS
 
       case x:Add =>
-        check(ctx, x.lhs) chain
+        check(ctx, x.lhs, x +: parents) chain
           expectType(TypeSpec.all, x.lhs) chain
-          check(ctx, x.rhs) chain
+          check(ctx, x.rhs, x +: parents) chain
           expectType(infixAddRhsTypes(x.lhs), x.rhs) chain
           specifyType(infixAddOutputTypes(x.lhs, x.rhs), x) chain
           checkAddBoundary(x)
 
       case x:Subtract =>
-        check(ctx, x.arguments) chain
+        check(ctx, x.arguments, x +: parents) chain
           checkTypes(x, x.signatures) chain
           checkSubtractBoundary(x)
 
       case x:UnarySubtract =>
-        check(ctx, x.arguments) chain
+        check(ctx, x.arguments, x +: parents) chain
           checkTypes(x, x.signatures)
 
       case x:UnaryAdd =>
-        check(ctx, x.arguments) chain
+        check(ctx, x.arguments, x +: parents) chain
           checkTypes(x, x.signatures)
 
       case x:Multiply =>
-        check(ctx, x.arguments) chain
+        check(ctx, x.arguments, x +: parents) chain
           checkTypes(x, x.signatures) chain
           checkMultiplyBoundary(x)
 
       case x:Divide =>
-        check(ctx, x.arguments) chain
+        check(ctx, x.arguments, x +: parents) chain
           checkTypes(x, x.signatures)
 
       case x:Modulo =>
-        check(ctx, x.arguments) chain
+        check(ctx, x.arguments, x +: parents) chain
           checkTypes(x, x.signatures)
 
       case x:Pow =>
-        check(ctx, x.arguments) chain
+        check(ctx, x.arguments, x +: parents) chain
           checkTypes(x, x.signatures)
 
         // PREDICATES
 
       case x:Not =>
-        check(ctx, x.arguments) chain
+        check(ctx, x.arguments, x +: parents) chain
           checkTypes(x, x.signatures)
 
       case x:Equals =>
-        check(ctx, x.arguments) chain checkTypes(x, x.signatures)
+        check(ctx, x.arguments, x +: parents) chain checkTypes(x, x.signatures)
 
       case x:Equivalent =>
         requireCypher10Support("`~` (equivalence)", x.position) chain
-          check(ctx, x.arguments) chain
+          check(ctx, x.arguments, x +: parents) chain
           checkTypes(x, x.signatures)
 
       case x:NotEquals =>
-        check(ctx, x.arguments) chain checkTypes(x, x.signatures)
+        check(ctx, x.arguments, x +: parents) chain checkTypes(x, x.signatures)
 
       case x:InvalidNotEquals =>
         SemanticError(
@@ -201,87 +202,87 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
           x.position)
 
       case x:RegexMatch =>
-        check(ctx, x.arguments) chain
+        check(ctx, x.arguments, x +: parents) chain
           checkTypes(x, x.signatures)
 
       case x:And =>
-        check(ctx, x.arguments) chain
+        check(ctx, x.arguments, x +: parents) chain
           checkTypes(x, x.signatures)
 
       case x:Or =>
-        check(ctx, x.arguments) chain
+        check(ctx, x.arguments, x +: parents) chain
           checkTypes(x, x.signatures)
 
       case x:Xor =>
-        check(ctx, x.arguments) chain
+        check(ctx, x.arguments, x +: parents) chain
           checkTypes(x, x.signatures)
 
       case x:Ands =>
-        check(ctx, x.exprs)
+        check(ctx, x.exprs, x +: parents)
 
       case x:Ors =>
-        check(ctx, x.exprs)
+        check(ctx, x.exprs, x +: parents)
 
       case x:In =>
-        check(ctx, x.lhs) chain
+        check(ctx, x.lhs, x +: parents) chain
           expectType(CTAny.covariant, x.lhs) chain
-          check(ctx, x.rhs) chain
+          check(ctx, x.rhs, x +: parents) chain
           expectType(CTList(CTAny).covariant, x.rhs) chain
           specifyType(CTBoolean, x)
 
       case x:StartsWith =>
-        check(ctx, x.arguments) chain
+        check(ctx, x.arguments, x +: parents) chain
           checkTypes(x, x.signatures)
 
       case x:EndsWith =>
-        check(ctx, x.arguments) chain
+        check(ctx, x.arguments, x +: parents) chain
           checkTypes(x, x.signatures)
 
       case x:Contains =>
-        check(ctx, x.arguments) chain
+        check(ctx, x.arguments, x +: parents) chain
           checkTypes(x, x.signatures)
 
       case x:IsNull =>
-        check(ctx, x.arguments) chain
+        check(ctx, x.arguments, x +: parents) chain
           checkTypes(x, x.signatures)
 
       case x:IsNotNull =>
-        check(ctx, x.arguments) chain
+        check(ctx, x.arguments, x +: parents) chain
           checkTypes(x, x.signatures)
 
       case x:LessThan =>
-        check(ctx, x.arguments) chain checkTypes(x, x.signatures)
+        check(ctx, x.arguments, x +: parents) chain checkTypes(x, x.signatures)
 
       case x:LessThanOrEqual =>
-        check(ctx, x.arguments) chain checkTypes(x, x.signatures)
+        check(ctx, x.arguments, x +: parents) chain checkTypes(x, x.signatures)
 
       case x:GreaterThan =>
-        check(ctx, x.arguments) chain checkTypes(x, x.signatures)
+        check(ctx, x.arguments, x +: parents) chain checkTypes(x, x.signatures)
 
       case x:GreaterThanOrEqual =>
-        check(ctx, x.arguments) chain checkTypes(x, x.signatures)
+        check(ctx, x.arguments, x +: parents) chain checkTypes(x, x.signatures)
 
       case x:PartialPredicate[_] =>
-        check(ctx, x.coveredPredicate)
+        check(ctx, x.coveredPredicate, x +: parents)
 
       case x:CaseExpression =>
         val possibleTypes = unionOfTypes(x.possibleExpressions)
-        SemanticExpressionCheck.check(ctx, x.expression) chain
-          check(ctx, x.alternatives.flatMap { a => Seq(a._1, a._2) }) chain
-          check(ctx, x.default) chain
+        SemanticExpressionCheck.check(ctx, x.expression, x +: parents) chain
+          check(ctx, x.alternatives.flatMap { a => Seq(a._1, a._2) }, x +: parents) chain
+          check(ctx, x.default, x +: parents) chain
           when (x.expression.isEmpty) {
             expectType(CTBoolean.covariant, x.alternatives.map(_._1))
           } chain
           specifyType(possibleTypes, x)
 
       case x:AndedPropertyInequalities =>
-        x.inequalities.map(check(ctx, _)).reduceLeft(_ chain _)
+        x.inequalities.map(check(ctx, _, x +: parents)).reduceLeft(_ chain _)
 
       case x:CoerceTo =>
-        check(ctx, x.expr) chain expectType(x.typ.covariant, x.expr)
+        check(ctx, x.expr, x +: parents) chain expectType(x.typ.covariant, x.expr)
 
       case x:Property =>
-        check(ctx, x.map) chain
+        check(ctx, x.map, x +: parents) chain
           expectType(CTMap.covariant | CTNode.covariant | CTRelationship.covariant | CTPoint.covariant | CTDate.covariant | CTTime.covariant |
             CTLocalTime.covariant | CTLocalDateTime.covariant | CTDateTime.covariant | CTDuration.covariant, x.map) chain
           specifyType(CTAny.covariant, x)
@@ -309,10 +310,10 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
         }
 
       case x:FunctionInvocation =>
-        SemanticFunctionCheck.check(ctx, x)
+        SemanticFunctionCheck.check(ctx, x, x +: parents)
 
       case x:GetDegree =>
-        check(ctx, x.node) chain
+        check(ctx, x.node, x +: parents) chain
           expectType(CTMap.covariant | CTAny.invariant, x.node) chain
           specifyType(CTAny.covariant, x)
 
@@ -326,7 +327,7 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
         specifyType(x.parameterType.covariant, x)
 
       case x:HasLabels =>
-        check(ctx, x.expression) chain
+        check(ctx, x.expression, x +: parents) chain
           expectType(CTNode.covariant, x.expression) chain
           specifyType(CTBoolean, x)
 
@@ -339,8 +340,8 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
         SemanticError("Extract is no longer supported. Please use list comprehension instead", x.position)
 
       case x:ListComprehension =>
-        FilteringExpressions.semanticCheck(ctx, x) chain
-          checkInnerListComprehension(x) chain
+        FilteringExpressions.semanticCheck(ctx, x, parents) chain
+          checkInnerListComprehension(x, parents) chain
           FilteringExpressions.failIfAggregating(x.extractExpression)
 
       case x:PatternComprehension =>
@@ -376,12 +377,12 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
 
       case x:IterablePredicateExpression =>
         FilteringExpressions.checkPredicateDefined(x) chain
-          FilteringExpressions.semanticCheck(ctx, x) chain
+          FilteringExpressions.semanticCheck(ctx, x, parents) chain
           specifyType(CTBoolean, x)
 
       case x:ReduceExpression =>
-        check(ctx, x.init) chain
-          check(ctx, x.list) chain
+        check(ctx, x.init, x +: parents) chain
+          check(ctx, x.list, x +: parents) chain
           expectType(CTList(CTAny).covariant, x.list) chain
           withScopedState {
             val indexType: TypeGenerator = s =>
@@ -390,7 +391,7 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
 
             declareVariable(x.variable, indexType) chain
               declareVariable(x.accumulator, accType) chain
-              check(SemanticContext.Simple, x.expression)
+              check(SemanticContext.Simple, x.expression, x +: parents)
           } chain
           expectType(types(x.init), x.expression, AccumulatorExpressionTypeMismatchMessageGenerator) chain
           specifyType(s => types(x.init)(s) leastUpperBounds types(x.expression)(s), x) chain
@@ -401,23 +402,23 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
           case Seq() => CTList(CTAny).covariant
           case _     => leastUpperBoundsOfTypes(x.expressions)(state).wrapInCovariantList
         }
-        check(ctx, x.expressions) chain specifyType(possibleTypes, x)
+        check(ctx, x.expressions, x +: parents) chain specifyType(possibleTypes, x)
 
       case x:ListSlice =>
-        check(ctx, x.list) chain
+        check(ctx, x.list, x +: parents) chain
           expectType(CTList(CTAny).covariant, x.list) chain
           when(x.from.isEmpty && x.to.isEmpty) {
             SemanticError("The start or end (or both) is required for a collection slice", x.position)
           } chain
-          check(ctx, x.from) chain
+          check(ctx, x.from, x +: parents) chain
           expectType(CTInteger.covariant, x.from) chain
-          check(ctx, x.to) chain
+          check(ctx, x.to, x +: parents) chain
           expectType(CTInteger.covariant, x.to) chain
           specifyType(types(x.list), x)
 
       case x:ContainerIndex =>
-        check(ctx, x.expr) chain
-          check(ctx, x.idx) chain
+        check(ctx, x.expr, x +: parents) chain
+          check(ctx, x.idx, x +: parents) chain
           typeSwitch(x.expr) {
             exprT =>
               typeSwitch(x.idx) {
@@ -448,20 +449,20 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
       // MAPS
 
       case x:MapExpression =>
-        check(ctx, x.items.map(_._2)) chain
+        check(ctx, x.items.map(_._2), x +: parents) chain
           specifyType(CTMap, x)
 
       case x:MapProjection =>
-        check(ctx, x.items) chain
+        check(ctx, x.items, x +: parents) chain
           ensureDefined(x.name) chain
           specifyType(CTMap, x) ifOkChain // We need to remember the scope to later rewrite this ASTNode
           SemanticState.recordCurrentScope(x)
 
       case x:LiteralEntry =>
-        check(ctx, x.exp)
+        check(ctx, x.exp, x +: parents)
 
       case x:VariableSelector =>
-        check(ctx, x.id)
+        check(ctx, x.id, x +: parents)
 
       case _:PropertySelector =>
         SemanticCheckResult.success
@@ -470,7 +471,7 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
         SemanticCheckResult.success
 
       case x:DesugaredMapProjection =>
-        check(ctx, x.items) chain
+        check(ctx, x.items, x +: parents) chain
           ensureDefined(x.variable) chain
           specifyType(CTMap, x) ifOkChain // We need to remember the scope to later rewrite this ASTNode
           SemanticState.recordCurrentScope(x)
@@ -524,13 +525,20 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
 
       // EXISTS
       case x:ExistsSubClause =>
-        SemanticState.recordCurrentScope(x) chain
-        withScopedState { // saves us from leaking to the outside
-          SemanticPatternCheck.check(Pattern.SemanticContext.Match, x.pattern) chain
-            when(x.optionalWhereExpression.isDefined) {
-              check(ctx, x.optionalWhereExpression.get)
-            }
+        @tailrec
+        def existsIsValidHere(p: Seq[Expression]): SemanticCheck = p match {
+          case Nil => None
+          case (And(_, _) | Or(_, _) | Ands(_) | Ors(_) | Not(_) | ExistsSubClause(_,_)) :: ps  => existsIsValidHere(ps)
+          case _ => SemanticError("EXISTS is only valid in a WHERE clause as a standalone predicate or as part of a boolean expression (AND / OR / NOT)", x.position)
         }
+        existsIsValidHere(parents) chain
+          SemanticState.recordCurrentScope(x) chain
+            withScopedState { // saves us from leaking to the outside
+              SemanticPatternCheck.check(Pattern.SemanticContext.Match, x.pattern) chain
+                when(x.optionalWhereExpression.isDefined) {
+                  check(ctx, x.optionalWhereExpression.get, x +: parents)
+                }
+            }
 
       case x:Expression => semanticCheckFallback(ctx, x)
     }
@@ -538,30 +546,31 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
   /**
    * Build a semantic check over a traversable of expressions.
    */
-  def simple(traversable: Traversable[Expression]): SemanticCheck = check(SemanticContext.Simple, traversable)
+  def simple(traversable: Traversable[Expression]): SemanticCheck = check(SemanticContext.Simple, traversable, Seq())
 
   def check(
              ctx: SemanticContext,
-             traversable: Traversable[Expression]
+             traversable: Traversable[Expression],
+             parents: Seq[Expression]
            ): SemanticCheck =
-    semanticCheckFold(traversable)(expr => check(ctx, expr))
+    semanticCheckFold(traversable)(expr => check(ctx, expr, parents))
 
   /**
    * Build a semantic check over an optional expression.
    */
-  def simple(option: Option[Expression]): SemanticCheck = check(SemanticContext.Simple, option)
+  def simple(option: Option[Expression]): SemanticCheck = check(SemanticContext.Simple, option, Seq())
 
-  def check(ctx: SemanticContext, option: Option[Expression]): SemanticCheck =
+  def check(ctx: SemanticContext, option: Option[Expression], parents: Seq[Expression]): SemanticCheck =
     option.fold(SemanticCheckResult.success) {
-      check(ctx, _)
+      check(ctx, _, parents)
     }
 
   object FilteringExpressions {
 
-    def semanticCheck(ctx: SemanticContext, e: FilteringExpression):SemanticCheck =
-      SemanticExpressionCheck.check(ctx, e.expression) chain
+    def semanticCheck(ctx: SemanticContext, e: FilteringExpression, parents: Seq[Expression]):SemanticCheck =
+      SemanticExpressionCheck.check(ctx, e.expression, e +: parents) chain
         expectType(CTList(CTAny).covariant, e.expression) chain
-        checkInnerPredicate(e) chain
+        checkInnerPredicate(e, parents) chain
         failIfAggregating(e.innerPredicate)
 
     def failIfAggregating(expression: Option[Expression]): Option[SemanticError] =
@@ -578,11 +587,11 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
         SemanticError(s"${e.name}(...) requires a WHERE predicate", e.position)
       }
 
-    private def checkInnerPredicate(e: FilteringExpression): SemanticCheck =
+    private def checkInnerPredicate(e: FilteringExpression, parents: Seq[Expression]): SemanticCheck =
       e.innerPredicate match {
       case Some(predicate) => withScopedState {
         declareVariable(e.variable, possibleInnerTypes(e)) chain
-          SemanticExpressionCheck.check(SemanticContext.Simple, predicate) chain
+          SemanticExpressionCheck.check(SemanticContext.Simple, predicate, e +: parents) chain
           SemanticExpressionCheck.expectType(CTBoolean.covariant, predicate)
       }
       case None    => SemanticCheckResult.success
@@ -720,12 +729,12 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
     stringTypes | numberTypes | listTypes | temporalTypes
   }
 
-  private def checkInnerListComprehension(x: ListComprehension): SemanticCheck =
+  private def checkInnerListComprehension(x: ListComprehension, parents: Seq[Expression]): SemanticCheck =
     x.extractExpression match {
       case Some(e) =>
         withScopedState {
           declareVariable(x.variable, FilteringExpressions.possibleInnerTypes(x)) chain
-            check(SemanticContext.Simple, e)
+            check(SemanticContext.Simple, e, x +: parents)
         } chain {
           val outerTypes: TypeGenerator = types(e)(_).wrapInList
           specifyType(outerTypes, x)

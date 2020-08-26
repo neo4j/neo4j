@@ -705,7 +705,7 @@ case class UnresolvedCall(procedureNamespace: Namespace,
 
   override def semanticCheck: SemanticCheck = {
     val argumentCheck = declaredArguments.map(
-      SemanticExpressionCheck.check(SemanticContext.Results, _)).getOrElse(success)
+      SemanticExpressionCheck.check(SemanticContext.Results, _, Seq())).getOrElse(success)
     val resultsCheck = declaredResult.map(_.semanticCheck).getOrElse(success)
     val invalidExpressionsCheck = declaredArguments.map(_.map {
       case arg if arg.containsAggregate =>

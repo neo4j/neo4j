@@ -59,14 +59,14 @@ import org.neo4j.cypher.internal.util.symbols.CypherType
 
 object SemanticFunctionCheck extends SemanticAnalysisTooling {
 
-  def check(ctx: Expression.SemanticContext, invocation: FunctionInvocation): SemanticCheck =
+  def check(ctx: Expression.SemanticContext, invocation: FunctionInvocation, parents: Seq[Expression] = Seq()): SemanticCheck =
     invocation.function match {
       case f:AggregatingFunction =>
         when(ctx == Expression.SemanticContext.Simple) {
           error(s"Invalid use of aggregating function ${f.name}(...) in this context", invocation.position)
         } chain {
           checkNoNestedAggregateFunctions(invocation) chain
-          SemanticExpressionCheck.check(ctx, invocation.arguments) chain
+          SemanticExpressionCheck.check(ctx, invocation.arguments, invocation +: parents) chain
           semanticCheck(ctx, invocation)
         }
 
@@ -76,7 +76,7 @@ object SemanticFunctionCheck extends SemanticAnalysisTooling {
       case f:Function =>
         when(invocation.distinct) {
           error(s"Invalid use of DISTINCT with function '${f.name}'", invocation.position)
-        } chain SemanticExpressionCheck.check(ctx, invocation.arguments) chain semanticCheck(ctx, invocation)
+        } chain SemanticExpressionCheck.check(ctx, invocation.arguments, invocation +: parents) chain semanticCheck(ctx, invocation)
     }
 
   private def checkNoNestedAggregateFunctions(invocation: FunctionInvocation): SemanticCheck =

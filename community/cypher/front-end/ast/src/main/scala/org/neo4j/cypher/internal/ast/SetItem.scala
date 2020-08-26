@@ -17,9 +17,12 @@
 package org.neo4j.cypher.internal.ast
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticAnalysisTooling
+import org.neo4j.cypher.internal.ast.semantics.SemanticCheck
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckable
+import org.neo4j.cypher.internal.ast.semantics.SemanticError
 import org.neo4j.cypher.internal.ast.semantics.SemanticExpressionCheck
 import org.neo4j.cypher.internal.ast.semantics.SemanticPatternCheck
+import org.neo4j.cypher.internal.expressions.ExistsSubClause
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.LogicalProperty
@@ -43,10 +46,17 @@ sealed trait SetProperty extends SetItem with SemanticAnalysisTooling
 
 case class SetPropertyItem(property: LogicalProperty, expression: Expression)(val position: InputPosition) extends SetProperty {
   def semanticCheck =
-    SemanticExpressionCheck.simple(property) chain
+
+    checkForExists chain
+      SemanticExpressionCheck.simple(property) chain
       SemanticPatternCheck.checkValidPropertyKeyNames(Seq(property.propertyKey), property.position) chain
       SemanticExpressionCheck.simple(expression) chain
       expectType(CTNode.covariant | CTRelationship.covariant, property.map)
+
+  private def checkForExists: SemanticCheck = {
+    val invalid: Option[Expression] = expression.treeFind[Expression] { case _: ExistsSubClause => true }
+    invalid.map(exp => SemanticError("The EXISTS subclause is not valid inside a SET clause.", exp.position))
+  }
 }
 
 case class SetExactPropertiesFromMapItem(variable: Variable, expression: Expression)

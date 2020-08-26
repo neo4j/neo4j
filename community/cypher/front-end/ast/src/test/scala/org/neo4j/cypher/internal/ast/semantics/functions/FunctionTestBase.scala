@@ -52,7 +52,7 @@ abstract class FunctionTestBase(funcName: String) extends SemanticFunSuite {
       arguments
     )(DummyPosition(5))
 
-    val state = SemanticExpressionCheck.check(context, arguments)(SemanticState.clean).state
+    val state = SemanticExpressionCheck.check(context, arguments, Seq())(SemanticState.clean).state
     (SemanticExpressionCheck.check(context, invocation)(state), invocation)
   }
 }
