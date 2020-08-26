@@ -38,7 +38,7 @@ class JoinSolverStepTest extends CypherFunSuite with LogicalPlanningTestSupport2
   val pattern1 = PatternRelationship("r1", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
   val pattern2 = PatternRelationship("r2", ("b", "c"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
 
-  val table = new IDPTable[LogicalPlan]()
+  val table = IDPTable.empty[LogicalPlan]
 
   test("does not join based on empty table") {
     implicit val registry: DefaultIdRegistry[PatternRelationship] = IdRegistry[PatternRelationship]
@@ -177,8 +177,8 @@ class JoinSolverStepTest extends CypherFunSuite with LogicalPlanningTestSupport2
       val id2: Goal = register(pattern2)
 
       // Compact goals
-      val compactedId1 = BitSet(registry.compact(id1))
-      val compactedId2 = BitSet(registry.compact(id2))
+      val compactedId1 = Goal(BitSet(registry.compact(id1.bitSet)))
+      val compactedId2 = Goal(BitSet(registry.compact(id2.bitSet)))
       table.removeAllTracesOf(id1)
 
       // Table is not completely compacted
@@ -187,12 +187,12 @@ class JoinSolverStepTest extends CypherFunSuite with LogicalPlanningTestSupport2
       table.put(compactedId2, sorted = false, plan2)
 
       // Goal is completely compacted - should result in expandStillPossible == false
-      joinSolverStep(qg)(registry, compactedId1 ++ compactedId2, table, ctx).toSet should equal(Set(
+      joinSolverStep(qg)(registry, Goal(compactedId1.bitSet ++ compactedId2.bitSet), table, ctx).toSet should equal(Set(
         NodeHashJoin(Set("b"), plan1, plan2),
         NodeHashJoin(Set("b"), plan2, plan1)
       ))
     }
   }
 
-  def register[X](patRels: X*)(implicit registry: IdRegistry[X]): Goal = registry.registerAll(patRels)
+  def register[X](patRels: X*)(implicit registry: IdRegistry[X]): Goal = Goal(registry.registerAll(patRels))
 }

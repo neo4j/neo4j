@@ -28,19 +28,19 @@ import scala.collection.immutable.BitSet
 class IDPTableTest extends CypherFunSuite {
 
   test("removes all traces of a goal") {
-    val table = new IDPTable[LogicalPlan]()
+    val table = IDPTable.empty[LogicalPlan]
 
     // 0 is the sorted bit
-    addTo(table, BitSet(1))
-    addTo(table, BitSet(2))
-    addTo(table, BitSet(3))
-    addTo(table, BitSet(1, 2))
-    addTo(table, BitSet(2, 3))
-    addTo(table, BitSet(1, 3))
+    addTo(table, Goal(BitSet(1)))
+    addTo(table, Goal(BitSet(2)))
+    addTo(table, Goal(BitSet(3)))
+    addTo(table, Goal(BitSet(1, 2)))
+    addTo(table, Goal(BitSet(2, 3)))
+    addTo(table, Goal(BitSet(1, 3)))
 
-    table.removeAllTracesOf(BitSet(1, 2))
+    table.removeAllTracesOf(Goal(BitSet(1, 2)))
 
-    table.plans.map(_._1).toSet should equal(Set((BitSet(3), true), (BitSet(3), false)))
+    table.plans.map(_._1).toSet should equal(Set((Goal(BitSet(3)), true), (Goal(BitSet(3)), false)))
   }
 
   private def addTo(table: IDPTable[LogicalPlan], goal: idp.Goal): Unit = {

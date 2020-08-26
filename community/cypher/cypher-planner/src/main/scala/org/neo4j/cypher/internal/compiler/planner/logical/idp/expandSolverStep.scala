@@ -41,8 +41,8 @@ case class expandSolverStep(qg: QueryGraph) extends IDPSolverStep[PatternRelatio
   override def apply(registry: IdRegistry[PatternRelationship], goal: Goal, table: IDPCache[LogicalPlan], context: LogicalPlanningContext): Iterator[LogicalPlan] = {
     val result: Iterator[Iterator[LogicalPlan]] =
       for {
-        patternId <- goal.iterator
-        plan <- table(goal - patternId).iterator
+        patternId <- goal.bitSet.iterator
+        plan <- table(Goal(goal.bitSet - patternId)).iterator
         pattern <- registry.lookup(patternId)
       } yield {
         if (plan.availableSymbols.contains(pattern.name))

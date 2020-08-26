@@ -40,7 +40,7 @@ class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanningTestSuppor
   private val pattern1 = PatternRelationship("r1", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
   private val pattern2 = PatternRelationship("r2", ("b", "c"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
 
-  private val table = new IDPTable[LogicalPlan]()
+  private val table = IDPTable.empty[LogicalPlan]
   private val qg = mock[QueryGraph]
 
   test("does not expand based on empty table") {
@@ -119,15 +119,15 @@ class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanningTestSuppor
       val plan1 = fakeLogicalPlanFor(ctx.planningAttributes, "a", "r1", "b")
       ctx.planningAttributes.solveds.set(plan1.id, RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes("a", "b")))
 
-      val compactedPattern1 = BitSet(registry.compact(register(pattern1)))
-      val compactedPattern2 = BitSet(registry.compact(register(pattern2)))
+      val compactedPattern1 = Goal(BitSet(registry.compact(register(pattern1).bitSet)))
+      val compactedPattern2 = Goal(BitSet(registry.compact(register(pattern2).bitSet)))
 
       table.put(compactedPattern1, sorted = false, plan1)
 
-      expandSolverStep(qg)(registry, compactedPattern1 ++ compactedPattern2, table, ctx).toSet should be(empty)
+      expandSolverStep(qg)(registry, Goal(compactedPattern1.bitSet ++ compactedPattern2.bitSet), table, ctx).toSet should be(empty)
     }
   }
 
 
-  def register[X](patRels: X*)(implicit registry: IdRegistry[X]): Goal = registry.registerAll(patRels)
+  def register[X](patRels: X*)(implicit registry: IdRegistry[X]): Goal = Goal(registry.registerAll(patRels))
 }

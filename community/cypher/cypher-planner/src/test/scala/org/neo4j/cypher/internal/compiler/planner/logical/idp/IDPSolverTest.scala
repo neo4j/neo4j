@@ -143,22 +143,22 @@ class IDPSolverTest extends CypherFunSuite {
 
     verify(monitor).startIteration(1)
     verify(monitor).endIteration(1, 2, 16)
-    verify(table).removeAllTracesOf(BitSet(1, 2))
+    verify(table).removeAllTracesOf(Goal(BitSet(1, 2)))
     verify(monitor).startIteration(2)
     verify(monitor).endIteration(2, 2, 14)
-    verify(table).removeAllTracesOf(BitSet(3, 9))
+    verify(table).removeAllTracesOf(Goal(BitSet(3, 9)))
     verify(monitor).startIteration(3)
     verify(monitor).endIteration(3, 2, 12)
-    verify(table).removeAllTracesOf(BitSet(4, 10))
+    verify(table).removeAllTracesOf(Goal(BitSet(4, 10)))
     verify(monitor).startIteration(4)
     verify(monitor).endIteration(4, 2, 10)
-    verify(table).removeAllTracesOf(BitSet(5, 11))
+    verify(table).removeAllTracesOf(Goal(BitSet(5, 11)))
     verify(monitor).startIteration(5)
     verify(monitor).endIteration(5, 2, 8)
-    verify(table).removeAllTracesOf(BitSet(6, 12))
+    verify(table).removeAllTracesOf(Goal(BitSet(6, 12)))
     verify(monitor).startIteration(6)
     verify(monitor).endIteration(6, 3, 6)
-    verify(table).removeAllTracesOf(BitSet(7, 8, 13))
+    verify(table).removeAllTracesOf(Goal(BitSet(7, 8, 13)))
     verify(monitor).foundPlanAfter(6)
     verifyNoMoreInteractions(monitor)
   }
@@ -226,9 +226,9 @@ class IDPSolverTest extends CypherFunSuite {
     override def apply(registry: IdRegistry[Char], goal: Goal, table: IDPCache[String], context: Unit): Iterator[String] = {
       val goalSize = goal.size
       for {
-        leftGoal <- goal.subsets if leftGoal.size <= goalSize
+        leftGoal <- goal.subGoals if leftGoal.size <= goalSize
         lhs <- table(leftGoal).iterator
-        rightGoal = goal &~ leftGoal // bit set -- operator
+        rightGoal = Goal(goal.bitSet &~ leftGoal.bitSet) // bit set -- operator
         rhs <- table(rightGoal).iterator
         candidate = lhs ++ rhs if isSorted(candidate)
       } yield candidate

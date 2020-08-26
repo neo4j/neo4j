@@ -21,15 +21,17 @@ package org.neo4j.cypher.internal.compiler.planner.logical.idp
 
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.IDPCache.Results
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.IDPTable.SORTED_BIT
+import org.neo4j.cypher.internal.compiler.planner.logical.idp.IDPTable.SortedGoal
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.IDPTable.asGoal
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.IDPTable.extractSort
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.IDPTable.incorporateSort
 
+import scala.collection.immutable.BitSet
 import scala.collection.mutable
 
 // Table used by IDPSolver to record optimal plans found so far
 //
-class IDPTable[Result](private val map: mutable.Map[SortedGoal, Result] = mutable.Map.empty[SortedGoal, Result]) extends IDPCache[Result] {
+class IDPTable[Result]private(private val map: mutable.Map[SortedGoal, Result] = mutable.Map.empty[SortedGoal, Result]) extends IDPCache[Result] {
 
   def size: Int = map.size
 
@@ -38,13 +40,13 @@ class IDPTable[Result](private val map: mutable.Map[SortedGoal, Result] = mutabl
   }
 
   def apply(goal: Goal): Results[Result] = {
-    Results(map.get(goal), map.get(goal + SORTED_BIT))
+    Results(map.get(SortedGoal(goal.bitSet)), map.get(SortedGoal(goal.bitSet + SORTED_BIT)))
   }
 
   def contains(goal: Goal, sorted: Boolean): Boolean = map.contains(incorporateSort(goal, sorted))
 
   def unsortedPlansOfSize(k: Int): Iterator[(Goal, Result)] = map.iterator.collect {
-    case (sortedGoal, result) if !sortedGoal(SORTED_BIT) && sortedGoal.size == k => (asGoal(sortedGoal), result)
+    case (sortedGoal, result) if !sortedGoal.isSorted && sortedGoal.bitSet.size == k => (asGoal(sortedGoal), result)
   }
 
   def plans: Iterator[((Goal, Boolean), Result)] = map.iterator.map {
@@ -55,7 +57,7 @@ class IDPTable[Result](private val map: mutable.Map[SortedGoal, Result] = mutabl
     // It is OK and required not to convert the goal to a sorted goal here.
     // We want to drop the entries which solve a subset of what goal solves,
     // regardless ordering.
-    val toDrop = map.keysIterator.filter { entry => (entry & goal).nonEmpty }
+    val toDrop = map.keysIterator.filter { entry => (entry.bitSet & goal.bitSet).nonEmpty }
     toDrop.foreach(map.remove)
   }
 
@@ -65,23 +67,37 @@ class IDPTable[Result](private val map: mutable.Map[SortedGoal, Result] = mutabl
 object IDPTable {
   val SORTED_BIT = 0
 
+  private case class SortedGoal(bitSet: BitSet) {
+    def isSorted: Boolean = bitSet(SORTED_BIT)
+  }
+
   def apply[Solvable, Result](registry: IdRegistry[Solvable], seed: Seed[Solvable, Result]): IDPTable[Result] = {
-    val builder = mutable.Map.newBuilder[Goal, Result]
+    val builder = mutable.Map.newBuilder[SortedGoal, Result]
     if (seed.hasDefiniteSize)
       builder.sizeHint(seed.size)
-    seed.foreach { case ((goal, sorted), product) => builder += incorporateSort(registry.registerAll(goal), sorted) -> product }
+    seed.foreach { case ((goal, sorted), product) => builder += incorporateSort(Goal(registry.registerAll(goal)), sorted) -> product }
     new IDPTable[Result](builder.result())
   }
 
+  def empty[Result]: IDPTable[Result] = new IDPTable[Result]()
+
   private def incorporateSort(goal: Goal, sorted: Boolean): SortedGoal = {
-    if (sorted) goal + SORTED_BIT else goal
+    if (sorted) SortedGoal(goal.bitSet + SORTED_BIT) else SortedGoal(goal.bitSet)
   }
 
   private def extractSort(goal: SortedGoal): (Goal, Boolean) = {
-    (asGoal(goal), goal(SORTED_BIT))
+    (asGoal(goal), goal.isSorted)
   }
 
   private def asGoal(goal: SortedGoal): Goal = {
-    goal - SORTED_BIT
+    Goal(goal.bitSet - SORTED_BIT)
   }
+}
+
+case class Goal(bitSet: BitSet) {
+  def apply(i: Int): Boolean = bitSet(i)
+  def size: Int = bitSet.size
+  def subGoals: Iterator[Goal] = bitSet.subsets().map(Goal)
+  def subGoals(size: Int): Iterator[Goal] = bitSet.subsets(size).map(Goal)
+  def exists(p: Int => Boolean): Boolean = bitSet.exists(p)
 }

@@ -73,7 +73,7 @@ class IDPSolver[Solvable, Result, Context](generator: IDPSolverStep[Solvable, Re
   def apply(seed: Seed[Solvable, Result], initialToDo: Set[Solvable], context: Context): BestResults[Result] = {
     val registry = registryFactory()
     val table = tableFactory(registry, seed)
-    var toDo = registry.registerAll(initialToDo)
+    var toDo = Goal(registry.registerAll(initialToDo))
 
     // utility functions
     val goalSelector: Selector[(Goal, Result)] = projectingSelector.apply[(Goal, Result)](_._2, _)
@@ -87,7 +87,7 @@ class IDPSolver[Solvable, Result, Context](generator: IDPSolverStep[Solvable, Re
       while (keepGoing && blockSize <= maxBlockSize) {
         var foundNoCandidate = true
         blockSize += 1
-        val goals = toDo.subsets(blockSize)
+        val goals = toDo.subGoals(blockSize)
         while (keepGoing && goals.hasNext) {
           val goal = goals.next()
           if (table(goal).result.isEmpty) {
@@ -133,11 +133,11 @@ class IDPSolver[Solvable, Result, Context](generator: IDPSolverStep[Solvable, Re
     }
 
     def compactBlock(original: Goal): Unit = {
-      val newId = registry.compact(original)
+      val newId = registry.compact(original.bitSet)
       val IDPCache.Results(result, sortedResult) = table(original)
-      result.foreach { table.put(BitSet.empty + newId, sorted = false, _) }
-      sortedResult.foreach { table.put(BitSet.empty + newId, sorted = true, _) }
-      toDo = toDo -- original + newId
+      result.foreach { table.put(Goal(BitSet.empty + newId), sorted = false, _) }
+      sortedResult.foreach { table.put(Goal(BitSet.empty + newId), sorted = true, _) }
+      toDo = Goal(toDo.bitSet -- original.bitSet + newId)
       table.removeAllTracesOf(original)
     }
 
@@ -165,7 +165,7 @@ class IDPSolver[Solvable, Result, Context](generator: IDPSolverStep[Solvable, Re
     monitor.foundPlanAfter(iterations)
 
     val (plansFulfillingReq, plans) =  table.plans
-      .map { case ((key, fulfilsReq), result) => (registry.explode(key), fulfilsReq) -> result }
+      .map { case ((key, fulfilsReq), result) => (registry.explode(key.bitSet), fulfilsReq) -> result }
       .partition { case ((_, fulfilsReq), _) => fulfilsReq }
 
     val (_, bestResult) = plans

@@ -41,7 +41,7 @@ case class joinSolverStep(qg: QueryGraph, IGNORE_EXPAND_SOLUTIONS_FOR_TEST: Bool
 
     if (VERBOSE) {
       println(s"\n>>>> start solving ${show(goal, goalSymbols(goal, registry))}")
-      goal.toSeq.map(BitSet(_)).foreach {
+      goal.bitSet.toSeq.map(BitSet(_)).foreach {
         subgoal => println(s"Solving subgoal $subgoal which covers " + registry.explode(subgoal).flatMap(_.coveredIds))
       }
     }
@@ -69,9 +69,9 @@ case class joinSolverStep(qg: QueryGraph, IGNORE_EXPAND_SOLUTIONS_FOR_TEST: Bool
 
     for {
       leftSize <- 1.until(goalSize)
-      leftGoal <- goal.subsets(leftSize)
+      leftGoal <- goal.subGoals(leftSize)
       rightSize <- 1.until(goalSize)
-      rightGoal <- goal.subsets(rightSize) if (leftGoal != rightGoal) && ((leftGoal | rightGoal) == goal)
+      rightGoal <- goal.subGoals(rightSize) if (leftGoal != rightGoal) && (Goal(leftGoal.bitSet | rightGoal.bitSet) == goal)
       lhs <- table(leftGoal).iterator
       rhs <- table(rightGoal).iterator
     } {
@@ -112,10 +112,10 @@ case class joinSolverStep(qg: QueryGraph, IGNORE_EXPAND_SOLUTIONS_FOR_TEST: Bool
     solveds.get(plan.id).asSinglePlannerQuery.queryGraph.patternNodes
 
   private def show(goal: Goal, symbols: Set[String]) =
-    s"${showIds(goal)}: ${showNames(symbols)}"
+    s"${showIds(goal.bitSet)}: ${showNames(symbols)}"
 
   private def goalSymbols(goal: Goal, registry: IdRegistry[PatternRelationship]) =
-    registry.explode(goal).flatMap(_.coveredIds)
+    registry.explode(goal.bitSet).flatMap(_.coveredIds)
 
   private def showIds(ids: Set[Int]) =
     ids.toIndexedSeq.sorted.mkString("{", ", ", "}")
