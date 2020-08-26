@@ -41,7 +41,7 @@ public class CommunitySecurityComponentVersion_0_35 extends KnownCommunitySecuri
     @Override
     public boolean detected( Transaction tx )
     {
-        if ( nodesWithLabelExist( tx, USER_LABEL ) || getVersion( tx ) != NoCommunitySecurityComponentVersion.VERSION )
+        if ( nodesWithLabelExist( tx, USER_LABEL ) || getVersion( tx ) != UNKNOWN_VERSION )
         {
             return false;
         }

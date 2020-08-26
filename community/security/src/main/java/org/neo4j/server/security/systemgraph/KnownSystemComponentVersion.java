@@ -25,7 +25,6 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.logging.Log;
-import org.neo4j.server.security.systemgraph.versions.NoCommunitySecurityComponentVersion;
 
 /***
  * Version of a system graph component.
@@ -40,6 +39,8 @@ public abstract class KnownSystemComponentVersion
     public final int version;
     public final String description;
     protected final Log log;
+
+    public static final int UNKNOWN_VERSION = -1;
 
     protected KnownSystemComponentVersion( String property, int version, String description, Log log )
     {
@@ -66,7 +67,7 @@ public abstract class KnownSystemComponentVersion
 
     protected int getVersion( Transaction tx )
     {
-        int result = NoCommunitySecurityComponentVersion.VERSION;
+        int result = UNKNOWN_VERSION;
         ResourceIterator<Node> nodes = tx.findNodes( versionLabel );
         if ( nodes.hasNext() )
         {
@@ -94,7 +95,7 @@ public abstract class KnownSystemComponentVersion
 
     public SystemGraphComponent.Status getStatus()
     {
-        if ( this.version == NoCommunitySecurityComponentVersion.VERSION )
+        if ( this.version == UNKNOWN_VERSION )
         {
             return SystemGraphComponent.Status.UNINITIALIZED;
         }

@@ -25,11 +25,9 @@ import org.neo4j.server.security.systemgraph.UserSecurityGraphComponent;
 
 public class NoCommunitySecurityComponentVersion extends KnownCommunitySecurityComponentVersion
 {
-    public static final int VERSION = -1;
-
     public NoCommunitySecurityComponentVersion()
     {
-        super( VERSION, String.format( "no '%s' graph found", UserSecurityGraphComponent.COMPONENT ), NullLog.getInstance() );
+        super( UNKNOWN_VERSION, String.format( "no '%s' graph found", UserSecurityGraphComponent.COMPONENT ), NullLog.getInstance() );
     }
 
     @Override

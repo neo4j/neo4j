@@ -35,6 +35,7 @@ import org.neo4j.server.security.systemgraph.versions.CommunitySecurityComponent
 import org.neo4j.server.security.systemgraph.versions.KnownCommunitySecurityComponentVersion;
 import org.neo4j.server.security.systemgraph.versions.NoCommunitySecurityComponentVersion;
 
+import static org.neo4j.server.security.systemgraph.KnownSystemComponentVersion.UNKNOWN_VERSION;
 import static org.neo4j.server.security.systemgraph.versions.KnownCommunitySecurityComponentVersion.USER_LABEL;
 
 /***
@@ -113,7 +114,7 @@ public class UserSecurityGraphComponent extends AbstractSystemGraphComponent
             if ( !wasInitialized )
             {
 
-                 log.info( "Updating the initial password in component '%s'  ", COMPONENT, component.version, component.getStatus() );
+                log.info( "Updating the initial password in component '%s'  ", COMPONENT, component.version, component.getStatus() );
                 component.updateInitialUserPassword( tx );
                 tx.commit();
             }
@@ -128,7 +129,7 @@ public class UserSecurityGraphComponent extends AbstractSystemGraphComponent
             KnownCommunitySecurityComponentVersion currentVersion = knownUserSecurityComponentVersions.detectCurrentSecurityGraphVersion( tx );
             log.debug( "Trying to upgrade component '%s' with version %d and status %s to latest version",
                     COMPONENT, currentVersion.version, currentVersion.getStatus() );
-            if ( currentVersion.version == NoCommunitySecurityComponentVersion.VERSION )
+            if ( currentVersion.version == UNKNOWN_VERSION )
             {
                 log.debug( "The current version does not have a security graph, doing a full initialization" );
                 initializeLatestSystemGraph( tx );

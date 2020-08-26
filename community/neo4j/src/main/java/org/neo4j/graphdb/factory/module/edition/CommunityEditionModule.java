@@ -285,20 +285,15 @@ public class CommunityEditionModule extends StandaloneEditionModule
 
     private SecurityProvider makeSecurityModule( GlobalModule globalModule )
     {
-        SecurityProvider securityProvider;
         setupSecurityGraphInitializer( globalModule );
         if ( globalModule.getGlobalConfig().get( GraphDatabaseSettings.auth_enabled ) )
         {
             SecurityModule securityModule =
                     new CommunitySecurityModule( globalModule.getLogService(), globalModule.getGlobalConfig(), globalModule.getGlobalDependencies() );
             securityModule.setup();
-            securityProvider = securityModule;
+            return securityModule;
         }
-        else
-        {
-            securityProvider = NoAuthSecurityProvider.INSTANCE;
-        }
-        return securityProvider;
+        return NoAuthSecurityProvider.INSTANCE;
     }
 
     public static <T> T tryResolveOrCreate( Class<T> clazz, DependencyResolver dependencies, Supplier<T> newInstanceMethod )
