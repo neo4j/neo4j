@@ -19,10 +19,7 @@
  */
 package org.neo4j.graphdb;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
@@ -32,73 +29,57 @@ import org.neo4j.kernel.impl.locking.LockCountVisitor;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.community.CommunityLockClient;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.test.TestDatabaseManagementServiceBuilder;
-import org.neo4j.test.rule.OtherThreadRule;
+import org.neo4j.test.OtherThreadExecutor;
+import org.neo4j.test.extension.ImpermanentDbmsExtension;
+import org.neo4j.test.extension.Inject;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.fail;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.assertj.core.util.Throwables.getRootCause;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.graphdb.Label.label;
 
+@ImpermanentDbmsExtension
 public class GraphDatabaseShutdownTest
 {
-    private GraphDatabaseAPI db;
+    private final OtherThreadExecutor t2 = new OtherThreadExecutor( "T2" );
+    private final OtherThreadExecutor t3 = new OtherThreadExecutor( "T3" );
 
-    @Rule
-    public final OtherThreadRule t2 = new OtherThreadRule( "T2" );
-    @Rule
-    public final OtherThreadRule t3 = new OtherThreadRule( "T3" );
+    @Inject
     private DatabaseManagementService managementService;
-
-    @Before
-    public void setUp()
-    {
-        db = newDb();
-    }
-
-    @After
-    public void tearDown()
-    {
-        managementService.shutdown();
-    }
+    @Inject
+    private GraphDatabaseAPI db;
+    @Inject
+    private Locks locks;
 
     @Test
-    public void transactionShouldReleaseLocksWhenGraphDbIsBeingShutdown()
+    void transactionShouldReleaseLocksWhenGraphDbIsBeingShutdown()
     {
-        // GIVEN
-        final Locks locks = db.getDependencyResolver().resolveDependency( Locks.class );
         assertEquals( 0, lockCount( locks ) );
-        Exception exceptionThrownByTxClose = null;
 
-        // WHEN
-        try ( Transaction tx = db.beginTx() )
+        assertThrows( TransactionTerminatedException.class, () ->
         {
-            Node node = tx.createNode();
-            tx.acquireWriteLock( node );
-            assertThat( lockCount( locks ) ).isGreaterThanOrEqualTo( 1 );
+            try ( Transaction tx = db.beginTx() )
+            {
+                Node node = tx.createNode();
+                tx.acquireWriteLock( node );
+                assertThat( lockCount( locks ) ).isGreaterThanOrEqualTo( 1 );
 
-            managementService.shutdown();
+                managementService.shutdown();
 
-            tx.createNode();
-            tx.commit();
-        }
-        catch ( Exception e )
-        {
-            exceptionThrownByTxClose = e;
-        }
+                tx.createNode();
+                tx.commit();
+            }
+        } );
 
-        // THEN
-        assertThat( exceptionThrownByTxClose ).isInstanceOf( TransactionTerminatedException.class );
         assertFalse( db.isAvailable( 1 ) );
         assertEquals( 0, lockCount( locks ) );
     }
 
     @Test
-    public void shouldBeAbleToShutdownWhenThereAreTransactionsWaitingForLocks() throws Exception
+    void shouldBeAbleToShutdownWhenThereAreTransactionsWaitingForLocks()
     {
         // GIVEN
         final Node node;
@@ -113,7 +94,7 @@ public class GraphDatabaseShutdownTest
 
         // WHEN
         // one thread locks previously created node and initiates graph db shutdown
-        Future<Void> shutdownFuture = t2.execute( () ->
+        Future<Void> shutdownFuture = t2.executeDontWait( () ->
         {
             try ( Transaction tx = db.beginTx() )
             {
@@ -121,7 +102,7 @@ public class GraphDatabaseShutdownTest
                 nodeLockedLatch.countDown();
 
                 // Wait for T3 to start waiting for this node write lock
-                t3.get().waitUntilWaiting( details -> details.isAt( CommunityLockClient.class, "acquireExclusive" ) );
+                t3.waitUntilWaiting( details -> details.isAt( CommunityLockClient.class, "acquireExclusive" ) );
 
                 managementService.shutdown();
 
@@ -132,7 +113,7 @@ public class GraphDatabaseShutdownTest
         } );
 
         // other thread tries to lock the same node while it has been locked and graph db is being shutdown
-        Future<Void> secondTxResult = t3.execute( () ->
+        Future<Void> secondTxResult = t3.executeDontWait( () ->
         {
             try ( Transaction tx = db.beginTx() )
             {
@@ -148,24 +129,11 @@ public class GraphDatabaseShutdownTest
         } );
 
         // start waiting when the trap has been triggered
-        try
-        {
-            secondTxResult.get( 60, SECONDS );
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( getRootCause( e ) ).isInstanceOf( TransactionTerminatedException.class );
-        }
-        try
-        {
-            shutdownFuture.get();
-            fail( "Should thrown exception since transaction should be canceled." );
-        }
-        catch ( Exception e )
-        {
-            assertThat( getRootCause( e ) ).isInstanceOf( TransactionTerminatedException.class );
-        }
+        var e = assertThrows( Exception.class, () -> secondTxResult.get( 60, SECONDS ) );
+        assertThat( getRootCause( e ) ).isInstanceOf( TransactionTerminatedException.class );
+
+        var terminationException = assertThrows( Exception.class, shutdownFuture::get );
+        assertThat( getRootCause( terminationException ) ).isInstanceOf( TransactionTerminatedException.class );
     }
 
     private static int lockCount( Locks locks )
@@ -173,11 +141,5 @@ public class GraphDatabaseShutdownTest
         LockCountVisitor lockCountVisitor = new LockCountVisitor();
         locks.accept( lockCountVisitor );
         return lockCountVisitor.getLockCount();
-    }
-
-    private GraphDatabaseAPI newDb()
-    {
-        managementService = new TestDatabaseManagementServiceBuilder().impermanent().build();
-        return (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
     }
 }

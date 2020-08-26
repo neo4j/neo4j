@@ -17,72 +17,84 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+/*
+ * Copyright (c) 2002-2020 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex;
+import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.graphdb.schema.Schema;
+import org.neo4j.graphdb.schema.Schema.IndexState;
 import org.neo4j.index.SetInitialStateInNativeIndex;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.test.Barrier;
-import org.neo4j.test.rule.DbmsRule;
-import org.neo4j.test.rule.EmbeddedDbmsRule;
-import org.neo4j.test.rule.OtherThreadRule;
-import org.neo4j.test.rule.RandomRule;
-import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.DefaultFileSystemRule;
-import org.neo4j.test.rule.fs.FileSystemRule;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.Neo4jLayoutExtension;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexPopulator.BYTE_FAILED;
 import static org.neo4j.test.TestLabels.LABEL_ONE;
 
-@RunWith( Parameterized.class )
-@Ignore
+@Neo4jLayoutExtension
 public class IndexCleanupIT
 {
-    @Parameterized.Parameters( name = "{index} {0}" )
-    public static Collection<org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex> schemaIndexes()
-    {
-        return Arrays.asList( GraphDatabaseSettings.SchemaIndex.values() );
-    }
-
-    @Parameterized.Parameter
-    public GraphDatabaseSettings.SchemaIndex schemaIndex;
-
     private static final String propertyKey = "key";
 
-    private RandomRule random = new RandomRule();
-    private FileSystemRule fs = new DefaultFileSystemRule();
-    private TestDirectory directory = TestDirectory.testDirectory( fs );
-    private DbmsRule db = new EmbeddedDbmsRule( directory ).startLazily();
-    private OtherThreadRule t2 = new OtherThreadRule( "T2" );
+    @Inject
+    private FileSystemAbstraction fs;
+    @Inject
+    private DatabaseLayout databaseLayout;
+    private DatabaseManagementService managementService;
+    private GraphDatabaseAPI db;
 
-    @Rule
-    public RuleChain rules = RuleChain.outerRule( random ).around( fs ).around( directory ).around( db );
+    @AfterEach
+    void tearDown()
+    {
+        if ( managementService != null )
+        {
+            managementService.shutdown();
+        }
+    }
 
-    @Test
-    public void mustClearIndexDirectoryOnDropWhileOnline()
+    @ParameterizedTest
+    @EnumSource( SchemaIndex.class )
+    void mustClearIndexDirectoryOnDropWhileOnline( SchemaIndex schemaIndex )
     {
         configureDb( schemaIndex );
         createIndex( db, true );
@@ -98,22 +110,23 @@ public class IndexCleanupIT
         assertNoIndexFilesExisting( providerDirectories );
     }
 
-    @Test
-    public void mustClearIndexDirectoryOnDropWhileFailed() throws IOException
+    @ParameterizedTest
+    @EnumSource( SchemaIndex.class )
+    void mustClearIndexDirectoryOnDropWhileFailed( SchemaIndex schemaIndex ) throws IOException
     {
         configureDb( schemaIndex );
         createIndex( db, true );
         IndexProviderDescriptor providerDescriptor = new IndexProviderDescriptor( schemaIndex.providerKey(), schemaIndex.providerVersion() );
         SetInitialStateInNativeIndex setInitialStateInNativeIndex = new SetInitialStateInNativeIndex( BYTE_FAILED, providerDescriptor );
-        db.restartDatabase( setInitialStateInNativeIndex );
+        restartDatabase( schemaIndex, setInitialStateInNativeIndex );
         // Index should be failed at this point
 
         try ( Transaction tx = db.beginTx() )
         {
             for ( IndexDefinition index : tx.schema().getIndexes() )
             {
-                Schema.IndexState indexState = tx.schema().getIndexState( index );
-                assertEquals( Schema.IndexState.FAILED, indexState, "expected index state to be " + Schema.IndexState.FAILED );
+                IndexState indexState = tx.schema().getIndexState( index );
+                assertEquals( IndexState.FAILED, indexState, "expected index state to be " + IndexState.FAILED );
             }
             tx.commit();
         }
@@ -125,8 +138,10 @@ public class IndexCleanupIT
         assertNoIndexFilesExisting( providerDirectories( fs, db ) );
     }
 
-    @Test
-    public void mustClearIndexDirectoryOnDropWhilePopulating() throws InterruptedException
+
+    @ParameterizedTest
+    @EnumSource( SchemaIndex.class )
+    void mustClearIndexDirectoryOnDropWhilePopulating( SchemaIndex schemaIndex ) throws InterruptedException
     {
         // given
         Barrier.Control midPopulation = new Barrier.Control();
@@ -139,7 +154,7 @@ public class IndexCleanupIT
             }
         };
         configureDb( schemaIndex );
-        Monitors monitors = db.getGraphDatabaseAPI().getDependencyResolver().resolveDependency( Monitors.class );
+        Monitors monitors = db.getDependencyResolver().resolveDependency( Monitors.class );
         monitors.addMonitorListener( trappingMonitor );
         createIndex( db, false );
 
@@ -174,9 +189,18 @@ public class IndexCleanupIT
         }
     }
 
-    private void configureDb( GraphDatabaseSettings.SchemaIndex schemaIndex )
+    private void restartDatabase( SchemaIndex index, SetInitialStateInNativeIndex action ) throws IOException
     {
-        db.withSetting( GraphDatabaseSettings.default_schema_provider, schemaIndex.providerName() );
+        managementService.shutdown();
+        action.run( fs, databaseLayout );
+        configureDb( index );
+    }
+
+    private void configureDb( SchemaIndex schemaIndex )
+    {
+        managementService = new TestDatabaseManagementServiceBuilder( databaseLayout )
+                .setConfig( default_schema_provider, schemaIndex.providerName() ).build();
+        db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
     }
 
     private void createIndex( GraphDatabaseService db, boolean awaitOnline )
@@ -196,7 +220,7 @@ public class IndexCleanupIT
         }
     }
 
-    private Path[] providerDirectories( FileSystemAbstraction fs, DbmsRule db )
+    private Path[] providerDirectories( FileSystemAbstraction fs, GraphDatabaseAPI db )
     {
         DatabaseLayout databaseLayout = db.databaseLayout();
         Path dbDir = databaseLayout.databaseDirectory();

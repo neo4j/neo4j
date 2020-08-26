@@ -19,19 +19,15 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.junit.Assume;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Label;
@@ -46,12 +42,15 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
-import org.neo4j.test.rule.DbmsRule;
-import org.neo4j.test.rule.EmbeddedDbmsRule;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.extension.DbmsExtension;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.values.storable.TextValue;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 
 /**
@@ -95,62 +94,36 @@ import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
  * </ul>
  * Code navigation:
  */
-@RunWith( Parameterized.class )
-public class MultipleOpenCursorsTest
+@DbmsExtension
+@ExtendWith( RandomExtension.class )
+class MultipleOpenCursorsTest
 {
-    private interface IndexCoordinatorFactory
-    {
-        IndexCoordinator create( Label indexLabel, String numberProp1,
-                String numberProp2, String stringProp1, String stringProp2 );
-    }
-
-    private final DbmsRule db = new EmbeddedDbmsRule();
-
-    private static final RandomRule rnd = new RandomRule();
-    @Rule
-    public RuleChain ruleChain = RuleChain.outerRule( rnd ).around( db );
-
     private static final Label indexLabel = Label.label( "IndexLabel" );
-
     private static final String numberProp1 = "numberProp1";
     private static final String numberProp2 = "numberProp2";
     private static final String stringProp1 = "stringProp1";
     private static final String stringProp2 = "stringProp2";
 
-    @Parameterized.Parameters( name = "{0}" )
-    public static Collection<Object[]> params()
+    @Inject
+    private GraphDatabaseAPI db;
+    @Inject
+    private RandomRule rnd;
+
+    public static Stream<Arguments> params()
     {
-        return Arrays.asList(
-                new Object[]{"Single number non unique", (IndexCoordinatorFactory) NumberIndexCoordinator::new},
-                new Object[]{"Single string non unique", (IndexCoordinatorFactory) StringIndexCoordinator::new},
-                new Object[]{"Composite number non unique",
-                        (IndexCoordinatorFactory) NumberCompositeIndexCoordinator::new},
-                new Object[]{"Composite string non unique",
-                        (IndexCoordinatorFactory) StringCompositeIndexCoordinator::new}
-        );
+        return Stream.of( Arguments.of( new NumberIndexCoordinator( indexLabel, numberProp1, numberProp2, stringProp1, stringProp2 ) ),
+                Arguments.of( new StringIndexCoordinator( indexLabel, numberProp1, numberProp2, stringProp1, stringProp2 ) ),
+                Arguments.of( new NumberCompositeIndexCoordinator( indexLabel, numberProp1, numberProp2, stringProp1, stringProp2 ) ),
+                Arguments.of( new StringCompositeIndexCoordinator( indexLabel, numberProp1, numberProp2, stringProp1, stringProp2 ) ) );
     }
 
-    @Parameterized.Parameter( 0 )
     public String name;
 
-    @Parameterized.Parameter( 1 )
-    public IndexCoordinatorFactory indexCoordinatorFactory;
-
-    private IndexCoordinator indexCoordinator;
-
-    @Before
-    public void setupDb()
+    @ParameterizedTest
+    @MethodSource( value = "params" )
+    void multipleCursorsNotNestedExists( IndexCoordinator indexCoordinator ) throws Exception
     {
-        indexCoordinator =
-                indexCoordinatorFactory.create( indexLabel, numberProp1, numberProp2, stringProp1, stringProp2 );
         indexCoordinator.init( db );
-        indexCoordinator.createIndex( db );
-    }
-
-    @Test
-    public void multipleCursorsNotNestedExists() throws Exception
-    {
-
         try ( Transaction tx = db.beginTx() )
         {
             KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
@@ -170,19 +143,11 @@ public class MultipleOpenCursorsTest
         }
     }
 
-    private List<Long> asList( NodeValueIndexCursor cursor )
+    @ParameterizedTest
+    @MethodSource( value = "params" )
+    void multipleCursorsNotNestedExact( IndexCoordinator indexCoordinator ) throws Exception
     {
-        List<Long> list = new ArrayList<>();
-        while ( cursor.next() )
-        {
-            list.add( cursor.nodeReference() );
-        }
-        return list;
-    }
-
-    @Test
-    public void multipleCursorsNotNestedExact() throws Exception
-    {
+        indexCoordinator.init( db );
         try ( Transaction tx = db.beginTx() )
         {
             // when
@@ -201,10 +166,12 @@ public class MultipleOpenCursorsTest
         }
     }
 
-    @Test
-    public void multipleIteratorsNotNestedRange() throws KernelException
+    @ParameterizedTest
+    @MethodSource( value = "params" )
+    void multipleIteratorsNotNestedRange( IndexCoordinator indexCoordinator ) throws KernelException
     {
-        Assume.assumeTrue( indexCoordinator.supportRangeQuery() );
+        assumeTrue( indexCoordinator.supportRangeQuery() );
+        indexCoordinator.init( db );
         try ( Transaction tx = db.beginTx() )
         {
             // when
@@ -223,9 +190,11 @@ public class MultipleOpenCursorsTest
         }
     }
 
-    @Test
-    public void multipleIteratorsNestedInnerNewExists() throws Exception
+    @ParameterizedTest
+    @MethodSource( value = "params" )
+    void multipleIteratorsNestedInnerNewExists( IndexCoordinator indexCoordinator ) throws Exception
     {
+        indexCoordinator.init( db );
         try ( Transaction tx = db.beginTx() )
         {
             // when
@@ -250,9 +219,11 @@ public class MultipleOpenCursorsTest
         }
     }
 
-    @Test
-    public void multipleIteratorsNestedInnerNewExact() throws Exception
+    @ParameterizedTest
+    @MethodSource( value = "params" )
+    void multipleIteratorsNestedInnerNewExact( IndexCoordinator indexCoordinator ) throws Exception
     {
+        indexCoordinator.init( db );
         try ( Transaction tx = db.beginTx() )
         {
             // when
@@ -276,10 +247,12 @@ public class MultipleOpenCursorsTest
         }
     }
 
-    @Test
-    public void multipleIteratorsNestedInnerNewRange() throws Exception
+    @ParameterizedTest
+    @MethodSource( value = "params" )
+    void multipleIteratorsNestedInnerNewRange( IndexCoordinator indexCoordinator ) throws Exception
     {
-        Assume.assumeTrue( indexCoordinator.supportRangeQuery() );
+        assumeTrue( indexCoordinator.supportRangeQuery() );
+        indexCoordinator.init( db );
         try ( Transaction tx = db.beginTx() )
         {
             // when
@@ -303,9 +276,11 @@ public class MultipleOpenCursorsTest
         }
     }
 
-    @Test
-    public void multipleIteratorsNestedInterleavedExists() throws Exception
+    @ParameterizedTest
+    @MethodSource( value = "params" )
+    void multipleIteratorsNestedInterleavedExists( IndexCoordinator indexCoordinator ) throws Exception
     {
+        indexCoordinator.init( db );
         try ( Transaction tx = db.beginTx() )
         {
             // when
@@ -329,9 +304,11 @@ public class MultipleOpenCursorsTest
         }
     }
 
-    @Test
-    public void multipleIteratorsNestedInterleavedExact() throws Exception
+    @ParameterizedTest
+    @MethodSource( value = "params" )
+    void multipleIteratorsNestedInterleavedExact( IndexCoordinator indexCoordinator ) throws Exception
     {
+        indexCoordinator.init( db );
         try ( Transaction tx = db.beginTx() )
         {
             // when
@@ -355,10 +332,12 @@ public class MultipleOpenCursorsTest
         }
     }
 
-    @Test
-    public void multipleIteratorsNestedInterleavedRange() throws Exception
+    @ParameterizedTest
+    @MethodSource( value = "params" )
+    void multipleIteratorsNestedInterleavedRange( IndexCoordinator indexCoordinator ) throws Exception
     {
-        Assume.assumeTrue( indexCoordinator.supportRangeQuery() );
+        assumeTrue( indexCoordinator.supportRangeQuery() );
+        indexCoordinator.init( db );
         try ( Transaction tx = db.beginTx() )
         {
             // when
@@ -379,6 +358,16 @@ public class MultipleOpenCursorsTest
             }
             tx.commit();
         }
+    }
+
+    private static List<Long> asList( NodeValueIndexCursor cursor )
+    {
+        List<Long> list = new ArrayList<>();
+        while ( cursor.next() )
+        {
+            list.add( cursor.nodeReference() );
+        }
+        return list;
     }
 
     private void exhaustInterleaved( NodeValueIndexCursor source1, List<Long> target1, NodeValueIndexCursor source2,
@@ -473,6 +462,12 @@ public class MultipleOpenCursorsTest
         {
             return tx.schema().indexFor( indexLabel ).on( stringProp1 ).on( stringProp2 ).create();
         }
+
+        @Override
+        public String toString()
+        {
+            return "Composite string non unique";
+        }
     }
 
     private static class NumberCompositeIndexCoordinator extends IndexCoordinator
@@ -529,6 +524,12 @@ public class MultipleOpenCursorsTest
         IndexDefinition doCreateIndex( Transaction tx )
         {
             return tx.schema().indexFor( indexLabel ).on( numberProp1 ).on( numberProp2 ).create();
+        }
+
+        @Override
+        public String toString()
+        {
+            return "Composite number non unique";
         }
     }
 
@@ -595,6 +596,12 @@ public class MultipleOpenCursorsTest
         {
             return tx.schema().indexFor( indexLabel ).on( stringProp1 ).create();
         }
+
+        @Override
+        public String toString()
+        {
+            return "Single string non unique";
+        }
     }
 
     private static class NumberIndexCoordinator extends IndexCoordinator
@@ -660,6 +667,12 @@ public class MultipleOpenCursorsTest
         {
             return tx.schema().indexFor( indexLabel ).on( numberProp1 ).create();
         }
+
+        @Override
+        public String toString()
+        {
+            return "Single number non unique";
+        }
     }
 
     private abstract static class IndexCoordinator
@@ -713,7 +726,7 @@ public class MultipleOpenCursorsTest
             }
         }
 
-        void init( DbmsRule db )
+        void init( GraphDatabaseAPI db )
         {
             try ( Transaction tx = db.beginTx() )
             {
@@ -738,9 +751,11 @@ public class MultipleOpenCursorsTest
                 stringPropId2 = tokenRead.propertyKey( stringProp2 );
                 tx.commit();
             }
+
+            createIndex( db );
         }
 
-        void createIndex( DbmsRule db )
+        private void createIndex( GraphDatabaseAPI db )
         {
             try ( Transaction tx = db.beginTx() )
             {

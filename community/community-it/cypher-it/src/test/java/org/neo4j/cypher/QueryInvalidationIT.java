@@ -19,8 +19,7 @@
  */
 package org.neo4j.cypher;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import scala.Option;
 
 import java.time.Duration;
@@ -31,39 +30,50 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.cypher.internal.planning.CypherCacheHitMonitor;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.helpers.collection.Pair;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.monitoring.Monitors;
-import org.neo4j.test.rule.DbmsRule;
-import org.neo4j.test.rule.ImpermanentDbmsRule;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.test.extension.ExtensionCallback;
+import org.neo4j.test.extension.ImpermanentDbmsExtension;
+import org.neo4j.test.extension.Inject;
 
-import static java.util.Collections.singletonMap;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.GraphDatabaseSettings.cypher_min_replan_interval;
+import static org.neo4j.configuration.GraphDatabaseSettings.query_statistics_divergence_threshold;
 
+@ImpermanentDbmsExtension( configurationCallback = "configure" )
 public class QueryInvalidationIT
 {
     private static final int USERS = 100;
     private static final int CONNECTIONS = 100;
 
-    @Rule
-    public final DbmsRule db = new ImpermanentDbmsRule()
-            .withSetting( GraphDatabaseSettings.query_statistics_divergence_threshold, 0.1 )
-            .withSetting( GraphDatabaseSettings.cypher_min_replan_interval, Duration.ofSeconds( 1 ) );
+    @Inject
+    private GraphDatabaseAPI db;
+    @Inject
+    private Monitors monitors;
+
+    @ExtensionCallback
+    void configure( TestDatabaseManagementServiceBuilder builder )
+    {
+        builder.setConfig( query_statistics_divergence_threshold, 0.1 )
+               .setConfig( cypher_min_replan_interval, Duration.ofSeconds( 1 ) );
+    }
 
     @Test
-    public void shouldRePlanAfterDataChangesFromAnEmptyDatabase() throws Exception
+    void shouldRePlanAfterDataChangesFromAnEmptyDatabase() throws Exception
     {
         // GIVEN
         TestMonitor monitor = new TestMonitor();
-        db.resolveDependency( Monitors.class ).addMonitorListener( monitor );
+        monitors.addMonitorListener( monitor );
         // - setup schema -
         createIndex();
         // - execute the query without the existence data -
@@ -86,16 +96,16 @@ public class QueryInvalidationIT
         executeDistantFriendsCountQuery( USERS, "default" );
 
         // THEN
-        assertEquals( "Query should have been replanned.", 1, monitor.discards.get() );
+        assertEquals( 1, monitor.discards.get(), "Query should have been replanned." );
         assertThat( "Replan should have occurred after TTL", monitor.waitTime.get(), greaterThanOrEqualTo( 1L ) );
     }
 
     @Test
-    public void shouldScheduleRePlansWithForceAndSkip() throws Exception
+    void shouldScheduleRePlansWithForceAndSkip() throws Exception
     {
         // GIVEN
         TestMonitor monitor = new TestMonitor();
-        db.resolveDependency( Monitors.class ).addMonitorListener( monitor );
+        monitors.addMonitorListener( monitor );
         // - setup schema -
         createIndex();
         // - execute the query without the existence data -
@@ -118,8 +128,8 @@ public class QueryInvalidationIT
         executeDistantFriendsCountQuery( USERS, "skip" );
 
         // THEN
-        assertEquals( "Query should not have been compiled.", 0, monitor.compilations.get() );
-        assertEquals( "Query should not have been discarded.", 0, monitor.discards.get() );
+        assertEquals( 0, monitor.compilations.get(), "Query should not have been compiled." );
+        assertEquals( 0, monitor.discards.get(), "Query should not have been discarded." );
 
         // AND WHEN
         monitor.reset();
@@ -127,7 +137,7 @@ public class QueryInvalidationIT
         executeDistantFriendsCountQuery( USERS, "force" );
 
         // THEN
-        assertEquals( "Query should have been replanned.", 1, monitor.compilations.get() );
+        assertEquals( 1, monitor.compilations.get(), "Query should have been replanned." );
 
         // WHEN
         monitor.reset();
@@ -135,20 +145,20 @@ public class QueryInvalidationIT
         executeDistantFriendsCountQuery( USERS, "default" );
 
         // THEN should use the entry cached with "replan=force" instead of replanning again
-        assertEquals( "Query should not have been compiled.", 0, monitor.compilations.get() );
-        assertEquals( "Query should not have been discarded.", 0, monitor.discards.get() );
+        assertEquals( 0, monitor.compilations.get(), "Query should not have been compiled." );
+        assertEquals( 0, monitor.discards.get(), "Query should not have been discarded." );
     }
 
     @Test
-    public void shouldRePlanAfterDataChangesFromAPopulatedDatabase() throws Exception
+    void shouldRePlanAfterDataChangesFromAPopulatedDatabase() throws Exception
     {
         // GIVEN
         Config config = db.getDependencyResolver().resolveDependency( Config.class );
-        double divergenceThreshold = config.get( GraphDatabaseSettings.query_statistics_divergence_threshold );
-        long replanInterval = config.get( GraphDatabaseSettings.cypher_min_replan_interval ).toMillis();
+        double divergenceThreshold = config.get( query_statistics_divergence_threshold );
+        long replanInterval = config.get( cypher_min_replan_interval ).toMillis();
 
         TestMonitor monitor = new TestMonitor();
-        db.resolveDependency( Monitors.class ).addMonitorListener( monitor );
+        monitors.addMonitorListener( monitor );
         // - setup schema -
         createIndex();
         //create some data
@@ -157,8 +167,8 @@ public class QueryInvalidationIT
 
         long replanTime = System.currentTimeMillis() + replanInterval;
 
-        assertTrue( "Test does not work with edge setting for query_statistics_divergence_threshold: " + divergenceThreshold,
-                    divergenceThreshold > 0.0 && divergenceThreshold < 1.0 );
+        assertTrue( divergenceThreshold > 0.0 && divergenceThreshold < 1.0,
+                "Test does not work with edge setting for query_statistics_divergence_threshold: " + divergenceThreshold );
 
         int usersToCreate = ((int) (Math.ceil( ((double) USERS) / (1.0 - divergenceThreshold) ))) - USERS + 1;
 
@@ -177,7 +187,7 @@ public class QueryInvalidationIT
         executeDistantFriendsCountQuery( USERS, "default" );
 
         // THEN
-        assertEquals( "Query should have been replanned.", 1, monitor.discards.get() );
+        assertEquals( 1, monitor.discards.get(), "Query should have been replanned." );
         assertThat( "Replan should have occurred after TTL", monitor.waitTime.get(), greaterThanOrEqualTo( replanInterval / 1000 ) );
     }
 
@@ -201,7 +211,7 @@ public class QueryInvalidationIT
         {
             for ( long userId = startingUserId; userId < numUsers + startingUserId; userId++ )
             {
-                transaction.execute( "CREATE (newUser:User {userId: $userId})", singletonMap( "userId", userId ) );
+                transaction.execute( "CREATE (newUser:User {userId: $userId})", Map.of( "userId", userId ) );
             }
             Map<String,Object> params = new HashMap<>();
             for ( int i = 0; i < numConnections; i++ )
@@ -225,7 +235,7 @@ public class QueryInvalidationIT
     {
         try ( Transaction transaction = db.beginTx() )
         {
-            Map<String,Object> params = singletonMap( "userId", (long) randomInt( userId ) );
+            Map<String,Object> params = Map.of( "userId", (long) randomInt( userId ) );
 
             try ( Result result = transaction.execute(
                     String.format(

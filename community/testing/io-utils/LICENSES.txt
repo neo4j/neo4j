@@ -391,7 +391,6 @@ Eclipse Public License v2.0
   JUnit Platform Commons
   JUnit Platform Engine API
   JUnit Platform Launcher
-  JUnit Vintage Engine
 ------------------------------------------------------------------------------
 
 Eclipse Public License - v 2.0

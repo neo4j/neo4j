@@ -19,53 +19,57 @@
  */
 package org.neo4j.cypher.security;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
-
-import java.util.Map;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.security.AuthenticationResult;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.security.AuthToken;
-import org.neo4j.test.rule.DbmsRule;
-import org.neo4j.test.rule.EmbeddedDbmsRule;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.test.extension.DbmsController;
+import org.neo4j.test.extension.DbmsExtension;
+import org.neo4j.test.extension.ExtensionCallback;
+import org.neo4j.test.extension.Inject;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 
-public class BasicAuthIT
+@DbmsExtension( configurationCallback = "configure" )
+class BasicAuthIT
 {
-    private final TestDirectory testDirectory = TestDirectory.testDirectory();
+    @Inject
+    private TestDirectory testDirectory;
+    @Inject
+    private DatabaseManagementService managementService;
+    @Inject
+    private DbmsController dbmsController;
+    @Inject
+    private AuthManager authManager;
 
-    private DbmsRule dbRule = new EmbeddedDbmsRule().startLazily().withSetting( GraphDatabaseSettings.auth_enabled, true );
-
-    @Rule
-    public RuleChain chain = RuleChain.outerRule( testDirectory ).around( dbRule );
+    @ExtensionCallback
+    void configure( TestDatabaseManagementServiceBuilder builder )
+    {
+        builder.setConfig( GraphDatabaseSettings.auth_enabled, false );
+    }
 
     @Test
-    public void shouldCreateUserWithAuthDisabled() throws Exception
+    void shouldCreateUserWithAuthDisabled() throws Exception
     {
         // GIVEN
-        dbRule.withSetting( GraphDatabaseSettings.auth_enabled, false );
-        dbRule.ensureStarted();
-
-        GraphDatabaseService database = dbRule.getManagementService().database( GraphDatabaseSettings.SYSTEM_DATABASE_NAME );
-        try ( Transaction tx = database.beginTx() )
+        var systemDatabase = managementService.database( GraphDatabaseSettings.SYSTEM_DATABASE_NAME );
+        try ( Transaction tx = systemDatabase.beginTx() )
         {
             // WHEN
             tx.execute( "CREATE USER foo SET PASSWORD 'bar'" ).close();
             tx.commit();
         }
-        dbRule.restartDatabase( Map.of( GraphDatabaseSettings.auth_enabled, true ) );
+        dbmsController.restartDbms( builder -> builder.setConfig( GraphDatabaseSettings.auth_enabled, true ) );
 
         // THEN
-        AuthManager authManager = dbRule.resolveDependency( AuthManager.class );
         LoginContext loginContext = authManager.login( AuthToken.newBasicAuthToken( "foo", "wrong" ) );
         assertThat( loginContext.subject().getAuthenticationResult(), equalTo( AuthenticationResult.FAILURE ) );
         loginContext = authManager.login( AuthToken.newBasicAuthToken( "foo", "bar" ) );

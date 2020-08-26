@@ -19,49 +19,62 @@
  */
 package org.neo4j.index;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.Collections;
 
 import org.neo4j.batchinsert.BatchInserter;
 import org.neo4j.batchinsert.BatchInserters;
+import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.id.IdValidator;
 import org.neo4j.internal.id.ReservedIdException;
-import org.neo4j.test.rule.EmbeddedDbmsRule;
-import org.neo4j.test.rule.fs.DefaultFileSystemRule;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.Neo4jLayoutExtension;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.internal.helpers.collection.Iterators.count;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
 
+@Neo4jLayoutExtension
 public class BatchInsertionIT
 {
-    @Rule
-    public final EmbeddedDbmsRule dbRule = new EmbeddedDbmsRule().startLazily();
-    @Rule
-    public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
+    @Inject
+    private FileSystemAbstraction fileSystem;
+    @Inject
+    private DatabaseLayout databaseLayout;
+    private DatabaseManagementService managementService;
+
+    @AfterEach
+    void tearDown()
+    {
+        if ( managementService != null )
+        {
+            managementService.shutdown();
+        }
+    }
 
     @Test
-    public void shouldIndexNodesWithMultipleLabels() throws Exception
+    void shouldIndexNodesWithMultipleLabels() throws Exception
     {
-        // Given
-        BatchInserter inserter = BatchInserters.inserter( dbRule.databaseLayout(), fileSystemRule.get() );
+        try ( var inserter = BatchInserters.inserter( databaseLayout, fileSystem ) )
+        {
+            inserter.createNode( map( "name", "Bob" ), label( "User" ), label( "Admin" ) );
 
-        inserter.createNode( map( "name", "Bob" ), label( "User" ), label( "Admin" ) );
+            inserter.createDeferredSchemaIndex( label( "User" ) ).on( "name" ).create();
+            inserter.createDeferredSchemaIndex( label( "Admin" ) ).on( "name" ).create();
+        }
 
-        inserter.createDeferredSchemaIndex( label( "User" ) ).on( "name" ).create();
-        inserter.createDeferredSchemaIndex( label( "Admin" ) ).on( "name" ).create();
-
-        // When
-        inserter.shutdown();
-
-        // Then
-        GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
+        var db = getDatabase();
         try ( Transaction tx = db.beginTx() )
         {
             assertThat( count( tx.findNodes( label( "User" ), "name", "Bob" ) ) ).isEqualTo( 1L );
@@ -70,34 +83,28 @@ public class BatchInsertionIT
     }
 
     @Test
-    public void shouldNotIndexNodesWithWrongLabel() throws Exception
+    void shouldNotIndexNodesWithWrongLabel() throws Exception
     {
-        // Given
-        BatchInserter inserter = BatchInserters.inserter( dbRule.databaseLayout(), fileSystemRule.get() );
+        try ( BatchInserter inserter = BatchInserters.inserter( databaseLayout, fileSystem ) )
+        {
+            inserter.createNode( map( "name", "Bob" ), label( "User" ), label( "Admin" ) );
+            inserter.createDeferredSchemaIndex( label( "Banana" ) ).on( "name" ).create();
+        }
 
-        inserter.createNode( map("name", "Bob"), label( "User" ), label("Admin"));
-
-        inserter.createDeferredSchemaIndex( label( "Banana" ) ).on( "name" ).create();
-
-        // When
-        inserter.shutdown();
-
-        // Then
-        GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
+        var db = getDatabase();
         try ( Transaction tx = db.beginTx() )
         {
             assertThat( count( tx.findNodes( label( "Banana" ), "name", "Bob" ) ) ).isEqualTo( 0L );
         }
-
     }
 
     @Test
-    public void shouldBeAbleToMakeRepeatedCallsToSetNodeProperty() throws Exception
+    void shouldBeAbleToMakeRepeatedCallsToSetNodeProperty() throws Exception
     {
-        BatchInserter inserter = BatchInserters.inserter( dbRule.databaseLayout(), fileSystemRule.get() );
+        final Object finalValue = 87;
+        BatchInserter inserter = BatchInserters.inserter( databaseLayout, fileSystem );
         long nodeId = inserter.createNode( Collections.emptyMap() );
 
-        final Object finalValue = 87;
         inserter.setNodeProperty( nodeId, "a", "some property value" );
         inserter.setNodeProperty( nodeId, "a", 42 );
         inserter.setNodeProperty( nodeId, "a", 3.14 );
@@ -105,7 +112,7 @@ public class BatchInsertionIT
         inserter.setNodeProperty( nodeId, "a", finalValue );
         inserter.shutdown();
 
-        GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
+        var db = getDatabase();
         try ( Transaction tx = db.beginTx() )
         {
             assertThat( tx.getNodeById( nodeId ).getProperty( "a" ) ).isEqualTo( finalValue );
@@ -113,9 +120,9 @@ public class BatchInsertionIT
     }
 
     @Test
-    public void shouldBeAbleToMakeRepeatedCallsToSetNodePropertyWithMultiplePropertiesPerBlock() throws Exception
+    void shouldBeAbleToMakeRepeatedCallsToSetNodePropertyWithMultiplePropertiesPerBlock() throws Exception
     {
-        BatchInserter inserter = BatchInserters.inserter( dbRule.databaseLayout(), fileSystemRule.get() );
+        BatchInserter inserter = BatchInserters.inserter( databaseLayout, fileSystem );
         long nodeId = inserter.createNode( Collections.emptyMap() );
 
         final Object finalValue1 = 87;
@@ -128,7 +135,7 @@ public class BatchInsertionIT
         inserter.setNodeProperty( nodeId, "a", finalValue1 );
         inserter.shutdown();
 
-        GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
+        var db = getDatabase();
         try ( Transaction tx = db.beginTx() )
         {
             assertThat( tx.getNodeById( nodeId ).getProperty( "a" ) ).isEqualTo( finalValue1 );
@@ -136,21 +143,18 @@ public class BatchInsertionIT
         }
     }
 
-    @Test( expected = ReservedIdException.class )
-    public void makeSureCantCreateNodeWithMagicNumber() throws IOException
+    @Test
+    void makeSureCantCreateNodeWithMagicNumber() throws IOException
     {
-        // given
-        BatchInserter inserter = BatchInserters.inserter( dbRule.databaseLayout(), fileSystemRule.get() );
-        try
+        try ( BatchInserter inserter = BatchInserters.inserter( databaseLayout, fileSystem ) )
         {
-            // when
-            long id = IdValidator.INTEGER_MINUS_ONE;
-            inserter.createNode( id, null );
-            // then throws
+            assertThrows( ReservedIdException.class, () -> inserter.createNode( IdValidator.INTEGER_MINUS_ONE, null ) );
         }
-        finally
-        {
-            inserter.shutdown();
-        }
+    }
+
+    private GraphDatabaseService getDatabase()
+    {
+        managementService = new TestDatabaseManagementServiceBuilder( databaseLayout ).setFileSystem( fileSystem ).build();
+        return managementService.database( DEFAULT_DATABASE_NAME );
     }
 }

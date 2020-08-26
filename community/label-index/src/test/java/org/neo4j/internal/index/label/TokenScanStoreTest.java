@@ -28,6 +28,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.NoSuchFileException;
@@ -806,7 +807,7 @@ public class TokenScanStoreTest
         scrambleFile( random.random(), file );
     }
 
-    public static void scrambleFile( Random random, File file ) throws IOException
+    public static void scrambleFile( Random random, File file )
     {
         try ( RandomAccessFile fileAccess = new RandomAccessFile( file, "rw" );
                 FileChannel channel = fileAccess.getChannel() )
@@ -817,6 +818,10 @@ public class TokenScanStoreTest
             ByteBuffer buffer = ByteBuffer.wrap( bytes );
             channel.position( 0 );
             writeAll( channel, buffer );
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
         }
     }
 
