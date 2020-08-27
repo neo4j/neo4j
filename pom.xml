@@ -105,8 +105,9 @@
     <caffeine.version>2.6.2</caffeine.version>
     <required.maven.version>3.5.2</required.maven.version>
     <jackson.version>2.10.2</jackson.version>
-	  <amazon-sdk.version>1.11.524</amazon-sdk.version>
-	  <guava.version>26.0-jre</guava.version>
+    <amazon-sdk.version>1.11.524</amazon-sdk.version>
+    <guava.version>26.0-jre</guava.version>
+    <slf4j.version>1.7.30</slf4j.version>
   </properties>
 
   <modules>
@@ -1021,7 +1022,7 @@
       <dependency>
         <groupId>org.apache.shiro</groupId>
         <artifactId>shiro-core</artifactId>
-        <version>1.5.3</version>
+        <version>1.6.0</version>
       </dependency>
       <dependency>
         <groupId>com.github.ben-manes.caffeine</groupId>
@@ -1031,12 +1032,12 @@
       <dependency>
         <groupId>org.slf4j</groupId>
         <artifactId>slf4j-nop</artifactId>
-        <version>1.7.25</version>
+        <version>${slf4j.version}</version>
       </dependency>
       <dependency>
         <groupId>org.slf4j</groupId>
         <artifactId>slf4j-api</artifactId>
-        <version>1.7.25</version>
+        <version>${slf4j.version}</version>
       </dependency>
 
       <!-- testing -->
@@ -1082,7 +1083,7 @@
       <dependency>
         <groupId>org.slf4j</groupId>
         <artifactId>slf4j-log4j12</artifactId>
-        <version>1.7.25</version>
+        <version>${slf4j.version}</version>
         <scope>test</scope>
       </dependency>
 
