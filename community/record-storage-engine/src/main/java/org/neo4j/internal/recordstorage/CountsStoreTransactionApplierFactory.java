@@ -34,6 +34,6 @@ class CountsStoreTransactionApplierFactory implements TransactionApplierFactory
     @Override
     public TransactionApplier startTx( CommandsToApply transaction, BatchContext batchContext )
     {
-        return new CountsStoreTransactionApplier( countsStore.apply( transaction.transactionId(), transaction.cursorTracer() ) );
+        return new CountsStoreTransactionApplier( countsStore, transaction );
     }
 }

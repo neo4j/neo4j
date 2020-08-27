@@ -26,10 +26,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -62,6 +59,7 @@ import org.neo4j.util.concurrent.OutOfOrderSequence;
 
 import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
+import static org.neo4j.internal.counts.CountsChanges.ABSENT;
 import static org.neo4j.internal.counts.CountsKey.MAX_STRAY_TX_ID;
 import static org.neo4j.internal.counts.CountsKey.MIN_STRAY_TX_ID;
 import static org.neo4j.internal.counts.CountsKey.nodeKey;
@@ -92,7 +90,7 @@ public class GBPTreeCountsStore implements CountsStore
     private final CountsBuilder initialCountsBuilder;
     private final boolean readOnly;
     private final Monitor monitor;
-    private volatile ConcurrentHashMap<CountsKey,AtomicLong> changes = new ConcurrentHashMap<>();
+    private volatile CountsChanges changes = new CountsChanges();
     private final TxIdInformation txIdInformation;
     private volatile boolean started;
 
@@ -227,6 +225,7 @@ public class GBPTreeCountsStore implements CountsStore
         Lock writeLock = lock( this.lock.writeLock() );
 
         // When we have the lock we do two things (no updates will come in while we have it):
+        CountsChanges changesToWrite;
         OutOfOrderSequence.Snapshot txIdSnapshot;
         try
         {
@@ -234,30 +233,28 @@ public class GBPTreeCountsStore implements CountsStore
             txIdSnapshot = idSequence.snapshot();
 
             // Take the changes and instantiate a new map for other updates to apply to after we release this lock
-            // We have to write them while we have the lock since we start from a new empty "changes" cache,
-            // otherwise an applying transaction after we've released the lock below but before writing the changes to the tree
-            // could load old counts into the new changes cache and therefore corrupt the counts store.
-            ConcurrentHashMap<CountsKey,AtomicLong> changesToWrite = changes;
-            writeCountsChanges( changesToWrite, cursorTracer );
-            changes = new ConcurrentHashMap<>();
+            changesToWrite = changes;
+            changes = changes.fork();
+            changesToWrite.freeze();
         }
         finally
         {
             writeLock.unlock();
         }
 
-        // Now update the transaction information in the tree
+        // Now write all the things to the tree
+        writeCountsChanges( changesToWrite, cursorTracer );
+        changes.clearPreviousChanges();
         updateTxIdInformationInTree( txIdSnapshot, cursorTracer );
 
         // Good, check-point all these changes
         tree.checkpoint( ioLimiter, new CountsHeader( txIdSnapshot.highestGapFree()[0] ), cursorTracer );
     }
 
-    private void writeCountsChanges( ConcurrentHashMap<CountsKey,AtomicLong> changes, PageCursorTracer cursorTracer ) throws IOException
+    private void writeCountsChanges( CountsChanges changes, PageCursorTracer cursorTracer ) throws IOException
     {
         // Sort the entries in the natural tree order to get more performance in the writer
-        List<Map.Entry<CountsKey,AtomicLong>> changeList = new ArrayList<>( changes.entrySet() );
-        changeList.sort( ( e1, e2 ) -> layout.compare( e1.getKey(), e2.getKey() ) );
+        Iterable<Map.Entry<CountsKey,AtomicLong>> changeList = changes.sortedChanges( layout );
         try ( Writer<CountsKey,CountsValue> writer = tree.writer( cursorTracer ) )
         {
             CountsValue value = new CountsValue();
@@ -313,7 +310,7 @@ public class GBPTreeCountsStore implements CountsStore
     public void accept( CountsVisitor visitor, PageCursorTracer cursorTracer )
     {
         // First visit the changes that we haven't check-pointed yet
-        for ( Map.Entry<CountsKey,AtomicLong> changedEntry : changes.entrySet() )
+        for ( Map.Entry<CountsKey,AtomicLong> changedEntry : changes.sortedChanges( layout ) )
         {
             // Our simplistic approach to the changes map makes it contain 0 counts at times, we don't remove entries from it
             if ( changedEntry.getValue().get() != 0 )
@@ -328,7 +325,7 @@ public class GBPTreeCountsStore implements CountsStore
             while ( seek.next() )
             {
                 CountsKey key = seek.key();
-                if ( !changes.containsKey( key ) )
+                if ( !changes.containsChange( key ) )
                 {
                     key.accept( visitor, seek.value().count );
                 }
@@ -347,8 +344,8 @@ public class GBPTreeCountsStore implements CountsStore
 
     private long read( CountsKey key, PageCursorTracer cursorTracer )
     {
-        AtomicLong changedCount = changes.get( key );
-        return changedCount != null ? changedCount.get() : readCountFromTree( key, cursorTracer );
+        long changedCount = changes.get( key );
+        return changedCount != ABSENT ? changedCount : readCountFromTree( key, cursorTracer );
     }
 
     /**

@@ -649,7 +649,7 @@ class GBPTreeCountsStoreTest
                 AtomicLong expectedCount = expected.remove( key );
                 if ( expectedCount == null )
                 {
-                    assertEquals( baseCount, count );
+                    assertEquals( baseCount, count, () -> format( "Counts store has wrong count for (absent) %s", key ) );
                 }
                 else
                 {

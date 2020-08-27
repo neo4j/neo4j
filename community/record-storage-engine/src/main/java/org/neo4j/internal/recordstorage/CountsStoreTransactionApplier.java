@@ -20,17 +20,22 @@
 package org.neo4j.internal.recordstorage;
 
 import org.neo4j.counts.CountsAccessor;
+import org.neo4j.counts.CountsStore;
 import org.neo4j.internal.recordstorage.Command.SchemaRuleCommand;
+import org.neo4j.storageengine.api.CommandsToApply;
 
 class CountsStoreTransactionApplier extends TransactionApplier.Adapter
 {
-    private final CountsAccessor.Updater countsUpdater;
+    private final CountsStore countsStore;
+    private final CommandsToApply transaction;
+    private CountsAccessor.Updater countsUpdater;
     private boolean haveUpdates;
     private boolean countsUpdaterClosed;
 
-    CountsStoreTransactionApplier( CountsAccessor.Updater countsUpdater )
+    CountsStoreTransactionApplier( CountsStore countsStore, CommandsToApply transaction )
     {
-        this.countsUpdater = countsUpdater;
+        this.countsStore = countsStore;
+        this.transaction = transaction;
     }
 
     @Override
@@ -43,7 +48,9 @@ class CountsStoreTransactionApplier extends TransactionApplier.Adapter
     {
         if ( !countsUpdaterClosed )
         {
-            countsUpdater.close();
+            // It's important to call the countsUpdater() method which opens the updater if it wasn't already open, this is because
+            // we need to register all transactions to the counts store even if they don't apply any counts changes.
+            countsUpdater().close();
             countsUpdaterClosed = true;
         }
     }
@@ -52,15 +59,29 @@ class CountsStoreTransactionApplier extends TransactionApplier.Adapter
     public boolean visitNodeCountsCommand( Command.NodeCountsCommand command )
     {
         haveUpdates = true;
-        countsUpdater.incrementNodeCount( command.labelId(), command.delta() );
+        countsUpdater().incrementNodeCount( command.labelId(), command.delta() );
         return false;
+    }
+
+    /**
+     * @return Updater for counts. This is retrieved lazily on first counts change because the window of time a counts updater is open
+     * affects the window of time that all counts-updating transactions will need to block during a checkpoint. So instead of opening this updater
+     * when the transaction starts to apply then open it when it gets to changing counts, if at all.
+     */
+    private CountsAccessor.Updater countsUpdater()
+    {
+        if ( countsUpdater == null )
+        {
+            countsUpdater = countsStore.apply( transaction.transactionId(), transaction.cursorTracer() );
+        }
+        return countsUpdater;
     }
 
     @Override
     public boolean visitRelationshipCountsCommand( Command.RelationshipCountsCommand command )
     {
         haveUpdates = true;
-        countsUpdater.incrementRelationshipCount( command.startLabelId(), command.typeId(), command.endLabelId(), command.delta() );
+        countsUpdater().incrementRelationshipCount( command.startLabelId(), command.typeId(), command.endLabelId(), command.delta() );
         return false;
     }
 

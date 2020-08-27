@@ -20,7 +20,6 @@
 package org.neo4j.internal.counts;
 
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.function.ToLongFunction;
@@ -36,11 +35,11 @@ import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
 public class MapWriter implements CountUpdater.CountWriter
 {
     private final ToLongFunction<CountsKey> storeLookup;
-    private final ConcurrentMap<CountsKey,AtomicLong> changes;
+    private final CountsChanges changes;
     private final OutOfOrderSequence idSequence;
     private final long txId;
 
-    MapWriter( ToLongFunction<CountsKey> storeLookup, ConcurrentMap<CountsKey,AtomicLong> changes, OutOfOrderSequence idSequence, long txId )
+    MapWriter( ToLongFunction<CountsKey> storeLookup, CountsChanges changes, OutOfOrderSequence idSequence, long txId )
     {
         this.storeLookup = storeLookup;
         this.changes = changes;
@@ -52,7 +51,7 @@ public class MapWriter implements CountUpdater.CountWriter
     public void write( CountsKey key, long delta )
     {
         Function<CountsKey,AtomicLong> defaultToStoredCount = k -> new AtomicLong( storeLookup.applyAsLong( k ) );
-        changes.computeIfAbsent( key, defaultToStoredCount ).addAndGet( delta );
+        changes.add( key, delta, defaultToStoredCount );
     }
 
     @Override
