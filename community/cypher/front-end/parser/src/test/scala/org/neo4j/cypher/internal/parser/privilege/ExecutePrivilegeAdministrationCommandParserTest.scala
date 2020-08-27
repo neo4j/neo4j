@@ -41,11 +41,15 @@ class ExecutePrivilegeAdministrationCommandParserTest extends AdministrationComm
       ).foreach {
         case (execute, action) =>
           test(s"$verb $execute * ON DBMS $preposition role") {
-            yields(func(action, List(ast.ProcedureAllQualifier()(_)), Seq(literal("role"))))
+            yields(func(action, List(ast.ProcedureQualifier(expressions.Namespace(List.empty)(_), expressions.ProcedureName("*")(_))(_)), Seq(literal("role"))))
           }
 
           test(s"$verb ${execute}S * ON DBMS $preposition role") {
-            yields(func(action, List(ast.ProcedureAllQualifier()(_)), Seq(literal("role"))))
+            yields(func(action, List(ast.ProcedureQualifier(expressions.Namespace(List.empty)(_), expressions.ProcedureName("*")(_))(_)), Seq(literal("role"))))
+          }
+
+          test(s"$verb ${execute}S `*` ON DBMS $preposition role") {
+            yields(func(action, List(ast.ProcedureQualifier(expressions.Namespace(List.empty)(_), expressions.ProcedureName("*")(_))(_)), Seq(literal("role"))))
           }
 
           test(s"$verb $execute apoc.procedure ON DBMS $preposition role") {
@@ -70,19 +74,45 @@ class ExecutePrivilegeAdministrationCommandParserTest extends AdministrationComm
           }
 
           test(s"$verb $execute apoc* ON DBMS $preposition role") {
-            failsToParse
+            yields(func(
+              action,
+              List(ast.ProcedureQualifier(expressions.Namespace(List.empty)(_), expressions.ProcedureName("apoc*")(_))(_)),
+              Seq(literal("role"))))
           }
 
           test(s"$verb $execute *apoc ON DBMS $preposition role") {
-            failsToParse
+            yields(func(
+              action,
+              List(ast.ProcedureQualifier(expressions.Namespace(List.empty)(_), expressions.ProcedureName("*apoc")(_))(_)),
+              Seq(literal("role"))))
           }
 
           test(s"$verb $execute apoc.*.math.* ON DBMS $preposition role") {
-            failsToParse
+            yields(func(
+              action,
+              List(ast.ProcedureQualifier(expressions.Namespace(List("apoc", "*", "math"))(_), expressions.ProcedureName("*")(_))(_)),
+              Seq(literal("role"))))
           }
 
           test(s"$verb $execute math.*n ON DBMS $preposition role") {
-            failsToParse
+            yields(func(
+              action,
+              List(ast.ProcedureQualifier(expressions.Namespace(List("math"))(_), expressions.ProcedureName("*n")(_))(_)),
+              Seq(literal("role"))))
+          }
+
+          test(s"$verb $execute mat?.`a.\n`.*n ON DBMS $preposition role") {
+            yields(func(
+              action,
+              List(ast.ProcedureQualifier(expressions.Namespace(List("mat?", "a.\n"))(_), expressions.ProcedureName("*n")(_))(_)),
+              Seq(literal("role"))))
+          }
+
+          test(s"$verb $execute *.sin ON DBMS $preposition role") {
+            yields(func(
+              action,
+              List(ast.ProcedureQualifier(expressions.Namespace(List("*"))(_), expressions.ProcedureName("sin")(_))(_)),
+              Seq(literal("role"))))
           }
 
           test(s"$verb $execute apoc.math.* ON DBMS $preposition role") {

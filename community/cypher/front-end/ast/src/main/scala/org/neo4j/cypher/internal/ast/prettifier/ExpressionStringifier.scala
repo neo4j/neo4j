@@ -422,15 +422,16 @@ object ExpressionStringifier {
    * When printing these again, the knowledge of the back-ticks is lost, but the same test for
    * non-identifier characters can be used to recover that knowledge.
    */
-  def backtick(txt: String, alwaysBacktick: Boolean = false): String = {
+  def backtick(txt: String, alwaysBacktick: Boolean = false, globbing: Boolean = false): String = {
     def escaped = txt.replaceAll("`", "``")
+    def orGlobbedCharacter(p: Int) = globbing && (p == '*'.asInstanceOf[Int] || p == '?'.asInstanceOf[Int])
 
     if (alwaysBacktick)
       s"`$escaped`"
     else {
       val isJavaIdentifier =
-        txt.codePoints().limit(1).allMatch(p => Character.isJavaIdentifierStart(p) && Character.getType(p) != Character.CURRENCY_SYMBOL) &&
-          txt.codePoints().skip(1).allMatch(p => Character.isJavaIdentifierPart(p))
+        txt.codePoints().limit(1).allMatch(p => (Character.isJavaIdentifierStart(p) && Character.getType(p) != Character.CURRENCY_SYMBOL) || orGlobbedCharacter(p)) &&
+          txt.codePoints().skip(1).allMatch(p => Character.isJavaIdentifierPart(p) || orGlobbedCharacter(p))
       if (!isJavaIdentifier)
         s"`$escaped`"
       else

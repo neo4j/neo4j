@@ -125,7 +125,6 @@ import org.neo4j.cypher.internal.ast.OnMatch
 import org.neo4j.cypher.internal.ast.OrderBy
 import org.neo4j.cypher.internal.ast.PeriodicCommitHint
 import org.neo4j.cypher.internal.ast.PrivilegeCommand
-import org.neo4j.cypher.internal.ast.ProcedureAllQualifier
 import org.neo4j.cypher.internal.ast.ProcedureQualifier
 import org.neo4j.cypher.internal.ast.ProcedureResult
 import org.neo4j.cypher.internal.ast.ProcedureResultItem
@@ -1390,7 +1389,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     procedureNamespace <- _namespace
     procedureName      <- _procedureName
     procedures         <- oneOrMore(ProcedureQualifier(procedureNamespace, procedureName)(pos))
-    qualifier          <- oneOf(procedures, List(ProcedureAllQualifier()(pos)))
+    qualifier          <- frequency(7 -> procedures, 3 -> List(ProcedureQualifier(Namespace()(pos), ProcedureName("*")(pos))(pos)))
     roleNames          <- _listOfNameOfEither
     revokeType         <- _revokeType
     dbmsGrant          = GrantPrivilege.dbmsAction(dbmsAction, roleNames, qualifier)(pos)

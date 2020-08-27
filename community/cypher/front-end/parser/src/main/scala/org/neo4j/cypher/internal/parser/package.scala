@@ -16,6 +16,8 @@
  */
 package org.neo4j.cypher.internal
 
+import org.neo4j.cypher.internal.parser.matchers.GlobbedIdentifierPartMatcher
+import org.neo4j.cypher.internal.parser.matchers.GlobbedIdentifierStartMatcher
 import org.neo4j.cypher.internal.parser.matchers.IdentifierPartMatcher
 import org.neo4j.cypher.internal.parser.matchers.IdentifierStartMatcher
 import org.neo4j.cypher.internal.parser.matchers.WhitespaceCharMatcher
@@ -23,6 +25,8 @@ import org.parboiled.scala.Rule0
 
 package object parser {
   lazy val IdentifierStart: Rule0 = new IdentifierStartMatcher()
+  lazy val GlobbedIdentifierStart: Rule0 = new GlobbedIdentifierStartMatcher()
   lazy val IdentifierPart: Rule0 = new IdentifierPartMatcher()
+  lazy val GlobbedIdentifierPart: Rule0 = new GlobbedIdentifierPartMatcher()
   lazy val WSChar: Rule0 = new WhitespaceCharMatcher()
 }

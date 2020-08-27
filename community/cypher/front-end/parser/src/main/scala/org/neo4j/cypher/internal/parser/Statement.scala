@@ -536,12 +536,8 @@ trait Statement extends Parser
   }
 
   private def ProcedureIdentifier: Rule1[List[PrivilegeQualifier]] = rule("") {
-    keyword("*") ~~~> (pos => List(ast.ProcedureAllQualifier()(pos))) |
-    oneOrMore(NamedProcedure, separator = CommaSep) ~~>> { procedures => pos => procedures.map(p => ast.ProcedureQualifier(p._1, p._2)(pos)) }
-  }
-
-  def NamedProcedure: Rule2[expressions.Namespace, expressions.ProcedureName] = rule("") {
-    Namespace ~ group(ProcedureName | keyword("*") ~~~> (pos => expressions.ProcedureName("*")(pos)))
+    oneOrMore(group(GlobbedNamespace ~ GlobbedProcedureName), separator = CommaSep) ~~>>
+      { procedures => pos => procedures.map(p => ast.ProcedureQualifier(p._1, p._2)(pos)) }
   }
 
   private def IndexKeyword: Rule0 = keyword("INDEXES") | keyword("INDEX")

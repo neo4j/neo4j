@@ -328,7 +328,12 @@ sealed trait ProcedurePrivilegeQualifier extends PrivilegeQualifier {
   override def dup(children: Seq[AnyRef]): ProcedurePrivilegeQualifier.this.type = this
 }
 
-final case class ProcedureQualifier(nameSpace: Namespace, procedureName: ProcedureName)(val position: InputPosition) extends ProcedurePrivilegeQualifier
+final case class ProcedureQualifier(nameSpace: Namespace, procedureName: ProcedureName)(val position: InputPosition) extends ProcedurePrivilegeQualifier {
+  override def simplify: Seq[ProcedurePrivilegeQualifier] = (nameSpace, procedureName) match {
+    case (Namespace(Nil), ProcedureName("*")) => Seq(ProcedureAllQualifier()(position))
+    case _ => Seq(this)
+  }
+}
 
 final case class ProcedureAllQualifier()(val position: InputPosition) extends ProcedurePrivilegeQualifier
 

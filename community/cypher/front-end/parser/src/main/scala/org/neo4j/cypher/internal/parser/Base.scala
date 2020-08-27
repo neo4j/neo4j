@@ -115,11 +115,17 @@ trait Base extends Parser {
 
   def SymbolicNameString: Rule1[String] = UnescapedSymbolicNameString | EscapedSymbolicNameString
 
+  def GlobbedSymbolicNameString: Rule1[String] = GlobbedUnescapedSymbolicNameString | EscapedSymbolicNameString
+
   def SymbolicDatabaseNameString: Rule1[String] =
     SymbolicNameString ~ zeroOrMore("." ~ SymbolicNameString) ~~>> ((firstPart, tail) => _ => (firstPart +: tail).mkString("."))
 
   def UnescapedSymbolicNameString: Rule1[String] = rule("an identifier") {
     group(IdentifierStart ~ zeroOrMore(IdentifierPart)) ~> (_.toString) ~ !IdentifierPart
+  }
+
+  def GlobbedUnescapedSymbolicNameString: Rule1[String] = rule("an identifier") {
+    group(GlobbedIdentifierStart ~ zeroOrMore(GlobbedIdentifierPart)) ~> (_.toString) ~ !GlobbedIdentifierPart
   }
 
   def EscapedSymbolicNameString: Rule1[String] = rule("an identifier") {
@@ -135,6 +141,10 @@ trait Base extends Parser {
 
   def Namespace: Rule1[expressions.Namespace] = rule("namespace of a procedure") {
     zeroOrMore(SymbolicNameString ~ ".") ~~>> (expressions.Namespace(_))
+  }
+
+  def GlobbedNamespace: Rule1[expressions.Namespace] = rule("globbed namespace of a procedure") {
+    zeroOrMore(GlobbedSymbolicNameString ~ ".") ~~>> (expressions.Namespace(_))
   }
 
   def parseOrThrow[T](input: String, cypherExceptionFactory: CypherExceptionFactory, initialOffset: Option[InputPosition], rule: Rule1[Seq[T]]): T = {

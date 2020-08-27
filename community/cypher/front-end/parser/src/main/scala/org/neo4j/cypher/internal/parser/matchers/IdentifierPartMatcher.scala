@@ -19,3 +19,7 @@ package org.neo4j.cypher.internal.parser.matchers
 class IdentifierPartMatcher extends ScalaCharMatcher("an identifier character") {
   protected def matchChar(c: Char): Boolean = Character.isJavaIdentifierPart(c)
 }
+
+class GlobbedIdentifierPartMatcher extends IdentifierPartMatcher {
+  override protected def matchChar(c: Char): Boolean = super.matchChar(c) || '*'.equals(c) || '?'.equals(c)
+}

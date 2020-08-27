@@ -815,9 +815,9 @@ object Prettifier {
       case ElementQualifier(name) => ExpressionStringifier.backtick(name)
       case UserQualifier(name) => escapeName(name)
       case ProcedureQualifier(nameSpace, procedureName) =>
-        val namespace = nameSpace.parts.map(ExpressionStringifier.backtick(_)).mkString(".")
+        val namespace = nameSpace.parts.map(ExpressionStringifier.backtick(_, globbing = true)).mkString(".")
         val prefix = if (namespace.isEmpty) "" else namespace + "."
-        prefix + ExpressionStringifier.backtick(procedureName.name)
+        prefix + ExpressionStringifier.backtick(procedureName.name, globbing = true)
     }
 
     qualifier match {

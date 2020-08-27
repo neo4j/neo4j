@@ -59,7 +59,9 @@ class TokenHoldersIdLookup implements LoginContext.IdLookup
     @Override
     public int[] getProcedureIds( String procedureGlobbing )
     {
-        String escapedString = procedureGlobbing.replaceAll( "\\.", "\\\\." ).replaceAll( "\\*", ".*" );
+        String escapedString = procedureGlobbing.replaceAll( "\\.", "\\\\." )
+                                                .replaceAll( "\\*", ".*" )
+                                                .replaceAll( "\\?", ".?" );
         return globalProcedures.getIdsOfProceduresMatching( Pattern.compile( escapedString, CASE_INSENSITIVE ) );
     }
 }
