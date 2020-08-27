@@ -94,6 +94,7 @@ import org.neo4j.cypher.internal.ast.DropUserAction
 import org.neo4j.cypher.internal.ast.DumpData
 import org.neo4j.cypher.internal.ast.ElementQualifier
 import org.neo4j.cypher.internal.ast.ElementsAllQualifier
+import org.neo4j.cypher.internal.ast.ExecuteProcedureAction
 import org.neo4j.cypher.internal.ast.Foreach
 import org.neo4j.cypher.internal.ast.FromGraph
 import org.neo4j.cypher.internal.ast.GrantPrivilege
@@ -124,6 +125,8 @@ import org.neo4j.cypher.internal.ast.OnMatch
 import org.neo4j.cypher.internal.ast.OrderBy
 import org.neo4j.cypher.internal.ast.PeriodicCommitHint
 import org.neo4j.cypher.internal.ast.PrivilegeCommand
+import org.neo4j.cypher.internal.ast.ProcedureAllQualifier
+import org.neo4j.cypher.internal.ast.ProcedureQualifier
 import org.neo4j.cypher.internal.ast.ProcedureResult
 import org.neo4j.cypher.internal.ast.ProcedureResultItem
 import org.neo4j.cypher.internal.ast.PropertiesResource
@@ -1382,6 +1385,20 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     dbms            <- oneOf(dbmsGrant, dbmsDeny, dbmsRevoke)
   } yield dbms
 
+  def _qualifiedDbmsPrivilege: Gen[PrivilegeCommand] = for {
+    dbmsAction         <- ExecuteProcedureAction
+    procedureNamespace <- _namespace
+    procedureName      <- _procedureName
+    procedures         <- oneOrMore(ProcedureQualifier(procedureNamespace, procedureName)(pos))
+    qualifier          <- oneOf(procedures, List(ProcedureAllQualifier()(pos)))
+    roleNames          <- _listOfNameOfEither
+    revokeType         <- _revokeType
+    dbmsGrant          = GrantPrivilege.dbmsAction(dbmsAction, roleNames, qualifier)(pos)
+    dbmsDeny           = DenyPrivilege.dbmsAction(dbmsAction, roleNames, qualifier)(pos)
+    dbmsRevoke         = RevokePrivilege.dbmsAction(dbmsAction, roleNames, revokeType, qualifier)(pos)
+    dbms               <- oneOf(dbmsGrant, dbmsDeny, dbmsRevoke)
+  } yield dbms
+
   def _databasePrivilege: Gen[PrivilegeCommand] = for {
     databaseAction      <- _databaseAction
     namedScope          <- _listOfNameOfEither.map(_.map(n => NamedDatabaseScope(n)(pos)))
@@ -1411,6 +1428,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
   def _privilegeCommand: Gen[AdministrationCommand] = oneOf(
     _showPrivileges,
     _dbmsPrivilege,
+    _qualifiedDbmsPrivilege,
     _databasePrivilege,
     _graphPrivilege
   )
