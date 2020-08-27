@@ -154,7 +154,10 @@ public class BatchInsertionIT
 
     private GraphDatabaseService getDatabase()
     {
-        managementService = new TestDatabaseManagementServiceBuilder( databaseLayout ).setFileSystem( fileSystem ).build();
+        if ( managementService == null )
+        {
+            managementService = new TestDatabaseManagementServiceBuilder( databaseLayout ).setFileSystem( fileSystem ).build();
+        }
         return managementService.database( DEFAULT_DATABASE_NAME );
     }
 }
