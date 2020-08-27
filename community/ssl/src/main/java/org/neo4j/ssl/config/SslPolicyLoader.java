@@ -23,6 +23,7 @@ import io.netty.handler.ssl.SslProvider;
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 
 import java.io.File;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -48,6 +49,7 @@ import javax.net.ssl.CertPathTrustManagerParameters;
 import javax.net.ssl.TrustManagerFactory;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.SslSystemInternalSettings;
 import org.neo4j.configuration.SslSystemSettings;
 import org.neo4j.configuration.ssl.ClientAuth;
 import org.neo4j.configuration.ssl.SslPolicyConfig;
@@ -71,15 +73,20 @@ import static java.lang.String.format;
  */
 public class SslPolicyLoader
 {
+    private static final FilenameFilter ALL_FILES = ( File dir, String name ) -> true;
+    private static final FilenameFilter SKIP_DOT_FILES = ( File dir, String name ) -> !name.startsWith( "." );
+
     private final Map<SslPolicyScope,SslPolicy> policies = new ConcurrentHashMap<>();
     private final Config config;
     private final SslProvider sslProvider;
     private final LogProvider logProvider;
     private final Log log;
+    private final boolean skipDotFiles;
 
     private SslPolicyLoader( Config config, LogProvider logProvider )
     {
         this.config = config;
+        this.skipDotFiles = config.get( SslSystemInternalSettings.ignore_dotfiles );
         this.sslProvider = config.get( SslSystemSettings.netty_ssl_provider );
         this.logProvider = logProvider;
         this.log = logProvider.getLog( SslPolicyLoader.class );
@@ -162,7 +169,7 @@ public class SslPolicyLoader
 
         KeyAndChain keyAndChain = pemKeyAndChain( policyConfig );
 
-        Collection<X509CRL> crls = getCRLs( revokedCertificatesDir );
+        Collection<X509CRL> crls = getCRLs( revokedCertificatesDir, certificateFilenameFilter() );
         TrustManagerFactory trustManagerFactory;
         try
         {
@@ -223,10 +230,10 @@ public class SslPolicyLoader
         return new KeyAndChain( privateKey, keyCertChain, trustStore );
     }
 
-    private static Collection<X509CRL> getCRLs( File revokedCertificatesDir )
+    private static Collection<X509CRL> getCRLs( File revokedCertificatesDir, FilenameFilter filter )
     {
         Collection<X509CRL> crls = new ArrayList<>();
-        File[] revocationFiles = revokedCertificatesDir.exists() ? revokedCertificatesDir.listFiles() : new File[0];
+        File[] revocationFiles = revokedCertificatesDir.exists() ? revokedCertificatesDir.listFiles( filter ) : new File[0];
 
         if ( revocationFiles == null )
         {
@@ -323,7 +330,7 @@ public class SslPolicyLoader
         KeyStore trustStore = KeyStore.getInstance( KeyStore.getDefaultType() );
         trustStore.load( null, null );
 
-        File[] trustedCertFiles = trustedCertificatesDir.exists() ? trustedCertificatesDir.listFiles() : new File[0];
+        File[] trustedCertFiles = trustedCertificatesDir.exists() ? trustedCertificatesDir.listFiles( certificateFilenameFilter() ) : new File[0];
 
         if ( trustedCertFiles == null )
         {
@@ -369,5 +376,10 @@ public class SslPolicyLoader
             this.keyCertChain = keyCertChain;
             this.trustStore = trustStore;
         }
+    }
+
+    private FilenameFilter certificateFilenameFilter()
+    {
+        return skipDotFiles ? SKIP_DOT_FILES : ALL_FILES;
     }
 }
