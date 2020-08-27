@@ -21,8 +21,6 @@ package org.neo4j.internal.index.label;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledOnOs;
-import org.junit.jupiter.api.condition.OS;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
 
@@ -212,7 +210,6 @@ class TokenScanWriteMonitorTest
     }
 
     @Test
-    @DisabledOnOs( OS.WINDOWS )
     void shouldPruneAtConfiguredThreshold() throws IOException
     {
         // given
