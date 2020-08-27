@@ -19,20 +19,16 @@
  */
 package org.neo4j.configuration;
 
-import io.netty.handler.ssl.SslProvider;
-
-import org.neo4j.annotations.api.PublicApi;
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.graphdb.config.Setting;
 
-import static org.neo4j.configuration.SettingValueParsers.ofEnum;
+import static org.neo4j.configuration.SettingValueParsers.BOOL;
 
 @ServiceProvider
-@PublicApi
-public class SslSystemSettings implements SettingsDeclaration
+public class SslSystemInternalSettings implements SettingsDeclaration
 {
-    @Description( "Netty SSL provider" )
-    public static final Setting<SslProvider> netty_ssl_provider =
-            SettingImpl.newBuilder( "dbms.netty.ssl.provider", ofEnum( SslProvider.class ), SslProvider.JDK ).build();
+    @Internal
+    @Description( "Don't try and read dot-prefixed files or dot-prefixed directories in ssl policy directories" )
+    public static final Setting<Boolean> ignore_dotfiles =
+            SettingImpl.newBuilder( "unsupported.dbms.ssl.system.ignore_dot_files", BOOL, false ).build();
 }
-
