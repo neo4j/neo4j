@@ -38,7 +38,7 @@ import org.neo4j.server.security.systemgraph.versions.NoCommunitySecurityCompone
 import static org.neo4j.server.security.systemgraph.KnownSystemComponentVersion.UNKNOWN_VERSION;
 import static org.neo4j.server.security.systemgraph.versions.KnownCommunitySecurityComponentVersion.USER_LABEL;
 
-/***
+/**
  * This component contains the users of the dbms.
  * Each user is represented by a node in the system database with the label :User and properties for username, credentials, passwordChangeRequired and status.
  * The schema is the same in both community and enterprise (even if status is an enterprise-only feature).

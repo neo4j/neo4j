@@ -29,7 +29,7 @@ import org.neo4j.util.Preconditions;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 
-/***
+/**
  * Common code for all system graph components, apart from test implementations and the central collection class {@link SystemGraphComponents}.
  */
 public abstract class AbstractSystemGraphComponent implements SystemGraphComponent

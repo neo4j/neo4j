@@ -26,7 +26,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.logging.Log;
 
-/***
+/**
  * Version of a system graph component.
  * Components that due to breaking schema changes requires migrations also needs versions.
  * Each component has its own version scheme starting at 0 and increasing each release with breaking changes.

@@ -112,7 +112,7 @@ public interface SystemGraphComponent
      * If the component-specific sub-graph of the system database is not initialized yet (empty), this method should populate it with the default contents for
      * the current version of the component.
      *
-     * throws {@link Exception} on any possible error raised by the initialization process
+     * @throws Exception on any possible error raised by the initialization process
      */
     void initializeSystemGraph( GraphDatabaseService system ) throws Exception;
 
@@ -120,7 +120,7 @@ public interface SystemGraphComponent
      * If the component-specific sub-graph of the system database is an older, but still supported, version, this method should upgrade it to the latest
      * supported version.
      *
-     * throws {@link Exception} on any possible error raised by the upgrade process
+     * @throws Exception on any possible error raised by the upgrade process
      */
     void upgradeToCurrent( GraphDatabaseService system ) throws Exception;
 
