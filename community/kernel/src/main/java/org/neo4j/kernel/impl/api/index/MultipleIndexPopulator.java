@@ -128,7 +128,7 @@ public class MultipleIndexPopulator
     private static final String EOL = System.lineSeparator();
 
     private final int QUEUE_THRESHOLD = FeatureToggles.getInteger( MultipleIndexPopulator.class, QUEUE_THRESHOLD_NAME, 20_000 );
-    private final int BATCH_SIZE_SCAN = FeatureToggles.getInteger( MultipleIndexPopulator.class, BATCH_SIZE_NAME, 10_000 );
+    final int BATCH_SIZE_SCAN = FeatureToggles.getInteger( MultipleIndexPopulator.class, BATCH_SIZE_NAME, 10_000 );
     final int BATCH_MAX_BYTE_SIZE_SCAN = FeatureToggles.getInteger( MultipleIndexPopulator.class, BATCH_MAX_BYTE_SIZE_NAME, (int) mebiBytes( 10 ) );
     private final boolean PRINT_DEBUG = FeatureToggles.flag( MultipleIndexPopulator.class, "print_debug", false );
     private final int AWAIT_TIMEOUT_MINUTES = FeatureToggles.getInteger( MultipleIndexPopulator.class, AWAIT_TIMEOUT_MINUTES_NAME, 30 );
@@ -863,7 +863,10 @@ public class MultipleIndexPopulator
         {
             for ( Value value : values )
             {
-                size += heapSizeOf( value );
+                if ( value != null )
+                {
+                    size += heapSizeOf( value );
+                }
             }
         }
         return size;
