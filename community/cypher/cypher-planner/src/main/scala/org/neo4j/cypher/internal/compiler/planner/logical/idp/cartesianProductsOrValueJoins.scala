@@ -129,7 +129,7 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
     val bestSortedPlans = maybeSortedComponent.map {
       // If we have a sorted component, that should go to the very left of the cartesian products to keep the sort order
       sortedComponent =>
-        val c = Component(sortedComponent.queryGraph, sortedComponent.plan.bestSortedResult.get)
+        val c = Component(sortedComponent.queryGraph, sortedComponent.plan.bestResultFulfillingReq.get)
         c +: bestPlans.filterNot(comp => c.queryGraph == comp.queryGraph)
     }
 

@@ -40,7 +40,6 @@ import org.neo4j.cypher.internal.logical.plans.NodeIndexScan
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
-import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -167,7 +166,7 @@ class CartesianProductsOrValueJoinsTest extends CypherFunSuite with LogicalPlann
       }
 
       // n3 needs to be on left, so that its sort order is kept. The rest should still be sorted by cost.
-      result.plan.bestSortedResult.get should beLike {
+      result.plan.bestResultFulfillingReq.get should beLike {
         case CartesianProduct(
           CartesianProduct(
             CartesianProduct(

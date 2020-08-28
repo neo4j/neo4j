@@ -53,7 +53,7 @@ case class SingleComponentPlanner(monitor: IDPQueryGraphSolverMonitor,
 
     val bestPlans =
       if (qg.patternRelationships.nonEmpty) {
-        val leaves = bestPlansPerAvailableSymbol.flatMap(bestPlans => bestPlans.bestSortedResult.toSeq :+ bestPlans.bestResult).toSet
+        val leaves = bestPlansPerAvailableSymbol.flatMap(bestPlans => bestPlans.bestResultFulfillingReq.toSeq :+ bestPlans.bestResult).toSet
 
         val orderRequirement = if (interestingOrder.isEmpty) {
           ExtraRequirement.empty
@@ -89,7 +89,7 @@ case class SingleComponentPlanner(monitor: IDPQueryGraphSolverMonitor,
         val result = solver(seed, qg.patternRelationships, context)
         monitor.endIDPIterationFor(qg, result.bestResult)
 
-        BestResults(result.bestResult, result.bestSortedResult)
+        BestResults(result.bestResult, result.bestResultFulfillingReq)
       } else {
         val solutionPlans =
           if (qg.shortestPathPatterns.isEmpty) {
@@ -111,7 +111,7 @@ case class SingleComponentPlanner(monitor: IDPQueryGraphSolverMonitor,
 
     if (IDPQueryGraphSolver.VERBOSE) {
       println(s"Result (picked best plan):\n\tPlan #${bestPlans.bestResult.debugId}\n\t${bestPlans.bestResult.toString}")
-      bestPlans.bestSortedResult.foreach { bSP =>
+      bestPlans.bestResultFulfillingReq.foreach { bSP =>
         println(s"Result (picked best sorted plan):\n\tPlan #${bSP.debugId}\n\t${bSP.toString}")
       }
       println("\n")

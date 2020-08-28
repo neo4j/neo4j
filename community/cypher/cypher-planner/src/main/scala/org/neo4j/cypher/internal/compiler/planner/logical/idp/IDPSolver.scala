@@ -49,8 +49,8 @@ object ExtraRequirement {
 }
 
 case class BestResults[+Result](bestResult: Result,
-                               bestSortedResult: Option[Result]) {
-  def map[B](f: Result => B): BestResults[B] = BestResults(f(bestResult), bestSortedResult.map(f))
+                                bestResultFulfillingReq: Option[Result]) {
+  def map[B](f: Result => B): BestResults[B] = BestResults(f(bestResult), bestResultFulfillingReq.map(f))
 }
 
 /**
@@ -131,8 +131,8 @@ class IDPSolver[Solvable, Result, Context](generator: IDPSolverStep[Solvable, Re
     def compactBlock(original: Goal): Unit = {
       val newId = registry.compact(original)
       table(original).foreach {
-        case (attribute, result) =>
-          table.put(BitSet.empty + newId, attribute, result)
+        case (fulfilsReq, result) =>
+          table.put(BitSet.empty + newId, fulfilsReq, result)
       }
       toDo = toDo -- original + newId
       table.removeAllTracesOf(original)
@@ -157,19 +157,19 @@ class IDPSolver[Solvable, Result, Context](generator: IDPSolverStep[Solvable, Re
     }
     monitor.foundPlanAfter(iterations)
 
-    val (sortedPlans, plans) =  table.plans
-      .map { case ((key, attribute), result) => (registry.explode(key), attribute) -> result }
-      .partition { case ((_, fulfilsAttribute), _) => fulfilsAttribute }
+    val (plansFulfillingReq, plans) =  table.plans
+      .map { case ((key, fulfilsReq), result) => (registry.explode(key), fulfilsReq) -> result }
+      .partition { case ((_, fulfilsReq), _) => fulfilsReq }
 
     val (_, bestResult) = plans
       .toSingleOption
       .getOrElse(throw new AssertionError("Expected a single plan to be left in the plan table"))
 
-    if (sortedPlans.hasNext) {
-      val (_, sortedPlan) = sortedPlans.toSingleOption
-        .getOrElse(throw new AssertionError("Expected a single sorted plan to be left in the plan table"))
+    if (plansFulfillingReq.hasNext) {
+      val (_, plan) = plansFulfillingReq.toSingleOption
+        .getOrElse(throw new AssertionError("Expected a single plan that fulfils the requirements to be left in the plan table"))
 
-      BestResults(bestResult, Some(sortedPlan))
+      BestResults(bestResult, Some(plan))
     } else {
       BestResults(bestResult, None)
     }

@@ -120,7 +120,7 @@ case class IDPQueryGraphSolver(singleComponentSolver: SingleComponentPlannerTrai
     require(optionalMatches.isEmpty)
     // Best sorted plan, if available, otherwise best overall plan
     val bestPlans = resultingPlans.head.plan
-    bestPlans.bestSortedResult.getOrElse(bestPlans.bestResult)
+    bestPlans.bestResultFulfillingReq.getOrElse(bestPlans.bestResult)
   }
 }
 

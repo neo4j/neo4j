@@ -27,7 +27,7 @@ trait ProjectingSelector[P] {
 
   def ofBestResults(plans: Iterable[BestResults[P]]): Option[BestResults[P]] = {
     val best = apply(plans.map(_.bestResult))
-    val bestSorted = apply(plans.flatMap(_.bestSortedResult))
-    best.map(BestResults(_, bestSorted))
+    val bestFulfillingReq = apply(plans.flatMap(_.bestResultFulfillingReq))
+    best.map(BestResults(_, bestFulfillingReq))
   }
 }
