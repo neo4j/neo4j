@@ -41,8 +41,8 @@ class RecordRelationshipGroupCursor extends RelationshipGroupRecord implements A
     private boolean open;
     RecordLoadOverride loadMode;
 
-    RecordRelationshipGroupCursor( RelationshipStore relationshipStore, RelationshipGroupStore groupStore, PageCursorTracer cursorTracer,
-            RecordLoadOverride loadMode )
+    RecordRelationshipGroupCursor( RelationshipStore relationshipStore, RelationshipGroupStore groupStore, RecordLoadOverride loadMode,
+            PageCursorTracer cursorTracer )
     {
         super( NO_ID );
         this.relationshipStore = relationshipStore;

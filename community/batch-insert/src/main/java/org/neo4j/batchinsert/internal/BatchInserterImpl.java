@@ -53,6 +53,8 @@ import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.counts.GBPTreeCountsStore;
+import org.neo4j.internal.counts.GBPTreeGenericCountsStore;
+import org.neo4j.internal.counts.RelationshipGroupDegreesStore;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.IteratorWrapper;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
@@ -191,6 +193,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.store_internal_log_p
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.internal.counts.RelationshipGroupDegreesStore.noRebuilder;
 import static org.neo4j.internal.helpers.Numbers.safeCastLongToInt;
 import static org.neo4j.internal.helpers.collection.Iterables.single;
 import static org.neo4j.internal.kernel.api.TokenRead.NO_TOKEN;
@@ -228,6 +231,7 @@ public class BatchInserterImpl implements BatchInserter
     private final PageCacheTracer pageCacheTracer;
     private final PageCursorTracer cursorTracer;
     private final MemoryTracker memoryTracker;
+    private final RelationshipGroupDegreesStore.Updater degreeUpdater;
     private boolean labelsTouched;
     private boolean relationshipTypesTouched;
     private boolean isShutdown;
@@ -247,6 +251,7 @@ public class BatchInserterImpl implements BatchInserter
     private final PropertyKeyTokenStore propertyKeyTokenStore;
     private final PropertyStore propertyStore;
     private final SchemaStore schemaStore;
+    private final RelationshipGroupDegreesStore groupDegreesStore;
     private final NeoStoreIndexStoreView storeIndexStoreView;
 
     private final LabelTokenStore labelTokenStore;
@@ -318,6 +323,11 @@ public class BatchInserterImpl implements BatchInserter
             RecordStore<RelationshipGroupRecord> relationshipGroupStore = neoStores.getRelationshipGroupStore();
             schemaStore = neoStores.getSchemaStore();
             labelTokenStore = neoStores.getLabelTokenStore();
+            groupDegreesStore = new RelationshipGroupDegreesStore( pageCache, databaseLayout.relationshipGroupDegreesStore(), fileSystem, immediate(),
+                    noRebuilder( neoStores.getMetaDataStore().getLastCommittedTransactionId() - 1 ), false, pageCacheTracer,
+                    GBPTreeGenericCountsStore.NO_MONITOR );
+            groupDegreesStore.start( cursorTracer, memoryTracker );
+            degreeUpdater = groupDegreesStore.apply( neoStores.getMetaDataStore().getLastCommittedTransactionId(), cursorTracer );
 
             TokenHolder propertyKeyTokenHolder = new DelegatingTokenHolder( this::createNewPropertyKeyId, TokenHolder.TYPE_PROPERTY_KEY );
             TokenHolder relationshipTypeTokenHolder = new DelegatingTokenHolder( this::createNewRelationshipType, TokenHolder.TYPE_RELATIONSHIP_TYPE );
@@ -987,7 +997,7 @@ public class BatchInserterImpl implements BatchInserter
     {
         long id = relationshipStore.nextId( cursorTracer );
         int typeId = getOrCreateRelationshipTypeId( type.name() );
-        relationshipCreator.relationshipCreate( id, typeId, node1, node2, recordAccess, noopLockClient );
+        relationshipCreator.relationshipCreate( id, typeId, node1, node2, recordAccess, degreeUpdater, noopLockClient );
         if ( properties != null && !properties.isEmpty() )
         {
             RelationshipRecord record = recordAccess.getRelRecords().getOrLoad( id, null, cursorTracer ).forChangingData();
@@ -1116,7 +1126,8 @@ public class BatchInserterImpl implements BatchInserter
         try ( cursorTracer;
               var ignore = new Lifespan( life );
               locker;
-              neoStores )
+              neoStores;
+              degreeUpdater; groupDegreesStore )
         {
             rebuildCounts( pageCacheTracer, memoryTracker );
             LabelScanStore labelIndex = buildLabelIndex();

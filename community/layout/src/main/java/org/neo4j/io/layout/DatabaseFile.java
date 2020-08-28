@@ -65,6 +65,8 @@ public enum DatabaseFile
 
     COUNTS_STORE( DatabaseFileNames.COUNTS_STORE, false ),
 
+    RELATIONSHIP_GROUP_DEGREES_STORE( DatabaseFileNames.RELATIONSHIP_GROUP_DEGREES_STORE, false ),
+
     METADATA_STORE( DatabaseFileNames.METADATA_STORE ),
 
     INDEX_STATISTICS_STORE( DatabaseFileNames.INDEX_STATISTICS_STORE, false ),

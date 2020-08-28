@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.recordstorage;
 
+import org.neo4j.internal.counts.RelationshipGroupDegreesStore;
 import org.neo4j.internal.recordstorage.RecordAccess.RecordProxy;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
@@ -49,11 +50,12 @@ public class RelationshipCreator
      *
      * @param id The id of the relationship to create.
      * @param type The id of the relationship type this relationship will
-     *            have.
+     * have.
      * @param firstNodeId The id of the start node.
      * @param secondNodeId The id of the end node.
      */
-    public void relationshipCreate( long id, int type, long firstNodeId, long secondNodeId, RecordAccessSet recordChangeSet, ResourceLocker locks )
+    public void relationshipCreate( long id, int type, long firstNodeId, long secondNodeId, RecordAccessSet recordChangeSet,
+            RelationshipGroupDegreesStore.Updater groupDegreesUpdater, ResourceLocker locks )
     {
         RecordProxy<NodeRecord,Void> firstNode = recordChangeSet.getNodeRecords().getOrLoad( firstNodeId, null, cursorTracer );
         RecordProxy<NodeRecord,Void> secondNode =

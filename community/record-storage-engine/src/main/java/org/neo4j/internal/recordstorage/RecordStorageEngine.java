@@ -34,8 +34,11 @@ import org.neo4j.counts.CountsAccessor;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
+import org.neo4j.internal.counts.CountUpdater;
 import org.neo4j.internal.counts.CountsBuilder;
 import org.neo4j.internal.counts.GBPTreeCountsStore;
+import org.neo4j.internal.counts.GBPTreeGenericCountsStore;
+import org.neo4j.internal.counts.RelationshipGroupDegreesStore;
 import org.neo4j.internal.diagnostics.DiagnosticsLogger;
 import org.neo4j.internal.diagnostics.DiagnosticsManager;
 import org.neo4j.internal.id.IdController;
@@ -126,6 +129,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     private final PageCacheTracer cacheTracer;
     private final MemoryTracker otherMemoryTracker;
     private final GBPTreeCountsStore countsStore;
+    private final RelationshipGroupDegreesStore groupDegreesStore;
     private final int denseNodeThreshold;
     private final Map<IdType,WorkSync<IdGenerator,IdGeneratorUpdateWork>> idGeneratorWorkSyncs = new EnumMap<>( IdType.class );
     private final Map<TransactionApplicationMode,TransactionApplierFactoryChain> applierChains = new EnumMap<>( TransactionApplicationMode.class );
@@ -182,6 +186,8 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
 
             countsStore = openCountsStore( pageCache, fs, databaseLayout, config, logProvider, recoveryCleanupWorkCollector, cacheTracer );
 
+            groupDegreesStore = openDegreesStore( pageCache, fs, databaseLayout, config, logProvider, recoveryCleanupWorkCollector, cacheTracer );
+
             consistencyCheckApply = config.get( GraphDatabaseInternalSettings.consistency_check_on_apply );
         }
         catch ( Throwable failure )
@@ -221,7 +227,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         if ( mode.needsAuxiliaryStores() )
         {
             // Counts store application
-            appliers.add( new CountsStoreTransactionApplierFactory( countsStore ) );
+            appliers.add( new CountsStoreTransactionApplierFactory( countsStore, groupDegreesStore ) );
 
             // Schema index application
             appliers.add( new IndexTransactionApplierFactory( indexUpdateListener ) );
@@ -232,9 +238,9 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     private GBPTreeCountsStore openCountsStore( PageCache pageCache, FileSystemAbstraction fs, DatabaseLayout layout, Config config, LogProvider logProvider,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, PageCacheTracer pageCacheTracer )
     {
-        boolean readOnly = config.get( GraphDatabaseSettings.read_only );
         try
         {
+            boolean readOnly = config.get( GraphDatabaseSettings.read_only );
             return new GBPTreeCountsStore( pageCache, layout.countStore(), fs, recoveryCleanupWorkCollector, new CountsBuilder()
             {
                 private final Log log = logProvider.getLog( MetaDataStore.class );
@@ -252,7 +258,35 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
                 {
                     return neoStores.getMetaDataStore().getLastCommittedTransactionId();
                 }
-            }, readOnly, pageCacheTracer, GBPTreeCountsStore.NO_MONITOR );
+            }, readOnly, pageCacheTracer, GBPTreeGenericCountsStore.NO_MONITOR );
+        }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException( e );
+        }
+    }
+
+    private RelationshipGroupDegreesStore openDegreesStore( PageCache pageCache, FileSystemAbstraction fs, DatabaseLayout layout, Config config,
+            LogProvider logProvider, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, PageCacheTracer pageCacheTracer )
+    {
+        try
+        {
+            boolean readOnly = config.get( GraphDatabaseSettings.read_only );
+            return new RelationshipGroupDegreesStore( pageCache, layout.relationshipGroupDegreesStore(), fs, recoveryCleanupWorkCollector,
+                    new GBPTreeGenericCountsStore.Rebuilder()
+            {
+                @Override
+                public long lastCommittedTxId()
+                {
+                    return neoStores.getMetaDataStore().getLastCommittedTransactionId();
+                }
+
+                @Override
+                public void rebuild( CountUpdater updater, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
+                {
+                    // Don't
+                }
+            }, readOnly, pageCacheTracer, GBPTreeGenericCountsStore.NO_MONITOR );
         }
         catch ( IOException e )
         {
@@ -431,6 +465,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         {
             neoStores.start( cursor );
             countsStore.start( cursor, otherMemoryTracker );
+            groupDegreesStore.start( cursor, otherMemoryTracker );
             idController.start();
         }
     }
@@ -453,13 +488,14 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     @Override
     public void shutdown() throws Exception
     {
-        executeAll( countsStore::close, neoStores::close );
+        executeAll( countsStore::close, groupDegreesStore::close, neoStores::close );
     }
 
     @Override
     public void flushAndForce( IOLimiter limiter, PageCursorTracer cursorTracer ) throws IOException
     {
         countsStore.checkpoint( limiter, cursorTracer );
+        groupDegreesStore.checkpoint( limiter, cursorTracer );
         neoStores.flush( limiter, cursorTracer );
     }
 
@@ -489,6 +525,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     {
         List<StoreFileMetadata> files = new ArrayList<>();
         files.add( new StoreFileMetadata( databaseLayout.countStore(), RecordFormat.NO_RECORD_SIZE ) );
+        files.add( new StoreFileMetadata( databaseLayout.relationshipGroupDegreesStore(), RecordFormat.NO_RECORD_SIZE ) );
         for ( StoreType type : StoreType.values() )
         {
             final RecordStore<AbstractBaseRecord> recordStore = neoStores.getRecordStore( type );

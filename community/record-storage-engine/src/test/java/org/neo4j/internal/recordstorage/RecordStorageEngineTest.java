@@ -283,56 +283,67 @@ class RecordStorageEngineTest
             final TransactionApplier transactionApplier = actual.startTx( transaction, batchContext );
             return new TransactionApplier()
             {
+                @Override
                 public boolean visit( StorageCommand element ) throws IOException
                 {
                     return transactionApplier.visit( element );
                 }
 
+                @Override
                 public boolean visitNodeCommand( Command.NodeCommand command ) throws IOException
                 {
                     return transactionApplier.visitNodeCommand( command );
                 }
 
+                @Override
                 public boolean visitRelationshipCommand( Command.RelationshipCommand command ) throws IOException
                 {
                     return transactionApplier.visitRelationshipCommand( command );
                 }
 
+                @Override
                 public boolean visitPropertyCommand( Command.PropertyCommand command ) throws IOException
                 {
                     return transactionApplier.visitPropertyCommand( command );
                 }
 
+                @Override
                 public boolean visitRelationshipGroupCommand( Command.RelationshipGroupCommand command ) throws IOException
                 {
                     return transactionApplier.visitRelationshipGroupCommand( command );
                 }
 
+                @Override
                 public boolean visitRelationshipTypeTokenCommand( Command.RelationshipTypeTokenCommand command ) throws IOException
                 {
                     return transactionApplier.visitRelationshipTypeTokenCommand( command );
                 }
 
+                @Override
                 public boolean visitLabelTokenCommand( Command.LabelTokenCommand command ) throws IOException
                 {
                     return transactionApplier.visitLabelTokenCommand( command );
                 }
 
+                @Override
                 public boolean visitPropertyKeyTokenCommand( Command.PropertyKeyTokenCommand command ) throws IOException
                 {
                     return transactionApplier.visitPropertyKeyTokenCommand( command );
                 }
 
+                @Override
                 public boolean visitSchemaRuleCommand( Command.SchemaRuleCommand command ) throws IOException
                 {
                     return transactionApplier.visitSchemaRuleCommand( command );
                 }
 
+                @Override
                 public boolean visitNodeCountsCommand( Command.NodeCountsCommand command ) throws IOException
                 {
                     return transactionApplier.visitNodeCountsCommand( command );
                 }
 
+                @Override
                 public boolean visitRelationshipCountsCommand( Command.RelationshipCountsCommand command ) throws IOException
                 {
                     return transactionApplier.visitRelationshipCountsCommand( command );
@@ -342,6 +353,12 @@ class RecordStorageEngineTest
                 public boolean visitMetaDataCommand( Command.MetaDataCommand command ) throws IOException
                 {
                     return transactionApplier.visitMetaDataCommand( command );
+                }
+
+                @Override
+                public boolean visitGroupDegreeCommand( Command.GroupDegreeCommand command ) throws IOException
+                {
+                    return transactionApplier.visitGroupDegreeCommand( command );
                 }
 
                 public void close() throws Exception

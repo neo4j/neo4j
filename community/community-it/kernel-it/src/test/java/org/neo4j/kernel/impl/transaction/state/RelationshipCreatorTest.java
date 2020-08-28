@@ -27,6 +27,7 @@ import java.util.Set;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.internal.counts.RelationshipGroupDegreesStore;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.recordstorage.DirectRecordAccessSet;
@@ -53,6 +54,7 @@ import org.neo4j.lock.AcquireLockTimeoutException;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceType;
 import org.neo4j.lock.ResourceTypes;
+import org.neo4j.storageengine.api.RelationshipDirection;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
@@ -94,7 +96,7 @@ class RelationshipCreatorTest
 
         // WHEN
         relationshipCreator.relationshipCreate( idGeneratorFactory.get( IdType.RELATIONSHIP ).nextId( NULL ), 0,
-                nodeId, nodeId, tracker, tracker );
+                nodeId, nodeId, tracker, tracker, tracker );
 
         // THEN
         assertEquals( tracker.relationshipLocksAcquired.size(), tracker.changedRelationships.size() );
@@ -120,7 +122,7 @@ class RelationshipCreatorTest
         }
     }
 
-    static class Tracker extends NoOpClient implements RecordAccessSet
+    static class Tracker extends NoOpClient implements RecordAccessSet, RelationshipGroupDegreesStore.Updater
     {
         private final RecordAccessSet delegate;
         private final TrackingRecordAccess<RelationshipRecord, Void> relRecords;
@@ -197,6 +199,12 @@ class RelationshipCreatorTest
         public RecordAccess<RelationshipTypeTokenRecord, Void> getRelationshipTypeTokenChanges()
         {
             return delegate.getRelationshipTypeTokenChanges();
+        }
+
+        @Override
+        public void increment( long groupId, RelationshipDirection direction, long delta )
+        {
+            // TODO
         }
 
         @Override

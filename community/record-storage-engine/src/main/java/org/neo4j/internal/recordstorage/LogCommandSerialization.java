@@ -69,6 +69,8 @@ public abstract class LogCommandSerialization implements CommandReader
             return readNeoStoreCommand( channel );
         case NeoCommandType.META_DATA_COMMAND:
             return readMetaDataCommand( channel );
+        case NeoCommandType.UPDATE_GROUP_DEGREE_COMMAND:
+            return readGroupDegreeCommand( channel );
 
         // legacy indexes
         case NeoCommandType.INDEX_DEFINE_COMMAND:
@@ -94,6 +96,11 @@ public abstract class LogCommandSerialization implements CommandReader
     }
 
     protected Command readMetaDataCommand( ReadableChannel channel ) throws IOException
+    {
+        throw unsupportedInThisVersionException();
+    }
+
+    protected Command readGroupDegreeCommand( ReadableChannel channel ) throws IOException
     {
         throw unsupportedInThisVersionException();
     }
@@ -239,6 +246,11 @@ public abstract class LogCommandSerialization implements CommandReader
     }
 
     public void writeMetaDataCommand( WritableChannel channel, Command.MetaDataCommand command ) throws IOException
+    {
+        throw unsupportedInThisVersionException();
+    }
+
+    public void writeGroupDegreeCommand( WritableChannel channel, Command.GroupDegreeCommand command ) throws IOException
     {
         throw unsupportedInThisVersionException();
     }

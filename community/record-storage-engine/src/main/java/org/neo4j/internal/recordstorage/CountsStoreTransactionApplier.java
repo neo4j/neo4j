@@ -21,37 +21,47 @@ package org.neo4j.internal.recordstorage;
 
 import org.neo4j.counts.CountsAccessor;
 import org.neo4j.counts.CountsStore;
+import org.neo4j.internal.counts.RelationshipGroupDegreesStore;
 import org.neo4j.internal.recordstorage.Command.SchemaRuleCommand;
 import org.neo4j.storageengine.api.CommandsToApply;
 
 class CountsStoreTransactionApplier extends TransactionApplier.Adapter
 {
     private final CountsStore countsStore;
+    private final RelationshipGroupDegreesStore groupDegreesStore;
     private final CommandsToApply transaction;
     private CountsAccessor.Updater countsUpdater;
+    private RelationshipGroupDegreesStore.Updater degreesUpdater;
     private boolean haveUpdates;
     private boolean countsUpdaterClosed;
+    private boolean degreesUpdaterClosed;
 
-    CountsStoreTransactionApplier( CountsStore countsStore, CommandsToApply transaction )
+    CountsStoreTransactionApplier( CountsStore countsStore, RelationshipGroupDegreesStore groupDegreesStore, CommandsToApply transaction )
     {
         this.countsStore = countsStore;
+        this.groupDegreesStore = groupDegreesStore;
         this.transaction = transaction;
     }
 
     @Override
     public void close()
     {
-        closeCountsUpdaterIfOpen();
+        closeCountsUpdatersIfOpen();
     }
 
-    private void closeCountsUpdaterIfOpen()
+    private void closeCountsUpdatersIfOpen()
     {
+        // It's important to call the countsUpdater() method which opens the updater if it wasn't already open, this is because
+        // we need to register all transactions to the counts store even if they don't apply any counts changes.
         if ( !countsUpdaterClosed )
         {
-            // It's important to call the countsUpdater() method which opens the updater if it wasn't already open, this is because
-            // we need to register all transactions to the counts store even if they don't apply any counts changes.
             countsUpdater().close();
             countsUpdaterClosed = true;
+        }
+        if ( !degreesUpdaterClosed )
+        {
+            degreesUpdater().close();
+            degreesUpdaterClosed = true;
         }
     }
 
@@ -77,6 +87,15 @@ class CountsStoreTransactionApplier extends TransactionApplier.Adapter
         return countsUpdater;
     }
 
+    private RelationshipGroupDegreesStore.Updater degreesUpdater()
+    {
+        if ( degreesUpdater == null )
+        {
+            degreesUpdater = groupDegreesStore.apply( transaction.transactionId(), transaction.cursorTracer() );
+        }
+        return degreesUpdater;
+    }
+
     @Override
     public boolean visitRelationshipCountsCommand( Command.RelationshipCountsCommand command )
     {
@@ -94,7 +113,15 @@ class CountsStoreTransactionApplier extends TransactionApplier.Adapter
         // and an index population thread wanting to apply index sampling to the counts store.
         assert !haveUpdates : "Assumed that a schema transaction wouldn't also contain data commands affecting " +
                 "counts store, but was proven wrong with this transaction";
-        closeCountsUpdaterIfOpen();
+        closeCountsUpdatersIfOpen();
+        return false;
+    }
+
+    @Override
+    public boolean visitGroupDegreeCommand( Command.GroupDegreeCommand command )
+    {
+        haveUpdates = true;
+        degreesUpdater().increment( command.groupId(), command.direction(), command.delta() );
         return false;
     }
 }

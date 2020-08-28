@@ -135,6 +135,11 @@ public class DatabaseLayout
         return file( DatabaseFile.COUNTS_STORE.getName() );
     }
 
+    public Path relationshipGroupDegreesStore()
+    {
+        return file( DatabaseFile.RELATIONSHIP_GROUP_DEGREES_STORE.getName() );
+    }
+
     public Path propertyStringStore()
     {
         return file( DatabaseFile.PROPERTY_STRING_STORE.getName() );

@@ -27,6 +27,8 @@ import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.store.record.MetaDataRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 
+import static org.neo4j.internal.recordstorage.Command.GroupDegreeCommand.directionFromCombinedKey;
+import static org.neo4j.internal.recordstorage.Command.GroupDegreeCommand.groupIdFromCombinedKey;
 import static org.neo4j.util.Bits.bitFlag;
 
 class LogCommandSerializationV4_3_D3 extends LogCommandSerializationV4_2
@@ -75,5 +77,21 @@ class LogCommandSerializationV4_3_D3 extends LogCommandSerializationV4_2
         byte flags = bitFlag( record.inUse(), Record.IN_USE.byteValue() );
         channel.put( flags );
         channel.putLong( record.getValue() );
+    }
+
+    @Override
+    protected Command readGroupDegreeCommand( ReadableChannel channel ) throws IOException
+    {
+        long key = channel.getLong();
+        long delta = channel.getLong();
+        return new Command.GroupDegreeCommand( groupIdFromCombinedKey( key ), directionFromCombinedKey( key ), delta );
+    }
+
+    @Override
+    public void writeGroupDegreeCommand( WritableChannel channel, Command.GroupDegreeCommand command ) throws IOException
+    {
+        channel.put( NeoCommandType.UPDATE_GROUP_DEGREE_COMMAND );
+        channel.putLong( command.getKey() );
+        channel.putLong( command.delta() );
     }
 }

@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test;
 
 import org.neo4j.counts.CountsAccessor;
 import org.neo4j.counts.CountsStore;
+import org.neo4j.internal.counts.RelationshipGroupDegreesStore;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -41,7 +42,7 @@ class CountsStoreTransactionApplierTest
         final CountsStore counts = mock( CountsStore.class );
         final CountsAccessor.Updater updater = mock( CountsAccessor.Updater.class );
         when( counts.apply( anyLong(), any( PageCursorTracer.class ) ) ).thenReturn( updater );
-        final CountsStoreTransactionApplierFactory applier = new CountsStoreTransactionApplierFactory( counts );
+        final CountsStoreTransactionApplierFactory applier = new CountsStoreTransactionApplierFactory( counts, mock( RelationshipGroupDegreesStore.class ) );
 
         // WHEN
         try ( TransactionApplier txApplier = applier.startTx( new GroupOfCommands( 2L ), mock( BatchContext.class ) ) )

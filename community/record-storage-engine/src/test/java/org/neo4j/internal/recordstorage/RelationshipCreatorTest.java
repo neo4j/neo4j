@@ -197,7 +197,8 @@ class RelationshipCreatorTest
     {
         RelationshipCreator logic = new RelationshipCreator( newRelGroupGetter( givenState ), denseNodeThreshold, PageCursorTracer.NULL );
 
-        logic.relationshipCreate( nextRelId( givenState ), 0, fromNode, toNode, changeset, ResourceLocker.IGNORE );
+        logic.relationshipCreate( nextRelId( givenState ), 0, fromNode, toNode, changeset, new TransactionRecordState.DegreesUpdater(),
+                ResourceLocker.IGNORE );
     }
 
     private static long nextRelId( AbstractBaseRecord[] existingRecords )

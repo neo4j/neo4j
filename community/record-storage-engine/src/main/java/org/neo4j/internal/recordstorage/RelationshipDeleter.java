@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.recordstorage;
 
+import org.neo4j.internal.counts.RelationshipGroupDegreesStore;
 import org.neo4j.internal.recordstorage.RecordAccess.RecordProxy;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
@@ -53,7 +54,7 @@ class RelationshipDeleter
      *
      * @param id The id of the relationship to delete.
      */
-    void relDelete( long id, RecordAccessSet recordChanges, ResourceLocker locks )
+    void relDelete( long id, RecordAccessSet recordChanges, RelationshipGroupDegreesStore.Updater groupDegreesUpdater, ResourceLocker locks )
     {
         RelationshipRecord record = recordChanges.getRelRecords().getOrLoad( id, null, cursorTracer ).forChangingLinkage();
         propertyChainDeleter.deletePropertyChain( record, recordChanges.getPropertyRecords() );

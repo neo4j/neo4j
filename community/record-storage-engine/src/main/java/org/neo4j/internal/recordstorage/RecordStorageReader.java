@@ -38,6 +38,7 @@ import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
+import org.neo4j.kernel.impl.store.record.RecordLoadOverride;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.AllNodeScan;
 import org.neo4j.storageengine.api.AllRelationshipsScan;
@@ -321,6 +322,11 @@ public class RecordStorageReader implements StorageReader
     public StorageRelationshipTraversalCursor allocateRelationshipTraversalCursor( PageCursorTracer cursorTracer )
     {
         return new RecordRelationshipTraversalCursor( relationshipStore, relationshipGroupStore, cursorTracer );
+    }
+
+    RecordRelationshipGroupCursor allocateRelationshipGroupCursor( PageCursorTracer cursorTracer )
+    {
+        return new RecordRelationshipGroupCursor( relationshipStore, relationshipGroupStore, RecordLoadOverride.none(), cursorTracer );
     }
 
     @Override

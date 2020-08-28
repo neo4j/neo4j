@@ -43,4 +43,5 @@ public interface NeoCommandType
     byte UPDATE_NODE_COUNTS_COMMAND = (byte) 17;
     byte SCHEMA_RULE_COMMAND = (byte) 18;
     byte META_DATA_COMMAND = (byte) 19;
+    byte UPDATE_GROUP_DEGREE_COMMAND = (byte) 20;
 }

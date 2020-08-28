@@ -19,6 +19,10 @@
  */
 package org.neo4j.internal.recordstorage;
 
+import org.apache.commons.lang3.mutable.MutableLong;
+import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
+import org.eclipse.collections.impl.factory.primitive.LongObjectMaps;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -28,6 +32,7 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.function.Function;
 
+import org.neo4j.internal.counts.RelationshipGroupDegreesStore;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.recordstorage.Command.Mode;
@@ -56,11 +61,14 @@ import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
 import org.neo4j.lock.ResourceLocker;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.storageengine.api.RelationshipDirection;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageProperty;
+import org.neo4j.util.VisibleForTesting;
 import org.neo4j.values.storable.Value;
 
 import static java.lang.String.format;
+import static org.neo4j.internal.recordstorage.Command.GroupDegreeCommand.combinedKeyOnGroupAndDirection;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 import static org.neo4j.kernel.impl.store.PropertyStore.encodeString;
 
@@ -96,6 +104,7 @@ public class TransactionRecordState implements RecordState
     private final PageCursorTracer cursorTracer;
     private final MemoryTracker memoryTracker;
     private final LogCommandSerialization commandSerialization;
+    private final DegreesUpdater groupDegreesUpdater = new DegreesUpdater();
 
     private boolean prepared;
 
@@ -269,6 +278,20 @@ public class TransactionRecordState implements RecordState
         // schema records look malformed.
         addFiltered( commands, Mode.DELETE, propCommands );
 
+        if ( groupDegreesUpdater.degrees != null )
+        {
+            groupDegreesUpdater.degrees.forEachKeyValue( ( key, delta ) ->
+            {
+                if ( delta.longValue() != 0 )
+                {
+                    long groupId = Command.GroupDegreeCommand.groupIdFromCombinedKey( key );
+                    RelationshipDirection direction = Command.GroupDegreeCommand.directionFromCombinedKey( key );
+                    commands.add( new Command.GroupDegreeCommand( groupId, direction, delta.longValue() ) );
+                    memoryTracker.allocateHeap( Command.GroupDegreeCommand.SHALLOW_SIZE );
+                }
+            } );
+        }
+
         assert commands.size() == noOfCommands - skippedCommands : format( "Expected %d final commands, got %d " +
                 "instead, with %d skipped", noOfCommands, commands.size(), skippedCommands );
 
@@ -285,12 +308,12 @@ public class TransactionRecordState implements RecordState
 
     void relCreate( long id, int typeId, long startNodeId, long endNodeId )
     {
-        relationshipCreator.relationshipCreate( id, typeId, startNodeId, endNodeId, recordChangeSet, locks );
+        relationshipCreator.relationshipCreate( id, typeId, startNodeId, endNodeId, recordChangeSet, groupDegreesUpdater, locks );
     }
 
     void relDelete( long relId )
     {
-        relationshipDeleter.relDelete( relId, recordChangeSet, locks );
+        relationshipDeleter.relDelete( relId, recordChangeSet, groupDegreesUpdater, locks );
     }
 
     private void addFiltered( Collection<StorageCommand> target, Mode mode, Command[]... commands )
@@ -541,8 +564,42 @@ public class TransactionRecordState implements RecordState
         propertyCreator.primitiveSetProperty( record, propertyKeyId, value, recordChangeSet.getPropertyRecords() );
     }
 
+    @VisibleForTesting
+    Long groupDegreeDelta( long groupId, RelationshipDirection direction )
+    {
+        if ( groupDegreesUpdater.degrees != null )
+        {
+            MutableLong delta = groupDegreesUpdater.degrees.get( combinedKeyOnGroupAndDirection( groupId, direction ) );
+            if ( delta != null )
+            {
+                return delta.getValue();
+            }
+        }
+        return null;
+    }
+
     public interface PropertyReceiver<P extends StorageProperty>
     {
         void receive( P property, long propertyRecordId );
+    }
+
+    public static class DegreesUpdater implements RelationshipGroupDegreesStore.Updater
+    {
+        private MutableLongObjectMap<MutableLong> degrees;
+
+        @Override
+        public void increment( long groupId, RelationshipDirection direction, long delta )
+        {
+            if ( degrees == null )
+            {
+                degrees = LongObjectMaps.mutable.empty();
+            }
+            degrees.getIfAbsentPut( combinedKeyOnGroupAndDirection( groupId, direction ), MutableLong::new ).add( delta );
+        }
+
+        @Override
+        public void close()
+        {
+        }
     }
 }

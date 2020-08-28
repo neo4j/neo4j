@@ -51,7 +51,7 @@ public class CountsKey
      * second: 0
      * </pre>
      */
-    private static final byte TYPE_NODE = 1;
+    static final byte TYPE_NODE = 1;
 
     /**
      * Key data layout for this type:
@@ -63,8 +63,8 @@ public class CountsKey
     private static final byte TYPE_RELATIONSHIP = 2;
 
     // Commonly used keys
-    static final CountsKey MIN_COUNT = new CountsKey( TYPE_NODE, Long.MIN_VALUE, Integer.MIN_VALUE );
-    static final CountsKey MAX_COUNT = new CountsKey( TYPE_RELATIONSHIP, Long.MAX_VALUE, Integer.MAX_VALUE );
+    static final CountsKey MIN_COUNT = new CountsKey( (byte) (TYPE_STRAY_TX_ID + 1), Long.MIN_VALUE, Integer.MIN_VALUE );
+    static final CountsKey MAX_COUNT = new CountsKey( Byte.MAX_VALUE, Long.MAX_VALUE, Integer.MAX_VALUE );
     static final CountsKey MIN_STRAY_TX_ID = strayTxId( Long.MIN_VALUE );
     static final CountsKey MAX_STRAY_TX_ID = strayTxId( Long.MAX_VALUE );
 

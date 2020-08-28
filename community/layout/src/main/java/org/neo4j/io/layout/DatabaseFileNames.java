@@ -36,6 +36,7 @@ final class DatabaseFileNames
 
     static final String RELATIONSHIP_STORE = "neostore.relationshipstore.db";
     static final String RELATIONSHIP_GROUP_STORE = "neostore.relationshipgroupstore.db";
+    static final String RELATIONSHIP_GROUP_DEGREES_STORE = "neostore.relationshipgroupstore.degrees.db";
     static final String RELATIONSHIP_TYPE_TOKEN_STORE = "neostore.relationshiptypestore.db";
     static final String RELATIONSHIP_TYPE_TOKEN_NAMES_STORE = "neostore.relationshiptypestore.db.names";
 

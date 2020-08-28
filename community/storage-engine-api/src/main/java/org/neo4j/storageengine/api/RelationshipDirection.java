@@ -44,6 +44,13 @@ public enum RelationshipDirection
     LOOP,
     ERROR;
 
+    public static RelationshipDirection[] DIRECTIONS = values();
+
+    public static RelationshipDirection ofOrdinal( int ordinal )
+    {
+        return DIRECTIONS[ordinal];
+    }
+
     public static RelationshipDirection directionOfStrict( long nodeReference, long sourceNodeReference, long targetNodeReference )
     {
         if ( sourceNodeReference == nodeReference )

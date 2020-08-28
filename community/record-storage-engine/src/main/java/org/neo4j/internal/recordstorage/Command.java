@@ -36,6 +36,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
+import org.neo4j.storageengine.api.RelationshipDirection;
 import org.neo4j.storageengine.api.StorageCommand;
 
 import static java.lang.Math.toIntExact;
@@ -641,6 +642,72 @@ public abstract class Command implements StorageCommand
         public long delta()
         {
             return delta;
+        }
+    }
+
+    public static class GroupDegreeCommand extends Command
+    {
+        static final long SHALLOW_SIZE = shallowSizeOfInstance( GroupDegreeCommand.class );
+
+        private final long groupId;
+        private final RelationshipDirection direction;
+        private final long delta;
+
+        public GroupDegreeCommand( long groupId, RelationshipDirection direction, long delta )
+        {
+            setup( combinedKeyOnGroupAndDirection( groupId, direction ), Mode.UPDATE );
+            assert delta != 0 : "Tried to create a GroupDegreeCommand for something that didn't change any count";
+            this.groupId = groupId;
+            this.direction = direction;
+            this.delta = delta;
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format( "GroupDegree[(group:%s, %s) %s %d]", groupId, direction, delta < 0 ? "-" : "+", Math.abs( delta ) );
+        }
+
+        @Override
+        public boolean handle( CommandVisitor handler ) throws IOException
+        {
+            return handler.visitGroupDegreeCommand( this );
+        }
+
+        public long groupId()
+        {
+            return groupId;
+        }
+
+        public RelationshipDirection direction()
+        {
+            return direction;
+        }
+
+        public long delta()
+        {
+            return delta;
+        }
+
+        @Override
+        public void serialize( WritableChannel channel ) throws IOException
+        {
+            serialization.writeGroupDegreeCommand( channel, this );
+        }
+
+        public static long combinedKeyOnGroupAndDirection( long groupId, RelationshipDirection direction )
+        {
+            return groupId << 2 | direction.ordinal();
+        }
+
+        public static long groupIdFromCombinedKey( long key )
+        {
+            return key >> 2;
+        }
+
+        public static RelationshipDirection directionFromCombinedKey( long key )
+        {
+            return RelationshipDirection.ofOrdinal( (int) (key & 0x3) );
         }
     }
 }

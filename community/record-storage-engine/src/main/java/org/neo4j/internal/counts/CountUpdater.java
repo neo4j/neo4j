@@ -23,14 +23,11 @@ import java.util.concurrent.locks.Lock;
 
 import org.neo4j.counts.CountsAccessor;
 
-import static org.neo4j.internal.counts.CountsKey.nodeKey;
-import static org.neo4j.internal.counts.CountsKey.relationshipKey;
-
 /**
  * The implementation of {@link CountsAccessor.Updater} for the {@link GBPTreeCountsStore}.
  * Writing happens inside the supplied {@link CountWriter}.
  */
-class CountUpdater implements CountsAccessor.Updater
+public class CountUpdater implements AutoCloseable
 {
     private final CountWriter writer;
     private final Lock lock;
@@ -41,16 +38,9 @@ class CountUpdater implements CountsAccessor.Updater
         this.lock = lock;
     }
 
-    @Override
-    public void incrementNodeCount( long labelId, long delta )
+    void increment( CountsKey key, long delta )
     {
-        writer.write( nodeKey( labelId ), delta );
-    }
-
-    @Override
-    public void incrementRelationshipCount( long startLabelId, int typeId, long endLabelId, long delta )
-    {
-        writer.write( relationshipKey( startLabelId, typeId, endLabelId ), delta );
+        writer.write( key, delta );
     }
 
     @Override

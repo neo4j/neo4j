@@ -128,4 +128,10 @@ public class TransactionApplierFacade implements TransactionApplier
     {
         return visit( command );
     }
+
+    @Override
+    public boolean visitGroupDegreeCommand( Command.GroupDegreeCommand command ) throws IOException
+    {
+        return visit( command );
+    }
 }
