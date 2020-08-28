@@ -63,6 +63,7 @@ import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.logging.Log;
 import org.neo4j.service.Services;
 import org.neo4j.util.FeatureToggles;
+import org.neo4j.util.Preconditions;
 
 import static java.lang.String.format;
 import static java.lang.System.lineSeparator;
@@ -714,10 +715,7 @@ public class Config implements Configuration
     {
         if ( isCommand( entry ) )
         {
-            if ( !expandCommands )
-            {
-                throw new IllegalArgumentException( format( "%s is a command, but config is not explicitly told to expand it.", entry ) );
-            }
+            Preconditions.checkArgument( expandCommands, format( "%s is a command, but config is not explicitly told to expand it.", entry )  );
             String str = entry.trim();
             String command = str.substring( 2, str.length() - 1 );
             log.info( "Executing external script to retrieve value of setting " + settingName );
@@ -764,7 +762,12 @@ public class Config implements Configuration
             }
             return output;
         }
-        catch ( IOException | InterruptedException e )
+        catch ( InterruptedException e )
+        {
+            Thread.currentThread().interrupt();
+            throw new IllegalArgumentException( "Interrupted while executing command", e );
+        }
+        catch ( IOException e )
         {
             throw new IllegalArgumentException( e );
         }
