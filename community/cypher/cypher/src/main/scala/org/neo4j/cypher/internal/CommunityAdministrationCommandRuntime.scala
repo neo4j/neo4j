@@ -60,6 +60,7 @@ import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.RelationshipType.withName
 import org.neo4j.graphdb.Transaction
 import org.neo4j.graphdb.security.AuthorizationViolationException.PERMISSION_DENIED
+import org.neo4j.internal.kernel.api.security.AccessMode
 import org.neo4j.internal.kernel.api.security.AdminActionOnResource
 import org.neo4j.internal.kernel.api.security.AdminActionOnResource.DatabaseScope
 import org.neo4j.internal.kernel.api.security.PrivilegeAction
@@ -68,6 +69,7 @@ import org.neo4j.internal.kernel.api.security.Segment
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException
 import org.neo4j.kernel.api.exceptions.Status
 import org.neo4j.kernel.api.exceptions.Status.HasStatus
+import org.neo4j.kernel.impl.api.security.OverriddenAccessMode
 import org.neo4j.values.storable.ByteArray
 import org.neo4j.values.storable.StringArray
 import org.neo4j.values.storable.TextValue
@@ -335,7 +337,8 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
 
       SystemCommandExecutionPlan("SystemProcedure", normalExecutionEngine, queryString, MapValue.EMPTY,
         checkCredentialsExpired = checkCredentialsExpired,
-        parameterConverter = addParameterDefaults
+        parameterConverter = addParameterDefaults,
+        modeConverter = s => s.withMode(new OverriddenAccessMode(s.mode(), AccessMode.Static.READ))
       )
 
     // Ignore the log command in community

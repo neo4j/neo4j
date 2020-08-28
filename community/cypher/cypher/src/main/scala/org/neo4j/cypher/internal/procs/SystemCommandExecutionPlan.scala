@@ -48,7 +48,8 @@ case class SystemCommandExecutionPlan(name: String, normalExecutionEngine: Execu
                                       source: Option[ExecutionPlan] = None,
                                       checkCredentialsExpired: Boolean = true,
                                       parameterGenerator: (Transaction, SecurityContext) => MapValue = (_, _) => MapValue.EMPTY,
-                                      parameterConverter: (Transaction, MapValue) => MapValue = (_, p) => p)
+                                      parameterConverter: (Transaction, MapValue) => MapValue = (_, p) => p,
+                                      modeConverter: SecurityContext => SecurityContext = s => s.withMode(AccessMode.Static.READ))
   extends AdministrationChainedExecutionPlan(source) {
 
   override def runSpecific(ctx: SystemUpdateCountingQueryContext,
@@ -64,7 +65,7 @@ case class SystemCommandExecutionPlan(name: String, normalExecutionEngine: Execu
     try {
       val securityContext = tc.securityContext()
       if (checkCredentialsExpired) securityContext.assertCredentialsNotExpired()
-      val fullReadAccess = securityContext.withMode(AccessMode.Static.READ)
+      val fullReadAccess = modeConverter(securityContext)
       revertAccessModeChange = tc.kernelTransaction().overrideWith(fullReadAccess)
       val tx = tc.transaction()
       val updatedParams = parameterConverter(tx, safeMergeParameters(systemParams, params, parameterGenerator.apply(tx, securityContext)))
