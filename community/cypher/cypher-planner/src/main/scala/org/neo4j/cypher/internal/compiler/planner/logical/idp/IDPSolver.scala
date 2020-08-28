@@ -94,10 +94,10 @@ class IDPSolver[Solvable, Result, Context](generator: IDPSolverStep[Solvable, Re
             val (extraCandidates, baseCandidates) = candidates.partition(extraRequirement.fulfils)
             val bestExtraCandidate = projectingSelector(extraCandidates)
 
-            // The best overall candidate is either the one that fulfils the requirement _or_ one that does
-            // not fulfil the requirement (baseCandidate), put the best into the table with `false`.
             // We don't want to compare just the ones that do not fulfil the requirement
             // in isolation, because it could be that the best overall candidate fulfils the requirement.
+            // bestExtraCandidate has already been determined to be cheaper than any other extraCandidate,
+            // therefore it is enough to cost estimate the bestExtraCandidate against all baseCandidates.
             projectingSelector(baseCandidates ++ bestExtraCandidate.toIterable).foreach { candidate =>
               foundNoCandidate = false
               table.put(goal, false, candidate)
