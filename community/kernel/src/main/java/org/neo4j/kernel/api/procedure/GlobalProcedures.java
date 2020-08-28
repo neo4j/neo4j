@@ -20,7 +20,7 @@
 package org.neo4j.kernel.api.procedure;
 
 import java.util.Set;
-import java.util.regex.Pattern;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import org.neo4j.collection.RawIterator;
@@ -79,7 +79,7 @@ public interface GlobalProcedures
 
     Set<ProcedureSignature> getAllProcedures();
 
-    int[] getIdsOfProceduresMatching( Pattern regex );
+    int[] getIdsOfProceduresMatching( Predicate<CallableProcedure> predicate );
 
     Stream<UserFunctionSignature> getAllNonAggregatingFunctions();
 

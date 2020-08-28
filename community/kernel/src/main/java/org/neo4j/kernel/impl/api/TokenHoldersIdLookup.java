@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.api;
 
 import java.util.regex.Matcher;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
 import org.neo4j.internal.kernel.api.security.LoginContext;
@@ -63,7 +64,14 @@ class TokenHoldersIdLookup implements LoginContext.IdLookup
         String escaped = escapeSpecialCharacters( procedureGlobbing );
         String escapedString = escaped.replaceAll( "\\*", ".*" )
                                       .replaceAll( "\\?", ".{1}" );
-        return globalProcedures.getIdsOfProceduresMatching( Pattern.compile( escapedString, CASE_INSENSITIVE ) );
+        Predicate<String> matcherPredicate = Pattern.compile( escapedString, CASE_INSENSITIVE ).asMatchPredicate();
+        return globalProcedures.getIdsOfProceduresMatching( p -> matcherPredicate.test( p.signature().name().toString() ) );
+    }
+
+    @Override
+    public int[] getAdminProcedureIds()
+    {
+        return globalProcedures.getIdsOfProceduresMatching( p -> p.signature().admin() );
     }
 
     // These are characters that have special meaning in java regex, * and ? are omitted since we have special handling for those

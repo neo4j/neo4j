@@ -46,6 +46,8 @@ public enum PrivilegeAction
     EXECUTE,
     /** Execute procedure with elevated access */
     EXECUTE_BOOSTED,
+    /** Execute @Admin procedure with elevated access */
+    EXECUTE_ADMIN,
 
     CREATE_LABEL,
     CREATE_RELTYPE,
@@ -83,8 +85,6 @@ public enum PrivilegeAction
     SHOW_PRIVILEGE,
     ASSIGN_PRIVILEGE,
     REMOVE_PRIVILEGE,
-
-    ADMIN_PROCEDURE,
 
     // Some grouping actions that represent super-sets of other actions
 
@@ -348,7 +348,7 @@ public enum PrivilegeAction
                            USER_MANAGEMENT.satisfies( action ) ||
                            DATABASE_MANAGEMENT.satisfies( action ) ||
                            PRIVILEGE_MANAGEMENT.satisfies( action ) ||
-                           ADMIN_PROCEDURE == action ||
+                           EXECUTE_ADMIN == action ||
                            this == action;
                 }
             };

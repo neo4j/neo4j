@@ -21,8 +21,8 @@ package org.neo4j.procedure;
 
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
-import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import org.neo4j.collection.RawIterator;
@@ -208,10 +208,10 @@ public class LazyProcedures implements GlobalProcedures, Consumer<Supplier<Globa
     }
 
     @Override
-    public int[] getIdsOfProceduresMatching( Pattern regex )
+    public int[] getIdsOfProceduresMatching( Predicate<CallableProcedure> predicate )
     {
         init();
-        return globalProcedures.getIdsOfProceduresMatching( regex );
+        return globalProcedures.getIdsOfProceduresMatching( predicate );
     }
 
     @Override

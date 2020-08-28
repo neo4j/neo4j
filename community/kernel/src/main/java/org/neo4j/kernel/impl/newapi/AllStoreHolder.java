@@ -49,6 +49,7 @@ import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.internal.kernel.api.procs.UserAggregator;
 import org.neo4j.internal.kernel.api.procs.UserFunctionHandle;
 import org.neo4j.internal.kernel.api.security.AccessMode;
+import org.neo4j.internal.kernel.api.security.AdminAccessMode;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -945,10 +946,10 @@ public class AllStoreHolder extends Read
             throw new AuthorizationViolationException( format("Executing procedure is not allowed for %s.", ktx.securityContext().description() ) );
         }
 
-        AccessMode override =
-                mode.shouldBoostProcedure( id ) ? new OverriddenAccessMode( mode, procedureMode ) : new RestrictedAccessMode( mode, procedureMode );
+        final SecurityContext procedureSecurityContext = mode.shouldBoostProcedure( id ) ?
+                              ktx.securityContext().withMode( new OverriddenAccessMode( mode, procedureMode ) ).withMode( AdminAccessMode.FULL ) :
+                              ktx.securityContext().withMode( new RestrictedAccessMode( mode, procedureMode ) );
 
-        final SecurityContext procedureSecurityContext = ktx.securityContext().withMode( override );
         final RawIterator<AnyValue[],ProcedureException> procedureCall;
         try ( KernelTransaction.Revertable ignore = ktx.overrideWith( procedureSecurityContext );
               Statement statement = ktx.acquireStatement() )

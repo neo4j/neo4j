@@ -336,7 +336,8 @@ trait Statement extends Parser
     keyword("ASSIGN PRIVILEGE") ~~~> (_ => ast.AssignPrivilegeAction) |
     keyword("REMOVE PRIVILEGE") ~~~> (_ => ast.RemovePrivilegeAction) |
     keyword("PRIVILEGE MANAGEMENT") ~~~> (_ => ast.AllPrivilegeActions) |
-    group(keyword("ALL") ~~ optional(optional(keyword("DBMS")) ~~ keyword("PRIVILEGES")))~~~> (_ => ast.AllDbmsAction)
+    group(keyword("ALL") ~~ optional(optional(keyword("DBMS")) ~~ keyword("PRIVILEGES")))~~~> (_ => ast.AllDbmsAction) |
+    group(keyword("EXECUTE") ~~ AdminKeyword ~~ keyword("PROCEDURES")) ~> (_ => ast.ExecuteAdminProcedureAction)
   }
 
   private def QualifiedDbmsAction: Rule2[List[ast.PrivilegeQualifier], ast.AdminAction] = rule("qualified dbms action") {
@@ -548,6 +549,8 @@ trait Statement extends Parser
   private def PasswordKeyword: Rule0 = keyword("PASSWORDS") | keyword("PASSWORD")
 
   private def ProcedureKeyword: Rule0 = keyword("PROCEDURES") | keyword("PROCEDURE")
+
+  private def AdminKeyword: Rule0 = keyword("ADMINISTRATOR") | keyword("ADMIN")
 
   // Database specific
 

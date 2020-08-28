@@ -90,6 +90,14 @@ public class SecurityContext implements LoginContext
         return new SecurityContext( subject, mode );
     }
 
+    /**
+     * Create a copy of this SecurityContext with the provided admin access mode.
+     */
+    public SecurityContext withMode( AdminAccessMode adminAccessMode )
+    {
+        return new SecurityContext( subject, mode );
+    }
+
     public void assertCredentialsNotExpired()
     {
         if ( AuthenticationResult.PASSWORD_CHANGE_REQUIRED.equals( subject().getAuthenticationResult() ) )

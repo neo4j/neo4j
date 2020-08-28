@@ -21,7 +21,7 @@ package org.neo4j.procedure.impl;
 
 import java.nio.file.Path;
 import java.util.Set;
-import java.util.regex.Pattern;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import org.neo4j.collection.RawIterator;
@@ -306,9 +306,9 @@ public class GlobalProceduresRegistry extends LifecycleAdapter implements Global
     }
 
     @Override
-    public int[] getIdsOfProceduresMatching( Pattern regex )
+    public int[] getIdsOfProceduresMatching( Predicate<CallableProcedure> predicate )
     {
-        return registry.getIdsOfProceduresMatching( regex );
+        return registry.getIdsOfProceduresMatching( predicate );
     }
 
     @Override

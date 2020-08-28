@@ -31,7 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.ACCESS;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.ADMIN;
-import static org.neo4j.internal.kernel.api.security.PrivilegeAction.ADMIN_PROCEDURE;
+import static org.neo4j.internal.kernel.api.security.PrivilegeAction.EXECUTE_ADMIN;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.ALTER_USER;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.ASSIGN_PRIVILEGE;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.ASSIGN_ROLE;
@@ -104,7 +104,7 @@ class PrivilegeActionTest
         expected.put( CONSTRAINT, Set.of( CREATE_CONSTRAINT, DROP_CONSTRAINT ) );
         expected.put( TOKEN, Set.of( CREATE_LABEL, CREATE_RELTYPE, CREATE_PROPERTYKEY ) );
         expected.put( DATABASE_ACTIONS, Set.of( INDEX, CONSTRAINT, TOKEN, ACCESS ) );
-        expected.put( DBMS_ACTIONS, Set.of( ROLE_MANAGEMENT, USER_MANAGEMENT, DATABASE_MANAGEMENT, PRIVILEGE_MANAGEMENT, ADMIN_PROCEDURE ) );
+        expected.put( DBMS_ACTIONS, Set.of( ROLE_MANAGEMENT, USER_MANAGEMENT, DATABASE_MANAGEMENT, PRIVILEGE_MANAGEMENT, EXECUTE_ADMIN ) );
     }
 
     @Test
