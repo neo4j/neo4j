@@ -132,7 +132,7 @@
     <caffeine.version>2.8.5</caffeine.version>
     <required.maven.version>3.5.4</required.maven.version>
     <jackson.version>2.11.3</jackson.version>
-	<amazon-sdk.version>1.11.524</amazon-sdk.version>
+	<amazon-sdk.version>1.11.850</amazon-sdk.version>
     <guava.version>29.0-jre</guava.version>
     <awaitility.version>4.0.3</awaitility.version>
     <log4j.version>2.13.3</log4j.version>
@@ -1543,6 +1543,11 @@
       	<groupId>com.amazonaws</groupId>
       	<artifactId>aws-java-sdk-secretsmanager</artifactId>
       	<version>${amazon-sdk.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.amazonaws</groupId>
+        <artifactId>aws-java-sdk-ec2</artifactId>
+        <version>${amazon-sdk.version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
