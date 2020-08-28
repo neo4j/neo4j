@@ -62,7 +62,8 @@ class TransactionLogVersionSelectorTest
     void moreRecent()
     {
         assertTrue( INSTANCE.moreRecentVersionExists( V2_3.version() ) );
-        assertTrue( INSTANCE.moreRecentVersionExists( V4_0.version() ) );
+        // todo assertTrue when enabling 4.2 log version again
+        assertFalse( INSTANCE.moreRecentVersionExists( V4_0.version() ) );
         assertFalse( INSTANCE.moreRecentVersionExists( V4_2.version() ) );
     }
 }

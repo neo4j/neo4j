@@ -61,7 +61,9 @@ class VersionAwareLogEntryReaderTest
     void shouldReadACommitLogEntry() throws IOException
     {
         // given
-        final LogEntryCommit commit = new LogEntryCommit( 42, 21, 1748422299 );
+        // todo New checksum when enabling 4.2 log version again
+//        final LogEntryCommit commit = new LogEntryCommit( 42, 21, 1748422299 );
+        final LogEntryCommit commit = new LogEntryCommit( 42, 21, 2039335142 );
         final InMemoryClosableChannel channel = new InMemoryClosableChannel();
 
         writeCommitEntry( channel, commit );

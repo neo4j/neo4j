@@ -139,7 +139,8 @@ class LogEntryParserDispatcherV6Test
         channel.putChecksum();
 
         channel.getCurrentPosition( marker );
-        assertThrows( Exception.class, () -> LATEST.select( LEGACY_CHECK_POINT ) );
+        // todo Re-insert line when enabling 4.2 log version again
+//        assertThrows( Exception.class, () -> LATEST.select( LEGACY_CHECK_POINT ) );
         assertThrows( Exception.class, () -> V4_2.select( LEGACY_CHECK_POINT ) );
     }
 

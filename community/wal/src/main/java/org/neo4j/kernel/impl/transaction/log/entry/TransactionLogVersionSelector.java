@@ -59,7 +59,7 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryParserSetV4_2.
  */
 public class TransactionLogVersionSelector extends LogVersionSelector
 {
-    public static final LogEntryParserSet LATEST = V4_2;
+    public static final LogEntryParserSet LATEST = V4_0;
     public static final TransactionLogVersionSelector INSTANCE = new TransactionLogVersionSelector();
 
     private TransactionLogVersionSelector()
