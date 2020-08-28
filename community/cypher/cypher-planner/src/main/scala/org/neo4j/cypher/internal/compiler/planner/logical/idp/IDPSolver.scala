@@ -91,17 +91,20 @@ class IDPSolver[Solvable, Result, Context](generator: IDPSolverStep[Solvable, Re
           val goal = goals.next()
           if (table(goal).isEmpty) {
             val candidates = LazyIterable(generator(registry, goal, table, context))
-            val extraCandidates = candidates.filter(extraRequirement.fulfils)
-            // From _all_ candidates (even if they fulfil the requirement), put the best into the table
-            // with `false`. We don't want to compare just the ones that do not fulfil the requirement
+            val (extraCandidates, baseCandidates) = candidates.partition(extraRequirement.fulfils)
+            val bestExtraCandidate = projectingSelector(extraCandidates)
+
+            // The best overall candidate is either the one that fulfils the requirement _or_ one that does
+            // not fulfil the requirement (baseCandidate), put the best into the table with `false`.
+            // We don't want to compare just the ones that do not fulfil the requirement
             // in isolation, because it could be that the best overall candidate fulfils the requirement.
-            projectingSelector(candidates).foreach { candidate =>
+            projectingSelector(baseCandidates ++ bestExtraCandidate.toIterable).foreach { candidate =>
               foundNoCandidate = false
               table.put(goal, false, candidate)
             }
             // Also add the best candidate from all candidates that fulfil the requirement into the table
             // with `true`.
-            projectingSelector(extraCandidates).foreach { candidate =>
+            bestExtraCandidate.foreach { candidate =>
               foundNoCandidate = false
               table.put(goal, true, candidate)
             }
