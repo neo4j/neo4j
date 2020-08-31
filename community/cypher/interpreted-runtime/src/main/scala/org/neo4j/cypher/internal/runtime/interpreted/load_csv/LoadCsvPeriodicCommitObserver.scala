@@ -21,10 +21,12 @@ package org.neo4j.cypher.internal.runtime.interpreted.load_csv
 
 import java.net.URL
 
+import org.neo4j.cypher.internal.runtime.ExpressionCursors
 import org.neo4j.cypher.internal.runtime.QueryContext
-import org.neo4j.cypher.internal.runtime.interpreted.CSVResource
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExternalCSVResource
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.LoadCsvIterator
+import org.neo4j.internal.kernel.api.AutoCloseablePlus
+import org.neo4j.internal.kernel.api.Cursor
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -56,23 +58,23 @@ class LoadCsvPeriodicCommitObserver(batchRowCount: Long, resources: ExternalCSVR
   private def commitAndRestartTx() {
     //This is horrible, we need to close things such as expression cursors but we don't want to close
     //the URL that we are reading the CSV from until we are all done
-
-    val csvResources = new ArrayBuffer[CSVResource]()
+    val trackedResources = new ArrayBuffer[AutoCloseablePlus]()
     queryContext.resources.allResources.foreach {
-      case csvResource: CSVResource =>
-        //save so that we can remove and re-add them
-        csvResources += csvResource
+      // Cursors are tied to transaction and needs to be closed here.
+      // We call closeInternal instead of close, so that the resources are not removed from the ResourceManager.
+      // We want that, because they are still traced by the RuntimeResult and will be closed from there as well.
+      case c: Cursor => c.closeInternal()
+      case ec: ExpressionCursors => ec.closeInternal()
       case e =>
-        // We call closeInternal instead of close, so that the resources are not removed from the ResourceManager.
-        // We want that, because they are still traced by the RuntimeResult and will be closed from there as well.
-        e.closeInternal()
+        //save so that we can remove and re-add them
+        trackedResources += e
     }
     // Remove before we restart the tx
-    csvResources.foreach(queryContext.resources.untrace)
+    trackedResources.foreach(queryContext.resources.untrace)
     // Restart TX
     queryContext.transactionalContext.commitAndRestartTx()
     // Add back
-    csvResources.foreach(queryContext.resources.trace)
+    trackedResources.foreach(queryContext.resources.trace)
     outerLoadCSVIterator.foreach(_.notifyCommit())
   }
 }
