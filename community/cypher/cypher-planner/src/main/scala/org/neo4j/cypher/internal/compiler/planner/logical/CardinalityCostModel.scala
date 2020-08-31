@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CostModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.ir.LazyMode
@@ -88,16 +89,8 @@ object CardinalityCostModel extends CostModel {
          _: ProjectEndpoints
     => 1.0
 
-    // Filtering on labels and properties
-    case Selection(predicate, _) =>
-      val noOfStoreAccesses = predicate.exprs.treeCount {
-        case _: Property | _: HasLabels => true
-        case _ => false
-      }
-      if (noOfStoreAccesses > 0)
-        CostPerRow(noOfStoreAccesses)
-      else
-        DEFAULT_COST_PER_ROW
+    case Selection(predicate, _)
+    => apply(predicate)
 
     case _: AllNodesScan
     => 1.2
@@ -157,6 +150,17 @@ object CardinalityCostModel extends CostModel {
 
   private def cardinalityForPlan(plan: LogicalPlan, cardinalities: Cardinalities): Cardinality = plan match {
     case _ => plan.lhs.map(p => cardinalities.get(p.id)).getOrElse(cardinalities.get(plan.id))
+  }
+
+  def apply(expression: Expression): CostPerRow = {
+    val noOfStoreAccesses = expression.treeCount {
+      case _: Property | _: HasLabels => true
+      case _ => false
+    }
+    if (noOfStoreAccesses > 0)
+      CostPerRow(noOfStoreAccesses)
+    else
+      DEFAULT_COST_PER_ROW
   }
 
   def apply(plan: LogicalPlan, input: QueryGraphSolverInput, cardinalities: Cardinalities): Cost = {

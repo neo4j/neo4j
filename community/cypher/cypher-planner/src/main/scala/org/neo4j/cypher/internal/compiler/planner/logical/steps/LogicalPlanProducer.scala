@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.ast.UsingScanHint
 import org.neo4j.cypher.internal.compiler.helpers.ListSupport
 import org.neo4j.cypher.internal.compiler.helpers.PredicateHelper.coercePredicatesWithAnds
 import org.neo4j.cypher.internal.compiler.planner.ProcedureCallProjection
+import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CardinalityModel
 import org.neo4j.cypher.internal.expressions.CachedProperty
@@ -39,7 +40,6 @@ import org.neo4j.cypher.internal.expressions.LabelToken
 import org.neo4j.cypher.internal.expressions.MapProjection
 import org.neo4j.cypher.internal.expressions.Ors
 import org.neo4j.cypher.internal.expressions.PatternComprehension
-import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RelTypeName
@@ -413,7 +413,8 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
   }
 
   def planHiddenSelection(predicates: Seq[Expression], left: LogicalPlan, context: LogicalPlanningContext): LogicalPlan = {
-    annotate(Selection(coercePredicatesWithAnds(predicates), left), solveds.get(left.id), providedOrders.get(left.id).fromLeft, context)
+    val sortedPredicates = sortPredicatesBySelectivity(left, predicates, context)
+    annotate(Selection(coercePredicatesWithAnds(sortedPredicates), left), solveds.get(left.id), providedOrders.get(left.id).fromLeft, context)
   }
 
   def planNodeByIdSeek(variable: Variable,
@@ -616,7 +617,8 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
   def planSelection(source: LogicalPlan, predicates: Seq[Expression], context: LogicalPlanningContext): LogicalPlan = {
     val solved = solveds.get(source.id).asSinglePlannerQuery.updateTailOrSelf(_.amendQueryGraph(_.addPredicates(predicates: _*)))
     val (rewrittenPredicates, rewrittenSource) = PatternExpressionSolver.ForMulti.solve(source, predicates, context)
-    annotate(Selection(coercePredicatesWithAnds(rewrittenPredicates), rewrittenSource), solved, providedOrders.get(source.id).fromLeft, context)
+    val sortedPredicates = sortPredicatesBySelectivity(source, rewrittenPredicates, context)
+    annotate(Selection(coercePredicatesWithAnds(sortedPredicates), rewrittenSource), solved, providedOrders.get(source.id).fromLeft, context)
   }
 
   def planHorizonSelection(source: LogicalPlan, predicates: Seq[Expression], interestingOrder: InterestingOrder, context: LogicalPlanningContext): LogicalPlan = {
@@ -627,15 +629,13 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
 
     // solve existential subquery predicates
     val (solvedPredicates, existsPlan) = PatternExpressionSolver.ForExistentialSubquery.solve(source, predicates, interestingOrder, context)
-    if (solvedPredicates.nonEmpty) {
-      annotate(Selection(coercePredicatesWithAnds(solvedPredicates), existsPlan), solved, providedOrders.get(source.id).fromLeft, context)
-    }
-    val filteredPredicates = predicates.filterNot(solvedPredicates.contains(_))
+    val unsolvedPredicates = predicates.filterNot(solvedPredicates.contains(_))
 
     // solve remaining predicates
-    val newPlan = if (filteredPredicates.nonEmpty) {
-      val (rewrittenPredicates, rewrittenSource) = PatternExpressionSolver.ForMulti.solve(existsPlan, filteredPredicates, context)
-      annotate(Selection(coercePredicatesWithAnds(rewrittenPredicates), rewrittenSource), solved, providedOrders.get(existsPlan.id).fromLeft, context)
+    val newPlan = if (unsolvedPredicates.nonEmpty) {
+      val (rewrittenPredicates, rewrittenSource) = PatternExpressionSolver.ForMulti.solve(existsPlan, unsolvedPredicates, context)
+      val sortedPredicates = sortPredicatesBySelectivity(source, rewrittenPredicates, context)
+      annotate(Selection(coercePredicatesWithAnds(sortedPredicates), rewrittenSource), solved, providedOrders.get(existsPlan.id).fromLeft, context)
     } else {
       existsPlan
     }
@@ -1349,4 +1349,14 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     }
   }
 
+  private def sortPredicatesBySelectivity(source: LogicalPlan, predicates: Seq[Expression], context: LogicalPlanningContext): Seq[Expression] = {
+    // sort by (cost, selectivity). This is a heuristic. We would have to do some searching algorithm to find the actual optimal ordering.
+    predicates.sortBy { predicate =>
+      val cost = CardinalityCostModel.apply(predicate).cost
+      val solved = solveds.get(source.id).asSinglePlannerQuery.updateTailOrSelf(_.amendQueryGraph(_.addPredicates(predicate)))
+      // The cardinality will be some constant multiplied with the selectivity, where the constant is the same for all predicates.
+      val cardinality = cardinalityModel(solved, context.input, context.semanticTable)
+      (cost, cardinality)
+    }
+  }
 }
