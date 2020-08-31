@@ -187,7 +187,20 @@ case class MergeCreateNodePipe(src: Pipe, data: CreateNodeCommand)
     })
 
   override protected def handleNoValue(key: String): Unit = {
-    throw new InvalidSemanticsException(s"Cannot merge node using null property value for $key")
+    val variableNamePart =
+      // " UNNAMED X" -> Auto generated variable names, do not expose
+      if (data.idName.startsWith(" ")) {
+        ""
+      } else {
+        data.idName
+    }
+    val labels = data.labels.map(l => l.name).mkString(":")
+    val colon = if (labels.length > 0) {
+      ":"
+    } else {
+      ""
+    }
+    throw new InvalidSemanticsException(s"Cannot merge the following node because of null property value for '$key': ($variableNamePart$colon$labels {$key: null})")
   }
 }
 
@@ -208,6 +221,30 @@ case class MergeCreateRelationshipPipe(src: Pipe, data: CreateRelationshipComman
     })
 
   override protected def handleNoValue(key: String): Unit = {
-    throw new InvalidSemanticsException(s"Cannot merge relationship using null property value for $key")
+    val relVariableName = data.idName
+    val startVariableName = data.startNode
+    val endVariableName = data.endNode
+    // " UNNAMED X" -> Auto generated variable names, do not expose
+    val relVarPart =
+      if (relVariableName.startsWith(" ")) {
+        ""
+      } else {
+        relVariableName
+      }
+    val startVarPart =
+      if (startVariableName.startsWith(" ")) {
+        ""
+      } else {
+        startVariableName
+      }
+    val endVarPart =
+      if (endVariableName.startsWith(" ")) {
+        ""
+      } else {
+        endVariableName
+      }
+    val relType = data.relType.name // this is always available
+    throw new InvalidSemanticsException(
+      s"Cannot merge the following relationship because of null property value for '$key': ($startVarPart)-[$relVarPart:$relType {$key: null}]->($endVarPart)")
   }
 }
