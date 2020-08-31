@@ -269,6 +269,20 @@ trait Statement extends Parser
 
   // Privilege commands
 
+  def ShowPrivileges: Rule1[ShowPrivileges] = rule("CATALOG SHOW PRIVILEGES") {
+    group(keyword("SHOW") ~~ ScopeForShowPrivileges ~~ ShowCommandClauses
+      ~~>> ((scope, yld, rtn) => ast.ShowPrivileges(scope, yld, rtn)))
+  }
+
+  private def ScopeForShowPrivileges: Rule1[ShowPrivilegeScope] = rule("show privilege scope")(
+    group(RoleKeyword ~~ SymbolicNameOrStringParameterList ~~ keyword("PRIVILEGES")) ~~>> (ast.ShowRolesPrivileges(_)) |
+      group(UserKeyword ~~ SymbolicNameOrStringParameterList ~~ keyword("PRIVILEGES")) ~~>> (ast.ShowUsersPrivileges(_)) |
+      group(UserKeyword ~~ keyword("PRIVILEGES")) ~~~> ast.ShowUserPrivileges(None) |
+      optional(keyword("ALL")) ~~ keyword("PRIVILEGES") ~~~> ast.ShowAllPrivileges()
+  )
+
+  private def UserKeyword: Rule0 = keyword("USERS") | keyword("USER")
+
   //` ... ON DBMS TO role`
   def GrantDbmsPrivilege: Rule1[GrantPrivilege] = rule("CATALOG GRANT dbms privileges") {
     group(keyword("GRANT") ~~ DbmsAction ~~ keyword("ON DBMS TO") ~~ SymbolicNameOrStringParameterList) ~~>>
@@ -359,50 +373,60 @@ trait Statement extends Parser
       ((revokeType, resource, graphScope, qualifier, action, roles) => ast.RevokePrivilege.graphAction(action, Some(resource), graphScope, qualifier, roles, revokeType))
   }
 
-  def ShowPrivileges: Rule1[ShowPrivileges] = rule("CATALOG SHOW PRIVILEGES") {
-    group(keyword("SHOW") ~~ ScopeForShowPrivileges ~~ ShowCommandClauses
-      ~~>> ((scope, yld, rtn) => ast.ShowPrivileges(scope, yld, rtn)))
+  // Help methods for grant/deny/revoke
+
+  private def RevokeType: Rule1[RevokeType] = rule("revoke type") {
+    keyword("REVOKE GRANT") ~~~> RevokeGrantType() |
+      keyword("REVOKE DENY") ~~~> RevokeDenyType() |
+      keyword("REVOKE") ~~~> RevokeBothType()
   }
 
-  private def PrivilegeProperty: Rule1[ActionResource] = rule("{propertyList}")(
-    group("{" ~~ SymbolicNamesList ~~ "}") ~~>> {ast.PropertiesResource(_)} |
-      group("{" ~~ "*" ~~ "}") ~~~> {ast.AllPropertyResource()}
-  )
+  // Dbms specific
 
-  private def LabelResource: Rule1[ActionResource] = rule("label used for set/remove label") {
-    group(SymbolicNamesList  ~~>> {ast.LabelsResource(_)} |
-      group(keyword("*") ~~~> {ast.AllLabelResource()}))
+  private def DbmsAction: Rule1[AdminAction] = rule("dbms action") {
+    keyword("CREATE ROLE") ~~~> (_ => ast.CreateRoleAction) |
+      keyword("DROP ROLE") ~~~> (_ => ast.DropRoleAction) |
+      keyword("ASSIGN ROLE") ~~~> (_ => ast.AssignRoleAction) |
+      keyword("REMOVE ROLE") ~~~> (_ => ast.RemoveRoleAction) |
+      keyword("SHOW ROLE") ~~~> (_ => ast.ShowRoleAction) |
+      keyword("ROLE MANAGEMENT") ~~~> (_ => ast.AllRoleActions) |
+      keyword("CREATE USER") ~~~> (_ => ast.CreateUserAction) |
+      keyword("DROP USER") ~~~> (_ => ast.DropUserAction) |
+      keyword("SHOW USER") ~~~> (_ => ast.ShowUserAction) |
+      keyword("SET USER STATUS") ~~~> (_ => ast.SetUserStatusAction) |
+      keyword("SET") ~~ PasswordKeyword ~~~> (_ => ast.SetPasswordsAction) |
+      keyword("ALTER USER") ~~~> (_ => ast.AlterUserAction) |
+      keyword("USER MANAGEMENT") ~~~> (_ => ast.AllUserActions) |
+      keyword("CREATE DATABASE") ~~~> (_ => ast.CreateDatabaseAction) |
+      keyword("DROP DATABASE") ~~~> (_ => ast.DropDatabaseAction) |
+      keyword("DATABASE MANAGEMENT") ~~~> (_ => ast.AllDatabaseManagementActions) |
+      keyword("SHOW PRIVILEGE") ~~~> (_ => ast.ShowPrivilegeAction) |
+      keyword("ASSIGN PRIVILEGE") ~~~> (_ => ast.AssignPrivilegeAction) |
+      keyword("REMOVE PRIVILEGE") ~~~> (_ => ast.RemovePrivilegeAction) |
+      keyword("PRIVILEGE MANAGEMENT") ~~~> (_ => ast.AllPrivilegeActions) |
+      group(keyword("ALL") ~~ optional(optional(keyword("DBMS")) ~~ keyword("PRIVILEGES")))~~~> (_ => ast.AllDbmsAction)
   }
 
-  private def UserQualifier: Rule1[List[DatabasePrivilegeQualifier]] = rule("(usernameList)")(
-    group("(" ~~ SymbolicNameOrStringParameterList ~~ ")") ~~>> {userName => pos => userName.map(ast.UserQualifier(_)(pos))} |
-    group("(" ~~ "*" ~~ ")") ~~~> { pos => List(ast.UserAllQualifier()(pos))}
-  )
+  private def QualifiedDbmsAction: Rule2[List[PrivilegeQualifier], AdminAction] = rule("qualified dbms action") {
+    keyword("EXECUTE") ~~ ProcedureKeyword ~~ ProcedureIdentifier ~> (_ => ast.ExecuteProcedureAction)
+  }
 
-  private def ScopeQualifierWithProperty: Rule1[List[GraphPrivilegeQualifier]] = rule("which element type and associated labels/relTypes (props) qualifier combination")(
-    ScopeQualifier ~~ optional("(" ~~ "*" ~~ ")")
-  )
+  private def ProcedureIdentifier: Rule1[List[PrivilegeQualifier]] = rule("procedure identifier") {
+    oneOrMore(group(GlobbedNamespace ~ GlobbedProcedureName), separator = CommaSep) ~~>>
+      { procedures => pos => procedures.map(p => ast.ProcedureQualifier(p._1, p._2)(pos)) }
+  }
 
-  private def ScopeQualifier: Rule1[List[GraphPrivilegeQualifier]] = rule("which element type and associated labels/relTypes qualifier combination")(
-    group(RelationshipKeyword ~~ SymbolicNamesList) ~~>> { relNames => pos => relNames.map(ast.RelationshipQualifier(_)(pos)) } |
-    group(RelationshipKeyword ~~ "*") ~~~> { pos => List(ast.RelationshipAllQualifier()(pos)) } |
-    group(NodeKeyword ~~ SymbolicNamesList) ~~>> { nodeName => pos => nodeName.map(ast.LabelQualifier(_)(pos)) } |
-    group(NodeKeyword ~~ "*") ~~~> { pos => List(ast.LabelAllQualifier()(pos)) } |
-    group(ElementKeyword ~~ SymbolicNamesList) ~~>> { elemName => pos => elemName.map(ast.ElementQualifier(_)(pos)) } |
-    optional(ElementKeyword ~~ "*") ~~~> { pos => List(ast.ElementsAllQualifier()(pos)) }
-  )
+  private def PasswordKeyword: Rule0 = keyword("PASSWORD") | keyword("PASSWORDS")
 
-  private def ElementKeyword: Rule0 = keyword("ELEMENTS") | keyword("ELEMENT")
+  private def ProcedureKeyword: Rule0 = keyword("PROCEDURE") | keyword("PROCEDURES")
 
-  private def RelationshipKeyword: Rule0 = keyword("RELATIONSHIPS") | keyword("RELATIONSHIP")
-
-  private def NodeKeyword: Rule0 = keyword("NODE") | keyword("NODES")
+  // Database specific
 
   private def Database: Rule1[List[DatabaseScope]] = rule("on a database") {
     keyword("ON DEFAULT DATABASE") ~~~> (pos => List(ast.DefaultDatabaseScope()(pos))) |
-    group(keyword("ON") ~~ (keyword("DATABASE") | keyword("DATABASES"))) ~~
-      group((SymbolicDatabaseNameOrStringParameterList ~~>> (params => pos => params.map(ast.NamedDatabaseScope(_)(pos)))) |
-      (keyword("*") ~~~> (pos => List(ast.AllDatabasesScope()(pos)))))
+      group(keyword("ON") ~~ (keyword("DATABASE") | keyword("DATABASES"))) ~~
+        group((SymbolicDatabaseNameOrStringParameterList ~~>> (params => pos => params.map(ast.NamedDatabaseScope(_)(pos)))) |
+          (keyword("*") ~~~> (pos => List(ast.AllDatabasesScope()(pos)))))
   }
 
   private def DatabaseAction: Rule1[DatabaseAction] = rule("database action")(
@@ -424,74 +448,17 @@ trait Statement extends Parser
 
   private def QualifiedDatabaseAction: Rule2[List[DatabasePrivilegeQualifier], DatabaseAction] = rule("qualified database action")(
     group(keyword("SHOW") ~~ TransactionKeyword ~~ UserQualifier ~> (_ => ast.ShowTransactionAction)) |
-    group(keyword("SHOW") ~~ TransactionKeyword ~> (_ => List(ast.UserAllQualifier()(InputPosition.NONE))) ~> (_ => ast.ShowTransactionAction)) |
-    group(keyword("TERMINATE") ~~ TransactionKeyword ~~ UserQualifier ~> (_ => ast.TerminateTransactionAction)) |
-    group(keyword("TERMINATE") ~~ TransactionKeyword ~> (_ => List(ast.UserAllQualifier()(InputPosition.NONE))) ~> (_ => ast.TerminateTransactionAction)) |
-    group(keyword("TRANSACTION") ~~ optional(keyword("MANAGEMENT")) ~~ UserQualifier ~> (_ => ast.AllTransactionActions)) |
-    group(keyword("TRANSACTION") ~~ optional(keyword("MANAGEMENT")) ~> (_ => List(ast.UserAllQualifier()(InputPosition.NONE))) ~> (_ => ast.AllTransactionActions))
+      group(keyword("SHOW") ~~ TransactionKeyword ~> (_ => List(ast.UserAllQualifier()(InputPosition.NONE))) ~> (_ => ast.ShowTransactionAction)) |
+      group(keyword("TERMINATE") ~~ TransactionKeyword ~~ UserQualifier ~> (_ => ast.TerminateTransactionAction)) |
+      group(keyword("TERMINATE") ~~ TransactionKeyword ~> (_ => List(ast.UserAllQualifier()(InputPosition.NONE))) ~> (_ => ast.TerminateTransactionAction)) |
+      group(keyword("TRANSACTION") ~~ optional(keyword("MANAGEMENT")) ~~ UserQualifier ~> (_ => ast.AllTransactionActions)) |
+      group(keyword("TRANSACTION") ~~ optional(keyword("MANAGEMENT")) ~> (_ => List(ast.UserAllQualifier()(InputPosition.NONE))) ~> (_ => ast.AllTransactionActions))
   )
 
-  private def GraphAction: Rule3[List[GraphScope], GraphAction, List[ast.GraphPrivilegeQualifier]] = rule("graph action")(
-    group(keyword("ALL") ~~ optional(optional(keyword("GRAPH")) ~~ keyword("PRIVILEGES"))) ~~ Graph ~> (_ => ast.AllGraphAction) ~> (_ => List(ast.AllQualifier()(InputPosition.NONE))) |
-    group(keyword("WRITE") ~~ Graph) ~> (_ => ast.WriteAction) ~> (_ => List(ast.ElementsAllQualifier()(InputPosition.NONE)))
+  private def UserQualifier: Rule1[List[DatabasePrivilegeQualifier]] = rule("(usernameList)")(
+    group("(" ~~ SymbolicNameOrStringParameterList ~~ ")") ~~>> {userName => pos => userName.map(ast.UserQualifier(_)(pos))} |
+      group("(" ~~ "*" ~~ ")") ~~~> { pos => List(ast.UserAllQualifier()(pos))}
   )
-
-  private def QualifiedGraphAction: Rule3[List[GraphScope], List[GraphPrivilegeQualifier], GraphAction] = rule("qualified graph action")(
-    group(keyword("CREATE") ~~ Graph ~~ ScopeQualifier ~> (_ => ast.CreateElementAction)) |
-    group(keyword("DELETE") ~~ Graph ~~ ScopeQualifier ~> (_ => ast.DeleteElementAction))
-  )
-
-  private def QualifiedWithPropertyGraphAction: Rule3[List[GraphScope], List[GraphPrivilegeQualifier], GraphAction] = rule("qualified with property graph action")(
-    group(keyword("TRAVERSE") ~~ Graph ~~ ScopeQualifierWithProperty ~> (_ => ast.TraverseAction))
-  )
-
-  private def GraphActionWithResource: Rule3[ActionResource, List[GraphScope], GraphAction] = rule("graph action with resource")(
-    group(keyword("SET LABEL") ~~ LabelResource ~~ Graph ~> (_ => ast.SetLabelAction)) |
-    group(keyword("REMOVE LABEL") ~~ LabelResource ~~ Graph ~> (_ => ast.RemoveLabelAction))
-  )
-
-  private def QualifiedGraphActionWithResource: Rule4[ActionResource, List[GraphScope], List[GraphPrivilegeQualifier], GraphAction] = rule("qualified graph action with resource")(
-    group(keyword("MERGE") ~~ PrivilegeProperty ~~ Graph ~~ ScopeQualifier ~> (_ => ast.MergeAdminAction)) |
-    group(keyword("SET PROPERTY") ~~ PrivilegeProperty ~~ Graph ~~ ScopeQualifier ~> (_ => ast.SetPropertyAction))
-  )
-
-  private def QualifiedWithPropertyGraphActionWithResource: Rule4[ActionResource, List[GraphScope], List[GraphPrivilegeQualifier], GraphAction] = rule("qualified with property graph action with resource")(
-    group(keyword("READ")  ~~ PrivilegeProperty ~~ Graph ~~ ScopeQualifierWithProperty ~> (_ => ast.ReadAction)) |
-    group(keyword("MATCH")  ~~ PrivilegeProperty ~~ Graph ~~ ScopeQualifierWithProperty ~> (_ => ast.MatchAction))
-  )
-
-  private def DbmsAction: Rule1[AdminAction] = rule("dbms action") {
-    keyword("CREATE ROLE") ~~~> (_ => ast.CreateRoleAction) |
-    keyword("DROP ROLE") ~~~> (_ => ast.DropRoleAction) |
-    keyword("ASSIGN ROLE") ~~~> (_ => ast.AssignRoleAction) |
-    keyword("REMOVE ROLE") ~~~> (_ => ast.RemoveRoleAction) |
-    keyword("SHOW ROLE") ~~~> (_ => ast.ShowRoleAction) |
-    keyword("ROLE MANAGEMENT") ~~~> (_ => ast.AllRoleActions) |
-    keyword("CREATE USER") ~~~> (_ => ast.CreateUserAction) |
-    keyword("DROP USER") ~~~> (_ => ast.DropUserAction) |
-    keyword("SHOW USER") ~~~> (_ => ast.ShowUserAction) |
-    keyword("SET USER STATUS") ~~~> (_ => ast.SetUserStatusAction) |
-    keyword("SET") ~~ PasswordKeyword ~~~> (_ => ast.SetPasswordsAction) |
-    keyword("ALTER USER") ~~~> (_ => ast.AlterUserAction) |
-    keyword("USER MANAGEMENT") ~~~> (_ => ast.AllUserActions) |
-    keyword("CREATE DATABASE") ~~~> (_ => ast.CreateDatabaseAction) |
-    keyword("DROP DATABASE") ~~~> (_ => ast.DropDatabaseAction) |
-    keyword("DATABASE MANAGEMENT") ~~~> (_ => ast.AllDatabaseManagementActions) |
-    keyword("SHOW PRIVILEGE") ~~~> (_ => ast.ShowPrivilegeAction) |
-    keyword("ASSIGN PRIVILEGE") ~~~> (_ => ast.AssignPrivilegeAction) |
-    keyword("REMOVE PRIVILEGE") ~~~> (_ => ast.RemovePrivilegeAction) |
-    keyword("PRIVILEGE MANAGEMENT") ~~~> (_ => ast.AllPrivilegeActions) |
-    group(keyword("ALL") ~~ optional(optional(keyword("DBMS")) ~~ keyword("PRIVILEGES")))~~~> (_ => ast.AllDbmsAction)
-  }
-
-  private def QualifiedDbmsAction: Rule2[List[PrivilegeQualifier], AdminAction] = rule("qualified dbms action") {
-    keyword("EXECUTE") ~~ ProcedureKeyword ~~ ProcedureIdentifier ~> (_ => ast.ExecuteProcedureAction)
-  }
-
-  private def ProcedureIdentifier: Rule1[List[PrivilegeQualifier]] = rule("") {
-    oneOrMore(group(GlobbedNamespace ~ GlobbedProcedureName), separator = CommaSep) ~~>>
-      { procedures => pos => procedures.map(p => ast.ProcedureQualifier(p._1, p._2)(pos)) }
-  }
 
   private def IndexKeyword: Rule0 = keyword("INDEXES") | keyword("INDEX")
 
@@ -505,31 +472,72 @@ trait Statement extends Parser
 
   private def TransactionKeyword: Rule0 = keyword("TRANSACTION") | keyword("TRANSACTIONS")
 
-  private def PasswordKeyword: Rule0 = keyword("PASSWORD") | keyword("PASSWORDS")
-
-  private def UserKeyword: Rule0 = keyword("USERS") | keyword("USER")
-
-  private def ProcedureKeyword: Rule0 = keyword("PROCEDURE") | keyword("PROCEDURES")
-
-  private def RevokeType: Rule1[RevokeType] = rule("revoke type") {
-    keyword("REVOKE GRANT") ~~~> RevokeGrantType() |
-    keyword("REVOKE DENY") ~~~> RevokeDenyType() |
-    keyword("REVOKE") ~~~> RevokeBothType()
-  }
+  // Graph specific
 
   private def Graph: Rule1[List[GraphScope]] = rule("on a graph")(
     keyword("ON DEFAULT GRAPH") ~~~> (pos => List(ast.DefaultGraphScope()(pos))) |
-    group(keyword("ON") ~~ (keyword("GRAPH") | keyword("GRAPHS"))) ~~
-      group((SymbolicDatabaseNameOrStringParameterList ~~>> (names => ipp => names.map(ast.NamedGraphScope(_)(ipp)))) |
-      keyword("*") ~~~> (ipp => List(ast.AllGraphsScope()(ipp))))
+      group(keyword("ON") ~~ (keyword("GRAPH") | keyword("GRAPHS"))) ~~
+        group((SymbolicDatabaseNameOrStringParameterList ~~>> (names => ipp => names.map(ast.NamedGraphScope(_)(ipp)))) |
+          keyword("*") ~~~> (ipp => List(ast.AllGraphsScope()(ipp))))
   )
 
-  private def ScopeForShowPrivileges: Rule1[ShowPrivilegeScope] = rule("show privilege scope")(
-    group(RoleKeyword ~~ SymbolicNameOrStringParameterList ~~ keyword("PRIVILEGES")) ~~>> (ast.ShowRolesPrivileges(_)) |
-      group(UserKeyword ~~ SymbolicNameOrStringParameterList ~~ keyword("PRIVILEGES")) ~~>> (ast.ShowUsersPrivileges(_)) |
-      group(UserKeyword ~~ keyword("PRIVILEGES")) ~~~> ast.ShowUserPrivileges(None) |
-      optional(keyword("ALL")) ~~ keyword("PRIVILEGES") ~~~> ast.ShowAllPrivileges()
+  private def GraphAction: Rule3[List[GraphScope], GraphAction, List[ast.GraphPrivilegeQualifier]] = rule("graph action")(
+    group(keyword("ALL") ~~ optional(optional(keyword("GRAPH")) ~~ keyword("PRIVILEGES"))) ~~ Graph ~> (_ => ast.AllGraphAction) ~> (_ => List(ast.AllQualifier()(InputPosition.NONE))) |
+      group(keyword("WRITE") ~~ Graph) ~> (_ => ast.WriteAction) ~> (_ => List(ast.ElementsAllQualifier()(InputPosition.NONE)))
   )
+
+  private def QualifiedGraphAction: Rule3[List[GraphScope], List[GraphPrivilegeQualifier], GraphAction] = rule("qualified graph action")(
+    group(keyword("CREATE") ~~ Graph ~~ ScopeQualifier ~> (_ => ast.CreateElementAction)) |
+      group(keyword("DELETE") ~~ Graph ~~ ScopeQualifier ~> (_ => ast.DeleteElementAction))
+  )
+
+  private def QualifiedWithPropertyGraphAction: Rule3[List[GraphScope], List[GraphPrivilegeQualifier], GraphAction] = rule("qualified with property graph action")(
+    group(keyword("TRAVERSE") ~~ Graph ~~ ScopeQualifierWithProperty ~> (_ => ast.TraverseAction))
+  )
+
+  private def GraphActionWithResource: Rule3[ActionResource, List[GraphScope], GraphAction] = rule("graph action with resource")(
+    group(keyword("SET LABEL") ~~ LabelResource ~~ Graph ~> (_ => ast.SetLabelAction)) |
+      group(keyword("REMOVE LABEL") ~~ LabelResource ~~ Graph ~> (_ => ast.RemoveLabelAction))
+  )
+
+  private def QualifiedGraphActionWithResource: Rule4[ActionResource, List[GraphScope], List[GraphPrivilegeQualifier], GraphAction] = rule("qualified graph action with resource")(
+    group(keyword("MERGE") ~~ PrivilegeProperty ~~ Graph ~~ ScopeQualifier ~> (_ => ast.MergeAdminAction)) |
+      group(keyword("SET PROPERTY") ~~ PrivilegeProperty ~~ Graph ~~ ScopeQualifier ~> (_ => ast.SetPropertyAction))
+  )
+
+  private def QualifiedWithPropertyGraphActionWithResource: Rule4[ActionResource, List[GraphScope], List[GraphPrivilegeQualifier], GraphAction] = rule("qualified with property graph action with resource")(
+    group(keyword("READ")  ~~ PrivilegeProperty ~~ Graph ~~ ScopeQualifierWithProperty ~> (_ => ast.ReadAction)) |
+      group(keyword("MATCH")  ~~ PrivilegeProperty ~~ Graph ~~ ScopeQualifierWithProperty ~> (_ => ast.MatchAction))
+  )
+
+  private def ScopeQualifier: Rule1[List[GraphPrivilegeQualifier]] = rule("which element type and associated labels/relTypes qualifier combination")(
+    group(RelationshipKeyword ~~ SymbolicNamesList) ~~>> { relNames => pos => relNames.map(ast.RelationshipQualifier(_)(pos)) } |
+      group(RelationshipKeyword ~~ "*") ~~~> { pos => List(ast.RelationshipAllQualifier()(pos)) } |
+      group(NodeKeyword ~~ SymbolicNamesList) ~~>> { nodeName => pos => nodeName.map(ast.LabelQualifier(_)(pos)) } |
+      group(NodeKeyword ~~ "*") ~~~> { pos => List(ast.LabelAllQualifier()(pos)) } |
+      group(ElementKeyword ~~ SymbolicNamesList) ~~>> { elemName => pos => elemName.map(ast.ElementQualifier(_)(pos)) } |
+      optional(ElementKeyword ~~ "*") ~~~> { pos => List(ast.ElementsAllQualifier()(pos)) }
+  )
+
+  private def ScopeQualifierWithProperty: Rule1[List[GraphPrivilegeQualifier]] = rule("which element type and associated labels/relTypes (props) qualifier combination")(
+    ScopeQualifier ~~ optional("(" ~~ "*" ~~ ")")
+  )
+
+  private def LabelResource: Rule1[ActionResource] = rule("label used for set/remove label") {
+    group(SymbolicNamesList  ~~>> {ast.LabelsResource(_)} |
+      group(keyword("*") ~~~> {ast.AllLabelResource()}))
+  }
+
+  private def PrivilegeProperty: Rule1[ActionResource] = rule("{propertyList}")(
+    group("{" ~~ SymbolicNamesList ~~ "}") ~~>> {ast.PropertiesResource(_)} |
+      group("{" ~~ "*" ~~ "}") ~~~> {ast.AllPropertyResource()}
+  )
+
+  private def ElementKeyword: Rule0 = keyword("ELEMENTS") | keyword("ELEMENT")
+
+  private def RelationshipKeyword: Rule0 = keyword("RELATIONSHIPS") | keyword("RELATIONSHIP")
+
+  private def NodeKeyword: Rule0 = keyword("NODE") | keyword("NODES")
 
   // Database management commands
 
