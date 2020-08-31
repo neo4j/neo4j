@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
@@ -71,9 +70,10 @@ import static org.neo4j.common.Subject.AUTH_DISABLED;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.kernel.api.index.IndexQueryHelper.add;
 import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
-import static org.neo4j.kernel.impl.api.index.MultipleIndexPopulator.AWAIT_TIMEOUT_MINUTES_NAME;
-import static org.neo4j.kernel.impl.api.index.MultipleIndexPopulator.BATCH_SIZE_NAME;
-import static org.neo4j.kernel.impl.api.index.MultipleIndexPopulator.QUEUE_THRESHOLD_NAME;
+import static org.neo4j.kernel.impl.api.index.MultipleIndexPopulator.DEFAULT_AWAIT_TIMEOUT_MINUTES;
+import static org.neo4j.kernel.impl.api.index.MultipleIndexPopulator.DEFAULT_BATCH_MAX_BYTE_SIZE;
+import static org.neo4j.kernel.impl.api.index.MultipleIndexPopulator.DEFAULT_BATCH_SIZE_SCAN;
+import static org.neo4j.kernel.impl.api.index.MultipleIndexPopulator.DEFAULT_QUEUE_THRESHOLD;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 public class BatchingMultipleIndexPopulatorTest
@@ -84,22 +84,13 @@ public class BatchingMultipleIndexPopulatorTest
     private final IndexDescriptor index42 = TestIndexDescriptorFactory.forLabel( 42, 42 );
     private final InMemoryTokens tokens = new InMemoryTokens();
 
-    @AfterEach
-    void tearDown()
-    {
-        clearProperty( QUEUE_THRESHOLD_NAME );
-        clearProperty( AWAIT_TIMEOUT_MINUTES_NAME );
-        clearProperty( BATCH_SIZE_NAME );
-    }
-
     @Test
     void populateFromQueueDoesNothingIfThresholdNotReached() throws Exception
     {
-        setProperty( QUEUE_THRESHOLD_NAME, 5 );
-
         MultipleIndexPopulator batchingPopulator = new MultipleIndexPopulator(
                 mock( IndexStoreView.class ), NullLogProvider.getInstance(), EntityType.NODE,
-                mock( SchemaState.class ), mock( IndexStatisticsStore.class ), new CallingThreadJobScheduler(), tokens, NULL, INSTANCE, "", AUTH_DISABLED );
+                mock( SchemaState.class ), mock( IndexStatisticsStore.class ), new CallingThreadJobScheduler(), tokens, NULL, INSTANCE, "", AUTH_DISABLED,
+                5, DEFAULT_BATCH_SIZE_SCAN, DEFAULT_BATCH_MAX_BYTE_SIZE, DEFAULT_AWAIT_TIMEOUT_MINUTES );
 
         IndexPopulator populator = addPopulator( batchingPopulator, index1 );
         IndexUpdater updater = mock( IndexUpdater.class );
@@ -119,13 +110,12 @@ public class BatchingMultipleIndexPopulatorTest
     @Test
     void populateFromQueuePopulatesWhenThresholdReached() throws Exception
     {
-        setProperty( QUEUE_THRESHOLD_NAME, 2 );
-
         NeoStoreIndexStoreView storeView =
                 new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE, () -> mock( StorageReader.class ) );
         MultipleIndexPopulator batchingPopulator = new MultipleIndexPopulator(
                 storeView, NullLogProvider.getInstance(), EntityType.NODE, mock( SchemaState.class ), mock( IndexStatisticsStore.class ),
-                new CallingThreadJobScheduler(), tokens, NULL, INSTANCE, "", AUTH_DISABLED );
+                new CallingThreadJobScheduler(), tokens, NULL, INSTANCE, "", AUTH_DISABLED,
+                2, DEFAULT_BATCH_SIZE_SCAN, DEFAULT_BATCH_MAX_BYTE_SIZE, DEFAULT_AWAIT_TIMEOUT_MINUTES );
 
         IndexPopulator populator1 = addPopulator( batchingPopulator, index1 );
         IndexUpdater updater1 = mock( IndexUpdater.class );
@@ -175,8 +165,6 @@ public class BatchingMultipleIndexPopulatorTest
     @Test
     void batchIsFlushedWhenThresholdReached() throws Exception
     {
-        setProperty( BATCH_SIZE_NAME, 2 );
-
         EntityUpdates update1 = nodeUpdates( 1, propertyId, "foo", labelId );
         EntityUpdates update2 = nodeUpdates( 2, propertyId, "bar", labelId );
         EntityUpdates update3 = nodeUpdates( 3, propertyId, "baz", labelId );
@@ -184,7 +172,8 @@ public class BatchingMultipleIndexPopulatorTest
 
         MultipleIndexPopulator batchingPopulator = new MultipleIndexPopulator( storeView,
                 NullLogProvider.getInstance(), EntityType.NODE, mock( SchemaState.class ), mock( IndexStatisticsStore.class ),
-                new CallingThreadJobScheduler(), tokens, NULL, INSTANCE, "", AUTH_DISABLED );
+                new CallingThreadJobScheduler(), tokens, NULL, INSTANCE, "", AUTH_DISABLED,
+                DEFAULT_QUEUE_THRESHOLD, 2, DEFAULT_BATCH_MAX_BYTE_SIZE, DEFAULT_AWAIT_TIMEOUT_MINUTES );
 
         IndexPopulator populator = addPopulator( batchingPopulator, index1 );
 
@@ -197,8 +186,6 @@ public class BatchingMultipleIndexPopulatorTest
     @Test
     void populatorMarkedAsFailed() throws Exception
     {
-        setProperty( BATCH_SIZE_NAME, 2 );
-
         EntityUpdates update1 = nodeUpdates( 1, propertyId, "aaa", labelId );
         EntityUpdates update2 = nodeUpdates( 1, propertyId, "bbb", labelId );
         IndexStoreView storeView = newStoreView( update1, update2 );
@@ -212,7 +199,8 @@ public class BatchingMultipleIndexPopulatorTest
         {
             MultipleIndexPopulator batchingPopulator = new MultipleIndexPopulator( storeView,
                     NullLogProvider.getInstance(), EntityType.NODE, mock( SchemaState.class ), mock( IndexStatisticsStore.class ),
-                    jobScheduler, tokens, NULL, INSTANCE,  "", AUTH_DISABLED );
+                    jobScheduler, tokens, NULL, INSTANCE,  "", AUTH_DISABLED,
+                    DEFAULT_QUEUE_THRESHOLD, 2, DEFAULT_BATCH_MAX_BYTE_SIZE, DEFAULT_AWAIT_TIMEOUT_MINUTES );
 
             populator = addPopulator( batchingPopulator, index1 );
             List<IndexEntryUpdate<IndexDescriptor>> expected = forUpdates( index1, update1, update2 );
@@ -232,8 +220,6 @@ public class BatchingMultipleIndexPopulatorTest
     @Test
     void populatorMarkedAsFailedAndUpdatesNotAdded() throws Exception
     {
-        setProperty( BATCH_SIZE_NAME, 2 );
-
         EntityUpdates update1 = nodeUpdates( 1, propertyId, "aaa", labelId );
         EntityUpdates update2 = nodeUpdates( 1, propertyId, "bbb", labelId );
         EntityUpdates update3 = nodeUpdates( 1, propertyId, "ccc", labelId );
@@ -245,7 +231,8 @@ public class BatchingMultipleIndexPopulatorTest
 
         MultipleIndexPopulator batchingPopulator = new MultipleIndexPopulator( storeView,
                 NullLogProvider.getInstance(), EntityType.NODE, mock( SchemaState.class ), mock( IndexStatisticsStore.class ),
-                new CallingThreadJobScheduler(), tokens, NULL, INSTANCE,  "", AUTH_DISABLED );
+                new CallingThreadJobScheduler(), tokens, NULL, INSTANCE,  "", AUTH_DISABLED,
+                DEFAULT_QUEUE_THRESHOLD, 2, DEFAULT_BATCH_MAX_BYTE_SIZE, DEFAULT_AWAIT_TIMEOUT_MINUTES );
 
         IndexPopulator populator = addPopulator( batchingPopulator, index1 );
         doThrow( batchFlushError ).when( populator ).add( forUpdates( index1, update3, update4 ), PageCursorTracer.NULL );
@@ -262,7 +249,6 @@ public class BatchingMultipleIndexPopulatorTest
     void shouldApplyBatchesInParallel() throws Exception
     {
         // given
-        setProperty( BATCH_SIZE_NAME, 2 );
         EntityUpdates[] updates = new EntityUpdates[9];
         for ( int i = 0; i < updates.length; i++ )
         {
@@ -282,7 +268,8 @@ public class BatchingMultipleIndexPopulatorTest
         };
         MultipleIndexPopulator batchingPopulator = new MultipleIndexPopulator( storeView,
                 NullLogProvider.getInstance(), EntityType.NODE, mock( SchemaState.class ), mock( IndexStatisticsStore.class ),
-                jobScheduler, tokens, NULL, INSTANCE,  "", AUTH_DISABLED );
+                jobScheduler, tokens, NULL, INSTANCE,  "", AUTH_DISABLED,
+                DEFAULT_QUEUE_THRESHOLD, 2, DEFAULT_BATCH_MAX_BYTE_SIZE, DEFAULT_AWAIT_TIMEOUT_MINUTES );
         addPopulator( batchingPopulator, index1 );
 
         // when

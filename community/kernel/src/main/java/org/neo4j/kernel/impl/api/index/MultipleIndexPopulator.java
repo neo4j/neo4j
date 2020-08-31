@@ -127,11 +127,16 @@ public class MultipleIndexPopulator
     static final String AWAIT_TIMEOUT_MINUTES_NAME = "await_timeout_minutes";
     private static final String EOL = System.lineSeparator();
 
-    private final int QUEUE_THRESHOLD = FeatureToggles.getInteger( MultipleIndexPopulator.class, QUEUE_THRESHOLD_NAME, 20_000 );
-    final int BATCH_SIZE_SCAN = FeatureToggles.getInteger( MultipleIndexPopulator.class, BATCH_SIZE_NAME, 10_000 );
-    final int BATCH_MAX_BYTE_SIZE_SCAN = FeatureToggles.getInteger( MultipleIndexPopulator.class, BATCH_MAX_BYTE_SIZE_NAME, (int) mebiBytes( 10 ) );
+    static final int DEFAULT_BATCH_SIZE_SCAN = 10_000;
+    static final int DEFAULT_QUEUE_THRESHOLD = 20_000;
+    static final int DEFAULT_BATCH_MAX_BYTE_SIZE = (int) mebiBytes( 10 );
+    static final int DEFAULT_AWAIT_TIMEOUT_MINUTES = 30;
+
+    private final int QUEUE_THRESHOLD;
+    final int BATCH_SIZE_SCAN;
+    final int BATCH_MAX_BYTE_SIZE_SCAN;
     private final boolean PRINT_DEBUG = FeatureToggles.flag( MultipleIndexPopulator.class, "print_debug", false );
-    private final int AWAIT_TIMEOUT_MINUTES = FeatureToggles.getInteger( MultipleIndexPopulator.class, AWAIT_TIMEOUT_MINUTES_NAME, 30 );
+    private final int AWAIT_TIMEOUT_MINUTES;
 
     // Concurrency queue since multiple concurrent threads may enqueue updates into it. It is important for this queue
     // to have fast #size() method since it might be drained in batches
@@ -174,6 +179,19 @@ public class MultipleIndexPopulator
             IndexStatisticsStore indexStatisticsStore, JobScheduler jobScheduler, TokenNameLookup tokenNameLookup, PageCacheTracer cacheTracer,
             MemoryTracker memoryTracker, String databaseName, Subject subject )
     {
+        this( storeView, logProvider, type, schemaState, indexStatisticsStore, jobScheduler, tokenNameLookup, cacheTracer, memoryTracker, databaseName,
+                subject,
+                FeatureToggles.getInteger( MultipleIndexPopulator.class, QUEUE_THRESHOLD_NAME, DEFAULT_QUEUE_THRESHOLD ),
+                FeatureToggles.getInteger( MultipleIndexPopulator.class, BATCH_SIZE_NAME, DEFAULT_BATCH_SIZE_SCAN ),
+                FeatureToggles.getInteger( MultipleIndexPopulator.class, BATCH_MAX_BYTE_SIZE_NAME, DEFAULT_BATCH_MAX_BYTE_SIZE ),
+                FeatureToggles.getInteger( MultipleIndexPopulator.class, AWAIT_TIMEOUT_MINUTES_NAME, DEFAULT_AWAIT_TIMEOUT_MINUTES ) );
+    }
+
+    public MultipleIndexPopulator( IndexStoreView storeView, LogProvider logProvider, EntityType type, SchemaState schemaState,
+            IndexStatisticsStore indexStatisticsStore, JobScheduler jobScheduler, TokenNameLookup tokenNameLookup, PageCacheTracer cacheTracer,
+            MemoryTracker memoryTracker, String databaseName, Subject subject,
+            int queueThreshold, int batchSizeScan, int batchMaxByteSizeScan, int awaitTimeoutMillis )
+    {
         this.storeView = storeView;
         this.cursorTracer = cacheTracer.createPageCursorTracer( MULTIPLE_INDEX_POPULATOR_TAG );
         this.memoryTracker = memoryTracker;
@@ -189,6 +207,11 @@ public class MultipleIndexPopulator
         this.cacheTracer = cacheTracer;
         this.databaseName = databaseName;
         this.subject = subject;
+
+        this.QUEUE_THRESHOLD = queueThreshold;
+        this.BATCH_SIZE_SCAN = batchSizeScan;
+        this.BATCH_MAX_BYTE_SIZE_SCAN = batchMaxByteSizeScan;
+        this.AWAIT_TIMEOUT_MINUTES = awaitTimeoutMillis;
     }
 
     IndexPopulation addPopulator( IndexPopulator populator, IndexDescriptor indexDescriptor, FlippableIndexProxy flipper,

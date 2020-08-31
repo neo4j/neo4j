@@ -538,7 +538,7 @@ class MultipleIndexPopulatorTest
         multipleIndexPopulator.create( NULL );
         String largeString = random.nextAlphaNumericString( 100_000, 100_000 );
         int roughlyNumUpdates = (int) (multipleIndexPopulator.BATCH_MAX_BYTE_SIZE_SCAN / HeapEstimator.sizeOf( largeString ));
-        assertThat( roughlyNumUpdates ).isLessThan( multipleIndexPopulator.BATCH_SIZE_SCAN / 10 );
+        assertThat( roughlyNumUpdates ).isLessThan( MultipleIndexPopulator.DEFAULT_BATCH_SIZE_SCAN / 10 );
         Value largeStringValue = Values.stringValue( largeString );
         IndexDescriptor indexDescriptor = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 0, 1 ) ).withName( "name" ).materialise( 99 );
         boolean full = false;
