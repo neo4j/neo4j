@@ -44,94 +44,19 @@ class CommunityPrivilegeAdministrationCommandAcceptanceTest extends CommunityAdm
     assertFailure("SHOW USERS $foo, bar PRIVILEGES", "Unsupported administration command: SHOW USERS $foo, bar PRIVILEGES")
   }
 
-  private val enterprisePrivileges = Seq(
-    // Graph privileges
-    "TRAVERSE ON GRAPH * NODES * (*)",
-    "READ {*} ON GRAPH * NODES * (*)",
-    "MATCH {*} ON DEFAULT GRAPH NODES * (*)",
-    "WRITE ON GRAPH *",
-    "SET LABEL foo ON GRAPH *",
-    "REMOVE LABEL foo ON GRAPH *",
-    "CREATE ON DEFAULT GRAPH NODE A",
-    "DELETE ON GRAPH * RELATIONSHIP B",
-    "SET PROPERTY {prop} ON GRAPH *",
-    "ALL GRAPH PRIVILEGES ON GRAPH *",
-
-    // Database privileges
-    "ACCESS ON DATABASE *",
-    "START ON DATABASE $foo",
-    "STOP ON DATABASE *",
-    "CREATE INDEX ON DATABASE *",
-    "DROP INDEX ON DATABASE $foo",
-    "INDEX MANAGEMENT ON DATABASE *",
-    "CREATE CONSTRAINT ON DATABASE *",
-    "DROP CONSTRAINT ON DATABASE *",
-    "CONSTRAINT MANAGEMENT ON DATABASE $foo",
-    "CREATE NEW NODE LABEL ON DATABASE *",
-    "CREATE NEW RELATIONSHIP TYPE ON DATABASE $foo",
-    "CREATE NEW PROPERTY NAME ON DATABASE *",
-    "NAME MANAGEMENT ON DATABASE *",
-    "ALL DATABASE PRIVILEGES ON DATABASE *",
-    "SHOW TRANSACTION (*) ON DATABASE *",
-    "TERMINATE TRANSACTION ($user) ON DATABASE $foo",
-    "TRANSACTION MANAGEMENT ON DATABASE *",
-
-    // Dbms privileges
-    "ROLE MANAGEMENT ON DBMS",
-    "CREATE ROLE ON DBMS",
-    "DROP ROLE ON DBMS",
-    "ASSIGN ROLE ON DBMS",
-    "REMOVE ROLE ON DBMS",
-    "SHOW ROLE ON DBMS",
-    "USER MANAGEMENT ON DBMS",
-    "CREATE USER ON DBMS",
-    "DROP USER ON DBMS",
-    "SET USER STATUS ON DBMS",
-    "SET PASSWORDS ON DBMS",
-    "ALTER USER ON DBMS",
-    "SHOW USER ON DBMS",
-    "DATABASE MANAGEMENT ON DBMS",
-    "CREATE DATABASE ON DBMS",
-    "DROP DATABASE ON DBMS",
-    "PRIVILEGE MANAGEMENT ON DBMS",
-    "SHOW PRIVILEGE ON DBMS",
-    "ASSIGN PRIVILEGE ON DBMS",
-    "REMOVE PRIVILEGE ON DBMS",
-    "ALL ON DBMS",
-    "ALL PRIVILEGES ON DBMS",
-    "ALL DBMS PRIVILEGES ON DBMS",
-    "EXECUTE PROCEDURE * ON DBMS"
-  )
-
-  private val grantPrivilegeTypes = Seq(
+  private val privilegeTypes = Seq(
     ("GRANT", "TO"),
     ("REVOKE", "FROM"),
     ("REVOKE GRANT", "FROM"),
-
-  )
-
-  private val denyPrivilegeTypes = Seq(
     ("DENY", "TO"),
     ("REVOKE DENY", "FROM")
   )
 
-  enterprisePrivileges.foreach {
-    privilege =>
-      (grantPrivilegeTypes ++ denyPrivilegeTypes).foreach {
-        case (privilegeType, preposition) =>
-          test(s"should fail on $privilegeType $privilege from community") {
-            val command = s"$privilegeType $privilege $preposition custom"
-            assertFailure(command, s"Unsupported administration command: $command")
-          }
-      }
-  }
-
-  grantPrivilegeTypes.foreach {
+  privilegeTypes.foreach {
     case (privilegeType, preposition) =>
-      test(s"should fail on $privilegeType MERGE {*} ON GRAPH * from community") {
-        val command = s"$privilegeType MERGE {*} ON GRAPH * $preposition custom"
+      test(s"should fail on $privilegeType from community") {
+        val command = s"$privilegeType TRAVERSE ON GRAPH * NODES * (*) $preposition custom"
         assertFailure(command, s"Unsupported administration command: $command")
       }
   }
-
 }
