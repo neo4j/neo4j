@@ -74,7 +74,7 @@ class StoreInfoCommandTest
         homeDir = testDirectory.directoryPath( "home-dir" );
         fooDbDirectory = homeDir.resolve( "data/databases/foo" );
         fooDbLayout = DatabaseLayout.ofFlat( fooDbDirectory );
-        fileSystem.mkdirs( fooDbDirectory.toFile() );
+        fileSystem.mkdirs( fooDbDirectory );
 
         out = mock( PrintStream.class );
         command = new StoreInfoCommand( new ExecutionContext( homeDir, homeDir, out, mock( PrintStream.class ), testDirectory.getFileSystem() ) );
@@ -189,7 +189,7 @@ class StoreInfoCommandTest
 
         var barDbDirectory = homeDir.resolve( "data/databases/bar" );
         var barDbLayout = DatabaseLayout.ofFlat( barDbDirectory );
-        fileSystem.mkdirs( barDbDirectory.toFile() );
+        fileSystem.mkdirs( barDbDirectory );
 
         prepareNeoStoreFile( currentFormat.storeVersion(), fooDbLayout );
         prepareNeoStoreFile( currentFormat.storeVersion(), barDbLayout );
@@ -221,7 +221,7 @@ class StoreInfoCommandTest
 
         var barDbDirectory = homeDir.resolve( "data/databases/bar" );
         var barDbLayout = DatabaseLayout.ofFlat( barDbDirectory );
-        fileSystem.mkdirs( barDbDirectory.toFile() );
+        fileSystem.mkdirs( barDbDirectory );
 
         prepareNeoStoreFile( currentFormat.storeVersion(), fooDbLayout );
         prepareNeoStoreFile( currentFormat.storeVersion(), barDbLayout );

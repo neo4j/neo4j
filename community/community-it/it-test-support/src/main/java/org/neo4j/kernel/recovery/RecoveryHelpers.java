@@ -47,7 +47,7 @@ public final class RecoveryHelpers
           latestCheckpoint.ifPresent( checkpointInfo ->
               {
               LogPosition entryPosition = useSeparateCheckpointFiles ? checkpointInfo.getEntryPosition() : checkpointInfo.getLogPosition();
-              try ( StoreChannel storeChannel = fs.write( checkpointFile.getCurrentFile().toFile() ) )
+              try ( StoreChannel storeChannel = fs.write( checkpointFile.getCurrentFile() ) )
               {
                   storeChannel.truncate( entryPosition.getByteOffset() );
               }

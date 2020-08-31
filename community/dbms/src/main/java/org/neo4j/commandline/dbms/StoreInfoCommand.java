@@ -22,7 +22,6 @@ package org.neo4j.commandline.dbms;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 
-import java.io.File;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
@@ -88,11 +87,10 @@ public class StoreInfoCommand extends AbstractCommand
                 var collector = structured ?
                                 Collectors.joining( ",", "[", "]" ) :
                                 Collectors.joining( System.lineSeparator() + System.lineSeparator() );
-                var result = Arrays.stream( fs.listFiles( path.toFile() ) )
-                                   .map( File::toPath )
-                                   .filter( dbPath -> Validators.isExistingDatabase( fs, DatabaseLayout.ofFlat( dbPath ) ) )
-                                   .map( dbPath -> printInfo( fs, dbPath, pageCache, storageEngineFactory, config, structured, true ) )
-                                   .collect( collector );
+                var result = Arrays.stream( fs.listFiles( path ) )
+                        .filter( dbPath -> Validators.isExistingDatabase( fs, DatabaseLayout.ofFlat( dbPath ) ) )
+                        .map( dbPath -> printInfo( fs, dbPath, pageCache, storageEngineFactory, config, structured, true ) )
+                        .collect( collector );
                 ctx.out().print( result );
             }
             else
@@ -112,7 +110,7 @@ public class StoreInfoCommand extends AbstractCommand
 
     private static void validatePath( FileSystemAbstraction fs, boolean all, Path storePath )
     {
-        if ( !fs.isDirectory( storePath.toFile() ) )
+        if ( !fs.isDirectory( storePath ) )
         {
             throw new IllegalArgumentException( format( "Provided path %s must point to a directory.", storePath.toAbsolutePath() ) );
         }
@@ -138,10 +136,10 @@ public class StoreInfoCommand extends AbstractCommand
         try ( var ignored = LockChecker.checkDatabaseLock( databaseLayout ) )
         {
             var storeVersionCheck = storageEngineFactory.versionCheck( fs, databaseLayout, Config.defaults(), pageCache,
-                                                                       NullLogService.getInstance(), PageCacheTracer.NULL );
+                    NullLogService.getInstance(), PageCacheTracer.NULL );
             var storeVersion = storeVersionCheck.storeVersion( PageCursorTracer.NULL )
-                                                .orElseThrow( () ->
-                                                    new CommandFailedException( format( "Could not find version metadata in store '%s'", dbPath ) ) );
+                    .orElseThrow( () ->
+                            new CommandFailedException( format( "Could not find version metadata in store '%s'", dbPath ) ) );
 
             var versionInformation = storageEngineFactory.versionInformation( storeVersion );
 
@@ -150,13 +148,12 @@ public class StoreInfoCommand extends AbstractCommand
             var lastTxId = txIdStore.getLastCommittedTransactionId(); // Latest committed tx id found in metadata store. May be behind if recovery is required.
             var successorString = versionInformation.successor().map( StoreVersion::introductionNeo4jVersion ).orElse( null );
 
-            var storeInfo = new StoreInfo( databaseLayout.getDatabaseName(),
-                                           false,
-                                           storeVersion,
-                                           versionInformation.introductionNeo4jVersion(),
-                                           successorString,
-                                           lastTxId,
-                                           recoveryRequired );
+            var storeInfo = StoreInfo.notInUseResult( databaseLayout.getDatabaseName(),
+                    storeVersion,
+                    versionInformation.introductionNeo4jVersion(),
+                    successorString,
+                    lastTxId,
+                    recoveryRequired );
 
             return storeInfo.print( structured );
         }
@@ -167,7 +164,7 @@ public class StoreInfoCommand extends AbstractCommand
                 throw new CommandFailedException( format( "Failed to execute command as the database '%s' is in use. " +
                                                           "Please stop it and try again.", databaseLayout.getDatabaseName() ), e );
             }
-            return inUseResult( databaseLayout.getDatabaseName() ).print( structured );
+            return StoreInfo.inUseResult( databaseLayout.getDatabaseName() ).print( structured );
         }
         catch ( CommandFailedException e )
         {
@@ -191,11 +188,6 @@ public class StoreInfoCommand extends AbstractCommand
         }
     }
 
-    private static StoreInfo inUseResult( String databaseName )
-    {
-        return new StoreInfo( databaseName, true, null, null, null, -1, true );
-    }
-
     private static class StoreInfo
     {
         private final String databaseName;
@@ -206,7 +198,18 @@ public class StoreInfoCommand extends AbstractCommand
         private final boolean recoveryRequired;
         private final boolean inUse;
 
-        StoreInfo( String databaseName, boolean inUse, String storeFormat, String storeFormatIntroduced, String storeFormatSuperseded,
+        static StoreInfo inUseResult( String databaseName )
+        {
+            return new StoreInfo( databaseName, true, null, null, null, -1, true );
+        }
+
+        static StoreInfo notInUseResult( String databaseName, String storeFormat, String storeFormatIntroduced, String storeFormatSuperseded,
+                long lastCommittedTransaction, boolean recoveryRequired )
+        {
+            return new StoreInfo( databaseName, false, storeFormat, storeFormatIntroduced, storeFormatSuperseded, lastCommittedTransaction, recoveryRequired );
+        }
+
+        private StoreInfo( String databaseName, boolean inUse, String storeFormat, String storeFormatIntroduced, String storeFormatSuperseded,
                 long lastCommittedTransaction, boolean recoveryRequired )
         {
             this.databaseName = databaseName;
