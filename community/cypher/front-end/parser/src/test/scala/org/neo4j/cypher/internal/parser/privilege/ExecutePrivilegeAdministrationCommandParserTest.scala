@@ -18,14 +18,10 @@ package org.neo4j.cypher.internal.parser.privilege
 
 import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.ExecuteProcedureAction
-import org.neo4j.cypher.internal.ast.PrivilegeType
 import org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.parser.AdministrationCommandParserTestBase
-import org.neo4j.cypher.internal.util.InputPosition
 
 class ExecutePrivilegeAdministrationCommandParserTest extends AdministrationCommandParserTestBase {
-
-  type privilegeTypeFunction = () => InputPosition => PrivilegeType
 
   Seq(
     ("GRANT", "TO", grantExecutePrivilege: executePrivilegeFunc),
@@ -41,85 +37,85 @@ class ExecutePrivilegeAdministrationCommandParserTest extends AdministrationComm
       ).foreach {
         case (execute, action) =>
           test(s"$verb $execute * ON DBMS $preposition role") {
-            yields(func(action, List(ast.ProcedureQualifier(expressions.Namespace(List.empty)(_), expressions.ProcedureName("*")(_))(_)), Seq(literal("role"))))
+            yields(func(action, List(ast.ProcedureQualifier(expressions.Namespace(List.empty)(_), expressions.ProcedureName("*")(_))(_)), Seq(literalRole)))
           }
 
           test(s"$verb ${execute}S * ON DBMS $preposition role") {
-            yields(func(action, List(ast.ProcedureQualifier(expressions.Namespace(List.empty)(_), expressions.ProcedureName("*")(_))(_)), Seq(literal("role"))))
+            yields(func(action, List(ast.ProcedureQualifier(expressions.Namespace(List.empty)(_), expressions.ProcedureName("*")(_))(_)), Seq(literalRole)))
           }
 
           test(s"$verb ${execute}S `*` ON DBMS $preposition role") {
-            yields(func(action, List(ast.ProcedureQualifier(expressions.Namespace(List.empty)(_), expressions.ProcedureName("*")(_))(_)), Seq(literal("role"))))
+            yields(func(action, List(ast.ProcedureQualifier(expressions.Namespace(List.empty)(_), expressions.ProcedureName("*")(_))(_)), Seq(literalRole)))
           }
 
           test(s"$verb $execute apoc.procedure ON DBMS $preposition role") {
             yields(func(
               action,
               List(ast.ProcedureQualifier(expressions.Namespace(List("apoc"))(_), expressions.ProcedureName("procedure")(_))(_)),
-              Seq(literal("role"))))
+              Seq(literalRole)))
           }
 
           test(s"$verb ${execute}S apoc.procedure ON DBMS $preposition role") {
             yields(func(
               action,
               List(ast.ProcedureQualifier(expressions.Namespace(List("apoc"))(_), expressions.ProcedureName("procedure")(_))(_)),
-              Seq(literal("role"))))
+              Seq(literalRole)))
           }
 
           test(s"$verb $execute apoc.math.sin ON DBMS $preposition role") {
             yields(func(
               action,
               List(ast.ProcedureQualifier(expressions.Namespace(List("apoc", "math"))(_), expressions.ProcedureName("sin")(_))(_)),
-              Seq(literal("role"))))
+              Seq(literalRole)))
           }
 
           test(s"$verb $execute apoc* ON DBMS $preposition role") {
             yields(func(
               action,
               List(ast.ProcedureQualifier(expressions.Namespace(List.empty)(_), expressions.ProcedureName("apoc*")(_))(_)),
-              Seq(literal("role"))))
+              Seq(literalRole)))
           }
 
           test(s"$verb $execute *apoc ON DBMS $preposition role") {
             yields(func(
               action,
               List(ast.ProcedureQualifier(expressions.Namespace(List.empty)(_), expressions.ProcedureName("*apoc")(_))(_)),
-              Seq(literal("role"))))
+              Seq(literalRole)))
           }
 
           test(s"$verb $execute apoc.*.math.* ON DBMS $preposition role") {
             yields(func(
               action,
               List(ast.ProcedureQualifier(expressions.Namespace(List("apoc", "*", "math"))(_), expressions.ProcedureName("*")(_))(_)),
-              Seq(literal("role"))))
+              Seq(literalRole)))
           }
 
           test(s"$verb $execute math.*n ON DBMS $preposition role") {
             yields(func(
               action,
               List(ast.ProcedureQualifier(expressions.Namespace(List("math"))(_), expressions.ProcedureName("*n")(_))(_)),
-              Seq(literal("role"))))
+              Seq(literalRole)))
           }
 
           test(s"$verb $execute mat?.`a.\n`.*n ON DBMS $preposition role") {
             yields(func(
               action,
               List(ast.ProcedureQualifier(expressions.Namespace(List("mat?", "a.\n"))(_), expressions.ProcedureName("*n")(_))(_)),
-              Seq(literal("role"))))
+              Seq(literalRole)))
           }
 
           test(s"$verb $execute *.sin ON DBMS $preposition role") {
             yields(func(
               action,
               List(ast.ProcedureQualifier(expressions.Namespace(List("*"))(_), expressions.ProcedureName("sin")(_))(_)),
-              Seq(literal("role"))))
+              Seq(literalRole)))
           }
 
           test(s"$verb $execute apoc.math.* ON DBMS $preposition role") {
             yields(func(
               action,
               List(ast.ProcedureQualifier(expressions.Namespace(List("apoc", "math"))(_), expressions.ProcedureName("*")(_))(_)),
-              Seq(literal("role"))))
+              Seq(literalRole)))
           }
 
           test(s"$verb $execute math.sin, math.cos ON DBMS $preposition role") {
@@ -127,7 +123,7 @@ class ExecutePrivilegeAdministrationCommandParserTest extends AdministrationComm
               action,
               List(ast.ProcedureQualifier(expressions.Namespace(List("math"))(_), expressions.ProcedureName("sin")(_))(_),
                    ast.ProcedureQualifier(expressions.Namespace(List("math"))(_), expressions.ProcedureName("cos")(_))(_)),
-              Seq(literal("role"))))
+              Seq(literalRole)))
           }
 
           test(s"$verb $execute apoc.math.sin, math.* ON DBMS $preposition role") {
@@ -135,7 +131,7 @@ class ExecutePrivilegeAdministrationCommandParserTest extends AdministrationComm
               action,
               List(ast.ProcedureQualifier(expressions.Namespace(List("apoc", "math"))(_), expressions.ProcedureName("sin")(_))(_),
                 ast.ProcedureQualifier(expressions.Namespace(List("math"))(_), expressions.ProcedureName("*")(_))(_)),
-              Seq(literal("role"))))
+              Seq(literalRole)))
           }
       }
   }

@@ -147,59 +147,59 @@ class RoleAdministrationCommandParserTest extends AdministrationCommandParserTes
   //  Creating role
 
   test("CREATE ROLE foo") {
-    yields(ast.CreateRole(literal("foo"), None, ast.IfExistsThrowError))
+    yields(ast.CreateRole(literalFoo, None, ast.IfExistsThrowError))
   }
 
   test("CREATE ROLE $foo") {
-    yields(ast.CreateRole(param("foo"), None, ast.IfExistsThrowError))
+    yields(ast.CreateRole(paramFoo, None, ast.IfExistsThrowError))
   }
 
   test("CATALOG CREATE ROLE `foo`") {
-    yields(ast.CreateRole(literal("foo"), None, ast.IfExistsThrowError))
+    yields(ast.CreateRole(literalFoo, None, ast.IfExistsThrowError))
   }
 
   test("CREATE ROLE ``") {
-    yields(ast.CreateRole(literal(""), None, ast.IfExistsThrowError))
+    yields(ast.CreateRole(literalEmpty, None, ast.IfExistsThrowError))
   }
 
   test("CREATE ROLE foo AS COPY OF bar") {
-    yields(ast.CreateRole(literal("foo"), Some(literal("bar")), ast.IfExistsThrowError))
+    yields(ast.CreateRole(literalFoo, Some(literalBar), ast.IfExistsThrowError))
   }
 
   test("CREATE ROLE foo AS COPY OF $bar") {
-    yields(ast.CreateRole(literal("foo"), Some(param("bar")), ast.IfExistsThrowError))
+    yields(ast.CreateRole(literalFoo, Some(param("bar")), ast.IfExistsThrowError))
   }
 
   test("CREATE ROLE foo AS COPY OF ``") {
-    yields(ast.CreateRole(literal("foo"), Some(literal("")), ast.IfExistsThrowError))
+    yields(ast.CreateRole(literalFoo, Some(literalEmpty), ast.IfExistsThrowError))
   }
 
   test("CREATE ROLE `` AS COPY OF bar") {
-    yields(ast.CreateRole(literal(""), Some(literal("bar")), ast.IfExistsThrowError))
+    yields(ast.CreateRole(literalEmpty, Some(literalBar), ast.IfExistsThrowError))
   }
 
   test("CREATE ROLE foo IF NOT EXISTS") {
-    yields(ast.CreateRole(literal("foo"), None, ast.IfExistsDoNothing))
+    yields(ast.CreateRole(literalFoo, None, ast.IfExistsDoNothing))
   }
 
   test("CREATE ROLE foo IF NOT EXISTS AS COPY OF bar") {
-    yields(ast.CreateRole(literal("foo"), Some(literal("bar")), ast.IfExistsDoNothing))
+    yields(ast.CreateRole(literalFoo, Some(literalBar), ast.IfExistsDoNothing))
   }
 
   test("CREATE OR REPLACE ROLE foo") {
-    yields(ast.CreateRole(literal("foo"), None, ast.IfExistsReplace))
+    yields(ast.CreateRole(literalFoo, None, ast.IfExistsReplace))
   }
 
   test("CREATE OR REPLACE ROLE foo AS COPY OF bar") {
-    yields(ast.CreateRole(literal("foo"), Some(literal("bar")), ast.IfExistsReplace))
+    yields(ast.CreateRole(literalFoo, Some(literalBar), ast.IfExistsReplace))
   }
 
   test("CREATE OR REPLACE ROLE foo IF NOT EXISTS") {
-    yields(ast.CreateRole(literal("foo"), None, ast.IfExistsInvalidSyntax))
+    yields(ast.CreateRole(literalFoo, None, ast.IfExistsInvalidSyntax))
   }
 
   test("CREATE OR REPLACE ROLE foo IF NOT EXISTS AS COPY OF bar") {
-    yields(ast.CreateRole(literal("foo"), Some(literal("bar")), ast.IfExistsInvalidSyntax))
+    yields(ast.CreateRole(literalFoo, Some(literalBar), ast.IfExistsInvalidSyntax))
   }
 
   test("CATALOG CREATE ROLE \"foo\"") {
@@ -237,23 +237,23 @@ class RoleAdministrationCommandParserTest extends AdministrationCommandParserTes
   //  Dropping role
 
   test("DROP ROLE foo") {
-    yields(ast.DropRole(literal("foo"), ifExists = false))
+    yields(ast.DropRole(literalFoo, ifExists = false))
   }
 
   test("DROP ROLE $foo") {
-    yields(ast.DropRole(param("foo"), ifExists = false))
+    yields(ast.DropRole(paramFoo, ifExists = false))
   }
 
   test("DROP ROLE ``") {
-    yields(ast.DropRole(literal(""), ifExists = false))
+    yields(ast.DropRole(literalEmpty, ifExists = false))
   }
 
   test("DROP ROLE foo IF EXISTS") {
-    yields(ast.DropRole(literal("foo"), ifExists = true))
+    yields(ast.DropRole(literalFoo, ifExists = true))
   }
 
   test("DROP ROLE `` IF EXISTS") {
-    yields(ast.DropRole(literal(""), ifExists = true))
+    yields(ast.DropRole(literalEmpty, ifExists = true))
   }
 
   test("DROP ROLE ") {
@@ -283,65 +283,65 @@ class RoleAdministrationCommandParserTest extends AdministrationCommandParserTes
         ("GRANT", "TO", grantRole: grantOrRevokeRoleFunc),
         ("REVOKE", "FROM", revokeRole: grantOrRevokeRoleFunc)
       ).foreach {
-        case (command: String, preposition: String, func: grantOrRevokeRoleFunc) =>
+        case (verb: String, preposition: String, func: grantOrRevokeRoleFunc) =>
 
-          test(s"$command $roleKeyword foo $preposition abc") {
+          test(s"$verb $roleKeyword foo $preposition abc") {
             yields(func(Seq("foo"), Seq("abc")))
           }
 
-          test(s"CATALOG $command $roleKeyword foo $preposition abc") {
+          test(s"CATALOG $verb $roleKeyword foo $preposition abc") {
             yields(func(Seq("foo"), Seq("abc")))
           }
 
-          test(s"$command $roleKeyword foo, bar $preposition abc") {
+          test(s"$verb $roleKeyword foo, bar $preposition abc") {
             yields(func(Seq("foo", "bar"), Seq("abc")))
           }
 
-          test(s"$command $roleKeyword foo $preposition abc, def") {
+          test(s"$verb $roleKeyword foo $preposition abc, def") {
             yields(func(Seq("foo"), Seq("abc", "def")))
           }
 
-          test(s"$command $roleKeyword foo,bla,roo $preposition bar, baz,abc,  def") {
+          test(s"$verb $roleKeyword foo,bla,roo $preposition bar, baz,abc,  def") {
             yields(func(Seq("foo", "bla", "roo"), Seq("bar", "baz", "abc", "def")))
           }
 
-          test(s"$command $roleKeyword `fo:o` $preposition bar") {
+          test(s"$verb $roleKeyword `fo:o` $preposition bar") {
             yields(func(Seq("fo:o"), Seq("bar")))
           }
 
-          test(s"$command $roleKeyword foo $preposition `b:ar`") {
+          test(s"$verb $roleKeyword foo $preposition `b:ar`") {
             yields(func(Seq("foo"), Seq("b:ar")))
           }
 
-          test(s"$command $roleKeyword `$$f00`,bar $preposition abc,`$$a&c`") {
+          test(s"$verb $roleKeyword `$$f00`,bar $preposition abc,`$$a&c`") {
             yields(func(Seq("$f00", "bar"), Seq("abc", "$a&c")))
           }
 
           // Should fail to parse if not following the pattern $command $roleKeyword role(s) $preposition user(s)
 
-          test(s"$command $roleKeyword") {
+          test(s"$verb $roleKeyword") {
             failsToParse
           }
 
-          test(s"$command $roleKeyword foo") {
+          test(s"$verb $roleKeyword foo") {
             failsToParse
           }
 
-          test(s"$command $roleKeyword foo $preposition") {
+          test(s"$verb $roleKeyword foo $preposition") {
             failsToParse
           }
 
-          test(s"$command $roleKeyword $preposition abc") {
+          test(s"$verb $roleKeyword $preposition abc") {
             failsToParse
           }
 
           // Should fail to parse when invalid user or role name
 
-          test(s"$command $roleKeyword fo:o $preposition bar") {
+          test(s"$verb $roleKeyword fo:o $preposition bar") {
             failsToParse
           }
 
-          test(s"$command $roleKeyword foo $preposition b:ar") {
+          test(s"$verb $roleKeyword foo $preposition b:ar") {
             failsToParse
           }
       }
@@ -357,6 +357,7 @@ class RoleAdministrationCommandParserTest extends AdministrationCommandParserTes
       }
 
       // ROLES TO USER only have GRANT and REVOKE and not DENY
+
       test( s"DENY $roleKeyword foo TO abc") {
         failsToParse
       }

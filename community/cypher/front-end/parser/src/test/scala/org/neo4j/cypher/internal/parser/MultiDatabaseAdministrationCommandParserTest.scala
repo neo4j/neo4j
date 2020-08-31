@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.ast.Yield
 
 class MultiDatabaseAdministrationCommandParserTest extends AdministrationCommandParserTestBase {
+  private val literalFooBar = literal("foo.bar")
 
   // SHOW DATABASE
 
@@ -37,77 +38,79 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationCommand
     ("DATABASE $db",  ast.ShowDatabase.apply(NamedDatabaseScope(param("db"))(pos), _: Option[Either[Yield, Where]], _: Option[Return]) _  ),
     ("DATABASE neo4j",  ast.ShowDatabase.apply(NamedDatabaseScope(literal("neo4j"))(pos), _: Option[Either[Yield, Where]], _: Option[Return]) _  )
   ).foreach{ case (dbType, privilege) =>
+
     test(s"SHOW $dbType") {
       yields(privilege(None, None))
     }
 
     test(s"SHOW $dbType WHERE access = 'GRANTED'") {
-      yields(privilege(Some(Right(ast.Where(equals(varFor("access"), literalString("GRANTED"))) _)), None))
+      yields(privilege(Some(Right(ast.Where(equals(varFor(accessString), grantedString)) _)), None))
     }
 
     test(s"SHOW $dbType WHERE access = 'GRANTED' AND action = 'match'") {
-      val accessPredicate = equals(varFor("access"), literalString("GRANTED"))
+      val accessPredicate = equals(varFor(accessString), grantedString)
       val matchPredicate = equals(varFor("action"), literalString("match"))
       yields(privilege(Some(Right(ast.Where(and(accessPredicate, matchPredicate)) _)), None))
     }
 
     test(s"SHOW $dbType YIELD access ORDER BY access") {
-      val orderBy = ast.OrderBy(List(ast.AscSortItem(varFor("access")) _)) _
-      val columns = ast.Yield(ast.ReturnItems(false, List(UnaliasedReturnItem(varFor("access"), "access") _)) _, Some(orderBy), None, None, None) _
+      val orderBy = ast.OrderBy(List(ast.AscSortItem(varFor(accessString)) _)) _
+      val columns = ast.Yield(ast.ReturnItems(includeExisting = false, List(UnaliasedReturnItem(varFor(accessString), accessString) _)) _, Some(orderBy), None, None, None) _
       yields(privilege( Some(Left(columns)), None))
     }
 
     test(s"SHOW $dbType YIELD access ORDER BY access WHERE access ='none'") {
-      val orderBy = ast.OrderBy(List(ast.AscSortItem(varFor("access")) _)) _
-      val where = ast.Where(equals(varFor("access"), literalString("none"))) _
-      val columns = ast.Yield(ast.ReturnItems(false, List(UnaliasedReturnItem(varFor("access"), "access") _)) _, Some(orderBy), None, None, Some(where)) _
+      val orderBy = ast.OrderBy(List(ast.AscSortItem(varFor(accessString)) _)) _
+      val where = ast.Where(equals(varFor(accessString), literalString("none"))) _
+      val columns = ast.Yield(ast.ReturnItems(includeExisting = false, List(UnaliasedReturnItem(varFor(accessString), accessString) _)) _, Some(orderBy), None, None, Some(where)) _
       yields(privilege(Some(Left(columns)), None))
     }
 
     test(s"SHOW $dbType YIELD access ORDER BY access SKIP 1 LIMIT 10 WHERE access ='none'") {
-      val orderBy = ast.OrderBy(List(ast.AscSortItem(varFor("access")) _)) _
-      val where = ast.Where(equals(varFor("access"), literalString("none"))) _
-      val columns = ast.Yield(ast.ReturnItems(false, List(UnaliasedReturnItem(varFor("access"), "access") _)) _, Some(orderBy),
+      val orderBy = ast.OrderBy(List(ast.AscSortItem(varFor(accessString)) _)) _
+      val where = ast.Where(equals(varFor(accessString), literalString("none"))) _
+      val columns = ast.Yield(ast.ReturnItems(includeExisting = false, List(UnaliasedReturnItem(varFor(accessString), accessString) _)) _, Some(orderBy),
         Some(ast.Skip(literalInt(1)) _), Some(ast.Limit(literalInt(10)) _), Some(where)) _
       yields(privilege(Some(Left(columns)), None))
     }
 
     test(s"SHOW $dbType YIELD access SKIP -1") {
-      val columns = ast.Yield(ast.ReturnItems(false, List(UnaliasedReturnItem(varFor("access"), "access") _)) _, None,
+      val columns = ast.Yield(ast.ReturnItems(includeExisting = false, List(UnaliasedReturnItem(varFor(accessString), accessString) _)) _, None,
         Some(ast.Skip(literalInt(-1)) _), None, None) _
       yields(privilege(Some(Left(columns)), None))
     }
 
     test(s"SHOW $dbType YIELD access ORDER BY access RETURN access") {
       yields(privilege(
-        Some(Left(ast.Yield(ast.ReturnItems(false, List(UnaliasedReturnItem(varFor("access"), "access") _)) _, Some(ast.OrderBy(List(ast.AscSortItem(varFor("access")) _)) _), None, None, None) _)),
-        Some(ast.Return(ast.ReturnItems(false, List(UnaliasedReturnItem(varFor("access"), "access") _)) _) _)
+        Some(Left(ast.Yield(ast.ReturnItems(includeExisting = false, List(UnaliasedReturnItem(varFor(accessString), accessString) _)) _, Some(ast.OrderBy(List(ast.AscSortItem(varFor(accessString)) _)) _), None, None, None) _)),
+        Some(ast.Return(ast.ReturnItems(includeExisting = false, List(UnaliasedReturnItem(varFor(accessString), accessString) _)) _) _)
       ))
     }
 
     test(s"SHOW $dbType WHERE access = 'GRANTED' RETURN action") {
       yields(privilege(
-        Some(Right(ast.Where(equals(varFor("access"), literalString("GRANTED"))) _)),
-        Some(ast.Return(ast.ReturnItems(false, List(UnaliasedReturnItem(varFor("action"), "action") _))_ )_)
+        Some(Right(ast.Where(equals(varFor(accessString), grantedString)) _)),
+        Some(ast.Return(ast.ReturnItems(includeExisting = false, List(UnaliasedReturnItem(varFor("action"), "action") _))_ )_)
       ))
     }
 
     test(s"SHOW $dbType YIELD * RETURN *") {
       yields(privilege(
-        Some(Left(ast.Yield(ast.ReturnItems(true,List()) _,None,None,None,None)_)),
-        Some(ast.Return(false,ast.ReturnItems(true,List()) _,None,None,None,Set()) _)))
+        Some(Left(ast.Yield(ast.ReturnItems(includeExisting = true,List()) _,None,None,None,None)_)),
+        Some(ast.Return(distinct = false,ast.ReturnItems(includeExisting = true,List()) _,None,None,None,Set()) _)))
     }
   }
 
   test("SHOW DATABASE blah YIELD *,blah RETURN user") {
     failsToParse
   }
+
   test("SHOW DATABASE `foo.bar`") {
-    yields(ast.ShowDatabase(NamedDatabaseScope(literal("foo.bar"))(pos), None, None))
+    yields(ast.ShowDatabase(NamedDatabaseScope(literalFooBar)(pos), None, None))
   }
 
   test("SHOW DATABASE foo.bar") {
-    yields(ast.ShowDatabase(NamedDatabaseScope(literal("foo.bar"))(pos), None, None))
+    yields(ast.ShowDatabase(NamedDatabaseScope(literalFooBar)(pos), None, None))
   }
 
   test("SHOW DATABASE") {
@@ -117,32 +120,32 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationCommand
   // CREATE DATABASE
 
   test("CREATE DATABASE foo") {
-    yields(ast.CreateDatabase(literal("foo"), ast.IfExistsThrowError))
+    yields(ast.CreateDatabase(literalFoo, ast.IfExistsThrowError))
   }
 
   test("USE system CREATE DATABASE foo") {
     // can parse USE clause, but is not included in AST
-    yields(ast.CreateDatabase(literal("foo"), ast.IfExistsThrowError))
+    yields(ast.CreateDatabase(literalFoo, ast.IfExistsThrowError))
   }
 
   test("CREATE DATABASE $foo") {
-    yields(ast.CreateDatabase(param("foo"), ast.IfExistsThrowError))
+    yields(ast.CreateDatabase(paramFoo, ast.IfExistsThrowError))
   }
 
   test("CREATE DATABASE `foo.bar`") {
-    yields(ast.CreateDatabase(literal("foo.bar"), ast.IfExistsThrowError))
+    yields(ast.CreateDatabase(literalFooBar, ast.IfExistsThrowError))
   }
 
   test("CATALOG CREATE DATABASE `foo.bar`") {
-    yields(ast.CreateDatabase(literal("foo.bar"), ast.IfExistsThrowError))
+    yields(ast.CreateDatabase(literalFooBar, ast.IfExistsThrowError))
   }
 
   test("CREATE DATABASE foo.bar") {
-    yields(ast.CreateDatabase(literal("foo.bar"), ast.IfExistsThrowError))
+    yields(ast.CreateDatabase(literalFooBar, ast.IfExistsThrowError))
   }
 
   test("CATALOG CREATE DATABASE foo.bar") {
-    yields(ast.CreateDatabase(literal("foo.bar"), ast.IfExistsThrowError))
+    yields(ast.CreateDatabase(literalFooBar, ast.IfExistsThrowError))
   }
 
   test("CATALOG CREATE DATABASE `graph.db`.`db.db`") {
@@ -158,11 +161,11 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationCommand
   }
 
   test("CATALOG CREATE DATABASE ``") {
-    yields(ast.CreateDatabase(literal(""), ast.IfExistsThrowError))
+    yields(ast.CreateDatabase(literalEmpty, ast.IfExistsThrowError))
   }
 
   test("CREATE DATABASE foo IF NOT EXISTS") {
-    yields(ast.CreateDatabase(literal("foo"), ast.IfExistsDoNothing))
+    yields(ast.CreateDatabase(literalFoo, ast.IfExistsDoNothing))
   }
 
   test("CATALOG CREATE DATABASE `_foo-bar42` IF NOT EXISTS") {
@@ -170,7 +173,7 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationCommand
   }
 
   test("CREATE OR REPLACE DATABASE foo") {
-    yields(ast.CreateDatabase(literal("foo"), ast.IfExistsReplace))
+    yields(ast.CreateDatabase(literalFoo, ast.IfExistsReplace))
   }
 
   test("CATALOG CREATE OR REPLACE DATABASE `_foo-bar42`") {
@@ -178,7 +181,7 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationCommand
   }
 
   test("CREATE OR REPLACE DATABASE foo IF NOT EXISTS") {
-    yields(ast.CreateDatabase(literal("foo"), ast.IfExistsInvalidSyntax))
+    yields(ast.CreateDatabase(literalFoo, ast.IfExistsInvalidSyntax))
   }
 
   test("CREATE DATABASE \"foo.bar\"") {
@@ -223,23 +226,23 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationCommand
   // DROP DATABASE
 
   test("DROP DATABASE foo") {
-    yields(ast.DropDatabase(literal("foo"), ifExists = false, DestroyData))
+    yields(ast.DropDatabase(literalFoo, ifExists = false, DestroyData))
   }
 
   test("DROP DATABASE $foo") {
-    yields(ast.DropDatabase(param("foo"), ifExists = false, DestroyData))
+    yields(ast.DropDatabase(paramFoo, ifExists = false, DestroyData))
   }
 
   test("CATALOG DROP DATABASE `foo.bar`") {
-    yields(ast.DropDatabase(literal("foo.bar"), ifExists = false, DestroyData))
+    yields(ast.DropDatabase(literalFooBar, ifExists = false, DestroyData))
   }
 
   test("CATALOG DROP DATABASE foo.bar") {
-    yields(ast.DropDatabase(literal("foo.bar"), ifExists = false, DestroyData))
+    yields(ast.DropDatabase(literalFooBar, ifExists = false, DestroyData))
   }
 
   test("DROP DATABASE foo IF EXISTS") {
-    yields(ast.DropDatabase(literal("foo"), ifExists = true, DestroyData))
+    yields(ast.DropDatabase(literalFoo, ifExists = true, DestroyData))
   }
 
   test("DROP DATABASE") {
@@ -255,19 +258,19 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationCommand
   }
 
   test("DROP DATABASE foo DUMP DATA") {
-    yields(ast.DropDatabase(literal("foo"), ifExists = false, DumpData))
+    yields(ast.DropDatabase(literalFoo, ifExists = false, DumpData))
   }
 
   test("DROP DATABASE foo DESTROY DATA") {
-    yields(ast.DropDatabase(literal("foo"), ifExists = false, DestroyData))
+    yields(ast.DropDatabase(literalFoo, ifExists = false, DestroyData))
   }
 
   test("DROP DATABASE foo IF EXISTS DUMP DATA") {
-    yields(ast.DropDatabase(literal("foo"), ifExists = true, DumpData))
+    yields(ast.DropDatabase(literalFoo, ifExists = true, DumpData))
   }
 
   test("DROP DATABASE foo IF EXISTS DESTROY DATA") {
-    yields(ast.DropDatabase(literal("foo"), ifExists = true, DestroyData))
+    yields(ast.DropDatabase(literalFoo, ifExists = true, DestroyData))
   }
 
   test("DROP DATABASE  KEEP DATA") {
@@ -277,19 +280,19 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationCommand
   // START DATABASE
 
   test("START DATABASE foo") {
-    yields(ast.StartDatabase(literal("foo")))
+    yields(ast.StartDatabase(literalFoo))
   }
 
   test("START DATABASE $foo") {
-    yields(ast.StartDatabase(param("foo")))
+    yields(ast.StartDatabase(paramFoo))
   }
 
   test("CATALOG START DATABASE `foo.bar`") {
-    yields(ast.StartDatabase(literal("foo.bar")))
+    yields(ast.StartDatabase(literalFooBar))
   }
 
   test("CATALOG START DATABASE foo.bar") {
-    yields(ast.StartDatabase(literal("foo.bar")))
+    yields(ast.StartDatabase(literalFooBar))
   }
 
   test("START DATABASE") {
@@ -299,19 +302,19 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationCommand
   // STOP DATABASE
 
   test("STOP DATABASE foo") {
-    yields(ast.StopDatabase(literal("foo")))
+    yields(ast.StopDatabase(literalFoo))
   }
 
   test("STOP DATABASE $foo") {
-    yields(ast.StopDatabase(param("foo")))
+    yields(ast.StopDatabase(paramFoo))
   }
 
   test("CATALOG STOP DATABASE `foo.bar`") {
-    yields(ast.StopDatabase(literal("foo.bar")))
+    yields(ast.StopDatabase(literalFooBar))
   }
 
   test("CATALOG STOP DATABASE foo.bar") {
-    yields(ast.StopDatabase(literal("foo.bar")))
+    yields(ast.StopDatabase(literalFooBar))
   }
 
   test("STOP DATABASE") {

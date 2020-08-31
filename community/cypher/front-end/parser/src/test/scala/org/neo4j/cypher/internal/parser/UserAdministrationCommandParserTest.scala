@@ -25,6 +25,14 @@ import org.neo4j.cypher.internal.expressions.SensitiveParameter
 import org.neo4j.cypher.internal.expressions.SensitiveStringLiteral
 
 class UserAdministrationCommandParserTest extends AdministrationCommandParserTestBase {
+  private val varUser = varFor("user")
+  private val password = pw("password")
+  private val passwordNew = pw("new")
+  private val passwordCurrent = pw("current")
+  private val passwordEmpty = pw("")
+  private val paramPassword = pwParam("password")
+  private val paramPasswordNew = pwParam("newPassword")
+  private val paramPasswordCurrent = pwParam("currentPassword")
 
   //  Showing user
 
@@ -41,59 +49,62 @@ class UserAdministrationCommandParserTest extends AdministrationCommandParserTes
   }
 
   test("SHOW USERS WHERE user = 'GRANTED'") {
-    yields(ast.ShowUsers(Some(Right(ast.Where(equals(varFor("user"), literalString("GRANTED"))) _)), None))
+    yields(ast.ShowUsers(Some(Right(ast.Where(equals(varUser, grantedString)) _)), None))
   }
 
   test("SHOW USERS WHERE user = 'GRANTED' AND action = 'match'") {
-    val accessPredicate = equals(varFor("user"), literalString("GRANTED"))
+    val accessPredicate = equals(varUser, grantedString)
     val matchPredicate = equals(varFor("action"), literalString("match"))
     yields(ast.ShowUsers(Some(Right(ast.Where(and(accessPredicate, matchPredicate)) _)), None))
   }
 
   test("SHOW USERS YIELD user ORDER BY user") {
-    val orderBy = ast.OrderBy(List(ast.AscSortItem(varFor("user")) _)) _
-    val columns = ast.Yield(ast.ReturnItems(false, List(UnaliasedReturnItem(varFor("user"), "user") _)) _, Some(orderBy), None, None, None) _
+    val orderBy = ast.OrderBy(List(ast.AscSortItem(varUser) _)) _
+    val columns = ast.Yield(ast.ReturnItems(includeExisting = false, List(UnaliasedReturnItem(varUser, "user") _)) _, Some(orderBy), None, None, None) _
     yields(ast.ShowUsers(Some(Left(columns)), None))
   }
 
   test("SHOW USERS YIELD user ORDER BY user WHERE user ='none'") {
-    val orderBy = ast.OrderBy(List(ast.AscSortItem(varFor("user")) _)) _
-    val where = ast.Where(equals(varFor("user"), literalString("none"))) _
-    val columns = ast.Yield(ast.ReturnItems(false, List(UnaliasedReturnItem(varFor("user"), "user") _)) _, Some(orderBy), None, None, Some(where)) _
+    val orderBy = ast.OrderBy(List(ast.AscSortItem(varUser) _)) _
+    val where = ast.Where(equals(varUser, literalString("none"))) _
+    val columns = ast.Yield(ast.ReturnItems(includeExisting = false, List(UnaliasedReturnItem(varUser, "user") _)) _, Some(orderBy), None, None, Some(where)) _
     yields(ast.ShowUsers(Some(Left(columns)) , None))
   }
 
   test("SHOW USERS YIELD user ORDER BY user SKIP 1 LIMIT 10 WHERE user ='none'") {
-    val orderBy = ast.OrderBy(List(ast.AscSortItem(varFor("user")) _)) _
-    val where = ast.Where(equals(varFor("user"), literalString("none"))) _
-    val columns = ast.Yield(ast.ReturnItems(false, List(UnaliasedReturnItem(varFor("user"), "user") _)) _, Some(orderBy),
+    val orderBy = ast.OrderBy(List(ast.AscSortItem(varUser) _)) _
+    val where = ast.Where(equals(varUser, literalString("none"))) _
+    val columns = ast.Yield(ast.ReturnItems(includeExisting = false, List(UnaliasedReturnItem(varUser, "user") _)) _, Some(orderBy),
       Some(ast.Skip(literalInt(1)) _), Some(ast.Limit(literalInt(10)) _), Some(where)) _
     yields(ast.ShowUsers(Some(Left(columns)), None))
   }
 
   test("SHOW USERS YIELD user SKIP -1") {
-    val columns = ast.Yield(ast.ReturnItems(false, List(UnaliasedReturnItem(varFor("user"), "user") _)) _, None,
+    val columns = ast.Yield(ast.ReturnItems(includeExisting = false, List(UnaliasedReturnItem(varUser, "user") _)) _, None,
       Some(ast.Skip(literalInt(-1)) _), None, None) _
     yields(ast.ShowUsers(Some(Left(columns)), None))
   }
 
   test("SHOW USERS YIELD user RETURN user ORDER BY user") {
     yields(ast.ShowUsers(
-      Some(Left(ast.Yield(ast.ReturnItems(false, List(UnaliasedReturnItem(varFor("user"), "user") _)) _, None, None, None, None) _)),
-      Some(ast.Return(false, ast.ReturnItems(false, List(UnaliasedReturnItem(varFor("user"), "user") _)) _, Some(ast.OrderBy(List(ast.AscSortItem(varFor("user")) _)) _), None, None) _)
+      Some(Left(ast.Yield(ast.ReturnItems(includeExisting = false, List(UnaliasedReturnItem(varUser, "user") _)) _, None, None, None, None) _)),
+      Some(ast.Return(distinct = false, ast.ReturnItems(includeExisting = false, List(UnaliasedReturnItem(varUser, "user") _)) _, Some(ast.OrderBy(List(ast.AscSortItem(varUser) _)) _), None, None) _)
     ))
   }
 
   test("SHOW USERS YIELD user, suspended as suspended WHERE suspended RETURN DISTINCT user") {
     yields(ast.ShowUsers(
-      Some(Left(ast.Yield(ast.ReturnItems(false, List(UnaliasedReturnItem(varFor("user"), "user") _, AliasedReturnItem(varFor("suspended")))) _, None, None, None,
-        Some(ast.Where(varFor("suspended"))_)) _)),
-      Some(ast.Return(true, ast.ReturnItems(false, List(UnaliasedReturnItem(varFor("user"), "user") _)) _, None, None, None) _)
+      Some(Left(ast.Yield(ast.ReturnItems(includeExisting = false, List(UnaliasedReturnItem(varUser, "user") _, AliasedReturnItem(varFor("suspended")))) _, None, None, None,
+        Some(ast.Where(varFor("suspended")) _)) _)),
+      Some(ast.Return(distinct = true, ast.ReturnItems(includeExisting = false, List(UnaliasedReturnItem(varUser, "user") _)) _, None, None, None) _)
     ))
   }
 
   test("SHOW USERS YIELD * RETURN *") {
-    yields(ast.ShowUsers(Some(Left(ast.Yield(ast.ReturnItems(true,List()) _,None,None,None,None)_)),Some(ast.Return(false,ast.ReturnItems(true,List()) _,None,None,None,Set()) _)))
+    yields(ast.ShowUsers(
+      Some(Left(ast.Yield(ast.ReturnItems(includeExisting = true, List()) _, None, None, None, None) _)),
+      Some(ast.Return(distinct = false, ast.ReturnItems(includeExisting = true, List()) _, None, None, None, Set()) _)
+    ))
   }
 
   test("SHOW USERS YIELD *,blah RETURN user") {
@@ -103,11 +114,11 @@ class UserAdministrationCommandParserTest extends AdministrationCommandParserTes
   //  Creating user
 
   test("CATALOG CREATE USER foo SET PASSWORD 'password'") {
-    yields(ast.CreateUser(literal("foo"), pw("password"), requirePasswordChange = true, suspended = None, ast.IfExistsThrowError))
+    yields(ast.CreateUser(literalFoo, password, requirePasswordChange = true, suspended = None, ast.IfExistsThrowError))
   }
 
   test("CATALOG CREATE USER $foo SET PASSWORD 'password'") {
-    yields(ast.CreateUser(param("foo"), pw("password"), requirePasswordChange = true, suspended = None, ast.IfExistsThrowError))
+    yields(ast.CreateUser(paramFoo, password, requirePasswordChange = true, suspended = None, ast.IfExistsThrowError))
   }
 
   test("CATALOG CREATE USER $bar SET PASSWORD $pw") {
@@ -115,115 +126,115 @@ class UserAdministrationCommandParserTest extends AdministrationCommandParserTes
   }
 
   test("CREATE USER `foo` SET PASSwORD 'password'") {
-    yields(ast.CreateUser(literal("foo"), pw("password"), requirePasswordChange = true, suspended = None, ast.IfExistsThrowError))
+    yields(ast.CreateUser(literalFoo, password, requirePasswordChange = true, suspended = None, ast.IfExistsThrowError))
   }
 
   test("CREATE USER `!#\"~` SeT PASSWORD 'password'") {
-    yields(ast.CreateUser(literal("!#\"~"), pw("password"), requirePasswordChange = true, suspended = None, ast.IfExistsThrowError))
+    yields(ast.CreateUser(literal("!#\"~"), password, requirePasswordChange = true, suspended = None, ast.IfExistsThrowError))
   }
 
   test("CREATE USER foo SeT PASSWORD 'pasS5Wor%d'") {
-    yields(ast.CreateUser(literal("foo"), pw("pasS5Wor%d"), requirePasswordChange = true, suspended = None, ast.IfExistsThrowError))
+    yields(ast.CreateUser(literalFoo, pw("pasS5Wor%d"), requirePasswordChange = true, suspended = None, ast.IfExistsThrowError))
   }
 
   test("CREATE USER foo SET PASSwORD ''") {
-    yields(ast.CreateUser(literal("foo"), pw(""), requirePasswordChange = true, suspended = None, ast.IfExistsThrowError))
+    yields(ast.CreateUser(literalFoo, passwordEmpty, requirePasswordChange = true, suspended = None, ast.IfExistsThrowError))
   }
 
   test("CREATE uSER foo SET PASSWORD $password") {
-    yields(ast.CreateUser(literal("foo"), pwParam("password"), requirePasswordChange = true, suspended = None, ast.IfExistsThrowError))
+    yields(ast.CreateUser(literalFoo, paramPassword, requirePasswordChange = true, suspended = None, ast.IfExistsThrowError))
   }
 
   test("CREaTE USER foo SET PASSWORD 'password' CHANGE REQUIRED") {
-    yields(ast.CreateUser(literal("foo"), pw("password"), requirePasswordChange = true, suspended = None, ast.IfExistsThrowError))
+    yields(ast.CreateUser(literalFoo, password, requirePasswordChange = true, suspended = None, ast.IfExistsThrowError))
   }
 
   test("CATALOG CREATE USER foo SET PASSWORD $password CHANGE REQUIRED") {
-    yields(ast.CreateUser(literal("foo"), pwParam("password"), requirePasswordChange = true, suspended = None, ast.IfExistsThrowError))
+    yields(ast.CreateUser(literalFoo, paramPassword, requirePasswordChange = true, suspended = None, ast.IfExistsThrowError))
   }
 
   test("CREATE USER foo SET PASSWORD 'password' SET PASSWORD CHANGE required") {
-    yields(ast.CreateUser(literal("foo"), pw("password"), requirePasswordChange = true, suspended = None, ast.IfExistsThrowError))
+    yields(ast.CreateUser(literalFoo, password, requirePasswordChange = true, suspended = None, ast.IfExistsThrowError))
   }
 
   test("CREATE USER foo SET PASSWORD 'password' CHAngE NOT REQUIRED") {
-    yields(ast.CreateUser(literal("foo"), pw("password"), requirePasswordChange = false, suspended = None, ast.IfExistsThrowError))
+    yields(ast.CreateUser(literalFoo, password, requirePasswordChange = false, suspended = None, ast.IfExistsThrowError))
   }
 
   test("CREATE USER foo SET PASSWORD 'password' SET PASSWORD CHANGE NOT REQUIRED") {
-    yields(ast.CreateUser(literal("foo"), pw("password"), requirePasswordChange = false, suspended = None, ast.IfExistsThrowError))
+    yields(ast.CreateUser(literalFoo, password, requirePasswordChange = false, suspended = None, ast.IfExistsThrowError))
   }
 
   test("CREATE USER foo SET PASSWORD $password SET  PASSWORD CHANGE NOT REQUIRED") {
-    yields(ast.CreateUser(literal("foo"), pwParam("password"), requirePasswordChange = false, suspended = None, ast.IfExistsThrowError))
+    yields(ast.CreateUser(literalFoo, paramPassword, requirePasswordChange = false, suspended = None, ast.IfExistsThrowError))
   }
 
   test("CATALOG CREATE USER foo SET PASSWORD 'password' SET STATUS SUSPENDed") {
-    yields(ast.CreateUser(literal("foo"), pw("password"), requirePasswordChange = true, suspended = Some(true), ast.IfExistsThrowError))
+    yields(ast.CreateUser(literalFoo, password, requirePasswordChange = true, suspended = Some(true), ast.IfExistsThrowError))
   }
 
   test("CREATE USER foo SET PASSWORD 'password' SET STATUS ACtiVE") {
-    yields(ast.CreateUser(literal("foo"), pw("password"), requirePasswordChange = true, suspended = Some(false), ast.IfExistsThrowError))
+    yields(ast.CreateUser(literalFoo, password, requirePasswordChange = true, suspended = Some(false), ast.IfExistsThrowError))
   }
 
   test("CREATE USER foo SET PASSWORD 'password' SET PASSWORD CHANGE NOT REQUIRED SET   STATuS SUSPENDED") {
-    yields(ast.CreateUser(literal("foo"), pw("password"), requirePasswordChange = false, suspended = Some(true), ast.IfExistsThrowError))
+    yields(ast.CreateUser(literalFoo, password, requirePasswordChange = false, suspended = Some(true), ast.IfExistsThrowError))
   }
 
   test("CREATE USER foo SET PASSWORD $password CHANGE REQUIRED SET STATUS SUSPENDED") {
-    yields(ast.CreateUser(literal("foo"), pwParam("password"), requirePasswordChange = true, suspended = Some(true), ast.IfExistsThrowError))
+    yields(ast.CreateUser(literalFoo, paramPassword, requirePasswordChange = true, suspended = Some(true), ast.IfExistsThrowError))
   }
 
   test("CREATE USER `` SET PASSwORD 'password'") {
-    yields(ast.CreateUser(literal(""), pw("password"), requirePasswordChange = true, suspended = None, ast.IfExistsThrowError))
+    yields(ast.CreateUser(literalEmpty, password, requirePasswordChange = true, suspended = None, ast.IfExistsThrowError))
   }
 
   test("CREATE USER `f:oo` SET PASSWORD 'password'") {
-    yields(ast.CreateUser(literal("f:oo"), pw("password"), requirePasswordChange = true, suspended = None, ast.IfExistsThrowError))
+    yields(ast.CreateUser(literalFColonOo, password, requirePasswordChange = true, suspended = None, ast.IfExistsThrowError))
   }
 
   test("CATALOG CREATE USER foo IF NOT EXISTS SET PASSWORD 'password'") {
-    yields(ast.CreateUser(literal("foo"), pw("password"), requirePasswordChange = true, suspended = None, ast.IfExistsDoNothing))
+    yields(ast.CreateUser(literalFoo, password, requirePasswordChange = true, suspended = None, ast.IfExistsDoNothing))
   }
 
   test("CREATE uSER foo IF NOT EXISTS SET PASSWORD $password") {
-    yields(ast.CreateUser(literal("foo"), pwParam("password"), requirePasswordChange = true, suspended = None, ast.IfExistsDoNothing))
+    yields(ast.CreateUser(literalFoo, paramPassword, requirePasswordChange = true, suspended = None, ast.IfExistsDoNothing))
   }
 
   test("CATALOG CREATE USER foo IF NOT EXISTS SET PASSWORD $password CHANGE REQUIRED") {
-    yields(ast.CreateUser(literal("foo"), pwParam("password"), requirePasswordChange = true, suspended = None, ast.IfExistsDoNothing))
+    yields(ast.CreateUser(literalFoo, paramPassword, requirePasswordChange = true, suspended = None, ast.IfExistsDoNothing))
   }
 
   test("CREATE USER foo IF NOT EXISTS SET PASSWORD $password SET STATUS SUSPENDED") {
-    yields(ast.CreateUser(literal("foo"), pwParam("password"), requirePasswordChange = true, suspended = Some(true), ast.IfExistsDoNothing))
+    yields(ast.CreateUser(literalFoo, paramPassword, requirePasswordChange = true, suspended = Some(true), ast.IfExistsDoNothing))
   }
 
   test("CREATE USER foo IF NOT EXISTS SET PASSWORD $password CHANGE REQUIRED SET STATUS SUSPENDED") {
-    yields(ast.CreateUser(literal("foo"), pwParam("password"), requirePasswordChange = true, suspended = Some(true), ast.IfExistsDoNothing))
+    yields(ast.CreateUser(literalFoo, paramPassword, requirePasswordChange = true, suspended = Some(true), ast.IfExistsDoNothing))
   }
 
   test("CATALOG CREATE OR REPLACE USER foo SET PASSWORD 'password'") {
-    yields(ast.CreateUser(literal("foo"), pw("password"), requirePasswordChange = true, suspended = None, ast.IfExistsReplace))
+    yields(ast.CreateUser(literalFoo, password, requirePasswordChange = true, suspended = None, ast.IfExistsReplace))
   }
 
   test("CREATE OR REPLACE uSER foo SET PASSWORD $password") {
-    yields(ast.CreateUser(literal("foo"), pwParam("password"), requirePasswordChange = true, suspended = None, ast.IfExistsReplace))
+    yields(ast.CreateUser(literalFoo, paramPassword, requirePasswordChange = true, suspended = None, ast.IfExistsReplace))
   }
 
   test("CATALOG CREATE OR REPLACE USER foo SET PASSWORD $password CHANGE REQUIRED") {
-    yields(ast.CreateUser(literal("foo"), pwParam("password"), requirePasswordChange = true, suspended = None, ast.IfExistsReplace))
+    yields(ast.CreateUser(literalFoo, paramPassword, requirePasswordChange = true, suspended = None, ast.IfExistsReplace))
   }
 
   test("CREATE OR REPLACE USER foo SET PASSWORD $password SET STATUS SUSPENDED") {
-    yields(ast.CreateUser(literal("foo"), pwParam("password"), requirePasswordChange = true, suspended = Some(true), ast.IfExistsReplace))
+    yields(ast.CreateUser(literalFoo, paramPassword, requirePasswordChange = true, suspended = Some(true), ast.IfExistsReplace))
   }
 
   test("CREATE OR REPLACE USER foo SET PASSWORD $password CHANGE REQUIRED SET STATUS SUSPENDED") {
-    yields(ast.CreateUser(literal("foo"), pwParam("password"), requirePasswordChange = true, suspended = Some(true), ast.IfExistsReplace))
+    yields(ast.CreateUser(literalFoo, paramPassword, requirePasswordChange = true, suspended = Some(true), ast.IfExistsReplace))
   }
 
   test("CREATE OR REPLACE USER foo IF NOT EXISTS SET PASSWORD 'password'") {
-    yields(ast.CreateUser(literal("foo"), pw("password"), requirePasswordChange = true, suspended = None, ast.IfExistsInvalidSyntax))
+    yields(ast.CreateUser(literalFoo, password, requirePasswordChange = true, suspended = None, ast.IfExistsInvalidSyntax))
   }
 
   test("CREATE USER foo") {
@@ -285,7 +296,6 @@ class UserAdministrationCommandParserTest extends AdministrationCommandParserTes
   test("CREATE USER foo SET PASSWORD CHANGE REQUIRED SET STATUS ACTIVE") {
     failsToParse
   }
-
 
   test( "CREATE USER foo IF EXISTS SET PASSWORD 'bar'") {
     failsToParse
@@ -353,31 +363,31 @@ class UserAdministrationCommandParserTest extends AdministrationCommandParserTes
   //  Dropping user
 
   test("DROP USER foo") {
-    yields(ast.DropUser(literal("foo"), ifExists = false))
+    yields(ast.DropUser(literalFoo, ifExists = false))
   }
 
   test("DROP USER $foo") {
-    yields(ast.DropUser(param("foo"), ifExists = false))
+    yields(ast.DropUser(paramFoo, ifExists = false))
   }
 
   test("DROP USER ``") {
-    yields(ast.DropUser(literal(""), ifExists = false))
+    yields(ast.DropUser(literalEmpty, ifExists = false))
   }
 
   test("DROP USER `f:oo`") {
-    yields(ast.DropUser(literal("f:oo"), ifExists = false))
+    yields(ast.DropUser(literalFColonOo, ifExists = false))
   }
 
   test("DROP USER foo IF EXISTS") {
-    yields(ast.DropUser(literal("foo"), ifExists = true))
+    yields(ast.DropUser(literalFoo, ifExists = true))
   }
 
   test("DROP USER `` IF EXISTS") {
-    yields(ast.DropUser(literal(""), ifExists = true))
+    yields(ast.DropUser(literalEmpty, ifExists = true))
   }
 
   test("DROP USER `f:oo` IF EXISTS") {
-    yields(ast.DropUser(literal("f:oo"), ifExists = true))
+    yields(ast.DropUser(literalFColonOo, ifExists = true))
   }
 
   test("DROP USER ") {
@@ -395,63 +405,63 @@ class UserAdministrationCommandParserTest extends AdministrationCommandParserTes
   //  Altering user
 
   test("CATALOG ALTER USER foo SET PASSWORD 'password'") {
-    yields(ast.AlterUser(literal("foo"), Some(pw("password")), None, None))
+    yields(ast.AlterUser(literalFoo, Some(password), None, None))
   }
 
   test("CATALOG ALTER USER $foo SET PASSWORD 'password'") {
-    yields(ast.AlterUser(param("foo"), Some(pw("password")), None, None))
+    yields(ast.AlterUser(paramFoo, Some(password), None, None))
   }
 
   test("ALTER USER `` SET PASSWORD 'password'") {
-    yields(ast.AlterUser(literal(""), Some(pw("password")), None, None))
+    yields(ast.AlterUser(literalEmpty, Some(password), None, None))
   }
 
   test("ALTER USER `f:oo` SET PASSWORD 'password'") {
-    yields(ast.AlterUser(literal("f:oo"), Some(pw("password")), None, None))
+    yields(ast.AlterUser(literalFColonOo, Some(password), None, None))
   }
 
   test("ALTER USER foo SET PASSWORD ''") {
-    yields(ast.AlterUser(literal("foo"), Some(pw("")), None, None))
+    yields(ast.AlterUser(literalFoo, Some(passwordEmpty), None, None))
   }
 
   test("ALTER USER foo SET PASSWORD $password") {
-    yields(ast.AlterUser(literal("foo"), Some(pwParam("password")), None, None))
+    yields(ast.AlterUser(literalFoo, Some(paramPassword), None, None))
   }
 
   test("CATALOG ALTER USER foo SET PASSWORD CHANGE REQUIRED") {
-    yields(ast.AlterUser(literal("foo"), None, requirePasswordChange = Some(true), None))
+    yields(ast.AlterUser(literalFoo, None, requirePasswordChange = Some(true), None))
   }
 
   test("CATALOG ALTER USER foo SET PASSWORD CHANGE NOT REQUIRED") {
-    yields(ast.AlterUser(literal("foo"), None, requirePasswordChange = Some(false), None))
+    yields(ast.AlterUser(literalFoo, None, requirePasswordChange = Some(false), None))
   }
 
   test("ALTER USER foo SET STATUS SUSPENDED") {
-    yields(ast.AlterUser(literal("foo"), None, None, suspended = Some(true)))
+    yields(ast.AlterUser(literalFoo, None, None, suspended = Some(true)))
   }
 
   test("ALTER USER foo SET STATUS ACTIVE") {
-    yields(ast.AlterUser(literal("foo"), None, None, suspended = Some(false)))
+    yields(ast.AlterUser(literalFoo, None, None, suspended = Some(false)))
   }
 
   test("CATALOG ALTER USER foo SET PASSWORD 'password' CHANGE REQUIRED") {
-    yields(ast.AlterUser(literal("foo"), Some(pw("password")), requirePasswordChange = Some(true), None))
+    yields(ast.AlterUser(literalFoo, Some(password), requirePasswordChange = Some(true), None))
   }
 
   test("ALTER USER foo SET PASSWORD $password SET PASSWORD CHANGE NOT REQUIRED") {
-    yields(ast.AlterUser(literal("foo"), Some(pwParam("password")), requirePasswordChange = Some(false), None))
+    yields(ast.AlterUser(literalFoo, Some(paramPassword), requirePasswordChange = Some(false), None))
   }
 
   test("CATALOG ALTER USER foo SET PASSWORD 'password' SET STATUS ACTIVE") {
-    yields(ast.AlterUser(literal("foo"), Some(pw("password")), None, suspended = Some(false)))
+    yields(ast.AlterUser(literalFoo, Some(password), None, suspended = Some(false)))
   }
 
   test("CATALOG ALTER USER foo SET PASSWORD CHANGE NOT REQUIRED SET STATUS ACTIVE") {
-    yields(ast.AlterUser(literal("foo"), None, requirePasswordChange = Some(false), suspended = Some(false)))
+    yields(ast.AlterUser(literalFoo, None, requirePasswordChange = Some(false), suspended = Some(false)))
   }
 
   test("ALTER USER foo SET PASSWORD $password SET PASSWORD CHANGE NOT REQUIRED SET STATUS SUSPENDED") {
-    yields(ast.AlterUser(literal("foo"), Some(pwParam("password")), requirePasswordChange = Some(false), suspended = Some(true)))
+    yields(ast.AlterUser(literalFoo, Some(paramPassword), requirePasswordChange = Some(false), suspended = Some(true)))
   }
 
   test("ALTER USER foo") {
@@ -508,39 +518,39 @@ class UserAdministrationCommandParserTest extends AdministrationCommandParserTes
   // Changing own password
 
   test("ALTER CURRENT USER SET PASSWORD FROM 'current' TO 'new'") {
-    yields(ast.SetOwnPassword(pw("new"), pw("current")))
+    yields(ast.SetOwnPassword(passwordNew, passwordCurrent))
   }
 
   test("alter current user set password from 'current' to ''") {
-    yields(ast.SetOwnPassword(pw(""), pw("current")))
+    yields(ast.SetOwnPassword(passwordEmpty, passwordCurrent))
   }
 
   test("alter current user set password from '' to 'new'") {
-    yields(ast.SetOwnPassword(pw("new"), pw("")))
+    yields(ast.SetOwnPassword(passwordNew, passwordEmpty))
   }
 
   test("ALTER CURRENT USER SET PASSWORD FROM 'current' TO 'passWORD123%!'") {
-    yields(ast.SetOwnPassword(pw("passWORD123%!"), pw("current")))
+    yields(ast.SetOwnPassword(pw("passWORD123%!"), passwordCurrent))
   }
 
   test("ALTER CURRENT USER SET PASSWORD FROM 'current' TO $newPassword") {
-    yields(ast.SetOwnPassword(pwParam("newPassword"), pw("current")))
+    yields(ast.SetOwnPassword(paramPasswordNew, passwordCurrent))
   }
 
   test("ALTER CURRENT USER SET PASSWORD FROM $currentPassword TO 'new'") {
-    yields(ast.SetOwnPassword(pw("new"), pwParam("currentPassword")))
+    yields(ast.SetOwnPassword(passwordNew, paramPasswordCurrent))
   }
 
   test("alter current user set password from $currentPassword to ''") {
-    yields(ast.SetOwnPassword(pw(""), pwParam("currentPassword")))
+    yields(ast.SetOwnPassword(passwordEmpty, paramPasswordCurrent))
   }
 
   test("ALTER CURRENT USER SET PASSWORD FROM $currentPassword TO 'passWORD123%!'") {
-    yields(ast.SetOwnPassword(pw("passWORD123%!"), pwParam("currentPassword")))
+    yields(ast.SetOwnPassword(pw("passWORD123%!"), paramPasswordCurrent))
   }
 
   test("ALTER CURRENT USER SET PASSWORD FROM $currentPassword TO $newPassword") {
-    yields(ast.SetOwnPassword(pwParam("newPassword"), pwParam("currentPassword")))
+    yields(ast.SetOwnPassword(paramPasswordNew, paramPasswordCurrent))
   }
 
   test("ALTER CURRENT USER SET PASSWORD FROM 'current' TO null") {
