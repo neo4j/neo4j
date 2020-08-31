@@ -19,17 +19,26 @@ package org.neo4j.cypher.internal.ast.semantics.functions
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTList
 import org.neo4j.cypher.internal.util.symbols.CTMap
+import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTPoint
+import org.neo4j.cypher.internal.util.symbols.CTRelationship
 import org.neo4j.cypher.internal.util.symbols.CTString
 
 class PointTest extends FunctionTestBase("point")  {
 
-  test("should accept correct types") {
+  test("should accept map") {
     testValidTypes(CTMap)(CTPoint)
   }
 
+  test("should accept node") {
+    testValidTypes(CTNode)(CTPoint)
+  }
+
+  test("should accept relationship") {
+    testValidTypes(CTRelationship)(CTPoint)
+  }
+
   test("should fail type check for incompatible arguments") {
-    // TODO: Fix error message which seems to assume that Node and Relationships are acceptable maps
     testInvalidApplication(CTList(CTAny))(
       "Type mismatch: expected Map, Node or Relationship but was List<Any>"
     )
