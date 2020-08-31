@@ -75,6 +75,8 @@ import org.parboiled.scala.Rule3
 import org.parboiled.scala.Rule4
 import org.parboiled.scala.group
 
+//noinspection ConvertibleToMethodValue
+// Can't convert since that breaks parsing
 trait Statement extends Parser
   with GraphSelection
   with Query
@@ -118,7 +120,7 @@ trait Statement extends Parser
   }
 
   def ShowUsers: Rule1[ShowUsers] = rule("CATALOG SHOW USERS") {
-    keyword("SHOW USERS") ~~ ShowCommandClauses ~~>> (ast.ShowUsers(_,_)_)
+    keyword("SHOW USERS") ~~ ShowCommandClauses ~~>> (ast.ShowUsers(_,_))
   }
 
   def CreateUser: Rule1[CreateUser] = rule("CATALOG CREATE USER") {
@@ -208,11 +210,13 @@ trait Statement extends Parser
     keyword("") ~>>> (_ => _ => None) // no status change
   }
 
+  //noinspection MutatorLikeMethodIsParameterless
   def setStatus: Rule1[Boolean] = {
     keyword("SET STATUS SUSPENDED") ~>>> (_ => _ => true) |
     keyword("SET STATUS ACTIVE") ~>>> (_ => _ => false)
   }
 
+  //noinspection MutatorLikeMethodIsParameterless
   def setRequirePasswordChange: Rule1[Boolean] = {
     keyword("SET PASSWORD CHANGE NOT REQUIRED") ~>>> (_ => _ => false) |
     keyword("SET PASSWORD CHANGE REQUIRED") ~>>> (_ => _ => true)
@@ -533,8 +537,8 @@ trait Statement extends Parser
 
   private def ScopeForShowDatabase: Rule1[DatabaseScope] = rule("show database scope")(
     group(keyword("DATABASE") ~~ SymbolicDatabaseNameOrStringParameter) ~~>> (ast.NamedDatabaseScope(_)) |
-    keyword("DATABASES") ~~~> (ast.AllDatabasesScope()) |
-    keyword("DEFAULT DATABASE") ~~~> (ast.DefaultDatabaseScope())
+    keyword("DATABASES") ~~~> ast.AllDatabasesScope() |
+    keyword("DEFAULT DATABASE") ~~~> ast.DefaultDatabaseScope()
   )
 
   def CreateDatabase: Rule1[CreateDatabase] = rule("CATALOG CREATE DATABASE") {
@@ -590,11 +594,13 @@ trait Statement extends Parser
 
   def SymbolicNameOrStringParameterList: Rule1[List[Either[String, expressions.Parameter]]] =
     rule("a list of symbolic names or string parameters") {
+      //noinspection LanguageFeature
       (oneOrMore(WS ~~ SymbolicNameOrStringParameter ~~ WS, separator = ",") memoMismatches).suppressSubnodes
     }
 
   def SymbolicDatabaseNameOrStringParameterList: Rule1[List[Either[String, expressions.Parameter]]] =
     rule("a list of symbolic database names or string parameters") {
+      //noinspection LanguageFeature
       (oneOrMore(WS ~~ SymbolicDatabaseNameOrStringParameter ~~ WS, separator = ",") memoMismatches).suppressSubnodes
     }
 }
