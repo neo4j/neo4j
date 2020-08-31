@@ -47,6 +47,7 @@ import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StoreVersion;
 
 import static java.lang.String.format;
+import static java.util.Comparator.comparing;
 import static org.neo4j.kernel.impl.scheduler.JobSchedulerFactory.createInitialisedScheduler;
 import static org.neo4j.kernel.recovery.Recovery.isRecoveryRequired;
 import static picocli.CommandLine.Command;
@@ -88,6 +89,7 @@ public class StoreInfoCommand extends AbstractCommand
                                 Collectors.joining( ",", "[", "]" ) :
                                 Collectors.joining( System.lineSeparator() + System.lineSeparator() );
                 var result = Arrays.stream( fs.listFiles( path ) )
+                        .sorted( comparing( Path::getFileName ) )
                         .filter( dbPath -> Validators.isExistingDatabase( fs, DatabaseLayout.ofFlat( dbPath ) ) )
                         .map( dbPath -> printInfo( fs, dbPath, pageCache, storageEngineFactory, config, structured, true ) )
                         .collect( collector );

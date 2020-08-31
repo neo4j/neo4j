@@ -199,7 +199,7 @@ class StoreInfoCommandTest
 
         var expectedFoo = expectedStructuredResult( "foo", true, "N/A", "N/A", "N/A" );
 
-        var expected = String.format( "[%s,%s]", expectedFoo, expectedBar );
+        var expected = String.format( "[%s,%s]", expectedBar, expectedFoo );
 
         // when
         try ( Locker locker = new DatabaseLocker( fileSystem, fooDbLayout ) )
@@ -231,10 +231,10 @@ class StoreInfoCommandTest
 
         var expectedFoo = expectedPrettyResult( "foo", false, currentFormat.storeVersion(), currentFormat.introductionVersion(), "N/A" );
 
-        var expected = expectedFoo +
+        var expected = expectedBar +
                        System.lineSeparator() +
                        System.lineSeparator() +
-                       expectedBar;
+                       expectedFoo;
 
         // when
         CommandLine.populateCommand( command, args( databasesRoot, true, false ) );
