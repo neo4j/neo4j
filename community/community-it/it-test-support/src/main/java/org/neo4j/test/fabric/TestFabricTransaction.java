@@ -21,6 +21,7 @@ package org.neo4j.test.fabric;
 
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 import org.neo4j.bolt.dbapi.BoltQueryExecution;
 import org.neo4j.bolt.dbapi.BoltTransaction;
@@ -110,6 +111,12 @@ public class TestFabricTransaction implements InternalTransaction
     public void terminate( Status reason )
     {
         fabricTransaction.markForTermination( reason );
+    }
+
+    @Override
+    public UUID databaseId()
+    {
+        return this.kernelInternalTransaction.databaseId();
     }
 
     @Override

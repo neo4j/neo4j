@@ -39,7 +39,7 @@ public class TestFabricValueMapper extends DefaultValueMapper
     {
         if ( value instanceof NodeEntityWrappingNodeValue )
         { // this is the back door through which "virtual nodes" slip
-            return ((NodeEntityWrappingNodeValue) value).nodeEntity();
+            return ((NodeEntityWrappingNodeValue) value).getEntity();
         }
         throw new UnsupportedOperationException( "can't map VirtualNodeValue" );
     }
@@ -49,7 +49,7 @@ public class TestFabricValueMapper extends DefaultValueMapper
     {
         if ( value instanceof RelationshipEntityWrappingValue )
         { // this is the back door through which "virtual relationships" slip
-            return ((RelationshipEntityWrappingValue) value).relationshipEntity();
+            return ((RelationshipEntityWrappingValue) value).getEntity();
         }
         throw new UnsupportedOperationException( "can't map VirtualRelationshipValue" );
     }

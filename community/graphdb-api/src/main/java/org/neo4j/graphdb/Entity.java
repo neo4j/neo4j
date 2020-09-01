@@ -184,4 +184,10 @@ public interface Entity
      * @return all properties on this property container
      */
     Map<String, Object> getAllProperties();
+
+    /**
+     * Returns the transaction of the node.
+     * @return transaction.
+     */
+    Transaction getTransaction();
 }

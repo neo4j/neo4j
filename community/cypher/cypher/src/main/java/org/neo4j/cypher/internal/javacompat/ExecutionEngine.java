@@ -33,9 +33,13 @@ import org.neo4j.cypher.internal.FullyParsedQuery;
 import org.neo4j.cypher.internal.runtime.InputDataStream;
 import org.neo4j.cypher.internal.tracing.CompilationTracer;
 import org.neo4j.cypher.internal.tracing.TimingCompilationTracer;
+import org.neo4j.exceptions.CypherExecutionException;
 import org.neo4j.exceptions.Neo4jException;
+import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.Result;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.GraphDatabaseQueryService;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.query.FunctionInformation;
 import org.neo4j.kernel.impl.query.QueryExecution;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
@@ -43,6 +47,7 @@ import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.kernel.impl.query.QueryExecutionMonitor;
 import org.neo4j.kernel.impl.query.QuerySubscriber;
 import org.neo4j.kernel.impl.query.TransactionalContext;
+import org.neo4j.kernel.impl.util.WrappingEntity;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.values.virtual.MapValue;
@@ -119,6 +124,7 @@ public class ExecutionEngine implements QueryExecutionEngine
     {
         try
         {
+            checkParams( context, parameters );
             return cypherExecutionEngine.execute( query, parameters, context, false, prePopulate, subscriber );
         }
         catch ( Neo4jException e )
@@ -132,12 +138,39 @@ public class ExecutionEngine implements QueryExecutionEngine
     {
         try
         {
+            checkParams( context, parameters );
             return cypherExecutionEngine.execute( query, parameters, context, prePopulate, input, queryMonitor, subscriber );
         }
         catch ( Neo4jException e )
         {
             throw new QueryExecutionKernelException( e );
         }
+    }
+
+    private void checkParams( TransactionalContext context, MapValue parameters ) throws QueryExecutionKernelException
+    {
+        parameters.foreach(
+                ( s, n ) ->
+                {
+                    if ( n instanceof WrappingEntity )
+                    {
+                        Transaction t = ((WrappingEntity) n).getEntity().getTransaction();
+                        if(t instanceof InternalTransaction)
+                        {
+                            InternalTransaction entityInternalTransaction = (InternalTransaction) t;
+                            entityInternalTransaction.checkInTransaction();
+                            if ( entityInternalTransaction.databaseId() != context.databaseId().databaseId().uuid() )
+                            {
+                                throw new QueryExecutionKernelException(
+                                        new CypherExecutionException( "Not allowed to have parameters from another database." ) );
+                            }
+                            if ( !entityInternalTransaction.isOpen() )
+                            {
+                                throw new NotInTransactionException( "The transaction for at least one of the parameters is closed." );
+                            }
+                        }
+                    }
+                } );
     }
 
     @Override
