@@ -20,7 +20,7 @@ import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.AllGraphAction
 import org.neo4j.cypher.internal.parser.AdministrationCommandParserTestBase
 
-class GraphPrivilegeAdministrationCommandParserTest extends AdministrationCommandParserTestBase {
+class AllGraphPrivilegeAdministrationCommandParserTest extends AdministrationCommandParserTestBase {
 
   Seq(
     ("GRANT", "TO", grantGraphPrivilege: noResourcePrivilegeFunc),

@@ -108,7 +108,7 @@ class PropertyPrivilegeAdministrationCommandParserTest extends AdministrationCom
         yields(func(ast.GraphPrivilege(SetPropertyAction)(_), ast.PropertiesResource(propSeq)(_), List(graphScopeFoo), List(ast.ElementsAllQualifier()(_)), Seq(paramRole)))
       }
 
-      // PROPERTYS instead of LABEL
+      // PROPERTYS/PROPERTIES instead of PROPERTY
 
       test(s"$verb SET PROPERTYS { prop } ON GRAPH * $preposition role") {
         failsToParse
