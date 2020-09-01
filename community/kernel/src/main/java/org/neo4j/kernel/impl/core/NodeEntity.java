@@ -38,6 +38,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.internal.kernel.api.LabelSet;
 import org.neo4j.internal.kernel.api.NodeCursor;
@@ -650,6 +651,12 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship>
         {
             throw new IllegalStateException( "Label retrieved through kernel API should exist.", e );
         }
+    }
+
+    @Override
+    public Transaction getTransaction()
+    {
+        return internalTransaction;
     }
 
     @Override

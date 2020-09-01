@@ -37,6 +37,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.SchemaRead;
@@ -271,6 +272,9 @@ public class SchemaProcedure
         }
 
         @Override
+        public Transaction getTransaction() { return null; }
+
+        @Override
         public void delete()
         {
 
@@ -376,6 +380,12 @@ public class SchemaProcedure
         public Iterable<Label> getLabels()
         {
             return Collections.singletonList( label );
+        }
+
+        @Override
+        public Transaction getTransaction()
+        {
+            return null;
         }
 
         @Override

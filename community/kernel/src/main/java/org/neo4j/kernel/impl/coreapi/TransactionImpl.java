@@ -23,6 +23,8 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
+import java.util.function.Consumer;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.exceptions.KernelException;
@@ -475,6 +477,19 @@ public class TransactionImpl implements InternalTransaction
     public final void terminate()
     {
         transaction.markForTermination( Terminated );
+    }
+
+    @Override
+    public UUID databaseId()
+    {
+        if ( this.transaction != null )
+        {
+            return this.transaction.getDatabaseId();
+        }
+        else
+        {
+            return null;
+        }
     }
 
     @Override

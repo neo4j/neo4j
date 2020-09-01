@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.util;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.kernel.impl.core.RelationshipEntity;
 import org.neo4j.values.AnyValueWriter;
 import org.neo4j.values.storable.TextValue;
@@ -32,7 +33,7 @@ import org.neo4j.values.virtual.RelationshipValue;
 import org.neo4j.values.virtual.VirtualNodeValue;
 import org.neo4j.values.virtual.VirtualValues;
 
-public class RelationshipEntityWrappingValue extends RelationshipValue
+public class RelationshipEntityWrappingValue extends RelationshipValue implements WrappingEntity<Relationship>
 {
     private final Relationship relationship;
     private volatile TextValue type;
@@ -182,7 +183,7 @@ public class RelationshipEntityWrappingValue extends RelationshipValue
     {
         if ( node instanceof NodeEntityWrappingNodeValue )
         {
-            Node proxy = ((NodeEntityWrappingNodeValue) node).nodeEntity();
+            Node proxy = ((NodeEntityWrappingNodeValue) node).getEntity();
             return ValueUtils.fromNodeEntity( relationship.getOtherNode( proxy ) );
         }
         else
@@ -227,6 +228,31 @@ public class RelationshipEntityWrappingValue extends RelationshipValue
                 if ( m == null )
                 {
                     m = properties = ValueUtils.asMapValue( relationship.getAllProperties() );
+                }
+            }
+        }
+        return m;
+    }
+
+    @Override
+    public Relationship getEntity()
+    {
+        return relationship;
+    }
+
+    public MapValue properties( PropertyCursor propertyCursor )
+    {
+        MapValue m = properties;
+        if ( m == null )
+        {
+            synchronized ( this )
+            {
+                m = properties;
+                if ( m == null )
+                {
+                    var relProperties = relationship instanceof RelationshipEntity ?
+                                        ((RelationshipEntity) relationship).getAllProperties( propertyCursor ) : relationship.getAllProperties();
+                    m = properties = ValueUtils.asMapValue( relProperties );
                 }
             }
         }

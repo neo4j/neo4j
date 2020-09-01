@@ -21,6 +21,7 @@ package org.neo4j.procedure.impl;
 
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 import org.neo4j.function.ThrowingFunction;
 import org.neo4j.graphdb.Entity;
@@ -291,6 +292,9 @@ public class ProcedureTransactionProvider implements ThrowingFunction<Context,Tr
         {
             return transaction.isOpen();
         }
+
+        @Override
+        public UUID databaseId() { return transaction.databaseId(); }
 
         @Override
         public void terminate()

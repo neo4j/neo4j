@@ -21,6 +21,7 @@ package org.neo4j.procedure.builtin;
 
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.ExecutionStatistics;
@@ -329,5 +330,11 @@ public class StubKernelTransaction implements KernelTransaction
     public PageCursorTracer pageCursorTracer()
     {
         return null;
+    }
+
+    @Override
+    public UUID getDatabaseId()
+    {
+        throw new UnsupportedOperationException( "not implemented" );
     }
 }

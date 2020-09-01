@@ -24,6 +24,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -1138,6 +1139,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     {
         return namedDatabaseId.name();
     }
+
+    public UUID getDatabaseId() { return namedDatabaseId.databaseId().uuid(); }
 
     public static class Statistics
     {

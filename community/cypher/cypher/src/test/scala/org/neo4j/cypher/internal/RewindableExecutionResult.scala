@@ -21,10 +21,23 @@ package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.internal.plandescription.InternalPlanDescription
 import org.neo4j.cypher.internal.result.InternalExecutionResult
-import org.neo4j.cypher.internal.runtime._
+import org.neo4j.cypher.internal.runtime.ExecutionMode
+import org.neo4j.cypher.internal.runtime.NormalMode
+import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.cypher.internal.runtime.QueryStatistics
+import org.neo4j.cypher.internal.runtime.QueryTransactionalContext
+import org.neo4j.cypher.internal.runtime.RuntimeScalaValueConverter
+import org.neo4j.cypher.internal.runtime.isGraphKernelResultValue
 import org.neo4j.cypher.result.RuntimeResult
-import org.neo4j.graphdb.{Notification, Result}
-import org.neo4j.kernel.impl.query.{QueryExecution, QuerySubscription, RecordingQuerySubscriber}
+import org.neo4j.exceptions.CypherExecutionException
+import org.neo4j.graphdb.Entity
+import org.neo4j.graphdb.Notification
+import org.neo4j.graphdb.Result
+import org.neo4j.kernel.impl.coreapi.InternalTransaction
+import org.neo4j.kernel.impl.query.QueryExecutionKernelException
+import org.neo4j.kernel.impl.query.QueryExecution
+import org.neo4j.kernel.impl.query.QuerySubscription
+import org.neo4j.kernel.impl.query.RecordingQuerySubscriber
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -132,7 +145,11 @@ object RewindableExecutionResult {
       val result = new ArrayBuffer[Map[String, AnyRef]]()
       subscriber.getOrThrow().asScala.foreach( record => {
         val row = columns.zipWithIndex.map {
-          case (value, index) => value -> scalaValues.asDeepScalaValue(queryContext.asObject(record(index))).asInstanceOf[AnyRef]
+          case (value, index) => {
+            val atIndex = scalaValues.asDeepScalaValue(queryContext.asObject(record(index))).asInstanceOf[AnyRef]
+            checkValidInput(queryContext.transactionalContext, atIndex)
+            value -> atIndex
+          }
         }
         if (row.nonEmpty) result.append(row.toMap)
       })
@@ -143,5 +160,21 @@ object RewindableExecutionResult {
                                                   subscriber.queryStatistics().asInstanceOf[QueryStatistics],
                                                   notifications)
     } finally subscription.cancel()
+  }
+
+  private def checkValidInput(context: QueryTransactionalContext, input: AnyRef): Boolean = input match {
+    case entity: Entity =>
+      entity.getTransaction match {
+        case transaction: InternalTransaction if !transaction.isOpen => throw new QueryExecutionKernelException(new CypherExecutionException("The transaction of the result needs to be open."))
+        case transaction: InternalTransaction =>
+          val databaseId = transaction.databaseId()
+          if (databaseId != null && databaseId != context.databaseId.databaseId().uuid()) {
+            throw new QueryExecutionKernelException(new CypherExecutionException("Not allowed to use results from another database."))
+          } else {
+            true
+          }
+        case _ => true
+      }
+    case _ => true
   }
 }

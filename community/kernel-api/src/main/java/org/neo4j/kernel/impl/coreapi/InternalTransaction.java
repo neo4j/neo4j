@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.coreapi;
 
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
@@ -54,4 +55,6 @@ public interface InternalTransaction extends Transaction, TransactionalEntityFac
     void checkInTransaction();
 
     boolean isOpen();
+
+    UUID databaseId();
 }

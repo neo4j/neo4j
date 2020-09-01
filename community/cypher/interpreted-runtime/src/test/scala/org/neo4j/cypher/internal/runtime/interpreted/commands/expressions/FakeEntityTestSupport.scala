@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
-import java.lang.Iterable
 import java.util
 
 import org.neo4j.graphdb._
@@ -63,6 +62,9 @@ trait FakeEntityTestSupport {
     def getAllProperties: util.Map[String, AnyRef] = null
 
     override def toString: String = "Rel"
+
+    override def getTransaction(): Transaction = ???
+
   }
 
   class FakeNode extends Node {
@@ -136,6 +138,8 @@ trait FakeEntityTestSupport {
     def getDegree(relType: RelationshipType): Int = ???
 
     def getDegree(relType: RelationshipType, direction: Direction): Int = ???
+
+    override def getTransaction(): Transaction = ???
   }
 
 }

@@ -33,7 +33,7 @@ import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.NodeValue;
 import org.neo4j.values.virtual.VirtualValues;
 
-public class NodeEntityWrappingNodeValue extends NodeValue
+public class NodeEntityWrappingNodeValue extends NodeValue implements WrappingEntity<Node>
 {
     private final Node node;
     private volatile TextArray labels;
@@ -43,11 +43,6 @@ public class NodeEntityWrappingNodeValue extends NodeValue
     {
         super( node.getId() );
         this.node = node;
-    }
-
-    public Node nodeEntity()
-    {
-        return node;
     }
 
     @Override
@@ -152,5 +147,11 @@ public class NodeEntityWrappingNodeValue extends NodeValue
             size += properties.estimatedHeapUsage();
         }
         return size;
+    }
+
+    @Override
+    public Node getEntity()
+    {
+        return node;
     }
 }
