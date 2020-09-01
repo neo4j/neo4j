@@ -23,11 +23,13 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.messaging.RequestMessageDecoder;
 import org.neo4j.bolt.packstream.Neo4jPack;
 import org.neo4j.bolt.runtime.BoltResponseHandler;
 import org.neo4j.bolt.v3.messaging.request.HelloMessage;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.security.AuthToken;
 
 public class HelloMessageDecoder implements RequestMessageDecoder
@@ -55,6 +57,7 @@ public class HelloMessageDecoder implements RequestMessageDecoder
     public RequestMessage decode( Neo4jPack.Unpacker unpacker ) throws IOException
     {
         Map<String,Object> meta = readMetaDataMap( unpacker );
+        assertUserAgentPresent( meta );
         return new HelloMessage( meta );
     }
 
@@ -71,5 +74,13 @@ public class HelloMessageDecoder implements RequestMessageDecoder
             metaDataMap.put( key, convertedValue );
         } );
         return metaDataMap;
+    }
+
+    protected static void assertUserAgentPresent( Map<String,Object> metaData ) throws BoltIOException
+    {
+        if ( !metaData.containsKey( "user_agent" ) )
+        {
+            throw new BoltIOException( Status.Request.Invalid, "Expected \"user_agent\" in metadata" );
+        }
     }
 }

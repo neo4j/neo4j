@@ -45,7 +45,7 @@ public class HelloMessageDecoder extends org.neo4j.bolt.v3.messaging.decoder.Hel
     public RequestMessage decode( Neo4jPack.Unpacker unpacker ) throws IOException
     {
         Map<String,Object> meta = readMetaDataMap( unpacker );
-
+        assertUserAgentPresent( meta );
         RoutingContext routingContext = parseRoutingContext( meta );
         return new HelloMessage( meta, routingContext, extractAuthToken( meta ) );
     }

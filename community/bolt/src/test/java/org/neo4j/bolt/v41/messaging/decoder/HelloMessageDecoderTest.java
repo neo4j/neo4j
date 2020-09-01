@@ -199,6 +199,24 @@ class HelloMessageDecoderTest extends AuthTokenDecoderTest
     }
 
     @Test
+    protected void testShouldErrorForMissingUserAgent() throws Exception
+    {
+        Neo4jPack neo4jPack = newNeo4jPack();
+        Map<String,Object> authToken = new HashMap<>();
+        org.neo4j.bolt.v3.messaging.request.HelloMessage originalMessage = new org.neo4j.bolt.v3.messaging.request.HelloMessage( authToken );
+
+        PackedInputArray input = new PackedInputArray( encode( neo4jPack, originalMessage ) );
+        Neo4jPack.Unpacker unpacker = neo4jPack.newUnpacker( input );
+
+        // these two steps are executed before decoding in order to select a correct decoder
+        unpacker.unpackStructHeader();
+        unpacker.unpackStructSignature();
+
+        BoltIOException exception = assertThrows( BoltIOException.class, () -> decoder.decode( unpacker ) );
+        assertEquals( "Expected \"user_agent\" in metadata", exception.getMessage() );
+    }
+
+    @Test
     public void shouldThrowExceptionOnIncorrectRoutingContextFormat() throws Exception
     {
         Map<String,Object> meta = new HashMap<>();
