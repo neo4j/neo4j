@@ -59,7 +59,7 @@ case class expandStar(state: SemanticState) extends Rewriter {
       // We use the position of the clause for variables in new return items.
       // If the position was one of previous declaration, that could destroy scoping.
       val expr = Variable(id)(clausePos)
-      val alias = expr.copyId
+      val alias = expr.bumpId
       AliasedReturnItem(expr, alias)(clausePos)
     }
 
