@@ -116,19 +116,18 @@ class LiteralTest extends SemanticFunSuite {
   }
 
   test("correctly parses hex numbers") {
-    assert(signedOctal("0x22").value === 0x22)
-    assert(signedOctal("0x0").value === 0x0)
-    assert(signedOctal("0x734").value === 0x734)
-    assert(signedOctal("-0x034").value === -0x034)
+    assert(signedHex("0x22").value === 0x22)
+    assert(signedHex("0x0").value === 0x0)
+    assert(signedHex("0x734").value === 0x734)
+    assert(signedHex("-0x034").value === -0x034)
   }
 
   test("correctly parses hex numbers (with soon-to-be-deprecated syntax)") {
-    assert(signedOctal("0X22").value === 0x22)
-    assert(signedOctal("0X0").value === 0x0)
-    assert(signedOctal("0X734").value === 0x734)
-    assert(signedOctal("-0X034").value === -0x034)
+    assert(signedHex("0X22").value === 0x22)
+    assert(signedHex("0X0").value === 0x0)
+    assert(signedHex("0X734").value === 0x734)
+    assert(signedHex("-0X034").value === -0x034)
   }
-
 
   test("correctly parses octal numbers") {
     assert(signedOctal("0o22").value === 0x12)

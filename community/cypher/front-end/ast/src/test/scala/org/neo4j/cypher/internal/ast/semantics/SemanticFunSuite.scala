@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
+import org.neo4j.cypher.internal.expressions.SignedHexIntegerLiteral
 import org.neo4j.cypher.internal.expressions.SignedOctalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.expressions.UnsignedDecimalIntegerLiteral
@@ -57,6 +58,7 @@ class SemanticFunSuite extends CypherFunSuite with SemanticAnalysisTooling with 
   def signedDecimal(str:String) = SignedDecimalIntegerLiteral(str)(pos)
   def decimalDouble(str:String) = DecimalDoubleLiteral(str)(pos)
   def signedOctal(str:String) = SignedOctalIntegerLiteral(str)(pos)
+  def signedHex(str:String) = SignedHexIntegerLiteral(str)(pos)
 
   def variable(name: String): Variable = Variable(name)(pos)
   def propertyKeyName(name: String) = PropertyKeyName("prop")(pos)
