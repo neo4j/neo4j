@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.neo4j.internal.kernel.api.security.LoginContext;
@@ -59,9 +60,24 @@ class TokenHoldersIdLookup implements LoginContext.IdLookup
     @Override
     public int[] getProcedureIds( String procedureGlobbing )
     {
-        String escapedString = procedureGlobbing.replaceAll( "\\.", "\\\\." )
-                                                .replaceAll( "\\*", ".*" )
-                                                .replaceAll( "\\?", ".?" );
+        String escaped = escapeSpecialCharacters( procedureGlobbing );
+        String escapedString = escaped.replaceAll( "\\*", ".*" )
+                                      .replaceAll( "\\?", ".{1}" );
         return globalProcedures.getIdsOfProceduresMatching( Pattern.compile( escapedString, CASE_INSENSITIVE ) );
+    }
+
+    // These are characters that have special meaning in java regex, * and ? are omitted since we have special handling for those
+    private final String specialCharacters = "<([{\\^-=$!|]})+.>";
+    // To construct a pattern with the special characters they must first be escaped
+    // the '.' is a regex matching every character in the string once and replacing it with the escaped form
+    @SuppressWarnings( "ReplaceAllDot" )
+    private final String escapedSpecialCharacters = specialCharacters.replaceAll( ".", "\\\\$0" );
+    private final Pattern specialCharacterPattern = Pattern.compile( "[" + escapedSpecialCharacters + "]" );
+
+    private String escapeSpecialCharacters( String s )
+    {
+        Matcher m = specialCharacterPattern.matcher( s );
+        // escape all special character that were found
+        return m.replaceAll( "\\\\$0" );
     }
 }
