@@ -71,7 +71,6 @@ import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.SingleQueryExpression
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.Union
-import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
 import org.neo4j.cypher.internal.planner.spi.DelegatingGraphStatistics
 import org.neo4j.cypher.internal.planner.spi.MinimumGraphStatistics
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
@@ -263,9 +262,9 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
         case (_: AllNodesScan, _, _) => 1000.0
         case (_: NodeByLabelScan, _, _) => 50.0
         case (_: NodeIndexScan, _, _) => 10.0
-        case (plan: NodeIndexSeek, _, _) if plan.label.name == "name" => 1.0
-        case (plan: NodeIndexSeek, _, _) if plan.label.name == "age" => 5.0
-        case (Selection(_, _), _, _) => 30.0
+        case (plan: NodeIndexSeek, _, _) if plan.properties.headOption.map(_.propertyKeyToken.name).contains("name") => 1.0
+        case (plan: NodeIndexSeek, _, _) if plan.properties.headOption.map(_.propertyKeyToken.name).contains("age")  => 5.0
+        case (Selection(_, source), x, y) => cost((source, x, y)) + 30.0
         case _ => Double.MaxValue
       }
     } getLogicalPlanFor "MATCH (a:Person) WHERE a.age > 40 AND a.name >= 'Cinderella' RETURN a")._2 should equal(
