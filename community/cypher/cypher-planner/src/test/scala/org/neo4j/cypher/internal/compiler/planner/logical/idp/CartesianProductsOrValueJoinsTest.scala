@@ -43,6 +43,9 @@ import org.neo4j.cypher.internal.logical.plans.NodeIndexScan
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
+import org.neo4j.cypher.internal.util.Cardinality
+import org.neo4j.cypher.internal.util.LabelId
+import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class CartesianProductsOrValueJoinsTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
@@ -307,9 +310,9 @@ class CartesianProductsOrValueJoinsTest extends CypherFunSuite with LogicalPlann
   }
 
   private def addComponent(component: PlannedComponent, cardinality: Cardinality, planningAttributes: PlanningAttributes = PlanningAttributes.newAttributes): PlannedComponent = {
-    planningAttributes.solveds.set(component.plan.id, RegularSinglePlannerQuery(queryGraph = component.queryGraph))
-    planningAttributes.cardinalities.set(component.plan.id, cardinality)
-    planningAttributes.providedOrders.set(component.plan.id, ProvidedOrder.empty)
+    planningAttributes.solveds.set(component.plan.bestResult.id, RegularSinglePlannerQuery(queryGraph = component.queryGraph))
+    planningAttributes.cardinalities.set(component.plan.bestResult.id, cardinality)
+    planningAttributes.providedOrders.set(component.plan.bestResult.id, ProvidedOrder.empty)
     component
   }
 
@@ -347,10 +350,10 @@ class CartesianProductsOrValueJoinsTest extends CypherFunSuite with LogicalPlann
       val givenPlans: Set[PlannedComponent] = Set(
         addComponent(PlannedComponent(
           QueryGraph(patternNodes = Set("a")),
-          AllNodesScan("a", Set.empty)), lhsCardinality, context.planningAttributes),
+          BestResults(AllNodesScan("a", Set.empty), None)), lhsCardinality, context.planningAttributes),
         addComponent(PlannedComponent(
           QueryGraph(patternNodes = Set("b"), selections = Selections(Set(Predicate(Set("b"), hasLabels("b", "B"))))),
-          AllNodesScan("b", Set.empty)), Cardinality(1), context.planningAttributes),
+          BestResults(AllNodesScan("b", Set.empty), None)), Cardinality(1), context.planningAttributes),
       )
 
       cartesianProductsOrValueJoins(givenPlans, cfg.qg, InterestingOrder.empty, context, kit, SingleComponentPlanner(mock[IDPQueryGraphSolverMonitor]))
