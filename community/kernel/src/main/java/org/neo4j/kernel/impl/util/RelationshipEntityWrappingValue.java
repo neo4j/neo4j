@@ -37,7 +37,7 @@ import org.neo4j.values.virtual.VirtualValues;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 import static org.neo4j.values.AnyValueWriter.EntityMode.REFERENCE;
 
-public class RelationshipEntityWrappingValue extends RelationshipValue
+public class RelationshipEntityWrappingValue extends RelationshipValue implements WrappingEntity<Relationship>
 {
     static final long SHALLOW_SIZE = shallowSizeOfInstance( RelationshipEntityWrappingValue.class ) + RelationshipEntity.SHALLOW_SIZE;
 
@@ -222,7 +222,7 @@ public class RelationshipEntityWrappingValue extends RelationshipValue
     {
         if ( node instanceof NodeEntityWrappingNodeValue )
         {
-            Node proxy = ((NodeEntityWrappingNodeValue) node).nodeEntity();
+            Node proxy = ((NodeEntityWrappingNodeValue) node).getEntity();
             return ValueUtils.fromNodeEntity( relationship.getOtherNode( proxy ) );
         }
         else
@@ -271,6 +271,12 @@ public class RelationshipEntityWrappingValue extends RelationshipValue
             }
         }
         return m;
+    }
+
+    @Override
+    public Relationship getEntity()
+    {
+        return relationship;
     }
 
     public MapValue properties( PropertyCursor propertyCursor )

@@ -39,7 +39,7 @@ import org.neo4j.values.virtual.VirtualValues;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 import static org.neo4j.values.AnyValueWriter.EntityMode.REFERENCE;
 
-public class NodeEntityWrappingNodeValue extends NodeValue
+public class NodeEntityWrappingNodeValue extends NodeValue implements WrappingEntity<Node>
 {
     static final long SHALLOW_SIZE = shallowSizeOfInstance( NodeEntityWrappingNodeValue.class ) + NodeEntity.SHALLOW_SIZE;
 
@@ -51,11 +51,6 @@ public class NodeEntityWrappingNodeValue extends NodeValue
     {
         super( node.getId() );
         this.node = node;
-    }
-
-    public Node nodeEntity()
-    {
-        return node;
     }
 
     @Override
@@ -209,5 +204,11 @@ public class NodeEntityWrappingNodeValue extends NodeValue
             size += properties.estimatedHeapUsage();
         }
         return size;
+    }
+
+    @Override
+    public Node getEntity()
+    {
+        return node;
     }
 }

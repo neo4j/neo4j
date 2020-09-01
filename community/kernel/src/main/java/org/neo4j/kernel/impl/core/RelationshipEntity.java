@@ -35,6 +35,7 @@ import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
@@ -540,5 +541,11 @@ public class RelationshipEntity implements Relationship, RelationshipVisitor<Run
         {
             throw new NotFoundException( new EntityNotFoundException( EntityType.RELATIONSHIP, id ) );
         }
+    }
+
+    @Override
+    public Transaction getTransaction()
+    {
+        return internalTransaction;
     }
 }
