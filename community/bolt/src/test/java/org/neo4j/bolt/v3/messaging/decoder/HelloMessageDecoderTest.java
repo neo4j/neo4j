@@ -21,8 +21,10 @@ package org.neo4j.bolt.v3.messaging.decoder;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.messaging.RequestMessageDecoder;
 import org.neo4j.bolt.packstream.Neo4jPack;
@@ -32,6 +34,7 @@ import org.neo4j.bolt.security.auth.AuthTokenDecoderTest;
 import org.neo4j.bolt.v3.messaging.request.HelloMessage;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.bolt.v3.BoltProtocolV3ComponentFactory.encode;
 import static org.neo4j.bolt.v3.BoltProtocolV3ComponentFactory.newNeo4jPack;
@@ -94,6 +97,24 @@ class HelloMessageDecoderTest extends AuthTokenDecoderTest
         RequestMessage deserializedMessage = decoder.decode( unpacker );
 
         assertHelloMessageMatches( originalMessage, deserializedMessage );
+    }
+
+    @Test
+    protected void testShouldErrorForMissingUserAgent() throws Exception
+    {
+        Neo4jPack neo4jPack = newNeo4jPack();
+        Map<String,Object> authToken = new HashMap<>();
+        HelloMessage originalMessage = new HelloMessage( authToken );
+
+        PackedInputArray input = new PackedInputArray( encode( neo4jPack, originalMessage ) );
+        Neo4jPack.Unpacker unpacker = neo4jPack.newUnpacker( input );
+
+        // these two steps are executed before decoding in order to select a correct decoder
+        unpacker.unpackStructHeader();
+        unpacker.unpackStructSignature();
+
+        BoltIOException exception = assertThrows( BoltIOException.class, () -> decoder.decode( unpacker ) );
+        assertEquals( "Expected \"user_agent\" in metadata", exception.getMessage() );
     }
 
     private static void assertHelloMessageMatches( HelloMessage expected, RequestMessage actual )
