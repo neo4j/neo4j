@@ -175,6 +175,8 @@ import org.neo4j.cypher.internal.macros.AssertMacros.checkOnlyWhenAssertionsAreE
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.PredicateOrdering
+import org.neo4j.cypher.internal.util.Selectivity
 import org.neo4j.cypher.internal.util.attribution.Attributes
 import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.exceptions.ExhaustiveShortestPathForbiddenException
@@ -1350,13 +1352,13 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
   }
 
   private def sortPredicatesBySelectivity(source: LogicalPlan, predicates: Seq[Expression], context: LogicalPlanningContext): Seq[Expression] = {
-    // sort by (cost, selectivity). This is a heuristic. We would have to do some searching algorithm to find the actual optimal ordering.
+    val incomingCardinality = cardinalities.get(source.id)
     predicates.sortBy { predicate =>
-      val cost = CardinalityCostModel.apply(predicate).cost
+      val costPerRow = CardinalityCostModel.apply(predicate)
       val solved = solveds.get(source.id).asSinglePlannerQuery.updateTailOrSelf(_.amendQueryGraph(_.addPredicates(predicate)))
-      // The cardinality will be some constant multiplied with the selectivity, where the constant is the same for all predicates.
       val cardinality = cardinalityModel(solved, context.input, context.semanticTable)
-      (cost, cardinality)
-    }
+      val selectivity = (cardinality / incomingCardinality).getOrElse(Selectivity.ONE)
+      (costPerRow, selectivity)
+    }(PredicateOrdering)
   }
 }

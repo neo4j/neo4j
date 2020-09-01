@@ -28,11 +28,15 @@ import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.Selection
+import org.neo4j.cypher.internal.util.PredicateOrdering
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class SelectionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
+  /**
+   * The assumptions on the ordering for these selectivities is based on that [[PredicateOrdering]] is used.
+   */
   test("Should order predicates in selection first by cost then by selectivity") {
     val label = hasLabels("n", "Label")
     val otherLabel = hasLabels("n", "OtherLabel")
@@ -41,12 +45,12 @@ class SelectionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
     val nParam = equals(varFor("n"), parameter("param", CTAny))
     val nFooBar = equals(prop("n", "foo"), prop("n", "bar"))
     val selectivities = Map[Expression, Double](
-      label -> 0.1, // More selective, so will be chosen for LabelScan
-      otherLabel -> 0.5,
-      nProp -> 0.2, // Most selective predicate with 1 store access
+      label -> 0.1, // More selective, so will be chosen for LabelScan.
+      otherLabel -> 0.9, // So unselective it comes last, even if it has one store access less than nFooBar.
+      nProp -> 0.2, // Most selective predicate with 1 store access.
       nPropIn -> 0.2, // -"-
       nParam -> 0.9, // Least selective, but cheapest, therefore comes first.
-      nFooBar -> 0.1, // Very selective, but most costly with 2 store accesses. Comes last.
+      nFooBar -> 0.1, // Very selective, but most costly with 2 store accesses. Comes almost last.
     )
 
     val plan = new given {
@@ -67,8 +71,8 @@ class SelectionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
       case Selection(Ands(Seq(
         `nParam`,
         `nProp`,
-        `otherLabel`,
-        `nFooBar`
+        `nFooBar`,
+        `otherLabel`
       )),
         NodeByLabelScan("n", LabelName("Label"), `noArgs`, IndexOrderNone)
       ) => ()
