@@ -980,15 +980,17 @@ public final class ProcedureCompilation
         else if ( type.equals( NODE ) )
         {
             Expression internalTransaction = invoke( context, methodReference( Context.class, InternalTransaction.class, "internalTransactionOrNull" ) );
-            Expression getNode = invoke( internalTransaction, methodReference( InternalTransaction.class, Entity.class, "validateSameDB", Entity.class ), expression );
-            return nullCheck( expression,
-                              invoke( methodReference( ValueUtils.class, NodeValue.class, "fromNodeEntity", Node.class ),
-                                      getNode ) );
+            Expression getNode = invoke( internalTransaction,
+                                         methodReference( InternalTransaction.class, Entity.class, "validateSameDB", Entity.class ), expression );
+            return nullCheck( expression, invoke( methodReference( ValueUtils.class, NodeValue.class, "fromNodeEntity", Node.class ), getNode ) );
         }
         else if ( type.equals( RELATIONSHIP ) )
         {
-            return nullCheck( expression, invoke( methodReference( ValueUtils.class, RelationshipValue.class, "fromRelationshipEntity",
-                    Relationship.class ), expression ));
+            Expression internalTransaction = invoke( context, methodReference( Context.class, InternalTransaction.class, "internalTransactionOrNull" ) );
+            Expression getRelationship =
+                    invoke( internalTransaction, methodReference( InternalTransaction.class, Entity.class, "validateSameDB", Entity.class ), expression );
+            return nullCheck( expression, invoke(
+                    methodReference( ValueUtils.class, RelationshipValue.class, "fromRelationshipEntity", Relationship.class ), getRelationship ) );
         }
         else if ( type.equals( PATH ) )
         {
