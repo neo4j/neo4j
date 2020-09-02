@@ -344,7 +344,7 @@ setup_additional_arguments() {
       ;;
   esac
   done
-  ADDITIONAL_ARGS="${ARGS_LIST[@]}"
+  ADDITIONAL_ARGS=${ARGS_LIST[@]+"${ARGS_LIST[@]}"}
 }
 
 assemble_command_line() {
