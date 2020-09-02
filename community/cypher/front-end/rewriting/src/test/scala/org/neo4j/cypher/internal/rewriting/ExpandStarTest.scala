@@ -113,14 +113,15 @@ class ExpandStarTest extends CypherFunSuite with AstConstructionTestSupport {
     // RETURN *
     // owner would not be scoped/namespaced correctly after having done `isolateAggregation`.
     val wizz = "WITH 1 AS foo "
-    val pos = InputPosition(wizz.length, 1, wizz.length + 1)
+    val expressionPos = InputPosition(wizz.length, 1, wizz.length + 1)
+    val variablePos = expressionPos.bumped()
 
     val original = prepRewrite(s"${wizz}RETURN *")
     val checkResult = original.semanticCheck(SemanticState.clean)
     val after = original.rewrite(expandStar(checkResult.state))
     val returnItem = after.asInstanceOf[Query].part.asInstanceOf[SingleQuery].clauses.last.asInstanceOf[Return].returnItems.items.head.asInstanceOf[AliasedReturnItem]
-    returnItem.expression.position should equal(pos)
-    returnItem.variable.position should equal(pos)
+    returnItem.expression.position should equal(expressionPos)
+    returnItem.variable.position should equal(variablePos)
   }
 
   private def assertRewrite(originalQuery: String, expectedQuery: String) {
