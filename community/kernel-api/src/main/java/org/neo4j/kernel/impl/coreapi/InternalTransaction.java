@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
@@ -59,4 +60,6 @@ public interface InternalTransaction extends Transaction, TransactionalEntityFac
     void terminate( Status reason );
 
     UUID databaseId();
+
+    <E extends Entity> E validateSameDB(E entity);
 }

@@ -269,9 +269,6 @@ public class SchemaProcedure
         }
 
         @Override
-        public Transaction getTransaction() { return null; }
-
-        @Override
         public void delete()
         {
 
@@ -377,12 +374,6 @@ public class SchemaProcedure
         public Iterable<Label> getLabels()
         {
             return Collections.singletonList( label );
-        }
-
-        @Override
-        public Transaction getTransaction()
-        {
-            return null;
         }
 
         @Override

@@ -110,7 +110,7 @@ import static org.neo4j.values.storable.Values.utf8Value;
 /**
  * Default implementation of {@link org.neo4j.graphdb.Transaction}
  */
-public class TransactionImpl implements InternalTransaction
+public class TransactionImpl extends EntityValidationTransactionImpl
 {
     private static final String UNABLE_TO_COMPLETE_TRANSACTION = "Unable to complete transaction.";
     private static final EntityLocker locker = new EntityLocker();
