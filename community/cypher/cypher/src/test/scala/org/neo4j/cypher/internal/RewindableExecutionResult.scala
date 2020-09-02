@@ -29,12 +29,9 @@ import org.neo4j.cypher.internal.runtime.QueryTransactionalContext
 import org.neo4j.cypher.internal.runtime.RuntimeScalaValueConverter
 import org.neo4j.cypher.internal.runtime.isGraphKernelResultValue
 import org.neo4j.cypher.result.RuntimeResult
-import org.neo4j.exceptions.CypherExecutionException
 import org.neo4j.graphdb.Entity
 import org.neo4j.graphdb.Notification
 import org.neo4j.graphdb.Result
-import org.neo4j.kernel.impl.coreapi.InternalTransaction
-import org.neo4j.kernel.impl.query.QueryExecutionKernelException
 import org.neo4j.kernel.impl.query.QueryExecution
 import org.neo4j.kernel.impl.query.QuerySubscription
 import org.neo4j.kernel.impl.query.RecordingQuerySubscriber
@@ -162,19 +159,8 @@ object RewindableExecutionResult {
     } finally subscription.cancel()
   }
 
-  private def checkValidInput(context: QueryTransactionalContext, input: AnyRef): Boolean = input match {
-    case entity: Entity =>
-      entity.getTransaction match {
-        case transaction: InternalTransaction if !transaction.isOpen => throw new QueryExecutionKernelException(new CypherExecutionException("The transaction of the result needs to be open."))
-        case transaction: InternalTransaction =>
-          val databaseId = transaction.databaseId()
-          if (databaseId != null && databaseId != context.databaseId.databaseId().uuid()) {
-            throw new QueryExecutionKernelException(new CypherExecutionException("Not allowed to use results from another database."))
-          } else {
-            true
-          }
-        case _ => true
-      }
-    case _ => true
+  private def checkValidInput(context: QueryTransactionalContext, input: AnyRef): Unit = input match {
+    case entity: Entity => context.transaction.internalTransaction().validateSameDB(entity)
+    case _ => ()
   }
 }

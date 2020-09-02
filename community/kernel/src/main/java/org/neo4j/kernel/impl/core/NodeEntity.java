@@ -38,7 +38,6 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.internal.kernel.api.LabelSet;
 import org.neo4j.internal.kernel.api.NodeCursor;
@@ -653,8 +652,7 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship>
         }
     }
 
-    @Override
-    public Transaction getTransaction()
+    public InternalTransaction getTransaction()
     {
         return internalTransaction;
     }

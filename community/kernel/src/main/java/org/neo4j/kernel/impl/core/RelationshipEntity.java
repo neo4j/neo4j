@@ -547,8 +547,7 @@ public class RelationshipEntity implements Relationship, RelationshipVisitor<Run
         }
     }
 
-    @Override
-    public Transaction getTransaction()
+     public InternalTransaction getTransaction()
     {
         return internalTransaction;
     }
