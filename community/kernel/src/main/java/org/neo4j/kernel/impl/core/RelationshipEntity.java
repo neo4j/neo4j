@@ -97,11 +97,22 @@ public class RelationshipEntity implements Relationship, RelationshipVisitor<Run
 
     public boolean initializeData()
     {
-        // It enough to check only start node, since it's absence will indicate that data was not yet loaded.
         if ( startNode == NO_ID )
         {
             KernelTransaction transaction = internalTransaction.kernelTransaction();
             RelationshipScanCursor relationships = transaction.ambientRelationshipCursor();
+            return initializeData( relationships );
+        }
+        return true;
+    }
+
+    public boolean initializeData( RelationshipScanCursor relationships )
+    {
+        // It enough to check only start node, since it's absence will indicate that data was not yet loaded.
+        if ( startNode == NO_ID )
+        {
+            KernelTransaction transaction = internalTransaction.kernelTransaction();
+
             transaction.dataRead().singleRelationship( id, relationships );
             // At this point we don't care if it is there or not just load what we got.
             boolean wasPresent = relationships.next();
@@ -299,7 +310,14 @@ public class RelationshipEntity implements Relationship, RelationshipVisitor<Run
     }
 
     @Override
-    public Map<String, Object> getAllProperties()
+    public Map<String,Object> getAllProperties()
+    {
+        KernelTransaction transaction = internalTransaction.kernelTransaction();
+        PropertyCursor propertyCursor = transaction.ambientPropertyCursor();
+        return getAllProperties( propertyCursor );
+    }
+
+    public Map<String, Object> getAllProperties( PropertyCursor propertyCursor )
     {
         KernelTransaction transaction = internalTransaction.kernelTransaction();
         Map<String,Object> properties = new HashMap<>();
@@ -307,7 +325,6 @@ public class RelationshipEntity implements Relationship, RelationshipVisitor<Run
         try
         {
             RelationshipScanCursor relationships = transaction.ambientRelationshipCursor();
-            PropertyCursor propertyCursor = transaction.ambientPropertyCursor();
             TokenRead token = transaction.tokenRead();
             singleRelationship( transaction, relationships );
             relationships.properties( propertyCursor );

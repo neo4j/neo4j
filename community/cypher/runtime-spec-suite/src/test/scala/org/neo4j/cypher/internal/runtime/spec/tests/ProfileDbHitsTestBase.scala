@@ -40,10 +40,10 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
                                                                  costOfExpandGetRelCursor: Long, // the reported dbHits for obtaining a relationship cursor for expanding
                                                                  costOfExpandOneRel: Long, // the reported dbHits for expanding one relationship
                                                                  costOfRelationshipTypeLookup: Long, // the reported dbHits for finding the id of a relationship type
-                                                                 cartesianProductChunkSize: Long // The size of a LHS chunk for cartesian product
+                                                                 cartesianProductChunkSize: Long, // The size of a LHS chunk for cartesian product
+                                                                 canFuseOverPipelines: Boolean,
+                                                                 createsRelValueInExpand: Boolean
                                                                ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
-
-  protected def canFuseOverPipelines: Boolean = false
 
   test("should profile dbHits of all nodes scan") {
     given { nodeGraph(sizeHint) }
@@ -523,10 +523,71 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
-    queryProfile.operatorProfile(0).dbHits() shouldBe 0 // produce results
     //Note: in interpreted we don't count rel.getStart, rel.getEnd as dbhits
     queryProfile.operatorProfile(1).dbHits() should (be (0) or be (aRels.size)) // project endpoints
     queryProfile.operatorProfile(2).dbHits() shouldBe 0 // input
+  }
+
+  test("should profile dbHits of populating nodes in produceresults") {
+    given { nodePropertyGraph(sizeHint, { case i => Map("p" -> i, "q" -> -i) }, "somelabel")}
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+
+    queryProfile.operatorProfile(0).dbHits() should be (sizeHint * (1 /* read node */ + 2 * costOfProperty)) // produceresults
+  }
+
+  test("should profile dbHits of populating relationships in produceresults") {
+    // given
+    given {
+      val nodes = nodeGraph(sizeHint)
+      connectWithProperties(nodes, nodes.indices.map(i => (i, (i + 1) % nodes.length, "Rel", Map("p" -> i, "q" -> -i))))
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r")
+      .expandAll("(x)-[r]->(y)")
+      .allNodeScan("x")
+      .build()
+
+    val result = profile(logicalQuery, runtime)
+    consume(result)
+
+    val dbHitsForRelRead = if (createsRelValueInExpand) 0 else 1
+
+    // then
+    result.runtimeResult.queryProfile().operatorProfile(0).dbHits() should be (sizeHint * (dbHitsForRelRead + 2 * costOfProperty)) // produceresults
+  }
+
+  test("should profile dbHits of populating collections in produceresults") {
+    // given
+    given {
+      nodePropertyGraph(sizeHint, { case i => Map("p" -> i, "q" -> -i) }, "somelabel")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("list", "map")
+      .projection("{key: list} AS map")
+      .aggregation(Seq(), Seq("collect(x) AS list"))
+      .allNodeScan("x")
+      .build()
+
+    val result = profile(logicalQuery, runtime)
+    consume(result)
+
+    // then
+    result.runtimeResult.queryProfile().operatorProfile(0).dbHits() should be (sizeHint * (1 /* read node */ + 2 * costOfProperty)) // produceresults
   }
 }
 

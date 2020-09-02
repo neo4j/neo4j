@@ -222,7 +222,7 @@ abstract class SlottedPipeFallbackTestBase[CONTEXT <: RuntimeContext](
     queryProfile.operatorProfile(4).time() should be > 0L // input
 
     // DB HITS
-    queryProfile.operatorProfile(0).dbHits() shouldBe 0L // produce result
+    queryProfile.operatorProfile(0).dbHits() shouldBe sizeHint * 7 // produce result
     queryProfile.operatorProfile(1).dbHits() shouldBe sizeHint // project endpoints
     queryProfile.operatorProfile(2).dbHits() shouldBe sizeHint // project endpoints
     queryProfile.operatorProfile(3).dbHits() shouldBe 2 * sizeHint // var expand

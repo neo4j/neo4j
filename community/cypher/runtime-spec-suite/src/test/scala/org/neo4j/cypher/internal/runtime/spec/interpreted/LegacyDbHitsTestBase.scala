@@ -31,7 +31,8 @@ object LegacyDbHitsTestBase {
 
 abstract class LegacyDbHitsTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT],
                                                                runtime: CypherRuntime[CONTEXT],
-                                                               sizeHint: Int)
+                                                               sizeHint: Int,
+                                                               createsRelValueInExpand: Boolean)
   extends ProfileDbHitsTestBase(edition,
                                 runtime,
                                 sizeHint,
@@ -42,4 +43,6 @@ abstract class LegacyDbHitsTestBase[CONTEXT <: RuntimeContext](edition: Edition[
                                 costOfExpandGetRelCursor = LegacyDbHitsTestBase.costOfExpandOneRel,
                                 costOfExpandOneRel = LegacyDbHitsTestBase.costOfExpandOneRel,
                                 costOfRelationshipTypeLookup = 1,
-                                cartesianProductChunkSize = 1)
+                                cartesianProductChunkSize = 1,
+                                canFuseOverPipelines = false,
+                                createsRelValueInExpand = createsRelValueInExpand)

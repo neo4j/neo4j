@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.runtime
 import org.neo4j.internal.kernel.api.AutoCloseablePlus
 import org.neo4j.internal.kernel.api.CursorFactory
 import org.neo4j.internal.kernel.api.DefaultCloseListenable
+import org.neo4j.internal.kernel.api.KernelReadTracer
 import org.neo4j.internal.kernel.api.NodeCursor
 import org.neo4j.internal.kernel.api.PropertyCursor
 import org.neo4j.internal.kernel.api.RelationshipScanCursor
@@ -48,5 +49,11 @@ class ExpressionCursors(cursorFactory: CursorFactory, cursorTracer: PageCursorTr
     if (!isClosed) {
       IOUtils.closeAll(nodeCursor, relationshipScanCursor, propertyCursor)
     }
+  }
+
+  def setKernelTracer(tracer: KernelReadTracer): Unit = {
+    nodeCursor.setTracer(tracer)
+    relationshipScanCursor.setTracer(tracer)
+    propertyCursor.setTracer(tracer)
   }
 }

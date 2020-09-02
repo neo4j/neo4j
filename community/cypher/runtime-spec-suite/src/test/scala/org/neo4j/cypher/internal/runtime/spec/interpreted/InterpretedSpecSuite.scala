@@ -172,7 +172,7 @@ class InterpretedOptionalTest extends OptionalTestBase(COMMUNITY.EDITION, Interp
                               with OptionalFailureTestBase[CommunityRuntimeContext]
 class InterpretedProvidedOrderTest extends ProvidedOrderTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
                                    with CartesianProductProvidedOrderTestBase[CommunityRuntimeContext]
-class InterpretedProfileDbHitsTest extends LegacyDbHitsTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
+class InterpretedProfileDbHitsTest extends LegacyDbHitsTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT, createsRelValueInExpand = true)
                                    with ProcedureCallDbHitsTestBase[CommunityRuntimeContext]
                                    with NestedPlanDbHitsTestBase[CommunityRuntimeContext]
 class InterpretedProfileRowsTest extends ProfileRowsTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT, 1)

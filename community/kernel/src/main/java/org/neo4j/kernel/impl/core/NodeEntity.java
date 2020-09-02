@@ -180,7 +180,7 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship>
     private boolean innerHasRelationships( final KernelTransaction transaction, final Direction direction, int[] typeIds )
     {
         try ( ResourceIterator<Relationship> iterator =
-                getRelationshipSelectionIterator( transaction, direction, typeIds ) )
+                      getRelationshipSelectionIterator( transaction, direction, typeIds ) )
         {
             return iterator.hasNext();
         }
@@ -383,7 +383,7 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship>
                 if ( propertyIds[i] == currentKey )
                 {
                     properties.put( keys[i],
-                            propertyCursor.propertyValue().asObjectCopy() );
+                                    propertyCursor.propertyValue().asObjectCopy() );
                     propertiesToFind--;
                     break;
                 }
@@ -396,19 +396,26 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship>
     public Map<String,Object> getAllProperties()
     {
         KernelTransaction transaction = internalTransaction.kernelTransaction();
+        return getAllProperties( transaction.ambientNodeCursor(), transaction.ambientPropertyCursor() );
+    }
+
+    public Map<String,Object> getAllProperties( NodeCursor nodes, PropertyCursor propertyCursor )
+    {
+        KernelTransaction transaction = internalTransaction.kernelTransaction();
         Map<String,Object> properties = new HashMap<>();
 
         try
         {
-            NodeCursor nodes = transaction.ambientNodeCursor();
-            PropertyCursor propertyCursor = transaction.ambientPropertyCursor();
             TokenRead token = transaction.tokenRead();
-            singleNode( transaction, nodes );
+            if ( nodes.isClosed() || nodes.nodeReference() != getId() )
+            {
+                singleNode( transaction, nodes );
+            }
             nodes.properties( propertyCursor );
             while ( propertyCursor.next() )
             {
                 properties.put( token.propertyKeyName( propertyCursor.propertyKey() ),
-                        propertyCursor.propertyValue().asObjectCopy() );
+                                propertyCursor.propertyValue().asObjectCopy() );
             }
         }
         catch ( PropertyKeyIdNotFoundKernelException e )
@@ -610,8 +617,13 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship>
     @Override
     public Iterable<Label> getLabels()
     {
+        NodeCursor nodes = internalTransaction.kernelTransaction().ambientNodeCursor();
+        return getLabels( nodes );
+    }
+
+    public Iterable<Label> getLabels( NodeCursor nodes )
+    {
         KernelTransaction transaction = internalTransaction.kernelTransaction();
-        NodeCursor nodes = transaction.ambientNodeCursor();
         try
         {
             singleNode( transaction, nodes );

@@ -256,6 +256,12 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
   override def nodeCursor(): NodeCursor =
     transactionalContext.cursors.allocateNodeCursor(transactionalContext.kernelTransaction.pageCursorTracer)
 
+  override def relationshipScanCursor(): RelationshipScanCursor =
+    transactionalContext.cursors.allocateRelationshipScanCursor(transactionalContext.kernelTransaction.pageCursorTracer)
+
+  override def propertyCursor(): PropertyCursor =
+    transactionalContext.cursors.allocatePropertyCursor(transactionalContext.kernelTransaction.pageCursorTracer, transactionalContext.tc.kernelTransaction().memoryTracker())
+
   override def traversalCursor(): RelationshipTraversalCursor =
     transactionalContext.cursors.allocateRelationshipTraversalCursor(transactionalContext.kernelTransaction.pageCursorTracer)
 

@@ -22,6 +22,8 @@ package org.neo4j.kernel.impl.util;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.internal.kernel.api.PropertyCursor;
+import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.kernel.impl.core.RelationshipEntity;
 import org.neo4j.values.AnyValueWriter;
 import org.neo4j.values.storable.TextValue;
@@ -121,6 +123,32 @@ public class RelationshipEntityWrappingValue extends RelationshipValue
             size += endNode.estimatedHeapUsage();
         }
        return size;
+    }
+
+    public void populate( RelationshipScanCursor relCursor, PropertyCursor propertyCursor )
+    {
+        try
+        {
+            if ( relationship instanceof RelationshipEntity )
+            {
+                RelationshipEntity proxy = (RelationshipEntity) relationship;
+                if ( !proxy.initializeData( relCursor ) )
+                {
+                    // When this happens to relationship proxies, we have most likely observed our relationship being deleted by an overlapping committed
+                    // transaction.
+                    return;
+                }
+            }
+            // type, startNode and endNode will have counted their DB hits as part of initializeData.
+            type();
+            properties( propertyCursor );
+            startNode();
+            endNode();
+        }
+        catch ( NotFoundException e )
+        {
+            // best effort, cannot do more
+        }
     }
 
     public void populate()
@@ -239,6 +267,25 @@ public class RelationshipEntityWrappingValue extends RelationshipValue
                 if ( m == null )
                 {
                     m = properties = ValueUtils.asMapValue( relationship.getAllProperties() );
+                }
+            }
+        }
+        return m;
+    }
+
+    public MapValue properties( PropertyCursor propertyCursor )
+    {
+        MapValue m = properties;
+        if ( m == null )
+        {
+            synchronized ( this )
+            {
+                m = properties;
+                if ( m == null )
+                {
+                    var relProperties = relationship instanceof RelationshipEntity ?
+                                        ((RelationshipEntity) relationship).getAllProperties( propertyCursor ) : relationship.getAllProperties();
+                    m = properties = ValueUtils.asMapValue( relProperties );
                 }
             }
         }

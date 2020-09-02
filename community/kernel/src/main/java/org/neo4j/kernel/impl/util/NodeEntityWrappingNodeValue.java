@@ -26,6 +26,8 @@ import org.neo4j.exceptions.StoreFailureException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
+import org.neo4j.internal.kernel.api.NodeCursor;
+import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.kernel.impl.core.NodeEntity;
 import org.neo4j.values.AnyValueWriter;
 import org.neo4j.values.storable.TextArray;
@@ -91,12 +93,12 @@ public class NodeEntityWrappingNodeValue extends NodeValue
         }
     }
 
-    public void populate()
+    public void populate( NodeCursor nodeCursor, PropertyCursor propertyCursor )
     {
         try
         {
-            labels();
-            properties();
+            labels( nodeCursor );
+            properties( nodeCursor, propertyCursor );
         }
         catch ( NotFoundException | StoreFailureException e )
         {
@@ -107,6 +109,30 @@ public class NodeEntityWrappingNodeValue extends NodeValue
     public boolean isPopulated()
     {
         return labels != null && properties != null;
+    }
+
+    public TextArray labels( NodeCursor nodeCursor )
+    {
+        TextArray l = labels;
+        if ( l == null )
+        {
+            synchronized ( this )
+            {
+                l = labels;
+                if ( l == null )
+                {
+                    List<String> ls = new ArrayList<>();
+                    // No DBHits for Virtual node hacks.
+                    var nodeLabels = node instanceof NodeEntity ? ((NodeEntity) node).getLabels( nodeCursor ) : node.getLabels();
+                    for ( Label label : nodeLabels )
+                    {
+                        ls.add( label.name() );
+                    }
+                    l = labels = Values.stringArray( ls.toArray( new String[0] ) );
+                }
+            }
+        }
+        return l;
     }
 
     @Override
@@ -126,7 +152,6 @@ public class NodeEntityWrappingNodeValue extends NodeValue
                         ls.add( label.name() );
                     }
                     l = labels = Values.stringArray( ls.toArray( new String[0] ) );
-
                 }
             }
         }
@@ -145,6 +170,26 @@ public class NodeEntityWrappingNodeValue extends NodeValue
                 if ( m == null )
                 {
                     m = properties = ValueUtils.asMapValue( node.getAllProperties() );
+                }
+            }
+        }
+        return m;
+    }
+
+    public MapValue properties( NodeCursor nodeCursor, PropertyCursor propertyCursor )
+    {
+        MapValue m = properties;
+        if ( m == null )
+        {
+            synchronized ( this )
+            {
+                m = properties;
+                if ( m == null )
+                {
+                    // No DBHits for Virtual node hacks.
+                    var nodeProperties = node instanceof NodeEntity ?
+                                         ((NodeEntity) node).getAllProperties( nodeCursor, propertyCursor ) : node.getAllProperties();
+                    m = properties = ValueUtils.asMapValue( nodeProperties );
                 }
             }
         }

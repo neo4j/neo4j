@@ -19,6 +19,9 @@
  */
 package org.neo4j.cypher.internal.runtime;
 
+import org.neo4j.internal.kernel.api.NodeCursor;
+import org.neo4j.internal.kernel.api.PropertyCursor;
+import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.kernel.impl.util.NodeEntityWrappingNodeValue;
 import org.neo4j.kernel.impl.util.RelationshipEntityWrappingValue;
 import org.neo4j.values.AnyValue;
@@ -35,57 +38,57 @@ public final class ValuePopulation
         throw new UnsupportedOperationException( "Do not instantiate" );
     }
 
-    public static AnyValue populate( AnyValue value )
+    public static AnyValue populate( AnyValue value, NodeCursor nodeCursor, RelationshipScanCursor relCursor,  PropertyCursor propertyCursor )
     {
         if ( value instanceof NodeEntityWrappingNodeValue )
         {
-            ((NodeEntityWrappingNodeValue) value).populate();
+            ((NodeEntityWrappingNodeValue) value).populate( nodeCursor, propertyCursor );
         }
         else if ( value instanceof RelationshipEntityWrappingValue )
         {
-            ((RelationshipEntityWrappingValue) value).populate();
+            ((RelationshipEntityWrappingValue) value).populate( relCursor, propertyCursor );
         }
         else if ( value instanceof PathValue )
         {
             PathValue path = (PathValue) value;
             for ( NodeValue node : path.nodes() )
             {
-                populate( node );
+                populate( node, nodeCursor, propertyCursor );
             }
             for ( RelationshipValue relationship : path.relationships() )
             {
-                populate( relationship );
+                populate( relationship, relCursor, propertyCursor );
             }
         }
         else if ( value instanceof ListValue )
         {
             for ( AnyValue v : (ListValue) value )
             {
-                populate( v );
+                populate( v, nodeCursor, relCursor, propertyCursor );
             }
         }
         else if ( value instanceof MapValue )
         {
-            ((MapValue) value).foreach( ( ignore, anyValue ) -> populate( anyValue ) );
+            ((MapValue) value).foreach( ( ignore, anyValue ) -> populate( anyValue, nodeCursor, relCursor, propertyCursor ) );
         }
 
         return value;
     }
 
-    public static NodeValue populate( NodeValue value )
+    public static NodeValue populate( NodeValue value, NodeCursor nodeCursor, PropertyCursor propertyCursor )
     {
         if ( value instanceof NodeEntityWrappingNodeValue )
         {
-            ((NodeEntityWrappingNodeValue) value).populate();
+            ((NodeEntityWrappingNodeValue) value).populate( nodeCursor, propertyCursor );
         }
         return value;
     }
 
-    public static RelationshipValue populate( RelationshipValue value )
+    public static RelationshipValue populate( RelationshipValue value, RelationshipScanCursor relCursor, PropertyCursor propertyCursor )
     {
         if ( value instanceof RelationshipEntityWrappingValue )
         {
-            ((RelationshipEntityWrappingValue) value).populate();
+            ((RelationshipEntityWrappingValue) value).populate( relCursor, propertyCursor );
         }
         return value;
     }

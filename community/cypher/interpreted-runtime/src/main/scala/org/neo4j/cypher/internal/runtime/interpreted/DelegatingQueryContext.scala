@@ -80,6 +80,8 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
   protected def manyDbHits(value: RelationshipTraversalCursor): RelationshipTraversalCursor = value
   protected def manyDbHits(value: NodeValueIndexCursor): NodeValueIndexCursor = value
   protected def manyDbHits(value: NodeCursor): NodeCursor = value
+  protected def manyDbHits(value: RelationshipScanCursor): RelationshipScanCursor = value
+  protected def manyDbHits(value: PropertyCursor): PropertyCursor = value
   protected def manyDbHits(count: Int): Int = count
 
   override def resources: ResourceManager = inner.resources
@@ -119,6 +121,10 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
     manyDbHitsCliRi(inner.getRelationshipsForIdsPrimitive(node, dir, types))
 
   override def nodeCursor(): NodeCursor = manyDbHits(inner.nodeCursor())
+
+  override def relationshipScanCursor(): RelationshipScanCursor = manyDbHits(inner.relationshipScanCursor())
+
+  override def propertyCursor(): PropertyCursor = manyDbHits(inner.propertyCursor())
 
   override def traversalCursor(): RelationshipTraversalCursor = manyDbHits(inner.traversalCursor())
 
