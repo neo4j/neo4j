@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolv
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.ir.PlannerQueryPart
 import org.neo4j.cypher.internal.ir.QueryGraph
+import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.ProcedureSignature
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
@@ -57,6 +58,11 @@ trait LogicalPlanningConfiguration {
   def qg: QueryGraph
 
   protected def mapCardinality(pf: PartialFunction[PlannerQueryPart, Double]): PartialFunction[PlannerQueryPart, Cardinality] = pf.andThen(Cardinality.apply)
+  protected def selectivitiesCardinality(selectivities: Map[Expression, Double],
+                                         baseCardinality: QueryGraph => Double): PartialFunction[PlannerQueryPart, Cardinality] = mapCardinality {
+    case RegularSinglePlannerQuery(queryGraph, _, _, _, _) =>
+      queryGraph.selections.predicates.foldLeft(baseCardinality(queryGraph)){ case (rows, predicate) => rows * selectivities(predicate.expr)}
+  }
 }
 
 case class IndexDef(label: String, propertyKeys: Seq[String])

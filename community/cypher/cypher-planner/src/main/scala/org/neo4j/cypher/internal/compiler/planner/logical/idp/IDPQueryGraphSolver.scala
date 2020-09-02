@@ -23,6 +23,9 @@ import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.PatternExpressionSolving
 import org.neo4j.cypher.internal.compiler.planner.logical.QueryGraphSolver
 import org.neo4j.cypher.internal.compiler.planner.logical.QueryPlannerKit
+import org.neo4j.cypher.internal.compiler.planner.logical.SortPlanner
+import org.neo4j.cypher.internal.compiler.planner.logical.SortPlanner.SatisfiedForPlan
+import org.neo4j.cypher.internal.compiler.planner.logical.SortPlanner.orderSatisfaction
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.planShortestPaths
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
@@ -42,6 +45,37 @@ trait IDPQueryGraphSolverMonitor extends IDPSolverMonitor {
 
 object IDPQueryGraphSolver {
   val VERBOSE: Boolean = java.lang.Boolean.getBoolean("pickBestPlan.VERBOSE")
+
+  def composeGenerators[Solvable](
+    queryGraph: QueryGraph,
+    interestingOrder: InterestingOrder,
+    kit: QueryPlannerKit,
+    context: LogicalPlanningContext,
+    generators: Seq[IDPSolverStep[Solvable, LogicalPlan, LogicalPlanningContext]],
+  ): IDPSolverStep[Solvable, LogicalPlan, LogicalPlanningContext] = {
+    val selectingGenerators = generators.map(_.map(plan => kit.select(plan, queryGraph)))
+    val sortingGenerators = if (interestingOrder.isEmpty) Seq.empty else
+      selectingGenerators.map(_.flatMap(plan => SortPlanner.maybeSortedPlan(plan, interestingOrder, context).filterNot(_ == plan)))
+    val combinedGenerators = selectingGenerators ++ sortingGenerators
+    combinedGenerators.foldLeft(IDPSolverStep.empty[Solvable, LogicalPlan, LogicalPlanningContext])(_ ++ _)
+  }
+
+  def extraRequirementForInterestingOrder(context: LogicalPlanningContext, interestingOrder: InterestingOrder): ExtraRequirement[LogicalPlan] = {
+    if (interestingOrder.isEmpty) {
+      ExtraRequirement.empty
+    } else {
+      new ExtraRequirement[LogicalPlan]() {
+        override def fulfils(plan: LogicalPlan): Boolean = {
+          val asSortedAsPossible = SatisfiedForPlan(plan)
+          orderSatisfaction(interestingOrder, context, plan) match {
+            case asSortedAsPossible() => true
+            case _ => false
+          }
+        }
+      }
+    }
+
+  }
 }
 
 /**

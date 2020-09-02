@@ -46,11 +46,11 @@ import org.neo4j.cypher.internal.compiler.planner.logical.MetricsFactory
 import org.neo4j.cypher.internal.compiler.planner.logical.QueryGraphSolver
 import org.neo4j.cypher.internal.compiler.planner.logical.QueryPlannerConfiguration
 import org.neo4j.cypher.internal.compiler.planner.logical.SimpleMetricsFactory
+import org.neo4j.cypher.internal.compiler.planner.logical.idp.ComponentConnectorPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.DefaultIDPSolverConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.IDPQueryGraphSolver
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.IDPQueryGraphSolverMonitor
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.SingleComponentPlanner
-import org.neo4j.cypher.internal.compiler.planner.logical.idp.cartesianProductsOrValueJoins
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.devNullListener
 import org.neo4j.cypher.internal.compiler.test_helpers.ContextHelper
@@ -185,12 +185,19 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
 
   def mockedMetrics: Metrics = newSimpleMetrics(hardcodedStatistics)
 
+  private def newMockQueryGraphSolver = {
+    val solverMonitor = mock[IDPQueryGraphSolverMonitor]
+    val singleComponentPlanner = SingleComponentPlanner(solverMonitor)
+    new IDPQueryGraphSolver(
+      singleComponentPlanner,
+      ComponentConnectorPlanner(singleComponentPlanner, DefaultIDPSolverConfig, solverMonitor),
+      solverMonitor)
+  }
+
   def newMockedLogicalPlanningContext(planContext: PlanContext,
                                       metrics: Metrics = mockedMetrics,
                                       semanticTable: SemanticTable = newMockedSemanticTable,
-                                      strategy: QueryGraphSolver = new IDPQueryGraphSolver(
-                                        SingleComponentPlanner(mock[IDPQueryGraphSolverMonitor]),
-                                        cartesianProductsOrValueJoins, mock[IDPQueryGraphSolverMonitor]),
+                                      strategy: QueryGraphSolver = newMockQueryGraphSolver,
                                       cardinality: Cardinality = Cardinality(1),
                                       strictness: Option[StrictnessMode] = None,
                                       notificationLogger: InternalNotificationLogger = devNullLogger,
@@ -208,9 +215,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
   def newMockedLogicalPlanningContextWithFakeAttributes(planContext: PlanContext,
                                                         metrics: Metrics = mockedMetrics,
                                                         semanticTable: SemanticTable = newMockedSemanticTable,
-                                                        strategy: QueryGraphSolver = new IDPQueryGraphSolver(
-                                                          SingleComponentPlanner(mock[IDPQueryGraphSolverMonitor]),
-                                                          cartesianProductsOrValueJoins, mock[IDPQueryGraphSolverMonitor]),
+                                                        strategy: QueryGraphSolver = newMockQueryGraphSolver,
                                                         cardinality: Cardinality = Cardinality(1),
                                                         strictness: Option[StrictnessMode] = None,
                                                         notificationLogger: InternalNotificationLogger = devNullLogger,
