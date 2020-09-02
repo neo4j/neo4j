@@ -23,5 +23,5 @@ import org.neo4j.graphdb.Entity;
 
 public interface WrappingEntity<T extends Entity>
 {
-    public T getEntity();
+    T getEntity();
 }

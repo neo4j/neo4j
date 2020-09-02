@@ -1166,7 +1166,10 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         return namedDatabaseId.name();
     }
 
-    public UUID getDatabaseId() { return namedDatabaseId.databaseId().uuid(); }
+    public UUID getDatabaseId()
+    {
+        return namedDatabaseId.databaseId().uuid();
+    }
 
     public static class Statistics
     {

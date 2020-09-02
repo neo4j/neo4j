@@ -300,7 +300,10 @@ public class ProcedureTransactionProvider implements ThrowingFunction<Context,Tr
         }
 
         @Override
-        public UUID databaseId() { return transaction.databaseId(); }
+        public UUID databaseId()
+        {
+            return transaction.databaseId();
+        }
 
         @Override
         public <E extends Entity> E validateSameDB( E entity )

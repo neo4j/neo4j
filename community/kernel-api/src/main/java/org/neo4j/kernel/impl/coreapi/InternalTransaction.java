@@ -61,5 +61,5 @@ public interface InternalTransaction extends Transaction, TransactionalEntityFac
 
     UUID databaseId();
 
-    <E extends Entity> E validateSameDB(E entity);
+    <E extends Entity> E validateSameDB( E entity );
 }
