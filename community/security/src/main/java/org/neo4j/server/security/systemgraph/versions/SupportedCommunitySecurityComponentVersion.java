@@ -27,23 +27,24 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.security.User;
 import org.neo4j.logging.Log;
 import org.neo4j.server.security.auth.UserRepository;
+import org.neo4j.server.security.systemgraph.ComponentVersion;
 import org.neo4j.string.UTF8;
 import org.neo4j.util.Preconditions;
 
 import static java.lang.String.format;
 import static org.neo4j.kernel.api.security.AuthManager.INITIAL_PASSWORD;
 import static org.neo4j.kernel.api.security.AuthManager.INITIAL_USER_NAME;
+import static org.neo4j.server.security.systemgraph.ComponentVersion.LATEST_COMMUNITY_SECURITY_COMPONENT_VERSION;
 import static org.neo4j.server.security.systemgraph.SystemGraphRealmHelper.IS_SUSPENDED;
-import static org.neo4j.server.security.systemgraph.UserSecurityGraphComponent.LATEST_VERSION;
 
 public class SupportedCommunitySecurityComponentVersion extends KnownCommunitySecurityComponentVersion
 {
     private final UserRepository userRepository;
     private SecureHasher secureHasher;
 
-    SupportedCommunitySecurityComponentVersion( int version, String description, Log log, UserRepository userRepository )
+    SupportedCommunitySecurityComponentVersion( ComponentVersion componentVersion, Log log, UserRepository userRepository )
     {
-        super( version, description, log );
+        super( componentVersion, log );
         this.userRepository = userRepository;
         this.secureHasher = new SecureHasher();
     }
@@ -51,7 +52,8 @@ public class SupportedCommunitySecurityComponentVersion extends KnownCommunitySe
     @Override
     public void upgradeSecurityGraph( Transaction tx, KnownCommunitySecurityComponentVersion latest )
     {
-        Preconditions.checkState( latest.version == LATEST_VERSION, format("Latest version should be %s but was %s", LATEST_VERSION, latest.version ));
+        Preconditions.checkState( latest.version == LATEST_COMMUNITY_SECURITY_COMPONENT_VERSION,
+                format("Latest version should be %s but was %s", LATEST_COMMUNITY_SECURITY_COMPONENT_VERSION, latest.version ));
         this.setVersionProperty( tx, latest.version );
     }
 

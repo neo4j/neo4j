@@ -43,7 +43,7 @@ import static org.neo4j.kernel.database.DatabaseIdRepository.NAMED_SYSTEM_DATABA
 
 /**
  * This is the community component for databases.
- * Each database is represented by a node with label {@link DATABASE_LABEL} or {@link DELETED_DATABASE_LABEL}
+ * Each database is represented by a node with label :Database or :DeletedDatabase
  * and properties for the database name, status, uuid, creation time, store version and more.
  * There is also one node with label :DatabaseDefault and one with label :DatabaseAll,
  * that represent the default database and all databases, respectively.

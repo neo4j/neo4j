@@ -31,38 +31,47 @@ import org.neo4j.logging.Log;
  * Components that due to breaking schema changes requires migrations also needs versions.
  * Each component has its own version scheme starting at 0 and increasing each release with breaking changes.
  * The versions should be on the format [component]Version_[versionNbr]_[neo4jRelease].
+ * The version schemes are described in {@link ComponentVersion}.
  */
 public abstract class KnownSystemComponentVersion
 {
     private final Label versionLabel = Label.label( "Version" );
+    private final ComponentVersion componentVersion;
     protected final String componentVersionProperty;
     public final int version;
     public final String description;
     protected final Log log;
 
     public static final int UNKNOWN_VERSION = -1;
+    public static final String VERSION_35 = "Neo4j 3.5";
+    public static final String VERSION_36 = "Neo4j 3.6";
+    public static final String VERSION_40 = "Neo4j 4.0";
+    public static final String VERSION_41D1 = "Neo4j 4.1.0-Drop01";
+    public static final String VERSION_41 = "Neo4j 4.1";
+    public static final String VERSION_42D4 = "Neo4j 4.2.0-Drop04";
 
-    protected KnownSystemComponentVersion( String property, int version, String description, Log log )
+    protected KnownSystemComponentVersion( ComponentVersion componentVersion, Log log )
     {
-        this.componentVersionProperty = property;
-        this.version = version;
-        this.description = description;
+        this.componentVersion = componentVersion;
+        this.componentVersionProperty = componentVersion.getComponentName();
+        this.version = componentVersion.getVersion();
+        this.description = componentVersion.getDescription();
         this.log = log;
     }
 
     public boolean isCurrent()
     {
-        return false;
+        return componentVersion.isCurrent();
     }
 
     public boolean migrationSupported()
     {
-        return false;
+        return componentVersion.migrationSupported();
     }
 
     public boolean runtimeSupported()
     {
-        return false;
+        return componentVersion.runtimeSupported();
     }
 
     protected int getVersion( Transaction tx )

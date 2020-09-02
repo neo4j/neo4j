@@ -34,6 +34,9 @@ import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME
  */
 public abstract class AbstractSystemGraphComponent implements SystemGraphComponent
 {
+    public static final String SECURITY_USER_COMPONENT = "security-users";
+    public static final String SECURITY_PRIVILEGE_COMPONENT = "security-privileges";
+
     protected final Config config;
 
     public AbstractSystemGraphComponent( Config config )

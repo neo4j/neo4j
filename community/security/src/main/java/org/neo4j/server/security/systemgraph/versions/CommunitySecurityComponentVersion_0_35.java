@@ -24,19 +24,23 @@ import org.neo4j.kernel.impl.security.User;
 import org.neo4j.logging.Log;
 import org.neo4j.server.security.auth.ListSnapshot;
 import org.neo4j.server.security.auth.UserRepository;
+import org.neo4j.server.security.systemgraph.ComponentVersion;
 import org.neo4j.util.Preconditions;
 
 import static java.lang.String.format;
+import static org.neo4j.server.security.systemgraph.ComponentVersion.LATEST_COMMUNITY_SECURITY_COMPONENT_VERSION;
 import static org.neo4j.server.security.systemgraph.SystemGraphRealmHelper.IS_SUSPENDED;
-import static org.neo4j.server.security.systemgraph.UserSecurityGraphComponent.LATEST_VERSION;
 
+/**
+ * This is the UserSecurityComponent version for Neo4j 3.5
+ */
 public class CommunitySecurityComponentVersion_0_35 extends KnownCommunitySecurityComponentVersion
 {
     private final UserRepository userRepository;
 
     public CommunitySecurityComponentVersion_0_35( Log log, UserRepository userRepository )
     {
-        super( 0, "Neo4j 3.5", log );
+        super( ComponentVersion.COMMUNITY_SECURITY_35, log );
         this.userRepository = userRepository;
     }
 
@@ -76,7 +80,8 @@ public class CommunitySecurityComponentVersion_0_35 extends KnownCommunitySecuri
     @Override
     public void upgradeSecurityGraph( Transaction tx, KnownCommunitySecurityComponentVersion latest ) throws Exception
     {
-        Preconditions.checkState( latest.version == LATEST_VERSION, format("Latest version should be %s but was %s", LATEST_VERSION, latest.version ));
+        Preconditions.checkState( latest.version == LATEST_COMMUNITY_SECURITY_COMPONENT_VERSION,
+                format("Latest version should be %s but was %s", LATEST_COMMUNITY_SECURITY_COMPONENT_VERSION, latest.version ));
         userRepository.start();
         ListSnapshot<User> users = userRepository.getSnapshot();
 

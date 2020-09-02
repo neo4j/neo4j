@@ -32,8 +32,8 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.security.Credential;
 import org.neo4j.kernel.impl.security.User;
 import org.neo4j.logging.Log;
+import org.neo4j.server.security.systemgraph.ComponentVersion;
 import org.neo4j.server.security.systemgraph.KnownSystemComponentVersion;
-import org.neo4j.server.security.systemgraph.UserSecurityGraphComponent;
 import org.neo4j.string.UTF8;
 
 import static org.neo4j.kernel.api.security.AuthManager.INITIAL_PASSWORD;
@@ -44,27 +44,9 @@ public abstract class KnownCommunitySecurityComponentVersion extends KnownSystem
     public static final Label USER_LABEL = Label.label( "User" );
     private SecureHasher secureHasher = new SecureHasher();
 
-    KnownCommunitySecurityComponentVersion( int version, String description, Log log )
+    KnownCommunitySecurityComponentVersion( ComponentVersion componentVersion, Log log )
     {
-        super( UserSecurityGraphComponent.COMPONENT, version, description, log );
-    }
-
-    @Override
-    public boolean isCurrent()
-    {
-        return version == UserSecurityGraphComponent.LATEST_VERSION;
-    }
-
-    @Override
-    public boolean migrationSupported()
-    {
-        return UserSecurityGraphComponent.VERSIONS_MIGRATION_SUPPORTED.contains( version );
-    }
-
-    @Override
-    public boolean runtimeSupported()
-    {
-        return UserSecurityGraphComponent.VERSIONS_RUNTIME_SUPPORTED.contains( version );
+        super( componentVersion, log );
     }
 
     boolean componentNotInVersionNode( Transaction tx )

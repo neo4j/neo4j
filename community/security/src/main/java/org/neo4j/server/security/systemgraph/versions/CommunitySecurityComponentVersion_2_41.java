@@ -21,14 +21,15 @@ package org.neo4j.server.security.systemgraph.versions;
 
 import org.neo4j.logging.Log;
 import org.neo4j.server.security.auth.UserRepository;
+import org.neo4j.server.security.systemgraph.ComponentVersion;
 
 /**
- * Version 2 of the security model is identical to version 1, but with the Version node now existing and containing the correct version information.
+ * This is the UserSecurityComponent version for Neo4j 4.1
  */
 public class CommunitySecurityComponentVersion_2_41 extends SupportedCommunitySecurityComponentVersion
 {
     public CommunitySecurityComponentVersion_2_41( Log log, UserRepository userRepository )
     {
-        super( 2, "Neo4j 4.1", log, userRepository );
+        super( ComponentVersion.COMMUNITY_SECURITY_41, log, userRepository );
     }
 }
