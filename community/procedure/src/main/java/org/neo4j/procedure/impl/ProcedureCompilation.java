@@ -694,7 +694,8 @@ public final class ProcedureCompilation
                 block.tryCatch(
                         onSuccess ->
                                 onSuccess.returns( toAnyValue(
-                                        invoke( get( onSuccess.self(), aggregator ), methodReference( result ) ), result.getReturnType(), get( onSuccess.self(), context )) ),
+                                        invoke( get( onSuccess.self(), aggregator ), methodReference( result ) ), result.getReturnType(),
+                                        get( onSuccess.self(), context )) ),
                         onError ->
                                 onError( onError, format( "function `%s`", signature.name() ) ),
                         param( Throwable.class, "T" ) );
