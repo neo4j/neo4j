@@ -21,26 +21,30 @@ package org.neo4j.internal.index.label;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Stream;
+import java.util.stream.Collectors;
 
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
+import org.neo4j.test.extension.RandomExtension;
+import org.neo4j.test.rule.RandomRule;
+import org.neo4j.time.Clocks;
+import org.neo4j.time.FakeClock;
 
-import static java.lang.Math.abs;
-import static java.lang.System.currentTimeMillis;
+import static java.lang.Long.min;
 import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -51,12 +55,15 @@ import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.common.EntityType.RELATIONSHIP;
 
 @Neo4jLayoutExtension
+@ExtendWith( RandomExtension.class )
 class TokenScanWriteMonitorTest
 {
     @Inject
     private DefaultFileSystemAbstraction fs;
     @Inject
     private DatabaseLayout databaseLayout;
+    @Inject
+    private RandomRule random;
 
     private String baseName;
 
@@ -188,8 +195,9 @@ class TokenScanWriteMonitorTest
         // given
         File storeDir = databaseLayout.databaseDirectory().toFile();
         int rotationThreshold = 1_000;
+        RecordingMonitor monitor = new RecordingMonitor();
         TokenScanWriteMonitor writeMonitor = new TokenScanWriteMonitor( fs, databaseLayout, rotationThreshold, ByteUnit.Byte, 1, TimeUnit.DAYS,
-                NODE );
+                NODE, monitor, Clocks.nanoClock() );
 
         // when
         for ( int i = 0; requireNonNull( storeDir.listFiles() ).length < 5; i++ )
@@ -202,45 +210,41 @@ class TokenScanWriteMonitorTest
 
         // then
         writeMonitor.close();
-        for ( File file : requireNonNull( storeDir.listFiles( ( dir, name ) -> !name.equals( baseName ) ) ) )
-        {
-            long sizeDiff = abs( rotationThreshold - fs.getFileSize( file.toPath() ) );
-            assertTrue( sizeDiff < rotationThreshold / 10D );
-        }
+        assertThat( monitor.rotations ).isNotEmpty();
+        monitor.rotations.forEach( e -> assertThat( e.fileSize ).isGreaterThanOrEqualTo( rotationThreshold ) );
     }
 
     @Test
-    void shouldPruneAtConfiguredThreshold() throws IOException
+    void shouldPruneAtConfiguredThreshold()
     {
         // given
-        Path storeDir = databaseLayout.databaseDirectory();
         long pruneThreshold = 200;
+        RecordingMonitor monitor = new RecordingMonitor();
+        FakeClock clock = Clocks.fakeClock();
         TokenScanWriteMonitor writeMonitor =
-                new TokenScanWriteMonitor( fs, databaseLayout, 1_000, ByteUnit.Byte, pruneThreshold, TimeUnit.MILLISECONDS, NODE );
+                new TokenScanWriteMonitor( fs, databaseLayout, 500, ByteUnit.Byte, pruneThreshold, TimeUnit.MILLISECONDS, NODE, monitor, clock );
 
         // when
-        long startTime = currentTimeMillis();
+        long startTime = clock.millis();
         long endTime = startTime + TimeUnit.SECONDS.toMillis( 1 );
-        for ( int i = 0; currentTimeMillis() < endTime; i++ )
+        for ( int i = 0; clock.millis() < endTime; i++ )
         {
+            long timeLeft = endTime - clock.millis();
+            clock.forward( min( timeLeft, random.nextInt( 1, 10 ) ), TimeUnit.MILLISECONDS );
             writeMonitor.range( i, 1 );
             writeMonitor.prepareAdd( i, 5 );
             writeMonitor.mergeAdd( new TokenScanValue(), new TokenScanValue().set( 5 ) );
             writeMonitor.writeSessionEnded();
         }
-        long loopEnded = currentTimeMillis();
 
         // then
         writeMonitor.close();
-        try ( Stream<Path> list = Files.list( storeDir ) )
-        {
-            list.filter( p -> !p.getFileName().toString().equals( baseName ) ).forEach( file ->
-            {
-                long timestamp = TokenScanWriteMonitor.millisOf( file );
-                long diff = endTime - timestamp;
-                assertThat( diff ).isLessThan( (loopEnded - endTime) + pruneThreshold * 2 );
-            } );
-        }
+        List<Entry> remainingFiles =
+                monitor.rotations.stream().filter( r -> monitor.prunes.stream().noneMatch( p -> r.timestamp == p.timestamp ) ).collect( Collectors.toList() );
+        assertThat( remainingFiles ).isNotEmpty();
+        assertThat( monitor.rotations.size() ).isGreaterThan( remainingFiles.size() );
+        assertThat( monitor.prunes ).isNotEmpty();
+        remainingFiles.forEach( e -> assertThat( endTime - e.timestamp ).isLessThan( pruneThreshold * 2 ) );
     }
 
     @Test
@@ -253,5 +257,35 @@ class TokenScanWriteMonitorTest
         List<Path> filesAfter = Arrays.asList( fs.listFiles( databaseLayout.databaseDirectory() ) );
         assertThat( filesAfter.size() ).isEqualTo( 1 );
         assertThat( filesAfter.get( 0 ).getFileName().toString() ).contains( databaseLayout.relationshipTypeScanStore().getFileName().toString() );
+    }
+
+    private static class RecordingMonitor implements TokenScanWriteMonitor.Monitor
+    {
+        private final List<Entry> rotations = new ArrayList<>();
+        private final List<Entry> prunes = new ArrayList<>();
+
+        @Override
+        public void rotated( Path file, long timestamp, long fileSize )
+        {
+            rotations.add( new Entry( timestamp, fileSize ) );
+        }
+
+        @Override
+        public void pruned( Path file, long timestamp )
+        {
+            prunes.add( new Entry( timestamp, 0 ) );
+        }
+    }
+
+    private static class Entry
+    {
+        private final long timestamp;
+        private final long fileSize;
+
+        Entry( long timestamp, long fileSize )
+        {
+            this.timestamp = timestamp;
+            this.fileSize = fileSize;
+        }
     }
 }

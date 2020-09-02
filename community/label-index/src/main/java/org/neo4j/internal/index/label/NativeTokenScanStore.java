@@ -394,7 +394,9 @@ public abstract class NativeTokenScanStore implements TokenScanStore, EntityToke
             isDirty = true;
         }
 
-        writeMonitor = TokenScanWriteMonitor.ENABLED ? new TokenScanWriteMonitor( fs, directoryStructure, entityType() ) : NativeTokenScanWriter.EMPTY;
+        writeMonitor = TokenScanWriteMonitor.ENABLED
+                       ? new TokenScanWriteMonitor( fs, directoryStructure, entityType() )
+                       : NativeTokenScanWriter.EMPTY;
         singleWriter = new NativeTokenScanWriter( 1_000, writeMonitor );
 
         if ( isDirty )

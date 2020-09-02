@@ -45,10 +45,11 @@ import org.neo4j.io.fs.ReadableChannel;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.memory.NativeScopedBuffer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.time.Clocks;
+import org.neo4j.time.SystemNanoClock;
 import org.neo4j.util.FeatureToggles;
 
 import static java.lang.String.format;
-import static java.lang.System.currentTimeMillis;
 import static java.util.Comparator.comparing;
 import static java.util.concurrent.TimeUnit.DAYS;
 import static org.neo4j.io.ByteUnit.mebiBytes;
@@ -78,6 +79,8 @@ public class TokenScanWriteMonitor implements NativeTokenScanWriter.WriteMonitor
     private static final String ARG_TXFILTER = "txfilter";
 
     private final FileSystemAbstraction fs;
+    private final Monitor monitor;
+    private final SystemNanoClock clock;
     private final Path storeDir;
     private final Path file;
     private FlushableChannel channel;
@@ -88,14 +91,16 @@ public class TokenScanWriteMonitor implements NativeTokenScanWriter.WriteMonitor
 
     TokenScanWriteMonitor( FileSystemAbstraction fs, DatabaseLayout databaseLayout, EntityType entityType )
     {
-        this( fs, databaseLayout, ROTATION_SIZE_THRESHOLD, ByteUnit.Byte, PRUNE_THRESHOLD, TimeUnit.MILLISECONDS, entityType );
+        this( fs, databaseLayout, ROTATION_SIZE_THRESHOLD, ByteUnit.Byte, PRUNE_THRESHOLD, TimeUnit.MILLISECONDS, entityType, NO_MONITOR, Clocks.nanoClock() );
     }
 
     TokenScanWriteMonitor( FileSystemAbstraction fs, DatabaseLayout databaseLayout,
             long rotationThreshold, ByteUnit rotationThresholdUnit,
-            long pruneThreshold, TimeUnit pruneThresholdUnit, EntityType entityType )
+            long pruneThreshold, TimeUnit pruneThresholdUnit, EntityType entityType, Monitor monitor, SystemNanoClock clock )
     {
         this.fs = fs;
+        this.monitor = monitor;
+        this.clock = clock;
         this.rotationThreshold = rotationThresholdUnit.toBytes( rotationThreshold );
         this.pruneThreshold = pruneThresholdUnit.toMillis( pruneThreshold );
         this.storeDir = databaseLayout.databaseDirectory();
@@ -104,7 +109,7 @@ public class TokenScanWriteMonitor implements NativeTokenScanWriter.WriteMonitor
         {
             if ( fs.fileExists( file ) )
             {
-                moveAwayFile();
+                moveAwayFile( fs.getFileSize( file ) );
             }
             this.channel = instantiateChannel();
         }
@@ -221,7 +226,8 @@ public class TokenScanWriteMonitor implements NativeTokenScanWriter.WriteMonitor
         }
 
         position.add( 1 );
-        if ( position.sum() > rotationThreshold )
+        long fileSize = position.sum();
+        if ( fileSize > rotationThreshold )
         {
             // Rotate
             lock.lock();
@@ -229,7 +235,7 @@ public class TokenScanWriteMonitor implements NativeTokenScanWriter.WriteMonitor
             {
                 channel.prepareForFlush().flush();
                 channel.close();
-                moveAwayFile();
+                moveAwayFile( fileSize );
                 position.reset();
                 channel = instantiateChannel();
             }
@@ -243,13 +249,15 @@ public class TokenScanWriteMonitor implements NativeTokenScanWriter.WriteMonitor
             }
 
             // Prune
-            long time = currentTimeMillis();
+            long time = clock.millis();
             long threshold = time - pruneThreshold;
             for ( Path file : fs.listFiles( storeDir, ( dir, name ) -> name.startsWith( file.getFileName() + "-" ) ) )
             {
-                if ( millisOf( file ) < threshold )
+                long timestamp = millisOf( file );
+                if ( timestamp < threshold )
                 {
                     fs.deleteFile( file );
+                    monitor.pruned( file, timestamp );
                 }
             }
         }
@@ -298,7 +306,7 @@ public class TokenScanWriteMonitor implements NativeTokenScanWriter.WriteMonitor
         }
     }
 
-    private void moveAwayFile() throws IOException
+    private void moveAwayFile( long fileSize ) throws IOException
     {
         Path to;
         do
@@ -307,11 +315,12 @@ public class TokenScanWriteMonitor implements NativeTokenScanWriter.WriteMonitor
         }
         while ( fs.fileExists( to ) );
         fs.renameFile( file, to );
+        monitor.rotated( to, millisOf( to ), fileSize );
     }
 
     private Path timestampedFile()
     {
-        return storeDir.resolve( file.getFileName() + "-" + currentTimeMillis() );
+        return storeDir.resolve( file.getFileName() + "-" + clock.millis() );
     }
 
     /**
@@ -620,4 +629,24 @@ public class TokenScanWriteMonitor implements NativeTokenScanWriter.WriteMonitor
             return String.valueOf( bitsAsChars );
         }
     }
+
+    public interface Monitor
+    {
+        void rotated( Path file, long timestamp, long size );
+
+        void pruned( Path file, long timestamp );
+    }
+
+    public static final Monitor NO_MONITOR = new Monitor()
+    {
+        @Override
+        public void rotated( Path file, long timestamp, long size )
+        {
+        }
+
+        @Override
+        public void pruned( Path file, long timestamp )
+        {
+        }
+    };
 }
