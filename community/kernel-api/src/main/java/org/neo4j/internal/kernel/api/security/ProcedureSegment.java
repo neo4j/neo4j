@@ -21,16 +21,16 @@ package org.neo4j.internal.kernel.api.security;
 
 public class ProcedureSegment implements Segment
 {
-    private final String procedures;
+    private final String procedure;
 
-    public ProcedureSegment( String procedures )
+    public ProcedureSegment( String procedure )
     {
-        this.procedures = procedures;
+        this.procedure = procedure;
     }
 
-    public String getProcedures()
+    public String getProcedure()
     {
-        return procedures;
+        return procedure;
     }
 
     @Override
@@ -39,7 +39,7 @@ public class ProcedureSegment implements Segment
         if ( segment instanceof ProcedureSegment )
         {
             var other = (ProcedureSegment) segment;
-            return procedures == null || procedures.equals( other.procedures );
+            return procedure == null || procedure.equals( other.procedure );
         }
         return false;
     }
