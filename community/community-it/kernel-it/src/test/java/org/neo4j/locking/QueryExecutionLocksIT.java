@@ -809,6 +809,9 @@ class QueryExecutionLocksIT
         }
 
         @Override
-        public UUID getDatabaseId() { return null; }
+        public UUID getDatabaseId()
+        {
+            return null;
+        }
     }
 }

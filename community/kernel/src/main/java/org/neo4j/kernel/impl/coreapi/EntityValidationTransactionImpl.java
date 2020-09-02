@@ -25,9 +25,6 @@ import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.kernel.impl.core.NodeEntity;
 import org.neo4j.kernel.impl.core.RelationshipEntity;
 
-import static java.lang.String.format;
-import static org.neo4j.values.storable.Values.utf8Value;
-
 /**
  * Default implementation of {@link org.neo4j.graphdb.Transaction}
  */
@@ -39,20 +36,28 @@ abstract class EntityValidationTransactionImpl implements InternalTransaction
     {
         InternalTransaction internalTransaction;
 
-        if (entity instanceof NodeEntity) {
+        if ( entity instanceof NodeEntity )
+        {
             internalTransaction = ((NodeEntity) entity).getTransaction();
-        } else if (entity instanceof RelationshipEntity) {
+        }
+        else if ( entity instanceof RelationshipEntity )
+        {
             internalTransaction = ((RelationshipEntity) entity).getTransaction();
-        } else {
+        }
+        else
+        {
             internalTransaction = null;
         }
 
-        if (internalTransaction != null) {
-            if ( !internalTransaction.isOpen() ) {
-                throw new NotInTransactionException("must be open");
-            } else if ( internalTransaction.databaseId() != this.databaseId() )
+        if ( internalTransaction != null )
+        {
+            if ( !internalTransaction.isOpen() )
             {
-                throw new CypherExecutionException( "Node passed in is from another database. Not allowed to pass results from another database." );
+                throw new NotInTransactionException( "The transaction of the entity has been closed." );
+            }
+            else if ( internalTransaction.databaseId() != this.databaseId() )
+            {
+                throw new CypherExecutionException( "Can not use an entity from another database." );
             }
         }
 
