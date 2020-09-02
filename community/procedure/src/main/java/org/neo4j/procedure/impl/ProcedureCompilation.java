@@ -44,6 +44,7 @@ import org.neo4j.codegen.Expression;
 import org.neo4j.codegen.FieldReference;
 import org.neo4j.codegen.MethodDeclaration;
 import org.neo4j.collection.RawIterator;
+import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
@@ -60,6 +61,7 @@ import org.neo4j.kernel.api.procedure.CallableProcedure;
 import org.neo4j.kernel.api.procedure.CallableUserAggregationFunction;
 import org.neo4j.kernel.api.procedure.CallableUserFunction;
 import org.neo4j.kernel.api.procedure.Context;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.util.DefaultValueMapper;
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.values.AnyValue;
@@ -613,12 +615,14 @@ public final class ProcedureCompilation
         ClassHandle handle;
         try ( ClassGenerator generator = codeGenerator.generateClass( BaseStreamIterator.class, PACKAGE, iteratorName( outputType ) ) )
         {
+            FieldReference context = generator.field( Context.class, "ctx" );
             try ( CodeBlock constructor = generator.generateConstructor( param( Stream.class, "stream" ),
-                    param( ResourceTracker.class, "tracker" ), param( ProcedureSignature.class, "signature" ) ) )
+                    param( ResourceTracker.class, "tracker" ), param( ProcedureSignature.class, "signature" ), param( Context.class, "ctx" ) ) )
             {
                 constructor.expression(
                         invokeSuper( typeReference( BaseStreamIterator.class ), constructor.load( "stream" ),
                                 constructor.load( "tracker" ), constructor.load( "signature" ) ) );
+                constructor.put( constructor.self(), context, constructor.load( "ctx" ) );
             }
 
             try ( CodeBlock method = generator
@@ -631,7 +635,7 @@ public final class ProcedureCompilation
                 for ( int i = 0; i < fields.size(); i++ )
                 {
                     Field f = fields.get( i );
-                    mapped[i] = toAnyValue( get( method.load( "casted" ), field( f ) ), f.getType() );
+                    mapped[i] = toAnyValue( get( method.load( "casted" ), field( f ) ), f.getType(), get( method.self(), context ) );
                 }
                 method.returns( Expression.newInitializedArray( typeReference( AnyValue.class ), mapped ) );
             }
@@ -690,7 +694,7 @@ public final class ProcedureCompilation
                 block.tryCatch(
                         onSuccess ->
                                 onSuccess.returns( toAnyValue(
-                                        invoke( get( onSuccess.self(), aggregator ), methodReference( result ) ), result.getReturnType()) ),
+                                        invoke( get( onSuccess.self(), aggregator ), methodReference( result ) ), result.getReturnType(), get( onSuccess.self(), context )) ),
                         onError ->
                                 onError( onError, format( "function `%s`", signature.name() ) ),
                         param( Throwable.class, "T" ) );
@@ -748,7 +752,7 @@ public final class ProcedureCompilation
         //call the actual function
         block.assign( methodToCall.getReturnType(), "fromFunction",
                 invoke( block.load( USER_CLASS ), methodReference( methodToCall ), parameters ) );
-        block.returns( toAnyValue( block.load( "fromFunction" ), methodToCall.getReturnType() ) );
+        block.returns( toAnyValue( block.load( "fromFunction" ), methodToCall.getReturnType(), block.load( "ctx" ) ) );
     }
 
     private static void procedureBody( CodeBlock block,
@@ -777,8 +781,8 @@ public final class ProcedureCompilation
             block.assign( parameterizedType( Stream.class, procedureType( methodToCall ) ), "fromProcedure",
                     invoke( block.load( USER_CLASS ), methodReference( methodToCall ), parameters ) );
             block.returns( invoke( newInstance( iterator ),
-                    constructorReference( iterator, Stream.class, ResourceTracker.class, ProcedureSignature.class ),
-                    block.load( "fromProcedure" ), block.load( "tracker" ), getStatic( signature ) ) );
+                    constructorReference( iterator, Stream.class, ResourceTracker.class, ProcedureSignature.class, Context.class ),
+                    block.load( "fromProcedure" ), block.load( "tracker" ), getStatic( signature ), block.load( "ctx" ) ) );
         }
     }
 
@@ -884,7 +888,7 @@ public final class ProcedureCompilation
      * @param userType the type of the expression to map
      * @return an expression properly mapped to AnyValue
      */
-    private static Expression toAnyValue( Expression expression, Class<?> userType )
+    private static Expression toAnyValue( Expression expression, Class<?> userType, Expression context )
     {
         if ( AnyValue.class.isAssignableFrom( userType ) )
         {
@@ -975,8 +979,11 @@ public final class ProcedureCompilation
         }
         else if ( type.equals( NODE ) )
         {
-            return nullCheck( expression, invoke( methodReference( ValueUtils.class, NodeValue.class, "fromNodeEntity", Node.class ),
-                    expression ));
+            Expression internalTransaction = invoke( context, methodReference( Context.class, InternalTransaction.class, "internalTransactionOrNull" ) );
+            Expression getNode = invoke( internalTransaction, methodReference( InternalTransaction.class, Entity.class, "validateSameDB", Entity.class ), expression );
+            return nullCheck( expression,
+                              invoke( methodReference( ValueUtils.class, NodeValue.class, "fromNodeEntity", Node.class ),
+                                      getNode ) );
         }
         else if ( type.equals( RELATIONSHIP ) )
         {

@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
+import java.lang.Iterable
 import java.util
 
 import org.neo4j.graphdb.Direction
@@ -27,7 +28,6 @@ import org.neo4j.graphdb.Label
 import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.Relationship
 import org.neo4j.graphdb.RelationshipType
-import org.neo4j.graphdb.Transaction
 
 trait FakeEntityTestSupport {
 
@@ -68,9 +68,6 @@ trait FakeEntityTestSupport {
     def getAllProperties: util.Map[String, AnyRef] = null
 
     override def toString: String = "Rel"
-
-    override def getTransaction(): Transaction = ???
-
   }
 
   class FakeNode extends Node {
@@ -144,8 +141,6 @@ trait FakeEntityTestSupport {
     def getDegree(relType: RelationshipType): Int = ???
 
     def getDegree(relType: RelationshipType, direction: Direction): Int = ???
-
-    override def getTransaction(): Transaction = ???
   }
 
 }

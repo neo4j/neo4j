@@ -158,21 +158,7 @@ public class ExecutionEngine implements QueryExecutionEngine
                 {
                     if ( n instanceof WrappingEntity )
                     {
-                        Transaction t = ((WrappingEntity) n).getEntity().getTransaction();
-                        if(t instanceof InternalTransaction)
-                        {
-                            InternalTransaction entityInternalTransaction = (InternalTransaction) t;
-                            entityInternalTransaction.checkInTransaction();
-                            if ( entityInternalTransaction.databaseId() != context.databaseId().databaseId().uuid() )
-                            {
-                                throw new QueryExecutionKernelException(
-                                        new CypherExecutionException( "Not allowed to have parameters from another database." ) );
-                            }
-                            if ( !entityInternalTransaction.isOpen() )
-                            {
-                                throw new NotInTransactionException( "The transaction for at least one of the parameters is closed." );
-                            }
-                        }
+                        context.transaction().validateSameDB( ((WrappingEntity) n).getEntity() );
                     }
                 } );
     }
