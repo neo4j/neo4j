@@ -304,19 +304,19 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
     test(s"$cypherToken-$orderCapability: Cannot order by index when ordering is on same property name, but different node") {
       val plan = new given {
         indexOn("Awesome", "prop").providesOrder(orderCapability)
-      } getLogicalPlanFor s"MATCH (m:Awesome), (n:Awesome) WHERE n.prop > 'foo' RETURN m.prop ORDER BY m.prop $cypherToken"
+      } getLogicalPlanFor(s"MATCH (m:Awesome), (n:Awesome) WHERE n.prop > 'foo' RETURN m.prop ORDER BY m.prop $cypherToken", stripProduceResults = false)
 
       val expectedIndexOrder = if (orderCapability.asc) IndexOrderAscending else IndexOrderDescending
 
       plan._2 should equal(
-        Sort(
-          Projection(
-            CartesianProduct(
-              IndexSeek(
-                "n:Awesome(prop > 'foo')", indexOrder = expectedIndexOrder),
-              NodeByLabelScan("m", labelName("Awesome"), Set.empty, IndexOrderNone)),
-            Map("m.prop" -> prop("m", "prop"))),
-          Seq(sortOrder("m.prop")))
+        new LogicalPlanBuilder()
+          .produceResults("`m.prop`")
+          .cartesianProduct()
+          .|.nodeIndexOperator("n:Awesome(prop > 'foo')", indexOrder = expectedIndexOrder)
+          .sort(Seq(sortOrder("m.prop")))
+          .projection("m.prop AS `m.prop`")
+          .nodeByLabelScan("m", "Awesome")
+          .build()
       )
     }
 
@@ -325,12 +325,23 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
       // By keeping the best overall and the best sorted plan, we should only have one sort.
       val plan = new given {
         indexOn("Awesome", "prop").providesOrder(orderCapability)
-      } getLogicalPlanFor s"MATCH (m:Awesome)--()--(), (n:Awesome) WHERE n.prop > 'foo' RETURN m.prop ORDER BY m.prop $cypherToken"
+      } getLogicalPlanFor(s"MATCH (m:Awesome)-[r]-(x)-[p]-(y), (n:Awesome) WHERE n.prop > 'foo' RETURN m.prop ORDER BY m.prop $cypherToken", stripProduceResults = false)
 
-      plan._2 shouldBe a[Sort]
-      plan._2.treeCount {
-        case _: Sort => true
-      } shouldBe 1
+      val expectedIndexOrder = if (orderCapability.asc) IndexOrderAscending else IndexOrderDescending
+
+      plan._2 should equal(
+      new LogicalPlanBuilder()
+        .produceResults("`m.prop`")
+        .cartesianProduct()
+        .|.nodeIndexOperator("n:Awesome(prop > 'foo')", indexOrder = expectedIndexOrder)
+        .filter("NOT p = r")
+        .expand("(x)-[p]-(y)")
+        .expand("(m)-[r]-(x)")
+        .sort(Seq(sortOrder("m.prop")))
+        .projection("m.prop AS `m.prop`")
+        .nodeByLabelScan("m", "Awesome")
+        .build()
+      )
     }
 
     test(s"$cypherToken-$orderCapability: Order by index backed property should plan with provided order (starts with scan)") {
@@ -386,6 +397,8 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
     }
 
     /**
+     * TODO replace
+     *
      * Returns cardinalities based on matching against given patternNodes + predicates.
      * Only matches if the patternNodes and all predicates are covered by the patternNodesPredicateSelectivity nested map.
      * The resulting cardinality is the product of baseCardinality and the given selectivity for all matching predicates.

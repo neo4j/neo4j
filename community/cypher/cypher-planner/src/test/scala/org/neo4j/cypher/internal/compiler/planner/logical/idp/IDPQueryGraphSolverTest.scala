@@ -56,7 +56,7 @@ import org.scalatest.exceptions.TestFailedException
 class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
   self =>
 
-  case class EmptySolverConfig() extends IDPSolverConfig() {
+  case class EmptySolverConfig() extends SingleComponentIDPSolverConfig() {
     override def solvers(queryGraph: QueryGraph): Seq[Nothing] = Seq.empty
   }
 
@@ -520,7 +520,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
           // We disallow joins in a couple of configurations
           val joinsPossible: Boolean = solverConfig match {
             case ExpandOnlyIDPSolverConfig => false
-            case _ => true
+            case _                         => true
           }
           assertMinExpandsAndJoins(plan, numberOfPatternRelationships, joinsPossible, numberOfPatternRelationships)
         } catch {
@@ -906,6 +906,6 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
     }
   }
 
-  private def createQueryGraphSolver(monitor: IDPQueryGraphSolverMonitor, solverConfig: IDPSolverConfig) =
+  private def createQueryGraphSolver(monitor: IDPQueryGraphSolverMonitor, solverConfig: SingleComponentIDPSolverConfig) =
     IDPQueryGraphSolver(SingleComponentPlanner(monitor, solverConfig), cartesianProductsOrValueJoins, monitor)
 }

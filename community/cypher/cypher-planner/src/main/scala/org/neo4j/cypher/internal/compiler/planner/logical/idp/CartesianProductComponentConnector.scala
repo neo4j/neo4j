@@ -17,12 +17,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.planner.logical
+package org.neo4j.cypher.internal.compiler.planner.logical.idp
 
+import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
+import org.neo4j.cypher.internal.compiler.planner.logical.QueryPlannerKit
 import org.neo4j.cypher.internal.ir.QueryGraph
+import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
-package object idp {
-  type Seed[SolvableItem, Result] = Iterable[((Set[SolvableItem], Boolean), Result)]
-  type ComponentConnectorSolverStep = IDPSolverStep[QueryGraph, LogicalPlan, LogicalPlanningContext]
+case object CartesianProductComponentConnector
+  extends ComponentConnector {
+
+  def solverStep(queryGraph: QueryGraph, interestingOrder: InterestingOrder, kit: QueryPlannerKit): ComponentConnectorSolverStep =
+    (_: IdRegistry[QueryGraph], goal: Goal, table: IDPCache[LogicalPlan], context: LogicalPlanningContext) => {
+      for {
+        (leftGoal, rightGoal) <- goal.coveringSplits
+        leftPlan <- table(leftGoal).iterator
+        rightPlan <- table(rightGoal).iterator
+      } yield context.logicalPlanProducer.planCartesianProduct(leftPlan, rightPlan, context)
+    }
 }

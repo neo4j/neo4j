@@ -47,4 +47,26 @@ class IDPTableTest extends CypherFunSuite {
     table.put(goal, sorted = false, mock[LogicalPlan])
     table.put(goal, sorted = true, mock[LogicalPlan])
   }
+
+  test("goal coveringSplits empty") {
+    val goal = Goal(BitSet())
+    goal.coveringSplits.toSeq should be(empty)
+  }
+
+  test("goal coveringSplits single element") {
+    val goal = Goal(BitSet(1))
+    goal.coveringSplits.toSeq should be(empty)
+  }
+
+  test("goal coveringSplits multiple elements") {
+    val goal = Goal(BitSet(1, 2, 3))
+    goal.coveringSplits.toSeq should contain theSameElementsAs Seq(
+      (Goal(BitSet(1)), Goal(BitSet(2, 3))),
+      (Goal(BitSet(2)), Goal(BitSet(1, 3))),
+      (Goal(BitSet(3)), Goal(BitSet(1, 2))),
+      (Goal(BitSet(1, 2)), Goal(BitSet(3))),
+      (Goal(BitSet(1, 3)), Goal(BitSet(2))),
+      (Goal(BitSet(2, 3)), Goal(BitSet(1))),
+    )
+  }
 }

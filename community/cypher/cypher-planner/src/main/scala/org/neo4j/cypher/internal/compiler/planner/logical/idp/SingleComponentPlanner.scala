@@ -24,8 +24,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningSupport.RichHint
 import org.neo4j.cypher.internal.compiler.planner.logical.QueryPlannerKit
 import org.neo4j.cypher.internal.compiler.planner.logical.SortPlanner
-import org.neo4j.cypher.internal.compiler.planner.logical.SortPlanner.SatisfiedForPlan
-import org.neo4j.cypher.internal.compiler.planner.logical.SortPlanner.orderSatisfaction
+import org.neo4j.cypher.internal.compiler.planner.logical.idp.IDPQueryGraphSolver.extraRequirementForInterestingOrder
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.SingleComponentPlanner.planSinglePattern
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.expandSolverStep.planSinglePatternSide
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.expandSolverStep.planSingleProjectEndpoints
@@ -48,7 +47,7 @@ import org.neo4j.time.Stopwatch
  * written by Donald Kossmann and Konrad Stocker
  */
 case class SingleComponentPlanner(monitor: IDPQueryGraphSolverMonitor,
-                                  solverConfig: IDPSolverConfig = DefaultIDPSolverConfig,
+                                  solverConfig: SingleComponentIDPSolverConfig = DefaultIDPSolverConfig,
                                   leafPlanFinder: LeafPlanFinder = leafPlanOptions) extends SingleComponentPlannerTrait {
   override def planComponent(qg: QueryGraph, context: LogicalPlanningContext, kit: QueryPlannerKit, interestingOrder: InterestingOrder): BestPlans = {
     val bestPlansPerAvailableSymbol = leafPlanFinder(context.config, qg, interestingOrder, context)
@@ -57,27 +56,9 @@ case class SingleComponentPlanner(monitor: IDPQueryGraphSolverMonitor,
       if (qg.patternRelationships.nonEmpty) {
         val leaves = bestPlansPerAvailableSymbol.flatMap(bestPlans => bestPlans.bestResultFulfillingReq.toSeq :+ bestPlans.bestResult).toSet
 
-        val orderRequirement = if (interestingOrder.isEmpty) {
-          ExtraRequirement.empty
-        } else {
-          new ExtraRequirement[LogicalPlan]() {
-            override def fulfils(plan: LogicalPlan): Boolean = {
-              val asSortedAsPossible = SatisfiedForPlan(plan)
-              orderSatisfaction(interestingOrder, context, plan) match {
-                case asSortedAsPossible() => true
-                case _ => false
-              }
-            }
-          }
-        }
-
+        val orderRequirement = extraRequirementForInterestingOrder(context, interestingOrder)
         val generators = solverConfig.solvers(qg).map(_ (qg))
-        val selectingGenerators = generators.map(_.map(plan => kit.select(plan, qg)))
-        val combinedGenerators = if (interestingOrder.isEmpty) selectingGenerators else {
-          val sortingGenerators = selectingGenerators.map(_.flatMap(plan => SortPlanner.maybeSortedPlan(plan, interestingOrder, context).filterNot(_ == plan)))
-          selectingGenerators ++ sortingGenerators
-        }
-        val generator = combinedGenerators.foldLeft(IDPSolverStep.empty[PatternRelationship, LogicalPlan, LogicalPlanningContext])(_ ++ _)
+        val generator = IDPQueryGraphSolver.composeGenerators(qg, interestingOrder, kit, context, generators)
 
         val solver = new IDPSolver[PatternRelationship, LogicalPlan, LogicalPlanningContext](
           generator = generator,

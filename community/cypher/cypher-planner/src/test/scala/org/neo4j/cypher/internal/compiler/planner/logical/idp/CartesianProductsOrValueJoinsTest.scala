@@ -243,7 +243,7 @@ class CartesianProductsOrValueJoinsTest extends CypherFunSuite with LogicalPlann
     val equalityComparison = equals(lhs, rhs)
 
     // when
-    val result = cartesianProductsOrValueJoins.valueJoins(Seq(equalityComparison))
+    val result = cartesianProductsOrValueJoins.joinPredicateCandidates(Seq(equalityComparison))
 
     // then
     result should equal(Set(equalityComparison))
@@ -254,7 +254,7 @@ class CartesianProductsOrValueJoinsTest extends CypherFunSuite with LogicalPlann
     val equalityComparison = propEquality("x","id", 42)
 
     // when
-    val result = cartesianProductsOrValueJoins.valueJoins(Seq(equalityComparison))
+    val result = cartesianProductsOrValueJoins.joinPredicateCandidates(Seq(equalityComparison))
 
     // then
     result should be(empty)
@@ -267,7 +267,7 @@ class CartesianProductsOrValueJoinsTest extends CypherFunSuite with LogicalPlann
     val equalityComparison = equals(lhs, rhs)
 
     // when
-    val result = cartesianProductsOrValueJoins.valueJoins(Seq(equalityComparison))
+    val result = cartesianProductsOrValueJoins.joinPredicateCandidates(Seq(equalityComparison))
 
     // then
     result should be(empty)
@@ -285,7 +285,7 @@ class CartesianProductsOrValueJoinsTest extends CypherFunSuite with LogicalPlann
     val pred3 = equals(x_id2, lit)
 
     // when
-    val result = cartesianProductsOrValueJoins.valueJoins(Seq(pred1, pred2, pred3))
+    val result = cartesianProductsOrValueJoins.joinPredicateCandidates(Seq(pred1, pred2, pred3))
 
     // then
     result should be(Set(pred2))
