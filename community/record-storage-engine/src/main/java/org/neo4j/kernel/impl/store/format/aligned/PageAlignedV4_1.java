@@ -29,7 +29,7 @@ import org.neo4j.kernel.impl.store.format.standard.LabelTokenRecordFormat;
 import org.neo4j.kernel.impl.store.format.standard.NodeRecordFormat;
 import org.neo4j.kernel.impl.store.format.standard.PropertyKeyTokenRecordFormat;
 import org.neo4j.kernel.impl.store.format.standard.PropertyRecordFormat;
-import org.neo4j.kernel.impl.store.format.standard.RelationshipGroupRecordFormat;
+import org.neo4j.kernel.impl.store.format.standard.RelationshipGroupRecordFormatV4_0;
 import org.neo4j.kernel.impl.store.format.standard.RelationshipRecordFormat;
 import org.neo4j.kernel.impl.store.format.standard.RelationshipTypeTokenRecordFormat;
 import org.neo4j.kernel.impl.store.format.standard.SchemaRecordFormat;
@@ -87,7 +87,7 @@ public class PageAlignedV4_1 extends BaseRecordFormats
     @Override
     public RecordFormat<RelationshipGroupRecord> relationshipGroup()
     {
-        return new RelationshipGroupRecordFormat( true );
+        return new RelationshipGroupRecordFormatV4_0( true );
     }
 
     @Override

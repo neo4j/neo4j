@@ -67,7 +67,7 @@ public class StandardV4_0 extends BaseRecordFormats
     @Override
     public RecordFormat<RelationshipGroupRecord> relationshipGroup()
     {
-        return new RelationshipGroupRecordFormat();
+        return new RelationshipGroupRecordFormatV4_0();
     }
 
     @Override

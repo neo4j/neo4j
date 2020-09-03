@@ -26,7 +26,7 @@ import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 
-public class RelationshipGroupRecordFormat extends BaseOneByteHeaderRecordFormat<RelationshipGroupRecord>
+public class RelationshipGroupRecordFormatV4_0 extends BaseOneByteHeaderRecordFormat<RelationshipGroupRecord>
 {
    /* Record layout
     *
@@ -37,12 +37,12 @@ public class RelationshipGroupRecordFormat extends BaseOneByteHeaderRecordFormat
 
     public static final int RECORD_SIZE = 25;
 
-    public RelationshipGroupRecordFormat()
+    public RelationshipGroupRecordFormatV4_0()
     {
         this( false );
     }
 
-    public RelationshipGroupRecordFormat( boolean pageAligned )
+    public RelationshipGroupRecordFormatV4_0( boolean pageAligned )
     {
         super( fixedRecordSize( RECORD_SIZE ), 0, IN_USE_BIT, StandardFormatSettings.RELATIONSHIP_GROUP_MAXIMUM_ID_BITS, pageAligned );
     }
@@ -53,16 +53,13 @@ public class RelationshipGroupRecordFormat extends BaseOneByteHeaderRecordFormat
         // [    ,   x] in use
         // [    ,xxx ] high next id bits
         // [ xxx,    ] high firstOut bits
-        // [x   ,    ] has external degrees (out)
         long headerByte = cursor.getByte();
         boolean inUse = isInUse( (byte) headerByte );
         record.setInUse( inUse );
         if ( mode.shouldLoad( inUse ) )
         {
-            // [    ,   x] has external degrees (in)
             // [    ,xxx ] high firstIn bits
             // [ xxx,    ] high firstLoop bits
-            // [x   ,    ] has external degrees (loop)
             long highByte = cursor.getByte();
 
             int type = cursor.getShort() & 0xFFFF;
@@ -77,19 +74,12 @@ public class RelationshipGroupRecordFormat extends BaseOneByteHeaderRecordFormat
             long nextInMod = (highByte & 0xE) << 31;
             long nextLoopMod = (highByte & 0x70) << 28;
 
-            boolean hasExternalDegreesOut = (headerByte & 0x80) != 0;
-            boolean hasExternalDegreesIn = (highByte & 0x1) != 0;
-            boolean hasExternalDegreesLoop = (highByte & 0x80) != 0;
-
             record.initialize( inUse, type,
                     BaseRecordFormat.longFromIntAndMod( nextOutLowBits, nextOutMod ),
                     BaseRecordFormat.longFromIntAndMod( nextInLowBits, nextInMod ),
                     BaseRecordFormat.longFromIntAndMod( nextLoopLowBits, nextLoopMod ),
                     owningNode,
                     BaseRecordFormat.longFromIntAndMod( nextLowBits, nextMod ) );
-            record.setHasExternalDegreesOut( hasExternalDegreesOut );
-            record.setHasExternalDegreesIn( hasExternalDegreesIn );
-            record.setHasExternalDegreesLoop( hasExternalDegreesLoop );
         }
     }
 
@@ -106,21 +96,15 @@ public class RelationshipGroupRecordFormat extends BaseOneByteHeaderRecordFormat
                              (record.getFirstIn() & 0x700000000L) >> 31;
             long nextLoopMod = record.getFirstLoop() == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 :
                                (record.getFirstLoop() & 0x700000000L) >> 28;
-            long hasExternalDegreesOutMod = record.hasExternalDegreesOut() ? 0x80 : 0;
-            long hasExternalDegreesInMod = record.hasExternalDegreesIn() ? 0x1 : 0;
-            long hasExternalDegreesLoopMod = record.hasExternalDegreesLoop() ? 0x80 : 0;
 
             // [    ,   x] in use
             // [    ,xxx ] high next id bits
             // [ xxx,    ] high firstOut bits
-            // [x   ,    ] has external degrees (out)
-            cursor.putByte( (byte) (hasExternalDegreesOutMod | nextOutMod | nextMod | 1) );
+            cursor.putByte( (byte) (nextOutMod | nextMod | 1) );
 
-            // [    ,   x] has external degrees (in)
             // [    ,xxx ] high firstIn bits
             // [ xxx,    ] high firstLoop bits
-            // [x   ,    ] has external degrees (loop)
-            cursor.putByte( (byte) (hasExternalDegreesLoopMod | nextLoopMod | nextInMod | hasExternalDegreesInMod) );
+            cursor.putByte( (byte) (nextLoopMod | nextInMod) );
 
             cursor.putShort( (short) record.getType() );
             cursor.putInt( (int) record.getNext() );

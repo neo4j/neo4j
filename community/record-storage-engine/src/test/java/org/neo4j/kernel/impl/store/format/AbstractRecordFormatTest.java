@@ -82,7 +82,7 @@ public abstract class AbstractRecordFormatTest
     public void before( TestInfo testInfo )
     {
         testName = testInfo.getDisplayName();
-        generators = new LimitedRecordGenerators( random.randomValues(), entityBits, propertyBits, 40, 16, -1 );
+        generators = new LimitedRecordGenerators( random.randomValues(), entityBits, propertyBits, 40, 16, -1, formats );
     }
 
     @Test

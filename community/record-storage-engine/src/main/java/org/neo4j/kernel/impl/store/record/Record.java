@@ -43,12 +43,14 @@ public enum Record
 
     NO_LABELS_FIELD( (byte)0, 0 );
 
-    public static final byte CREATED_IN_TX = 2;
-    public static final byte REQUIRE_SECONDARY_UNIT = 4;
-    public static final byte HAS_SECONDARY_UNIT = 8;
-    public static final byte USES_FIXED_REFERENCE_FORMAT = 16;
+    public static final int CREATED_IN_TX = 0b0000_0010;
+    public static final int REQUIRE_SECONDARY_UNIT = 0b0000_0100;
+    public static final int HAS_SECONDARY_UNIT = 0b0000_1000;
+    public static final int USES_FIXED_REFERENCE_FORMAT = 0b0001_0000;
     // Named a bit more generically and elusive because this flag is used for different things depending on which type of record it is
-    public static final byte ADDITIONAL_FLAG_1 = 32;
+    public static final int ADDITIONAL_FLAG_1 = 0b0010_0000;
+    public static final int ADDITIONAL_FLAG_2 = 0b0100_0000;
+    public static final int ADDITIONAL_FLAG_3 = 0b1000_0000;
 
     private final byte byteValue;
     private final int intValue;

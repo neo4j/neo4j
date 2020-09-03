@@ -49,7 +49,7 @@ import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 
 class LogCommandSerializationV4_0Test
 {
-    private static final long NULL_REF = NULL_REFERENCE.longValue();
+    static final long NULL_REF = NULL_REFERENCE.longValue();
 
     @Test
     void shouldReadPropertyKeyCommand() throws Exception

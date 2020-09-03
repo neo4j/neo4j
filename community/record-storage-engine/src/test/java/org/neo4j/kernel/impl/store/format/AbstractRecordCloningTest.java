@@ -87,7 +87,7 @@ public abstract class AbstractRecordCloningTest
     void setUp()
     {
         RecordFormats formats = formats();
-        RecordGenerators generators = new LimitedRecordGenerators( random.randomValues(), entityBits(), propertyBits(), 40, 16, -1 );
+        RecordGenerators generators = new LimitedRecordGenerators( random.randomValues(), entityBits(), propertyBits(), 40, 16, -1, formats );
         keys = FullyCoveringRecordKeys.INSTANCE;
         idSequence = new BatchingIdSequence( 1 );
         nodes = generators.node();

@@ -33,6 +33,9 @@ public class RelationshipGroupRecord extends AbstractBaseRecord
     private long firstIn;
     private long firstLoop;
     private long owningNode;
+    private boolean externalDegreesOut;
+    private boolean externalDegreesIn;
+    private boolean externalDegreesLoop;
 
     // Not stored, just kept in memory temporarily when loading the group chain
     private long prev;
@@ -52,6 +55,9 @@ public class RelationshipGroupRecord extends AbstractBaseRecord
         this.firstLoop = other.firstLoop;
         this.owningNode = other.owningNode;
         this.prev = other.prev;
+        this.externalDegreesOut = other.externalDegreesOut;
+        this.externalDegreesIn = other.externalDegreesIn;
+        this.externalDegreesLoop = other.externalDegreesLoop;
     }
 
     public RelationshipGroupRecord initialize( boolean inUse, int type, long firstOut, long firstIn, long firstLoop, long owningNode, long next )
@@ -64,6 +70,9 @@ public class RelationshipGroupRecord extends AbstractBaseRecord
         this.owningNode = owningNode;
         this.next = next;
         this.prev = NULL_REFERENCE.intValue();
+        this.externalDegreesOut = false;
+        this.externalDegreesIn = false;
+        this.externalDegreesLoop = false;
         return this;
     }
 
@@ -157,6 +166,36 @@ public class RelationshipGroupRecord extends AbstractBaseRecord
         this.owningNode = owningNode;
     }
 
+    public boolean hasExternalDegreesOut()
+    {
+        return externalDegreesOut;
+    }
+
+    public void setHasExternalDegreesOut( boolean externalDegrees )
+    {
+        this.externalDegreesOut = externalDegrees;
+    }
+
+    public boolean hasExternalDegreesIn()
+    {
+        return externalDegreesIn;
+    }
+
+    public void setHasExternalDegreesIn( boolean externalDegrees )
+    {
+        this.externalDegreesIn = externalDegrees;
+    }
+
+    public boolean hasExternalDegreesLoop()
+    {
+        return externalDegreesLoop;
+    }
+
+    public void setHasExternalDegreesLoop( boolean externalDegrees )
+    {
+        this.externalDegreesLoop = externalDegrees;
+    }
+
     @Override
     public String toString()
     {
@@ -169,6 +208,7 @@ public class RelationshipGroupRecord extends AbstractBaseRecord
                ",next=" + next +
                ",used=" + inUse() +
                ",owner=" + getOwningNode() +
+               ",externalDegrees=[out:" + externalDegreesOut + ",in:" + externalDegreesIn + ",loop:" + externalDegreesLoop + "]" +
                secondaryUnitToString() + "]";
     }
 
@@ -195,13 +235,15 @@ public class RelationshipGroupRecord extends AbstractBaseRecord
         }
         RelationshipGroupRecord that = (RelationshipGroupRecord) o;
         return type == that.type && next == that.next && firstOut == that.firstOut && firstIn == that.firstIn &&
-                firstLoop == that.firstLoop && owningNode == that.owningNode;
+                firstLoop == that.firstLoop && owningNode == that.owningNode &&
+                externalDegreesOut == that.externalDegreesOut && externalDegreesIn == that.externalDegreesIn && externalDegreesLoop == that.externalDegreesLoop;
         // don't compare prev since it's not persisted
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash( super.hashCode(), type, next, firstOut, firstIn, firstLoop, owningNode, prev );
+        return Objects.hash( super.hashCode(), type, next, firstOut, firstIn, firstLoop, owningNode, prev, externalDegreesOut, externalDegreesIn,
+                externalDegreesLoop );
     }
 }

@@ -364,6 +364,18 @@ public final class Bits
         return (flags & flag) == flag;
     }
 
+    public static boolean bitFlag( int flags, int flag )
+    {
+        assert (flag & (-flag)) == flag : "flag should be a power of 2, not: 0x" + Integer.toHexString( flag );
+        return (flags & flag) == flag;
+    }
+
+    public static int bitFlag( boolean value, int flag )
+    {
+        assert Integer.bitCount( flag ) == 1 : "flag should be a power of 2, not: 0x" + Integer.toHexString( flag );
+        return value ? flag : 0;
+    }
+
     public static byte bitFlag( boolean value, byte flag )
     {
         assert (flag & (-flag)) == flag : "flag should be a power of 2, not: 0x" + Integer.toHexString( flag );
@@ -384,6 +396,17 @@ public final class Bits
             result |= flag;
         }
         return result;
+    }
+
+    public static byte bitFlags( int... flags )
+    {
+        int result = 0;
+        for ( int flag : flags )
+        {
+            result |= flag;
+        }
+        assert (result & ~0xFF) == 0;
+        return (byte) result;
     }
 
     /**

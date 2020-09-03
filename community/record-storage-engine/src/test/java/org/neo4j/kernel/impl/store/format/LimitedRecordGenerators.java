@@ -51,8 +51,11 @@ public class LimitedRecordGenerators implements RecordGenerators
     private final long nullValue;
     private final float fractionNullValues;
 
-    public LimitedRecordGenerators( RandomValues random, int entityBits, int propertyBits, int nodeLabelBits,
-            int tokenBits, long nullValue )
+    // toggles from capabilities
+    private final boolean groupExternalDegrees;
+
+    public LimitedRecordGenerators( RandomValues random, int entityBits, int propertyBits, int nodeLabelBits, int tokenBits, long nullValue,
+            RecordFormats formats )
     {
         this.random = random;
         this.entityBits = entityBits;
@@ -61,6 +64,7 @@ public class LimitedRecordGenerators implements RecordGenerators
         this.tokenBits = tokenBits;
         this.nullValue = nullValue;
         this.fractionNullValues = 0.2f;
+        this.groupExternalDegrees = formats.hasCapability( RecordStorageCapability.GROUP_DEGREES_STORE );
     }
 
     @Override
@@ -74,14 +78,24 @@ public class LimitedRecordGenerators implements RecordGenerators
     @Override
     public Generator<RelationshipGroupRecord> relationshipGroup()
     {
-        return ( recordSize, format, recordId ) -> new RelationshipGroupRecord( recordId ).initialize(
-                random.nextBoolean(),
-                randomInt( tokenBits ),
-                randomLongOrOccasionallyNull( entityBits ),
-                randomLongOrOccasionallyNull( entityBits ),
-                randomLongOrOccasionallyNull( entityBits ),
-                randomLongOrOccasionallyNull( entityBits ),
-                randomLongOrOccasionallyNull( entityBits ) );
+        return ( recordSize, format, recordId ) ->
+        {
+            RelationshipGroupRecord record = new RelationshipGroupRecord( recordId ).initialize(
+                    random.nextBoolean(),
+                    randomInt( tokenBits ),
+                    randomLongOrOccasionallyNull( entityBits ),
+                    randomLongOrOccasionallyNull( entityBits ),
+                    randomLongOrOccasionallyNull( entityBits ),
+                    randomLongOrOccasionallyNull( entityBits ),
+                    randomLongOrOccasionallyNull( entityBits ) );
+            if ( groupExternalDegrees )
+            {
+                record.setHasExternalDegreesOut( random.nextBoolean() );
+                record.setHasExternalDegreesIn( random.nextBoolean() );
+                record.setHasExternalDegreesLoop( random.nextBoolean() );
+            }
+            return record;
+        };
     }
 
     @Override

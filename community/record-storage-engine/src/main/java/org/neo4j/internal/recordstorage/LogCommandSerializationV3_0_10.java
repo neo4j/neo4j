@@ -155,7 +155,7 @@ class LogCommandSerializationV3_0_10 extends LogCommandSerialization
     private RelationshipGroupRecord readRelationshipGroupRecord( long id, ReadableChannel channel )
             throws IOException
     {
-        byte flags = channel.get();
+        int flags = channel.get() & 0xFF;
         boolean inUse = bitFlag( flags, Record.IN_USE.byteValue() );
         boolean requireSecondaryUnit = bitFlag( flags, Record.REQUIRE_SECONDARY_UNIT );
         boolean hasSecondaryUnit = bitFlag( flags, Record.HAS_SECONDARY_UNIT );

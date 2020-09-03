@@ -44,6 +44,7 @@ public class FullyCoveringRecordKeys implements RecordKeys
     {
         return ( written, read ) ->
         {
+            assertEquals( written, read );
             assertEquals( written.getNextProp(), read.getNextProp() );
             assertEquals( written.getNextRel(), read.getNextRel() );
             assertEquals( written.getLabelField(), read.getLabelField() );
@@ -58,6 +59,7 @@ public class FullyCoveringRecordKeys implements RecordKeys
     {
         return ( written, read ) ->
         {
+            assertEquals( written, read );
             assertEquals( written.getNextProp(), read.getNextProp() );
             assertEquals( written.getFirstNode(), read.getFirstNode() );
             assertEquals( written.getSecondNode(), read.getSecondNode() );
@@ -75,7 +77,7 @@ public class FullyCoveringRecordKeys implements RecordKeys
     @Override
     public RecordKey<PropertyRecord> property()
     {
-        return new RecordKey<PropertyRecord>()
+        return new RecordKey<>()
         {
             @Override
             public void assertRecordsEquals( PropertyRecord written, PropertyRecord read )
@@ -117,6 +119,7 @@ public class FullyCoveringRecordKeys implements RecordKeys
     {
         return ( written, read ) ->
         {
+            assertEquals( written, read );
             assertEquals( written.getType(), read.getType() );
             assertEquals( written.getFirstOut(), read.getFirstOut() );
             assertEquals( written.getFirstIn(), read.getFirstIn() );
@@ -132,6 +135,7 @@ public class FullyCoveringRecordKeys implements RecordKeys
     {
         return ( written, read ) ->
         {
+            assertEquals( written, read );
             assertEquals( written.getNameId(), read.getNameId() );
             assertEquals( written.isUseFixedReferences(), read.isUseFixedReferences() );
         };
@@ -142,6 +146,7 @@ public class FullyCoveringRecordKeys implements RecordKeys
     {
         return ( written, read ) ->
         {
+            assertEquals( written, read );
             assertEquals( written.getNameId(), read.getNameId() );
             assertEquals( written.getPropertyCount(), read.getPropertyCount() );
         };
@@ -152,6 +157,7 @@ public class FullyCoveringRecordKeys implements RecordKeys
     {
         return ( written, read ) ->
         {
+            assertEquals( written, read );
             assertEquals( written.getNameId(), read.getNameId() );
             assertEquals( written.isUseFixedReferences(), read.isUseFixedReferences() );
         };

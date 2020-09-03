@@ -20,29 +20,26 @@
 package org.neo4j.internal.recordstorage;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.IOException;
 
 import org.neo4j.kernel.impl.store.record.MetaDataRecord;
+import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 import org.neo4j.storageengine.api.CommandReader;
 import org.neo4j.storageengine.api.StorageCommand;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
+import org.neo4j.test.rule.RandomRule;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@ExtendWith( RandomExtension.class )
 class LogCommandSerializationV4_3D_3Test extends LogCommandSerializationV4_2Test
 {
-    @Override
-    protected CommandReader createReader()
-    {
-        return new LogCommandSerializationV4_3_D3();
-    }
-
-    @Override
-    protected LogCommandSerialization writer()
-    {
-        return LogCommandSerializationV4_3_D3.INSTANCE;
-    }
+    @Inject
+    private RandomRule random;
 
     @Test
     void shouldReadAndWriteMetaDataCommand() throws IOException
@@ -63,5 +60,42 @@ class LogCommandSerializationV4_3D_3Test extends LogCommandSerializationV4_2Test
 
         // Then
         assertBeforeAndAfterEquals( readCommand, before, after );
+    }
+
+    @Test
+    void shouldReadRelationshipGroupCommandIncludingExternalDegrees() throws Throwable
+    {
+        // Given
+        InMemoryClosableChannel channel = new InMemoryClosableChannel();
+        RelationshipGroupRecord before = new RelationshipGroupRecord( 42 ).initialize( false, 3, NULL_REF, NULL_REF, NULL_REF, NULL_REF, NULL_REF );
+        RelationshipGroupRecord after = new RelationshipGroupRecord( 42 ).initialize( true, 3, 4, 5, 6, 7, 8 );
+        after.setHasExternalDegreesOut( random.nextBoolean() );
+        after.setHasExternalDegreesIn( random.nextBoolean() );
+        after.setHasExternalDegreesLoop( random.nextBoolean() );
+        after.setCreated();
+
+        new Command.RelationshipGroupCommand( writer(), before, after ).serialize( channel );
+
+        // When
+        CommandReader reader = createReader();
+        StorageCommand command = reader.read( channel );
+        assertTrue( command instanceof Command.RelationshipGroupCommand);
+
+        Command.RelationshipGroupCommand relationshipGroupCommand = (Command.RelationshipGroupCommand) command;
+
+        // Then
+        assertBeforeAndAfterEquals( relationshipGroupCommand, before, after );
+    }
+
+    @Override
+    protected CommandReader createReader()
+    {
+        return new LogCommandSerializationV4_3_D3();
+    }
+
+    @Override
+    protected LogCommandSerialization writer()
+    {
+        return LogCommandSerializationV4_3_D3.INSTANCE;
     }
 }
