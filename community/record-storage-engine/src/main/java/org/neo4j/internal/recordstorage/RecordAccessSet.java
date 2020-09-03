@@ -19,8 +19,10 @@
  */
 package org.neo4j.internal.recordstorage;
 
+import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
@@ -30,21 +32,21 @@ import org.neo4j.kernel.impl.store.record.SchemaRecord;
 
 public interface RecordAccessSet
 {
-    RecordAccess<NodeRecord> getNodeRecords();
+    RecordAccess<NodeRecord, Void> getNodeRecords();
 
-    RecordAccess<PropertyRecord> getPropertyRecords();
+    RecordAccess<PropertyRecord, PrimitiveRecord> getPropertyRecords();
 
-    RecordAccess<RelationshipRecord> getRelRecords();
+    RecordAccess<RelationshipRecord, Void> getRelRecords();
 
-    RecordAccess<RelationshipGroupRecord> getRelGroupRecords();
+    RecordAccess<RelationshipGroupRecord, Integer> getRelGroupRecords();
 
-    RecordAccess<SchemaRecord> getSchemaRuleChanges();
+    RecordAccess<SchemaRecord, SchemaRule> getSchemaRuleChanges();
 
-    RecordAccess<PropertyKeyTokenRecord> getPropertyKeyTokenChanges();
+    RecordAccess<PropertyKeyTokenRecord, Void> getPropertyKeyTokenChanges();
 
-    RecordAccess<LabelTokenRecord> getLabelTokenChanges();
+    RecordAccess<LabelTokenRecord, Void> getLabelTokenChanges();
 
-    RecordAccess<RelationshipTypeTokenRecord> getRelationshipTypeTokenChanges();
+    RecordAccess<RelationshipTypeTokenRecord, Void> getRelationshipTypeTokenChanges();
 
     boolean hasChanges();
 

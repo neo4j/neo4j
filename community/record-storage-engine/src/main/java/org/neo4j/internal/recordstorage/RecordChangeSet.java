@@ -22,8 +22,10 @@ package org.neo4j.internal.recordstorage;
 import org.apache.commons.lang3.mutable.MutableInt;
 
 import org.neo4j.internal.recordstorage.RecordAccess.Loader;
+import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
@@ -34,14 +36,14 @@ import org.neo4j.memory.MemoryTracker;
 
 public class RecordChangeSet implements RecordAccessSet
 {
-    private final RecordAccess<NodeRecord> nodeRecords;
-    private final RecordAccess<PropertyRecord> propertyRecords;
-    private final RecordAccess<RelationshipRecord> relRecords;
-    private final RecordAccess<RelationshipGroupRecord> relGroupRecords;
-    private final RecordAccess<SchemaRecord> schemaRuleChanges;
-    private final RecordAccess<PropertyKeyTokenRecord> propertyKeyTokenChanges;
-    private final RecordAccess<LabelTokenRecord> labelTokenChanges;
-    private final RecordAccess<RelationshipTypeTokenRecord> relationshipTypeTokenChanges;
+    private final RecordAccess<NodeRecord, Void> nodeRecords;
+    private final RecordAccess<PropertyRecord, PrimitiveRecord> propertyRecords;
+    private final RecordAccess<RelationshipRecord, Void> relRecords;
+    private final RecordAccess<RelationshipGroupRecord, Integer> relGroupRecords;
+    private final RecordAccess<SchemaRecord, SchemaRule> schemaRuleChanges;
+    private final RecordAccess<PropertyKeyTokenRecord, Void> propertyKeyTokenChanges;
+    private final RecordAccess<LabelTokenRecord, Void> labelTokenChanges;
+    private final RecordAccess<RelationshipTypeTokenRecord, Void> relationshipTypeTokenChanges;
     private final MutableInt changeCounter = new MutableInt();
 
     public RecordChangeSet( Loaders loaders, MemoryTracker memoryTracker )
@@ -58,14 +60,14 @@ public class RecordChangeSet implements RecordAccessSet
     }
 
     public RecordChangeSet(
-            Loader<NodeRecord> nodeLoader,
-            Loader<PropertyRecord> propertyLoader,
-            Loader<RelationshipRecord> relationshipLoader,
-            Loader<RelationshipGroupRecord> relationshipGroupLoader,
-            Loader<SchemaRecord> schemaRuleLoader,
-            Loader<PropertyKeyTokenRecord> propertyKeyTokenLoader,
-            Loader<LabelTokenRecord> labelTokenLoader,
-            Loader<RelationshipTypeTokenRecord> relationshipTypeTokenLoader,
+            Loader<NodeRecord,Void> nodeLoader,
+            Loader<PropertyRecord,PrimitiveRecord> propertyLoader,
+            Loader<RelationshipRecord,Void> relationshipLoader,
+            Loader<RelationshipGroupRecord,Integer> relationshipGroupLoader,
+            Loader<SchemaRecord,SchemaRule> schemaRuleLoader,
+            Loader<PropertyKeyTokenRecord,Void> propertyKeyTokenLoader,
+            Loader<LabelTokenRecord,Void> labelTokenLoader,
+            Loader<RelationshipTypeTokenRecord,Void> relationshipTypeTokenLoader,
             MemoryTracker memoryTracker )
     {
         this.nodeRecords = new RecordChanges<>( nodeLoader, changeCounter, memoryTracker );
@@ -79,49 +81,49 @@ public class RecordChangeSet implements RecordAccessSet
     }
 
     @Override
-    public RecordAccess<NodeRecord> getNodeRecords()
+    public RecordAccess<NodeRecord, Void> getNodeRecords()
     {
         return nodeRecords;
     }
 
     @Override
-    public RecordAccess<PropertyRecord> getPropertyRecords()
+    public RecordAccess<PropertyRecord, PrimitiveRecord> getPropertyRecords()
     {
         return propertyRecords;
     }
 
     @Override
-    public RecordAccess<RelationshipRecord> getRelRecords()
+    public RecordAccess<RelationshipRecord, Void> getRelRecords()
     {
         return relRecords;
     }
 
     @Override
-    public RecordAccess<RelationshipGroupRecord> getRelGroupRecords()
+    public RecordAccess<RelationshipGroupRecord, Integer> getRelGroupRecords()
     {
         return relGroupRecords;
     }
 
     @Override
-    public RecordAccess<SchemaRecord> getSchemaRuleChanges()
+    public RecordAccess<SchemaRecord, SchemaRule> getSchemaRuleChanges()
     {
         return schemaRuleChanges;
     }
 
     @Override
-    public RecordAccess<PropertyKeyTokenRecord> getPropertyKeyTokenChanges()
+    public RecordAccess<PropertyKeyTokenRecord, Void> getPropertyKeyTokenChanges()
     {
         return propertyKeyTokenChanges;
     }
 
     @Override
-    public RecordAccess<LabelTokenRecord> getLabelTokenChanges()
+    public RecordAccess<LabelTokenRecord, Void> getLabelTokenChanges()
     {
         return labelTokenChanges;
     }
 
     @Override
-    public RecordAccess<RelationshipTypeTokenRecord> getRelationshipTypeTokenChanges()
+    public RecordAccess<RelationshipTypeTokenRecord, Void> getRelationshipTypeTokenChanges()
     {
         return relationshipTypeTokenChanges;
     }

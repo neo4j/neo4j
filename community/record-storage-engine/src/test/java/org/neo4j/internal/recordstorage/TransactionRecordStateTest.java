@@ -189,8 +189,8 @@ class TransactionRecordStateTest
 
     private static void assertDenseRelationshipCounts( RecordChangeSet recordChangeSet, long nodeId, int type, int outCount, int inCount )
     {
-        RecordProxy<RelationshipGroupRecord> proxy =
-                getRelationshipGroup( recordChangeSet, recordChangeSet.getNodeRecords().getOrLoad( nodeId, NULL ).forReadingData(), type );
+        RecordProxy<RelationshipGroupRecord,Integer> proxy =
+                getRelationshipGroup( recordChangeSet, recordChangeSet.getNodeRecords().getOrLoad( nodeId, null, NULL ).forReadingData(), type );
         assertNotNull( proxy );
         RelationshipGroupRecord group = proxy.forReadingData();
         assertNotNull( group );
@@ -199,7 +199,7 @@ class TransactionRecordStateTest
         long relId = group.getFirstOut();
         if ( relId != Record.NO_NEXT_RELATIONSHIP.intValue() )
         {
-            rel = recordChangeSet.getRelRecords().getOrLoad( relId, NULL ).forReadingData();
+            rel = recordChangeSet.getRelRecords().getOrLoad( relId, null, NULL ).forReadingData();
             // count is stored in the back pointer of the first relationship in the chain
             assertEquals( outCount, rel.getFirstPrevRel(), "Stored relationship count for OUTGOING differs" );
             assertEquals( outCount, manuallyCountRelationships( recordChangeSet, nodeId, relId ),
@@ -209,20 +209,20 @@ class TransactionRecordStateTest
         relId = group.getFirstIn();
         if ( relId != Record.NO_NEXT_RELATIONSHIP.intValue() )
         {
-            rel = recordChangeSet.getRelRecords().getOrLoad( relId, NULL ).forReadingData();
+            rel = recordChangeSet.getRelRecords().getOrLoad( relId, null, NULL ).forReadingData();
             assertEquals( inCount, rel.getSecondPrevRel(), "Stored relationship count for INCOMING differs" );
             assertEquals( inCount, manuallyCountRelationships( recordChangeSet, nodeId, relId ),
                 "Manually counted relationships for INCOMING differs" );
         }
     }
 
-    private static RecordProxy<RelationshipGroupRecord> getRelationshipGroup( RecordChangeSet recordChangeSet, NodeRecord node, int type )
+    private static RecordProxy<RelationshipGroupRecord,Integer> getRelationshipGroup( RecordChangeSet recordChangeSet, NodeRecord node, int type )
     {
         long groupId = node.getNextRel();
         long previousGroupId = Record.NO_NEXT_RELATIONSHIP.intValue();
         while ( groupId != Record.NO_NEXT_RELATIONSHIP.intValue() )
         {
-            RecordProxy<RelationshipGroupRecord> change = recordChangeSet.getRelGroupRecords().getOrLoad( groupId, NULL );
+            RecordProxy<RelationshipGroupRecord,Integer> change = recordChangeSet.getRelGroupRecords().getOrLoad( groupId, type, NULL );
             RelationshipGroupRecord record = change.forReadingData();
             record.setPrev( previousGroupId ); // not persistent so not a "change"
             if ( record.getType() == type )
@@ -242,7 +242,7 @@ class TransactionRecordStateTest
         while ( relId != Record.NO_NEXT_RELATIONSHIP.intValue() )
         {
             count++;
-            RelationshipRecord record = recordChangeSet.getRelRecords().getOrLoad( relId, NULL ).forReadingData();
+            RelationshipRecord record = recordChangeSet.getRelRecords().getOrLoad( relId, null, NULL ).forReadingData();
             relId = record.getFirstNode() == nodeId ? record.getFirstNextRel() : record.getSecondNextRel();
         }
         return count;
@@ -951,13 +951,13 @@ class TransactionRecordStateTest
         createRelationships( neoStores, tx, nodeId, typeC, OUTGOING, 10 );
         createRelationships( neoStores, tx, nodeId, typeC, INCOMING, 10 );
         // here we're at the edge
-        assertFalse( recordChangeSet.getNodeRecords().getOrLoad( nodeId, NULL ).forReadingData().isDense() );
+        assertFalse( recordChangeSet.getNodeRecords().getOrLoad( nodeId, null, NULL ).forReadingData().isDense() );
 
         // WHEN creating the relationship that pushes us over the threshold
         createRelationships( neoStores, tx, nodeId, typeC, INCOMING, 1 );
 
         // THEN the node should have been converted into a dense node
-        assertTrue( recordChangeSet.getNodeRecords().getOrLoad( nodeId, NULL ).forReadingData().isDense() );
+        assertTrue( recordChangeSet.getNodeRecords().getOrLoad( nodeId, null, NULL ).forReadingData().isDense() );
         assertDenseRelationshipCounts( recordChangeSet, nodeId, typeA, 6, 7 );
         assertDenseRelationshipCounts( recordChangeSet, nodeId, typeB, 8, 9 );
         assertDenseRelationshipCounts( recordChangeSet, nodeId, typeC, 10, 11 );
@@ -977,13 +977,13 @@ class TransactionRecordStateTest
         createRelationships( neoStores, tx, nodeId, typeA, INCOMING, 25 );
 
         // here we're at the edge
-        assertFalse( recordChangeSet.getNodeRecords().getOrLoad( nodeId, NULL ).forReadingData().isDense() );
+        assertFalse( recordChangeSet.getNodeRecords().getOrLoad( nodeId, null, NULL ).forReadingData().isDense() );
 
         // WHEN creating the relationship that pushes us over the threshold
         createRelationships( neoStores, tx, nodeId, typeA, INCOMING, 1 );
 
         // THEN the node should have been converted into a dense node
-        assertTrue( recordChangeSet.getNodeRecords().getOrLoad( nodeId, NULL ).forReadingData().isDense() );
+        assertTrue( recordChangeSet.getNodeRecords().getOrLoad( nodeId, null, NULL ).forReadingData().isDense() );
         assertDenseRelationshipCounts( recordChangeSet, nodeId, typeA, 24, 26 );
     }
 
@@ -1000,13 +1000,13 @@ class TransactionRecordStateTest
         createRelationships( neoStores, tx, nodeId, typeA, OUTGOING, 8 );
 
         // here we're at the edge
-        assertFalse( recordChangeSet.getNodeRecords().getOrLoad( nodeId, NULL ).forReadingData().isDense() );
+        assertFalse( recordChangeSet.getNodeRecords().getOrLoad( nodeId, null, NULL ).forReadingData().isDense() );
 
         // WHEN creating the relationship that pushes us over the threshold
         createRelationships( neoStores, tx, nodeId, typeA, OUTGOING, 1 );
 
         // THEN the node should have been converted into a dense node
-        assertTrue( recordChangeSet.getNodeRecords().getOrLoad( nodeId, NULL ).forReadingData().isDense() );
+        assertTrue( recordChangeSet.getNodeRecords().getOrLoad( nodeId, null, NULL ).forReadingData().isDense() );
         assertDenseRelationshipCounts( recordChangeSet, nodeId, typeA, 9, 0 );
     }
 
@@ -1064,7 +1064,7 @@ class TransactionRecordStateTest
         tx.relDelete( relationshipsCreatedAOutgoing[0] );
 
         // THEN
-        assertRelationshipGroupDoesNotExist( recordChangeSet, recordChangeSet.getNodeRecords().getOrLoad( nodeId, NULL ).forReadingData(), typeA );
+        assertRelationshipGroupDoesNotExist( recordChangeSet, recordChangeSet.getNodeRecords().getOrLoad( nodeId, null, NULL ).forReadingData(), typeA );
         assertDenseRelationshipCounts( recordChangeSet, nodeId, typeB, 1, 1 );
         assertDenseRelationshipCounts( recordChangeSet, nodeId, typeC, 1, 1 );
 
@@ -1072,7 +1072,7 @@ class TransactionRecordStateTest
         tx.relDelete( relationshipsCreatedBIncoming[0] );
 
         // THEN
-        assertRelationshipGroupDoesNotExist( recordChangeSet, recordChangeSet.getNodeRecords().getOrLoad( nodeId, NULL ).forReadingData(), typeA );
+        assertRelationshipGroupDoesNotExist( recordChangeSet, recordChangeSet.getNodeRecords().getOrLoad( nodeId, null, NULL ).forReadingData(), typeA );
         assertDenseRelationshipCounts( recordChangeSet, nodeId, typeB, 1, 0 );
         assertDenseRelationshipCounts( recordChangeSet, nodeId, typeC, 1, 1 );
 
@@ -1080,25 +1080,25 @@ class TransactionRecordStateTest
         tx.relDelete( relationshipsCreatedBOutgoing[0] );
 
         // THEN
-        assertRelationshipGroupDoesNotExist( recordChangeSet, recordChangeSet.getNodeRecords().getOrLoad( nodeId, NULL ).forReadingData(), typeA );
-        assertRelationshipGroupDoesNotExist( recordChangeSet, recordChangeSet.getNodeRecords().getOrLoad( nodeId, NULL ).forReadingData(), typeB );
+        assertRelationshipGroupDoesNotExist( recordChangeSet, recordChangeSet.getNodeRecords().getOrLoad( nodeId, null, NULL ).forReadingData(), typeA );
+        assertRelationshipGroupDoesNotExist( recordChangeSet, recordChangeSet.getNodeRecords().getOrLoad( nodeId, null, NULL ).forReadingData(), typeB );
         assertDenseRelationshipCounts( recordChangeSet, nodeId, typeC, 1, 1 );
 
         // WHEN
         tx.relDelete( relationshipsCreatedCIncoming[0] );
 
         // THEN
-        assertRelationshipGroupDoesNotExist( recordChangeSet, recordChangeSet.getNodeRecords().getOrLoad( nodeId, NULL ).forReadingData(), typeA );
-        assertRelationshipGroupDoesNotExist( recordChangeSet, recordChangeSet.getNodeRecords().getOrLoad( nodeId, NULL ).forReadingData(), typeB );
+        assertRelationshipGroupDoesNotExist( recordChangeSet, recordChangeSet.getNodeRecords().getOrLoad( nodeId, null, NULL ).forReadingData(), typeA );
+        assertRelationshipGroupDoesNotExist( recordChangeSet, recordChangeSet.getNodeRecords().getOrLoad( nodeId, null, NULL ).forReadingData(), typeB );
         assertDenseRelationshipCounts( recordChangeSet, nodeId, typeC, 1, 0 );
 
         // WHEN
         tx.relDelete( relationshipsCreatedCOutgoing[0] );
 
         // THEN
-        assertRelationshipGroupDoesNotExist( recordChangeSet, recordChangeSet.getNodeRecords().getOrLoad( nodeId, NULL ).forReadingData(), typeA );
-        assertRelationshipGroupDoesNotExist( recordChangeSet, recordChangeSet.getNodeRecords().getOrLoad( nodeId, NULL ).forReadingData(), typeB );
-        assertRelationshipGroupDoesNotExist( recordChangeSet, recordChangeSet.getNodeRecords().getOrLoad( nodeId, NULL ).forReadingData(), typeC );
+        assertRelationshipGroupDoesNotExist( recordChangeSet, recordChangeSet.getNodeRecords().getOrLoad( nodeId, null, NULL ).forReadingData(), typeA );
+        assertRelationshipGroupDoesNotExist( recordChangeSet, recordChangeSet.getNodeRecords().getOrLoad( nodeId, null, NULL ).forReadingData(), typeB );
+        assertRelationshipGroupDoesNotExist( recordChangeSet, recordChangeSet.getNodeRecords().getOrLoad( nodeId, null, NULL ).forReadingData(), typeC );
     }
 
     @Test
@@ -1312,7 +1312,7 @@ class TransactionRecordStateTest
         apply( state );
 
         state = newTransactionRecordState();
-        state.schemaRuleDelete( ruleId );
+        state.schemaRuleDelete( ruleId, rule );
 
         List<StorageCommand> commands = new ArrayList<>();
         state.extractCommands( commands, INSTANCE );

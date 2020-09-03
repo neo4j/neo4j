@@ -24,18 +24,21 @@ import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.recordstorage.Command.NodeCommand;
 import org.neo4j.internal.recordstorage.RecordAccess.RecordProxy;
 import org.neo4j.internal.recordstorage.RecordChanges.RecordChange;
+import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
@@ -98,14 +101,14 @@ class WriteTransactionCommandOrderingTest
     {
         RecordChangeSet recordChangeSet = mock( RecordChangeSet.class );
 
-        RecordChanges<LabelTokenRecord> labelTokenChanges = mock( RecordChanges.class );
-        RecordChanges<RelationshipTypeTokenRecord> relationshipTypeTokenChanges = mock( RecordChanges.class );
-        RecordChanges<PropertyKeyTokenRecord> propertyKeyTokenChanges = mock( RecordChanges.class );
-        RecordChanges<NodeRecord> nodeRecordChanges = mock( RecordChanges.class );
-        RecordChanges<RelationshipRecord> relationshipRecordChanges = mock( RecordChanges.class );
-        RecordChanges<PropertyRecord> propertyRecordChanges = mock( RecordChanges.class );
-        RecordChanges<RelationshipGroupRecord> relationshipGroupChanges = mock( RecordChanges.class );
-        RecordChanges<SchemaRecord> schemaRuleChanges = mock( RecordChanges.class );
+        RecordChanges<LabelTokenRecord,Void> labelTokenChanges = mock( RecordChanges.class );
+        RecordChanges<RelationshipTypeTokenRecord,Void> relationshipTypeTokenChanges = mock( RecordChanges.class );
+        RecordChanges<PropertyKeyTokenRecord,Void> propertyKeyTokenChanges = mock( RecordChanges.class );
+        RecordChanges<NodeRecord,Void> nodeRecordChanges = mock( RecordChanges.class );
+        RecordChanges<RelationshipRecord,Void> relationshipRecordChanges = mock( RecordChanges.class );
+        RecordChanges<PropertyRecord,PrimitiveRecord> propertyRecordChanges = mock( RecordChanges.class );
+        RecordChanges<RelationshipGroupRecord,Integer> relationshipGroupChanges = mock( RecordChanges.class );
+        RecordChanges<SchemaRecord, SchemaRule> schemaRuleChanges = mock( RecordChanges.class );
 
         when( recordChangeSet.getLabelTokenChanges() ).thenReturn( labelTokenChanges );
         when( recordChangeSet.getRelationshipTypeTokenChanges() ).thenReturn( relationshipTypeTokenChanges );
@@ -116,19 +119,19 @@ class WriteTransactionCommandOrderingTest
         when( recordChangeSet.getRelGroupRecords() ).thenReturn( relationshipGroupChanges );
         when( recordChangeSet.getSchemaRuleChanges() ).thenReturn( schemaRuleChanges );
 
-        List<RecordProxy<NodeRecord>> nodeChanges = new ArrayList<>();
+        List<RecordProxy<NodeRecord,Void>> nodeChanges = new LinkedList<>();
 
-        RecordChange<NodeRecord> deletedNode = mock( RecordChange.class );
+        RecordChange<NodeRecord,Void> deletedNode = mock( RecordChange.class );
         when( deletedNode.getBefore() ).thenReturn( inUseNode() );
         when( deletedNode.forReadingLinkage() ).thenReturn( missingNode() );
         nodeChanges.add( deletedNode );
 
-        RecordChange<NodeRecord> createdNode = mock( RecordChange.class );
+        RecordChange<NodeRecord,Void> createdNode = mock( RecordChange.class );
         when( createdNode.getBefore() ).thenReturn( missingNode() );
         when( createdNode.forReadingLinkage() ).thenReturn( createdNode() );
         nodeChanges.add( createdNode );
 
-        RecordChange<NodeRecord> updatedNode = mock( RecordChange.class );
+        RecordChange<NodeRecord,Void> updatedNode = mock( RecordChange.class );
         when( updatedNode.getBefore() ).thenReturn( inUseNode() );
         when( updatedNode.forReadingLinkage() ).thenReturn( inUseNode() );
         nodeChanges.add( updatedNode );

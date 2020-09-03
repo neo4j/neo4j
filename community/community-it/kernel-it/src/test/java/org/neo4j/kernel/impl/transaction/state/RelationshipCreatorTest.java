@@ -35,11 +35,13 @@ import org.neo4j.internal.recordstorage.RecordAccessSet;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.recordstorage.RelationshipCreator;
 import org.neo4j.internal.recordstorage.RelationshipGroupGetter;
+import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
@@ -121,7 +123,7 @@ class RelationshipCreatorTest
     static class Tracker extends NoOpClient implements RecordAccessSet
     {
         private final RecordAccessSet delegate;
-        private final TrackingRecordAccess<RelationshipRecord> relRecords;
+        private final TrackingRecordAccess<RelationshipRecord, Void> relRecords;
         private final Set<Long> relationshipLocksAcquired = new HashSet<>();
         private final Set<Long> changedRelationships = new HashSet<>();
 
@@ -150,49 +152,49 @@ class RelationshipCreatorTest
         }
 
         @Override
-        public RecordAccess<NodeRecord> getNodeRecords()
+        public RecordAccess<NodeRecord, Void> getNodeRecords()
         {
             return delegate.getNodeRecords();
         }
 
         @Override
-        public RecordAccess<PropertyRecord> getPropertyRecords()
+        public RecordAccess<PropertyRecord, PrimitiveRecord> getPropertyRecords()
         {
             return delegate.getPropertyRecords();
         }
 
         @Override
-        public RecordAccess<RelationshipRecord> getRelRecords()
+        public RecordAccess<RelationshipRecord, Void> getRelRecords()
         {
             return relRecords;
         }
 
         @Override
-        public RecordAccess<RelationshipGroupRecord> getRelGroupRecords()
+        public RecordAccess<RelationshipGroupRecord, Integer> getRelGroupRecords()
         {
             return delegate.getRelGroupRecords();
         }
 
         @Override
-        public RecordAccess<SchemaRecord> getSchemaRuleChanges()
+        public RecordAccess<SchemaRecord, SchemaRule> getSchemaRuleChanges()
         {
             return delegate.getSchemaRuleChanges();
         }
 
         @Override
-        public RecordAccess<PropertyKeyTokenRecord> getPropertyKeyTokenChanges()
+        public RecordAccess<PropertyKeyTokenRecord, Void> getPropertyKeyTokenChanges()
         {
             return delegate.getPropertyKeyTokenChanges();
         }
 
         @Override
-        public RecordAccess<LabelTokenRecord> getLabelTokenChanges()
+        public RecordAccess<LabelTokenRecord, Void> getLabelTokenChanges()
         {
             return delegate.getLabelTokenChanges();
         }
 
         @Override
-        public RecordAccess<RelationshipTypeTokenRecord> getRelationshipTypeTokenChanges()
+        public RecordAccess<RelationshipTypeTokenRecord, Void> getRelationshipTypeTokenChanges()
         {
             return delegate.getRelationshipTypeTokenChanges();
         }

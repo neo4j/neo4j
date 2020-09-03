@@ -55,14 +55,14 @@ public class RelationshipCreator
      */
     public void relationshipCreate( long id, int type, long firstNodeId, long secondNodeId, RecordAccessSet recordChangeSet, ResourceLocker locks )
     {
-        RecordProxy<NodeRecord> firstNode = recordChangeSet.getNodeRecords().getOrLoad( firstNodeId, cursorTracer );
-        RecordProxy<NodeRecord> secondNode =
-                firstNodeId == secondNodeId ? firstNode : recordChangeSet.getNodeRecords().getOrLoad( secondNodeId, cursorTracer );
+        RecordProxy<NodeRecord,Void> firstNode = recordChangeSet.getNodeRecords().getOrLoad( firstNodeId, null, cursorTracer );
+        RecordProxy<NodeRecord,Void> secondNode =
+                firstNodeId == secondNodeId ? firstNode : recordChangeSet.getNodeRecords().getOrLoad( secondNodeId, null, cursorTracer );
         convertNodeToDenseIfNecessary( firstNode, recordChangeSet.getRelRecords(),
                 recordChangeSet.getRelGroupRecords(), locks );
         convertNodeToDenseIfNecessary( secondNode, recordChangeSet.getRelRecords(),
                 recordChangeSet.getRelGroupRecords(), locks );
-        RelationshipRecord record = recordChangeSet.getRelRecords().create( id, cursorTracer ).forChangingLinkage();
+        RelationshipRecord record = recordChangeSet.getRelRecords().create( id, null, cursorTracer ).forChangingLinkage();
         record.setLinks( firstNodeId, secondNodeId, type );
         record.setInUse( true );
         record.setCreated();
@@ -75,9 +75,9 @@ public class RelationshipCreator
         return (int) (nodeId == rel.getFirstNode() ? rel.getFirstPrevRel() : rel.getSecondPrevRel());
     }
 
-    private void convertNodeToDenseIfNecessary( RecordProxy<NodeRecord> nodeChange,
-            RecordAccess<RelationshipRecord> relRecords,
-            RecordAccess<RelationshipGroupRecord> relGroupRecords, ResourceLocker locks )
+    private void convertNodeToDenseIfNecessary( RecordProxy<NodeRecord,Void> nodeChange,
+            RecordAccess<RelationshipRecord, Void> relRecords,
+            RecordAccess<RelationshipGroupRecord, Integer> relGroupRecords, ResourceLocker locks )
     {
         NodeRecord node = nodeChange.forReadingLinkage();
         if ( node.isDense() )
@@ -87,24 +87,24 @@ public class RelationshipCreator
         long relId = node.getNextRel();
         if ( relId != Record.NO_NEXT_RELATIONSHIP.intValue() )
         {
-            RecordProxy<RelationshipRecord> relChange = relRecords.getOrLoad( relId, cursorTracer );
+            RecordProxy<RelationshipRecord, Void> relChange = relRecords.getOrLoad( relId, null, cursorTracer );
             RelationshipRecord rel = relChange.forReadingLinkage();
             if ( relCount( node.getId(), rel ) >= denseNodeThreshold )
             {
                 locks.acquireExclusive( LockTracer.NONE, ResourceTypes.RELATIONSHIP, relId );
                 // Re-read the record after we've locked it since another transaction might have
                 // changed in the meantime.
-                relChange = relRecords.getOrLoad( relId, cursorTracer );
+                relChange = relRecords.getOrLoad( relId, null, cursorTracer );
 
                 convertNodeToDenseNode( nodeChange, relChange.forChangingLinkage(), relRecords, relGroupRecords, locks );
             }
         }
     }
 
-    private void connectRelationship( RecordProxy<NodeRecord> firstNodeChange,
-            RecordProxy<NodeRecord> secondNodeChange, RelationshipRecord rel,
-            RecordAccess<RelationshipRecord> relRecords,
-            RecordAccess<RelationshipGroupRecord> relGroupRecords, ResourceLocker locks )
+    private void connectRelationship( RecordProxy<NodeRecord,Void> firstNodeChange,
+            RecordProxy<NodeRecord,Void> secondNodeChange, RelationshipRecord rel,
+            RecordAccess<RelationshipRecord, Void> relRecords,
+            RecordAccess<RelationshipGroupRecord, Integer> relGroupRecords, ResourceLocker locks )
     {
         // Assertion interpreted: if node is a normal node and we're trying to create a
         // relationship that we already have as first rel for that node --> error
@@ -160,9 +160,9 @@ public class RelationshipCreator
         }
     }
 
-    private void connectRelationshipToDenseNode( RecordProxy<NodeRecord> nodeChange, RelationshipRecord rel,
-            RecordAccess<RelationshipRecord> relRecords,
-            RecordAccess<RelationshipGroupRecord> relGroupRecords, ResourceLocker locks )
+    private void connectRelationshipToDenseNode( RecordProxy<NodeRecord,Void> nodeChange, RelationshipRecord rel,
+            RecordAccess<RelationshipRecord, Void> relRecords,
+            RecordAccess<RelationshipGroupRecord, Integer> relGroupRecords, ResourceLocker locks )
     {
         var relationshipGroup = relGroupGetter.getOrCreateRelationshipGroup( nodeChange, rel.getType(), relGroupRecords );
         RelationshipGroupRecord group = relationshipGroup.forChangingData();
@@ -175,14 +175,14 @@ public class RelationshipCreator
     }
 
     private void connect( NodeRecord node, RelationshipRecord rel,
-            RecordAccess<RelationshipRecord> relRecords, ResourceLocker locks )
+            RecordAccess<RelationshipRecord, Void> relRecords, ResourceLocker locks )
     {
         connect( node.getId(), node.getNextRel(), rel, relRecords, locks );
     }
 
-    private void convertNodeToDenseNode( RecordProxy<NodeRecord> nodeChange, RelationshipRecord firstRel,
-            RecordAccess<RelationshipRecord> relRecords,
-            RecordAccess<RelationshipGroupRecord> relGroupRecords, ResourceLocker locks )
+    private void convertNodeToDenseNode( RecordProxy<NodeRecord,Void> nodeChange, RelationshipRecord firstRel,
+            RecordAccess<RelationshipRecord, Void> relRecords,
+            RecordAccess<RelationshipGroupRecord, Integer> relGroupRecords, ResourceLocker locks )
     {
         NodeRecord node = nodeChange.forChangingLinkage();
         node.setDense( true );
@@ -197,19 +197,19 @@ public class RelationshipCreator
             if ( relId != Record.NO_NEXT_RELATIONSHIP.intValue() )
             {   // Lock and load the next relationship in the chain
                 locks.acquireExclusive( LockTracer.NONE, ResourceTypes.RELATIONSHIP, relId );
-                relRecord = relRecords.getOrLoad( relId, cursorTracer ).forChangingLinkage();
+                relRecord = relRecords.getOrLoad( relId, null, cursorTracer ).forChangingLinkage();
             }
         }
     }
 
     private void connect( long nodeId, long firstRelId, RelationshipRecord rel,
-            RecordAccess<RelationshipRecord> relRecords, ResourceLocker locks )
+            RecordAccess<RelationshipRecord, Void> relRecords, ResourceLocker locks )
     {
         long newCount = 1;
         if ( firstRelId != Record.NO_NEXT_RELATIONSHIP.intValue() )
         {
             locks.acquireExclusive( LockTracer.NONE, ResourceTypes.RELATIONSHIP, firstRelId );
-            RelationshipRecord firstRel = relRecords.getOrLoad( firstRelId, cursorTracer ).forChangingLinkage();
+            RelationshipRecord firstRel = relRecords.getOrLoad( firstRelId, null, cursorTracer ).forChangingLinkage();
             boolean changed = false;
             if ( firstRel.getFirstNode() == nodeId )
             {

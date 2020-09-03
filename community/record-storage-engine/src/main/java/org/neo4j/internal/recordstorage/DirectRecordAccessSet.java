@@ -21,12 +21,14 @@ package org.neo4j.internal.recordstorage;
 
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdGeneratorFactory;
+import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
@@ -36,14 +38,14 @@ import org.neo4j.kernel.impl.store.record.SchemaRecord;
 
 public class DirectRecordAccessSet implements RecordAccessSet
 {
-    private final DirectRecordAccess<NodeRecord> nodeRecords;
-    private final DirectRecordAccess<PropertyRecord> propertyRecords;
-    private final DirectRecordAccess<RelationshipRecord> relationshipRecords;
-    private final DirectRecordAccess<RelationshipGroupRecord> relationshipGroupRecords;
-    private final DirectRecordAccess<PropertyKeyTokenRecord> propertyKeyTokenRecords;
-    private final DirectRecordAccess<RelationshipTypeTokenRecord> relationshipTypeTokenRecords;
-    private final DirectRecordAccess<LabelTokenRecord> labelTokenRecords;
-    private final DirectRecordAccess<?>[] all;
+    private final DirectRecordAccess<NodeRecord, Void> nodeRecords;
+    private final DirectRecordAccess<PropertyRecord,PrimitiveRecord> propertyRecords;
+    private final DirectRecordAccess<RelationshipRecord, Void> relationshipRecords;
+    private final DirectRecordAccess<RelationshipGroupRecord, Integer> relationshipGroupRecords;
+    private final DirectRecordAccess<PropertyKeyTokenRecord, Void> propertyKeyTokenRecords;
+    private final DirectRecordAccess<RelationshipTypeTokenRecord, Void> relationshipTypeTokenRecords;
+    private final DirectRecordAccess<LabelTokenRecord, Void> labelTokenRecords;
+    private final DirectRecordAccess[] all;
     private final IdGeneratorFactory idGeneratorFactory;
 
     public DirectRecordAccessSet( NeoStores neoStores, IdGeneratorFactory idGeneratorFactory )
@@ -75,56 +77,56 @@ public class DirectRecordAccessSet implements RecordAccessSet
     }
 
     @Override
-    public RecordAccess<NodeRecord> getNodeRecords()
+    public RecordAccess<NodeRecord, Void> getNodeRecords()
     {
         return nodeRecords;
     }
 
     @Override
-    public RecordAccess<PropertyRecord> getPropertyRecords()
+    public RecordAccess<PropertyRecord, PrimitiveRecord> getPropertyRecords()
     {
         return propertyRecords;
     }
 
     @Override
-    public RecordAccess<RelationshipRecord> getRelRecords()
+    public RecordAccess<RelationshipRecord, Void> getRelRecords()
     {
         return relationshipRecords;
     }
 
     @Override
-    public RecordAccess<RelationshipGroupRecord> getRelGroupRecords()
+    public RecordAccess<RelationshipGroupRecord, Integer> getRelGroupRecords()
     {
         return relationshipGroupRecords;
     }
 
     @Override
-    public RecordAccess<SchemaRecord> getSchemaRuleChanges()
+    public RecordAccess<SchemaRecord, SchemaRule> getSchemaRuleChanges()
     {
         throw new UnsupportedOperationException( "Not needed. Implement if needed" );
     }
 
     @Override
-    public RecordAccess<PropertyKeyTokenRecord> getPropertyKeyTokenChanges()
+    public RecordAccess<PropertyKeyTokenRecord, Void> getPropertyKeyTokenChanges()
     {
         return propertyKeyTokenRecords;
     }
 
     @Override
-    public RecordAccess<LabelTokenRecord> getLabelTokenChanges()
+    public RecordAccess<LabelTokenRecord, Void> getLabelTokenChanges()
     {
         return labelTokenRecords;
     }
 
     @Override
-    public RecordAccess<RelationshipTypeTokenRecord> getRelationshipTypeTokenChanges()
+    public RecordAccess<RelationshipTypeTokenRecord, Void> getRelationshipTypeTokenChanges()
     {
         return relationshipTypeTokenRecords;
     }
 
     public void commit()
     {
-        for ( DirectRecordAccess<?> access : all )
+        for ( DirectRecordAccess access : all )
         {
             access.commit();
         }
@@ -134,7 +136,7 @@ public class DirectRecordAccessSet implements RecordAccessSet
     @Override
     public boolean hasChanges()
     {
-        for ( DirectRecordAccess<?> access : all )
+        for ( DirectRecordAccess<?,?> access : all )
         {
             if ( access.changeSize() > 0 )
             {
@@ -148,7 +150,7 @@ public class DirectRecordAccessSet implements RecordAccessSet
     public int changeSize()
     {
         int total = 0;
-        for ( DirectRecordAccess<?> access : all )
+        for ( DirectRecordAccess<?,?> access : all )
         {
             total += access.changeSize();
         }
