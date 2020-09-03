@@ -222,15 +222,14 @@ trait Statement extends Parser
 
   def ShowRoles: Rule1[ShowRoles] = rule("SHOW ROLES") {
     //SHOW [ ALL | POPULATED ] ROLES WITH USERS
-    group(keyword("SHOW") ~~ keyword("POPULATED") ~~ keyword("ROLES") ~~ keyword("WITH USERS")) ~~ ShowCommandClauses ~~>>
-      (ast.ShowRoles(withUsers = true, showAll = false, _, _)) |
-    group(keyword("SHOW") ~~ optional(keyword("ALL")) ~~ keyword("ROLES") ~~ keyword("WITH USERS")) ~~ ShowCommandClauses ~~>>
-      (ast.ShowRoles(withUsers = true, showAll = true, _, _)) |
+    group(ShowAllRoles ~~ keyword("WITH USERS") ~~ ShowCommandClauses) ~~>> (ast.ShowRoles(withUsers = true, _, _, _)) |
     // SHOW [ ALL | POPULATED ] ROLES
-    group(keyword("SHOW") ~~ keyword("POPULATED") ~~ keyword("ROLES")) ~~ ShowCommandClauses ~~>>
-      (ast.ShowRoles(withUsers = false, showAll = false, _, _)) |
-    group(keyword("SHOW") ~~ optional(keyword("ALL")) ~~ keyword("ROLES")) ~~ ShowCommandClauses ~~>>
-      (ast.ShowRoles(withUsers = false, showAll = true, _, _))
+    group(ShowAllRoles ~~ ShowCommandClauses) ~~>> (ast.ShowRoles(withUsers = false, _, _, _))
+  }
+
+  private def ShowAllRoles: Rule1[Boolean] = {
+    keyword("SHOW POPULATED ROLES") ~~~> (_ => false) |
+    group(keyword("SHOW") ~~ optional(keyword("ALL")) ~~ keyword("ROLES")) ~~~> (_ => true)
   }
 
   def CreateRole: Rule1[CreateRole] = rule("CREATE ROLE") {
