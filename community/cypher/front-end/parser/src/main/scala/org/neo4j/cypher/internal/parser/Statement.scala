@@ -412,41 +412,42 @@ trait Statement extends Parser
 
   private def Database: Rule1[List[DatabaseScope]] = rule("on a database") {
     keyword("ON DEFAULT DATABASE") ~~~> (pos => List(ast.DefaultDatabaseScope()(pos))) |
-      group(keyword("ON") ~~ (keyword("DATABASE") | keyword("DATABASES"))) ~~
-        group((SymbolicDatabaseNameOrStringParameterList ~~>> (params => pos => params.map(ast.NamedDatabaseScope(_)(pos)))) |
-          (keyword("*") ~~~> (pos => List(ast.AllDatabasesScope()(pos)))))
+    group(keyword("ON") ~~ DatabaseKeyword) ~~ group((SymbolicDatabaseNameOrStringParameterList ~~>> (params => pos => params.map(ast.NamedDatabaseScope(_)(pos)))) |
+    (keyword("*") ~~~> (pos => List(ast.AllDatabasesScope()(pos)))))
   }
 
   private def DatabaseAction: Rule1[DatabaseAction] = rule("database action")(
     keyword("ACCESS") ~~~> (_ => ast.AccessDatabaseAction) |
-      keyword("START") ~~~> (_ => ast.StartDatabaseAction) |
-      keyword("STOP") ~~~> (_ => ast.StopDatabaseAction) |
-      group(keyword("CREATE") ~~ IndexKeyword) ~~~> (_ => ast.CreateIndexAction) |
-      group(keyword("DROP") ~~ IndexKeyword) ~~~> (_ => ast.DropIndexAction) |
-      group(IndexKeyword ~~ optional(keyword("MANAGEMENT"))) ~~~> (_ => ast.AllIndexActions) |
-      group(keyword("CREATE") ~~ ConstraintKeyword) ~~~> (_ => ast.CreateConstraintAction) |
-      group(keyword("DROP") ~~ ConstraintKeyword) ~~~> (_ => ast.DropConstraintAction) |
-      group(ConstraintKeyword ~~ optional(keyword("MANAGEMENT"))) ~~~> (_ => ast.AllConstraintActions) |
-      group(keyword("CREATE NEW") ~~ optional(keyword("NODE")) ~~ LabelKeyword) ~~~> (_ => ast.CreateNodeLabelAction) |
-      group(keyword("CREATE NEW") ~~ optional(keyword("RELATIONSHIP")) ~~ TypeKeyword) ~~~> (_ => ast.CreateRelationshipTypeAction) |
-      group(keyword("CREATE NEW") ~~ optional(keyword("PROPERTY")) ~~ NameKeyword) ~~~> (_ => ast.CreatePropertyKeyAction) |
-      group(keyword("NAME") ~~ optional(keyword("MANAGEMENT"))) ~~~> (_ => ast.AllTokenActions) |
-      group(keyword("ALL") ~~ optional(optional(keyword("DATABASE")) ~~ keyword("PRIVILEGES"))) ~~~> (_ => ast.AllDatabaseAction)
+    keyword("START") ~~~> (_ => ast.StartDatabaseAction) |
+    keyword("STOP") ~~~> (_ => ast.StopDatabaseAction) |
+    group(keyword("CREATE") ~~ IndexKeyword) ~~~> (_ => ast.CreateIndexAction) |
+    group(keyword("DROP") ~~ IndexKeyword) ~~~> (_ => ast.DropIndexAction) |
+    group(IndexKeyword ~~ optional(keyword("MANAGEMENT"))) ~~~> (_ => ast.AllIndexActions) |
+    group(keyword("CREATE") ~~ ConstraintKeyword) ~~~> (_ => ast.CreateConstraintAction) |
+    group(keyword("DROP") ~~ ConstraintKeyword) ~~~> (_ => ast.DropConstraintAction) |
+    group(ConstraintKeyword ~~ optional(keyword("MANAGEMENT"))) ~~~> (_ => ast.AllConstraintActions) |
+    group(keyword("CREATE NEW") ~~ optional(keyword("NODE")) ~~ LabelKeyword) ~~~> (_ => ast.CreateNodeLabelAction) |
+    group(keyword("CREATE NEW") ~~ optional(keyword("RELATIONSHIP")) ~~ TypeKeyword) ~~~> (_ => ast.CreateRelationshipTypeAction) |
+    group(keyword("CREATE NEW") ~~ optional(keyword("PROPERTY")) ~~ NameKeyword) ~~~> (_ => ast.CreatePropertyKeyAction) |
+    group(keyword("NAME") ~~ optional(keyword("MANAGEMENT"))) ~~~> (_ => ast.AllTokenActions) |
+    group(keyword("ALL") ~~ optional(optional(keyword("DATABASE")) ~~ keyword("PRIVILEGES"))) ~~~> (_ => ast.AllDatabaseAction)
   )
 
   private def QualifiedDatabaseAction: Rule2[List[DatabasePrivilegeQualifier], DatabaseAction] = rule("qualified database action")(
     group(keyword("SHOW") ~~ TransactionKeyword ~~ UserQualifier ~> (_ => ast.ShowTransactionAction)) |
-      group(keyword("SHOW") ~~ TransactionKeyword ~> (_ => List(ast.UserAllQualifier()(InputPosition.NONE))) ~> (_ => ast.ShowTransactionAction)) |
-      group(keyword("TERMINATE") ~~ TransactionKeyword ~~ UserQualifier ~> (_ => ast.TerminateTransactionAction)) |
-      group(keyword("TERMINATE") ~~ TransactionKeyword ~> (_ => List(ast.UserAllQualifier()(InputPosition.NONE))) ~> (_ => ast.TerminateTransactionAction)) |
-      group(keyword("TRANSACTION") ~~ optional(keyword("MANAGEMENT")) ~~ UserQualifier ~> (_ => ast.AllTransactionActions)) |
-      group(keyword("TRANSACTION") ~~ optional(keyword("MANAGEMENT")) ~> (_ => List(ast.UserAllQualifier()(InputPosition.NONE))) ~> (_ => ast.AllTransactionActions))
+    group(keyword("SHOW") ~~ TransactionKeyword ~> (_ => List(ast.UserAllQualifier()(InputPosition.NONE))) ~> (_ => ast.ShowTransactionAction)) |
+    group(keyword("TERMINATE") ~~ TransactionKeyword ~~ UserQualifier ~> (_ => ast.TerminateTransactionAction)) |
+    group(keyword("TERMINATE") ~~ TransactionKeyword ~> (_ => List(ast.UserAllQualifier()(InputPosition.NONE))) ~> (_ => ast.TerminateTransactionAction)) |
+    group(keyword("TRANSACTION") ~~ optional(keyword("MANAGEMENT")) ~~ UserQualifier ~> (_ => ast.AllTransactionActions)) |
+    group(keyword("TRANSACTION") ~~ optional(keyword("MANAGEMENT")) ~> (_ => List(ast.UserAllQualifier()(InputPosition.NONE))) ~> (_ => ast.AllTransactionActions))
   )
 
   private def UserQualifier: Rule1[List[DatabasePrivilegeQualifier]] = rule("(usernameList)")(
-    group("(" ~~ SymbolicNameOrStringParameterList ~~ ")") ~~>> {userName => pos => userName.map(ast.UserQualifier(_)(pos))} |
-      group("(" ~~ "*" ~~ ")") ~~~> { pos => List(ast.UserAllQualifier()(pos))}
+    group("(" ~~ SymbolicNameOrStringParameterList ~~ ")") ~~>> { userName => pos => userName.map(ast.UserQualifier(_)(pos)) } |
+    group("(" ~~ "*" ~~ ")") ~~~> { pos => List(ast.UserAllQualifier()(pos)) }
   )
+
+  private def DatabaseKeyword: Rule0 = keyword("DATABASES") | keyword("DATABASE")
 
   private def IndexKeyword: Rule0 = keyword("INDEXES") | keyword("INDEX")
 
@@ -458,7 +459,7 @@ trait Statement extends Parser
 
   private def NameKeyword: Rule0 = keyword("NAMES") | keyword("NAME")
 
-  private def TransactionKeyword: Rule0 = keyword("TRANSACTION") | keyword("TRANSACTIONS")
+  private def TransactionKeyword: Rule0 = keyword("TRANSACTIONS") | keyword("TRANSACTION")
 
   // Graph specific
 
@@ -545,7 +546,7 @@ trait Statement extends Parser
     group(keyword("DROP DATABASE") ~~ SymbolicDatabaseNameOrStringParameter ~~ DataAction) ~~>> ((dbName, dataAction) => ast.DropDatabase(dbName, ifExists = false, dataAction))
   }
 
-  private def DataAction: Rule1[DropDatabaseAdditionalAction] = rule("") {
+  private def DataAction: Rule1[DropDatabaseAdditionalAction] = rule("data action on drop database") {
     keyword("DUMP DATA") ~~~> (_ => DumpData) |
     optional(keyword("DESTROY DATA")) ~~~> (_ => DestroyData)
   }
