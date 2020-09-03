@@ -19,12 +19,7 @@
  */
 package org.neo4j.dbms.identity;
 
-/**
- * Interface for a module holding global unique server identifier {@link ServerId}
- *
- * This identifier will be created on startup if not already present.
- */
-public interface IdentityModule
+public interface ServerIdentity
 {
-    ServerId myself();
+    ServerId serverId();
 }

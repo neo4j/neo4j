@@ -53,23 +53,23 @@ public class StandaloneIdentityModuleTest
         assertFalse( fs.fileExists( dataDir ) );
 
         // when
-        var identityModule = StandaloneIdentityModule.create( nullLogProvider(), fs, layout, EmptyMemoryTracker.INSTANCE );
+        var identityModule = new StandaloneIdentityModule( nullLogProvider(), fs, layout, EmptyMemoryTracker.INSTANCE );
 
         // then
         assertTrue( fs.fileExists( dataDir ) );
         assertTrue( fs.fileExists( layout.serverIdFile() ) );
-        assertNotNull( identityModule.myself() );
+        assertNotNull( identityModule.serverId() );
 
         // when
-        var secondIdentityModule = StandaloneIdentityModule.create( nullLogProvider(), fs, layout, EmptyMemoryTracker.INSTANCE );
+        var secondIdentityModule = new StandaloneIdentityModule( nullLogProvider(), fs, layout, EmptyMemoryTracker.INSTANCE );
 
         // then
-        assertEquals( identityModule.myself(), secondIdentityModule.myself() );
+        assertEquals( identityModule.serverId(), secondIdentityModule.serverId() );
 
         fs.deleteRecursively( dataDir );
-        var thirdIdentityModule = StandaloneIdentityModule.create( nullLogProvider(), fs, layout, EmptyMemoryTracker.INSTANCE );
+        var thirdIdentityModule = new StandaloneIdentityModule( nullLogProvider(), fs, layout, EmptyMemoryTracker.INSTANCE );
 
         // then
-        assertNotEquals( secondIdentityModule.myself(), thirdIdentityModule.myself() );
+        assertNotEquals( secondIdentityModule.serverId(), thirdIdentityModule.serverId() );
     }
 }

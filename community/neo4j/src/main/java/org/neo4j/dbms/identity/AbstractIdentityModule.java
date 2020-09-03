@@ -32,10 +32,12 @@ import org.neo4j.io.state.SimpleFileStorage;
 import org.neo4j.io.state.SimpleStorage;
 import org.neo4j.logging.Log;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.util.Id;
 
-public abstract class DefaultIdentityModule implements IdentityModule, DiagnosticsProvider
+public abstract class AbstractIdentityModule implements DiagnosticsProvider, ServerIdentity
 {
-    protected static <T extends ServerId> T readOrGenerate( SimpleStorage<T> storage, Log log, Class<T> type, Function<UUID,T> creator, Supplier<UUID> uuid )
+    protected static <T extends Id> T readOrGenerate( SimpleStorage<T> storage, Log log, Class<T> type, Function<UUID,? extends T> creator,
+            Supplier<UUID> uuid )
     {
         T myself;
         try
@@ -50,7 +52,7 @@ public abstract class DefaultIdentityModule implements IdentityModule, Diagnosti
                 }
                 else
                 {
-                    log.info( String.format( "Found %s on disk: %s (%s)", type.getSimpleName(), myself, myself.getUuid() ) );
+                    log.info( String.format( "Found %s on disk: %s (%s)", type.getSimpleName(), myself, myself.uuid() ) );
                 }
             }
             else
@@ -83,7 +85,6 @@ public abstract class DefaultIdentityModule implements IdentityModule, Diagnosti
     @Override
     public void dump( DiagnosticsLogger logger )
     {
-        var serverId = myself();
-        logger.log( String.format( "ServerId is: %s (%s)", serverId.toString(), serverId.getUuid() ) );
+        logger.log( String.format( "ServerId is: %s", serverId().toString() ) );
     }
 }

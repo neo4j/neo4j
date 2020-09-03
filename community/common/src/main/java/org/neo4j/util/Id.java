@@ -26,7 +26,7 @@ import static java.util.Objects.requireNonNull;
 
 public class Id
 {
-    private final UUID uuid;
+    protected final UUID uuid;
     private String shortName;
 
     public Id( UUID uuid )
@@ -40,19 +40,13 @@ public class Id
         return uuid;
     }
 
-    private String shortName()
+    protected String shortName()
     {
         if ( shortName == null )
         {
             shortName = uuid.toString().substring( 0, 8 );
         }
         return shortName;
-    }
-
-    @Override
-    public String toString()
-    {
-        return shortName();
     }
 
     @Override
@@ -74,5 +68,11 @@ public class Id
     public int hashCode()
     {
         return Objects.hash( uuid );
+    }
+
+    @Override
+    public String toString()
+    {
+        return shortName();
     }
 }

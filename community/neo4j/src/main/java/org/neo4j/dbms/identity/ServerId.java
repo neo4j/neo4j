@@ -24,31 +24,34 @@ import java.util.UUID;
 
 import org.neo4j.io.fs.ReadableChannel;
 import org.neo4j.io.fs.WritableChannel;
-import org.neo4j.io.marshal.SafeChannelMarshal;
+import org.neo4j.io.marshal.SafeStateMarshal;
+import org.neo4j.util.Id;
 
 /**
  * ServerId is used for identifying a Neo4J instance.
  * It is persisted in the root of the data directory.
  */
-public interface ServerId
+public final class ServerId extends Id
 {
-    static ServerId of( UUID id )
+    public ServerId( UUID uuid )
     {
-        return new StandaloneServerId( id );
+        super( uuid );
     }
 
-    UUID getUuid();
+    @Override
+    public String toString()
+    {
+        return "ServerId{" + shortName() + '}';
+    }
 
-    /**
-     * Format:
-     * ┌──────────────────────────────┐
-     * │mostSignificantBits    8 bytes│
-     * │leastSignificantBits   8 bytes│
-     * └──────────────────────────────┘
-     */
-    class Marshal extends SafeChannelMarshal<ServerId>
+    public static class Marshal extends SafeStateMarshal<ServerId>
     {
         public static final Marshal INSTANCE = new Marshal();
+
+        private Marshal()
+        {
+            // use INSTANCE
+        }
 
         @Override
         public void marshal( ServerId serverId, WritableChannel channel ) throws IOException
@@ -60,8 +63,8 @@ public interface ServerId
             else
             {
                 channel.put( (byte) 1 );
-                channel.putLong( serverId.getUuid().getMostSignificantBits() );
-                channel.putLong( serverId.getUuid().getLeastSignificantBits() );
+                channel.putLong( serverId.uuid().getMostSignificantBits() );
+                channel.putLong( serverId.uuid().getLeastSignificantBits() );
             }
         }
 
@@ -77,8 +80,20 @@ public interface ServerId
             {
                 long mostSigBits = channel.getLong();
                 long leastSigBits = channel.getLong();
-                return ServerId.of( new UUID( mostSigBits, leastSigBits ) );
+                return new ServerId( new UUID( mostSigBits, leastSigBits ) );
             }
+        }
+
+        @Override
+        public ServerId startState()
+        {
+            return null;
+        }
+
+        @Override
+        public long ordinal( ServerId serverId )
+        {
+            return serverId == null ? 0 : 1;
         }
     }
 }

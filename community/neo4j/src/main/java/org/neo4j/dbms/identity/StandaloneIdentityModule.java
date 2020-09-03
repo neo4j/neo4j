@@ -26,26 +26,20 @@ import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.memory.MemoryTracker;
 
-public class StandaloneIdentityModule extends DefaultIdentityModule
+public class StandaloneIdentityModule extends AbstractIdentityModule
 {
-    public static StandaloneIdentityModule create( LogProvider logProvider, FileSystemAbstraction fs, Neo4jLayout layout, MemoryTracker memoryTracker )
+    private final ServerId serverId;
+
+    public StandaloneIdentityModule( LogProvider logProvider, FileSystemAbstraction fs, Neo4jLayout layout, MemoryTracker memoryTracker )
     {
         var log = logProvider.getLog( StandaloneIdentityModule.class );
         var storage = createServerIdStorage( fs, layout.serverIdFile(), memoryTracker );
-        var myself = readOrGenerate( storage, log, ServerId.class, ServerId::of, UUID::randomUUID );
-        return new StandaloneIdentityModule( myself );
-    }
-
-    private final ServerId myself;
-
-    protected StandaloneIdentityModule( ServerId myself )
-    {
-        this.myself = myself;
+        this.serverId = readOrGenerate( storage, log, ServerId.class, ServerId::new, UUID::randomUUID );
     }
 
     @Override
-    public ServerId myself()
+    public ServerId serverId()
     {
-        return myself;
+        return serverId;
     }
 }
