@@ -315,6 +315,73 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
     result.toList should be(List(Map("name" -> "system"),Map("name" -> "neo4j")))
   }
 
+  test("should show databases with yield and return") {
+    // GIVEN
+    setup(defaultConfig)
+
+    // WHEN
+    val result = execute("SHOW DATABASES YIELD name RETURN name")
+
+    // THEN
+    result.toSet should be(Set(Map("name" -> "system"),Map("name" -> "neo4j")))
+  }
+
+  test("should count default database with yield and return") {
+    // GIVEN
+    setup(defaultConfig)
+
+    // WHEN
+    val result = execute("SHOW DEFAULT DATABASE YIELD name RETURN count(name) as count, name")
+
+    // THEN
+    result.toSet should be(Set(Map("count" -> 1, "name" -> "neo4j")))
+  }
+
+  test("should show databases with yield, return and skip") {
+    // GIVEN
+    setup(defaultConfig)
+
+    // WHEN
+    val result = execute("SHOW DATABASES YIELD * RETURN name ORDER BY name SKIP 1")
+
+    // THEN
+    result.toList should be(List(Map("name" -> "system")))
+  }
+
+  test("should show databases with yield, return and limit") {
+    // GIVEN
+    setup(defaultConfig)
+
+    // WHEN
+    val result = execute("SHOW DATABASES YIELD * RETURN name ORDER BY name LIMIT 1")
+
+    // THEN
+    result.toList should be(List(Map("name" -> "neo4j")))
+  }
+
+  test("should show database neo4j with yield and aliasing") {
+    // GIVEN
+    setup(defaultConfig)
+
+    // WHEN
+    val result = execute("SHOW DATABASE neo4j YIELD name AS foo WHERE foo = 'neo4j' RETURN foo")
+
+    // THEN
+    result.toList should be(List(Map("foo" -> "neo4j")))
+  }
+
+  test("should show default database with yield and return with aliasing") {
+    // GIVEN
+    setup(defaultConfig)
+
+    // WHEN
+    val result = execute("SHOW DEFAULT DATABASE YIELD name WHERE name = 'neo4j' RETURN name as foo")
+
+    // THEN
+    result.toList should be(List(Map("foo" -> "neo4j")))
+  }
+
+
   test("should not show database with invalid yield") {
     // GIVEN
     setup(defaultConfig)

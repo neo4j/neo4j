@@ -62,6 +62,7 @@ import org.neo4j.cypher.internal.ast.ShowUsers
 import org.neo4j.cypher.internal.ast.StartDatabase
 import org.neo4j.cypher.internal.ast.StopDatabase
 import org.neo4j.cypher.internal.ast.Where
+import org.neo4j.cypher.internal.ast.Yield
 import org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.util.InputPosition
@@ -117,7 +118,7 @@ trait Statement extends Parser
   }
 
   def ShowUsers: Rule1[ShowUsers] = rule("CATALOG SHOW USERS") {
-    keyword("SHOW USERS") ~~ ShowCommandClauses ~~>> (ast.ShowUsers(_,_,_)_)
+    keyword("SHOW USERS") ~~ ShowCommandClauses ~~>> (ast.ShowUsers(_,_)_)
   }
 
   def CreateUser: Rule1[CreateUser] = rule("CATALOG CREATE USER") {
@@ -220,14 +221,14 @@ trait Statement extends Parser
   def ShowRoles: Rule1[ShowRoles] = rule("CATALOG SHOW ROLES") {
     //SHOW [ ALL | POPULATED ] ROLES WITH USERS
     group(keyword("SHOW") ~~ keyword("POPULATED") ~~ keyword("ROLES") ~~
-      keyword("WITH USERS")) ~~ ShowCommandClauses ~~>> (ast.ShowRoles(withUsers = true, showAll = false, _, _, _)) |
+      keyword("WITH USERS")) ~~ ShowCommandClauses ~~>> (ast.ShowRoles(withUsers = true, showAll = false, _, _)) |
     group(keyword("SHOW") ~~ optional(keyword("ALL")) ~~ keyword("ROLES") ~~
-      keyword("WITH USERS")) ~~ ShowCommandClauses ~~>> (ast.ShowRoles(withUsers = true, showAll = true, _, _, _)) |
+      keyword("WITH USERS")) ~~ ShowCommandClauses ~~>> (ast.ShowRoles(withUsers = true, showAll = true, _, _)) |
     // SHOW [ ALL | POPULATED ] ROLES
     group(keyword("SHOW") ~~ keyword("POPULATED") ~~ keyword("ROLES")) ~~ ShowCommandClauses ~~>>
-      (ast.ShowRoles(withUsers = false, showAll = false, _, _, _)) |
+      (ast.ShowRoles(withUsers = false, showAll = false, _, _)) |
     group(keyword("SHOW") ~~ optional(keyword("ALL")) ~~ keyword("ROLES")) ~~ ShowCommandClauses ~~>>
-      (ast.ShowRoles(withUsers = false, showAll = true, _, _, _))
+      (ast.ShowRoles(withUsers = false, showAll = true, _, _))
   }
 
   def CreateRole: Rule1[CreateRole] = rule("CATALOG CREATE ROLE") {
@@ -403,12 +404,13 @@ trait Statement extends Parser
 
   def ShowPrivileges: Rule1[ShowPrivileges] = rule("CATALOG SHOW PRIVILEGES") {
     group(keyword("SHOW") ~~ ScopeForShowPrivileges ~~ ShowCommandClauses
-      ~~>> ((scope, yld, where, rtn) => ast.ShowPrivileges(scope, yld, where, rtn)))
+      ~~>> ((scope, yld, rtn) => ast.ShowPrivileges(scope, yld, rtn)))
   }
 
-  private def ShowCommandClauses: Rule3[Option[Return], Option[Where], Option[Return]] = rule("YIELD ... WHERE .. RETURN .. for SHOW commands") {
-    optional(group(keyword("YIELD") ~~ YieldBody) ~~>> (ast.Return(distinct = false, _, _, _, _))) ~~
-      optional(Where) ~> (_ => None)
+  private def ShowCommandClauses: Rule2[Option[Either[Yield, Where]], Option[Return]] = rule("YIELD ... WHERE .. RETURN .. for SHOW commands") {
+    optional(keyword("YIELD") ~~ YieldBody ~~>>
+      ((returnItems, maybeOrderBy, maybeSkip, maybeLimit, maybeWhere) => pos => Left(ast.Yield(returnItems, maybeOrderBy, maybeSkip, maybeLimit, maybeWhere)(pos))) |
+      Where ~~>> (where => _ => Right(where))) ~~ optional(ReturnWithoutGraph)
   }
 
   private def PrivilegeProperty: Rule1[ActionResource] = rule("{propertyList}")(
@@ -575,7 +577,7 @@ trait Statement extends Parser
   )
 
   def ShowDatabase: Rule1[ShowDatabase] = rule("CATALOG SHOW DATABASE") {
-    group(keyword("SHOW") ~~ ScopeForShowDatabase) ~~ ShowCommandClauses ~~>> (ast.ShowDatabase(_,_,_,_))
+    group(keyword("SHOW") ~~ ScopeForShowDatabase) ~~ ShowCommandClauses ~~>> (ast.ShowDatabase(_,_,_))
   }
 
   private def ScopeForShowDatabase: Rule1[DatabaseScope] = rule("show database scope")(

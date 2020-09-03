@@ -151,6 +151,75 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     result.toList should be(List(Map("user" -> "neo4j"),Map("user" -> "foo"),Map("user" -> "bar")))
   }
 
+  test("should show users with yield and return") {
+    // WHEN
+    val result = execute("SHOW USERS YIELD user RETURN user")
+
+    // THEN
+    result.toSet should be(Set(Map("user"->"neo4j")))
+  }
+
+  test("should count users with yield and return") {
+    // GIVEN
+    execute("CREATE USER foo SET PASSWORD 'password' CHANGE NOT REQUIRED")
+
+    // WHEN
+    val result = execute("SHOW USERS YIELD user, passwordChangeRequired RETURN count(user) as count, passwordChangeRequired")
+
+    // THEN
+    result.toSet should be(Set(Map("count" -> 1, "passwordChangeRequired" -> true),
+      Map("count" -> 1, "passwordChangeRequired" -> false)))
+  }
+
+  test("should show users with yield, return and skip") {
+    // GIVEN
+    execute("CREATE USER foo SET PASSWORD 'password'")
+    execute("CREATE USER bar SET PASSWORD 'password'")
+    execute("CREATE USER zoo SET PASSWORD 'password'")
+
+    // WHEN
+    val result = execute("SHOW USERS YIELD * RETURN user ORDER BY user SKIP 2")
+
+    // THEN
+    result.toList should be(List(Map("user" -> "neo4j"), Map("user" -> "zoo")))
+  }
+
+  test("should show users with yield, return and limit") {
+    // GIVEN
+    execute("CREATE USER foo SET PASSWORD 'password'")
+    execute("CREATE USER bar SET PASSWORD 'password'")
+
+    // WHEN
+    val result = execute("SHOW USERS YIELD * RETURN user ORDER BY user LIMIT 1")
+
+    // THEN
+    result.toList should be(List(Map("user" -> "bar")))
+  }
+
+  test("should show users with yield and aliasing") {
+    // GIVEN
+    execute("CREATE USER foo SET PASSWORD 'password'")
+    execute("CREATE USER bar SET PASSWORD 'password'")
+
+    // WHEN
+    val result = execute("SHOW USERS YIELD user AS foo WHERE foo = 'foo' RETURN foo")
+
+    // THEN
+    result.toList should be(List(Map("foo" -> "foo")))
+  }
+
+  test("should show users with yield and return with aliasing") {
+    // GIVEN
+    execute("CREATE USER foo SET PASSWORD 'password'")
+    execute("CREATE USER bar SET PASSWORD 'password'")
+
+    // WHEN
+    val result = execute("SHOW USERS YIELD user WHERE user = 'foo' RETURN user as foo")
+
+    // THEN
+    result.toList should be(List(Map("foo" -> "foo")))
+  }
+
   test("should not show users with invalid yield") {
 
     // WHEN

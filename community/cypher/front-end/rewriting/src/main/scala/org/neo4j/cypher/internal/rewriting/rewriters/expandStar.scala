@@ -22,6 +22,7 @@ import org.neo4j.cypher.internal.ast.Return
 import org.neo4j.cypher.internal.ast.ReturnItem
 import org.neo4j.cypher.internal.ast.ReturnItems
 import org.neo4j.cypher.internal.ast.With
+import org.neo4j.cypher.internal.ast.Yield
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Variable
@@ -41,14 +42,17 @@ case class expandStar(state: SemanticState) extends Rewriter {
       val newReturnItems = if (values.includeExisting) returnItems(clause, values.items, excludedNames) else values
       clause.copy(returnItems = newReturnItems, excludedNames = Set.empty)(clause.position)
 
+    case clause@Yield(values, _, _, _, _) if values.includeExisting =>
+      val newReturnItems = if (values.includeExisting) returnItems(clause, values.items) else values
+      clause.copy(returnItems = newReturnItems)(clause.position)
+
     case expandedAstNode =>
       expandedAstNode
   }
 
   private val instance = bottomUp(rewriter, _.isInstanceOf[Expression])
 
-  private def returnItems(clause: Clause, listedItems: Seq[ReturnItem], excludedNames: Set[String] = Set.empty)
-  : ReturnItems = {
+  private def returnItems(clause: Clause, listedItems: Seq[ReturnItem], excludedNames: Set[String] = Set.empty): ReturnItems = {
     val scope = state.scope(clause).getOrElse {
       throw new IllegalStateException(s"${clause.name} should note its Scope in the SemanticState")
     }

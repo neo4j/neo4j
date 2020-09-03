@@ -25,73 +25,89 @@ import org.neo4j.cypher.internal.ast.NamedDatabaseScope
 import org.neo4j.cypher.internal.ast.Return
 import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
 import org.neo4j.cypher.internal.ast.Where
+import org.neo4j.cypher.internal.ast.Yield
 
 class MultiDatabaseAdministrationCommandParserTest extends AdministrationCommandParserTestBase {
 
   // SHOW DATABASE
 
   Seq(
-    ("DATABASES", ast.ShowDatabase.apply(AllDatabasesScope()(pos), _: Option[Return], _: Option[Where], _: Option[Return]) _  ),
-    ("DEFAULT DATABASE", ast.ShowDatabase.apply(DefaultDatabaseScope()(pos), _: Option[Return], _: Option[Where], _: Option[Return]) _  ),
-    ("DATABASE $db",  ast.ShowDatabase.apply(NamedDatabaseScope(param("db"))(pos), _: Option[Return], _: Option[Where], _: Option[Return]) _  ),
-    ("DATABASE neo4j",  ast.ShowDatabase.apply(NamedDatabaseScope(literal("neo4j"))(pos), _: Option[Return], _: Option[Where], _: Option[Return]) _  )
+    ("DATABASES", ast.ShowDatabase.apply(AllDatabasesScope()(pos), _: Option[Either[Yield, Where]], _: Option[Return]) _  ),
+    ("DEFAULT DATABASE", ast.ShowDatabase.apply(DefaultDatabaseScope()(pos), _: Option[Either[Yield, Where]], _: Option[Return]) _  ),
+    ("DATABASE $db",  ast.ShowDatabase.apply(NamedDatabaseScope(param("db"))(pos), _: Option[Either[Yield, Where]], _: Option[Return]) _  ),
+    ("DATABASE neo4j",  ast.ShowDatabase.apply(NamedDatabaseScope(literal("neo4j"))(pos), _: Option[Either[Yield, Where]], _: Option[Return]) _  )
   ).foreach{ case (dbType, privilege) =>
     test(s"SHOW $dbType") {
-      yields(privilege(None, None, None))
+      yields(privilege(None, None))
     }
 
     test(s"SHOW $dbType WHERE access = 'GRANTED'") {
-      yields(privilege(None, Some(ast.Where(equals(varFor("access"), literalString("GRANTED"))) _), None))
+      yields(privilege(Some(Right(ast.Where(equals(varFor("access"), literalString("GRANTED"))) _)), None))
     }
 
     test(s"SHOW $dbType WHERE access = 'GRANTED' AND action = 'match'") {
       val accessPredicate = equals(varFor("access"), literalString("GRANTED"))
       val matchPredicate = equals(varFor("action"), literalString("match"))
-      yields(privilege(None, Some(ast.Where(and(accessPredicate, matchPredicate)) _), None))
+      yields(privilege(Some(Right(ast.Where(and(accessPredicate, matchPredicate)) _)), None))
     }
 
     test(s"SHOW $dbType YIELD access ORDER BY access") {
       val orderBy = ast.OrderBy(List(ast.AscSortItem(varFor("access")) _)) _
-      val columns = ast.Return(false, ast.ReturnItems(false, List(UnaliasedReturnItem(varFor("access"), "access") _)) _, Some(orderBy), None, None) _
-      yields(privilege( Some(columns), None, None))
+      val columns = ast.Yield(ast.ReturnItems(false, List(UnaliasedReturnItem(varFor("access"), "access") _)) _, Some(orderBy), None, None, None) _
+      yields(privilege( Some(Left(columns)), None))
     }
 
     test(s"SHOW $dbType YIELD access ORDER BY access WHERE access ='none'") {
       val orderBy = ast.OrderBy(List(ast.AscSortItem(varFor("access")) _)) _
-      val columns = ast.Return(false, ast.ReturnItems(false, List(UnaliasedReturnItem(varFor("access"), "access") _)) _, Some(orderBy), None, None) _
       val where = ast.Where(equals(varFor("access"), literalString("none"))) _
-      yields(privilege(Some(columns), Some(where), None))
+      val columns = ast.Yield(ast.ReturnItems(false, List(UnaliasedReturnItem(varFor("access"), "access") _)) _, Some(orderBy), None, None, Some(where)) _
+      yields(privilege(Some(Left(columns)), None))
     }
 
     test(s"SHOW $dbType YIELD access ORDER BY access SKIP 1 LIMIT 10 WHERE access ='none'") {
       val orderBy = ast.OrderBy(List(ast.AscSortItem(varFor("access")) _)) _
-      val columns = ast.Return(false, ast.ReturnItems(false, List(UnaliasedReturnItem(varFor("access"), "access") _)) _, Some(orderBy),
-        Some(ast.Skip(literalInt(1)) _), Some(ast.Limit(literalInt(10)) _)) _
       val where = ast.Where(equals(varFor("access"), literalString("none"))) _
-      yields(privilege(Some(columns), Some(where), None))
+      val columns = ast.Yield(ast.ReturnItems(false, List(UnaliasedReturnItem(varFor("access"), "access") _)) _, Some(orderBy),
+        Some(ast.Skip(literalInt(1)) _), Some(ast.Limit(literalInt(10)) _), Some(where)) _
+      yields(privilege(Some(Left(columns)), None))
     }
 
     test(s"SHOW $dbType YIELD access SKIP -1") {
-      val columns = ast.Return(false, ast.ReturnItems(false, List(UnaliasedReturnItem(varFor("access"), "access") _)) _, None,
-        Some(ast.Skip(literalInt(-1)) _), None) _
-      yields(privilege(Some(columns), None, None))
+      val columns = ast.Yield(ast.ReturnItems(false, List(UnaliasedReturnItem(varFor("access"), "access") _)) _, None,
+        Some(ast.Skip(literalInt(-1)) _), None, None) _
+      yields(privilege(Some(Left(columns)), None))
     }
 
     test(s"SHOW $dbType YIELD access ORDER BY access RETURN access") {
-      failsToParse
+      yields(privilege(
+        Some(Left(ast.Yield(ast.ReturnItems(false, List(UnaliasedReturnItem(varFor("access"), "access") _)) _, Some(ast.OrderBy(List(ast.AscSortItem(varFor("access")) _)) _), None, None, None) _)),
+        Some(ast.Return(ast.ReturnItems(false, List(UnaliasedReturnItem(varFor("access"), "access") _)) _) _)
+      ))
     }
 
     test(s"SHOW $dbType WHERE access = 'GRANTED' RETURN action") {
-      failsToParse
+      yields(privilege(
+        Some(Right(ast.Where(equals(varFor("access"), literalString("GRANTED"))) _)),
+        Some(ast.Return(ast.ReturnItems(false, List(UnaliasedReturnItem(varFor("action"), "action") _))_ )_)
+      ))
+    }
+
+    test(s"SHOW $dbType YIELD * RETURN *") {
+      yields(privilege(
+        Some(Left(ast.Yield(ast.ReturnItems(true,List()) _,None,None,None,None)_)),
+        Some(ast.Return(false,ast.ReturnItems(true,List()) _,None,None,None,Set()) _)))
     }
   }
 
+  test("SHOW DATABASE blah YIELD *,blah RETURN user") {
+    failsToParse
+  }
   test("SHOW DATABASE `foo.bar`") {
-    yields(ast.ShowDatabase(NamedDatabaseScope(literal("foo.bar"))(pos), None, None, None))
+    yields(ast.ShowDatabase(NamedDatabaseScope(literal("foo.bar"))(pos), None, None))
   }
 
   test("SHOW DATABASE foo.bar") {
-    yields(ast.ShowDatabase(NamedDatabaseScope(literal("foo.bar"))(pos), None, None, None))
+    yields(ast.ShowDatabase(NamedDatabaseScope(literal("foo.bar"))(pos), None, None))
   }
 
   test("SHOW DATABASE") {

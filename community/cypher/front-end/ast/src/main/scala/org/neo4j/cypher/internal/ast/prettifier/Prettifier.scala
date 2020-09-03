@@ -159,6 +159,7 @@ import org.neo4j.cypher.internal.ast.UsingScanHint
 import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.ast.With
 import org.neo4j.cypher.internal.ast.WriteAction
+import org.neo4j.cypher.internal.ast.Yield
 import org.neo4j.cypher.internal.expressions.CoerceTo
 import org.neo4j.cypher.internal.expressions.ImplicitProcedureArgument
 import org.neo4j.cypher.internal.expressions.LabelName
@@ -258,20 +259,22 @@ case class Prettifier(
   def asString(adminCommand: AdministrationCommand): String =  {
     val useString = asString(adminCommand.useGraph)
 
-    def showClausesAsString(yields: Option[Return],
-                      where: Option[Where],
-                      returns: Option[Return]): (String, String, String) = {
+    def showClausesAsString(yields: Option[Either[Yield, Where]],
+                      returns: Option[Return]): (String, String) = {
       val ind: IndentingQueryPrettifier = base.indented()
-      val w = where.map(ind.asString).map("\n" + _).getOrElse("")
-      val y = yields.map(ind.asString).map("\n" + _.replace("RETURN", "YIELD")).getOrElse("")
+      val y = yields match {
+        case Some(Left(y)) => "\n" + ind.asString(y)
+        case Some(Right(w)) => "\n" + ind.asString(w)
+        case None => ""
+      }
       val r = returns.map(ind.asString).map("\n" + _).getOrElse("")
-      (w, y, r)
+      (y, r)
     }
     val commandString = adminCommand match {
 
-      case x @ ShowUsers(yields, where, returns) =>
-        val (w: String, y: String, r: String) = showClausesAsString(yields, where, returns)
-        s"${x.name}$y$w$r"
+      case x @ ShowUsers(yields, returns) =>
+        val (y: String, r: String) = showClausesAsString(yields, returns)
+        s"${x.name}$y$r"
 
       case x @ CreateUser(userName, initialPassword, requirePasswordChange, suspended, ifExistsDo) =>
         val userNameString = Prettifier.escapeName(userName)
@@ -303,9 +306,9 @@ case class Prettifier(
       case x @ SetOwnPassword(newPassword, currentPassword) =>
         s"${x.name} FROM ${expr.escapePassword(currentPassword)} TO ${expr.escapePassword(newPassword)}"
 
-      case x @ ShowRoles(withUsers, _, yields, where, returns) =>
-        val (w: String, y: String, r: String) = showClausesAsString(yields, where, returns)
-        s"${x.name}${if (withUsers) " WITH USERS" else ""}$y$w$r"
+      case x @ ShowRoles(withUsers, _, yields, returns) =>
+        val (y: String, r: String) = showClausesAsString(yields, returns)
+        s"${x.name}${if (withUsers) " WITH USERS" else ""}$y$r"
 
       case x @ CreateRole(roleName, None, ifExistsDo) =>
         ifExistsDo match {
@@ -413,17 +416,17 @@ case class Prettifier(
         val (resourceName, scope) = Prettifier.extractScope(resource, graphScope, qualifier)
         s"${x.name} {$resourceName} ON $scope FROM ${Prettifier.escapeNames(roleNames)}"
 
-      case ShowPrivileges(scope, yields, where, returns) =>
-        val (w: String, y: String, r: String) = showClausesAsString(yields, where, returns)
-        s"SHOW ${Prettifier.extractScope(scope)} PRIVILEGES$y$w$r"
+      case ShowPrivileges(scope, yields, returns) =>
+        val (y: String, r: String) = showClausesAsString(yields, returns)
+        s"SHOW ${Prettifier.extractScope(scope)} PRIVILEGES$y$r"
 
-      case x @ ShowDatabase(scope, yields, where, returns) =>
-        val (w: String, y: String, r: String) = showClausesAsString(yields, where, returns)
+      case x @ ShowDatabase(scope, yields, returns) =>
+        val (y: String, r: String) = showClausesAsString(yields, returns)
         val optionalName = scope match {
           case NamedDatabaseScope(dbName) => s" ${Prettifier.escapeName(dbName)}"
           case _ => ""
         }
-        s"${x.name}$optionalName$y$w$r"
+        s"${x.name}$optionalName$y$r"
 
       case x @ CreateDatabase(dbName, ifExistsDo) =>
         ifExistsDo match {
@@ -516,6 +519,7 @@ case class Prettifier(
       case m: Match          => asString(m)
       case c: SubQuery       => asString(c)
       case w: With           => asString(w)
+      case y: Yield          => asString(y)
       case c: Create         => asString(c)
       case u: Unwind         => asString(u)
       case u: UnresolvedCall => asString(u)
@@ -628,6 +632,16 @@ case class Prettifier(
       val s = w.skip.map(ind.asString).map(asNewLine).getOrElse("")
       val wh = w.where.map(ind.asString).map(asNewLine).getOrElse("")
       s"${INDENT}WITH$d $i$o$s$l$wh"
+    }
+
+    def asString(y: Yield): String = {
+      val i = asString(y.returnItems)
+      val ind = indented()
+      val o = y.orderBy.map(ind.asString).map(asNewLine).getOrElse("")
+      val l = y.limit.map(ind.asString).map(asNewLine).getOrElse("")
+      val s = y.skip.map(ind.asString).map(asNewLine).getOrElse("")
+      val wh = y.where.map(ind.asString).map(asNewLine).getOrElse("")
+      s"${INDENT}YIELD $i$o$s$l$wh"
     }
 
     def asString(c: Create): String = {

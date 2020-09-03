@@ -18,6 +18,7 @@ package org.neo4j.cypher.internal.parser.privilege
 
 import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
+import org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.parser.AdministrationCommandParserTestBase
 
 class PrivilegeAdministrationCommandParserTest extends AdministrationCommandParserTestBase {
@@ -25,15 +26,15 @@ class PrivilegeAdministrationCommandParserTest extends AdministrationCommandPars
   //  Showing privileges
 
   test("SHOW PRIVILEGES") {
-    yields(ast.ShowPrivileges(ast.ShowAllPrivileges() _, None, None, None))
+    yields(ast.ShowPrivileges(ast.ShowAllPrivileges() _, None, None))
   }
 
   test("catalog show privileges") {
-    yields(ast.ShowPrivileges(ast.ShowAllPrivileges() _, None, None, None))
+    yields(ast.ShowPrivileges(ast.ShowAllPrivileges() _, None, None))
   }
 
   test("SHOW ALL PRIVILEGES") {
-    yields(ast.ShowPrivileges(ast.ShowAllPrivileges() _, None, None, None))
+    yields(ast.ShowPrivileges(ast.ShowAllPrivileges() _, None, None))
   }
 
   // yield / skip / limit / order by / where
@@ -46,97 +47,132 @@ class PrivilegeAdministrationCommandParserTest extends AdministrationCommandPars
     ("ROLE $role, reader", ast.ShowRolesPrivileges(List(param("role"), literal("reader"))) _)
   ).foreach{ case (privType, privilege) => {
     test(s"SHOW $privType PRIVILEGES WHERE access = 'GRANTED'") {
-      yields(ast.ShowPrivileges(privilege, None, Some(ast.Where(equals(varFor("access"), literalString("GRANTED"))) _), None))
+      yields(ast.ShowPrivileges(privilege, Some(Right(ast.Where(equals(varFor("access"), literalString("GRANTED"))) _)), None))
     }
 
     test(s"SHOW $privType PRIVILEGES WHERE access = 'GRANTED' AND action = 'match'") {
       val accessPredicate = equals(varFor("access"), literalString("GRANTED"))
       val matchPredicate = equals(varFor("action"), literalString("match"))
-      yields(ast.ShowPrivileges(privilege, None, Some(ast.Where(and(accessPredicate, matchPredicate)) _), None))
+      yields(ast.ShowPrivileges(privilege, Some(Right(ast.Where(and(accessPredicate, matchPredicate)) _)), None))
     }
 
     test(s"SHOW $privType PRIVILEGES YIELD access ORDER BY access") {
       val orderBy = ast.OrderBy(List(ast.AscSortItem(varFor("access")) _)) _
-      val columns = ast.Return(false, ast.ReturnItems(false, List(UnaliasedReturnItem(varFor("access"), "access") _)) _, Some(orderBy), None, None) _
-      yields(ast.ShowPrivileges(privilege, Some(columns), None, None))
+      val columns = ast.Yield(ast.ReturnItems(false, List(UnaliasedReturnItem(varFor("access"), "access") _)) _, Some(orderBy), None, None, None) _
+      yields(ast.ShowPrivileges(privilege, Some(Left(columns)), None))
     }
 
     test(s"SHOW $privType PRIVILEGES YIELD access ORDER BY access WHERE access ='none'") {
       val orderBy = ast.OrderBy(List(ast.AscSortItem(varFor("access")) _)) _
-      val columns = ast.Return(false, ast.ReturnItems(false, List(UnaliasedReturnItem(varFor("access"), "access") _)) _, Some(orderBy), None, None) _
       val where = ast.Where(equals(varFor("access"), literalString("none"))) _
-      yields(ast.ShowPrivileges(privilege, Some(columns), Some(where), None))
+      val columns = ast.Yield(ast.ReturnItems(false, List(UnaliasedReturnItem(varFor("access"), "access") _)) _, Some(orderBy), None, None, Some(where)) _
+      yields(ast.ShowPrivileges(privilege, Some(Left(columns)), None))
     }
 
     test(s"SHOW $privType PRIVILEGES YIELD access ORDER BY access SKIP 1 LIMIT 10 WHERE access ='none'") {
       val orderBy = ast.OrderBy(List(ast.AscSortItem(varFor("access")) _)) _
-      val columns = ast.Return(false, ast.ReturnItems(false, List(UnaliasedReturnItem(varFor("access"), "access") _)) _, Some(orderBy),
-        Some(ast.Skip(literalInt(1)) _), Some(ast.Limit(literalInt(10)) _)) _
       val where = ast.Where(equals(varFor("access"), literalString("none"))) _
-      yields(ast.ShowPrivileges(privilege, Some(columns), Some(where), None))
+      val columns = ast.Yield(ast.ReturnItems(false, List(UnaliasedReturnItem(varFor("access"), "access") _)) _, Some(orderBy),
+        Some(ast.Skip(literalInt(1)) _), Some(ast.Limit(literalInt(10)) _), Some(where)) _
+      yields(ast.ShowPrivileges(privilege, Some(Left(columns)), None))
     }
 
     test(s"SHOW $privType PRIVILEGES YIELD access SKIP -1") {
-      val columns = ast.Return(false, ast.ReturnItems(false, List(UnaliasedReturnItem(varFor("access"), "access") _)) _, None,
-        Some(ast.Skip(literalInt(-1)) _), None) _
-      yields(ast.ShowPrivileges(privilege, Some(columns), None, None))
+      val columns = ast.Yield(ast.ReturnItems(false, List(UnaliasedReturnItem(varFor("access"), "access") _)) _, None,
+        Some(ast.Skip(literalInt(-1)) _), None, None) _
+      yields(ast.ShowPrivileges(privilege, Some(Left(columns)), None))
+    }
+
+    test(s"SHOW $privType PRIVILEGES YIELD access, action RETURN access, count(action) ORDER BY access") {
+          val orderBy = ast.OrderBy(List(ast.AscSortItem(varFor("access")) _)) _
+          val accessColumn = UnaliasedReturnItem(varFor("access"), "access") _
+          val actionColumn: UnaliasedReturnItem = UnaliasedReturnItem(varFor("action"), "action") _
+          val countFunction = astFunctionInvocation("count", varFor("action"))
+          val countColumn = UnaliasedReturnItem(countFunction, "count(action)") _
+          val yieldColumns = ast.Yield(ast.ReturnItems(includeExisting = false, List(accessColumn, actionColumn)) _, None, None, None, None) _
+          val returns = ast.Return(false, ast.ReturnItems(includeExisting = false, List(accessColumn, countColumn)) _, Some(orderBy), None, None) _
+          yields(ast.ShowPrivileges(privilege, Some(Left(yieldColumns)), Some(returns)))
     }
 
     test(s"SHOW $privType PRIVILEGES YIELD access, action SKIP 1 RETURN access, action") {
-      failsToParse
+      val accessColumn = UnaliasedReturnItem(varFor("access"), "access") _
+      val actionColumn: UnaliasedReturnItem = UnaliasedReturnItem(varFor("action"), "action") _
+      val returnItems: ast.ReturnItems =  ast.ReturnItems(false, List(accessColumn, actionColumn)) _
+      yields(ast.ShowPrivileges(privilege,
+        Some(Left(ast.Yield(returnItems, None, Some(ast.Skip(literalInt(1)) _), None, None) _ )),
+        Some(ast.Return(distinct = false, returnItems, None, None, None) _ )))
     }
 
     test(s"SHOW $privType PRIVILEGES YIELD access, action WHERE access = 'none' RETURN action") {
-      failsToParse
+      val accessColumn = UnaliasedReturnItem(varFor("access"), "access") _
+      val actionColumn: UnaliasedReturnItem = UnaliasedReturnItem(varFor("action"), "action") _
+      val where = ast.Where(equals(varFor("access"), literalString("none"))) _
+      yields(ast.ShowPrivileges(privilege,
+        Some(Left(ast.Yield(ast.ReturnItems(false, List(accessColumn, actionColumn)) _, None, None, None, Some(where)) _ )),
+        Some(ast.Return(distinct = false, ast.ReturnItems(false, List(actionColumn)) _, None, None, None) _ )))
+    }
+
+    test(s"SHOW $privType PRIVILEGES YIELD * RETURN *") {
+      yields(ast.ShowPrivileges(privilege,
+        Some(Left(ast.Yield(ast.ReturnItems(true,List()) _,None,None,None,None)_)),
+        Some(ast.Return(false,ast.ReturnItems(true,List()) _,None,None,None,Set()) _)))
     }
   }}
 
+  test("SHOW USER user PRIVILEGES YIELD *, blah RETURN user") {
+    failsToParse
+  }
+
+  test("SHOW USER user PRIVILEGES YIELD # RETURN user") {
+    failsToParse
+  }
+
   test("SHOW USER user PRIVILEGES") {
-    yields(ast.ShowPrivileges(ast.ShowUsersPrivileges(List(literal("user"))) _, None, None, None))
+    yields(ast.ShowPrivileges(ast.ShowUsersPrivileges(List(literal("user"))) _, None, None))
   }
 
   test("SHOW USERS $user PRIVILEGES") {
-    yields(ast.ShowPrivileges(ast.ShowUsersPrivileges(List(param("user"))) _, None, None, None))
+    yields(ast.ShowPrivileges(ast.ShowUsersPrivileges(List(param("user"))) _, None,  None))
   }
 
   test("SHOW USER `us%er` PRIVILEGES") {
-    yields(ast.ShowPrivileges(ast.ShowUsersPrivileges(List(literal("us%er"))) _, None, None, None))
+    yields(ast.ShowPrivileges(ast.ShowUsersPrivileges(List(literal("us%er"))) _, None,  None))
   }
 
   test("SHOW USER user, $userParam PRIVILEGES") {
-    yields(ast.ShowPrivileges(ast.ShowUsersPrivileges(List(literal("user"), param("userParam"))) _, None, None, None))
+    yields(ast.ShowPrivileges(ast.ShowUsersPrivileges(List(literal("user"), param("userParam"))) _, None, None))
   }
 
   test("SHOW USERS user1, $userParam, user2 PRIVILEGES") {
-    yields(ast.ShowPrivileges(ast.ShowUsersPrivileges(List(literal("user1"), param("userParam"), literal("user2"))) _, None, None, None))
+    yields(ast.ShowPrivileges(ast.ShowUsersPrivileges(List(literal("user1"), param("userParam"), literal("user2"))) _, None, None))
   }
 
   test("SHOW USER PRIVILEGES") {
-    yields(ast.ShowPrivileges(ast.ShowUserPrivileges(None) _, None, None, None))
+    yields(ast.ShowPrivileges(ast.ShowUserPrivileges(None) _, None, None))
   }
 
   test("SHOW USERS PRIVILEGES") {
-    yields(ast.ShowPrivileges(ast.ShowUserPrivileges(None) _, None, None, None))
+    yields(ast.ShowPrivileges(ast.ShowUserPrivileges(None) _, None, None))
   }
 
   test("SHOW ROLE role PRIVILEGES") {
-    yields(ast.ShowPrivileges(ast.ShowRolesPrivileges(List(literal("role"))) _, None, None, None))
+    yields(ast.ShowPrivileges(ast.ShowRolesPrivileges(List(literal("role"))) _, None, None))
   }
 
   test("SHOW ROLE $role PRIVILEGES") {
-    yields(ast.ShowPrivileges(ast.ShowRolesPrivileges(List(param("role"))) _, None, None, None))
+    yields(ast.ShowPrivileges(ast.ShowRolesPrivileges(List(param("role"))) _, None, None))
   }
 
   test("SHOW ROLES `ro%le` PRIVILEGES") {
-    yields(ast.ShowPrivileges(ast.ShowRolesPrivileges(List(literal("ro%le"))) _, None, None, None))
+    yields(ast.ShowPrivileges(ast.ShowRolesPrivileges(List(literal("ro%le"))) _, None, None))
   }
 
   test("SHOW ROLE role1, $roleParam, role2, role3 PRIVILEGES") {
-    yields(ast.ShowPrivileges(ast.ShowRolesPrivileges(List(literal("role1"), param("roleParam"), literal("role2"), literal("role3"))) _, None, None, None))
+    yields(ast.ShowPrivileges(ast.ShowRolesPrivileges(List(literal("role1"), param("roleParam"), literal("role2"), literal("role3"))) _, None, None))
   }
 
   test("SHOW ROLES role1, $roleParam1, role2, $roleParam2 PRIVILEGES") {
-    yields(ast.ShowPrivileges(ast.ShowRolesPrivileges(List(literal("role1"), param("roleParam1"), literal("role2"), param("roleParam2"))) _, None, None, None))
+    yields(ast.ShowPrivileges(ast.ShowRolesPrivileges(List(literal("role1"), param("roleParam1"), literal("role2"), param("roleParam2"))) _, None, None))
   }
 
   test("SHOW PRIVILEGE") {
@@ -512,5 +548,8 @@ class PrivilegeAdministrationCommandParserTest extends AdministrationCommandPars
         failsToParse
       }
   }
+
+  private def astFunctionInvocation(functionName: String, parameters: expressions.Expression*): expressions.FunctionInvocation =
+    expressions.FunctionInvocation(expressions.FunctionName(functionName) _, distinct = false, parameters.toIndexedSeq) _
 
 }

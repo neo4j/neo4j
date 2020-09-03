@@ -26,43 +26,66 @@ class RoleAdministrationCommandParserTest extends AdministrationCommandParserTes
   //  Showing roles
 
   test("SHOW ROLES") {
-    yields(ast.ShowRoles(withUsers = false, showAll = true, None, None, None))
+    yields(ast.ShowRoles(withUsers = false, showAll = true, None, None))
   }
 
   test("CATALOG SHOW ALL ROLES") {
-    yields(ast.ShowRoles(withUsers = false, showAll = true, None, None, None))
+    yields(ast.ShowRoles(withUsers = false, showAll = true, None, None))
   }
 
   test("CATALOG SHOW ALL ROLES YIELD role") {
-    yields(ast.ShowRoles(withUsers = false, showAll = true, Some(ast.Return(ast.ReturnItems(includeExisting = false, List(UnaliasedReturnItem(varFor("role"), "role")_))_)_), None, None))
+    yields(ast.ShowRoles(withUsers = false, showAll = true, Some(Left(ast.Yield(ast.ReturnItems(includeExisting = false, List(UnaliasedReturnItem(varFor("role"), "role")_))_, None, None, None, None)_)), None))
   }
 
   test("CATALOG SHOW ALL ROLES WHERE role='PUBLIC'") {
-    yields(ast.ShowRoles(withUsers = false, showAll = true, None, Some(ast.Where(Equals(varFor("role"), literalString("PUBLIC"))_)_), None))
+    yields(ast.ShowRoles(withUsers = false, showAll = true, Some(Right(ast.Where(Equals(varFor("role"), literalString("PUBLIC"))_)_)), None))
   }
 
   test("SHOW ALL ROLES YIELD role RETURN role") {
-    failsToParse
+    yields(ast.ShowRoles(withUsers = false, showAll = true,
+      Some(Left(ast.Yield(ast.ReturnItems(includeExisting = false, List(UnaliasedReturnItem(varFor("role"), "role")_))_, None, None, None, None)_)),
+      Some(ast.Return(ast.ReturnItems(includeExisting = false, List(UnaliasedReturnItem(varFor("role"), "role")_))_)_)))
   }
 
   test("SHOW POPULATED ROLES YIELD role WHERE role='PUBLIC' RETURN role") {
+    yields(ast.ShowRoles(withUsers = false, showAll = false,
+      Some(Left(ast.Yield(ast.ReturnItems(includeExisting = false, List(UnaliasedReturnItem(varFor("role"), "role")_))_, None, None, None,
+        Some(ast.Where(Equals(varFor("role"), literalString("PUBLIC"))_)_))_)),
+      Some(ast.Return(ast.ReturnItems(includeExisting = false, List(UnaliasedReturnItem(varFor("role"), "role")_))_)_)))
+  }
+
+  test("SHOW POPULATED ROLES YIELD * RETURN *") {
+    yields(ast.ShowRoles(withUsers = false, showAll = false,
+      Some(Left(ast.Yield(ast.ReturnItems(true,List()) _,None,None,None,None)_)),Some(ast.Return(false,ast.ReturnItems(true,List()) _,None,None,None,Set()) _)))
+  }
+
+  test("SHOW ROLES WITH USERS YIELD * LIMIT 10 WHERE foo='bar' RETURN some,columns LIMIT 10") {
+    yields(ast.ShowRoles(withUsers = true, showAll = true,
+      Some(Left(ast.Yield(ast.ReturnItems(true,List()) _,None,None,Some(ast.Limit(literalInt(10)) _),
+        Some(ast.Where(Equals(varFor("foo"), literalString("bar"))_)_))_)),
+      Some(ast.Return(false,ast.ReturnItems(false,List(UnaliasedReturnItem(varFor("some"), "some")_, UnaliasedReturnItem(varFor("columns"), "columns")_)) _,None,None,
+        Some(ast.Limit(literalInt(10)) _),Set())_)
+    ))
+  }
+
+  test("SHOW POPULATED ROLES YIELD *,blah RETURN role") {
     failsToParse
   }
 
   test("CATALOG SHOW POPULATED ROLES") {
-    yields(ast.ShowRoles(withUsers = false, showAll = false, None, None, None))
+    yields(ast.ShowRoles(withUsers = false, showAll = false, None, None))
   }
 
   test("SHOW ROLES WITH USERS") {
-    yields(ast.ShowRoles(withUsers = true, showAll = true, None, None, None))
+    yields(ast.ShowRoles(withUsers = true, showAll = true, None, None))
   }
 
   test("CATALOG SHOW ALL ROLES WITH USERS") {
-    yields(ast.ShowRoles(withUsers = true, showAll = true, None, None, None))
+    yields(ast.ShowRoles(withUsers = true, showAll = true, None, None))
   }
 
   test("SHOW POPULATED ROLES WITH USERS") {
-    yields(ast.ShowRoles(withUsers = true, showAll = false, None, None, None))
+    yields(ast.ShowRoles(withUsers = true, showAll = false, None, None))
   }
 
   test("CATALOG SHOW ROLE") {

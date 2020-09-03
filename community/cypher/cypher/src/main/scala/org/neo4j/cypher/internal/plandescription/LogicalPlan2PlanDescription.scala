@@ -37,12 +37,11 @@ import org.neo4j.cypher.internal.ast.NamedGraphScope
 import org.neo4j.cypher.internal.ast.NoResource
 import org.neo4j.cypher.internal.ast.PrivilegeQualifier
 import org.neo4j.cypher.internal.ast.ProcedurePrivilegeQualifier
-import org.neo4j.cypher.internal.ast.ProcedureQualifier
 import org.neo4j.cypher.internal.ast.PropertyResource
 import org.neo4j.cypher.internal.ast.UserAllQualifier
 import org.neo4j.cypher.internal.ast.UserQualifier
 import org.neo4j.cypher.internal.ast.Where
-import org.neo4j.cypher.internal.ast.prettifier.Prettifier
+import org.neo4j.cypher.internal.ast.Yield
 import org.neo4j.cypher.internal.ast.prettifier.Prettifier
 import org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.expressions.Expression
@@ -411,15 +410,15 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
       case SetOwnPassword(_, _) =>
         PlanDescriptionImpl(id, "AlterCurrentUserSetPassword", NoChildren, Seq.empty, variables)
 
-      case ShowPrivileges(_, scope, _, _, where, _) => // Can be both a leaf plan and a middle plan so need to be in both places
-        val args = showCommandDetails(where, asPrettyString.raw(Prettifier.extractScope(scope)))
+      case ShowPrivileges(_, scope, _, yields, where, _) => // Can be both a leaf plan and a middle plan so need to be in both places
+        val args = showCommandDetails(yields, where, asPrettyString.raw(Prettifier.extractScope(scope)))
         PlanDescriptionImpl(id, "ShowPrivileges", NoChildren, args, variables)
 
-      case ShowDatabase(scope, _, _, where, _) =>
+      case ShowDatabase(scope, _, yields, where, _) =>
         val args = scope match {
-          case NamedDatabaseScope(dbName) => showCommandDetails(where, escapeName(dbName))
-          case _: AllDatabasesScope => showCommandDetails(where)
-          case _: DefaultDatabaseScope => showCommandDetails(where)
+          case NamedDatabaseScope(dbName) => showCommandDetails(yields, where, escapeName(dbName))
+          case _: AllDatabasesScope => showCommandDetails(yields, where)
+          case _: DefaultDatabaseScope => showCommandDetails(yields, where)
         }
         PlanDescriptionImpl(id, scope.showCommandName, NoChildren, args, variables)
 
@@ -699,8 +698,8 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         val details = Details(constraintInfo(nameOption, relationship, scala.util.Right(relTypeName), Seq(prop), scala.util.Left("exists")))
         PlanDescriptionImpl(id, "CreateConstraint", children, Seq(details), variables)
 
-      case ShowUsers(_, _, _, where, _) =>
-        PlanDescriptionImpl(id, "ShowUsers", children, showCommandDetails(where), variables)
+      case ShowUsers(_, _, yields, where, _) =>
+        PlanDescriptionImpl(id, "ShowUsers", children, showCommandDetails(yields, where), variables)
 
       case CreateUser(_, name, _, _, _) =>
         PlanDescriptionImpl(id, "CreateUser", children, Seq(Details(getUserInfo(name))), variables)
@@ -711,8 +710,8 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
       case AlterUser(_, name, _, _, _) =>
         PlanDescriptionImpl(id, "AlterUser", children, Seq(Details(getUserInfo(name))), variables)
 
-      case ShowRoles(_, _, _, _, _, where, _) =>
-        PlanDescriptionImpl(id, "ShowRoles", children, showCommandDetails(where), variables)
+      case ShowRoles(_, _, _, _, yields, where, _) =>
+        PlanDescriptionImpl(id, "ShowRoles", children, showCommandDetails(yields, where), variables)
 
       case DropRole(_, name) =>
         PlanDescriptionImpl(id, "DropRole", children, Seq(Details(getRoleInfo(name))), variables)
@@ -786,8 +785,8 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         PlanDescriptionImpl(id, Prettifier.revokeOperation(s"Revoke${action.planName}", revokeType), children,
           Seq(Details(Seq(graphName) ++ resourceText ++ qualifierText ++ Seq(getRoleInfo(roleName)))), variables)
 
-      case ShowPrivileges(_, scope, _, _, where, _) => // Can be both a leaf plan and a middle plan so need to be in both places
-        val args = showCommandDetails(where, asPrettyString.raw(Prettifier.extractScope(scope)))
+      case ShowPrivileges(_, scope, _, yields, where, _) => // Can be both a leaf plan and a middle plan so need to be in both places
+        val args = showCommandDetails(yields, where, asPrettyString.raw(Prettifier.extractScope(scope)))
         PlanDescriptionImpl(id, "ShowPrivileges", children, args, variables)
 
       case CreateDatabase(_, dbName) =>
@@ -1296,8 +1295,9 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
     pretty"$idName $setString ${asPrettyString(expression)}"
   }
 
-  private def showCommandDetails(where: Option[Where], stringsToAppend: PrettyString*): List[Details] = {
-    stringsToAppend ++ where.map(w => asPrettyString(w.expression)).toSeq match {
+  private def showCommandDetails(yields: Option[Yield], where: Option[Where], stringsToAppend: PrettyString*): List[Details] = {
+    val resolvedWhere = yields.map(_.where).getOrElse(where)
+    stringsToAppend ++ resolvedWhere.map(w => asPrettyString(w.expression)).toSeq match {
       case Nil => Nil
       case details => List(Details(details))
     }

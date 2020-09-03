@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.ast.PrivilegeQualifier
 import org.neo4j.cypher.internal.ast.Return
 import org.neo4j.cypher.internal.ast.ShowPrivilegeScope
 import org.neo4j.cypher.internal.ast.Where
+import org.neo4j.cypher.internal.ast.Yield
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.ir.LazyMode
@@ -60,7 +61,7 @@ abstract class SecurityAdministrationLogicalPlan(source: Option[AdministrationCo
 }
 
 // Security administration commands
-case class ShowUsers(source: PrivilegePlan, override val returnColumns: List[String], yields: Option[Return], where: Option[Where], returns: Option[Return])
+case class ShowUsers(source: PrivilegePlan, override val returnColumns: List[String], yields: Option[Yield], where: Option[Where], returns: Option[Return])
                     (implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
 
 case class CreateUser(source: SecurityAdministrationLogicalPlan, userName: Either[String, Parameter], initialPassword: Expression,
@@ -75,7 +76,7 @@ case class ShowRoles(source: PrivilegePlan,
                      withUsers: Boolean,
                      showAll: Boolean,
                      override val returnColumns: List[String],
-                     yields: Option[Return],
+                     yields: Option[Yield],
                      where: Option[Where],
                      returns: Option[Return])(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
 
@@ -114,7 +115,7 @@ case class RevokeGraphAction(source: PrivilegePlan, action: GraphAction, resoure
 case class ShowPrivileges(source: Option[PrivilegePlan],
                           scope: ShowPrivilegeScope,
                           override val returnColumns: List[String],
-                          yields: Option[Return],
+                          yields: Option[Yield],
                           where: Option[Where],
                           returns: Option[Return])(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(source)
 
@@ -126,7 +127,7 @@ case class EnsureNodeExists(source: PrivilegePlan, label: String, name: Either[S
 // Database administration commands
 case class ShowDatabase(scope: DatabaseScope,
                         override val returnColumns: List[String],
-                        yields: Option[Return],
+                        yields: Option[Yield],
                         where: Option[Where],
                         returns: Option[Return])(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan
 

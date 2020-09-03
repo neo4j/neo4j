@@ -19,6 +19,7 @@ package org.neo4j.cypher.internal.parser
 import java.util
 
 import org.neo4j.cypher.internal.ast
+import org.neo4j.cypher.internal.ast.AliasedReturnItem
 import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
 import org.neo4j.cypher.internal.expressions.SensitiveParameter
 import org.neo4j.cypher.internal.expressions.SensitiveStringLiteral
@@ -28,11 +29,11 @@ class UserAdministrationCommandParserTest extends AdministrationCommandParserTes
   //  Showing user
 
   test("SHOW USERS") {
-    yields(ast.ShowUsers(None, None, None))
+    yields(ast.ShowUsers(None, None))
   }
 
   test("CATALOG SHOW USERS") {
-    yields(ast.ShowUsers(None, None, None))
+    yields(ast.ShowUsers(None, None))
   }
 
   test("CATALOG SHOW USER") {
@@ -40,47 +41,62 @@ class UserAdministrationCommandParserTest extends AdministrationCommandParserTes
   }
 
   test("SHOW USERS WHERE user = 'GRANTED'") {
-    yields(ast.ShowUsers(None, Some(ast.Where(equals(varFor("user"), literalString("GRANTED"))) _), None))
+    yields(ast.ShowUsers(Some(Right(ast.Where(equals(varFor("user"), literalString("GRANTED"))) _)), None))
   }
 
   test("SHOW USERS WHERE user = 'GRANTED' AND action = 'match'") {
     val accessPredicate = equals(varFor("user"), literalString("GRANTED"))
     val matchPredicate = equals(varFor("action"), literalString("match"))
-    yields(ast.ShowUsers(None, Some(ast.Where(and(accessPredicate, matchPredicate)) _), None))
+    yields(ast.ShowUsers(Some(Right(ast.Where(and(accessPredicate, matchPredicate)) _)), None))
   }
 
   test("SHOW USERS YIELD user ORDER BY user") {
     val orderBy = ast.OrderBy(List(ast.AscSortItem(varFor("user")) _)) _
-    val columns = ast.Return(false, ast.ReturnItems(false, List(UnaliasedReturnItem(varFor("user"), "user") _)) _, Some(orderBy), None, None) _
-    yields(ast.ShowUsers(Some(columns), None, None))
+    val columns = ast.Yield(ast.ReturnItems(false, List(UnaliasedReturnItem(varFor("user"), "user") _)) _, Some(orderBy), None, None, None) _
+    yields(ast.ShowUsers(Some(Left(columns)), None))
   }
 
   test("SHOW USERS YIELD user ORDER BY user WHERE user ='none'") {
     val orderBy = ast.OrderBy(List(ast.AscSortItem(varFor("user")) _)) _
-    val columns = ast.Return(false, ast.ReturnItems(false, List(UnaliasedReturnItem(varFor("user"), "user") _)) _, Some(orderBy), None, None) _
     val where = ast.Where(equals(varFor("user"), literalString("none"))) _
-    yields(ast.ShowUsers(Some(columns), Some(where), None))
+    val columns = ast.Yield(ast.ReturnItems(false, List(UnaliasedReturnItem(varFor("user"), "user") _)) _, Some(orderBy), None, None, Some(where)) _
+    yields(ast.ShowUsers(Some(Left(columns)) , None))
   }
 
   test("SHOW USERS YIELD user ORDER BY user SKIP 1 LIMIT 10 WHERE user ='none'") {
     val orderBy = ast.OrderBy(List(ast.AscSortItem(varFor("user")) _)) _
-    val columns = ast.Return(false, ast.ReturnItems(false, List(UnaliasedReturnItem(varFor("user"), "user") _)) _, Some(orderBy),
-      Some(ast.Skip(literalInt(1)) _), Some(ast.Limit(literalInt(10)) _)) _
     val where = ast.Where(equals(varFor("user"), literalString("none"))) _
-    yields(ast.ShowUsers(Some(columns), Some(where), None))
+    val columns = ast.Yield(ast.ReturnItems(false, List(UnaliasedReturnItem(varFor("user"), "user") _)) _, Some(orderBy),
+      Some(ast.Skip(literalInt(1)) _), Some(ast.Limit(literalInt(10)) _), Some(where)) _
+    yields(ast.ShowUsers(Some(Left(columns)), None))
   }
 
   test("SHOW USERS YIELD user SKIP -1") {
-    val columns = ast.Return(false, ast.ReturnItems(false, List(UnaliasedReturnItem(varFor("user"), "user") _)) _, None,
-      Some(ast.Skip(literalInt(-1)) _), None) _
-    yields(ast.ShowUsers(Some(columns), None, None))
+    val columns = ast.Yield(ast.ReturnItems(false, List(UnaliasedReturnItem(varFor("user"), "user") _)) _, None,
+      Some(ast.Skip(literalInt(-1)) _), None, None) _
+    yields(ast.ShowUsers(Some(Left(columns)), None))
   }
 
   test("SHOW USERS YIELD user RETURN user ORDER BY user") {
-    failsToParse
+    yields(ast.ShowUsers(
+      Some(Left(ast.Yield(ast.ReturnItems(false, List(UnaliasedReturnItem(varFor("user"), "user") _)) _, None, None, None, None) _)),
+      Some(ast.Return(false, ast.ReturnItems(false, List(UnaliasedReturnItem(varFor("user"), "user") _)) _, Some(ast.OrderBy(List(ast.AscSortItem(varFor("user")) _)) _), None, None) _)
+    ))
   }
 
-  test("SHOW USERS YIELD user, suspended WHERE suspended RETURN user") {
+  test("SHOW USERS YIELD user, suspended as suspended WHERE suspended RETURN DISTINCT user") {
+    yields(ast.ShowUsers(
+      Some(Left(ast.Yield(ast.ReturnItems(false, List(UnaliasedReturnItem(varFor("user"), "user") _, AliasedReturnItem(varFor("suspended")))) _, None, None, None,
+        Some(ast.Where(varFor("suspended"))_)) _)),
+      Some(ast.Return(true, ast.ReturnItems(false, List(UnaliasedReturnItem(varFor("user"), "user") _)) _, None, None, None) _)
+    ))
+  }
+
+  test("SHOW USERS YIELD * RETURN *") {
+    yields(ast.ShowUsers(Some(Left(ast.Yield(ast.ReturnItems(true,List()) _,None,None,None,None)_)),Some(ast.Return(false,ast.ReturnItems(true,List()) _,None,None,None,Set()) _)))
+  }
+
+  test("SHOW USERS YIELD *,blah RETURN user") {
     failsToParse
   }
 

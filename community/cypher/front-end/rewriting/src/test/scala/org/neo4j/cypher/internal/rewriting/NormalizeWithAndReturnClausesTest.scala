@@ -48,31 +48,31 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
   }
 
   test("ensure variables are aliased for SHOW PRIVILEGES") {
-    val yields : Option[ast.Return] = Some(ast.Return(ReturnItems(false, Seq(ast.AliasedReturnItem(Variable("role")(InputPosition.NONE))))(InputPosition.NONE))(InputPosition.NONE))
+    val yields = Some(Left(ast.Yield(ReturnItems(includeExisting = false, Seq(ast.AliasedReturnItem(Variable("role")(InputPosition.NONE))))(InputPosition.NONE), None, None, None, None)(InputPosition.NONE)))
     assertRewrite(
       "SHOW PRIVILEGES YIELD role",
-      ast.ShowPrivileges(ShowAllPrivileges()(InputPosition.NONE), yields, None, None)(InputPosition.NONE))
+      ast.ShowPrivileges(ShowAllPrivileges()(InputPosition.NONE), yields, None)(InputPosition.NONE))
   }
 
   test("ensure variables are aliased for SHOW USER") {
-    val yields : Option[ast.Return] = Some(ast.Return(ReturnItems(false, Seq(ast.AliasedReturnItem(Variable("user")(InputPosition.NONE))))(InputPosition.NONE))(InputPosition.NONE))
+    val yields = Some(Left(ast.Yield(ReturnItems(includeExisting = false, Seq(ast.AliasedReturnItem(Variable("user")(InputPosition.NONE))))(InputPosition.NONE), None, None, None, None)(InputPosition.NONE)))
     assertRewrite(
       "SHOW USERS YIELD user",
-      ast.ShowUsers(yields, None, None)(InputPosition.NONE))
+      ast.ShowUsers(yields, None)(InputPosition.NONE))
   }
 
   test("ensure variables are aliased for SHOW ROLES") {
-    val yields : Option[ast.Return] = Some(ast.Return(ReturnItems(false, Seq(ast.AliasedReturnItem(Variable("role")(InputPosition.NONE))))(InputPosition.NONE))(InputPosition.NONE))
+    val yields = Some(Left(ast.Yield(ReturnItems(includeExisting = false, Seq(ast.AliasedReturnItem(Variable("role")(InputPosition.NONE))))(InputPosition.NONE), None, None, None, None)(InputPosition.NONE)))
     assertRewrite(
       "SHOW ROLES YIELD role",
-      ast.ShowRoles(false, true, yields, None, None)(InputPosition.NONE))
+      ast.ShowRoles(withUsers = false, showAll = true, yields, None)(InputPosition.NONE))
   }
 
   test("ensure variables are aliased for SHOW DATABASES") {
-    val yields : Option[ast.Return] = Some(ast.Return(ReturnItems(false, Seq(ast.AliasedReturnItem(Variable("name")(InputPosition.NONE))))(InputPosition.NONE))(InputPosition.NONE))
+    val yields = Some(Left(ast.Yield(ReturnItems(includeExisting = false, Seq(ast.AliasedReturnItem(Variable("name")(InputPosition.NONE))))(InputPosition.NONE), None, None, None, None)(InputPosition.NONE)))
     assertRewrite(
       "SHOW DATABASES YIELD name",
-      ast.ShowDatabase(ast.AllDatabasesScope()(InputPosition.NONE), yields, None, None)(InputPosition.NONE))
+      ast.ShowDatabase(ast.AllDatabasesScope()(InputPosition.NONE), yields,  None)(InputPosition.NONE))
   }
 
   test("WITH: attach ORDER BY expressions to existing aliases") {

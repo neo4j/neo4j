@@ -737,6 +737,7 @@ object ProjectionClause {
     arg match {
       case With(distinct, ri, orderBy, skip, limit, where) => Some((distinct, ri, orderBy, skip, limit, where))
       case Return(distinct, ri, orderBy, skip, limit, _) => Some((distinct, ri, orderBy, skip, limit, None))
+      case Yield(ri, orderBy, skip, limit, where) => Some((false, ri, orderBy, skip, limit, where))
     }
   }
 
@@ -774,6 +775,7 @@ sealed trait ProjectionClause extends HorizonClause {
     this match {
       case w:With => w.copy(distinct, returnItems, orderBy, skip, limit, where)(this.position)
       case r:Return => r.copy(distinct, returnItems, orderBy, skip, limit, r.excludedNames)(this.position)
+      case y:Yield => y.copy(returnItems, orderBy, skip, limit, where)(this.position)
     }
   }
 
@@ -799,7 +801,7 @@ sealed trait ProjectionClause extends HorizonClause {
       // can see both variables from before the WITH and variables introduced by the WITH
       // (SKIP and LIMIT clauses are not allowed to access variables anyway, so they do not need to be included in this condition even when they are standalone)
       val specialScopeForSubClausesNeeded = orderBy.isDefined || where.isDefined
-      val canSeePreviousScope = !(returnItems.containsAggregate | distinct)
+      val canSeePreviousScope = (!(returnItems.containsAggregate | distinct | isInstanceOf[Yield])) || returnItems.includeExisting
 
       if (specialScopeForSubClausesNeeded && canSeePreviousScope) {
         /*
@@ -869,7 +871,7 @@ sealed trait ProjectionClause extends HorizonClause {
    * @param error the error
    * @return an error with a possibly better error message
    */
-  private def warnOnAccessToRestrictedVariableInOrderByOrWhere(previousScopeVars: Set[String])(error: SemanticErrorDef): SemanticErrorDef = {
+  private[ast] def warnOnAccessToRestrictedVariableInOrderByOrWhere(previousScopeVars: Set[String])(error: SemanticErrorDef): SemanticErrorDef = {
     previousScopeVars.collectFirst {
       case name if error.msg.equals(s"Variable `$name` not defined") => error.withMsg(
         s"In a WITH/RETURN with DISTINCT or an aggregation, it is not possible to access variables declared before the WITH/RETURN: $name")
@@ -954,6 +956,22 @@ case class Return(distinct: Boolean,
       case _ =>
         Seq.empty
     }
+}
+
+case class Yield(returnItems: ReturnItems,
+                 orderBy: Option[OrderBy],
+                 skip: Option[Skip],
+                 limit: Option[Limit],
+                 where: Option[Where])(val position: InputPosition) extends ProjectionClause {
+  override def distinct: Boolean = false
+
+  override def name: String = "YIELD"
+
+  override def withReturnItems(items: Seq[ReturnItem]): Yield =
+    this.copy(returnItems = ReturnItems(returnItems.includeExisting, items)(returnItems.position))(this.position)
+
+  override def warnOnAccessToRestrictedVariableInOrderByOrWhere(previousScopeVars: Set[String])
+                                                               (error: SemanticErrorDef): SemanticErrorDef = error
 }
 
 case class SubQuery(part: QueryPart)(val position: InputPosition) extends HorizonClause with SemanticAnalysisTooling {

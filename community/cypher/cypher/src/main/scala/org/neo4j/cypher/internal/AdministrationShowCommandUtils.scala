@@ -19,13 +19,16 @@
  */
 package org.neo4j.cypher.internal
 
+import org.neo4j.cypher.internal.ast.AliasedReturnItem
 import org.neo4j.cypher.internal.ast.OrderBy
+import org.neo4j.cypher.internal.ast.ProjectionClause
 import org.neo4j.cypher.internal.ast.Return
 import org.neo4j.cypher.internal.ast.ReturnItem
 import org.neo4j.cypher.internal.ast.ReturnItems
 import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
 import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.ast.With
+import org.neo4j.cypher.internal.ast.Yield
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.ast.prettifier.Prettifier
 import org.neo4j.cypher.internal.expressions.Variable
@@ -34,7 +37,10 @@ import org.neo4j.cypher.internal.util.InputPosition
 
 object AdministrationShowCommandUtils {
 
-  private val prettifier = Prettifier(ExpressionStringifier()).IndentingQueryPrettifier()
+  private val prettifier = Prettifier(ExpressionStringifier {
+    case ParameterFromSlot(_, name, _) => s"$$${ExpressionStringifier.backtick(name, alwaysBacktick = false)}"
+    case expression => ExpressionStringifier.failingExtender(expression)
+  }).IndentingQueryPrettifier()
 
   private def genDefaultOrderBy(columns: List[String], defaultOrder: Seq[String]): Option[OrderBy] =
     defaultOrder.filter(columns.contains) match {
@@ -46,37 +52,55 @@ object AdministrationShowCommandUtils {
     })(InputPosition.NONE))
   }
 
-  private def maybeReplaceOrderBy(r: Return, symbols: List[String], defaultOrder: Seq[String]): Return = r.orderBy match {
-      case None => r.copy(orderBy = genDefaultOrderBy(symbols, defaultOrder))(r.position)
-      case _ => r
+  private def calcOrderBy(r: ProjectionClause, symbols: List[String], defaultOrder: Seq[String]): Option[OrderBy] = {
+    r.orderBy match {
+      case None => genDefaultOrderBy(symbols, defaultOrder)
+      case _ => r.orderBy
+    }
+  }
+
+  private def getScope(previousScope: List[String], clause: Option[ProjectionClause]): List[String] = {
+    def aliasSymbolsWhereNecessary(r: ReturnItems, symbols: List[String]): List[String] = {
+      symbols.map(s => r.items.find{ case AliasedReturnItem(Variable(name), _) => name == s } match {
+        case Some(AliasedReturnItem(_, Variable(alias))) => alias
+        case _ => s
+      })
+    }
+    clause match {
+      case Some(projectionClause) if projectionClause.returnItems.includeExisting => aliasSymbolsWhereNecessary(projectionClause.returnItems, previousScope)
+      case Some(projectionClause) => projectionClause.returnItems.items.map(ri => ri.alias.get.name).toList
+      case None => previousScope
+    }
   }
 
   def generateWhereClause(where: Option[Where]) :String = {
-    where.map { w =>
-      val expr = ExpressionStringifier {
-        case ParameterFromSlot(_, name, _) => s"$$${ExpressionStringifier.backtick(name, alwaysBacktick = false)}"
-        case expression => ExpressionStringifier.failingExtender(expression)
-      }
-      s"WHERE ${expr(w.expression)}"
-    }.getOrElse("")
+    where.map(prettifier.asString).getOrElse("")
   }
 
-  def generateReturnClause(symbols: List[String], yields: Option[Return], returns: Option[Return], defaultOrder: Seq[String]): String = {
-    val yieldColumns: Option[Return] = yields.map(maybeReplaceOrderBy(_, symbols, defaultOrder))
-    val returnColumns: Option[Return] = returns.map(maybeReplaceOrderBy(_, symbols, defaultOrder))
+  def generateReturnClause(defaultSymbols: List[String], yields: Option[Yield], returns: Option[Return], defaultOrder: Seq[String]): String = {
+    val yieldScope = getScope(defaultSymbols, yields)
+    val returnScope = getScope(yieldScope, returns)
+
+    val yieldColumns: Option[Yield] = yields.map(y => y.copy(orderBy = calcOrderBy(y, yieldScope , defaultOrder))(y.position))
+    val returnColumns: Option[Return] = returns.map(r => r.copy(orderBy = calcOrderBy(r, returnScope, defaultOrder))(r.position))
 
     def symbolsToReturnItems(symbols: List[String]): List[ReturnItem] = symbols.map(s => UnaliasedReturnItem(Variable(s)(InputPosition.NONE), s)(InputPosition.NONE))
 
-    val yieldsClause: Return = yieldColumns
-      .getOrElse(Return(distinct = false, ReturnItems(false, symbolsToReturnItems(symbols))(InputPosition.NONE), genDefaultOrderBy(symbols, defaultOrder), None, None)(InputPosition.NONE))
-
-    returnColumns match {
-      case Some(r) =>
-        prettifier.asString(With(distinct = false, yieldsClause.returnItems, yieldsClause.orderBy, yieldsClause.skip, yieldsClause.limit, None)(yieldsClause.position)) +
-          " " + prettifier.asString(r)
-      case None =>
-        prettifier.asString(yieldsClause)
+    val clauses = (yieldColumns, returnColumns) match {
+      // YIELD with WHERE and no RETURN so convert YIELD / WHERE to WITH and YIELD to RETURN
+      case (Some(y @ Yield(returnItems, orderBy, skip, limit, Some(where))), None) =>
+        Seq(With(distinct = false, returnItems, orderBy, skip, limit, Some(where))(y.position), Return(distinct = false, returnItems, orderBy, skip, limit)(y.position))
+      // YIELD with no WHERE so convert YIELD to RETURN
+      case (Some(y @ Yield(returnItems, orderBy, skip, limit, None)), None) =>
+        Seq(Return(distinct = false, returnItems, orderBy, skip, limit)(y.position))
+      // YIELD and RETURN so convert YIELD to WITH, and keep the RETURN
+      case (Some(y @ Yield(returnItems, orderBy, skip, limit, where)), Some(returnClause)) =>
+        Seq(With(distinct = false, returnItems, orderBy, skip, limit, where)(y.position), returnClause)
+      // No YIELD or RETURN so just make up a RETURN with everything
+      case (None, _) => Seq(Return(distinct = false, ReturnItems(includeExisting = false, symbolsToReturnItems(defaultSymbols))(InputPosition.NONE),
+        genDefaultOrderBy(defaultSymbols, defaultOrder), None, None)(InputPosition.NONE))
     }
+    clauses.map(prettifier.asString).mkString(" ")
   }
 
 }

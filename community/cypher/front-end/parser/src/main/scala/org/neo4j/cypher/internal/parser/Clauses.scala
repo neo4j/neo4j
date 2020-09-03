@@ -21,6 +21,7 @@ import org.neo4j.cypher.internal.expressions
 import org.parboiled.scala.Parser
 import org.parboiled.scala.Rule1
 import org.parboiled.scala.Rule4
+import org.parboiled.scala.Rule5
 import org.parboiled.scala.group
 
 trait Clauses extends Parser
@@ -60,7 +61,7 @@ trait Clauses extends Parser
     group(keyword("CREATE") ~~ Pattern) ~~>> (ast.CreateInConstruct(_))
   }
 
-  def CatalogName = rule("catalog name with parts; foo.bar.baz") {
+  def CatalogName: Rule1[ast.CatalogName] = rule("catalog name with parts; foo.bar.baz") {
     group(SymbolicNameString ~~ zeroOrMore("." ~~ SymbolicNameString) ~~> (ast.CatalogName(_, _)))
   }
 
@@ -122,7 +123,11 @@ trait Clauses extends Parser
 
   def Return: Rule1[ast.Clause] = rule("RETURN")(
     group(keyword("RETURN GRAPH")) ~ push(ast.ReturnGraph(None)(_))
-      | group(keyword("RETURN DISTINCT") ~~ ReturnBody) ~~>> (ast.Return(distinct = true, _, _, _, _))
+      | ReturnWithoutGraph
+  )
+
+  def ReturnWithoutGraph: Rule1[ast.Return] = rule("RETURN")(
+    group(keyword("RETURN DISTINCT") ~~ ReturnBody) ~~>> (ast.Return(distinct = true, _, _, _, _))
       | group(keyword("RETURN") ~~ ReturnBody) ~~>> (ast.Return(distinct = false, _, _, _, _))
   )
 
@@ -182,20 +187,22 @@ trait Clauses extends Parser
       | group(Expression ~> (s => s)) ~~>> (ast.UnaliasedReturnItem(_, _))
   )
 
-  def YieldBody: Rule4[ast.ReturnItems, Option[ast.OrderBy], Option[ast.Skip], Option[ast.Limit]] = {
+  def YieldBody: Rule5[ast.ReturnItems, Option[ast.OrderBy], Option[ast.Skip], Option[ast.Limit], Option[ast.Where]] = {
     YieldItems ~~
       optional(Order) ~~
       optional(group(keyword("SKIP") ~~ SignedIntegerLiteral) ~~>> (ast.Skip(_))) ~~
-      optional(group(keyword("LIMIT") ~~ SignedIntegerLiteral) ~~>> (ast.Limit(_)))
+      optional(group(keyword("LIMIT") ~~ SignedIntegerLiteral) ~~>> (ast.Limit(_))) ~~
+      optional(Where)
   }
 
   private def YieldItems: Rule1[ast.ReturnItems] = rule("'*', an expression")(
-    oneOrMore(YieldItem, separator = CommaSep) ~~>> (ast.ReturnItems(includeExisting = false, _))
+    keyword("*") ~~~> ast.ReturnItems(includeExisting = true, List())
+      | oneOrMore(YieldItem, separator = CommaSep) ~~>> (ast.ReturnItems(includeExisting = false, _))
   )
 
   private def YieldItem: Rule1[ast.ReturnItem] = rule(
-    // Don't allow aliasing for now, it adds complexity to the inner cypher
-     group(Variable ~> (s => s)) ~~>> (ast.UnaliasedReturnItem(_, _))
+    group(Variable ~~ keyword("AS") ~~ Variable) ~~>> (ast.AliasedReturnItem(_, _))
+      | group(Variable ~> (s => s)) ~~>> (ast.UnaliasedReturnItem(_, _))
   )
 
   def Order: Rule1[ast.OrderBy] = rule("ORDER") {

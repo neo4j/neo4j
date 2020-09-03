@@ -88,11 +88,11 @@ object Additions {
 
     override def check(statement: Statement, cypherExceptionFactory: CypherExceptionFactory): Unit = statement.treeExists {
       // SHOW ROLE role1, role2 PRIVILEGES
-      case s@ShowPrivileges(ShowRolesPrivileges(r), _, _, _) if r.size > 1 =>
+      case s@ShowPrivileges(ShowRolesPrivileges(r), _, _) if r.size > 1 =>
         throw cypherExceptionFactory.syntaxException("Multiple roles in SHOW ROLE PRIVILEGE command is not supported in this Cypher version.", s.position)
 
       // SHOW USER user1, user2 PRIVILEGES
-      case s@ShowPrivileges(ShowUsersPrivileges(u), _, _, _) if u.size > 1 =>
+      case s@ShowPrivileges(ShowUsersPrivileges(u), _,  _) if u.size > 1 =>
         throw cypherExceptionFactory.syntaxException("Multiple users in SHOW USER PRIVILEGE command is not supported in this Cypher version.", s.position)
 
       case d: DefaultGraphScope => throw cypherExceptionFactory.syntaxException("Default graph is not supported in this Cypher version.", d.position)
