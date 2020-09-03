@@ -114,9 +114,9 @@ public class TestFabricTransaction implements InternalTransaction
     }
 
     @Override
-    public UUID databaseId()
+    public UUID getDatabaseId()
     {
-        return this.kernelInternalTransaction.databaseId();
+        return this.kernelInternalTransaction.getDatabaseId();
     }
 
     @Override

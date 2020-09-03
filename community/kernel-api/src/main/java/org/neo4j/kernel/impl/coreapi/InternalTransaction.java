@@ -59,7 +59,7 @@ public interface InternalTransaction extends Transaction, TransactionalEntityFac
 
     void terminate( Status reason );
 
-    UUID databaseId();
+    UUID getDatabaseId();
 
     <E extends Entity> E validateSameDB( E entity );
 }
