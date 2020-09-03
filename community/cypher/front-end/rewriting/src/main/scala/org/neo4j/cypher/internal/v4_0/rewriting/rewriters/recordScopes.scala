@@ -29,7 +29,5 @@ case class recordScopes(semanticState: SemanticState) extends Rewriter {
       x.withOuterScope(semanticState.recordedScopes(x).symbolDefinitions.map(_.asVariable))
     case x: ExistsSubClause =>
       x.withOuterScope(semanticState.recordedScopes(x).symbolDefinitions.map(_.asVariable))
-    case x: MapProjection =>
-      x.withDefinitionPos(semanticState.recordedScopes(x).symbolTable(x.name.name).definition.position)
   })
 }

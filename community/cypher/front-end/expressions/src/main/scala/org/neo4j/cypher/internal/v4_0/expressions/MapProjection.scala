@@ -22,17 +22,14 @@ case class MapProjection(
                           name: Variable, // Since this is always rewritten to DesugaredMapProjection this
                                           // (and in the elements below) may not need to be LogicalVariable
                           items: Seq[MapProjectionElement])
-                        (val position: InputPosition, val definitionPos: Option[InputPosition])
+                        (val position: InputPosition)
   extends Expression {
-
-  def withDefinitionPos(pos:InputPosition): MapProjection =
-    copy()(position, Some(pos))
 
   override def dup(children: Seq[AnyRef]): this.type = {
     MapProjection(
       children(0).asInstanceOf[Variable],
       children(1).asInstanceOf[Seq[MapProjectionElement]]
-    )(position, definitionPos).asInstanceOf[this.type]
+    )(position).asInstanceOf[this.type]
   }
 }
 

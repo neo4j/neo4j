@@ -105,7 +105,7 @@ trait Literals extends Parser
   def MapProjection: Rule1[ast.MapProjection] = rule {
     group(
       Variable ~~ ch('{') ~~ zeroOrMore(LiteralEntry | PropertySelector | VariableSelector | AllPropertiesSelector, CommaSep) ~~ ch('}')
-    ) ~~>> ((a, b) => pos => ast.MapProjection(a, b)(pos, None))
+    ) ~~>> ((a, b) => pos => ast.MapProjection(a, b)(pos))
   }
 
   def Parameter: Rule1[org.neo4j.cypher.internal.v4_0.expressions.Parameter] = rule("a parameter") {
