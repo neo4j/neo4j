@@ -93,6 +93,10 @@ class PlanDescriptionArgumentSerializerTests extends CypherFunSuite {
     serialize(Order(ProvidedOrder(List(ProvidedOrder.Asc(varFor("  FRESHID42")))))) should be("anon[42] ASC")
   }
 
+  test("should remove multiple layers of namespacer renamings") {
+    PlanDescriptionArgumentSerializer.removeGeneratedNames("    var@10@20") shouldBe "var"
+  }
+
   private val pos: InputPosition = DummyPosition(0)
   private def varFor(name: String): Variable = Variable(name)(pos)
   private def prop(varName: String, propName: String): Property = Property(varFor(varName), PropertyKeyName(propName)(pos))(pos)

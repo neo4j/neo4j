@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.v4_0.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.v4_0.expressions
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v4_0.util.UnNamedNameGenerator._
+import org.neo4j.cypher.internal.v4_0.util.helpers.fixedPoint
 
 object PlanDescriptionArgumentSerializer {
   private val SEPARATOR = ", "
@@ -127,7 +128,7 @@ object PlanDescriptionArgumentSerializer {
     deduplicateVariableNames(named)
   }
 
-  def deduplicateVariableNames(in: String): String = {
+  private val deduplicateVariableNames: String => String = fixedPoint { (in: String) =>
     val sb = new StringBuilder
     var i = 0
     for (m <- DEDUP_PATTERN.findAllMatchIn(in)) {
