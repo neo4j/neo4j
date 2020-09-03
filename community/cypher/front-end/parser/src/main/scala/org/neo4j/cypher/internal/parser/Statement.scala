@@ -394,9 +394,9 @@ trait Statement extends Parser
       { procedures => pos => procedures.map(p => ast.ProcedureQualifier(p._1, p._2)(pos)) }
   }
 
-  private def PasswordKeyword: Rule0 = keyword("PASSWORD") | keyword("PASSWORDS")
+  private def PasswordKeyword: Rule0 = keyword("PASSWORDS") | keyword("PASSWORD")
 
-  private def ProcedureKeyword: Rule0 = keyword("PROCEDURE") | keyword("PROCEDURES")
+  private def ProcedureKeyword: Rule0 = keyword("PROCEDURES") | keyword("PROCEDURE")
 
   // Database specific
 
@@ -516,7 +516,7 @@ trait Statement extends Parser
 
   private def RelationshipKeyword: Rule0 = keyword("RELATIONSHIPS") | keyword("RELATIONSHIP")
 
-  private def NodeKeyword: Rule0 = keyword("NODE") | keyword("NODES")
+  private def NodeKeyword: Rule0 = keyword("NODES") | keyword("NODE")
 
   // Database management commands
 
