@@ -404,8 +404,8 @@ class DataCollectorQueriesAcceptanceTest extends DataCollectorTestSupport {
         |RETURN node, relationship, path
       """.stripMargin).single
 
-    val node = entities("node").asInstanceOf[Node]
-    val relationship = entities("relationship").asInstanceOf[Relationship]
+    val node = entities("node").asInstanceOf[Node].getId
+    val relationship = entities("relationship").asInstanceOf[Relationship].getId
     val path = entities("path").asInstanceOf[Path]
 
     val longString: String = "".padTo(200, 'x')

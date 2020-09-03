@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.coreapi;
 
+import java.util.UUID;
+
 import org.neo4j.exceptions.CypherExecutionException;
 import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.NotInTransactionException;
@@ -53,11 +55,15 @@ abstract class EntityValidationTransactionImpl implements InternalTransaction
         {
             if ( !internalTransaction.isOpen() )
             {
-                throw new NotInTransactionException( "The transaction of the entity has been closed." );
+                throw new NotInTransactionException( "The transaction of entity " + entity.getId() + " has been closed." );
             }
-            else if ( internalTransaction.databaseId() != this.databaseId() )
+
+            UUID entityDatabaseId = internalTransaction.getDatabaseId();
+            UUID databaseId = this.getDatabaseId();
+            if ( entityDatabaseId != databaseId )
             {
-                throw new CypherExecutionException( "Can not use an entity from another database." );
+                throw new CypherExecutionException( "Can not use an entity from another database. Entity id: " + entity.getId() +
+                                                    ", entity database: " + entityDatabaseId + ", expected database: " + databaseId + "." );
             }
         }
 
