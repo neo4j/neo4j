@@ -164,6 +164,90 @@ class TransactionRecordStateTest
         neoStores.close();
     }
 
+    private NeoStores createStores()
+    {
+        return createStores( Config.defaults() );
+    }
+
+    private NeoStores createStores( Config config )
+    {
+        return createStores( config, RecordFormatSelector.selectForConfig( config, NullLogProvider.getInstance() ) );
+    }
+
+    private NeoStores createStores( Config config, RecordFormats formats )
+    {
+        idGeneratorFactory = new DefaultIdGeneratorFactory( fs, immediate() );
+        var storeFactory = new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache, fs,
+                formats, NullLogProvider.getInstance(), PageCacheTracer.NULL, immutable.empty() );
+        return storeFactory.openAllNeoStores( true );
+    }
+
+    private static void assertRelationshipGroupDoesNotExist( RecordChangeSet recordChangeSet, NodeRecord node, int type )
+    {
+        assertNull( getRelationshipGroup( recordChangeSet, node, type ) );
+    }
+
+    private static void assertDenseRelationshipCounts( RecordChangeSet recordChangeSet, long nodeId, int type, int outCount, int inCount )
+    {
+        RecordProxy<RelationshipGroupRecord> proxy =
+                getRelationshipGroup( recordChangeSet, recordChangeSet.getNodeRecords().getOrLoad( nodeId, NULL ).forReadingData(), type );
+        assertNotNull( proxy );
+        RelationshipGroupRecord group = proxy.forReadingData();
+        assertNotNull( group );
+
+        RelationshipRecord rel;
+        long relId = group.getFirstOut();
+        if ( relId != Record.NO_NEXT_RELATIONSHIP.intValue() )
+        {
+            rel = recordChangeSet.getRelRecords().getOrLoad( relId, NULL ).forReadingData();
+            // count is stored in the back pointer of the first relationship in the chain
+            assertEquals( outCount, rel.getFirstPrevRel(), "Stored relationship count for OUTGOING differs" );
+            assertEquals( outCount, manuallyCountRelationships( recordChangeSet, nodeId, relId ),
+                "Manually counted relationships for OUTGOING differs" );
+        }
+
+        relId = group.getFirstIn();
+        if ( relId != Record.NO_NEXT_RELATIONSHIP.intValue() )
+        {
+            rel = recordChangeSet.getRelRecords().getOrLoad( relId, NULL ).forReadingData();
+            assertEquals( inCount, rel.getSecondPrevRel(), "Stored relationship count for INCOMING differs" );
+            assertEquals( inCount, manuallyCountRelationships( recordChangeSet, nodeId, relId ),
+                "Manually counted relationships for INCOMING differs" );
+        }
+    }
+
+    private static RecordProxy<RelationshipGroupRecord> getRelationshipGroup( RecordChangeSet recordChangeSet, NodeRecord node, int type )
+    {
+        long groupId = node.getNextRel();
+        long previousGroupId = Record.NO_NEXT_RELATIONSHIP.intValue();
+        while ( groupId != Record.NO_NEXT_RELATIONSHIP.intValue() )
+        {
+            RecordProxy<RelationshipGroupRecord> change = recordChangeSet.getRelGroupRecords().getOrLoad( groupId, NULL );
+            RelationshipGroupRecord record = change.forReadingData();
+            record.setPrev( previousGroupId ); // not persistent so not a "change"
+            if ( record.getType() == type )
+            {
+                return change;
+            }
+            previousGroupId = groupId;
+            groupId = record.getNext();
+        }
+        return null;
+    }
+
+    private static int manuallyCountRelationships( RecordChangeSet recordChangeSet, long nodeId, long firstRelId )
+    {
+        int count = 0;
+        long relId = firstRelId;
+        while ( relId != Record.NO_NEXT_RELATIONSHIP.intValue() )
+        {
+            count++;
+            RelationshipRecord record = recordChangeSet.getRelRecords().getOrLoad( relId, NULL ).forReadingData();
+            relId = record.getFirstNode() == nodeId ? record.getFirstNextRel() : record.getSecondNextRel();
+        }
+        return count;
+    }
+
     @Test
     void shouldCreateEqualEntityPropertyUpdatesOnRecoveryOfCreatedEntities() throws Exception
     {
@@ -1228,7 +1312,7 @@ class TransactionRecordStateTest
         apply( state );
 
         state = newTransactionRecordState();
-        state.schemaRuleDelete( rule );
+        state.schemaRuleDelete( ruleId );
 
         List<StorageCommand> commands = new ArrayList<>();
         state.extractCommands( commands, INSTANCE );
@@ -1563,89 +1647,5 @@ class TransactionRecordStateTest
             list.add( cursor.currentEntityId() );
         }
         return list;
-    }
-
-    private NeoStores createStores()
-    {
-        return createStores( Config.defaults() );
-    }
-
-    private NeoStores createStores( Config config )
-    {
-        return createStores( config, RecordFormatSelector.selectForConfig( config, NullLogProvider.getInstance() ) );
-    }
-
-    private NeoStores createStores( Config config, RecordFormats formats )
-    {
-        idGeneratorFactory = new DefaultIdGeneratorFactory( fs, immediate() );
-        var storeFactory = new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache, fs,
-                formats, NullLogProvider.getInstance(), PageCacheTracer.NULL, immutable.empty() );
-        return storeFactory.openAllNeoStores( true );
-    }
-
-    private static void assertRelationshipGroupDoesNotExist( RecordChangeSet recordChangeSet, NodeRecord node, int type )
-    {
-        assertNull( getRelationshipGroup( recordChangeSet, node, type ) );
-    }
-
-    private static void assertDenseRelationshipCounts( RecordChangeSet recordChangeSet, long nodeId, int type, int outCount, int inCount )
-    {
-        RecordProxy<RelationshipGroupRecord> proxy =
-                getRelationshipGroup( recordChangeSet, recordChangeSet.getNodeRecords().getOrLoad( nodeId, NULL ).forReadingData(), type );
-        assertNotNull( proxy );
-        RelationshipGroupRecord group = proxy.forReadingData();
-        assertNotNull( group );
-
-        RelationshipRecord rel;
-        long relId = group.getFirstOut();
-        if ( relId != Record.NO_NEXT_RELATIONSHIP.intValue() )
-        {
-            rel = recordChangeSet.getRelRecords().getOrLoad( relId, NULL ).forReadingData();
-            // count is stored in the back pointer of the first relationship in the chain
-            assertEquals( outCount, rel.getFirstPrevRel(), "Stored relationship count for OUTGOING differs" );
-            assertEquals( outCount, manuallyCountRelationships( recordChangeSet, nodeId, relId ),
-                    "Manually counted relationships for OUTGOING differs" );
-        }
-
-        relId = group.getFirstIn();
-        if ( relId != Record.NO_NEXT_RELATIONSHIP.intValue() )
-        {
-            rel = recordChangeSet.getRelRecords().getOrLoad( relId, NULL ).forReadingData();
-            assertEquals( inCount, rel.getSecondPrevRel(), "Stored relationship count for INCOMING differs" );
-            assertEquals( inCount, manuallyCountRelationships( recordChangeSet, nodeId, relId ),
-                    "Manually counted relationships for INCOMING differs" );
-        }
-    }
-
-    private static RecordProxy<RelationshipGroupRecord> getRelationshipGroup( RecordChangeSet recordChangeSet, NodeRecord node, int type )
-    {
-        long groupId = node.getNextRel();
-        long previousGroupId = Record.NO_NEXT_RELATIONSHIP.intValue();
-        while ( groupId != Record.NO_NEXT_RELATIONSHIP.intValue() )
-        {
-            RecordProxy<RelationshipGroupRecord> change = recordChangeSet.getRelGroupRecords().getOrLoad( groupId, NULL );
-            RelationshipGroupRecord record = change.forReadingData();
-            record.setPrev( previousGroupId ); // not persistent so not a "change"
-            if ( record.getType() == type )
-            {
-                return change;
-            }
-            previousGroupId = groupId;
-            groupId = record.getNext();
-        }
-        return null;
-    }
-
-    private static int manuallyCountRelationships( RecordChangeSet recordChangeSet, long nodeId, long firstRelId )
-    {
-        int count = 0;
-        long relId = firstRelId;
-        while ( relId != Record.NO_NEXT_RELATIONSHIP.intValue() )
-        {
-            count++;
-            RelationshipRecord record = recordChangeSet.getRelRecords().getOrLoad( relId, NULL ).forReadingData();
-            relId = record.getFirstNode() == nodeId ? record.getFirstNextRel() : record.getSecondNextRel();
-        }
-        return count;
     }
 }

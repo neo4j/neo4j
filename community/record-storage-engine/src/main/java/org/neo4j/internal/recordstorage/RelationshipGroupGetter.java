@@ -77,7 +77,6 @@ public class RelationshipGroupGetter
             long id = idGenerator.nextId( cursorTracer );
             change = relGroupRecords.create( id, cursorTracer );
             RelationshipGroupRecord record = change.forChangingData();
-            record.setType( type );
             record.setInUse( true );
             record.setCreated();
             record.setOwningNode( node.getId() );
