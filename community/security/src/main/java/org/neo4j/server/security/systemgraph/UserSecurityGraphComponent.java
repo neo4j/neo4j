@@ -140,4 +140,9 @@ public class UserSecurityGraphComponent extends AbstractSystemGraphComponent
             }
         } );
     }
+
+    public KnownCommunitySecurityComponentVersion findSecurityGraphComponentVersion( String substring )
+    {
+        return knownUserSecurityComponentVersions.findSecurityGraphVersion( substring );
+    }
 }

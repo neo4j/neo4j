@@ -144,7 +144,7 @@ public enum ComponentVersion
     {
         if ( componentName.equals( SECURITY_USER_COMPONENT ) )
         {
-            return version == 0;
+            return version >= 0 && version <= LATEST_COMMUNITY_SECURITY_COMPONENT_VERSION;
         }
         else if ( componentName.equals( SECURITY_PRIVILEGE_COMPONENT ) )
         {
