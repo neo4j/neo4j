@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction.stats;
 
+import org.neo4j.kernel.impl.api.transaction.monitor.TransactionSizeMonitor;
+
 public interface TransactionCounters
 {
     long getPeakConcurrentNumberOfTransactions();
@@ -48,4 +50,6 @@ public interface TransactionCounters
     long getNumberOfRolledBackReadTransactions();
 
     long getNumberOfRolledBackWriteTransactions();
+
+    void setTransactionSizeCallback( TransactionSizeMonitor transactionSizeMonitor );
 }

@@ -388,6 +388,16 @@ class KernelTransactionTerminationTest
         {
         }
 
+        @Override
+        public void addHeapTransactionSize( long transactionSizeHeap )
+        {
+        }
+
+        @Override
+        public void addNativeTransactionSize( long transactionSizeNative )
+        {
+        }
+
         void reset()
         {
             committed = false;

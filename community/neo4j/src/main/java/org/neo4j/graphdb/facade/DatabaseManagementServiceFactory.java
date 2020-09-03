@@ -150,7 +150,6 @@ public class DatabaseManagementServiceFactory
         var webServer = createWebServer( edition, managementService, globalDependencies, config, globalModule.getLogService().getUserLogProvider() );
         globalDependencies.satisfyDependency( webServer );
         globalLife.add( webServer );
-        globalDependencies.satisfyDependency( edition.globalTransactionCounter() );
 
         startDatabaseServer( globalModule, globalLife, internalLog, databaseManager, managementService );
 

@@ -772,6 +772,9 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         }
         finally
         {
+            transactionMonitor.addHeapTransactionSize( memoryTracker.heapHighWaterMark() );
+            transactionMonitor.addNativeTransactionSize( memoryTracker.usedNativeMemory() );
+
             if ( !success )
             {
                 rollback( listenersState );

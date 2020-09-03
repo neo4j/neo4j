@@ -51,8 +51,6 @@ import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
-import org.neo4j.kernel.impl.transaction.stats.GlobalTransactionStats;
-import org.neo4j.kernel.impl.transaction.stats.TransactionCounters;
 import org.neo4j.kernel.impl.util.watcher.DefaultFileDeletionListenerFactory;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.LogProvider;
@@ -75,7 +73,6 @@ import static org.neo4j.procedure.impl.temporal.TemporalFunction.registerTempora
 @IgnoreApiCheck
 public abstract class AbstractEditionModule
 {
-    private final GlobalTransactionStats transactionStatistic = new GlobalTransactionStats();
     protected NetworkConnectionTracker connectionTracker;
     protected ConstraintSemantics constraintSemantics;
     protected IOLimiter ioLimiter;
@@ -125,12 +122,7 @@ public abstract class AbstractEditionModule
 
     public DatabaseTransactionStats createTransactionMonitor()
     {
-        return transactionStatistic.createDatabaseTransactionMonitor();
-    }
-
-    public TransactionCounters globalTransactionCounter()
-    {
-        return transactionStatistic;
+        return new DatabaseTransactionStats();
     }
 
     public ConstraintSemantics getConstraintSemantics()

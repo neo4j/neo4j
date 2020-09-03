@@ -161,6 +161,7 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase
 
         // THEN
         verify( transactionMonitor ).transactionFinished( true, isWriteTx );
+        verifyTransactionSizeInteractionWithMonitor();
         verifyExtraInteractionWithTheMonitor( transactionMonitor, isWriteTx );
     }
 
@@ -301,6 +302,7 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase
 
         // THEN
         verify( transactionMonitor ).transactionFinished( true, isWriteTx );
+        verifyTransactionSizeInteractionWithMonitor();
         verifyExtraInteractionWithTheMonitor( transactionMonitor, isWriteTx );
     }
 
@@ -453,6 +455,12 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase
             verify( this.transactionMonitor ).upgradeToWriteTransaction();
         }
         verifyNoMoreInteractions( transactionMonitor );
+    }
+
+    private void verifyTransactionSizeInteractionWithMonitor()
+    {
+        verify( transactionMonitor ).addHeapTransactionSize( anyLong() );
+        verify( transactionMonitor ).addNativeTransactionSize( anyLong() );
     }
 
     @ParameterizedTest

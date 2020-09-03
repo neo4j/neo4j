@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.transaction.stats;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 
+import org.neo4j.kernel.impl.api.transaction.monitor.TransactionSizeMonitor;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 
 public class DatabaseTransactionStats implements TransactionMonitor, TransactionCounters
@@ -36,6 +37,7 @@ public class DatabaseTransactionStats implements TransactionMonitor, Transaction
     private final LongAdder terminatedReadTransactionCount = new LongAdder();
     private final LongAdder terminatedWriteTransactionCount = new LongAdder();
     private volatile long peakTransactionCount;
+    private volatile TransactionSizeMonitor transactionSizeCallback = NullTransactionSizeCallback.INSTANCE;
 
     @Override
     public void transactionStarted()
@@ -163,6 +165,24 @@ public class DatabaseTransactionStats implements TransactionMonitor, Transaction
         return rolledBackWriteTransactionCount.longValue();
     }
 
+    @Override
+    public void setTransactionSizeCallback( TransactionSizeMonitor transactionSizeMonitor )
+    {
+        this.transactionSizeCallback = transactionSizeMonitor != null ? transactionSizeMonitor : NullTransactionSizeCallback.INSTANCE;
+    }
+
+    @Override
+    public void addHeapTransactionSize( long transactionSizeHeap )
+    {
+        transactionSizeCallback.addHeapTransactionSize( transactionSizeHeap );
+    }
+
+    @Override
+    public void addNativeTransactionSize( long transactionSizeNative )
+    {
+        transactionSizeCallback.addNativeTransactionSize( transactionSizeNative );
+    }
+
     private static void incrementCounter( LongAdder readCount, LongAdder writeCount, boolean write )
     {
         if ( write )
@@ -172,6 +192,25 @@ public class DatabaseTransactionStats implements TransactionMonitor, Transaction
         else
         {
             readCount.increment();
+        }
+    }
+
+    private static class NullTransactionSizeCallback implements TransactionSizeMonitor
+    {
+        private static final TransactionSizeMonitor INSTANCE = new NullTransactionSizeCallback();
+
+        private NullTransactionSizeCallback()
+        {
+        }
+
+        @Override
+        public void addHeapTransactionSize( long transactionSizeHeap )
+        {
+        }
+
+        @Override
+        public void addNativeTransactionSize( long transactionSizeNative )
+        {
         }
     }
 }
