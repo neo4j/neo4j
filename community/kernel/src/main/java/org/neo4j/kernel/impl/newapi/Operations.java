@@ -112,7 +112,6 @@ import org.neo4j.values.storable.Values;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static java.lang.String.format;
-import static org.apache.commons.lang3.ArrayUtils.EMPTY_INT_ARRAY;
 import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException.Phase.VALIDATION;
 import static org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException.OperationContext.CONSTRAINT_CREATION;
@@ -135,6 +134,8 @@ import static org.neo4j.values.storable.Values.NO_VALUE;
  */
 public class Operations implements Write, SchemaWrite
 {
+    private static final int[] EMPTY_INT_ARRAY = new int[0];
+
     private final KernelTransactionImplementation ktx;
     private final AllStoreHolder allStoreHolder;
     private final StorageReader storageReader;
@@ -1513,6 +1514,15 @@ public class Operations implements Write, SchemaWrite
         }
 
         return constraint;
+    }
+
+    private void assertAllowsWrites()
+    {
+        AccessMode accessMode = ktx.securityContext().mode();
+        if ( !accessMode.allowsWrites() )
+        {
+            throw accessMode.onViolation( format( "Write operations are not allowed for %s.", ktx.securityContext().description() ) );
+        }
     }
 
     private void assertAllowsCreateNode( int[] labelIds )
