@@ -129,17 +129,16 @@ trait Statement extends Parser
     group(CreateUserStart ~~ keyword("SET PASSWORD") ~~ SensitiveStringLiteral ~~ OptionalStatus) ~~>> ((userName, ifExistsDo, initialPassword, suspended) =>
       ast.CreateUser(userName, initialPassword, requirePasswordChange = true, suspended, ifExistsDo)) |
     // CREATE [OR REPLACE] USER username [IF NOT EXISTS] SET PASSWORD stringLiteralPassword optionalRequirePasswordChange optionalStatus
-    group(CreateUserStart ~~ keyword("SET PASSWORD") ~~ SensitiveStringLiteral ~~
-    OptionalRequirePasswordChange ~~ OptionalStatus) ~~>> ((userName, ifExistsDo, initialPassword, requirePasswordChange, suspended) =>
+    group(CreateUserStart ~~ keyword("SET PASSWORD") ~~ SensitiveStringLiteral ~~ OptionalRequirePasswordChange ~~ OptionalStatus) ~~>>
+      ((userName, ifExistsDo, initialPassword, requirePasswordChange, suspended) =>
       ast.CreateUser(userName, initialPassword, requirePasswordChange.getOrElse(true), suspended, ifExistsDo)) |
     //
     // CREATE [OR REPLACE] USER username [IF NOT EXISTS] SET PASSWORD parameterPassword optionalStatus
-    group(CreateUserStart ~~ keyword("SET PASSWORD") ~~ SensitiveStringParameter ~~
-    OptionalStatus) ~~>> ((userName, ifExistsDo, initialPassword, suspended) =>
+    group(CreateUserStart ~~ keyword("SET PASSWORD") ~~ SensitiveStringParameter ~~ OptionalStatus) ~~>> ((userName, ifExistsDo, initialPassword, suspended) =>
       ast.CreateUser(userName, initialPassword, requirePasswordChange = true, suspended, ifExistsDo)) |
     // CREATE [OR REPLACE] USER username [IF NOT EXISTS] SET PASSWORD parameterPassword optionalRequirePasswordChange optionalStatus
-    group(CreateUserStart ~~ keyword("SET PASSWORD") ~~ SensitiveStringParameter ~~
-    OptionalRequirePasswordChange ~~ OptionalStatus) ~~>> ((userName, ifExistsDo, initialPassword, requirePasswordChange, suspended) =>
+    group(CreateUserStart ~~ keyword("SET PASSWORD") ~~ SensitiveStringParameter ~~ OptionalRequirePasswordChange ~~ OptionalStatus) ~~>>
+      ((userName, ifExistsDo, initialPassword, requirePasswordChange, suspended) =>
       ast.CreateUser(userName, initialPassword, requirePasswordChange.getOrElse(true), suspended, ifExistsDo))
   }
 
@@ -158,22 +157,18 @@ trait Statement extends Parser
 
   def AlterUser: Rule1[AlterUser] = rule("ALTER USER") {
     // ALTER USER username SET PASSWORD stringLiteralPassword optionalStatus
-    group(keyword("ALTER USER") ~~ SymbolicNameOrStringParameter ~~ keyword("SET PASSWORD") ~~ SensitiveStringLiteral ~~
-    OptionalStatus) ~~>> ((userName, initialPassword, suspended) =>
-      ast.AlterUser(userName, Some(initialPassword), None, suspended)) |
+    group(keyword("ALTER USER") ~~ SymbolicNameOrStringParameter ~~ keyword("SET PASSWORD") ~~ SensitiveStringLiteral ~~ OptionalStatus) ~~>>
+      ((userName, initialPassword, suspended) => ast.AlterUser(userName, Some(initialPassword), None, suspended)) |
     // ALTER USER username SET PASSWORD stringLiteralPassword optionalRequirePasswordChange optionalStatus
-    group(keyword("ALTER USER") ~~ SymbolicNameOrStringParameter ~~ keyword("SET PASSWORD") ~~ SensitiveStringLiteral ~~
-    OptionalRequirePasswordChange ~~ OptionalStatus) ~~>> ((userName, initialPassword, requirePasswordChange, suspended) =>
-      ast.AlterUser(userName, Some(initialPassword), requirePasswordChange, suspended)) |
+    group(keyword("ALTER USER") ~~ SymbolicNameOrStringParameter ~~ keyword("SET PASSWORD") ~~ SensitiveStringLiteral ~~ OptionalRequirePasswordChange ~~ OptionalStatus) ~~>>
+      ((userName, initialPassword, requirePasswordChange, suspended) => ast.AlterUser(userName, Some(initialPassword), requirePasswordChange, suspended)) |
     //
     // ALTER USER username SET PASSWORD parameterPassword optionalStatus
-    group(keyword("ALTER USER") ~~ SymbolicNameOrStringParameter ~~ keyword("SET PASSWORD") ~~ SensitiveStringParameter ~~
-    OptionalStatus) ~~>> ((userName, initialPassword, suspended) =>
-      ast.AlterUser(userName, Some(initialPassword), None, suspended)) |
+    group(keyword("ALTER USER") ~~ SymbolicNameOrStringParameter ~~ keyword("SET PASSWORD") ~~ SensitiveStringParameter ~~ OptionalStatus) ~~>>
+      ((userName, initialPassword, suspended) => ast.AlterUser(userName, Some(initialPassword), None, suspended)) |
     // ALTER USER username SET PASSWORD parameterPassword optionalRequirePasswordChange optionalStatus
-    group(keyword("ALTER USER") ~~ SymbolicNameOrStringParameter ~~ keyword("SET PASSWORD") ~~ SensitiveStringParameter ~~
-    OptionalRequirePasswordChange ~~ OptionalStatus) ~~>> ((userName, initialPassword, requirePasswordChange, suspended) =>
-      ast.AlterUser(userName, Some(initialPassword), requirePasswordChange, suspended)) |
+    group(keyword("ALTER USER") ~~ SymbolicNameOrStringParameter ~~ keyword("SET PASSWORD") ~~ SensitiveStringParameter ~~ OptionalRequirePasswordChange ~~ OptionalStatus) ~~>>
+      ((userName, initialPassword, requirePasswordChange, suspended) => ast.AlterUser(userName, Some(initialPassword), requirePasswordChange, suspended)) |
     //
     // ALTER USER username setRequirePasswordChange optionalStatus
     group(keyword("ALTER USER") ~~ SymbolicNameOrStringParameter ~~ SetRequirePasswordChange ~~ OptionalStatus) ~~>>
@@ -227,10 +222,10 @@ trait Statement extends Parser
 
   def ShowRoles: Rule1[ShowRoles] = rule("SHOW ROLES") {
     //SHOW [ ALL | POPULATED ] ROLES WITH USERS
-    group(keyword("SHOW") ~~ keyword("POPULATED") ~~ keyword("ROLES") ~~
-      keyword("WITH USERS")) ~~ ShowCommandClauses ~~>> (ast.ShowRoles(withUsers = true, showAll = false, _, _)) |
-    group(keyword("SHOW") ~~ optional(keyword("ALL")) ~~ keyword("ROLES") ~~
-      keyword("WITH USERS")) ~~ ShowCommandClauses ~~>> (ast.ShowRoles(withUsers = true, showAll = true, _, _)) |
+    group(keyword("SHOW") ~~ keyword("POPULATED") ~~ keyword("ROLES") ~~ keyword("WITH USERS")) ~~ ShowCommandClauses ~~>>
+      (ast.ShowRoles(withUsers = true, showAll = false, _, _)) |
+    group(keyword("SHOW") ~~ optional(keyword("ALL")) ~~ keyword("ROLES") ~~ keyword("WITH USERS")) ~~ ShowCommandClauses ~~>>
+      (ast.ShowRoles(withUsers = true, showAll = true, _, _)) |
     // SHOW [ ALL | POPULATED ] ROLES
     group(keyword("SHOW") ~~ keyword("POPULATED") ~~ keyword("ROLES")) ~~ ShowCommandClauses ~~>>
       (ast.ShowRoles(withUsers = false, showAll = false, _, _)) |
@@ -256,27 +251,24 @@ trait Statement extends Parser
   }
 
   def GrantRole: Rule1[GrantRolesToUsers] = rule("GRANT ROLE") {
-    group(keyword("GRANT") ~~ RoleKeyword ~~ SymbolicNameOrStringParameterList ~~
-      keyword("TO") ~~ SymbolicNameOrStringParameterList) ~~>> (ast.GrantRolesToUsers(_, _))
+    group(keyword("GRANT") ~~ RoleKeyword ~~ SymbolicNameOrStringParameterList ~~ keyword("TO") ~~ SymbolicNameOrStringParameterList) ~~>> (ast.GrantRolesToUsers(_, _))
   }
 
   def RevokeRole: Rule1[RevokeRolesFromUsers] = rule("REVOKE ROLE") {
-    group(keyword("REVOKE") ~~ RoleKeyword ~~ SymbolicNameOrStringParameterList ~~
-      keyword("FROM") ~~ SymbolicNameOrStringParameterList) ~~>> (ast.RevokeRolesFromUsers(_, _))
+    group(keyword("REVOKE") ~~ RoleKeyword ~~ SymbolicNameOrStringParameterList ~~ keyword("FROM") ~~ SymbolicNameOrStringParameterList) ~~>> (ast.RevokeRolesFromUsers(_, _))
   }
 
   // Privilege commands
 
   def ShowPrivileges: Rule1[ShowPrivileges] = rule("SHOW PRIVILEGES") {
-    group(keyword("SHOW") ~~ ScopeForShowPrivileges ~~ ShowCommandClauses
-      ~~>> ((scope, yld, rtn) => ast.ShowPrivileges(scope, yld, rtn)))
+    group(keyword("SHOW") ~~ ScopeForShowPrivileges ~~ ShowCommandClauses ~~>> ((scope, yld, rtn) => ast.ShowPrivileges(scope, yld, rtn)))
   }
 
   private def ScopeForShowPrivileges: Rule1[ShowPrivilegeScope] = rule("show privilege scope") {
     group(RoleKeyword ~~ SymbolicNameOrStringParameterList ~~ keyword("PRIVILEGES")) ~~>> (ast.ShowRolesPrivileges(_)) |
-      group(UserKeyword ~~ SymbolicNameOrStringParameterList ~~ keyword("PRIVILEGES")) ~~>> (ast.ShowUsersPrivileges(_)) |
-      group(UserKeyword ~~ keyword("PRIVILEGES")) ~~~> ast.ShowUserPrivileges(None) |
-      optional(keyword("ALL")) ~~ keyword("PRIVILEGES") ~~~> ast.ShowAllPrivileges()
+    group(UserKeyword ~~ SymbolicNameOrStringParameterList ~~ keyword("PRIVILEGES")) ~~>> (ast.ShowUsersPrivileges(_)) |
+    group(UserKeyword ~~ keyword("PRIVILEGES")) ~~~> ast.ShowUserPrivileges(None) |
+    optional(keyword("ALL")) ~~ keyword("PRIVILEGES") ~~~> ast.ShowAllPrivileges()
   }
 
   private def UserKeyword: Rule0 = keyword("USERS") | keyword("USER")
@@ -363,34 +355,34 @@ trait Statement extends Parser
 
   private def RevokeType: Rule1[RevokeType] = rule("revoke type") {
     keyword("REVOKE GRANT") ~~~> RevokeGrantType() |
-      keyword("REVOKE DENY") ~~~> RevokeDenyType() |
-      keyword("REVOKE") ~~~> RevokeBothType()
+    keyword("REVOKE DENY") ~~~> RevokeDenyType() |
+    keyword("REVOKE") ~~~> RevokeBothType()
   }
 
   // Dbms specific
 
   private def DbmsAction: Rule1[AdminAction] = rule("dbms action") {
     keyword("CREATE ROLE") ~~~> (_ => ast.CreateRoleAction) |
-      keyword("DROP ROLE") ~~~> (_ => ast.DropRoleAction) |
-      keyword("ASSIGN ROLE") ~~~> (_ => ast.AssignRoleAction) |
-      keyword("REMOVE ROLE") ~~~> (_ => ast.RemoveRoleAction) |
-      keyword("SHOW ROLE") ~~~> (_ => ast.ShowRoleAction) |
-      keyword("ROLE MANAGEMENT") ~~~> (_ => ast.AllRoleActions) |
-      keyword("CREATE USER") ~~~> (_ => ast.CreateUserAction) |
-      keyword("DROP USER") ~~~> (_ => ast.DropUserAction) |
-      keyword("SHOW USER") ~~~> (_ => ast.ShowUserAction) |
-      keyword("SET USER STATUS") ~~~> (_ => ast.SetUserStatusAction) |
-      keyword("SET") ~~ PasswordKeyword ~~~> (_ => ast.SetPasswordsAction) |
-      keyword("ALTER USER") ~~~> (_ => ast.AlterUserAction) |
-      keyword("USER MANAGEMENT") ~~~> (_ => ast.AllUserActions) |
-      keyword("CREATE DATABASE") ~~~> (_ => ast.CreateDatabaseAction) |
-      keyword("DROP DATABASE") ~~~> (_ => ast.DropDatabaseAction) |
-      keyword("DATABASE MANAGEMENT") ~~~> (_ => ast.AllDatabaseManagementActions) |
-      keyword("SHOW PRIVILEGE") ~~~> (_ => ast.ShowPrivilegeAction) |
-      keyword("ASSIGN PRIVILEGE") ~~~> (_ => ast.AssignPrivilegeAction) |
-      keyword("REMOVE PRIVILEGE") ~~~> (_ => ast.RemovePrivilegeAction) |
-      keyword("PRIVILEGE MANAGEMENT") ~~~> (_ => ast.AllPrivilegeActions) |
-      group(keyword("ALL") ~~ optional(optional(keyword("DBMS")) ~~ keyword("PRIVILEGES")))~~~> (_ => ast.AllDbmsAction)
+    keyword("DROP ROLE") ~~~> (_ => ast.DropRoleAction) |
+    keyword("ASSIGN ROLE") ~~~> (_ => ast.AssignRoleAction) |
+    keyword("REMOVE ROLE") ~~~> (_ => ast.RemoveRoleAction) |
+    keyword("SHOW ROLE") ~~~> (_ => ast.ShowRoleAction) |
+    keyword("ROLE MANAGEMENT") ~~~> (_ => ast.AllRoleActions) |
+    keyword("CREATE USER") ~~~> (_ => ast.CreateUserAction) |
+    keyword("DROP USER") ~~~> (_ => ast.DropUserAction) |
+    keyword("SHOW USER") ~~~> (_ => ast.ShowUserAction) |
+    keyword("SET USER STATUS") ~~~> (_ => ast.SetUserStatusAction) |
+    keyword("SET") ~~ PasswordKeyword ~~~> (_ => ast.SetPasswordsAction) |
+    keyword("ALTER USER") ~~~> (_ => ast.AlterUserAction) |
+    keyword("USER MANAGEMENT") ~~~> (_ => ast.AllUserActions) |
+    keyword("CREATE DATABASE") ~~~> (_ => ast.CreateDatabaseAction) |
+    keyword("DROP DATABASE") ~~~> (_ => ast.DropDatabaseAction) |
+    keyword("DATABASE MANAGEMENT") ~~~> (_ => ast.AllDatabaseManagementActions) |
+    keyword("SHOW PRIVILEGE") ~~~> (_ => ast.ShowPrivilegeAction) |
+    keyword("ASSIGN PRIVILEGE") ~~~> (_ => ast.AssignPrivilegeAction) |
+    keyword("REMOVE PRIVILEGE") ~~~> (_ => ast.RemovePrivilegeAction) |
+    keyword("PRIVILEGE MANAGEMENT") ~~~> (_ => ast.AllPrivilegeActions) |
+    group(keyword("ALL") ~~ optional(optional(keyword("DBMS")) ~~ keyword("PRIVILEGES")))~~~> (_ => ast.AllDbmsAction)
   }
 
   private def QualifiedDbmsAction: Rule2[List[PrivilegeQualifier], AdminAction] = rule("qualified dbms action") {
@@ -410,8 +402,10 @@ trait Statement extends Parser
 
   private def Database: Rule1[List[DatabaseScope]] = rule("on a database") {
     keyword("ON DEFAULT DATABASE") ~~~> (pos => List(ast.DefaultDatabaseScope()(pos))) |
-    group(keyword("ON") ~~ DatabaseKeyword) ~~ group((SymbolicDatabaseNameOrStringParameterList ~~>> (params => pos => params.map(ast.NamedDatabaseScope(_)(pos)))) |
-    (keyword("*") ~~~> (pos => List(ast.AllDatabasesScope()(pos)))))
+    group(keyword("ON") ~~ DatabaseKeyword) ~~ group(
+      (SymbolicDatabaseNameOrStringParameterList ~~>> (params => pos => params.map(ast.NamedDatabaseScope(_)(pos)))) |
+      (keyword("*") ~~~> (pos => List(ast.AllDatabasesScope()(pos))))
+    )
   }
 
   private def DatabaseAction: Rule1[DatabaseAction] = rule("database action") {
@@ -463,13 +457,15 @@ trait Statement extends Parser
 
   private def Graph: Rule1[List[GraphScope]] = rule("on a graph") {
     keyword("ON DEFAULT GRAPH") ~~~> (pos => List(ast.DefaultGraphScope()(pos))) |
-    group(keyword("ON") ~~ (keyword("GRAPH") | keyword("GRAPHS"))) ~~
-      group((SymbolicDatabaseNameOrStringParameterList ~~>> (names => ipp => names.map(ast.NamedGraphScope(_)(ipp)))) |
-    keyword("*") ~~~> (ipp => List(ast.AllGraphsScope()(ipp))))
+    group(keyword("ON") ~~ GraphKeyword) ~~ group(
+      (SymbolicDatabaseNameOrStringParameterList ~~>> (names => ipp => names.map(ast.NamedGraphScope(_)(ipp)))) |
+      keyword("*") ~~~> (ipp => List(ast.AllGraphsScope()(ipp)))
+    )
   }
 
   private def GraphAction: Rule3[List[GraphScope], GraphAction, List[ast.GraphPrivilegeQualifier]] = rule("graph action") {
-    group(keyword("ALL") ~~ optional(optional(keyword("GRAPH")) ~~ keyword("PRIVILEGES"))) ~~ Graph ~> (_ => ast.AllGraphAction) ~> (_ => List(ast.AllQualifier()(InputPosition.NONE))) |
+    group(keyword("ALL") ~~ optional(optional(keyword("GRAPH")) ~~ keyword("PRIVILEGES"))) ~~ Graph ~>
+      (_ => ast.AllGraphAction) ~> (_ => List(ast.AllQualifier()(InputPosition.NONE))) |
     group(keyword("WRITE") ~~ Graph) ~> (_ => ast.WriteAction) ~> (_ => List(ast.ElementsAllQualifier()(InputPosition.NONE)))
   }
 
@@ -514,6 +510,8 @@ trait Statement extends Parser
     group("{" ~~ "*" ~~ "}") ~~~> {ast.AllPropertyResource()}
   }
 
+  private def GraphKeyword: Rule0 = keyword("GRAPHS") | keyword("GRAPH")
+
   private def ElementKeyword: Rule0 = keyword("ELEMENTS") | keyword("ELEMENT")
 
   private def RelationshipKeyword: Rule0 = keyword("RELATIONSHIPS") | keyword("RELATIONSHIP")
@@ -540,8 +538,10 @@ trait Statement extends Parser
   }
 
   def DropDatabase: Rule1[DropDatabase] = rule("DROP DATABASE") {
-    group(keyword("DROP DATABASE") ~~ SymbolicDatabaseNameOrStringParameter ~~ keyword("IF EXISTS") ~~ DataAction) ~~>> ((dbName, dataAction) => ast.DropDatabase(dbName, ifExists = true, dataAction)) |
-    group(keyword("DROP DATABASE") ~~ SymbolicDatabaseNameOrStringParameter ~~ DataAction) ~~>> ((dbName, dataAction) => ast.DropDatabase(dbName, ifExists = false, dataAction))
+    group(keyword("DROP DATABASE") ~~ SymbolicDatabaseNameOrStringParameter ~~ keyword("IF EXISTS") ~~ DataAction) ~~>>
+      ((dbName, dataAction) => ast.DropDatabase(dbName, ifExists = true, dataAction)) |
+    group(keyword("DROP DATABASE") ~~ SymbolicDatabaseNameOrStringParameter ~~ DataAction) ~~>>
+      ((dbName, dataAction) => ast.DropDatabase(dbName, ifExists = false, dataAction))
   }
 
   private def DataAction: Rule1[DropDatabaseAdditionalAction] = rule("data action on drop database") {
@@ -557,7 +557,7 @@ trait Statement extends Parser
     group(keyword("STOP DATABASE") ~~ SymbolicDatabaseNameOrStringParameter) ~~>> (ast.StopDatabase(_))
   }
 
-  // Graph commands
+  // Graph/View commands
 
   def CreateGraph: Rule1[CreateGraph] = rule("CATALOG CREATE GRAPH") {
     group(keyword("CATALOG CREATE GRAPH") ~~ CatalogName ~~ "{" ~~
@@ -585,28 +585,28 @@ trait Statement extends Parser
   private def RoleKeyword: Rule0 = keyword("ROLES") | keyword("ROLE")
 
   private def ShowCommandClauses: Rule2[Option[Either[Yield, Where]], Option[Return]] = rule("YIELD ... WHERE .. RETURN .. for SHOW commands") {
-    optional(keyword("YIELD") ~~ YieldBody ~~>>
-      ((returnItems, maybeOrderBy, maybeSkip, maybeLimit, maybeWhere) => pos => Left(ast.Yield(returnItems, maybeOrderBy, maybeSkip, maybeLimit, maybeWhere)(pos))) |
-      Where ~~>> (where => _ => Right(where))) ~~ optional(ReturnWithoutGraph)
+    optional(
+      keyword("YIELD") ~~ YieldBody ~~>> ((returnItems, maybeOrderBy, maybeSkip, maybeLimit, maybeWhere) =>
+        pos => Left(ast.Yield(returnItems, maybeOrderBy, maybeSkip, maybeLimit, maybeWhere)(pos))) |
+      Where ~~>> (where => _ => Right(where))
+    ) ~~ optional(ReturnWithoutGraph)
   }
 
   def SymbolicNameOrStringParameter: Rule1[Either[String, expressions.Parameter]] =
     group(SymbolicNameString) ~~>> (s => _ => Left(s)) |
-      group(StringParameter) ~~>> (p => _ => Right(p))
+    group(StringParameter) ~~>> (p => _ => Right(p))
 
   def SymbolicDatabaseNameOrStringParameter: Rule1[Either[String, expressions.Parameter]] =
     group(SymbolicDatabaseNameString) ~~>> (s => _ => Left(s)) |
-      group(StringParameter) ~~>> (p => _ => Right(p))
+    group(StringParameter) ~~>> (p => _ => Right(p))
 
-  def SymbolicNameOrStringParameterList: Rule1[List[Either[String, expressions.Parameter]]] =
-    rule("a list of symbolic names or string parameters") {
-      //noinspection LanguageFeature
-      (oneOrMore(WS ~~ SymbolicNameOrStringParameter ~~ WS, separator = ",") memoMismatches).suppressSubnodes
-    }
+  def SymbolicNameOrStringParameterList: Rule1[List[Either[String, expressions.Parameter]]] = rule("a list of symbolic names or string parameters") {
+    //noinspection LanguageFeature
+    (oneOrMore(WS ~~ SymbolicNameOrStringParameter ~~ WS, separator = ",") memoMismatches).suppressSubnodes
+  }
 
-  def SymbolicDatabaseNameOrStringParameterList: Rule1[List[Either[String, expressions.Parameter]]] =
-    rule("a list of symbolic database names or string parameters") {
-      //noinspection LanguageFeature
-      (oneOrMore(WS ~~ SymbolicDatabaseNameOrStringParameter ~~ WS, separator = ",") memoMismatches).suppressSubnodes
-    }
+  def SymbolicDatabaseNameOrStringParameterList: Rule1[List[Either[String, expressions.Parameter]]] = rule("a list of symbolic database names or string parameters") {
+    //noinspection LanguageFeature
+    (oneOrMore(WS ~~ SymbolicDatabaseNameOrStringParameter ~~ WS, separator = ",") memoMismatches).suppressSubnodes
+  }
 }
