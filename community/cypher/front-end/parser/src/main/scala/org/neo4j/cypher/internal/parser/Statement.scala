@@ -270,8 +270,6 @@ trait Statement extends Parser
     optional(keyword("ALL")) ~~ keyword("PRIVILEGES") ~~~> ast.ShowAllPrivileges()
   }
 
-  private def UserKeyword: Rule0 = keyword("USERS") | keyword("USER")
-
   //` ... ON DBMS TO role`
   def GrantDbmsPrivilege: Rule1[GrantPrivilege] = rule("GRANT dbms privileges") {
     group(keyword("GRANT") ~~ DbmsAction ~~ keyword("ON DBMS TO") ~~ SymbolicNameOrStringParameterList) ~~>>
@@ -393,10 +391,6 @@ trait Statement extends Parser
       { procedures => pos => procedures.map(p => ast.ProcedureQualifier(p._1, p._2)(pos)) }
   }
 
-  private def PasswordKeyword: Rule0 = keyword("PASSWORDS") | keyword("PASSWORD")
-
-  private def ProcedureKeyword: Rule0 = keyword("PROCEDURES") | keyword("PROCEDURE")
-
   // Database specific
 
   private def Database: Rule1[List[DatabaseScope]] = rule("on a database") {
@@ -437,20 +431,6 @@ trait Statement extends Parser
     group("(" ~~ SymbolicNameOrStringParameterList ~~ ")") ~~>> { userName => pos => userName.map(ast.UserQualifier(_)(pos)) } |
     group("(" ~~ "*" ~~ ")") ~~~> { pos => List(ast.UserAllQualifier()(pos)) }
   }
-
-  private def DatabaseKeyword: Rule0 = keyword("DATABASES") | keyword("DATABASE")
-
-  private def IndexKeyword: Rule0 = keyword("INDEXES") | keyword("INDEX")
-
-  private def ConstraintKeyword: Rule0 = keyword("CONSTRAINTS") | keyword("CONSTRAINT")
-
-  private def LabelKeyword: Rule0 = keyword("LABELS") | keyword("LABEL")
-
-  private def TypeKeyword: Rule0 = keyword("TYPES") | keyword("TYPE")
-
-  private def NameKeyword: Rule0 = keyword("NAMES") | keyword("NAME")
-
-  private def TransactionKeyword: Rule0 = keyword("TRANSACTIONS") | keyword("TRANSACTION")
 
   // Graph specific
 
@@ -508,14 +488,6 @@ trait Statement extends Parser
     group("{" ~~ SymbolicNamesList ~~ "}") ~~>> {ast.PropertiesResource(_)} |
     group("{" ~~ "*" ~~ "}") ~~~> {ast.AllPropertyResource()}
   }
-
-  private def GraphKeyword: Rule0 = keyword("GRAPHS") | keyword("GRAPH")
-
-  private def ElementKeyword: Rule0 = keyword("ELEMENTS") | keyword("ELEMENT")
-
-  private def RelationshipKeyword: Rule0 = keyword("RELATIONSHIPS") | keyword("RELATIONSHIP")
-
-  private def NodeKeyword: Rule0 = keyword("NODES") | keyword("NODE")
 
   // Database management commands
 
@@ -581,8 +553,6 @@ trait Statement extends Parser
 
   // Shared help methods
 
-  private def RoleKeyword: Rule0 = keyword("ROLES") | keyword("ROLE")
-
   private def ShowCommandClauses: Rule2[Option[Either[Yield, Where]], Option[Return]] = rule("YIELD ... WHERE .. RETURN .. for SHOW commands") {
     optional(
       keyword("YIELD") ~~ YieldBody ~~>> ((returnItems, maybeOrderBy, maybeSkip, maybeLimit, maybeWhere) =>
@@ -608,4 +578,43 @@ trait Statement extends Parser
     //noinspection LanguageFeature
     (oneOrMore(WS ~~ SymbolicDatabaseNameOrStringParameter ~~ WS, separator = ",") memoMismatches).suppressSubnodes
   }
+
+  // Keyword methods
+
+  private def RoleKeyword: Rule0 = keyword("ROLES") | keyword("ROLE")
+
+  private def UserKeyword: Rule0 = keyword("USERS") | keyword("USER")
+
+  // Dbms specific
+
+  private def PasswordKeyword: Rule0 = keyword("PASSWORDS") | keyword("PASSWORD")
+
+  private def ProcedureKeyword: Rule0 = keyword("PROCEDURES") | keyword("PROCEDURE")
+
+  // Database specific
+
+  private def DatabaseKeyword: Rule0 = keyword("DATABASES") | keyword("DATABASE")
+
+  private def IndexKeyword: Rule0 = keyword("INDEXES") | keyword("INDEX")
+
+  private def ConstraintKeyword: Rule0 = keyword("CONSTRAINTS") | keyword("CONSTRAINT")
+
+  private def LabelKeyword: Rule0 = keyword("LABELS") | keyword("LABEL")
+
+  private def TypeKeyword: Rule0 = keyword("TYPES") | keyword("TYPE")
+
+  private def NameKeyword: Rule0 = keyword("NAMES") | keyword("NAME")
+
+  private def TransactionKeyword: Rule0 = keyword("TRANSACTIONS") | keyword("TRANSACTION")
+
+  // Graph specific
+
+  private def GraphKeyword: Rule0 = keyword("GRAPHS") | keyword("GRAPH")
+
+  private def ElementKeyword: Rule0 = keyword("ELEMENTS") | keyword("ELEMENT")
+
+  private def RelationshipKeyword: Rule0 = keyword("RELATIONSHIPS") | keyword("RELATIONSHIP")
+
+  private def NodeKeyword: Rule0 = keyword("NODES") | keyword("NODE")
+
 }
