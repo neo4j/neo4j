@@ -358,6 +358,35 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     queryProfile.operatorProfile(4).rows() shouldBe nodesPerLabel // nodeByLabelScan
   }
 
+  test("should profile rows with distinct on the RHS of apply (fused pipelines)") {
+    // given
+    val nodesPerLabel = 20
+    given {bipartiteGraph(nodesPerLabel, "A", "B", "R")}
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a")
+      .nonFuseable()
+      .apply()
+      .|.expand("(a)-[r]->(b)")
+      .|.distinct("10 AS ten", "a AS a")
+      .|.nodeByLabelScan("a", "A", "x")
+      .input(variables = Seq("x"))
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime, inputValues((1 to 10).map(Array[Any](_)): _*))
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(0).rows() shouldBe (10 *nodesPerLabel * nodesPerLabel) // produce results
+    queryProfile.operatorProfile(1).rows() shouldBe (10 * nodesPerLabel * nodesPerLabel) // nonFuseable
+    queryProfile.operatorProfile(2).rows() shouldBe (10 * nodesPerLabel * nodesPerLabel) // apply
+    queryProfile.operatorProfile(3).rows() shouldBe (10 * nodesPerLabel * nodesPerLabel) // expand
+    queryProfile.operatorProfile(4).rows() shouldBe 10 * nodesPerLabel // distinct
+    queryProfile.operatorProfile(5).rows() shouldBe 10 * nodesPerLabel // nodeByLabelScan
+    queryProfile.operatorProfile(6).rows() shouldBe 10 // input
+  }
+
   test("should profile rows with expand (fused pipelines)") {
     // given
     val nodesPerLabel = 10
