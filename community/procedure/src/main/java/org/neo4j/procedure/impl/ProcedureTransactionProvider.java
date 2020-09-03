@@ -294,9 +294,9 @@ public class ProcedureTransactionProvider implements ThrowingFunction<Context,Tr
         }
 
         @Override
-        public UUID databaseId()
+        public UUID getDatabaseId()
         {
-            return transaction.databaseId();
+            return transaction.getDatabaseId();
         }
 
         @Override

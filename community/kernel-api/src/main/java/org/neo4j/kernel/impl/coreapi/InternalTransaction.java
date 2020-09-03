@@ -57,7 +57,7 @@ public interface InternalTransaction extends Transaction, TransactionalEntityFac
 
     boolean isOpen();
 
-    UUID databaseId();
+    UUID getDatabaseId();
 
     <E extends Entity> E validateSameDB( E entity );
 }

@@ -480,7 +480,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl
     }
 
     @Override
-    public UUID databaseId()
+    public UUID getDatabaseId()
     {
         if ( this.transaction != null )
         {
