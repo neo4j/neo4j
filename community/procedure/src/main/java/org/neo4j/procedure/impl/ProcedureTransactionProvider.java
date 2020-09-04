@@ -306,6 +306,12 @@ public class ProcedureTransactionProvider implements ThrowingFunction<Context,Tr
         }
 
         @Override
+        public String getDatabaseName()
+        {
+            return transaction.getDatabaseName();
+        }
+
+        @Override
         public <E extends Entity> E validateSameDB( E entity )
         {
             return transaction.validateSameDB( entity );

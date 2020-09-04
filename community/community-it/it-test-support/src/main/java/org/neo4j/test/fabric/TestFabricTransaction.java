@@ -120,6 +120,12 @@ public class TestFabricTransaction implements InternalTransaction
     }
 
     @Override
+    public String getDatabaseName()
+    {
+        return this.kernelInternalTransaction.getDatabaseName();
+    }
+
+    @Override
     public <E extends Entity> E validateSameDB( E entity )
     {
         return this.kernelInternalTransaction.validateSameDB( entity );

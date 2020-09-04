@@ -417,5 +417,15 @@ public interface KernelTransaction extends AssertOpen, AutoCloseable
         void close();
     }
 
+    /**
+     * The id of the database which the transaction is connected to.
+     * @return database id.
+     */
     UUID getDatabaseId();
+
+    /**
+     * The name of the database which the transaction is connected to.
+     * @return database name.
+     */
+    String getDatabaseName();
 }
