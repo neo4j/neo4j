@@ -971,4 +971,44 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
 
     runtimeResult should beColumns("name", "c").withRows(expected)
   }
+
+  test("should handle percentileDisc") {
+    given {
+      nodePropertyGraph(sizeHint, {
+        case i: Int => Map("num" -> i % 10)
+      }, "Honey")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("p")
+      .aggregation(Seq.empty, Seq("percentileDisc(x.num, 0.5) AS p"))
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("p").withRows(singleRow(4))
+  }
+
+  test("should handle percentileDisc with nulls") {
+    given {
+      nodePropertyGraph(sizeHint, {
+        case i: Int if i % 2 == 0 => Map("num" -> i % 10)
+      }, "Honey")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("p")
+      .aggregation(Seq.empty, Seq("percentileDisc(x.num, 0.5) AS p"))
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("p").withRows(singleRow(4))
+  }
 }
