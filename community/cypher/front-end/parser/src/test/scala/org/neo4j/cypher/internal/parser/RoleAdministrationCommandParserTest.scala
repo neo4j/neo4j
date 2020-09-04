@@ -17,11 +17,10 @@
 package org.neo4j.cypher.internal.parser
 
 import org.neo4j.cypher.internal.ast
-import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
-import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.util.InputPosition
 
 class RoleAdministrationCommandParserTest extends AdministrationCommandParserTestBase {
+  private val roleString = "role"
 
   //  Showing roles
 
@@ -34,37 +33,35 @@ class RoleAdministrationCommandParserTest extends AdministrationCommandParserTes
   }
 
   test("CATALOG SHOW ALL ROLES YIELD role") {
-    yields(ast.ShowRoles(withUsers = false, showAll = true, Some(Left(ast.Yield(ast.ReturnItems(includeExisting = false, List(UnaliasedReturnItem(varFor("role"), "role")_))_, None, None, None, None)_)), None))
+    yields(ast.ShowRoles(withUsers = false, showAll = true, Some(Left(yieldClause(returnItems(variableReturnItem(roleString))))), None))
   }
 
   test("CATALOG SHOW ALL ROLES WHERE role='PUBLIC'") {
-    yields(ast.ShowRoles(withUsers = false, showAll = true, Some(Right(ast.Where(Equals(varFor("role"), literalString("PUBLIC"))_)_)), None))
+    yields(ast.ShowRoles(withUsers = false, showAll = true, Some(Right(where(equals(varFor(roleString), literalString("PUBLIC"))))), None))
   }
 
   test("SHOW ALL ROLES YIELD role RETURN role") {
     yields(ast.ShowRoles(withUsers = false, showAll = true,
-      Some(Left(ast.Yield(ast.ReturnItems(includeExisting = false, List(UnaliasedReturnItem(varFor("role"), "role")_))_, None, None, None, None)_)),
-      Some(ast.Return(ast.ReturnItems(includeExisting = false, List(UnaliasedReturnItem(varFor("role"), "role")_))_)_)))
+      Some(Left(yieldClause(returnItems(variableReturnItem(roleString))))),
+      Some(returnClause(returnItems(variableReturnItem(roleString))))
+    ))
   }
 
   test("SHOW POPULATED ROLES YIELD role WHERE role='PUBLIC' RETURN role") {
     yields(ast.ShowRoles(withUsers = false, showAll = false,
-      Some(Left(ast.Yield(ast.ReturnItems(includeExisting = false, List(UnaliasedReturnItem(varFor("role"), "role")_))_, None, None, None,
-        Some(ast.Where(Equals(varFor("role"), literalString("PUBLIC"))_)_))_)),
-      Some(ast.Return(ast.ReturnItems(includeExisting = false, List(UnaliasedReturnItem(varFor("role"), "role")_))_)_)))
+      Some(Left(yieldClause(returnItems(variableReturnItem(roleString)), where = Some(where(equals(varFor(roleString), literalString("PUBLIC"))))))),
+      Some(returnClause(returnItems(variableReturnItem(roleString))))
+    ))
   }
 
   test("SHOW POPULATED ROLES YIELD * RETURN *") {
-    yields(ast.ShowRoles(withUsers = false, showAll = false,
-      Some(Left(ast.Yield(ast.ReturnItems(true,List()) _,None,None,None,None)_)),Some(ast.Return(false,ast.ReturnItems(true,List()) _,None,None,None,Set()) _)))
+    yields(ast.ShowRoles(withUsers = false, showAll = false, Some(Left(yieldClause(returnAllItems))), Some(returnClause(returnAllItems))))
   }
 
   test("SHOW ROLES WITH USERS YIELD * LIMIT 10 WHERE foo='bar' RETURN some,columns LIMIT 10") {
     yields(ast.ShowRoles(withUsers = true, showAll = true,
-      Some(Left(ast.Yield(ast.ReturnItems(true,List()) _,None,None,Some(ast.Limit(literalInt(10)) _),
-        Some(ast.Where(Equals(varFor("foo"), literalString("bar"))_)_))_)),
-      Some(ast.Return(false,ast.ReturnItems(false,List(UnaliasedReturnItem(varFor("some"), "some")_, UnaliasedReturnItem(varFor("columns"), "columns")_)) _,None,None,
-        Some(ast.Limit(literalInt(10)) _),Set())_)
+      Some(Left(yieldClause(returnAllItems, limit = Some(limit(10)), where = Some(where(equals(varFor("foo"), literalString("bar"))))))),
+      Some(returnClause(returnItems(variableReturnItem("some"), variableReturnItem("columns")), limit = Some(limit(10))))
     ))
   }
 
@@ -358,7 +355,7 @@ class RoleAdministrationCommandParserTest extends AdministrationCommandParserTes
 
       // ROLES TO USER only have GRANT and REVOKE and not DENY
 
-      test( s"DENY $roleKeyword foo TO abc") {
+      test(s"DENY $roleKeyword foo TO abc") {
         failsToParse
       }
   }

@@ -104,8 +104,9 @@ import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.cypher.internal.util.test_helpers.CypherTestSupport
 
 trait AstConstructionTestSupport extends CypherTestSupport {
-  protected val pos = DummyPosition(0)
+  protected val pos: InputPosition = DummyPosition(0)
 
+  //noinspection LanguageFeature
   implicit def withPos[T](expr: InputPosition => T): T = expr(pos)
 
   def varFor(name: String): Variable = Variable(name)(pos)
@@ -326,7 +327,7 @@ trait AstConstructionTestSupport extends CypherTestSupport {
   def nodePat(name: String, labels: String*): NodePattern =
     NodePattern(Some(Variable(name)(pos)), labels.map(LabelName(_)(pos)), None)(pos)
 
-  def patternExpression(nodeVar1: Variable, nodeVar2: Variable) =
+  def patternExpression(nodeVar1: Variable, nodeVar2: Variable): PatternExpression =
     PatternExpression(RelationshipsPattern(RelationshipChain(
       NodePattern(Some(nodeVar1), Seq.empty, None)(pos),
       RelationshipPattern(None, Seq.empty, None, None, BOTH)(pos),
@@ -358,19 +359,19 @@ trait AstConstructionTestSupport extends CypherTestSupport {
     Merge(Pattern(Seq(EveryPath(pattern)))(pos), Seq.empty)(pos)
 
   def match_(pattern: PatternElement, where: Option[Where] = None): Match =
-    Match(false, Pattern(Seq(EveryPath(pattern)))(pos), Seq(), where)(pos)
+    Match(optional = false, Pattern(Seq(EveryPath(pattern)))(pos), Seq(), where)(pos)
 
   def with_(items: ReturnItem*): With =
-    With(ReturnItems(false, items)(pos))(pos)
+    With(ReturnItems(includeExisting = false, items)(pos))(pos)
 
   def return_(items: ReturnItem*): Return =
-    Return(ReturnItems(false, items)(pos))(pos)
+    Return(ReturnItems(includeExisting = false, items)(pos))(pos)
 
   def return_(ob: OrderBy, items: ReturnItem*): Return =
-    Return(false, ReturnItems(false, items)(pos), Some(ob), None, None)(pos)
+    Return(distinct = false, ReturnItems(includeExisting = false, items)(pos), Some(ob), None, None)(pos)
 
   def returnAll: Return =
-    Return(ReturnItems(true, Seq.empty)(pos))(pos)
+    Return(ReturnItems(includeExisting = true, Seq.empty)(pos))(pos)
 
   def orderBy(items: SortItem*): OrderBy =
     OrderBy(items)(pos)
