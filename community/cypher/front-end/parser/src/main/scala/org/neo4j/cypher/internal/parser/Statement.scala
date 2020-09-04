@@ -227,7 +227,7 @@ trait Statement extends Parser
     group(ShowAllRoles ~~ ShowCommandClauses) ~~>> (ast.ShowRoles(withUsers = false, _, _, _))
   }
 
-  private def ShowAllRoles: Rule1[Boolean] = {
+  private def ShowAllRoles: Rule1[Boolean] = rule("return true for SHOW ALL ROLES, false for SHOW POPULATED ROLES") {
     keyword("SHOW POPULATED ROLES") ~~~> (_ => false) |
     group(keyword("SHOW") ~~ optional(keyword("ALL")) ~~ keyword("ROLES")) ~~~> (_ => true)
   }
