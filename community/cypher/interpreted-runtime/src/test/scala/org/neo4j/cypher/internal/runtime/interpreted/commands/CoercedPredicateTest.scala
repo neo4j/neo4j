@@ -36,7 +36,7 @@ class CoercedPredicateTest extends CypherFunSuite {
   val ctx: CypherRow = null
   val state: QueryState = QueryStateHelper.empty
 
-  test("should_coerce_non_empty_collection_to_true") {
+  test("should coerce non empty collection to true") {
     // Given
     val collection = ListLiteral(literal(1))
 
@@ -47,7 +47,7 @@ class CoercedPredicateTest extends CypherFunSuite {
     result should equal(true)
   }
 
-  test("should_coerce_empty_collection_to_false") {
+  test("should coerce empty collection to false") {
     // Given
     val collection = ListLiteral()
 
@@ -58,7 +58,7 @@ class CoercedPredicateTest extends CypherFunSuite {
     result should equal(false)
   }
 
-  test("should_pass_through_false") {
+  test("should pass through false") {
     // Given
     val inner = Not(True())
 
@@ -69,7 +69,7 @@ class CoercedPredicateTest extends CypherFunSuite {
     result should equal(false)
   }
 
-  test("should_pass_through_true") {
+  test("should pass through true") {
     // Given
     val inner = True()
 
@@ -80,7 +80,7 @@ class CoercedPredicateTest extends CypherFunSuite {
     result should equal(true)
   }
 
-  test("should_treat_null_as_false") {
+  test("should treat null as false") {
     // Given
     val inner = Literal(NO_VALUE)
 

@@ -32,7 +32,7 @@ case class CoerceToPredicate(inner: Expression) extends Expression with Semantic
   override def semanticCheck(ctx: SemanticContext): SemanticCheck = SemanticCheckResult.success
 
   override def asCanonicalStringVal: String = {
-    s"CoerceToPredicate($inner)"
+    s"CoerceToPredicate(${inner.asCanonicalStringVal})"
   }
 
  override def position: InputPosition = InputPosition.NONE

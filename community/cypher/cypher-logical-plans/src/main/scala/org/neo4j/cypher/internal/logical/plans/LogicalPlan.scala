@@ -36,6 +36,7 @@ import org.neo4j.cypher.internal.util.attribution.Identifiable
 import org.neo4j.cypher.internal.util.attribution.SameId
 import org.neo4j.exceptions.InternalException
 
+import scala.collection.mutable
 import scala.collection.mutable.ArrayStack
 import scala.util.hashing.MurmurHash3
 
@@ -150,7 +151,7 @@ abstract class LogicalPlan(idGen: IdGen)
       case _ => System.lineSeparator() + "  " * level + in
     }
 
-    val childrenHeap = new ArrayStack[(String, Int, Option[LogicalPlan])]
+    val childrenHeap = new mutable.ArrayStack[(String, Int, Option[LogicalPlan])]
     childrenHeap.push(("", 0, Some(this)))
     val sb = new StringBuilder()
 
