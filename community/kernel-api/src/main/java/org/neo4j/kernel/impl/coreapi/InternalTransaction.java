@@ -59,5 +59,7 @@ public interface InternalTransaction extends Transaction, TransactionalEntityFac
 
     UUID getDatabaseId();
 
+    String getDatabaseName();
+
     <E extends Entity> E validateSameDB( E entity );
 }

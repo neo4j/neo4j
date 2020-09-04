@@ -493,6 +493,19 @@ public class TransactionImpl extends EntityValidationTransactionImpl
     }
 
     @Override
+    public String getDatabaseName()
+    {
+        if ( this.transaction != null )
+        {
+            return this.transaction.getDatabaseName();
+        }
+        else
+        {
+            return null;
+        }
+    }
+
+    @Override
     public void close()
     {
         safeTerminalOperation( KernelTransaction::close );

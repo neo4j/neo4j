@@ -813,5 +813,11 @@ class QueryExecutionLocksIT
         {
             return null;
         }
+
+        @Override
+        public String getDatabaseName()
+        {
+            return null;
+        }
     }
 }

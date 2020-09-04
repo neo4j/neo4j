@@ -1135,6 +1135,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         txState().indexDoDrop( index );
     }
 
+    @Override
     public String getDatabaseName()
     {
         return namedDatabaseId.name();
