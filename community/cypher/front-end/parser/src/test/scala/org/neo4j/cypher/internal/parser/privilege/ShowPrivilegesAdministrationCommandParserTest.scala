@@ -18,7 +18,6 @@ package org.neo4j.cypher.internal.parser.privilege
 
 import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
-import org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.parser.AdministrationCommandParserTestBase
 
 class ShowPrivilegesAdministrationCommandParserTest extends AdministrationCommandParserTestBase {
@@ -52,7 +51,7 @@ class ShowPrivilegesAdministrationCommandParserTest extends AdministrationComman
 
     test(s"SHOW $privType PRIVILEGES WHERE access = 'GRANTED' AND action = 'match'") {
       val accessPredicate = equals(varFor(accessString), grantedString)
-      val matchPredicate = equals(varFor("action"), literalString("match"))
+      val matchPredicate = equals(varFor(actionString), literalString("match"))
       yields(ast.ShowPrivileges(privilege, Some(Right(ast.Where(and(accessPredicate, matchPredicate)) _)), None))
     }
 
@@ -64,14 +63,14 @@ class ShowPrivilegesAdministrationCommandParserTest extends AdministrationComman
 
     test(s"SHOW $privType PRIVILEGES YIELD access ORDER BY access WHERE access ='none'") {
       val orderBy = ast.OrderBy(List(ast.AscSortItem(varFor(accessString)) _)) _
-      val where = ast.Where(equals(varFor(accessString), literalString("none"))) _
+      val where = ast.Where(equals(varFor(accessString), noneString)) _
       val columns = ast.Yield(ast.ReturnItems(includeExisting = false, List(UnaliasedReturnItem(varFor(accessString), accessString) _)) _, Some(orderBy), None, None, Some(where)) _
       yields(ast.ShowPrivileges(privilege, Some(Left(columns)), None))
     }
 
     test(s"SHOW $privType PRIVILEGES YIELD access ORDER BY access SKIP 1 LIMIT 10 WHERE access ='none'") {
       val orderBy = ast.OrderBy(List(ast.AscSortItem(varFor(accessString)) _)) _
-      val where = ast.Where(equals(varFor(accessString), literalString("none"))) _
+      val where = ast.Where(equals(varFor(accessString), noneString)) _
       val columns = ast.Yield(ast.ReturnItems(includeExisting = false, List(UnaliasedReturnItem(varFor(accessString), accessString) _)) _, Some(orderBy),
         Some(ast.Skip(literalInt(1)) _), Some(ast.Limit(literalInt(10)) _), Some(where)) _
       yields(ast.ShowPrivileges(privilege, Some(Left(columns)), None))
@@ -86,8 +85,8 @@ class ShowPrivilegesAdministrationCommandParserTest extends AdministrationComman
     test(s"SHOW $privType PRIVILEGES YIELD access, action RETURN access, count(action) ORDER BY access") {
       val orderBy = ast.OrderBy(List(ast.AscSortItem(varFor(accessString)) _)) _
       val accessColumn = UnaliasedReturnItem(varFor(accessString), accessString) _
-      val actionColumn: UnaliasedReturnItem = UnaliasedReturnItem(varFor("action"), "action") _
-      val countFunction = astFunctionInvocation("count", varFor("action"))
+      val actionColumn: UnaliasedReturnItem = UnaliasedReturnItem(varFor(actionString), actionString) _
+      val countFunction = count(varFor(actionString))
       val countColumn = UnaliasedReturnItem(countFunction, "count(action)") _
       val yieldColumns = ast.Yield(ast.ReturnItems(includeExisting = false, List(accessColumn, actionColumn)) _, None, None, None, None) _
       val returns = ast.Return(distinct = false, ast.ReturnItems(includeExisting = false, List(accessColumn, countColumn)) _, Some(orderBy), None, None) _
@@ -96,7 +95,7 @@ class ShowPrivilegesAdministrationCommandParserTest extends AdministrationComman
 
     test(s"SHOW $privType PRIVILEGES YIELD access, action SKIP 1 RETURN access, action") {
       val accessColumn = UnaliasedReturnItem(varFor(accessString), accessString) _
-      val actionColumn: UnaliasedReturnItem = UnaliasedReturnItem(varFor("action"), "action") _
+      val actionColumn: UnaliasedReturnItem = UnaliasedReturnItem(varFor(actionString), actionString) _
       val returnItems: ast.ReturnItems =  ast.ReturnItems(includeExisting = false, List(accessColumn, actionColumn)) _
       yields(ast.ShowPrivileges(privilege,
         Some(Left(ast.Yield(returnItems, None, Some(ast.Skip(literalInt(1)) _), None, None) _ )),
@@ -105,8 +104,8 @@ class ShowPrivilegesAdministrationCommandParserTest extends AdministrationComman
 
     test(s"SHOW $privType PRIVILEGES YIELD access, action WHERE access = 'none' RETURN action") {
       val accessColumn = UnaliasedReturnItem(varFor(accessString), accessString) _
-      val actionColumn: UnaliasedReturnItem = UnaliasedReturnItem(varFor("action"), "action") _
-      val where = ast.Where(equals(varFor(accessString), literalString("none"))) _
+      val actionColumn: UnaliasedReturnItem = UnaliasedReturnItem(varFor(actionString), actionString) _
+      val where = ast.Where(equals(varFor(accessString), noneString)) _
       yields(ast.ShowPrivileges(privilege,
         Some(Left(ast.Yield(ast.ReturnItems(includeExisting = false, List(accessColumn, actionColumn)) _, None, None, None, Some(where)) _ )),
         Some(ast.Return(distinct = false, ast.ReturnItems(includeExisting = false, List(actionColumn)) _, None, None, None) _ )))
@@ -210,8 +209,4 @@ class ShowPrivilegesAdministrationCommandParserTest extends AdministrationComman
   test("SHOW ROLE ro%le PRIVILEGES") {
     failsToParse
   }
-
-  private def astFunctionInvocation(functionName: String, parameters: expressions.Expression*): expressions.FunctionInvocation =
-    expressions.FunctionInvocation(expressions.FunctionName(functionName) _, distinct = false, parameters.toIndexedSeq) _
-
 }

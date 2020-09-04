@@ -54,7 +54,7 @@ class UserAdministrationCommandParserTest extends AdministrationCommandParserTes
 
   test("SHOW USERS WHERE user = 'GRANTED' AND action = 'match'") {
     val accessPredicate = equals(varUser, grantedString)
-    val matchPredicate = equals(varFor("action"), literalString("match"))
+    val matchPredicate = equals(varFor(actionString), literalString("match"))
     yields(ast.ShowUsers(Some(Right(ast.Where(and(accessPredicate, matchPredicate)) _)), None))
   }
 
@@ -66,14 +66,14 @@ class UserAdministrationCommandParserTest extends AdministrationCommandParserTes
 
   test("SHOW USERS YIELD user ORDER BY user WHERE user ='none'") {
     val orderBy = ast.OrderBy(List(ast.AscSortItem(varUser) _)) _
-    val where = ast.Where(equals(varUser, literalString("none"))) _
+    val where = ast.Where(equals(varUser, noneString)) _
     val columns = ast.Yield(ast.ReturnItems(includeExisting = false, List(UnaliasedReturnItem(varUser, "user") _)) _, Some(orderBy), None, None, Some(where)) _
     yields(ast.ShowUsers(Some(Left(columns)) , None))
   }
 
   test("SHOW USERS YIELD user ORDER BY user SKIP 1 LIMIT 10 WHERE user ='none'") {
     val orderBy = ast.OrderBy(List(ast.AscSortItem(varUser) _)) _
-    val where = ast.Where(equals(varUser, literalString("none"))) _
+    val where = ast.Where(equals(varUser, noneString)) _
     val columns = ast.Yield(ast.ReturnItems(includeExisting = false, List(UnaliasedReturnItem(varUser, "user") _)) _, Some(orderBy),
       Some(ast.Skip(literalInt(1)) _), Some(ast.Limit(literalInt(10)) _), Some(where)) _
     yields(ast.ShowUsers(Some(Left(columns)), None))

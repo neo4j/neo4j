@@ -49,7 +49,9 @@ class AdministrationCommandParserTestBase
   extends ParserAstTest[ast.Statement] with Statement with AstConstructionTestSupport {
   val propSeq = Seq("prop")
   val accessString = "access"
+  val actionString = "action"
   val grantedString: StringLiteral = literalString("GRANTED")
+  val noneString: StringLiteral = literalString("none")
   val literalEmpty: Either[String, Parameter] = literal("")
   val literalUser: Either[String, Parameter] = literal("user")
   val literalUser1: Either[String, Parameter] = literal("user1")

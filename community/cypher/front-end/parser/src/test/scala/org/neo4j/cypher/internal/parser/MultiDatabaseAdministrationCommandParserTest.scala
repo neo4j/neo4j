@@ -49,7 +49,7 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationCommand
 
     test(s"SHOW $dbType WHERE access = 'GRANTED' AND action = 'match'") {
       val accessPredicate = equals(varFor(accessString), grantedString)
-      val matchPredicate = equals(varFor("action"), literalString("match"))
+      val matchPredicate = equals(varFor(actionString), literalString("match"))
       yields(privilege(Some(Right(ast.Where(and(accessPredicate, matchPredicate)) _)), None))
     }
 
@@ -61,14 +61,14 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationCommand
 
     test(s"SHOW $dbType YIELD access ORDER BY access WHERE access ='none'") {
       val orderBy = ast.OrderBy(List(ast.AscSortItem(varFor(accessString)) _)) _
-      val where = ast.Where(equals(varFor(accessString), literalString("none"))) _
+      val where = ast.Where(equals(varFor(accessString), noneString)) _
       val columns = ast.Yield(ast.ReturnItems(includeExisting = false, List(UnaliasedReturnItem(varFor(accessString), accessString) _)) _, Some(orderBy), None, None, Some(where)) _
       yields(privilege(Some(Left(columns)), None))
     }
 
     test(s"SHOW $dbType YIELD access ORDER BY access SKIP 1 LIMIT 10 WHERE access ='none'") {
       val orderBy = ast.OrderBy(List(ast.AscSortItem(varFor(accessString)) _)) _
-      val where = ast.Where(equals(varFor(accessString), literalString("none"))) _
+      val where = ast.Where(equals(varFor(accessString), noneString)) _
       val columns = ast.Yield(ast.ReturnItems(includeExisting = false, List(UnaliasedReturnItem(varFor(accessString), accessString) _)) _, Some(orderBy),
         Some(ast.Skip(literalInt(1)) _), Some(ast.Limit(literalInt(10)) _), Some(where)) _
       yields(privilege(Some(Left(columns)), None))
@@ -90,7 +90,7 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationCommand
     test(s"SHOW $dbType WHERE access = 'GRANTED' RETURN action") {
       yields(privilege(
         Some(Right(ast.Where(equals(varFor(accessString), grantedString)) _)),
-        Some(ast.Return(ast.ReturnItems(includeExisting = false, List(UnaliasedReturnItem(varFor("action"), "action") _))_ )_)
+        Some(ast.Return(ast.ReturnItems(includeExisting = false, List(UnaliasedReturnItem(varFor(actionString), actionString) _))_ )_)
       ))
     }
 
