@@ -30,7 +30,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
  */
 public class FileSystemLifecycleAdapter extends LifecycleAdapter
 {
-    private FileSystemAbstraction fileSystemAbstraction;
+    private final FileSystemAbstraction fileSystemAbstraction;
 
     public FileSystemLifecycleAdapter( FileSystemAbstraction fileSystemAbstraction )
     {

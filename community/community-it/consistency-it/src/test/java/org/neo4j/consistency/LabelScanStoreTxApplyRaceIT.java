@@ -29,6 +29,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.Label;
@@ -47,6 +48,7 @@ import org.neo4j.test.TestLabels;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.SuppressOutputExtension;
+import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.Integer.max;
 import static java.util.UUID.randomUUID;
@@ -77,6 +79,8 @@ class LabelScanStoreTxApplyRaceIT
     private GraphDatabaseAPI db;
     @Inject
     private DatabaseManagementService managementService;
+    @Inject
+    private TestDirectory testDirectory;
 
     /**
      * The test case is basically loads of concurrent CREATE/DELETE NODE or sometimes just CREATE, keeping the created node in an array
@@ -101,9 +105,8 @@ class LabelScanStoreTxApplyRaceIT
         DatabaseLayout dbLayout = db.databaseLayout();
         managementService.shutdown();
 
-        assertTrue( new ConsistencyCheckService().runFullConsistencyCheck( dbLayout, defaults(), NONE,
-                new Log4jLogProvider( System.out ), false,
-                new ConsistencyFlags( true, true, true, true, true, false ) ).isSuccessful() );
+        assertTrue( new ConsistencyCheckService().runFullConsistencyCheck( dbLayout, defaults( GraphDatabaseSettings.neo4j_home, testDirectory.homePath() ),
+                NONE, new Log4jLogProvider( System.out ), false, new ConsistencyFlags( true, true, true, true, true, false ) ).isSuccessful() );
     }
 
     private Runnable creator( AtomicReferenceArray<Node> nodeHeads, int guy )

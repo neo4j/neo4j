@@ -28,6 +28,7 @@ import java.nio.file.Path;
 import java.util.function.Function;
 import javax.servlet.http.HttpServletRequest;
 
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.logging.Level;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogTimeZone;
@@ -43,9 +44,9 @@ public class RotatingRequestLog extends AbstractLifeCycle implements RequestLog,
     private final Log log;
     private final Neo4jLoggerContext loggerContext;
 
-    public RotatingRequestLog( LogTimeZone logTimeZone, String logFile, long rotationSize, int rotationKeepNumber )
+    public RotatingRequestLog( FileSystemAbstraction fs, LogTimeZone logTimeZone, String logFile, long rotationSize, int rotationKeepNumber )
     {
-        loggerContext = LogConfig.createBuilder( Path.of( logFile ), Level.INFO )
+        loggerContext = LogConfig.createBuilder( fs, Path.of( logFile ), Level.INFO )
                 .withRotation( rotationSize, rotationKeepNumber )
                 .withTimezone( logTimeZone )
                 .build();

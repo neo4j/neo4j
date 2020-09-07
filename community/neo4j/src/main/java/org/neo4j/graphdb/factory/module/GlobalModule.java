@@ -34,7 +34,6 @@ import org.neo4j.graphdb.facade.DatabaseManagementServiceFactory;
 import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.internal.collector.RecentQueryBuffer;
 import org.neo4j.internal.diagnostics.DiagnosticsManager;
-import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemLifecycleAdapter;
@@ -84,7 +83,6 @@ import org.neo4j.memory.GlobalMemoryGroupTracker;
 import org.neo4j.memory.MemoryGroup;
 import org.neo4j.memory.MemoryPools;
 import org.neo4j.monitoring.Monitors;
-import org.neo4j.scheduler.DeferredExecutor;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StorageEngineFactory;
@@ -162,14 +160,14 @@ public class GlobalModule
 
         this.globalConfig = globalDependencies.satisfyDependency( globalConfig );
 
+        fileSystem = tryResolveOrCreate( FileSystemAbstraction.class, this::createFileSystemAbstraction );
+        globalDependencies.satisfyDependency( fileSystem );
+        globalLife.add( new FileSystemLifecycleAdapter( fileSystem ) );
+
         // If no logging was passed in from the outside then create logging and register
         // with this life
         logService = globalDependencies.satisfyDependency( createLogService( externalDependencies.userLogProvider() ) );
         globalConfig.setLogger( logService.getInternalLog( Config.class ) );
-
-        fileSystem = tryResolveOrCreate( FileSystemAbstraction.class, this::createFileSystemAbstraction );
-        globalDependencies.satisfyDependency( fileSystem );
-        globalLife.add( new FileSystemLifecycleAdapter( fileSystem ) );
 
         // Component monitoring
         globalMonitors = externalDependencies.monitors() == null ? new Monitors() : externalDependencies.monitors();
@@ -177,7 +175,6 @@ public class GlobalModule
 
         JobScheduler createdOrResolvedScheduler = tryResolveOrCreate( JobScheduler.class, this::createJobScheduler );
         jobScheduler = globalLife.add( globalDependencies.satisfyDependency( createdOrResolvedScheduler ) );
-        startDeferredExecutors( jobScheduler, externalDependencies.deferredExecutors() );
 
         fileLockerService = createFileLockerService();
         Locker storeLocker = fileLockerService.createStoreLocker( fileSystem, neo4jLayout );
@@ -281,16 +278,6 @@ public class GlobalModule
         }
     }
 
-    private static void startDeferredExecutors( JobScheduler jobScheduler, Iterable<Pair<DeferredExecutor,Group>> deferredExecutors )
-    {
-        for ( Pair<DeferredExecutor,Group> executorGroupPair : deferredExecutors )
-        {
-            DeferredExecutor executor = executorGroupPair.first();
-            Group group = executorGroupPair.other();
-            executor.satisfyWith( jobScheduler.monitoredJobExecutor( group ) );
-        }
-    }
-
     protected FileLockerService createFileLockerService()
     {
         return new GlobalLockerService();
@@ -336,8 +323,9 @@ public class GlobalModule
     protected LogService createLogService( LogProvider userLogProvider )
     {
         // Will get diagnostics as header in each newly created log file (diagnostics in the first file is printed during start up).
-        Neo4jLoggerContext loggerContext = LogConfig.createBuilder( globalConfig.get( store_internal_log_path), globalConfig.get( store_internal_log_level) )
-                .withFormat( globalConfig.get( log_format) )
+        Neo4jLoggerContext loggerContext =
+                LogConfig.createBuilder( fileSystem, globalConfig.get( store_internal_log_path ), globalConfig.get( store_internal_log_level ) )
+                         .withFormat( globalConfig.get( log_format ) )
                 .withTimezone( globalConfig.get( db_timezone ) )
                 .withHeaderLogger( log -> dbmsDiagnosticsManager.dumpAll(log), DiagnosticsManager.class.getCanonicalName() )
                 .withRotation( globalConfig.get( store_internal_log_rotation_threshold ), globalConfig.get( store_internal_log_max_archives ) )

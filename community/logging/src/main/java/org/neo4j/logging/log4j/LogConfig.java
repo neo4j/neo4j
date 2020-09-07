@@ -32,13 +32,19 @@ import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.logging.log4j.core.config.DefaultConfiguration;
 import org.apache.logging.log4j.core.config.LoggerConfig;
 
+import java.io.IOException;
 import java.io.OutputStream;
+import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.function.Consumer;
 
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.logging.FormattedLogFormat;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogTimeZone;
+
+import static org.neo4j.util.Preconditions.checkArgument;
 
 public final class LogConfig
 {
@@ -63,13 +69,14 @@ public final class LogConfig
 
     public static void reconfigureLogging( Neo4jLoggerContext ctx, Builder builder )
     {
+        checkArgument( !ctx.haveExternalResources(), "Can not reconfigure logging that is using output stream" );
         LoggerContext log4jContext = ctx.getLoggerContext();
         configureLogging( log4jContext, builder );
     }
 
-    public static Builder createBuilder( Path logPath, org.neo4j.logging.Level level )
+    public static Builder createBuilder( FileSystemAbstraction fs, Path logPath, org.neo4j.logging.Level level )
     {
-        return new Builder( logPath, level );
+        return new Builder( fs, logPath, level );
     }
 
     public static Builder createBuilder( OutputStream outputStream, org.neo4j.logging.Level level )
@@ -121,6 +128,8 @@ public final class LogConfig
 
     private static Appender getAppender( Builder builder, Layout<String> layout )
     {
+        OutputStream outputStream = builder.outputStream;
+
         if ( builder.logToSystemOut )
         {
             return ConsoleAppender.newBuilder()
@@ -129,17 +138,14 @@ public final class LogConfig
                     .setTarget( ConsoleAppender.Target.SYSTEM_OUT )
                     .build();
         }
-        else if ( builder.logPath != null )
+        else if ( builder.fileSystemAbstraction instanceof DefaultFileSystemAbstraction )
         {
             // Uses RollingFile appender even if no rotation is requested (but with threshold that won't be reached) to be able to
             // reconfigure between with and without rotation.
             return createRollingFileAppender( builder, layout );
         }
-        else
-        {
-            return ((OutputStreamAppender.Builder<?>) OutputStreamAppender.newBuilder().setName( APPENDER_NAME ).setLayout( layout ))
-                    .setTarget( builder.outputStream ).build();
-        }
+        return ((OutputStreamAppender.Builder<?>) OutputStreamAppender.newBuilder().setName( APPENDER_NAME ).setLayout( layout ))
+                .setTarget( outputStream ).build();
     }
 
     private static Appender createRollingFileAppender( Builder builder, Layout<String> layout )
@@ -198,8 +204,8 @@ public final class LogConfig
     public static class Builder
     {
         private final Path logPath;
-        private final OutputStream outputStream;
         private final Level level;
+        private OutputStream outputStream;
         private long rotationThreshold;
         private int maxArchives;
         private FormattedLogFormat format = FormattedLogFormat.STANDARD_FORMAT;
@@ -209,9 +215,11 @@ public final class LogConfig
         private String headerClassName;
         private boolean logToSystemOut;
         private boolean createOnDemand;
+        private FileSystemAbstraction fileSystemAbstraction;
 
-        private Builder( Path logPath, org.neo4j.logging.Level level )
+        private Builder( FileSystemAbstraction fileSystemAbstraction, Path logPath, org.neo4j.logging.Level level )
         {
+            this.fileSystemAbstraction = fileSystemAbstraction;
             this.logPath = logPath;
             this.outputStream = null;
             this.level = convertNeo4jLevelToLevel( level );
@@ -239,7 +247,6 @@ public final class LogConfig
 
         public Builder withFormat( FormattedLogFormat format )
         {
-
             this.format = format;
             return this;
         }
@@ -271,9 +278,40 @@ public final class LogConfig
 
         public Neo4jLoggerContext build()
         {
-            LoggerContext context = new LoggerContext( "loggercontext" );
-            configureLogging( context, this );
-            return new Neo4jLoggerContext( context );
+            try
+            {
+                LoggerContext context = new LoggerContext( "loggercontext" );
+
+                // We only need to have a rotating file supplier for the real file system
+                if ( fileSystemAbstraction instanceof DefaultFileSystemAbstraction )
+                {
+                    if ( outputStream != null )
+                    {
+                        throw new IllegalStateException( "When using filesystem abstraction you cannot provide a stream since we cant rotate that" );
+                    }
+                    configureLogging( context, this );
+                    return new Neo4jLoggerContext( context, null );
+                }
+
+                // Everything else should be fine without rotation
+                if ( outputStream == null )
+                {
+                    // We are use a different file system than DefaultFileSystemAbstraction, we cannot use log4j file appenders here
+                    fileSystemAbstraction.mkdirs( logPath.getParent() );
+                    outputStream = fileSystemAbstraction.openAsOutputStream( logPath, true );
+                    configureLogging( context, this );
+                    return new Neo4jLoggerContext( context, outputStream );
+                }
+                else
+                {
+                    configureLogging( context, this );
+                    return new Neo4jLoggerContext( context, null );
+                }
+            }
+            catch ( IOException e )
+            {
+                throw new UncheckedIOException( e );
+            }
         }
     }
 }

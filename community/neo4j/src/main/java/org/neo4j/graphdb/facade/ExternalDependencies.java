@@ -25,12 +25,9 @@ import org.neo4j.annotations.api.IgnoreApiCheck;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.graphdb.event.DatabaseEventListener;
 import org.neo4j.graphdb.security.URLAccessRule;
-import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.monitoring.Monitors;
-import org.neo4j.scheduler.DeferredExecutor;
-import org.neo4j.scheduler.Group;
 
 @IgnoreApiCheck
 public interface ExternalDependencies
@@ -48,11 +45,6 @@ public interface ExternalDependencies
     Iterable<ExtensionFactory<?>> extensions();
 
     Map<String,URLAccessRule> urlAccessRules();
-
-    /**
-     * Collection of command executors to start running once the db is started
-     */
-    Iterable<Pair<DeferredExecutor,Group>> deferredExecutors();
 
     /**
      * Configured default database event listeners

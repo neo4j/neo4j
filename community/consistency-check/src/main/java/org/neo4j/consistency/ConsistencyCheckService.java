@@ -20,7 +20,6 @@
 package org.neo4j.consistency;
 
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.nio.file.Path;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -40,7 +39,6 @@ import org.neo4j.consistency.statistics.VerboseStatistics;
 import org.neo4j.consistency.store.DirectStoreAccess;
 import org.neo4j.counts.CountsAccessor;
 import org.neo4j.counts.CountsStore;
-import org.neo4j.function.Suppliers;
 import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.counts.CountsBuilder;
@@ -93,7 +91,6 @@ import static org.neo4j.consistency.internal.SchemaIndexExtensionLoader.instanti
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.helpers.Strings.joinAsLines;
 import static org.neo4j.internal.index.label.FullStoreChangeStream.EMPTY;
-import static org.neo4j.io.fs.FileSystemUtils.createOrOpenAsOutputStream;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.factory.DbmsInfo.TOOL;
 import static org.neo4j.kernel.recovery.Recovery.isRecoveryRequired;
@@ -223,7 +220,7 @@ public class ConsistencyCheckService
         final Path reportFile = chooseReportPath( reportDir );
 
         Log4jLogProvider reportLogProvider = new Log4jLogProvider(
-                LogConfig.createBuilder( reportFile, Level.INFO ).createOnDemand().withCategory( false ).build() );
+                LogConfig.createBuilder( fileSystem, reportFile, Level.INFO ).createOnDemand().withCategory( false ).build() );
         Log reportLog = reportLogProvider.getLog( getClass() );
 
         // Bootstrap kernel extensions

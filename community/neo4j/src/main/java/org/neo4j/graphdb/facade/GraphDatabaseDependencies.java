@@ -28,13 +28,10 @@ import org.neo4j.common.DependencyResolver;
 import org.neo4j.graphdb.event.DatabaseEventListener;
 import org.neo4j.graphdb.security.URLAccessRule;
 import org.neo4j.internal.helpers.collection.Iterators;
-import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.impl.security.URLAccessRules;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.monitoring.Monitors;
-import org.neo4j.scheduler.DeferredExecutor;
-import org.neo4j.scheduler.Group;
 import org.neo4j.service.Services;
 
 import static org.neo4j.internal.helpers.collection.Iterables.asList;
@@ -45,7 +42,7 @@ public class GraphDatabaseDependencies implements ExternalDependencies
     public static GraphDatabaseDependencies newDependencies( ExternalDependencies deps )
     {
         return new GraphDatabaseDependencies( deps.monitors(), deps.userLogProvider(), deps.dependencies(), deps.extensions(),
-                deps.urlAccessRules(), deps.deferredExecutors(), deps.databaseEventListeners() );
+                deps.urlAccessRules(), deps.databaseEventListeners() );
     }
 
     public static GraphDatabaseDependencies newDependencies()
@@ -59,7 +56,7 @@ public class GraphDatabaseDependencies implements ExternalDependencies
         urlAccessRules.put( "file", URLAccessRules.fileAccess() );
 
         return new GraphDatabaseDependencies( null, null, null, extensions,
-                urlAccessRules, empty(), empty() );
+                urlAccessRules, empty() );
     }
 
     private Monitors monitors;
@@ -68,7 +65,6 @@ public class GraphDatabaseDependencies implements ExternalDependencies
     private List<ExtensionFactory<?>> extensions;
     private List<DatabaseEventListener> databaseEventListeners;
     private final Map<String,URLAccessRule> urlAccessRules;
-    private final List<Pair<DeferredExecutor, Group>> deferredExecutors;
 
     private GraphDatabaseDependencies(
             Monitors monitors,
@@ -76,7 +72,6 @@ public class GraphDatabaseDependencies implements ExternalDependencies
             DependencyResolver dependencies,
             Iterable<ExtensionFactory<?>> extensions,
             Map<String,URLAccessRule> urlAccessRules,
-            Iterable<Pair<DeferredExecutor, Group>> deferredExecutors,
             Iterable<DatabaseEventListener> eventListeners
             )
     {
@@ -85,7 +80,6 @@ public class GraphDatabaseDependencies implements ExternalDependencies
         this.dependencies = dependencies;
         this.extensions = asList( extensions );
         this.urlAccessRules = urlAccessRules;
-        this.deferredExecutors = asList( deferredExecutors );
         this.databaseEventListeners = asList( eventListeners );
     }
 
@@ -111,12 +105,6 @@ public class GraphDatabaseDependencies implements ExternalDependencies
     public GraphDatabaseDependencies databaseEventListeners( Iterable<DatabaseEventListener> eventListeners )
     {
         this.databaseEventListeners = asList( eventListeners );
-        return this;
-    }
-
-    public GraphDatabaseDependencies withDeferredExecutor( DeferredExecutor executor, Group group )
-    {
-        this.deferredExecutors.add( Pair.of( executor, group ) );
         return this;
     }
 
@@ -155,12 +143,6 @@ public class GraphDatabaseDependencies implements ExternalDependencies
     public Map<String,URLAccessRule> urlAccessRules()
     {
         return urlAccessRules;
-    }
-
-    @Override
-    public Iterable<Pair<DeferredExecutor,Group>> deferredExecutors()
-    {
-        return deferredExecutors;
     }
 
     @Override

@@ -129,10 +129,6 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
                       : new TestDatabaseManagementServiceFactory(
                               getDbmsInfo( config ), getEditionFactory( config ), impermanent, fileSystem, clock, internalLogProvider );
 
-        if ( impermanent )
-        {
-            config.set( GraphDatabaseSettings.log_queries, GraphDatabaseSettings.LogQueryLevel.OFF );
-        }
         return factory.build( augmentConfig( config ), GraphDatabaseDependencies.newDependencies( dependencies ) );
     }
 

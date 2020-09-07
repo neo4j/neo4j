@@ -110,7 +110,7 @@ class LogConfigTest
         Path targetFile1 = dir.homePath().resolve( "debug.log.1" );
         Path targetFile2 = dir.homePath().resolve( "debug.log.2" );
 
-        ctx = LogConfig.createBuilder( targetFile, Level.INFO )
+        ctx = LogConfig.createBuilder( fs, targetFile, Level.INFO )
                 .withRotation( 10, 2 )
                 .build();
 
@@ -136,7 +136,7 @@ class LogConfigTest
         Path targetFile2 = dir.homePath().resolve( "debug.log.2" );
         Path targetFile3 = dir.homePath().resolve( "debug.log.3" );
 
-        ctx = LogConfig.createBuilder( targetFile, Level.INFO )
+        ctx = LogConfig.createBuilder( fs, targetFile, Level.INFO )
                 .withRotation( 10, 2 )
                 .build();
 
@@ -164,7 +164,7 @@ class LogConfigTest
         Path targetFile = dir.homePath().resolve("debug.log" );
         Path targetFile1 = dir.homePath().resolve("debug.log.1" );
 
-        ctx = LogConfig.createBuilder( targetFile, Level.INFO )
+        ctx = LogConfig.createBuilder( fs, targetFile, Level.INFO )
                 .withRotation( 30, 2 )
                 .withHeaderLogger( log ->
                         {
@@ -198,7 +198,7 @@ class LogConfigTest
     {
         Path targetFile = dir.homePath().resolve( "debug.log" );
 
-        ctx = LogConfig.createBuilder( targetFile, Level.INFO )
+        ctx = LogConfig.createBuilder( fs, targetFile, Level.INFO )
                 .withRotation( 10, 2 )
                 .createOnDemand()
                 .build();
@@ -231,7 +231,7 @@ class LogConfigTest
         // The sent in filename should be ignored if logToSystemOut is used.
         Path targetFile = dir.homePath().resolve( "debug.log" );
 
-        ctx = LogConfig.createBuilder( targetFile, Level.INFO )
+        ctx = LogConfig.createBuilder( fs, targetFile, Level.INFO )
                 .logToSystemOut()
                 .build();
 
@@ -250,7 +250,7 @@ class LogConfigTest
         Path targetFile2 = dir.homePath().resolve( "debug.log.2" );
         Path targetFile3 = dir.homePath().resolve( "debug.log.3" );
 
-        ctx = LogConfig.createBuilder( targetFile, Level.INFO )
+        ctx = LogConfig.createBuilder( fs, targetFile, Level.INFO )
                 .withRotation( 100, 2 )
                 .build();
 
@@ -262,7 +262,7 @@ class LogConfigTest
         assertThat( fs.fileExists( targetFile ) ).isEqualTo( true );
         assertThat( fs.fileExists( targetFile1 ) ).isEqualTo( false );
 
-        LogConfig.reconfigureLogging( ctx, LogConfig.createBuilder( targetFile, Level.INFO ).withRotation( 10, 3 ) );
+        LogConfig.reconfigureLogging( ctx, LogConfig.createBuilder( fs, targetFile, Level.INFO ).withRotation( 10, 3 ) );
 
         // Should now rotate on each message with the new limit.
         logger.warn( "test4" );

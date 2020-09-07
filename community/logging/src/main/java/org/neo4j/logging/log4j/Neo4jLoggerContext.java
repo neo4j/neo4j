@@ -25,16 +25,20 @@ import org.apache.logging.log4j.core.LoggerContext;
 
 import java.io.Closeable;
 
+import org.neo4j.io.IOUtils;
+
 /**
  * Facade for Log4j LoggerContext.
  */
 public class Neo4jLoggerContext implements Closeable
 {
     private final LoggerContext ctx;
+    private final Closeable additionalClosable;
 
-    public Neo4jLoggerContext( LoggerContext ctx )
+    public Neo4jLoggerContext( LoggerContext ctx, Closeable additionalClosable )
     {
         this.ctx = ctx;
+        this.additionalClosable = additionalClosable;
     }
 
     /**
@@ -55,9 +59,18 @@ public class Neo4jLoggerContext implements Closeable
         return ctx;
     }
 
+    boolean haveExternalResources()
+    {
+        return additionalClosable != null;
+    }
+
     @Override
     public void close()
     {
         LogManager.shutdown( ctx );
+        if ( additionalClosable != null )
+        {
+            IOUtils.closeAllSilently( additionalClosable );
+        }
     }
 }

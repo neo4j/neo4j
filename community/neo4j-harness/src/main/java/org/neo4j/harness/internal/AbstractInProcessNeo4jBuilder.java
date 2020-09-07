@@ -44,6 +44,7 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
 import org.neo4j.harness.Neo4jBuilder;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
@@ -156,7 +157,8 @@ public abstract class AbstractInProcessNeo4jBuilder implements Neo4jBuilder
             dbConfig = config.build();
         }
 
-        Neo4jLoggerContext loggerContext = LogConfig.createBuilder( userLogFile, Level.INFO ).withTimezone( dbConfig.get( db_timezone ) ).build();
+        Neo4jLoggerContext loggerContext =
+                LogConfig.createBuilder( new DefaultFileSystemAbstraction(), userLogFile, Level.INFO ).withTimezone( dbConfig.get( db_timezone ) ).build();
         var userLogProvider = new Log4jLogProvider( loggerContext );
         GraphDatabaseDependencies dependencies = GraphDatabaseDependencies.newDependencies().userLogProvider( userLogProvider );
         dependencies = dependencies.extensions( buildExtensionList( dependencies ) );

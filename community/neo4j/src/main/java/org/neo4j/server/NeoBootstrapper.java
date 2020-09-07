@@ -38,6 +38,7 @@ import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.IOUtils;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.os.OsBeanUtil;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.internal.Version;
@@ -200,12 +201,13 @@ public abstract class NeoBootstrapper implements Bootstrapper
     {
 
         LogConfig.Builder builder =
-                LogConfig.createBuilder( config.get( GraphDatabaseSettings.store_user_log_path ), config.get( GraphDatabaseSettings.store_internal_log_level ) )
-                        .withTimezone( config.get( GraphDatabaseSettings.db_timezone ) )
-                        .withFormat( config.get( GraphDatabaseInternalSettings.log_format ) )
-                        .withCategory( false )
-                        .withRotation( config.get( GraphDatabaseSettings.store_user_log_rotation_threshold ),
-                                config.get( GraphDatabaseSettings.store_user_log_max_archives ) );
+                LogConfig.createBuilder( new DefaultFileSystemAbstraction(), config.get( GraphDatabaseSettings.store_user_log_path ),
+                        config.get( GraphDatabaseSettings.store_internal_log_level ) )
+                         .withTimezone( config.get( GraphDatabaseSettings.db_timezone ) )
+                         .withFormat( config.get( GraphDatabaseInternalSettings.log_format ) )
+                         .withCategory( false )
+                         .withRotation( config.get( GraphDatabaseSettings.store_user_log_rotation_threshold ),
+                                 config.get( GraphDatabaseSettings.store_user_log_max_archives ) );
 
         if ( config.get( GraphDatabaseSettings.store_user_log_to_stdout ) )
         {

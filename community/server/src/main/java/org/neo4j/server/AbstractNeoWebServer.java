@@ -40,6 +40,7 @@ import org.neo4j.configuration.connectors.HttpsConnector;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.dbms.DatabaseStateService;
 import org.neo4j.dbms.api.DatabaseManagementService;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.availability.CompositeDatabaseAvailabilityGuard;
 import org.neo4j.kernel.impl.factory.DbmsInfo;
@@ -326,10 +327,11 @@ public abstract class AbstractNeoWebServer extends LifecycleAdapter implements N
         }
 
         requestLog = new RotatingRequestLog(
-            config.get( db_timezone ),
-            config.get( http_log_path ).toString(),
-            config.get( http_logging_rotation_size ),
-            config.get( http_logging_rotation_keep_number ) );
+                globalDependencies.resolveDependency( FileSystemAbstraction.class ),
+                config.get( db_timezone ),
+                config.get( http_log_path ).toString(),
+                config.get( http_logging_rotation_size ),
+                config.get( http_logging_rotation_keep_number ) );
         webServer.setRequestLog( requestLog );
     }
 

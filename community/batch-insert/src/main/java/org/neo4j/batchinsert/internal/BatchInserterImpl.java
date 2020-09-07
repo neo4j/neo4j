@@ -284,7 +284,7 @@ public class BatchInserterImpl implements BatchInserter
             pageCache = pageCacheFactory.getOrCreatePageCache();
             life.add( new PageCacheLifecycle( pageCache ) );
 
-            Neo4jLoggerContext ctx = LogConfig.createBuilder( config.get( store_internal_log_path ), Level.INFO ).build();
+            Neo4jLoggerContext ctx = LogConfig.createBuilder( fileSystem, config.get( store_internal_log_path ), Level.INFO ).build();
 
             logService = life.add( new SimpleLogService( ctx ) );
             msgLog = logService.getInternalLog( getClass() );
