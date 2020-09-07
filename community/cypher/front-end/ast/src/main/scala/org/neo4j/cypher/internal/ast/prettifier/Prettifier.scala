@@ -276,14 +276,15 @@ case class Prettifier(
         val (y: String, r: String) = showClausesAsString(yields, returns)
         s"${x.name}$y$r"
 
-      case x @ CreateUser(userName, initialPassword, requirePasswordChange, suspended, ifExistsDo) =>
+      case x @ CreateUser(userName, isEncryptedPassword, initialPassword, requirePasswordChange, suspended, ifExistsDo) =>
         val userNameString = Prettifier.escapeName(userName)
         val ifNotExists = ifExistsDo match {
           case IfExistsDoNothing | IfExistsInvalidSyntax => " IF NOT EXISTS"
           case _                    => ""
         }
+        val setPasswordString = if(isEncryptedPassword) "SET ENCRYPTED PASSWORD" else "SET PASSWORD"
         val password = expr.escapePassword(initialPassword)
-        val passwordString = s"SET PASSWORD $password CHANGE ${if (!requirePasswordChange) "NOT " else ""}REQUIRED"
+        val passwordString = s"$setPasswordString $password CHANGE ${if (!requirePasswordChange) "NOT " else ""}REQUIRED"
         val statusString = if (suspended.isDefined) s" SET STATUS ${if (suspended.get) "SUSPENDED" else "ACTIVE"}"
         else ""
         s"${x.name} $userNameString$ifNotExists $passwordString$statusString"
@@ -292,14 +293,15 @@ case class Prettifier(
         if (ifExists) s"${x.name} ${Prettifier.escapeName(userName)} IF EXISTS"
         else s"${x.name} ${Prettifier.escapeName(userName)}"
 
-      case x @ AlterUser(userName, initialPassword, requirePasswordChange, suspended) =>
+      case x @ AlterUser(userName, isEncryptedPassword, initialPassword, requirePasswordChange, suspended) =>
         val userNameString = Prettifier.escapeName(userName)
         val passwordString = initialPassword.map(" " + expr.escapePassword(_)).getOrElse("")
         val passwordModeString = if (requirePasswordChange.isDefined)
           s" CHANGE ${if (!requirePasswordChange.get) "NOT " else ""}REQUIRED"
         else
           ""
-        val passwordPrefix = if (passwordString.nonEmpty || passwordModeString.nonEmpty) " SET PASSWORD" else ""
+        val setPasswordString = if(isEncryptedPassword.getOrElse(false)) "SET ENCRYPTED PASSWORD" else "SET PASSWORD"
+        val passwordPrefix = if (passwordString.nonEmpty || passwordModeString.nonEmpty) s" ${setPasswordString}" else ""
         val statusString = if (suspended.isDefined) s" SET STATUS ${if (suspended.get) "SUSPENDED" else "ACTIVE"}" else ""
         s"${x.name} $userNameString$passwordPrefix$passwordString$passwordModeString$statusString"
 

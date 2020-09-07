@@ -132,15 +132,15 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
       // SHOW USERS
       case su @ ShowUsers(_, returns) => Some(plans.ShowUsers(plans.AssertDbmsAdmin(ShowUserAction), su.defaultColumnNames, su.yields, su.where, returns))
 
-      // CREATE [OR REPLACE] USER foo [IF NOT EXISTS] WITH PASSWORD password
-      case c@CreateUser(userName, initialPassword, requirePasswordChange, suspended, ifExistsDo) =>
+      // CREATE [OR REPLACE] USER foo [IF NOT EXISTS] WITH [PLAINTEXT | ENCRYPTED] PASSWORD password
+      case c@CreateUser(userName, isEncryptedPassword, initialPassword, requirePasswordChange, suspended, ifExistsDo) =>
         val source = ifExistsDo match {
           case IfExistsReplace => plans.DropUser(plans.AssertNotCurrentUser(plans.AssertDbmsAdmin(Seq(DropUserAction, CreateUserAction)), userName, "replace", "Deleting yourself is not allowed"), userName)
           case IfExistsDoNothing => plans.DoNothingIfExists(plans.AssertDbmsAdmin(CreateUserAction), "User", userName)
           case _ => plans.AssertDbmsAdmin(CreateUserAction)
         }
         Some(plans.LogSystemCommand(
-          plans.CreateUser(source, userName, initialPassword, requirePasswordChange, suspended),
+          plans.CreateUser(source, userName, isEncryptedPassword, initialPassword, requirePasswordChange, suspended),
           prettifier.asString(c)))
 
       // DROP USER foo [IF EXISTS]
@@ -150,7 +150,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         Some(plans.LogSystemCommand(plans.DropUser(source, userName), prettifier.asString(c)))
 
       // ALTER USER foo
-      case c@AlterUser(userName, initialPassword, requirePasswordChange, suspended) =>
+      case c@AlterUser(userName, isEncryptedPassword, initialPassword, requirePasswordChange, suspended) =>
         val isSetPassword = initialPassword.isDefined || requirePasswordChange.isDefined
         val admin = (isSetPassword, suspended) match {
           case (true, Some(_)) => plans.AssertDbmsAdmin(Seq(SetPasswordsAction, SetUserStatusAction))
@@ -162,7 +162,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
           if(suspended.isDefined) plans.AssertNotCurrentUser(admin, userName, "alter", "Changing your own activation status is not allowed")
           else admin
         Some(plans.LogSystemCommand(
-          plans.AlterUser(assertionSubPlan, userName, initialPassword, requirePasswordChange, suspended),
+          plans.AlterUser(assertionSubPlan, userName, isEncryptedPassword, initialPassword, requirePasswordChange, suspended),
           prettifier.asString(c)))
 
       // ALTER CURRENT USER SET PASSWORD FROM currentPassword TO newPassword

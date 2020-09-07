@@ -107,127 +107,151 @@ class UserAdministrationCommandParserTest extends AdministrationCommandParserTes
   //  Creating user
 
   test("CATALOG CREATE USER foo SET PASSWORD 'password'") {
-    yields(ast.CreateUser(literalFoo, password, requirePasswordChange = true, suspended = None, ast.IfExistsThrowError))
+    yields(ast.CreateUser(literalFoo, isEncryptedPassword = false, password, requirePasswordChange = true, suspended = None, ast.IfExistsThrowError))
   }
 
   test("CATALOG CREATE USER $foo SET PASSWORD 'password'") {
-    yields(ast.CreateUser(paramFoo, password, requirePasswordChange = true, suspended = None, ast.IfExistsThrowError))
+    yields(ast.CreateUser(paramFoo, isEncryptedPassword = false, password, requirePasswordChange = true, suspended = None, ast.IfExistsThrowError))
   }
 
-  test("CATALOG CREATE USER $bar SET PASSWORD $pw") {
-    yields(ast.CreateUser(param("bar"), pwParam("pw"), requirePasswordChange = true, suspended = None, ast.IfExistsThrowError))
+  test("CATALOG CREATE USER foo SET PLAINTEXT PASSWORD 'password'") {
+    yields(ast.CreateUser(literalFoo, isEncryptedPassword = false, password, requirePasswordChange = true, suspended = None, ast.IfExistsThrowError))
+  }
+
+  test("CATALOG CREATE USER $foo SET PLAINTEXT PASSWORD 'password'") {
+    yields(ast.CreateUser(paramFoo, isEncryptedPassword = false, password, requirePasswordChange = true, suspended = None, ast.IfExistsThrowError))
+  }
+
+  test("CATALOG CREATE USER $bar SET PASSWORD $password") {
+    yields(ast.CreateUser(param("bar"), isEncryptedPassword = false, paramPassword, requirePasswordChange = true, suspended = None, ast.IfExistsThrowError))
   }
 
   test("CREATE USER `foo` SET PASSwORD 'password'") {
-    yields(ast.CreateUser(literalFoo, password, requirePasswordChange = true, suspended = None, ast.IfExistsThrowError))
+    yields(ast.CreateUser(literalFoo, isEncryptedPassword = false, password, requirePasswordChange = true, suspended = None, ast.IfExistsThrowError))
   }
 
   test("CREATE USER `!#\"~` SeT PASSWORD 'password'") {
-    yields(ast.CreateUser(literal("!#\"~"), password, requirePasswordChange = true, suspended = None, ast.IfExistsThrowError))
+    yields(ast.CreateUser(literal("!#\"~"), isEncryptedPassword = false, password, requirePasswordChange = true, suspended = None, ast.IfExistsThrowError))
   }
 
   test("CREATE USER foo SeT PASSWORD 'pasS5Wor%d'") {
-    yields(ast.CreateUser(literalFoo, pw("pasS5Wor%d"), requirePasswordChange = true, suspended = None, ast.IfExistsThrowError))
+    yields(ast.CreateUser(literalFoo, isEncryptedPassword = false, pw("pasS5Wor%d"), requirePasswordChange = true, suspended = None, ast.IfExistsThrowError))
   }
 
   test("CREATE USER foo SET PASSwORD ''") {
-    yields(ast.CreateUser(literalFoo, passwordEmpty, requirePasswordChange = true, suspended = None, ast.IfExistsThrowError))
+    yields(ast.CreateUser(literalFoo, isEncryptedPassword = false, passwordEmpty, requirePasswordChange = true, suspended = None, ast.IfExistsThrowError))
   }
 
   test("CREATE uSER foo SET PASSWORD $password") {
-    yields(ast.CreateUser(literalFoo, paramPassword, requirePasswordChange = true, suspended = None, ast.IfExistsThrowError))
+    yields(ast.CreateUser(literalFoo, isEncryptedPassword = false, paramPassword, requirePasswordChange = true, suspended = None, ast.IfExistsThrowError))
   }
 
   test("CREaTE USER foo SET PASSWORD 'password' CHANGE REQUIRED") {
-    yields(ast.CreateUser(literalFoo, password, requirePasswordChange = true, suspended = None, ast.IfExistsThrowError))
+    yields(ast.CreateUser(literalFoo, isEncryptedPassword = false, password, requirePasswordChange = true, suspended = None, ast.IfExistsThrowError))
   }
 
   test("CATALOG CREATE USER foo SET PASSWORD $password CHANGE REQUIRED") {
-    yields(ast.CreateUser(literalFoo, paramPassword, requirePasswordChange = true, suspended = None, ast.IfExistsThrowError))
+    yields(ast.CreateUser(literalFoo, isEncryptedPassword = false, paramPassword, requirePasswordChange = true, suspended = None, ast.IfExistsThrowError))
   }
 
   test("CREATE USER foo SET PASSWORD 'password' SET PASSWORD CHANGE required") {
-    yields(ast.CreateUser(literalFoo, password, requirePasswordChange = true, suspended = None, ast.IfExistsThrowError))
+    yields(ast.CreateUser(literalFoo, isEncryptedPassword = false, password, requirePasswordChange = true, suspended = None, ast.IfExistsThrowError))
   }
 
   test("CREATE USER foo SET PASSWORD 'password' CHAngE NOT REQUIRED") {
-    yields(ast.CreateUser(literalFoo, password, requirePasswordChange = false, suspended = None, ast.IfExistsThrowError))
+    yields(ast.CreateUser(literalFoo, isEncryptedPassword = false, password, requirePasswordChange = false, suspended = None, ast.IfExistsThrowError))
   }
 
   test("CREATE USER foo SET PASSWORD 'password' SET PASSWORD CHANGE NOT REQUIRED") {
-    yields(ast.CreateUser(literalFoo, password, requirePasswordChange = false, suspended = None, ast.IfExistsThrowError))
+    yields(ast.CreateUser(literalFoo, isEncryptedPassword = false, password, requirePasswordChange = false, suspended = None, ast.IfExistsThrowError))
   }
 
   test("CREATE USER foo SET PASSWORD $password SET  PASSWORD CHANGE NOT REQUIRED") {
-    yields(ast.CreateUser(literalFoo, paramPassword, requirePasswordChange = false, suspended = None, ast.IfExistsThrowError))
+    yields(ast.CreateUser(literalFoo, isEncryptedPassword = false, paramPassword, requirePasswordChange = false, suspended = None, ast.IfExistsThrowError))
   }
 
   test("CATALOG CREATE USER foo SET PASSWORD 'password' SET STATUS SUSPENDed") {
-    yields(ast.CreateUser(literalFoo, password, requirePasswordChange = true, suspended = Some(true), ast.IfExistsThrowError))
+    yields(ast.CreateUser(literalFoo, isEncryptedPassword = false, password, requirePasswordChange = true, suspended = Some(true), ast.IfExistsThrowError))
   }
 
   test("CREATE USER foo SET PASSWORD 'password' SET STATUS ACtiVE") {
-    yields(ast.CreateUser(literalFoo, password, requirePasswordChange = true, suspended = Some(false), ast.IfExistsThrowError))
+    yields(ast.CreateUser(literalFoo, isEncryptedPassword = false, password, requirePasswordChange = true, suspended = Some(false), ast.IfExistsThrowError))
   }
 
   test("CREATE USER foo SET PASSWORD 'password' SET PASSWORD CHANGE NOT REQUIRED SET   STATuS SUSPENDED") {
-    yields(ast.CreateUser(literalFoo, password, requirePasswordChange = false, suspended = Some(true), ast.IfExistsThrowError))
+    yields(ast.CreateUser(literalFoo, isEncryptedPassword = false, password, requirePasswordChange = false, suspended = Some(true), ast.IfExistsThrowError))
   }
 
   test("CREATE USER foo SET PASSWORD $password CHANGE REQUIRED SET STATUS SUSPENDED") {
-    yields(ast.CreateUser(literalFoo, paramPassword, requirePasswordChange = true, suspended = Some(true), ast.IfExistsThrowError))
+    yields(ast.CreateUser(literalFoo, isEncryptedPassword = false, paramPassword, requirePasswordChange = true, suspended = Some(true), ast.IfExistsThrowError))
   }
 
   test("CREATE USER `` SET PASSwORD 'password'") {
-    yields(ast.CreateUser(literalEmpty, password, requirePasswordChange = true, suspended = None, ast.IfExistsThrowError))
+    yields(ast.CreateUser(literalEmpty, isEncryptedPassword = false, password, requirePasswordChange = true, suspended = None, ast.IfExistsThrowError))
   }
 
   test("CREATE USER `f:oo` SET PASSWORD 'password'") {
-    yields(ast.CreateUser(literalFColonOo, password, requirePasswordChange = true, suspended = None, ast.IfExistsThrowError))
+    yields(ast.CreateUser(literalFColonOo, isEncryptedPassword = false, password, requirePasswordChange = true, suspended = None, ast.IfExistsThrowError))
   }
 
   test("CATALOG CREATE USER foo IF NOT EXISTS SET PASSWORD 'password'") {
-    yields(ast.CreateUser(literalFoo, password, requirePasswordChange = true, suspended = None, ast.IfExistsDoNothing))
+    yields(ast.CreateUser(literalFoo, isEncryptedPassword = false, password, requirePasswordChange = true, suspended = None, ast.IfExistsDoNothing))
   }
 
   test("CREATE uSER foo IF NOT EXISTS SET PASSWORD $password") {
-    yields(ast.CreateUser(literalFoo, paramPassword, requirePasswordChange = true, suspended = None, ast.IfExistsDoNothing))
+    yields(ast.CreateUser(literalFoo, isEncryptedPassword = false, paramPassword, requirePasswordChange = true, suspended = None, ast.IfExistsDoNothing))
   }
 
   test("CATALOG CREATE USER foo IF NOT EXISTS SET PASSWORD $password CHANGE REQUIRED") {
-    yields(ast.CreateUser(literalFoo, paramPassword, requirePasswordChange = true, suspended = None, ast.IfExistsDoNothing))
+    yields(ast.CreateUser(literalFoo, isEncryptedPassword = false, paramPassword, requirePasswordChange = true, suspended = None, ast.IfExistsDoNothing))
   }
 
   test("CREATE USER foo IF NOT EXISTS SET PASSWORD $password SET STATUS SUSPENDED") {
-    yields(ast.CreateUser(literalFoo, paramPassword, requirePasswordChange = true, suspended = Some(true), ast.IfExistsDoNothing))
+    yields(ast.CreateUser(literalFoo, isEncryptedPassword = false, paramPassword, requirePasswordChange = true, suspended = Some(true), ast.IfExistsDoNothing))
   }
 
   test("CREATE USER foo IF NOT EXISTS SET PASSWORD $password CHANGE REQUIRED SET STATUS SUSPENDED") {
-    yields(ast.CreateUser(literalFoo, paramPassword, requirePasswordChange = true, suspended = Some(true), ast.IfExistsDoNothing))
+    yields(ast.CreateUser(literalFoo, isEncryptedPassword = false, paramPassword, requirePasswordChange = true, suspended = Some(true), ast.IfExistsDoNothing))
   }
 
   test("CATALOG CREATE OR REPLACE USER foo SET PASSWORD 'password'") {
-    yields(ast.CreateUser(literalFoo, password, requirePasswordChange = true, suspended = None, ast.IfExistsReplace))
+    yields(ast.CreateUser(literalFoo, isEncryptedPassword = false, password, requirePasswordChange = true, suspended = None, ast.IfExistsReplace))
   }
 
   test("CREATE OR REPLACE uSER foo SET PASSWORD $password") {
-    yields(ast.CreateUser(literalFoo, paramPassword, requirePasswordChange = true, suspended = None, ast.IfExistsReplace))
+    yields(ast.CreateUser(literalFoo, isEncryptedPassword = false, paramPassword, requirePasswordChange = true, suspended = None, ast.IfExistsReplace))
   }
 
   test("CATALOG CREATE OR REPLACE USER foo SET PASSWORD $password CHANGE REQUIRED") {
-    yields(ast.CreateUser(literalFoo, paramPassword, requirePasswordChange = true, suspended = None, ast.IfExistsReplace))
+    yields(ast.CreateUser(literalFoo, isEncryptedPassword = false, paramPassword, requirePasswordChange = true, suspended = None, ast.IfExistsReplace))
   }
 
   test("CREATE OR REPLACE USER foo SET PASSWORD $password SET STATUS SUSPENDED") {
-    yields(ast.CreateUser(literalFoo, paramPassword, requirePasswordChange = true, suspended = Some(true), ast.IfExistsReplace))
+    yields(ast.CreateUser(literalFoo, isEncryptedPassword = false, paramPassword, requirePasswordChange = true, suspended = Some(true), ast.IfExistsReplace))
   }
 
   test("CREATE OR REPLACE USER foo SET PASSWORD $password CHANGE REQUIRED SET STATUS SUSPENDED") {
-    yields(ast.CreateUser(literalFoo, paramPassword, requirePasswordChange = true, suspended = Some(true), ast.IfExistsReplace))
+    yields(ast.CreateUser(literalFoo, isEncryptedPassword = false, paramPassword, requirePasswordChange = true, suspended = Some(true), ast.IfExistsReplace))
   }
 
   test("CREATE OR REPLACE USER foo IF NOT EXISTS SET PASSWORD 'password'") {
-    yields(ast.CreateUser(literalFoo, password, requirePasswordChange = true, suspended = None, ast.IfExistsInvalidSyntax))
+    yields(ast.CreateUser(literalFoo, isEncryptedPassword = false, password, requirePasswordChange = true, suspended = None, ast.IfExistsInvalidSyntax))
+  }
+
+  test("CREATE USER foo SET ENCRYPTED PASSWORD '1,04773b8510aea96ca2085cb81764b0a2,75f4201d047191c17c5e236311b7c4d77e36877503fe60b1ca6d4016160782ab'") {
+    yields(ast.CreateUser(literalFoo, isEncryptedPassword = true, pw("1,04773b8510aea96ca2085cb81764b0a2,75f4201d047191c17c5e236311b7c4d77e36877503fe60b1ca6d4016160782ab"), requirePasswordChange = true, suspended = None, ast.IfExistsThrowError))
+  }
+
+  test("CATALOG CREATE USER $foo SET encrYPTEd PASSWORD 'password'") {
+    yields(ast.CreateUser(paramFoo, isEncryptedPassword = true, password, requirePasswordChange = true, suspended = None, ast.IfExistsThrowError))
+  }
+
+  test("CATALOG CREATE USER $bar SET ENCRYPTED Password $password") {
+    yields(ast.CreateUser(param("bar"), isEncryptedPassword = true, paramPassword, requirePasswordChange = true, suspended = None, ast.IfExistsThrowError))
+  }
+
+  test("CREATE OR REPLACE USER foo SET encrypted password 'sha256,x1024,0x2460294fe,b3ddb287a'") {
+    yields(ast.CreateUser(literalFoo, isEncryptedPassword = true, pw("sha256,x1024,0x2460294fe,b3ddb287a"), requirePasswordChange = true, suspended = None, ast.IfExistsReplace))
   }
 
   test("CREATE command finds password literal at correct offset") {
@@ -270,6 +294,22 @@ class UserAdministrationCommandParserTest extends AdministrationCommandParserTes
   }
 
   test("CREATE USER foo SET PASSWORD") {
+    failsToParse
+  }
+
+  test("CREATE USER foo SET ENCRYPTED PASSWORD 123") {
+    failsToParse
+  }
+
+  test("CREATE USER foo SET ENCRYPTED PASSWORD") {
+    failsToParse
+  }
+
+  test("CREATE USER foo SET PLAINTEXT PASSWORD") {
+    failsToParse
+  }
+
+  test("CREATE USER foo SET PASSWORD 'password' SET ENCRYPTED PASSWORD") {
     failsToParse
   }
 
@@ -398,63 +438,79 @@ class UserAdministrationCommandParserTest extends AdministrationCommandParserTes
   //  Altering user
 
   test("CATALOG ALTER USER foo SET PASSWORD 'password'") {
-    yields(ast.AlterUser(literalFoo, Some(password), None, None))
+    yields(ast.AlterUser(literalFoo, isEncryptedPassword = Some(false), Some(password), None, None))
   }
 
   test("CATALOG ALTER USER $foo SET PASSWORD 'password'") {
-    yields(ast.AlterUser(paramFoo, Some(password), None, None))
+    yields(ast.AlterUser(paramFoo, isEncryptedPassword = Some(false), Some(password), None, None))
   }
 
   test("ALTER USER `` SET PASSWORD 'password'") {
-    yields(ast.AlterUser(literalEmpty, Some(password), None, None))
+    yields(ast.AlterUser(literalEmpty, isEncryptedPassword = Some(false), Some(password), None, None))
   }
 
   test("ALTER USER `f:oo` SET PASSWORD 'password'") {
-    yields(ast.AlterUser(literalFColonOo, Some(password), None, None))
+    yields(ast.AlterUser(literalFColonOo, isEncryptedPassword = Some(false), Some(password), None, None))
   }
 
   test("ALTER USER foo SET PASSWORD ''") {
-    yields(ast.AlterUser(literalFoo, Some(passwordEmpty), None, None))
+    yields(ast.AlterUser(literalFoo, isEncryptedPassword = Some(false), Some(passwordEmpty), None, None))
   }
 
   test("ALTER USER foo SET PASSWORD $password") {
-    yields(ast.AlterUser(literalFoo, Some(paramPassword), None, None))
+    yields(ast.AlterUser(literalFoo, isEncryptedPassword = Some(false), Some(paramPassword), None, None))
   }
 
   test("CATALOG ALTER USER foo SET PASSWORD CHANGE REQUIRED") {
-    yields(ast.AlterUser(literalFoo, None, requirePasswordChange = Some(true), None))
+    yields(ast.AlterUser(literalFoo, None, None, requirePasswordChange = Some(true), None))
   }
 
   test("CATALOG ALTER USER foo SET PASSWORD CHANGE NOT REQUIRED") {
-    yields(ast.AlterUser(literalFoo, None, requirePasswordChange = Some(false), None))
+    yields(ast.AlterUser(literalFoo, None, None, requirePasswordChange = Some(false), None))
   }
 
   test("ALTER USER foo SET STATUS SUSPENDED") {
-    yields(ast.AlterUser(literalFoo, None, None, suspended = Some(true)))
+    yields(ast.AlterUser(literalFoo, None, None, None, suspended = Some(true)))
   }
 
   test("ALTER USER foo SET STATUS ACTIVE") {
-    yields(ast.AlterUser(literalFoo, None, None, suspended = Some(false)))
+    yields(ast.AlterUser(literalFoo, None, None, None, suspended = Some(false)))
   }
 
   test("CATALOG ALTER USER foo SET PASSWORD 'password' CHANGE REQUIRED") {
-    yields(ast.AlterUser(literalFoo, Some(password), requirePasswordChange = Some(true), None))
+    yields(ast.AlterUser(literalFoo, isEncryptedPassword = Some(false), Some(password), requirePasswordChange = Some(true), None))
   }
 
   test("ALTER USER foo SET PASSWORD $password SET PASSWORD CHANGE NOT REQUIRED") {
-    yields(ast.AlterUser(literalFoo, Some(paramPassword), requirePasswordChange = Some(false), None))
+    yields(ast.AlterUser(literalFoo, isEncryptedPassword = Some(false), Some(paramPassword), requirePasswordChange = Some(false), None))
   }
 
   test("CATALOG ALTER USER foo SET PASSWORD 'password' SET STATUS ACTIVE") {
-    yields(ast.AlterUser(literalFoo, Some(password), None, suspended = Some(false)))
+    yields(ast.AlterUser(literalFoo, isEncryptedPassword = Some(false), Some(password), None, suspended = Some(false)))
   }
 
   test("CATALOG ALTER USER foo SET PASSWORD CHANGE NOT REQUIRED SET STATUS ACTIVE") {
-    yields(ast.AlterUser(literalFoo, None, requirePasswordChange = Some(false), suspended = Some(false)))
+    yields(ast.AlterUser(literalFoo, None, None, requirePasswordChange = Some(false), suspended = Some(false)))
   }
 
   test("ALTER USER foo SET PASSWORD $password SET PASSWORD CHANGE NOT REQUIRED SET STATUS SUSPENDED") {
-    yields(ast.AlterUser(literalFoo, Some(paramPassword), requirePasswordChange = Some(false), suspended = Some(true)))
+    yields(ast.AlterUser(literalFoo, isEncryptedPassword = Some(false), Some(paramPassword), requirePasswordChange = Some(false), suspended = Some(true)))
+  }
+
+  test("CATALOG ALTER USER foo SET ENCRYPTED Password $password") {
+    yields(ast.AlterUser(literalFoo, isEncryptedPassword = Some(true), Some(paramPassword), None, None))
+  }
+
+  test("CATALOG ALTER USER foo SET ENCRYPTED PASSWORD 'password'") {
+    yields(ast.AlterUser(literalFoo, isEncryptedPassword = Some(true), Some(password), None, None))
+  }
+
+  test("CATALOG ALTER USER $foo SET ENCRYPTED PASSWORD 'password'") {
+    yields(ast.AlterUser(paramFoo, isEncryptedPassword = Some(true), Some(password), None, None))
+  }
+
+  test("ALTER USER `` SET ENCRYPTED PASSWORD 'password'") {
+    yields(ast.AlterUser(literalEmpty, isEncryptedPassword = Some(true), Some(password), None, None))
   }
 
   test("ALTER user command finds password literal at correct offset") {
@@ -489,6 +545,22 @@ class UserAdministrationCommandParserTest extends AdministrationCommandParserTes
   }
 
   test("ALTER USER foo SET PASSWORD") {
+    failsToParse
+  }
+
+  test("ALTER USER foo SET ENCRYPTED PASSWORD 123") {
+    failsToParse
+  }
+
+  test("ALTER USER foo SET PLAINTEXT PASSWORD") {
+    failsToParse
+  }
+
+  test("ALTER USER foo SET ENCRYPTED PASSWORD") {
+    failsToParse
+  }
+
+  test("ALTER USER foo SET PASSWORD 'password' SET ENCRYPTED PASSWORD") {
     failsToParse
   }
 

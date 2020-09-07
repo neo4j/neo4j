@@ -1134,13 +1134,13 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     assertGood(attach(ShowUsers(privLhsLP, List(), None, None, None), 1.0),
       planDescription(id, "ShowUsers", SingleChild(privLhsPD), Seq(), Set.empty))
 
-    assertGood(attach(CreateUser(privLhsLP, util.Left("name"), varFor("password"), requirePasswordChange = false, suspended = None), 1.0),
+    assertGood(attach(CreateUser(privLhsLP, util.Left("name"), isEncryptedPassword = false, varFor("password"), requirePasswordChange = false, suspended = None), 1.0),
       planDescription(id, "CreateUser", SingleChild(privLhsPD), Seq(details("USER name")), Set.empty))
 
     assertGood(attach(DropUser(privLhsLP, util.Left("name")), 1.0),
       planDescription(id, "DropUser", SingleChild(privLhsPD), Seq(details("USER name")), Set.empty))
 
-    assertGood(attach(AlterUser(privLhsLP, util.Left("name"), None, requirePasswordChange = Some(true), suspended = Some(false)), 1.0),
+    assertGood(attach(AlterUser(privLhsLP, util.Left("name"), isEncryptedPassword = Some(false), None, requirePasswordChange = Some(true), suspended = Some(false)), 1.0),
       planDescription(id, "AlterUser", SingleChild(privLhsPD), Seq(details("USER name")), Set.empty))
 
     assertGood(attach(ShowRoles(privLhsLP, withUsers = false, showAll = true, List(), None, None, None), 1.0),

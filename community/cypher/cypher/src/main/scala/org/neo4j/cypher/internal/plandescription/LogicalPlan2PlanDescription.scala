@@ -701,13 +701,13 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
       case ShowUsers(_, _, yields, where, _) =>
         PlanDescriptionImpl(id, "ShowUsers", children, showCommandDetails(yields, where), variables)
 
-      case CreateUser(_, name, _, _, _) =>
+      case CreateUser(_, name, _, _, _, _) =>
         PlanDescriptionImpl(id, "CreateUser", children, Seq(Details(getUserInfo(name))), variables)
 
       case DropUser(_, name) =>
         PlanDescriptionImpl(id, "DropUser", children, Seq(Details(getUserInfo(name))), variables)
 
-      case AlterUser(_, name, _, _, _) =>
+      case AlterUser(_, name, _, _, _, _) =>
         PlanDescriptionImpl(id, "AlterUser", children, Seq(Details(getUserInfo(name))), variables)
 
       case ShowRoles(_, _, _, _, yields, where, _) =>

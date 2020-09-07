@@ -383,6 +383,33 @@ class PrettifierIT extends CypherFunSuite {
       "create user abc set password 'foo' change not required set status suspended" ->
         "CREATE USER abc SET PASSWORD '******' CHANGE NOT REQUIRED SET STATUS SUSPENDED",
 
+      "create user abc set encrypted password 'foo'" ->
+        "CREATE USER abc SET ENCRYPTED PASSWORD '******' CHANGE REQUIRED",
+
+      "create user abc set encrypted password $password" ->
+        "CREATE USER abc SET ENCRYPTED PASSWORD $password CHANGE REQUIRED",
+
+      "create user abc set plaintext password 'foo'" ->
+        "CREATE USER abc SET PASSWORD '******' CHANGE REQUIRED",
+
+      "create user abc set plaintext password $password" ->
+        "CREATE USER abc SET PASSWORD $password CHANGE REQUIRED",
+
+      "alter user abc set encrypted password 'foo'" ->
+        "ALTER USER abc SET ENCRYPTED PASSWORD '******'",
+
+      "alter user $abc set encrypted password 'foo'" ->
+        "ALTER USER $abc SET ENCRYPTED PASSWORD '******'",
+
+      "alter user abc set encrypted password $password" ->
+        "ALTER USER abc SET ENCRYPTED PASSWORD $password",
+
+      "alter user abc set plaintext password 'foo'" ->
+        "ALTER USER abc SET PASSWORD '******'",
+
+      "alter user abc set plaintext password $password" ->
+        "ALTER USER abc SET PASSWORD $password",
+
       "alter user abc set password 'foo'" ->
         "ALTER USER abc SET PASSWORD '******'",
 
