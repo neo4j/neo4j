@@ -33,6 +33,54 @@ class ShowPrivilegesAdministrationCommandParserTest extends AdministrationComman
     yields(ast.ShowPrivileges(ast.ShowAllPrivileges()(pos), None, None))
   }
 
+  test("SHOW USER user PRIVILEGES") {
+    yields(ast.ShowPrivileges(ast.ShowUsersPrivileges(List(literalUser))(pos), None, None))
+  }
+
+  test("SHOW USERS $user PRIVILEGES") {
+    yields(ast.ShowPrivileges(ast.ShowUsersPrivileges(List(paramUser))(pos), None, None))
+  }
+
+  test("SHOW USER `us%er` PRIVILEGES") {
+    yields(ast.ShowPrivileges(ast.ShowUsersPrivileges(List(literal("us%er")))(pos), None, None))
+  }
+
+  test("SHOW USER user, $user PRIVILEGES") {
+    yields(ast.ShowPrivileges(ast.ShowUsersPrivileges(List(literalUser, paramUser))(pos), None, None))
+  }
+
+  test("SHOW USERS user1, $user, user2 PRIVILEGES") {
+    yields(ast.ShowPrivileges(ast.ShowUsersPrivileges(List(literalUser1, paramUser, literal("user2")))(pos), None, None))
+  }
+
+  test("SHOW USER PRIVILEGES") {
+    yields(ast.ShowPrivileges(ast.ShowUserPrivileges(None)(pos), None, None))
+  }
+
+  test("SHOW USERS PRIVILEGES") {
+    yields(ast.ShowPrivileges(ast.ShowUserPrivileges(None)(pos), None, None))
+  }
+
+  test("SHOW ROLE role PRIVILEGES") {
+    yields(ast.ShowPrivileges(ast.ShowRolesPrivileges(List(literalRole))(pos), None, None))
+  }
+
+  test("SHOW ROLE $role PRIVILEGES") {
+    yields(ast.ShowPrivileges(ast.ShowRolesPrivileges(List(paramRole))(pos), None, None))
+  }
+
+  test("SHOW ROLES `ro%le` PRIVILEGES") {
+    yields(ast.ShowPrivileges(ast.ShowRolesPrivileges(List(literal("ro%le")))(pos), None, None))
+  }
+
+  test("SHOW ROLE role1, $roleParam, role2, role3 PRIVILEGES") {
+    yields(ast.ShowPrivileges(ast.ShowRolesPrivileges(List(literalRole1, param("roleParam"), literalRole2, literal("role3")))(pos), None, None))
+  }
+
+  test("SHOW ROLES role1, $roleParam1, role2, $roleParam2 PRIVILEGES") {
+    yields(ast.ShowPrivileges(ast.ShowRolesPrivileges(List(literalRole1, param("roleParam1"), literalRole2, param("roleParam2")))(pos), None, None))
+  }
+
   // yield / skip / limit / order by / where
 
   Seq(
@@ -113,62 +161,6 @@ class ShowPrivilegesAdministrationCommandParserTest extends AdministrationComman
     }
   }
 
-  test("SHOW USER user PRIVILEGES YIELD *, blah RETURN user") {
-    failsToParse
-  }
-
-  test("SHOW USER user PRIVILEGES YIELD # RETURN user") {
-    failsToParse
-  }
-
-  test("SHOW USER user PRIVILEGES") {
-    yields(ast.ShowPrivileges(ast.ShowUsersPrivileges(List(literalUser))(pos), None, None))
-  }
-
-  test("SHOW USERS $user PRIVILEGES") {
-    yields(ast.ShowPrivileges(ast.ShowUsersPrivileges(List(paramUser))(pos), None, None))
-  }
-
-  test("SHOW USER `us%er` PRIVILEGES") {
-    yields(ast.ShowPrivileges(ast.ShowUsersPrivileges(List(literal("us%er")))(pos), None, None))
-  }
-
-  test("SHOW USER user, $user PRIVILEGES") {
-    yields(ast.ShowPrivileges(ast.ShowUsersPrivileges(List(literalUser, paramUser))(pos), None, None))
-  }
-
-  test("SHOW USERS user1, $user, user2 PRIVILEGES") {
-    yields(ast.ShowPrivileges(ast.ShowUsersPrivileges(List(literalUser1, paramUser, literal("user2")))(pos), None, None))
-  }
-
-  test("SHOW USER PRIVILEGES") {
-    yields(ast.ShowPrivileges(ast.ShowUserPrivileges(None)(pos), None, None))
-  }
-
-  test("SHOW USERS PRIVILEGES") {
-    yields(ast.ShowPrivileges(ast.ShowUserPrivileges(None)(pos), None, None))
-  }
-
-  test("SHOW ROLE role PRIVILEGES") {
-    yields(ast.ShowPrivileges(ast.ShowRolesPrivileges(List(literalRole))(pos), None, None))
-  }
-
-  test("SHOW ROLE $role PRIVILEGES") {
-    yields(ast.ShowPrivileges(ast.ShowRolesPrivileges(List(paramRole))(pos), None, None))
-  }
-
-  test("SHOW ROLES `ro%le` PRIVILEGES") {
-    yields(ast.ShowPrivileges(ast.ShowRolesPrivileges(List(literal("ro%le")))(pos), None, None))
-  }
-
-  test("SHOW ROLE role1, $roleParam, role2, role3 PRIVILEGES") {
-    yields(ast.ShowPrivileges(ast.ShowRolesPrivileges(List(literalRole1, param("roleParam"), literalRole2, literal("role3")))(pos), None, None))
-  }
-
-  test("SHOW ROLES role1, $roleParam1, role2, $roleParam2 PRIVILEGES") {
-    yields(ast.ShowPrivileges(ast.ShowRolesPrivileges(List(literalRole1, param("roleParam1"), literalRole2, param("roleParam2")))(pos), None, None))
-  }
-
   test("SHOW PRIVILEGE") {
     failsToParse
   }
@@ -202,6 +194,14 @@ class ShowPrivilegesAdministrationCommandParserTest extends AdministrationComman
   }
 
   test("SHOW ROLE ro%le PRIVILEGES") {
+    failsToParse
+  }
+
+  test("SHOW USER user PRIVILEGES YIELD *, blah RETURN user") {
+    failsToParse
+  }
+
+  test("SHOW USER user PRIVILEGES YIELD # RETURN user") {
     failsToParse
   }
 }

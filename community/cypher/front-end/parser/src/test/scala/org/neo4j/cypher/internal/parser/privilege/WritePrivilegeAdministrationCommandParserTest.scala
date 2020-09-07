@@ -63,18 +63,6 @@ class WritePrivilegeAdministrationCommandParserTest extends AdministrationComman
         yields(func(ast.GraphPrivilege(WriteAction)(pos), List(ast.DefaultGraphScope()(_)), List(ast.ElementsAllQualifier() _), Seq(literalRole)))
       }
 
-      // Should not parse DEFAULT together with plural GRAPHS
-
-      test(s"$verb WRITE ON DEFAULT GRAPHS $preposition role") {
-        failsToParse
-      }
-
-      // Default graph and named graph should not parse
-
-      test(s"$verb WRITE ON DEFAULT GRAPH baz $preposition role") {
-        failsToParse
-      }
-
       // Multiple roles should be allowed
 
       test(s"$verb WRITE ON GRAPH foo $preposition role1, role2") {
@@ -152,6 +140,18 @@ class WritePrivilegeAdministrationCommandParserTest extends AdministrationComman
       }
 
       test(s"$verb WRITE GRAPH foo $preposition role") {
+        failsToParse
+      }
+
+      // DEFAULT together with plural GRAPHS
+
+      test(s"$verb WRITE ON DEFAULT GRAPHS $preposition role") {
+        failsToParse
+      }
+
+      // Default graph and named graph
+
+      test(s"$verb WRITE ON DEFAULT GRAPH baz $preposition role") {
         failsToParse
       }
 

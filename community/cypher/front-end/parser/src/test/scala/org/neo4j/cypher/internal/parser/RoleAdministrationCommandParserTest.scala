@@ -32,6 +32,22 @@ class RoleAdministrationCommandParserTest extends AdministrationCommandParserTes
     yields(ast.ShowRoles(withUsers = false, showAll = true, None, None))
   }
 
+  test("CATALOG SHOW POPULATED ROLES") {
+    yields(ast.ShowRoles(withUsers = false, showAll = false, None, None))
+  }
+
+  test("SHOW ROLES WITH USERS") {
+    yields(ast.ShowRoles(withUsers = true, showAll = true, None, None))
+  }
+
+  test("CATALOG SHOW ALL ROLES WITH USERS") {
+    yields(ast.ShowRoles(withUsers = true, showAll = true, None, None))
+  }
+
+  test("SHOW POPULATED ROLES WITH USERS") {
+    yields(ast.ShowRoles(withUsers = true, showAll = false, None, None))
+  }
+
   test("CATALOG SHOW ALL ROLES YIELD role") {
     yields(ast.ShowRoles(withUsers = false, showAll = true, Some(Left(yieldClause(returnItems(variableReturnItem(roleString))))), None))
   }
@@ -63,26 +79,6 @@ class RoleAdministrationCommandParserTest extends AdministrationCommandParserTes
       Some(Left(yieldClause(returnAllItems, limit = Some(limit(10)), where = Some(where(equals(varFor("foo"), literalString("bar"))))))),
       Some(returnClause(returnItems(variableReturnItem("some"), variableReturnItem("columns")), limit = Some(limit(10))))
     ))
-  }
-
-  test("SHOW POPULATED ROLES YIELD *,blah RETURN role") {
-    failsToParse
-  }
-
-  test("CATALOG SHOW POPULATED ROLES") {
-    yields(ast.ShowRoles(withUsers = false, showAll = false, None, None))
-  }
-
-  test("SHOW ROLES WITH USERS") {
-    yields(ast.ShowRoles(withUsers = true, showAll = true, None, None))
-  }
-
-  test("CATALOG SHOW ALL ROLES WITH USERS") {
-    yields(ast.ShowRoles(withUsers = true, showAll = true, None, None))
-  }
-
-  test("SHOW POPULATED ROLES WITH USERS") {
-    yields(ast.ShowRoles(withUsers = true, showAll = false, None, None))
   }
 
   test("CATALOG SHOW ROLE") {
@@ -138,6 +134,10 @@ class RoleAdministrationCommandParserTest extends AdministrationCommandParserTes
   }
 
   test("CATALOG SHOW ROLES WITH USER user") {
+    failsToParse
+  }
+
+  test("SHOW POPULATED ROLES YIELD *,blah RETURN role") {
     failsToParse
   }
 

@@ -43,10 +43,6 @@ class UserAdministrationCommandParserTest extends AdministrationCommandParserTes
     yields(ast.ShowUsers(None, None))
   }
 
-  test("CATALOG SHOW USER") {
-    failsToParse
-  }
-
   test("SHOW USERS WHERE user = 'GRANTED'") {
     yields(ast.ShowUsers(Some(Right(where(equals(varUser, grantedString)))), None))
   }
@@ -98,6 +94,10 @@ class UserAdministrationCommandParserTest extends AdministrationCommandParserTes
 
   test("SHOW USERS YIELD * RETURN *") {
     yields(ast.ShowUsers(Some(Left(yieldClause(returnAllItems))), Some(returnClause(returnAllItems))))
+  }
+
+  test("CATALOG SHOW USER") {
+    failsToParse
   }
 
   test("SHOW USERS YIELD *,blah RETURN user") {
@@ -230,6 +230,25 @@ class UserAdministrationCommandParserTest extends AdministrationCommandParserTes
     yields(ast.CreateUser(literalFoo, password, requirePasswordChange = true, suspended = None, ast.IfExistsInvalidSyntax))
   }
 
+  test("CREATE command finds password literal at correct offset") {
+    parsing("CREATE USER foo SET PASSWORD 'password'").shouldVerify { statement =>
+      val passwords = statement.findByAllClass[SensitiveStringLiteral].map(l => (l.value, l.position.offset))
+      passwords.foreach { case (pw, offset) =>
+        withClue("Expecting password = password, offset = 29") {
+          util.Arrays.equals(toUtf8Bytes("password"), pw) shouldBe true
+          offset shouldBe 29
+        }
+      }
+    }
+  }
+
+  test("CREATE command finds password parameter at correct offset") {
+    parsing("CREATE USER foo SET PASSWORD $param").shouldVerify { statement =>
+      val passwords = statement.findByAllClass[SensitiveParameter].map(p => (p.name, p.position.offset))
+      passwords should equal(Seq("param" -> 29))
+    }
+  }
+
   test("CREATE USER foo") {
     failsToParse
   }
@@ -332,25 +351,6 @@ class UserAdministrationCommandParserTest extends AdministrationCommandParserTes
 
   test("CREATE OR REPLACE USER foo SET PASSWORD CHANGE REQUIRED SET STATUS ACTIVE") {
     failsToParse
-  }
-
-  test("CREATE command finds password literal at correct offset") {
-    parsing("CREATE USER foo SET PASSWORD 'password'").shouldVerify { statement =>
-      val passwords = statement.findByAllClass[SensitiveStringLiteral].map(l => (l.value, l.position.offset))
-      passwords.foreach { case (pw, offset) =>
-        withClue("Expecting password = password, offset = 29") {
-          util.Arrays.equals(toUtf8Bytes("password"), pw) shouldBe true
-          offset shouldBe 29
-        }
-      }
-    }
-  }
-
-  test("CREATE command finds password parameter at correct offset") {
-    parsing("CREATE USER foo SET PASSWORD $param").shouldVerify { statement =>
-      val passwords = statement.findByAllClass[SensitiveParameter].map(p => (p.name, p.position.offset))
-      passwords should equal(Seq("param" -> 29))
-    }
   }
 
   //  Dropping user
@@ -457,6 +457,25 @@ class UserAdministrationCommandParserTest extends AdministrationCommandParserTes
     yields(ast.AlterUser(literalFoo, Some(paramPassword), requirePasswordChange = Some(false), suspended = Some(true)))
   }
 
+  test("ALTER user command finds password literal at correct offset") {
+    parsing("ALTER USER foo SET PASSWORD 'password'").shouldVerify { statement =>
+      val passwords = statement.findByAllClass[SensitiveStringLiteral].map(l => (l.value, l.position.offset))
+      passwords.foreach { case (pw, offset) =>
+        withClue("Expecting password = password, offset = 28") {
+          util.Arrays.equals(toUtf8Bytes("password"), pw) shouldBe true
+          offset shouldBe 28
+        }
+      }
+    }
+  }
+
+  test("ALTER user command finds password parameter at correct offset") {
+    parsing("ALTER USER foo SET PASSWORD $param").shouldVerify { statement =>
+      val passwords = statement.findByAllClass[SensitiveParameter].map(p => (p.name, p.position.offset))
+      passwords should equal(Seq("param" -> 28))
+    }
+  }
+
   test("ALTER USER foo") {
     failsToParse
   }
@@ -487,25 +506,6 @@ class UserAdministrationCommandParserTest extends AdministrationCommandParserTes
 
   test("CATALOG ALTER USER foo SET PASSWORD 'password' SET STATUS IMAGINARY") {
     failsToParse
-  }
-
-  test("ALTER user command finds password literal at correct offset") {
-    parsing("ALTER USER foo SET PASSWORD 'password'").shouldVerify { statement =>
-      val passwords = statement.findByAllClass[SensitiveStringLiteral].map(l => (l.value, l.position.offset))
-      passwords.foreach { case (pw, offset) =>
-        withClue("Expecting password = password, offset = 28") {
-          util.Arrays.equals(toUtf8Bytes("password"), pw) shouldBe true
-          offset shouldBe 28
-        }
-      }
-    }
-  }
-
-  test("ALTER user command finds password parameter at correct offset") {
-    parsing("ALTER USER foo SET PASSWORD $param").shouldVerify { statement =>
-      val passwords = statement.findByAllClass[SensitiveParameter].map(p => (p.name, p.position.offset))
-      passwords should equal(Seq("param" -> 28))
-    }
   }
 
   // Changing own password
@@ -546,6 +546,20 @@ class UserAdministrationCommandParserTest extends AdministrationCommandParserTes
     yields(ast.SetOwnPassword(paramPasswordNew, paramPasswordCurrent))
   }
 
+  test("ALTER CURRENT USER command finds password literal at correct offset") {
+    parsing("ALTER CURRENT USER SET PASSWORD FROM 'current' TO 'new'").shouldVerify { statement =>
+      val passwords = statement.findByAllClass[SensitiveStringLiteral].map(l => (new String(l.value, "utf-8"), l.position.offset))
+      passwords.toSet should equal(Set("current" -> 37, "new" -> 50))
+    }
+  }
+
+  test("ALTER CURRENT USER command finds password parameter at correct offset") {
+    parsing("ALTER CURRENT USER SET PASSWORD FROM $current TO $new").shouldVerify { statement =>
+      val passwords = statement.findByAllClass[SensitiveParameter].map(p => (p.name, p.position.offset))
+      passwords.toSet should equal(Set("current" -> 37, "new" -> 49))
+    }
+  }
+
   test("ALTER CURRENT USER SET PASSWORD FROM 'current' TO null") {
     failsToParse
   }
@@ -576,19 +590,5 @@ class UserAdministrationCommandParserTest extends AdministrationCommandParserTes
 
   test("ALTER CURRENT USER SET PASSWORD TO 'new'") {
     failsToParse
-  }
-
-  test("ALTER CURRENT USER command finds password literal at correct offset") {
-    parsing("ALTER CURRENT USER SET PASSWORD FROM 'current' TO 'new'").shouldVerify { statement =>
-      val passwords = statement.findByAllClass[SensitiveStringLiteral].map(l => (new String(l.value, "utf-8"), l.position.offset))
-      passwords.toSet should equal(Set("current" -> 37, "new" -> 50))
-    }
-  }
-
-  test("ALTER CURRENT USER command finds password parameter at correct offset") {
-    parsing("ALTER CURRENT USER SET PASSWORD FROM $current TO $new").shouldVerify { statement =>
-      val passwords = statement.findByAllClass[SensitiveParameter].map(p => (p.name, p.position.offset))
-      passwords.toSet should equal(Set("current" -> 37, "new" -> 49))
-    }
   }
 }
