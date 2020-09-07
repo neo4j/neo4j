@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal
 
+import org.neo4j.cypher.CypherConnectComponentsPlannerOption
 import org.neo4j.cypher.CypherExecutionMode
 import org.neo4j.cypher.CypherExpressionEngineOption
 import org.neo4j.cypher.CypherInterpretedPipesFallbackOption
@@ -89,6 +90,7 @@ case class QueryOptions(offset: InputPosition,
                         operatorEngine: CypherOperatorEngineOption,
                         interpretedPipesFallback: CypherInterpretedPipesFallbackOption,
                         replan: CypherReplanOption,
+                        connectComponentsPlanner: CypherConnectComponentsPlannerOption,
                         debugOptions: Set[String],
                         recompilationLimitReached: Boolean = false,
                         materializedEntitiesMode: Boolean = false) {
@@ -126,6 +128,10 @@ case class QueryOptions(offset: InputPosition,
       case CypherInterpretedPipesFallbackOption.default => ""
       case _ => s"interpretedPipesFallback=${interpretedPipesFallback.name}"
     },
+    connectComponentsPlanner = connectComponentsPlanner match {
+      case CypherConnectComponentsPlannerOption.default => ""
+      case _ => s"connectComponentsPlanner=${connectComponentsPlanner.name}"
+    },
     debugFlags = debugOptions.map(flag => s"debug=$flag").mkString(" ")
   )
 
@@ -147,6 +153,7 @@ case class QueryOptions(offset: InputPosition,
       option("operatorEngine", operatorEngine, CypherOperatorEngineOption.default),
       option("interpretedPipesFallback", interpretedPipesFallback, CypherInterpretedPipesFallbackOption.default),
       option("replan", replan, CypherReplanOption.default),
+      option("connectComponentsPlanner", connectComponentsPlanner, CypherConnectComponentsPlannerOption.default),
       debugOptions.map(flag => s"debug=$flag"),
     ).flatten
 
@@ -164,9 +171,10 @@ object QueryOptions {
                       expressionEngineInfo: String,
                       operatorEngineInfo: String,
                       interpretedPipesFallbackInfo: String,
+                      connectComponentsPlanner: String,
                       debugFlags: String) {
     def render: String =
-      s"CYPHER $version $plannerInfo $runtimeInfo $updateStrategyInfo $expressionEngineInfo $operatorEngineInfo $interpretedPipesFallbackInfo $debugFlags"
+      s"CYPHER $version $plannerInfo $runtimeInfo $updateStrategyInfo $expressionEngineInfo $operatorEngineInfo $interpretedPipesFallbackInfo $connectComponentsPlanner $debugFlags"
   }
 
   val default: QueryOptions = QueryOptions(InputPosition.NONE,
@@ -180,5 +188,6 @@ object QueryOptions {
     CypherOperatorEngineOption.default,
     CypherInterpretedPipesFallbackOption.default,
     CypherReplanOption.default,
+    CypherConnectComponentsPlannerOption.default,
     Set())
 }
