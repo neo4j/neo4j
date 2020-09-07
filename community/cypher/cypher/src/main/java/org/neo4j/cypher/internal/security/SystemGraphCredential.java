@@ -26,6 +26,11 @@ import org.apache.shiro.crypto.hash.SimpleHash;
 import org.apache.shiro.subject.PrincipalCollection;
 import org.apache.shiro.util.ByteSource;
 
+import java.nio.charset.StandardCharsets;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.impl.security.Credential;
 
 public class SystemGraphCredential implements Credential
@@ -101,6 +106,54 @@ public class SystemGraphCredential implements Credential
         String encodedSalt = credential.hashedCredentials.getSalt().toHex();
         String encodedPassword = credential.hashedCredentials.toHex();
         return String.join( CREDENTIAL_SEPARATOR, algorithm, encodedPassword, encodedSalt, iterations );
+    }
+
+    public static String serialize( byte[] encodedCredential ) throws InvalidArgumentsException
+    {
+        Pattern validEncryptedPassword = Pattern.compile( String.join( CREDENTIAL_SEPARATOR, "^([0-9])", "([A-Fa-f0-9]+)", "([A-Fa-f0-9]+)" ) );
+        String encryptedPasswordString = new String( encodedCredential, StandardCharsets.UTF_8 );
+
+        Matcher matcher = validEncryptedPassword.matcher( encryptedPasswordString );
+        if ( matcher.matches() )
+        {
+            String version = matcher.group( 1 );
+            String hash = matcher.group( 2 );
+            String salt = matcher.group( 3 );
+            SecureHasherConfiguration configuration = SecureHasherConfigurations.configurations.get( version );
+
+            if ( configuration == null )
+            {
+                throw new InvalidArgumentsException( "The encryption version specified is not available." );
+            }
+
+            return String.join( CREDENTIAL_SEPARATOR, configuration.algorithm, hash, salt, String.valueOf( configuration.iterations ) );
+        }
+        else
+        {
+            throw new InvalidArgumentsException( "Incorrect format of encrypted password. Correct format is '<encryption-version>,<hash>,<salt>'." );
+        }
+    }
+
+    public static String maskSerialized( String serialized ) throws InvalidArgumentsException
+    {
+        Pattern validSerialized =
+                Pattern.compile( String.join( CREDENTIAL_SEPARATOR, "^([A-Za-z0-9\\-]+)", "([A-Fa-f0-9]+)", "([A-Fa-f0-9]+)" ) + "(?:,([0-9]+))?" );
+
+        Matcher matcher = validSerialized.matcher( serialized );
+        if ( matcher.matches() )
+        {
+            String algorithm = matcher.group( 1 );
+            String hash = matcher.group( 2 );
+            String salt = matcher.group( 3 );
+            int iterations = matcher.groupCount() == 4 ? Integer.parseInt( matcher.group( 4 ) ) : 1;
+            String version = SecureHasherConfigurations.getVersionForConfiguration( algorithm, iterations );
+
+            return String.join( CREDENTIAL_SEPARATOR, version, hash, salt );
+        }
+        else
+        {
+            throw new InvalidArgumentsException( "Invalid serialized credential." );
+        }
     }
 
     public static SystemGraphCredential deserialize( String part, SecureHasher secureHasher ) throws FormatException

@@ -67,6 +67,10 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
     }
   }
 
+  protected def validateAndFormatEncryptedPassword(password: Array[Byte]): TextValue = {
+    Values.utf8Value(SystemGraphCredential.serialize(password))
+  }
+
   private val internalPrefix: String = "__internal_"
 
   protected def internalKey(name: String): String = internalPrefix + name
@@ -77,15 +81,14 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
                                           bytesValue: Value,
                                           mapValueConverter: (Transaction, MapValue) => MapValue)
 
-  protected def getPasswordExpression(password: expressions.Expression): PasswordExpression =
+  protected def getPasswordExpression(password: expressions.Expression, isEncryptedPassword: Boolean): PasswordExpression =
     password match {
       case parameterPassword: ParameterFromSlot =>
         validateStringParameterType(parameterPassword)
         def convertPasswordParameters(transaction: Transaction, params: MapValue): MapValue = {
           val passwordParameter = parameterPassword.name
           val encodedPassword = getValidPasswordParameter(params, passwordParameter)
-          validatePassword(encodedPassword)
-          val hashedPassword = hashPassword(encodedPassword)
+          val hashedPassword = if (isEncryptedPassword) validateAndFormatEncryptedPassword(encodedPassword) else hashPassword(validatePassword(encodedPassword))
           params.updatedWith(passwordParameter, hashedPassword).updatedWith(passwordParameter + "_bytes", Values.byteArray(encodedPassword))
         }
         PasswordExpression(parameterPassword.name, Values.NO_VALUE, s"${parameterPassword.name}_bytes", Values.NO_VALUE, convertPasswordParameters)
@@ -169,6 +172,7 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
   }
 
   protected def makeCreateUserExecutionPlan(userName: Either[String, Parameter],
+                                  isEncryptedPassword: Boolean,
                                   password: expressions.Expression,
                                   requirePasswordChange: Boolean,
                                   suspended: Boolean,
@@ -178,7 +182,7 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
     val passwordChangeRequiredKey = internalKey("passwordChangeRequired")
     val suspendedKey = internalKey("suspended")
     val userNameFields = getNameFields("username", userName)
-    val credentials = getPasswordExpression(password)
+    val credentials = getPasswordExpression(password, isEncryptedPassword)
     val mapValueConverter: (Transaction, MapValue) => MapValue = (tx, p) => credentials.mapValueConverter(tx, userNameFields.nameConverter(tx, p))
     UpdatingSystemCommandExecutionPlan("CreateUser", normalExecutionEngine,
       // NOTE: If username already exists we will violate a constraint
@@ -210,6 +214,7 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
   }
 
   protected def makeAlterUserExecutionPlan(userName: Either[String, Parameter],
+                                           isEncryptedPassword: Option[Boolean],
                                            password: Option[expressions.Expression],
                                            requirePasswordChange: Option[Boolean],
                                            suspended: Option[Boolean])(
@@ -217,7 +222,7 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
                                             normalExecutionEngine: ExecutionEngine
                                           ): ExecutionPlan = {
     val userNameFields = getNameFields("username", userName)
-      val maybePw = password.map(getPasswordExpression)
+      val maybePw = password.map(p => getPasswordExpression(p, isEncryptedPassword.getOrElse(false)))
       val params = Seq(
         maybePw -> "credentials",
         requirePasswordChange -> "passwordChangeRequired",
