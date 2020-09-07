@@ -92,25 +92,25 @@ public abstract class AbstractSystemGraphComponent implements SystemGraphCompone
 
         Status status = detect( system );
         if ( status == Status.UNINITIALIZED )
-            {
-                initializeSystemGraphConstraints( system );
-                initializeSystemGraphModel( system );
-                postInitialization( system, true );
-            }
-            else if ( status == Status.CURRENT || (status == Status.REQUIRES_UPGRADE && !mayUpgrade) )
-            {
-                verifySystemGraph( system );
-                postInitialization( system, false );
-            }
-            else if ( (mayUpgrade && status == Status.REQUIRES_UPGRADE) || status == Status.UNSUPPORTED_BUT_CAN_UPGRADE )
-            {
-                upgradeToCurrent( system );
-            }
-            else
-            {
-                throw new IllegalStateException( String.format( "Unsupported component state for '%s': %s", component(), status.description() ) );
-            }
-            assertSystemGraphIntegrity( system );
+        {
+            initializeSystemGraphConstraints( system );
+            initializeSystemGraphModel( system );
+            postInitialization( system, true );
+        }
+        else if ( status == Status.CURRENT || (status == Status.REQUIRES_UPGRADE && !mayUpgrade) )
+        {
+            verifySystemGraph( system );
+            postInitialization( system, false );
+        }
+        else if ( (mayUpgrade && status == Status.REQUIRES_UPGRADE) || status == Status.UNSUPPORTED_BUT_CAN_UPGRADE )
+        {
+            upgradeToCurrent( system );
+        }
+        else
+        {
+            throw new IllegalStateException( String.format( "Unsupported component state for '%s': %s", component(), status.description() ) );
+        }
+        assertSystemGraphIntegrity( system );
     }
 
     private Status detect( GraphDatabaseService system )

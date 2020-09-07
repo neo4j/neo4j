@@ -97,12 +97,19 @@ public enum ComponentVersion
     // Used for testing only:
     ENTERPRISE_SECURITY_FAKE_VERSION( Integer.MAX_VALUE, SECURITY_PRIVILEGE_COMPONENT, "Neo4j 8.8.88" );
 
+    // Static variables for SECURITY_USER_COMPONENT versions
+    public static final int FIRST_VALID_COMMUNITY_SECURITY_COMPONENT_VERSION = COMMUNITY_SECURITY_35.getVersion();
+    public static final int FIRST_RUNTIME_SUPPORTED_COMMUNITY_SECURITY_COMPONENT_VERSION = COMMUNITY_SECURITY_40.getVersion();
+    public static final int LATEST_COMMUNITY_SECURITY_COMPONENT_VERSION = COMMUNITY_SECURITY_41.getVersion();
+
+    // Static variables for SECURITY_PRIVILEGE_COMPONENT versions
+    public static final int FIRST_VALID_ENTERPRISE_SECURITY_COMPONENT_VERSION = ENTERPRISE_SECURITY_35.getVersion();
+    public static final int FIRST_RUNTIME_SUPPORTED_ENTERPRISE_SECURITY_COMPONENT_VERSION = ENTERPRISE_SECURITY_40.getVersion();
+    public static final int LATEST_ENTERPRISE_SECURITY_COMPONENT_VERSION = ENTERPRISE_SECURITY_42D4.getVersion();
+
     private final String componentName;
     private final int version;
     private final String description;
-
-    public static final int LATEST_COMMUNITY_SECURITY_COMPONENT_VERSION = 2;
-    public static final int LATEST_ENTERPRISE_SECURITY_COMPONENT_VERSION = 5;
 
     ComponentVersion( int version, String componentName, String description )
     {
@@ -144,11 +151,11 @@ public enum ComponentVersion
     {
         if ( componentName.equals( SECURITY_USER_COMPONENT ) )
         {
-            return version >= 0 && version <= LATEST_COMMUNITY_SECURITY_COMPONENT_VERSION;
+            return version >= FIRST_VALID_COMMUNITY_SECURITY_COMPONENT_VERSION && version <= LATEST_COMMUNITY_SECURITY_COMPONENT_VERSION;
         }
         else if ( componentName.equals( SECURITY_PRIVILEGE_COMPONENT ) )
         {
-            return version >= 0 && version <= LATEST_ENTERPRISE_SECURITY_COMPONENT_VERSION;
+            return version >= FIRST_VALID_ENTERPRISE_SECURITY_COMPONENT_VERSION && version <= LATEST_ENTERPRISE_SECURITY_COMPONENT_VERSION;
         }
         return false;
     }
@@ -157,11 +164,11 @@ public enum ComponentVersion
     {
         if ( componentName.equals( SECURITY_USER_COMPONENT ) )
         {
-            return version >= 1 && version <= LATEST_COMMUNITY_SECURITY_COMPONENT_VERSION;
+            return version >= FIRST_RUNTIME_SUPPORTED_COMMUNITY_SECURITY_COMPONENT_VERSION && version <= LATEST_COMMUNITY_SECURITY_COMPONENT_VERSION;
         }
         else if ( componentName.equals( SECURITY_PRIVILEGE_COMPONENT ) )
         {
-            return version >= 2 && version <= LATEST_ENTERPRISE_SECURITY_COMPONENT_VERSION;
+            return version >= FIRST_RUNTIME_SUPPORTED_ENTERPRISE_SECURITY_COMPONENT_VERSION && version <= LATEST_ENTERPRISE_SECURITY_COMPONENT_VERSION;
         }
         return false;
     }
