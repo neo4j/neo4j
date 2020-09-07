@@ -161,7 +161,12 @@ object RewindableExecutionResult {
   }
 
   private def checkValidInput(context: QueryTransactionalContext, input: AnyRef): Unit = input match {
-    case entity: Entity => context.transaction.internalTransaction().validateSameDB(entity)
+    case entity: Entity =>
+      val internalTransaction = context.transaction.internalTransaction()
+
+      if (internalTransaction != null) {
+        internalTransaction.validateSameDB(entity)
+      }
     case _ => ()
   }
 }

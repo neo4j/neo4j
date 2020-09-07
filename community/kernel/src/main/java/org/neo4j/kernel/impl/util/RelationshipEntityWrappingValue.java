@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.util;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.kernel.impl.core.RelationshipEntity;
 import org.neo4j.values.AnyValueWriter;
 import org.neo4j.values.storable.TextValue;
@@ -250,25 +249,6 @@ public class RelationshipEntityWrappingValue extends RelationshipValue implement
     public Relationship getEntity()
     {
         return relationship;
-    }
-
-    public MapValue properties( PropertyCursor propertyCursor )
-    {
-        MapValue m = properties;
-        if ( m == null )
-        {
-            synchronized ( this )
-            {
-                m = properties;
-                if ( m == null )
-                {
-                    var relProperties = relationship instanceof RelationshipEntity ?
-                                        ((RelationshipEntity) relationship).getAllProperties( propertyCursor ) : relationship.getAllProperties();
-                    m = properties = ValueUtils.asMapValue( relProperties );
-                }
-            }
-        }
-        return m;
     }
 }
 

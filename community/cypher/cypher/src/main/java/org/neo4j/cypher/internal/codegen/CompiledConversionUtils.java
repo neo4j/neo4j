@@ -636,7 +636,7 @@ public abstract class CompiledConversionUtils
         }
         if ( object instanceof NodeEntityWrappingNodeValue )
         {
-            return Values.of( ((NodeEntityWrappingNodeValue) object).nodeEntity().getProperty( key ) );
+            return Values.of( ((NodeEntityWrappingNodeValue) object).getEntity().getProperty( key ) );
         }
         if ( object instanceof RelationshipEntityWrappingValue )
         {
