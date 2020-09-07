@@ -354,13 +354,13 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
 
       // START DATABASE foo
       case StartDatabase(dbName) =>
-        Some(plans.StartDatabase(plans.AssertDatabaseAdmin(StartDatabaseAction, dbName), dbName))
+        val checkAllowed = plans.AssertNotBlocked(plans.AssertDatabaseAdmin(StartDatabaseAction, dbName), StartDatabaseAction)
+        Some(plans.StartDatabase(checkAllowed, dbName))
 
       // STOP DATABASE foo
       case StopDatabase(dbName) =>
-        Some(plans.StopDatabase(
-          plans.EnsureValidNonSystemDatabase(
-            plans.AssertDatabaseAdmin(StopDatabaseAction, dbName), dbName, "stop"), dbName))
+        val checkAllowed = plans.AssertNotBlocked(plans.AssertDatabaseAdmin(StopDatabaseAction, dbName), StopDatabaseAction)
+        Some(plans.StopDatabase(plans.EnsureValidNonSystemDatabase(checkAllowed, dbName, "stop"), dbName))
 
       // Global call: CALL foo.bar.baz("arg1", 2) // only if system procedure is allowed!
       case Query(None, SingleQuery(Seq(resolved@ResolvedCall(signature, _, _, _, _),Return(_,_,_,_,_,_)))) if signature.systemProcedure =>
