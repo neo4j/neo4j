@@ -18,12 +18,12 @@ package org.neo4j.cypher.internal.rewriting.rewriters
 
 import org.neo4j.cypher.internal.ast.AliasedReturnItem
 import org.neo4j.cypher.internal.ast.AscSortItem
-import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.DescSortItem
 import org.neo4j.cypher.internal.ast.OrderBy
 import org.neo4j.cypher.internal.ast.ProjectionClause
+import org.neo4j.cypher.internal.ast.Query
+import org.neo4j.cypher.internal.ast.QueryPart
 import org.neo4j.cypher.internal.ast.Return
-import org.neo4j.cypher.internal.ast.ReturnItem
 import org.neo4j.cypher.internal.ast.ReturnItems
 import org.neo4j.cypher.internal.ast.ShowDatabase
 import org.neo4j.cypher.internal.ast.ShowPrivileges
@@ -32,6 +32,8 @@ import org.neo4j.cypher.internal.ast.ShowUsers
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.SortItem
 import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
+import org.neo4j.cypher.internal.ast.UnionAll
+import org.neo4j.cypher.internal.ast.UnionDistinct
 import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.ast.Yield
 import org.neo4j.cypher.internal.expressions.Expression
@@ -39,7 +41,6 @@ import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.Rewriter
-import org.neo4j.cypher.internal.util.bottomUp
 import org.neo4j.cypher.internal.util.topDown
 
 /**
@@ -64,63 +65,104 @@ import org.neo4j.cypher.internal.util.topDown
  */
 case class normalizeWithAndReturnClauses(cypherExceptionFactory: CypherExceptionFactory) extends Rewriter {
 
-  def apply(that: AnyRef): AnyRef = instance.apply(that)
+  def apply(that: AnyRef): AnyRef = that match {
+    case q@Query(_, queryPart) => q.copy(part = rewriteTopLevelQueryPart(queryPart))(q.position)
 
-  private val clauseRewriter: Clause => Clause = {
+    case s@ShowPrivileges(_, yieldOrWhere, returns) =>
+      s.copy(yieldOrWhere = rewriteOptionalYield(yieldOrWhere), returns = returns.map(addAliasesToReturn))(s.position)
+        .withGraph(s.useGraph)
+
+    case s@ShowDatabase(_, yieldOrWhere, returns) =>
+      s.copy(yieldOrWhere = rewriteOptionalYield(yieldOrWhere), returns = returns.map(addAliasesToReturn))(s.position)
+        .withGraph(s.useGraph)
+
+    case s@ShowUsers(yieldOrWhere, returns) =>
+      s.copy(yieldOrWhere = rewriteOptionalYield(yieldOrWhere), returns = returns.map(addAliasesToReturn))(s.position)
+        .withGraph(s.useGraph)
+
+    case s@ShowRoles(_, _, yieldOrWhere, returns) =>
+      s.copy(yieldOrWhere = rewriteOptionalYield(yieldOrWhere), returns = returns.map(addAliasesToReturn))(s.position)
+        .withGraph(s.useGraph)
+
+    case x => x
+  }
+
+  /**
+   * Rewrites all single queries in the top level query (which can be a single or a union query of single queries).
+   * It does not rewrite query parts in subqueries.
+   */
+  private def rewriteTopLevelQueryPart(queryPart: QueryPart): QueryPart = queryPart match {
+    case sq:SingleQuery => rewriteTopLevelSingleQuery(sq)
+    case union@UnionAll(part, query) => union.copy(part = rewriteTopLevelQueryPart(part), query = rewriteTopLevelSingleQuery(query))(union.position)
+    case union@UnionDistinct(part, query) => union.copy(part = rewriteTopLevelQueryPart(part), query = rewriteTopLevelSingleQuery(query))(union.position)
+  }
+
+  /**
+   * Adds aliases to all return items in Return clauses in the top level query.
+   * Rewrites all projection clauses (also in subqueries) using [[rewriteProjectionsRecursively]].
+   */
+  private def rewriteTopLevelSingleQuery(singleQuery: SingleQuery): SingleQuery = {
+    val newClauses = singleQuery.clauses.map {
+      case r: Return => addAliasesToReturn(r)
+      case x => x
+    }
+    rewriteProjectionsRecursively(singleQuery.copy(clauses = newClauses)(singleQuery.position)).asInstanceOf[SingleQuery]
+  }
+
+  private def rewriteOptionalYield(or: Option[Either[Yield, Where]]): Option[Either[Yield, Where]] = or match {
+    case Some(Left(y)) => Some(Left(addAliasesToYield(y)))
+    case other => other
+  }
+
+  private def addAliasesToReturn(r: Return): Return = r.copy(returnItems = aliasUnaliasedReturnItems(r.returnItems))(r.position)
+  private def addAliasesToYield(y: Yield): Yield = y.copy(returnItems = aliasUnaliasedReturnItems(y.returnItems))(y.position)
+
+  /**
+   * Convert all UnaliasedReturnItems to AliasedReturnItems.
+   */
+  private def aliasUnaliasedReturnItems(ri: ReturnItems): ReturnItems = {
+    val aliasedReturnItems =
+      ri.items.map {
+        case i: UnaliasedReturnItem =>
+          val newPosition = i.expression.position.bumped()
+          AliasedReturnItem(i.expression, Variable(i.name)(newPosition))(i.position)
+        case x => x
+      }
+    ri.copy(items = aliasedReturnItems)(ri.position)
+  }
+
+  /**
+   * Convert those UnaliasedReturnItems to AliasedReturnItems which refer to a variable or a map projection.
+   * Those can be deemed as implicitly aliased.
+   */
+  private def aliasImplicitlyAliasedReturnItems(ri: ReturnItems): ReturnItems = {
+    val newItems =
+      ri.items.map {
+        case i: UnaliasedReturnItem if i.alias.isDefined =>
+          AliasedReturnItem(i.expression, i.alias.get.copyId)(i.position)
+        case x => x
+      }
+    ri.copy(items = newItems)(ri.position)
+  }
+
+  private val rewriteProjectionsRecursively: Rewriter = topDown(Rewriter.lift {
     // Only alias return items
     case clause@ProjectionClause(_, ri: ReturnItems, None, _, _, None) =>
-      val (unaliasedReturnItems, aliasedReturnItems) = partitionReturnItems(ri.items, implicitlyAliasVariables)
-      val initialReturnItems = unaliasedReturnItems ++ aliasedReturnItems
-      clause.copyProjection(returnItems = ri.copy(items = initialReturnItems)(ri.position))
+      clause.copyProjection(returnItems = aliasImplicitlyAliasedReturnItems(ri))
 
     // Alias return items and rewrite ORDER BY and WHERE
-    case clause@ProjectionClause(distinct, ri: ReturnItems, orderBy, skip, limit, where) =>
+    case clause@ProjectionClause(_, ri: ReturnItems, orderBy, _, _, where) =>
       clause.verifyOrderByAggregationUse((s, i) => throw cypherExceptionFactory.syntaxException(s, i))
-      val (unaliasedReturnItems, aliasedReturnItems) = partitionReturnItems(ri.items, implicitlyAliasVariables)
-      val initialReturnItems = unaliasedReturnItems ++ aliasedReturnItems
 
-      val existingAliases = aliasedReturnItems.map(i => i.expression -> i.alias.get.copyId).toMap
+      val existingAliases = ri.items.collect {
+        case AliasedReturnItem(expression, variable) => expression -> variable
+      }.toMap
+
       val updatedOrderBy = orderBy.map(aliasOrderBy(existingAliases, _))
       val updatedWhere = where.map(aliasWhere(existingAliases, _))
 
-      clause.copyProjection(returnItems = ri.copy(items = initialReturnItems)(ri.position), orderBy = updatedOrderBy, where = updatedWhere)
-
-    // Not our business
-    case clause =>
-      clause
-  }
-
-  private def implicitlyAliasVariables(i: UnaliasedReturnItem): Option[AliasedReturnItem] =
-    if (i.alias.isDefined) {
-      Some(AliasedReturnItem(i.expression, i.alias.get.copyId)(i.position))
-    } else {
-      None
-    }
-
-  /**
-   * Aliases return items if possible. Return a tuple of unaliased (because impossible) and
-   * aliased (because they already were aliases or we just introduced an alias for them)
-   * return items.
-   *
-   * @param aliasImplicitly UnaliasedReturnItems are rewritten to AliasedReturnItems if this function is defined.
-   */
-  private def partitionReturnItems(returnItems: Seq[ReturnItem],
-                                   aliasImplicitly: UnaliasedReturnItem => Option[AliasedReturnItem]): (Seq[ReturnItem], Seq[AliasedReturnItem]) =
-    returnItems.foldLeft((Vector.empty[ReturnItem], Vector.empty[AliasedReturnItem])) {
-      case ((unaliasedItems, aliasedItems), item) => item match {
-        case i: AliasedReturnItem =>
-          (unaliasedItems, aliasedItems :+ i)
-
-        case i: UnaliasedReturnItem =>
-          aliasImplicitly(i) match {
-            case Some(aliasedReturnItem) =>
-              (unaliasedItems, aliasedItems :+ aliasedReturnItem)
-            case None =>
-              // Unaliased return items are preserved so that semantic check can report them as errors
-              (unaliasedItems :+ item, aliasedItems)
-          }
-      }
-    }
+      clause.copyProjection(returnItems = aliasImplicitlyAliasedReturnItems(ri), orderBy = updatedOrderBy, where = updatedWhere)
+  })
 
   /**
    * Given a list of existing aliases, this rewrites an OrderBy to use these where possible.
@@ -165,51 +207,4 @@ case class normalizeWithAndReturnClauses(cypherExceptionFactory: CypherException
         newExpression
     }
   }
-
-  private def rewriteReturnItems(ri: ReturnItems): ReturnItems = {
-    val aliasedReturnItems =
-      ri.items.map {
-        case i: AliasedReturnItem => i
-        case i: UnaliasedReturnItem =>
-          val newPosition = i.expression.position.bumped()
-          AliasedReturnItem(i.expression, Variable(i.name)(newPosition))(i.position)
-      }
-    ri.copy(items = aliasedReturnItems)(ri.position)
-  }
-
-  private def rewriteOptionalReturn(or: Option[Return]): Option[Return] = or.map(r => r.copy(returnItems = rewriteReturnItems(r.returnItems))(r.position))
-
-  private def rewriteOptionalYield(or: Option[Either[Yield, Where]]): Option[Either[Yield, Where]] = or match {
-    case Some(Left(y)) => Some(Left(y.copy(returnItems = rewriteReturnItems(y.returnItems))(y.position)))
-    case other => other
-  }
-
-  private val instance: Rewriter = bottomUp(Rewriter.lift {
-    case query@SingleQuery(clauses) =>
-      val finalClause =
-        clauses.last match {
-          case r @ Return(_, ri: ReturnItems, _, _, _, _) =>
-            // All un-aliased return items in the final RETURN are OK
-            r.copyProjection(returnItems = rewriteReturnItems(ri))
-
-          case clause => clause
-      }
-      query.copy(clauses = (clauses.init :+ finalClause).map(clauseRewriter))(query.position)
-
-    case s@ShowPrivileges(_, yields, returns) =>
-      s.copy(yieldOrWhere = rewriteOptionalYield(yields), returns = rewriteOptionalReturn(returns))(s.position)
-        .withGraph(s.useGraph)
-
-    case s@ShowDatabase(_, yields, returns) =>
-      s.copy(yieldOrWhere = rewriteOptionalYield(yields), returns = rewriteOptionalReturn(returns))(s.position)
-        .withGraph(s.useGraph)
-
-    case s@ShowUsers(yields, returns) =>
-      s.copy(yieldOrWhere = rewriteOptionalYield(yields), returns = rewriteOptionalReturn(returns))(s.position)
-        .withGraph(s.useGraph)
-
-    case s@ShowRoles(_, _, yields, returns) =>
-      s.copy(yieldOrWhere = rewriteOptionalYield(yields), returns = rewriteOptionalReturn(returns))(s.position)
-        .withGraph(s.useGraph)
-  })
 }

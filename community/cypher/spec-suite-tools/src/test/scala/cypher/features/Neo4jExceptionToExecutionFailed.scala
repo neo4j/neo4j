@@ -207,7 +207,7 @@ object Neo4jExceptionToExecutionFailed {
       INVALID_AGGREGATION
     else if (msg.matches(semanticError("Cannot use aggregation in ORDER BY if there are no aggregate expressions in the preceding ((RETURN)|(WITH))")))
       INVALID_AGGREGATION
-    else if (msg.matches(semanticError("Expression in WITH must be aliased \\(use AS\\)")))
+    else if (msg.matches(semanticError("Expression in .* must be aliased \\(use AS\\)")))
       NO_EXPRESSION_ALIAS
     else if (msg.matches(semanticError("All sub queries in an UNION must have the same column names")))
       DIFFERENT_COLUMNS_IN_UNION

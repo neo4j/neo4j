@@ -146,8 +146,8 @@ Feature: SubqueryAcceptance
       RETURN sum(x.prop) AS sum
       """
     Then the result should be, in any order:
-      | sum  |
-      | 33   |
+      | sum |
+      | 33  |
     And no side effects
 
   Scenario: Should treat variables with the same name but different scopes correctly
@@ -262,8 +262,8 @@ Feature: SubqueryAcceptance
       RETURN sum(x.prop) AS sum
       """
     Then the result should be, in any order:
-      | sum  |
-      | 39   |
+      | sum |
+      | 39  |
     And no side effects
 
   Scenario: Aggregation on imported variables
@@ -351,8 +351,124 @@ Feature: SubqueryAcceptance
        RETURN z
       """
     Then the result should be, in any order:
-      | z   |
-      | 1   |
+      | z |
+      | 1 |
     And no side effects
 
+  Scenario: Return items in uncorrelated single subquery must be aliased
+    Given any graph
+    When executing query:
+      """
+      CALL {
+        RETURN 5
+      }
+      RETURN `5` AS five
+      """
+    Then a SyntaxError should be raised at compile time: NoExpressionAlias
 
+  Scenario: Return items in uncorrelated union subquery must be aliased
+    Given any graph
+    When executing query:
+      """
+      CALL {
+        RETURN 5 UNION RETURN 5
+      }
+      RETURN `5` AS five
+      """
+    Then a SyntaxError should be raised at compile time: NoExpressionAlias
+
+  Scenario: Return items in correlated single subquery must be aliased
+    Given any graph
+    When executing query:
+      """
+      MATCH (n)
+      CALL {
+        WITH n
+        RETURN 5 + 5
+      }
+      RETURN `5 + 5` AS plus
+      """
+    Then a SyntaxError should be raised at compile time: NoExpressionAlias
+
+  Scenario: Return items in correlated union subquery must be aliased
+    Given any graph
+    When executing query:
+      """
+      MATCH (n)
+      CALL {
+        WITH n
+        RETURN 5 + 5
+        UNION
+        WITH n
+        RETURN 5 + 5
+      }
+      RETURN `5 + 5` AS plus
+      """
+    Then a SyntaxError should be raised at compile time: NoExpressionAlias
+
+  Scenario: Map projections in uncorrelated single subquery are OK
+    Given an empty graph
+    When executing query:
+      """
+      CALL {
+        MATCH (n)
+        RETURN n {.prop, .foo}
+      }
+      RETURN n
+      """
+    Then the result should be, in any order:
+      | n |
+    And no side effects
+
+  Scenario: Map projections in uncorrelated union subquery are OK
+    Given an empty graph
+    When executing query:
+      """
+      CALL {
+        MATCH (n)
+        RETURN n {.prop, .foo}
+        UNION
+        MATCH (n)
+        RETURN n {.prop, .foo}
+      }
+      RETURN n
+      """
+    Then the result should be, in any order:
+      | n |
+    And no side effects
+
+  Scenario: Map projections in correlated single subquery are OK
+    Given an empty graph
+    When executing query:
+      """
+      MATCH (n)
+      CALL {
+        WITH n
+        MATCH (n)--(m)
+        RETURN m {.prop, .foo}
+      }
+      RETURN m
+      """
+    Then the result should be, in any order:
+      | m |
+    And no side effects
+
+  Scenario: Map projections in correlated union subquery are OK
+    Given an empty graph
+    When executing query:
+      """
+      MATCH (n)
+      CALL {
+        WITH n
+        MATCH (n)--(m)
+        RETURN m {.prop, .foo}
+        UNION
+        WITH n
+        MATCH (n)--(m)
+        RETURN m {.prop, .foo}
+      }
+      RETURN m
+      """
+    Then the result should be, in any order:
+      | m |
+    And no side effects

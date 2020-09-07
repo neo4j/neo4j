@@ -31,7 +31,7 @@ Feature: ReturnAcceptance
       LIMIT 0
       """
     Then the result should be, in any order:
-      | n            |
+      | n |
     And no side effects
 
   Scenario: Accessing a list with null should return null
@@ -85,7 +85,7 @@ Feature: ReturnAcceptance
       RETURN [[1], [null], null] AS result
       """
     Then the result should be, in any order:
-      | result      |
+      | result              |
       | [[1], [null], null] |
     And no side effects
 
@@ -107,7 +107,7 @@ Feature: ReturnAcceptance
       RETURN [null, [null, {a: null}], {b: [null, {c: [null]}]}] AS result
       """
     Then the result should be, in any order:
-      | result      |
+      | result                                              |
       | [null, [null, {a: null}], {b: [null, {c: [null]}]}] |
     And no side effects
 
@@ -118,7 +118,7 @@ Feature: ReturnAcceptance
       RETURN {a: null, b: {c: null, d: {e: null}, f: [null, {g: null, h: [null], i: {j: null}}]}} as result
       """
     Then the result should be, in any order:
-      | result      |
+      | result                                                                               |
       | {a: null, b: {c: null, d: {e: null}, f: [null, {g: null, h: [null], i: {j: null}}]}} |
 
   Scenario: Accessing a non-existing property with string should work
@@ -175,7 +175,7 @@ Feature: ReturnAcceptance
       """
     Then the result should be, in any order:
       | result |
-      | false   |
+      | false  |
     And no side effects
 
   Scenario: Exponentiation should work
@@ -186,7 +186,7 @@ Feature: ReturnAcceptance
       """
     Then the result should be, in any order:
       | result |
-      | 8.0 |
+      | 8.0    |
     And no side effects
 
   Scenario: Multiplying a float and an integer should be no problem
@@ -208,7 +208,7 @@ Feature: ReturnAcceptance
       """
     Then the result should be, in any order:
       | result |
-      | []   |
+      | []     |
     And no side effects
 
   Scenario: Negative range with positive step should be empty
@@ -219,5 +219,17 @@ Feature: ReturnAcceptance
       """
     Then the result should be, in any order:
       | result |
-      | []   |
+      | []     |
+    And no side effects
+
+  Scenario: Should work not aliasing union return items
+    Given any graph
+    When executing query:
+      """
+      RETURN 5 UNION ALL RETURN 5
+      """
+    Then the result should be, in any order:
+      | 5 |
+      | 5 |
+      | 5 |
     And no side effects

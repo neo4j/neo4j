@@ -20,6 +20,7 @@ import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.ReturnItems
 import org.neo4j.cypher.internal.ast.ShowAllPrivileges
 import org.neo4j.cypher.internal.ast.Statement
+import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.CorrelatedSubQueries
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.MultipleDatabases
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.expressions.Variable
@@ -45,6 +46,84 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
         |WITH n AS n
         |RETURN n AS n
       """.stripMargin)
+  }
+
+  test("ensure map projections are aliased") {
+    assertRewrite(
+      """MATCH (n)
+        |WITH n {.foo, .bar}
+        |RETURN n {.baz, .bar}
+      """.stripMargin,
+      """MATCH (n)
+        |WITH n {.foo, .bar} AS n
+        |RETURN n {.baz, .bar} AS n
+      """.stripMargin)
+  }
+
+  test("ensure expressions are aliased in RETURN") {
+    assertRewrite(
+      """MATCH (n)
+        |RETURN n.bar, n
+      """.stripMargin,
+      """MATCH (n)
+        |RETURN n.bar AS `n.bar`, n AS n
+      """.stripMargin)
+  }
+
+  test("ensure all things are are aliased in UNION") {
+    assertRewrite(
+      """MATCH (n)
+        |RETURN n, 3 + 5
+        |  UNION
+        |MATCH (n)
+        |WITH n {.foo, .bar}
+        |RETURN n {.baz, .bar}, 3 + 5
+      """.stripMargin,
+      """MATCH (n)
+        |RETURN n AS n, 3 + 5 AS `3 + 5`
+        |  UNION
+        |MATCH (n)
+        |WITH n {.foo, .bar} AS n
+        |RETURN n {.baz, .bar} AS n, 3 + 5 AS `3 + 5`
+      """.stripMargin)
+  }
+
+  test("ensure valid things are aliased in subqueries") {
+    assertRewrite(
+      """CALL {
+        |  MATCH (n:N) RETURN n
+        |    UNION
+        |  MATCH (n:M) RETURN n
+        |}
+        |CALL {
+        |  WITH n
+        |  MATCH (n)--(m)--(p)
+        |  RETURN p {.foo, .bar}, m
+        |}
+        |RETURN n, m, p
+      """.stripMargin,
+      """CALL {
+        |  MATCH (n:N) RETURN n AS n
+        |    UNION
+        |  MATCH (n:M) RETURN n AS n
+        |}
+        |CALL {
+        |  WITH n AS n
+        |  MATCH (n)--(m)--(p)
+        |  RETURN p {.foo, .bar} AS p, m AS m
+        |}
+        |RETURN n AS n, m AS m, p AS p
+      """.stripMargin)
+  }
+
+  test("expression in subquery return must be aliased") {
+    assertNotRewrittenAndSemanticErrors(
+      """CALL {
+        |  RETURN 5 + 5
+        |}
+        |RETURN `5 + 5` AS `5 + 5`
+      """.stripMargin,
+      "Expression in CALL { RETURN ... } must be aliased (use AS) (line 2, column 10 (offset: 16))")
   }
 
   test("ensure variables are aliased for SHOW PRIVILEGES") {
@@ -814,7 +893,7 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
     val result = endoRewrite(original)
     assert(result === expected, s"\n$originalQuery\nshould be rewritten to:\n$expectedQuery\nbut was rewritten to:${prettifier.asString(result.asInstanceOf[Statement])}")
 
-    val checkResult = result.semanticCheck(SemanticState.clean.withFeature(MultipleDatabases))
+    val checkResult = result.semanticCheck(SemanticState.clean.withFeatures(MultipleDatabases, CorrelatedSubQueries))
     assert(checkResult.errors === Seq())
   }
 
@@ -825,7 +904,7 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
     assert(result === expectedStatement, s"\n$originalQuery\nshould be rewritten to:\n${prettifier.asString(expectedStatement)}\n" +
       s"but was rewritten to:${prettifier.asString(result.asInstanceOf[Statement])}")
 
-    val checkResult = result.semanticCheck(SemanticState.clean.withFeature(MultipleDatabases))
+    val checkResult = result.semanticCheck(SemanticState.clean.withFeatures(MultipleDatabases, CorrelatedSubQueries))
     assert(checkResult.errors === Seq())
   }
 
@@ -834,7 +913,7 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
     val result = endoRewrite(original)
     assert(result === original, s"\n$query\nshould not have been rewritten but was to:\n${prettifier.asString(result.asInstanceOf[Statement])}")
 
-    val checkResult = result.semanticCheck(SemanticState.clean.withFeature(MultipleDatabases))
+    val checkResult = result.semanticCheck(SemanticState.clean.withFeatures(MultipleDatabases, CorrelatedSubQueries))
     val errors = checkResult.errors.map(error => s"${error.msg} (${error.position})").toSet
     semanticErrors.foreach(msg =>
       assert(errors contains msg, s"Error '$msg' not produced (errors: $errors)}")
