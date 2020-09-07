@@ -31,7 +31,6 @@ import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.Namespace
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.ProcedureName
-import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Rewritable
@@ -85,23 +84,34 @@ sealed trait ReadAdministrationCommand extends AdministrationCommand {
 
   override def returnColumns: List[LogicalVariable] = returnColumnNames.map(name => Variable(name)(position))
 
-  private def checkForDML(where: Where): SemanticCheck = {
-    val invalid: Option[Expression] = where.expression.treeFind[Expression] { case _: ExistsSubClause => true }
-    invalid.map(exp => SemanticError("The EXISTS clause is not valid on SHOW commands.", exp.position))
-  }
-
-  private def checkClauses(state: SemanticState): SemanticCheckResult = {
-    (yieldOrWhere, returns) match {
-      case (None, Some(r)) => SemanticCheckResult.error(state, SemanticError("The RETURN clause is not valid without a YIELD", r.position ))
-      case (Some(Right(_)), Some(r)) => SemanticCheckResult.error(state, SemanticError("The RETURN clause is not valid without a YIELD", r.position ))
-      case _ => SemanticCheckResult.success(state)
-    }
-  }
-
   override def semanticCheck: SemanticCheck = initialState => {
 
     def createSymbol(variable: (String, CypherType), offset: Int): semantics.Symbol =
       semantics.Symbol(variable._1, Set(new InputPosition(offset, 1, 1)), TypeSpec.exact(variable._2))
+
+    def checkForDML(where: Where): SemanticCheck = {
+      val invalid: Option[Expression] = where.expression.treeFind[Expression] { case _: ExistsSubClause => true }
+      invalid.map(exp => SemanticError("The EXISTS clause is not valid on SHOW commands.", exp.position))
+    }
+
+    def checkClauses: SemanticCheck = state => {
+      (yieldOrWhere, returns) match {
+        case (None, Some(r)) => SemanticCheckResult.error(state, SemanticError("The RETURN clause is not valid without a YIELD", r.position ))
+        case (Some(Right(_)), Some(r)) => SemanticCheckResult.error(state, SemanticError("The RETURN clause is not valid without a YIELD", r.position ))
+        case _ => SemanticCheckResult.success(state)
+      }
+    }
+
+    def checkWhere(w: Where, prevErrors: Seq[SemanticErrorDef]): SemanticCheck = state => {
+      val whereCheckResult = (w.semanticCheck chain checkForDML(w))(state)
+      semantics.SemanticCheckResult(whereCheckResult.state, prevErrors ++ whereCheckResult.errors )
+    }
+
+    def checkProjection(r: ProjectionClause, prevErrors: Seq[SemanticErrorDef]): SemanticCheck = state => {
+      val closingResult = (r.semanticCheck chain r.where.map(checkForDML).getOrElse(None))(state)
+      val continuationResult = r.semanticCheckContinuation(closingResult.state.currentScope.scope)(closingResult.state)
+      semantics.SemanticCheckResult(continuationResult.state, prevErrors ++ closingResult.errors ++ continuationResult.errors)
+    }
 
     val initialCheckResult = super.semanticCheck
       .chain(state => SemanticCheckResult.success(state.newChildScope))
@@ -111,24 +121,12 @@ sealed trait ReadAdministrationCommand extends AdministrationCommand {
         declareVariables(defaultColumnSet.zipWithIndex.map { case (name, index) => createSymbol(name, index) })
       )(initialState)
 
-    Seq(yields, yieldOrWhere.flatMap(_.right.toOption), returns).foldLeft(initialCheckResult){ (checkResult, maybeReturn) => maybeReturn match {
+    Seq(yields, where, returns).foldLeft(initialCheckResult){ (checkResult, maybeClause) => maybeClause match {
       case None => checkResult
-      case Some(w: Where) => checkWhere(w, checkResult.state, checkResult.errors)
-      case Some(r: ProjectionClause) => (checkProjection(r, _, checkResult.errors)).chain(recordCurrentScope(r))(checkResult.state)
+      case Some(w: Where) => checkWhere(w, checkResult.errors)(checkResult.state)
+      case Some(r: ProjectionClause) => checkProjection(r, checkResult.errors).chain(recordCurrentScope(r))(checkResult.state)
     }}
   }
-
-  def checkWhere(w: Where, state: SemanticState, prevErrors: Seq[SemanticErrorDef]): SemanticCheckResult = {
-    val whereCheckResult = (w.semanticCheck chain checkForDML(w))(state)
-    semantics.SemanticCheckResult(whereCheckResult.state, prevErrors ++ whereCheckResult.errors )
-  }
-
-  def checkProjection(r: ProjectionClause, state: SemanticState, prevErrors: Seq[SemanticErrorDef]): SemanticCheckResult = {
-    val closingResult = (r.semanticCheck chain r.where.map(checkForDML).getOrElse(None))(state)
-    val continuationResult = r.semanticCheckContinuation(closingResult.state.currentScope.scope)(closingResult.state)
-    semantics.SemanticCheckResult(continuationResult.state, prevErrors ++ closingResult.errors ++ continuationResult.errors)
-  }
-
 }
 
 sealed trait WriteAdministrationCommand extends AdministrationCommand {
