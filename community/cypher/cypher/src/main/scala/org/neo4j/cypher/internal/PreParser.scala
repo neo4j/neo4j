@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal
 
+import org.neo4j.cypher.CypherConnectComponentsPlannerOption
 import org.neo4j.cypher.CypherExecutionMode
 import org.neo4j.cypher.CypherExpressionEngineOption
 import org.neo4j.cypher.CypherInterpretedPipesFallbackOption
@@ -172,6 +173,7 @@ object PreParser {
     val interpretedPipesFallback: PPOption[CypherInterpretedPipesFallbackOption] = new PPOption(configuredInterpretedPipesFallback)
     val updateStrategy: PPOption[CypherUpdateStrategy] = new PPOption(CypherUpdateStrategy.default)
     val replan: PPOption[CypherReplanOption] = new PPOption(CypherReplanOption.default)
+    val connectComponentsPlanner = new PPOption(CypherConnectComponentsPlannerOption.default)
     var debugOptions: Set[String] = Set()
 
     def parseOptions(options: Seq[PreParserOption]): Unit =
@@ -197,8 +199,10 @@ object PreParser {
             operatorEngine.selectOrThrow(CypherOperatorEngineOption(o.name), "Can't specify multiple conflicting operator execution modes")
           case i: InterpretedPipesFallbackPreParserOption =>
             interpretedPipesFallback.selectOrThrow(CypherInterpretedPipesFallbackOption(i.name), "Can't specify multiple conflicting interpreted pipes fallback modes")
-          case r: ReplanPreParserOption =>
+          case r: ReplanPreParserOption                   =>
             replan.selectOrThrow(CypherReplanOption(r.name), "Can't specify multiple conflicting replan strategies")
+          case c: ConnectComponentsPlannerPreParserOption =>
+            connectComponentsPlanner.selectOrThrow(CypherConnectComponentsPlannerOption(c.name), "Can't specify multiple conflicting connect component planners")
 
           case ConfigurationOptions(versionOpt, innerOptions) =>
             for (v <- versionOpt)
@@ -238,6 +242,7 @@ object PreParser {
       operatorEngine.pick,
       interpretedPipesFallback.pick,
       replan.pick,
+      connectComponentsPlanner.pick,
       debugOptions)
   }
 }

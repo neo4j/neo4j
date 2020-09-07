@@ -23,6 +23,7 @@ import java.time.Duration
 import java.util.Optional
 
 import org.neo4j.configuration.helpers.NormalizedDatabaseName
+import org.neo4j.cypher.CypherConnectComponentsPlannerOption
 import org.neo4j.cypher.CypherExecutionMode
 import org.neo4j.cypher.CypherExpressionEngineOption
 import org.neo4j.cypher.CypherInterpretedPipesFallbackOption
@@ -672,6 +673,7 @@ class FabricPlannerTest
           |  operatorEngine=interpreted
           |  interpretedPipesFallback=disabled
           |  replan=force
+          |  connectComponentsPlanner=greedy
           |  debug=foo
           |  debug=bar
           |WITH 1 AS a
@@ -699,6 +701,7 @@ class FabricPlannerTest
         operatorEngine = CypherOperatorEngineOption.interpreted,
         interpretedPipesFallback = CypherInterpretedPipesFallbackOption.disabled,
         replan = CypherReplanOption.force,
+        connectComponentsPlanner = CypherConnectComponentsPlannerOption.greedy,
         debugOptions = Set("foo", "bar"),
       )
 
@@ -748,6 +751,7 @@ class FabricPlannerTest
         operatorEngine = CypherOperatorEngineOption.default,
         interpretedPipesFallback = CypherInterpretedPipesFallbackOption.default,
         replan = CypherReplanOption.default,
+        connectComponentsPlanner = CypherConnectComponentsPlannerOption.default,
         debugOptions = Set(),
       )
 
