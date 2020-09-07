@@ -335,16 +335,21 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
       // CREATE [OR REPLACE] DATABASE foo [IF NOT EXISTS]
       case CreateDatabase(dbName, ifExistsDo) =>
         val source = ifExistsDo match {
-          case IfExistsReplace => plans.DropDatabase(plans.AssertDbmsAdmin(Seq(DropDatabaseAction, CreateDatabaseAction)), dbName, DestroyData)
-          case IfExistsDoNothing => plans.DoNothingIfExists(plans.AssertDbmsAdmin(CreateDatabaseAction), "Database", dbName, s => new NormalizedDatabaseName(s).name())
-          case _ => plans.AssertDbmsAdmin(CreateDatabaseAction)
+          case IfExistsReplace =>
+            plans.DropDatabase(plans.AssertNotBlocked(plans.AssertDbmsAdmin(Seq(DropDatabaseAction, CreateDatabaseAction)), CreateDatabaseAction), dbName, DestroyData)
+
+          case IfExistsDoNothing =>
+            plans.DoNothingIfExists(plans.AssertNotBlocked(plans.AssertDbmsAdmin(CreateDatabaseAction), CreateDatabaseAction),
+              "Database", dbName, s => new NormalizedDatabaseName(s).name())
+
+          case _ => plans.AssertNotBlocked(plans.AssertDbmsAdmin(CreateDatabaseAction), CreateDatabaseAction)
         }
         Some(plans.EnsureValidNumberOfDatabases(plans.CreateDatabase(source, dbName)))
 
       // DROP DATABASE foo [IF EXISTS] [DESTROY | DUMP DATA]
       case DropDatabase(dbName, ifExists, additionalAction) =>
-        val admin = plans.AssertDbmsAdmin(DropDatabaseAction)
-        val source = if (ifExists) plans.DoNothingIfNotExists(admin, "Database", dbName, s => new NormalizedDatabaseName(s).name()) else admin
+        val checkAllowed = plans.AssertNotBlocked(plans.AssertDbmsAdmin(DropDatabaseAction), DropDatabaseAction)
+        val source = if (ifExists) plans.DoNothingIfNotExists(checkAllowed, "Database", dbName, s => new NormalizedDatabaseName(s).name()) else checkAllowed
         Some(plans.DropDatabase(plans.EnsureValidNonSystemDatabase(source, dbName, "delete"), dbName, additionalAction))
 
       // START DATABASE foo

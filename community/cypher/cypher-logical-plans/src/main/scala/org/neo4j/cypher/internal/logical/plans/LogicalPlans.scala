@@ -81,9 +81,12 @@ object LogicalPlans {
           resultStack.push(result)
 
         case (Some(_), None) =>
-          val source = resultStack.pop()
-          val result = mapper.onOneChildPlan(current, source)
-          resultStack.push(result)
+          // AssertNotBlocked is an internal plan which should not be included in the plan description
+          if (!current.isInstanceOf[AssertNotBlocked]) {
+            val source = resultStack.pop()
+            val result = mapper.onOneChildPlan(current, source)
+            resultStack.push(result)
+          }
 
         case (Some(left), Some(right)) if right eq left =>
           throw new IllegalStateException(s"Tried to map bad logical plan. LHS and RHS must never be the same: op: $current\nfull plan: $plan")

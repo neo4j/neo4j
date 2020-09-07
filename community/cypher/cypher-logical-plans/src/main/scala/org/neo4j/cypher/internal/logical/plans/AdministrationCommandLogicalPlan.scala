@@ -99,6 +99,7 @@ case class AssertDbmsAdmin(actions: Seq[AdminAction])(implicit idGen: IdGen) ext
 case class AssertDbmsAdminOrSelf(user: Either[String, Parameter], actions: Seq[AdminAction])(implicit idGen: IdGen) extends PrivilegePlan
 case class AssertDatabaseAdmin(action: AdminAction, database: Either[String, Parameter])(implicit idGen: IdGen) extends PrivilegePlan
 case class AssertNotCurrentUser(source: PrivilegePlan, userName: Either[String, Parameter], verb: String, violationMessage: String)(implicit idGen: IdGen) extends PrivilegePlan(Some(source))
+case class AssertNotBlocked(source: PrivilegePlan, action: AdminAction)(implicit idGen: IdGen) extends PrivilegePlan(Some(source))
 
 case class GrantDbmsAction(source: PrivilegePlan, action: AdminAction, qualifier: PrivilegeQualifier, roleName: Either[String, Parameter])(implicit idGen: IdGen) extends PrivilegePlan(Some(source))
 case class DenyDbmsAction(source: PrivilegePlan, action: AdminAction, qualifier: PrivilegeQualifier, roleName: Either[String, Parameter])(implicit idGen: IdGen) extends PrivilegePlan(Some(source))
