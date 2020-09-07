@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.idp
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.QueryPlannerKit
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.IDPQueryGraphSolver.extraRequirementForInterestingOrder
+import org.neo4j.cypher.internal.compiler.planner.logical.idp.cartesianProductsOrValueJoins.planLotsOfCartesianProducts
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
@@ -47,9 +48,6 @@ case class ComponentConnectorPlanner(singleComponentPlanner: SingleComponentPlan
   // Ideas:
   // - If NIJ connector and VHJ connector == empty step solver && components > 8 then fallback to leftdeep CP tree.
   // - Conditional connectors: Only ask CPCC if no hash join found for goal.
-  // - If all individual components together solve all predicates we can:
-  //   - Skip selecting generators altogether
-  //   - If also no joins are possible, a left-deep CP tree sorted by cost will be the best plan. No need for IDP.
   def apply(components: Set[PlannedComponent],
             queryGraph: QueryGraph,
             interestingOrder: InterestingOrder,
@@ -58,6 +56,24 @@ case class ComponentConnectorPlanner(singleComponentPlanner: SingleComponentPlan
             singleComponentPlanner: SingleComponentPlannerTrait): Set[PlannedComponent] = {
     require(components.size > 1, "Can't connect less than 2 components.")
 
+    val allSolved = components.flatMap(_.queryGraph.selections.predicates)
+    val notYetSolved = queryGraph.selections.predicates -- allSolved
+    if (notYetSolved.isEmpty) {
+      // If there are no predicates left to be solved, that also means no joins are possible (because they would need to join on a predicate).
+      // Also, the order of cartesian products does not need a search algorithm, since no Selections can be put in-between.
+      // The best plan is a simple left-deep tree of cartesian products.
+      Set(planLotsOfCartesianProducts(components, queryGraph, context, kit))
+    } else {
+      val bestPlans = connectWithIDP(components, queryGraph, interestingOrder, context, kit)
+      Set(PlannedComponent(queryGraph, bestPlans))
+    }
+  }
+
+  private def connectWithIDP(components: Set[PlannedComponent],
+                             queryGraph: QueryGraph,
+                             interestingOrder: InterestingOrder,
+                             context: LogicalPlanningContext,
+                             kit: QueryPlannerKit): BestResults[LogicalPlan] = {
     val orderRequirement = extraRequirementForInterestingOrder(context, interestingOrder)
 
     val generators = connectors.map(_.solverStep(queryGraph, interestingOrder, kit))
@@ -82,9 +98,7 @@ case class ComponentConnectorPlanner(singleComponentPlanner: SingleComponentPlan
     }
     val initialTodo = components.map(_.queryGraph)
 
-    val bestPlans = solver(seed, initialTodo, context)
-
-    Set(PlannedComponent(queryGraph, bestPlans))
+    solver(seed, initialTodo, context)
   }
 }
 
