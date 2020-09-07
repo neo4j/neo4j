@@ -51,6 +51,7 @@ import org.neo4j.cypher.internal.util.DeprecatedVarLengthBindingNotification
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.util.LengthOnNonPathNotification
+import org.neo4j.cypher.internal.util.MissingAliasNotification
 import org.neo4j.cypher.internal.util.SubqueryVariableShadowing
 import org.neo4j.cypher.internal.util.UnboundedShortestPathNotification
 import org.neo4j.graphdb
@@ -127,6 +128,8 @@ object NotificationWrapping {
       NotificationCode.DEPRECATED_HEX_LITERAL_SYNTAX.notification(pos.withOffset(offset).asInputPosition)
     case SubqueryVariableShadowing(pos, varName) =>
       NotificationCode.SUBQUERY_VARIABLE_SHADOWING.notification(pos.withOffset(offset).asInputPosition, NotificationDetail.Factory.shadowingVariable(varName))
+    case MissingAliasNotification(pos) =>
+      NotificationCode.MISSING_ALIAS.notification(pos.withOffset(offset).asInputPosition)
   }
 
   private implicit class ConvertibleCompilerInputPosition(pos: InputPosition) {

@@ -213,6 +213,6 @@ class IsolateAggregationTest extends CypherFunSuite with RewriteTest with AstCon
 
   override protected def parseForRewriting(queryText: String): Statement = {
     val exceptionFactory = OpenCypherExceptionFactory(Some(pos))
-    super.parseForRewriting(queryText).endoRewrite(inSequence(normalizeWithAndReturnClauses(exceptionFactory)))
+    super.parseForRewriting(queryText).endoRewrite(inSequence(normalizeWithAndReturnClauses(exceptionFactory, _ => ())))
   }
 }

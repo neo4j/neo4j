@@ -54,7 +54,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
   private def ast(queryText: String) = {
     val parsed = parser.parse(queryText, OpenCypherExceptionFactory(None))
     val exceptionFactory = OpenCypherExceptionFactory(Some(pos))
-    val normalized = parsed.endoRewrite(inSequence(normalizeWithAndReturnClauses(exceptionFactory)))
+    val normalized = parsed.endoRewrite(inSequence(normalizeWithAndReturnClauses(exceptionFactory, _ => ())))
     val checkResult = normalized.semanticCheck(SemanticState.clean)
     normalized.endoRewrite(inSequence(expandStar(checkResult.state)))
   }

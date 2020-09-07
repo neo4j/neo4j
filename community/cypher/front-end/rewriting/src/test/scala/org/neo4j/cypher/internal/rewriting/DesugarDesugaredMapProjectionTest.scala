@@ -75,7 +75,7 @@ class DesugarDesugaredMapProjectionTest extends CypherFunSuite {
     test(originalQuery + " is rewritten to " + expectedQuery) {
       def rewrite(q: String): Statement = {
         val exceptionFactory = OpenCypherExceptionFactory(None)
-        val sequence: Rewriter = inSequence(normalizeWithAndReturnClauses(exceptionFactory))
+        val sequence: Rewriter = inSequence(normalizeWithAndReturnClauses(exceptionFactory, _ => ()))
         val originalAst = parser.parse(q, OpenCypherExceptionFactory(None)).endoRewrite(sequence)
         val semanticCheckResult = originalAst.semanticCheck(SemanticState.clean)
         val withScopes = originalAst.endoRewrite(recordScopes(semanticCheckResult.state))

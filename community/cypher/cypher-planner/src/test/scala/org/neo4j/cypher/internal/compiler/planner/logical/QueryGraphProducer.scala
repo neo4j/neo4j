@@ -66,7 +66,7 @@ trait QueryGraphProducer extends MockitoSugar {
     val q = query + " RETURN 1 AS Result"
     val exceptionFactory = Neo4jCypherExceptionFactory(q, None)
     val ast = parser.parse(q, exceptionFactory)
-    val cleanedStatement: Statement = ast.endoRewrite(inSequence(normalizeWithAndReturnClauses(exceptionFactory)))
+    val cleanedStatement: Statement = ast.endoRewrite(inSequence(normalizeWithAndReturnClauses(exceptionFactory, _ => ())))
     val onError = SyntaxExceptionCreator.throwOnError(exceptionFactory)
     val SemanticCheckResult(semanticState, errors) = SemanticChecker.check(cleanedStatement)
     onError(errors)

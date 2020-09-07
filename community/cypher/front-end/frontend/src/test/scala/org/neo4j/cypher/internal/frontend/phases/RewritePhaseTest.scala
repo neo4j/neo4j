@@ -85,7 +85,7 @@ trait RewritePhaseTest {
   private def parseAndRewrite(queryText: String, features: SemanticFeature*): Statement = {
     val exceptionFactory = OpenCypherExceptionFactory(None)
     val parsedAst = parser.parse(queryText, exceptionFactory)
-    val cleanedAst = parsedAst.endoRewrite(inSequence(normalizeWithAndReturnClauses(exceptionFactory)))
+    val cleanedAst = parsedAst.endoRewrite(inSequence(normalizeWithAndReturnClauses(exceptionFactory, _ => ())))
     val (rewrittenAst, _, _) = astRewriter.rewrite(cleanedAst, cleanedAst.semanticState(features: _*), Map.empty, exceptionFactory)
     rewrittenAst
   }

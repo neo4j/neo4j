@@ -268,7 +268,9 @@ public interface Status
                 "The provided property key is not in the database" ),
 
         SubqueryVariableShadowingWarning( ClientNotification,
-                "Variable in subquery is shadowing a variable with the same name from the outer scope." );
+                "Variable in subquery is shadowing a variable with the same name from the outer scope." ),
+        MissingAlias( ClientNotification,
+                      "Missing alias in a RETURN clause in a CALL subquery." );
 
         private final Code code;
 

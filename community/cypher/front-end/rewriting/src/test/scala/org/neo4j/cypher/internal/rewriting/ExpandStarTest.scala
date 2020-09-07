@@ -138,9 +138,9 @@ class ExpandStarTest extends CypherFunSuite with AstConstructionTestSupport {
   private def prepRewrite(q: String, multipleGraphs: Boolean = false) = {
     val exceptionFactory = OpenCypherExceptionFactory(None)
     val rewriter = if (multipleGraphs)
-      inSequence(normalizeWithAndReturnClauses(exceptionFactory))
+      inSequence(normalizeWithAndReturnClauses(exceptionFactory, _ => ()))
     else
-      inSequence(normalizeWithAndReturnClauses(exceptionFactory))
+      inSequence(normalizeWithAndReturnClauses(exceptionFactory, _ => ()))
     parser.parse(q, exceptionFactory).endoRewrite(rewriter)
   }
 }

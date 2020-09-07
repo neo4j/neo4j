@@ -132,6 +132,7 @@ org.neo4j.kernel.api.exceptions.Status.Statement::ExperimentalFeature org.neo4j.
 org.neo4j.kernel.api.exceptions.Status.Statement::ExternalResourceFailed org.neo4j.kernel.api.exceptions.Status.Statement public static final
 org.neo4j.kernel.api.exceptions.Status.Statement::FeatureDeprecationWarning org.neo4j.kernel.api.exceptions.Status.Statement public static final
 org.neo4j.kernel.api.exceptions.Status.Statement::JoinHintUnfulfillableWarning org.neo4j.kernel.api.exceptions.Status.Statement public static final
+org.neo4j.kernel.api.exceptions.Status.Statement::MissingAlias org.neo4j.kernel.api.exceptions.Status.Statement public static final
 org.neo4j.kernel.api.exceptions.Status.Statement::NoApplicableIndexWarning org.neo4j.kernel.api.exceptions.Status.Statement public static final
 org.neo4j.kernel.api.exceptions.Status.Statement::NotSystemDatabaseError org.neo4j.kernel.api.exceptions.Status.Statement public static final
 org.neo4j.kernel.api.exceptions.Status.Statement::ParameterMissing org.neo4j.kernel.api.exceptions.Status.Statement public static final

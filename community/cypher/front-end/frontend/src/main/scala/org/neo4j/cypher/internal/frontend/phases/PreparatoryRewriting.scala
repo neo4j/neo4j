@@ -30,7 +30,7 @@ case class PreparatoryRewriting(deprecations: Deprecations) extends Phase[BaseCo
   override def process(from: BaseState, context: BaseContext): BaseState = {
 
     val rewrittenStatement = from.statement().endoRewrite(inSequence(
-      normalizeWithAndReturnClauses(context.cypherExceptionFactory),
+      normalizeWithAndReturnClauses(context.cypherExceptionFactory, context.notificationLogger.log),
       insertWithBetweenOptionalMatchAndMatch,
       expandCallWhere,
       replaceDeprecatedCypherSyntax(deprecations),

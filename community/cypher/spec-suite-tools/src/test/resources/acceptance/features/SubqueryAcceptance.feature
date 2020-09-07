@@ -355,57 +355,6 @@ Feature: SubqueryAcceptance
       | 1 |
     And no side effects
 
-  Scenario: Return items in uncorrelated single subquery must be aliased
-    Given any graph
-    When executing query:
-      """
-      CALL {
-        RETURN 5
-      }
-      RETURN `5` AS five
-      """
-    Then a SyntaxError should be raised at compile time: NoExpressionAlias
-
-  Scenario: Return items in uncorrelated union subquery must be aliased
-    Given any graph
-    When executing query:
-      """
-      CALL {
-        RETURN 5 UNION RETURN 5
-      }
-      RETURN `5` AS five
-      """
-    Then a SyntaxError should be raised at compile time: NoExpressionAlias
-
-  Scenario: Return items in correlated single subquery must be aliased
-    Given any graph
-    When executing query:
-      """
-      MATCH (n)
-      CALL {
-        WITH n
-        RETURN 5 + 5
-      }
-      RETURN `5 + 5` AS plus
-      """
-    Then a SyntaxError should be raised at compile time: NoExpressionAlias
-
-  Scenario: Return items in correlated union subquery must be aliased
-    Given any graph
-    When executing query:
-      """
-      MATCH (n)
-      CALL {
-        WITH n
-        RETURN 5 + 5
-        UNION
-        WITH n
-        RETURN 5 + 5
-      }
-      RETURN `5 + 5` AS plus
-      """
-    Then a SyntaxError should be raised at compile time: NoExpressionAlias
-
   Scenario: Map projections in uncorrelated single subquery are OK
     Given an empty graph
     When executing query:
