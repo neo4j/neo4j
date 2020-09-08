@@ -243,7 +243,7 @@ abstract class DistinctTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("y").withRows(singleColumn(expected))
   }
 
-  test("should work with distinct on multiple primitive columns on RHS of apply\"") {
+  test("should work with distinct on multiple primitive columns on RHS of apply") {
     // given
     val (nodes, _) = given {circleGraph(sizeHint)}
     val inputNodes = inputValues(nodes.flatMap(n => Seq.fill(11)(n)).map(Array[Any](_)): _*)
