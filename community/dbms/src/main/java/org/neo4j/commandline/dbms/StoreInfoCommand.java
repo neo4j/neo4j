@@ -277,9 +277,9 @@ public class StoreInfoCommand extends AbstractCommand
 
         String structuredJson( String value )
         {
-            var nullSafeValue = value == null ? "N/A" : value;
-            var kvFmt = "\"%s\":\"%s\"";
-            return String.format( kvFmt, jsonKey, nullSafeValue );
+            var kFmt = "\"%s\":";
+            var kvFmt = kFmt + "\"%s\"";
+            return value == null ? String.format( kFmt + "null", jsonKey ) : String.format( kvFmt, jsonKey, value );
         }
     }
 }

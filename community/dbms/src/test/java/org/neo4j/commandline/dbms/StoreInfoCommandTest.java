@@ -195,9 +195,9 @@ class StoreInfoCommandTest
         prepareNeoStoreFile( currentFormat.storeVersion(), barDbLayout );
         var databasesRoot = homeDir.resolve( "data/databases" );
 
-        var expectedBar = expectedStructuredResult( "bar", false, currentFormat.storeVersion(), currentFormat.introductionVersion(), "N/A" );
+        var expectedBar = expectedStructuredResult( "bar", false, currentFormat.storeVersion(), currentFormat.introductionVersion(), null );
 
-        var expectedFoo = expectedStructuredResult( "foo", true, "N/A", "N/A", "N/A" );
+        var expectedFoo = expectedStructuredResult( "foo", true, null, null, null );
 
         var expected = String.format( "[%s,%s]", expectedBar, expectedFoo );
 
@@ -250,7 +250,7 @@ class StoreInfoCommandTest
         //given
         var currentFormat = RecordFormatSelector.defaultFormat();
         prepareNeoStoreFile( currentFormat.storeVersion(), fooDbLayout );
-        var expectedFoo = expectedStructuredResult( "foo", false, currentFormat.storeVersion(), currentFormat.introductionVersion(), "N/A" );
+        var expectedFoo = expectedStructuredResult( "foo", false, currentFormat.storeVersion(), currentFormat.introductionVersion(), null );
 
         // when
         CommandLine.populateCommand( command, args( fooDbDirectory, false, true ) );
@@ -276,12 +276,17 @@ class StoreInfoCommandTest
         return "{" +
                "\"databaseName\":\"" + databaseName + "\"," +
                "\"inUse\":\"" + inUse + "\"," +
-               "\"storeFormat\":\"" + version + "\"," +
-               "\"storeFormatIntroduced\":\"" + introduced + "\"," +
-               "\"storeFormatSuperseded\":\"" + superseded + "\"," +
+               "\"storeFormat\":" + nullSafeField( version ) + "," +
+               "\"storeFormatIntroduced\":" + nullSafeField( introduced ) + "," +
+               "\"storeFormatSuperseded\":" + nullSafeField( superseded ) + "," +
                "\"lastCommittedTransaction\":\"-1\"," +
                "\"recoveryRequired\":\"true\"" +
                "}";
+    }
+
+    private String nullSafeField( String value )
+    {
+        return value == null ? "null" : "\"" + value + "\"";
     }
 
     private void prepareNeoStoreFile( String storeVersion, DatabaseLayout dbLayout ) throws IOException
