@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
+import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher.beLike
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.cartesianProductsOrValueJoins.COMPONENT_THRESHOLD_FOR_CARTESIAN_PRODUCT
@@ -143,6 +144,32 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
         NodeByLabelScan("a", labelName("A"), Set.empty, IndexOrderNone)
       )
     )
+  }
+
+  test("should plan cartesian product of two plans so the cost is minimized, even if cardinality is way lower on one side.") {
+    val selectivities = Map[Expression, Double](
+      hasLabels("a", "A") -> 0.1,
+      hasLabels("b", "A") -> 0.1,
+      equals(prop("a", "prop"), literalInt(0)) -> 0.1,
+      in(prop("a", "prop"), listOfInt(0)) -> 0.1
+    )
+
+    val plan = new given {
+      cardinality = selectivitiesCardinality(selectivities, qg => Math.pow(100.0, qg.connectedComponents.size))
+    } getLogicalPlanFor("MATCH (a:A), (b:A) WHERE a.prop = 0 RETURN a", stripProduceResults = false)
+
+    // A x B = 11 +  1 * 10 => 21
+    // B x A = 10 + 10 * 11 => 121
+
+    plan._2 should equal(
+      new LogicalPlanBuilder()
+        .produceResults("a")
+        .cartesianProduct()
+        .|.nodeByLabelScan("b", "A")
+        .filter("a.prop = 0")
+        .nodeByLabelScan("a", "A")
+        .build()
+      )
   }
 
   test("should not plan apply with independent rhs") {
