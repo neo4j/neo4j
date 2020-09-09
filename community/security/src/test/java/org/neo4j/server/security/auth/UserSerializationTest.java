@@ -83,6 +83,30 @@ class UserSerializationTest
         }
     }
 
+    @Test
+    void shouldMaskAndUnmaskSerializedSystemGraphCredential() throws Exception
+    {
+        // Given
+        SecureHasher hasher = new SecureHasher();
+        List<User> users = asList(
+                new User.Builder( "Mike", SystemGraphCredential.createCredentialForPassword( UTF8.encode( "1234321" ), hasher ) ).build(),
+                new User.Builder( "Steve", SystemGraphCredential.createCredentialForPassword( UTF8.encode( "1234321" ), hasher ) ).build(),
+                new User.Builder( "steve.stevesson@WINDOMAIN", SystemGraphCredential.createCredentialForPassword( UTF8.encode( "1234321" ), hasher ) ).build(),
+                new User.Builder( "Bob", SystemGraphCredential.createCredentialForPassword( UTF8.encode( "0987654" ), hasher ) ).build()
+        );
+
+        for ( User user : users )
+        {
+            String serialized = user.credentials().serialize();
+
+            // When
+            String masked = SystemGraphCredential.maskSerialized(serialized);
+
+            // Then
+            assertThat( serialized ).isEqualTo( SystemGraphCredential.serialize( masked.getBytes() ) );
+        }
+    }
+
     /**
      * This is a future-proofing test. If you come here because you've made changes to the serialization format,
      * this is your reminder to make sure to build this is in a backwards compatible way.

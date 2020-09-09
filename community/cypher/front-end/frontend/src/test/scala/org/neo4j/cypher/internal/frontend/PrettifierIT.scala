@@ -395,21 +395,6 @@ class PrettifierIT extends CypherFunSuite {
       "create user abc set plaintext password $password" ->
         "CREATE USER abc SET PASSWORD $password CHANGE REQUIRED",
 
-      "alter user abc set encrypted password 'foo'" ->
-        "ALTER USER abc SET ENCRYPTED PASSWORD '******'",
-
-      "alter user $abc set encrypted password 'foo'" ->
-        "ALTER USER $abc SET ENCRYPTED PASSWORD '******'",
-
-      "alter user abc set encrypted password $password" ->
-        "ALTER USER abc SET ENCRYPTED PASSWORD $password",
-
-      "alter user abc set plaintext password 'foo'" ->
-        "ALTER USER abc SET PASSWORD '******'",
-
-      "alter user abc set plaintext password $password" ->
-        "ALTER USER abc SET PASSWORD $password",
-
       "alter user abc set password 'foo'" ->
         "ALTER USER abc SET PASSWORD '******'",
 
@@ -439,6 +424,21 @@ class PrettifierIT extends CypherFunSuite {
 
       "alter user abc set password change not required set status active" ->
         "ALTER USER abc SET PASSWORD CHANGE NOT REQUIRED SET STATUS ACTIVE",
+
+      "alter user abc set encrypted password 'foo'" ->
+        "ALTER USER abc SET ENCRYPTED PASSWORD '******'",
+
+      "alter user $abc set encrypted password 'foo'" ->
+        "ALTER USER $abc SET ENCRYPTED PASSWORD '******'",
+
+      "alter user abc set encrypted password $password" ->
+        "ALTER USER abc SET ENCRYPTED PASSWORD $password",
+
+      "alter user abc set plaintext password 'foo'" ->
+        "ALTER USER abc SET PASSWORD '******'",
+
+      "alter user abc set plaintext password $password" ->
+        "ALTER USER abc SET PASSWORD $password",
 
       "drop user abc" ->
         "DROP USER abc",

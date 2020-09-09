@@ -101,12 +101,6 @@ trait Statement extends Parser
     group(keyword("CREATE USER") ~~ SymbolicNameOrStringParameter ~> (_ => ast.IfExistsThrowError))
   }
 
-  def SetPassword: Rule1[Boolean] = {
-    // returns: isEncryptedPassword
-    group(keyword("SET") ~~ optional(keyword("PLAINTEXT")) ~~ (keyword("PASSWORD")) ~> (_ => false)) |
-    group(keyword("SET ENCRYPTED PASSWORD") ~> (_ => true))
-  }
-
   def DropUser: Rule1[ast.DropUser] = rule("DROP USER") {
     group(keyword("DROP USER") ~~ SymbolicNameOrStringParameter ~~ keyword("IF EXISTS")) ~~>> (ast.DropUser(_, ifExists = true)) |
     group(keyword("DROP USER") ~~ SymbolicNameOrStringParameter) ~~>> (ast.DropUser(_, ifExists = false))
@@ -149,6 +143,12 @@ trait Statement extends Parser
     // ALTER CURRENT USER SET PASSWORD FROM parameterPassword TO parameterPassword
     group(keyword("ALTER CURRENT USER SET PASSWORD FROM") ~~ SensitiveStringParameter ~~ keyword("TO") ~~ SensitiveStringParameter) ~~>>
       ((currentPassword, newPassword) => ast.SetOwnPassword(newPassword, currentPassword))
+  }
+
+  def SetPassword: Rule1[Boolean] = rule("set encrypted or plaintext password") {
+    // returns: isEncryptedPassword
+    group(keyword("SET") ~~ optional(keyword("PLAINTEXT")) ~~ (keyword("PASSWORD")) ~> (_ => false)) |
+      group(keyword("SET ENCRYPTED PASSWORD") ~> (_ => true))
   }
 
   def OptionalRequirePasswordChange: Rule1[Option[Boolean]] = {

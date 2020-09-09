@@ -50,12 +50,6 @@ object Additions {
 
     override def check(statement: Statement, cypherExceptionFactory: CypherExceptionFactory): Unit = statement.treeExists {
 
-      case c@CreateUser(_, true, _, _, _, _) =>
-        throw cypherExceptionFactory.syntaxException("Creating a user with an encrypted password is not supported in this Cypher version.", c.position)
-
-      case c@AlterUser(_, Some(true), _, _, _) =>
-        throw cypherExceptionFactory.syntaxException("Updating a user with an encrypted password is not supported in this Cypher version.", c.position)
-
       case u: UseGraph =>
         throw cypherExceptionFactory.syntaxException("The USE clause is not supported in this Cypher version.", u.position)
 
@@ -98,6 +92,13 @@ object Additions {
   case object addedFeaturesIn4_2 extends Additions {
 
     override def check(statement: Statement, cypherExceptionFactory: CypherExceptionFactory): Unit = statement.treeExists {
+
+      case c@CreateUser(_, true, _, _, _, _) =>
+        throw cypherExceptionFactory.syntaxException("Creating a user with an encrypted password is not supported in this Cypher version.", c.position)
+
+      case c@AlterUser(_, Some(true), _, _, _) =>
+        throw cypherExceptionFactory.syntaxException("Updating a user with an encrypted password is not supported in this Cypher version.", c.position)
+
       // SHOW ROLE role1, role2 PRIVILEGES
       case s@ShowPrivileges(ShowRolesPrivileges(r), _, _) if r.size > 1 =>
         throw cypherExceptionFactory.syntaxException("Multiple roles in SHOW ROLE PRIVILEGE command is not supported in this Cypher version.", s.position)

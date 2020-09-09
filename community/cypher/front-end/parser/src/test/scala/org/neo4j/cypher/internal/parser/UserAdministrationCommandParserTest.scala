@@ -118,8 +118,8 @@ class UserAdministrationCommandParserTest extends AdministrationCommandParserTes
     yields(ast.CreateUser(literalFoo, isEncryptedPassword = false, password, requirePasswordChange = true, suspended = None, ast.IfExistsThrowError))
   }
 
-  test("CATALOG CREATE USER $foo SET PLAINTEXT PASSWORD 'password'") {
-    yields(ast.CreateUser(paramFoo, isEncryptedPassword = false, password, requirePasswordChange = true, suspended = None, ast.IfExistsThrowError))
+  test("CATALOG CREATE USER foo SET PLAINTEXT PASSWORD $password") {
+    yields(ast.CreateUser(literalFoo, isEncryptedPassword = false, paramPassword, requirePasswordChange = true, suspended = None, ast.IfExistsThrowError))
   }
 
   test("CATALOG CREATE USER $bar SET PASSWORD $password") {
@@ -313,6 +313,10 @@ class UserAdministrationCommandParserTest extends AdministrationCommandParserTes
     failsToParse
   }
 
+  test("CREATE USER foo SET PASSWORD 'password' ENCRYPTED") {
+    failsToParse
+  }
+
   test("CREATE USER foo SET PASSwORD 'passwordString'+$passwordexpressions.Parameter") {
     failsToParse
   }
@@ -445,6 +449,14 @@ class UserAdministrationCommandParserTest extends AdministrationCommandParserTes
     yields(ast.AlterUser(paramFoo, isEncryptedPassword = Some(false), Some(password), None, None))
   }
 
+  test("CATALOG ALTER USER foo SET PLAINTEXT PASSWORD 'password'") {
+    yields(ast.AlterUser(literalFoo, isEncryptedPassword = Some(false), Some(password), None, None))
+  }
+
+  test("CATALOG ALTER USER foo SET PLAINTEXT PASSWORD $password") {
+    yields(ast.AlterUser(literalFoo, isEncryptedPassword = Some(false), Some(paramPassword), None, None))
+  }
+
   test("ALTER USER `` SET PASSWORD 'password'") {
     yields(ast.AlterUser(literalEmpty, isEncryptedPassword = Some(false), Some(password), None, None))
   }
@@ -459,6 +471,26 @@ class UserAdministrationCommandParserTest extends AdministrationCommandParserTes
 
   test("ALTER USER foo SET PASSWORD $password") {
     yields(ast.AlterUser(literalFoo, isEncryptedPassword = Some(false), Some(paramPassword), None, None))
+  }
+
+  test("CATALOG ALTER USER foo SET ENCRYPTED Password $password") {
+    yields(ast.AlterUser(literalFoo, isEncryptedPassword = Some(true), Some(paramPassword), None, None))
+  }
+
+  test("CATALOG ALTER USER foo SET ENCRYPTED PASSWORD 'password'") {
+    yields(ast.AlterUser(literalFoo, isEncryptedPassword = Some(true), Some(password), None, None))
+  }
+
+  test("CATALOG ALTER USER $foo SET ENCRYPTED PASSWORD 'password'") {
+    yields(ast.AlterUser(paramFoo, isEncryptedPassword = Some(true), Some(password), None, None))
+  }
+
+  test("ALTER USER `` SET ENCRYPTED PASSWORD 'password'") {
+    yields(ast.AlterUser(literalEmpty, isEncryptedPassword = Some(true), Some(password), None, None))
+  }
+
+  test("CATALOG ALTER USER foo SET ENCRYPTED PASSWORD '1,04773b8510aea96ca2085cb81764b0a2,75f4201d047191c17c5e236311b7c4d77e36877503fe60b1ca6d4016160782ab'") {
+    yields(ast.AlterUser(literalFoo, isEncryptedPassword = Some(true), Some(pw("1,04773b8510aea96ca2085cb81764b0a2,75f4201d047191c17c5e236311b7c4d77e36877503fe60b1ca6d4016160782ab")), None, None))
   }
 
   test("CATALOG ALTER USER foo SET PASSWORD CHANGE REQUIRED") {
@@ -495,22 +527,6 @@ class UserAdministrationCommandParserTest extends AdministrationCommandParserTes
 
   test("ALTER USER foo SET PASSWORD $password SET PASSWORD CHANGE NOT REQUIRED SET STATUS SUSPENDED") {
     yields(ast.AlterUser(literalFoo, isEncryptedPassword = Some(false), Some(paramPassword), requirePasswordChange = Some(false), suspended = Some(true)))
-  }
-
-  test("CATALOG ALTER USER foo SET ENCRYPTED Password $password") {
-    yields(ast.AlterUser(literalFoo, isEncryptedPassword = Some(true), Some(paramPassword), None, None))
-  }
-
-  test("CATALOG ALTER USER foo SET ENCRYPTED PASSWORD 'password'") {
-    yields(ast.AlterUser(literalFoo, isEncryptedPassword = Some(true), Some(password), None, None))
-  }
-
-  test("CATALOG ALTER USER $foo SET ENCRYPTED PASSWORD 'password'") {
-    yields(ast.AlterUser(paramFoo, isEncryptedPassword = Some(true), Some(password), None, None))
-  }
-
-  test("ALTER USER `` SET ENCRYPTED PASSWORD 'password'") {
-    yields(ast.AlterUser(literalEmpty, isEncryptedPassword = Some(true), Some(password), None, None))
   }
 
   test("ALTER user command finds password literal at correct offset") {
@@ -561,6 +577,10 @@ class UserAdministrationCommandParserTest extends AdministrationCommandParserTes
   }
 
   test("ALTER USER foo SET PASSWORD 'password' SET ENCRYPTED PASSWORD") {
+    failsToParse
+  }
+
+  test("ALTER USER foo SET PASSWORD 'password' ENCRYPTED") {
     failsToParse
   }
 

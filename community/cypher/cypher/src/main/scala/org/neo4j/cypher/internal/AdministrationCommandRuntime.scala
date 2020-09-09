@@ -172,13 +172,13 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
   }
 
   protected def makeCreateUserExecutionPlan(userName: Either[String, Parameter],
-                                  isEncryptedPassword: Boolean,
-                                  password: expressions.Expression,
-                                  requirePasswordChange: Boolean,
-                                  suspended: Boolean,
-                                  restrictedUsernames : Seq[String] = Seq.empty)(
-                                   sourcePlan: Option[ExecutionPlan],
-                                   normalExecutionEngine: ExecutionEngine): ExecutionPlan = {
+                                            isEncryptedPassword: Boolean,
+                                            password: expressions.Expression,
+                                            requirePasswordChange: Boolean,
+                                            suspended: Boolean,
+                                            restrictedUsernames: Seq[String] = Seq.empty)
+                                           (sourcePlan: Option[ExecutionPlan],
+                                            normalExecutionEngine: ExecutionEngine): ExecutionPlan = {
     val passwordChangeRequiredKey = internalKey("passwordChangeRequired")
     val suspendedKey = internalKey("suspended")
     val userNameFields = getNameFields("username", userName)
@@ -217,10 +217,9 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
                                            isEncryptedPassword: Option[Boolean],
                                            password: Option[expressions.Expression],
                                            requirePasswordChange: Option[Boolean],
-                                           suspended: Option[Boolean])(
-                                            sourcePlan: Option[ExecutionPlan],
-                                            normalExecutionEngine: ExecutionEngine
-                                          ): ExecutionPlan = {
+                                           suspended: Option[Boolean])
+                                          (sourcePlan: Option[ExecutionPlan],
+                                           normalExecutionEngine: ExecutionEngine): ExecutionPlan = {
     val userNameFields = getNameFields("username", userName)
       val maybePw = password.map(p => getPasswordExpression(p, isEncryptedPassword.getOrElse(false)))
       val params = Seq(

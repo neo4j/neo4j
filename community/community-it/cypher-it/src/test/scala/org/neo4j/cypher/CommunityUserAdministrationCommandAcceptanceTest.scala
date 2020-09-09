@@ -25,6 +25,8 @@ import java.util.Collections
 import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
 import org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME
+import org.neo4j.cypher.internal.security.SecureHasher
+import org.neo4j.cypher.internal.security.SystemGraphCredential
 import org.neo4j.exceptions.DatabaseAdministrationException
 import org.neo4j.exceptions.InvalidArgumentException
 import org.neo4j.exceptions.ParameterNotFoundException
@@ -443,7 +445,7 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
 
   test("should do nothing when creating already existing user using if not exists") {
     // WHEN
-    execute("CREATE USER neo4j IF NOT EXISTS SET PASSWORD 'password' CHANGE NOT REQUIRED")
+    execute("CREATE USER neo4j IF NOT EXISTS SET PLAINTEXT PASSWORD 'password' CHANGE NOT REQUIRED")
 
     // THEN
     execute("SHOW USERS").toSet shouldBe Set(user("neo4j"))
@@ -551,6 +553,108 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     // THEN
     exception2.getMessage should include("Failed to create the specified user '$user': cannot have both `OR REPLACE` and `IF NOT EXISTS`.")
   }
+
+  test("should create user with encrypted password") {
+    // GIVEN
+    val username = "foo"
+    val password = "bar"
+    val encryptedPassword = getMaskedEncodedPassword(password)
+
+    // WHEN
+    execute(s"CREATE USER $username SET ENCRYPTED PASSWORD '$encryptedPassword'")
+
+    // THEN
+    execute("SHOW USERS").toSet shouldBe Set(user("neo4j"), user(username))
+    testUserLogin(username, "wrong", AuthenticationResult.FAILURE)
+    testUserLogin(username, encryptedPassword, AuthenticationResult.FAILURE)
+    testUserLogin(username, password, AuthenticationResult.PASSWORD_CHANGE_REQUIRED)
+  }
+
+  test("should create user with old configuration encrypted password") {
+    // GIVEN
+    val username = "foo"
+    val password = "bar"
+    val version = "0"
+    val encryptedPassword = getMaskedEncodedPassword(password, version)
+
+    // WHEN
+    execute(s"CREATE USER $username SET ENCRYPTED PASSWORD '$encryptedPassword'")
+
+    // THEN
+    execute("SHOW USERS").toSet shouldBe Set(user("neo4j"), user(username))
+    testUserLogin(username, "wrong", AuthenticationResult.FAILURE)
+    testUserLogin(username, encryptedPassword, AuthenticationResult.FAILURE)
+    testUserLogin(username, password, AuthenticationResult.PASSWORD_CHANGE_REQUIRED)
+  }
+
+  test("should fail to create user with unmasked encrypted password") {
+    // GIVEN
+    val username = "foo"
+    val unmaskedEncryptedPassword = "SHA-256,04773b8510aea96ca2085cb81764b0a2,75f4201d047191c17c5e236311b7c4d77e36877503fe60b1ca6d4016160782ab,1024"
+
+    the[InvalidArgumentsException] thrownBy {
+      // WHEN
+      execute(s"CREATE USER $username SET ENCRYPTED PASSWORD '$unmaskedEncryptedPassword'")
+      // THEN
+    } should have message "Incorrect format of encrypted password. Correct format is '<encryption-version>,<hash>,<salt>'."
+
+    execute("SHOW USERS").toSet shouldBe Set(user("neo4j"))
+  }
+
+  test("should fail to create user with encrypted password and unsupported version number") {
+    // GIVEN
+    val username = "foo"
+    val incorrectlyEncryptedPassword = "8,04773b8510aea96ca2085cb81764b0a2,75f4201d047191c17c5e236311b7c4d77e36877503fe60b1ca6d4016160782ab"
+
+    the[InvalidArgumentsException] thrownBy {
+      // WHEN
+      execute(s"CREATE USER $username SET ENCRYPTED PASSWORD '$incorrectlyEncryptedPassword'")
+      // THEN
+    } should have message "The encryption version specified is not available."
+
+    execute("SHOW USERS").toSet shouldBe Set(user("neo4j"))
+  }
+
+  test("should fail to create user with encrypted password and missing salt/hash") {
+    // GIVEN
+    val username = "foo"
+    val incorrectlyEncryptedPassword = "1,75f4201d047191c17c5e236311b7c4d77e36877503fe60b1ca6d4016160782ab"
+
+    the[InvalidArgumentsException] thrownBy {
+      // WHEN
+      execute(s"CREATE USER $username SET ENCRYPTED PASSWORD '$incorrectlyEncryptedPassword'")
+      // THEN
+    } should have message "Incorrect format of encrypted password. Correct format is '<encryption-version>,<hash>,<salt>'."
+
+    execute("SHOW USERS").toSet shouldBe Set(user("neo4j"))
+  }
+
+  test("should fail to create user with empty encrypted password") {
+    the[InvalidArgumentsException] thrownBy {
+      // WHEN
+      execute("CREATE USER foo SET ENCRYPTED PASSWORD ''")
+      // THEN
+    } should have message "Incorrect format of encrypted password. Correct format is '<encryption-version>,<hash>,<salt>'."
+
+    execute("SHOW USERS").toSet shouldBe Set(user("neo4j"))
+  }
+
+  test("should create user with encrypted password as parameter") {
+    // GIVEN
+    val username = "foo"
+    val password = "bar"
+    val encryptedPassword = getMaskedEncodedPassword(password)
+
+    // WHEN
+    execute(s"CREATE USER $username SET ENCRYPTED PASSWORD $$password CHANGE REQUIRED", Map("password" -> encryptedPassword))
+
+    // THEN
+    execute("SHOW USERS").toSet shouldBe Set(user("neo4j"), user(username))
+    testUserLogin(username, "wrong", AuthenticationResult.FAILURE)
+    testUserLogin(username, encryptedPassword, AuthenticationResult.FAILURE)
+    testUserLogin(username, password, AuthenticationResult.PASSWORD_CHANGE_REQUIRED)
+  }
+
 
   test("should fail when creating user when not on system database") {
     selectDatabase(DEFAULT_DATABASE_NAME)
@@ -732,7 +836,7 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     prepareUser("foo", "bar")
 
     // WHEN
-    execute("ALTER USER foo SET PASSWORD $password", Map("password" -> "baz"))
+    execute("ALTER USER foo SET PLAINTEXT PASSWORD $password", Map("password" -> "baz"))
 
     // THEN
     testUserLogin("foo", "baz", AuthenticationResult.PASSWORD_CHANGE_REQUIRED)
@@ -847,6 +951,95 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
       execute("ALTER USER $user SET PASSWORD 'baz'", Map("user" -> "foo"))
       // THEN
     } should have message "Failed to alter the specified user 'foo': User does not exist."
+  }
+
+  test("should alter user with encrypted password") {
+    // GIVEN
+    val username = "foo"
+    val oldPassword = "bar"
+    val password = "baz"
+    val encryptedPassword = getMaskedEncodedPassword(password)
+
+    execute(s"CREATE USER $username SET PASSWORD '$oldPassword'")
+
+    // WHEN
+    execute(s"ALTER USER $username SET ENCRYPTED PASSWORD '$encryptedPassword'")
+
+    // THEN
+    testUserLogin(username, oldPassword, AuthenticationResult.FAILURE)
+    testUserLogin(username, encryptedPassword, AuthenticationResult.FAILURE)
+    testUserLogin(username, password, AuthenticationResult.PASSWORD_CHANGE_REQUIRED)
+  }
+
+  test("should alter user with old configuration encrypted password") {
+    // GIVEN
+    val username = "foo"
+    val oldPassword = "bar"
+    val password = "baz"
+    val version = "0"
+    val encryptedPassword = getMaskedEncodedPassword(password, version)
+
+    execute(s"CREATE USER $username SET PASSWORD '$oldPassword'")
+
+    // WHEN
+    execute(s"ALTER USER $username SET ENCRYPTED PASSWORD '$encryptedPassword'")
+
+    // THEN
+    testUserLogin(username, oldPassword, AuthenticationResult.FAILURE)
+    testUserLogin(username, encryptedPassword, AuthenticationResult.FAILURE)
+    testUserLogin(username, password, AuthenticationResult.PASSWORD_CHANGE_REQUIRED)
+  }
+
+  test("should fail to alter user with empty encrypted password") {
+    // GIVEN
+    val username = "foo"
+    val password = "bar"
+    execute(s"CREATE USER $username SET PASSWORD '$password'")
+
+    the[InvalidArgumentsException] thrownBy {
+      // WHEN
+      execute("ALTER USER foo SET ENCRYPTED PASSWORD ''")
+      // THEN
+    } should have message "Incorrect format of encrypted password. Correct format is '<encryption-version>,<hash>,<salt>'."
+
+    testUserLogin(username, "", AuthenticationResult.FAILURE)
+    testUserLogin(username, password, AuthenticationResult.PASSWORD_CHANGE_REQUIRED)
+  }
+
+  test("should fail to alter user with incorrectly encrypted password") {
+    // GIVEN
+    val username = "foo"
+    val password = "bar"
+    val incorrectlyEncryptedPassword = "0b1ca6d4016160782ab"
+
+    execute(s"CREATE USER $username SET PASSWORD '$password'")
+
+    the[InvalidArgumentsException] thrownBy {
+      // WHEN
+      execute(s"ALTER USER $username SET ENCRYPTED PASSWORD '$incorrectlyEncryptedPassword'")
+      // THEN
+    } should have message "Incorrect format of encrypted password. Correct format is '<encryption-version>,<hash>,<salt>'."
+
+    testUserLogin(username, incorrectlyEncryptedPassword, AuthenticationResult.FAILURE)
+    testUserLogin(username, password, AuthenticationResult.PASSWORD_CHANGE_REQUIRED)
+  }
+
+  test("should alter user with encrypted password as parameter") {
+    // GIVEN
+    val username = "foo"
+    val oldPassword = "bar"
+    val password = "baz"
+    val encryptedPassword = getMaskedEncodedPassword(password)
+
+    execute(s"CREATE USER $username SET PASSWORD '$oldPassword'")
+
+    // WHEN
+    execute(s"ALTER USER $username SET ENCRYPTED PASSWORD $$password CHANGE REQUIRED", Map("password" -> encryptedPassword))
+
+    // THEN
+    testUserLogin(username, oldPassword, AuthenticationResult.FAILURE)
+    testUserLogin(username, encryptedPassword, AuthenticationResult.FAILURE)
+    testUserLogin(username, password, AuthenticationResult.PASSWORD_CHANGE_REQUIRED)
   }
 
   test("should fail on altering user status from community") {
@@ -1137,6 +1330,18 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     execute("SHOW USERS").toSet shouldBe Set(user("neo4j"), user(username))
     testUserLogin(username, "wrong", AuthenticationResult.FAILURE)
     testUserLogin(username, password, AuthenticationResult.PASSWORD_CHANGE_REQUIRED)
+  }
+
+  private def getMaskedEncodedPassword(password: String): String = {
+    val hasher = new SecureHasher()
+    val credential = SystemGraphCredential.createCredentialForPassword(password.getBytes, hasher)
+    SystemGraphCredential.maskSerialized(credential.serialize())
+  }
+
+  private def getMaskedEncodedPassword(password: String, version: String): String = {
+    val hasher = new SecureHasher(version)
+    val credential = SystemGraphCredential.createCredentialForPassword(password.getBytes, hasher)
+    SystemGraphCredential.maskSerialized(credential.serialize())
   }
 
   private def executeOnSystem(username: String, password: String, query: String,
