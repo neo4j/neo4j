@@ -46,17 +46,20 @@ object Namespacer extends Phase[BaseContext, BaseState, BaseState] {
 
   override def process(from: BaseState, ignored: BaseContext): BaseState = {
     val withProjectedUnions = from.statement().endoRewrite(projectUnions)
+    val table = SemanticTable(types = from.semantics().typeTable, recordedScopes = from.semantics().recordedScopes.mapValues(_.scope))
 
     val ambiguousNames = shadowedNames(from.semantics().scopeTree)
     val variableDefinitions: Map[SymbolUse, SymbolUse] = from.semantics().scopeTree.allVariableDefinitions
     val renamings = variableRenamings(withProjectedUnions, variableDefinitions, ambiguousNames)
 
-    val rewriter = renamingRewriter(renamings)
-    val newStatement = withProjectedUnions.endoRewrite(rewriter)
-    val table = SemanticTable(types = from.semantics().typeTable, recordedScopes = from.semantics().recordedScopes.mapValues(_.scope))
-
-    val newSemanticTable = table.replaceExpressions(rewriter)
-    from.withStatement(newStatement).withSemanticTable(newSemanticTable)
+    if (renamings.isEmpty) {
+      from.withStatement(withProjectedUnions).withSemanticTable(table)
+    } else {
+      val rewriter = renamingRewriter(renamings)
+      val newStatement = withProjectedUnions.endoRewrite(rewriter)
+      val newSemanticTable = table.replaceExpressions(rewriter)
+      from.withStatement(newStatement).withSemanticTable(newSemanticTable)
+    }
   }
 
   override def postConditions: Set[Condition] = Set(
