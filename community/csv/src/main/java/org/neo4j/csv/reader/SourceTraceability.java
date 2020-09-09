@@ -37,9 +37,24 @@ public interface SourceTraceability
     String sourceDescription();
 
     /**
-     * @return a low-level byte-like position e.g. byte offset.
+     * @return a low-level byte-like position e.g. byte offset. This position is an "uncompressed" position.
      */
     long position();
+
+    /**
+     * @return the observed compression ratio to use when compensating between situations where reported data source length
+     * is a compressed length and {@link #position()} is decompressed position. Usually this value is 1.0, which means that
+     * source length and position are aligned, but in some cases e.g. for GZIP this isn't efficiently possible and therefore
+     * this ratio can be used like so:
+     *
+     * <pre>
+     * actualSourceLength = position() / compressionRatio()
+     * </pre>
+     */
+    default float compressionRatio()
+    {
+        return 1f;
+    }
 
     abstract class Adapter implements SourceTraceability
     {
@@ -50,12 +65,14 @@ public interface SourceTraceability
         }
     }
 
-    SourceTraceability EMPTY = new Adapter()
+    class Empty extends Adapter
     {
         @Override
         public String sourceDescription()
         {
             return "EMPTY";
         }
-    };
+    }
+
+    SourceTraceability EMPTY = new Empty();
 }

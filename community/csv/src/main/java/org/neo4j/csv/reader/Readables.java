@@ -32,6 +32,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.function.LongSupplier;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
@@ -39,6 +40,8 @@ import java.util.zip.ZipFile;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.function.IOFunction;
 import org.neo4j.function.ThrowingFunction;
+
+import static org.neo4j.csv.reader.CharReadable.EMPTY;
 
 /**
  * Means of instantiating common {@link CharReadable} instances.
@@ -58,38 +61,6 @@ public class Readables
     {
         throw new AssertionError( "No instances allowed" );
     }
-
-    public static final CharReadable EMPTY = new CharReadable.Adapter()
-    {
-        @Override
-        public SectionedCharBuffer read( SectionedCharBuffer buffer, int from )
-        {
-            return buffer;
-        }
-
-        @Override
-        public void close()
-        {   // Nothing to close
-        }
-
-        @Override
-        public String sourceDescription()
-        {
-            return "EMPTY";
-        }
-
-        @Override
-        public int read( char[] into, int offset, int length )
-        {
-            return -1;
-        }
-
-        @Override
-        public long length()
-        {
-            return 0;
-        }
-    };
 
     public static CharReadable wrap( final InputStream stream, final String sourceName, Charset charset )
             throws IOException
@@ -198,7 +169,7 @@ public class Readables
                     {
                         return file.getPath();
                     }
-                }, file.length() );
+                }, entry.getSize() );
             }
             else if ( magic == Magic.GZIP )
             {   // GZIP file. GZIP isn't an archive like ZIP, so this is purely data that is compressed.
@@ -206,15 +177,37 @@ public class Readables
                 // files into one blob, which is then compressed. If that's the case then
                 // the data will look like garbage and the reader will fail for whatever it will be used for.
                 // TODO add tar support
-                GZIPInputStream zipStream = new GZIPInputStream( new FileInputStream( file ) );
-                return wrap( new InputStreamReader( zipStream, charset )
+                LongSupplier[] bytesReadFromCompressedSource = new LongSupplier[1];
+                GZIPInputStream zipStream = new GZIPInputStream( new FileInputStream( file ) )
+                {
+                    {
+                        // Access GZIPInputStream's internal Inflater instance and make number of bytes read available
+                        // to the returned CharReadable below.
+                        bytesReadFromCompressedSource[0] = inf::getBytesRead;
+                    }
+                };
+                InputStreamReader reader = new InputStreamReader( zipStream, charset )
                 {
                     @Override
                     public String toString()
                     {
                         return file.getPath();
                     }
-                }, file.length() );
+                };
+                // For GZIP there's no reliable way of getting the decompressed file size w/o decompressing the whole file,
+                // therefore this compression ratio estimation mechanic is put in place such that at any given time the reader
+                // can be queried about its observed compression ratio and the longer the reader goes the more accurate it gets.
+                long compressedFileLength = file.length();
+                return new WrappedCharReadable( compressedFileLength, reader, file.getPath() )
+                {
+                    @Override
+                    public float compressionRatio()
+                    {
+                        long decompressedPosition = position();
+                        long compressedPosition = bytesReadFromCompressedSource[0].getAsLong();
+                        return (float) ((double) compressedPosition / decompressedPosition);
+                    }
+                };
             }
             else
             {
