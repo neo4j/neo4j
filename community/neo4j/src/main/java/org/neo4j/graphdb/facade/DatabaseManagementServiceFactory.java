@@ -39,6 +39,7 @@ import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManagementServiceImpl;
 import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.dbms.database.DbmsRuntimeSystemGraphComponent;
 import org.neo4j.dbms.database.DefaultDatabaseInitializer;
 import org.neo4j.dbms.database.SystemGraphComponents;
 import org.neo4j.dbms.database.UnableToStartDatabaseException;
@@ -137,9 +138,16 @@ public class DatabaseManagementServiceFactory
         setupProcedures( globalModule, edition, databaseManager );
 
         globalLife.add( edition.createSystemGraphInitializer( globalModule, databaseManager ) );
+
+        var dbmsRuntimeSystemGraphComponent = new DbmsRuntimeSystemGraphComponent( globalModule.getGlobalConfig() );
+        globalModule.getSystemGraphComponents().register( dbmsRuntimeSystemGraphComponent );
+
         edition.createSecurityModule( globalModule );
         SecurityProvider securityProvider = edition.getSecurityProvider();
         globalDependencies.satisfyDependencies( securityProvider.authManager() );
+
+        var dbmsRuntimeRepository = edition.createAndRegisterDbmsRuntimeRepository( globalModule, databaseManager, globalDependencies );
+        globalDependencies.satisfyDependency( dbmsRuntimeRepository );
 
         globalLife.add( new DefaultDatabaseInitializer( databaseManager ) );
 

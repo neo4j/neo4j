@@ -30,6 +30,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.dbms.database.DbmsRuntimeRepository;
 import org.neo4j.dbms.database.SystemGraphInitializer;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.facade.DatabaseManagementServiceFactory;
@@ -179,4 +180,8 @@ public abstract class AbstractEditionModule
 
     public abstract Lifecycle createWebServer( DatabaseManagementService managementService, Dependencies globalDependencies,
             Config config, LogProvider userLogProvider, DbmsInfo dbmsInfo );
+
+    public abstract DbmsRuntimeRepository createAndRegisterDbmsRuntimeRepository( GlobalModule globalModule,
+            DatabaseManager<?> databaseManager,
+            Dependencies dependencies );
 }

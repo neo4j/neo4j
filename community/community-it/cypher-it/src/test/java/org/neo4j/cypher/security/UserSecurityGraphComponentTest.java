@@ -99,6 +99,9 @@ class UserSecurityGraphComponentTest
         UserRepository initialPassword = new InMemoryUserRepository();
         userSecurityGraphComponent = new UserSecurityGraphComponent( NullLog.getInstance(), oldUsers, initialPassword, Config.defaults() );
         systemGraphComponents.register( userSecurityGraphComponent );
+
+        // remove DBMS runtime component as it is not a subject of this test
+        systemGraphComponents.deregister( "dbms-runtime" );
     }
 
     @BeforeEach

@@ -22,10 +22,13 @@ package org.neo4j.graphdb.factory.module.edition;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import org.neo4j.collection.Dependencies;
 import org.neo4j.dbms.DatabaseStateService;
 import org.neo4j.dbms.DefaultDatabaseStateService;
 import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.dbms.database.DbmsRuntimeRepository;
 import org.neo4j.dbms.database.DefaultDatabaseManager;
+import org.neo4j.dbms.database.StandaloneDbmsRuntimeRepository;
 import org.neo4j.dbms.database.StandaloneDatabaseContext;
 import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.factory.module.edition.context.EditionDatabaseComponents;
@@ -88,5 +91,15 @@ public abstract class StandaloneEditionModule extends AbstractEditionModule
         globalModule.getGlobalDependencies().satisfyDependency( databaseStateService );
 
         return databaseManager;
+    }
+
+    @Override
+    public DbmsRuntimeRepository createAndRegisterDbmsRuntimeRepository( GlobalModule globalModule,
+            DatabaseManager<?> databaseManager,
+            Dependencies dependencies )
+    {
+        var dbmsRuntimeRepository = new StandaloneDbmsRuntimeRepository( databaseManager );
+        globalModule.getTransactionEventListeners().registerTransactionEventListener( "system", dbmsRuntimeRepository );
+        return dbmsRuntimeRepository;
     }
 }
