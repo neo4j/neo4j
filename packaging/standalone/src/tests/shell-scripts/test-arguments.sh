@@ -31,7 +31,7 @@ test_expect_success "should fail on invalid argument to start " "
 "
 
 test_expect_success "should pass accepted argument to java" "
-  neo4j-home/bin/neo4j start --expand-commands &&
+  neo4j-home/bin/neo4j console --expand-commands &&
   test_expect_java_arg '--expand-commands'
 "
 test_done
