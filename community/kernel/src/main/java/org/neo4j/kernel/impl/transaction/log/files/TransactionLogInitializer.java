@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.transaction.log.files;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.Collections;
 
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -30,10 +31,10 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.transaction.log.LogEntryCursor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionLogWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
@@ -48,6 +49,8 @@ import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.TransactionId;
 
 import static org.apache.commons.lang3.ArrayUtils.EMPTY_BYTE_ARRAY;
+import static org.neo4j.internal.kernel.api.security.AuthSubject.ANONYMOUS;
+import static org.neo4j.kernel.impl.api.LeaseService.NO_LEASE;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
 
@@ -156,9 +159,8 @@ public class TransactionLogInitializer
         long timestamp = committedTx.commitTimestamp();
         long transactionId = committedTx.transactionId();
         TransactionLogWriter transactionLogWriter = logFiles.getLogFile().getTransactionLogWriter();
-        var writer = transactionLogWriter.getWriter();
-        writer.writeStartEntry( timestamp, BASE_TX_ID, BASE_TX_CHECKSUM, EMPTY_BYTE_ARRAY );
-        int checksum = writer.writeCommitEntry( transactionId, timestamp );
+        PhysicalTransactionRepresentation emptyTx = emptyTransaction( timestamp );
+        int checksum = transactionLogWriter.append( emptyTx, BASE_TX_ID, BASE_TX_CHECKSUM );
         LogPosition position = transactionLogWriter.getCurrentPosition();
         appendCheckpoint( logFiles, reason, position );
         try ( PageCursorTracer cursorTracer = tracer.createPageCursorTracer( LOGS_UPGRADER_TRACER_TAG ) )
@@ -166,6 +168,11 @@ public class TransactionLogInitializer
             store.setLastCommittedAndClosedTransactionId(
                     transactionId, checksum, timestamp, position.getByteOffset(), position.getLogVersion(), cursorTracer );
         }
+    }
+
+    private PhysicalTransactionRepresentation emptyTransaction( long timestamp )
+    {
+        return new PhysicalTransactionRepresentation( Collections.emptyList(), EMPTY_BYTE_ARRAY, timestamp, BASE_TX_ID, timestamp, NO_LEASE, ANONYMOUS );
     }
 
     private void appendCheckpoint( LogFiles logFiles, String reason, LogPosition position ) throws IOException

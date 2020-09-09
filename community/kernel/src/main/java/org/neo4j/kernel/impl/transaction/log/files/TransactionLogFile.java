@@ -41,6 +41,7 @@ import org.neo4j.io.memory.HeapScopedBuffer;
 import org.neo4j.io.memory.NativeScopedBuffer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.kernel.database.DbmsLogEntryWriterFactory;
 import org.neo4j.kernel.impl.transaction.log.LogHeaderCache;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogVersionBridge;
@@ -53,7 +54,6 @@ import org.neo4j.kernel.impl.transaction.log.ReaderLogVersionBridge;
 import org.neo4j.kernel.impl.transaction.log.TransactionLogWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.tracing.LogForceEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogForceEvents;
@@ -65,7 +65,7 @@ import org.neo4j.storageengine.api.LogVersionRepository;
 
 import static java.lang.Math.min;
 import static java.lang.Runtime.getRuntime;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryParserSetV4_0.V4_0;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryParserSetVersion.LogEntryV4_0;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
 import static org.neo4j.kernel.impl.transaction.log.entry.TransactionLogVersionSelector.LATEST;
 
@@ -126,7 +126,8 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile
         seekChannelPosition( currentLogVersion );
 
         writer = new PositionAwarePhysicalFlushableChecksumChannel( channel, new NativeScopedBuffer( calculateLogBufferSize(), memoryTracker ) );
-        transactionLogWriter = new TransactionLogWriter( new LogEntryWriter<>( writer, context.useSeparateCheckpointFiles() ? LATEST : V4_0 ) );
+        transactionLogWriter = new TransactionLogWriter( writer, new DbmsLogEntryWriterFactory(
+                context.useSeparateCheckpointFiles() ? LATEST::version : LogEntryV4_0::getVersionByte ) );
     }
 
     // In order to be able to write into a logfile after life.stop during shutdown sequence

@@ -37,7 +37,7 @@ public class CheckpointParserSetV4_2 extends LogEntryParserSet
 
     private CheckpointParserSetV4_2()
     {
-        super( (byte) 3 );
+        super( LogEntryParserSetVersion.CheckpointEntryV4_2 );
         register( new LogEntryParser( DETACHED_CHECK_POINT )
         {
             @Override

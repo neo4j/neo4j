@@ -130,7 +130,7 @@ class LogVersionUpgradeCheckerIT
         {
             LogFile logFile = logFiles.getLogFile();
             TransactionLogWriter transactionLogWriter = logFile.getTransactionLogWriter();
-            var channel = transactionLogWriter.getWriter().getChannel();
+            var channel = transactionLogWriter.getChannel();
 
             LogPosition logPosition = transactionLogWriter.getCurrentPosition();
 

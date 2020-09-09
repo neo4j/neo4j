@@ -222,7 +222,7 @@ class CorruptedLogsTruncatorTest
     private void generateTransactionLogFiles( LogFiles logFiles ) throws IOException
     {
         LogFile logFile = logFiles.getLogFile();
-        FlushablePositionAwareChecksumChannel writer = logFile.getTransactionLogWriter().getWriter().getChannel();
+        FlushablePositionAwareChecksumChannel writer = logFile.getTransactionLogWriter().getChannel();
         for ( byte i = 0; i < 107; i++ )
         {
             writer.put( i );

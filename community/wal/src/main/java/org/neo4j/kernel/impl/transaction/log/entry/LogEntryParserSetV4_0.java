@@ -33,7 +33,7 @@ public class LogEntryParserSetV4_0 extends LogEntryParserSet
 
     private LogEntryParserSetV4_0()
     {
-        super( (byte) 1 );
+        super( LogEntryParserSetVersion.LogEntryV4_0 );
         register( new LogEntryParser( LogEntryTypeCodes.TX_START )
         {
             @Override

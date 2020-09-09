@@ -29,7 +29,9 @@ import java.util.Collection;
 
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.WritableChecksumChannel;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.kernel.database.LogEntryWriterFactory;
 import org.neo4j.kernel.impl.api.TestCommand;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
@@ -240,7 +242,7 @@ class ReversedSingleFileTransactionCursorTest
 
     private void writeTransactions( int transactionCount, int minTransactionSize, int maxTransactionSize ) throws IOException
     {
-        FlushablePositionAwareChecksumChannel channel = (FlushablePositionAwareChecksumChannel) logFile.getTransactionLogWriter().getWriter().getChannel();
+        FlushablePositionAwareChecksumChannel channel = (FlushablePositionAwareChecksumChannel) logFile.getTransactionLogWriter().getChannel();
         TransactionLogWriter writer = logFile.getTransactionLogWriter();
         int previousChecksum = BASE_TX_CHECKSUM;
         for ( int i = 0; i < transactionCount; i++ )
@@ -253,8 +255,8 @@ class ReversedSingleFileTransactionCursorTest
 
     private void appendCorruptedTransaction() throws IOException
     {
-        var channel = logFile.getTransactionLogWriter().getWriter().getChannel();
-        TransactionLogWriter writer = new TransactionLogWriter( new CorruptedLogEntryWriter( channel ) );
+        var channel = logFile.getTransactionLogWriter().getChannel();
+        TransactionLogWriter writer = new TransactionLogWriter( channel, new CorruptedLogEntryWriterFactory() );
         writer.append( tx( random.intBetween( 100, 1000 ) ), ++txId, BASE_TX_CHECKSUM );
     }
 
@@ -271,9 +273,18 @@ class ReversedSingleFileTransactionCursorTest
         return tx;
     }
 
-    private static class CorruptedLogEntryWriter extends LogEntryWriter
+    private static class CorruptedLogEntryWriterFactory implements LogEntryWriterFactory
     {
-        CorruptedLogEntryWriter( FlushablePositionAwareChecksumChannel channel )
+        @Override
+        public <T extends WritableChecksumChannel> LogEntryWriter<T> createEntryWriter( T channel )
+        {
+            return new CorruptedLogEntryWriter<>( channel );
+        }
+    }
+
+    private static class CorruptedLogEntryWriter<T extends WritableChecksumChannel> extends LogEntryWriter<T>
+    {
+        CorruptedLogEntryWriter( T channel )
         {
             super( channel );
         }

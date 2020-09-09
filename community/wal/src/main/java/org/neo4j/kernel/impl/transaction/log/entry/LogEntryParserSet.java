@@ -31,10 +31,10 @@ import org.neo4j.util.Preconditions;
  */
 public abstract class LogEntryParserSet
 {
-    private final byte version;
+    private final LogEntryParserSetVersion version;
     private final ByteObjectHashMap<LogEntryParser> parsers = new ByteObjectHashMap<>();
 
-    LogEntryParserSet( byte version )
+    LogEntryParserSet( LogEntryParserSetVersion version )
     {
         this.version = version;
     }
@@ -49,7 +49,7 @@ public abstract class LogEntryParserSet
         LogEntryParser parser = parsers.get( type );
         if ( parser == null )
         {
-            throw new IllegalArgumentException( "Unknown entry type " + type + " for version " + version );
+            throw new IllegalArgumentException( "Unknown entry type " + type + " for version " + version.getVersionByte() );
         }
         return parser;
     }
@@ -66,6 +66,6 @@ public abstract class LogEntryParserSet
      */
     public byte version()
     {
-        return version;
+        return version.getVersionByte();
     }
 }

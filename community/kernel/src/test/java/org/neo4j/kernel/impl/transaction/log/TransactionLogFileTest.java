@@ -189,7 +189,7 @@ class TransactionLogFileTest
         // WHEN
         LogFile logFile = logFiles.getLogFile();
         TransactionLogWriter transactionLogWriter = logFile.getTransactionLogWriter();
-        var channel = transactionLogWriter.getWriter().getChannel();
+        var channel = transactionLogWriter.getChannel();
         LogPosition currentPosition = transactionLogWriter.getCurrentPosition();
         int intValue = 45;
         long longValue = 4854587;
@@ -216,7 +216,7 @@ class TransactionLogFileTest
         // WHEN
         LogFile logFile = logFiles.getLogFile();
         TransactionLogWriter logWriter = logFile.getTransactionLogWriter();
-        var writer = logWriter.getWriter().getChannel();
+        var writer = logWriter.getChannel();
         LogPosition position1 = logWriter.getCurrentPosition();
         int intValue = 45;
         long longValue = 4854587;
@@ -255,7 +255,7 @@ class TransactionLogFileTest
 
         LogFile logFile = logFiles.getLogFile();
         var transactionLogWriter = logFile.getTransactionLogWriter();
-        var writer = transactionLogWriter.getWriter().getChannel();
+        var writer = transactionLogWriter.getChannel();
         LogPosition position = transactionLogWriter.getCurrentPosition();
         for ( int i = 0; i < 5; i++ )
         {
@@ -333,7 +333,7 @@ class TransactionLogFileTest
         life.add( logFiles );
 
         LogFile logFile = logFiles.getLogFile();
-        var channel = logFile.getTransactionLogWriter().getWriter().getChannel();
+        var channel = logFile.getTransactionLogWriter().getChannel();
 
         life.shutdown();
 

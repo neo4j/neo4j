@@ -131,7 +131,7 @@ class TransactionLogFileRotateAndReadRaceIT
             while ( !end.get() )
             {
                 int bytesToWrite = random.nextInt( 1, dataChunk.length );
-                writer.getWriter().getChannel().put( dataChunk, bytesToWrite );
+                writer.getChannel().put( dataChunk, bytesToWrite );
                 if ( logFile.rotationNeeded() )
                 {
                     logFile.rotate();

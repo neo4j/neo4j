@@ -52,8 +52,10 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.fs.StoreFileChannel;
 import org.neo4j.io.fs.WritableChannel;
+import org.neo4j.io.fs.WritableChecksumChannel;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.kernel.database.LogEntryWriterFactory;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
@@ -238,9 +240,9 @@ class RecoveryCorruptedTransactionLogIT
 
     @ParameterizedTest( name = "[{index}] ({0})" )
     @MethodSource( "corruptedLogEntryWriters" )
-    void recoverFirstCorruptedTransactionSingleFileNoCheckpoint( String testName, LogEntryWriterProvider logEntryWriterProvider ) throws IOException
+    void recoverFirstCorruptedTransactionSingleFileNoCheckpoint( String testName, LogEntryWriterWrapper logEntryWriterWrapper ) throws IOException
     {
-        addCorruptedCommandsToLastLogFile( logEntryWriterProvider );
+        addCorruptedCommandsToLastLogFile( logEntryWriterWrapper );
 
         startStopDbRecoveryOfCorruptedLogs();
 
@@ -447,7 +449,7 @@ class RecoveryCorruptedTransactionLogIT
     void failToRecoverFirstCorruptedTransactionSingleFileNoCheckpointIfFailOnCorruption()
             throws IOException
     {
-        addCorruptedCommandsToLastLogFile( CorruptedLogEntryWriter::new );
+        addCorruptedCommandsToLastLogFile( new CorruptedLogEntryWrapper() );
 
         DatabaseManagementService managementService = databaseFactory.build();
         GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
@@ -467,7 +469,7 @@ class RecoveryCorruptedTransactionLogIT
     @Test
     void failToRecoverFirstCorruptedTransactionSingleFileNoCheckpointIfFailOnCorruptionVersion() throws IOException
     {
-        addCorruptedCommandsToLastLogFile( CorruptedLogEntryVersionWriter::new );
+        addCorruptedCommandsToLastLogFile( new CorruptedLogEntryVersionWrapper() );
 
         DatabaseManagementService managementService = databaseFactory.build();
         GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
@@ -486,7 +488,7 @@ class RecoveryCorruptedTransactionLogIT
 
     @ParameterizedTest( name = "[{index}] ({0})" )
     @MethodSource( "corruptedLogEntryWriters" )
-    void recoverNotAFirstCorruptedTransactionSingleFileNoCheckpoint( String testName, LogEntryWriterProvider logEntryWriterProvider ) throws IOException
+    void recoverNotAFirstCorruptedTransactionSingleFileNoCheckpoint( String testName, LogEntryWriterWrapper logEntryWriterWrapper ) throws IOException
     {
         DatabaseManagementService managementService = databaseFactory.build();
         GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
@@ -504,7 +506,7 @@ class RecoveryCorruptedTransactionLogIT
         long originalFileLength = getLastReadablePosition( highestLogFile ).getByteOffset();
         removeLastCheckpointRecordFromLastLogFile();
 
-        addCorruptedCommandsToLastLogFile( logEntryWriterProvider );
+        addCorruptedCommandsToLastLogFile( logEntryWriterWrapper );
         long modifiedFileLength = fileSystem.getFileSize( highestLogFile );
 
         assertThat( modifiedFileLength ).isGreaterThan( originalFileLength );
@@ -536,7 +538,7 @@ class RecoveryCorruptedTransactionLogIT
 
     @ParameterizedTest( name = "[{index}] ({0})" )
     @MethodSource( "corruptedLogEntryWriters" )
-    void recoverNotAFirstCorruptedTransactionMultipleFilesNoCheckpoints( String testName, LogEntryWriterProvider logEntryWriterProvider ) throws IOException
+    void recoverNotAFirstCorruptedTransactionMultipleFilesNoCheckpoints( String testName, LogEntryWriterWrapper logEntryWriterWrapper ) throws IOException
     {
         DatabaseManagementService managementService = databaseFactory.build();
         GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
@@ -555,7 +557,7 @@ class RecoveryCorruptedTransactionLogIT
         long originalFileLength = getLastReadablePosition( highestLogFile ).getByteOffset();
         removeLastCheckpointRecordFromLastLogFile();
 
-        addCorruptedCommandsToLastLogFile( logEntryWriterProvider );
+        addCorruptedCommandsToLastLogFile( logEntryWriterWrapper );
         long modifiedFileLength = fileSystem.getFileSize( highestLogFile );
 
         assertThat( modifiedFileLength ).isGreaterThan( originalFileLength );
@@ -586,7 +588,7 @@ class RecoveryCorruptedTransactionLogIT
 
     @ParameterizedTest( name = "[{index}] ({0})" )
     @MethodSource( "corruptedLogEntryWriters" )
-    void recoverNotAFirstCorruptedTransactionMultipleFilesMultipleCheckpoints( String testName, LogEntryWriterProvider logEntryWriterProvider )
+    void recoverNotAFirstCorruptedTransactionMultipleFilesMultipleCheckpoints( String testName, LogEntryWriterWrapper logEntryWriterWrapper )
             throws IOException
     {
         DatabaseManagementService managementService = databaseFactory.build();
@@ -604,7 +606,7 @@ class RecoveryCorruptedTransactionLogIT
         long originalFileLength = getLastReadablePosition( highestLogFile ).getByteOffset();
         removeLastCheckpointRecordFromLastLogFile();
 
-        addCorruptedCommandsToLastLogFile( logEntryWriterProvider );
+        addCorruptedCommandsToLastLogFile( logEntryWriterWrapper );
         long modifiedFileLength = fileSystem.getFileSize( highestLogFile );
 
         assertThat( modifiedFileLength ).isGreaterThan( originalFileLength );
@@ -633,7 +635,7 @@ class RecoveryCorruptedTransactionLogIT
 
     @ParameterizedTest( name = "[{index}] ({0})" )
     @MethodSource( "corruptedLogEntryWriters" )
-    void recoverFirstCorruptedTransactionAfterCheckpointInLastLogFile( String testName, LogEntryWriterProvider logEntryWriterProvider ) throws IOException
+    void recoverFirstCorruptedTransactionAfterCheckpointInLastLogFile( String testName, LogEntryWriterWrapper logEntryWriterWrapper ) throws IOException
     {
         DatabaseManagementService managementService = databaseFactory.build();
         GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
@@ -643,7 +645,7 @@ class RecoveryCorruptedTransactionLogIT
 
         Path highestLogFile = logFiles.getLogFile().getHighestLogFile();
         long originalFileLength = getLastReadablePosition( highestLogFile ).getByteOffset();
-        addCorruptedCommandsToLastLogFile( logEntryWriterProvider );
+        addCorruptedCommandsToLastLogFile( logEntryWriterWrapper );
         long modifiedFileLength = fileSystem.getFileSize( highestLogFile );
 
         assertThat( modifiedFileLength ).isGreaterThan( originalFileLength );
@@ -861,7 +863,7 @@ class RecoveryCorruptedTransactionLogIT
             LogFile transactionLogFile = logFiles.getLogFile();
             lifespan.add( logFiles );
 
-            var channel = transactionLogFile.getTransactionLogWriter().getWriter().getChannel();
+            var channel = transactionLogFile.getTransactionLogWriter().getChannel();
             for ( int i = 0; i < 10; i++ )
             {
                 channel.put( byteSource.get() );
@@ -879,7 +881,7 @@ class RecoveryCorruptedTransactionLogIT
         return (byte) random.nextInt( Byte.MIN_VALUE, Byte.MAX_VALUE );
     }
 
-    private void addCorruptedCommandsToLastLogFile( LogEntryWriterProvider logEntryWriterProvider ) throws IOException
+    private void addCorruptedCommandsToLastLogFile( LogEntryWriterWrapper logEntryWriterWrapper ) throws IOException
     {
         PositiveLogFilesBasedLogVersionRepository versionRepository = new PositiveLogFilesBasedLogVersionRepository( logFiles );
         LogFiles internalLogFiles = LogFilesBuilder.builder( databaseLayout, fileSystem )
@@ -892,7 +894,10 @@ class RecoveryCorruptedTransactionLogIT
         try ( Lifespan lifespan = new Lifespan( internalLogFiles ) )
         {
             LogFile transactionLogFile = internalLogFiles.getLogFile();
-            TransactionLogWriter writer = new TransactionLogWriter( logEntryWriterProvider.create( transactionLogFile.getTransactionLogWriter().getWriter() ) );
+            LogEntryWriter<FlushablePositionAwareChecksumChannel> realLogEntryWriter = transactionLogFile.getTransactionLogWriter().getWriter();
+            LogEntryWriter<FlushablePositionAwareChecksumChannel> wrappedLogEntryWriter = logEntryWriterWrapper.wrap( realLogEntryWriter );
+            StaticLogEntryWriterFactory<FlushablePositionAwareChecksumChannel> factory = new StaticLogEntryWriterFactory<>( wrappedLogEntryWriter );
+            TransactionLogWriter writer = new TransactionLogWriter( realLogEntryWriter.getChannel(), factory );
             Collection<StorageCommand> commands = new ArrayList<>();
             commands.add( new Command.PropertyCommand( new PropertyRecord( 1 ), new PropertyRecord( 2 ) ) );
             commands.add( new Command.NodeCommand( new NodeRecord( 2 ), new NodeRecord( 3 ) ) );
@@ -999,21 +1004,46 @@ class RecoveryCorruptedTransactionLogIT
     private static Stream<Arguments> corruptedLogEntryWriters()
     {
         return Stream.of(
-                Arguments.of( "CorruptedLogEntryWriter", (LogEntryWriterProvider) CorruptedLogEntryWriter::new ),
-                Arguments.of( "CorruptedLogEntryVersionWriter", (LogEntryWriterProvider) CorruptedLogEntryVersionWriter::new )
+                Arguments.of( "CorruptedLogEntryWriterFactory", new CorruptedLogEntryWrapper() ),
+                Arguments.of( "CorruptedLogEntryVersionWriter", new CorruptedLogEntryVersionWrapper() )
         );
     }
 
     @FunctionalInterface
-    private interface LogEntryWriterProvider
+    private interface LogEntryWriterWrapper
     {
-        LogEntryWriter<FlushablePositionAwareChecksumChannel> create( LogEntryWriter<FlushablePositionAwareChecksumChannel> writer );
+        <T extends WritableChecksumChannel> LogEntryWriter<T> wrap( LogEntryWriter<T> logEntryWriter );
+
+    }
+    private static class StaticLogEntryWriterFactory<T extends WritableChecksumChannel> implements LogEntryWriterFactory
+    {
+        private final LogEntryWriter<T> logEntryWriter;
+
+        StaticLogEntryWriterFactory( LogEntryWriter<T> logEntryWriter )
+        {
+            this.logEntryWriter = logEntryWriter;
+        }
+
+        @Override
+        public <T extends WritableChecksumChannel> LogEntryWriter<T> createEntryWriter( T channel )
+        {
+            return (LogEntryWriter<T>) logEntryWriter;
+        }
     }
 
-    private static class CorruptedLogEntryWriter extends DelegatingLogEntryWriter
+    private static class CorruptedLogEntryWrapper implements LogEntryWriterWrapper
+    {
+        @Override
+        public <T extends WritableChecksumChannel> LogEntryWriter<T> wrap( LogEntryWriter<T> logEntryWriter )
+        {
+            return new CorruptedLogEntryWriter<>( logEntryWriter );
+        }
+    }
+
+    private static class CorruptedLogEntryWriter<T extends WritableChecksumChannel> extends DelegatingLogEntryWriter<T>
     {
 
-        CorruptedLogEntryWriter( LogEntryWriter<FlushablePositionAwareChecksumChannel> writer )
+        CorruptedLogEntryWriter( LogEntryWriter<T> writer )
         {
             super( writer );
         }
@@ -1025,16 +1055,24 @@ class RecoveryCorruptedTransactionLogIT
         }
     }
 
-    private static class CorruptedLogEntryVersionWriter extends DelegatingLogEntryWriter
+    private static class CorruptedLogEntryVersionWrapper implements LogEntryWriterWrapper
     {
-        CorruptedLogEntryVersionWriter( LogEntryWriter<FlushablePositionAwareChecksumChannel> delegate )
+        @Override
+        public <T extends WritableChecksumChannel> LogEntryWriter<T> wrap( LogEntryWriter<T> logEntryWriter )
+        {
+            return new CorruptedLogEntryVersionWriter<>( logEntryWriter );
+        }
+    }
+
+    private static class CorruptedLogEntryVersionWriter<T extends WritableChecksumChannel> extends DelegatingLogEntryWriter<T>
+    {
+        CorruptedLogEntryVersionWriter( LogEntryWriter<T> delegate )
         {
             super( delegate );
         }
 
         /**
-         * Use a non-existing log entry version.
-         * Implementation stolen from {@link LogEntryWriter#writeStartEntry(long, long, int, byte[])}.
+         * Use a non-existing log entry version. Implementation stolen from {@link LogEntryWriter#writeStartEntry(long, long, int, byte[])}.
          */
         @Override
         public void writeStartEntry( long timeWritten, long latestCommittedTxWhenStarted, int previousChecksum, byte[] additionalHeaderData ) throws IOException
@@ -1157,11 +1195,11 @@ class RecoveryCorruptedTransactionLogIT
         }
     }
 
-    private static class DelegatingLogEntryWriter extends LogEntryWriter<FlushablePositionAwareChecksumChannel>
+    private static class DelegatingLogEntryWriter<T extends WritableChecksumChannel> extends LogEntryWriter<T>
     {
-        private final LogEntryWriter<FlushablePositionAwareChecksumChannel> delegate;
+        private final LogEntryWriter<T> delegate;
 
-        DelegatingLogEntryWriter( LogEntryWriter<FlushablePositionAwareChecksumChannel> logEntryWriter )
+        DelegatingLogEntryWriter( LogEntryWriter<T> logEntryWriter )
         {
             super( logEntryWriter.getChannel() );
             this.delegate = logEntryWriter;
@@ -1216,7 +1254,7 @@ class RecoveryCorruptedTransactionLogIT
         }
 
         @Override
-        public FlushablePositionAwareChecksumChannel getChannel()
+        public T getChannel()
         {
             return delegate.getChannel();
         }

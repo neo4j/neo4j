@@ -21,16 +21,20 @@ package org.neo4j.kernel.impl.transaction.log;
 
 import java.io.IOException;
 
+import org.neo4j.kernel.database.LogEntryWriterFactory;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
+import org.neo4j.util.VisibleForTesting;
 
 public class TransactionLogWriter
 {
-    private final LogEntryWriter<FlushablePositionAwareChecksumChannel> writer;
+    private final FlushablePositionAwareChecksumChannel channel;
+    private final LogEntryWriterFactory logEntryWriterFactory;
 
-    public TransactionLogWriter( LogEntryWriter<FlushablePositionAwareChecksumChannel> writer )
+    public TransactionLogWriter( FlushablePositionAwareChecksumChannel channel, LogEntryWriterFactory logEntryWriterFactory )
     {
-        this.writer = writer;
+        this.channel = channel;
+        this.logEntryWriterFactory = logEntryWriterFactory;
     }
 
     /**
@@ -39,6 +43,7 @@ public class TransactionLogWriter
      */
     public int append( TransactionRepresentation transaction, long transactionId, int previousChecksum ) throws IOException
     {
+        LogEntryWriter<FlushablePositionAwareChecksumChannel> writer = logEntryWriterFactory.createEntryWriter( channel );
         writer.writeStartEntry( transaction.getTimeStarted(), transaction.getLatestCommittedTxWhenStarted(), previousChecksum, transaction.additionalHeader() );
 
         // Write all the commands to the log channel
@@ -50,21 +55,29 @@ public class TransactionLogWriter
 
     public void legacyCheckPoint( LogPosition logPosition ) throws IOException
     {
+        LogEntryWriter<FlushablePositionAwareChecksumChannel> writer = logEntryWriterFactory.createEntryWriter( channel );
         writer.writeLegacyCheckPointEntry( logPosition );
-    }
-
-    public LogEntryWriter<FlushablePositionAwareChecksumChannel> getWriter()
-    {
-        return writer;
     }
 
     public LogPosition getCurrentPosition() throws IOException
     {
-        return writer.getChannel().getCurrentPosition();
+        return channel.getCurrentPosition();
     }
 
     public LogPositionMarker getCurrentPosition( LogPositionMarker logPositionMarker ) throws IOException
     {
-        return writer.getChannel().getCurrentPosition( logPositionMarker );
+        return channel.getCurrentPosition( logPositionMarker );
+    }
+
+    @VisibleForTesting
+    public FlushablePositionAwareChecksumChannel getChannel()
+    {
+        return channel;
+    }
+
+    @VisibleForTesting
+    public LogEntryWriter<FlushablePositionAwareChecksumChannel> getWriter()
+    {
+        return logEntryWriterFactory.createEntryWriter( channel );
     }
 }
