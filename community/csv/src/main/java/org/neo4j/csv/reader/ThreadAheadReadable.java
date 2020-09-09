@@ -95,6 +95,12 @@ public class ThreadAheadReadable extends ThreadAhead implements CharReadable
     }
 
     @Override
+    public float compressionRatio()
+    {
+        return actual.compressionRatio();
+    }
+
+    @Override
     public String sourceDescription()
     {   // Returns the source information of where this reader is perceived to be. The fact that this
         // thing reads ahead should be visible in this description.

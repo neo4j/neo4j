@@ -39,6 +39,7 @@ public class MultiReadable implements CharReadable
     private CharReadable current = CharReadable.EMPTY;
     private boolean requiresNewLine;
     private long previousPosition;
+    private float previousCompressionRatio = 1f;
 
     public MultiReadable( RawIterator<CharReadable,IOException> readers )
     {
@@ -71,13 +72,22 @@ public class MultiReadable implements CharReadable
         return previousPosition + current.position();
     }
 
+    @Override
+    public float compressionRatio()
+    {
+        return previousCompressionRatio * (current.compressionRatio() * current.position() / position());
+    }
+
     private boolean goToNextSource() throws IOException
     {
         if ( actual.hasNext() )
         {
             if ( current != null )
             {
-                previousPosition += current.position();
+                long sourceLength = current.position();
+                float sourceCompressionRatio = current.compressionRatio();
+                previousPosition += sourceLength;
+                previousCompressionRatio *= sourceCompressionRatio * sourceLength / previousPosition/*which at this point is the total position*/;
             }
             closeCurrent();
             current = actual.next();
