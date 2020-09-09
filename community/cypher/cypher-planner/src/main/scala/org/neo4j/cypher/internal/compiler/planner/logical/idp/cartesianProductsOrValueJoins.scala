@@ -108,7 +108,7 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
       pickTheBest(plans, kit, cartesianProducts)
     }
     else {
-      Set(planLotsOfCartesianProducts(plans, qg, context, kit))
+      Set(planLotsOfCartesianProducts(plans, qg, context, kit, considerSelections = true))
     }
   }
 
@@ -136,11 +136,14 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
 
   /**
    * Plans a large amount of query parts together. Produces a left deep tree sorted by the cost/cardinality of the query parts.
+   *
+   * @param considerSelections whether to try and plan selections after each combining of two components.
    */
   private[idp] def planLotsOfCartesianProducts(plans: Set[PlannedComponent],
                                                qg: QueryGraph,
                                                context: LogicalPlanningContext,
-                                               kit: QueryPlannerKit): PlannedComponent = {
+                                               kit: QueryPlannerKit,
+                                               considerSelections: Boolean): PlannedComponent = {
     val maybeSortedComponent = theSortedComponent(plans)
 
     val bestPlans: Seq[Component] = plans.toList.map {
@@ -160,8 +163,9 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
 
     def cross(allPlans: Seq[Component]): Component = allPlans.tail.foldLeft(allPlans.head) {
       case (l, r) =>
-        val crossProduct = kit.select(context.logicalPlanProducer.planCartesianProduct(l.plan, r.plan, context), qg)
-        Component(l.queryGraph ++ r.queryGraph, crossProduct)
+        val cp = context.logicalPlanProducer.planCartesianProduct(l.plan, r.plan, context)
+        val cpWithSelection = if (considerSelections) kit.select(cp, qg) else cp
+        Component(l.queryGraph ++ r.queryGraph, cpWithSelection)
     }
 
     val bestPlan = cross(bestPlans)
