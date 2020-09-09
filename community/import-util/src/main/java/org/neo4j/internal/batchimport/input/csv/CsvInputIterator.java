@@ -126,6 +126,12 @@ class CsvInputIterator implements SourceTraceability, Closeable
         return chunker.position();
     }
 
+    @Override
+    public float compressionRatio()
+    {
+        return stream.compressionRatio();
+    }
+
     static CharSeeker seeker( Chunk chunk, Configuration config )
     {
         return new BufferedCharSeeker( Source.singleChunk( chunk ), config );

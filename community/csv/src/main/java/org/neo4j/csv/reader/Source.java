@@ -62,23 +62,17 @@ public interface Source extends Closeable
         /**
          * @return position in the {@link #data()} array where the current field which is being
          * read starts. Some characters of the current field may have started in the previous chunk
-         * and so those characters are transfered over to this data array before {@link #startPosition()}
+         * and so those characters are transferred over to this data array before {@link #startPosition()}
          */
         int backPosition();
     }
 
-    Chunk EMPTY_CHUNK = new Chunk()
+    class Empty extends SourceTraceability.Empty implements Chunk
     {
         @Override
         public int startPosition()
         {
             return 0;
-        }
-
-        @Override
-        public String sourceDescription()
-        {
-            return "EMPTY";
         }
 
         @Override
@@ -104,7 +98,9 @@ public interface Source extends Closeable
         {
             return 0;
         }
-    };
+    }
+
+    Chunk EMPTY_CHUNK = new Empty();
 
     static Source singleChunk( Chunk chunk )
     {

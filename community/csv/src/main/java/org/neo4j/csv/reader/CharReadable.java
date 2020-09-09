@@ -79,22 +79,16 @@ public interface CharReadable extends Closeable, SourceTraceability
         public void close() throws IOException
         {   // Nothing to close
         }
+
+        @Override
+        public float compressionRatio()
+        {
+            return 1f;
+        }
     }
 
-    CharReadable EMPTY = new CharReadable()
+    class Empty extends SourceTraceability.Empty implements CharReadable
     {
-        @Override
-        public long position()
-        {
-            return 0;
-        }
-
-        @Override
-        public String sourceDescription()
-        {
-            return "EMPTY";
-        }
-
         @Override
         public int read( char[] into, int offset, int length )
         {
@@ -119,4 +113,6 @@ public interface CharReadable extends Closeable, SourceTraceability
         {
         }
     };
+
+    CharReadable EMPTY = new Empty();
 }

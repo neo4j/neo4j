@@ -282,7 +282,7 @@ public class CsvInput implements Input
                         }
                         try ( CsvInputIterator iterator = new CsvInputIterator( source, data.decorator(), header, config,
                                 idType, EMPTY, CsvGroupInputIterator.extractors( config ), groupId );
-                              InputEntity entity = new InputEntity() )
+                                InputEntity entity = new InputEntity() )
                         {
                             int entities = 0;
                             int properties = 0;
@@ -299,7 +299,10 @@ public class CsvInput implements Input
                             }
                             if ( entities > 0 )
                             {
-                                long entityCountInSource = (long) (((double) source.length() / iterator.position()) * entities);
+                                long position = iterator.position();
+                                double compressionRatio = iterator.compressionRatio();
+                                double actualFileSize = source.length() / compressionRatio;
+                                long entityCountInSource = (long) ((actualFileSize / position) * entities);
                                 estimates[0] += entityCountInSource;
                                 estimates[1] += ((double) properties / entities) * entityCountInSource;
                                 estimates[2] += ((double) propertySize / entities) * entityCountInSource;

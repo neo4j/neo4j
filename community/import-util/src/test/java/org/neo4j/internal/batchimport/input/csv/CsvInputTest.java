@@ -19,6 +19,8 @@
  */
 package org.neo4j.internal.batchimport.input.csv;
 
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.mutable.MutableLong;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -26,14 +28,27 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.PrintWriter;
 import java.io.Reader;
 import java.io.StringReader;
+import java.nio.charset.Charset;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
+import java.util.zip.GZIPOutputStream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 import org.neo4j.collection.RawIterator;
 import org.neo4j.csv.reader.CharReadable;
@@ -67,12 +82,16 @@ import org.neo4j.values.storable.LocalTimeValue;
 import org.neo4j.values.storable.TimeValue;
 import org.neo4j.values.storable.Values;
 
+import static java.lang.String.format;
 import static java.util.Arrays.asList;
+import static java.util.Collections.emptyList;
+import static org.hamcrest.Matchers.lessThan;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -85,8 +104,10 @@ import static org.neo4j.csv.reader.Configuration.COMMAS;
 import static org.neo4j.csv.reader.Readables.wrap;
 import static org.neo4j.internal.batchimport.input.Collector.EMPTY;
 import static org.neo4j.internal.batchimport.input.IdType.ACTUAL;
+import static org.neo4j.internal.batchimport.input.IdType.STRING;
 import static org.neo4j.internal.batchimport.input.InputEntityDecorators.NO_DECORATOR;
 import static org.neo4j.internal.batchimport.input.csv.CsvInput.NO_MONITOR;
+import static org.neo4j.internal.batchimport.input.csv.Data.undecorated;
 import static org.neo4j.internal.batchimport.input.csv.DataFactories.datas;
 import static org.neo4j.internal.batchimport.input.csv.DataFactories.defaultFormatNodeFileHeader;
 import static org.neo4j.internal.batchimport.input.csv.DataFactories.defaultFormatRelationshipFileHeader;
@@ -94,6 +115,7 @@ import static org.neo4j.internal.helpers.ArrayUtil.union;
 import static org.neo4j.internal.helpers.collection.Iterators.asRawIterator;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.helpers.collection.Iterators.iterator;
+import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @RunWith( Parameterized.class )
@@ -1285,6 +1307,122 @@ public class CsvInputTest
         verify( monitor, times( 1 ) ).typeNormalized( "source2", "floatProp", "float", "double" );
         verify( monitor, times( 1 ) ).typeNormalized( "source3", "byteProp", "byte", "long" );
         verifyNoMoreInteractions( monitor );
+    }
+
+    @Test
+    public void shouldCalculateCorrectEstimatesForZippedInputFile() throws IOException
+    {
+        // GIVEN
+        IdType idType = STRING;
+        File uncompressedFile = createNodeInputDataFile( mebiBytes( 10 ) );
+        File compressedFile = compressWithZip( uncompressedFile );
+        assertThat( compressedFile.length(), lessThan( uncompressedFile.length() ) );
+
+        // WHEN
+        Input.Estimates uncompressedEstimates = calculateEstimatesOnSingleFileNodeData( idType, uncompressedFile );
+        Input.Estimates compressedEstimates = calculateEstimatesOnSingleFileNodeData( idType, compressedFile );
+
+        // then
+        assertEstimatesEquals( uncompressedEstimates, compressedEstimates, 0 );
+    }
+
+    @Test
+    public void shouldCalculateCorrectEstimatesForGZippedInputFile() throws IOException
+    {
+        // GIVEN
+        IdType idType = STRING;
+        File uncompressedFile = createNodeInputDataFile( mebiBytes( 10 ) );
+        File compressedFile = compressWithGZip( uncompressedFile );
+        assertThat( compressedFile.length(), lessThan( uncompressedFile.length() ) );
+
+        // WHEN
+        Input.Estimates uncompressedEstimates = calculateEstimatesOnSingleFileNodeData( idType, uncompressedFile );
+        Input.Estimates compressedEstimates = calculateEstimatesOnSingleFileNodeData( idType, compressedFile );
+
+        // then the compressed and uncompressed should be _roughly_ equal. The thing with GZIP is that there's no reliable way
+        // of getting the uncompressed data size w/o decompressing it in its entirety, and this is why the estimator doesn't do this
+        // but instead tries to estimate its compression rate after reading a chunk of it
+        assertEstimatesEquals( uncompressedEstimates, compressedEstimates, 0.01 );
+    }
+
+    private void assertEstimatesEquals( Input.Estimates a, Input.Estimates b, double errorMargin )
+    {
+        assertEquals( a.numberOfNodes(), b.numberOfNodes(), a.numberOfNodes() * errorMargin );
+        assertEquals( a.numberOfNodeLabels(), b.numberOfNodeLabels(), a.numberOfNodeLabels() * errorMargin );
+        assertEquals( a.numberOfNodeProperties(), b.numberOfNodeProperties(), a.numberOfNodeProperties() * errorMargin );
+        assertEquals( a.numberOfRelationships(), b.numberOfRelationships(), a.numberOfRelationships() * errorMargin );
+        assertEquals( a.numberOfRelationshipProperties(), b.numberOfRelationshipProperties(), a.numberOfRelationshipProperties() * errorMargin );
+        assertEquals( a.sizeOfNodeProperties(), b.sizeOfNodeProperties(), a.sizeOfNodeProperties() * errorMargin );
+        assertEquals( a.sizeOfRelationshipProperties(), b.sizeOfRelationshipProperties(), a.sizeOfRelationshipProperties() * errorMargin );
+    }
+
+    private Input.Estimates calculateEstimatesOnSingleFileNodeData( IdType idType, File nodeDataFile ) throws IOException
+    {
+        Input input = new CsvInput( dataIterable( config -> undecorated( () -> Readables.individualFiles( Charset.defaultCharset(), nodeDataFile ) ) ),
+                defaultFormatNodeFileHeader(), emptyList(), defaultFormatRelationshipFileHeader(), idType, COMMAS, NO_MONITOR, INSTANCE );
+        // We don't care about correct value size calculation really, as long as it's consistent
+        return input.calculateEstimates( ( values, tracer, memTracker ) -> Stream.of( values ).mapToInt( v -> v.toString().length() ).sum() );
+    }
+
+    private File compressWithZip( File uncompressedFile ) throws IOException
+    {
+        File file = directory.file( uncompressedFile.getName() + "-compressed" );
+        try ( ZipOutputStream out = new ZipOutputStream( new FileOutputStream( file ) );
+                InputStream in = new BufferedInputStream( new FileInputStream( uncompressedFile ) ) )
+        {
+            out.putNextEntry( new ZipEntry( uncompressedFile.getName() ) );
+            IOUtils.copy( in, out );
+        }
+        return file;
+    }
+
+    private File compressWithGZip( File uncompressedFile ) throws IOException
+    {
+        File file = directory.file( uncompressedFile.getName() + "-compressed" );
+        try ( GZIPOutputStream out = new GZIPOutputStream( new FileOutputStream( file ) );
+                InputStream in = new BufferedInputStream( new FileInputStream( uncompressedFile ) ) )
+        {
+            IOUtils.copy( in, out );
+        }
+        return file;
+    }
+
+    private File createNodeInputDataFile( long roughSize ) throws FileNotFoundException
+    {
+        File file = directory.file( "data-file" );
+        MutableLong bytesWritten = new MutableLong();
+        BufferedOutputStream out = new BufferedOutputStream( new FileOutputStream( file ) )
+        {
+            @Override
+            public synchronized void write( byte[] b, int off, int len ) throws IOException
+            {
+                super.write( b, off, len );
+                bytesWritten.add( len );
+            }
+
+            @Override
+            public synchronized void write( int b ) throws IOException
+            {
+                super.write( b );
+                bytesWritten.add( 1 );
+            }
+
+            @Override
+            public void write( byte[] b ) throws IOException
+            {
+                super.write( b );
+                bytesWritten.add( b.length );
+            }
+        };
+        try ( PrintWriter writer = new PrintWriter( out ) )
+        {
+            writer.println( ":ID,name:string,prop:int" );
+            while ( bytesWritten.longValue() < roughSize )
+            {
+                writer.println( format( "%s,%s,%d", random.nextAlphaNumericString( 6, 6 ), random.nextAlphaNumericString( 5, 20 ), random.nextInt() ) );
+            }
+        }
+        return file;
     }
 
     private static Data dataItem( final CharReadable data, final Decorator decorator )
