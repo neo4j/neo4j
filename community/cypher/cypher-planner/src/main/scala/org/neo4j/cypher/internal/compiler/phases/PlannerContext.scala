@@ -35,6 +35,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.QueryGraphSolver
 import org.neo4j.cypher.internal.frontend.phases.BaseContext
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.frontend.phases.Monitors
+import org.neo4j.cypher.internal.options.CypherDebugOptions
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.rewriting.rewriters.InnerVariableNamer
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
@@ -53,7 +54,7 @@ class PlannerContext(val cypherExceptionFactory: CypherExceptionFactory,
                      val config: CypherPlannerConfiguration,
                      val queryGraphSolver: QueryGraphSolver,
                      val updateStrategy: UpdateStrategy,
-                     val debugOptions: Set[String],
+                     val debugOptions: CypherDebugOptions,
                      val clock: Clock,
                      val logicalPlanIdGen: IdGen,
                      val innerVariableNamer: InnerVariableNamer,
@@ -73,7 +74,7 @@ object PlannerContextCreator extends ContextCreator[PlannerContext] {
                       notificationLogger: InternalNotificationLogger,
                       planContext: PlanContext,
                       queryText: String,
-                      debugOptions: Set[String],
+                      debugOptions: CypherDebugOptions,
                       offset: Option[InputPosition],
                       monitors: Monitors,
                       metricsFactory: MetricsFactory,

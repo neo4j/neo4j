@@ -19,15 +19,15 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.CypherPlannerOption
-import org.neo4j.cypher.CypherRuntimeOption
-import org.neo4j.cypher.CypherUpdateStrategy
-import org.neo4j.cypher.CypherVersion
 import org.neo4j.cypher.internal.cache.CaffeineCacheFactory
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
 import org.neo4j.cypher.internal.compiler.phases.Compatibility3_5
 import org.neo4j.cypher.internal.compiler.phases.Compatibility4_2
 import org.neo4j.cypher.internal.compiler.phases.Compatibility4_3
+import org.neo4j.cypher.internal.options.CypherPlannerOption
+import org.neo4j.cypher.internal.options.CypherRuntimeOption
+import org.neo4j.cypher.internal.options.CypherUpdateStrategy
+import org.neo4j.cypher.internal.options.CypherVersion
 import org.neo4j.cypher.internal.planning.CypherPlanner
 import org.neo4j.exceptions.SyntaxException
 import org.neo4j.kernel.GraphDatabaseQueryService

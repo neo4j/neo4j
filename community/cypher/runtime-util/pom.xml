@@ -100,6 +100,12 @@
 
         <dependency>
             <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-cypher-config</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.neo4j</groupId>
             <artifactId>kernel-api-test-utils</artifactId>
             <scope>test</scope>
             <version>${project.version}</version>

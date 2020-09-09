@@ -19,16 +19,12 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.CypherExpressionEngineOption
-import org.neo4j.cypher.CypherInterpretedPipesFallbackOption
-import org.neo4j.cypher.CypherOperatorEngineOption
-import org.neo4j.cypher.CypherPlannerOption
-import org.neo4j.cypher.CypherRuntimeOption
-import org.neo4j.cypher.CypherVersion
+import org.neo4j.configuration.Config
 import org.neo4j.cypher.internal.cache.TestExecutorCaffeineCacheFactory
 import org.neo4j.cypher.internal.compiler.phases.CompilationPhases
 import org.neo4j.cypher.internal.compiler.phases.CompilationPhases.ParsingConfig
 import org.neo4j.cypher.internal.compiler.test_helpers.ContextHelper
+import org.neo4j.cypher.internal.config.CypherConfiguration
 import org.neo4j.cypher.internal.frontend.phases.InitialState
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
 import org.neo4j.cypher.internal.rewriting.rewriters.GeneratingNamer
@@ -37,12 +33,8 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 class InputQueryTest extends CypherFunSuite {
 
   private val preParser =
-    new PreParser(CypherVersion.default,
-      CypherPlannerOption.default,
-      CypherRuntimeOption.default,
-      CypherExpressionEngineOption.default,
-      CypherOperatorEngineOption.default,
-      CypherInterpretedPipesFallbackOption.default,
+    new PreParser(
+      CypherConfiguration.fromConfig(Config.defaults()),
       0,
       TestExecutorCaffeineCacheFactory)
 

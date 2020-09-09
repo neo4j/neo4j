@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal
 
 import java.util.concurrent.atomic.AtomicLong
 
-import org.neo4j.cypher.CypherVersion
+import org.neo4j.cypher.internal.options.CypherVersion
 import org.neo4j.kernel.impl.api.SchemaStateKey
 import org.neo4j.kernel.impl.query.TransactionalContext
 

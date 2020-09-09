@@ -23,7 +23,7 @@ import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.cypher.internal.CommunityCompilerFactory;
 import org.neo4j.cypher.internal.CompilerFactory;
-import org.neo4j.cypher.internal.CypherConfiguration;
+import org.neo4j.cypher.internal.config.CypherConfiguration;
 import org.neo4j.cypher.internal.CypherRuntimeConfiguration;
 import org.neo4j.cypher.internal.cache.CaffeineCacheFactory;
 import org.neo4j.cypher.internal.cache.ExecutorBasedCaffeineCacheFactory;
@@ -60,13 +60,13 @@ public class CommunityCypherEngineProvider extends QueryEngineProvider
         GraphDatabaseCypherService queryService = new GraphDatabaseCypherService( graphAPI );
         deps.satisfyDependency( queryService );
         CypherConfiguration cypherConfig = CypherConfiguration.fromConfig( spi.config() );
-        CypherPlannerConfiguration plannerConfig = cypherConfig.toCypherPlannerConfiguration( spi.config(), isSystemDatabase );
-        CypherRuntimeConfiguration runtimeConfig = cypherConfig.toCypherRuntimeConfiguration();
+        CypherPlannerConfiguration plannerConfig = CypherPlannerConfiguration.fromCypherConfiguration( cypherConfig, spi.config(), isSystemDatabase );
+        CypherRuntimeConfiguration runtimeConfig = CypherRuntimeConfiguration.fromCypherConfiguration( cypherConfig );
         CompilerFactory compilerFactory = makeCompilerFactory( queryService, spi, plannerConfig, runtimeConfig );
         CaffeineCacheFactory cacheFactory = makeCacheFactory( spi );
         if ( isSystemDatabase )
         {
-            CypherPlannerConfiguration innerPlannerConfig = cypherConfig.toCypherPlannerConfiguration( spi.config(), false );
+            CypherPlannerConfiguration innerPlannerConfig = CypherPlannerConfiguration.fromCypherConfiguration( cypherConfig, spi.config(), false );
             CommunityCompilerFactory innerCompilerFactory =
                     new CommunityCompilerFactory( queryService,spi.monitors(), cacheFactory, spi.logProvider(), innerPlannerConfig, runtimeConfig );
             return new SystemExecutionEngine( queryService, cacheFactory, spi.logProvider(), compilerFactory, innerCompilerFactory );

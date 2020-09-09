@@ -22,7 +22,7 @@ package org.neo4j.fabric
 import java.util.concurrent.Executors
 
 import org.neo4j.configuration.Config
-import org.neo4j.cypher.internal.CypherConfiguration
+import org.neo4j.cypher.internal.config.CypherConfiguration
 import org.neo4j.cypher.internal.PreParsedQuery
 import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport

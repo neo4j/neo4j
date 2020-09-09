@@ -55,6 +55,7 @@
                 <module>runtime-spec-suite</module>
                 <module>expression-evaluator</module>
                 <module>cypher-testing</module>
+                <module>cypher-config</module>
             </modules>
         </profile>
     </profiles>

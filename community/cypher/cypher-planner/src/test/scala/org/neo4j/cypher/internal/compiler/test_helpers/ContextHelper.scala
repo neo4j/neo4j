@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.QueryGraphSolver
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.NO_TRACING
 import org.neo4j.cypher.internal.frontend.phases.Monitors
+import org.neo4j.cypher.internal.options.CypherDebugOptions
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.rewriting.rewriters.GeneratingNamer
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
@@ -51,7 +52,7 @@ object ContextHelper extends MockitoSugar {
              config: CypherPlannerConfiguration = mock[CypherPlannerConfiguration],
              queryGraphSolver: QueryGraphSolver = mock[QueryGraphSolver],
              updateStrategy: UpdateStrategy = mock[UpdateStrategy],
-             debugOptions: Set[String] = Set.empty,
+             debugOptions: CypherDebugOptions = CypherDebugOptions.default,
              clock: Clock = Clock.systemUTC(),
              logicalPlanIdGen: IdGen = new SequentialIdGen(),
              params: MapValue = MapValue.EMPTY): PlannerContext = {

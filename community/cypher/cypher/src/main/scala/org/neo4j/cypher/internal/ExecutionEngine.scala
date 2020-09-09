@@ -22,10 +22,11 @@ package org.neo4j.cypher.internal
 import java.lang
 import java.time.Clock
 
-import org.neo4j.cypher.CypherExecutionMode
 import org.neo4j.cypher.internal.QueryCache.ParameterTypeMap
 import org.neo4j.cypher.internal.cache.CaffeineCacheFactory
+import org.neo4j.cypher.internal.config.CypherConfiguration
 import org.neo4j.cypher.internal.expressions.functions.FunctionInfo
+import org.neo4j.cypher.internal.options.CypherExecutionMode
 import org.neo4j.cypher.internal.planning.CypherCacheMonitor
 import org.neo4j.cypher.internal.runtime.InputDataStream
 import org.neo4j.cypher.internal.runtime.NoInput
@@ -70,14 +71,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
   // HELPER OBJECTS
   private val defaultQueryExecutionMonitor = kernelMonitors.newMonitor(classOf[QueryExecutionMonitor])
 
-  private val preParser = new PreParser(config.version,
-    config.planner,
-    config.runtime,
-    config.expressionEngineOption,
-    config.operatorEngine,
-    config.interpretedPipesFallback,
-    config.queryCacheSize,
-    cacheFactory)
+  private val preParser = new PreParser(config, config.queryCacheSize, cacheFactory)
   private val lastCommittedTxIdProvider = LastCommittedTxIdProvider(queryService)
   private def planReusabilitiy(executableQuery: ExecutableQuery,
                                transactionalContext: TransactionalContext): ReusabilityState =

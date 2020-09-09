@@ -20,6 +20,7 @@
 package org.neo4j.fabric.planning
 
 import org.neo4j.cypher.internal.FullyParsedQuery
+import org.neo4j.cypher.internal.options.CypherDebugOptions
 import org.neo4j.cypher.internal.util.ObfuscationMetadata
 import org.neo4j.fabric.planning.FabricPlan.DebugOptions
 import org.neo4j.graphdb.Notification
@@ -46,9 +47,9 @@ object FabricPlan {
   val PROFILE: ExecutionType = Profile
 
   object DebugOptions {
-    def from(debugOptions: Set[String]): DebugOptions = DebugOptions(
-      logPlan = debugOptions.contains("fabriclogplan"),
-      logRecords = debugOptions.contains("fabriclogrecords"),
+    def from(debugOptions: CypherDebugOptions): DebugOptions = DebugOptions(
+      logPlan = debugOptions.fabricLogPlanEnabled,
+      logRecords = debugOptions.fabricLogRecordsEnabled,
     )
   }
 

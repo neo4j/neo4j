@@ -47,13 +47,13 @@ object DebugPrinter extends Phase[PlannerContext, LogicalPlanState, LogicalPlanS
   override def description: String = "Print IR or AST as query result"
 
   override def process(from: LogicalPlanState, context: PlannerContext): LogicalPlanState = {
-    val string = if (context.debugOptions.contains("querygraph"))
+    val string = if (context.debugOptions.queryGraphEnabled)
       from.query.toString
-    else if (context.debugOptions.contains("ast"))
+    else if (context.debugOptions.astEnabled)
       from.statement().toString
-    else if (context.debugOptions.contains("semanticstate"))
+    else if (context.debugOptions.semanticStateEnabled)
       from.semantics().toString
-    else if (context.debugOptions.contains("logicalplan"))
+    else if (context.debugOptions.logicalPlanEnabled)
       from.logicalPlan.toString
     else
       """Output options are: queryGraph, ast, semanticstate, logicalplan"""

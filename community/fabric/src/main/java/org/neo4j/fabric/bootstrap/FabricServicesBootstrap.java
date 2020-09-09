@@ -31,7 +31,7 @@ import org.neo4j.bolt.txtracking.TransactionIdTracker;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.cypher.internal.CypherConfiguration;
+import org.neo4j.cypher.internal.config.CypherConfiguration;
 import org.neo4j.cypher.internal.cache.ExecutorBasedCaffeineCacheFactory;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.api.DatabaseNotFoundException;

@@ -21,11 +21,11 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 
 import java.util.Collections
 
-import org.neo4j.cypher.CypherInterpretedPipesFallbackOption
-import org.neo4j.cypher.CypherOperatorEngineOption
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.MasterCompiler
 import org.neo4j.cypher.internal.RuntimeContext
+import org.neo4j.cypher.internal.options.CypherInterpretedPipesFallbackOption
+import org.neo4j.cypher.internal.options.CypherOperatorEngineOption
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder

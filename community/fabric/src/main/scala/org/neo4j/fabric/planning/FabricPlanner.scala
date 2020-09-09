@@ -19,13 +19,13 @@
  */
 package org.neo4j.fabric.planning
 
-import org.neo4j.cypher.CypherExpressionEngineOption
-import org.neo4j.cypher.CypherRuntimeOption
-import org.neo4j.cypher.internal.CypherConfiguration
+import org.neo4j.cypher.internal.config.CypherConfiguration
 import org.neo4j.cypher.internal.FullyParsedQuery
 import org.neo4j.cypher.internal.PreParsedQuery
 import org.neo4j.cypher.internal.QueryOptions
 import org.neo4j.cypher.internal.cache.CaffeineCacheFactory
+import org.neo4j.cypher.internal.options.CypherExpressionEngineOption
+import org.neo4j.cypher.internal.options.CypherRuntimeOption
 import org.neo4j.cypher.internal.planner.spi.ProcedureSignatureResolver
 import org.neo4j.cypher.rendering.QueryRenderer
 import org.neo4j.fabric.cache.FabricQueryCache

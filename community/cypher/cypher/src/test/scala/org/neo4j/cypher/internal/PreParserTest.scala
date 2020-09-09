@@ -19,27 +19,32 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.CypherExpressionEngineOption
-import org.neo4j.cypher.CypherInterpretedPipesFallbackOption
-import org.neo4j.cypher.CypherOperatorEngineOption
-import org.neo4j.cypher.CypherPlannerOption
-import org.neo4j.cypher.CypherReplanOption
-import org.neo4j.cypher.CypherRuntimeOption
-import org.neo4j.cypher.CypherVersion
+import org.neo4j.configuration.Config
+import org.neo4j.configuration.GraphDatabaseInternalSettings
+import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.cypher.internal.cache.TestExecutorCaffeineCacheFactory
+import org.neo4j.cypher.internal.config.CypherConfiguration
+import org.neo4j.cypher.internal.options.CypherConnectComponentsPlannerOption
+import org.neo4j.cypher.internal.options.CypherExpressionEngineOption
+import org.neo4j.cypher.internal.options.CypherInterpretedPipesFallbackOption
+import org.neo4j.cypher.internal.options.CypherOperatorEngineOption
+import org.neo4j.cypher.internal.options.CypherPlannerOption
+import org.neo4j.cypher.internal.options.CypherReplanOption
+import org.neo4j.cypher.internal.options.CypherRuntimeOption
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.exceptions.InvalidArgumentException
+import org.neo4j.graphdb.config.Setting
+
+import scala.collection.JavaConverters.mapAsJavaMapConverter
 
 class PreParserTest extends CypherFunSuite {
 
-  val preParser = new PreParser(CypherVersion.default,
-    CypherPlannerOption.default,
-    CypherRuntimeOption.default,
-    CypherExpressionEngineOption.default,
-    CypherOperatorEngineOption.default,
-    CypherInterpretedPipesFallbackOption.default,
+  private def preParserWith(settings: (Setting[_], AnyRef)*) = new PreParser(
+    CypherConfiguration.fromConfig(Config.defaults(settings.toMap.asJava)),
     0,
     TestExecutorCaffeineCacheFactory)
+
+  private val preParser = preParserWith()
 
   test("should not allow inconsistent runtime options") {
     intercept[InvalidArgumentException](preParser.preParseQuery("CYPHER runtime=slotted runtime=interpreted RETURN 42"))
@@ -54,6 +59,16 @@ class PreParserTest extends CypherFunSuite {
     intercept[InvalidArgumentException](preParser.preParseQuery("PROFILE EXPLAIN RETURN 42"))
   }
 
+  test("should not allow unknown options") {
+    intercept[InvalidArgumentException](preParser.preParseQuery("CYPHER foo=idp RETURN 42"))
+      .getMessage should include("foo")
+  }
+
+  test("should not allow unknown debug flags") {
+    intercept[InvalidArgumentException](preParser.preParseQuery("CYPHER debug=idp RETURN 42"))
+      .getMessage should include("idp")
+  }
+
   test("should accept just one operator execution mode") {
     preParser.preParseQuery("CYPHER operatorEngine=interpreted RETURN 42").options.operatorEngine should equal(CypherOperatorEngineOption.interpreted)
   }
@@ -64,6 +79,10 @@ class PreParserTest extends CypherFunSuite {
     preParser.preParseQuery("CYPHER replan=default RETURN 42").options.replan should equal(CypherReplanOption.default)
   }
 
+  test("should accept just one connect components planner") {
+    preParser.preParseQuery("CYPHER connectComponentsPlanner=idp RETURN 42").options.connectComponentsPlanner should equal(CypherConnectComponentsPlannerOption.idp)
+  }
+
   test("should not allow multiple conflicting replan strategies") {
     intercept[InvalidArgumentException](preParser.preParseQuery("CYPHER replan=force replan=skip RETURN 42"))
   }
@@ -72,6 +91,8 @@ class PreParserTest extends CypherFunSuite {
     preParser.preParseQuery("CYPHER interpretedPipesFallback=disabled RETURN 42").options.interpretedPipesFallback should
       equal(CypherInterpretedPipesFallbackOption.disabled)
     preParser.preParseQuery("CYPHER interpretedPipesFallback=default RETURN 42").options.interpretedPipesFallback should
+      equal(CypherInterpretedPipesFallbackOption.default)
+    preParser.preParseQuery("CYPHER interpretedPipesFallback=whitelisted_plans_only RETURN 42").options.interpretedPipesFallback should
       equal(CypherInterpretedPipesFallbackOption.whitelistedPlansOnly)
     preParser.preParseQuery("CYPHER interpretedPipesFallback=all RETURN 42").options.interpretedPipesFallback should
       equal(CypherInterpretedPipesFallbackOption.allPossiblePlans)
@@ -102,9 +123,9 @@ class PreParserTest extends CypherFunSuite {
         """USING
            PERIODIC
            COMMIT""",
-        "CYPHER 3.5 planner=cost debug=ofCourse USING PERIODIC COMMIT",
-        "CYPHER 4.2 planner=cost debug=ofCourse USING PERIODIC COMMIT",
-        "CYPHER 4.3 planner=cost debug=ofCourse USING PERIODIC COMMIT",
+        "CYPHER 3.5 planner=cost debug=tostring USING PERIODIC COMMIT",
+        "CYPHER 4.2 planner=cost debug=tostring USING PERIODIC COMMIT",
+        "CYPHER 4.3 planner=cost debug=tostring USING PERIODIC COMMIT",
         "using periodic commit",
         "UsING pERIOdIC COMmIT"
       )
@@ -122,15 +143,85 @@ class PreParserTest extends CypherFunSuite {
         "CREATE ({name: 'USING PERIODIC COMMIT'})",
         "CREATE ({`USING PERIODIC COMMIT`: true})",
         "CREATE (:`USING PERIODIC COMMIT`)",
-        "CYPHER 3.5 debug=usingPeriodicCommit PROFILE CREATE ({name: 'USING PERIODIC COMMIT'})",
-        "CYPHER 4.2 debug=usingPeriodicCommit PROFILE CREATE ({name: 'USING PERIODIC COMMIT'})",
-        "CYPHER 4.3 debug=usingPeriodicCommit PROFILE CREATE ({name: 'USING PERIODIC COMMIT'})",
+        "CYPHER 3.5 debug=tostring PROFILE CREATE ({name: 'USING PERIODIC COMMIT'})",
+        "CYPHER 4.2 debug=tostring PROFILE CREATE ({name: 'USING PERIODIC COMMIT'})",
+        "CYPHER 4.3 debug=tostring PROFILE CREATE ({name: 'USING PERIODIC COMMIT'})",
         """CREATE ({name: '
           |USING PERIODIC COMMIT')""".stripMargin
       )
 
     for (query <- queries) {
       preParser.preParseQuery(query).options.isPeriodicCommit should be(false)
+    }
+  }
+
+  test("should take defaults from config") {
+    preParserWith(GraphDatabaseSettings.cypher_planner -> GraphDatabaseSettings.CypherPlanner.COST)
+      .preParseQuery("RETURN 1").options.planner shouldEqual CypherPlannerOption.cost
+
+    preParserWith(GraphDatabaseInternalSettings.cypher_runtime -> GraphDatabaseInternalSettings.CypherRuntime.PIPELINED)
+      .preParseQuery("RETURN 1").options.runtime shouldEqual CypherRuntimeOption.pipelined
+
+    preParserWith(GraphDatabaseInternalSettings.cypher_expression_engine -> GraphDatabaseInternalSettings.CypherExpressionEngine.COMPILED)
+      .preParseQuery("RETURN 1").options.expressionEngine shouldEqual CypherExpressionEngineOption.compiled
+
+    preParserWith(GraphDatabaseInternalSettings.cypher_operator_engine -> GraphDatabaseInternalSettings.CypherOperatorEngine.COMPILED)
+      .preParseQuery("RETURN 1").options.operatorEngine shouldEqual CypherOperatorEngineOption.compiled
+
+    preParserWith(GraphDatabaseInternalSettings.cypher_pipelined_interpreted_pipes_fallback -> GraphDatabaseInternalSettings.CypherPipelinedInterpretedPipesFallback.ALL)
+      .preParseQuery("RETURN 1").options.interpretedPipesFallback shouldEqual CypherInterpretedPipesFallbackOption.allPossiblePlans
+  }
+
+  test("should not accept illegal combinations") {
+
+    case class OptionCombo(
+      optionA: Option,
+      optionB: Option,
+    )
+    case class Option(
+      asString: String,
+      asSetting: (Setting[_], AnyRef),
+    )
+
+    val expressionEngineCompiled = Option("expressionEngine=compiled",
+      GraphDatabaseInternalSettings.cypher_expression_engine -> GraphDatabaseInternalSettings.CypherExpressionEngine.COMPILED)
+    val operatorEngineCompiled = Option("operatorEngine=compiled",
+      GraphDatabaseInternalSettings.cypher_operator_engine -> GraphDatabaseInternalSettings.CypherOperatorEngine.COMPILED)
+    val interpretedPipesFallbackDisabled = Option("interpretedPipesFallback=disabled",
+      GraphDatabaseInternalSettings.cypher_pipelined_interpreted_pipes_fallback -> GraphDatabaseInternalSettings.CypherPipelinedInterpretedPipesFallback.DISABLED)
+    val interpretedPipesFallbackWhitelisted = Option("interpretedPipesFallback=whitelisted_plans_only",
+      GraphDatabaseInternalSettings.cypher_pipelined_interpreted_pipes_fallback -> GraphDatabaseInternalSettings.CypherPipelinedInterpretedPipesFallback.WHITELISTED_PLANS_ONLY)
+    val interpretedPipesFallbackAll = Option("interpretedPipesFallback=all",
+      GraphDatabaseInternalSettings.cypher_pipelined_interpreted_pipes_fallback -> GraphDatabaseInternalSettings.CypherPipelinedInterpretedPipesFallback.ALL)
+    val runtimeInterpreted = Option("runtime=interpreted",
+      GraphDatabaseInternalSettings.cypher_runtime -> GraphDatabaseInternalSettings.CypherRuntime.INTERPRETED)
+    val runtimeSlotted = Option("runtime=slotted",
+      GraphDatabaseInternalSettings.cypher_runtime -> GraphDatabaseInternalSettings.CypherRuntime.SLOTTED)
+
+    val invalidCombos = Seq(
+      OptionCombo(expressionEngineCompiled, runtimeInterpreted),
+      OptionCombo(operatorEngineCompiled, runtimeSlotted),
+      OptionCombo(operatorEngineCompiled, runtimeInterpreted),
+      OptionCombo(interpretedPipesFallbackDisabled, runtimeInterpreted),
+      OptionCombo(interpretedPipesFallbackDisabled, runtimeSlotted),
+      OptionCombo(interpretedPipesFallbackWhitelisted, runtimeInterpreted),
+      OptionCombo(interpretedPipesFallbackWhitelisted, runtimeSlotted),
+      OptionCombo(interpretedPipesFallbackAll, runtimeInterpreted),
+      OptionCombo(interpretedPipesFallbackAll, runtimeSlotted),
+    )
+
+    def shouldFail(query: String, settings: (Setting[_], AnyRef)*) =
+      withClue(s"query: $query, settings: $settings") {
+        intercept[InvalidArgumentException](
+          preParserWith(settings: _*).preParseQuery(query)
+        )
+      }
+
+    invalidCombos.foreach { combo =>
+      shouldFail(s"CYPHER ${combo.optionA.asString} ${combo.optionB.asString} RETURN 1")
+      shouldFail(s"CYPHER ${combo.optionB.asString} RETURN 1", combo.optionA.asSetting)
+      shouldFail(s"CYPHER ${combo.optionA.asString} RETURN 1", combo.optionB.asSetting)
+      shouldFail(s"RETURN 1", combo.optionA.asSetting, combo.optionB.asSetting)
     }
   }
 }

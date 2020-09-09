@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.plandescription
 
-import org.neo4j.cypher.CypherVersion
 import org.neo4j.cypher.internal.ExecutionPlan
 import org.neo4j.cypher.internal.frontend.PlannerName
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.options.CypherVersion
 import org.neo4j.cypher.internal.plandescription.Arguments.Runtime
 import org.neo4j.cypher.internal.plandescription.Arguments.RuntimeImpl
 import org.neo4j.cypher.internal.plandescription.Arguments.Time

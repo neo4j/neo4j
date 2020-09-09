@@ -21,8 +21,9 @@ package org.neo4j.cypher.internal
 
 import java.time.Clock
 
-import org.neo4j.cypher.CypherInterpretedPipesFallbackOption
-import org.neo4j.cypher.CypherOperatorEngineOption
+import org.neo4j.cypher.internal.options.CypherDebugOptions
+import org.neo4j.cypher.internal.options.CypherInterpretedPipesFallbackOption
+import org.neo4j.cypher.internal.options.CypherOperatorEngineOption
 import org.neo4j.cypher.internal.planner.spi.TokenContext
 import org.neo4j.internal.kernel.api.SchemaRead
 import org.neo4j.logging.Log
@@ -42,7 +43,7 @@ case class CommunityRuntimeContextManager(log: Log, config: CypherRuntimeConfigu
   override def create(tokenContext: TokenContext,
                       schemaRead: SchemaRead,
                       clock: Clock,
-                      debugOptions: Set[String],
+                      debugOptions: CypherDebugOptions,
                       ignore: Boolean,
                       ignore2: Boolean,
                       ignore3: CypherOperatorEngineOption,

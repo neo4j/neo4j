@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal
 import org.mockito.Mockito
 import org.mockito.Mockito.times
 import org.mockito.Mockito.verifyNoMoreInteractions
-import org.neo4j.cypher.CypherReplanOption
 import org.neo4j.cypher.internal.QueryCache.ParameterTypeMap
 import org.neo4j.cypher.internal.QueryCacheTest.TC
 import org.neo4j.cypher.internal.QueryCacheTest.alwaysStale
@@ -33,6 +32,7 @@ import org.neo4j.cypher.internal.QueryCacheTest.newKey
 import org.neo4j.cypher.internal.QueryCacheTest.newTracer
 import org.neo4j.cypher.internal.QueryCacheTest.staleAfterNTimes
 import org.neo4j.cypher.internal.cache.TestExecutorCaffeineCacheFactory
+import org.neo4j.cypher.internal.options.CypherReplanOption
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.internal.helpers.collection.Pair

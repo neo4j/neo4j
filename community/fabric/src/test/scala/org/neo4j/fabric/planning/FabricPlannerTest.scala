@@ -23,16 +23,6 @@ import java.time.Duration
 import java.util.Optional
 
 import org.neo4j.configuration.helpers.NormalizedDatabaseName
-import org.neo4j.cypher.CypherConnectComponentsPlannerOption
-import org.neo4j.cypher.CypherExecutionMode
-import org.neo4j.cypher.CypherExpressionEngineOption
-import org.neo4j.cypher.CypherInterpretedPipesFallbackOption
-import org.neo4j.cypher.CypherOperatorEngineOption
-import org.neo4j.cypher.CypherPlannerOption
-import org.neo4j.cypher.CypherReplanOption
-import org.neo4j.cypher.CypherRuntimeOption
-import org.neo4j.cypher.CypherUpdateStrategy
-import org.neo4j.cypher.CypherVersion
 import org.neo4j.cypher.internal.FullyParsedQuery
 import org.neo4j.cypher.internal.QueryOptions
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
@@ -46,6 +36,18 @@ import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.UnresolvedCall
 import org.neo4j.cypher.internal.expressions.SensitiveParameter
+import org.neo4j.cypher.internal.options.CypherConnectComponentsPlannerOption
+import org.neo4j.cypher.internal.options.CypherDebugOption
+import org.neo4j.cypher.internal.options.CypherDebugOptions
+import org.neo4j.cypher.internal.options.CypherExecutionMode
+import org.neo4j.cypher.internal.options.CypherExpressionEngineOption
+import org.neo4j.cypher.internal.options.CypherInterpretedPipesFallbackOption
+import org.neo4j.cypher.internal.options.CypherOperatorEngineOption
+import org.neo4j.cypher.internal.options.CypherPlannerOption
+import org.neo4j.cypher.internal.options.CypherReplanOption
+import org.neo4j.cypher.internal.options.CypherRuntimeOption
+import org.neo4j.cypher.internal.options.CypherUpdateStrategy
+import org.neo4j.cypher.internal.options.CypherVersion
 import org.neo4j.cypher.internal.tracing.TimingCompilationTracer
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTAny
@@ -693,8 +695,8 @@ class FabricPlannerTest
           |  interpretedPipesFallback=disabled
           |  replan=force
           |  connectComponentsPlanner=greedy
-          |  debug=foo
-          |  debug=bar
+          |  debug=tostring
+          |  debug=reportCostComparisonsAsRows
           |WITH 1 AS a
           |CALL {
           |  USE foo
@@ -721,7 +723,7 @@ class FabricPlannerTest
         interpretedPipesFallback = CypherInterpretedPipesFallbackOption.disabled,
         replan = CypherReplanOption.force,
         connectComponentsPlanner = CypherConnectComponentsPlannerOption.greedy,
-        debugOptions = Set("foo", "bar"),
+        debugOptions = CypherDebugOptions(Set(CypherDebugOption.tostring, CypherDebugOption.reportCostComparisonsAsRows)),
       )
 
       val expectedLast = QueryOptions.default.copy(
@@ -771,7 +773,7 @@ class FabricPlannerTest
         interpretedPipesFallback = CypherInterpretedPipesFallbackOption.default,
         replan = CypherReplanOption.default,
         connectComponentsPlanner = CypherConnectComponentsPlannerOption.default,
-        debugOptions = Set(),
+        debugOptions = CypherDebugOptions.default,
       )
 
       val expectedLast = QueryOptions.default.copy(

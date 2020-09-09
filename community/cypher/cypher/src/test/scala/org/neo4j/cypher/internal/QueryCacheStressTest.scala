@@ -21,12 +21,12 @@ package org.neo4j.cypher.internal
 
 import org.mockito.Mockito.atLeastOnce
 import org.mockito.Mockito.verify
-import org.neo4j.cypher.CypherReplanOption
 import org.neo4j.cypher.internal.QueryCacheTest.TC
 import org.neo4j.cypher.internal.QueryCacheTest.compilerWithExpressionCodeGenOption
 import org.neo4j.cypher.internal.QueryCacheTest.newCache
 import org.neo4j.cypher.internal.QueryCacheTest.newKey
 import org.neo4j.cypher.internal.QueryCacheTest.newTracer
+import org.neo4j.cypher.internal.options.CypherReplanOption
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 import scala.concurrent.Await

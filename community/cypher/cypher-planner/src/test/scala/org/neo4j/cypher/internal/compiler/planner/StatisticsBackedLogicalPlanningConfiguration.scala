@@ -35,6 +35,8 @@ import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.ProcedureSignature
 import org.neo4j.cypher.internal.logical.plans.QualifiedName
+import org.neo4j.cypher.internal.options.CypherDebugOption
+import org.neo4j.cypher.internal.options.CypherDebugOptions
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
@@ -58,7 +60,7 @@ trait StatisticsBackedLogicalPlanningSupport {
 
 object StatisticsBackedLogicalPlanningConfigurationBuilder {
   case class Options(
-    debug: Set[String] = Set(),
+    debug: CypherDebugOptions = CypherDebugOptions(Set.empty),
     connectComponentsPlanner: Boolean = false,
   )
 }
@@ -190,12 +192,16 @@ class StatisticsBackedLogicalPlanningConfigurationBuilder() {
     throw new IllegalStateException(message)
 
 
-  def enableDebugOption(option: String, enable: Boolean = true): this.type = {
-    options = options.copy(debug = if (enable) options.debug + option else options.debug - option)
+  def enableDebugOption(option: CypherDebugOption, enable: Boolean = true): this.type = {
+    options = options.copy(
+      debug = if (enable)
+        options.debug.copy(options.debug.enabledOptions + option)
+      else
+        options.debug.copy(options.debug.enabledOptions - option))
     this
   }
 
-  def enablePrintCostComparisons(enable: Boolean = true): this.type = enableDebugOption("printCostComparisons", enable)
+  def enablePrintCostComparisons(enable: Boolean = true): this.type = enableDebugOption(CypherDebugOption.printCostComparisons, enable)
 
   def enableConnectComponentsPlanner(enable: Boolean = true): this.type = {
     options = options.copy(connectComponentsPlanner = enable)
@@ -237,14 +243,14 @@ class StatisticsBackedLogicalPlanningConfigurationBuilder() {
 
       override def uniqueValueSelectivity(index: IndexDescriptor): Option[Selectivity] = {
         selectivities.uniqueValue
-          .get(IndexDef(label = tokens.getLabelName(index.label), propertyKeys = index.properties.map(_.id).map(tokens.getPropertyKeyName)))
-          .flatMap(Selectivity.of)
+                     .get(IndexDef(label = tokens.getLabelName(index.label), propertyKeys = index.properties.map(_.id).map(tokens.getPropertyKeyName)))
+                     .flatMap(Selectivity.of)
       }
 
       override def indexPropertyExistsSelectivity(index: IndexDescriptor): Option[Selectivity] = {
         selectivities.propExists
-          .get(IndexDef(label = tokens.getLabelName(index.label), propertyKeys = index.properties.map(_.id).map(tokens.getPropertyKeyName)))
-          .flatMap(Selectivity.of)
+                     .get(IndexDef(label = tokens.getLabelName(index.label), propertyKeys = index.properties.map(_.id).map(tokens.getPropertyKeyName)))
+                     .flatMap(Selectivity.of)
       }
     }
 

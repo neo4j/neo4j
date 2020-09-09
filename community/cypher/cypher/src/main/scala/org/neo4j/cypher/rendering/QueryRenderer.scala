@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.rendering
 
-import org.neo4j.cypher.CypherExecutionMode
 import org.neo4j.cypher.internal.QueryOptions
 import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.Query
@@ -30,6 +29,7 @@ import org.neo4j.cypher.internal.ast.prettifier.Prettifier
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.logical.plans.ResolvedCall
+import org.neo4j.cypher.internal.options.CypherExecutionMode
 import org.neo4j.cypher.internal.runtime.ast.ParameterFromSlot
 import org.neo4j.cypher.internal.util.InputPosition
 

@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.phases
 
 import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.configuration.GraphDatabaseSettings
-import org.neo4j.cypher.internal.compiler.StatsDivergenceCalculator
+import org.neo4j.cypher.internal.config.StatsDivergenceCalculator
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class StatsDivergenceCalculatorTest extends CypherFunSuite {

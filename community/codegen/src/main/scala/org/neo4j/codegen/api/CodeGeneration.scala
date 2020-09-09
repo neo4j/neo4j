@@ -45,6 +45,8 @@ import org.neo4j.codegen.bytecode.ByteCode.BYTECODE
 import org.neo4j.codegen.bytecode.ByteCode.PRINT_BYTECODE
 import org.neo4j.codegen.source.SourceCode.PRINT_SOURCE
 import org.neo4j.codegen.source.SourceCode.SOURCECODE
+import org.neo4j.codegen.source.SourceVisitor
+import org.neo4j.cypher.internal.options.CypherDebugOptions
 import org.neo4j.codegen.source.SourceCode.sourceLocation
 import org.neo4j.codegen.source.SourceVisitor
 
@@ -69,13 +71,13 @@ object CodeGeneration {
   case class SourceCodeGeneration(saver: CodeSaver) extends CodeGenerationMode
 
   object CodeGenerationMode {
-    def fromDebugOptions(debugOptions: Set[String]): CodeGenerationMode = {
+    def fromDebugOptions(debugOptions: CypherDebugOptions): CodeGenerationMode = {
       if(debugOptions.contains(GENERATE_JAVA_SOURCE_DEBUG_OPTION)) {
         val saveSourceToFileLocation = Option(System.getProperty(GENERATED_SOURCE_LOCATION_PROPERTY)).map(Paths.get(_))
-        val saver = new CodeSaver(debugOptions.contains("show_java_source"), debugOptions.contains("show_bytecode"), saveSourceToFileLocation)
+        val saver = new CodeSaver(debugOptions.showJavaSourceEnabled, debugOptions.showBytecodeEnabled, saveSourceToFileLocation)
         SourceCodeGeneration(saver)
       } else {
-        val saver = new CodeSaver(false, debugOptions.contains("show_bytecode"))
+        val saver = new CodeSaver(false, debugOptions.showBytecodeEnabled)
         ByteCodeGeneration(saver)
       }
     }

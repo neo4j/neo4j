@@ -53,8 +53,8 @@ case object QueryPlanner
   override def postConditions = Set(CompilationContains[LogicalPlan])
 
   override def process(from: LogicalPlanState, context: PlannerContext): LogicalPlanState = {
-    val costComparisonsAsRows = context.debugOptions.contains("reportcostcomparisonsasrows")
-    val printCostComparisons = context.debugOptions.contains("printcostcomparisons") || java.lang.Boolean.getBoolean("pickBestPlan.VERBOSE")
+    val costComparisonsAsRows = context.debugOptions.reportCostComparisonsAsRowsEnabled
+    val printCostComparisons = context.debugOptions.printCostComparisonsEnabled || java.lang.Boolean.getBoolean("pickBestPlan.VERBOSE")
 
     val costComparisonListener =
       if (costComparisonsAsRows)
@@ -100,7 +100,7 @@ case object QueryPlanner
     }
   }
 
-  private def getMetricsFrom(context: PlannerContext) = if (context.debugOptions.contains("inverse_cost")) {
+  private def getMetricsFrom(context: PlannerContext) = if (context.debugOptions.inverseCostEnabled) {
     context.metrics.copy(cost = (v1: LogicalPlan, v2: QueryGraphSolverInput, v3: SemanticTable, v4: Cardinalities) => -context.metrics.cost.costFor(v1, v2, v3, v4))
   } else {
     context.metrics

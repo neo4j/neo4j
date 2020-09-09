@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher
 
+import org.neo4j.configuration.Config
 import org.neo4j.cypher.internal.compiler.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.compiler.phases.RewriteProcedureCalls
@@ -33,6 +34,7 @@ import org.neo4j.cypher.internal.spi.procsHelpers.asCypherProcedureSignature
 import org.neo4j.cypher.internal.CypherQueryObfuscator
 import org.neo4j.cypher.internal.PreParser
 import org.neo4j.cypher.internal.cache.ExecutorBasedCaffeineCacheFactory
+import org.neo4j.cypher.internal.config.CypherConfiguration
 import org.neo4j.kernel.api.query.QueryObfuscator
 import org.neo4j.procedure.impl.GlobalProceduresRegistry
 
@@ -53,12 +55,8 @@ class CypherQueryObfuscatorFactory {
 
   private val procedures = new GlobalProceduresRegistry()
 
-  private val preParser = new PreParser(CypherVersion.default,
-    CypherPlannerOption.default,
-    CypherRuntimeOption.default,
-    CypherExpressionEngineOption.default,
-    CypherOperatorEngineOption.default,
-    CypherInterpretedPipesFallbackOption.default,
+  private val preParser = new PreParser(
+    CypherConfiguration.fromConfig(Config.defaults()),
     1,
     new ExecutorBasedCaffeineCacheFactory((_:Runnable).run()))
 

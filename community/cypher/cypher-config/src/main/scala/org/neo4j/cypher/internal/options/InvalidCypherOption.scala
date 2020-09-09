@@ -17,14 +17,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher
+package org.neo4j.cypher.internal.options
 
-sealed abstract class CypherExpressionEngineOption(engineName: String) extends CypherOption(engineName)
+import org.neo4j.exceptions.InvalidArgumentException
 
-case object CypherExpressionEngineOption extends CypherOptionCompanion[CypherExpressionEngineOption] {
-  case object default extends CypherExpressionEngineOption("default")
-  case object interpreted extends CypherExpressionEngineOption("interpreted")
-  case object compiled extends CypherExpressionEngineOption("compiled")
-  case object onlyWhenHot extends CypherExpressionEngineOption("only_when_hot")
-  val all: Set[CypherExpressionEngineOption] = Set(interpreted, compiled, onlyWhenHot)
-}
+class InvalidCypherOption(msg: String) extends InvalidArgumentException(msg)

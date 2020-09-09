@@ -26,7 +26,7 @@ import org.neo4j.configuration.Config
 import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.cypher.CypherOperatorEngineOption
 import org.neo4j.cypher.internal.CommunityRuntimeContextManager
-import org.neo4j.cypher.internal.CypherConfiguration
+import org.neo4j.cypher.internal.config.CypherConfiguration
 import org.neo4j.cypher.internal.CypherRuntimeConfiguration
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.RuntimeContextManager
@@ -73,7 +73,7 @@ class Edition[CONTEXT <: RuntimeContext](graphBuilderFactory: () => TestDatabase
     newRuntimeContextManager(runtimeConfig(), resolver, lifeSupport, logProvider)
 
   def runtimeConfig(): CypherRuntimeConfiguration = {
-    cypherConfig().toCypherRuntimeConfiguration
+    CypherRuntimeConfiguration.fromCypherConfiguration(cypherConfig())
   }
 
   def cypherConfig(): CypherConfiguration = {

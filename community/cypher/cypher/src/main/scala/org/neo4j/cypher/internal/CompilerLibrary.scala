@@ -21,11 +21,11 @@ package org.neo4j.cypher.internal
 
 import java.util.concurrent.ConcurrentHashMap
 
+import org.neo4j.cypher.internal.options.CypherPlannerOption
+import org.neo4j.cypher.internal.options.CypherRuntimeOption
+import org.neo4j.cypher.internal.options.CypherUpdateStrategy
+import org.neo4j.cypher.internal.options.CypherVersion
 import org.neo4j.cypher.internal.planning.CypherPlanner
-import org.neo4j.cypher.CypherPlannerOption
-import org.neo4j.cypher.CypherRuntimeOption
-import org.neo4j.cypher.CypherUpdateStrategy
-import org.neo4j.cypher.CypherVersion
 
 import scala.collection.JavaConverters.collectionAsScalaIterableConverter
 

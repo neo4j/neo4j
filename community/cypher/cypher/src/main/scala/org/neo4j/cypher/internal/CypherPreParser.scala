@@ -20,101 +20,54 @@
 package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.internal.compiler.Neo4jCypherExceptionFactory
+import org.neo4j.cypher.internal.options.CypherExecutionMode
 import org.neo4j.cypher.internal.parser.Base
 import org.neo4j.cypher.internal.util.InputPosition
 import org.parboiled.scala.Rule0
 import org.parboiled.scala.Rule1
 import org.parboiled.scala.group
 
-final case class PreParsedStatement(statement: String, options: Seq[PreParserOption], offset: InputPosition)
+sealed trait PreParserOption
+sealed abstract class ModePreParserOption(val value: CypherExecutionMode) extends PreParserOption
+case object ExplainModePreParserOption extends ModePreParserOption(CypherExecutionMode.explain)
+case object ProfileModePreParserOption extends ModePreParserOption(CypherExecutionMode.profile)
+final case class VersionPreParserOption(value: String) extends PreParserOption
+final case class KeyValuePreParserOption(key: String, value: String) extends PreParserOption
+
+final case class PreParsedStatement(statement: String, options: List[PreParserOption], offset: InputPosition)
 
 case object CypherPreParser extends org.parboiled.scala.Parser with Base {
   def apply(input: String): PreParsedStatement = parseOrThrow(input, Neo4jCypherExceptionFactory(input, None), None, QueryWithOptions)
 
   def QueryWithOptions: Rule1[Seq[PreParsedStatement]] =
     WS ~ AllOptions ~ WS ~ AnySomething ~~>>
-      ( (options: Seq[PreParserOption], text: String) => pos => Seq(PreParsedStatement(text, options, pos)))
+      ( (options: List[PreParserOption], text: String) => pos => Seq(PreParsedStatement(text, options, pos)))
 
-  def AllOptions: Rule1[Seq[PreParserOption]] = zeroOrMore(AnyCypherOption, WS)
+  def AllOptions: Rule1[List[PreParserOption]] = zeroOrMore(AnyCypherOption, WS) ~~> (_.flatten)
 
-  def AnyCypherOption: Rule1[PreParserOption] = Cypher | Explain | Profile
+  def AnyCypherOption: Rule1[List[PreParserOption]] = Cypher | (Mode ~~> (m => List(m)))
 
-  def AnySomething: Rule1[String] = rule("Query") { oneOrMore(org.parboiled.scala.ANY) ~> identity }
+  def Mode: Rule1[ModePreParserOption] = rule("execution mode")(Profile | Explain)
 
-  def Cypher: Rule1[ConfigurationOptions] = rule("CYPHER options") {
-    keyword("CYPHER") ~~
-      optional(VersionNumber) ~~
-      zeroOrMore(PlannerOption
-        | RuntimeOption
-        | ExpressionEngineOption
-        | OperatorEngineOption
-        | InterpretedPipesFallbackOption
-        | ReplanOption
-        | StrategyOption
-        | ConnectComponentsPlannerOption
-        | DebugFlag, WS) ~~> ConfigurationOptions
+  def Profile: Rule1[ModePreParserOption] = keyword("PROFILE") ~ push(ProfileModePreParserOption)
+
+  def Explain: Rule1[ModePreParserOption] = keyword("EXPLAIN") ~ push(ExplainModePreParserOption)
+
+  def Cypher: Rule1[List[PreParserOption]] = rule("CYPHER options") {
+    keyword("CYPHER") ~~ optional(Version) ~~ KeyValueOptions ~~> ((ver, opts) => ver.toList ++ opts)
   }
 
-  def PlannerOption: Rule1[PreParserOption] = rule("planner option") (
-    option("planner", "cost") ~ push(CostPlannerOption)
-      | option("planner", "greedy") ~ push(GreedyPlannerOption)
-      | option("planner", "idp") ~ push(IDPPlannerOption)
-      | option("planner", "dp") ~ push(DPPlannerOption)
-  )
-
-  def RuntimeOption: Rule1[RuntimePreParserOption] = rule("runtime option")(
-    option("runtime", "interpreted") ~ push(InterpretedRuntimeOption)
-      | option("runtime", "slotted") ~ push(SlottedRuntimeOption)
-      | option("runtime", "pipelined") ~ push(PipelinedRuntimeOption)
-      | option("runtime", "parallel") ~ push(ParallelRuntimeOption)
-  )
-
-  def StrategyOption: Rule1[UpdateStrategyOption] = rule("strategy option")(
-    option("updateStrategy", "eager") ~ push(EagerOption)
-  )
-
-  def VersionNumber: Rule1[VersionOption] = rule("Version") {
-    group(Digits ~ "." ~ Digits) ~> VersionOption
+  def Version: Rule1[VersionPreParserOption] = rule("Version") {
+    group(Digits ~ "." ~ Digits) ~> VersionPreParserOption
   }
-
-  def DebugFlag: Rule1[DebugOption] = rule("debug option") {
-    keyword("debug") ~~ "=" ~~ SymbolicNameString ~~> DebugOption
-  }
-
-  def ExpressionEngineOption: Rule1[ExpressionEnginePreParserOption] = rule("expression engine option") (
-    option("expressionEngine", "interpreted") ~ push(InterpretedExpressionOption)
-      | option("expressionEngine", "compiled") ~ push(CompiledExpressionOption)
-  )
-
-  def OperatorEngineOption: Rule1[OperatorEnginePreParserOption] = rule("operator engine mode options") (
-    option("operatorEngine", "compiled") ~ push(CompiledOperatorEngineOption)
-      | option("operatorEngine", "interpreted") ~ push(InterpretedOperatorEngineOption)
-  )
-
-  def InterpretedPipesFallbackOption: Rule1[InterpretedPipesFallbackPreParserOption] = rule("interpreted pipes fallback options") (
-    option("interpretedPipesFallback", "disabled") ~ push(DisabledInterpretedPipesFallbackOption)
-      | option("interpretedPipesFallback", "default") ~ push(DefaultInterpretedPipesFallbackOption)
-      | option("interpretedPipesFallback", "all") ~ push(AllInterpretedPipesFallbackOption)
-  )
-
-  def ReplanOption: Rule1[ReplanPreParserOption] = rule("replan strategy options") (
-    option("replan", "force") ~ push(ReplanForceOption)
-      | option("replan", "skip") ~ push(ReplanSkipOption)
-      | option("replan", "default") ~ push(ReplanDefaultOption)
-  )
-
-  def ConnectComponentsPlannerOption: Rule1[ConnectComponentsPlannerPreParserOption] = rule("connect components planner options") (
-    option("connectComponentsPlanner", "idp") ~ push(IDPConnectComponentsPlannerOption)
-      | option("connectComponentsPlanner", "greedy") ~ push(GreedyConnectComponentsPlannerOption)
-  )
 
   def Digits: Rule0 = oneOrMore("0" - "9")
 
-  def Profile: Rule1[ExecutionModePreParserOption] = keyword("PROFILE") ~ push(ProfileOption)
+  def KeyValueOptions: Rule1[List[KeyValuePreParserOption]] = zeroOrMore(KeyValueOption, WS)
 
-  def Explain: Rule1[ExecutionModePreParserOption] = keyword("EXPLAIN") ~ push(ExplainOption)
+  def KeyValueOption: Rule1[KeyValuePreParserOption] = rule("cypher option")(
+    (UnescapedSymbolicNameString ~~ "=" ~~ UnescapedSymbolicNameString) ~~> KeyValuePreParserOption
+  )
 
-  def option(key: String, value: String): Rule0 = {
-    keyword(key) ~~ "=" ~~ keyword(value)
-  }
+  def AnySomething: Rule1[String] = rule("Query") { oneOrMore(org.parboiled.scala.ANY) ~> identity }
 }

@@ -21,9 +21,6 @@ package org.neo4j.cypher.internal.planning
 
 import java.time.Clock
 
-import org.neo4j.cypher.CypherConnectComponentsPlannerOption
-import org.neo4j.cypher.CypherPlannerOption
-import org.neo4j.cypher.CypherUpdateStrategy
 import org.neo4j.cypher.internal.AdministrationCommandRuntime
 import org.neo4j.cypher.internal.CacheTracer
 import org.neo4j.cypher.internal.CompilerWithExpressionCodeGenOption
@@ -77,6 +74,9 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.ProcedureCall
 import org.neo4j.cypher.internal.logical.plans.ResolvedCall
 import org.neo4j.cypher.internal.logical.plans.SystemProcedureCall
+import org.neo4j.cypher.internal.options.CypherConnectComponentsPlannerOption
+import org.neo4j.cypher.internal.options.CypherPlannerOption
+import org.neo4j.cypher.internal.options.CypherUpdateStrategy
 import org.neo4j.cypher.internal.planner.spi.CostBasedPlannerName
 import org.neo4j.cypher.internal.planner.spi.DPPlannerName
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName

@@ -19,18 +19,18 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.CypherConnectComponentsPlannerOption
-import org.neo4j.cypher.CypherExecutionMode
-import org.neo4j.cypher.CypherExpressionEngineOption
-import org.neo4j.cypher.CypherInterpretedPipesFallbackOption
-import org.neo4j.cypher.CypherOperatorEngineOption
-import org.neo4j.cypher.CypherOption
-import org.neo4j.cypher.CypherPlannerOption
-import org.neo4j.cypher.CypherReplanOption
-import org.neo4j.cypher.CypherRuntimeOption
-import org.neo4j.cypher.CypherUpdateStrategy
-import org.neo4j.cypher.CypherVersion
 import org.neo4j.cypher.internal.frontend.phases.BaseState
+import org.neo4j.cypher.internal.options.CypherConnectComponentsPlannerOption
+import org.neo4j.cypher.internal.options.CypherDebugOptions
+import org.neo4j.cypher.internal.options.CypherExecutionMode
+import org.neo4j.cypher.internal.options.CypherExpressionEngineOption
+import org.neo4j.cypher.internal.options.CypherInterpretedPipesFallbackOption
+import org.neo4j.cypher.internal.options.CypherOperatorEngineOption
+import org.neo4j.cypher.internal.options.CypherPlannerOption
+import org.neo4j.cypher.internal.options.CypherReplanOption
+import org.neo4j.cypher.internal.options.CypherRuntimeOption
+import org.neo4j.cypher.internal.options.CypherUpdateStrategy
+import org.neo4j.cypher.internal.options.CypherVersion
 import org.neo4j.cypher.internal.util.InputPosition
 
 /**
@@ -91,7 +91,7 @@ case class QueryOptions(offset: InputPosition,
                         interpretedPipesFallback: CypherInterpretedPipesFallbackOption,
                         replan: CypherReplanOption,
                         connectComponentsPlanner: CypherConnectComponentsPlannerOption,
-                        debugOptions: Set[String],
+                        debugOptions: CypherDebugOptions,
                         recompilationLimitReached: Boolean = false,
                         materializedEntitiesMode: Boolean = false) {
 
@@ -102,64 +102,36 @@ case class QueryOptions(offset: InputPosition,
   def withRecompilationLimitReached: QueryOptions = copy(recompilationLimitReached = true)
 
   def cacheKey: QueryOptions.CacheKey = QueryOptions.CacheKey(
-    version = version.name,
+    version = version.render,
     executionMode match {
       case CypherExecutionMode.profile => "PROFILE"
       case _ => ""
     },
-    plannerInfo = planner match {
-      case CypherPlannerOption.default => ""
-      case _ => s"planner=${planner.name}"
-    },
-    runtimeInfo = runtime match {
-      case CypherRuntimeOption.default => ""
-      case _ => s"runtime=${runtime.name}"
-    },
-    updateStrategyInfo = updateStrategy match {
-      case CypherUpdateStrategy.default => ""
-      case _ => s"updateStrategy=${updateStrategy.name}"
-    },
-    expressionEngineInfo = expressionEngine match {
-      case CypherExpressionEngineOption.default |
-           CypherExpressionEngineOption.onlyWhenHot => ""
-      case _ => s"expressionEngine=${expressionEngine.name}"
-    },
-    operatorEngineInfo = operatorEngine match {
-      case CypherOperatorEngineOption.default => ""
-      case _ => s"operatorEngine=${operatorEngine.name}"
-    },
-    interpretedPipesFallbackInfo = interpretedPipesFallback match {
-      case CypherInterpretedPipesFallbackOption.default => ""
-      case _ => s"interpretedPipesFallback=${interpretedPipesFallback.name}"
-    },
-    connectComponentsPlanner = connectComponentsPlanner match {
-      case CypherConnectComponentsPlannerOption.default => ""
-      case _ => s"connectComponentsPlanner=${connectComponentsPlanner.name}"
-    },
-    debugFlags = debugOptions.map(flag => s"debug=$flag").mkString(" ")
+    plannerInfo = planner.render,
+    runtimeInfo = runtime.render,
+    updateStrategyInfo = updateStrategy.render,
+    expressionEngineInfo = expressionEngine.render,
+    operatorEngineInfo = operatorEngine.render,
+    interpretedPipesFallbackInfo = interpretedPipesFallback.render,
+    connectComponentsPlannerInfo = connectComponentsPlanner.render,
+    debugFlags = debugOptions.enabledOptionsSeq.map(_.render).mkString(" ")
   )
 
   def render: Option[String] = {
-    def arg(value: CypherOption, ignoredValue: CypherOption) =
-      if (value == ignoredValue) Seq()
-      else Seq(value.name)
-
-    def option(key: String, value: CypherOption, ignoredValue: CypherOption) =
-      if (value == ignoredValue) Seq()
-      else Seq(s"$key=${value.name}")
-
     val parts = Seq(
-      arg(version, CypherVersion.default),
-      option("planner", planner, CypherPlannerOption.default),
-      option("runtime", runtime, CypherRuntimeOption.default),
-      option("updateStrategy", updateStrategy, CypherUpdateStrategy.default),
-      option("expressionEngine", expressionEngine, CypherExpressionEngineOption.default),
-      option("operatorEngine", operatorEngine, CypherOperatorEngineOption.default),
-      option("interpretedPipesFallback", interpretedPipesFallback, CypherInterpretedPipesFallbackOption.default),
-      option("replan", replan, CypherReplanOption.default),
-      option("connectComponentsPlanner", connectComponentsPlanner, CypherConnectComponentsPlannerOption.default),
-      debugOptions.map(flag => s"debug=$flag"),
-    ).flatten
+      Seq(
+        version.render,
+        planner.render,
+        runtime.render,
+        updateStrategy.render,
+        expressionEngine.render,
+        operatorEngine.render,
+        interpretedPipesFallback.render,
+        replan.render,
+        connectComponentsPlanner.render,
+      ),
+      debugOptions.enabledOptionsSeq.map(_.render)
+    ).flatten.filterNot(_.isEmpty)
 
     if (parts.nonEmpty) Some(s"CYPHER ${parts.mkString(" ")}")
     else None
@@ -176,13 +148,14 @@ object QueryOptions {
                       expressionEngineInfo: String,
                       operatorEngineInfo: String,
                       interpretedPipesFallbackInfo: String,
-                      connectComponentsPlanner: String,
+                      connectComponentsPlannerInfo: String,
                       debugFlags: String) {
     def render: String =
-      s"CYPHER $version $profile $plannerInfo $runtimeInfo $updateStrategyInfo $expressionEngineInfo $operatorEngineInfo $interpretedPipesFallbackInfo $connectComponentsPlanner $debugFlags"
+      s"CYPHER $version $profile $plannerInfo $runtimeInfo $updateStrategyInfo $expressionEngineInfo $operatorEngineInfo $interpretedPipesFallbackInfo $connectComponentsPlannerInfo $debugFlags"
   }
 
-  val default: QueryOptions = QueryOptions(InputPosition.NONE,
+  val default: QueryOptions = QueryOptions(
+    InputPosition.NONE,
     isPeriodicCommit = false,
     CypherVersion.default,
     CypherExecutionMode.default,
@@ -194,5 +167,6 @@ object QueryOptions {
     CypherInterpretedPipesFallbackOption.default,
     CypherReplanOption.default,
     CypherConnectComponentsPlannerOption.default,
-    Set())
+    CypherDebugOptions.default,
+  )
 }

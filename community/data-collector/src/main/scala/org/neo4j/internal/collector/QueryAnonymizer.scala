@@ -19,19 +19,21 @@
  */
 package org.neo4j.internal.collector
 
-import org.neo4j.cypher.CypherExpressionEngineOption
-import org.neo4j.cypher.CypherInterpretedPipesFallbackOption
-import org.neo4j.cypher.CypherOperatorEngineOption
-import org.neo4j.cypher.CypherPlannerOption
-import org.neo4j.cypher.CypherRuntimeOption
-import org.neo4j.cypher.CypherVersion
+import org.neo4j.configuration.Config
 import org.neo4j.cypher.internal.PreParser
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.ast.prettifier.Prettifier
 import org.neo4j.cypher.internal.cache.ExecutorBasedCaffeineCacheFactory
 import org.neo4j.cypher.internal.compiler.Neo4jCypherExceptionFactory
+import org.neo4j.cypher.internal.config.CypherConfiguration
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.options.CypherExpressionEngineOption
+import org.neo4j.cypher.internal.options.CypherInterpretedPipesFallbackOption
+import org.neo4j.cypher.internal.options.CypherOperatorEngineOption
+import org.neo4j.cypher.internal.options.CypherPlannerOption
+import org.neo4j.cypher.internal.options.CypherRuntimeOption
+import org.neo4j.cypher.internal.options.CypherVersion
 import org.neo4j.cypher.internal.parser.CypherParser
 import org.neo4j.cypher.internal.rewriting.rewriters.anonymizeQuery
 import org.neo4j.internal.kernel.api.TokenRead
@@ -51,12 +53,8 @@ case class PlainText(valueMapper: ValueMapper.JavaMapper) extends QueryAnonymize
 }
 
 object IdAnonymizer {
-  private val preParser = new PreParser(CypherVersion.default,
-    CypherPlannerOption.default,
-    CypherRuntimeOption.default,
-    CypherExpressionEngineOption.default,
-    CypherOperatorEngineOption.default,
-    CypherInterpretedPipesFallbackOption.default,
+  private val preParser = new PreParser(
+    CypherConfiguration.fromConfig(Config.defaults()),
     0,
     new ExecutorBasedCaffeineCacheFactory((_:Runnable).run()))
 }

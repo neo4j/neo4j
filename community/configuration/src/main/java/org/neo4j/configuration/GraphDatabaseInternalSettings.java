@@ -208,8 +208,7 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
 
     public enum CypherOperatorEngine
     {
-        COMPILED,
-        INTERPRETED
+        DEFAULT, COMPILED, INTERPRETED
     }
 
     @Internal
@@ -218,18 +217,19 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
                   "Operator fusion means that multiple operators such as for example " +
                   "AllNodesScan -> Filter -> ProduceResult can be compiled into a single specialized operator. " +
                   "This setting only applies to the pipelined and parallel runtime. " +
-                  "Allowed values are \"COMPILED\" (default) and \"INTERPRETED\"." )
+                  "Allowed values are \"default\" (the default, use compiled when applicable), \"compiled\" and \"interpreted\"." )
     public static final Setting<CypherOperatorEngine> cypher_operator_engine =
-            newBuilder( "unsupported.cypher.pipelined.operator_engine", ofEnum( CypherOperatorEngine.class ), CypherOperatorEngine.COMPILED ).build();
+            newBuilder( "unsupported.cypher.pipelined.operator_engine", ofEnum( CypherOperatorEngine.class ), CypherOperatorEngine.DEFAULT ).build();
 
     public enum CypherPipelinedInterpretedPipesFallback
     {
-        DISABLED, DEFAULT, ALL
+        DISABLED, DEFAULT, ALL, WHITELISTED_PLANS_ONLY
     }
 
     @Internal
     @Description( "Use interpreted pipes as a fallback for operators that do not have a specialized implementation in the pipelined runtime. " +
-                  "Allowed values are \"disabled\", \"default\" (the default) and \"all\" (experimental). " +
+                  "Allowed values are \"disabled\", \"default\" (the default, use whitelisted_plans_only when applicable), \"whitelisted_plans_only\" " +
+                  "and \"all\" (experimental). " +
                   "The default is to enable the use of a subset of whitelisted operators that are known to be supported, whereas \"all\" is an " +
                   "experimental option that enables the fallback to be used for all possible operators that are not known to be unsupported." )
     public static final Setting<CypherPipelinedInterpretedPipesFallback> cypher_pipelined_interpreted_pipes_fallback =

@@ -26,15 +26,7 @@ import java.time.ZoneOffset
 
 import org.neo4j.configuration.Config
 import org.neo4j.configuration.GraphDatabaseSettings
-import org.neo4j.cypher
 import org.neo4j.cypher.CacheCounts
-import org.neo4j.cypher.CypherExpressionEngineOption
-import org.neo4j.cypher.CypherInterpretedPipesFallbackOption
-import org.neo4j.cypher.CypherOperatorEngineOption
-import org.neo4j.cypher.CypherPlannerOption
-import org.neo4j.cypher.CypherRuntimeOption
-import org.neo4j.cypher.CypherUpdateStrategy
-import org.neo4j.cypher.CypherVersion
 import org.neo4j.cypher.ExecutionEngineHelper.asJavaMapDeep
 import org.neo4j.cypher.GraphDatabaseTestSupport
 import org.neo4j.cypher.internal.CacheTracer
@@ -43,16 +35,25 @@ import org.neo4j.cypher.internal.CommunityRuntimeContextManager
 import org.neo4j.cypher.internal.CommunityRuntimeFactory
 import org.neo4j.cypher.internal.Compiler
 import org.neo4j.cypher.internal.CompilerLibrary
-import org.neo4j.cypher.internal.CypherConfiguration
+import org.neo4j.cypher.internal.config.CypherConfiguration
 import org.neo4j.cypher.internal.CypherCurrentCompiler
+import org.neo4j.cypher.internal.CypherRuntimeConfiguration
 import org.neo4j.cypher.internal.PreParser
 import org.neo4j.cypher.internal.QueryCache.ParameterTypeMap
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.cache.TestExecutorCaffeineCacheFactory
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
-import org.neo4j.cypher.internal.compiler.StatsDivergenceCalculator
+import org.neo4j.cypher.internal.compiler.phases.Compatibility4_2
 import org.neo4j.cypher.internal.compiler.phases.Compatibility4_3
+import org.neo4j.cypher.internal.config.StatsDivergenceCalculator
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
+import org.neo4j.cypher.internal.options.CypherExpressionEngineOption
+import org.neo4j.cypher.internal.options.CypherInterpretedPipesFallbackOption
+import org.neo4j.cypher.internal.options.CypherOperatorEngineOption
+import org.neo4j.cypher.internal.options.CypherPlannerOption
+import org.neo4j.cypher.internal.options.CypherRuntimeOption
+import org.neo4j.cypher.internal.options.CypherUpdateStrategy
+import org.neo4j.cypher.internal.options.CypherVersion
 import org.neo4j.cypher.internal.planner.spi.MinimumGraphStatistics.MIN_NODES_ALL
 import org.neo4j.cypher.internal.planner.spi.MinimumGraphStatistics.MIN_NODES_WITH_LABEL
 import org.neo4j.cypher.internal.runtime.interpreted.CSVResources
@@ -99,7 +100,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
       kernelMonitors,
       log,
       cacheFactory,
-      cypher.CypherPlannerOption.default,
+      CypherPlannerOption.default,
       CypherUpdateStrategy.default,
       () => 1,
       compatibilityMode = Compatibility4_3)
@@ -111,7 +112,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     CypherCurrentCompiler(
       planner,
       CommunityRuntimeFactory.getRuntime(CypherRuntimeOption.default, disallowFallback = true),
-      CommunityRuntimeContextManager(log, CypherConfiguration.fromConfig(Config.defaults()).toCypherRuntimeConfiguration),
+      CommunityRuntimeContextManager(log, CypherRuntimeConfiguration.fromCypherConfiguration(CypherConfiguration.fromConfig(Config.defaults()))),
       kernelMonitors)
 
   }
@@ -145,12 +146,8 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
                        params: scala.Predef.Map[String, AnyRef] = Map.empty,
                        cypherCompiler: Compiler = compiler): Unit = {
 
-    val preParser = new PreParser(CypherVersion.default,
-      CypherPlannerOption.default,
-      CypherRuntimeOption.default,
-      CypherExpressionEngineOption.default,
-      CypherOperatorEngineOption.default,
-      CypherInterpretedPipesFallbackOption.default,
+    val preParser = new PreParser(
+      CypherConfiguration.fromConfig(Config.defaults()),
       1,
       cacheFactory)
 
@@ -366,7 +363,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
 
   test("should clear all compiler library caches") {
     val compilerLibrary = createCompilerLibrary()
-    val compilers = CypherVersion.all.map { version =>
+    val compilers = CypherVersion.values.map { version =>
       compilerLibrary.selectCompiler(version, CypherPlannerOption.default, CypherRuntimeOption.default, CypherUpdateStrategy.default)
     }
 
@@ -392,7 +389,9 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     val cypherConfig = CypherConfiguration.fromConfig(config)
     val compilerFactory =
       new CommunityCompilerFactory(graph, monitors, cacheFactory, nullLogProvider,
-        cypherConfig.toCypherPlannerConfiguration(config, planSystemCommands = false), cypherConfig.toCypherRuntimeConfiguration)
+        CypherPlannerConfiguration.fromCypherConfiguration(cypherConfig, config, planSystemCommands = false),
+        CypherRuntimeConfiguration.fromCypherConfiguration(cypherConfig),
+      )
     new CompilerLibrary(compilerFactory, () => null)
   }
 }

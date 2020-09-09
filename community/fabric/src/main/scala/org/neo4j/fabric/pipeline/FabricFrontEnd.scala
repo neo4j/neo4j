@@ -19,10 +19,7 @@
  */
 package org.neo4j.fabric.pipeline
 
-
-import org.neo4j.cypher.CypherExecutionMode
-import org.neo4j.cypher.CypherVersion
-import org.neo4j.cypher.internal.CypherConfiguration
+import org.neo4j.cypher.internal.config.CypherConfiguration
 import org.neo4j.cypher.internal.NotificationWrapping
 import org.neo4j.cypher.internal.PreParsedQuery
 import org.neo4j.cypher.internal.PreParser
@@ -45,6 +42,8 @@ import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.frontend.phases.InitialState
 import org.neo4j.cypher.internal.frontend.phases.Monitors
 import org.neo4j.cypher.internal.frontend.phases.Transformer
+import org.neo4j.cypher.internal.options.CypherExecutionMode
+import org.neo4j.cypher.internal.options.CypherVersion
 import org.neo4j.cypher.internal.planner.spi.PlannerNameFor
 import org.neo4j.cypher.internal.planner.spi.ProcedureSignatureResolver
 import org.neo4j.cypher.internal.planning.WrappedMonitors
@@ -75,12 +74,7 @@ case class FabricFrontEnd(
   object preParsing {
 
     private val preParser = new PreParser(
-      cypherConfig.version,
-      cypherConfig.planner,
-      cypherConfig.runtime,
-      cypherConfig.expressionEngineOption,
-      cypherConfig.operatorEngine,
-      cypherConfig.interpretedPipesFallback,
+      cypherConfig,
       cypherConfig.queryCacheSize,
       cacheFactory
     )

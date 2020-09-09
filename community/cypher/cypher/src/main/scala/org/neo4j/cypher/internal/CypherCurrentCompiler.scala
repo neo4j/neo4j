@@ -19,9 +19,6 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.CypherExecutionMode
-import org.neo4j.cypher.CypherExecutionMode.profile
-import org.neo4j.cypher.CypherVersion
 import org.neo4j.cypher.internal.NotificationWrapping.asKernelNotification
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.frontend.PlannerName
@@ -34,6 +31,9 @@ import org.neo4j.cypher.internal.logical.plans.ProduceResult
 import org.neo4j.cypher.internal.logical.plans.SchemaIndexScanUsage
 import org.neo4j.cypher.internal.logical.plans.SchemaIndexSeekUsage
 import org.neo4j.cypher.internal.macros.AssertMacros
+import org.neo4j.cypher.internal.options.CypherDebugOptions
+import org.neo4j.cypher.internal.options.CypherExecutionMode
+import org.neo4j.cypher.internal.options.CypherVersion
 import org.neo4j.cypher.internal.plandescription.InternalPlanDescription
 import org.neo4j.cypher.internal.plandescription.PlanDescriptionBuilder
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
@@ -148,7 +148,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
       planState.hasLoadCSV,
       planState.maybePeriodicCommit.flatMap(_.map(x => PeriodicCommitInfo(x.batchSize))),
       new SequentialIdGen(planningAttributesCopy.cardinalities.size),
-      query.options.executionMode == profile)
+      query.options.executionMode == CypherExecutionMode.profile)
 
 
     val executionPlan: ExecutionPlan = try {
@@ -256,7 +256,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
         providedOrders,
         executionPlan)
 
-    private def getQueryContext(transactionalContext: TransactionalContext, debugOptions: Set[String], taskCloser: TaskCloser) = {
+    private def getQueryContext(transactionalContext: TransactionalContext, debugOptions: CypherDebugOptions, taskCloser: TaskCloser) = {
       val (threadSafeCursorFactory, resourceManager) = executionPlan.threadSafeExecutionResources() match {
         case Some((tFactory, rFactory)) => (tFactory, rFactory(resourceMonitor))
         case None => (null, new ResourceManager(resourceMonitor, transactionalContext.kernelTransaction().memoryTracker()))

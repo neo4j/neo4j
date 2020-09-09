@@ -17,8 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler
+package org.neo4j.cypher.internal.config
 
+// TODO make logic config for this
 sealed trait StatsDivergenceCalculator {
   val initialThreshold: Double
   val initialMillis: Long

@@ -27,7 +27,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.cypher.internal.CacheTracer;
 import org.neo4j.cypher.internal.CompilerFactory;
 import org.neo4j.cypher.internal.CompilerLibrary;
-import org.neo4j.cypher.internal.CypherConfiguration;
+import org.neo4j.cypher.internal.config.CypherConfiguration;
 import org.neo4j.cypher.internal.ExecutionEngineQueryCacheMonitor;
 import org.neo4j.cypher.internal.FullyParsedQuery;
 import org.neo4j.cypher.internal.cache.CaffeineCacheFactory;

@@ -21,6 +21,8 @@ package org.neo4j.cypher.internal.compiler
 
 import java.time.Clock
 
+import org.neo4j.configuration.Config
+import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.cypher.internal.compiler.phases.CompilationPhases
 import org.neo4j.cypher.internal.compiler.phases.CompilationPhases.ParsingConfig
 import org.neo4j.cypher.internal.compiler.phases.CompilationPhases.planPipeLine
@@ -31,10 +33,13 @@ import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.compiler.planner.logical.MetricsFactory
 import org.neo4j.cypher.internal.compiler.planner.logical.debug.DebugPrinter
+import org.neo4j.cypher.internal.config.CypherConfiguration
+import org.neo4j.cypher.internal.config.StatsDivergenceCalculator
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.frontend.phases.InitialState
 import org.neo4j.cypher.internal.frontend.phases.Monitors
+import org.neo4j.cypher.internal.options.CypherDebugOptions
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
 import org.neo4j.cypher.internal.planner.spi.PlannerNameFor
 import org.neo4j.cypher.internal.rewriting.RewriterStepSequencer
@@ -55,7 +60,7 @@ case class CypherPlanner[Context <: PlannerContext](monitors: Monitors,
   def planPreparedQuery(state: BaseState, context: Context): LogicalPlanState = {
     val pipeLine = if(config.planSystemCommands)
       systemPipeLine
-    else if (context.debugOptions.contains("tostring"))
+    else if (context.debugOptions.toStringEnabled)
       planPipeLine() andThen DebugPrinter
     else
       planPipeLine()
@@ -67,7 +72,7 @@ case class CypherPlanner[Context <: PlannerContext](monitors: Monitors,
                  rawQueryText: String,
                  notificationLogger: InternalNotificationLogger,
                  plannerNameText: String = IDPPlannerName.name,
-                 debugOptions: Set[String],
+                 debugOptions: CypherDebugOptions,
                  offset: Option[InputPosition],
                  tracer: CompilationPhaseTracer,
                  innerVariableNamer: InnerVariableNamer,
@@ -101,6 +106,24 @@ case class CypherPlanner[Context <: PlannerContext](monitors: Monitors,
     )).transform(startState, context)
   }
 
+}
+
+object CypherPlannerConfiguration {
+  def fromCypherConfiguration(config: CypherConfiguration, cfg: Config, planSystemCommands: Boolean): CypherPlannerConfiguration =
+    CypherPlannerConfiguration(
+      queryCacheSize = config.queryCacheSize,
+      statsDivergenceCalculator = CypherConfiguration.statsDivergenceFromConfig(cfg),
+      useErrorsOverWarnings = config.useErrorsOverWarnings,
+      idpMaxTableSize = config.idpMaxTableSize,
+      idpIterationDuration = config.idpIterationDuration,
+      errorIfShortestPathFallbackUsedAtRuntime = config.errorIfShortestPathFallbackUsedAtRuntime,
+      errorIfShortestPathHasCommonNodesAtRuntime = config.errorIfShortestPathHasCommonNodesAtRuntime,
+      legacyCsvQuoteEscaping = config.legacyCsvQuoteEscaping,
+      csvBufferSize = config.csvBufferSize,
+      nonIndexedLabelWarningThreshold = cfg.get(GraphDatabaseInternalSettings.query_non_indexed_label_warning_threshold).longValue(),
+      planSystemCommands = planSystemCommands,
+      useJavaCCParser = config.useJavaCCParser
+    )
 }
 
 case class CypherPlannerConfiguration(queryCacheSize: Int,
