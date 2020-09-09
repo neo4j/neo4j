@@ -31,6 +31,8 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
+import scala.collection.immutable.BitSet
+
 class NestedIndexJoinComponentConnectorTest extends CypherFunSuite with LogicalPlanningTestSupport2 with PlanMatchHelp {
 
   private def register[X](registry: IdRegistry[X], elements: X*): Goal = Goal(registry.registerAll(elements))
@@ -73,7 +75,63 @@ class NestedIndexJoinComponentConnectorTest extends CypherFunSuite with LogicalP
         Apply(mPlan, IndexSeek("n:N(prop = ???)", CanGetValue, paramExpr = Some(mProp), argumentIds = Set("m"), labelId = 0)),
         Apply(nPlan, IndexSeek("m:M(prop = ???)", CanGetValue, paramExpr = Some(nProp), argumentIds = Set("n"), labelId = 1)),
       )
+    }
+  }
 
+  test("produces no nested index joins if idp table is compacted and no single components remain") {
+    val table = IDPTable.empty[LogicalPlan]
+    val registry: DefaultIdRegistry[QueryGraph] = IdRegistry[QueryGraph]
+
+    val nProp = prop("n", "prop")
+    val mProp = prop("m", "prop")
+    val oProp = prop("p", "prop")
+    val pProp = prop("p", "prop")
+    val joinPred = equals(nProp, mProp)
+    val labelNPred = hasLabels("n", "N")
+    val labelMPred = hasLabels("m", "M")
+    val labelOPred = hasLabels("o", "P")
+    val labelPPred = hasLabels("p", "P")
+    new given() {
+      indexOn("N", "prop")
+      indexOn("M", "prop")
+      indexOn("O", "prop")
+      indexOn("P", "prop")
+      addTypeToSemanticTable(nProp, CTAny)
+      addTypeToSemanticTable(mProp, CTAny)
+      addTypeToSemanticTable(oProp, CTAny)
+      addTypeToSemanticTable(pProp, CTAny)
+    }.withLogicalPlanningContext { (_, ctx) =>
+
+      val order = InterestingOrder.empty
+      val kit = ctx.config.toKit(order, ctx)
+      val nQg = QueryGraph(patternNodes = Set("n")).addPredicates(labelNPred)
+      val mQg = QueryGraph(patternNodes = Set("m")).addPredicates(labelMPred)
+      val oQg = QueryGraph(patternNodes = Set("o")).addPredicates(labelOPred)
+      val pQg = QueryGraph(patternNodes = Set("p")).addPredicates(labelPPred)
+      val fullQg = (nQg ++ mQg ++ oQg ++ pQg).addPredicates(joinPred)
+
+      val noPlan = fakeLogicalPlanFor(ctx.planningAttributes, "n", "o")
+      val mpPlan = fakeLogicalPlanFor(ctx.planningAttributes, "m", "p")
+      ctx.planningAttributes.solveds.set(noPlan.id, RegularSinglePlannerQuery(nQg ++ oQg))
+      ctx.planningAttributes.solveds.set(mpPlan.id, RegularSinglePlannerQuery(mQg ++ pQg))
+
+      // Register single plans
+      val nId = registry.register(nQg)
+      val mId = registry.register(mQg)
+      val oId = registry.register(oQg)
+      val pId = registry.register(pQg)
+
+      // Compact no and mp
+      val noId = registry.compact(BitSet(nId, oId))
+      table.put(Goal(BitSet(noId)), sorted = false, noPlan)
+      val mpId = registry.compact(BitSet(mId, pId))
+      table.put(Goal(BitSet(mpId)), sorted = false, mpPlan)
+
+      val goal = Goal(BitSet(noId, mpId))
+
+      val step = NestedIndexJoinComponentConnector(singleComponentPlanner).solverStep(fullQg, order, kit)
+      val plans = step(registry, goal, table, ctx).toSeq
+      plans should be(empty)
     }
   }
 
@@ -114,5 +172,4 @@ class NestedIndexJoinComponentConnectorTest extends CypherFunSuite with LogicalP
       )
     }
   }
-
 }
