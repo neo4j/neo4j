@@ -56,13 +56,14 @@ case class ComponentConnectorPlanner(singleComponentPlanner: SingleComponentPlan
             singleComponentPlanner: SingleComponentPlannerTrait): Set[PlannedComponent] = {
     require(components.size > 1, "Can't connect less than 2 components.")
 
+    // kit.select plans predicates and shortest path patterns. If nothing is left in this area, we can skip IDP.
     val allSolved = components.flatMap(_.queryGraph.selections.predicates)
     val notYetSolved = queryGraph.selections.predicates -- allSolved
-    if (notYetSolved.isEmpty) {
+    if (notYetSolved.isEmpty && queryGraph.shortestPathPatterns.isEmpty) {
       // If there are no predicates left to be solved, that also means no joins are possible (because they would need to join on a predicate).
       // Also, the order of cartesian products does not need a search algorithm, since no Selections can be put in-between.
       // The best plan is a simple left-deep tree of cartesian products.
-      Set(planLotsOfCartesianProducts(components, queryGraph, context, kit))
+      Set(planLotsOfCartesianProducts(components, queryGraph, context, kit, considerSelections = false))
     } else {
       val bestPlans = connectWithIDP(components, queryGraph, interestingOrder, context, kit)
       Set(PlannedComponent(queryGraph, bestPlans))
