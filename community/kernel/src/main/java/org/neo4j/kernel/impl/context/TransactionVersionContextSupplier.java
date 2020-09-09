@@ -31,7 +31,7 @@ import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
  */
 public class TransactionVersionContextSupplier implements VersionContextSupplier
 {
-    protected ThreadLocal<VersionContext> cursorContext;
+    private ThreadLocal<VersionContext> cursorContext;
 
     @Override
     public void init( LongSupplier lastClosedTransactionIdSupplier )

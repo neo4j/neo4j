@@ -44,10 +44,9 @@ import org.neo4j.graphdb.QueryExecutionType;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.io.pagecache.tracing.cursor.context.VersionContext;
 import org.neo4j.kernel.impl.context.TransactionVersionContext;
-import org.neo4j.kernel.impl.context.TransactionVersionContextSupplier;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.snapshot.TestTransactionVersionContextSupplier;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
@@ -83,7 +82,7 @@ class EagerResultIT
         prepareData();
         TransactionIdStore transactionIdStore = getTransactionIdStore();
         testCursorContext = new TestVersionContext( transactionIdStore::getLastClosedTransactionId );
-        testContextSupplier.setCursorContext( testCursorContext );
+        testContextSupplier.setTestVersionContext( testCursorContext );
     }
 
     @AfterEach
@@ -335,14 +334,6 @@ class EagerResultIT
         int getAdditionalAttempts()
         {
             return additionalAttempts;
-        }
-    }
-
-    private class TestTransactionVersionContextSupplier extends TransactionVersionContextSupplier
-    {
-        void setCursorContext( VersionContext versionContext )
-        {
-            this.cursorContext.set( versionContext );
         }
     }
 }

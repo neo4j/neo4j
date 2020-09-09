@@ -79,7 +79,7 @@ class QueryRestartIT
         checkpoint();
 
         testCursorContext = TestVersionContext.testCursorContext( managementService, DEFAULT_DATABASE_NAME );
-        testContextSupplier.setCursorContext( testCursorContext );
+        testContextSupplier.setTestVersionContext( testCursorContext );
     }
 
     private void checkpoint() throws IOException

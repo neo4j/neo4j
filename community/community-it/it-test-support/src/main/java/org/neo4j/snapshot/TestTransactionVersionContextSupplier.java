@@ -29,9 +29,16 @@ import org.neo4j.kernel.impl.context.TransactionVersionContextSupplier;
  */
 public class TestTransactionVersionContextSupplier extends TransactionVersionContextSupplier
 {
-    public void setCursorContext( VersionContext versionContext )
+    private VersionContext testVersionContext;
+
+    public void setTestVersionContext( VersionContext versionContext )
     {
-        this.cursorContext = ThreadLocal.withInitial( () -> versionContext );
-        this.cursorContext.set( versionContext );
+        this.testVersionContext = versionContext;
+    }
+
+    @Override
+    public VersionContext getVersionContext()
+    {
+        return testVersionContext == null ? super.getVersionContext() : testVersionContext;
     }
 }

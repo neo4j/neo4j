@@ -71,7 +71,7 @@ public class SnapshotQueryExecutionIT extends ExclusiveWebContainerTestBase
     private void prepareCursorContext()
     {
         testCursorContext = testCursorContext( idSupplier );
-        testContextSupplier.setCursorContext( testCursorContext );
+        testContextSupplier.setTestVersionContext( testCursorContext );
     }
 
     private static void createData( GraphDatabaseService database )
