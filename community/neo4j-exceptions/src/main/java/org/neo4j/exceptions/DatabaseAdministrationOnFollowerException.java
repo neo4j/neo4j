@@ -31,6 +31,6 @@ public class DatabaseAdministrationOnFollowerException extends CypherExecutionEx
     @Override
     public Status status()
     {
-        return Status.Statement.NotSystemDatabaseOnLeaderError;
+        return Status.Cluster.NotALeader;
     }
 }
