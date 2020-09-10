@@ -753,15 +753,16 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     // Procedure security settings
     //=========================================================================
 
-    @Deprecated( since = "4.2.0", forRemoval = true )
     @Description( "The default role that can execute all procedures and user-defined functions that are not covered " +
             "by the `" + "dbms.security.procedures.roles" + "` setting. If the `" + "dbms.security.procedures.default_allowed" +
             "` setting is the empty string (default), procedures will be executed according to the same security " +
             "rules as normal Cypher statements. " +
-            "Deprecated: Replaced by EXECUTE PROCEDURE and EXECUTE BOOSTED PROCEDURE privileges." )
+            "This setting (if not empty string) will be translated to 'GRANT EXECUTE BOOSTED PROCEDURE *' for that role. " +
+            "If `" + "dbms.security.procedures.roles" + "`is not empty, any procedure that this role is not mapped to will result in a " +
+            "'DENY EXECUTE BOOSTED PROCEDURE procedure' for this role. " +
+            "Any privilege mapped in this way cannot be revoked, instead the config must be changed and will take effect after a restart." )
     public static final Setting<String> default_allowed = newBuilder( "dbms.security.procedures.default_allowed", STRING, "" ).build();
 
-    @Deprecated( since = "4.2.0", forRemoval = true )
     @Description( "This provides a finer level of control over which roles can execute procedures than the " +
             "`" + "dbms.security.procedures.default_allowed" + "` setting. For example: `+dbms.security.procedures.roles=" +
             "apoc.convert.*:reader;apoc.load.json*:writer;apoc.trigger.add:TriggerHappy+` will allow the role " +
@@ -769,7 +770,8 @@ public class GraphDatabaseSettings implements SettingsDeclaration
             "all procedures in the `apoc.load` namespace that starts with `json` and the role `TriggerHappy` " +
             "to execute the specific procedure `apoc.trigger.add`. Procedures not matching any of these " +
             "patterns will be subject to the `" + "dbms.security.procedures.default_allowed" + "` setting. " +
-            "Deprecated: Replaced by EXECUTE PROCEDURE and EXECUTE BOOSTED PROCEDURE privileges." )
+            "This setting (if not empty string) will be translated to 'GRANT EXECUTE BOOSTED PROCEDURE procedure' privileges for the mapped roles. " +
+            "Any privilege mapped in this way cannot be revoked, instead the config must be changed and will take effect after a restart." )
     public static final Setting<String> procedure_roles = newBuilder( "dbms.security.procedures.roles", STRING, "" ).build();
 
     @Description( "Default network interface to listen for incoming connections. " +
