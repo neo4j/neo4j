@@ -77,7 +77,7 @@ public final class DefaultDatabaseManager extends AbstractDatabaseManager<Standa
     public synchronized StandaloneDatabaseContext createDatabase( NamedDatabaseId namedDatabaseId )
     {
         requireNonNull( namedDatabaseId );
-        log.info( "Creating '%s' database.", namedDatabaseId.name() );
+        log.info( "Creating '%s'.", namedDatabaseId );
         checkDatabaseLimit( namedDatabaseId );
         StandaloneDatabaseContext databaseContext = createDatabaseContext( namedDatabaseId );
         databaseMap.put( namedDatabaseId, databaseContext );
@@ -104,7 +104,7 @@ public final class DefaultDatabaseManager extends AbstractDatabaseManager<Standa
         StandaloneDatabaseContext context = getDatabaseContext( namedDatabaseId )
                 .orElseThrow( () -> new DatabaseNotFoundException( "Database not found: " + namedDatabaseId ) );
         Database database = context.database();
-        log.info( "Upgrading '%s' database.", namedDatabaseId.name() );
+        log.info( "Upgrading '%s'.", namedDatabaseId );
         context.fail( null ); // Clear any failed state, e.g. due to format being too old on startup.
         try
         {
@@ -112,7 +112,7 @@ public final class DefaultDatabaseManager extends AbstractDatabaseManager<Standa
         }
         catch ( Throwable throwable )
         {
-            String message = "Failed to upgrade database: " + namedDatabaseId.name();
+            String message = "Failed to upgrade " + namedDatabaseId;
             context.fail( throwable );
             throw new DatabaseManagementException( message, throwable );
         }
@@ -139,7 +139,7 @@ public final class DefaultDatabaseManager extends AbstractDatabaseManager<Standa
         }
         catch ( Throwable t )
         {
-            log.error( "Failed to stop database: " + namedDatabaseId.name(), t );
+            log.error( "Failed to stop " + namedDatabaseId, t );
             context.fail( t );
         }
     }
@@ -153,7 +153,7 @@ public final class DefaultDatabaseManager extends AbstractDatabaseManager<Standa
         }
         catch ( Throwable t )
         {
-            log.error( "Failed to start database: " + namedDatabaseId.name(), t );
+            log.error( "Failed to start " + namedDatabaseId, t );
             context.fail( t );
         }
     }
@@ -162,7 +162,7 @@ public final class DefaultDatabaseManager extends AbstractDatabaseManager<Standa
     {
         if ( databaseMap.size() >= 2 )
         {
-            throw new DatabaseManagementException( "Default database already exists. Fail to create another database: " + namedDatabaseId.name() );
+            throw new DatabaseManagementException( "Default database already exists. Fail to create another: " + namedDatabaseId );
         }
     }
 }

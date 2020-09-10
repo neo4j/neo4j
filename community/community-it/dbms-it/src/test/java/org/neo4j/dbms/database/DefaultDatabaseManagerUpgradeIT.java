@@ -130,7 +130,7 @@ class DefaultDatabaseManagerUpgradeIT
         DatabaseManagementException e = assertThrows( DatabaseManagementException.class, () -> databaseManager.upgradeDatabase( namedDatabaseId ) );
 
         // Then
-        assertThat( e ).hasMessage( "Failed to upgrade database: " + namedDatabaseId.name() );
+        assertThat( e ).hasMessage( "Failed to upgrade " + namedDatabaseId );
         assertThat( e ).hasRootCause( expectedException );
         assertFalse( db.isAvailable( 100 ), "Expected database to be available after upgrade" );
         assertTrue( MigrationTestUtils.checkNeoStoreHasFormatVersion( check, StandardV3_4.RECORD_FORMATS ), "Expected store not upgraded." );

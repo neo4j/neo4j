@@ -27,6 +27,6 @@ public class DatabaseStartAbortedException extends Exception
 {
     public DatabaseStartAbortedException( NamedDatabaseId namedDatabaseId )
     {
-        super( format( "Database %s was stopped before it finished starting!", namedDatabaseId.name() ) );
+        super( format( "%s was stopped before it finished starting!", namedDatabaseId ) );
     }
 }

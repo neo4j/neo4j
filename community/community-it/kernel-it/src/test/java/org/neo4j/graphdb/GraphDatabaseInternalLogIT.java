@@ -28,6 +28,7 @@ import java.util.stream.Stream;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
@@ -51,8 +52,10 @@ class GraphDatabaseInternalLogIT
     {
         // Given
         DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( testDir.homePath() )
-                .setConfig( GraphDatabaseSettings.logs_directory, testDir.directoryPath("logs").toAbsolutePath() )
+                .setConfig( GraphDatabaseSettings.logs_directory, testDir.directoryPath( "logs" ).toAbsolutePath() )
                 .build();
+
+        var databaseId = ((GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME )).databaseId();
         managementService.shutdown();
         Path internalLog = testDir.directoryPath( "logs" ).resolve( INTERNAL_LOG_FILE );
 
@@ -60,8 +63,8 @@ class GraphDatabaseInternalLogIT
         assertThat( Files.isRegularFile( internalLog ) ).isEqualTo( true );
         assertThat( Files.size( internalLog ) ).isGreaterThan( 0L );
 
-        assertEquals( 1, countOccurrences( internalLog, "Database " + DEFAULT_DATABASE_NAME + " is ready." ) );
-        assertEquals( 2, countOccurrences( internalLog, "Database " + DEFAULT_DATABASE_NAME + " is unavailable." ) );
+        assertEquals( 1, countOccurrences( internalLog, databaseId + " is ready." ) );
+        assertEquals( 2, countOccurrences( internalLog, databaseId + " is unavailable." ) );
     }
 
     @Test

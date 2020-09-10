@@ -543,8 +543,8 @@ public class Database extends LifecycleAdapter
     {
         if ( ArrayUtils.isNotEmpty( logFiles.logFiles() ) )
         {
-            throw new RuntimeException( format( "Fail to start database '%s' since transaction logs were found, while database " +
-                    "files are missing.", namedDatabaseId.name() ) );
+            throw new RuntimeException( format( "Fail to start '%s' since transaction logs were found, while database " +
+                    "files are missing.", namedDatabaseId ) );
         }
     }
 
@@ -913,7 +913,7 @@ public class Database extends LifecycleAdapter
         }
         catch ( IOException e )
         {
-            internalLogProvider.getLog( Database.class ).error( format( "Failed to delete database '%s' files.", namedDatabaseId.name() ), e );
+            internalLogProvider.getLog( Database.class ).error( format( "Failed to delete '%s' files.", namedDatabaseId ), e );
             throw new UncheckedIOException( e );
         }
     }

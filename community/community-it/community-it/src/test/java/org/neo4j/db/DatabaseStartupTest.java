@@ -225,7 +225,7 @@ class DatabaseStartupTest
             Optional<Throwable> cause = dbStateService.causeOfFailure( db.databaseId() );
             assertTrue( cause.isPresent() );
             assertThat( cause.get() ).hasStackTraceContaining(
-                    "Fail to start database '" + DEFAULT_DATABASE_NAME + "' since transaction logs were found, while database " );
+                    "Fail to start '" + db.databaseId() + "' since transaction logs were found, while database " );
         }
         finally
         {

@@ -283,13 +283,13 @@ public class DatabaseAvailabilityGuard extends LifecycleAdapter implements Avail
         @Override
         public void available()
         {
-            log.info( "Database %s is ready.", namedDatabaseId.name() );
+            log.info( "%s is ready.", namedDatabaseId );
         }
 
         @Override
         public void unavailable()
         {
-            log.info( "Database %s is unavailable.", namedDatabaseId.name() );
+            log.info( "%s is unavailable.", namedDatabaseId );
         }
     }
 }

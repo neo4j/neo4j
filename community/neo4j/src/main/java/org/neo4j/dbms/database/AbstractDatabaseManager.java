@@ -167,7 +167,7 @@ public abstract class AbstractDatabaseManager<DB extends DatabaseContext> extend
             catch ( Throwable t )
             {
                 var dbmsException = new DatabaseManagementException( format( "An error occurred! Unable to %s the database `%s`.",
-                        operationName, namedDatabaseId.name() ), t );
+                        operationName, namedDatabaseId ), t );
                 dbmsExceptions = Exceptions.chain( dbmsExceptions, dbmsException );
             }
         }
@@ -182,13 +182,13 @@ public abstract class AbstractDatabaseManager<DB extends DatabaseContext> extend
     {
         try
         {
-            log.info( "Starting '%s' database.", namedDatabaseId.name() );
+            log.info( "Starting '%s'.", namedDatabaseId );
             Database database = context.database();
             database.start();
         }
         catch ( Throwable t )
         {
-            throw new DatabaseManagementException( format( "An error occurred! Unable to start database with name `%s`.", namedDatabaseId.name() ), t );
+            throw new DatabaseManagementException( format( "An error occurred! Unable to start `%s`.", namedDatabaseId ), t );
         }
     }
 
@@ -196,13 +196,13 @@ public abstract class AbstractDatabaseManager<DB extends DatabaseContext> extend
     {
         try
         {
-            log.info( "Stop '%s' database.", namedDatabaseId.name() );
+            log.info( "Stopping '%s'.", namedDatabaseId );
             Database database = context.database();
             database.stop();
         }
         catch ( Throwable t )
         {
-            throw new DatabaseManagementException( format( "An error occurred! Unable to stop database with name `%s`.", namedDatabaseId.name() ), t );
+            throw new DatabaseManagementException( format( "An error occurred! Unable to stop `%s`.", namedDatabaseId ), t );
         }
     }
 
