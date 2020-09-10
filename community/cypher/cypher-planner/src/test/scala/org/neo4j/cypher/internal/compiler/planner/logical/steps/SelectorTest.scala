@@ -21,6 +21,14 @@ package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.NodePattern
+import org.neo4j.cypher.internal.expressions.PatternExpression
+import org.neo4j.cypher.internal.expressions.RelTypeName
+import org.neo4j.cypher.internal.expressions.RelationshipChain
+import org.neo4j.cypher.internal.expressions.RelationshipPattern
+import org.neo4j.cypher.internal.expressions.RelationshipsPattern
+import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.expressions.functions.Exists
 import org.neo4j.cypher.internal.ir.Predicate
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
@@ -29,7 +37,7 @@ import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class SelectCoveredTest extends CypherFunSuite with LogicalPlanningTestSupport {
+class SelectorTest extends CypherFunSuite with LogicalPlanningTestSupport {
   private val planContext = newMockedPlanContext()
 
   test("when a predicate that isn't already solved is solvable it should be applied") {
@@ -41,12 +49,13 @@ class SelectCoveredTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val selections = Selections(Set(Predicate(inner.availableSymbols, predicate)))
 
     val qg = QueryGraph(selections = selections)
+    val selector = Selector(pickBestPlanUsingHintsAndCost, selectCovered)
 
     // When
-    val result = selectCovered(inner, qg, InterestingOrder.empty, context)
+    val result = selector(inner, qg, InterestingOrder.empty, context)
 
     // Then
-    result should equal(Seq(Selection(Seq(predicate), inner)))
+    result should equal(Selection(Seq(predicate), inner))
   }
 
   test("should not try to solve predicates with unmet dependencies") {
@@ -59,12 +68,13 @@ class SelectCoveredTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val inner = newMockedLogicalPlanWithProjections(context.planningAttributes, "x")
 
     val qg = QueryGraph(selections = selections)
+    val selector = Selector(pickBestPlanUsingHintsAndCost, selectCovered)
 
     // When
-    val result = selectCovered(inner, qg, InterestingOrder.empty, context)
+    val result = selector(inner, qg, InterestingOrder.empty, context)
 
     // Then
-    result should be (empty)
+    result should equal(inner)
   }
 
   test("when two predicates not already solved are solvable, they should be applied") {
@@ -78,12 +88,13 @@ class SelectCoveredTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val inner = newMockedLogicalPlanWithProjections(context.planningAttributes, "x")
 
     val qg = QueryGraph(selections = selections)
+    val selector = Selector(pickBestPlanUsingHintsAndCost, selectCovered)
 
     // When
-    val result = selectCovered(inner, qg, InterestingOrder.empty, context)
+    val result = selector(inner, qg, InterestingOrder.empty, context)
 
     // Then
-    result should equal(Seq(Selection(Seq(predicate1, predicate2), inner)))
+    result should equal(Selection(Seq(predicate1, predicate2), inner))
   }
 
   test("when a predicate is already solved, it should not be applied again") {
@@ -94,12 +105,13 @@ class SelectCoveredTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val qg = QueryGraph(selections = Selections(Set(Predicate(coveredIds, literalInt(1)))))
     val solved = RegularSinglePlannerQuery(qg)
     val inner = newMockedLogicalPlanWithSolved(context.planningAttributes, idNames = Set("x"), solved = solved)
+    val selector = Selector(pickBestPlanUsingHintsAndCost, selectCovered)
 
     // When
-    val result = selectCovered(inner, qg, InterestingOrder.empty, context)
+    val result = selector(inner, qg, InterestingOrder.empty, context)
 
     // Then
-    result should equal(Seq())
+    result should equal(inner)
   }
 
   test("a predicate without all dependencies covered should not be applied ") {
@@ -110,11 +122,41 @@ class SelectCoveredTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val selections = Selections(Set(Predicate(Set("x", "y"), predicate)))
     val inner = newMockedLogicalPlanWithProjections(context.planningAttributes, "x")
     val qg = QueryGraph(selections = selections)
+    val selector = Selector(pickBestPlanUsingHintsAndCost, selectCovered)
 
     // When
-    val result = selectCovered(inner, qg, InterestingOrder.empty, context)
+    val result = selector(inner, qg, InterestingOrder.empty, context)
 
     // Then
-    result should equal(Seq())
+    result should equal(inner)
+  }
+
+  test("should not introduce semi apply for unsolved exclusive pattern predicate when nodes not applicable") {
+    // MATCH (a) WHERE (a)-->()
+    val relChain = RelationshipChain(
+      NodePattern(Some(varFor("a")), Seq(), None)_,
+      RelationshipPattern(Some(varFor("  UNNAMED1")), Seq.empty[RelTypeName], None, None, SemanticDirection.OUTGOING) _,
+      NodePattern(Some(varFor("  UNNAMED2")), Seq(), None)_
+    )_
+
+    val patternExp = Exists(PatternExpression(RelationshipsPattern(relChain)_))_
+
+    val predicate = Predicate(Set("a"), patternExp)
+    val selections = Selections(Set(predicate))
+
+    val qg = QueryGraph(
+      patternNodes = Set("b"),
+      selections = selections
+    )
+
+    val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext())
+
+    val bPlan = newMockedLogicalPlan(context.planningAttributes, "b")
+    val selector = Selector(pickBestPlanUsingHintsAndCost, selectPatternPredicates)
+    // When
+    val result = selector(bPlan, qg, InterestingOrder.empty, context)
+
+    // Then
+    result should equal(bPlan)
   }
 }

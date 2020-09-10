@@ -19,21 +19,26 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.planner.logical.CandidateGenerator
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
-import org.neo4j.cypher.internal.compiler.planner.unsolvedPreds
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.ir.QueryGraph
+import org.neo4j.cypher.internal.ir.Selections.containsPatternPredicates
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
-case object selectCovered extends CandidateGenerator[LogicalPlan] {
-  def apply(in: LogicalPlan, queryGraph: QueryGraph, interestingOrder: InterestingOrder, context: LogicalPlanningContext): Seq[LogicalPlan] = {
-    val unsolvedPredicates = unsolvedPreds(context.planningAttributes.solveds)(queryGraph.selections, in)
+case object selectCovered extends SelectionCandidateGenerator {
+  override def apply(input: LogicalPlan,
+                     unsolvedPredicates: Set[Expression],
+                     queryGraph: QueryGraph,
+                     interestingOrder: InterestingOrder,
+                     context: LogicalPlanningContext): Iterator[SelectionCandidate] = {
+    val unsolvedScalarPredicates = unsolvedPredicates.filterNot(containsPatternPredicates)
 
-    if (unsolvedPredicates.isEmpty) {
-      Seq()
+    if (unsolvedScalarPredicates.isEmpty) {
+      Iterator.empty
     } else {
-      Seq(context.logicalPlanProducer.planSelection(in, unsolvedPredicates, context))
+      val plan = context.logicalPlanProducer.planSelection(input, unsolvedScalarPredicates.toSeq, context)
+      Iterator(SelectionCandidate(plan, unsolvedScalarPredicates))
     }
   }
 }
