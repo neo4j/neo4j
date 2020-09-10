@@ -29,10 +29,9 @@ class DatabaseNameLogContextTest
     void shouldFormatMessage()
     {
         var databaseId = TestDatabaseIdRepository.randomNamedDatabaseId();
-        var context = new DatabaseNameLogContext( databaseId );
 
-        var formattedMessage = context.formatMessage( "Hello there" );
+        var formattedMessage = databaseId.formatMessage( "Hello there" );
 
-        assertEquals( String.format( "[%s] Hello there", databaseId.name() ), formattedMessage );
+        assertEquals( String.format( "[%s/%s] Hello there", databaseId.name(), databaseId.databaseId().id() ), formattedMessage );
     }
 }

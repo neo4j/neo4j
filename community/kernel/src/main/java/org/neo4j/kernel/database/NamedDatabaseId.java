@@ -23,19 +23,20 @@ import java.util.Objects;
 import java.util.UUID;
 
 import org.neo4j.configuration.helpers.NormalizedDatabaseName;
+import org.neo4j.logging.internal.DatabaseLogContext;
 
 import static java.util.Objects.requireNonNull;
 
 /**
  * Represents a unique identifier for a database, including a persistent and immutable component. Intended to support renaming of database.
- *
+ * <p>
  * Cannot be used to represent a database that has not been created yet or has not been resolved from persistent storage yet.
- *
+ * <p>
  * Create using a {@link DatabaseIdRepository}, or if reading from persistence or network use a {@link DatabaseIdFactory}
- *
+ * <p>
  * Equality and hashcode are based only on UUID.
  */
-public class NamedDatabaseId implements Comparable<NamedDatabaseId>
+public class NamedDatabaseId implements Comparable<NamedDatabaseId>, DatabaseLogContext
 {
     private final String name;
     private final DatabaseId databaseId;
@@ -108,5 +109,11 @@ public class NamedDatabaseId implements Comparable<NamedDatabaseId>
     public boolean isSystemDatabase()
     {
         return databaseId.isSystemDatabase();
+    }
+
+    @Override
+    public String formatMessage( String message )
+    {
+        return "[" + this.name + "/" + this.databaseId.id() + "] " + message;
     }
 }

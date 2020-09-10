@@ -40,7 +40,6 @@ import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.database.DatabaseCreationContext;
-import org.neo4j.kernel.database.DatabaseNameLogContext;
 import org.neo4j.kernel.database.DatabaseStartupController;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.extension.ExtensionFactory;
@@ -128,7 +127,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
         this.transactionsMemoryPool = globalModule.getTransactionsMemoryPool();
         this.otherMemoryPool = globalModule.getOtherMemoryPool();
         this.databaseLayout = globalModule.getNeo4jLayout().databaseLayout( namedDatabaseId.name() );
-        this.databaseLogService = new DatabaseLogService( new DatabaseNameLogContext( namedDatabaseId ), globalModule.getLogService() );
+        this.databaseLogService = new DatabaseLogService( namedDatabaseId, globalModule.getLogService() );
         this.scheduler = globalModule.getJobScheduler();
         this.globalDependencies = globalDependencies;
         this.tokenHolders = editionComponents.getTokenHolders();
