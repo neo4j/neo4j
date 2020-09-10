@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.ir.QueryGraph
+import org.neo4j.cypher.internal.ir.Selections.containsPatternPredicates
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.Expand
@@ -257,7 +258,7 @@ class TriadicSelectionFinderTest extends CypherFunSuite with LogicalPlanningTest
                                      r1Types: Seq[String] = Seq.empty,
                                      r2Types: Seq[String] = Seq.empty,
                                      r2Direction: SemanticDirection = OUTGOING,
-                                     cLabels: Seq[String] = Seq.empty) = {
+                                     cLabels: Seq[String] = Seq.empty): (Expand, Selection) = {
     val lblScan = NodeByLabelScan("a", labelName(aLabel), Set.empty, IndexOrderNone)
     val expand1 = Expand(lblScan, "a", OUTGOING, r1Types.map(RelTypeName(_)(pos)), "b", "r1", ExpandAll)
     val expand2 = Expand(expand1, "b", r2Direction, r2Types.map(RelTypeName(_)(pos)), "c", "r2", ExpandAll)
@@ -272,7 +273,7 @@ class TriadicSelectionFinderTest extends CypherFunSuite with LogicalPlanningTest
                                      predicateExpressionCase: Boolean = false,
                                      r2Types: Seq[String] = Seq.empty,
                                      r2Direction: SemanticDirection = OUTGOING,
-                                     cLabels: Seq[String] = Seq.empty) = {
+                                     cLabels: Seq[String] = Seq.empty): TriadicSelection = {
     val argument = Argument(expand1.availableSymbols)
     val expand2B = Expand(argument, "b", r2Direction, r2Types.map(RelTypeName(_)(pos)), "c", "r2", ExpandAll)
     val relationshipUniqueness = not(equals(varFor("r1"), varFor("r2")))
@@ -281,6 +282,14 @@ class TriadicSelectionFinderTest extends CypherFunSuite with LogicalPlanningTest
     TriadicSelection(expand1, selectionB, predicateExpressionCase, "a", "b", "c")
   }
 
-  private def testTriadic(in: LogicalPlan, qg: QueryGraph, context: LogicalPlanningContext): Seq[LogicalPlan] =
-    triadicSelectionFinder(in, qg, InterestingOrder.empty, context)
+  private def testTriadic(in: LogicalPlan, qg: QueryGraph, context: LogicalPlanningContext): Seq[LogicalPlan] = {
+    val unsolvedPredicates = qg.selections.flatPredicates.toSet
+    val candidates = triadicSelectionFinder(in, unsolvedPredicates, qg, InterestingOrder.empty, context).toSeq
+    candidates.foreach {
+      case SelectionCandidate(_, solvedPredicates) =>
+        // All pattern predicates should be solved. This assumes that only triadic pattern predicates are used in the tests.
+        solvedPredicates should equal(unsolvedPredicates.filter(containsPatternPredicates))
+    }
+    candidates.map(_.plan)
+  }
 }

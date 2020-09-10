@@ -235,7 +235,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
   def planLock(plan: LogicalPlan, nodesToLock: Set[String], context: LogicalPlanningContext): LogicalPlan =
     annotate(LockNodes(plan, nodesToLock), solveds.get(plan.id), providedOrders.get(plan.id).fromLeft, context)
 
-  def solvePredicate(plan: LogicalPlan, solvedExpression: Expression, context: LogicalPlanningContext): LogicalPlan = {
+  def solvePredicate(plan: LogicalPlan, solvedExpression: Expression): LogicalPlan = {
     // Keep other attributes but change solved
     val keptAttributes = Attributes(idGen, cardinalities, providedOrders, leveragedOrders)
     val newPlan = plan.copyPlanWithIdGen(keptAttributes.copy(plan.id))
@@ -244,7 +244,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     newPlan
   }
 
-  def solvePredicateInHorizon(plan: LogicalPlan, solvedExpression: Expression, context: LogicalPlanningContext): LogicalPlan = {
+  def solvePredicateInHorizon(plan: LogicalPlan, solvedExpression: Expression): LogicalPlan = {
     // Keep other attributes but change solved
     val keptAttributes = Attributes(idGen, cardinalities, providedOrders)
     val newPlan = plan.copyPlanWithIdGen(keptAttributes.copy(plan.id))
