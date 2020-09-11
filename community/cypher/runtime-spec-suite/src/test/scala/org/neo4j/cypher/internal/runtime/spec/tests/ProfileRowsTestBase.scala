@@ -1816,4 +1816,41 @@ trait NonParallelProfileRowsTestBase[CONTEXT <: RuntimeContext] {
     queryProfile.operatorProfile(1).rows() shouldBe limit // partial top
     queryProfile.operatorProfile(2).rows() shouldBe sizeHint // input
   }
+
+  test("should profile rows with triadic selection") {
+    // given
+    given { chainGraphs(sizeHint, "A", "B") }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y", "z")
+      .triadicSelection(positivePredicate = false, "x", "y", "z")
+      .|.expandAll("(y)-->(z)")
+      .|.argument("x", "y")
+      .expandAll("(x)-->(y)")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    val rows: Int => Long = queryProfile.operatorProfile(_).rows()
+
+    rows(0) shouldBe sizeHint   // produce results
+    rows(2) shouldBe sizeHint   // expand
+    rows(3) shouldBe sizeHint*2 // argument
+    rows(4) shouldBe sizeHint*2 // expand
+    rows(5) shouldBe sizeHint*3 // all node scan
+
+    // in pipelined triadic selection is rewritten into build-apply-filter
+    (rows(1), rows(6), rows(7), rows(8)) should {
+      be ((sizeHint, 0, 0, 0)) or // triadic selection
+      be ((0,
+        sizeHint*2, // triadic build
+        sizeHint,   // apply
+        sizeHint))  // triadic filter
+    }
+  }
 }
