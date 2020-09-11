@@ -105,6 +105,7 @@ import org.neo4j.cypher.internal.runtime.spec.tests.SortTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.SubscriberErrorTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.ThreadUnsafeExpressionTests
 import org.neo4j.cypher.internal.runtime.spec.tests.TopTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.TriadicSelectionTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.UndirectedRelationshipByIdSeekTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.UnionTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.UnwindTestBase
@@ -208,3 +209,4 @@ class InterpretedLetSelectOrAntiSemiApplyTest extends LetSelectOrAntiSemiApplyTe
 class InterpretedNestedPlanExpressionTest extends NestedPlanExpressionTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedRollupApplyTest extends RollupApplyTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedDropResultTest extends DropResultTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
+class InterpretedTriadicSelectionTest extends TriadicSelectionTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)

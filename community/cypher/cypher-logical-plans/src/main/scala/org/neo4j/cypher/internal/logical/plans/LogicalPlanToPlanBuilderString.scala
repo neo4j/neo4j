@@ -280,6 +280,8 @@ object LogicalPlanToPlanBuilderString {
       case AntiConditionalApply(_, _, items) => wrapInQuotationsAndMkString(items)
       case LetSemiApply(_, _, idName) => wrapInQuotations(idName)
       case LetAntiSemiApply(_, _, idName) => wrapInQuotations(idName)
+      case TriadicSelection(_, _, positivePredicate, sourceId, seenId, targetId) =>
+        s"$positivePredicate, ${wrapInQuotationsAndMkString(Seq(sourceId, seenId, targetId))}"
     }
     val plansWithContent2: PartialFunction[LogicalPlan, String] = {
       case MultiNodeIndexSeek(indexSeekLeafPlans: Seq[IndexSeekLeafPlan]) =>

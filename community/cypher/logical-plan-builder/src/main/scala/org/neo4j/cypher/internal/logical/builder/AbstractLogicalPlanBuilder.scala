@@ -141,6 +141,7 @@ import org.neo4j.cypher.internal.logical.plans.SingleSeekableArg
 import org.neo4j.cypher.internal.logical.plans.Skip
 import org.neo4j.cypher.internal.logical.plans.Sort
 import org.neo4j.cypher.internal.logical.plans.Top
+import org.neo4j.cypher.internal.logical.plans.TriadicSelection
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.Union
 import org.neo4j.cypher.internal.logical.plans.UnwindCollection
@@ -804,6 +805,9 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   def nestedPlanExistsExpressionProjection(resultList: String): IMPL = {
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) => Projection(lhs, Map(resultList -> NestedPlanExistsExpression(rhs, "exists(...)")(NONE)))(_)))
   }
+
+  def triadicSelection(positivePredicate: Boolean, sourceId: String, seenId: String, targetId: String): IMPL =
+    appendAtCurrentIndent(BinaryOperator((lhs, rhs) => TriadicSelection(lhs, rhs, positivePredicate, sourceId, seenId, targetId)(_)))
 
   def injectValue(variable: String, value: String): IMPL = {
     val collection = s"${variable}Collection"
