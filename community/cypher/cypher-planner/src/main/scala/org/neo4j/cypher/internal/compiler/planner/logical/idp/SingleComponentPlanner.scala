@@ -58,7 +58,7 @@ case class SingleComponentPlanner(monitor: IDPQueryGraphSolverMonitor,
 
         val orderRequirement = extraRequirementForInterestingOrder(context, interestingOrder)
         val generators = solverConfig.solvers(qg).map(_ (qg))
-        val generator = IDPQueryGraphSolver.composeGenerators(qg, interestingOrder, kit, context, generators)
+        val generator = IDPQueryGraphSolver.composeSolverSteps(qg, interestingOrder, kit, context, generators)
 
         val solver = new IDPSolver[PatternRelationship, LogicalPlan, LogicalPlanningContext](
           generator = generator,

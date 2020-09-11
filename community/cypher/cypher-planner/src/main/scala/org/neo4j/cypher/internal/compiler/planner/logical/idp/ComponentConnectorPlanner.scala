@@ -41,12 +41,12 @@ import org.neo4j.time.Stopwatch
 case class ComponentConnectorPlanner(singleComponentPlanner: SingleComponentPlannerTrait, config: IDPSolverConfig, monitor: IDPSolverMonitor)
   extends JoinDisconnectedQueryGraphComponents {
 
-  private val connectors = Seq(
-    CartesianProductComponentConnector,
+  private val cpConnector = CartesianProductComponentConnector
+  private val joinConnectors = Seq(
     NestedIndexJoinComponentConnector(singleComponentPlanner),
     ValueHashJoinComponentConnector,
-    OptionalMatchConnector,
   )
+  private val omConnector = OptionalMatchConnector
 
   override def connectComponentsAndSolveOptionalMatch(components: Set[PlannedComponent],
                                                       queryGraph: QueryGraph,
@@ -83,8 +83,15 @@ case class ComponentConnectorPlanner(singleComponentPlanner: SingleComponentPlan
       numComponents = components.size,
       numOptionalMatches = queryGraph.optionalMatches.size
     )
-    val generators = connectors.map(_.solverStep(goalBitAllocation, queryGraph, interestingOrder, kit))
-    val generator = IDPQueryGraphSolver.composeGenerators(queryGraph, interestingOrder, kit, context, generators)
+    val joinSolverSteps = joinConnectors.map(_.solverStep(goalBitAllocation, queryGraph, interestingOrder, kit))
+    val composedJoinSolverStep = IDPQueryGraphSolver.composeSolverSteps(queryGraph, interestingOrder, kit, context, joinSolverSteps)
+    val cpSolverStep = cpConnector.solverStep(goalBitAllocation, queryGraph, interestingOrder, kit)
+    val composedCPSolverStep = IDPQueryGraphSolver.selectingAndSortingSolverStep(queryGraph, interestingOrder, kit, context, cpSolverStep)
+    val omSolverStep = omConnector.solverStep(goalBitAllocation, queryGraph, interestingOrder, kit)
+    val composedOmSolverStep = IDPQueryGraphSolver.selectingAndSortingSolverStep(queryGraph, interestingOrder, kit, context, omSolverStep)
+
+    // Only even generate CP plans if no joins are available, since joins will always be better.
+    val generator = (composedJoinSolverStep || composedCPSolverStep) ++ composedOmSolverStep
 
     val solver = new IDPSolver[QueryGraph, LogicalPlan, LogicalPlanningContext](
       generator = generator,

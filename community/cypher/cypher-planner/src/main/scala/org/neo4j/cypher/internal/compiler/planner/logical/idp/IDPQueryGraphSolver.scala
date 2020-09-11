@@ -45,18 +45,29 @@ trait IDPQueryGraphSolverMonitor extends IDPSolverMonitor {
 object IDPQueryGraphSolver {
   val VERBOSE: Boolean = java.lang.Boolean.getBoolean("pickBestPlan.VERBOSE")
 
-  def composeGenerators[Solvable](
-    queryGraph: QueryGraph,
-    interestingOrder: InterestingOrder,
-    kit: QueryPlannerKit,
-    context: LogicalPlanningContext,
-    generators: Seq[IDPSolverStep[Solvable, LogicalPlan, LogicalPlanningContext]],
-  ): IDPSolverStep[Solvable, LogicalPlan, LogicalPlanningContext] = {
-    val selectingGenerators = generators.map(_.map(plan => kit.select(plan, queryGraph)))
-    val sortingGenerators = if (interestingOrder.isEmpty) Seq.empty else
-      selectingGenerators.map(_.flatMap(plan => SortPlanner.maybeSortedPlan(plan, interestingOrder, context).filterNot(_ == plan)))
-    val combinedGenerators = selectingGenerators ++ sortingGenerators
-    combinedGenerators.foldLeft(IDPSolverStep.empty[Solvable, LogicalPlan, LogicalPlanningContext])(_ ++ _)
+  def composeSolverSteps[Solvable](queryGraph: QueryGraph,
+                                   interestingOrder: InterestingOrder,
+                                   kit: QueryPlannerKit,
+                                   context: LogicalPlanningContext,
+                                   generators: Seq[IDPSolverStep[Solvable, LogicalPlan, LogicalPlanningContext]]
+                                  ): IDPSolverStep[Solvable, LogicalPlan, LogicalPlanningContext] = {
+    val combinedSolverSteps = generators.map(selectingAndSortingSolverStep(queryGraph, interestingOrder, kit, context, _))
+    combinedSolverSteps.foldLeft(IDPSolverStep.empty[Solvable, LogicalPlan, LogicalPlanningContext])(_ ++ _)
+  }
+
+  def selectingAndSortingSolverStep[Solvable](queryGraph: QueryGraph,
+                                              interestingOrder: InterestingOrder,
+                                              kit: QueryPlannerKit,
+                                              context: LogicalPlanningContext,
+                                              solverStep: IDPSolverStep[Solvable, LogicalPlan, LogicalPlanningContext]
+                                             ): IDPSolverStep[Solvable, LogicalPlan, LogicalPlanningContext] = {
+    val selectingSolverStep = solverStep.map(plan => kit.select(plan, queryGraph))
+    if (interestingOrder.isEmpty) {
+      selectingSolverStep
+    } else {
+      val sortingSolverStep = selectingSolverStep.flatMap(plan => SortPlanner.maybeSortedPlan(plan, interestingOrder, context).filterNot(_ == plan))
+      selectingSolverStep ++ sortingSolverStep
+    }
   }
 
   def extraRequirementForInterestingOrder(context: LogicalPlanningContext, interestingOrder: InterestingOrder): ExtraRequirement[LogicalPlan] = {
