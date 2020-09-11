@@ -163,6 +163,8 @@ import org.neo4j.cypher.internal.logical.plans.Skip
 import org.neo4j.cypher.internal.logical.plans.Sort
 import org.neo4j.cypher.internal.logical.plans.SystemProcedureCall
 import org.neo4j.cypher.internal.logical.plans.Top
+import org.neo4j.cypher.internal.logical.plans.TriadicBuild
+import org.neo4j.cypher.internal.logical.plans.TriadicFilter
 import org.neo4j.cypher.internal.logical.plans.TriadicSelection
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.Union
@@ -619,6 +621,15 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         val relationship = prop.map.asCanonicalStringVal
         val details = Details(constraintInfo(nameOption, relationship, scala.util.Right(relTypeName), Seq(prop), scala.util.Left("exists")))
         PlanDescriptionImpl(id, "CreateConstraint", children, Seq(details), variables)
+
+      case TriadicBuild(_, sourceId, seenId, _) =>
+        val details = Details(pretty"(${asPrettyString(sourceId)})--(${asPrettyString(seenId)})")
+        PlanDescriptionImpl(id, "TriadicBuild", children, Seq(details), variables)
+
+      case TriadicFilter(_, positivePredicate, sourceId, targetId, _) =>
+        val positivePredicateString = if (positivePredicate) pretty"" else pretty"NOT "
+        val details = Details(pretty"WHERE $positivePredicateString(${asPrettyString(sourceId)})--(${asPrettyString(targetId)})")
+        PlanDescriptionImpl(id, "TriadicFilter", children, Seq(details), variables)
 
       case x => throw new InternalException(s"Unknown plan type: ${x.getClass.getSimpleName}. Missing a case?")
     }

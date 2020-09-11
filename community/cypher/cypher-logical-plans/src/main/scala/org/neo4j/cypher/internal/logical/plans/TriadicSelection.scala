@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.logical.plans
 
+import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.attribution.IdGen
 
 /**
@@ -71,4 +72,32 @@ case class TriadicSelection(left: LogicalPlan,
   override def rhs: Option[LogicalPlan] = Some(right)
 
   override val availableSymbols: Set[String] = left.availableSymbols ++ right.availableSymbols
+}
+
+// TriadicBuild and TriadicFilter are used by Pipelined to perform the same logic as TriadicSelection.
+// 'triadicSelectionId' is used to link corresponding Build and Filter plans.
+
+case class TriadicBuild(source: LogicalPlan,
+                        sourceId: String,
+                        seenId: String,
+                        triadicSelectionId: Some[Id]) // wrapped in Some because Id is a value class and doesn't play well with rewriting
+                       (implicit idGen: IdGen)
+  extends LogicalPlan(idGen) with LazyLogicalPlan {
+
+  override def lhs: Option[LogicalPlan] = Some(source)
+  override def rhs: Option[LogicalPlan] = None
+  override def availableSymbols: Set[String] = source.availableSymbols
+}
+
+case class TriadicFilter(source: LogicalPlan,
+                         positivePredicate: Boolean,
+                         sourceId: String,
+                         targetId: String,
+                         triadicSelectionId: Some[Id]) // wrapped in Some because Id is a value class and doesn't play well with rewriting
+                        (implicit idGen: IdGen)
+  extends LogicalPlan(idGen) with LazyLogicalPlan {
+
+  override def lhs: Option[LogicalPlan] = Some(source)
+  override def rhs: Option[LogicalPlan] = None
+  override def availableSymbols: Set[String] = source.availableSymbols
 }

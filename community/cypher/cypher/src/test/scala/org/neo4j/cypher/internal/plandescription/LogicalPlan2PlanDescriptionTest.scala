@@ -239,6 +239,8 @@ import org.neo4j.cypher.internal.logical.plans.Sort
 import org.neo4j.cypher.internal.logical.plans.StartDatabase
 import org.neo4j.cypher.internal.logical.plans.StopDatabase
 import org.neo4j.cypher.internal.logical.plans.Top
+import org.neo4j.cypher.internal.logical.plans.TriadicBuild
+import org.neo4j.cypher.internal.logical.plans.TriadicFilter
 import org.neo4j.cypher.internal.logical.plans.TriadicSelection
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.Union
@@ -1310,6 +1312,19 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   test("SemiApply") {
     assertGood(attach(SemiApply(lhsLP, rhsLP), 2345.0),
       planDescription(id, "SemiApply", TwoChildren(lhsPD, rhsPD), Seq.empty, Set("a")))
+  }
+
+  test("TriadicBuild") {
+    assertGood(attach(TriadicBuild(lhsLP, "a", "b", Some(Id(1))), 113.0),
+      planDescription(id, "TriadicBuild", SingleChild(lhsPD), Seq(details("(a)--(b)")), Set("a")))
+  }
+
+  test("TriadicFilter") {
+    assertGood(attach(TriadicFilter(lhsLP, positivePredicate = true, "a", "b", Some(Id(1))), 113.0),
+      planDescription(id, "TriadicFilter", SingleChild(lhsPD), Seq(details("WHERE (a)--(b)")), Set("a")))
+
+    assertGood(attach(TriadicFilter(lhsLP, positivePredicate = false, "a", "b", Some(Id(1))), 113.0),
+      planDescription(id, "TriadicFilter", SingleChild(lhsPD), Seq(details("WHERE NOT (a)--(b)")), Set("a")))
   }
 
   test("TriadicSelection") {
