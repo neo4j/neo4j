@@ -715,6 +715,23 @@ class LogicalPlanToLogicalPlanBuilderStringTest extends CypherFunSuite with Test
       .allNodeScan("x")
       .build())
 
+  testPlan("triadicBuild",
+    new TestPlanBuilder()
+      .produceResults("n")
+      .triadicFilter(42, positivePredicate = true, "n", "n")
+      .triadicBuild(42, "n", "n")
+      .allNodeScan("n")
+      .build())
+
+  testPlan("triadicFilter",
+    new TestPlanBuilder()
+      .produceResults("n")
+      .triadicFilter(42, positivePredicate = true, "n", "n")
+      .triadicBuild(42, "n", "n")
+      .allNodeScan("n")
+      .build())
+
+
   testPlan("injectValue",
     new TestPlanBuilder()
       .produceResults("x")

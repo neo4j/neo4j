@@ -282,6 +282,10 @@ object LogicalPlanToPlanBuilderString {
       case LetAntiSemiApply(_, _, idName) => wrapInQuotations(idName)
       case TriadicSelection(_, _, positivePredicate, sourceId, seenId, targetId) =>
         s"$positivePredicate, ${wrapInQuotationsAndMkString(Seq(sourceId, seenId, targetId))}"
+      case TriadicBuild(_, sourceId, seenId, triadicSelectionId) =>
+        s"${triadicSelectionId.value.x}, ${wrapInQuotationsAndMkString(Seq(sourceId, seenId))}"
+      case TriadicFilter(_, positivePredicate, sourceId, targetId, triadicSelectionId) =>
+        s"${triadicSelectionId.value.x}, $positivePredicate, ${wrapInQuotationsAndMkString(Seq(sourceId, targetId))}"
     }
     val plansWithContent2: PartialFunction[LogicalPlan, String] = {
       case MultiNodeIndexSeek(indexSeekLeafPlans: Seq[IndexSeekLeafPlan]) =>

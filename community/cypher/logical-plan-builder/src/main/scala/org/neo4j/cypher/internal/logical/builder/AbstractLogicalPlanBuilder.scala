@@ -141,6 +141,8 @@ import org.neo4j.cypher.internal.logical.plans.SingleSeekableArg
 import org.neo4j.cypher.internal.logical.plans.Skip
 import org.neo4j.cypher.internal.logical.plans.Sort
 import org.neo4j.cypher.internal.logical.plans.Top
+import org.neo4j.cypher.internal.logical.plans.TriadicBuild
+import org.neo4j.cypher.internal.logical.plans.TriadicFilter
 import org.neo4j.cypher.internal.logical.plans.TriadicSelection
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.Union
@@ -808,6 +810,12 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
 
   def triadicSelection(positivePredicate: Boolean, sourceId: String, seenId: String, targetId: String): IMPL =
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) => TriadicSelection(lhs, rhs, positivePredicate, sourceId, seenId, targetId)(_)))
+
+  def triadicBuild(triadicSelectionId: Int, sourceId: String, seenId: String): IMPL =
+    appendAtCurrentIndent(UnaryOperator(lp => TriadicBuild(lp, sourceId, seenId, Some(Id(triadicSelectionId)))(_)))
+
+  def triadicFilter(triadicSelectionId: Int, positivePredicate: Boolean, sourceId: String, targetId: String): IMPL =
+    appendAtCurrentIndent(UnaryOperator(lp => TriadicFilter(lp, positivePredicate, sourceId, targetId, Some(Id(triadicSelectionId)))(_)))
 
   def injectValue(variable: String, value: String): IMPL = {
     val collection = s"${variable}Collection"
