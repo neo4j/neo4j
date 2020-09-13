@@ -21,6 +21,8 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
+import org.neo4j.cypher.internal.logical.plans.GetValue
+import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
@@ -364,6 +366,31 @@ abstract class ValueHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition
     // then
 
     runtimeResult should beColumns("a").withRows(nodes.map(Array[Any](_)))
+  }
+
+  test("should work under a cartesian product with cache property in join expression") {
+    // given
+    index("A", "row")
+    val nodes = given {
+      nodePropertyGraph(sizeHint, {
+        case i: Int => Map("row" -> i)
+      }, "A")
+    }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("c")
+      .cartesianProduct()
+      .|.valueHashJoin("cache[b.row] = c.row")
+      .|.|.nodeByLabelScan("c", "A", IndexOrderNone)
+      .|.nodeByLabelScan("b", "A", IndexOrderNone)
+      .filter("a.row < 1")
+      .nodeIndexOperator("a:A(row)", indexOrder = IndexOrderNone, getValue = GetValue)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    val expected = nodes.map(n => Array(n))
+    runtimeResult should beColumns("c").withRows(expected)
   }
 
   test("should support simple hash join with apply on lhs and rhs") {
