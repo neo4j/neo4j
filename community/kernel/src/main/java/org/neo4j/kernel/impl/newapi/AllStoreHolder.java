@@ -1012,7 +1012,27 @@ public class AllStoreHolder extends Read
         SecurityContext securityContext = ktx.securityContext().withMode( mode );
         try ( KernelTransaction.Revertable ignore = ktx.overrideWith( securityContext ) )
         {
-            return globalProcedures.createAggregationFunction( prepareContext( securityContext, ProcedureCallContext.EMPTY ), id );
+            UserAggregator aggregator = globalProcedures.createAggregationFunction( prepareContext( securityContext, ProcedureCallContext.EMPTY ), id );
+            return new UserAggregator()
+            {
+                @Override
+                public void update( AnyValue[] input ) throws ProcedureException
+                {
+                    try ( KernelTransaction.Revertable ignore = ktx.overrideWith( securityContext ) )
+                    {
+                        aggregator.update( input );
+                    }
+                }
+
+                @Override
+                public AnyValue result() throws ProcedureException
+                {
+                    try ( KernelTransaction.Revertable ignore = ktx.overrideWith( securityContext ) )
+                    {
+                        return aggregator.result();
+                    }
+                }
+            };
         }
     }
 
