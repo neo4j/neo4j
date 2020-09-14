@@ -22,6 +22,8 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher.beLike
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
+import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.createQueryGraphSolverWithComponentConnectorPlanner
+import org.neo4j.cypher.internal.compiler.planner.logical.idp.ComponentConnectorPlanner
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.functions.Exists
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
@@ -654,7 +656,7 @@ class OrderPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
       indexOn("A", "prop").providesOrder(IndexOrderCapability.BOTH)
       indexOn("B", "prop").providesOrder(IndexOrderCapability.BOTH)
       indexOn("C", "prop").providesOrder(IndexOrderCapability.BOTH)
-    }.getLogicalPlanFor(query)._2
+    }.getLogicalPlanFor(query, queryGraphSolver = createQueryGraphSolverWithComponentConnectorPlanner())._2
 
     // Different cartesian product variants are OK, but it should maintain the
     // order from a
@@ -729,7 +731,7 @@ class OrderPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
       indexOn("A", "prop").providesOrder(IndexOrderCapability.BOTH)
       indexOn("B", "prop").providesOrder(IndexOrderCapability.BOTH)
       indexOn("C", "prop").providesOrder(IndexOrderCapability.BOTH)
-    }.getLogicalPlanFor(query)._2
+    }.getLogicalPlanFor(query, queryGraphSolver = createQueryGraphSolverWithComponentConnectorPlanner())._2
 
     // Different cartesian product variants are OK, but it should maintain the
     // order from a and only need to partially sort c
@@ -760,7 +762,7 @@ class OrderPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
       cardinality = selectivitiesCardinality(selectivities, qg => Math.pow(100.0, qg.connectedComponents.size))
       indexOn("A", "prop").providesOrder(IndexOrderCapability.BOTH)
       indexOn("B", "prop").providesOrder(IndexOrderCapability.BOTH)
-    }.getLogicalPlanFor(query)._2
+    }.getLogicalPlanFor(query, queryGraphSolver = createQueryGraphSolverWithComponentConnectorPlanner())._2
 
     // It should maintain the
     // order from a and only need to partially sort b
