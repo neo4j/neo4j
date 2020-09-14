@@ -36,6 +36,7 @@ import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.ConfigUtils;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.graphdb.config.Setting;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -100,6 +101,10 @@ class MemoryRecommendationsCommand extends AbstractCommand
             description = "Recommend memory settings with respect to the given amount of memory, instead of the total memory of the system running the command."
     )
     private Long memory;
+
+    @Option( names = "--docker", arity = "0", description = "The recommended memory settings are produced in the form of environment variables " +
+            "that can be directly passed to Neo4j docker container." )
+    private boolean dockerOutput;
 
     MemoryRecommendationsCommand( ExecutionContext ctx )
     {
@@ -257,22 +262,36 @@ class MemoryRecommendationsCommand extends AbstractCommand
         print( "# involves a full GC, which is desirable to avoid." );
         print( "#" );
         print( "# Based on the above, the following memory settings are recommended:" );
-        print( initial_heap_size.name() + "=" + heap );
-        print( max_heap_size.name() + "=" + heap );
-        print( pagecache_memory.name() + "=" + pagecache );
+        print( initial_heap_size, heap );
+        print( max_heap_size, heap );
+        print( pagecache_memory, pagecache );
         if ( offHeapMemory != 0 )
         {
-            print( tx_state_max_off_heap_memory.name() + "=" + txState );
+            print( tx_state_max_off_heap_memory, txState );
         }
         print( "#" );
         print( "# It is also recommended turning out-of-memory errors into full crashes," );
         print( "# instead of allowing a partially crashed database to continue running:" );
-        print( "#" + additional_jvm.name() + "=-XX:+ExitOnOutOfMemoryError" );
+        print( additional_jvm + "-XX:+ExitOnOutOfMemoryError" );
         print( "#" );
         print( "# The numbers below have been derived based on your current databases located at: '" + databasesRoot + "'." );
         print( "# They can be used as an input into more detailed memory analysis." );
         print( "# Total size of lucene indexes in all databases: " + bytesToString( luceneSize ) );
         print( "# Total size of data and native indexes in all databases: " + bytesToString( pageCacheSize ) );
+    }
+
+    private void print( Setting<?> setting, String value )
+    {
+        if ( !dockerOutput )
+        {
+            print( setting.name() + "=" + value );
+        }
+        else
+        {
+            var nameWithFixedUnderscores = setting.name().replaceAll( "_", "__" );
+            var nameWithFixedUnderscoresAndDots = nameWithFixedUnderscores.replaceAll( "\\.", "_" );
+            print( "EXPORT NEO4J_" + nameWithFixedUnderscoresAndDots + "=" + value );
+        }
     }
 
     private long pageCacheSize( Collection<DatabaseLayout> layouts )

@@ -104,7 +104,7 @@ class MemoryRecommendationsCommandTest
                 "%n" +
                 "USAGE%n" +
                 "%n" +
-                "memrec [--verbose] [--memory=<size>]%n" +
+                "memrec [--docker] [--verbose] [--memory=<size>]%n" +
                 "%n" +
                 "DESCRIPTION%n" +
                 "%n" +
@@ -121,7 +121,10 @@ class MemoryRecommendationsCommandTest
                 "      --verbose         Enable verbose output.%n" +
                 "      --memory=<size>   Recommend memory settings with respect to the given%n" +
                 "                          amount of memory, instead of the total memory of the%n" +
-                "                          system running the command."
+                "                          system running the command.%n" +
+                "      --docker          The recommended memory settings are produced in the%n" +
+                "                          form of environment variables that can be directly%n" +
+                "                          passed to Neo4j docker container."
         ) );
     }
 
@@ -226,6 +229,32 @@ class MemoryRecommendationsCommandTest
         verify( output ).println( max_heap_size.name() + "=" + heap );
         verify( output ).println( pagecache_memory.name() + "=" + pagecache );
         verify( output ).println( tx_state_max_off_heap_memory.name() + "=" + offHeap );
+    }
+
+    @Test
+    void canPrintRecommendationsAsDockerEnvVariables() throws Exception
+    {
+        PrintStream output = mock( PrintStream.class );
+        Path homeDir = testDirectory.homePath();
+        Path configDir = homeDir.resolve( "conf" );
+        Path configFile = configDir.resolve( DEFAULT_CONFIG_FILE_NAME );
+        configDir.toFile().mkdirs();
+        store( stringMap( data_directory.name(), homeDir.toString() ), configFile );
+
+        MemoryRecommendationsCommand command = new MemoryRecommendationsCommand(
+                new ExecutionContext( homeDir, configDir, output, mock( PrintStream.class ), testDirectory.getFileSystem() ) );
+
+        CommandLine.populateCommand( command, "--memory=8g", "--docker" );
+        String heap = bytesToString( recommendHeapMemory( gibiBytes( 8 ) ) );
+        String pagecache = bytesToString( recommendPageCacheMemory( gibiBytes( 8 ), gibiBytes( 2 ) ) );
+        String offHeap = bytesToString( gibiBytes( 2 ) );
+
+        command.execute();
+
+        verify( output ).println( "EXPORT NEO4J_dbms_memory_heap_initial__size=" + heap );
+        verify( output ).println( "EXPORT NEO4J_dbms_memory_heap_max__size=" + heap );
+        verify( output ).println( "EXPORT NEO4J_dbms_memory_pagecache_size=" + pagecache );
+        verify( output ).println( "EXPORT NEO4J_dbms_memory_off__heap_max__size=" + offHeap );
     }
 
     @Test
