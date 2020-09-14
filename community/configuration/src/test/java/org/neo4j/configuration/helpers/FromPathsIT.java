@@ -22,9 +22,10 @@ package org.neo4j.configuration.helpers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.io.File;
 import java.nio.file.Path;
-import java.util.Optional;
 import java.util.Set;
+import java.util.StringJoiner;
 
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
@@ -59,9 +60,9 @@ class FromPathsIT
     }
 
     @Test
-    void shouldReturnTheInputValueIfFilterIsNotApplied()
+    void shouldReturnTheInputValueIfThereIsNoRegexInPath()
     {
-        final var filteredPaths = new FromPaths( dbRoot1Directory.toAbsolutePath().toString() ).paths( Optional.empty() );
+        final var filteredPaths = new FromPaths( dbRoot1Directory.toAbsolutePath().toString() ).getPaths();
 
         final var expected = Set.of( dbRoot1Directory );
         assertThat( filteredPaths ).containsAll( expected );
@@ -70,55 +71,82 @@ class FromPathsIT
     @Test
     void shouldGetAllFoldersThatMatchIfFilterIsApplied()
     {
-        final var fromPaths = new FromPaths( dbRoot1Directory.toAbsolutePath().toString() );
-
-        assertThat( fromPaths.paths( Optional.of( new DatabaseNamePattern( "n*" ) ) ) ).containsAll( Set.of( neo4j1Directory ) );
-        assertThat( fromPaths.paths( Optional.of( new DatabaseNamePattern( "neo4?" ) ) ) ).containsAll( Set.of( neo4j1Directory ) );
-        assertThat( fromPaths.paths( Optional.of( new DatabaseNamePattern( "neo4j" ) ) ) ).containsAll( Set.of( neo4j1Directory ) );
-        assertThat( fromPaths.paths( Optional.of( new DatabaseNamePattern( "*" ) ) ) )
-                .containsAll( Set.of( neo4j1Directory, mongo1Directory, redis1Directory ) );
+        assertThat( new FromPaths( concatenateSubPath( dbRoot1Directory.toAbsolutePath().toString(), "n*" ) )
+                            .getPaths() ).containsAll( Set.of( neo4j1Directory ) );
+        assertThat( new FromPaths( concatenateSubPath( dbRoot1Directory.toAbsolutePath().toString(), "neo4?" ) )
+                            .getPaths() ).containsAll( Set.of( neo4j1Directory ) );
+        assertThat( new FromPaths( concatenateSubPath( dbRoot1Directory.toAbsolutePath().toString(), "neo4j" ) )
+                            .getPaths() ).containsAll( Set.of( neo4j1Directory ) );
+        assertThat( new FromPaths( concatenateSubPath( dbRoot1Directory.toAbsolutePath().toString(), "*4*" ) )
+                            .getPaths() ).containsAll( Set.of( neo4j1Directory ) );
+        assertThat( new FromPaths( concatenateSubPath( dbRoot1Directory.toAbsolutePath().toString(), "*" ) ).getPaths().containsAll(
+                Set.of( neo4j1Directory, mongo1Directory, redis1Directory ) ) );
     }
 
     @Test
-    void shouldBeSingleValueInCaseThereIsNoCommaInTheInput()
+    void isSingleShouldReturnTrueIfInputIsSingleValue()
     {
-        assertThat( new FromPaths( "test" ).isSingle() ).isTrue();
+        assertThat( new FromPaths( concatenateSubPath( "a", "b" ) ).isSingle() ).isTrue();
     }
 
     @Test
-    void shouldBeNotSingleValueInCaseThereIsACommaInTheInput()
+    void isSingleShouldReturnFalseIfInputIsListOfValues()
     {
-        assertThat( new FromPaths( "test, test2" ).isSingle() ).isFalse();
+        assertThat( new FromPaths( concatenateSubPath( "a", "b" ) + "," + concatenateSubPath( "c", "d" ) ).isSingle() ).isFalse();
     }
 
     @Test
     void shouldReturnTheInputListIfFilterIsNotApplied()
     {
-        final var filteredPaths = new FromPaths( dbRoot1Directory.toAbsolutePath().toString() + ", " + dbRoot2Directory.toAbsolutePath().toString() )
-                .paths( Optional.empty() );
+        final var paths = new FromPaths( dbRoot1Directory.toAbsolutePath().toString() + ", " + dbRoot2Directory.toAbsolutePath().toString() )
+                .getPaths();
 
         final var expected = Set.of( dbRoot1Directory, dbRoot2Directory );
-        assertThat( filteredPaths ).containsAll( expected );
+        assertThat( paths ).containsAll( expected );
     }
 
     @Test
     void shouldGetAllFoldersFromTheListOfPathsIfFilterIsApplied()
     {
-        final var filteredPaths = new FromPaths( dbRoot1Directory.toAbsolutePath().toString() + ", " + dbRoot2Directory.toAbsolutePath().toString() )
-                .paths( Optional.of( new DatabaseNamePattern( "n*" ) ) );
+        final var filteredPaths = new FromPaths( concatenateSubPath( dbRoot1Directory.toAbsolutePath().toString(), "n*" ) + ", "
+                                                 + concatenateSubPath( dbRoot2Directory.toAbsolutePath().toString(), "n*" ) ).getPaths();
 
         final var expected = Set.of( neo4j1Directory, neo4j2Directory );
         assertThat( filteredPaths ).containsAll( expected );
     }
 
     @Test
-    void shouldThrowExceptionIfFromPathIsEmpty()
+    void shouldThrowExceptionIfFromPathIllegal()
     {
         Exception e = assertThrows( IllegalArgumentException.class, () -> assertValid( "" ) );
         assertEquals( "The provided from parameter is empty.", e.getMessage() );
 
         Exception e2 = assertThrows( NullPointerException.class, () -> assertValid( null ) );
         assertEquals( "The provided from parameter is empty.", e2.getMessage() );
+
+        Exception e3 = assertThrows( IllegalArgumentException.class, () -> assertValid( concatenateSubPath( "a*", "b" ) ) );
+        assertThat( e3.getMessage() ).contains( "Asterisks and question marks should be placed in the last subpath" );
+
+        Exception e4 = assertThrows( IllegalArgumentException.class, () -> assertValid( concatenateSubPath( "a", "b->" ) ) );
+        assertThat( e4.getMessage() ).contains( "is in illegal format." );
+    }
+
+    @Test
+    void inputShouldNotPointToTheRootOfTheFileSystem()
+    {
+        final var roots = File.listRoots();
+        if ( roots.length == 0 )
+        {
+            return;
+        }
+        var exception = assertThrows( IllegalArgumentException.class, () -> assertValid( roots[0].toPath().toAbsolutePath().toString() ) );
+        assertThat( exception.getMessage() ).contains( "should not point to the root of the file system" );
+    }
+
+    @Test
+    void shouldNotThrowExceptionWhenPathContainsTwoSubpath()
+    {
+        new FromPaths( concatenateSubPath( "a", "b" ) );
     }
 
     private void assertValid( String name )
@@ -126,4 +154,13 @@ class FromPathsIT
         new FromPaths( name );
     }
 
+    private String concatenateSubPath( String... paths )
+    {
+        StringJoiner result = new StringJoiner( File.separator );
+        for ( String path : paths )
+        {
+            result.add( path );
+        }
+        return result.toString();
+    }
 }

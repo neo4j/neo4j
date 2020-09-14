@@ -67,7 +67,7 @@ public interface Converters
         }
     }
 
-    class FromPathConverter implements ITypeConverter<FromPaths>
+    class FromPathsConverter implements ITypeConverter<FromPaths>
     {
 
         @Override

@@ -19,22 +19,26 @@
  */
 package org.neo4j.configuration.helpers;
 
-import java.nio.file.Files;
+import org.apache.commons.lang3.StringUtils;
+
+import java.io.File;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
+
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 
 public class FromPaths
 {
     private final Set<Path> paths;
+    private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
 
     public FromPaths( String value )
     {
-        validate( value );
+        validateNotEmpty( value );
         this.paths = buildPaths( value );
     }
 
@@ -43,33 +47,15 @@ public class FromPaths
         return paths.size() == 1;
     }
 
-    public Set<Path> paths( Optional<DatabaseNamePattern> folderPattern )
+    public Set<Path> getPaths()
     {
-        return folderPattern.map( this::getAllFilteredPaths )
-                            .orElse( paths );
+        return paths;
     }
 
-    private Set<Path> getAllFilteredPaths( DatabaseNamePattern pattern )
+    private Set<Path> getAllFolders( Path path )
     {
-        return paths.stream().flatMap( this::getAllFolders )
-                    .filter( path ->
-                             {
-                                 final var absolutePath = path.toAbsolutePath();
-                                 final var lastPathOfPath = absolutePath.getName( absolutePath.getNameCount() - 1 );
-                                 return pattern.matches( lastPathOfPath.toString() );
-                             } ).collect( Collectors.toSet() );
-    }
-
-    private Stream<Path> getAllFolders( Path path )
-    {
-        try ( var paths = Files.walk( path, 1 ) )
-        {
-            return paths.collect( Collectors.toSet() ).stream();
-        }
-        catch ( Exception ex )
-        {
-            throw new IllegalArgumentException( "Can't get folder content of path " + path.toAbsolutePath(), ex );
-        }
+        return Arrays.stream( fs.listFiles( path ) )
+                     .filter( p -> p.toFile().isDirectory() ).collect( Collectors.toSet() );
     }
 
     private Set<Path> buildPaths( String value )
@@ -78,15 +64,76 @@ public class FromPaths
         return Arrays.stream( tokens )
                      .map( String::trim )
                      .filter( t -> !t.isEmpty() )
-                     .map( t -> Path.of( t ) )
+                     .map( path -> new File( path ).getAbsoluteFile() ) // Path class can't be used because Path can't be created with regex for some
+                     // file systems
+                     .peek( file ->
+                            {
+                                validateParentPath( file ); //Path class can't contain regex in the subpath
+                                validateLastSubPath( file );
+                            } )
+                     .flatMap( file -> getAndFilterPaths( file ).stream() )
                      .collect( Collectors.toSet() );
     }
 
-    private void validate( String value )
+    private Set<Path> getAndFilterPaths( File file )
     {
-        Objects.requireNonNull( value, "The provided from parameter is empty." );
+        final var parent = file.getParent(); //not null, protect by validateParentPath
+        final var pattern = new DatabaseNamePattern( file.getName() );
+        if ( !pattern.containsPattern() )
+        {
+            return Set.of( Path.of( file.toString() ) );
+        }
 
-        if ( value.trim().isEmpty() )
+        return getAllFolders( Path.of( parent ) ).stream()
+                                                 .filter( path ->
+                                                          {
+                                                              final var name = path.getName( path.getNameCount() - 1 );
+                                                              return pattern.matches( name.toString() );
+                                                          } )
+                                                 .collect( Collectors.toSet() );
+    }
+
+    private void validateParentPath( File file )
+    {
+        final var parentPath = file.getParent();
+        if ( parentPath != null && !parentPath.trim().isEmpty() )
+        {
+            final var asterisks = StringUtils.countMatches( parentPath, '*' );
+            final var questionMarks = StringUtils.countMatches( parentPath, '?' );
+            if ( asterisks > 0 || questionMarks > 0 )
+            {
+                throw new IllegalArgumentException( file.getAbsolutePath() + " is illegal. Asterisks and question marks should be placed in the last subpath" );
+            }
+        }
+        else
+        {
+            throw new IllegalArgumentException( "From path with value=" + file.getAbsolutePath() + " should not point to the root of the file system" );
+        }
+    }
+
+    private void validateLastSubPath( File file )
+    {
+        if ( file.getParent() == null || Path.of( file.getParent() ).getNameCount() == 0 )
+        {
+            throw new IllegalArgumentException( "From path with value=" + file.getAbsolutePath() + " should not point to the root of the file system" );
+        }
+
+        final var lastSubPath = file.getName();
+        try
+        {
+            new DatabaseNamePattern( lastSubPath );
+        }
+        catch ( IllegalArgumentException ex )
+        {
+            throw new IllegalArgumentException( "Last path of " + file.getAbsolutePath() + " is in illegal format.", ex );
+        }
+    }
+
+    private void validateNotEmpty( String path )
+    {
+        Objects.requireNonNull( path, "The provided from parameter is empty." );
+
+        if ( path.trim().isEmpty() )
         {
             throw new IllegalArgumentException( "The provided from parameter is empty." );
         }

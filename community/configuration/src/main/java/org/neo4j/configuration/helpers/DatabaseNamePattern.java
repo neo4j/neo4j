@@ -54,7 +54,7 @@ public class DatabaseNamePattern
         return databaseName;
     }
 
-    private Optional<Pattern> buildRegexPattern( String name )
+    public static Optional<Pattern> buildRegexPattern( String name )
     {
         if ( !StringUtils.containsAny( name, "*?" ) )
         {
