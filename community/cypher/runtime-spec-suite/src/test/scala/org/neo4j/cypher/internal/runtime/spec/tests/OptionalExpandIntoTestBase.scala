@@ -881,4 +881,26 @@ abstract class OptionalExpandIntoTestBase[CONTEXT <: RuntimeContext](
 
     runtimeResult should beColumns("x", "y", "r").withRows(expected)
   }
+
+  test("should be able access property on nulled relationship") {
+    // given
+    given {
+      nodeGraph(1)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("res")
+      .projection("r.prop AS res")
+      .optionalExpandInto("(x)-[r]->(y)")
+      .cartesianProduct()
+      .|.allNodeScan("y")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("res").withSingleRow(null)
+  }
 }
