@@ -29,6 +29,7 @@ import org.neo4j.util.Preconditions;
 
 import static java.lang.String.format;
 import static org.neo4j.server.security.systemgraph.ComponentVersion.LATEST_COMMUNITY_SECURITY_COMPONENT_VERSION;
+import static org.neo4j.server.security.systemgraph.ComponentVersion.Neo4jVersions.UNKNOWN_VERSION;
 import static org.neo4j.server.security.systemgraph.SystemGraphRealmHelper.IS_SUSPENDED;
 
 /**

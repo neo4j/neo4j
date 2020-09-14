@@ -38,6 +38,7 @@ import org.neo4j.string.UTF8;
 
 import static org.neo4j.kernel.api.security.AuthManager.INITIAL_PASSWORD;
 import static org.neo4j.kernel.api.security.AuthManager.INITIAL_USER_NAME;
+import static org.neo4j.server.security.systemgraph.ComponentVersion.Neo4jVersions.UNKNOWN_VERSION;
 
 public abstract class KnownCommunitySecurityComponentVersion extends KnownSystemComponentVersion
 {

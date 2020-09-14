@@ -21,13 +21,7 @@ package org.neo4j.server.security.systemgraph;
 
 import static org.neo4j.dbms.database.AbstractSystemGraphComponent.SECURITY_PRIVILEGE_COMPONENT;
 import static org.neo4j.dbms.database.AbstractSystemGraphComponent.SECURITY_USER_COMPONENT;
-import static org.neo4j.server.security.systemgraph.KnownSystemComponentVersion.UNKNOWN_VERSION;
-import static org.neo4j.server.security.systemgraph.KnownSystemComponentVersion.VERSION_35;
-import static org.neo4j.server.security.systemgraph.KnownSystemComponentVersion.VERSION_36;
-import static org.neo4j.server.security.systemgraph.KnownSystemComponentVersion.VERSION_40;
-import static org.neo4j.server.security.systemgraph.KnownSystemComponentVersion.VERSION_41;
-import static org.neo4j.server.security.systemgraph.KnownSystemComponentVersion.VERSION_41D1;
-import static org.neo4j.server.security.systemgraph.KnownSystemComponentVersion.VERSION_42D4;
+import static org.neo4j.server.security.systemgraph.ComponentVersion.Neo4jVersions.UNKNOWN_VERSION;
 
 /**
  * Describes the version scheme of those system components that needs versioning.
@@ -48,9 +42,9 @@ public enum ComponentVersion
      * Version 2 (Neo4j 4.1):
      *  - Introduced the version node in the system database
      */
-    COMMUNITY_SECURITY_35( 0, SECURITY_USER_COMPONENT, VERSION_35 ),
-    COMMUNITY_SECURITY_40( 1, SECURITY_USER_COMPONENT, VERSION_40 ),
-    COMMUNITY_SECURITY_41( 2, SECURITY_USER_COMPONENT, VERSION_41 ),
+    COMMUNITY_SECURITY_35( 0, SECURITY_USER_COMPONENT, Neo4jVersions.VERSION_35 ),
+    COMMUNITY_SECURITY_40( 1, SECURITY_USER_COMPONENT, Neo4jVersions.VERSION_40 ),
+    COMMUNITY_SECURITY_41( 2, SECURITY_USER_COMPONENT, Neo4jVersions.VERSION_41 ),
 
     COMMUNITY_SECURITY_UNKNOWN_VERSION( UNKNOWN_VERSION, SECURITY_USER_COMPONENT, String.format( "no '%s' graph found", SECURITY_USER_COMPONENT ) ),
 
@@ -84,12 +78,12 @@ public enum ComponentVersion
      * Version 5 (Neo4j 4.2.0-Drop04):
      *   - Added support for execute procedure privileges
      */
-    ENTERPRISE_SECURITY_35( 0, SECURITY_PRIVILEGE_COMPONENT, VERSION_35 ),
-    ENTERPRISE_SECURITY_36( 1, SECURITY_PRIVILEGE_COMPONENT, VERSION_36 ),
-    ENTERPRISE_SECURITY_40( 2, SECURITY_PRIVILEGE_COMPONENT, VERSION_40 ),
-    ENTERPRISE_SECURITY_41D1( 3, SECURITY_PRIVILEGE_COMPONENT, VERSION_41D1 ),
-    ENTERPRISE_SECURITY_41( 4, SECURITY_PRIVILEGE_COMPONENT, VERSION_41 ),
-    ENTERPRISE_SECURITY_42D4( 5, SECURITY_PRIVILEGE_COMPONENT, VERSION_42D4 ),
+    ENTERPRISE_SECURITY_35( 0, SECURITY_PRIVILEGE_COMPONENT, Neo4jVersions.VERSION_35 ),
+    ENTERPRISE_SECURITY_36( 1, SECURITY_PRIVILEGE_COMPONENT, Neo4jVersions.VERSION_36 ),
+    ENTERPRISE_SECURITY_40( 2, SECURITY_PRIVILEGE_COMPONENT, Neo4jVersions.VERSION_40 ),
+    ENTERPRISE_SECURITY_41D1( 3, SECURITY_PRIVILEGE_COMPONENT, Neo4jVersions.VERSION_41D1 ),
+    ENTERPRISE_SECURITY_41( 4, SECURITY_PRIVILEGE_COMPONENT, Neo4jVersions.VERSION_41 ),
+    ENTERPRISE_SECURITY_42D4( 5, SECURITY_PRIVILEGE_COMPONENT, Neo4jVersions.VERSION_42D4 ),
 
     ENTERPRISE_SECURITY_UNKNOWN_VERSION( UNKNOWN_VERSION, SECURITY_PRIVILEGE_COMPONENT, String.format( "no '%s' graph found", SECURITY_PRIVILEGE_COMPONENT ) ),
     ENTERPRISE_SECURITY_FUTURE_VERSION( Integer.MIN_VALUE, SECURITY_PRIVILEGE_COMPONENT, "Unrecognized future version" ),
@@ -171,5 +165,17 @@ public enum ComponentVersion
             return version >= FIRST_RUNTIME_SUPPORTED_ENTERPRISE_SECURITY_COMPONENT_VERSION && version <= LATEST_ENTERPRISE_SECURITY_COMPONENT_VERSION;
         }
         return false;
+    }
+
+    public static class Neo4jVersions
+    {
+        public static final String VERSION_35 = "Neo4j 3.5";
+        public static final String VERSION_36 = "Neo4j 3.6";
+        public static final String VERSION_40 = "Neo4j 4.0";
+        public static final String VERSION_41D1 = "Neo4j 4.1.0-Drop01";
+        public static final String VERSION_41 = "Neo4j 4.1";
+        public static final String VERSION_42D4 = "Neo4j 4.2.0-Drop04";
+
+        public static final int UNKNOWN_VERSION = -1;
     }
 }

@@ -26,6 +26,8 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.logging.Log;
 
+import static org.neo4j.server.security.systemgraph.ComponentVersion.Neo4jVersions.UNKNOWN_VERSION;
+
 /**
  * Version of a system graph component.
  * Components that due to breaking schema changes requires migrations also needs versions.
@@ -41,14 +43,6 @@ public abstract class KnownSystemComponentVersion
     public final int version;
     public final String description;
     protected final Log log;
-
-    public static final int UNKNOWN_VERSION = -1;
-    public static final String VERSION_35 = "Neo4j 3.5";
-    public static final String VERSION_36 = "Neo4j 3.6";
-    public static final String VERSION_40 = "Neo4j 4.0";
-    public static final String VERSION_41D1 = "Neo4j 4.1.0-Drop01";
-    public static final String VERSION_41 = "Neo4j 4.1";
-    public static final String VERSION_42D4 = "Neo4j 4.2.0-Drop04";
 
     protected KnownSystemComponentVersion( ComponentVersion componentVersion, Log log )
     {

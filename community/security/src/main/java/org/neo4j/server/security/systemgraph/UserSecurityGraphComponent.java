@@ -32,7 +32,7 @@ import org.neo4j.server.security.systemgraph.versions.CommunitySecurityComponent
 import org.neo4j.server.security.systemgraph.versions.KnownCommunitySecurityComponentVersion;
 import org.neo4j.server.security.systemgraph.versions.NoCommunitySecurityComponentVersion;
 
-import static org.neo4j.server.security.systemgraph.KnownSystemComponentVersion.UNKNOWN_VERSION;
+import static org.neo4j.server.security.systemgraph.ComponentVersion.Neo4jVersions.UNKNOWN_VERSION;
 import static org.neo4j.server.security.systemgraph.versions.KnownCommunitySecurityComponentVersion.USER_LABEL;
 
 /**

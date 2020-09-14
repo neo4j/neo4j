@@ -63,9 +63,9 @@ import static org.neo4j.dbms.database.SystemGraphComponent.Status.CURRENT;
 import static org.neo4j.dbms.database.SystemGraphComponent.Status.REQUIRES_UPGRADE;
 import static org.neo4j.dbms.database.SystemGraphComponent.Status.UNSUPPORTED_BUT_CAN_UPGRADE;
 import static org.neo4j.server.security.auth.SecurityTestUtils.credentialFor;
-import static org.neo4j.server.security.systemgraph.KnownSystemComponentVersion.VERSION_35;
-import static org.neo4j.server.security.systemgraph.KnownSystemComponentVersion.VERSION_40;
-import static org.neo4j.server.security.systemgraph.KnownSystemComponentVersion.VERSION_41;
+import static org.neo4j.server.security.systemgraph.ComponentVersion.Neo4jVersions.VERSION_35;
+import static org.neo4j.server.security.systemgraph.ComponentVersion.Neo4jVersions.VERSION_40;
+import static org.neo4j.server.security.systemgraph.ComponentVersion.Neo4jVersions.VERSION_41;
 
 @TestDirectoryExtension
 @TestInstance( PER_CLASS )
