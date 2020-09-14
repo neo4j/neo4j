@@ -3,7 +3,7 @@ set -eu
 
 args="$@"
 record_args() {
-  [[ "${FAKE_JAVA_DISABLE_RECORD_ARGS:-}" ]] || echo -n "${args}" | tee -a java-args
+  [[ "${FAKE_JAVA_DISABLE_RECORD_ARGS:-}" ]] || echo -n "${args}" >java-args
 }
 trap record_args EXIT
 
