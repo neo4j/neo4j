@@ -76,6 +76,7 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
   // Same property in different positions
   private val nFoo1 = Property(n, foo)(InputPosition.NONE)
   private val cachedNProp1 = CachedProperty("n", n, prop, NODE_TYPE)(InputPosition.NONE)
+  private val cachedNFoo1 = CachedProperty("n", n, foo, NODE_TYPE)(InputPosition.NONE)
   private val cachedNProp2 = CachedProperty("n", n, prop, NODE_TYPE)(InputPosition.NONE.bumped())
   private val cachedNRelProp1 = CachedProperty("n", n, prop, RELATIONSHIP_TYPE)(InputPosition.NONE)
   private val cachedNRelProp2 = CachedProperty("n", n, prop, RELATIONSHIP_TYPE)(InputPosition.NONE.bumped())
@@ -154,6 +155,28 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
     )
     val initialType = initialTable.types(nProp1)
     newTable.types(cachedNProp1) should be(initialType)
+  }
+
+  test("should reorder predicates in selection to match what now became the cheapest ordering.") {
+    val initialTable = semanticTable(nProp1 -> CTInteger, nFoo1 -> CTInteger, n -> CTNode)
+    val plan = Selection(
+      Seq(greaterThan(prop("n", "otherProp"), literalInt(1)), equals(prop("n", "prop"), prop("n", "foo"))),
+      Projection(
+        indexScan("n", "L", "prop", CanGetValue),
+        Map("x" -> nFoo1)
+      )
+    )
+    val (newPlan, newTable) = replace(plan, initialTable)
+
+    newPlan should equal(
+      Selection(
+        Seq(equals(cachedNProp1, cachedNFoo1), greaterThan(prop("n", "otherProp"), literalInt(1))),
+        Projection(
+          indexScan("n", "L", "prop", GetValue),
+          Map("x" -> cachedNFoo1)
+        )
+      )
+    )
   }
 
   test("should rewrite [prop(n, prop)] to [CachedProperty(n.prop)] with usage in selection after index scan") {
@@ -595,8 +618,20 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
   }
 
   private def replace(plan: LogicalPlan, initialTable: SemanticTable, readFromCursor: Boolean = false): (LogicalPlan, SemanticTable) = {
-    val state = LogicalPlanState(InitialState("", None, IDPPlannerName)).withSemanticTable(initialTable).withMaybeLogicalPlan(Some(plan))
-    val resultState = InsertCachedProperties(pushdownPropertyReads = false, readFromCursor).transform(state, mock[PlannerContext])
+    val state = LogicalPlanState(InitialState("", None, IDPPlannerName))
+      .withSemanticTable(initialTable)
+      .withMaybeLogicalPlan(Some(plan))
+
+    val icp = new InsertCachedProperties(pushdownPropertyReads = false, readFromCursor) {
+      // Override so that we do not have to provide so many mocks.
+      override protected[steps] def resortSelectionPredicates(from: LogicalPlanState,
+                                                              context: PlannerContext,
+                                                              s: Selection): Seq[Expression] = {
+        s.predicate.exprs.sortBy(_.treeCount { case _: Property => true })
+      }
+    }
+
+    val resultState =  icp.transform(state, mock[PlannerContext])
     (resultState.logicalPlan, resultState.semanticTable())
   }
 

@@ -23,12 +23,14 @@ import org.neo4j.cypher.internal.ast.Union.UnionMapping
 import org.neo4j.cypher.internal.ast.UsingIndexHint
 import org.neo4j.cypher.internal.ast.UsingJoinHint
 import org.neo4j.cypher.internal.ast.UsingScanHint
+import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.helpers.ListSupport
 import org.neo4j.cypher.internal.compiler.helpers.PredicateHelper.coercePredicatesWithAnds
 import org.neo4j.cypher.internal.compiler.planner.ProcedureCallProjection
 import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CardinalityModel
+import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.expressions.CachedProperty
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.ExistsSubClause
@@ -173,6 +175,8 @@ import org.neo4j.cypher.internal.logical.plans.VariablePredicate
 import org.neo4j.cypher.internal.macros.AssertMacros
 import org.neo4j.cypher.internal.macros.AssertMacros.checkOnlyWhenAssertionsAreEnabled
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.PredicateOrdering
@@ -1351,14 +1355,40 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     }
   }
 
-  private def sortPredicatesBySelectivity(source: LogicalPlan, predicates: Seq[Expression], context: LogicalPlanningContext): Seq[Expression] = {
+  private def sortPredicatesBySelectivity(source: LogicalPlan,
+                                          predicates: Seq[Expression],
+                                          context: LogicalPlanningContext): Seq[Expression] =
+    LogicalPlanProducer.sortPredicatesBySelectivity(source, predicates, context.input, context.semanticTable, solveds, cardinalities, cardinalityModel)
+
+}
+
+object LogicalPlanProducer {
+
+  def sortPredicatesBySelectivity(source: LogicalPlan,
+                                  predicates: Seq[Expression],
+                                  queryGraphSolverInput: QueryGraphSolverInput,
+                                  semanticTable: SemanticTable,
+                                  solveds: Solveds,
+                                  cardinalities: Cardinalities,
+                                  cardinalityModel: CardinalityModel): Seq[Expression] = {
     val incomingCardinality = cardinalities.get(source.id)
+    val solvedBeforePredicate = solveds.get(source.id) match {
+      case query: SinglePlannerQuery => query
+      case _:UnionQuery =>
+        // In case we re-order predicates after the plan has already been rewritten,
+        // there is a chance that the source plan solves a UNION query.
+        // In that case we just pretend it solves an Argument with the same available symbols.
+        RegularSinglePlannerQuery(QueryGraph(argumentIds = source.availableSymbols))
+    }
+
     predicates.sortBy { predicate =>
       val costPerRow = CardinalityCostModel.apply(predicate)
-      val solved = solveds.get(source.id).asSinglePlannerQuery.updateTailOrSelf(_.amendQueryGraph(_.addPredicates(predicate)))
-      val cardinality = cardinalityModel(solved, context.input, context.semanticTable)
+      val solved = solvedBeforePredicate.updateTailOrSelf(_.amendQueryGraph(_.addPredicates(predicate)))
+      val cardinality = cardinalityModel(solved, queryGraphSolverInput, semanticTable)
       val selectivity = (cardinality / incomingCardinality).getOrElse(Selectivity.ONE)
       (costPerRow, selectivity)
     }(PredicateOrdering)
   }
+
+
 }

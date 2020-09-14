@@ -21,8 +21,11 @@ package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
+import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
+import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.CachedProperty
 import org.neo4j.cypher.internal.expressions.EntityType
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.NODE_TYPE
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
@@ -39,9 +42,11 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.MultiNodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.OptionalExpand
 import org.neo4j.cypher.internal.logical.plans.ProjectingPlan
+import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.attribution.SameId
 import org.neo4j.cypher.internal.util.bottomUp
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTRelationship
@@ -230,6 +235,13 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean, readProperties
           }
         }
 
+      case s:Selection =>
+        // Since CachedProperties are cheaper than Properties, the previously best predicate evaluation order in a Selection
+        // might not be the best order any more.
+        // We re-order the predicates to find the new best order.
+        val newPredicates = resortSelectionPredicates(from, context, s)
+        s.copy(predicate = Ands(newPredicates)(s.predicate.position))(SameId(s.id))
+
       case e:Expand if readPropertiesFromCursor =>
         val nodePropsToCache = acc.properties.collect {
           case (Property(Variable(n), prop), PropertyUsages(_, true, usages, NODE_TYPE)) if n == e.from & usages >= 1 =>
@@ -260,6 +272,20 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean, readProperties
     val plan = propertyRewriter(logicalPlan).asInstanceOf[LogicalPlan]
     val newSemanticTable = if (currentTypes == from.semanticTable().types) from.semanticTable() else from.semanticTable().copy(types = currentTypes)
     from.withMaybeLogicalPlan(Some(plan)).withSemanticTable(newSemanticTable)
+  }
+
+  protected[steps] def resortSelectionPredicates(from: LogicalPlanState,
+                                                 context: PlannerContext,
+                                                 s: Selection): Seq[Expression] = {
+    LogicalPlanProducer.sortPredicatesBySelectivity(
+      s.source,
+      s.predicate.exprs,
+      QueryGraphSolverInput.empty,
+      from.semanticTable(),
+      from.planningAttributes.solveds,
+      from.planningAttributes.cardinalities,
+      context.metrics.cardinality
+    )
   }
 
   override def name: String = "insertCachedProperties"

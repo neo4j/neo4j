@@ -70,7 +70,7 @@ trait ASTCachedProperty extends LogicalProperty {
 
 /**
  * A property value that is cached in the execution context. Such a value can be
- * retrieved very fast, but care has to be taken to it doesn't out-dated by writes to
+ * retrieved very fast, but care has to be taken to it doesn't get out-dated by writes to
  * the graph/transaction state.
  *
  * @param originalEntityName the name of the variable how it appeared in the first Property access.
