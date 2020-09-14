@@ -1033,6 +1033,41 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("p").withRows(singleRow(2))
   }
 
+  test("percentileDisc should return null for empty input") {
+    //given no data
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("p")
+      .aggregation(Seq.empty, Seq("percentileDisc(x.num, 0.5) AS p"))
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("p").withRows(singleRow(null))
+  }
+
+  test("percentileDisc should return one row for one input row") {
+    given {
+      nodePropertyGraph(1, {
+        case i: Int => Map("num" -> 11)}, "Honey")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("p")
+      .aggregation(Seq.empty, Seq("percentileDisc(x.num, 0.5) AS p"))
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("p").withRows(singleRow(11))
+  }
+
   test("should handle percentileCont") {
     given {
       nodePropertyGraph(sizeHint, {
@@ -1092,5 +1127,40 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
 
     // then
     runtimeResult should beColumns("p").withRows(singleRow(2))
+  }
+
+  test("percentileCont should return null for empty input") {
+    //given no data
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("p")
+      .aggregation(Seq.empty, Seq("percentileCont(x.num, 0.5) AS p"))
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("p").withRows(singleRow(null))
+  }
+
+  test("percentileCont should return one row for one input row") {
+    given {
+      nodePropertyGraph(1, {
+        case i: Int => Map("num" -> 11)}, "Honey")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("p")
+      .aggregation(Seq.empty, Seq("percentileCont(x.num, 0.5) AS p"))
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("p").withRows(singleRow(11))
   }
 }
