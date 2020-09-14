@@ -43,6 +43,7 @@ import org.neo4j.cypher.internal.rewriting.Deprecations
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.DeprecatedHexLiteralSyntax
 import org.neo4j.cypher.internal.util.InternalNotification
+import org.neo4j.cypher.internal.util.InternalNotificationLogger
 import org.neo4j.cypher.internal.util.MissingAliasNotification
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.topDown
@@ -67,7 +68,7 @@ import org.neo4j.cypher.internal.util.topDown
  * WITH n.prop AS prop ORDER BY prop DESC
  * RETURN prop AS prop
  */
-case class normalizeWithAndReturnClauses(cypherExceptionFactory: CypherExceptionFactory, notificationLogger: InternalNotification => Unit) extends Rewriter {
+case class normalizeWithAndReturnClauses(cypherExceptionFactory: CypherExceptionFactory, notificationLogger: InternalNotificationLogger) extends Rewriter {
 
   def apply(that: AnyRef): AnyRef = that match {
     case q@Query(_, queryPart) => q.copy(part = rewriteTopLevelQueryPart(queryPart))(q.position)
@@ -132,7 +133,7 @@ case class normalizeWithAndReturnClauses(cypherExceptionFactory: CypherException
       ri.items.map {
         case i: UnaliasedReturnItem =>
           if (warnForMissingAliases && i.alias.isEmpty) {
-            notificationLogger(MissingAliasNotification(i.position))
+            notificationLogger.log(MissingAliasNotification(i.position))
           }
           val newPosition = i.expression.position.bumped()
           AliasedReturnItem(i.expression, Variable(i.name)(newPosition))(i.position)

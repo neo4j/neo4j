@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.parser.ParserFixture.parser
 import org.neo4j.cypher.internal.rewriting.Deprecations
 import org.neo4j.cypher.internal.rewriting.Deprecations.V1
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
+import org.neo4j.cypher.internal.util.RecordingNotificationLogger
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class SyntaxDeprecationWarningsTest extends CypherFunSuite {

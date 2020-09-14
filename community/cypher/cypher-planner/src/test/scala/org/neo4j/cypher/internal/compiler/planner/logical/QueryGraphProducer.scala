@@ -46,6 +46,7 @@ import org.neo4j.cypher.internal.logical.plans.QualifiedName
 import org.neo4j.cypher.internal.logical.plans.UserFunctionSignature
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizeWithAndReturnClauses
+import org.neo4j.cypher.internal.util.devNullLogger
 import org.neo4j.cypher.internal.util.inSequence
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTList
@@ -66,7 +67,7 @@ trait QueryGraphProducer extends MockitoSugar {
     val q = query + " RETURN 1 AS Result"
     val exceptionFactory = Neo4jCypherExceptionFactory(q, None)
     val ast = parser.parse(q, exceptionFactory)
-    val cleanedStatement: Statement = ast.endoRewrite(inSequence(normalizeWithAndReturnClauses(exceptionFactory, _ => ())))
+    val cleanedStatement: Statement = ast.endoRewrite(inSequence(normalizeWithAndReturnClauses(exceptionFactory, devNullLogger)))
     val onError = SyntaxExceptionCreator.throwOnError(exceptionFactory)
     val SemanticCheckResult(semanticState, errors) = SemanticChecker.check(cleanedStatement)
     onError(errors)

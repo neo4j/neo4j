@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.spi
 
 import org.neo4j.cypher.internal.LastCommittedTxIdProvider
-import org.neo4j.cypher.internal.frontend.phases.InternalNotificationLogger
 import org.neo4j.cypher.internal.logical.plans.CanGetValue
 import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
 import org.neo4j.cypher.internal.logical.plans.FieldSignature
@@ -40,6 +39,7 @@ import org.neo4j.cypher.internal.spi.procsHelpers.asCypherProcedureSignature
 import org.neo4j.cypher.internal.spi.procsHelpers.asCypherType
 import org.neo4j.cypher.internal.spi.procsHelpers.asCypherValue
 import org.neo4j.cypher.internal.spi.procsHelpers.asOption
+import org.neo4j.cypher.internal.util.InternalNotificationLogger
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.PropertyKeyId
 import org.neo4j.cypher.internal.util.symbols

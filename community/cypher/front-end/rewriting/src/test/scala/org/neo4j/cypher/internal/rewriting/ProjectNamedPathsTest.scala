@@ -44,6 +44,7 @@ import org.neo4j.cypher.internal.rewriting.rewriters.expandStar
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizeWithAndReturnClauses
 import org.neo4j.cypher.internal.rewriting.rewriters.projectNamedPaths
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
+import org.neo4j.cypher.internal.util.devNullLogger
 import org.neo4j.cypher.internal.util.inSequence
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -54,7 +55,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
   private def ast(queryText: String) = {
     val parsed = parser.parse(queryText, OpenCypherExceptionFactory(None))
     val exceptionFactory = OpenCypherExceptionFactory(Some(pos))
-    val normalized = parsed.endoRewrite(inSequence(normalizeWithAndReturnClauses(exceptionFactory, _ => ())))
+    val normalized = parsed.endoRewrite(inSequence(normalizeWithAndReturnClauses(exceptionFactory, devNullLogger)))
     val checkResult = normalized.semanticCheck(SemanticState.clean)
     normalized.endoRewrite(inSequence(expandStar(checkResult.state)))
   }

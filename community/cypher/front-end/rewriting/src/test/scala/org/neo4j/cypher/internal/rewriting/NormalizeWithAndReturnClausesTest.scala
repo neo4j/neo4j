@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.util.MissingAliasNotification
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory.SyntaxException
+import org.neo4j.cypher.internal.util.RecordingNotificationLogger
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -37,8 +38,8 @@ import scala.collection.mutable.ArrayBuffer
 
 class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest {
   private val exceptionFactory = OpenCypherExceptionFactory(None)
-  private val notificationBuffer = new ArrayBuffer[InternalNotification]()
-  val rewriterUnderTest: Rewriter = normalizeWithAndReturnClauses(exceptionFactory, notificationBuffer += _)
+  private val notificationLogger = new RecordingNotificationLogger()
+  val rewriterUnderTest: Rewriter = normalizeWithAndReturnClauses(exceptionFactory, notificationLogger)
 
   test("ensure variables are aliased") {
     assertRewrite(
@@ -925,7 +926,7 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
   }
 
   protected def assertRewriteAndWarnings(originalQuery: String, expectedQuery: String, expectedWarnings: Set[InternalNotification]) {
-    notificationBuffer.clear()
+    notificationLogger.clear()
     val original = parseForRewriting(originalQuery.replace("\r\n", "\n"))
     val expected = parseForRewriting(expectedQuery.replace("\r\n", "\n"))
     val result = endoRewrite(original)
@@ -933,7 +934,7 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
 
     val checkResult = result.semanticCheck(SemanticState.clean.withFeatures(MultipleDatabases, CorrelatedSubQueries))
     assert(checkResult.errors === Seq())
-    notificationBuffer.toSet should equal(expectedWarnings)
+    notificationLogger.notifications should equal(expectedWarnings)
   }
 
   protected def assertNotRewrittenAndSemanticErrors(query: String, semanticErrors: String*): Unit = {

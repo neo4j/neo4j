@@ -14,10 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.cypher.internal.frontend.phases
-
-import org.neo4j.cypher.internal.util.InputPosition
-import org.neo4j.cypher.internal.util.InternalNotification
+package org.neo4j.cypher.internal.util
 
 /**
  * A NotificationLogger records notifications.
@@ -45,7 +42,9 @@ case object devNullLogger extends InternalNotificationLogger {
 class RecordingNotificationLogger(override val offset: Option[InputPosition] = None) extends InternalNotificationLogger {
   private val builder = Set.newBuilder[InternalNotification]
 
-  def log(notification: InternalNotification) = builder += notification
+  def clear(): Unit = builder.clear()
 
-  def notifications = builder.result()
+  def log(notification: InternalNotification): Unit = builder += notification
+
+  def notifications: Set[InternalNotification] = builder.result()
 }

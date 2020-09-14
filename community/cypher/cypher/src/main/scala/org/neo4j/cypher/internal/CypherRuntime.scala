@@ -27,7 +27,6 @@ import org.neo4j.cypher.CypherOperatorEngineOption
 import org.neo4j.cypher.CypherRuntimeOption
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.RuntimeUnsupportedNotification
-import org.neo4j.cypher.internal.frontend.phases.RecordingNotificationLogger
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.LeveragedOrders
@@ -35,6 +34,7 @@ import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.planner.spi.TokenContext
 import org.neo4j.cypher.internal.runtime.MemoryTrackingController
 import org.neo4j.cypher.internal.util.InternalNotification
+import org.neo4j.cypher.internal.util.RecordingNotificationLogger
 import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.exceptions.CantCompileQueryException
 import org.neo4j.exceptions.RuntimeUnsupportedException

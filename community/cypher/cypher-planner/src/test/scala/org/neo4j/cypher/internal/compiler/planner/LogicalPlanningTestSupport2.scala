@@ -54,7 +54,6 @@ import org.neo4j.cypher.internal.frontend.phases.ASTRewriter
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.InitialState
 import org.neo4j.cypher.internal.frontend.phases.Transformer
-import org.neo4j.cypher.internal.frontend.phases.devNullLogger
 import org.neo4j.cypher.internal.ir.PeriodicCommit
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
@@ -86,6 +85,7 @@ import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.PropertyKeyId
 import org.neo4j.cypher.internal.util.attribution.Attribute
+import org.neo4j.cypher.internal.util.devNullLogger
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.CypherTestSupport
 import org.neo4j.internal.helpers.collection.Visitable

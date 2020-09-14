@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.rewriting.rewriters.normalizeWithAndReturnClaus
 import org.neo4j.cypher.internal.rewriting.rewriters.recordScopes
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
 import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.devNullLogger
 import org.neo4j.cypher.internal.util.inSequence
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -75,7 +76,7 @@ class DesugarDesugaredMapProjectionTest extends CypherFunSuite {
     test(originalQuery + " is rewritten to " + expectedQuery) {
       def rewrite(q: String): Statement = {
         val exceptionFactory = OpenCypherExceptionFactory(None)
-        val sequence: Rewriter = inSequence(normalizeWithAndReturnClauses(exceptionFactory, _ => ()))
+        val sequence: Rewriter = inSequence(normalizeWithAndReturnClauses(exceptionFactory, devNullLogger))
         val originalAst = parser.parse(q, OpenCypherExceptionFactory(None)).endoRewrite(sequence)
         val semanticCheckResult = originalAst.semanticCheck(SemanticState.clean)
         val withScopes = originalAst.endoRewrite(recordScopes(semanticCheckResult.state))

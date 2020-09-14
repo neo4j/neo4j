@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.rewriting.rewriters.Never
 import org.neo4j.cypher.internal.rewriting.rewriters.SameNameNamer
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizeWithAndReturnClauses
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
+import org.neo4j.cypher.internal.util.devNullLogger
 import org.neo4j.cypher.internal.util.inSequence
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -85,7 +86,7 @@ trait RewritePhaseTest {
   private def parseAndRewrite(queryText: String, features: SemanticFeature*): Statement = {
     val exceptionFactory = OpenCypherExceptionFactory(None)
     val parsedAst = parser.parse(queryText, exceptionFactory)
-    val cleanedAst = parsedAst.endoRewrite(inSequence(normalizeWithAndReturnClauses(exceptionFactory, _ => ())))
+    val cleanedAst = parsedAst.endoRewrite(inSequence(normalizeWithAndReturnClauses(exceptionFactory, devNullLogger)))
     val (rewrittenAst, _, _) = astRewriter.rewrite(cleanedAst, cleanedAst.semanticState(features: _*), Map.empty, exceptionFactory)
     rewrittenAst
   }
