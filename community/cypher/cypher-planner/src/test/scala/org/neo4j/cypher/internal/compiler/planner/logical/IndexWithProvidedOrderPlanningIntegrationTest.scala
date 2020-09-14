@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
+import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.createQueryGraphSolverWithComponentConnectorPlanner
 import org.neo4j.cypher.internal.expressions.AndedPropertyInequalities
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.Expression
@@ -304,7 +305,9 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
     test(s"$cypherToken-$orderCapability: Cannot order by index when ordering is on same property name, but different node") {
       val plan = new given {
         indexOn("Awesome", "prop").providesOrder(orderCapability)
-      } getLogicalPlanFor(s"MATCH (m:Awesome), (n:Awesome) WHERE n.prop > 'foo' RETURN m.prop ORDER BY m.prop $cypherToken", stripProduceResults = false)
+      } getLogicalPlanFor(s"MATCH (m:Awesome), (n:Awesome) WHERE n.prop > 'foo' RETURN m.prop ORDER BY m.prop $cypherToken",
+        stripProduceResults = false,
+        queryGraphSolver = createQueryGraphSolverWithComponentConnectorPlanner())
 
       val expectedIndexOrder = if (orderCapability.asc) IndexOrderAscending else IndexOrderDescending
 
@@ -320,12 +323,14 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
       )
     }
 
-    test(s"$cypherToken-$orderCapability: Cannot order by index when ordering is on same property name, but different node with relaltionship") {
+    test(s"$cypherToken-$orderCapability: Cannot order by index when ordering is on same property name, but different node with relationship") {
       // With two relationships we use IDP to get the best plan.
       // By keeping the best overall and the best sorted plan, we should only have one sort.
       val plan = new given {
         indexOn("Awesome", "prop").providesOrder(orderCapability)
-      } getLogicalPlanFor(s"MATCH (m:Awesome)-[r]-(x)-[p]-(y), (n:Awesome) WHERE n.prop > 'foo' RETURN m.prop ORDER BY m.prop $cypherToken", stripProduceResults = false)
+      } getLogicalPlanFor(s"MATCH (m:Awesome)-[r]-(x)-[p]-(y), (n:Awesome) WHERE n.prop > 'foo' RETURN m.prop ORDER BY m.prop $cypherToken",
+        stripProduceResults = false,
+        queryGraphSolver = createQueryGraphSolverWithComponentConnectorPlanner())
 
       val expectedIndexOrder = if (orderCapability.asc) IndexOrderAscending else IndexOrderDescending
 
