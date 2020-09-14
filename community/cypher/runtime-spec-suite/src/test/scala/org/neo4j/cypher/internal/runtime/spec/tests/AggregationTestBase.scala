@@ -1012,6 +1012,27 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("p").withRows(singleRow(4))
   }
 
+  test("should handle percentileDisc with distinct") {
+    given {
+      nodePropertyGraph(sizeHint, {
+        case i: Int if i % 2 == 0 => Map("num" -> i % 10)
+      }, "Honey")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("p")
+      .aggregation(Seq.empty, Seq("percentileDisc(DISTINCT i, 0.5) AS p"))
+      .unwind("[1, 1, 1, 2, 3] AS i")
+      .argument()
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("p").withRows(singleRow(2))
+  }
+
   test("should handle percentileCont") {
     given {
       nodePropertyGraph(sizeHint, {
@@ -1050,5 +1071,26 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
 
     // then
     runtimeResult should beColumns("p").withRows(singleRow(4))
+  }
+
+  test("should handle percentileCont with distinct") {
+    given {
+      nodePropertyGraph(sizeHint, {
+        case i: Int if i % 2 == 0 => Map("num" -> i % 10)
+      }, "Honey")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("p")
+      .aggregation(Seq.empty, Seq("percentileCont(DISTINCT i, 0.5) AS p"))
+      .unwind("[1, 1, 1, 2, 3] AS i")
+      .argument()
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("p").withRows(singleRow(2))
   }
 }
