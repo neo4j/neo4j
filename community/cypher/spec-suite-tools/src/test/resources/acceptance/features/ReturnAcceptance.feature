@@ -222,7 +222,7 @@ Feature: ReturnAcceptance
       | []     |
     And no side effects
 
-  Scenario: Should work not aliasing union return items
+  Scenario: Unaliased return items in a top level union should be accepted
     Given any graph
     When executing query:
       """

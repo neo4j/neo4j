@@ -110,7 +110,7 @@ case class normalizeWithAndReturnClauses(cypherExceptionFactory: CypherException
       case r: Return => addAliasesToReturn(r)
       case x => x
     }
-    rewriteProjectionsRecursively(singleQuery.copy(clauses = newClauses)(singleQuery.position)).asInstanceOf[SingleQuery]
+    singleQuery.copy(clauses = newClauses)(singleQuery.position).endoRewrite(rewriteProjectionsRecursively)
   }
 
   private def rewriteOptionalYield(or: Option[Either[Yield, Where]]): Option[Either[Yield, Where]] = or match {
@@ -118,32 +118,20 @@ case class normalizeWithAndReturnClauses(cypherExceptionFactory: CypherException
     case other => other
   }
 
-  private def addAliasesToReturn(r: Return): Return = r.copy(returnItems = aliasUnaliasedReturnItems(r.returnItems))(r.position)
-  private def addAliasesToYield(y: Yield): Yield = y.copy(returnItems = aliasUnaliasedReturnItems(y.returnItems))(y.position)
+  private def addAliasesToReturn(r: Return): Return = r.copy(returnItems = aliasUnaliasedReturnItems(r.returnItems, warnForMissingAliases = false))(r.position)
+  private def addAliasesToYield(y: Yield): Yield = y.copy(returnItems = aliasUnaliasedReturnItems(y.returnItems, warnForMissingAliases = false))(y.position)
 
   /**
    * Convert all UnaliasedReturnItems to AliasedReturnItems.
+   *
+   * @param warnForMissingAliases if `true`, generate warnings if an expression other than a variable or map projection
+   *                              gets automatically aliased.
    */
-  private def aliasUnaliasedReturnItems(ri: ReturnItems): ReturnItems = {
+  private def aliasUnaliasedReturnItems(ri: ReturnItems, warnForMissingAliases: Boolean): ReturnItems = {
     val aliasedReturnItems =
       ri.items.map {
         case i: UnaliasedReturnItem =>
-          val newPosition = i.expression.position.bumped()
-          AliasedReturnItem(i.expression, Variable(i.name)(newPosition))(i.position)
-        case x => x
-      }
-    ri.copy(items = aliasedReturnItems)(ri.position)
-  }
-
-  /**
-   * Convert all UnaliasedReturnItems to AliasedReturnItems, but generate warnings if an expression other than a variable or map projection
-   * gets automatically aliased.
-   */
-  private def aliasUnaliasedReturnItemsWithWarning(ri: ReturnItems): ReturnItems = {
-    val aliasedReturnItems =
-      ri.items.map {
-        case i: UnaliasedReturnItem =>
-          if (i.alias.isEmpty) {
+          if (warnForMissingAliases && i.alias.isEmpty) {
             notificationLogger(MissingAliasNotification(i.position))
           }
           val newPosition = i.expression.position.bumped()
@@ -170,7 +158,7 @@ case class normalizeWithAndReturnClauses(cypherExceptionFactory: CypherException
   private val rewriteProjectionsRecursively: Rewriter = topDown(Rewriter.lift {
     // Only alias return items
     case clause@ProjectionClause(_, ri: ReturnItems, None, _, _, None) =>
-      val replacer: ReturnItems => ReturnItems = if(clause.isReturn) aliasUnaliasedReturnItemsWithWarning else aliasImplicitlyAliasedReturnItems
+      val replacer: ReturnItems => ReturnItems = if(clause.isReturn) aliasUnaliasedReturnItems(_, warnForMissingAliases = true) else aliasImplicitlyAliasedReturnItems
       clause.copyProjection(returnItems = replacer(ri))
 
     // Alias return items and rewrite ORDER BY and WHERE
@@ -184,7 +172,7 @@ case class normalizeWithAndReturnClauses(cypherExceptionFactory: CypherException
       val updatedOrderBy = orderBy.map(aliasOrderBy(existingAliases, _))
       val updatedWhere = where.map(aliasWhere(existingAliases, _))
 
-      val replacer: ReturnItems => ReturnItems = if(clause.isReturn) aliasUnaliasedReturnItemsWithWarning else aliasImplicitlyAliasedReturnItems
+      val replacer: ReturnItems => ReturnItems = if(clause.isReturn) aliasUnaliasedReturnItems(_, warnForMissingAliases = true) else aliasImplicitlyAliasedReturnItems
       clause.copyProjection(returnItems = replacer(ri), orderBy = updatedOrderBy, where = updatedWhere)
   })
 

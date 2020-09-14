@@ -213,7 +213,7 @@ public enum NotificationCode
     MISSING_ALIAS(
             SeverityLevel.WARNING,
             Status.Statement.MissingAlias,
-            "There is no alias for one or more complex returned items in a RETURN clausein a CALL subquery. " +
+            "There is no alias for one or more complex returned items in a RETURN clause in a CALL subquery. " +
             "All returned items except variables, e.g. 'RETURN n', and map projections, e.g. 'RETURN n { .prop, .prop2 }' " +
             "should be aliased explicitly using 'AS'. The support for such unaliased returned items will be removed in a future version."
     );
