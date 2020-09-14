@@ -42,7 +42,7 @@ import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.SeekableArgs
 
-object idSeekLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
+case class idSeekLeafPlanner(skipIDs: Set[String]) extends LeafPlanner with LeafPlanFromExpression {
 
   override def producePlanFor(e: Expression, qg: QueryGraph, interestingOrder: InterestingOrder, context: LogicalPlanningContext): Option[LeafPlansForVariable] = {
     val arguments: Set[LogicalVariable] = qg.argumentIds.map(n => Variable(n)(null))
@@ -54,17 +54,20 @@ object idSeekLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
       case _ => None
     }
 
-    idSeekPredicates map {
+    idSeekPredicates flatMap {
       case (predicate, variable@Variable(id), idValues) if !qg.argumentIds.contains(id) =>
 
-        qg.patternRelationships.find(_.name == id) match {
-          case Some(relationship) =>
-            val types = relationship.types.toList
-            val seekPlan = planRelationshipByIdSeek(relationship, idValues, Seq(predicate), qg.argumentIds, context)
-            LeafPlansForVariable(id, Set(planRelTypeFilter(seekPlan, variable, types, context)))
-          case None =>
-            val plan = context.logicalPlanProducer.planNodeByIdSeek(variable, idValues, Seq(predicate), qg.argumentIds, context)
-            LeafPlansForVariable(id, Set(plan))
+        if (skipIDs.contains(id)) None
+        else {
+          qg.patternRelationships.find(_.name == id) match {
+            case Some(relationship) =>
+              val types = relationship.types.toList
+              val seekPlan = planRelationshipByIdSeek(relationship, idValues, Seq(predicate), qg.argumentIds, context)
+              Some(LeafPlansForVariable(id, Set(planRelTypeFilter(seekPlan, variable, types, context))))
+            case None               =>
+              val plan = context.logicalPlanProducer.planNodeByIdSeek(variable, idValues, Seq(predicate), qg.argumentIds, context)
+              Some(LeafPlansForVariable(id, Set(plan)))
+          }
         }
     }
   }

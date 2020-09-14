@@ -19,13 +19,18 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.idp
 
+import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher.beLike
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
-import org.neo4j.cypher.internal.expressions.Expression
-import org.neo4j.cypher.internal.ir.Predicate
+import org.neo4j.cypher.internal.compiler.planner.logical.ExpressionEvaluator
+import org.neo4j.cypher.internal.compiler.planner.logical.Metrics
+import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.BestPlans
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.LabelToken
+import org.neo4j.cypher.internal.ir.PlannerQueryPart
+import org.neo4j.cypher.internal.ir.Predicate
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.ir.Selections
@@ -37,7 +42,6 @@ import org.neo4j.cypher.internal.logical.plans.CartesianProduct
 import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexScan
 import org.neo4j.cypher.internal.logical.plans.Selection
@@ -333,11 +337,16 @@ class CartesianProductsOrValueJoinsTest extends CypherFunSuite with LogicalPlann
       indexOn("B", "p")
       addTypeToSemanticTable(prop("b", "p"), CTInteger.invariant)
 
-      cost = {
-        // Appears as RHS of Apply
-        case (_: NodeIndexSeek, input, _) =>
-          rhsInputCardinalities = rhsInputCardinalities + input.inboundCardinality
-          1.0
+      override def cardinalityModel(queryGraphCardinalityModel: Metrics.QueryGraphCardinalityModel,
+                                    evaluator: ExpressionEvaluator): Metrics.CardinalityModel = {
+        val superModel = super.cardinalityModel(queryGraphCardinalityModel, evaluator)
+        (query: PlannerQueryPart, input: QueryGraphSolverInput, semanticTable: SemanticTable) => {
+          // Appears as RHS of Apply
+          if (query.asSinglePlannerQuery.queryGraph.patternNodes == Set("b")) {
+            rhsInputCardinalities = rhsInputCardinalities + input.inboundCardinality
+          }
+          superModel(query, input, semanticTable)
+        }
       }
       addTypeToSemanticTable(varFor("a"), CTNode)
       addTypeToSemanticTable(varFor("b"), CTNode)

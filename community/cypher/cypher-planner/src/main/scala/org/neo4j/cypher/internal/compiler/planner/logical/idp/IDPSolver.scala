@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.compiler.helpers.IteratorSupport.RichIterator
 import org.neo4j.cypher.internal.compiler.helpers.LazyIterable
 import org.neo4j.cypher.internal.compiler.planner.logical.ProjectingSelector
 import org.neo4j.cypher.internal.compiler.planner.logical.Selector
+import org.neo4j.exceptions.InternalException
 import org.neo4j.time.Stopwatch
 
 import scala.collection.immutable.BitSet
@@ -142,7 +143,7 @@ class IDPSolver[Solvable, Result, Context](generator: IDPSolverStep[Solvable, Re
       // The best of the candidates is likely to appear in larger plans, so it is a good idea to compact that one.
       val bestInBlock: Option[(Goal, Result)] = goalSelector(blockCandidates)
       val (goal, _) = bestInBlock.getOrElse {
-        throw new IllegalStateException(
+        throw new InternalException(
           s"""Found no solution for block with size $blockSize,
              |$blockCandidates were the selected candidates from the table $table""".stripMargin)
       }
@@ -166,7 +167,7 @@ class IDPSolver[Solvable, Result, Context](generator: IDPSolverStep[Solvable, Re
       iterations += 1
       monitor.startIteration(iterations)
       val largestFinished = generateBestCandidates(toDo.size)
-      if (largestFinished <= 0) throw new IllegalStateException(
+      if (largestFinished <= 0) throw new InternalException(
         s"""Unfortunately, the planner was unable to find a plan within the constraints provided.
            |Try increasing the config values `${GraphDatabaseInternalSettings.cypher_idp_solver_table_threshold.name()}`
            |and `${GraphDatabaseInternalSettings.cypher_idp_solver_duration_threshold.name()}` to allow
@@ -187,12 +188,12 @@ class IDPSolver[Solvable, Result, Context](generator: IDPSolverStep[Solvable, Re
 
     val (_, bestResult) = plans
       .toSingleOption
-      .getOrElse(throw new AssertionError("Expected a single plan to be left in the plan table"))
+      .getOrElse(throw new InternalException("Expected a single plan to be left in the plan table"))
 
     if (plansFulfillingReq.hasNext) {
       val (_, plan) = plansFulfillingReq
         .toSingleOption
-        .getOrElse(throw new AssertionError("Expected a single plan that fulfils the requirements to be left in the plan table"))
+        .getOrElse(throw new InternalException("Expected a single plan that fulfils the requirements to be left in the plan table"))
 
       BestResults(bestResult, Some(plan))
     } else {

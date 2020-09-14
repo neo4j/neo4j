@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.idp
 
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
+import org.neo4j.cypher.internal.compiler.planner.logical.QueryPlannerConfiguration
 import org.neo4j.cypher.internal.compiler.planner.logical.QueryPlannerKit
 import org.neo4j.cypher.internal.compiler.planner.logical.SortPlanner.SatisfiedForPlan
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.BestPlans
@@ -33,6 +34,7 @@ import org.neo4j.cypher.internal.logical.plans.NodeUniqueIndexSeek
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.CartesianOrdering
 import org.neo4j.cypher.internal.util.Cost
+import org.neo4j.exceptions.InternalException
 
 import scala.annotation.tailrec
 
@@ -352,18 +354,30 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
       .addArgumentIds(lhsQG.idsWithoutOptionalMatchesOrUpdates.toIndexedSeq)
       .addPredicates(predicate)
       .addHints(rhsQG.hints)
+
+    val symbolsThatShouldOnlyUseIndexLeafPlanners: Set[String] = predicate.dependencies.map(_.name).intersect(rhsQG.patternNodes)
+
     val contextForRhs = context.withUpdatedCardinalityInformation(lhsPlan)
-    // TODO can we give the containsDependentIndexSeeks filter directly to singleComponentPlanner and make it filter out unusable plans earlier?
-    // I.e. if no suitable leaf plans exist then we could abort
-    val rhsPlans = singleComponentPlanner.planComponent(rhsQgWithLhsArguments, contextForRhs, kit, interestingOrder)
+      .withConfig(context.config.withLeafPlanners(
+        QueryPlannerConfiguration.leafPlannersForNestedIndexJoins(symbolsThatShouldOnlyUseIndexLeafPlanners)
+      ))
+
+    val rhsPlans = try {
+      // planComponent throws if it can't fins a solution, which is normally the expected behavior.
+      // Here, however, restricting the leaf planners might lead to no solutions found and that is OK.
+      Some(singleComponentPlanner.planComponent(rhsQgWithLhsArguments, contextForRhs, kit, interestingOrder))
+    } catch {
+      case _:InternalException =>
+        None
+    }
 
     // Keep only RHSs that actually leverage the data from the LHS to use an index.
     // The reason is that otherwise, we are producing a cartesian product disguising as an Apply, and
     // this confuses the cost model
-    rhsPlans.allResults.collect {
+    rhsPlans.fold[Iterator[LogicalPlan]](Iterator.empty)(_.allResults.collect {
       case rhsPlan if containsDependentIndexSeeks(rhsPlan) =>
         context.logicalPlanProducer.planApply(lhsPlan, rhsPlan, context)
-    }
+    })
   }
 
   /**

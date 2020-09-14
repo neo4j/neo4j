@@ -25,9 +25,10 @@ import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
-object allNodesLeafPlanner extends LeafPlanner {
+case class allNodesLeafPlanner(skipIDs: Set[String]) extends LeafPlanner {
   def apply(queryGraph: QueryGraph, interestingOrder: InterestingOrder, context: LogicalPlanningContext): Seq[LogicalPlan] =
     queryGraph.patternNodes
-      .filter(!queryGraph.argumentIds.contains(_))
+      .diff(queryGraph.argumentIds)
+      .diff(skipIDs)
       .map(context.logicalPlanProducer.planAllNodesScan(_, queryGraph.argumentIds, context)).toIndexedSeq
 }

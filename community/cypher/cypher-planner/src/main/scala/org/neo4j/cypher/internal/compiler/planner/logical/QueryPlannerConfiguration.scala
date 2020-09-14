@@ -43,30 +43,40 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
 object QueryPlannerConfiguration {
 
-  private val leafPlanFromExpressions: IndexedSeq[LeafPlanner with LeafPlanFromExpressions] = IndexedSeq(
+  private def leafPlanFromExpressions(symbolsThatShouldOnlyUseIndexLeafPlanners: Set[String]): IndexedSeq[LeafPlanner with LeafPlanFromExpressions] = IndexedSeq(
     // MATCH (n) WHERE id(n) IN ... RETURN n
-    idSeekLeafPlanner,
+    idSeekLeafPlanner(symbolsThatShouldOnlyUseIndexLeafPlanners),
 
     // MATCH (n) WHERE n.prop IN ... RETURN n
     indexSeekLeafPlanner,
 
     // MATCH (n) WHERE has(n.prop) RETURN n
     // MATCH (n:Person) WHERE n.prop CONTAINS ...
-    indexScanLeafPlanner,
+    indexScanLeafPlanner(symbolsThatShouldOnlyUseIndexLeafPlanners),
 
     // MATCH (n:Person) RETURN n
-    labelScanLeafPlanner
+    labelScanLeafPlanner(symbolsThatShouldOnlyUseIndexLeafPlanners)
   )
 
-  val allLeafPlanners = leafPlanFromExpressions ++ IndexedSeq(
-    argumentLeafPlanner,
+  private def allLeafPlanners(symbolsThatShouldOnlyUseIndexLeafPlanners: Set[String]): IndexedSeq[LeafPlanner] = {
+    val expressionLeafPlanners = leafPlanFromExpressions(symbolsThatShouldOnlyUseIndexLeafPlanners)
+    expressionLeafPlanners ++ IndexedSeq(
+      argumentLeafPlanner(symbolsThatShouldOnlyUseIndexLeafPlanners),
 
-    // MATCH (n) RETURN n
-    allNodesLeafPlanner,
+      // MATCH (n) RETURN n
+      allNodesLeafPlanner(symbolsThatShouldOnlyUseIndexLeafPlanners),
 
-    // Handles OR between other leaf planners
-    OrLeafPlanner(leafPlanFromExpressions))
+      // Handles OR between other leaf planners
+      OrLeafPlanner(expressionLeafPlanners))
+  }
 
+  /**
+   * When doing nested index joins, we have certain variables for which we only want to allow index seeks.
+   * This method returns leaf planners that will not produce any other plans for these variables.
+   */
+  def leafPlannersForNestedIndexJoins(symbolsThatShouldOnlyUseIndexLeafPlanners: Set[String]): LeafPlannerIterable = {
+    LeafPlannerList(allLeafPlanners(symbolsThatShouldOnlyUseIndexLeafPlanners))
+  }
 
   val default: QueryPlannerConfiguration = {
     val predicateSelector = steps.Selector(pickBestPlanUsingHintsAndCost,
@@ -84,7 +94,7 @@ object QueryPlannerConfiguration {
         applyOptional,
         outerHashJoin,
       ),
-      leafPlanners = LeafPlannerList(allLeafPlanners),
+      leafPlanners = LeafPlannerList(allLeafPlanners(Set.empty)),
       updateStrategy = defaultUpdateStrategy
     )
 
@@ -97,7 +107,7 @@ case class QueryPlannerConfiguration(leafPlanners: LeafPlannerIterable,
                                      pickBestCandidate: CandidateSelectorFactory,
                                      updateStrategy: UpdateStrategy) {
 
-  def toKit(interestingOrder: InterestingOrder, context: LogicalPlanningContext) =
+  def toKit(interestingOrder: InterestingOrder, context: LogicalPlanningContext): QueryPlannerKit =
     QueryPlannerKit(
       select = (plan: LogicalPlan, qg: QueryGraph) => applySelections(plan, qg, interestingOrder, context),
       pickBest = pickBestCandidate(context),

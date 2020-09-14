@@ -490,6 +490,23 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTestBase(queryGraphSolve
       )
     }
 
+    test(s"$cypherToken-$orderCapability: Order by label variable in a plan where NIJ is not possible, with 1 relationship pattern on the RHS") {
+      val plan = new given {
+        indexOn("B", "prop").providesOrder(orderCapability)
+      }.getLogicalPlanFor(s"MATCH (a:A), (b:B)-[r]-(c) WHERE a.prop = b.prop - c.prop RETURN a ORDER BY a $cypherToken", stripProduceResults = false)
+
+      plan._2 should equal(
+        new LogicalPlanBuilder()
+          .produceResults("a")
+          .filter("a.prop = b.prop - c.prop")
+          .cartesianProduct()
+          .|.expand("(b)-[r]-(c)")
+          .|.nodeByLabelScan("b", "B", IndexOrderNone)
+          .nodeByLabelScan("a", "A", plannedOrder)
+          .build()
+      )
+    }
+
     test(s"$cypherToken-$orderCapability: Order by index backed properties in a plan with an Apply needs Partial Sort if RHS order required") {
       val plan = new given {
         indexOn("A", "prop").providesOrder(orderCapability)

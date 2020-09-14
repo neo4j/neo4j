@@ -81,9 +81,9 @@ case class OrLeafPlanner(inner: Seq[LeafPlanFromExpressions]) extends LeafPlanne
   }
 
   private[steps] def producePlansForExpressions(exprs: Seq[Expression],
-                                         qg: QueryGraph,
-                                         context: LogicalPlanningContext,
-                                         interestingOrder: InterestingOrder): Array[Array[LeafPlansForVariable]] = {
+                                                qg: QueryGraph,
+                                                context: LogicalPlanningContext,
+                                                interestingOrder: InterestingOrder): Array[Array[LeafPlansForVariable]] = {
 
     def filterPlans(plans: Seq[LeafPlansForVariable], findFunc: LogicalPlan => Boolean, filterFunc: LogicalPlan => Boolean): Seq[LeafPlansForVariable] =
       if (plans.exists(leafPlans => leafPlans.plans.exists(findFunc))) plans.filter(x => !x.plans.exists(filterFunc)) else plans

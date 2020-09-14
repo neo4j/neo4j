@@ -81,6 +81,10 @@ case class LogicalPlanningContext(planContext: PlanContext,
     copy(leafPlanUpdater = newUpdater)
   }
 
+  def withConfig(newConfig: QueryPlannerConfiguration): LogicalPlanningContext = {
+    copy(config = newConfig)
+  }
+
   def statistics: GraphStatistics = planContext.statistics
 
   def cost: CostModel = metrics.cost

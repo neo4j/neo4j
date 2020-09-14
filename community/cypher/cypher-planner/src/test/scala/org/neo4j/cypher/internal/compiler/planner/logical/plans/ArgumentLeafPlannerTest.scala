@@ -36,7 +36,7 @@ class ArgumentLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
       patternNodes = Set("a", "b")
     )
 
-    argumentLeafPlanner(qg, InterestingOrder.empty, context) shouldBe empty
+    argumentLeafPlanner(Set.empty)(qg, InterestingOrder.empty, context) shouldBe empty
   }
 
   test("should return an empty candidate list pattern nodes is empty") {
@@ -47,7 +47,7 @@ class ArgumentLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
       patternNodes = Set()
     )
 
-    argumentLeafPlanner(qg, InterestingOrder.empty, context) shouldBe empty
+    argumentLeafPlanner(Set.empty)(qg, InterestingOrder.empty, context) shouldBe empty
   }
 
   test("should return a plan containing all the id in argument ids and in pattern nodes") {
@@ -58,8 +58,36 @@ class ArgumentLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
       patternNodes = Set("a", "b", "d")
     )
 
-    argumentLeafPlanner(qg, InterestingOrder.empty, context) should equal(
+    argumentLeafPlanner(Set.empty)(qg, InterestingOrder.empty, context) should equal(
       Seq(Argument(Set("a", "b","c")))
+    )
+  }
+
+  test("should not plan argument for skipped id") {
+    // given
+    val context = newMockedLogicalPlanningContext(newMockedPlanContext())
+    val queryGraph = QueryGraph(
+      argumentIds = Set("n"),
+      patternNodes = Set("n")
+    )
+
+    // when
+    val resultPlans = argumentLeafPlanner(Set("n"))(queryGraph, InterestingOrder.empty, context)
+
+    // then
+    resultPlans should be(empty)
+  }
+
+  test("plan argument for skipped ids when not all pattern nodes are skipped") {
+    val context = newMockedLogicalPlanningContext(newMockedPlanContext())
+
+    val qg = QueryGraph(
+      argumentIds = Set("a", "b", "c"),
+      patternNodes = Set("a", "b", "d")
+    )
+
+    argumentLeafPlanner(Set("b"))(qg, InterestingOrder.empty, context) should equal(
+      Seq(Argument(Set("a", "b", "c")))
     )
   }
 }

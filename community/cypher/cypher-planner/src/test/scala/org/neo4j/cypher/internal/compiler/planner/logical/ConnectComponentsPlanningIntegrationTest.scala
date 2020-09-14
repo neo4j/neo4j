@@ -28,10 +28,6 @@ import org.neo4j.cypher.internal.logical.plans.AllNodesScan
 import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.CartesianProduct
-import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
-import org.neo4j.cypher.internal.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.logical.plans.LogicalPlanToPlanBuilderString
-import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexScan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.OptionalExpand
@@ -177,6 +173,34 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
                          .nodeByLabelScan("b", "B")
                          .build()
       )
+  }
+
+  test("should plan nested index join of two components connected with predicates for two different nodes") {
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setLabelCardinality("A", 30)
+      .setLabelCardinality("B", 20)
+      .setLabelCardinality("C", 20)
+      .setLabelCardinality("D", 20)
+      .setRelationshipCardinality("(:A)-[]-(:B)", 30)
+      .setRelationshipCardinality("(:A)-[]-()", 30)
+      .setRelationshipCardinality("()-[]-(:B)", 30)
+      .setRelationshipCardinality("(:C)-[]-(:D)", 20)
+      .setRelationshipCardinality("(:C)-[]-()", 20)
+      .setRelationshipCardinality("()-[]-(:D)", 20)
+      .addIndex("C", Seq("prop"), 1.0, 0.05)
+      .addIndex("D", Seq("prop"), 1.0, 0.05)
+      .build()
+
+    val plan = cfg.plan("MATCH (a:A)--(b:B), (c:C)--(d:D) WHERE a.prop + b.prop > c.prop AND a.prop + b.prop > d.prop RETURN a, b, c, d")
+
+    val nodeIndexSeeks = plan.treeCount {
+      case _: NodeIndexSeek => true
+    }
+
+    withClue(plan) {
+      nodeIndexSeeks should be > 0
+    }
   }
 
   test("should plan cartesian product of two plans so the cost is minimized, even if cardinality is way lower on one side.") {

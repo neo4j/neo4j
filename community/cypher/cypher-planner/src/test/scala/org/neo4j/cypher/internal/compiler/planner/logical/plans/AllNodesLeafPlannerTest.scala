@@ -37,9 +37,23 @@ class AllNodesLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
     val context = newMockedLogicalPlanningContext(planContext = planContext, metrics = newMockedMetricsFactory.newMetrics(hardcodedStatistics, mock[ExpressionEvaluator], config))
 
     // when
-    val resultPlans = allNodesLeafPlanner(queryGraph, InterestingOrder.empty, context)
+    val resultPlans = allNodesLeafPlanner(Set.empty)(queryGraph, InterestingOrder.empty, context)
 
     // then
     resultPlans should equal(Seq(AllNodesScan("n", Set.empty)))
+  }
+
+  test("should not plan all node scan for skipped id") {
+    // given
+    val queryGraph = QueryGraph(patternNodes = Set("n"))
+
+    val planContext = newMockedPlanContext()
+    val context = newMockedLogicalPlanningContext(planContext = planContext, metrics = newMockedMetricsFactory.newMetrics(hardcodedStatistics, mock[ExpressionEvaluator], config))
+
+    // when
+    val resultPlans = allNodesLeafPlanner(Set("n"))(queryGraph, InterestingOrder.empty, context)
+
+    // then
+    resultPlans should be(empty)
   }
 }

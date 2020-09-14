@@ -56,7 +56,7 @@ import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.cypher.internal.util.symbols.CypherType
 
-object indexScanLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
+case class indexScanLeafPlanner(skipIDs: Set[String]) extends LeafPlanner with LeafPlanFromExpression {
 
   override def producePlanFor(e: Expression, qg: QueryGraph, interestingOrder: InterestingOrder, context: LogicalPlanningContext): Option[LeafPlansForVariable] = {
     val lpp = context.logicalPlanProducer
@@ -66,13 +66,13 @@ object indexScanLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
 
     e match {
       // MATCH (n:User) WHERE n.prop CONTAINS 'substring' RETURN n
-      case predicate@Contains(prop@Property(Variable(name), _), expr) if onlyArgumentDependencies(expr) =>
+      case predicate@Contains(prop@Property(Variable(name), _), expr) if onlyArgumentDependencies(expr) && !skipIDs.contains(name) =>
         val plans = produce(name, qg, interestingOrder, prop, CTString, predicate,
           lpp.planNodeIndexContainsScan(_, _, _, _, _, expr, _, _, _, context), context)
         maybeLeafPlans(name, plans)
 
       // MATCH (n:User) WHERE n.prop ENDS WITH 'substring' RETURN n
-      case predicate@EndsWith(prop@Property(Variable(name), _), expr) if onlyArgumentDependencies(expr) =>
+      case predicate@EndsWith(prop@Property(Variable(name), _), expr) if onlyArgumentDependencies(expr) && !skipIDs.contains(name) =>
         val plans = produce(name, qg, interestingOrder, prop, CTString, predicate,
           lpp.planNodeIndexEndsWithScan(_, _, _, _, _, expr, _, _, _, context), context)
         maybeLeafPlans(name, plans)
@@ -80,12 +80,15 @@ object indexScanLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
       // MATCH (n:User) WHERE exists(n.prop) RETURN n
       case AsPropertyScannable(scannable) =>
         val name = scannable.name
-
-        val plans = produce(name, qg, interestingOrder, scannable.property, CTAny, scannable.expr, lpp.planNodeIndexScan(_, _, _, _, _, _, _, _, context), context)
-        maybeLeafPlans(name, plans)
+        if (skipIDs.contains(name)) {
+          None
+        } else {
+          val plans = produce(name, qg, interestingOrder, scannable.property, CTAny, scannable.expr, lpp.planNodeIndexScan(_, _, _, _, _, _, _, _, context), context)
+          maybeLeafPlans(name, plans)
+        }
 
       // MATCH (n:User) with existence/node key constraint on :User(prop) or aggregation on n.prop
-      case predicate@HasLabels(expr@Variable(name), labels) =>
+      case predicate@HasLabels(expr@Variable(name), labels) if !skipIDs.contains(name)  =>
         val label = labels.head
         val labelName = label.name
         val constrainedProps = context.planContext.getPropertiesWithExistenceConstraint(labelName)

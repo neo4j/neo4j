@@ -32,11 +32,11 @@ import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
-object labelScanLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
+case class labelScanLeafPlanner(skipIDs: Set[String]) extends LeafPlanner with LeafPlanFromExpression {
 
   override def producePlanFor(e: Expression, qg: QueryGraph, interestingOrder: InterestingOrder, context: LogicalPlanningContext): Option[LeafPlansForVariable] = {
     e match {
-      case labelPredicate@HasLabels(variable@Variable(varName), labels) =>
+      case labelPredicate@HasLabels(variable@Variable(varName), labels) if !skipIDs.contains(varName)  =>
         if (qg.patternNodes(varName) && !qg.argumentIds(varName)) {
           val labelName = labels.head
           val hint = qg.hints.collectFirst {
