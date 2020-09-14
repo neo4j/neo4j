@@ -347,7 +347,7 @@ public class TransportTestUtil
                 };
                 try
                 {
-                    Predicates.await( condition, 2, TimeUnit.SECONDS );
+                    Predicates.await( condition, 5, TimeUnit.MINUTES );
                     return true;
                 }
                 catch ( Exception e )
