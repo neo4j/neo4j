@@ -25,6 +25,7 @@ import picocli.CommandLine.Parameters;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import org.neo4j.cli.AbstractCommand;
@@ -240,6 +241,7 @@ public class StoreInfoCommand extends AbstractCommand
             if ( !structured )
             {
                 return printFields().stream()
+                                    .filter( p -> Objects.nonNull( p.other() ) )
                                     .map( p -> p.first().justifiedPretty( p.other() ) )
                                     .collect( Collectors.joining( System.lineSeparator() ) );
             }

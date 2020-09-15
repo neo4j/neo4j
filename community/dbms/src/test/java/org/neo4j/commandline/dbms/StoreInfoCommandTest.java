@@ -227,9 +227,9 @@ class StoreInfoCommandTest
         prepareNeoStoreFile( currentFormat.storeVersion(), barDbLayout );
         var databasesRoot = homeDir.resolve( "data/databases" );
 
-        var expectedBar = expectedPrettyResult( "bar", false, currentFormat.storeVersion(), currentFormat.introductionVersion(), "N/A" );
+        var expectedBar = expectedPrettyResult( "bar", false, currentFormat.storeVersion(), currentFormat.introductionVersion(), null );
 
-        var expectedFoo = expectedPrettyResult( "foo", false, currentFormat.storeVersion(), currentFormat.introductionVersion(), "N/A" );
+        var expectedFoo = expectedPrettyResult( "foo", false, currentFormat.storeVersion(), currentFormat.introductionVersion(), null );
 
         var expected = expectedBar +
                        System.lineSeparator() +
@@ -262,11 +262,12 @@ class StoreInfoCommandTest
 
     private String expectedPrettyResult( String databaseName, boolean inUse, String version, String introduced, String superseded )
     {
+        var nullSafeSuperseded = superseded == null ? "" : "Store format superseded in:   " + superseded + System.lineSeparator();
         return "Database name:                " + databaseName + System.lineSeparator() +
                "Database in use:              " + inUse + System.lineSeparator() +
                "Store format version:         " + version + System.lineSeparator() +
                "Store format introduced in:   " + introduced + System.lineSeparator() +
-               "Store format superseded in:   " + superseded + System.lineSeparator() +
+               nullSafeSuperseded +
                "Last committed transaction id:-1" + System.lineSeparator() +
                "Store needs recovery:         true";
     }
