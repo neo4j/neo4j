@@ -198,25 +198,29 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends RandomizedCardina
         -> N * N * N * Asel * A_T1_B_sel * Bsel * B_T2_C_sel * Csel,
 
       "MATCH (a:A)-[r1:T1]->(b:B)-[r2:T1]->(c:C)"
-        -> N * N * N * Asel * A_T1_B_sel * Bsel * B_T1_C_sel * Csel *
-        DEFAULT_REL_UNIQUENESS_SELECTIVITY,
+        -> N * N * N * Asel * A_T1_B_sel * Bsel * B_T1_C_sel * Csel * uniquenessSelectivityForNRels(2),
 
       "MATCH (a:A)-[r1:T1]->(b:B)-[r2:T1]->(a)"
-        -> N * N * Asel * A_T1_B_sel * Bsel * B_T1_A_sel,
+        -> N * N * Asel * A_T1_B_sel * Bsel * B_T1_A_sel * uniquenessSelectivityForNRels(2),
 
       "MATCH (:A)-[r1:T1]->(:A)-[r2:T1]->(:B)-[r3:T1]->(:B)"
         -> A * A * B * B * A_T1_A_sel * A_T1_B_sel * B_T1_B_sel *
-        Math.pow(DEFAULT_REL_UNIQUENESS_SELECTIVITY, 3), // Once per rel-uniqueness predicate
+        uniquenessSelectivityForNRels(3),
 
       "MATCH (:A)-[r1:T1]->(:A)-[r2:T1]->(:B)-[r3:T1]->(:B)-[r4:T2]->(c:C)"
         -> A * A * B * B * C * A_T1_A_sel * A_T1_B_sel * B_T1_B_sel * B_T2_C_sel *
-        Math.pow(DEFAULT_REL_UNIQUENESS_SELECTIVITY, 4)
+        uniquenessSelectivityForNRels(3) // r4 has a different relType, so it does not need to be checked for rel-uniqueness against the other rels
     )
 
     forAll(queries) { (q: String, expected: Double) =>
       forQuery(q).
         shouldHaveQueryGraphCardinality(expected)
     }
+  }
+
+  def uniquenessSelectivityForNRels(n: Int): Double = {
+    val numberOfPairs = n * (n - 1) / 2
+    Math.pow(DEFAULT_REL_UNIQUENESS_SELECTIVITY, numberOfPairs)
   }
 
   test("empty graph") {
