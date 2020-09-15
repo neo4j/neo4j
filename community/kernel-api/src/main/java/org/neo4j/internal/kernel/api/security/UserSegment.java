@@ -39,5 +39,11 @@ public class UserSegment implements Segment
         return false;
     }
 
+    @Override
+    public String toString()
+    {
+        return username == null ? "*" : username;
+    }
+
     public static final UserSegment ALL = new UserSegment( null );
 }

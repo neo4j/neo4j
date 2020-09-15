@@ -44,5 +44,11 @@ public class ProcedureSegment implements Segment
         return false;
     }
 
+    @Override
+    public String toString()
+    {
+        return procedures == null ? "*" : procedures;
+    }
+
     public static final ProcedureSegment ALL = new ProcedureSegment( null );
 }
