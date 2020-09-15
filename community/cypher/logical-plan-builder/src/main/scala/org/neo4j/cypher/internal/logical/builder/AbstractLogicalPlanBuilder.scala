@@ -124,6 +124,7 @@ import org.neo4j.cypher.internal.logical.plans.QueryExpression
 import org.neo4j.cypher.internal.logical.plans.RangeQueryExpression
 import org.neo4j.cypher.internal.logical.plans.RelationshipCountFromCountStore
 import org.neo4j.cypher.internal.logical.plans.ResolvedCall
+import org.neo4j.cypher.internal.logical.plans.ResolvedFunctionInvocation
 import org.neo4j.cypher.internal.logical.plans.RightOuterHashJoin
 import org.neo4j.cypher.internal.logical.plans.RollUpApply
 import org.neo4j.cypher.internal.logical.plans.SelectOrAntiSemiApply
@@ -642,10 +643,18 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   }
 
   def aggregation(groupingExpressions: Seq[String],
-                  aggregationExpression: Seq[String]): IMPL =
-    appendAtCurrentIndent(UnaryOperator(lp => Aggregation(lp,
-      Parser.parseProjections(groupingExpressions: _*),
-      Parser.parseProjections(aggregationExpression: _*))(_)))
+                  aggregationExpression: Seq[String]): IMPL = {
+    val expressions = Parser.parseProjections(aggregationExpression: _*).mapValues {
+      case f: FunctionInvocation if f.needsToBeResolved =>
+        ResolvedFunctionInvocation(resolver.functionSignature)(f).coerceArguments
+      case e => e
+    }
+
+    appendAtCurrentIndent(UnaryOperator(lp => {
+      Aggregation(lp,
+        Parser.parseProjections(groupingExpressions: _*), expressions)(_)
+    }))
+  }
 
   def orderedAggregation(groupingExpressions: Seq[String],
                          aggregationExpression: Seq[String],

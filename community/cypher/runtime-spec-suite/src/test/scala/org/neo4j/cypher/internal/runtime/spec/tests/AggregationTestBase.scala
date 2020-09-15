@@ -32,9 +32,16 @@ import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.graphdb.Node
+import org.neo4j.internal.kernel.api.procs.Neo4jTypes
+import org.neo4j.internal.kernel.api.procs.UserAggregator
+import org.neo4j.internal.kernel.api.procs.UserFunctionSignature
+import org.neo4j.kernel.api.procedure.CallableUserAggregationFunction.BasicUserAggregationFunction
+import org.neo4j.kernel.api.procedure.Context
+import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.DoubleValue
 import org.neo4j.values.storable.DurationValue
 import org.neo4j.values.storable.IntegralValue
+import org.neo4j.values.storable.NumberValue
 import org.neo4j.values.storable.StringValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.ListValue
@@ -45,7 +52,7 @@ import scala.util.Random
 abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
                                                                edition: Edition[CONTEXT],
                                                                runtime: CypherRuntime[CONTEXT],
-                                                               sizeHint: Int
+                                                               val sizeHint: Int
                                                              ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("should count(*)") {
@@ -1162,5 +1169,216 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
 
     // then
     runtimeResult should beColumns("p").withRows(singleRow(11))
+  }
+}
+
+trait UserDefinedAggregationSupport[CONTEXT <: RuntimeContext] {
+  self: AggregationTestBase[CONTEXT] =>
+  private val userAggregationFunctions = {
+    val oneArgument = UserFunctionSignature.functionSignature("test", "foo1")
+      .out(Neo4jTypes.NTInteger)
+      .in("in", Neo4jTypes.NTInteger)
+      .build()
+    val twoArguments = UserFunctionSignature.functionSignature("test", "foo2")
+      .out(Neo4jTypes.NTInteger)
+      .in("in", Neo4jTypes.NTInteger)
+      .build()
+
+    Seq(
+      new BasicUserAggregationFunction(oneArgument) {
+        override def create(ctx: Context): UserAggregator = new UserAggregator {
+          private var count = 0L
+
+          override def update(input: Array[AnyValue]): Unit = {
+            count += input(0).asInstanceOf[NumberValue].longValue()
+          }
+
+          override def result(): AnyValue = Values.longValue(count)
+        }
+      },
+      new BasicUserAggregationFunction(twoArguments) {
+        override def create(ctx: Context): UserAggregator = new UserAggregator {
+          private var count = 0L
+
+          override def update(input: Array[AnyValue]): Unit = {
+            count += input(0).asInstanceOf[NumberValue].times(input(1).asInstanceOf[NumberValue]).longValue()
+          }
+
+          override def result(): AnyValue = Values.longValue(count)
+        }
+      }
+    )
+  }
+
+  override protected def initTest(): Unit = {
+    userAggregationFunctions.foreach(registerUserAggregation)
+  }
+
+  test("should support user-defined aggregation") {
+    given {
+      nodePropertyGraph(sizeHint, {
+        case i: Int => Map("num" -> i)
+      }, "Honey")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("p")
+      .aggregation(Seq.empty, Seq("test.foo1(x.num) AS p"))
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("p").withRows(singleRow(sizeHint * (sizeHint - 1) / 2))
+  }
+
+  test("should support user-defined aggregation with grouping") {
+    given {
+      nodePropertyGraph(sizeHint, {
+        case i: Int => Map("num" -> 10, "name" -> ("name" + i % 10))
+      }, "Honey")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("name", "p")
+      .aggregation(Seq("x.name AS name"), Seq("test.foo1(x.num) AS p"))
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = (0 to 9).map(i => Array(s"name$i", sizeHint))
+    runtimeResult should beColumns("name", "p").withRows(expected)
+  }
+
+  test("should support user-defined aggregation under apply") {
+    given {
+      nodePropertyGraph(sizeHint, {
+        case i: Int => Map("num" -> i)
+      }, "Honey")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("p")
+      .apply()
+      .|.aggregation(Seq.empty, Seq("test.foo1(y.num) AS p"))
+      .|.allNodeScan("y", "x")
+      .input(variables = Seq("x"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, inputValues((1 to 10).map(i => Array[Any](i)):_*))
+
+    // then
+    val expected = (1 to 10).map(_ => Array[Any]((sizeHint * (sizeHint - 1) / 2)))
+    runtimeResult should beColumns("p").withRows(expected)
+  }
+
+  test("should support combine user-defined aggregation and aggregation") {
+    given {
+      nodePropertyGraph(sizeHint, {
+        case i: Int => Map("num" -> i)
+      }, "Honey")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("p", "c")
+      .aggregation(Seq.empty, Seq("test.foo1(x.num) AS p", "count(x.num) AS c"))
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("p", "c").withRows(singleRow(sizeHint * (sizeHint - 1) / 2, sizeHint))
+  }
+
+  test("should support user-defined aggregation with multiple inputs") {
+    given {
+      nodePropertyGraph(sizeHint, {
+        case i: Int => Map("num1" -> i, "num2" -> i)
+      }, "Honey")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("p")
+      .aggregation(Seq.empty, Seq("test.foo2(x.num1, x.num2) AS p"))
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("p").withRows(singleRow((sizeHint - 1) * sizeHint * (2 * sizeHint - 1) / 6))
+  }
+
+  test("should support user-defined aggregation with multiple arguments and grouping") {
+    given {
+      nodePropertyGraph(sizeHint, {
+        case i: Int => Map("num" -> 10, "name" -> ("name" + i % 10))
+      }, "Honey")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("name", "p")
+      .aggregation(Seq("x.name AS name"), Seq("test.foo2(x.num, x.num) AS p"))
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = (0 to 9).map(i => Array(s"name$i", 10 * sizeHint))
+    runtimeResult should beColumns("name", "p").withRows(expected)
+  }
+
+  test("should support user-defined aggregation with multiple arguments under apply") {
+    given {
+      nodePropertyGraph(sizeHint, {
+        case i: Int => Map("num" -> i)
+      }, "Honey")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("p")
+      .apply()
+      .|.aggregation(Seq.empty, Seq("test.foo2(y.num, y.num) AS p"))
+      .|.allNodeScan("y", "x")
+      .input(variables = Seq("x"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, inputValues((1 to 10).map(i => Array[Any](i)):_*))
+
+    // then
+    val expected = (1 to 10).map(_ => Array[Any]((sizeHint - 1) * sizeHint * (2 * sizeHint - 1) / 6))
+    runtimeResult should beColumns("p").withRows(expected)
+  }
+
+  test("should support combine user-defined aggregation with multiple arguments and aggregation") {
+    given {
+      nodePropertyGraph(sizeHint, {
+        case i: Int => Map("num" -> i)
+      }, "Honey")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("p", "c")
+      .aggregation(Seq.empty, Seq("test.foo2(x.num, x.num) AS p", "count(x.num) AS c"))
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("p", "c").withRows(singleRow((sizeHint - 1) * sizeHint * (2 * sizeHint - 1) / 6, sizeHint))
   }
 }

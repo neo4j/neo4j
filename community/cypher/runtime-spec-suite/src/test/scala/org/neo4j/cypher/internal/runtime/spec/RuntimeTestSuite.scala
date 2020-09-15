@@ -47,6 +47,7 @@ import org.neo4j.dbms.api.DatabaseManagementService
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.kernel.api.Kernel
 import org.neo4j.kernel.api.procedure.CallableProcedure
+import org.neo4j.kernel.api.procedure.CallableUserAggregationFunction
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade
 import org.neo4j.kernel.impl.query.NonRecordingQuerySubscriber
@@ -245,6 +246,10 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
 
   def registerProcedure(proc: CallableProcedure): Unit = {
     kernel.registerProcedure(proc)
+  }
+
+  def registerUserAggregation(func: CallableUserAggregationFunction): Unit = {
+    kernel.registerUserAggregationFunction(func)
   }
 
   // TX
