@@ -38,7 +38,7 @@ class CountCommittedTransactionThreshold extends AbstractCheckPointThreshold
     }
 
     @Override
-    protected boolean thresholdReached( long lastCommittedTransactionId )
+    protected boolean thresholdReached( long lastCommittedTransactionId, long lastCommittedTransactionLogVersion )
     {
         return lastCommittedTransactionId >= nextTransactionIdTarget;
     }

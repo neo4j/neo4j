@@ -554,7 +554,7 @@ public class NeoStoreDataSource extends LifecycleAdapter
         CheckPointThreshold threshold = CheckPointThreshold.createThreshold( config, clock, logPruning, logProvider );
 
         final CheckPointerImpl checkPointer = new CheckPointerImpl(
-                transactionIdStore, threshold, storageEngine, logPruning, appender, databaseHealth, logProvider,
+                transactionIdStore, threshold, storageEngine::flushAndForce, logPruning, appender, databaseHealth, logProvider,
                 tracers.checkPointTracer, ioLimiter, storeCopyCheckPointMutex );
 
         long recurringPeriod = threshold.checkFrequencyMillis();

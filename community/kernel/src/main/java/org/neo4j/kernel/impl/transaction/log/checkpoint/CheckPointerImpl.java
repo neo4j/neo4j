@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
-import org.eclipse.collections.api.block.predicate.primitive.BooleanPredicate;
-
 import java.io.IOException;
 import java.util.function.BooleanSupplier;
 
@@ -36,7 +34,6 @@ import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.storageengine.api.StorageEngine;
 
 import static java.lang.System.currentTimeMillis;
 import static org.neo4j.helpers.Format.duration;
@@ -46,7 +43,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
     private final TransactionAppender appender;
     private final TransactionIdStore transactionIdStore;
     private final CheckPointThreshold threshold;
-    private final StorageEngine storageEngine;
+    private final Flusher flusher;
     private final LogPruning logPruning;
     private final DatabaseHealth databaseHealth;
     private final IOLimiter ioLimiter;
@@ -59,7 +56,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
     public CheckPointerImpl(
             TransactionIdStore transactionIdStore,
             CheckPointThreshold threshold,
-            StorageEngine storageEngine,
+            Flusher flusher,
             LogPruning logPruning,
             TransactionAppender appender,
             DatabaseHealth databaseHealth,
@@ -71,7 +68,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
         this.appender = appender;
         this.transactionIdStore = transactionIdStore;
         this.threshold = threshold;
-        this.storageEngine = storageEngine;
+        this.flusher = flusher;
         this.logPruning = logPruning;
         this.databaseHealth = databaseHealth;
         this.ioLimiter = ioLimiter;
@@ -146,7 +143,8 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
     @Override
     public long checkPointIfNeeded( TriggerInfo info ) throws IOException
     {
-        if ( threshold.isCheckPointingNeeded( transactionIdStore.getLastClosedTransactionId(), info ) )
+        long[] lastClosedTransaction = transactionIdStore.getLastClosedTransaction();
+        if ( threshold.isCheckPointingNeeded( lastClosedTransaction[0], lastClosedTransaction[1], info ) )
         {
             try ( Resource lock = mutex.checkPoint() )
             {
@@ -176,7 +174,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
              */
             msgLog.info( prefix + " checkpoint started..." );
             long startTime = currentTimeMillis();
-            storageEngine.flushAndForce( ioLimiter );
+            flusher.flushAndForce( ioLimiter );
             /*
              * Check kernel health before going to write the next check point.  In case of a panic this check point
              * will be aborted, which is the safest alternative so that the next recovery will have a chance to
@@ -208,5 +206,10 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
     public long lastCheckPointedTransactionId()
     {
         return lastCheckPointedTx;
+    }
+
+    public interface Flusher
+    {
+        void flushAndForce( IOLimiter ioLimiter ) throws IOException;
     }
 }

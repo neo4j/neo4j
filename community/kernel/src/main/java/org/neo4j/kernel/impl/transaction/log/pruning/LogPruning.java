@@ -35,8 +35,9 @@ public interface LogPruning
      *
      * @return {@code true} if calling {@link #pruneLogs(long)} now <em>might</em> cause log files to be deleted.
      * Otherwise {@code false} if we are pretty sure that we don't need to prune any logs right now.
+     * @param upperVersion check up to this version.
      */
-    boolean mightHaveLogsToPrune();
+    boolean mightHaveLogsToPrune( long upperVersion );
 
     LogPruning NO_PRUNING = new LogPruning()
     {
@@ -46,7 +47,7 @@ public interface LogPruning
         }
 
         @Override
-        public boolean mightHaveLogsToPrune()
+        public boolean mightHaveLogsToPrune( long upperVersion )
         {
             return false;
         }
