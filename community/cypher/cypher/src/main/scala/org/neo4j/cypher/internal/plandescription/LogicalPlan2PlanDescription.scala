@@ -21,28 +21,6 @@ package org.neo4j.cypher.internal.plandescription
 
 import org.neo4j.cypher.CypherVersion
 import org.neo4j.cypher.internal.ExecutionPlan
-import org.neo4j.cypher.internal.ast.ActionResource
-import org.neo4j.cypher.internal.ast.AdminAction
-import org.neo4j.cypher.internal.ast.AllDatabasesScope
-import org.neo4j.cypher.internal.ast.AllGraphsScope
-import org.neo4j.cypher.internal.ast.AllLabelResource
-import org.neo4j.cypher.internal.ast.AllPropertyResource
-import org.neo4j.cypher.internal.ast.DatabaseScope
-import org.neo4j.cypher.internal.ast.DefaultDatabaseScope
-import org.neo4j.cypher.internal.ast.DefaultGraphScope
-import org.neo4j.cypher.internal.ast.GraphScope
-import org.neo4j.cypher.internal.ast.LabelResource
-import org.neo4j.cypher.internal.ast.NamedDatabaseScope
-import org.neo4j.cypher.internal.ast.NamedGraphScope
-import org.neo4j.cypher.internal.ast.NoResource
-import org.neo4j.cypher.internal.ast.PrivilegeQualifier
-import org.neo4j.cypher.internal.ast.ProcedurePrivilegeQualifier
-import org.neo4j.cypher.internal.ast.PropertyResource
-import org.neo4j.cypher.internal.ast.UserAllQualifier
-import org.neo4j.cypher.internal.ast.UserQualifier
-import org.neo4j.cypher.internal.ast.Where
-import org.neo4j.cypher.internal.ast.Yield
-import org.neo4j.cypher.internal.ast.prettifier.Prettifier
 import org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
@@ -52,7 +30,6 @@ import org.neo4j.cypher.internal.expressions.LabelToken
 import org.neo4j.cypher.internal.expressions.ListLiteral
 import org.neo4j.cypher.internal.expressions.MapExpression
 import org.neo4j.cypher.internal.expressions.Namespace
-import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.PropertyKeyToken
@@ -68,18 +45,14 @@ import org.neo4j.cypher.internal.ir.ShortestPathPattern
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.VarPatternLength
 import org.neo4j.cypher.internal.logical.plans
+import org.neo4j.cypher.internal.logical.plans.AdministrationCommandLogicalPlan
 import org.neo4j.cypher.internal.logical.plans.Aggregation
 import org.neo4j.cypher.internal.logical.plans.AllNodesScan
-import org.neo4j.cypher.internal.logical.plans.AlterUser
 import org.neo4j.cypher.internal.logical.plans.Anti
 import org.neo4j.cypher.internal.logical.plans.AntiConditionalApply
 import org.neo4j.cypher.internal.logical.plans.AntiSemiApply
 import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.Ascending
-import org.neo4j.cypher.internal.logical.plans.AssertDatabaseAdmin
-import org.neo4j.cypher.internal.logical.plans.AssertDbmsAdmin
-import org.neo4j.cypher.internal.logical.plans.AssertDbmsAdminOrSelf
-import org.neo4j.cypher.internal.logical.plans.AssertNotCurrentUser
 import org.neo4j.cypher.internal.logical.plans.AssertSameNode
 import org.neo4j.cypher.internal.logical.plans.Bound
 import org.neo4j.cypher.internal.logical.plans.CacheProperties
@@ -87,49 +60,34 @@ import org.neo4j.cypher.internal.logical.plans.CartesianProduct
 import org.neo4j.cypher.internal.logical.plans.ColumnOrder
 import org.neo4j.cypher.internal.logical.plans.CompositeQueryExpression
 import org.neo4j.cypher.internal.logical.plans.ConditionalApply
-import org.neo4j.cypher.internal.logical.plans.CopyRolePrivileges
 import org.neo4j.cypher.internal.logical.plans.Create
-import org.neo4j.cypher.internal.logical.plans.CreateDatabase
 import org.neo4j.cypher.internal.logical.plans.CreateIndex
 import org.neo4j.cypher.internal.logical.plans.CreateNodeKeyConstraint
 import org.neo4j.cypher.internal.logical.plans.CreateNodePropertyExistenceConstraint
 import org.neo4j.cypher.internal.logical.plans.CreateRelationshipPropertyExistenceConstraint
-import org.neo4j.cypher.internal.logical.plans.CreateRole
 import org.neo4j.cypher.internal.logical.plans.CreateUniquePropertyConstraint
-import org.neo4j.cypher.internal.logical.plans.CreateUser
 import org.neo4j.cypher.internal.logical.plans.DeleteExpression
 import org.neo4j.cypher.internal.logical.plans.DeleteNode
 import org.neo4j.cypher.internal.logical.plans.DeletePath
 import org.neo4j.cypher.internal.logical.plans.DeleteRelationship
-import org.neo4j.cypher.internal.logical.plans.DenyDatabaseAction
-import org.neo4j.cypher.internal.logical.plans.DenyDbmsAction
-import org.neo4j.cypher.internal.logical.plans.DenyGraphAction
 import org.neo4j.cypher.internal.logical.plans.Descending
 import org.neo4j.cypher.internal.logical.plans.DetachDeleteExpression
 import org.neo4j.cypher.internal.logical.plans.DetachDeleteNode
 import org.neo4j.cypher.internal.logical.plans.DetachDeletePath
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.Distinct
-import org.neo4j.cypher.internal.logical.plans.DoNothingIfExists
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForConstraint
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForIndex
-import org.neo4j.cypher.internal.logical.plans.DoNothingIfNotExists
 import org.neo4j.cypher.internal.logical.plans.DropConstraintOnName
-import org.neo4j.cypher.internal.logical.plans.DropDatabase
 import org.neo4j.cypher.internal.logical.plans.DropIndex
 import org.neo4j.cypher.internal.logical.plans.DropIndexOnName
 import org.neo4j.cypher.internal.logical.plans.DropNodeKeyConstraint
 import org.neo4j.cypher.internal.logical.plans.DropNodePropertyExistenceConstraint
 import org.neo4j.cypher.internal.logical.plans.DropRelationshipPropertyExistenceConstraint
 import org.neo4j.cypher.internal.logical.plans.DropResult
-import org.neo4j.cypher.internal.logical.plans.DropRole
 import org.neo4j.cypher.internal.logical.plans.DropUniquePropertyConstraint
-import org.neo4j.cypher.internal.logical.plans.DropUser
 import org.neo4j.cypher.internal.logical.plans.Eager
 import org.neo4j.cypher.internal.logical.plans.EmptyResult
-import org.neo4j.cypher.internal.logical.plans.EnsureNodeExists
-import org.neo4j.cypher.internal.logical.plans.EnsureValidNonSystemDatabase
-import org.neo4j.cypher.internal.logical.plans.EnsureValidNumberOfDatabases
 import org.neo4j.cypher.internal.logical.plans.ErrorPlan
 import org.neo4j.cypher.internal.logical.plans.ExistenceQueryExpression
 import org.neo4j.cypher.internal.logical.plans.Expand
@@ -137,10 +95,6 @@ import org.neo4j.cypher.internal.logical.plans.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.ExpandInto
 import org.neo4j.cypher.internal.logical.plans.FindShortestPaths
 import org.neo4j.cypher.internal.logical.plans.ForeachApply
-import org.neo4j.cypher.internal.logical.plans.GrantDatabaseAction
-import org.neo4j.cypher.internal.logical.plans.GrantDbmsAction
-import org.neo4j.cypher.internal.logical.plans.GrantGraphAction
-import org.neo4j.cypher.internal.logical.plans.GrantRoleToUser
 import org.neo4j.cypher.internal.logical.plans.InequalitySeekRangeWrapper
 import org.neo4j.cypher.internal.logical.plans.Input
 import org.neo4j.cypher.internal.logical.plans.LeftOuterHashJoin
@@ -151,7 +105,6 @@ import org.neo4j.cypher.internal.logical.plans.LetSemiApply
 import org.neo4j.cypher.internal.logical.plans.Limit
 import org.neo4j.cypher.internal.logical.plans.LoadCSV
 import org.neo4j.cypher.internal.logical.plans.LockNodes
-import org.neo4j.cypher.internal.logical.plans.LogSystemCommand
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlans
 import org.neo4j.cypher.internal.logical.plans.ManyQueryExpression
@@ -190,12 +143,7 @@ import org.neo4j.cypher.internal.logical.plans.RangeLessThan
 import org.neo4j.cypher.internal.logical.plans.RangeQueryExpression
 import org.neo4j.cypher.internal.logical.plans.RelationshipCountFromCountStore
 import org.neo4j.cypher.internal.logical.plans.RemoveLabels
-import org.neo4j.cypher.internal.logical.plans.RequireRole
 import org.neo4j.cypher.internal.logical.plans.ResolvedCall
-import org.neo4j.cypher.internal.logical.plans.RevokeDatabaseAction
-import org.neo4j.cypher.internal.logical.plans.RevokeDbmsAction
-import org.neo4j.cypher.internal.logical.plans.RevokeGraphAction
-import org.neo4j.cypher.internal.logical.plans.RevokeRoleFromUser
 import org.neo4j.cypher.internal.logical.plans.RightOuterHashJoin
 import org.neo4j.cypher.internal.logical.plans.RollUpApply
 import org.neo4j.cypher.internal.logical.plans.SeekableArgs
@@ -206,20 +154,13 @@ import org.neo4j.cypher.internal.logical.plans.SemiApply
 import org.neo4j.cypher.internal.logical.plans.SetLabels
 import org.neo4j.cypher.internal.logical.plans.SetNodePropertiesFromMap
 import org.neo4j.cypher.internal.logical.plans.SetNodeProperty
-import org.neo4j.cypher.internal.logical.plans.SetOwnPassword
 import org.neo4j.cypher.internal.logical.plans.SetPropertiesFromMap
 import org.neo4j.cypher.internal.logical.plans.SetProperty
 import org.neo4j.cypher.internal.logical.plans.SetRelationshipPropertiesFromMap
 import org.neo4j.cypher.internal.logical.plans.SetRelationshipProperty
-import org.neo4j.cypher.internal.logical.plans.ShowDatabase
-import org.neo4j.cypher.internal.logical.plans.ShowPrivileges
-import org.neo4j.cypher.internal.logical.plans.ShowRoles
-import org.neo4j.cypher.internal.logical.plans.ShowUsers
 import org.neo4j.cypher.internal.logical.plans.SingleQueryExpression
 import org.neo4j.cypher.internal.logical.plans.Skip
 import org.neo4j.cypher.internal.logical.plans.Sort
-import org.neo4j.cypher.internal.logical.plans.StartDatabase
-import org.neo4j.cypher.internal.logical.plans.StopDatabase
 import org.neo4j.cypher.internal.logical.plans.SystemProcedureCall
 import org.neo4j.cypher.internal.logical.plans.Top
 import org.neo4j.cypher.internal.logical.plans.TriadicSelection
@@ -276,6 +217,9 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
     val variables = plan.availableSymbols.map(asPrettyString(_))
 
     val result: InternalPlanDescription = plan match {
+      case _:AdministrationCommandLogicalPlan =>
+      PlanDescriptionImpl(id, "AdministrationCommand", NoChildren, Seq.empty, Set.empty)
+
       case AllNodesScan(idName, _) =>
         PlanDescriptionImpl(id, "AllNodesScan", NoChildren, Seq(Details(asPrettyString(idName))), variables)
 
@@ -407,33 +351,8 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         val constraintName = Details(pretty"CONSTRAINT ${asPrettyString(name)}")
         PlanDescriptionImpl(id, "DropConstraint", NoChildren, Seq(constraintName), variables)
 
-      case SetOwnPassword(_, _) =>
-        PlanDescriptionImpl(id, "AlterCurrentUserSetPassword", NoChildren, Seq.empty, variables)
-
-      case ShowPrivileges(_, scope, _, yields, where, _) => // Can be both a leaf plan and a middle plan so need to be in both places
-        val args = showCommandDetails(yields, where, asPrettyString.raw(Prettifier.extractScope(scope)))
-        PlanDescriptionImpl(id, "ShowPrivileges", NoChildren, args, variables)
-
-      case ShowDatabase(scope, _, yields, where, _) =>
-        val args = scope match {
-          case NamedDatabaseScope(dbName) => showCommandDetails(yields, where, escapeName(dbName))
-          case _: AllDatabasesScope => showCommandDetails(yields, where)
-          case _: DefaultDatabaseScope => showCommandDetails(yields, where)
-        }
-        PlanDescriptionImpl(id, scope.showCommandName, NoChildren, args, variables)
-
       case SystemProcedureCall(procedureName, _, _, _) =>
         PlanDescriptionImpl(id, procedureName, NoChildren, Seq.empty, variables)
-
-      case AssertDbmsAdmin(actions) =>
-        PlanDescriptionImpl(id, "AssertDbmsAdmin", NoChildren, Seq(Details(actions.map(x => asPrettyString.raw(x.name)))), variables)
-
-      case AssertDbmsAdminOrSelf(user, actions) =>
-        PlanDescriptionImpl(id, "AssertDbmsAdminOrSelf", NoChildren, Seq(Details(actions.map(x => asPrettyString.raw(x.name)) :+ getUserInfo(user))), variables)
-
-      case AssertDatabaseAdmin(action, dbName) =>
-        val arguments = Seq(Details(Seq(asPrettyString.raw(action.name), escapeName(dbName))))
-        PlanDescriptionImpl(id, "AssertDatabaseAdmin", NoChildren, arguments, variables)
 
       case x => throw new InternalException(s"Unknown plan type: ${x.getClass.getSimpleName}. Missing a case?")
     }
@@ -450,6 +369,9 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
     val children = if (source.isInstanceOf[ArgumentPlanDescription]) NoChildren else SingleChild(source)
 
     val result: InternalPlanDescription = plan match {
+      case _:AdministrationCommandLogicalPlan =>
+        PlanDescriptionImpl(id, "AdministrationCommand", NoChildren, Seq.empty, Set.empty)
+
       case Distinct(_, groupingExpressions) =>
         PlanDescriptionImpl(id, "Distinct", children, Seq(Details(aggregationInfo(groupingExpressions, Map.empty))), variables)
 
@@ -697,134 +619,6 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         val relationship = prop.map.asCanonicalStringVal
         val details = Details(constraintInfo(nameOption, relationship, scala.util.Right(relTypeName), Seq(prop), scala.util.Left("exists")))
         PlanDescriptionImpl(id, "CreateConstraint", children, Seq(details), variables)
-
-      case ShowUsers(_, _, yields, where, _) =>
-        PlanDescriptionImpl(id, "ShowUsers", children, showCommandDetails(yields, where), variables)
-
-      case CreateUser(_, name, _, _, _, _) =>
-        PlanDescriptionImpl(id, "CreateUser", children, Seq(Details(getUserInfo(name))), variables)
-
-      case DropUser(_, name) =>
-        PlanDescriptionImpl(id, "DropUser", children, Seq(Details(getUserInfo(name))), variables)
-
-      case AlterUser(_, name, _, _, _, _) =>
-        PlanDescriptionImpl(id, "AlterUser", children, Seq(Details(getUserInfo(name))), variables)
-
-      case ShowRoles(_, _, _, _, yields, where, _) =>
-        PlanDescriptionImpl(id, "ShowRoles", children, showCommandDetails(yields, where), variables)
-
-      case DropRole(_, name) =>
-        PlanDescriptionImpl(id, "DropRole", children, Seq(Details(getRoleInfo(name))), variables)
-
-      case CreateRole(_, name) =>
-        PlanDescriptionImpl(id, "CreateRole", children, Seq(Details(getRoleInfo(name))), variables)
-
-      case RequireRole(_, name) =>
-        PlanDescriptionImpl(id, "RequireRole", children, Seq(Details(getRoleInfo(name))), variables)
-
-      case CopyRolePrivileges(_, to, from, grantDeny) =>
-        val details = Details(pretty"FROM ROLE ${escapeName(from)} TO ROLE ${escapeName(to)}")
-        PlanDescriptionImpl(id, s"CopyRolePrivileges($grantDeny)", children, Seq(details), variables)
-
-      case GrantRoleToUser(_, roleName, userName) =>
-        PlanDescriptionImpl(id, "GrantRoleToUser", children, Seq(Details(Seq(getRoleInfo(roleName), getUserInfo(userName)))), variables)
-
-      case RevokeRoleFromUser(_, roleName, userName) =>
-        PlanDescriptionImpl(id, "RevokeRoleFromUser", children, Seq(Details(Seq(getRoleInfo(roleName), getUserInfo(userName)))), variables)
-
-      case GrantDbmsAction(_, action, qualifier: ProcedurePrivilegeQualifier, roleName) =>
-        PlanDescriptionImpl(id, "GrantDbmsAction", children, Seq(Details(asPrettyString.raw(action.name) +: extractQualifierSeq(qualifier) :+ getRoleInfo(roleName))), variables)
-
-      case GrantDbmsAction(_, action, _, roleName) =>
-        PlanDescriptionImpl(id, "GrantDbmsAction", children, Seq(Details(Seq(asPrettyString.raw(action.name), getRoleInfo(roleName)))), variables)
-
-      case DenyDbmsAction(_, action, qualifier: ProcedurePrivilegeQualifier, roleName) =>
-        PlanDescriptionImpl(id, "DenyDbmsAction", children, Seq(Details(asPrettyString.raw(action.name) +: extractQualifierSeq(qualifier) :+ getRoleInfo(roleName))), variables)
-
-      case DenyDbmsAction(_, action, _, roleName) =>
-        PlanDescriptionImpl(id, "DenyDbmsAction", children, Seq(Details(Seq(asPrettyString.raw(action.name), getRoleInfo(roleName)))), variables)
-
-      case RevokeDbmsAction(_, action, qualifier: ProcedurePrivilegeQualifier, roleName, revokeType) =>
-        val details = Details(asPrettyString.raw(action.name) +: extractQualifierSeq(qualifier) :+ getRoleInfo(roleName))
-        PlanDescriptionImpl(id, Prettifier.revokeOperation("RevokeDbmsAction", revokeType), children, Seq(details), variables)
-
-      case RevokeDbmsAction(_, action, _, roleName, revokeType) =>
-        val details = Details(Seq(asPrettyString.raw(action.name), getRoleInfo(roleName)))
-        PlanDescriptionImpl(id, Prettifier.revokeOperation("RevokeDbmsAction", revokeType), children, Seq(details), variables)
-
-      case GrantDatabaseAction(_, action, database, qualifier, roleName) =>
-        val details = extractDatabaseArguments(action, database, qualifier, roleName)
-        PlanDescriptionImpl(id, "GrantDatabaseAction", children, Seq(Details(details)), variables)
-
-      case DenyDatabaseAction(_, action, database, qualifier, roleName) =>
-        val details = extractDatabaseArguments(action, database, qualifier, roleName)
-        PlanDescriptionImpl(id, "DenyDatabaseAction", children, Seq(Details(details)), variables)
-
-      case RevokeDatabaseAction(_, action, database, qualifier, roleName, revokeType) =>
-        val details = extractDatabaseArguments(action, database, qualifier, roleName)
-        PlanDescriptionImpl(id, Prettifier.revokeOperation("RevokeDatabaseAction", revokeType), children, Seq(Details(details)), variables)
-
-      case GrantGraphAction(_, action, resource, graph, qualifier, roleName) =>
-        val graphName = extractGraphScope(graph)
-        val qualifierText = extractQualifierSeq(qualifier)
-        val resourceText = extractResourcePart(resource)
-        PlanDescriptionImpl(id, s"Grant${action.planName}", children,
-          Seq(Details(Seq(graphName) ++ resourceText ++ qualifierText ++ Seq(getRoleInfo(roleName)))), variables)
-
-      case DenyGraphAction(_, action, resource, graph, qualifier, roleName) =>
-        val graphName = extractGraphScope(graph)
-        val qualifierText = extractQualifierSeq(qualifier)
-        val resourceText = extractResourcePart(resource)
-        PlanDescriptionImpl(id, s"Deny${action.planName}", children,
-          Seq(Details(Seq(graphName) ++ resourceText ++ qualifierText ++ Seq(getRoleInfo(roleName)))), variables)
-
-      case RevokeGraphAction(_, action, resource, graph, qualifier, roleName, revokeType) =>
-        val graphName = extractGraphScope(graph)
-        val qualifierText = extractQualifierSeq(qualifier)
-        val resourceText = extractResourcePart(resource)
-        PlanDescriptionImpl(id, Prettifier.revokeOperation(s"Revoke${action.planName}", revokeType), children,
-          Seq(Details(Seq(graphName) ++ resourceText ++ qualifierText ++ Seq(getRoleInfo(roleName)))), variables)
-
-      case ShowPrivileges(_, scope, _, yields, where, _) => // Can be both a leaf plan and a middle plan so need to be in both places
-        val args = showCommandDetails(yields, where, asPrettyString.raw(Prettifier.extractScope(scope)))
-        PlanDescriptionImpl(id, "ShowPrivileges", children, args, variables)
-
-      case CreateDatabase(_, dbName) =>
-        PlanDescriptionImpl(id, "CreateDatabase", children, Seq(Details(escapeName(dbName))), variables)
-
-      case DropDatabase(_, dbName, additionalAction) =>
-        val details = Details(Seq(escapeName(dbName), asPrettyString.raw(additionalAction.name)))
-        PlanDescriptionImpl(id, "DropDatabase", children, Seq(details), variables)
-
-      case StartDatabase(_, dbName) =>
-        PlanDescriptionImpl(id, "StartDatabase", children, Seq(Details(escapeName(dbName))), variables)
-
-      case StopDatabase(_, dbName) =>
-        PlanDescriptionImpl(id, "StopDatabase", children, Seq(Details(escapeName(dbName))), variables)
-
-      case EnsureValidNonSystemDatabase(_, dbName, _) =>
-        PlanDescriptionImpl(id, "EnsureValidNonSystemDatabase", children, Seq(Details(escapeName(dbName))), variables)
-
-      case EnsureValidNumberOfDatabases(_) =>
-        PlanDescriptionImpl(id, "EnsureValidNumberOfDatabases", children, Seq.empty, variables)
-
-      case LogSystemCommand(_, _) =>
-        PlanDescriptionImpl(id, "LogSystemCommand", children, Seq.empty, variables)
-
-      case DoNothingIfNotExists(_, label, name, _) =>
-        val nameArgument = getNameArgumentForLabelInAdministrationCommand(label, name)
-        PlanDescriptionImpl(id, s"DoNothingIfNotExists($label)", children, Seq(Details(nameArgument)), variables)
-
-      case DoNothingIfExists(_, label, name, _) =>
-        val nameArgument = getNameArgumentForLabelInAdministrationCommand(label, name)
-        PlanDescriptionImpl(id, s"DoNothingIfExists($label)", children, Seq(Details(nameArgument)), variables)
-
-      case EnsureNodeExists(_, label, name, _) =>
-        val nameArgument = getNameArgumentForLabelInAdministrationCommand(label, name)
-        PlanDescriptionImpl(id, s"EnsureNodeExists($label)", children, Seq(Details(nameArgument)), variables)
-
-      case AssertNotCurrentUser(_, userName, _, _) =>
-        PlanDescriptionImpl(id, "AssertNotCurrentUser", children, Seq(Details(getUserInfo(userName))), variables)
 
       case x => throw new InternalException(s"Unknown plan type: ${x.getClass.getSimpleName}. Missing a case?")
     }
@@ -1191,76 +985,6 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
     if (caches.isEmpty) pretty"" else caches.map(asPrettyString(_)).mkPrettyString(", ", ", ", "")
   }
 
-  private def extractDatabaseArguments(action: AdminAction,
-                                       database: DatabaseScope,
-                                       qualifier: PrivilegeQualifier,
-                                       roleName: Either[String, Parameter]): Seq[PrettyString] =
-    Seq(asPrettyString.raw(action.name), extractDbScope(database)) ++ extractUserQualifier(qualifier).toSeq :+ getRoleInfo(roleName)
-
-  private def getNameArgumentForLabelInAdministrationCommand(label: String, name: Either[String, Parameter]): PrettyString = {
-    label match {
-      case "User" => getUserInfo(name)
-      case "Role" => getRoleInfo(name)
-      case "Database" => escapeName(name)
-    }
-  }
-
-  private def extractGraphScope(graphScope: GraphScope, qualifier: PrivilegeQualifier, resource: ActionResource): (PrettyString, Seq[PrettyString], PrettyString) = {
-    val graphName = extractGraphScope(graphScope)
-    val qualifierText = extractQualifierSeq(qualifier)
-    val resourceText = resource match {
-      case PropertyResource(name) => pretty"PROPERTY ${asPrettyString(name)}"
-      case AllPropertyResource() => pretty"ALL PROPERTIES"
-      case _ => throw new IllegalStateException(s"Can't handle resource: $resource")
-    }
-    (graphName, qualifierText, resourceText)
-  }
-
-  private def extractGraphScope(graphScope: GraphScope): PrettyString = {
-    graphScope match {
-      case NamedGraphScope(name) => pretty"GRAPH ${escapeName(name)}"
-      case AllGraphsScope() => pretty"ALL GRAPHS"
-      case DefaultGraphScope() => pretty"DEFAULT GRAPH"
-    }
-  }
-
-  private def extractQualifierSeq(qualifier: PrivilegeQualifier): Seq[PrettyString] = {
-    Prettifier.extractQualifierPart(List(qualifier)) match {
-      case Some(qualifierString) => Seq(asPrettyString.raw(qualifierString))
-      case _ => Seq.empty
-    }
-  }
-
-  private def extractResourcePart(resource: ActionResource): Option[PrettyString] = resource match {
-    case LabelResource(name) => Some(pretty"LABEL ${asPrettyString(name)}")
-    case AllLabelResource() => Some(pretty"ALL LABELS")
-    case PropertyResource(name) => Some(pretty"PROPERTY ${asPrettyString(name)}")
-    case AllPropertyResource() => Some(pretty"ALL PROPERTIES")
-    case NoResource() => None
-    case _ => Some(pretty"<unknown>")
-  }
-
-  private def extractUserQualifier(qualifier: PrivilegeQualifier): Option[PrettyString] = qualifier match {
-    case UserQualifier(name) => Some(pretty"USER ${escapeName(name)}")
-    case UserAllQualifier() => Some(pretty"ALL USERS")
-    case _ => None
-  }
-
-  private def extractDbScope(dbScope: DatabaseScope): PrettyString = dbScope match {
-    case NamedDatabaseScope(name) => pretty"DATABASE ${escapeName(name)}"
-    case AllDatabasesScope() => pretty"ALL DATABASES"
-    case DefaultDatabaseScope() => pretty"DEFAULT DATABASE"
-  }
-
-  private def escapeName(name: Either[String, Parameter]): PrettyString = name match {
-    case scala.util.Left(s) => asPrettyString(s)
-    case scala.util.Right(p) => pretty"$$${asPrettyString(p.name)}"
-  }
-
-  private def getUserInfo(user: Either[String, Parameter]): PrettyString = pretty"USER ${escapeName(user)}"
-
-  private def getRoleInfo(role: Either[String, Parameter]): PrettyString = pretty"ROLE ${escapeName(role)}"
-
   private def indexSchemaInfo(nameOption: Option[String], label: LabelName, properties: Seq[PropertyKeyName]): PrettyString = {
     val name = nameOption match {
       case Some(n) => pretty" ${asPrettyString(n)}"
@@ -1293,13 +1017,5 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
     val setString = if (removeOtherProps) pretty"=" else pretty"+="
 
     pretty"$idName $setString ${asPrettyString(expression)}"
-  }
-
-  private def showCommandDetails(yields: Option[Yield], where: Option[Where], stringsToAppend: PrettyString*): List[Details] = {
-    val resolvedWhere = yields.map(_.where).getOrElse(where)
-    stringsToAppend ++ resolvedWhere.map(w => asPrettyString(w.expression)).toSeq match {
-      case Nil => Nil
-      case details => List(Details(details))
-    }
   }
 }

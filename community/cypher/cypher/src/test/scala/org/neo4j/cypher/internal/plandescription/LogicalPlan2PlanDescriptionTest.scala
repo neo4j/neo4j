@@ -23,24 +23,25 @@ import org.neo4j.cypher.CypherVersion
 import org.neo4j.cypher.QueryPlanTestSupport.StubExecutionPlan
 import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.AllPropertyResource
+import org.neo4j.cypher.internal.ast.CreateDatabaseAction
 import org.neo4j.cypher.internal.ast.CreateNodeLabelAction
-import org.neo4j.cypher.internal.ast.CreateUserAction
-import org.neo4j.cypher.internal.ast.DestroyData
+import org.neo4j.cypher.internal.ast.DropRoleAction
 import org.neo4j.cypher.internal.ast.DumpData
+import org.neo4j.cypher.internal.ast.ElementsAllQualifier
 import org.neo4j.cypher.internal.ast.ExecuteProcedureAction
 import org.neo4j.cypher.internal.ast.LabelQualifier
 import org.neo4j.cypher.internal.ast.NoResource
 import org.neo4j.cypher.internal.ast.ProcedureAllQualifier
 import org.neo4j.cypher.internal.ast.ProcedureQualifier
 import org.neo4j.cypher.internal.ast.ProcedureResultItem
-import org.neo4j.cypher.internal.ast.PropertyResource
 import org.neo4j.cypher.internal.ast.ReadAction
-import org.neo4j.cypher.internal.ast.ShowRolesPrivileges
 import org.neo4j.cypher.internal.ast.ShowUserAction
 import org.neo4j.cypher.internal.ast.ShowUsersPrivileges
+import org.neo4j.cypher.internal.ast.StopDatabaseAction
 import org.neo4j.cypher.internal.ast.TraverseAction
 import org.neo4j.cypher.internal.ast.UserAllQualifier
 import org.neo4j.cypher.internal.ast.UserQualifier
+import org.neo4j.cypher.internal.ast.WriteAction
 import org.neo4j.cypher.internal.expressions.And
 import org.neo4j.cypher.internal.expressions.AndedPropertyInequalities
 import org.neo4j.cypher.internal.expressions.CachedProperty
@@ -92,6 +93,9 @@ import org.neo4j.cypher.internal.logical.plans.AntiConditionalApply
 import org.neo4j.cypher.internal.logical.plans.AntiSemiApply
 import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.Ascending
+import org.neo4j.cypher.internal.logical.plans.AssertDatabaseAdmin
+import org.neo4j.cypher.internal.logical.plans.AssertDbmsAdminOrSelf
+import org.neo4j.cypher.internal.logical.plans.AssertNotBlocked
 import org.neo4j.cypher.internal.logical.plans.AssertNotCurrentUser
 import org.neo4j.cypher.internal.logical.plans.AssertSameNode
 import org.neo4j.cypher.internal.logical.plans.CacheProperties
@@ -139,6 +143,7 @@ import org.neo4j.cypher.internal.logical.plans.DropUniquePropertyConstraint
 import org.neo4j.cypher.internal.logical.plans.DropUser
 import org.neo4j.cypher.internal.logical.plans.Eager
 import org.neo4j.cypher.internal.logical.plans.EmptyResult
+import org.neo4j.cypher.internal.logical.plans.EnsureNodeExists
 import org.neo4j.cypher.internal.logical.plans.EnsureValidNonSystemDatabase
 import org.neo4j.cypher.internal.logical.plans.EnsureValidNumberOfDatabases
 import org.neo4j.cypher.internal.logical.plans.ErrorPlan
@@ -217,10 +222,12 @@ import org.neo4j.cypher.internal.logical.plans.SemiApply
 import org.neo4j.cypher.internal.logical.plans.SetLabels
 import org.neo4j.cypher.internal.logical.plans.SetNodePropertiesFromMap
 import org.neo4j.cypher.internal.logical.plans.SetNodeProperty
+import org.neo4j.cypher.internal.logical.plans.SetOwnPassword
 import org.neo4j.cypher.internal.logical.plans.SetPropertiesFromMap
 import org.neo4j.cypher.internal.logical.plans.SetProperty
 import org.neo4j.cypher.internal.logical.plans.SetRelationshipPropertiesFromMap
 import org.neo4j.cypher.internal.logical.plans.SetRelationshipProperty
+import org.neo4j.cypher.internal.logical.plans.ShowDatabase
 import org.neo4j.cypher.internal.logical.plans.ShowPrivileges
 import org.neo4j.cypher.internal.logical.plans.ShowRoles
 import org.neo4j.cypher.internal.logical.plans.ShowUsers
@@ -297,10 +304,10 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   private val PLANNER_VERSION = PlannerVersion("4.2")
 
   implicit val idGen: IdGen = new SequentialIdGen()
-  val readOnly = true
-  val cardinalities = new Cardinalities
-  val providedOrders = new ProvidedOrders
-  val id = Id.INVALID_ID
+  private val readOnly = true
+  private val cardinalities = new Cardinalities
+  private val providedOrders = new ProvidedOrders
+  private val id = Id.INVALID_ID
 
   private def attach[P <: LogicalPlan](plan: P, cardinality: Cardinality, providedOrder: ProvidedOrder = ProvidedOrder.empty): P = {
     cardinalities.set(plan.id, cardinality)
@@ -308,14 +315,13 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     plan
   }
 
-  val privLhsLP = attach(plans.AssertDbmsAdmin(ShowUserAction), 2.0, ProvidedOrder.empty)
-  val privLhsPD = PlanDescriptionImpl(id, "AssertDbmsAdmin", NoChildren, Seq(details("SHOW USER"), EstimatedRows(2)), Set.empty)
+  private val privLhsLP = attach(plans.AssertDbmsAdmin(ShowUserAction), 2.0, ProvidedOrder.empty)
 
-  val lhsLP = attach(AllNodesScan("a", Set.empty), 2.0, ProvidedOrder.empty)
-  val lhsPD = PlanDescriptionImpl(id, "AllNodesScan", NoChildren, Seq(details("a"), EstimatedRows(2)), Set(pretty"a"))
+  private val lhsLP = attach(AllNodesScan("a", Set.empty), 2.0, ProvidedOrder.empty)
+  private val lhsPD = PlanDescriptionImpl(id, "AllNodesScan", NoChildren, Seq(details("a"), EstimatedRows(2)), Set(pretty"a"))
 
-  val rhsLP = attach(AllNodesScan("b", Set.empty), 2.0, ProvidedOrder.empty)
-  val rhsPD = PlanDescriptionImpl(id, "AllNodesScan", NoChildren, Seq(details("b"), EstimatedRows(2)), Set(pretty"b"))
+  private val rhsLP = attach(AllNodesScan("b", Set.empty), 2.0, ProvidedOrder.empty)
+  private val rhsPD = PlanDescriptionImpl(id, "AllNodesScan", NoChildren, Seq(details("b"), EstimatedRows(2)), Set(pretty"b"))
 
   private val pos: InputPosition = DummyPosition(0)
 
@@ -1131,132 +1137,99 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   }
 
   test("Admin") {
-    assertGood(attach(ShowUsers(privLhsLP, List(), None, None, None), 1.0),
-      planDescription(id, "ShowUsers", SingleChild(privLhsPD), Seq(), Set.empty))
+    val adminPlanDescription: PlanDescriptionImpl = planDescription(id, "AdministrationCommand", NoChildren, Seq.empty, Set.empty)
 
-    assertGood(attach(CreateUser(privLhsLP, util.Left("name"), isEncryptedPassword = false, varFor("password"), requirePasswordChange = false, suspended = None), 1.0),
-      planDescription(id, "CreateUser", SingleChild(privLhsPD), Seq(details("USER name")), Set.empty))
+    assertGood(attach(ShowUsers(privLhsLP, List(), None, None, None), 1.0), adminPlanDescription)
 
-    assertGood(attach(DropUser(privLhsLP, util.Left("name")), 1.0),
-      planDescription(id, "DropUser", SingleChild(privLhsPD), Seq(details("USER name")), Set.empty))
+    assertGood(attach(
+      CreateUser(privLhsLP, util.Left("name"), isEncryptedPassword = false, varFor("password"), requirePasswordChange = false, suspended = None),1.0), adminPlanDescription)
 
-    assertGood(attach(AlterUser(privLhsLP, util.Left("name"), isEncryptedPassword = Some(true), None, requirePasswordChange = Some(true), suspended = Some(false)), 1.0),
-      planDescription(id, "AlterUser", SingleChild(privLhsPD), Seq(details("USER name")), Set.empty))
+    assertGood(attach(DropUser(privLhsLP, util.Left("name")), 1.0), adminPlanDescription)
 
-    assertGood(attach(ShowRoles(privLhsLP, withUsers = false, showAll = true, List(), None, None, None), 1.0),
-      planDescription(id, "ShowRoles", SingleChild(privLhsPD), Seq.empty, Set.empty))
+    assertGood(attach(AlterUser(privLhsLP, util.Left("name"), isEncryptedPassword = Some(true), None, requirePasswordChange = Some(true), suspended = Some(false)), 1.0), adminPlanDescription)
 
-    assertGood(attach(DropRole(privLhsLP, util.Left("role")), 1.0),
-      planDescription(id, "DropRole", SingleChild(privLhsPD), Seq(details("ROLE role")), Set.empty))
+    assertGood(attach(SetOwnPassword(StringLiteral("oldPassword")(pos), StringLiteral("newPassword")(pos)), 1.0), adminPlanDescription)
 
-    assertGood(attach(CreateRole(privLhsLP, util.Left("role")), 1.0),
-      planDescription(id, "CreateRole", SingleChild(privLhsPD), Seq(details("ROLE role")), Set.empty))
+    assertGood(attach(ShowRoles(privLhsLP, withUsers = false, showAll = true, List(), None, None, None), 1.0), adminPlanDescription)
 
-    assertGood(attach(RequireRole(privLhsLP, util.Left("role")), 1.0),
-      planDescription(id, "RequireRole", SingleChild(privLhsPD), Seq(details("ROLE role")), Set.empty))
+    assertGood(attach(DropRole(privLhsLP, util.Left("role")), 1.0), adminPlanDescription)
 
-    assertGood(attach(CopyRolePrivileges(privLhsLP, util.Left("role1"), util.Left("role2"), grantDeny = "DENIED"), 1.0),
-      planDescription(id, "CopyRolePrivileges(DENIED)", SingleChild(privLhsPD), Seq(details("FROM ROLE role2 TO ROLE role1")), Set.empty))
+    assertGood(attach(CreateRole(privLhsLP, util.Left("role")), 1.0), adminPlanDescription)
 
-    assertGood(attach(CopyRolePrivileges(privLhsLP, util.Left("role1"), util.Left("role2"), grantDeny = "GRANTED"), 1.0),
-      planDescription(id, "CopyRolePrivileges(GRANTED)", SingleChild(privLhsPD), Seq(details("FROM ROLE role2 TO ROLE role1")), Set.empty))
+    assertGood(attach(RequireRole(privLhsLP, util.Left("role")), 1.0), adminPlanDescription)
 
-    assertGood(attach(GrantRoleToUser(privLhsLP, util.Left("role"), util.Left("user")), 1.0),
-      planDescription(id, "GrantRoleToUser", SingleChild(privLhsPD), Seq(details(Seq("ROLE role", "USER user"))), Set.empty))
+    assertGood(attach(CopyRolePrivileges(privLhsLP, util.Left("role1"), util.Left("role2"), grantDeny = "DENIED"), 1.0), adminPlanDescription)
 
-    assertGood(attach(RevokeRoleFromUser(privLhsLP, util.Left("role"), util.Left("user")), 1.0),
-      planDescription(id, "RevokeRoleFromUser", SingleChild(privLhsPD), Seq(details(Seq("ROLE role", "USER user"))), Set.empty))
+    assertGood(attach(GrantRoleToUser(privLhsLP, util.Left("role"), util.Left("user")), 1.0), adminPlanDescription)
 
-    assertGood(attach(GrantDbmsAction(privLhsLP, CreateUserAction, ast.AllQualifier()(pos), util.Left("role1")), 1.0),
-      planDescription(id, "GrantDbmsAction", SingleChild(privLhsPD), Seq(details(Seq("CREATE USER", "ROLE role1"))), Set.empty))
+    assertGood(attach(RevokeRoleFromUser(privLhsLP, util.Left("role"), util.Left("user")), 1.0), adminPlanDescription)
 
-    assertGood(attach(DenyDbmsAction(privLhsLP, CreateUserAction, ast.AllQualifier()(pos), util.Left("user")), 1.0),
-      planDescription(id, "DenyDbmsAction", SingleChild(privLhsPD), Seq(details(Seq("CREATE USER", "ROLE user"))), Set.empty))
+    assertGood(attach(GrantDbmsAction(privLhsLP, ExecuteProcedureAction, ProcedureAllQualifier()(pos), util.Left("role1")), 1.0), adminPlanDescription)
 
-    assertGood(attach(RevokeDbmsAction(privLhsLP, CreateUserAction, ast.AllQualifier()(pos), util.Left("role1"), "revokeType"), 1.0),
-      planDescription(id, "RevokeDbmsAction(revokeType)", SingleChild(privLhsPD), Seq(details(Seq("CREATE USER", "ROLE role1"))), Set.empty))
+    assertGood(attach(
+      DenyDbmsAction(privLhsLP, ExecuteProcedureAction, ProcedureQualifier(Namespace(List("apoc"))(pos), ProcedureName("sin")(pos))(pos), util.Left("role1")),
+      1.0), adminPlanDescription)
 
-    assertGood(attach(GrantDbmsAction(privLhsLP, ExecuteProcedureAction, ProcedureAllQualifier()(pos), util.Left("role1")), 1.0),
-      planDescription(id, "GrantDbmsAction", SingleChild(privLhsPD), Seq(details(Seq("EXECUTE PROCEDURE", "*", "ROLE role1"))), Set.empty))
+    assertGood(attach(
+      RevokeDbmsAction(privLhsLP, ExecuteProcedureAction, ProcedureAllQualifier()(pos), util.Left("role1"), "GRANTED"), 1.0), adminPlanDescription)
 
-    assertGood(attach(DenyDbmsAction(privLhsLP, ExecuteProcedureAction, ProcedureQualifier(Namespace(List("apoc"))(pos), ProcedureName("sin")(pos))(pos), util.Left("role1")), 1.0),
-      planDescription(id, "DenyDbmsAction", SingleChild(privLhsPD), Seq(details(Seq("EXECUTE PROCEDURE", "apoc.sin", "ROLE role1"))), Set.empty))
+    assertGood(attach(
+      GrantDatabaseAction(privLhsLP, CreateNodeLabelAction, ast.NamedDatabaseScope(util.Left("foo"))(pos), UserAllQualifier()(pos), util.Left("role1")),
+      1.0), adminPlanDescription)
 
-    assertGood(attach(RevokeDbmsAction(privLhsLP, ExecuteProcedureAction, ProcedureAllQualifier()(pos), util.Left("role1"), "revokeType"), 1.0),
-      planDescription(id, "RevokeDbmsAction(revokeType)", SingleChild(privLhsPD), Seq(details(Seq("EXECUTE PROCEDURE", "*", "ROLE role1"))), Set.empty))
+    assertGood(attach(
+      DenyDatabaseAction(privLhsLP, CreateNodeLabelAction, ast.AllDatabasesScope()(pos), UserQualifier(util.Left("user1"))(pos), util.Left("role1")),
+      1.0), adminPlanDescription)
 
-    assertGood(attach(GrantDatabaseAction(privLhsLP, CreateNodeLabelAction, ast.NamedDatabaseScope(util.Left("foo"))(pos), UserAllQualifier()(pos), util.Left("role1")), 1.0),
-      planDescription(id, "GrantDatabaseAction", SingleChild(privLhsPD), Seq(details(Seq("CREATE NEW NODE LABEL", "DATABASE foo", "ALL USERS", "ROLE role1"))), Set.empty))
+    assertGood(attach(
+      RevokeDatabaseAction(privLhsLP, CreateNodeLabelAction, ast.AllDatabasesScope()(pos), UserQualifier(util.Left("user1"))(pos), util.Left("role1"), "GRANTED"),
+      1.0), adminPlanDescription)
 
-    assertGood(attach(DenyDatabaseAction(privLhsLP, CreateNodeLabelAction, ast.AllDatabasesScope()(pos), UserQualifier(util.Left("user1"))(pos), util.Left("role1")), 1.0),
-      planDescription(id, "DenyDatabaseAction", SingleChild(privLhsPD), Seq(details(Seq("CREATE NEW NODE LABEL", "ALL DATABASES", "USER user1", "ROLE role1"))), Set.empty))
+    assertGood(attach(
+      GrantGraphAction(privLhsLP, TraverseAction, NoResource()(pos), ast.DefaultGraphScope()(pos), LabelQualifier("Label1")(pos), util.Left("role1")),
+      1.0), adminPlanDescription)
 
-    assertGood(attach(RevokeDatabaseAction(privLhsLP, CreateNodeLabelAction, ast.AllDatabasesScope()(pos), UserQualifier(util.Left("user1"))(pos), util.Left("role1"), "revokeType"), 1.0),
-      planDescription(id, "RevokeDatabaseAction(revokeType)", SingleChild(privLhsPD), Seq(details(Seq("CREATE NEW NODE LABEL", "ALL DATABASES", "USER user1", "ROLE role1"))), Set.empty))
+    assertGood(attach(
+      DenyGraphAction(privLhsLP, ReadAction, AllPropertyResource()(pos), ast.DefaultGraphScope()(pos), LabelQualifier("Label1")(pos), util.Left("role1")),
+      1.0), adminPlanDescription)
 
-    assertGood(attach(GrantGraphAction(privLhsLP, TraverseAction, NoResource()(pos), ast.AllGraphsScope()(pos), LabelQualifier("Label1")(pos), util.Left("role1")), 1.0),
-      planDescription(id, "GrantTraverse", SingleChild(privLhsPD), Seq(details(Seq("ALL GRAPHS", "NODE Label1", "ROLE role1"))), Set.empty))
+    assertGood(attach(
+      RevokeGraphAction(privLhsLP, WriteAction, NoResource()(pos), ast.AllGraphsScope()(pos), ElementsAllQualifier()(pos), util.Left("role1"), "GRANTED"),
+      1.0), adminPlanDescription)
 
-    assertGood(attach(DenyGraphAction(privLhsLP, TraverseAction, NoResource()(pos), ast.AllGraphsScope()(pos), LabelQualifier("Label1")(pos), util.Left("role1")), 1.0),
-      planDescription(id, "DenyTraverse", SingleChild(privLhsPD), Seq(details(Seq("ALL GRAPHS", "NODE Label1", "ROLE role1"))), Set.empty))
+    assertGood(attach(
+      ShowPrivileges(Some(privLhsLP), ShowUsersPrivileges(List(util.Left("user1"), util.Right(parameter("user2", CTString))))(pos), List(), None, None, None),
+      1.0), adminPlanDescription)
 
-    assertGood(attach(RevokeGraphAction(privLhsLP, TraverseAction, NoResource()(pos), ast.AllGraphsScope()(pos), LabelQualifier("Label1")(pos), util.Left("role1"), "revokeType"), 1.0),
-      planDescription(id, "RevokeTraverse(revokeType)", SingleChild(privLhsPD), Seq(details(Seq("ALL GRAPHS", "NODE Label1", "ROLE role1"))), Set.empty))
+    assertGood(attach(ShowDatabase(ast.AllDatabasesScope()(pos), List("foo", "bar"), None, None, None), 1.0), adminPlanDescription)
 
-    assertGood(attach(GrantGraphAction(privLhsLP, ReadAction, PropertyResource("prop")(pos), ast.AllGraphsScope()(pos), LabelQualifier("Label1")(pos), util.Left("role1")), 1.0),
-      planDescription(id, "GrantRead", SingleChild(privLhsPD), Seq(details(Seq("ALL GRAPHS", "PROPERTY prop", "NODE Label1", "ROLE role1"))), Set.empty))
+    assertGood(attach(CreateDatabase(privLhsLP, util.Left("db1")), 1.0), adminPlanDescription)
 
-    assertGood(attach(DenyGraphAction(privLhsLP, ReadAction, AllPropertyResource()(pos), ast.AllGraphsScope()(pos), LabelQualifier("Label1")(pos), util.Left("role1")), 1.0),
-      planDescription(id, "DenyRead", SingleChild(privLhsPD), Seq(details(Seq("ALL GRAPHS", "ALL PROPERTIES", "NODE Label1", "ROLE role1"))), Set.empty))
+    assertGood(attach(DropDatabase(privLhsLP, util.Left("db1"), DumpData), 1.0), adminPlanDescription)
 
-    assertGood(attach(RevokeGraphAction(privLhsLP, ReadAction, PropertyResource("prop")(pos), ast.AllGraphsScope()(pos), LabelQualifier("Label1")(pos), util.Left("role1"), "revokeType"), 1.0),
-      planDescription(id, "RevokeRead(revokeType)", SingleChild(privLhsPD), Seq(details(Seq("ALL GRAPHS", "PROPERTY prop", "NODE Label1", "ROLE role1"))), Set.empty))
+    assertGood(attach(StartDatabase(privLhsLP, util.Left("db1")), 1.0), adminPlanDescription)
 
-    assertGood(attach(GrantGraphAction(privLhsLP, TraverseAction, NoResource()(pos), ast.DefaultGraphScope()(pos), LabelQualifier("Label1")(pos), util.Left("role1")), 1.0),
-      planDescription(id, "GrantTraverse", SingleChild(privLhsPD), Seq(details(Seq("DEFAULT GRAPH", "NODE Label1", "ROLE role1"))), Set.empty))
+    assertGood(attach(StopDatabase(privLhsLP, util.Left("db1")), 1.0), adminPlanDescription)
 
-    assertGood(attach(DenyGraphAction(privLhsLP, ReadAction, AllPropertyResource()(pos), ast.DefaultGraphScope()(pos), LabelQualifier("Label1")(pos), util.Left("role1")), 1.0),
-      planDescription(id, "DenyRead", SingleChild(privLhsPD), Seq(details(Seq("DEFAULT GRAPH", "ALL PROPERTIES", "NODE Label1", "ROLE role1"))), Set.empty))
+    assertGood(attach(EnsureValidNonSystemDatabase(privLhsLP, util.Left("db1"), "action1"), 1.0), adminPlanDescription)
 
-    assertGood(attach(ShowPrivileges(Some(privLhsLP), ShowRolesPrivileges(List(util.Left("role1")))(pos), List(), None, None, None), 1.0),
-      planDescription(id, "ShowPrivileges", SingleChild(privLhsPD), Seq(details("ROLE role1")), Set.empty))
+    assertGood(attach(EnsureValidNumberOfDatabases(CreateDatabase(privLhsLP, util.Left("db1"))), 1.0), adminPlanDescription)
 
-    assertGood(attach(ShowPrivileges(Some(privLhsLP), ShowUsersPrivileges(List(util.Left("user1"), util.Right(parameter("user2", CTString))))(pos), List(), None, None, None), 1.0),
-      planDescription(id, "ShowPrivileges", SingleChild(privLhsPD), Seq(details("USERS user1, $user2")), Set.empty))
+    assertGood(attach(LogSystemCommand(privLhsLP, "command1"), 1.0), adminPlanDescription)
 
-    assertGood(attach(CreateDatabase(privLhsLP, util.Left("db1")), 1.0),
-      planDescription(id, "CreateDatabase", SingleChild(privLhsPD), Seq(details("db1")), Set.empty))
+    assertGood(attach(DoNothingIfNotExists(privLhsLP, "User", util.Left("user1")), 1.0), adminPlanDescription)
 
-    assertGood(attach(DropDatabase(privLhsLP, util.Left("db1"), DestroyData), 1.0),
-      planDescription(id, "DropDatabase", SingleChild(privLhsPD), Seq(details(Seq("db1", "DESTROY DATA"))), Set.empty))
+    assertGood(attach(DoNothingIfExists(privLhsLP, "User", util.Left("user1")), 1.0), adminPlanDescription)
 
-    assertGood(attach(DropDatabase(privLhsLP, util.Left("db1"), DumpData), 1.0),
-      planDescription(id, "DropDatabase", SingleChild(privLhsPD), Seq(details(Seq("db1", "DUMP DATA"))), Set.empty))
+    assertGood(attach(EnsureNodeExists(privLhsLP, "User", util.Left("user1")), 1.0), adminPlanDescription)
 
-    assertGood(attach(StartDatabase(privLhsLP, util.Left("db1")), 1.0),
-      planDescription(id, "StartDatabase", SingleChild(privLhsPD), Seq(details("db1")), Set.empty))
+    assertGood(attach(AssertNotCurrentUser(privLhsLP, util.Left("user1"), "verb1", "validation message"), 1.0), adminPlanDescription)
 
-    assertGood(attach(StopDatabase(privLhsLP, util.Left("db1")), 1.0),
-      planDescription(id, "StopDatabase", SingleChild(privLhsPD), Seq(details("db1")), Set.empty))
+    assertGood(attach(AssertDbmsAdminOrSelf(util.Left("user1"), DropRoleAction), 1.0), adminPlanDescription)
 
-    assertGood(attach(EnsureValidNonSystemDatabase(privLhsLP, util.Left("db1"), "action1"), 1.0),
-      planDescription(id, "EnsureValidNonSystemDatabase", SingleChild(privLhsPD), Seq(details("db1")), Set.empty))
+    assertGood(attach(AssertDatabaseAdmin(StopDatabaseAction, util.Left("db1")), 1.0), adminPlanDescription)
 
-    val expectedPD = planDescription(id, "CreateDatabase", NoChildren, Seq(details("db1")), Set.empty)
-    assertGood(attach(EnsureValidNumberOfDatabases(CreateDatabase(privLhsLP, util.Left("db1"))), 1.0),
-      planDescription(id, "EnsureValidNumberOfDatabases", SingleChild(expectedPD), Seq.empty, Set.empty))
-
-    assertGood(attach(LogSystemCommand(privLhsLP, "command1"), 1.0),
-      planDescription(id, "LogSystemCommand", SingleChild(privLhsPD), Seq.empty, Set.empty))
-
-    assertGood(attach(DoNothingIfNotExists(privLhsLP, "User", util.Left("user1")), 1.0),
-      planDescription(id, "DoNothingIfNotExists(User)", SingleChild(privLhsPD), Seq(details("USER user1")), Set.empty))
-
-    assertGood(attach(DoNothingIfExists(privLhsLP, "User", util.Left("user1")), 1.0),
-      planDescription(id, "DoNothingIfExists(User)", SingleChild(privLhsPD), Seq(details("USER user1")), Set.empty))
-
-    assertGood(attach(AssertNotCurrentUser(privLhsLP, util.Left("user1"), "verb1", "validation message"), 1.0),
-      planDescription(id, "AssertNotCurrentUser", SingleChild(privLhsPD), Seq(details("USER user1")), Set.empty))
+    assertGood(attach(AssertNotBlocked(privLhsLP, CreateDatabaseAction), 1.0), adminPlanDescription)
   }
 
   test("AntiConditionalApply") {
