@@ -95,9 +95,9 @@ public class LogPruningImpl implements LogPruning
     }
 
     @Override
-    public boolean mightHaveLogsToPrune()
+    public boolean mightHaveLogsToPrune( long upToVersion )
     {
-        return pruneStrategy.findLogVersionsToDelete( logFiles.getHighestLogVersion() ).count() > 0;
+        return pruneStrategy.findLogVersionsToDelete( upToVersion ).count() > 0;
     }
 
     @Override

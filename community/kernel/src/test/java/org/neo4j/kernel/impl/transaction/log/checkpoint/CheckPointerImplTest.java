@@ -95,7 +95,8 @@ class CheckPointerImplTest
     {
         // Given
         CheckPointerImpl checkPointing = checkPointer();
-        when( threshold.isCheckPointingNeeded( anyLong(), any( TriggerInfo.class ) ) ).thenReturn( false );
+        when( threshold.isCheckPointingNeeded( anyLong(), anyLong(), any( TriggerInfo.class ) ) ).thenReturn( false );
+        mockTxIdStore();
 
         checkPointing.start();
 
@@ -114,7 +115,7 @@ class CheckPointerImplTest
     {
         // Given
         CheckPointerImpl checkPointing = checkPointer();
-        when( threshold.isCheckPointingNeeded( anyLong(), eq( INFO ) ) ).thenReturn( true, false );
+        when( threshold.isCheckPointingNeeded( anyLong(), anyLong(), eq( INFO ) ) ).thenReturn( true, false );
         mockTxIdStore();
 
         checkPointing.start();
@@ -129,7 +130,7 @@ class CheckPointerImplTest
         verify( appender ).checkPoint( eq( logPosition ), any( LogCheckPointEvent.class ) );
         verify( threshold ).initialize( initialTransactionId );
         verify( threshold ).checkPointHappened( transactionId );
-        verify( threshold ).isCheckPointingNeeded( transactionId, INFO );
+        verify( threshold ).isCheckPointingNeeded( transactionId, logPosition.getLogVersion(), INFO );
         verify( logPruning ).pruneLogs( logPosition.getLogVersion() );
         verify( tracer ).beginCheckPoint();
         verifyNoMoreInteractions( forceOperation, health, appender, threshold, tracer );
@@ -140,7 +141,7 @@ class CheckPointerImplTest
     {
         // Given
         CheckPointerImpl checkPointing = checkPointer();
-        when( threshold.isCheckPointingNeeded( anyLong(), eq( INFO ) ) ).thenReturn( false );
+        when( threshold.isCheckPointingNeeded( anyLong(), anyLong(), eq( INFO ) ) ).thenReturn( false );
         mockTxIdStore();
 
         checkPointing.start();
@@ -155,7 +156,7 @@ class CheckPointerImplTest
         verify( appender ).checkPoint( eq( logPosition ), any( LogCheckPointEvent.class ) );
         verify( threshold ).initialize( initialTransactionId );
         verify( threshold ).checkPointHappened( transactionId );
-        verify( threshold, never() ).isCheckPointingNeeded( transactionId, INFO );
+        verify( threshold, never() ).isCheckPointingNeeded( transactionId, logPosition.getLogVersion(), INFO );
         verify( logPruning ).pruneLogs( logPosition.getLogVersion() );
         verifyNoMoreInteractions( forceOperation, health, appender, threshold );
     }
@@ -165,7 +166,7 @@ class CheckPointerImplTest
     {
         // Given
         CheckPointerImpl checkPointing = checkPointer();
-        when( threshold.isCheckPointingNeeded( anyLong(), eq( INFO ) ) ).thenReturn( false );
+        when( threshold.isCheckPointingNeeded( anyLong(), anyLong(), eq( INFO ) ) ).thenReturn( false );
         mockTxIdStore();
 
         checkPointing.start();
@@ -180,7 +181,7 @@ class CheckPointerImplTest
         verify( appender ).checkPoint( eq( logPosition ), any( LogCheckPointEvent.class ) );
         verify( threshold ).initialize( initialTransactionId );
         verify( threshold ).checkPointHappened( transactionId );
-        verify( threshold, never() ).isCheckPointingNeeded( transactionId, INFO );
+        verify( threshold, never() ).isCheckPointingNeeded( transactionId, logPosition.getLogVersion(), INFO );
         verify( logPruning ).pruneLogs( logPosition.getLogVersion() );
         verifyNoMoreInteractions( forceOperation, health, appender, threshold );
     }
@@ -190,7 +191,7 @@ class CheckPointerImplTest
     {
         // Given
         CheckPointerImpl checkPointing = checkPointer();
-        when( threshold.isCheckPointingNeeded( anyLong(), eq( INFO ) ) ).thenReturn( false );
+        when( threshold.isCheckPointingNeeded( anyLong(), anyLong(), eq( INFO ) ) ).thenReturn( false );
         mockTxIdStore();
 
         checkPointing.start();
@@ -205,7 +206,7 @@ class CheckPointerImplTest
         verify( appender ).checkPoint( eq( logPosition ), any( LogCheckPointEvent.class ) );
         verify( threshold ).initialize( initialTransactionId );
         verify( threshold ).checkPointHappened( transactionId );
-        verify( threshold, never() ).isCheckPointingNeeded( transactionId, INFO );
+        verify( threshold, never() ).isCheckPointingNeeded( transactionId, logPosition.getLogVersion(), INFO );
         verify( logPruning ).pruneLogs( logPosition.getLogVersion() );
         verifyNoMoreInteractions( forceOperation, health, appender, threshold );
     }
@@ -333,7 +334,7 @@ class CheckPointerImplTest
                 return true;
             }
         };
-        when( threshold.isCheckPointingNeeded( anyLong(), eq( INFO ) ) ).thenReturn( true, false );
+        when( threshold.isCheckPointingNeeded( anyLong(), anyLong(), eq( INFO ) ) ).thenReturn( true, false );
         mockTxIdStore();
         CheckPointerImpl checkPointing = checkPointer();
 
@@ -500,7 +501,7 @@ class CheckPointerImplTest
             return null;
         } );
 
-        when( threshold.isCheckPointingNeeded( anyLong(), eq( INFO ) ) ).thenReturn( true );
+        when( threshold.isCheckPointingNeeded( anyLong(), anyLong(), eq( INFO ) ) ).thenReturn( true );
         checkPointer.checkPointIfNeeded( INFO );
         forceCheckPointer.get();
         assertThat( observedRushCount.get() ).isEqualTo( 1L );
