@@ -25,13 +25,15 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import org.neo4j.internal.diagnostics.DiagnosticsLogger;
+import org.neo4j.internal.diagnostics.DiagnosticsProvider;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.state.SimpleFileStorage;
 import org.neo4j.io.state.SimpleStorage;
 import org.neo4j.logging.Log;
 import org.neo4j.memory.MemoryTracker;
 
-public abstract class DefaultIdentityModule implements IdentityModule
+public abstract class DefaultIdentityModule implements IdentityModule, DiagnosticsProvider
 {
     protected static <T extends ServerId> T readOrGenerate( SimpleStorage<T> storage, Log log, Class<T> type, Function<UUID,T> creator, Supplier<UUID> uuid )
     {
@@ -70,5 +72,18 @@ public abstract class DefaultIdentityModule implements IdentityModule
     protected static SimpleStorage<ServerId> createServerIdStorage( FileSystemAbstraction fs, Path serverIdFile, MemoryTracker memoryTracker )
     {
         return new SimpleFileStorage<>( fs, serverIdFile, ServerId.Marshal.INSTANCE, memoryTracker );
+    }
+
+    @Override
+    public String getDiagnosticsName()
+    {
+        return "Global Server Identity";
+    }
+
+    @Override
+    public void dump( DiagnosticsLogger logger )
+    {
+        var serverId = myself();
+        logger.log( String.format( "ServerId is: %s (%s)", serverId.toString(), serverId.getUuid() ) );
     }
 }
