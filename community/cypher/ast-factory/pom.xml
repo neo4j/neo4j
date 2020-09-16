@@ -52,6 +52,12 @@
 
         <!-- shared versions are defined in the parent pom -->
 
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-values</artifactId>
+            <version>${project.version}</version>
+            <scope>compile</scope>
+        </dependency>
     </dependencies>
 
     <build>

@@ -21,11 +21,20 @@ package org.neo4j.cypher.internal.parser.javacc;
 
 import org.junit.jupiter.api.Test;
 
-import java.io.StringReader;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
 
 import org.neo4j.cypher.internal.ast.factory.LiteralInterpreter;
+import org.neo4j.exceptions.UnsupportedTemporalUnitException;
+import org.neo4j.values.storable.DateTimeValue;
+import org.neo4j.values.storable.DateValue;
+import org.neo4j.values.storable.LocalDateTimeValue;
+import org.neo4j.values.storable.LocalTimeValue;
+import org.neo4j.values.storable.PointValue;
+import org.neo4j.values.storable.TimeValue;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.aMapWithSize;
@@ -36,7 +45,10 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.cypher.internal.ast.factory.LiteralInterpreter.DEFAULT_ZONE_ID;
 
 @SuppressWarnings( "ConstantConditions" )
 public class LiteralJavaccParserTest
@@ -155,6 +167,94 @@ public class LiteralJavaccParserTest
         Map<?,?> map3 = (Map<?,?>) map2.get( "map3" );
         assertThat( map3, aMapWithSize( 1 ) );
         assertThat( map3.get( "k3" ), equalTo( 3L ) );
+    }
+
+    @Test
+    void shouldInterpretDate() throws ParseException
+    {
+        DateValue date = DateValue.date( 2020, 12, 10 );
+        assertEquals( date, parseLiteral( "date('2020-12-10')" ) );
+        assertEquals( date, parseLiteral( "date({year:2020, month:12, day:10})" ) );
+
+        assertNotNull( parseLiteral( "date()" ) ); // should not throw
+
+        assertThrows( IllegalArgumentException.class, () -> parseLiteral( "date(2020, 12, 10)" ) );
+        assertThrows( UnsupportedTemporalUnitException.class, () -> parseLiteral( "date({year:2020, month:12, day:10, timezone: 'America/Los Angeles'})" ) );
+        assertNull( parseLiteral( "date(null)" ) );
+    }
+
+    @Test
+    void shouldInterpretDateTime() throws ParseException
+    {
+        DateTimeValue date = DateTimeValue.datetime( 2020, 12, 10, 6, 41, 23, 0, DEFAULT_ZONE_ID );
+        DateTimeValue dateTimeZone = DateTimeValue.datetime( 2020, 12, 10, 6, 41, 23, 0, ZoneId.of( "America/Los_Angeles" ) );
+        assertEquals( date, parseLiteral( "datetime('2020-12-10T6:41:23.0')" ) );
+        assertEquals( date, parseLiteral( "datetime({year:2020, month:12, day:10, hour: 6, minute: 41, second: 23})" ) );
+        assertEquals( dateTimeZone, parseLiteral( "datetime({year:2020, month:12, day:10, hour: 6, minute: 41, second: 23, timezone: 'America/Los Angeles'})" ) );
+        assertNotNull( parseLiteral( "datetime()" ) ); // should not throw
+
+        assertThrows( IllegalArgumentException.class, () -> parseLiteral( "datetime(2020, 12, 10, 6, 41, 23, 0)" ) );
+
+        assertNull( parseLiteral( "datetime(null)" ) );
+    }
+
+    @Test
+    void shouldInterpretTime() throws ParseException
+    {
+        Instant instant = Instant.now();
+        ZoneOffset currentOffsetForMyZone = DEFAULT_ZONE_ID.getRules().getOffset(instant);
+        TimeValue date = TimeValue.time( 6, 41, 23, 0, currentOffsetForMyZone);
+        assertEquals( date, parseLiteral( "time('6:41:23.0')" ) );
+        assertEquals( date, parseLiteral( "time({hour: 6, minute: 41, second: 23})" ) );
+        assertNotNull( parseLiteral( "time()" ) ); // should not throw
+
+        assertThrows( IllegalArgumentException.class, () -> parseLiteral( "time(6, 41, 23, 0)" ) );
+
+        assertNull( parseLiteral( "time(null)" ) );
+    }
+
+    @Test
+    void shouldInterpretLocalTime() throws ParseException
+    {
+        LocalTimeValue date = LocalTimeValue.localTime( 6, 41, 23, 0);
+        assertEquals( date, parseLiteral( "localtime('6:41:23.0')" ) );
+        assertEquals( date, parseLiteral( "localtime({hour: 6, minute: 41, second: 23})" ) );
+        assertNotNull( parseLiteral( "localtime()" ) ); // should not throw
+
+        assertThrows( IllegalArgumentException.class, () -> parseLiteral( "localtime(6, 41, 23, 0)" ) );
+
+        assertNull( parseLiteral( "localtime(null)" ) );
+    }
+
+    @Test
+    void shouldInterpretLocalDateTime() throws ParseException
+    {
+        LocalDateTimeValue date = LocalDateTimeValue.localDateTime( 2020, 12, 10, 6, 41, 23, 0);
+        assertEquals( date, parseLiteral( "localdatetime('2020-12-10T6:41:23.0')" ) );
+        assertEquals( date, parseLiteral( "localdatetime({year:2020, month:12, day:10, hour: 6, minute: 41, second: 23})" ) );
+        assertNotNull( parseLiteral( "localdatetime()" ) ); // should not throw
+
+        assertThrows( IllegalArgumentException.class, () -> parseLiteral( "localdatetime(2020, 12, 10, 6, 41, 23, 0)" ) );
+
+        assertNull( parseLiteral( "localdatetime(null)" ) );
+    }
+
+    @Test
+    void shouldInterpretPoint() throws ParseException
+    {
+        PointValue point = PointValue.parse( "{ x:3, y:0 }" );
+        assertEquals( point, parseLiteral( "point({ x:3, y:0 })" ) );
+
+        PointValue point3d = PointValue.parse( "{ x:0, y:4, z:1 }" );
+        assertEquals( point3d, parseLiteral( "point({ x:0, y:4, z:1 })" ) );
+
+        PointValue pointWGS84 = PointValue.parse( "{ longitude: 56.7, latitude: 12.78 }" );
+        assertEquals( pointWGS84, parseLiteral( "point({ longitude: 56.7, latitude: 12.78 })" ) );
+        assertEquals( pointWGS84.getCoordinateReferenceSystem().getName(), "wgs-84" );
+
+        assertThrows( IllegalArgumentException.class, () -> parseLiteral( "point(2020)" ) );
+
+        assertNull( parseLiteral( "point(null)" ) );
     }
 
     private Object parseLiteral( String str ) throws ParseException

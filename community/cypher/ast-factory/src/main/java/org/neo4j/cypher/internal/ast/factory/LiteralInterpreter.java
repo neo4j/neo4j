@@ -19,11 +19,28 @@
  */
 package org.neo4j.cypher.internal.ast.factory;
 
+import java.time.Clock;
+import java.time.ZoneId;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.function.BiFunction;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 import org.neo4j.cypher.internal.ast.factory.ASTFactory.NULL;
+import org.neo4j.values.storable.DateTimeValue;
+import org.neo4j.values.storable.DateValue;
+import org.neo4j.values.storable.DurationValue;
+import org.neo4j.values.storable.LocalDateTimeValue;
+import org.neo4j.values.storable.LocalTimeValue;
+import org.neo4j.values.storable.PointValue;
+import org.neo4j.values.storable.TimeValue;
+import org.neo4j.values.storable.Values;
+import org.neo4j.values.virtual.MapValue;
+import org.neo4j.values.virtual.MapValueBuilder;
+import org.neo4j.values.virtual.VirtualValues;
 
 /**
  * Interprets literal AST nodes and output a corresponding java object.
@@ -31,6 +48,7 @@ import org.neo4j.cypher.internal.ast.factory.ASTFactory.NULL;
 public class LiteralInterpreter implements ASTFactory<NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,Object,Object,Object,NULL,NULL>
 {
 
+    public static ZoneId DEFAULT_ZONE_ID = ZoneId.systemDefault();
     public static final String LONG_MIN_VALUE_DECIMAL_STRING = Long.toString( Long.MIN_VALUE ).substring( 1 );
     public static final String LONG_MIN_VALUE_HEXADECIMAL_STRING = "0x" + Long.toString( Long.MIN_VALUE, 16 ).substring( 1 );
     public static final String LONG_MIN_VALUE_OCTAL_STRING_OLD_SYNTAX = "0" + Long.toString( Long.MIN_VALUE, 8 ).substring( 1 );
@@ -610,7 +628,106 @@ public class LiteralInterpreter implements ASTFactory<NULL,NULL,NULL,NULL,NULL,N
     @Override
     public Object functionInvocation( NULL p, List<String> namespace, String name, boolean distinct, List<Object> arguments )
     {
+        if ( namespace.isEmpty() )
+        {
+            switch ( name.toLowerCase() )
+            {
+            case "date":
+                return createTemporalValue( arguments, name, DateValue::now, DateValue::parse, DateValue::build );
+            case "datetime":
+                return createTemporalValue( arguments, name, DateTimeValue::now, s -> DateTimeValue.parse( s, () -> DEFAULT_ZONE_ID ),
+                                            DateTimeValue::build );
+            case "time":
+                return createTemporalValue( arguments, name, TimeValue::now, s -> TimeValue.parse( s, () -> DEFAULT_ZONE_ID ), TimeValue::build );
+            case "localtime":
+                return createTemporalValue( arguments, name, LocalTimeValue::now, LocalTimeValue::parse, LocalTimeValue::build );
+            case "localdatetime":
+                return createTemporalValue( arguments, name, LocalDateTimeValue::now, LocalDateTimeValue::parse, LocalDateTimeValue::build );
+            case "duration":
+                return createDurationValue( arguments );
+            case "point":
+                return createPoint( arguments );
+            default:
+                throw new UnsupportedOperationException( "functionInvocation (" + name + ") is not a literal" );
+            }
+        }
         throw new UnsupportedOperationException( "functionInvocation is not a literal" );
+    }
+
+    private PointValue createPoint( List<Object> arguments )
+    {
+        if ( arguments.size() == 1 )
+        {
+            Object point = arguments.get( 0 );
+            if ( point == null )
+            {
+                return null;
+            }
+            else if ( point instanceof Map )
+            {
+                Map<String,?> pointAsMap = (Map) point;
+                return PointValue.fromMap( asMapValue( pointAsMap ) );
+            }
+            else
+            {
+                throw new IllegalArgumentException(
+                        "Function `point` did not get expected argument. Expected a string or map input but got " + point.getClass().getSimpleName() + "." );
+            }
+        }
+        else
+        {
+            throw new IllegalArgumentException(
+                    "Function `point` did not get expected number of arguments: expected 1 argument, got " + arguments.size() + " arguments." );
+        }
+    }
+
+    private <T> T createTemporalValue( List<Object> arguments, String functionName, Function<Clock,T> onEmpty, Function<String,T> onString,
+                                       BiFunction<MapValue,Supplier<ZoneId>,T> onMap )
+    {
+        if ( arguments.isEmpty() )
+        {
+            return onEmpty.apply( Clock.system( DEFAULT_ZONE_ID ) );
+        }
+        else if ( arguments.size() == 1 )
+        {
+            Object date = arguments.get( 0 );
+            if ( date == null )
+            {
+                return null;
+            }
+            else if ( date instanceof String )
+            {
+                return onString.apply( (String) date );
+            }
+            else if ( date instanceof Map )
+            {
+                MapValue dateMap = asMapValue( (Map) date );
+                return onMap.apply( dateMap, () -> DEFAULT_ZONE_ID );
+            }
+        }
+
+        throw new IllegalArgumentException(
+                "Function `" + functionName + "` did not get expected number of arguments: expected 0 or 1 argument, got " + arguments.size() + " arguments." );
+    }
+
+    private DurationValue createDurationValue( List<Object> arguments )
+    {
+        if ( arguments.size() == 1 )
+        {
+            Object duration = arguments.get( 0 );
+            if ( duration instanceof String )
+            {
+                return DurationValue.parse( (String) duration );
+            }
+            else if ( duration instanceof Map )
+            {
+                MapValue dateMap = asMapValue( (Map) duration );
+                return DurationValue.build( dateMap );
+            }
+        }
+
+        throw new IllegalArgumentException(
+                "Function `duration` did not get expected number of arguments: expected 1 argument, got " + arguments.size() + " arguments." );
     }
 
     @Override
@@ -719,5 +836,21 @@ public class LiteralInterpreter implements ASTFactory<NULL,NULL,NULL,NULL,NULL,N
     public NULL inputPosition( int offset, int line, int column )
     {
         return null;
+    }
+
+    private static MapValue asMapValue( Map<String,?> map )
+    {
+        int size = map.size();
+        if ( size == 0 )
+        {
+            return VirtualValues.EMPTY_MAP;
+        }
+
+        MapValueBuilder builder = new MapValueBuilder( size );
+        for ( Map.Entry<String,?> entry : map.entrySet() )
+        {
+            builder.add( entry.getKey(), Values.of( entry.getValue() ) );
+        }
+        return builder.build();
     }
 }
