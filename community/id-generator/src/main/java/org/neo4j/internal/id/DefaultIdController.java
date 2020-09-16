@@ -39,7 +39,7 @@ public class DefaultIdController extends LifecycleAdapter implements IdControlle
     }
 
     @Override
-    public void maintenance()
+    public void maintenance( boolean awaitOngoing )
     {
     }
 

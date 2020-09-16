@@ -58,6 +58,7 @@ class FreeIdScanner implements Closeable
     private final MarkerProvider markerProvider;
     private final long generation;
     private final ScanLock lock;
+    private final IndexedIdGenerator.Monitor monitor;
     /**
      * State for whether or not there's an ongoing scan, and if so where it should begin from. This is used in
      * {@link #findSomeIdsToCache(LinkedChunkLongArray, int, PageCursorTracer)} both to know where to initiate a scan from and to set it, if the cache got
@@ -66,7 +67,7 @@ class FreeIdScanner implements Closeable
     private Long ongoingScanRangeIndex;
 
     FreeIdScanner( int idsPerEntry, GBPTree<IdRangeKey,IdRange> tree, ConcurrentLongQueue cache, AtomicBoolean atLeastOneIdOnFreelist,
-            MarkerProvider markerProvider, long generation, boolean strictlyPrioritizeFreelistOverHighId )
+            MarkerProvider markerProvider, long generation, boolean strictlyPrioritizeFreelistOverHighId, IndexedIdGenerator.Monitor monitor )
     {
         this.idsPerEntry = idsPerEntry;
         this.tree = tree;
@@ -75,13 +76,14 @@ class FreeIdScanner implements Closeable
         this.markerProvider = markerProvider;
         this.generation = generation;
         this.lock = strictlyPrioritizeFreelistOverHighId ? ScanLock.lockyAndPessimistic() : ScanLock.lockFreeAndOptimistic();
+        this.monitor = monitor;
     }
 
     /**
      * Do a batch of scanning, either start a new scan from the beginning if none is active, or continue where a previous scan
      * paused. In this call free ids can be discovered and placed into the ID cache. IDs are marked as reserved before placed into cache.
      */
-    boolean tryLoadFreeIdsIntoCache( PageCursorTracer cursorTracer )
+    boolean tryLoadFreeIdsIntoCache( boolean awaitOngoing, PageCursorTracer cursorTracer )
     {
         if ( ongoingScanRangeIndex == null && !atLeastOneIdOnFreelist.get() )
         {
@@ -90,7 +92,7 @@ class FreeIdScanner implements Closeable
             return false;
         }
 
-        if ( lock.tryLock() )
+        if ( scanLock( awaitOngoing ) )
         {
             try
             {
@@ -125,6 +127,16 @@ class FreeIdScanner implements Closeable
             }
         }
         return false;
+    }
+
+    private boolean scanLock( boolean awaitOngoing )
+    {
+        if ( awaitOngoing )
+        {
+            lock.lock();
+            return true;
+        }
+        return lock.tryLock();
     }
 
     void clearCache( PageCursorTracer cursorTracer )
@@ -166,6 +178,7 @@ class FreeIdScanner implements Closeable
                 throw new IllegalStateException( "This really should not happen, we knew the max available space there were for caching ids" +
                         " and now the cache claims to have less than that?" );
             }
+            monitor.cached( id );
         } );
     }
 

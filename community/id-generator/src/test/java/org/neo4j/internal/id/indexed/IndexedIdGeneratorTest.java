@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.id.indexed;
 
+import org.eclipse.collections.api.factory.Sets;
 import org.eclipse.collections.api.iterator.MutableLongIterator;
 import org.eclipse.collections.api.list.primitive.LongList;
 import org.eclipse.collections.api.list.primitive.MutableLongList;
@@ -42,6 +43,7 @@ import java.util.Iterator;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -60,6 +62,8 @@ import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.id.IdValidator;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
+import org.neo4j.test.Barrier;
+import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.Race;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
@@ -693,7 +697,7 @@ class IndexedIdGeneratorTest
             assertThat( cursorTracer.unpins() ).isZero();
             assertThat( cursorTracer.hits() ).isZero();
 
-            idGenerator.maintenance( cursorTracer );
+            idGenerator.maintenance( false, cursorTracer );
 
             assertThat( cursorTracer.pins() ).isZero();
             assertThat( cursorTracer.unpins() ).isZero();
@@ -701,7 +705,7 @@ class IndexedIdGeneratorTest
 
             idGenerator.marker( NULL ).markDeleted( 1 );
             idGenerator.clearCache( NULL );
-            idGenerator.maintenance( cursorTracer );
+            idGenerator.maintenance( false, cursorTracer );
 
             assertThat( cursorTracer.pins() ).isOne();
             assertThat( cursorTracer.unpins() ).isOne();
@@ -820,6 +824,70 @@ class IndexedIdGeneratorTest
         for ( long defragId : batch.getDefragIds() )
         {
             assertFalse( IdValidator.isReservedId( defragId ) );
+        }
+    }
+
+    @Test
+    void shouldAwaitConcurrentOngoingMaintenanceIfToldTo() throws Exception
+    {
+        // given
+        idGenerator.close();
+        Barrier.Control barrier = new Barrier.Control();
+        IndexedIdGenerator.Monitor monitor = new IndexedIdGenerator.Monitor.Adapter()
+        {
+            private boolean first = true;
+
+            @Override
+            public void cached( long cachedId )
+            {
+                if ( first )
+                {
+                    barrier.reached();
+                    first = false;
+                }
+                super.cached( cachedId );
+            }
+        };
+        idGenerator = new IndexedIdGenerator( pageCache, file, immediate(), IdType.LABEL_TOKEN, false, () -> 0, MAX_ID, false, NULL, monitor,
+                Sets.immutable.empty() );
+        idGenerator.start( NO_FREE_IDS, NULL );
+        try ( Marker marker = idGenerator.marker( NULL ) )
+        {
+            for ( int i = 0; i < 5; i++ )
+            {
+                marker.markDeleted( i );
+                marker.markFree( i );
+            }
+        }
+
+        // when
+        try ( OtherThreadExecutor t2 = new OtherThreadExecutor( "T2" );
+                OtherThreadExecutor t3 = new OtherThreadExecutor( "T3" ) )
+        {
+            Future<Object> t2Future = t2.executeDontWait( () ->
+            {
+                idGenerator.nextId( NULL );
+                return null;
+            } );
+            barrier.await();
+
+            // First check that a maintenance call which isn't told to wait can complete
+            t3.execute( () ->
+            {
+                idGenerator.maintenance( false, NULL );
+                return null;
+            } );
+
+            // then check that a call which is told to wait blocks
+            Future<Object> t3Future = t3.executeDontWait( () ->
+            {
+                idGenerator.maintenance( true, NULL );
+                return null;
+            } );
+            t3.waitUntilWaiting( details -> details.isAt( FreeIdScanner.class, "tryLoadFreeIdsIntoCache" ) );
+            barrier.release();
+            t2Future.get();
+            t3Future.get();
         }
     }
 

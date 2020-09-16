@@ -135,7 +135,7 @@ class IdContextFactoryBuilderTest
             assertThat( cacheTracer.unpins() ).isZero();
             assertThat( cacheTracer.hits() ).isZero();
 
-            idController.maintenance();
+            idController.maintenance( false );
 
             assertThat( cacheTracer.pins() ).isGreaterThan( 0 );
             assertThat( cacheTracer.unpins() ).isGreaterThan( 0 );

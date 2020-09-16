@@ -97,7 +97,7 @@ class ReadOnlyHighIdGenerator implements IdGenerator
     }
 
     @Override
-    public void maintenance( PageCursorTracer cursorTracer )
+    public void maintenance( boolean awaitOngoing, PageCursorTracer cursorTracer )
     {
         throw new UnsupportedOperationException( "Should not be required" );
     }

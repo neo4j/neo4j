@@ -105,95 +105,97 @@ public class IndexedIdGenerator implements IdGenerator
         void clearingCache();
 
         void clearedCache();
+
+        class Adapter implements Monitor
+        {
+            @Override
+            public void opened( long highestWrittenId, long highId )
+            {
+            }
+
+            @Override
+            public void allocatedFromHigh( long allocatedId )
+            {
+            }
+
+            @Override
+            public void allocatedFromReused( long allocatedId )
+            {
+            }
+
+            @Override
+            public void cached( long cachedId )
+            {
+            }
+
+            @Override
+            public void markedAsUsed( long markedId )
+            {
+            }
+
+            @Override
+            public void markedAsDeleted( long markedId )
+            {
+            }
+
+            @Override
+            public void markedAsFree( long markedId )
+            {
+            }
+
+            @Override
+            public void markedAsReserved( long markedId )
+            {
+            }
+
+            @Override
+            public void markedAsUnreserved( long markedId )
+            {
+            }
+
+            @Override
+            public void markedAsDeletedAndFree( long markedId )
+            {
+            }
+
+            @Override
+            public void markSessionDone()
+            {
+            }
+
+            @Override
+            public void normalized( long idRange )
+            {
+            }
+
+            @Override
+            public void bridged( long bridgedId )
+            {
+            }
+
+            @Override
+            public void checkpoint( long highestWrittenId, long highId )
+            {
+            }
+
+            @Override
+            public void clearingCache()
+            {
+            }
+
+            @Override
+            public void clearedCache()
+            {
+            }
+
+            @Override
+            public void close()
+            {
+            }
+        }
     }
 
-    public static final Monitor NO_MONITOR = new Monitor()
-    {
-        @Override
-        public void opened( long highestWrittenId, long highId )
-        {
-        }
-
-        @Override
-        public void allocatedFromHigh( long allocatedId )
-        {
-        }
-
-        @Override
-        public void allocatedFromReused( long allocatedId )
-        {
-        }
-
-        @Override
-        public void cached( long cachedId )
-        {
-        }
-
-        @Override
-        public void markedAsUsed( long markedId )
-        {
-        }
-
-        @Override
-        public void markedAsDeleted( long markedId )
-        {
-        }
-
-        @Override
-        public void markedAsFree( long markedId )
-        {
-        }
-
-        @Override
-        public void markedAsReserved( long markedId )
-        {
-        }
-
-        @Override
-        public void markedAsUnreserved( long markedId )
-        {
-        }
-
-        @Override
-        public void markedAsDeletedAndFree( long markedId )
-        {
-        }
-
-        @Override
-        public void markSessionDone()
-        {
-        }
-
-        @Override
-        public void normalized( long idRange )
-        {
-        }
-
-        @Override
-        public void bridged( long bridgedId )
-        {
-        }
-
-        @Override
-        public void checkpoint( long highestWrittenId, long highId )
-        {
-        }
-
-        @Override
-        public void clearingCache()
-        {
-        }
-
-        @Override
-        public void clearedCache()
-        {
-        }
-
-        @Override
-        public void close()
-        {
-        }
-    };
+    public static final Monitor NO_MONITOR = new Monitor.Adapter();
 
     /**
      * Default value whether or not to strictly prioritize ids from freelist, as opposed to allocating from high id.
@@ -388,7 +390,7 @@ public class IndexedIdGenerator implements IdGenerator
 
         boolean strictlyPrioritizeFreelist = flag( IndexedIdGenerator.class, STRICTLY_PRIORITIZE_FREELIST_NAME, STRICTLY_PRIORITIZE_FREELIST_DEFAULT );
         this.scanner = readOnly ? null : new FreeIdScanner( idsPerEntry, tree, cache, atLeastOneIdOnFreelist,
-                tracer -> lockAndInstantiateMarker( true, tracer ), generation, strictlyPrioritizeFreelist );
+                tracer -> lockAndInstantiateMarker( true, tracer ), generation, strictlyPrioritizeFreelist, monitor );
     }
 
     private GBPTree<IdRangeKey,IdRange> instantiateTree( PageCache pageCache, Path path, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
@@ -415,7 +417,7 @@ public class IndexedIdGenerator implements IdGenerator
         // we can see if the cache is starting to dry out and if so do a scan right here.
         // There may be multiple allocation requests doing this, but it should be very cheap:
         // comparing two ints, reading an AtomicBoolean and trying to CAS an AtomicBoolean.
-        maintenance( cursorTracer );
+        maintenance( false, cursorTracer );
 
         // try get from cache
         long id = cache.takeOrDefault( NO_ID );
@@ -445,7 +447,7 @@ public class IndexedIdGenerator implements IdGenerator
     public org.neo4j.internal.id.IdRange nextIdBatch( int size, boolean forceConsecutiveAllocation, PageCursorTracer cursorTracer )
     {
         assertNotReadOnly();
-        maintenance( cursorTracer );
+        maintenance( false, cursorTracer );
 
         if ( forceConsecutiveAllocation )
         {
@@ -578,7 +580,7 @@ public class IndexedIdGenerator implements IdGenerator
 
         // After potentially recovery has been run and everything is prepared to get going let's call maintenance,
         // which will fill the ID buffers right away before any request comes to the db.
-        maintenance( cursorTracer );
+        maintenance( false, cursorTracer );
     }
 
     @Override
@@ -589,12 +591,12 @@ public class IndexedIdGenerator implements IdGenerator
     }
 
     @Override
-    public void maintenance( PageCursorTracer cursorTracer )
+    public void maintenance( boolean awaitOngoing, PageCursorTracer cursorTracer )
     {
         if ( !readOnly && cache.size() < cacheOptimisticRefillThreshold )
         {
             // We're just helping other allocation requests and avoiding unwanted sliding of highId here
-            scanner.tryLoadFreeIdsIntoCache( cursorTracer );
+            scanner.tryLoadFreeIdsIntoCache( awaitOngoing, cursorTracer );
         }
     }
 

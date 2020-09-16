@@ -57,7 +57,7 @@ public class BufferedIdController extends LifecycleAdapter implements IdControll
     public void start()
     {
         var monitoringParams = JobMonitoringParams.systemJob( databaseName, "ID generator maintenance" );
-        jobHandle = scheduler.scheduleRecurring( Group.STORAGE_MAINTENANCE, monitoringParams, this::maintenance, 1, SECONDS );
+        jobHandle = scheduler.scheduleRecurring( Group.STORAGE_MAINTENANCE, monitoringParams, () -> maintenance( false ), 1, SECONDS );
     }
 
     @Override
@@ -77,11 +77,11 @@ public class BufferedIdController extends LifecycleAdapter implements IdControll
     }
 
     @Override
-    public void maintenance()
+    public void maintenance( boolean awaitOngoing )
     {
         try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( BUFFERED_ID_CONTROLLER ) )
         {
-            bufferingIdGeneratorFactory.maintenance( cursorTracer );
+            bufferingIdGeneratorFactory.maintenance( awaitOngoing, cursorTracer );
         }
     }
 

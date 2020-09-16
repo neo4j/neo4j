@@ -141,7 +141,7 @@ public class IndexPopulationMissConcurrentUpdateIT
         assertThat( count( filter( n -> n.getId() > SCAN_BARRIER_NODE_ID_THRESHOLD, nodes ) ) ).as(
                 "At least two nodes above the scan barrier threshold and below initial creation threshold must have been created, " +
                         "otherwise test assumptions are invalid or outdated" ).isGreaterThan( 1L );
-        idController.maintenance();
+        idController.maintenance( true );
 
         // when
         try ( Transaction tx = db.beginTx() )
