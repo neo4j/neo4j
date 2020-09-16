@@ -251,10 +251,10 @@ class MemoryRecommendationsCommandTest
 
         command.execute();
 
-        verify( output ).println( "EXPORT NEO4J_dbms_memory_heap_initial__size=" + heap );
-        verify( output ).println( "EXPORT NEO4J_dbms_memory_heap_max__size=" + heap );
-        verify( output ).println( "EXPORT NEO4J_dbms_memory_pagecache_size=" + pagecache );
-        verify( output ).println( "EXPORT NEO4J_dbms_memory_off__heap_max__size=" + offHeap );
+        verify( output ).println( "EXPORT NEO4J_dbms_memory_heap_initial__size='" + heap + "'" );
+        verify( output ).println( "EXPORT NEO4J_dbms_memory_heap_max__size='" + heap + "'" );
+        verify( output ).println( "EXPORT NEO4J_dbms_memory_pagecache_size='" + pagecache + "'" );
+        verify( output ).println( "EXPORT NEO4J_dbms_memory_off__heap_max__size='" + offHeap + "'" );
     }
 
     @Test
