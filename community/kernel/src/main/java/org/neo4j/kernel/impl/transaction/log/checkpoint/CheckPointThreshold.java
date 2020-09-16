@@ -50,10 +50,11 @@ public interface CheckPointThreshold
      * This method can be used for querying the threshold about the necessity of a check point.
      *
      * @param lastCommittedTransactionId the latest transaction committed id
+     * @param lastCommittedTransactionLogVersion log version the latest committed transaction is in
      * @param consumer will be called with the description about this threshold only if the return value is true
      * @return true is a check point is needed, false otherwise.
      */
-    boolean isCheckPointingNeeded( long lastCommittedTransactionId, Consumer<String> consumer );
+    boolean isCheckPointingNeeded( long lastCommittedTransactionId, long lastCommittedTransactionLogVersion, Consumer<String> consumer );
 
     /**
      * This method notifies the threshold that a check point has happened. This must be called every time a check point
@@ -67,7 +68,7 @@ public interface CheckPointThreshold
 
     /**
      * Return a desired checking frequency, as a number of milliseconds between calls to
-     * {@link #isCheckPointingNeeded(long, Consumer)}.
+     * {@link #isCheckPointingNeeded(long, long, Consumer)}.
      *
      * @return A desired scheduling frequency in milliseconds.
      */
@@ -112,11 +113,11 @@ public interface CheckPointThreshold
             }
 
             @Override
-            public boolean isCheckPointingNeeded( long transactionId, Consumer<String> consumer )
+            public boolean isCheckPointingNeeded( long transactionId, long transactionLogVersion, Consumer<String> consumer )
             {
                 for ( CheckPointThreshold threshold : thresholds )
                 {
-                    if ( threshold.isCheckPointingNeeded( transactionId, consumer ) )
+                    if ( threshold.isCheckPointingNeeded( transactionId, transactionLogVersion, consumer ) )
                     {
                         return true;
                     }
