@@ -367,4 +367,57 @@ abstract class SkipTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT]
     runtimeResult should beColumns("sum").withSingleRow(input.flatten.drop(10).foldLeft(0)((sum, current) => sum + current(0).asInstanceOf[Int]))
 
   }
+
+  test("should work with aggregation on the RHS of an apply") {
+    // given
+    given {
+      nodePropertyGraph(sizeHint, properties = {
+        case _: Int => Map("foo" -> s"bar")
+      })
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("group", "c")
+      .apply()
+      .|.aggregation(Seq("n.foo AS group"), Seq("count(n) AS c"))
+      .|.skip(sizeHint - 10)
+      .|.allNodeScan("n", "x")
+      .input(variables = Seq("x"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, inputValues((1 to 10).map(Array[Any](_)): _*))
+
+    val expected = for {_ <- 1 to 10} yield Array(s"bar", 10)
+
+    // then
+    runtimeResult should beColumns("group", "c").withRows(expected)
+  }
+
+  test("should work with chained skips on the RHS of an apply") {
+    given {
+      nodePropertyGraph(sizeHint,
+        properties = {
+          case _: Int => Map("foo" -> s"bar")
+        }, "A")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("bar")
+      .projection("a.foo AS bar")
+      .apply()
+      .|.skip(2)
+      .|.skip(sizeHint - 10)
+      .|.nodeByLabelScan("a", "A", IndexOrderNone, "x")
+      .input(variables = Seq("x"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, inputValues((1 to 10).map(Array[Any](_)): _*))
+
+    // then
+    val expected = for {_ <- 1 to 10
+                        _ <- 0 until 8} yield s"bar"
+    runtimeResult should beColumns("bar").withRows(singleColumn(expected))
+  }
 }
