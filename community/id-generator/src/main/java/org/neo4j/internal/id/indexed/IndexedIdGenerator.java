@@ -642,6 +642,12 @@ public class IndexedIdGenerator implements IdGenerator
         this.highestWrittenId.set( highId.get() - 1 );
     }
 
+    @Override
+    public long getHighestWritten()
+    {
+        return highestWrittenId.get();
+    }
+
     public Path path()
     {
         return path;

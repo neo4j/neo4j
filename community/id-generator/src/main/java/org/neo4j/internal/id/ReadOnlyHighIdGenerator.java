@@ -48,6 +48,12 @@ class ReadOnlyHighIdGenerator implements IdGenerator
     }
 
     @Override
+    public long getHighestWritten()
+    {
+        return highId;
+    }
+
+    @Override
     public long getHighId()
     {
         return highId;

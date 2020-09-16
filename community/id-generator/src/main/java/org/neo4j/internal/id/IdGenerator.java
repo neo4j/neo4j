@@ -26,6 +26,7 @@ import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.index.schema.ConsistencyCheckable;
+import org.neo4j.util.VisibleForTesting;
 
 public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
 {
@@ -46,6 +47,8 @@ public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
      */
     void setHighId( long id );
     void markHighestWrittenAtHighId();
+    @VisibleForTesting
+    long getHighestWritten();
     long getHighId();
     long getHighestPossibleIdInUse();
     Marker marker( PageCursorTracer cursorTracer );
@@ -120,6 +123,12 @@ public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
         public void markHighestWrittenAtHighId()
         {
             delegate.markHighestWrittenAtHighId();
+        }
+
+        @Override
+        public long getHighestWritten()
+        {
+            return delegate.getHighestWritten();
         }
 
         @Override
