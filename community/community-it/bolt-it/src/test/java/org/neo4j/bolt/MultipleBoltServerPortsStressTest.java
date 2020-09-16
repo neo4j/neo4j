@@ -69,7 +69,7 @@ class MultipleBoltServerPortsStressTest
     private static final int DURATION_IN_MINUTES = 1;
     private static final int NUMBER_OF_THREADS = 10;
 
-    private static final String USER_AGENT = "TestClient/4.1";
+    private static final String USER_AGENT = "TestClient/4.2";
     private static TransportTestUtil util;
 
     @Inject
@@ -141,7 +141,7 @@ class MultipleBoltServerPortsStressTest
     private static void initializeConnection( SocketConnection connection, HostnamePort address ) throws Exception
     {
         connection.connect( address ).send( util.defaultAcceptedVersions() );
-        assertThat( connection ).satisfies( eventuallyReceives( new byte[]{0, 0, 1, 4} ) );
+        assertThat( connection ).satisfies( eventuallyReceives( new byte[]{0, 0, 2, 4} ) );
 
         connection.send( util.chunk( new HelloMessage( map( "user_agent", USER_AGENT ) ) ) );
         assertThat( connection ).satisfies( util.eventuallyReceives( msgSuccess() ) );

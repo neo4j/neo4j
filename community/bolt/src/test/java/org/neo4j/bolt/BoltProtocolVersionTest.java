@@ -29,7 +29,7 @@ class BoltProtocolVersionTest
 {
 
     @ParameterizedTest( name = "V{0}.{1}" )
-    @CsvSource( {"3, 0", "4, 0", "4, 1", "100, 100", "255, 255", "0, 0"} )
+    @CsvSource( {"3, 0", "4, 0", "4, 1", "4, 2", "100, 100", "255, 255", "0, 0"} )
     void shouldParseVersion( int major, int minor )
     {
         BoltProtocolVersion protocolVersion = new BoltProtocolVersion( major, minor );

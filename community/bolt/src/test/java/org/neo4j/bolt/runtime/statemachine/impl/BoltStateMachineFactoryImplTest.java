@@ -34,6 +34,8 @@ import org.neo4j.bolt.testing.BoltTestUtil;
 import org.neo4j.bolt.txtracking.DefaultReconciledTransactionTracker;
 import org.neo4j.bolt.v3.BoltStateMachineV3;
 import org.neo4j.bolt.v4.BoltStateMachineV4;
+import org.neo4j.bolt.v41.BoltStateMachineV41;
+import org.neo4j.bolt.v42.BoltStateMachineV42;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -77,6 +79,28 @@ class BoltStateMachineFactoryImplTest
 
         assertNotNull( boltStateMachine );
         assertThat( boltStateMachine ).isInstanceOf( BoltStateMachineV4.class );
+    }
+
+    @Test
+    void shouldCreateBoltStateMachinesV41()
+    {
+        BoltStateMachineFactoryImpl factory = newBoltFactory();
+
+        BoltStateMachine boltStateMachine = factory.newStateMachine( new BoltProtocolVersion( 4, 1 ), CHANNEL );
+
+        assertNotNull( boltStateMachine );
+        assertThat( boltStateMachine ).isInstanceOf( BoltStateMachineV41.class );
+    }
+
+    @Test
+    void shouldCreateBoltStateMachinesV42()
+    {
+        BoltStateMachineFactoryImpl factory = newBoltFactory();
+
+        BoltStateMachine boltStateMachine = factory.newStateMachine( new BoltProtocolVersion( 4, 2 ), CHANNEL );
+
+        assertNotNull( boltStateMachine );
+        assertThat( boltStateMachine ).isInstanceOf( BoltStateMachineV42.class );
     }
 
     @ParameterizedTest( name = "V{0}" )
