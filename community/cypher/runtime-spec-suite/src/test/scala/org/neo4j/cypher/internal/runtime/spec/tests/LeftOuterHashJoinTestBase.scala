@@ -34,6 +34,61 @@ abstract class LeftOuterHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edi
                                                                     val sizeHint: Int
                                                               ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
+  test("should handle Apply all around") {
+    // given
+    val (nodes, _) = given { circleGraph(sizeHint) }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y", "y2")
+      .apply()
+      .|.leftOuterHashJoin("x")
+      .|.|.apply()
+      .|.|.|.projection("y AS y2")
+      .|.|.|.argument("x", "y")
+      .|.|.expand("(x)--(y)")
+      .|.|.argument("x")
+      .|.argument("x")
+      .apply()
+      .|.argument("x")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expectedResultRows = for {y <- nodes
+                                  rel <- y.getRelationships().asScala
+                                  x = rel.getOtherNode(y)
+                                  } yield Array(x, y, y)
+    runtimeResult should beColumns("x", "y", "y2").withRows(expectedResultRows)
+  }
+
+  test("should join under Apply with alias on non-join-key on RHS") {
+    // given
+    val (nodes, _) = given { circleGraph(sizeHint) }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y", "y2")
+      .apply()
+      .|.leftOuterHashJoin("x")
+      .|.|.projection("y AS y2")
+      .|.|.expand("(x)--(y)")
+      .|.|.argument("x")
+      .|.argument("x")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expectedResultRows = for {y <- nodes
+                                  rel <- y.getRelationships().asScala
+                                  x = rel.getOtherNode(y)
+                                  } yield Array(x, y, y)
+    runtimeResult should beColumns("x", "y", "y2").withRows(expectedResultRows)
+  }
 
   test("should join with alias on non-join-key on RHS") {
     // given

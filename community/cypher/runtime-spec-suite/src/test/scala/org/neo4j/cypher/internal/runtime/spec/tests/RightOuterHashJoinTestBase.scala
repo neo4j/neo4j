@@ -535,4 +535,32 @@ abstract class RightOuterHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Ed
                                   } yield Array(x, y, y)
     runtimeResult should beColumns("x", "y", "y2").withRows(expectedResultRows)
   }
+
+  test("should join under Apply with alias on non-join-key on RHS") {
+    // given
+    val (nodes, _) = given { circleGraph(sizeHint) }
+    val lhsRows = batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y", "y2")
+      .apply()
+      .|.rightOuterHashJoin("x")
+      .|.|.projection("y AS y2")
+      .|.|.expand("(x)--(y)")
+      .|.|.argument("x")
+      .|.argument("x")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, lhsRows)
+
+    // then
+    val expectedResultRows = for {y <- nodes
+                                  rel <- y.getRelationships().asScala
+                                  x = rel.getOtherNode(y)
+                                  } yield Array(x, y, y)
+    runtimeResult should beColumns("x", "y", "y2").withRows(expectedResultRows)
+  }
+
 }
