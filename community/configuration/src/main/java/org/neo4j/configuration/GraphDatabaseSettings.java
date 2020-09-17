@@ -762,7 +762,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration
             "If `" + "dbms.security.procedures.roles" + "`is not empty, any procedure that this role is not mapped to will result in a " +
             "'DENY EXECUTE BOOSTED PROCEDURE procedure' for this role. " +
             "Any privilege mapped in this way cannot be revoked, instead the config must be changed and will take effect after a restart." +
-            "Deprecated: Replaced by EXECUTE PROCEDURE and EXECUTE BOOSTED PROCEDURE privileges.")
+            "Deprecated: Replaced by EXECUTE PROCEDURE and EXECUTE BOOSTED PROCEDURE privileges." )
     public static final Setting<String> default_allowed = newBuilder( "dbms.security.procedures.default_allowed", STRING, "" ).build();
 
     @Deprecated( since = "4.2.0", forRemoval = true )
