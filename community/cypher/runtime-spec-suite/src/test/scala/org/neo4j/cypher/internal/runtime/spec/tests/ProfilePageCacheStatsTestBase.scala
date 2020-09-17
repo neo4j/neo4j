@@ -36,7 +36,7 @@ abstract class ProfilePageCacheStatsTestBase[CONTEXT <: RuntimeContext](edition:
   runtime) {
 
   // This needs to be big enough to trigger some page cache hits & misses
-  private val SIZE = 5000
+  protected val SIZE = 5000
 
   test("should profile page cache stats of linear plan") {
     given {
@@ -61,29 +61,6 @@ abstract class ProfilePageCacheStatsTestBase[CONTEXT <: RuntimeContext](edition:
     checkProfilerStatsMakeSense(runtimeResult, 4,
       Seq(0) // Projection of a previous row should not access store
     )
-  }
-
-  test("should profile page cache stats of create with new label") {
-    given {
-      uniqueIndex("M", "prop")
-      nodePropertyGraph(SIZE, {
-        case i => Map("prop" -> i)
-      },"N", "M")
-      () // This makes sure we don't reattach the nodes to the new transaction, since that would create additional page cache hits/misses
-    }
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("a") // Populates results, thus can have page cache hits & misses
-      .create(createNode("a", "A"))
-      .nodeIndexOperator("m:M(prop > 0)", argumentIds = Set("a"))
-      .build()
-
-    val runtimeResult: RecordingRuntimeResult = profile(logicalQuery, runtime)
-    consume(runtimeResult)
-
-    // then
-    checkProfilerStatsMakeSense(runtimeResult, 3)
   }
 
   test("should profile page cache stats of branched plan") {
@@ -118,7 +95,7 @@ abstract class ProfilePageCacheStatsTestBase[CONTEXT <: RuntimeContext](edition:
     )
   }
 
-  private def checkProfilerStatsMakeSense(runtimeResult: RecordingRuntimeResult,
+  protected def checkProfilerStatsMakeSense(runtimeResult: RecordingRuntimeResult,
                                           numberOfOperators: Int,
                                           idSOfOperatorsThatShouldNotHaveAnyStats: Seq[Int] = Seq.empty): Unit = {
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
@@ -146,5 +123,32 @@ abstract class ProfilePageCacheStatsTestBase[CONTEXT <: RuntimeContext](edition:
 
     accHits should be(totalHits)
     accMisses should be(totalMisses)
+  }
+}
+
+trait UpdatingProfilePageCacheStatsTestBase [CONTEXT <: RuntimeContext] {
+  self: ProfilePageCacheStatsTestBase[CONTEXT] =>
+
+  test("should profile page cache stats of create with new label") {
+    given {
+      uniqueIndex("M", "prop")
+      nodePropertyGraph(SIZE, {
+        case i => Map("prop" -> i)
+      }, "N", "M")
+      () // This makes sure we don't reattach the nodes to the new transaction, since that would create additional page cache hits/misses
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a") // Populates results, thus can have page cache hits & misses
+      .create(createNode("a", "A"))
+      .nodeIndexOperator("m:M(prop > 0)", argumentIds = Set("a"))
+      .build()
+
+    val runtimeResult: RecordingRuntimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    checkProfilerStatsMakeSense(runtimeResult, 3)
   }
 }
