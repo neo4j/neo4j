@@ -40,6 +40,8 @@ import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.token.TokenHolders;
 
+import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
+
 public abstract class StandaloneEditionModule extends AbstractEditionModule
 {
     protected CommitProcessFactory commitProcessFactory;
@@ -99,7 +101,7 @@ public abstract class StandaloneEditionModule extends AbstractEditionModule
             Dependencies dependencies )
     {
         var dbmsRuntimeRepository = new StandaloneDbmsRuntimeRepository( databaseManager );
-        globalModule.getTransactionEventListeners().registerTransactionEventListener( "system", dbmsRuntimeRepository );
+        globalModule.getTransactionEventListeners().registerTransactionEventListener( SYSTEM_DATABASE_NAME, dbmsRuntimeRepository );
         return dbmsRuntimeRepository;
     }
 }

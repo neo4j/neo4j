@@ -21,6 +21,8 @@ package org.neo4j.dbms.database;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
+import org.neo4j.util.Preconditions;
+import org.neo4j.util.VisibleForTesting;
 
 import static org.neo4j.kernel.database.DatabaseIdRepository.NAMED_SYSTEM_DATABASE_ID;
 
@@ -44,15 +46,20 @@ public abstract class DbmsRuntimeRepository
     {
         var systemDatabase = getSystemDb();
 
-        try ( var tx = systemDatabase.beginTx() )
+        try ( var tx = systemDatabase.beginTx();
+                var nodes = tx.findNodes( DBMS_RUNTIME_LABEL ) )
         {
-            currentVersion = tx.findNodes( DBMS_RUNTIME_LABEL ).stream()
-                               .map( node -> (int) node.getProperty( VERSION_PROPERTY ) )
-                               .map( DbmsRuntimeVersion::fromVersionNumber )
-                               .findFirst()
-                               // there always must be something in the System DB in a properly initialised DBMS,
-                               // but many test don't initialise System DB
-                               .orElse( LATEST_VERSION );
+            if ( nodes.hasNext() )
+            {
+                currentVersion = DbmsRuntimeVersion.fromVersionNumber( (int) nodes.next().getProperty( VERSION_PROPERTY ) );
+                Preconditions.checkState( !nodes.hasNext(), "More than one dbms-runtime node in system database" );
+            }
+            else
+            {
+                // there always must be something in the System DB in a properly initialised DBMS,
+                // but many test don't initialise System DB
+                currentVersion = LATEST_VERSION;
+            }
         }
     }
 
@@ -81,6 +88,7 @@ public abstract class DbmsRuntimeRepository
     /**
      * This must be used only by children and tests!!!
      */
+    @VisibleForTesting
     public void setVersion( DbmsRuntimeVersion newVersion )
     {
         currentVersion = newVersion;

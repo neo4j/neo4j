@@ -873,7 +873,7 @@ class RecoveryCorruptedTransactionLogIT
 
     private byte randomInvalidVersionsBytes()
     {
-        return (byte) random.nextInt( TransactionLogVersionSelector.LATEST.version() + 1, Byte.MAX_VALUE );
+        return (byte) random.nextInt( TransactionLogVersionSelector.LATEST.versionByte() + 1, Byte.MAX_VALUE );
     }
 
     private byte randomBytes()
@@ -1077,7 +1077,7 @@ class RecoveryCorruptedTransactionLogIT
         @Override
         public void writeStartEntry( long timeWritten, long latestCommittedTxWhenStarted, int previousChecksum, byte[] additionalHeaderData ) throws IOException
         {
-            byte nonExistingLogEntryVersion = (byte) (TransactionLogVersionSelector.LATEST.version() + 10);
+            byte nonExistingLogEntryVersion = (byte) (TransactionLogVersionSelector.LATEST.versionByte() + 10);
             channel.put( nonExistingLogEntryVersion ).put( TX_START );
             channel.putLong( timeWritten )
                     .putLong( latestCommittedTxWhenStarted )

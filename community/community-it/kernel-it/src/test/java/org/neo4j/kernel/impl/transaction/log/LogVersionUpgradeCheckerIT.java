@@ -83,7 +83,7 @@ class LogVersionUpgradeCheckerIT
     @Test
     void startFromOlderTransactionLogsIfAllowed() throws Exception
     {
-        createStoreWithLogEntryVersion( V2_3.version(), true );
+        createStoreWithLogEntryVersion( V2_3.versionByte(), true );
 
         // Try to start with upgrading enabled
         DatabaseManagementService managementService = startDatabaseService( true );

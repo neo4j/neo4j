@@ -64,8 +64,13 @@ public abstract class LogEntryParserSet
     /**
      * @return the version of this log entry parser set.
      */
-    public byte version()
+    public byte versionByte()
     {
         return version.getVersionByte();
+    }
+
+    public LogEntryParserSetVersion version()
+    {
+        return version;
     }
 }

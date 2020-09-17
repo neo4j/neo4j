@@ -43,7 +43,7 @@ class CheckpointParserSetV4_2Test
     @Test
     void parseDetachedCheckpointRecord() throws IOException
     {
-        byte version = V4_2.version();
+        byte version = V4_2.versionByte();
         var storeId = new StoreId( 4, 5, 6, 7, 8 );
         var channel = new InMemoryClosableChannel();
         int checkpointMillis = 3;

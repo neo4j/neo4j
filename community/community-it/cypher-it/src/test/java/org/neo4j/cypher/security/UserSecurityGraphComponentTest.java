@@ -35,6 +35,7 @@ import java.util.stream.Stream;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.api.DatabaseManagementService;
+import org.neo4j.dbms.database.DbmsRuntimeSystemGraphComponent;
 import org.neo4j.dbms.database.DefaultSystemGraphComponent;
 import org.neo4j.dbms.database.SystemGraphComponent;
 import org.neo4j.dbms.database.SystemGraphComponents;
@@ -101,7 +102,7 @@ class UserSecurityGraphComponentTest
         systemGraphComponents.register( userSecurityGraphComponent );
 
         // remove DBMS runtime component as it is not a subject of this test
-        systemGraphComponents.deregister( "dbms-runtime" );
+        systemGraphComponents.deregister( DbmsRuntimeSystemGraphComponent.COMPONENT_NAME );
     }
 
     @BeforeEach

@@ -32,7 +32,7 @@ class CheckpointLogVersionSelectorTest
     @Test
     void selectAnyVersion()
     {
-        assertEquals( V4_2, INSTANCE.select( V4_2.version() ) );
+        assertEquals( V4_2, INSTANCE.select( V4_2.versionByte() ) );
     }
 
     @Test
@@ -56,6 +56,6 @@ class CheckpointLogVersionSelectorTest
     @Test
     void checkForMoreRecentVersion()
     {
-        assertFalse( INSTANCE.moreRecentVersionExists( V4_2.version() ) );
+        assertFalse( INSTANCE.moreRecentVersionExists( V4_2.versionByte() ) );
     }
 }

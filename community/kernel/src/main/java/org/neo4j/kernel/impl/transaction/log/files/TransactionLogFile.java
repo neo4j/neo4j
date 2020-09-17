@@ -127,7 +127,7 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile
 
         writer = new PositionAwarePhysicalFlushableChecksumChannel( channel, new NativeScopedBuffer( calculateLogBufferSize(), memoryTracker ) );
         transactionLogWriter = new TransactionLogWriter( writer, new DbmsLogEntryWriterFactory(
-                context.useSeparateCheckpointFiles() ? LATEST::version : LogEntryV4_0::getVersionByte ) );
+                context.useSeparateCheckpointFiles() ? LATEST::version : () -> LogEntryV4_0 ) );
     }
 
     // In order to be able to write into a logfile after life.stop during shutdown sequence

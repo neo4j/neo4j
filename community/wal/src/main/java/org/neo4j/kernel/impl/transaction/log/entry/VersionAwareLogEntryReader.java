@@ -89,7 +89,7 @@ public class VersionAwareLogEntryReader implements LogEntryReader
                     }
                     return null;
                 }
-                if ( parserSet == null || parserSet.version() != versionCode )
+                if ( parserSet == null || parserSet.versionByte() != versionCode )
                 {
                     parserSet = selector.select( versionCode );
                     // Since checksum is calculated over the whole entry we need to rewind and begin

@@ -79,7 +79,7 @@ class VersionAwareLogEntryReaderTest
     void shouldReadACommandLogEntry() throws IOException
     {
         // given
-        byte version = LATEST.version();
+        byte version = LATEST.versionByte();
         TestCommand testCommand = new TestCommand( new byte[] {100, 101, 102} );
         final LogEntryCommand command = new LogEntryCommand( version, testCommand );
         final InMemoryClosableChannel channel = new InMemoryClosableChannel();
@@ -121,7 +121,7 @@ class VersionAwareLogEntryReaderTest
         // given
         final InMemoryClosableChannel channel = new InMemoryClosableChannel();
 
-        channel.put( LATEST.version() );
+        channel.put( LATEST.versionByte() );
         channel.put( LogEntryTypeCodes.COMMAND );
         channel.put( CommandReader.NONE );
 

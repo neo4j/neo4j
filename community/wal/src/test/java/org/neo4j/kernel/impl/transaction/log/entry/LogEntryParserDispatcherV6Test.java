@@ -39,7 +39,7 @@ import static org.neo4j.kernel.impl.transaction.log.entry.TransactionLogVersionS
 
 class LogEntryParserDispatcherV6Test
 {
-    private final byte version = LATEST.version();
+    private final byte version = LATEST.versionByte();
     private final CommandReaderFactory commandReader = new TestCommandReaderFactory();
     private final LogPositionMarker marker = new LogPositionMarker();
     private final LogPosition position = new LogPosition( 0, 25 );

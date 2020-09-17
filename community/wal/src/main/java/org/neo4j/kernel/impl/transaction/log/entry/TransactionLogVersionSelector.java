@@ -64,7 +64,7 @@ public class TransactionLogVersionSelector extends LogVersionSelector
 
     private TransactionLogVersionSelector()
     {
-        super( LATEST.version() );
+        super( LATEST.versionByte() );
         register( V2_3 );
         register( V4_0 );
         register( V4_2 );

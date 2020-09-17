@@ -36,7 +36,7 @@ public abstract class LogVersionSelector
 
     protected void register( LogEntryParserSet set )
     {
-        byte version = set.version();
+        byte version = set.versionByte();
         Preconditions.checkState( !sets.containsKey( version ), "Conflicting version %d", version );
         sets.put( version, set );
     }
@@ -61,6 +61,11 @@ public abstract class LogVersionSelector
                         "indicates that the log files originates from an older version of neo4j, which we don't support " +
                         "migrations from.",
                 version, sets.keySet().min() ) );
+    }
+
+    public LogEntryParserSet select( LogEntryParserSetVersion parserSetVersion )
+    {
+        return select( parserSetVersion.getVersionByte() );
     }
 
     /**

@@ -19,8 +19,10 @@
  */
 package org.neo4j.dbms.database;
 
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryParserSetVersion;
+
 @FunctionalInterface
 public interface TransactionLogVersionProvider
 {
-    byte getVersion();
+    LogEntryParserSetVersion getVersion();
 }

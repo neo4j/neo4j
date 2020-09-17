@@ -68,7 +68,7 @@ class RecoveryStartInformationProviderTest
     {
         // given
         when( logFiles.getTailInformation() ).thenReturn( new LogTailInformation( false,
-                NO_TRANSACTION_ID, false, currentLogVersion, LATEST.version() ) );
+                NO_TRANSACTION_ID, false, currentLogVersion, LATEST.versionByte() ) );
 
         // when
         RecoveryStartInformation recoveryStartInformation = new RecoveryStartInformationProvider( logFiles, monitor ).get();
@@ -87,7 +87,7 @@ class RecoveryStartInformationProviderTest
         LogPosition checkPointLogPosition = new LogPosition( 1L, 4242 );
         when( logFiles.getTailInformation() ).thenReturn(
                 new LogTailInformation( new CheckpointInfo( checkPointLogPosition, StoreId.UNKNOWN, LogPosition.UNSPECIFIED ), true, 10L, false,
-                        currentLogVersion, LATEST.version(), StoreId.UNKNOWN ) );
+                        currentLogVersion, LATEST.versionByte(), StoreId.UNKNOWN ) );
 
         // when
         RecoveryStartInformation recoveryStartInformation = new RecoveryStartInformationProvider( logFiles, monitor ).get();
@@ -104,7 +104,7 @@ class RecoveryStartInformationProviderTest
     {
         // given
         when( logFiles.getTailInformation() ).thenReturn( new LogTailInformation( true, 10L, false,
-                currentLogVersion, LATEST.version() ) );
+                currentLogVersion, LATEST.versionByte() ) );
 
         // when
         RecoveryStartInformation recoveryStartInformation = new RecoveryStartInformationProvider( logFiles, monitor ).get();
@@ -120,7 +120,7 @@ class RecoveryStartInformationProviderTest
     void detectMissingTransactionLogsInformation()
     {
         when( logFiles.getTailInformation() ).thenReturn( new LogTailInformation( false, -1, true,
-                -1, LATEST.version() ) );
+                -1, LATEST.versionByte() ) );
 
         RecoveryStartInformation recoveryStartInformation = new RecoveryStartInformationProvider( logFiles, monitor ).get();
 
@@ -134,7 +134,7 @@ class RecoveryStartInformationProviderTest
         long oldestLogVersionFound = 1L;
         when( logFile.getLowestLogVersion() ).thenReturn( oldestLogVersionFound );
         when( logFiles.getTailInformation() ).thenReturn(
-                new LogTailInformation( true, 10L, false, currentLogVersion, LATEST.version() ) );
+                new LogTailInformation( true, 10L, false, currentLogVersion, LATEST.versionByte() ) );
 
         // when
         UnderlyingStorageException storageException =

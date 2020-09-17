@@ -35,9 +35,9 @@ class TransactionLogVersionSelectorTest
     @Test
     void shouldBeAbleToSelectAnyVersion()
     {
-        assertEquals( V2_3, INSTANCE.select( V2_3.version() ) );
-        assertEquals( V4_0, INSTANCE.select( V4_0.version() ) );
-        assertEquals( V4_2, INSTANCE.select( V4_2.version() ) );
+        assertEquals( V2_3, INSTANCE.select( V2_3.versionByte() ) );
+        assertEquals( V4_0, INSTANCE.select( V4_0.versionByte() ) );
+        assertEquals( V4_2, INSTANCE.select( V4_2.versionByte() ) );
     }
 
     @Test
@@ -61,9 +61,9 @@ class TransactionLogVersionSelectorTest
     @Test
     void moreRecent()
     {
-        assertTrue( INSTANCE.moreRecentVersionExists( V2_3.version() ) );
+        assertTrue( INSTANCE.moreRecentVersionExists( V2_3.versionByte() ) );
         // todo assertTrue when enabling 4.2 log version again
-        assertFalse( INSTANCE.moreRecentVersionExists( V4_0.version() ) );
-        assertFalse( INSTANCE.moreRecentVersionExists( V4_2.version() ) );
+        assertFalse( INSTANCE.moreRecentVersionExists( V4_0.versionByte() ) );
+        assertFalse( INSTANCE.moreRecentVersionExists( V4_2.versionByte() ) );
     }
 }

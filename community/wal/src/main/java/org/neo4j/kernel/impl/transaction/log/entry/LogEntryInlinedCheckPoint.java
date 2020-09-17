@@ -31,7 +31,7 @@ public class LogEntryInlinedCheckPoint extends AbstractLogEntry
 
     public LogEntryInlinedCheckPoint( LogPosition logPosition )
     {
-        this( V4_0.version(), logPosition );
+        this( V4_0.versionByte(), logPosition );
     }
 
     LogEntryInlinedCheckPoint( byte version, LogPosition logPosition )

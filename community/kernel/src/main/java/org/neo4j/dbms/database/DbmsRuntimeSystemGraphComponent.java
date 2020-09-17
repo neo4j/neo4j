@@ -30,7 +30,8 @@ import org.neo4j.graphdb.Transaction;
 
 public class DbmsRuntimeSystemGraphComponent extends AbstractSystemGraphComponent
 {
-    private final Label versionLabel = Label.label( "Version" );
+    private static final Label versionLabel = Label.label( "Version" );
+    public static final String COMPONENT_NAME = "dbms-runtime";
 
     public DbmsRuntimeSystemGraphComponent( Config config )
     {
@@ -40,7 +41,7 @@ public class DbmsRuntimeSystemGraphComponent extends AbstractSystemGraphComponen
     @Override
     public String component()
     {
-        return "dbms-runtime";
+        return COMPONENT_NAME;
     }
 
     @Override

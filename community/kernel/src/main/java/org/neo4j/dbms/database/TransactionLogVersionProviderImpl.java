@@ -33,20 +33,15 @@ public class TransactionLogVersionProviderImpl implements TransactionLogVersionP
     }
 
     @Override
-    public byte getVersion()
+    public LogEntryParserSetVersion getVersion()
     {
         DbmsRuntimeVersion dbmsRuntimeVersion = dbmsRuntimeRepository.getVersion();
 
-        LogEntryParserSetVersion parserSet;
         if ( dbmsRuntimeVersion == DbmsRuntimeVersion.V4_2 && useSeparateCheckpointFiles )
         {
-            parserSet = LogEntryParserSetVersion.LogEntryV4_2;
-        }
-        else
-        {
-            parserSet = LogEntryParserSetVersion.LogEntryV4_0;
+            return LogEntryParserSetVersion.LogEntryV4_2;
         }
 
-        return parserSet.getVersionByte();
+        return LogEntryParserSetVersion.LogEntryV4_0;
     }
 }

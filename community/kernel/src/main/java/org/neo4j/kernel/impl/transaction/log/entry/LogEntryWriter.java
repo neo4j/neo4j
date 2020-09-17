@@ -54,7 +54,7 @@ public class LogEntryWriter<T extends WritableChecksumChannel>
     public LogEntryWriter( T channel, LogEntryParserSet parserSet )
     {
         this.channel = channel;
-        this.parserSetVersion = parserSet.version();
+        this.parserSetVersion = parserSet.versionByte();
         this.serializer = new StorageCommandSerializer( channel, this );
     }
 

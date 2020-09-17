@@ -65,6 +65,6 @@ public class DetachedCheckpointLogEntryWriter
 
     protected static void writeLogEntryHeader( byte type, WritableChannel channel ) throws IOException
     {
-        channel.put( LATEST.version() ).put( type );
+        channel.put( LATEST.versionByte() ).put( type );
     }
 }

@@ -29,7 +29,7 @@ public class LogEntryCommand extends AbstractLogEntry
 
     public LogEntryCommand( StorageCommand command )
     {
-        this( TransactionLogVersionSelector.LATEST.version(), command );
+        this( TransactionLogVersionSelector.LATEST.versionByte(), command );
     }
 
     public LogEntryCommand( byte version, StorageCommand command )

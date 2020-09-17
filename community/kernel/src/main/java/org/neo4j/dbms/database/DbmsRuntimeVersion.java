@@ -19,8 +19,6 @@
  */
 package org.neo4j.dbms.database;
 
-import java.util.Arrays;
-
 public enum DbmsRuntimeVersion
 {
     V4_1( 1 ),
@@ -40,9 +38,13 @@ public enum DbmsRuntimeVersion
 
     public static DbmsRuntimeVersion fromVersionNumber( int versionNumber )
     {
-        return Arrays.stream( DbmsRuntimeVersion.values() )
-                     .filter( version -> version.versionNumber == versionNumber )
-                     .findFirst()
-                     .orElseThrow( () -> new IllegalArgumentException( "Unrecognised DBMS runtime version number: " + versionNumber ) );
+        for ( DbmsRuntimeVersion version : DbmsRuntimeVersion.values() )
+        {
+            if ( version.versionNumber == versionNumber )
+            {
+                return version;
+            }
+        }
+        throw new IllegalArgumentException( "Unrecognised DBMS runtime version number: " + versionNumber );
     }
 }

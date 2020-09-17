@@ -28,7 +28,7 @@ public class CheckpointLogVersionSelector extends LogVersionSelector
 
     private CheckpointLogVersionSelector()
     {
-        super( LATEST.version() );
+        super( LATEST.versionByte() );
         register( V4_2 );
     }
 }
