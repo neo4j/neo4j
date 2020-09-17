@@ -47,8 +47,7 @@ case class CreateIndexNewSyntax(variable: Variable, label: LabelName, properties
   extends SchemaCommand with SemanticAnalysisTooling {
   override def withGraph(useGraph: Option[GraphSelection]): SchemaCommand = copy(useGraph = useGraph)(position)
   override def semanticCheck = ifExistsDo match {
-    case IfExistsInvalidSyntax => SemanticError(s"Failed to create index: cannot supply both `OR REPLACE` and `IF NOT EXISTS`.", position)
-    case IfExistsReplace if name.isEmpty => SemanticError(s"Failed to create index: a name is required to `REPLACE` an existing index.", position)
+    case IfExistsInvalidSyntax | IfExistsReplace => SemanticError(s"Failed to create index: `OR REPLACE` cannot be used together with this command.", position)
     case _ =>
       declareVariable(variable, CTNode) chain
         SemanticExpressionCheck.simple(properties) chain
@@ -146,8 +145,7 @@ case class CreateNodeKeyConstraint(variable: Variable, label: LabelName, propert
   override def withGraph(useGraph: Option[GraphSelection]): SchemaCommand = copy(useGraph = useGraph)(position)
 
   override def semanticCheck: SemanticCheck =  ifExistsDo match {
-    case IfExistsInvalidSyntax => SemanticError(s"Failed to create node key constraint: cannot supply both `OR REPLACE` and `IF NOT EXISTS`.", position)
-    case IfExistsReplace if name.isEmpty => SemanticError(s"Failed to create node key constraint: a name is required to `REPLACE` an existing constraint.", position)
+    case IfExistsInvalidSyntax | IfExistsReplace => SemanticError(s"Failed to create node key constraint: `OR REPLACE` cannot be used together with this command.", position)
     case _ => super.semanticCheck
   }
 }
@@ -160,8 +158,7 @@ case class CreateUniquePropertyConstraint(variable: Variable, label: LabelName, 
   override def withGraph(useGraph: Option[GraphSelection]): SchemaCommand = copy(useGraph = useGraph)(position)
 
   override def semanticCheck: SemanticCheck =  ifExistsDo match {
-    case IfExistsInvalidSyntax => SemanticError(s"Failed to create uniqueness constraint: cannot supply both `OR REPLACE` and `IF NOT EXISTS`.", position)
-    case IfExistsReplace if name.isEmpty => SemanticError(s"Failed to create uniqueness constraint: a name is required to `REPLACE` an existing constraint.", position)
+    case IfExistsInvalidSyntax | IfExistsReplace => SemanticError(s"Failed to create uniqueness constraint: `OR REPLACE` cannot be used together with this command.", position)
     case _ => super.semanticCheck
   }
 }
@@ -174,8 +171,7 @@ case class CreateNodePropertyExistenceConstraint(variable: Variable, label: Labe
   override def withGraph(useGraph: Option[GraphSelection]): SchemaCommand = copy(useGraph = useGraph)(position)
 
   override def semanticCheck: SemanticCheck =  ifExistsDo match {
-    case IfExistsInvalidSyntax => SemanticError(s"Failed to create node property existence constraint: cannot supply both `OR REPLACE` and `IF NOT EXISTS`.", position)
-    case IfExistsReplace if name.isEmpty => SemanticError(s"Failed to create node property existence constraint: a name is required to `REPLACE` an existing constraint.", position)
+    case IfExistsInvalidSyntax | IfExistsReplace => SemanticError(s"Failed to create node property existence constraint: `OR REPLACE` cannot be used together with this command.", position)
     case _ => super.semanticCheck
   }
 }
@@ -188,8 +184,7 @@ case class CreateRelationshipPropertyExistenceConstraint(variable: Variable, rel
   override def withGraph(useGraph: Option[GraphSelection]): SchemaCommand = copy(useGraph = useGraph)(position)
 
   override def semanticCheck: SemanticCheck =  ifExistsDo match {
-    case IfExistsInvalidSyntax => SemanticError(s"Failed to create relationship property existence constraint: cannot supply both `OR REPLACE` and `IF NOT EXISTS`.", position)
-    case IfExistsReplace if name.isEmpty => SemanticError(s"Failed to create relationship property existence constraint: a name is required to `REPLACE` an existing constraint.", position)
+    case IfExistsInvalidSyntax | IfExistsReplace => SemanticError(s"Failed to create relationship property existence constraint: `OR REPLACE` cannot be used together with this command.", position)
     case _ => super.semanticCheck
   }
 }

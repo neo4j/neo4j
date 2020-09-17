@@ -33,7 +33,6 @@ import org.neo4j.cypher.internal.ast.DropNodePropertyExistenceConstraint
 import org.neo4j.cypher.internal.ast.DropRelationshipPropertyExistenceConstraint
 import org.neo4j.cypher.internal.ast.DropUniquePropertyConstraint
 import org.neo4j.cypher.internal.ast.IfExistsDoNothing
-import org.neo4j.cypher.internal.ast.IfExistsReplace
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.frontend.phases.BaseState
@@ -63,10 +62,6 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
       // CREATE CONSTRAINT ON (node:Label) ASSERT (node.prop1,node.prop2) IS NODE KEY
       case CreateNodeKeyConstraint(node, label, props, name, ifExistsDo, _) =>
         val source = ifExistsDo match {
-          case IfExistsReplace =>
-            // Name is not optional with OR REPLACE
-            // This has been checked in semantic checking, so it is safe to call name.get now
-            Some(plans.DropConstraintOnName(name.get, ifExists = true))
           case IfExistsDoNothing => Some(plans.DoNothingIfExistsForConstraint(node.name, scala.util.Left(label), props, plans.NodeKey, name))
           case _ => None
         }
@@ -80,10 +75,6 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
       // CREATE CONSTRAINT ON (node:Label) ASSERT (node.prop1,node.prop2) IS UNIQUE
       case CreateUniquePropertyConstraint(node, label, props, name, ifExistsDo, _) =>
         val source = ifExistsDo match {
-          case IfExistsReplace =>
-            // Name is not optional with OR REPLACE
-            // This has been checked in semantic checking, so it is safe to call name.get now
-            Some(plans.DropConstraintOnName(name.get, ifExists = true))
           case IfExistsDoNothing => Some(plans.DoNothingIfExistsForConstraint(node.name, scala.util.Left(label), props, plans.Uniqueness, name))
           case _ => None
         }
@@ -97,10 +88,6 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
       // CREATE CONSTRAINT ON (node:Label) ASSERT node.prop EXISTS
       case CreateNodePropertyExistenceConstraint(_, label, prop, name, ifExistsDo, _) =>
         val source = ifExistsDo match {
-          case IfExistsReplace =>
-            // Name is not optional with OR REPLACE
-            // This has been checked in semantic checking, so it is safe to call name.get now
-            Some(plans.DropConstraintOnName(name.get, ifExists = true))
           case IfExistsDoNothing => Some(plans.DoNothingIfExistsForConstraint(prop.map.asCanonicalStringVal, scala.util.Left(label), Seq(prop), plans.NodePropertyExistence, name))
           case _ => None
         }
@@ -113,10 +100,6 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
       // CREATE CONSTRAINT ON ()-[r:R]-() ASSERT r.prop EXISTS
       case CreateRelationshipPropertyExistenceConstraint(_, relType, prop, name, ifExistsDo, _) =>
         val source = ifExistsDo match {
-          case IfExistsReplace =>
-            // Name is not optional with OR REPLACE
-            // This has been checked in semantic checking, so it is safe to call name.get now
-            Some(plans.DropConstraintOnName(name.get, ifExists = true))
           case IfExistsDoNothing => Some(plans.DoNothingIfExistsForConstraint(prop.map.asCanonicalStringVal, scala.util.Right(relType), Seq(prop), plans.RelationshipPropertyExistence, name))
           case _ => None
         }
@@ -139,10 +122,6 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
       case CreateIndexNewSyntax(_, label, props, name, ifExistsDo, _) =>
         val propKeys = props.map(_.propertyKey)
         val source = ifExistsDo match {
-          case IfExistsReplace =>
-            // Name is not optional with OR REPLACE
-            // This has been checked in semantic checking, so it is safe to call name.get now
-            Some(plans.DropIndexOnName(name.get, ifExists = true))
           case IfExistsDoNothing => Some(plans.DoNothingIfExistsForIndex(label, propKeys, name))
           case _ => None
         }
