@@ -113,8 +113,19 @@ class JumpVisitor implements ExpressionVisitor
     @Override
     public void not( Expression expression )
     {
-        expression.accept( eval );
-        methodVisitor.visitJumpInsn( IFNE, this.target );
+        if ( expression instanceof Expression.Or )
+        {
+            notOr( (Expression.Or) expression );
+        }
+        else if ( expression instanceof Expression.And )
+        {
+            notAnd( (Expression.And) expression );
+        }
+        else
+        {
+            expression.accept( eval );
+            methodVisitor.visitJumpInsn( IFNE, this.target );
+        }
     }
 
     @Override
@@ -155,8 +166,20 @@ class JumpVisitor implements ExpressionVisitor
     @Override
     public void or( Expression... expressions )
     {
-        eval.or( expressions );
-        methodVisitor.visitJumpInsn( IFEQ, this.target );
+        Label label = new Label();
+        for ( int i = 0; i < expressions.length; i++ )
+        {
+            expressions[i].accept( eval );
+            if ( i < expressions.length - 1 )
+            {
+                methodVisitor.visitJumpInsn( IFNE, label );
+            }
+            else
+            {
+                methodVisitor.visitJumpInsn( IFEQ, this.target );
+            }
+        }
+        methodVisitor.visitLabel( label );
     }
 
     @Override
@@ -273,5 +296,33 @@ class JumpVisitor implements ExpressionVisitor
     public void box( Expression expression )
     {
         throw new IllegalArgumentException( "box is not a boolean expression" );
+    }
+
+    private void notOr( Expression.Or or )
+    {
+        for ( Expression expression : or.expressions() )
+        {
+            expression.accept( eval );
+            methodVisitor.visitJumpInsn( IFNE, this.target );
+        }
+    }
+
+    private void notAnd( Expression.And and )
+    {
+        Label label = new Label();
+        Expression[] expressions = and.expressions();
+        for ( int i = 0; i < expressions.length; i++ )
+        {
+            expressions[i].accept( eval );
+            if ( i < expressions.length - 1 )
+            {
+                methodVisitor.visitJumpInsn( IFEQ, label );
+            }
+            else
+            {
+                methodVisitor.visitJumpInsn( IFNE, this.target );
+            }
+        }
+        methodVisitor.visitLabel( label );
     }
 }
