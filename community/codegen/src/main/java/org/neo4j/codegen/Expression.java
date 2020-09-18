@@ -228,7 +228,7 @@ public abstract class Expression extends ExpressionTemplate
         return new Or( expressions );
     }
 
-    private static class And extends Expression
+    public static class And extends Expression
     {
         private final Expression[] expressions;
 
@@ -238,6 +238,11 @@ public abstract class Expression extends ExpressionTemplate
             this.expressions = expressions;
         }
 
+        public Expression[] expressions()
+        {
+            return expressions;
+        }
+
         @Override
         public void accept( ExpressionVisitor visitor )
         {
@@ -245,7 +250,7 @@ public abstract class Expression extends ExpressionTemplate
         }
     }
 
-    private static class Or extends Expression
+    public static class Or extends Expression
     {
         private final Expression[] expressions;
 
@@ -253,6 +258,11 @@ public abstract class Expression extends ExpressionTemplate
         {
             super( BOOLEAN );
             this.expressions = expressions;
+        }
+
+        public Expression[] expressions()
+        {
+            return expressions;
         }
 
         @Override
