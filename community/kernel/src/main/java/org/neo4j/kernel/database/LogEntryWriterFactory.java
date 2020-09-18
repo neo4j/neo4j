@@ -21,6 +21,7 @@ package org.neo4j.kernel.database;
 
 import org.neo4j.io.fs.WritableChecksumChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
+import org.neo4j.kernel.impl.transaction.log.entry.TransactionLogVersionSelector;
 
 /**
  * The LogEntryWriterFactory is responsible for picking the transaction log format version to
@@ -32,4 +33,14 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 public interface LogEntryWriterFactory
 {
     <T extends WritableChecksumChannel> LogEntryWriter<T> createEntryWriter( T channel );
+
+    LogEntryWriterFactory LATEST = new LogEntryWriterFactory()
+    {
+        @Override
+        public <T extends WritableChecksumChannel> LogEntryWriter<T> createEntryWriter( T channel )
+        {
+            return new LogEntryWriter<>( channel, TransactionLogVersionSelector.LATEST );
+        }
+    };
+
 }

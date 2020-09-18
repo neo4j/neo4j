@@ -34,22 +34,12 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.COMM
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.LEGACY_CHECK_POINT;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.TX_COMMIT;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.TX_START;
-import static org.neo4j.kernel.impl.transaction.log.entry.TransactionLogVersionSelector.LATEST;
 
 public class LogEntryWriter<T extends WritableChecksumChannel>
 {
     private final Visitor<StorageCommand,IOException> serializer;
     protected final T channel;
     private final byte parserSetVersion;
-
-    /**
-     * Create a writer that uses {@link TransactionLogVersionSelector#LATEST} for versioning.
-     * @param channel underlying channel
-     */
-    public LogEntryWriter( T channel )
-    {
-        this( channel, LATEST );
-    }
 
     public LogEntryWriter( T channel, LogEntryParserSet parserSet )
     {

@@ -1070,7 +1070,7 @@ class RecoveryCorruptedTransactionLogIT
 
         DelegatingLogEntryWriter( LogEntryWriter<T> logEntryWriter )
         {
-            super( logEntryWriter.getChannel() );
+            super( logEntryWriter.getChannel(), TransactionLogVersionSelector.LATEST );
             this.delegate = logEntryWriter;
         }
 
