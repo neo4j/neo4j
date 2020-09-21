@@ -19,13 +19,14 @@
  */
 package org.neo4j.logging.internal;
 
-import java.util.Objects;
 import java.util.function.Consumer;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import org.neo4j.logging.AbstractLog;
 import org.neo4j.logging.Log;
+
+import static java.util.Objects.requireNonNull;
 
 public class PrefixedLog extends AbstractLog
 {
@@ -34,7 +35,8 @@ public class PrefixedLog extends AbstractLog
 
     PrefixedLog( String prefix, Log delegate )
     {
-        Objects.requireNonNull( prefix );
+        requireNonNull( prefix, "prefix must be a string" );
+        requireNonNull( delegate, "delegate log cannot be null" );
         this.prefix = "[" + prefix + "] ";
         this.delegate = delegate;
     }
