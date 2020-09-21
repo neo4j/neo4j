@@ -45,6 +45,7 @@ import org.neo4j.cypher.internal.ir.PlannerQueryPart
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.QueryHorizon
 import org.neo4j.cypher.internal.ir.QueryPagination
+import org.neo4j.cypher.internal.ir.QueryProjection
 import org.neo4j.cypher.internal.ir.RegularQueryProjection
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.ir.Selections
@@ -82,45 +83,10 @@ class StatisticsBackedCardinalityModel(queryGraphCardinalityModel: QueryGraphCar
   }
 
   private def calculateCardinalityForQueryHorizon(in: Cardinality, horizon: QueryHorizon, semanticTable: SemanticTable): Cardinality = horizon match {
-    // Normal projection with LIMIT integer literal
-    case RegularQueryProjection(_, QueryPagination(_, Some(limit: IntegerLiteral)), where) =>
-      val cardinalityBeforeSelection = Cardinality.min(in, limit.value.toDouble)
-      horizonCardinalityWithSelections(cardinalityBeforeSelection, where, semanticTable)
-
-    // Normal projection with LIMIT
-    case RegularQueryProjection(_, QueryPagination(_, Some(limit)), where) =>
-      val cannotEvaluateStableValue =
-        simpleExpressionEvaluator.hasParameters(limit) ||
-          !simpleExpressionEvaluator.isDeterministic(limit)
-
-      val limitCardinality =
-        if (cannotEvaluateStableValue) DEFAULT_LIMIT_CARDINALITY
-        else {
-          val evaluatedValue: Option[Any] = simpleExpressionEvaluator.evaluateExpression(limit)
-
-          if (evaluatedValue.isDefined && evaluatedValue.get.isInstanceOf[NumberValue])
-            Cardinality(evaluatedValue.get.asInstanceOf[NumberValue].doubleValue())
-          else DEFAULT_LIMIT_CARDINALITY
-        }
-
-      val cardinalityBeforeSelection = Cardinality.min(in, limitCardinality)
-      horizonCardinalityWithSelections(cardinalityBeforeSelection, where, semanticTable)
-
-    case projection: RegularQueryProjection =>
-      horizonCardinalityWithSelections(in, projection.selections, semanticTable)
-
-    // Distinct
-    case projection: AggregatingQueryProjection if projection.aggregationExpressions.isEmpty =>
-      val cardinalityBeforeSelection = in * DEFAULT_DISTINCT_SELECTIVITY
-      horizonCardinalityWithSelections(cardinalityBeforeSelection, projection.selections, semanticTable)
-    case projection: DistinctQueryProjection =>
-      val cardinalityBeforeSelection = in * DEFAULT_DISTINCT_SELECTIVITY
-      horizonCardinalityWithSelections(cardinalityBeforeSelection, projection.selections, semanticTable)
-
-    // Aggregates
-    case projection: AggregatingQueryProjection =>
-      val cardinalityBeforeSelection = StatisticsBackedCardinalityModel.aggregateCardinalityBeforeSelection(in, projection.groupingExpressions)
-      horizonCardinalityWithSelections(cardinalityBeforeSelection, projection.selections, semanticTable)
+    case projection: QueryProjection =>
+      val cardinalityBeforeLimit = queryProjectionCardinalityBeforeLimit(in, projection)
+      val cardinalityBeforeSelection = queryProjectionCardinalityWithLimit(cardinalityBeforeLimit, projection.queryPagination)
+      queryProjectionCardinalityWithSelections(cardinalityBeforeSelection, projection.selections, semanticTable)
 
     // Unwind
     case UnwindProjection(_, expression) =>
@@ -153,9 +119,43 @@ class StatisticsBackedCardinalityModel(queryGraphCardinalityModel: QueryGraphCar
       in * subQueryCardinality
   }
 
-  private def horizonCardinalityWithSelections(cardinalityBeforeSelection: Cardinality,
-                                               where: Selections,
-                                               semanticTable: SemanticTable): Cardinality = {
+  private def queryProjectionCardinalityBeforeLimit(in: Cardinality, projection: QueryProjection): Cardinality = projection match {
+    case _: RegularQueryProjection =>
+      in
+
+    case _: DistinctQueryProjection =>
+      in * DEFAULT_DISTINCT_SELECTIVITY
+    case agg: AggregatingQueryProjection if agg.aggregationExpressions.isEmpty =>
+      in * DEFAULT_DISTINCT_SELECTIVITY
+
+    case agg: AggregatingQueryProjection =>
+      StatisticsBackedCardinalityModel.aggregateCardinalityEstimation(in, agg.groupingExpressions)
+  }
+
+  private def queryProjectionCardinalityWithLimit(cardinalityBeforeLimit: Cardinality, queryPagination: QueryPagination): Cardinality = {
+    val limitCardinality = queryPagination.limit match {
+      case None => cardinalityBeforeLimit
+      case Some(literal: IntegerLiteral) => Cardinality(literal.value.toDouble)
+      case Some(limitExpr) =>
+        val cannotEvaluateStableValue =
+          simpleExpressionEvaluator.hasParameters(limitExpr) ||
+            !simpleExpressionEvaluator.isDeterministic(limitExpr)
+
+        if (cannotEvaluateStableValue) DEFAULT_LIMIT_CARDINALITY
+        else {
+          val evaluatedValue: Option[Any] = simpleExpressionEvaluator.evaluateExpression(limitExpr)
+          evaluatedValue match {
+            case Some(num: NumberValue) => Cardinality(num.doubleValue())
+            case _ => DEFAULT_LIMIT_CARDINALITY
+          }
+        }
+    }
+    Cardinality.min(cardinalityBeforeLimit, limitCardinality)
+  }
+
+  private def queryProjectionCardinalityWithSelections(cardinalityBeforeSelection: Cardinality,
+                                                       where: Selections,
+                                                       semanticTable: SemanticTable): Cardinality = {
     implicit val selections: Selections = where
     implicit val implicitSemanticTable: SemanticTable = semanticTable
     val expressionSelectivities = selections.flatPredicates.map(expressionSelectivityCalculator(_))
@@ -173,7 +173,7 @@ class StatisticsBackedCardinalityModel(queryGraphCardinalityModel: QueryGraphCar
 }
 
 object StatisticsBackedCardinalityModel {
-  def aggregateCardinalityBeforeSelection(in: Cardinality, groupingExpressions: Map[String, Expression]): Cardinality =
+  def aggregateCardinalityEstimation(in: Cardinality, groupingExpressions: Map[String, Expression]): Cardinality =
     if (groupingExpressions.isEmpty)
       Cardinality.min(in, Cardinality.SINGLE)
     else

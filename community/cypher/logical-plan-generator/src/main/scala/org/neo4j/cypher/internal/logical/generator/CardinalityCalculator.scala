@@ -52,8 +52,8 @@ import org.neo4j.cypher.internal.logical.plans.Skip
 import org.neo4j.cypher.internal.logical.plans.Sort
 import org.neo4j.cypher.internal.logical.plans.Top
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByIdSeek
-import org.neo4j.cypher.internal.logical.plans.UnwindCollection
 import org.neo4j.cypher.internal.logical.plans.Union
+import org.neo4j.cypher.internal.logical.plans.UnwindCollection
 import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.util.Cardinality
@@ -142,7 +142,7 @@ object CardinalityCalculator {
   implicit val aggregationCardinality: CardinalityCalculator[Aggregation] = {
     (plan, state, _, _) =>
       val in = state.cardinalities.get(plan.source.id)
-      StatisticsBackedCardinalityModel.aggregateCardinalityBeforeSelection(in, plan.groupingExpressions)
+      StatisticsBackedCardinalityModel.aggregateCardinalityEstimation(in, plan.groupingExpressions)
   }
 
   implicit val applyCardinality: CardinalityCalculator[Apply] =
