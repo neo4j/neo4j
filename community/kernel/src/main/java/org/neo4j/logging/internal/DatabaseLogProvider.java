@@ -19,18 +19,19 @@
  */
 package org.neo4j.logging.internal;
 
+import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.logging.AbstractLogProvider;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 
-public class DatabaseLogProvider extends AbstractLogProvider<DatabaseLog>
+public class DatabaseLogProvider extends AbstractLogProvider<ContextualLog>
 {
-    private final DatabaseLogContext logContext;
+    private final NamedDatabaseId namedDatabaseId;
     private final LogProvider delegate;
 
-    public DatabaseLogProvider( DatabaseLogContext logContext, LogProvider delegate )
+    public DatabaseLogProvider( NamedDatabaseId namedDatabaseId, LogProvider delegate )
     {
-        this.logContext = logContext;
+        this.namedDatabaseId = namedDatabaseId;
         this.delegate = delegate;
     }
 
@@ -40,14 +41,14 @@ public class DatabaseLogProvider extends AbstractLogProvider<DatabaseLog>
     }
 
     @Override
-    protected DatabaseLog buildLog( Class<?> loggingClass )
+    protected ContextualLog buildLog( Class<?> loggingClass )
     {
-        return new DatabaseLog( logContext, delegate.getLog( loggingClass ) );
+        return new ContextualLog( namedDatabaseId, delegate.getLog( loggingClass ) );
     }
 
     @Override
-    protected DatabaseLog buildLog( String name )
+    protected ContextualLog buildLog( String name )
     {
-        return new DatabaseLog( logContext, delegate.getLog( name ) );
+        return new ContextualLog( namedDatabaseId, delegate.getLog( name ) );
     }
 }

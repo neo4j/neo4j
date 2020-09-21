@@ -23,7 +23,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayOutputStream;
+import java.util.UUID;
 
+import org.neo4j.kernel.database.DatabaseIdFactory;
+import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.logging.Level;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.log4j.Log4jLogProvider;
@@ -34,17 +37,16 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 
 class DatabaseLogServiceTest
 {
-    private static final String TEST_PREFIX = "prefix";
-
     private LogProvider logProvider;
     private DatabaseLogService logService;
     private final ByteArrayOutputStream outContent = new ByteArrayOutputStream();
+    private final NamedDatabaseId namedDatabaseId = DatabaseIdFactory.from( "foo", UUID.randomUUID() );
 
     @BeforeEach
     void setUp()
     {
         logProvider = new Log4jLogProvider( outContent, Level.DEBUG );
-        logService = new DatabaseLogService( DatabaseLogServiceTest::testLogContext, new SimpleLogService( logProvider ) );
+        logService = new DatabaseLogService( namedDatabaseId, new SimpleLogService( logProvider ) );
     }
 
     @Test
@@ -54,7 +56,7 @@ class DatabaseLogServiceTest
         var log = logProvider.getLog( "log_name" );
         log.info( "message" );
 
-        assertLogged( "[log_name] [prefix] message" );
+        assertLogged( "[log_name] " + namedDatabaseId.formatMessage( "message" ) );
     }
 
     @Test
@@ -64,7 +66,7 @@ class DatabaseLogServiceTest
         var log = logProvider.getLog( Object.class );
         log.info( "message" );
 
-        assertLogged( "[j.l.Object] [prefix] message" );
+        assertLogged( "[j.l.Object] " + namedDatabaseId.formatMessage( "message" ) );
     }
 
     @Test
@@ -108,10 +110,5 @@ class DatabaseLogServiceTest
     private void assertLogged( String message )
     {
         assertThat( outContent.toString() ).contains( message );
-    }
-
-    private static String testLogContext( String message )
-    {
-        return "[" + TEST_PREFIX + "] " + message;
     }
 }

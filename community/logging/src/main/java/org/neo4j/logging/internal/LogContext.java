@@ -20,7 +20,7 @@
 package org.neo4j.logging.internal;
 
 @FunctionalInterface
-public interface DatabaseLogContext
+public interface LogContext
 {
     String formatMessage( String message );
 }

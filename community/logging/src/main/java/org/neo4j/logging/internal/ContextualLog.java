@@ -26,12 +26,12 @@ import javax.annotation.Nullable;
 import org.neo4j.logging.AbstractLog;
 import org.neo4j.logging.Log;
 
-public class DatabaseLog extends AbstractLog
+public class ContextualLog extends AbstractLog
 {
-    private final DatabaseLogContext logContext;
+    private final LogContext logContext;
     private final Log delegate;
 
-    DatabaseLog( DatabaseLogContext logContext, Log delegate )
+    ContextualLog( LogContext logContext, Log delegate )
     {
         this.logContext = logContext;
         this.delegate = delegate;
