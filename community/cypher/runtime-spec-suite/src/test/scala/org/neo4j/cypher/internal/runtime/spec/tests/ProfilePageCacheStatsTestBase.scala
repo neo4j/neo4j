@@ -90,6 +90,7 @@ abstract class ProfilePageCacheStatsTestBase[CONTEXT <: RuntimeContext](edition:
     checkProfilerStatsMakeSense(runtimeResult, 8,
       Seq(2, // A join should not access store
         3, // Apply does not do anything
+        4, // Aggregation should not access store
         5, // Argument does not do anything
       )
     )

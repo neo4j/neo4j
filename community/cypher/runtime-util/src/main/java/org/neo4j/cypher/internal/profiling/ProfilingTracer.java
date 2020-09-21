@@ -133,9 +133,7 @@ public class ProfilingTracer implements QueryProfiler, QueryProfile
         @Override
         public void close()
         {
-            long pageCacheHits = statisticProvider.getPageCacheHits();
-            long pageCacheFaults = statisticProvider.getPageCacheMisses();
-            data.update( OperatorProfile.NO_DATA, hitCount, rowCount, pageCacheHits, pageCacheFaults, OperatorProfile.NO_DATA );
+            data.update( OperatorProfile.NO_DATA, hitCount, rowCount,  OperatorProfile.NO_DATA,  OperatorProfile.NO_DATA, OperatorProfile.NO_DATA );
         }
 
         @Override
@@ -176,12 +174,16 @@ public class ProfilingTracer implements QueryProfiler, QueryProfile
     {
         private final long start;
         private final Clock clock;
+        private long pageCountHitsStart;
+        private long pageCountMissesStart;
 
         TimeTrackingExecutionEvent( Clock clock, KernelStatisticProvider statisticProvider, ProfilingTracerData data )
         {
             super( statisticProvider, data );
             this.clock = clock;
             this.start = clock.nanoTime();
+            this.pageCountHitsStart = statisticProvider.getPageCacheHits();
+            this.pageCountMissesStart = statisticProvider.getPageCacheMisses();
         }
 
         @Override
@@ -190,7 +192,7 @@ public class ProfilingTracer implements QueryProfiler, QueryProfile
             long pageCacheHits = statisticProvider.getPageCacheHits();
             long pageCacheFaults = statisticProvider.getPageCacheMisses();
             long executionTime = clock.nanoTime() - start;
-            data.update( executionTime, hitCount, rowCount, pageCacheHits, pageCacheFaults, OperatorProfile.NO_DATA );
+            data.update( executionTime, hitCount, rowCount, pageCacheHits - pageCountHitsStart, pageCacheFaults - pageCountMissesStart, OperatorProfile.NO_DATA );
         }
     }
 }
