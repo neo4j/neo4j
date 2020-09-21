@@ -45,6 +45,7 @@ import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
+import org.neo4j.kernel.impl.coreapi.TransactionImpl;
 import org.neo4j.kernel.impl.locking.community.RWLock;
 import org.neo4j.lock.ResourceTypes;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
@@ -185,9 +186,11 @@ class DetachDeleteIT
         {
             Write write = getWrite( tx );
             write.nodeDetachDelete( nodeId );
-            sequencer.release( Phases.DETACH_DELETE_HAS_FINISHED );
-            sequencer.await( Phases.LOCK_VERIFICATION_FINISHED );
-            tx.commit();
+            ((TransactionImpl) tx).kernelTransaction().commit( () ->
+            {
+                sequencer.release( Phases.DETACH_DELETE_HAS_FINISHED );
+                sequencer.await( Phases.LOCK_VERIFICATION_FINISHED );
+            } );
         }
         relationshipAdder.get();
         lockVerifier.get();

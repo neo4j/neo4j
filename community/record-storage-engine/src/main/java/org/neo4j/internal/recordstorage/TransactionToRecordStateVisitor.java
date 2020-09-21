@@ -36,6 +36,7 @@ import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.storageengine.api.ConstraintRuleAccessor;
 import org.neo4j.storageengine.api.StorageProperty;
+import org.neo4j.storageengine.api.txstate.RelationshipModifications;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 
 class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
@@ -88,17 +89,9 @@ class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
     }
 
     @Override
-    public void visitCreatedRelationship( long id, int type, long startNode, long endNode )
+    public void visitRelationshipModifications( RelationshipModifications modifications )
     {
-        // record the state changes to be made to the store
-        recordState.relCreate( id, type, startNode, endNode );
-    }
-
-    @Override
-    public void visitDeletedRelationship( long id )
-    {
-        // record the state changes to be made to the store
-        recordState.relDelete( id );
+        recordState.relModify( modifications );
     }
 
     @Override

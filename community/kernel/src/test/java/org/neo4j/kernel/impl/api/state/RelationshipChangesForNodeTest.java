@@ -20,26 +20,43 @@
 package org.neo4j.kernel.impl.api.state;
 
 import org.eclipse.collections.api.iterator.LongIterator;
+import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
+import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.factory.primitive.IntObjectMaps;
+import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+
+import java.util.HashMap;
+import java.util.Map;
 
 import org.neo4j.graphdb.Direction;
-
-import org.neo4j.memory.EmptyMemoryTracker;
+import org.neo4j.storageengine.api.RelationshipDirection;
+import org.neo4j.storageengine.api.txstate.RelationshipModifications;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
+import org.neo4j.test.rule.RandomRule;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.collection.PrimitiveLongCollections.asArray;
+import static org.neo4j.kernel.impl.api.state.RelationshipChangesForNode.DiffStrategy.ADD;
+import static org.neo4j.kernel.impl.api.state.RelationshipChangesForNode.DiffStrategy.REMOVE;
+import static org.neo4j.kernel.impl.api.state.RelationshipChangesForNode.createRelationshipChangesForNode;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.RelationshipDirection.INCOMING;
 import static org.neo4j.storageengine.api.RelationshipDirection.LOOP;
 import static org.neo4j.storageengine.api.RelationshipDirection.OUTGOING;
 
+@ExtendWith( RandomExtension.class )
 class RelationshipChangesForNodeTest
 {
+    @Inject
+    private RandomRule random;
 
     @Test
     void shouldGetRelationships()
     {
-        RelationshipChangesForNode changes = RelationshipChangesForNode.createRelationshipChangesForNode(
-                RelationshipChangesForNode.DiffStrategy.ADD, EmptyMemoryTracker.INSTANCE );
+        RelationshipChangesForNode changes = createRelationshipChangesForNode( ADD, INSTANCE );
 
         final int TYPE = 2;
 
@@ -57,8 +74,7 @@ class RelationshipChangesForNodeTest
     @Test
     void shouldGetRelationshipsByTypeAndDirection()
     {
-        RelationshipChangesForNode changes = RelationshipChangesForNode.createRelationshipChangesForNode(
-                RelationshipChangesForNode.DiffStrategy.ADD, EmptyMemoryTracker.INSTANCE );
+        RelationshipChangesForNode changes = createRelationshipChangesForNode( ADD, INSTANCE );
 
         final int TYPE = 2;
         final int DECOY_TYPE = 666;
@@ -78,5 +94,74 @@ class RelationshipChangesForNodeTest
 
         LongIterator rawOutgoing = changes.getRelationships( Direction.OUTGOING, TYPE );
         assertThat( asArray( rawOutgoing ) ).containsExactly( 2, 3, 4, 5, 6 );
+    }
+
+    @Test
+    void shouldVisitRelationshipIds()
+    {
+        // given
+        RelationshipChangesForNode changes = createRelationshipChangesForNode( REMOVE, INSTANCE );
+        MutableIntObjectMap<Map<RelationshipDirection,MutableLongSet>> expected = IntObjectMaps.mutable.empty();
+        MutableLongSet allExpected = LongSets.mutable.empty();
+        for ( int id = 0; id < 100; id++ )
+        {
+            int type = random.nextInt( 5 );
+            RelationshipDirection direction = random.nextBoolean() ? random.nextBoolean() ? OUTGOING : INCOMING : LOOP;
+            changes.addRelationship( id, type, direction );
+            expected.getIfAbsentPut( type, HashMap::new ).computeIfAbsent( direction, d -> LongSets.mutable.empty() ).add( id );
+            allExpected.add( id );
+        }
+
+        // when
+        MutableLongSet allChangedIds = LongSets.mutable.empty();
+        changes.visitIds( allChangedIds::add );
+
+        // then
+        assertThat( allChangedIds ).isEqualTo( allExpected );
+
+        // and when
+        changes.visitIdsSplit( typeIds ->
+        {
+            Map<RelationshipDirection,MutableLongSet> dirMap = expected.remove( typeIds.type() );
+            visitExpectedIds( typeIds, dirMap, OUTGOING );
+            visitExpectedIds( typeIds, dirMap, INCOMING );
+            visitExpectedIds( typeIds, dirMap, LOOP );
+            assertThat( dirMap ).isEmpty();
+            return false;
+        }, RelationshipModifications.noAdditionalDataDecorator() );
+        assertThat( expected ).isEmpty();
+    }
+
+    @Test
+    void shouldReportHasRelationshipsOfType()
+    {
+        // given
+        int type = 1;
+        RelationshipChangesForNode changes = createRelationshipChangesForNode( ADD, INSTANCE );
+        assertThat( changes.hasRelationships( type ) ).isFalse();
+
+        long relId = 123;
+        RelationshipDirection[] directions = new RelationshipDirection[]{OUTGOING, INCOMING, LOOP};
+        for ( int i = 0; i < directions.length; i++ )
+        {
+            // when/then
+            changes.addRelationship( relId + i, type, directions[i] );
+            assertThat( changes.hasRelationships( type ) ).isTrue();
+        }
+        for ( RelationshipDirection direction : directions )
+        {
+            // when/then
+            assertThat( changes.hasRelationships( type ) ).isTrue();
+            changes.removeRelationship( relId++, type, direction );
+        }
+        // and then
+        assertThat( changes.hasRelationships( type ) ).isFalse();
+    }
+
+    private void visitExpectedIds( RelationshipModifications.NodeRelationshipTypeIds typeIds,
+            Map<RelationshipDirection,MutableLongSet> dirMap, RelationshipDirection direction )
+    {
+        typeIds.ids( direction ).forEach( ( id, type, startNode, endNode ) -> assertThat( dirMap.get( direction ).remove( id ) ).isTrue() );
+        assertThat( dirMap.remove( direction ).isEmpty() );
     }
 }

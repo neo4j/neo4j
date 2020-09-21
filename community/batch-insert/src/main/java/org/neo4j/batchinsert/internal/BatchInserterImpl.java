@@ -53,8 +53,8 @@ import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.counts.GBPTreeCountsStore;
-import org.neo4j.internal.counts.GBPTreeGenericCountsStore;
 import org.neo4j.internal.counts.RelationshipGroupDegreesStore;
+import org.neo4j.internal.counts.RelationshipGroupDegreesStoreFactory;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.IteratorWrapper;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
@@ -123,8 +123,6 @@ import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.kernel.impl.index.schema.LabelScanStore;
 import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStore;
 import org.neo4j.kernel.impl.index.schema.TokenScanStore;
-import org.neo4j.kernel.impl.locking.Locks;
-import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.pagecache.PageCacheLifecycle;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
@@ -189,18 +187,20 @@ import static org.neo4j.configuration.GraphDatabaseInternalSettings.databases_ro
 import static org.neo4j.configuration.GraphDatabaseSettings.logs_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.memory_tracking;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
+import static org.neo4j.configuration.GraphDatabaseSettings.read_only;
 import static org.neo4j.configuration.GraphDatabaseSettings.store_internal_log_path;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
-import static org.neo4j.internal.counts.RelationshipGroupDegreesStore.noRebuilder;
+import static org.neo4j.internal.counts.GBPTreeGenericCountsStore.NO_MONITOR;
 import static org.neo4j.internal.helpers.Numbers.safeCastLongToInt;
 import static org.neo4j.internal.helpers.collection.Iterables.single;
 import static org.neo4j.internal.kernel.api.TokenRead.NO_TOKEN;
+import static org.neo4j.internal.recordstorage.RelationshipCreator.insertFirst;
+import static org.neo4j.internal.recordstorage.RelationshipModifier.DEFAULT_EXTERNAL_DEGREES_THRESHOLD_SWITCH;
 import static org.neo4j.internal.schema.IndexType.fromPublicApi;
 import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.existsForLabel;
 import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.existsForRelType;
-import static org.neo4j.kernel.impl.api.index.IndexingService.NO_MONITOR;
 import static org.neo4j.kernel.impl.constraints.ConstraintSemantics.getConstraintSemantics;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 import static org.neo4j.kernel.impl.store.PropertyStore.encodeString;
@@ -232,6 +232,7 @@ public class BatchInserterImpl implements BatchInserter
     private final PageCursorTracer cursorTracer;
     private final MemoryTracker memoryTracker;
     private final RelationshipGroupDegreesStore.Updater degreeUpdater;
+    private final RelationshipGroupGetter relationshipGroupGetter;
     private boolean labelsTouched;
     private boolean relationshipTypesTouched;
     private boolean isShutdown;
@@ -255,7 +256,6 @@ public class BatchInserterImpl implements BatchInserter
     private final NeoStoreIndexStoreView storeIndexStoreView;
 
     private final LabelTokenStore labelTokenStore;
-    private final Locks.Client noopLockClient = new NoOpClient();
     private final long maxNodeId;
 
     public BatchInserterImpl( final DatabaseLayout databaseLayout, final FileSystemAbstraction fileSystem,
@@ -270,6 +270,7 @@ public class BatchInserterImpl implements BatchInserter
                 .set( transaction_logs_root_path, layout.transactionLogsRootDirectory() )
                 .set( logs_directory, Path.of( "" ) )
                 .fromConfig( fromConfig )
+                .set( read_only, false )
                 .build();
         this.fileSystem = fileSystem;
         pageCacheTracer = tracers.getPageCacheTracer();
@@ -323,10 +324,12 @@ public class BatchInserterImpl implements BatchInserter
             RecordStore<RelationshipGroupRecord> relationshipGroupStore = neoStores.getRelationshipGroupStore();
             schemaStore = neoStores.getSchemaStore();
             labelTokenStore = neoStores.getLabelTokenStore();
-            groupDegreesStore = new RelationshipGroupDegreesStore( pageCache, databaseLayout.relationshipGroupDegreesStore(), fileSystem, immediate(),
-                    noRebuilder( neoStores.getMetaDataStore().getLastCommittedTransactionId() - 1 ), false, pageCacheTracer,
-                    GBPTreeGenericCountsStore.NO_MONITOR );
+
+            groupDegreesStore = RelationshipGroupDegreesStoreFactory.create( config, pageCache, databaseLayout, fileSystem,
+                    immediate(), () -> neoStores.getMetaDataStore().getLastCommittedTransactionId() - 1, pageCacheTracer, NO_MONITOR );
             groupDegreesStore.start( cursorTracer, memoryTracker );
+            boolean relaxedLockingForDenseNodes = RelationshipGroupDegreesStoreFactory.featureEnabled( config, databaseLayout, fileSystem );
+
             degreeUpdater = groupDegreesStore.apply( neoStores.getMetaDataStore().getLastCommittedTransactionId(), cursorTracer );
 
             TokenHolder propertyKeyTokenHolder = new DelegatingTokenHolder( this::createNewPropertyKeyId, TokenHolder.TYPE_PROPERTY_KEY );
@@ -367,8 +370,9 @@ public class BatchInserterImpl implements BatchInserter
 
             // Record access
             recordAccess = new DirectRecordAccessSet( neoStores, idGeneratorFactory );
-            relationshipCreator = new RelationshipCreator(
-                new RelationshipGroupGetter( relationshipGroupStore, cursorTracer ), relationshipGroupStore.getStoreHeaderInt(), cursorTracer );
+            relationshipGroupGetter = new RelationshipGroupGetter( relationshipGroupStore, cursorTracer );
+            long externalDegreesThreshold = relaxedLockingForDenseNodes ? DEFAULT_EXTERNAL_DEGREES_THRESHOLD_SWITCH : Long.MAX_VALUE;
+            relationshipCreator = new RelationshipCreator( relationshipGroupStore.getStoreHeaderInt(), externalDegreesThreshold, cursorTracer );
             propertyTraverser = new PropertyTraverser( cursorTracer );
             propertyCreator = new PropertyCreator( propertyStore, propertyTraverser, cursorTracer, memoryTracker );
             propertyDeletor = new PropertyDeleter( propertyTraverser, cursorTracer );
@@ -597,8 +601,8 @@ public class BatchInserterImpl implements BatchInserter
                 immediate(), false, cacheTracer );
         IndexingService indexingService = IndexingServiceFactory
                 .createIndexingService( config, jobScheduler, indexProviderMap, indexStoreView, tokenHolders, emptyList(), logProvider, userLogProvider,
-                        NO_MONITOR, new DatabaseSchemaState( logProvider ), indexStatisticsStore, cacheTracer, memoryTracker, databaseLayout.getDatabaseName(),
-                        false );
+                        IndexingService.NO_MONITOR, new DatabaseSchemaState( logProvider ), indexStatisticsStore, cacheTracer, memoryTracker,
+                        databaseLayout.getDatabaseName(), false );
         life.add( indexingService );
         try
         {
@@ -647,7 +651,7 @@ public class BatchInserterImpl implements BatchInserter
         CountsComputer initialCountsBuilder =
                 new CountsComputer( neoStores, pageCache, cacheTracer, databaseLayout, memoryTracker, logService.getInternalLog( getClass() ) );
         try ( GBPTreeCountsStore countsStore = new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), fileSystem, immediate(),
-                initialCountsBuilder, false, cacheTracer, GBPTreeCountsStore.NO_MONITOR ) )
+                initialCountsBuilder, false, cacheTracer, NO_MONITOR ) )
         {
             countsStore.start( PageCursorTracer.NULL, memoryTracker );
             countsStore.checkpoint( IOLimiter.UNLIMITED, PageCursorTracer.NULL );
@@ -997,7 +1001,8 @@ public class BatchInserterImpl implements BatchInserter
     {
         long id = relationshipStore.nextId( cursorTracer );
         int typeId = getOrCreateRelationshipTypeId( type.name() );
-        relationshipCreator.relationshipCreate( id, typeId, node1, node2, recordAccess, degreeUpdater, noopLockClient );
+        relationshipCreator.relationshipCreate( id, typeId, node1, node2, recordAccess, degreeUpdater,
+                insertFirst( relationshipGroupGetter, recordAccess, cursorTracer ) );
         if ( properties != null && !properties.isEmpty() )
         {
             RelationshipRecord record = recordAccess.getRelRecords().getOrLoad( id, null, cursorTracer ).forChangingData();

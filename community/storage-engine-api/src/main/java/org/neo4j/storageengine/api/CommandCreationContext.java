@@ -19,6 +19,10 @@
  */
 package org.neo4j.storageengine.api;
 
+import org.neo4j.lock.LockTracer;
+import org.neo4j.lock.ResourceLocker;
+import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
+
 /**
  * A context which {@link StorageEngine} hands out to clients and which gets passed back in
  * to calls about creating commands. One of its purposes is to reserve and release ids. E.g. internal nodes and relationship references
@@ -69,6 +73,13 @@ public interface CommandCreationContext extends AutoCloseable
      * @return a unique relationship type token id.
      */
     int reserveRelationshipTypeTokenId();
+
+    void acquireRelationshipCreationLock( ReadableTransactionState txState, ResourceLocker locker, LockTracer lockTracer, long sourceNode, long targetNode );
+
+    void acquireRelationshipDeletionLock( ReadableTransactionState txState, ResourceLocker locker, LockTracer lockTracer,
+            long sourceNode, long targetNode, long relationship );
+
+    void acquireNodeDeletionLock( ReadableTransactionState txState, ResourceLocker locker, LockTracer lockTracer, long node );
 
     @Override
     void close();

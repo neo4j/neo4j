@@ -40,10 +40,7 @@ public interface TxStateVisitor extends AutoCloseable
 
     void visitDeletedNode( long id );
 
-    void visitCreatedRelationship( long id, int type, long startNode, long endNode ) throws
-            ConstraintValidationException;
-
-    void visitDeletedRelationship( long id );
+    void visitRelationshipModifications( RelationshipModifications modifications ) throws ConstraintValidationException;
 
     void visitNodePropertyChanges( long id, Iterator<StorageProperty> added, Iterator<StorageProperty> changed,
             IntIterable removed ) throws ConstraintValidationException;
@@ -83,12 +80,7 @@ public interface TxStateVisitor extends AutoCloseable
         }
 
         @Override
-        public void visitCreatedRelationship( long id, int type, long startNode, long endNode )
-        {
-        }
-
-        @Override
-        public void visitDeletedRelationship( long id )
+        public void visitRelationshipModifications( RelationshipModifications modifications )
         {
         }
 
@@ -175,16 +167,9 @@ public interface TxStateVisitor extends AutoCloseable
         }
 
         @Override
-        public void visitCreatedRelationship( long id, int type, long startNode, long endNode )
-                throws ConstraintValidationException
+        public void visitRelationshipModifications( RelationshipModifications modifications ) throws ConstraintValidationException
         {
-            actual.visitCreatedRelationship( id, type, startNode, endNode );
-        }
-
-        @Override
-        public void visitDeletedRelationship( long id )
-        {
-            actual.visitDeletedRelationship( id );
+            actual.visitRelationshipModifications( modifications );
         }
 
         @Override

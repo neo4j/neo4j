@@ -74,6 +74,7 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.lock.LockService;
+import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceLocker;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
@@ -433,7 +434,8 @@ class BatchingNeoStoresTest
         List<StorageCommand> commands = new ArrayList<>();
         try ( RecordStorageReader storageReader = storageEngine.newReader() )
         {
-            storageEngine.createCommands( commands, txState, storageReader, commandCreationContext, ResourceLocker.IGNORE, BASE_TX_ID, v -> v, NULL, INSTANCE );
+            storageEngine.createCommands( commands, txState, storageReader, commandCreationContext, ResourceLocker.IGNORE, LockTracer.NONE,
+                    BASE_TX_ID, v -> v, NULL, INSTANCE );
             CommandsToApply apply = new TransactionToApply( new PhysicalTransactionRepresentation( commands, new byte[0], 0, 0, 0, 0, ANONYMOUS ), NULL );
             storageEngine.apply( apply, TransactionApplicationMode.INTERNAL );
         }

@@ -19,19 +19,23 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
-import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.map.MutableMap;
 import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.UnmodifiableMap;
 
+import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TreeMap;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
+import org.neo4j.collection.trackable.HeapTrackingArrayList;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.schema.ConstraintDescriptor;
@@ -53,6 +57,8 @@ import org.neo4j.storageengine.api.RelationshipVisitor;
 import org.neo4j.storageengine.api.txstate.DiffSets;
 import org.neo4j.storageengine.api.txstate.LongDiffSets;
 import org.neo4j.storageengine.api.txstate.NodeState;
+import org.neo4j.storageengine.api.txstate.RelationshipModifications;
+import org.neo4j.storageengine.api.txstate.RelationshipModifications.NodeRelationshipIds;
 import org.neo4j.storageengine.api.txstate.RelationshipState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 import org.neo4j.util.VisibleForTesting;
@@ -65,6 +71,9 @@ import static org.neo4j.kernel.impl.api.state.TokenState.createTokenState;
 import static org.neo4j.kernel.impl.util.diffsets.TrackableDiffSets.newMutableDiffSets;
 import static org.neo4j.kernel.impl.util.diffsets.TrackableDiffSets.newMutableLongDiffSets;
 import static org.neo4j.kernel.impl.util.diffsets.TrackableDiffSets.newRemovalsCountingDiffSets;
+import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
+import static org.neo4j.storageengine.api.txstate.RelationshipModifications.idsAsBatch;
+import static org.neo4j.storageengine.api.txstate.RelationshipModifications.noAdditionalDataDecorator;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 
 /**
@@ -132,16 +141,42 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
 
         if ( relationships != null )
         {
-            final LongIterator added = relationships.getAdded().longIterator();
-            while ( added.hasNext() )
+            try ( HeapTrackingArrayList<NodeRelationshipIds> sortedNodeRelState = HeapTrackingArrayList.newArrayList( nodeStatesMap.size(), memoryTracker ) )
             {
-                final long relId = added.next();
-                if ( !relationshipVisit( relId, visitor::visitCreatedRelationship ) )
+                nodeStatesMap.forEachValue( nodeState ->
                 {
-                    throw new IllegalStateException( "No RelationshipState for added relationship!" );
-                }
+                    if ( nodeState.isDeleted() && nodeState.isAddedInThisTx() )
+                    {
+                        return;
+                    }
+                    if ( nodeState.hasAddedRelationships() || nodeState.hasRemovedRelationships() )
+                    {
+                        sortedNodeRelState.add( new StateNodeRelationshipIds( nodeState, this::relationshipVisit, memoryTracker ) );
+                    }
+                } );
+                sortedNodeRelState.sort( Comparator.comparingLong( NodeRelationshipIds::nodeId ) );
+
+                visitor.visitRelationshipModifications( new RelationshipModifications()
+                {
+                    @Override
+                    public void forEachSplit( Consumer<NodeRelationshipIds> nodeRelationshipIds )
+                    {
+                        sortedNodeRelState.forEach( nodeRelationshipIds );
+                    }
+
+                    @Override
+                    public RelationshipBatch creations()
+                    {
+                        return idsAsBatch( relationships.getAdded(), TxState.this::relationshipVisit );
+                    }
+
+                    @Override
+                    public RelationshipBatch deletions()
+                    {
+                        return idsAsBatch( relationships.getRemoved() );
+                    }
+                } );
             }
-            relationships.getRemoved().forEach( visitor::visitDeletedRelationship );
         }
 
         if ( nodes != null )
@@ -202,6 +237,73 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         }
     }
 
+    private static class StateNodeRelationshipIds implements NodeRelationshipIds
+    {
+        private static final long SHALLOW_SIZE = shallowSizeOfInstance( StateNodeRelationshipIds.class );
+        private final NodeStateImpl nodeState;
+        private final boolean hasCreations;
+        private final boolean hasDeletions;
+        private final RelationshipModifications.IdDataDecorator relationshipVisit;
+
+        StateNodeRelationshipIds( NodeStateImpl nodeState, RelationshipModifications.IdDataDecorator relationshipVisit, MemoryTracker memoryTracker )
+        {
+            this.nodeState = nodeState;
+            this.hasCreations = nodeState.hasAddedRelationships();
+            this.hasDeletions = nodeState.hasRemovedRelationships();
+            this.relationshipVisit = relationshipVisit;
+            memoryTracker.allocateHeap( SHALLOW_SIZE );
+        }
+        @Override
+        public long nodeId()
+        {
+            return nodeState.id;
+        }
+
+        @Override
+        public boolean hasCreations()
+        {
+            return hasCreations;
+        }
+
+        @Override
+        public boolean hasCreations( int type )
+        {
+            return hasCreations && nodeState.hasAddedRelationships( type );
+        }
+
+        @Override
+        public boolean hasDeletions()
+        {
+            return hasDeletions;
+        }
+
+        @Override
+        public RelationshipModifications.RelationshipBatch creations()
+        {
+            return nodeState.additionsAsRelationshipBatch( relationshipVisit );
+        }
+
+        @Override
+        public RelationshipModifications.RelationshipBatch deletions()
+        {
+            return nodeState.removalsAsRelationshipBatch( noAdditionalDataDecorator() );
+        }
+
+        @Override
+        public void forEachCreationSplitInterruptible(
+                Predicate<RelationshipModifications.NodeRelationshipTypeIds> nodeRelationshipTypeIds )
+        {
+            nodeState.visitAddedIdsSplit( nodeRelationshipTypeIds, relationshipVisit );
+        }
+
+        @Override
+        public void forEachDeletionSplitInterruptible(
+                Predicate<RelationshipModifications.NodeRelationshipTypeIds> nodeRelationshipTypeIds )
+        {
+            nodeState.visitRemovedIdsSplit( nodeRelationshipTypeIds );
+        }
+    }
+
     @Override
     public boolean hasChanges()
     {
@@ -217,7 +319,12 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     @Override
     public Iterable<NodeState> modifiedNodes()
     {
-        return nodeStatesMap == null ? Iterables.empty() : Iterables.cast( nodeStatesMap.values() );
+        if ( nodeStatesMap == null )
+        {
+            return Iterables.empty();
+        }
+        Collection<NodeStateImpl> nodeStates = nodeStatesMap.values();
+        return Iterables.cast( Iterables.filter( ns -> !ns.isDeleted(), nodeStates ) );
     }
 
     @VisibleForTesting
@@ -299,12 +406,15 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
 
         if ( nodeStatesMap != null )
         {
-            NodeStateImpl nodeState = nodeStatesMap.remove( nodeId );
+            // Previously this node state was removed completely and its state cleared. Was that to reduce memory footprint for large deletions?
+            // We have changed this so that it still keeps the removed relationships for this node so that they can be handed to command creation
+            // grouped by type and direction.
+            NodeStateImpl nodeState = nodeStatesMap.get( nodeId );
             if ( nodeState != null )
             {
                 final LongDiffSets diff = nodeState.labelDiffSets();
                 diff.getAdded().each( label -> getOrCreateLabelStateNodeDiffSets( label ).remove( nodeId ) );
-                nodeState.clear();
+                nodeState.markAsDeleted();
             }
         }
         dataChanged();
@@ -478,8 +588,8 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         {
             return NodeStateImpl.EMPTY;
         }
-        final NodeState nodeState = nodeStatesMap.get( id );
-        return nodeState == null ? NodeStateImpl.EMPTY : nodeState;
+        final NodeStateImpl nodeState = nodeStatesMap.get( id );
+        return nodeState == null || nodeState.isDeleted() ? NodeStateImpl.EMPTY : nodeState;
     }
 
     @Override
@@ -813,7 +923,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
 
     private NodeStateImpl newNodeState( long nodeId )
     {
-        return NodeStateImpl.createNodeState( nodeId, collectionsFactory, memoryTracker );
+        return NodeStateImpl.createNodeState( nodeId, nodeIsAddedInThisTx( nodeId ), collectionsFactory, memoryTracker );
     }
 
     private RelationshipStateImpl newRelationshipState( long relationshipId )

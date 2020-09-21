@@ -24,64 +24,76 @@ import org.neo4j.internal.recordstorage.RecordAccess.RecordProxy;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
-import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceLocker;
-import org.neo4j.lock.ResourceTypes;
+import org.neo4j.storageengine.api.txstate.RelationshipModifications.RelationshipBatch;
 
+import static org.neo4j.internal.recordstorage.RelationshipConnection.END_NEXT;
+import static org.neo4j.internal.recordstorage.RelationshipConnection.END_PREV;
+import static org.neo4j.internal.recordstorage.RelationshipConnection.START_NEXT;
+import static org.neo4j.internal.recordstorage.RelationshipConnection.START_PREV;
 import static org.neo4j.internal.recordstorage.RelationshipCreator.relCount;
+import static org.neo4j.internal.recordstorage.RelationshipGroupGetter.RelationshipGroupMonitor.EMPTY;
+import static org.neo4j.internal.recordstorage.RelationshipGroupGetter.deleteGroup;
+import static org.neo4j.internal.recordstorage.RelationshipGroupGetter.groupIsEmpty;
+import static org.neo4j.kernel.impl.store.record.Record.isNull;
+import static org.neo4j.lock.ResourceTypes.NODE;
+import static org.neo4j.lock.ResourceTypes.NODE_RELATIONSHIP_GROUP_DELETE;
+import static org.neo4j.lock.ResourceTypes.RELATIONSHIP_GROUP;
 
 class RelationshipDeleter
 {
     private final RelationshipGroupGetter relGroupGetter;
     private final PropertyDeleter propertyChainDeleter;
+    private final long externalDegreesThreshold;
     private final PageCursorTracer cursorTracer;
 
-    RelationshipDeleter( RelationshipGroupGetter relGroupGetter, PropertyDeleter propertyChainDeleter, PageCursorTracer cursorTracer )
+    RelationshipDeleter( RelationshipGroupGetter relGroupGetter, PropertyDeleter propertyChainDeleter, long externalDegreesThreshold,
+            PageCursorTracer cursorTracer )
     {
         this.relGroupGetter = relGroupGetter;
         this.propertyChainDeleter = propertyChainDeleter;
+        this.externalDegreesThreshold = externalDegreesThreshold;
         this.cursorTracer = cursorTracer;
     }
 
     /**
-     * Deletes a relationship by its id, returning its properties which are now
-     * removed. It is assumed that the nodes it connects have already been
-     * deleted in this
-     * transaction.
+     * Deletes relationships found in {@code ids}.
      *
-     * @param id The id of the relationship to delete.
+     * @param deletions The ids of all relationships to delete in this transaction.
+     * @param nodeDataLookup
      */
-    void relDelete( long id, RecordAccessSet recordChanges, RelationshipGroupDegreesStore.Updater groupDegreesUpdater, ResourceLocker locks )
+    void relationshipDelete( RelationshipBatch deletions, RecordAccessSet recordChanges, RelationshipGroupDegreesStore.Updater groupDegreesUpdater,
+            MappedNodeDataLookup nodeDataLookup, ResourceLocker locks )
     {
-        RelationshipRecord record = recordChanges.getRelRecords().getOrLoad( id, null, cursorTracer ).forChangingLinkage();
-        propertyChainDeleter.deletePropertyChain( record, recordChanges.getPropertyRecords() );
-        disconnectRelationship( record, recordChanges, locks );
-        updateNodesForDeletedRelationship( record, recordChanges, locks );
-        record.setInUse( false );
-        record.setType( -1 );
+        deletions.forEach( ( id, type, startNode, endNode ) ->
+        {
+            RelationshipRecord record = recordChanges.getRelRecords().getOrLoad( id, null, cursorTracer ).forChangingLinkage();
+            propertyChainDeleter.deletePropertyChain( record, recordChanges.getPropertyRecords() );
+            disconnectRelationship( record, recordChanges );
+            updateNodesForDeletedRelationship( record, recordChanges, groupDegreesUpdater, nodeDataLookup, locks );
+            record.setInUse( false );
+            record.setType( -1 );
+        } );
     }
 
-    private void disconnectRelationship( RelationshipRecord rel, RecordAccessSet recordChangeSet, ResourceLocker locks )
+    private void disconnectRelationship( RelationshipRecord rel, RecordAccessSet recordChangeSet )
     {
-        disconnect( rel, RelationshipConnection.START_NEXT, recordChangeSet.getRelRecords(), locks );
-        disconnect( rel, RelationshipConnection.START_PREV, recordChangeSet.getRelRecords(), locks );
-        disconnect( rel, RelationshipConnection.END_NEXT, recordChangeSet.getRelRecords(), locks );
-        disconnect( rel, RelationshipConnection.END_PREV, recordChangeSet.getRelRecords(), locks );
+        disconnect( rel, START_NEXT, recordChangeSet.getRelRecords() );
+        disconnect( rel, START_PREV, recordChangeSet.getRelRecords() );
+        disconnect( rel, END_NEXT, recordChangeSet.getRelRecords() );
+        disconnect( rel, END_PREV, recordChangeSet.getRelRecords() );
     }
 
-    private void disconnect( RelationshipRecord rel, RelationshipConnection pointer,
-            RecordAccess<RelationshipRecord, Void> relChanges, ResourceLocker locks )
+    private void disconnect( RelationshipRecord rel, RelationshipConnection pointer, RecordAccess<RelationshipRecord,Void> relChanges )
     {
         long otherRelId = pointer.otherSide().get( rel );
-        if ( otherRelId == Record.NO_NEXT_RELATIONSHIP.intValue() )
+        if ( isNull( otherRelId ) )
         {
             return;
         }
 
-        locks.acquireExclusive( LockTracer.NONE, ResourceTypes.RELATIONSHIP, otherRelId );
         RelationshipRecord otherRel = relChanges.getOrLoad( otherRelId, null, cursorTracer ).forChangingLinkage();
         boolean changed = false;
         long newId = pointer.get( rel );
@@ -103,146 +115,131 @@ class RelationshipDeleter
     }
 
     private void updateNodesForDeletedRelationship( RelationshipRecord rel, RecordAccessSet recordChanges,
+            RelationshipGroupDegreesStore.Updater groupDegreesUpdater, MappedNodeDataLookup nodeDataLookup, ResourceLocker locks )
+    {
+        boolean loop = rel.getFirstNode() == rel.getSecondNode();
+        updateNodeForDeletedRelationship( rel, recordChanges, groupDegreesUpdater, rel.getFirstNode(), true, nodeDataLookup, locks );
+        updateNodeForDeletedRelationship( rel, recordChanges, groupDegreesUpdater, rel.getSecondNode(), !loop, nodeDataLookup, locks );
+    }
+
+    private void updateNodeForDeletedRelationship( RelationshipRecord rel, RecordAccessSet recordChanges,
+            RelationshipGroupDegreesStore.Updater groupDegreesUpdater, long nodeId, boolean updateDegree, MappedNodeDataLookup nodeDataLookup,
             ResourceLocker locks )
     {
-        RecordProxy<NodeRecord, Void> startNodeChange = recordChanges.getNodeRecords().getOrLoad( rel.getFirstNode(), null, cursorTracer );
-        RecordProxy<NodeRecord, Void> endNodeChange = recordChanges.getNodeRecords().getOrLoad( rel.getSecondNode(), null, cursorTracer );
-
-        NodeRecord startNode = recordChanges.getNodeRecords().getOrLoad( rel.getFirstNode(), null, cursorTracer ).forReadingLinkage();
-        NodeRecord endNode = recordChanges.getNodeRecords().getOrLoad( rel.getSecondNode(), null, cursorTracer ).forReadingLinkage();
-        boolean loop = startNode.getId() == endNode.getId();
-
-        if ( !startNode.isDense() )
+        //When we reach here, all required locks (node/relationships/groups) should be taken for the required changes
+        RecordProxy<NodeRecord,Void> nodeProxy = recordChanges.getNodeRecords().getOrLoad( nodeId, null, cursorTracer );
+        NodeRecord node = nodeProxy.forReadingLinkage();
+        if ( !node.isDense() )
         {
-            if ( rel.isFirstInFirstChain() )
+            if ( rel.isFirstInChain( nodeId ) )
             {
-                startNode = startNodeChange.forChangingLinkage();
-                startNode.setNextRel( rel.getFirstNextRel() );
+                node = nodeProxy.forChangingLinkage();
+                node.setNextRel( rel.getNextRel( nodeId ) );
             }
-            decrementTotalRelationshipCount( startNode.getId(), rel, startNode.getNextRel(),
-                    recordChanges.getRelRecords(), locks );
-        }
-        else
-        {
-            RecordProxy<RelationshipGroupRecord, Integer> groupChange =
-                    relGroupGetter.getRelationshipGroup( startNode, rel.getType(),
-                            recordChanges.getRelGroupRecords() ).group();
-            assert groupChange != null : "Relationship group " + rel.getType() + " should have existed here";
-            RelationshipGroupRecord group = groupChange.forReadingData();
-            DirectionWrapper dir = DirectionIdentifier.wrapDirection( rel, startNode );
-            if ( rel.isFirstInFirstChain() )
+            if ( updateDegree )
             {
-                group = groupChange.forChangingData();
-                dir.setNextRel( group, rel.getFirstNextRel() );
-                if ( groupIsEmpty( group ) )
-                {
-                    deleteGroup( startNodeChange, group, recordChanges.getRelGroupRecords() );
-                }
-            }
-            decrementTotalRelationshipCount( startNode.getId(), rel, dir.getNextRel( group ),
-                    recordChanges.getRelRecords(), locks );
-        }
-
-        if ( !endNode.isDense() )
-        {
-            if ( rel.isFirstInSecondChain() )
-            {
-                endNode = endNodeChange.forChangingLinkage();
-                endNode.setNextRel( rel.getSecondNextRel() );
-            }
-            if ( !loop )
-            {
-                decrementTotalRelationshipCount( endNode.getId(), rel, endNode.getNextRel(),
-                        recordChanges.getRelRecords(), locks );
+                decrementTotalRelationshipCount( nodeId, rel, node.getNextRel(), recordChanges.getRelRecords() );
             }
         }
         else
         {
-            RecordProxy<RelationshipGroupRecord, Integer> groupChange =
-                    relGroupGetter.getRelationshipGroup( endNode, rel.getType(),
-                            recordChanges.getRelGroupRecords() ).group();
-            DirectionWrapper dir = DirectionIdentifier.wrapDirection( rel, endNode );
-            assert groupChange != null || loop : "Group has been deleted";
-            if ( groupChange != null )
+            DirectionWrapper direction = DirectionWrapper.wrapDirection( rel, node );
+            RecordProxy<RelationshipGroupRecord,Integer> groupProxy = nodeDataLookup.group( nodeId, rel.getType(), false );
+            if ( rel.isFirstInChain( nodeId ) )
             {
-                RelationshipGroupRecord group;
-                if ( rel.isFirstInSecondChain() )
+                RelationshipGroupRecord group = groupProxy.forChangingData();
+                direction.setNextRel( group, rel.getNextRel( nodeId ) );
+                if ( group.inUse() && groupIsEmpty( group ) )
                 {
-                    group = groupChange.forChangingData();
-                    dir.setNextRel( group, rel.getSecondNextRel() );
-                    if ( groupIsEmpty( group ) )
+                    boolean nodeRelationshipsLocked = locks.tryExclusiveLock( NODE_RELATIONSHIP_GROUP_DELETE, nodeId );
+                    boolean nodeLocked = nodeRelationshipsLocked && locks.tryExclusiveLock( NODE, nodeId );
+                    if ( nodeLocked && locks.tryExclusiveLock( RELATIONSHIP_GROUP, nodeId ) )
                     {
-                        deleteGroup( endNodeChange, group, recordChanges.getRelGroupRecords() );
+                        nodeProxy = recordChanges.getNodeRecords().getOrLoad( nodeId, null, cursorTracer );
+
+                        if ( isNull( group.getPrev() ) )
+                        {
+                            //Since the prev-pointer is not a stored state, we need to traverse to it again to get the correct prev
+                            long realPrev = relGroupGetter.getRelationshipGroup( nodeProxy.forReadingLinkage(), group.getType(),
+                                    recordChanges.getRelGroupRecords(), EMPTY ).group().forReadingLinkage().getPrev();
+                            group.setPrev( realPrev );
+                        }
+                        deleteGroup( nodeProxy, group, nodeDataLookup );
+                    }
+                    else
+                    {
+                        if ( nodeLocked )
+                        {
+                            locks.releaseExclusive( NODE, nodeId );
+                        }
+                        if ( nodeRelationshipsLocked )
+                        {
+                            locks.releaseExclusive( NODE_RELATIONSHIP_GROUP_DELETE, nodeId );
+                        }
                     }
                 }
-            } // Else this is a loop-rel and the group was deleted when dealing with the start node
-            if ( !loop )
+            }
+
+            if ( updateDegree )
             {
-                decrementTotalRelationshipCount( endNode.getId(), rel, dir.getNextRel( groupChange.forChangingData() ),
-                        recordChanges.getRelRecords(), locks );
+                RelationshipGroupRecord group = groupProxy.forReadingData();
+                if ( direction.hasExternalDegrees( group ) ) //Optimistic reading is fine, as this is a one-way switch
+                {
+                    groupDegreesUpdater.increment( group.getId(), direction.direction(), -1 );
+                }
+                else
+                {
+                    RecordProxy<RelationshipRecord,Void> firstRelProxy = null;
+                    long prevCount;
+                    if ( rel.isFirstInChain( nodeId ) )
+                    {
+                        prevCount = rel.getPrevRel( nodeId );
+                    }
+                    else
+                    {
+                        firstRelProxy = recordChanges.getRelRecords().getOrLoad( direction.getNextRel( group ), null, cursorTracer );
+                        prevCount = firstRelProxy.forReadingLinkage().getPrevRel( nodeId );
+                    }
+                    long count = prevCount - 1;
+
+                    if ( count > externalDegreesThreshold )
+                    {
+                        direction.setHasExternalDegrees( groupProxy.forChangingData() );
+                        groupDegreesUpdater.increment( groupProxy.getKey(), direction.direction(), count );
+                    }
+                    else if ( count > 0 )
+                    {
+                        if ( firstRelProxy == null )
+                        {
+                            firstRelProxy = recordChanges.getRelRecords().getOrLoad( direction.getNextRel( group ), null, cursorTracer );
+                        }
+                        firstRelProxy.forChangingLinkage().setPrevRel( count, nodeId );
+                    }
+                }
             }
         }
     }
 
     private void decrementTotalRelationshipCount( long nodeId, RelationshipRecord rel, long firstRelId,
-            RecordAccess<RelationshipRecord, Void> relRecords, ResourceLocker locks )
+            RecordAccess<RelationshipRecord, Void> relRecords )
     {
-        if ( firstRelId == Record.NO_PREV_RELATIONSHIP.intValue() )
+        if ( isNull( firstRelId ) )
         {
             return;
         }
-        boolean firstInChain = relIsFirstInChain( nodeId, rel );
-        if ( !firstInChain )
-        {
-            locks.acquireExclusive( LockTracer.NONE, ResourceTypes.RELATIONSHIP, firstRelId );
-        }
+        boolean deletingFirstInChain = rel.isFirstInChain( nodeId );
         RelationshipRecord firstRel = relRecords.getOrLoad( firstRelId, null, cursorTracer ).forChangingLinkage();
         if ( nodeId == firstRel.getFirstNode() )
         {
-            firstRel.setFirstPrevRel( firstInChain ? relCount( nodeId, rel ) - 1 : firstRel.getFirstPrevRel() - 1 );
+            firstRel.setFirstPrevRel( deletingFirstInChain ? relCount( nodeId, rel ) - 1 : firstRel.getFirstPrevRel() - 1 );
+            assert firstRel.getFirstPrevRel() >= 0;
             firstRel.setFirstInFirstChain( true );
         }
         if ( nodeId == firstRel.getSecondNode() )
         {
-            firstRel.setSecondPrevRel( firstInChain ? relCount( nodeId, rel ) - 1 : firstRel.getSecondPrevRel() - 1 );
+            firstRel.setSecondPrevRel( deletingFirstInChain ? relCount( nodeId, rel ) - 1 : firstRel.getSecondPrevRel() - 1 );
+            assert firstRel.getSecondPrevRel() >= 0;
             firstRel.setFirstInSecondChain( true );
         }
-    }
-
-    private void deleteGroup( RecordProxy<NodeRecord, Void> nodeChange,
-                              RelationshipGroupRecord group,
-                              RecordAccess<RelationshipGroupRecord, Integer> relGroupRecords )
-    {
-        long previous = group.getPrev();
-        long next = group.getNext();
-        if ( previous == Record.NO_NEXT_RELATIONSHIP.intValue() )
-        {   // This is the first one, just point the node to the next group
-            nodeChange.forChangingLinkage().setNextRel( next );
-        }
-        else
-        {   // There are others before it, point the previous to the next group
-            RelationshipGroupRecord previousRecord = relGroupRecords.getOrLoad( previous, null, cursorTracer ).forChangingLinkage();
-            previousRecord.setNext( next );
-        }
-
-        if ( next != Record.NO_NEXT_RELATIONSHIP.intValue() )
-        {   // There are groups after this one, point that next group to the previous of the group to be deleted
-            RelationshipGroupRecord nextRecord = relGroupRecords.getOrLoad( next, null, cursorTracer ).forChangingLinkage();
-            nextRecord.setPrev( previous );
-        }
-        group.setInUse( false );
-    }
-
-    private boolean groupIsEmpty( RelationshipGroupRecord group )
-    {
-        return group.getFirstOut() == Record.NO_NEXT_RELATIONSHIP.intValue() &&
-                group.getFirstIn() == Record.NO_NEXT_RELATIONSHIP.intValue() &&
-                group.getFirstLoop() == Record.NO_NEXT_RELATIONSHIP.intValue();
-    }
-
-    private boolean relIsFirstInChain( long nodeId, RelationshipRecord rel )
-    {
-        return (nodeId == rel.getFirstNode() && rel.isFirstInFirstChain()) ||
-                (nodeId == rel.getSecondNode() && rel.isFirstInSecondChain());
     }
 }

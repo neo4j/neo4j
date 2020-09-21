@@ -17,26 +17,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.internal.recordstorage;
+package org.neo4j.function;
 
-import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.kernel.impl.store.record.RelationshipRecord;
-
-public class DirectionIdentifier
+/**
+ * Represents an operation that accepts a single long argument and returns no result.
+ * Unlike most other functional interfaces, {@link ThrowingLongConsumer} is expected to operate via side-effects.
+ *
+ * @param <E> the type of exception that may be thrown from the function
+ */
+public interface ThrowingLongConsumer<E extends Throwable>
 {
-    private DirectionIdentifier()
-    {
-    }
+    /**
+     * Performs this operation on the given argument.
+     *
+     * @param t the input argument
+     * @throws E an exception if the function fails
+     */
+    void accept( long t ) throws E;
 
-    public static DirectionWrapper wrapDirection( RelationshipRecord rel, NodeRecord startNode )
+    static <E extends Exception> ThrowingLongConsumer<E> noop()
     {
-        boolean isOut = rel.getFirstNode() == startNode.getId();
-        boolean isIn = rel.getSecondNode() == startNode.getId();
-        assert isOut || isIn;
-        if ( isOut && isIn )
-        {
-            return DirectionWrapper.BOTH;
-        }
-        return isOut ? DirectionWrapper.OUTGOING : DirectionWrapper.INCOMING;
+        return t -> {};
     }
 }

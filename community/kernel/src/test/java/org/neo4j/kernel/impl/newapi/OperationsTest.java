@@ -44,7 +44,10 @@ import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
+import org.neo4j.internal.kernel.api.helpers.StubCursorFactory;
 import org.neo4j.internal.kernel.api.helpers.StubNodeCursor;
+import org.neo4j.internal.kernel.api.helpers.StubRead;
+import org.neo4j.internal.kernel.api.helpers.StubRelationshipCursor;
 import org.neo4j.internal.kernel.api.helpers.TestRelationshipChain;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
@@ -121,7 +124,7 @@ import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.
 import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.uniqueForLabel;
 import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.uniqueForSchema;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
-import static org.neo4j.kernel.impl.newapi.DetachingRelationshipDeleterTest.returnRelationships;
+import static org.neo4j.lock.LockTracer.NONE;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 
@@ -195,7 +198,7 @@ class OperationsTest
                 constraintIndexCreator, mock( ConstraintSemantics.class ), indexingProvidersService, Config.defaults(), NULL, INSTANCE );
         operations.initialize();
 
-        this.order = inOrder( locks, txState, storageReader, storageReaderSnapshot );
+        this.order = inOrder( locks, txState, storageReader, storageReaderSnapshot, creationContext );
     }
 
     @AfterEach
@@ -208,12 +211,14 @@ class OperationsTest
     void shouldAcquireEntityWriteLockCreatingRelationship() throws Exception
     {
         // when
-        long rId = operations.relationshipCreate( 1, 2, 3 );
+        long sourceNode = 1;
+        long targetNode = 3;
+        int relationshipType = 2;
+        long rId = operations.relationshipCreate( sourceNode, relationshipType, targetNode );
 
         // then
-        order.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 1 );
-        order.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 3 );
-        order.verify( txState ).relationshipDoCreate( rId, 2, 1, 3 );
+        order.verify( creationContext ).acquireRelationshipCreationLock( txState, locks, LockTracer.NONE, sourceNode, targetNode );
+        order.verify( txState ).relationshipDoCreate( rId, relationshipType, sourceNode, targetNode );
     }
 
     @Test
@@ -228,19 +233,19 @@ class OperationsTest
         operations.relationshipCreate( lowId, relationshipLabel, highId );
 
         // THEN
-        InOrder lockingOrder = inOrder( locks );
-        lockingOrder.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, lowId );
-        lockingOrder.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, highId );
+        InOrder lockingOrder = inOrder( creationContext );
+        lockingOrder.verify( creationContext ).acquireRelationshipCreationLock( txState, locks, LockTracer.NONE, lowId, highId );
+        lockingOrder.verify( creationContext ).reserveRelationship();
         lockingOrder.verifyNoMoreInteractions();
-        reset( locks );
+        reset( creationContext );
 
         // WHEN
         operations.relationshipCreate( highId, relationshipLabel, lowId );
 
         // THEN
-        InOrder lowLockingOrder = inOrder( locks );
-        lowLockingOrder.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, lowId );
-        lowLockingOrder.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, highId );
+        InOrder lowLockingOrder = inOrder( creationContext );
+        lowLockingOrder.verify( creationContext ).acquireRelationshipCreationLock( txState, locks, LockTracer.NONE, highId, lowId );
+        lowLockingOrder.verify( creationContext ).reserveRelationship();
         lowLockingOrder.verifyNoMoreInteractions();
     }
 
@@ -260,12 +265,10 @@ class OperationsTest
         operations.relationshipDelete( relationshipId );
 
         // THEN
-        InOrder lockingOrder = inOrder( locks );
-        lockingOrder.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, lowId );
-        lockingOrder.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, highId );
-        lockingOrder.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.RELATIONSHIP, relationshipId );
+        InOrder lockingOrder = inOrder( creationContext );
+        lockingOrder.verify( creationContext ).acquireRelationshipDeletionLock( txState, locks, LockTracer.NONE, lowId, highId, relationshipId );
         lockingOrder.verifyNoMoreInteractions();
-        reset( locks );
+        reset( creationContext );
 
         // and GIVEN
         setStoreRelationship( relationshipId, highId, lowId, relationshipLabel );
@@ -274,10 +277,8 @@ class OperationsTest
         operations.relationshipDelete( relationshipId );
 
         // THEN
-        InOrder highLowIdOrder = inOrder( locks );
-        highLowIdOrder.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, lowId );
-        highLowIdOrder.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, highId );
-        highLowIdOrder.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.RELATIONSHIP, relationshipId );
+        InOrder highLowIdOrder = inOrder( creationContext );
+        highLowIdOrder.verify( creationContext ).acquireRelationshipDeletionLock( txState, locks, LockTracer.NONE, highId, lowId, relationshipId );
         highLowIdOrder.verifyNoMoreInteractions();
     }
 
@@ -441,7 +442,7 @@ class OperationsTest
         operations.nodeDelete( 123 );
 
         //THEN
-        order.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 123 );
+        order.verify( creationContext ).acquireNodeDeletionLock( txState, locks, LockTracer.NONE, 123 );
         order.verify( txState ).nodeDoDelete( 123 );
     }
 
@@ -864,7 +865,7 @@ class OperationsTest
 
         operations.nodeDetachDelete( nodeId );
 
-        order.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, nodeId );
+        order.verify( creationContext ).acquireNodeDeletionLock( txState, locks, LockTracer.NONE, nodeId );
         order.verify( locks, never() ).releaseExclusive( ResourceTypes.NODE, nodeId );
         order.verify( txState ).nodeDoDelete( nodeId );
     }
@@ -882,8 +883,7 @@ class OperationsTest
 
         operations.nodeDetachDelete( nodeId );
 
-        order.verify( locks ).acquireExclusive(
-                LockTracer.NONE, ResourceTypes.NODE, nodeId, 2L );
+        order.verify( creationContext ).acquireNodeDeletionLock( txState, locks, LockTracer.NONE, nodeId );
         order.verify( locks, never() ).releaseExclusive( ResourceTypes.NODE, nodeId );
         order.verify( locks, never() ).releaseExclusive( ResourceTypes.NODE, 2L );
         order.verify( txState ).nodeDoDelete( nodeId );
@@ -905,8 +905,8 @@ class OperationsTest
         operations.nodeDelete( nodeId );
 
         // then
-        InOrder order = inOrder( locks );
-        order.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, nodeId );
+        InOrder order = inOrder( locks, creationContext );
+        order.verify( creationContext ).acquireNodeDeletionLock( txState, locks, LockTracer.NONE, nodeId );
         order.verify( locks ).acquireShared( LockTracer.NONE, ResourceTypes.LABEL, labelId1, labelId2 );
         order.verifyNoMoreInteractions();
     }
@@ -930,8 +930,8 @@ class OperationsTest
         operations.nodeDetachDelete( nodeId );
 
         // then
-        InOrder order = inOrder( locks );
-        order.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, nodeId );
+        InOrder order = inOrder( locks, creationContext );
+        order.verify( creationContext ).acquireNodeDeletionLock( txState, locks, LockTracer.NONE, nodeId );
         order.verify( locks ).acquireShared( LockTracer.NONE, ResourceTypes.LABEL, labelId1, labelId2 );
         order.verifyNoMoreInteractions();
     }
@@ -1372,5 +1372,17 @@ class OperationsTest
                 mock( TokenHolder.class ),
                 mock( TokenHolder.class ),
                 mock( TokenHolder.class ) );
+    }
+
+    public static void returnRelationships( KernelTransactionImplementation ktx, final TestRelationshipChain relIds )
+    {
+        StubRead read = new StubRead();
+        when( ktx.dataRead() ).thenReturn( read );
+        StubCursorFactory cursorFactory = new StubCursorFactory( true );
+        cursorFactory.withRelationshipTraversalCursors( new StubRelationshipCursor( relIds ) );
+
+        when( ktx.lockTracer() ).thenReturn( NONE );
+        when( ktx.cursors() ).thenReturn( cursorFactory );
+        when( ktx.ambientNodeCursor() ).thenAnswer( args -> new StubNodeCursor( false ).withNode( 42L ) );
     }
 }

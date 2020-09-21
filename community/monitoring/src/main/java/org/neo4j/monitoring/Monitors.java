@@ -31,13 +31,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import org.neo4j.annotations.api.IgnoreApiCheck;
 import org.neo4j.internal.helpers.ArrayUtil;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.logging.NullLogProvider;
 
 import static org.apache.commons.lang3.ArrayUtils.isEmpty;
 
@@ -55,15 +55,22 @@ import static org.apache.commons.lang3.ArrayUtils.isEmpty;
 @IgnoreApiCheck
 public class Monitors
 {
+    private static final FailureHandler IGNORE = ( f, m ) -> {};
+
     /** Monitor interface method -> Listeners */
     private final Map<Method,Set<MonitorListenerInvocationHandler>> methodMonitorListeners = new ConcurrentHashMap<>();
     private final MutableBag<Class<?>> monitoredInterfaces = MultiReaderHashBag.newBag();
     private final Monitors parent;
-    private final Log log;
+    private final FailureHandler failureHandler;
 
     public Monitors()
     {
-        this( null, NullLogProvider.getInstance() );
+        this( null, IGNORE );
+    }
+
+    public Monitors( FailureHandler failureHandler )
+    {
+        this( null, failureHandler );
     }
 
     /**
@@ -81,8 +88,13 @@ public class Monitors
      */
     public Monitors( Monitors parent, LogProvider logProvider )
     {
+        this( parent, new LoggingFailureHandler( logProvider ) );
+    }
+
+    public Monitors( Monitors parent, FailureHandler failureHandler )
+    {
         this.parent = parent;
-        this.log = logProvider.getLog( Monitors.class );
+        this.failureHandler = failureHandler;
     }
 
     public <T> T newMonitor( Class<T> monitorClass, String... tags )
@@ -234,12 +246,33 @@ public class Monitors
                 {
                     monitorListenerInvocationHandler.invoke( proxy, method, args, tags );
                 }
-                catch ( Throwable e )
+                catch ( Throwable failure )
                 {
-                    String message = String.format( "Encountered exception while handling listener for monitor method %s", method.getName() );
-                    monitor.log.warn( message, e );
+                    monitor.failureHandler.accept( failure, method.getName() );
                 }
             }
+        }
+    }
+
+    public interface FailureHandler
+    {
+        void accept( Throwable failure, String method );
+    }
+
+    public static class LoggingFailureHandler implements FailureHandler
+    {
+        private final Log log;
+
+        public LoggingFailureHandler( LogProvider logProvider )
+        {
+            log = logProvider.getLog( Monitors.class );
+        }
+
+        @Override
+        public void accept( Throwable failure, String method )
+        {
+            String message = String.format( "Encountered exception while handling listener for monitor method %s", method );
+            log.warn( message, failure );
         }
     }
 }

@@ -19,24 +19,25 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
-import org.eclipse.collections.impl.factory.primitive.LongObjectMaps;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.LongFunction;
 
+import org.neo4j.internal.counts.RelationshipGroupDegreesStore;
 import org.neo4j.internal.id.IdSequence;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
-import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
-import org.neo4j.memory.EmptyMemoryTracker;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import static org.neo4j.internal.recordstorage.FlatRelationshipModifications.singleDelete;
+import static org.neo4j.internal.recordstorage.RecordAccess.LoadMonitor.NULL_MONITOR;
+import static org.neo4j.internal.recordstorage.RelationshipModifier.DEFAULT_EXTERNAL_DEGREES_THRESHOLD_SWITCH;
 import static org.neo4j.kernel.impl.store.record.Record.NO_LABELS_FIELD;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 import static org.neo4j.lock.ResourceLocker.IGNORE;
@@ -46,9 +47,7 @@ class RelationshipDeleterTest
     private static final long NULL = NULL_REFERENCE.longValue();
 
     private RelationshipDeleter deleter;
-    private MutableLongObjectMap<NodeRecord> nodeStore;
-    private MutableLongObjectMap<RelationshipRecord> relationshipStore;
-    private MutableLongObjectMap<RelationshipGroupRecord> groupStore;
+    private MapRecordStore store;
     private RecordAccessSet recordChanges;
 
     @BeforeEach
@@ -57,12 +56,9 @@ class RelationshipDeleterTest
         RelationshipGroupGetter relationshipGroupGetter = new RelationshipGroupGetter( idSequence(), PageCursorTracer.NULL );
         PropertyTraverser propertyTraverser = new PropertyTraverser( PageCursorTracer.NULL );
         PropertyDeleter propertyDeleter = new PropertyDeleter( propertyTraverser, PageCursorTracer.NULL );
-        deleter = new RelationshipDeleter( relationshipGroupGetter, propertyDeleter, PageCursorTracer.NULL );
-        nodeStore = LongObjectMaps.mutable.empty();
-        relationshipStore = LongObjectMaps.mutable.empty();
-        groupStore = LongObjectMaps.mutable.empty();
-        recordChanges = new RecordChangeSet( loader( nodeStore, NodeRecord::new ), noLoader(), loader( relationshipStore, RelationshipRecord::new ),
-                loader( groupStore, RelationshipGroupRecord::new ), noLoader(), noLoader(), noLoader(), noLoader(), EmptyMemoryTracker.INSTANCE );
+        deleter = new RelationshipDeleter( relationshipGroupGetter, propertyDeleter, DEFAULT_EXTERNAL_DEGREES_THRESHOLD_SWITCH, PageCursorTracer.NULL );
+        store = new MapRecordStore();
+        recordChanges = store.newRecordChanges( NULL_MONITOR, MapRecordStore.Monitor.NULL );
     }
 
     @Test
@@ -77,15 +73,16 @@ class RelationshipDeleterTest
         long relB = 12;
         long relC = 13;
         int type = 0;
-        nodeStore.put( startNode, new NodeRecord( startNode ).initialize( true, NULL, false, relA, NO_LABELS_FIELD.longValue() ) );
-        nodeStore.put( otherNode1, new NodeRecord( otherNode1 ).initialize( true, NULL, false, relB, NO_LABELS_FIELD.longValue() ) );
-        nodeStore.put( otherNode2, new NodeRecord( otherNode2 ).initialize( true, NULL, false, relC, NO_LABELS_FIELD.longValue() ) );
-        relationshipStore.put( relA, new RelationshipRecord( relA ).initialize( true, NULL, startNode, startNode, type, 3, relB, 3, relB, true, true ) );
-        relationshipStore.put( relB, new RelationshipRecord( relB ).initialize( true, NULL, startNode, otherNode1, type, relA, relC, 1, NULL, false, true ) );
-        relationshipStore.put( relC, new RelationshipRecord( relC ).initialize( true, NULL, startNode, otherNode2, type, relB, NULL, 1, NULL, false, true ) );
+        store.write( new NodeRecord( startNode ).initialize( true, NULL, false, relA, NO_LABELS_FIELD.longValue() ) );
+        store.write( new NodeRecord( otherNode1 ).initialize( true, NULL, false, relB, NO_LABELS_FIELD.longValue() ) );
+        store.write( new NodeRecord( otherNode2 ).initialize( true, NULL, false, relC, NO_LABELS_FIELD.longValue() ) );
+        store.write( new RelationshipRecord( relA ).initialize( true, NULL, startNode, startNode, type, 3, relB, 3, relB, true, true ) );
+        store.write( new RelationshipRecord( relB ).initialize( true, NULL, startNode, otherNode1, type, relA, relC, 1, NULL, false, true ) );
+        store.write( new RelationshipRecord( relC ).initialize( true, NULL, startNode, otherNode2, type, relB, NULL, 1, NULL, false, true ) );
 
         // when deleting relB
-        deleter.relDelete( relB, recordChanges, IGNORE );
+        deleter.relationshipDelete( singleDelete( relB, type, startNode, otherNode1 ).deletions(), recordChanges,
+                mock( RelationshipGroupDegreesStore.Updater.class ), mock( MappedNodeDataLookup.class ), IGNORE );
 
         // then relA should be updated with correct degrees, i.e. from 3 -> 2 on both its chains
         RecordAccess.RecordProxy<RelationshipRecord,Void> relAChange = recordChanges.getRelRecords().getIfLoaded( relA );
@@ -107,63 +104,25 @@ class RelationshipDeleterTest
         long relB = 12;
         long relC = 13;
         int type = 1;
-        groupStore.put( groupG, new RelationshipGroupRecord( groupG ).initialize( true, 0, NULL, NULL, NULL, node, groupH ) );
-        groupStore.put( groupH, new RelationshipGroupRecord( groupH ).initialize( true, type, NULL, NULL, relA, node, NULL ) );
-        nodeStore.put( node, new NodeRecord( node ).initialize( true, NULL, true, groupG, NO_LABELS_FIELD.longValue() ) );
-        relationshipStore.put( relA, new RelationshipRecord( relA ).initialize( true, NULL, node, node, type, 3, relB, 3, relB, true, true ) );
-        relationshipStore.put( relB, new RelationshipRecord( relB ).initialize( true, NULL, node, node, type, relA, relC, relA, relC, false, false ) );
-        relationshipStore.put( relC, new RelationshipRecord( relC ).initialize( true, NULL, node, node, type, relB, NULL, relB, NULL, false, false ) );
+        store.write( new RelationshipGroupRecord( groupG ).initialize( true, 0, NULL, NULL, NULL, node, groupH ) );
+        store.write( new RelationshipGroupRecord( groupH ).initialize( true, type, NULL, NULL, relA, node, NULL ) );
+        store.write( new NodeRecord( node ).initialize( true, NULL, true, groupG, NO_LABELS_FIELD.longValue() ) );
+        store.write( new RelationshipRecord( relA ).initialize( true, NULL, node, node, type, 3, relB, 3, relB, true, true ) );
+        store.write( new RelationshipRecord( relB ).initialize( true, NULL, node, node, type, relA, relC, relA, relC, false, false ) );
+        store.write( new RelationshipRecord( relC ).initialize( true, NULL, node, node, type, relB, NULL, relB, NULL, false, false ) );
+        MappedNodeDataLookup groupLookup = mock( MappedNodeDataLookup.class );
+        when( groupLookup.group( node, type, false ) ).thenAnswer(
+                invocationOnMock -> recordChanges.getRelGroupRecords().getOrLoad( groupH, null, PageCursorTracer.NULL ) );
 
         // when deleting relB
-        deleter.relDelete( relB, recordChanges, IGNORE );
+        deleter.relationshipDelete( singleDelete( relB, type, node, node ).deletions(), recordChanges, mock( RelationshipGroupDegreesStore.Updater.class ),
+                groupLookup, IGNORE );
 
         // then relA should be updated with correct degrees, i.e. from 3 -> 2 on both its chains
         RecordAccess.RecordProxy<RelationshipRecord,Void> relAChange = recordChanges.getRelRecords().getIfLoaded( relA );
         assertTrue( relAChange.isChanged() );
         assertEquals( 2, relAChange.forReadingData().getFirstPrevRel() );
         assertEquals( 2, relAChange.forReadingData().getSecondPrevRel() );
-    }
-
-    private <T extends AbstractBaseRecord,R> RecordAccess.Loader<T,R> noLoader()
-    {
-        return loader( LongObjectMaps.mutable.empty(), id ->
-        {
-            throw new IllegalStateException( "Should not be needed" );
-        } );
-    }
-
-    private <T extends AbstractBaseRecord,R> RecordAccess.Loader<T,R> loader( MutableLongObjectMap<T> store, LongFunction<T> factory )
-    {
-        return new RecordAccess.Loader<T,R>()
-        {
-            @Override
-            public T newUnused( long key, R additionalData )
-            {
-                T record = factory.apply( key );
-                record.setCreated();
-                return record;
-            }
-
-            @Override
-            public T load( long key, R additionalData, PageCursorTracer cursorTracer )
-            {
-                T record = store.get( key );
-                assert record != null;
-                return record;
-            }
-
-            @Override
-            public void ensureHeavy( T record, PageCursorTracer cursorTracer )
-            {
-                // ignore
-            }
-
-            @Override
-            public T copy( T record )
-            {
-                return (T) record.copy();
-            }
-        };
     }
 
     private static IdSequence idSequence()

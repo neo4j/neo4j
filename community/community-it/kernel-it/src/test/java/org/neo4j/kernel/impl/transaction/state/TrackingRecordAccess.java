@@ -25,7 +25,6 @@ import org.neo4j.internal.recordstorage.RecordAccess;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
-import org.neo4j.kernel.impl.transaction.state.RelationshipCreatorTest.Tracker;
 
 public class TrackingRecordAccess<RECORD extends AbstractBaseRecord, ADDITIONAL> implements RecordAccess<RECORD, ADDITIONAL>
 {

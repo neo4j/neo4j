@@ -339,6 +339,7 @@ abstract class Read implements TxStateHolder,
     public void acquireExclusiveNodeLock( long... ids )
     {
         acquireExclusiveLock( ResourceTypes.NODE, ids );
+        acquireExclusiveLock( ResourceTypes.NODE_RELATIONSHIP_GROUP_DELETE, ids );
         ktx.assertOpen();
     }
 
@@ -359,6 +360,7 @@ abstract class Read implements TxStateHolder,
     @Override
     public void releaseExclusiveNodeLock( long... ids )
     {
+        releaseExclusiveLock( ResourceTypes.NODE_RELATIONSHIP_GROUP_DELETE, ids );
         releaseExclusiveLock( ResourceTypes.NODE, ids );
         ktx.assertOpen();
     }
@@ -381,6 +383,7 @@ abstract class Read implements TxStateHolder,
     public void acquireSharedNodeLock( long... ids )
     {
         acquireSharedLock( ResourceTypes.NODE, ids );
+        acquireSharedLock( ResourceTypes.NODE_RELATIONSHIP_GROUP_DELETE, ids );
         ktx.assertOpen();
     }
 
@@ -401,6 +404,7 @@ abstract class Read implements TxStateHolder,
     @Override
     public void releaseSharedNodeLock( long... ids )
     {
+        releaseSharedLock( ResourceTypes.NODE_RELATIONSHIP_GROUP_DELETE, ids );
         releaseSharedLock( ResourceTypes.NODE, ids );
         ktx.assertOpen();
     }

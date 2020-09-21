@@ -55,6 +55,7 @@ import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
+import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceLocker;
 import org.neo4j.memory.MemoryLimitExceededException;
 import org.neo4j.memory.MemoryTracker;
@@ -407,6 +408,7 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase
             any( StorageReader.class ),
             any( CommandCreationContext.class ),
             any( ResourceLocker.class ),
+            any( LockTracer.class ),
             anyLong(), any( TxStateVisitor.Decorator.class ), any( PageCursorTracer.class ), any( MemoryTracker.class ) );
 
         try ( KernelTransactionImplementation transaction = newTransaction( loginContext( isWriteTx ) ) )

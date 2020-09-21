@@ -736,6 +736,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                         storageReader,
                         commandCreationContext,
                         lockClient,
+                        lockTracer(),
                         lastTransactionIdWhenStarted,
                         this::enforceConstraints,
                         pageCursorTracer,

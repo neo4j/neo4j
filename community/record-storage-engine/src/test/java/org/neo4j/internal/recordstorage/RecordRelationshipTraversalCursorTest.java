@@ -385,7 +385,7 @@ public class RecordRelationshipTraversalCursorTest
 
     protected RecordRelationshipTraversalCursor getNodeRelationshipCursor()
     {
-        return new RecordRelationshipTraversalCursor( neoStores.getRelationshipStore(), neoStores.getRelationshipGroupStore(), PageCursorTracer.NULL );
+        return new RecordRelationshipTraversalCursor( neoStores.getRelationshipStore(), neoStores.getRelationshipGroupStore(), null, PageCursorTracer.NULL );
     }
 
     protected RelationshipSpec[] homogenousRelationships( int count, int type, RelationshipDirection direction )

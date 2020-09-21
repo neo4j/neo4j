@@ -78,10 +78,7 @@ public class NodeEntityTest extends EntityTest
         {
             var source = tx.createNode();
             var relationshipType = RelationshipType.withName( "connection" );
-            for ( int i = 0; i < 100; i++ )
-            {
-                source.createRelationshipTo( tx.createNode(), relationshipType );
-            }
+            createDenseNodeWithShortIncomingChain( tx, source, relationshipType );
             sourceId = source.getId();
             tx.commit();
         }
@@ -93,7 +90,7 @@ public class NodeEntityTest extends EntityTest
             cursorTracer.reportEvents();
             assertZeroTracer( cursorTracer );
 
-            source.getDegree( Direction.OUTGOING );
+            source.getDegree( Direction.INCOMING );
 
             assertThat( cursorTracer.hits() ).isEqualTo( 3 );
             assertThat( cursorTracer.unpins() ).isEqualTo( 0 );
@@ -104,23 +101,20 @@ public class NodeEntityTest extends EntityTest
     @Test
     void traceNodePageCacheAccessOnRelationshipTypeAndDegreeCount()
     {
-        long targetId;
+        long sourceId;
         var relationshipType = RelationshipType.withName( "connection" );
         try ( Transaction tx = db.beginTx() )
         {
-            var target = tx.createNode();
-            for ( int i = 0; i < 100; i++ )
-            {
-                tx.createNode().createRelationshipTo( target, relationshipType );
-            }
-            targetId = target.getId();
+            var source = tx.createNode();
+            createDenseNodeWithShortIncomingChain( tx, source, relationshipType );
+            sourceId = source.getId();
             tx.commit();
         }
 
         try ( Transaction tx = db.beginTx() )
         {
             var cursorTracer = ((InternalTransaction) tx).kernelTransaction().pageCursorTracer();
-            var source = tx.getNodeById( targetId );
+            var source = tx.getNodeById( sourceId );
             cursorTracer.reportEvents();
             assertZeroTracer( cursorTracer );
 
@@ -518,5 +512,17 @@ public class NodeEntityTest extends EntityTest
         assertThat( cursorTracer.hits() ).isZero();
         assertThat( cursorTracer.unpins() ).isZero();
         assertThat( cursorTracer.pins() ).isZero();
+    }
+
+    private void createDenseNodeWithShortIncomingChain( Transaction tx, Node source, RelationshipType relationshipType )
+    {
+        // This test measures page cache access very specifically when accessing degree for dense node.
+        // For dense nodes chain degrees gets "upgraded" to live in a separate degrees store on a certain chain length threshold
+        // which is why we create an additional short chain where this still is the case
+        for ( int i = 0; i < 100; i++ )
+        {
+            source.createRelationshipTo( tx.createNode(), relationshipType );
+        }
+        tx.createNode().createRelationshipTo( source, relationshipType );
     }
 }

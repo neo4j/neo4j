@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
@@ -37,8 +38,11 @@ import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.lock.LockTracer;
 import org.neo4j.storageengine.api.StorageCommand;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.DbmsExtension;
+import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.Inject;
 
 import static java.util.Collections.emptyList;
@@ -51,7 +55,7 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.EXTERNAL;
 import static org.neo4j.storageengine.api.txstate.TxStateVisitor.NO_DECORATION;
 
-@DbmsExtension
+@DbmsExtension( configurationCallback = "configure" )
 public class CommitProcessTracingIT
 {
     @Inject
@@ -60,6 +64,13 @@ public class CommitProcessTracingIT
     private TransactionCommitProcess commitProcess;
     @Inject
     private RecordStorageEngine storageEngine;
+
+    @ExtensionCallback
+    void configure( TestDatabaseManagementServiceBuilder builder )
+    {
+        // Disable the additional lock verification since this tests really only uses the raw storage engine
+        builder.setConfig( GraphDatabaseInternalSettings.additional_lock_verification, false );
+    }
 
     @Test
     void tracePageCacheAccessOnCommandCreation() throws KernelException
@@ -81,7 +92,7 @@ public class CommitProcessTracingIT
             var txState = new TxState();
             txState.nodeDoAddLabel( 1, sourceId );
 
-            storageEngine.createCommands( commands, txState, reader, context, IGNORE, 0, NO_DECORATION, cursorTracer, INSTANCE );
+            storageEngine.createCommands( commands, txState, reader, context, IGNORE, LockTracer.NONE, 0, NO_DECORATION, cursorTracer, INSTANCE );
 
             assertCursor( cursorTracer, 1 );
         }

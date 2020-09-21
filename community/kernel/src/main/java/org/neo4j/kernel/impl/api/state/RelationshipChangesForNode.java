@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.api.state;
 
 import org.eclipse.collections.api.iterator.LongIterator;
+import org.eclipse.collections.api.iterator.MutableLongIterator;
 import org.eclipse.collections.api.map.primitive.IntObjectMap;
 import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
 import org.eclipse.collections.api.set.primitive.IntSet;
@@ -30,16 +31,23 @@ import org.eclipse.collections.impl.factory.primitive.IntSets;
 import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 
+import java.util.function.Predicate;
+
 import org.neo4j.collection.trackable.HeapTrackingCollections;
+import org.neo4j.function.ThrowingLongConsumer;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.memory.HeapEstimator;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.RelationshipDirection;
+import org.neo4j.storageengine.api.txstate.RelationshipModifications;
+import org.neo4j.storageengine.api.txstate.RelationshipModifications.RelationshipBatch;
 
 import static java.lang.Math.toIntExact;
 import static org.neo4j.collection.PrimitiveLongCollections.concat;
 import static org.neo4j.internal.helpers.collection.Iterators.filter;
 import static org.neo4j.internal.helpers.collection.Iterators.iterator;
+import static org.neo4j.storageengine.api.txstate.RelationshipModifications.EMPTY_BATCH;
+import static org.neo4j.storageengine.api.txstate.RelationshipModifications.idsAsBatch;
 
 /**
  * Maintains relationships that have been added for a specific node.
@@ -251,6 +259,19 @@ public class RelationshipChangesForNode
         }
     }
 
+    public boolean hasRelationships( int type )
+    {
+        if ( byType != null )
+        {
+            RelationshipSetsByDirection byDirection = byType.get( type );
+            if ( byDirection != null )
+            {
+                return !byDirection.isEmpty();
+            }
+        }
+        return false;
+    }
+
     public IntSet relationshipTypes()
     {
         MutableIntSet types = IntSets.mutable.empty();
@@ -289,5 +310,163 @@ public class RelationshipChangesForNode
         }
         final LongSet relationships = map.get( type );
         return relationships == null ? ImmutableEmptyLongIterator.INSTANCE : relationships.freeze().longIterator();
+    }
+
+    <E extends Exception> void visitIds( ThrowingLongConsumer<E> visitor ) throws E
+    {
+        tryVisitIds( visitor, outgoing );
+        tryVisitIds( visitor, incoming );
+        tryVisitIds( visitor, loops );
+    }
+
+    private <E extends Exception> void tryVisitIds( ThrowingLongConsumer<E> visitor, MutableIntObjectMap<MutableLongSet> ids ) throws E
+    {
+        if ( ids != null )
+        {
+            for ( MutableLongSet idsBatch : ids.values() )
+            {
+                for ( MutableLongIterator idIterator = idsBatch.longIterator(); idIterator.hasNext(); )
+                {
+                    visitor.accept( idIterator.next() );
+                }
+            }
+        }
+    }
+
+    void visitIdsSplit( Predicate<RelationshipModifications.NodeRelationshipTypeIds> idsByType, RelationshipModifications.IdDataDecorator idDataDecorator )
+    {
+        // TODO incredibly wasteful: a new set and converting it into a sorted array
+        MutableIntSet allTypes = IntSets.mutable.empty();
+        tryAdd( allTypes, outgoing );
+        tryAdd( allTypes, incoming );
+        tryAdd( allTypes, loops );
+        for ( int type : allTypes.toSortedArray() )
+        {
+            if ( idsByType.test( new IdsByType( type, idDataDecorator ) ) )
+            {
+                break;
+            }
+        }
+    }
+
+    private static void tryAdd( MutableIntSet allTypes, MutableIntObjectMap<MutableLongSet> relationships )
+    {
+        if ( relationships != null )
+        {
+            allTypes.addAll( relationships.keySet() );
+        }
+    }
+
+    int totalCount()
+    {
+        return count( outgoing ) + count( incoming ) + count( loops );
+    }
+
+    private int count( MutableIntObjectMap<MutableLongSet> direction )
+    {
+        int count = 0;
+        if ( direction != null )
+        {
+            for ( MutableLongSet ids : direction.values() )
+            {
+                count += ids.size();
+            }
+        }
+        return count;
+    }
+
+    private final class IdsByType implements RelationshipModifications.NodeRelationshipTypeIds
+    {
+        private final int type;
+        private final RelationshipModifications.IdDataDecorator idDataDecorator;
+
+        IdsByType( int type, RelationshipModifications.IdDataDecorator idDataDecorator )
+        {
+            this.type = type;
+            this.idDataDecorator = idDataDecorator;
+        }
+
+        @Override
+        public int type()
+        {
+            return type;
+        }
+
+        @Override
+        public boolean hasOut()
+        {
+            return has( outgoing );
+        }
+
+        @Override
+        public boolean hasIn()
+        {
+            return has( incoming );
+        }
+
+        @Override
+        public boolean hasLoop()
+        {
+            return has( loops );
+        }
+
+        @Override
+        public RelationshipBatch out()
+        {
+            return idBatch( outgoing );
+        }
+
+        @Override
+        public RelationshipBatch in()
+        {
+            return idBatch( incoming );
+        }
+
+        @Override
+        public RelationshipBatch loop()
+        {
+            return idBatch( loops );
+        }
+
+        private RelationshipBatch idBatch( MutableIntObjectMap<MutableLongSet> byDirection )
+        {
+            if ( byDirection != null )
+            {
+                MutableLongSet ids = byDirection.get( type );
+                if ( ids != null )
+                {
+                    return idsAsBatch( ids, idDataDecorator );
+                }
+            }
+            return EMPTY_BATCH;
+        }
+
+        private boolean has( MutableIntObjectMap<MutableLongSet> byDirection )
+        {
+            if ( byDirection != null )
+            {
+                MutableLongSet ids = byDirection.get( type );
+                return ids != null && !ids.isEmpty();
+            }
+            return false;
+        }
+
+        boolean isEmpty()
+        {
+            if ( ids != null )
+            {
+                for ( MutableLongSet set : ids )
+                {
+                    if ( set != null )
+                    {
+                        if ( !set.isEmpty() )
+                        {
+                            return false;
+                        }
+                    }
+                }
+            }
+            return true;
+        }
     }
 }

@@ -90,7 +90,7 @@ class RelationshipGroupGetterTest
             // WHEN trying to find relationship group 7
             RecordAccess<RelationshipGroupRecord, Integer> access =
                     new DirectRecordAccess<>( store, Loaders.relationshipGroupLoader( store ) );
-            RelationshipGroupPosition result = groupGetter.getRelationshipGroup( node, 7, access );
+            RelationshipGroupPosition result = groupGetter.getRelationshipGroup( node, 7, access, RelationshipGroupGetter.RelationshipGroupMonitor.EMPTY );
 
             // THEN only groups 2, 4 and 10 should have been loaded
             InOrder verification = inOrder( store );

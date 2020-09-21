@@ -94,23 +94,19 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
     }
 
     @Override
-    public void visitCreatedRelationship( long id, int type, long startNode, long endNode )
-            throws ConstraintValidationException
+    public void visitRelationshipModifications( RelationshipModifications ids ) throws ConstraintValidationException
     {
-        updateRelationshipCount( startNode, type, endNode, 1 );
-        super.visitCreatedRelationship( id, type, startNode, endNode );
-    }
-
-    @Override
-    public void visitDeletedRelationship( long id )
-    {
-        relationshipCursor.single( id );
-        if ( !relationshipCursor.next() )
+        ids.creations().forEach( ( id, type, startNode, endNode ) -> updateRelationshipCount( startNode, type, endNode, 1 ) );
+        ids.deletions().forEach( ( id, type, startNode, endNode ) ->
         {
-            throw new IllegalStateException( "Relationship being deleted should exist along with its nodes. Relationship[" + id + "]" );
-        }
-        updateRelationshipCount( relationshipCursor.sourceNodeReference(), relationshipCursor.type(), relationshipCursor.targetNodeReference(), -1 );
-        super.visitDeletedRelationship( id );
+            relationshipCursor.single( id );
+            if ( !relationshipCursor.next() )
+            {
+                throw new IllegalStateException( "Relationship being deleted should exist along with its nodes. Relationship[" + id + "]" );
+            }
+            updateRelationshipCount( relationshipCursor.sourceNodeReference(), relationshipCursor.type(), relationshipCursor.targetNodeReference(), -1 );
+        } );
+        super.visitRelationshipModifications( ids );
     }
 
     @Override

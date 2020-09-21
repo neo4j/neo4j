@@ -22,6 +22,7 @@ package org.neo4j.internal.recordstorage;
 import org.eclipse.collections.api.set.primitive.MutableIntSet;
 import org.eclipse.collections.impl.factory.primitive.IntSets;
 
+import org.neo4j.internal.counts.RelationshipGroupDegreesStore;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
@@ -46,6 +47,7 @@ import static org.neo4j.storageengine.api.RelationshipSelection.ALL_RELATIONSHIP
 public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
 {
     private final NodeStore read;
+    private final RelationshipGroupDegreesStore groupDegreesStore;
     private final PageCursorTracer cursorTracer;
     private final RelationshipStore relationshipStore;
     private final RelationshipGroupStore groupStore;
@@ -60,10 +62,12 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
     private RecordRelationshipScanCursor relationshipScanCursor;
     private RecordLoadOverride loadMode;
 
-    RecordNodeCursor( NodeStore read, RelationshipStore relationshipStore, RelationshipGroupStore groupStore, PageCursorTracer cursorTracer )
+    RecordNodeCursor( NodeStore read, RelationshipStore relationshipStore, RelationshipGroupStore groupStore, RelationshipGroupDegreesStore groupDegreesStore,
+            PageCursorTracer cursorTracer )
     {
         super( NO_ID );
         this.read = read;
+        this.groupDegreesStore = groupDegreesStore;
         this.cursorTracer = cursorTracer;
         this.relationshipStore = relationshipStore;
         this.groupStore = groupStore;
@@ -205,7 +209,7 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
         {
             if ( groupCursor == null )
             {
-                groupCursor = new RecordRelationshipGroupCursor( relationshipStore, groupStore, cursorTracer, loadMode );
+                groupCursor = new RecordRelationshipGroupCursor( relationshipStore, groupStore, groupDegreesStore, loadMode, cursorTracer );
             }
             groupCursor.init( entityReference(), getNextRel(), true );
             while ( groupCursor.next() )
@@ -220,7 +224,7 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
     {
         if ( relationshipCursor == null )
         {
-            relationshipCursor = new RecordRelationshipTraversalCursor( relationshipStore, groupStore, cursorTracer );
+            relationshipCursor = new RecordRelationshipTraversalCursor( relationshipStore, groupStore, groupDegreesStore, cursorTracer );
         }
     }
 
@@ -287,7 +291,7 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
         {
             if ( groupCursor == null )
             {
-                groupCursor = new RecordRelationshipGroupCursor( relationshipStore, groupStore, cursorTracer, loadMode );
+                groupCursor = new RecordRelationshipGroupCursor( relationshipStore, groupStore, groupDegreesStore, loadMode, cursorTracer );
             }
             groupCursor.init( entityReference(), getNextRel(), isDense() );
             int criteriaMet = 0;

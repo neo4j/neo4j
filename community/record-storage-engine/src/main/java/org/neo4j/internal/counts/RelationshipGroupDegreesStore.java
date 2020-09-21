@@ -20,99 +20,31 @@
 package org.neo4j.internal.counts;
 
 import java.io.IOException;
-import java.nio.file.Path;
 
-import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.RelationshipDirection;
 
-public class RelationshipGroupDegreesStore extends GBPTreeGenericCountsStore
+public interface RelationshipGroupDegreesStore extends AutoCloseable
 {
-    static final byte TYPE_DEGREE = (byte) 3;
+    Updater apply( long txId, PageCursorTracer cursorTracer );
 
-    private static final Updater NO_OP_UPDATER = new Updater()
-    {
-        @Override
-        public void close()
-        {
-        }
+    Updater unsafeApply() throws IOException;
 
-        @Override
-        public void increment( long groupId, RelationshipDirection direction, long delta )
-        {
-        }
-    };
+    long degree( long groupId, RelationshipDirection direction, PageCursorTracer cursorTracer );
 
-    public RelationshipGroupDegreesStore( PageCache pageCache, Path file, FileSystemAbstraction fileSystem, RecoveryCleanupWorkCollector recoveryCollector,
-            Rebuilder rebuilder, boolean readOnly, PageCacheTracer pageCacheTracer, Monitor monitor ) throws IOException
-    {
-        super( pageCache, file, fileSystem, recoveryCollector, rebuilder, readOnly, pageCacheTracer, monitor );
-    }
+    void start( PageCursorTracer cursorTracer, MemoryTracker memoryTracker ) throws IOException;
 
-    public Updater apply( long txId, PageCursorTracer cursorTracer )
-    {
-        CountUpdater updater = super.updater( txId, cursorTracer );
-        return updater != null ? new DegreeUpdater( updater ) : NO_OP_UPDATER;
-    }
+    void close();
 
-    public long degree( long groupId, RelationshipDirection direction, PageCursorTracer cursorTracer )
-    {
-        return read( degreeKey( groupId, direction ), cursorTracer );
-    }
+    void checkpoint( IOLimiter ioLimiter, PageCursorTracer cursorTracer ) throws IOException;
 
-    public interface Updater extends AutoCloseable
+    interface Updater extends AutoCloseable
     {
         @Override
         void close();
 
         void increment( long groupId, RelationshipDirection direction, long delta );
-    }
-
-    public static class DegreeUpdater implements Updater, AutoCloseable
-    {
-        private final CountUpdater actual;
-
-        DegreeUpdater( CountUpdater actual )
-        {
-            this.actual = actual;
-        }
-
-        @Override
-        public void increment( long groupId, RelationshipDirection direction, long delta )
-        {
-            actual.increment( degreeKey( groupId, direction ), delta );
-        }
-
-        @Override
-        public void close()
-        {
-            actual.close();
-        }
-    }
-
-    private static CountsKey degreeKey( long groupId, RelationshipDirection direction )
-    {
-        return new CountsKey( TYPE_DEGREE, groupId << 2 | direction.ordinal(), 0 );
-    }
-
-    public static Rebuilder noRebuilder( long txId )
-    {
-        return new Rebuilder()
-        {
-            @Override
-            public long lastCommittedTxId()
-            {
-                return txId;
-            }
-
-            @Override
-            public void rebuild( CountUpdater updater, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
-            {
-            }
-        };
     }
 }

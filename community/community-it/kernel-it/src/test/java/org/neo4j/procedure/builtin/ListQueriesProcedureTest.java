@@ -393,7 +393,7 @@ public class ListQueriesProcedureTest
                 finishQueriesLatch.countDown();
             }
             return null;
-        }, null, waitingWhileIn( Locks.Client.class, "acquireExclusive" ), SECONDS_TIMEOUT, SECONDS );
+        }, null, waitingWhileIn( Locks.Client.class, "acquireExclusive", "acquireShared" ), SECONDS_TIMEOUT, SECONDS );
 
         return new Resource<>( listQueriesLatch, finishQueriesLatch, resource );
     }

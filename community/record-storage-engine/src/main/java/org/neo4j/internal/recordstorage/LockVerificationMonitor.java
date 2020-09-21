@@ -19,6 +19,10 @@
  */
 package org.neo4j.internal.recordstorage;
 
+import java.util.function.LongFunction;
+
+import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.internal.recordstorage.RecordAccess.LoadMonitor;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -33,33 +37,35 @@ import org.neo4j.lock.ResourceLocker;
 import org.neo4j.lock.ResourceType;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
-import static org.neo4j.internal.recordstorage.RecordStorageCommandCreationContext.buildLogicalRelationshipGroupResourceId;
 import static org.neo4j.lock.LockType.EXCLUSIVE;
 import static org.neo4j.lock.LockType.SHARED;
 import static org.neo4j.lock.ResourceTypes.NODE;
-import static org.neo4j.lock.ResourceTypes.NODE_DELETE;
+import static org.neo4j.lock.ResourceTypes.NODE_RELATIONSHIP_GROUP_DELETE;
 import static org.neo4j.lock.ResourceTypes.RELATIONSHIP;
-import static org.neo4j.lock.ResourceTypes.RELATIONSHIP_GROUP_DELETE;
+import static org.neo4j.lock.ResourceTypes.RELATIONSHIP_GROUP;
 import static org.neo4j.util.Preconditions.checkState;
 
 public class LockVerificationMonitor implements LoadMonitor
 {
     private final ResourceLocker locks;
     private final ReadableTransactionState txState;
-    private final NeoStores neoStores;
+    private final StoreLoader loader;
 
-    LockVerificationMonitor( ResourceLocker locks, ReadableTransactionState txState, NeoStores neoStores )
+    LockVerificationMonitor( ResourceLocker locks, ReadableTransactionState txState, StoreLoader loader )
     {
         this.locks = locks;
         this.txState = txState;
-        this.neoStores = neoStores;
+        this.loader = loader;
     }
 
     @Override
-    public void markedAsChanged( Object before )
+    public void markedAsChanged( AbstractBaseRecord before )
     {
         // This is assuming that all before records coming here are inUse, they should really always be when getting a call to this method
-        assert ((AbstractBaseRecord) before).inUse();
+        if ( !before.inUse() )
+        {
+            return; //we can not do anything useful with unused before records
+        }
 
         if ( before instanceof NodeRecord )
         {
@@ -77,103 +83,154 @@ public class LockVerificationMonitor implements LoadMonitor
 
     private void verifyNodeSufficientlyLocked( NodeRecord before )
     {
-        assertRecordsEquals( before, neoStores.getNodeStore() );
+        assertRecordsEquals( before, loader::loadNode );
         long id = before.getId();
         if ( !txState.nodeIsAddedInThisTx( id ) )
         {
-            assertLocked( id, NODE, EXCLUSIVE );
+            assertLocked( id, NODE, before );
         }
         if ( txState.nodeIsDeletedInThisTx( id ) )
         {
-            assertLocked( id, NODE_DELETE, EXCLUSIVE );
+            assertLocked( id, NODE_RELATIONSHIP_GROUP_DELETE, before );
         }
     }
 
     private void verifyRelationshipSufficientlyLocked( RelationshipRecord before )
     {
-        assertRecordsEquals( before, neoStores.getRelationshipStore() );
+        assertRecordsEquals( before, loader::loadRelationship );
         long id = before.getId();
         boolean addedInThisTx = txState.relationshipIsAddedInThisTx( id );
         checkState( before.inUse() == !addedInThisTx, "Relationship[%d] inUse:%b, but txState.relationshipIsAddedInThisTx:%b", id, before.inUse(),
                 addedInThisTx );
-        if ( !addedInThisTx )
-        {
-            assertLocked( id, RELATIONSHIP, EXCLUSIVE );
-        }
-
-        long firstNode = before.getFirstNode();
-        long secondNode = before.getSecondNode();
-        int type = before.getType();
-        if ( !txState.nodeIsAddedInThisTx( firstNode ) )
-        {
-            NodeRecord first = readRecord( firstNode, neoStores.getNodeStore() );
-            if ( first.inUse() && first.isDense() )
-            {
-                assertLocked( buildLogicalRelationshipGroupResourceId( firstNode, type ), RELATIONSHIP_GROUP_DELETE, SHARED );
-                assertLocked( firstNode, NODE_DELETE, SHARED );
-            }
-        }
-
-        if ( !txState.nodeIsAddedInThisTx( secondNode ) )
-        {
-            NodeRecord second = readRecord( secondNode, neoStores.getNodeStore() );
-            if ( second.inUse() && second.isDense() )
-            {
-                assertLocked( buildLogicalRelationshipGroupResourceId( secondNode, type ), RELATIONSHIP_GROUP_DELETE, SHARED );
-                assertLocked( secondNode, NODE_DELETE, SHARED );
-            }
-        }
+        checkRelationship( txState, locks, loader, before );
     }
 
     private void verifyRelationshipGroupSufficientlyLocked( RelationshipGroupRecord before )
     {
-        assertRecordsEquals( before, neoStores.getRelationshipGroupStore() );
+        assertRecordsEquals( before, loader::loadRelationshipGroup );
 
         long node = before.getOwningNode();
         if ( !txState.nodeIsAddedInThisTx( node ) )
         {
-            assertLocked( node, NODE, EXCLUSIVE );
+            assertLocked( node, RELATIONSHIP_GROUP, before );
         }
     }
 
-    private void assertLocked( long id, ResourceType resource, LockType type )
+    private void assertLocked( long id, ResourceType resource, AbstractBaseRecord record )
     {
-        assertLocked( locks, id, resource, type );
+        assertLocked( locks, id, resource, EXCLUSIVE, record );
     }
 
-    static void assertLocked( ResourceLocker locks, long id, ResourceType resource, LockType type )
+    static void checkRelationship( ReadableTransactionState txState, ResourceLocker locks, StoreLoader loader, RelationshipRecord record )
     {
-        if ( locks.activeLocks().noneMatch(
-                lock -> lock.resourceId() == id && lock.resourceType() == resource && lock.lockType() == type ) )
+        long id = record.getId();
+        if ( !txState.relationshipIsAddedInThisTx( id ) && !txState.relationshipIsDeletedInThisTx( id ) )
         {
-            throw new IllegalStateException( String.format( "[%s,%s] modified without %s lock.", resource, id, type ) );
+            //relationship only modified
+            assertLocked( locks, id, RELATIONSHIP, EXCLUSIVE, record );
+        }
+        else
+        {
+            if ( txState.relationshipIsDeletedInThisTx( id ) )
+            {
+                assertLocked( locks, id, RELATIONSHIP, EXCLUSIVE, record );
+            }
+            else
+            {
+                checkRelationshipNode( txState, locks, loader, record.getFirstNode() );
+                checkRelationshipNode( txState, locks, loader, record.getSecondNode() );
+            }
         }
     }
 
-    static <RECORD extends AbstractBaseRecord> void assertRecordsEquals( RECORD before, RecordStore<RECORD> store )
+    private static void checkRelationshipNode( ReadableTransactionState txState, ResourceLocker locks, StoreLoader loader, long nodeId )
     {
-        RECORD readRecord = readRecord( before.getId(), store );
-        checkState( readRecord.equals( before ),
-                "Record which got marked as changed is not what the store has, i.e. it was read before lock was acquired%before:  %s%nstore: %s", before,
-                readRecord );
+        if ( !txState.nodeIsAddedInThisTx( nodeId ) )
+        {
+            NodeRecord node = loader.loadNode( nodeId );
+            if ( node.inUse() && node.isDense() )
+            {
+                assertLocked( locks, nodeId, NODE_RELATIONSHIP_GROUP_DELETE, SHARED, node );
+                checkState( hasLock( locks, nodeId, NODE, EXCLUSIVE ) ||
+                        hasLock( locks, nodeId, NODE_RELATIONSHIP_GROUP_DELETE, SHARED ),
+                        "%s modified w/ neither [%s,%s] nor [%s,%s]", locks, NODE, EXCLUSIVE, NODE_RELATIONSHIP_GROUP_DELETE, SHARED );
+            }
+        }
     }
 
-    static <RECORD extends AbstractBaseRecord> RECORD readRecord( long id, RecordStore<RECORD> store )
+    static void assertLocked( ResourceLocker locks, long id, ResourceType resource, LockType type, AbstractBaseRecord record )
     {
-        return store.getRecord( id, store.newRecord(), RecordLoad.ALWAYS, PageCursorTracer.NULL );
+        checkState( hasLock( locks, id, resource, type ), "%s [%s,%s] modified without %s lock, record:%s.", locks, resource, id, type, record );
+    }
+
+    private static boolean hasLock( ResourceLocker locks, long id, ResourceType resource, LockType type )
+    {
+        return locks.activeLocks().anyMatch( lock -> lock.resourceId() == id && lock.resourceType() == resource && lock.lockType() == type );
+    }
+
+    static <RECORD extends AbstractBaseRecord> void assertRecordsEquals( RECORD before, LongFunction<RECORD> loader )
+    {
+        RECORD stored = loader.apply( before.getId() );
+        if ( before.inUse() || stored.inUse() )
+        {
+            checkState( stored.equals( before ),
+                    "Record which got marked as changed is not what the store has, i.e. it was read before lock was acquired%nbefore:%s%nstore:%s",
+                    before, stored );
+        }
     }
 
     public interface Factory
     {
         RecordAccess.LoadMonitor create( ResourceLocker locks, ReadableTransactionState txState, NeoStores neoStores );
 
-        static Factory defaultFactory()
+        static Factory defaultFactory( Config config )
         {
-            boolean test = false;
-            assert test = true;
-            return test ? ( locks, txState, neoStores ) -> new LockVerificationMonitor( locks, txState, neoStores ) : IGNORE;
+            boolean enabled = config.get( GraphDatabaseInternalSettings.additional_lock_verification );
+            return enabled ? ( locks, txState, neoStores ) -> new LockVerificationMonitor( locks, txState, new NeoStoresLoader( neoStores ) ) : IGNORE;
         };
 
         Factory IGNORE = ( locks, txState, neoStores ) -> LoadMonitor.NULL_MONITOR;
+    }
+
+    public interface StoreLoader
+    {
+        NodeRecord loadNode( long id );
+
+        RelationshipRecord loadRelationship( long id );
+
+        RelationshipGroupRecord loadRelationshipGroup( long id );
+    }
+
+    public static class NeoStoresLoader implements StoreLoader
+    {
+        private final NeoStores neoStores;
+
+        public NeoStoresLoader( NeoStores neoStores )
+        {
+            this.neoStores = neoStores;
+        }
+
+        @Override
+        public NodeRecord loadNode( long id )
+        {
+            return readRecord( id, neoStores.getNodeStore() );
+        }
+
+        @Override
+        public RelationshipRecord loadRelationship( long id )
+        {
+            return readRecord( id, neoStores.getRelationshipStore() );
+        }
+
+        @Override
+        public RelationshipGroupRecord loadRelationshipGroup( long id )
+        {
+            return readRecord( id, neoStores.getRelationshipGroupStore() );
+        }
+
+        private <RECORD extends AbstractBaseRecord> RECORD readRecord( long id, RecordStore<RECORD> store )
+        {
+            return store.getRecord( id, store.newRecord(), RecordLoad.ALWAYS, PageCursorTracer.NULL );
+        }
     }
 }

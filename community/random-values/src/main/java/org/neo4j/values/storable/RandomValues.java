@@ -1544,6 +1544,17 @@ public class RandomValues
     }
 
     /**
+     * Returns a random element from the provided array.
+     *
+     * @param among the array to choose a random element from.
+     * @return a random element of the provided array.
+     */
+    public long among( long[] among )
+    {
+        return among[generator.nextInt( among.length )];
+    }
+
+    /**
      * Returns a random element of the provided list
      *
      * @param among the list to choose a random element from
@@ -1584,6 +1595,8 @@ public class RandomValues
         assert min <= max;
         int diff = min == max ? 0 : generator.nextInt( max - min );
         int length = min + diff;
+        assert allowDuplicates || length <= among.length :
+                "Unique selection of " + length + " items cannot possibly be created from " + among.length + " items";
         T[] result = (T[]) Array.newInstance( among.getClass().getComponentType(), length );
         for ( int i = 0; i < length; i++ )
         {

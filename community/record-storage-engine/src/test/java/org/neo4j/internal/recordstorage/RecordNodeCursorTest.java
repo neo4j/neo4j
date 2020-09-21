@@ -70,7 +70,7 @@ class RecordNodeCursorTest
             record.initialize( record.getId() == 200, 1L, false, 1L, 0L );
             return null;
         } ).when( nodeStore ).nextRecordByCursor( any(), any(), any() );
-        RecordNodeCursor cursor = new RecordNodeCursor( nodeStore, null, null, NULL );
+        RecordNodeCursor cursor = new RecordNodeCursor( nodeStore, null, null, null, NULL );
 
         // when
         cursor.scan();

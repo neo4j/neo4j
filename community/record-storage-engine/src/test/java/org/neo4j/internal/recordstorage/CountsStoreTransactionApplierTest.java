@@ -42,7 +42,9 @@ class CountsStoreTransactionApplierTest
         final CountsStore counts = mock( CountsStore.class );
         final CountsAccessor.Updater updater = mock( CountsAccessor.Updater.class );
         when( counts.apply( anyLong(), any( PageCursorTracer.class ) ) ).thenReturn( updater );
-        final CountsStoreTransactionApplierFactory applier = new CountsStoreTransactionApplierFactory( counts, mock( RelationshipGroupDegreesStore.class ) );
+        final RelationshipGroupDegreesStore groupDegreesStore = mock( RelationshipGroupDegreesStore.class );
+        when( groupDegreesStore.apply( anyLong(), any( PageCursorTracer.class ) ) ).thenReturn( mock( RelationshipGroupDegreesStore.Updater.class ) );
+        final CountsStoreTransactionApplierFactory applier = new CountsStoreTransactionApplierFactory( counts, groupDegreesStore );
 
         // WHEN
         try ( TransactionApplier txApplier = applier.startTx( new GroupOfCommands( 2L ), mock( BatchContext.class ) ) )

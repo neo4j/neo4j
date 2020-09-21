@@ -30,6 +30,7 @@ import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceLocker;
 import org.neo4j.logging.Log;
 import org.neo4j.memory.MemoryTracker;
@@ -43,8 +44,8 @@ public interface StorageEngine extends Lifecycle
 {
     /**
      * @return a new {@link CommandCreationContext} meant to be kept for multiple calls to
-     * {@link #createCommands(Collection, ReadableTransactionState, StorageReader, CommandCreationContext, ResourceLocker, long, TxStateVisitor.Decorator,
-     * PageCursorTracer, MemoryTracker)}.
+     * {@link #createCommands(Collection, ReadableTransactionState, StorageReader, CommandCreationContext, ResourceLocker, LockTracer, long,
+     * TxStateVisitor.Decorator, PageCursorTracer, MemoryTracker)}.
      * Must be {@link CommandCreationContext#close() closed} after used, before being discarded.
      */
     CommandCreationContext newCommandCreationContext( PageCursorTracer cursorTracer, MemoryTracker memoryTracker );
@@ -87,6 +88,7 @@ public interface StorageEngine extends Lifecycle
      * The reason it's needed is that some relationship changes in the record storage engine
      * needs to lock prev/next relationships and these changes happens when creating commands
      * The EntityLocker interface is a subset of Locks.Client interface, just to fit in while it's here.
+     * @param lockTracer traces additional locks acquired while creating commands.
      * @param lastTransactionIdWhenStarted transaction id which was seen as last committed when this
      * transaction started, i.e. before any changes were made and before any data was read.
      * @param additionalTxStateVisitor any additional tx state visitor decoration.
@@ -100,6 +102,7 @@ public interface StorageEngine extends Lifecycle
             StorageReader storageReader,
             CommandCreationContext creationContext,
             ResourceLocker locks,
+            LockTracer lockTracer,
             long lastTransactionIdWhenStarted,
             TxStateVisitor.Decorator additionalTxStateVisitor,
             PageCursorTracer cursorTracer,

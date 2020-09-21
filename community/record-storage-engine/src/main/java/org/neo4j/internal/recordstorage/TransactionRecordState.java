@@ -59,11 +59,13 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
+import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceLocker;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.RelationshipDirection;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageProperty;
+import org.neo4j.storageengine.api.txstate.RelationshipModifications;
 import org.neo4j.util.VisibleForTesting;
 import org.neo4j.values.storable.Value;
 
@@ -97,8 +99,8 @@ public class TransactionRecordState implements RecordState
     private final RecordAccessSet recordChangeSet;
     private final long lastCommittedTxWhenTransactionStarted;
     private final ResourceLocker locks;
-    private final RelationshipCreator relationshipCreator;
-    private final RelationshipDeleter relationshipDeleter;
+    private final LockTracer lockTracer;
+    private final RelationshipModifier relationshipModifier;
     private final PropertyCreator propertyCreator;
     private final PropertyDeleter propertyDeleter;
     private final PageCursorTracer cursorTracer;
@@ -109,7 +111,7 @@ public class TransactionRecordState implements RecordState
     private boolean prepared;
 
     TransactionRecordState( NeoStores neoStores, IntegrityValidator integrityValidator, RecordChangeSet recordChangeSet,
-            long lastCommittedTxWhenTransactionStarted, ResourceLocker locks, RelationshipCreator relationshipCreator, RelationshipDeleter relationshipDeleter,
+            long lastCommittedTxWhenTransactionStarted, ResourceLocker locks, LockTracer lockTracer, RelationshipModifier relationshipModifier,
             PropertyCreator propertyCreator, PropertyDeleter propertyDeleter, PageCursorTracer cursorTracer, MemoryTracker memoryTracker,
             LogCommandSerialization commandSerialization )
     {
@@ -122,8 +124,8 @@ public class TransactionRecordState implements RecordState
         this.recordChangeSet = recordChangeSet;
         this.lastCommittedTxWhenTransactionStarted = lastCommittedTxWhenTransactionStarted;
         this.locks = locks;
-        this.relationshipCreator = relationshipCreator;
-        this.relationshipDeleter = relationshipDeleter;
+        this.lockTracer = lockTracer;
+        this.relationshipModifier = relationshipModifier;
         this.propertyCreator = propertyCreator;
         this.propertyDeleter = propertyDeleter;
         this.cursorTracer = cursorTracer;
@@ -278,6 +280,8 @@ public class TransactionRecordState implements RecordState
         // schema records look malformed.
         addFiltered( commands, Mode.DELETE, propCommands );
 
+        assert commands.size() == noOfCommands - skippedCommands : format( "Expected %d final commands, got %d " +
+                "instead, with %d skipped", noOfCommands, commands.size(), skippedCommands );
         if ( groupDegreesUpdater.degrees != null )
         {
             groupDegreesUpdater.degrees.forEachKeyValue( ( key, delta ) ->
@@ -291,10 +295,6 @@ public class TransactionRecordState implements RecordState
                 }
             } );
         }
-
-        assert commands.size() == noOfCommands - skippedCommands : format( "Expected %d final commands, got %d " +
-                "instead, with %d skipped", noOfCommands, commands.size(), skippedCommands );
-
         prepared = true;
     }
 
@@ -306,14 +306,9 @@ public class TransactionRecordState implements RecordState
         return after;
     }
 
-    void relCreate( long id, int typeId, long startNodeId, long endNodeId )
+    void relModify( RelationshipModifications modifications )
     {
-        relationshipCreator.relationshipCreate( id, typeId, startNodeId, endNodeId, recordChangeSet, groupDegreesUpdater, locks );
-    }
-
-    void relDelete( long relId )
-    {
-        relationshipDeleter.relDelete( relId, recordChangeSet, groupDegreesUpdater, locks );
+        relationshipModifier.modifyRelationships( modifications, recordChangeSet, groupDegreesUpdater, locks, lockTracer );
     }
 
     private void addFiltered( Collection<StorageCommand> target, Mode mode, Command[]... commands )

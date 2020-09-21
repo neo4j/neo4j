@@ -48,6 +48,7 @@ import org.neo4j.internal.recordstorage.Command.PropertyCommand;
 import org.neo4j.internal.recordstorage.Command.RelationshipCommand;
 import org.neo4j.internal.recordstorage.Command.RelationshipGroupCommand;
 import org.neo4j.internal.recordstorage.Command.SchemaRuleCommand;
+import org.neo4j.internal.recordstorage.FlatRelationshipModifications.RelationshipData;
 import org.neo4j.internal.recordstorage.RecordAccess.RecordProxy;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -78,11 +79,14 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.transaction.log.InMemoryVersionableReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.lock.LockService;
+import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceLocker;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.CommandReader;
 import org.neo4j.storageengine.api.CommandsToApply;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
+import org.neo4j.storageengine.api.RelationshipDirection;
 import org.neo4j.storageengine.api.StandardConstraintRuleAccessor;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageReader;
@@ -117,6 +121,11 @@ import static org.neo4j.internal.helpers.collection.Iterables.filter;
 import static org.neo4j.internal.helpers.collection.Iterables.single;
 import static org.neo4j.internal.helpers.collection.Iterators.array;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
+import static org.neo4j.internal.recordstorage.FlatRelationshipModifications.relationship;
+import static org.neo4j.internal.recordstorage.FlatRelationshipModifications.relationships;
+import static org.neo4j.internal.recordstorage.FlatRelationshipModifications.singleCreate;
+import static org.neo4j.internal.recordstorage.FlatRelationshipModifications.singleDelete;
+import static org.neo4j.internal.recordstorage.RelationshipModifier.DEFAULT_EXTERNAL_DEGREES_THRESHOLD_SWITCH;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.internal.schema.SchemaDescriptor.forRelType;
 import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.uniqueForLabel;
@@ -188,7 +197,8 @@ class TransactionRecordStateTest
         assertNull( getRelationshipGroup( recordChangeSet, node, type ) );
     }
 
-    private static void assertDenseRelationshipCounts( RecordChangeSet recordChangeSet, long nodeId, int type, int outCount, int inCount )
+    private static void assertDenseRelationshipCounts( TransactionRecordState tx, RecordChangeSet recordChangeSet, long nodeId, int type, int outCount,
+            int inCount )
     {
         RecordProxy<RelationshipGroupRecord,Integer> proxy =
                 getRelationshipGroup( recordChangeSet, recordChangeSet.getNodeRecords().getOrLoad( nodeId, null, NULL ).forReadingData(), type );
@@ -202,18 +212,40 @@ class TransactionRecordStateTest
         {
             rel = recordChangeSet.getRelRecords().getOrLoad( relId, null, NULL ).forReadingData();
             // count is stored in the back pointer of the first relationship in the chain
-            assertEquals( outCount, rel.getFirstPrevRel(), "Stored relationship count for OUTGOING differs" );
-            assertEquals( outCount, manuallyCountRelationships( recordChangeSet, nodeId, relId ),
-                "Manually counted relationships for OUTGOING differs" );
+            assertEquals( outCount, plusFromGroupDegreesStore( tx, rel.getFirstPrevRel(), group, RelationshipDirection.OUTGOING, recordChangeSet, nodeId ),
+                    "Stored relationship count for OUTGOING differs" );
+            assertEquals( outCount, manuallyCountRelationships( recordChangeSet, nodeId, relId ), "Manually counted relationships for OUTGOING differs" );
         }
 
         relId = group.getFirstIn();
         if ( relId != Record.NO_NEXT_RELATIONSHIP.intValue() )
         {
             rel = recordChangeSet.getRelRecords().getOrLoad( relId, null, NULL ).forReadingData();
-            assertEquals( inCount, rel.getSecondPrevRel(), "Stored relationship count for INCOMING differs" );
-            assertEquals( inCount, manuallyCountRelationships( recordChangeSet, nodeId, relId ),
-                "Manually counted relationships for INCOMING differs" );
+            assertEquals( inCount, plusFromGroupDegreesStore( tx, rel.getSecondPrevRel(), group, RelationshipDirection.INCOMING, recordChangeSet, nodeId ),
+                    "Stored relationship count for INCOMING differs" );
+            assertEquals( inCount, manuallyCountRelationships( recordChangeSet, nodeId, relId ), "Manually counted relationships for INCOMING differs" );
+        }
+    }
+
+    private static int plusFromGroupDegreesStore( TransactionRecordState tx, long prevRelDegree, RelationshipGroupRecord group, RelationshipDirection direction,
+            RecordChangeSet recordChangeSet, long nodeId )
+    {
+        NodeRecord node = recordChangeSet.getNodeRecords().getIfLoaded( nodeId ).forReadingData();
+        return (int) (node.isDense() && hasExternalDegrees( group, direction ) ? tx.groupDegreeDelta( group.getId(), direction ) : prevRelDegree);
+    }
+
+    private static boolean hasExternalDegrees( RelationshipGroupRecord group, RelationshipDirection direction )
+    {
+        switch ( direction )
+        {
+        case OUTGOING:
+            return group.hasExternalDegreesOut();
+        case INCOMING:
+            return group.hasExternalDegreesIn();
+        case LOOP:
+            return group.hasExternalDegreesLoop();
+        default:
+            throw new UnsupportedOperationException( direction.name() );
         }
     }
 
@@ -278,7 +310,7 @@ class TransactionRecordStateTest
         recordState.nodeCreate( nodeId );
         recordState.addLabelToNode( labelId, nodeId );
         recordState.nodeAddProperty( nodeId, propertyKeyId, Values.of( "Neo" ) );
-        recordState.relCreate( relId, relTypeId, nodeId, nodeId );
+        recordState.relModify( singleCreate( relId, relTypeId, nodeId, nodeId ) );
         recordState.relAddProperty( relId, propertyKeyId, Values.of( "Oen" ) );
 
         // WHEN
@@ -601,8 +633,8 @@ class TransactionRecordStateTest
         long nodeId = 0;
         long relId = 1;
         recordState.nodeCreate( nodeId );
-        recordState.relCreate( relId++, 0, nodeId, nodeId );
-        recordState.relCreate( relId, 0, nodeId, nodeId );
+        recordState.relModify( singleCreate( relId++, 0, nodeId, nodeId ) );
+        recordState.relModify( singleCreate( relId, 0, nodeId, nodeId ) );
         recordState.nodeAddProperty( nodeId, 0, value2 );
 
         // WHEN
@@ -621,6 +653,39 @@ class TransactionRecordStateTest
     }
 
     @Test
+    void shouldExtractCreatedCommandsIncludingGroupDegreesInCorrectOrder() throws Throwable
+    {
+        neoStores = createStores( Config.defaults( dense_node_threshold, 1 ) );
+        TransactionRecordState recordState = newTransactionRecordState();
+        long nodeId = 0;
+        long relId = 1;
+        recordState.nodeCreate( nodeId );
+        int numRelationships = DEFAULT_EXTERNAL_DEGREES_THRESHOLD_SWITCH + 1;
+        for ( long i = 0; i < numRelationships; i++ )
+        {
+            recordState.relModify( singleCreate( relId++, 0, nodeId, nodeId ) );
+        }
+        recordState.nodeAddProperty( nodeId, 0, value2 );
+
+        // WHEN
+        Collection<StorageCommand> commands = new ArrayList<>();
+        recordState.extractCommands( commands, INSTANCE );
+
+        // THEN
+        Iterator<StorageCommand> commandIterator = commands.iterator();
+
+        assertCommand( commandIterator.next(), PropertyCommand.class );
+        for ( int i = 0; i < numRelationships; i++ )
+        {
+            assertCommand( commandIterator.next(), RelationshipCommand.class );
+        }
+        assertCommand( commandIterator.next(), Command.RelationshipGroupCommand.class );
+        assertCommand( commandIterator.next(), NodeCommand.class );
+        assertCommand( commandIterator.next(), Command.GroupDegreeCommand.class );
+        assertFalse( commandIterator.hasNext() );
+    }
+
+    @Test
     void shouldExtractUpdateCommandsInCorrectOrder() throws Throwable
     {
         neoStores = createStores( Config.defaults( dense_node_threshold, 1 ) );
@@ -630,14 +695,14 @@ class TransactionRecordStateTest
         long relId2 = 2;
         long relId3 = 3;
         recordState.nodeCreate( nodeId );
-        recordState.relCreate( relId1, 0, nodeId, nodeId );
-        recordState.relCreate( relId2, 0, nodeId, nodeId );
+        recordState.relModify( singleCreate( relId1, 0, nodeId, nodeId ) );
+        recordState.relModify( singleCreate( relId2, 0, nodeId, nodeId ) );
         recordState.nodeAddProperty( nodeId, 0, Values.of( 101 ) );
         apply( transaction( recordState ) );
 
         recordState = newTransactionRecordState();
         recordState.nodeChangeProperty( nodeId, 0, Values.of( 102 ) );
-        recordState.relCreate( relId3, 0, nodeId, nodeId );
+        recordState.relModify( singleCreate( relId3, 0, nodeId, nodeId ) );
         recordState.relAddProperty( relId1, 0, Values.of( 123 ) );
 
         // WHEN
@@ -655,7 +720,6 @@ class TransactionRecordStateTest
         assertCommand( commandIterator.next(), PropertyCommand.class );
         assertCommand( commandIterator.next(), RelationshipCommand.class );
         assertCommand( commandIterator.next(), RelationshipCommand.class );
-        assertCommand( commandIterator.next(), Command.RelationshipGroupCommand.class );
         assertFalse( commandIterator.hasNext() );
     }
 
@@ -680,17 +744,20 @@ class TransactionRecordStateTest
         int relationshipB = 1;
         TransactionRecordState state = newTransactionRecordState();
         state.nodeCreate( 0 );
-        state.relCreate( 0, relationshipA, 0, 0 );
-        state.relCreate( 1, relationshipA, 0, 0 );
-        state.relCreate( 2, relationshipA, 0, 0 );
-        state.relCreate( 3, relationshipA, 0, 0 );
-        state.relCreate( 4, relationshipB, 0, 0 );
+        state.relModify( singleCreate( 0, relationshipA, 0, 0 ) );
+        state.relModify( singleCreate( 1, relationshipA, 0, 0 ) );
+        state.relModify( singleCreate( 2, relationshipA, 0, 0 ) );
+        state.relModify( singleCreate( 3, relationshipA, 0, 0 ) );
+        state.relModify( singleCreate( 4, relationshipB, 0, 0 ) );
         apply( state );
 
         // When doing a tx where a relationship of type A for the node is create and rel of type relationshipB is deleted
         state = newTransactionRecordState();
-        state.relCreate( 5, relationshipA, 0, 0 ); // here this node should be converted to dense and the groups should be created
-        state.relDelete( 4 ); // here the group relationshipB should be delete
+        // here this node should be converted to dense and the groups should be created
+        // and the group relationshipB should be delete
+        state.relModify( new FlatRelationshipModifications(
+                relationships( relationship( 5, relationshipA, 0, 0 ) ),
+                relationships( relationship( 4, relationshipB, 0, 0 ) ) ) );
 
         // Then
         Collection<StorageCommand> commands = new ArrayList<>();
@@ -711,14 +778,14 @@ class TransactionRecordStateTest
         long relId4 = 10;
         recordState.nodeCreate( nodeId1 );
         recordState.nodeCreate( nodeId2 );
-        recordState.relCreate( relId1, 0, nodeId1, nodeId1 );
-        recordState.relCreate( relId2, 0, nodeId1, nodeId1 );
-        recordState.relCreate( relId4, 1, nodeId1, nodeId1 );
+        recordState.relModify( singleCreate( relId1, 0, nodeId1, nodeId1 ) );
+        recordState.relModify( singleCreate( relId2, 0, nodeId1, nodeId1 ) );
+        recordState.relModify( singleCreate( relId4, 1, nodeId1, nodeId1 ) );
         recordState.nodeAddProperty( nodeId1, 0, value1 );
         apply( transaction( recordState ) );
 
         recordState = newTransactionRecordState();
-        recordState.relDelete( relId4 );
+        recordState.relModify( singleDelete( relId4, 1, nodeId1, nodeId1 ) );
         recordState.nodeDelete( nodeId2 );
         recordState.nodeRemoveProperty( nodeId1, 0 );
 
@@ -894,11 +961,9 @@ class TransactionRecordStateTest
 
         // WHEN
         // i remove enough relationships to become dense and remove enough to become not dense
-        long[] relationshipsOfTypeB = createRelationships( neoStores, tx, nodeId, typeB, OUTGOING, 5 );
-        for ( long relationshipToDelete : relationshipsOfTypeB )
-        {
-            tx.relDelete( relationshipToDelete );
-        }
+        RelationshipData[] relationshipsOfTypeB = createRelationships( neoStores, tx, nodeId, typeB, OUTGOING, 5 );
+
+        tx.relModify( new FlatRelationshipModifications( relationships(), relationshipsOfTypeB ) );
 
         CommandsToApply ptx = transaction( tx );
         apply( applier, ptx );
@@ -959,9 +1024,9 @@ class TransactionRecordStateTest
 
         // THEN the node should have been converted into a dense node
         assertTrue( recordChangeSet.getNodeRecords().getOrLoad( nodeId, null, NULL ).forReadingData().isDense() );
-        assertDenseRelationshipCounts( recordChangeSet, nodeId, typeA, 6, 7 );
-        assertDenseRelationshipCounts( recordChangeSet, nodeId, typeB, 8, 9 );
-        assertDenseRelationshipCounts( recordChangeSet, nodeId, typeC, 10, 11 );
+        assertDenseRelationshipCounts( tx, recordChangeSet, nodeId, typeA, 6, 7 );
+        assertDenseRelationshipCounts( tx, recordChangeSet, nodeId, typeB, 8, 9 );
+        assertDenseRelationshipCounts( tx, recordChangeSet, nodeId, typeC, 10, 11 );
     }
 
     @Test
@@ -985,7 +1050,7 @@ class TransactionRecordStateTest
 
         // THEN the node should have been converted into a dense node
         assertTrue( recordChangeSet.getNodeRecords().getOrLoad( nodeId, null, NULL ).forReadingData().isDense() );
-        assertDenseRelationshipCounts( recordChangeSet, nodeId, typeA, 24, 26 );
+        assertDenseRelationshipCounts( tx, recordChangeSet, nodeId, typeA, 24, 26 );
     }
 
     @Test
@@ -1008,7 +1073,7 @@ class TransactionRecordStateTest
 
         // THEN the node should have been converted into a dense node
         assertTrue( recordChangeSet.getNodeRecords().getOrLoad( nodeId, null, NULL ).forReadingData().isDense() );
-        assertDenseRelationshipCounts( recordChangeSet, nodeId, typeA, 9, 0 );
+        assertDenseRelationshipCounts( tx, recordChangeSet, nodeId, typeA, 9, 0 );
     }
 
     @Test
@@ -1021,13 +1086,13 @@ class TransactionRecordStateTest
         int typeA = 0;
         tx.nodeCreate( nodeId );
         tx.createRelationshipTypeToken( "A", typeA, false );
-        long[] relationshipsCreated = createRelationships( neoStores, tx, nodeId, typeA, INCOMING, 15 );
+        RelationshipData[] relationshipsCreated = createRelationships( neoStores, tx, nodeId, typeA, INCOMING, 15 );
 
         //WHEN
-        tx.relDelete( relationshipsCreated[0] );
+        tx.relModify( singleDelete( relationshipsCreated[0] ) );
 
         // THEN the node should have been converted into a dense node
-        assertDenseRelationshipCounts( recordChangeSet, nodeId, typeA, 0, 14 );
+        assertDenseRelationshipCounts( tx, recordChangeSet, nodeId, typeA, 0, 14 );
     }
 
     @Test
@@ -1042,59 +1107,59 @@ class TransactionRecordStateTest
         int typeC = 600;
         tx.nodeCreate( nodeId );
         tx.createRelationshipTypeToken( "A", typeA, false );
-        long[] relationshipsCreatedAIncoming = createRelationships( neoStores, tx, nodeId, typeA, INCOMING, 1 );
-        long[] relationshipsCreatedAOutgoing = createRelationships( neoStores, tx, nodeId, typeA, OUTGOING, 1 );
+        RelationshipData[] relationshipsCreatedAIncoming = createRelationships( neoStores, tx, nodeId, typeA, INCOMING, 1 );
+        RelationshipData[] relationshipsCreatedAOutgoing = createRelationships( neoStores, tx, nodeId, typeA, OUTGOING, 1 );
 
         tx.createRelationshipTypeToken( "B", typeB, false );
-        long[] relationshipsCreatedBIncoming = createRelationships( neoStores, tx, nodeId, typeB, INCOMING, 1 );
-        long[] relationshipsCreatedBOutgoing = createRelationships( neoStores, tx, nodeId, typeB, OUTGOING, 1 );
+        RelationshipData[] relationshipsCreatedBIncoming = createRelationships( neoStores, tx, nodeId, typeB, INCOMING, 1 );
+        RelationshipData[] relationshipsCreatedBOutgoing = createRelationships( neoStores, tx, nodeId, typeB, OUTGOING, 1 );
 
         tx.createRelationshipTypeToken( "C", typeC, false );
-        long[] relationshipsCreatedCIncoming = createRelationships( neoStores, tx, nodeId, typeC, INCOMING, 1 );
-        long[] relationshipsCreatedCOutgoing = createRelationships( neoStores, tx, nodeId, typeC, OUTGOING, 1 );
+        RelationshipData[] relationshipsCreatedCIncoming = createRelationships( neoStores, tx, nodeId, typeC, INCOMING, 1 );
+        RelationshipData[] relationshipsCreatedCOutgoing = createRelationships( neoStores, tx, nodeId, typeC, OUTGOING, 1 );
 
         // WHEN
-        tx.relDelete( relationshipsCreatedAIncoming[0] );
+        tx.relModify( singleDelete( relationshipsCreatedAIncoming[0] ) );
 
         // THEN
-        assertDenseRelationshipCounts( recordChangeSet, nodeId, typeA, 1, 0 );
-        assertDenseRelationshipCounts( recordChangeSet, nodeId, typeB, 1, 1 );
-        assertDenseRelationshipCounts( recordChangeSet, nodeId, typeC, 1, 1 );
+        assertDenseRelationshipCounts( tx, recordChangeSet, nodeId, typeA, 1, 0 );
+        assertDenseRelationshipCounts( tx, recordChangeSet, nodeId, typeB, 1, 1 );
+        assertDenseRelationshipCounts( tx, recordChangeSet, nodeId, typeC, 1, 1 );
 
         // WHEN
-        tx.relDelete( relationshipsCreatedAOutgoing[0] );
-
-        // THEN
-        assertRelationshipGroupDoesNotExist( recordChangeSet, recordChangeSet.getNodeRecords().getOrLoad( nodeId, null, NULL ).forReadingData(), typeA );
-        assertDenseRelationshipCounts( recordChangeSet, nodeId, typeB, 1, 1 );
-        assertDenseRelationshipCounts( recordChangeSet, nodeId, typeC, 1, 1 );
-
-        // WHEN
-        tx.relDelete( relationshipsCreatedBIncoming[0] );
+        tx.relModify( singleDelete( relationshipsCreatedAOutgoing[0] ) );
 
         // THEN
         assertRelationshipGroupDoesNotExist( recordChangeSet, recordChangeSet.getNodeRecords().getOrLoad( nodeId, null, NULL ).forReadingData(), typeA );
-        assertDenseRelationshipCounts( recordChangeSet, nodeId, typeB, 1, 0 );
-        assertDenseRelationshipCounts( recordChangeSet, nodeId, typeC, 1, 1 );
+        assertDenseRelationshipCounts( tx, recordChangeSet, nodeId, typeB, 1, 1 );
+        assertDenseRelationshipCounts( tx, recordChangeSet, nodeId, typeC, 1, 1 );
 
         // WHEN
-        tx.relDelete( relationshipsCreatedBOutgoing[0] );
+        tx.relModify( singleDelete( relationshipsCreatedBIncoming[0] ) );
 
         // THEN
         assertRelationshipGroupDoesNotExist( recordChangeSet, recordChangeSet.getNodeRecords().getOrLoad( nodeId, null, NULL ).forReadingData(), typeA );
-        assertRelationshipGroupDoesNotExist( recordChangeSet, recordChangeSet.getNodeRecords().getOrLoad( nodeId, null, NULL ).forReadingData(), typeB );
-        assertDenseRelationshipCounts( recordChangeSet, nodeId, typeC, 1, 1 );
+        assertDenseRelationshipCounts( tx, recordChangeSet, nodeId, typeB, 1, 0 );
+        assertDenseRelationshipCounts( tx, recordChangeSet, nodeId, typeC, 1, 1 );
 
         // WHEN
-        tx.relDelete( relationshipsCreatedCIncoming[0] );
+        tx.relModify( singleDelete( relationshipsCreatedBOutgoing[0] ) );
 
         // THEN
         assertRelationshipGroupDoesNotExist( recordChangeSet, recordChangeSet.getNodeRecords().getOrLoad( nodeId, null, NULL ).forReadingData(), typeA );
         assertRelationshipGroupDoesNotExist( recordChangeSet, recordChangeSet.getNodeRecords().getOrLoad( nodeId, null, NULL ).forReadingData(), typeB );
-        assertDenseRelationshipCounts( recordChangeSet, nodeId, typeC, 1, 0 );
+        assertDenseRelationshipCounts( tx, recordChangeSet, nodeId, typeC, 1, 1 );
 
         // WHEN
-        tx.relDelete( relationshipsCreatedCOutgoing[0] );
+        tx.relModify( singleDelete( relationshipsCreatedCIncoming[0] ) );
+
+        // THEN
+        assertRelationshipGroupDoesNotExist( recordChangeSet, recordChangeSet.getNodeRecords().getOrLoad( nodeId, null, NULL ).forReadingData(), typeA );
+        assertRelationshipGroupDoesNotExist( recordChangeSet, recordChangeSet.getNodeRecords().getOrLoad( nodeId, null, NULL ).forReadingData(), typeB );
+        assertDenseRelationshipCounts( tx, recordChangeSet, nodeId, typeC, 1, 0 );
+
+        // WHEN
+        tx.relModify( singleDelete( relationshipsCreatedCOutgoing[0] ) );
 
         // THEN
         assertRelationshipGroupDoesNotExist( recordChangeSet, recordChangeSet.getNodeRecords().getOrLoad( nodeId, null, NULL ).forReadingData(), typeA );
@@ -1127,9 +1192,9 @@ class TransactionRecordStateTest
             recordState.nodeCreate( nodeId );
             recordState.nodeCreate( otherNode1Id );
             recordState.nodeCreate( otherNode2Id );
-            recordState.relCreate( neoStores.getRelationshipStore().nextId( NULL ), type10, nodeId, otherNode1Id );
+            recordState.relModify( singleCreate( neoStores.getRelationshipStore().nextId( NULL ), type10, nodeId, otherNode1Id ) );
             // This relationship will cause the switch to dense
-            recordState.relCreate( neoStores.getRelationshipStore().nextId( NULL ), type10, nodeId, otherNode2Id );
+            recordState.relModify( singleCreate( neoStores.getRelationshipStore().nextId( NULL ), type10, nodeId, otherNode2Id ) );
 
             apply( transaction( recordState ) );
 
@@ -1142,7 +1207,7 @@ class TransactionRecordStateTest
             TransactionRecordState recordState = newTransactionRecordState();
             long otherNodeId = neoStores.getNodeStore().nextId( NULL );
             recordState.nodeCreate( otherNodeId );
-            recordState.relCreate( neoStores.getRelationshipStore().nextId( NULL ), type5, nodeId, otherNodeId );
+            recordState.relModify( singleCreate( neoStores.getRelationshipStore().nextId( NULL ), type5, nodeId, otherNodeId ) );
             apply( transaction( recordState ) );
 
             // THEN that group should end up first in the chain
@@ -1154,7 +1219,7 @@ class TransactionRecordStateTest
             TransactionRecordState recordState = newTransactionRecordState();
             long otherNodeId = neoStores.getNodeStore().nextId( NULL );
             recordState.nodeCreate( otherNodeId );
-            recordState.relCreate( neoStores.getRelationshipStore().nextId( NULL ), type15, nodeId, otherNodeId );
+            recordState.relModify( singleCreate( neoStores.getRelationshipStore().nextId( NULL ), type15, nodeId, otherNodeId ) );
             apply( transaction( recordState ) );
 
             // THEN that group should end up last in the chain
@@ -1170,9 +1235,9 @@ class TransactionRecordStateTest
         // WHEN
         TransactionRecordState state = newTransactionRecordState();
         state.nodeCreate( 0 );
-        state.relCreate( 0, 0, 0, 0 );
-        state.relCreate( 1, 0, 0, 0 );
-        state.relCreate( 2, 0, 0, 0 );
+        state.relModify( singleCreate( 0, 0, 0, 0 ) );
+        state.relModify( singleCreate( 1, 0, 0, 0 ) );
+        state.relModify( singleCreate( 2, 0, 0, 0 ) );
         List<StorageCommand> commands = new ArrayList<>();
         state.extractCommands( commands, INSTANCE );
 
@@ -1420,10 +1485,10 @@ class TransactionRecordStateTest
         }
     }
 
-    private static long[] createRelationships( NeoStores neoStores, TransactionRecordState tx, long nodeId, int type, Direction direction, int count )
+    private static RelationshipData[] createRelationships( NeoStores neoStores, TransactionRecordState tx, long nodeId, int type, Direction direction,
+            int count )
     {
-
-        long[] result = new long[count];
+        RelationshipData[] result = new RelationshipData[count];
         for ( int i = 0; i < count; i++ )
         {
             long otherNodeId = neoStores.getNodeStore().nextId( NULL );
@@ -1431,8 +1496,8 @@ class TransactionRecordStateTest
             long first = direction == OUTGOING ? nodeId : otherNodeId;
             long other = direction == INCOMING ? nodeId : otherNodeId;
             long relId = neoStores.getRelationshipStore().nextId( NULL );
-            result[i] = relId;
-            tx.relCreate( relId, type, first, other );
+            result[i] = relationship( relId, type, first, other );
+            tx.relModify( singleCreate( relId, type, first, other ) );
         }
         return result;
     }
@@ -1583,9 +1648,9 @@ class TransactionRecordStateTest
         PropertyTraverser propertyTraverser = new PropertyTraverser( NULL );
         RelationshipGroupGetter relationshipGroupGetter = new RelationshipGroupGetter( neoStores.getRelationshipGroupStore(), NULL );
         PropertyDeleter propertyDeleter = new PropertyDeleter( propertyTraverser, NULL );
-        return new TransactionRecordState( neoStores, integrityValidator, recordChangeSet, 0, ResourceLocker.IGNORE,
-                new RelationshipCreator( relationshipGroupGetter, neoStores.getRelationshipGroupStore().getStoreHeaderInt(), NULL ),
-                new RelationshipDeleter( relationshipGroupGetter, propertyDeleter, NULL ),
+        return new TransactionRecordState( neoStores, integrityValidator, recordChangeSet, 0, ResourceLocker.IGNORE, LockTracer.NONE,
+                new RelationshipModifier( relationshipGroupGetter, propertyDeleter, neoStores.getRelationshipGroupStore().getStoreHeaderInt(),
+                        true, NULL, EmptyMemoryTracker.INSTANCE ),
                 new PropertyCreator( neoStores.getPropertyStore(), propertyTraverser, NULL, INSTANCE ),
                 propertyDeleter, NULL, INSTANCE, RecordStorageCommandReaderFactory.LATEST_LOG_SERIALIZATION );
     }

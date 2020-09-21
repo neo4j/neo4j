@@ -95,4 +95,9 @@ public enum Record
     {
         return value == intValue;
     }
+
+    public static boolean isNull( long id )
+    {
+        return NULL_REFERENCE.is( id );
+    }
 }

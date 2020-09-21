@@ -29,7 +29,9 @@ import java.nio.ByteBuffer;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.function.LongSupplier;
 
 import org.neo4j.collection.Dependencies;
@@ -42,11 +44,13 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
+import org.neo4j.internal.id.DefaultIdController;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.id.indexed.IndexedIdGenerator;
-import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.internal.recordstorage.CommandLockVerification;
+import org.neo4j.internal.recordstorage.LockVerificationMonitor;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.recordstorage.TransactionRecordState.PropertyReceiver;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -58,10 +62,11 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
-import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContext;
 import org.neo4j.kernel.api.txstate.TransactionState;
-import org.neo4j.kernel.database.Database;
-import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
+import org.neo4j.kernel.impl.api.DatabaseSchemaState;
+import org.neo4j.kernel.impl.api.TransactionToApply;
+import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.store.MetaDataStore.Position;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
@@ -70,11 +75,16 @@ import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
+import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.monitoring.Health;
+import org.neo4j.storageengine.api.CommandCreationContext;
+import org.neo4j.storageengine.api.EntityTokenUpdateListener;
 import org.neo4j.storageengine.api.PropertyKeyValue;
 import org.neo4j.storageengine.api.RelationshipVisitor;
-import org.neo4j.storageengine.api.StorageEngine;
+import org.neo4j.storageengine.api.StandardConstraintRuleAccessor;
+import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.StoragePropertyCursor;
@@ -90,10 +100,12 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.token.DelegatingTokenHolder;
+import org.neo4j.token.TokenHolders;
 import org.neo4j.token.api.TokenHolder;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_BYTE_ARRAY;
 import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -102,15 +114,22 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.counts_store_rotation_timeout;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
-import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
+import static org.neo4j.internal.kernel.api.security.AuthSubject.AUTH_DISABLED;
+import static org.neo4j.internal.recordstorage.StoreTokens.createReadOnlyTokenHolder;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat.FIELD_NOT_PRESENT;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
+import static org.neo4j.lock.LockService.NO_LOCK_SERVICE;
+import static org.neo4j.lock.LockTracer.NONE;
+import static org.neo4j.lock.ResourceLocker.IGNORE;
+import static org.neo4j.logging.NullLogProvider.nullLogProvider;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.RelationshipSelection.ALL_RELATIONSHIPS;
+import static org.neo4j.storageengine.api.TransactionApplicationMode.INTERNAL;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 
 @EphemeralNeo4jLayoutExtension
@@ -130,15 +149,14 @@ public class NeoStoresTest
 
     private PropertyStore pStore;
     private NodeStore nodeStore;
-    private Database database;
-    private KernelTransaction tx;
     private TransactionState transactionState;
     private StorageReader storageReader;
     private TokenHolder propertyKeyTokenHolder;
-    private DatabaseManagementService managementService;
+    private RecordStorageEngine storageEngine;
+    private LifeSupport life;
 
     @BeforeEach
-    public void setUpNeoStores()
+    void setUpNeoStores()
     {
         Config config = Config.defaults();
         StoreFactory sf = getStoreFactory( config, databaseLayout, fs, NullLogProvider.getInstance() );
@@ -147,11 +165,12 @@ public class NeoStoresTest
     }
 
     @AfterEach
-    void tearDown()
+    void closeStorageEngine()
     {
-        if ( managementService != null )
+        if ( life != null )
         {
-            managementService.shutdown();
+            life.shutdown();
+            life = null;
         }
     }
 
@@ -700,31 +719,45 @@ public class NeoStoresTest
         Dependencies dependencies = new Dependencies();
         Config config = Config.defaults( GraphDatabaseSettings.fail_on_missing_files, false );
         dependencies.satisfyDependency( config );
-        if ( managementService != null )
-        {
-            managementService.shutdown();
-        }
-        managementService = new TestDatabaseManagementServiceBuilder().setFileSystem( fs ).setExternalDependencies( dependencies )
-                .setDatabaseRootDirectory( databaseLayout.databaseDirectory() ).build();
-        final GraphDatabaseAPI databaseAPI = (GraphDatabaseAPI) managementService.database( GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
-        database = databaseAPI.getDependencyResolver().resolveDependency( Database.class );
+        closeStorageEngine();
+        IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs, immediate() );
 
-        NeoStores neoStores = database.getDependencyResolver()
-                .resolveDependency( RecordStorageEngine.class ).testAccessNeoStores();
+        TokenHolders tokenHolders = new TokenHolders(
+                createReadOnlyTokenHolder( TokenHolder.TYPE_PROPERTY_KEY ),
+                createReadOnlyTokenHolder( TokenHolder.TYPE_LABEL ),
+                createReadOnlyTokenHolder( TokenHolder.TYPE_RELATIONSHIP_TYPE ) );
+        storageEngine =
+                new RecordStorageEngine( databaseLayout, config, pageCache, fs, nullLogProvider(), tokenHolders, new DatabaseSchemaState( nullLogProvider() ),
+                        new StandardConstraintRuleAccessor(), i -> i, NO_LOCK_SERVICE, mock( Health.class ), idGeneratorFactory, new DefaultIdController(),
+                        immediate(), PageCacheTracer.NULL, true, INSTANCE, CommandLockVerification.Factory.IGNORE, LockVerificationMonitor.Factory.IGNORE );
+        storageEngine.addRelationshipTypeUpdateListener( mock( EntityTokenUpdateListener.class ) );
+        life = new LifeSupport();
+        life.add( storageEngine );
+        life.add( storageEngine.schemaAndTokensLifecycle() );
+        life.start();
+
+        NeoStores neoStores = storageEngine.testAccessNeoStores();
         pStore = neoStores.getPropertyStore();
         nodeStore = neoStores.getNodeStore();
-        storageReader = database.getDependencyResolver().resolveDependency( StorageEngine.class ).newReader();
+        storageReader = storageEngine.newReader();
     }
 
-    private void startTx() throws TransactionFailureException
+    private void startTx()
     {
-        tx = database.getKernel().beginTransaction( KernelTransaction.Type.IMPLICIT, AUTH_DISABLED );
-        transactionState = ((KernelTransactionImplementation) tx).txState();
+        transactionState = new TxState();
     }
 
-    private void commitTx() throws TransactionFailureException
+    private void commitTx() throws Exception
     {
-        tx.commit();
+        try ( CommandCreationContext commandCreationContext = storageEngine.newCommandCreationContext( storageReader, NULL, INSTANCE ) )
+        {
+            List<StorageCommand> commands = new ArrayList<>();
+            storageEngine.createCommands( commands, transactionState, storageReader, commandCreationContext, IGNORE, NONE,
+                    storageEngine.testAccessNeoStores().getMetaDataStore().getLastClosedTransactionId(), tx -> tx, NULL, INSTANCE );
+            PhysicalTransactionRepresentation tx = new PhysicalTransactionRepresentation( commands );
+            tx.setHeader( EMPTY_BYTE_ARRAY, -1, -1, -1, -1, AUTH_DISABLED );
+            storageEngine.apply( new TransactionToApply( tx, EmptyVersionContext.EMPTY, NULL ), INTERNAL );
+        }
     }
 
     private int index( String key ) throws KernelException
@@ -734,8 +767,7 @@ public class NeoStoresTest
 
     private long nextId( Class<?> clazz )
     {
-        NeoStores neoStores = database.getDependencyResolver()
-                .resolveDependency( RecordStorageEngine.class ).testAccessNeoStores();
+        NeoStores neoStores = storageEngine.testAccessNeoStores();
         if ( clazz.equals( PropertyKeyTokenRecord.class ) )
         {
             return neoStores.getPropertyKeyTokenStore().nextId( NULL );

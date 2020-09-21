@@ -24,7 +24,9 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceLocker;
+import org.neo4j.memory.EmptyMemoryTracker;
 
 import static org.neo4j.internal.recordstorage.RecordAssert.assertThat;
 import static org.neo4j.internal.recordstorage.RecordBuilders.filterType;
@@ -195,10 +197,13 @@ class RelationshipCreatorTest
 
     private void createRelationshipBetween( long fromNode, long toNode )
     {
-        RelationshipCreator logic = new RelationshipCreator( newRelGroupGetter( givenState ), denseNodeThreshold, PageCursorTracer.NULL );
+        RelationshipModifier logic = new RelationshipModifier( newRelGroupGetter( givenState ), null, denseNodeThreshold, true,
+                PageCursorTracer.NULL,
+                EmptyMemoryTracker.INSTANCE );
 
-        logic.relationshipCreate( nextRelId( givenState ), 0, fromNode, toNode, changeset, new TransactionRecordState.DegreesUpdater(),
-                ResourceLocker.IGNORE );
+        FlatRelationshipModifications
+                data = new FlatRelationshipModifications( new FlatRelationshipModifications.RelationshipData( nextRelId( givenState ), 0, fromNode, toNode ) );
+        logic.modifyRelationships( data, changeset, new TransactionRecordState.DegreesUpdater(), ResourceLocker.IGNORE, LockTracer.NONE );
     }
 
     private static long nextRelId( AbstractBaseRecord[] existingRecords )

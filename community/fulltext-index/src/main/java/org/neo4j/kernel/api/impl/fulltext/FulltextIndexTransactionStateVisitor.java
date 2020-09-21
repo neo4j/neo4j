@@ -39,6 +39,7 @@ import org.neo4j.internal.schema.FulltextSchemaDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.storageengine.api.StorageProperty;
+import org.neo4j.storageengine.api.txstate.RelationshipModifications;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 import org.neo4j.values.storable.Value;
 
@@ -98,12 +99,6 @@ class FulltextIndexTransactionStateVisitor extends TxStateVisitor.Adapter
     }
 
     @Override
-    public void visitCreatedRelationship( long id, int type, long startNode, long endNode )
-    {
-        indexRelationship( id );
-    }
-
-    @Override
     public void visitNodePropertyChanges( long id, Iterator<StorageProperty> added, Iterator<StorageProperty> changed, IntIterable removed )
     {
         indexNode( id );
@@ -122,9 +117,10 @@ class FulltextIndexTransactionStateVisitor extends TxStateVisitor.Adapter
     }
 
     @Override
-    public void visitDeletedRelationship( long id )
+    public void visitRelationshipModifications( RelationshipModifications modifications )
     {
-        modifiedEntityIdsInThisTransaction.add( id );
+        modifications.creations().forEach( ( id, type, startNode, endNode ) -> indexRelationship( id ) );
+        modifications.deletions().forEach( ( id, type, startNode, endNode ) -> modifiedEntityIdsInThisTransaction.add( id ) );
     }
 
     @Override

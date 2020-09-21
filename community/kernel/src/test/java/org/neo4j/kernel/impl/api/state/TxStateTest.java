@@ -37,6 +37,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.NavigableMap;
 import java.util.Set;
 import java.util.TreeMap;
@@ -64,6 +65,7 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.txstate.DiffSets;
 import org.neo4j.storageengine.api.txstate.LongDiffSets;
+import org.neo4j.storageengine.api.txstate.RelationshipModifications;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
@@ -620,15 +622,11 @@ abstract class TxStateTest
         state.accept( new TxStateVisitor.Adapter()
         {
             @Override
-            public void visitCreatedRelationship( long id, int type, long startNode, long endNode )
+            public void visitRelationshipModifications( RelationshipModifications modifications )
             {
-                assertEquals( 1, id, "Should not create any other relationship than 1" );
-            }
-
-            @Override
-            public void visitDeletedRelationship( long id )
-            {
-                fail( "Should not delete any relationship" );
+                modifications.creations()
+                        .forEach( ( id, type, startNode, endNode ) -> assertEquals( 1, id, "Should not create any other relationship than 1" ) );
+                modifications.deletions().forEach( ( id, type, startNode, endNode ) -> fail( "Should not delete any relationship" ) );
             }
         } );
     }
@@ -695,10 +693,11 @@ abstract class TxStateTest
         state.accept( new TxStateVisitor.Adapter()
         {
             @Override
-            public void visitDeletedRelationship( long id )
+            public void visitRelationshipModifications( RelationshipModifications ids )
             {
                 // Then
-                assertEquals( 42, id, "Wrong deleted relationship id" );
+                assertThat( ids.deletions().size() ).isEqualTo( 1 );
+                ids.deletions().forEach( ( id, type, start, end ) -> assertEquals( 42, id, "Wrong deleted relationship id" ) );
             }
         } );
     }
@@ -804,9 +803,12 @@ abstract class TxStateTest
             }
 
             @Override
-            public void visitCreatedRelationship( long id, int type, long startNode, long endNode )
+            public void visitRelationshipModifications( RelationshipModifications modifications )
             {
-                visitLate();
+                if ( !modifications.creations().isEmpty() )
+                {
+                    visitLate();
+                }
             }
         } );
     }
@@ -839,15 +841,16 @@ abstract class TxStateTest
 
             // then
             @Override
-            public void visitCreatedRelationship( long id, int type, long startNode, long endNode )
+            public void visitRelationshipModifications( RelationshipModifications modifications )
             {
-                visitEarly();
-            }
-
-            @Override
-            public void visitDeletedRelationship( long id )
-            {
-                visitLate();
+                if ( !modifications.creations().isEmpty() )
+                {
+                    visitEarly();
+                }
+                if ( !modifications.deletions().isEmpty() )
+                {
+                    visitLate();
+                }
             }
         } );
     }
@@ -878,7 +881,7 @@ abstract class TxStateTest
             // then
 
             @Override
-            public void visitDeletedRelationship( long id )
+            public void visitRelationshipModifications( RelationshipModifications ids )
             {
                 visitEarly();
             }
@@ -1057,6 +1060,33 @@ abstract class TxStateTest
         verifyNoMoreInteractions( collectionsFactory );
     }
 
+    @Test
+    void visitedRelationshipChangesShouldBeSortedByNode() throws KernelException
+    {
+        //Given
+        for ( int i = 0; i < 100; i++ )
+        {
+            state.relationshipDoCreate( /*id=*/random.nextInt( 1 << 20 ),
+                    /*type=*/random.nextInt( 128 ),
+                    /*startNode=*/random.nextInt( 1 << 20 ),
+                    /*endNode=*/random.nextInt( 1 << 20 ) );
+        }
+
+        //When
+        List<Long> visitedRelationshipIds = new ArrayList<>();
+        state.accept( new TxStateVisitor.Adapter()
+        {
+            @Override
+            public void visitRelationshipModifications( RelationshipModifications modifications )
+            {
+                modifications.forEachSplit( nodeRelationshipIds -> visitedRelationshipIds.add( nodeRelationshipIds.nodeId() ) );
+            }
+        } );
+        //Then
+        assertThat( visitedRelationshipIds ).isNotEmpty();
+        assertThat( visitedRelationshipIds ).isSorted();
+    }
+
     private LongDiffSets addedNodes( long... added )
     {
         return new MutableLongDiffSetsImpl( LongSets.mutable.of( added ), LongSets.mutable.empty(), collectionsFactory, memoryTracker );
@@ -1086,7 +1116,6 @@ abstract class TxStateTest
                     visitMethods.add( method.getName() );
                 }
             }
-            assertEquals( 2, visitMethods.size(), "should implement exactly two visit*(...) methods" );
             do
             {
                 if ( random.nextBoolean() )

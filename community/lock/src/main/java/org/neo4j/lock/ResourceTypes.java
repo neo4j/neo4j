@@ -32,7 +32,12 @@ public enum ResourceTypes implements ResourceType
     // EXPLICIT INDEX resource had type id 5 - skip it to avoid resource types conflicts
     LABEL( 6, LockWaitStrategies.INCREMENTAL_BACKOFF ),
     RELATIONSHIP_TYPE( 7, LockWaitStrategies.INCREMENTAL_BACKOFF ),
-    SCHEMA_NAME( 8, LockWaitStrategies.INCREMENTAL_BACKOFF );
+    SCHEMA_NAME( 8, LockWaitStrategies.INCREMENTAL_BACKOFF ),
+    RELATIONSHIP_GROUP( 9, LockWaitStrategies.INCREMENTAL_BACKOFF ),
+    //Delete protection for concurrent create/delete
+    RELATIONSHIP_DELETE( 10, LockWaitStrategies.INCREMENTAL_BACKOFF ),
+    NODE_RELATIONSHIP_GROUP_DELETE( 11, LockWaitStrategies.INCREMENTAL_BACKOFF ),
+    DEGREES( 12, LockWaitStrategies.INCREMENTAL_BACKOFF );
 
     private static final MutableIntObjectMap<ResourceType> idToType = new IntObjectHashMap<>();
 

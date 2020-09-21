@@ -45,6 +45,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
+import org.neo4j.lock.LockTracer;
 import org.neo4j.storageengine.api.CommandsToApply;
 import org.neo4j.storageengine.api.StorageCommand;
 
@@ -158,7 +159,7 @@ class WriteTransactionCommandOrderingTest
         when( neoStores.getRelationshipStore() ).thenReturn( relationshipStore );
 
         return new TransactionRecordState( neoStores, mock( IntegrityValidator.class ), recordChangeSet,
-                0, null, null, null, null, null, NULL, INSTANCE, LATEST_LOG_SERIALIZATION );
+                0, null, LockTracer.NONE, null, null, null, NULL, INSTANCE, LATEST_LOG_SERIALIZATION );
     }
 
     private static class OrderVerifyingCommandHandler extends CommandVisitor.Adapter

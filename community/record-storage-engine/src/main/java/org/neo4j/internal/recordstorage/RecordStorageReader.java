@@ -28,6 +28,7 @@ import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.common.EntityType;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.counts.CountsAccessor;
+import org.neo4j.internal.counts.RelationshipGroupDegreesStore;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
@@ -44,7 +45,6 @@ import org.neo4j.storageengine.api.AllNodeScan;
 import org.neo4j.storageengine.api.AllRelationshipsScan;
 import org.neo4j.storageengine.api.StoragePropertyCursor;
 import org.neo4j.storageengine.api.StorageReader;
-import org.neo4j.storageengine.api.StorageRelationshipTraversalCursor;
 import org.neo4j.storageengine.api.StorageSchemaReader;
 import org.neo4j.token.TokenHolders;
 
@@ -63,11 +63,13 @@ public class RecordStorageReader implements StorageReader
     private final RelationshipGroupStore relationshipGroupStore;
     private final PropertyStore propertyStore;
     private final CountsAccessor counts;
+    private final RelationshipGroupDegreesStore groupDegreesStore;
     private final SchemaCache schemaCache;
 
     private boolean closed;
 
-    RecordStorageReader( TokenHolders tokenHolders, NeoStores neoStores, CountsAccessor counts, SchemaCache schemaCache )
+    RecordStorageReader( TokenHolders tokenHolders, NeoStores neoStores, CountsAccessor counts, RelationshipGroupDegreesStore groupDegreesStore,
+            SchemaCache schemaCache )
     {
         this.tokenHolders = tokenHolders;
         this.nodeStore = neoStores.getNodeStore();
@@ -75,6 +77,7 @@ public class RecordStorageReader implements StorageReader
         this.relationshipGroupStore = neoStores.getRelationshipGroupStore();
         this.propertyStore = neoStores.getPropertyStore();
         this.counts = counts;
+        this.groupDegreesStore = groupDegreesStore;
         this.schemaCache = schemaCache;
     }
 
@@ -84,7 +87,7 @@ public class RecordStorageReader implements StorageReader
      */
     public RecordStorageReader( NeoStores stores )
     {
-        this( null, stores, null, null );
+        this( null, stores, null, null, null );
     }
 
     @Override
@@ -315,18 +318,18 @@ public class RecordStorageReader implements StorageReader
     @Override
     public RecordNodeCursor allocateNodeCursor( PageCursorTracer cursorTracer )
     {
-        return new RecordNodeCursor( nodeStore, relationshipStore, relationshipGroupStore, cursorTracer );
+        return new RecordNodeCursor( nodeStore, relationshipStore, relationshipGroupStore, groupDegreesStore, cursorTracer );
     }
 
     @Override
-    public StorageRelationshipTraversalCursor allocateRelationshipTraversalCursor( PageCursorTracer cursorTracer )
+    public RecordRelationshipTraversalCursor allocateRelationshipTraversalCursor( PageCursorTracer cursorTracer )
     {
-        return new RecordRelationshipTraversalCursor( relationshipStore, relationshipGroupStore, cursorTracer );
+        return new RecordRelationshipTraversalCursor( relationshipStore, relationshipGroupStore, groupDegreesStore, cursorTracer );
     }
 
     RecordRelationshipGroupCursor allocateRelationshipGroupCursor( PageCursorTracer cursorTracer )
     {
-        return new RecordRelationshipGroupCursor( relationshipStore, relationshipGroupStore, RecordLoadOverride.none(), cursorTracer );
+        return new RecordRelationshipGroupCursor( relationshipStore, relationshipGroupStore, groupDegreesStore, RecordLoadOverride.none(), cursorTracer );
     }
 
     @Override

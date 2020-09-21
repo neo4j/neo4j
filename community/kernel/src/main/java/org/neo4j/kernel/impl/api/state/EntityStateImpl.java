@@ -42,7 +42,7 @@ import static java.util.Objects.requireNonNull;
 
 class EntityStateImpl implements EntityState
 {
-    private final long id;
+    final long id;
     private MutableLongObjectMap<Value> addedProperties;
     private MutableLongObjectMap<Value> changedProperties;
     private MutableLongSet removedProperties;

@@ -76,6 +76,7 @@ import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.internal.event.DatabaseTransactionEventListeners;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
+import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceLocker;
 import org.neo4j.logging.NullLog;
 import org.neo4j.memory.MemoryGroup;
@@ -643,6 +644,7 @@ class KernelTransactionsTest
                 any( StorageReader.class ),
                 any( CommandCreationContext.class ),
                 any( ResourceLocker.class ),
+                any( LockTracer.class ),
                 anyLong(),
                 any( TxStateVisitor.Decorator.class ), any( PageCursorTracer.class ), any( MemoryTracker.class ) );
 

@@ -22,6 +22,7 @@ package org.neo4j.test.rule.concurrent;
 import org.junit.rules.ExternalResource;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
@@ -37,6 +38,7 @@ import org.neo4j.function.Predicates;
 import org.neo4j.function.ThrowingFunction;
 import org.neo4j.function.ThrowingSupplier;
 
+import static org.apache.commons.lang3.ArrayUtils.contains;
 import static org.neo4j.function.ThrowingPredicate.throwingPredicate;
 import static org.neo4j.test.ReflectionUtil.verifyMethodExists;
 
@@ -139,9 +141,12 @@ public class ThreadingRule extends ExternalResource
         };
     }
 
-    public static Predicate<Thread> waitingWhileIn( final Class<?> owner, final String method )
+    public static Predicate<Thread> waitingWhileIn( final Class<?> owner, final String... eitherOfMethods )
     {
-        verifyMethodExists( owner, method );
+        for ( String method : eitherOfMethods )
+        {
+            verifyMethodExists( owner, method );
+        }
         return new Predicate<>()
         {
             @Override
@@ -159,7 +164,7 @@ public class ThreadingRule extends ExternalResource
                         {
                             var currentClass = Class.forName( element.getClassName() );
                             var currentClassIsSubtype = owner.isAssignableFrom( currentClass );
-                            if ( currentClassIsSubtype && element.getMethodName().equals( method ) )
+                            if ( currentClassIsSubtype && contains( eitherOfMethods, element.getMethodName() ) )
                             {
                                 return true;
                             }
@@ -175,7 +180,7 @@ public class ThreadingRule extends ExternalResource
             @Override
             public String toString()
             {
-                return String.format( "Predicate[Thread.state=WAITING && call stack contains %s.%s()]", owner.getName(), method );
+                return String.format( "Predicate[Thread.state=WAITING && call stack contains %s.%s()]", owner.getName(), Arrays.toString( eitherOfMethods ) );
             }
         };
     }

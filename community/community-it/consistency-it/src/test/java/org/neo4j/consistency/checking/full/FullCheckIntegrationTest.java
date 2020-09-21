@@ -2206,7 +2206,7 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check();
 
         // then
-        on( stats ).verify( RecordType.RELATIONSHIP, 4 )
+        on( stats ).verify( RecordType.RELATIONSHIP, 2 )
                 .andThatsAllFolks();
     }
 

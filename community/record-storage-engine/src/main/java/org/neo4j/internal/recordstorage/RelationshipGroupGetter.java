@@ -19,6 +19,8 @@
  */
 package org.neo4j.internal.recordstorage;
 
+import java.util.function.Predicate;
+
 import org.neo4j.internal.id.IdSequence;
 import org.neo4j.internal.recordstorage.RecordAccess.RecordProxy;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
@@ -26,10 +28,20 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 
+import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
+import static org.neo4j.kernel.impl.store.record.Record.isNull;
+
 public class RelationshipGroupGetter
 {
     private final IdSequence idGenerator;
     private final PageCursorTracer cursorTracer;
+
+    interface RelationshipGroupMonitor
+    {
+        void visit( RelationshipGroupRecord group );
+
+        RelationshipGroupMonitor EMPTY = g -> {};
+    }
 
     public RelationshipGroupGetter( IdSequence idGenerator, PageCursorTracer cursorTracer )
     {
@@ -37,17 +49,28 @@ public class RelationshipGroupGetter
         this.cursorTracer = cursorTracer;
     }
 
-    public RelationshipGroupPosition getRelationshipGroup( NodeRecord node, int type,
-            RecordAccess<RelationshipGroupRecord, Integer> relGroupRecords )
+    public RelationshipGroupPosition getRelationshipGroup( NodeRecord node, int type, RecordAccess<RelationshipGroupRecord,Integer> relGroupRecords,
+            RelationshipGroupMonitor monitor )
     {
-        long groupId = node.getNextRel();
-        long previousGroupId = Record.NO_NEXT_RELATIONSHIP.intValue();
+        return getRelationshipGroup( NULL_REFERENCE.longValue(), node.getNextRel(), type, relGroupRecords, monitor );
+    }
+
+    /**
+     * @param prevGroupId supplied here because {@link RelationshipGroupRecord#getPrev()} isn't persisted in the record.
+     * @param startingGroupId which group id to start iterating from.
+     */
+    public RelationshipGroupPosition getRelationshipGroup( long prevGroupId, long startingGroupId,
+            int type, RecordAccess<RelationshipGroupRecord, Integer> relGroupRecords, RelationshipGroupMonitor monitor )
+    {
+        long groupId = startingGroupId;
+        long previousGroupId = prevGroupId;
         RecordProxy<RelationshipGroupRecord, Integer> previous = null;
         RecordProxy<RelationshipGroupRecord, Integer> current;
-        while ( groupId != Record.NO_NEXT_RELATIONSHIP.intValue() )
+        while ( !isNull( groupId ) )
         {
             current = relGroupRecords.getOrLoad( groupId, null, cursorTracer );
             RelationshipGroupRecord record = current.forReadingData();
+            monitor.visit( record );
             record.setPrev( previousGroupId ); // not persistent so not a "change"
             if ( record.getType() == type )
             {
@@ -68,11 +91,18 @@ public class RelationshipGroupGetter
     public RecordProxy<RelationshipGroupRecord, Integer> getOrCreateRelationshipGroup(
             RecordProxy<NodeRecord,Void> nodeChange, int type, RecordAccess<RelationshipGroupRecord, Integer> relGroupRecords )
     {
-        RelationshipGroupPosition existingGroup = getRelationshipGroup( nodeChange.forReadingLinkage(), type, relGroupRecords );
+        return getOrCreateRelationshipGroup( nodeChange, type, relGroupRecords, NULL_REFERENCE.longValue(), nodeChange.forReadingLinkage().getNextRel() );
+    }
+
+    public RecordProxy<RelationshipGroupRecord, Integer> getOrCreateRelationshipGroup(
+            RecordProxy<NodeRecord,Void> nodeChange, int type, RecordAccess<RelationshipGroupRecord, Integer> relGroupRecords,
+            long prevGroupId, long startingGroupId )
+    {
+        RelationshipGroupPosition existingGroup = getRelationshipGroup( prevGroupId, startingGroupId, type, relGroupRecords, RelationshipGroupMonitor.EMPTY );
         RecordProxy<RelationshipGroupRecord, Integer> change = existingGroup.group();
         if ( change == null )
         {
-            NodeRecord node = nodeChange.forChangingLinkage();
+            NodeRecord node = nodeChange.forReadingLinkage();
             assert node.isDense() : "Node " + node + " should have been dense at this point";
             long id = idGenerator.nextId( cursorTracer );
             change = relGroupRecords.create( id, type, cursorTracer );
@@ -92,8 +122,9 @@ public class RelationshipGroupGetter
             }
             else
             {   // ...first in the chain
+                node = nodeChange.forChangingLinkage();
                 long firstGroupId = node.getNextRel();
-                if ( firstGroupId != Record.NO_NEXT_RELATIONSHIP.intValue() )
+                if ( !isNull( firstGroupId ) )
                 {   // There are others, make way for this new group
                     RelationshipGroupRecord previousFirstRecord = relGroupRecords.getOrLoad( firstGroupId, type, cursorTracer ).forReadingData();
                     record.setNext( previousFirstRecord.getId() );
@@ -103,6 +134,59 @@ public class RelationshipGroupGetter
             }
         }
         return change;
+    }
+
+    static void deleteGroup( RecordProxy<NodeRecord,Void> nodeChange, RelationshipGroupRecord group, MappedNodeDataLookup nodeDataLookup )
+    {
+        long previous = group.getPrev();
+        long next = group.getNext();
+        if ( isNull( previous ) )
+        {   // This is the first one, just point the node to the next group
+            nodeChange.forChangingLinkage().setNextRel( next );
+        }
+        else
+        {   // There are others before it, point the previous to the next group
+            nodeDataLookup.group( previous ).forChangingLinkage().setNext( next );
+        }
+
+        if ( !isNull( next ) )
+        {   // There are groups after this one, point that next group to the previous of the group to be deleted
+            nodeDataLookup.group( next ).forReadingLinkage().setPrev( previous ); //This is only for updating cache, thus reading not changing.
+        }
+        group.setInUse( false );
+    }
+
+    static boolean groupIsEmpty( RelationshipGroupRecord group )
+    {
+        return isNull( group.getFirstOut() ) && isNull( group.getFirstIn() ) && isNull( group.getFirstLoop() );
+    }
+
+    public boolean deleteEmptyGroups( RecordProxy<NodeRecord,Void> nodeProxy,
+            Predicate<RelationshipGroupRecord> canDeleteGroup, MappedNodeDataLookup nodeDataLookup )
+    {
+        long groupId = nodeProxy.forReadingLinkage().getNextRel();
+        long previousGroupId = Record.NULL_REFERENCE.longValue();
+        RecordProxy<RelationshipGroupRecord, Integer> current;
+        boolean anyDeleted = false;
+        while ( !isNull( groupId ) )
+        {
+            current = nodeDataLookup.group( groupId );
+            RelationshipGroupRecord group = current.forReadingData();
+            group.setPrev( previousGroupId );
+            if ( group.inUse() && groupIsEmpty( group ) && canDeleteGroup.test( group ) )
+            {
+                group = current.forChangingData();
+                deleteGroup( nodeProxy, group, nodeDataLookup );
+                anyDeleted = true;
+                break;
+            }
+            else
+            {
+                previousGroupId = groupId;
+            }
+            groupId = group.getNext();
+        }
+        return anyDeleted;
     }
 
     public static class RelationshipGroupPosition

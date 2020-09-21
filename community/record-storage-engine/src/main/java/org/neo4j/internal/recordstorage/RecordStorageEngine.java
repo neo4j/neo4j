@@ -19,13 +19,20 @@
  */
 package org.neo4j.internal.recordstorage;
 
+import org.apache.commons.lang3.mutable.MutableInt;
+import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
+import org.eclipse.collections.impl.factory.primitive.LongObjectMaps;
+
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
+import java.util.stream.LongStream;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
@@ -34,13 +41,15 @@ import org.neo4j.counts.CountsAccessor;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
-import org.neo4j.internal.counts.CountUpdater;
 import org.neo4j.internal.counts.CountsBuilder;
 import org.neo4j.internal.counts.GBPTreeCountsStore;
 import org.neo4j.internal.counts.GBPTreeGenericCountsStore;
 import org.neo4j.internal.counts.RelationshipGroupDegreesStore;
+import org.neo4j.internal.counts.RelationshipGroupDegreesStoreFactory;
 import org.neo4j.internal.diagnostics.DiagnosticsLogger;
 import org.neo4j.internal.diagnostics.DiagnosticsManager;
+import org.neo4j.internal.helpers.progress.ProgressListener;
+import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.internal.id.IdController;
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdGeneratorFactory;
@@ -66,14 +75,20 @@ import org.neo4j.kernel.impl.store.IdUpdateListener;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RecordStore;
+import org.neo4j.kernel.impl.store.RelationshipGroupStore;
+import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.MetaDataRecord;
+import org.neo4j.kernel.impl.store.record.RecordLoad;
+import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
+import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.lock.LockService;
+import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceLocker;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -85,6 +100,7 @@ import org.neo4j.storageengine.api.ConstraintRuleAccessor;
 import org.neo4j.storageengine.api.EntityTokenUpdateListener;
 import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.storageengine.api.MetadataProvider;
+import org.neo4j.storageengine.api.RelationshipDirection;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageReader;
@@ -100,6 +116,7 @@ import org.neo4j.util.VisibleForTesting;
 import org.neo4j.util.concurrent.WorkSync;
 
 import static org.neo4j.function.ThrowingAction.executeAll;
+import static org.neo4j.kernel.impl.store.record.Record.isNull;
 import static org.neo4j.lock.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.RECOVERY;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.REVERSE_RECOVERY;
@@ -122,6 +139,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     private final ConstraintRuleAccessor constraintSemantics;
     private final LockService lockService;
     private final boolean consistencyCheckApply;
+    private final boolean relaxedLockingForDenseNodes;
     private WorkSync<EntityTokenUpdateListener,TokenUpdateWork> labelScanStoreSync;
     private WorkSync<EntityTokenUpdateListener,TokenUpdateWork> relationshipTypeScanStoreSync;
     private WorkSync<IndexUpdateListener,IndexUpdatesWork> indexUpdatesSync;
@@ -193,7 +211,8 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
 
             countsStore = openCountsStore( pageCache, fs, databaseLayout, config, logProvider, recoveryCleanupWorkCollector, cacheTracer );
 
-            groupDegreesStore = openDegreesStore( pageCache, fs, databaseLayout, config, logProvider, recoveryCleanupWorkCollector, cacheTracer );
+            groupDegreesStore = openDegreesStore( pageCache, fs, databaseLayout, config, recoveryCleanupWorkCollector, cacheTracer );
+            relaxedLockingForDenseNodes = RelationshipGroupDegreesStoreFactory.featureEnabled( config, databaseLayout, fs );
 
             consistencyCheckApply = config.get( GraphDatabaseInternalSettings.consistency_check_on_apply );
         }
@@ -274,26 +293,12 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     }
 
     private RelationshipGroupDegreesStore openDegreesStore( PageCache pageCache, FileSystemAbstraction fs, DatabaseLayout layout, Config config,
-            LogProvider logProvider, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, PageCacheTracer pageCacheTracer )
+            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, PageCacheTracer pageCacheTracer )
     {
         try
         {
-            boolean readOnly = config.get( GraphDatabaseSettings.read_only );
-            return new RelationshipGroupDegreesStore( pageCache, layout.relationshipGroupDegreesStore(), fs, recoveryCleanupWorkCollector,
-                    new GBPTreeGenericCountsStore.Rebuilder()
-            {
-                @Override
-                public long lastCommittedTxId()
-                {
-                    return neoStores.getMetaDataStore().getLastCommittedTransactionId();
-                }
-
-                @Override
-                public void rebuild( CountUpdater updater, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
-                {
-                    // Don't
-                }
-            }, readOnly, pageCacheTracer, GBPTreeGenericCountsStore.NO_MONITOR );
+            return RelationshipGroupDegreesStoreFactory.create( config, pageCache, layout, fs, recoveryCleanupWorkCollector,
+                    () -> neoStores.getMetaDataStore().getLastCommittedTransactionId(), pageCacheTracer, GBPTreeGenericCountsStore.NO_MONITOR );
         }
         catch ( IOException e )
         {
@@ -304,13 +309,13 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     @Override
     public RecordStorageReader newReader()
     {
-        return new RecordStorageReader( tokenHolders, neoStores, countsStore, schemaCache );
+        return new RecordStorageReader( tokenHolders, neoStores, countsStore, groupDegreesStore, schemaCache );
     }
 
     @Override
     public RecordStorageCommandCreationContext newCommandCreationContext( PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
     {
-        return new RecordStorageCommandCreationContext( neoStores, denseNodeThreshold, cursorTracer, memoryTracker );
+        return new RecordStorageCommandCreationContext( neoStores, denseNodeThreshold, relaxedLockingForDenseNodes, cursorTracer, memoryTracker );
     }
 
     @Override
@@ -355,6 +360,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             StorageReader storageReader,
             CommandCreationContext commandCreationContext,
             ResourceLocker locks,
+            LockTracer lockTracer,
             long lastTransactionIdWhenStarted,
             TxStateVisitor.Decorator additionalTxStateVisitor,
             PageCursorTracer cursorTracer,
@@ -373,8 +379,8 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             RecordStorageCommandCreationContext creationContext = (RecordStorageCommandCreationContext) commandCreationContext;
             LogCommandSerialization serialization = RecordStorageCommandReaderFactory.INSTANCE.get( version );
             TransactionRecordState recordState =
-                    creationContext.createTransactionRecordState( integrityValidator, lastTransactionIdWhenStarted, locks, serialization,
-                            lockVerificationFactory.create( locks, txState, neoStores ) );
+                    creationContext.createTransactionRecordState( integrityValidator, lastTransactionIdWhenStarted, locks, lockTracer,
+                            serialization, lockVerificationFactory.create( locks, txState, neoStores ) );
 
             // Visit transaction state and populate these record state objects
             TxStateVisitor txStateVisitor = new TransactionToRecordStateVisitor( recordState, schemaState,
@@ -599,5 +605,179 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     public MetadataProvider metadataProvider()
     {
         return neoStores.getMetaDataStore();
+    }
+
+    public void unsafeConvertAllDenseChainsToExternalDegrees( boolean collectStats )
+    {
+        Histo degreeHisto = new Histo( "Degrees", 5, 10, 50 );
+        MutableLongObjectMap<MutableInt> numTypesPerNode = collectStats ? LongObjectMaps.mutable.empty() : null;
+        RelationshipGroupStore groupStore = neoStores.getRelationshipGroupStore();
+        RelationshipGroupRecord group = groupStore.newRecord();
+        RelationshipStore relationshipStore = neoStores.getRelationshipStore();
+        RelationshipRecord relationship = relationshipStore.newRecord();
+        long highId = groupStore.getHighId();
+        ProgressListener progress = ProgressMonitorFactory.textual( System.out ).singlePart( "Convert dense chains to external degrees", highId );
+        int numGroupsConverted = 0;
+        int numGroupsVisited = 0;
+        try ( DegreesReaderWriterManager degreesManager = new DegreesReaderWriterManager( groupDegreesStore ) )
+        {
+            for ( long id = groupStore.getNumberOfReservedLowIds(); id < highId; id++ )
+            {
+                groupStore.getRecord( id, group, RecordLoad.ALWAYS, PageCursorTracer.NULL );
+                if ( group.inUse() )
+                {
+                    numGroupsVisited++;
+                    if ( collectStats )
+                    {
+                        numTypesPerNode.getIfAbsentPut( group.getOwningNode(), MutableInt::new ).increment();
+                    }
+                    boolean changed = false;
+                    changed |= convertDirection( group, group::hasExternalDegreesOut, () -> group.setHasExternalDegreesOut( true ), group.getFirstOut(),
+                            RelationshipDirection.OUTGOING, relationshipStore, relationship, degreesManager, degreeHisto );
+                    changed |= convertDirection( group, group::hasExternalDegreesIn, () -> group.setHasExternalDegreesIn( true ), group.getFirstIn(),
+                            RelationshipDirection.INCOMING, relationshipStore, relationship, degreesManager, degreeHisto );
+                    changed |= convertDirection( group, group::hasExternalDegreesLoop, () -> group.setHasExternalDegreesLoop( true ), group.getFirstLoop(),
+                            RelationshipDirection.LOOP, relationshipStore, relationship, degreesManager, degreeHisto );
+                    if ( changed )
+                    {
+                        groupStore.updateRecord( group, IdUpdateListener.IGNORE, PageCursorTracer.NULL );
+                        numGroupsConverted++;
+                    }
+                }
+                progress.add( 1 );
+            }
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
+        finally
+        {
+            progress.done();
+        }
+
+        if ( collectStats )
+        {
+            System.out.println( "Num groups visited: " + numGroupsVisited );
+            System.out.println( "Num groups converted: " + numGroupsConverted );
+            Histo numTypesPerNodeHisto = new Histo( "Num types per dense node", 1, 2, 5, 10, 20, 50 );
+            numTypesPerNode.values().forEach( numTypes -> numTypesPerNodeHisto.add( numTypes.longValue() ) );
+            System.out.println( degreeHisto );
+            System.out.println( numTypesPerNodeHisto );
+        }
+    }
+
+    private boolean convertDirection( RelationshipGroupRecord group, BooleanSupplier hasExternalDegrees, Runnable setExternalDegrees, long firstRelationship,
+            RelationshipDirection direction, RelationshipStore relationshipStore, RelationshipRecord relationship,
+            DegreesReaderWriterManager degreesManager, Histo degreeHisto ) throws IOException
+    {
+        boolean converted = false;
+        long degree = 0;
+        if ( !hasExternalDegrees.getAsBoolean() )
+        {
+            converted = true;
+            if ( !isNull( firstRelationship )  )
+            {
+                relationshipStore.getRecord( firstRelationship, relationship, RecordLoad.NORMAL, PageCursorTracer.NULL );
+                degree = relationship.getPrevRel( group.getOwningNode() );
+                degreesManager.increment( group.getId(), direction, degree );
+                setExternalDegrees.run();
+            }
+        }
+        else if ( !isNull( firstRelationship ) )
+        {
+            degree = degreesManager.read( group.getId(), direction );
+        }
+
+        degreeHisto.add( degree );
+        return converted;
+    }
+
+    private static class Histo
+    {
+        private final String name;
+        private final long[] counts;
+        private final long[] thresholds;
+
+        Histo( String name, long... thresholds )
+        {
+            this.name = name;
+            this.counts = new long[thresholds.length + 1];
+            this.thresholds = thresholds;
+        }
+
+        void add( long value )
+        {
+            for ( int i = 0; i < thresholds.length; i++ )
+            {
+                if ( value < thresholds[i] )
+                {
+                    counts[i]++;
+                    return;
+                }
+            }
+            counts[counts.length - 1]++;
+        }
+
+        @Override
+        public String toString()
+        {
+            long total = LongStream.of( counts ).sum();
+            StringBuilder builder = new StringBuilder( name + "[total:" + total + "]:" );
+            long collective = 0;
+            for ( int i = 0; i < thresholds.length; i++ )
+            {
+                collective += counts[i];
+                builder.append( String.format( "%n  < %d: %d : %.2f", thresholds[i], counts[i], 100D * collective / total ) );
+            }
+            builder.append( String.format( "%n  > %d", counts[counts.length - 1] ) );
+            return builder.toString();
+        }
+    }
+
+    private static class DegreesReaderWriterManager implements AutoCloseable
+    {
+        private final RelationshipGroupDegreesStore store;
+        private RelationshipGroupDegreesStore.Updater updater;
+
+        DegreesReaderWriterManager( RelationshipGroupDegreesStore store )
+        {
+            this.store = store;
+        }
+
+        private RelationshipGroupDegreesStore.Updater updater() throws IOException
+        {
+            if ( updater == null )
+            {
+                updater = store.unsafeApply();
+            }
+            return updater;
+        }
+
+        void increment( long groupId, RelationshipDirection direction, long delta ) throws IOException
+        {
+            updater().increment( groupId, direction, delta );
+        }
+
+        long read( long groupId, RelationshipDirection direction )
+        {
+            ensureUpdaterClosed();
+            return store.degree( groupId, direction, PageCursorTracer.NULL );
+        }
+
+        private void ensureUpdaterClosed()
+        {
+            if ( updater != null )
+            {
+                updater.close();
+                updater = null;
+            }
+        }
+
+        @Override
+        public void close()
+        {
+            ensureUpdaterClosed();
+        }
     }
 }

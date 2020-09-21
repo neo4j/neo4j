@@ -44,6 +44,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
+import org.neo4j.storageengine.api.RelationshipDirection;
 import org.neo4j.storageengine.api.StorageCommand;
 
 import static java.lang.reflect.Modifier.isAbstract;
@@ -100,6 +101,7 @@ class LogTruncationTest
         permutations.put( NodeCountsCommand.class, new Command[]{new NodeCountsCommand( serialization, 42, 11 )} );
         permutations.put( RelationshipCountsCommand.class,
                 new Command[]{new RelationshipCountsCommand( serialization, 17, 2, 13, -2 )} );
+        permutations.put( Command.GroupDegreeCommand.class, new Command[]{new Command.GroupDegreeCommand( 42, RelationshipDirection.OUTGOING, 1 )} );
     }
 
     @Test

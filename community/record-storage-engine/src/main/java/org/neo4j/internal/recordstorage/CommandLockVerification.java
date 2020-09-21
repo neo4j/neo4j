@@ -21,8 +21,12 @@ package org.neo4j.internal.recordstorage;
 
 import java.util.Collection;
 
+import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
+import org.neo4j.internal.recordstorage.LockVerificationMonitor.NeoStoresLoader;
+import org.neo4j.internal.recordstorage.LockVerificationMonitor.StoreLoader;
 import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.lock.LockType;
 import org.neo4j.lock.ResourceLocker;
 import org.neo4j.lock.ResourceType;
@@ -30,14 +34,10 @@ import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
 import static org.neo4j.internal.recordstorage.LockVerificationMonitor.assertRecordsEquals;
-import static org.neo4j.internal.recordstorage.LockVerificationMonitor.readRecord;
-import static org.neo4j.internal.recordstorage.RecordStorageCommandCreationContext.buildLogicalRelationshipGroupResourceId;
 import static org.neo4j.lock.LockType.EXCLUSIVE;
-import static org.neo4j.lock.LockType.SHARED;
 import static org.neo4j.lock.ResourceTypes.NODE;
-import static org.neo4j.lock.ResourceTypes.NODE_DELETE;
-import static org.neo4j.lock.ResourceTypes.RELATIONSHIP;
-import static org.neo4j.lock.ResourceTypes.RELATIONSHIP_GROUP_DELETE;
+import static org.neo4j.lock.ResourceTypes.NODE_RELATIONSHIP_GROUP_DELETE;
+import static org.neo4j.lock.ResourceTypes.RELATIONSHIP_GROUP;
 
 /**
  * Merely a helper during development to ensure that commands generated are sufficiently locked, now that we're experimenting with
@@ -55,7 +55,7 @@ public interface CommandLockVerification
     {
         private final ResourceLocker locks;
         private final ReadableTransactionState txState;
-        private final NeoStores neoStores;
+        private final StoreLoader loader;
 
         private Collection<StorageCommand> ctxCommands;
 
@@ -63,7 +63,7 @@ public interface CommandLockVerification
         {
             this.locks = locks;
             this.txState = txState;
-            this.neoStores = neoStores;
+            this.loader = new NeoStoresLoader( neoStores );
         }
 
         @Override
@@ -94,49 +94,21 @@ public interface CommandLockVerification
             long id = command.getKey();
             if ( !txState.nodeIsAddedInThisTx( id ) )
             {
-                assertLocked( id, NODE, EXCLUSIVE );
+                assertLocked( id, NODE, EXCLUSIVE, command.after );
             }
             if ( txState.nodeIsDeletedInThisTx( id ) )
             {
-                assertLocked( id, NODE_DELETE, EXCLUSIVE );
+                assertLocked( id, NODE_RELATIONSHIP_GROUP_DELETE, EXCLUSIVE, command.after );
             }
         }
 
         private void verifyRelationshipSufficientlyLocked( Command.RelationshipCommand command )
         {
-            long id = command.getKey();
-            if ( !txState.relationshipIsAddedInThisTx( id ) )
-            {
-                assertLocked( id, RELATIONSHIP, EXCLUSIVE );
-            }
-
-            long firstNode = command.after.getFirstNode();
-            long secondNode = command.after.getSecondNode();
-            int type = txState.relationshipIsDeletedInThisTx( id ) ? command.before.getType() : command.after.getType();
-
-            if ( !txState.nodeIsAddedInThisTx( firstNode ) )
-            {
-                NodeRecord first = readRecord( firstNode, neoStores.getNodeStore() );
-                if ( first.inUse() && first.isDense() )
-                {
-                    assertLocked( buildLogicalRelationshipGroupResourceId( firstNode, type ), RELATIONSHIP_GROUP_DELETE, SHARED );
-                    assertLocked( firstNode, NODE_DELETE, SHARED );
-                }
-            }
-
-            if ( !txState.nodeIsAddedInThisTx( secondNode ) )
-            {
-                NodeRecord second = readRecord( secondNode, neoStores.getNodeStore() );
-                if ( second.inUse() && second.isDense() )
-                {
-                    assertLocked( buildLogicalRelationshipGroupResourceId( secondNode, type ), RELATIONSHIP_GROUP_DELETE, SHARED );
-                    assertLocked( secondNode, NODE_DELETE, SHARED );
-                }
-            }
+            LockVerificationMonitor.checkRelationship( txState, locks, loader, command.after );
 
             if ( command.before.inUse() )
             {
-                assertRecordsEquals( command.before, neoStores.getRelationshipStore() );
+                assertRecordsEquals( command.before, loader::loadRelationship );
             }
         }
 
@@ -145,24 +117,24 @@ public interface CommandLockVerification
             long node = command.after.getOwningNode();
             if ( !txState.nodeIsAddedInThisTx( node ) )
             {
-                assertLocked( node, NODE, EXCLUSIVE );
+                assertLocked( node, RELATIONSHIP_GROUP, EXCLUSIVE, command.after );
             }
 
             boolean deleted = !command.after.inUse();
             if ( deleted )
             {
-                assertLocked( buildLogicalRelationshipGroupResourceId( node, command.before.getType() ), RELATIONSHIP_GROUP_DELETE, EXCLUSIVE );
+                assertLocked( node, NODE_RELATIONSHIP_GROUP_DELETE, EXCLUSIVE, command.after );
             }
 
             if ( command.before.inUse() )
             {
-                assertRecordsEquals( command.before, neoStores.getRelationshipGroupStore() );
+                assertRecordsEquals( command.before, loader::loadRelationshipGroup );
             }
         }
 
-        private void assertLocked( long id, ResourceType resource, LockType type )
+        private void assertLocked( long id, ResourceType resource, LockType type, AbstractBaseRecord record )
         {
-            LockVerificationMonitor.assertLocked( locks, id, resource, type );
+            LockVerificationMonitor.assertLocked( locks, id, resource, type, record );
         }
     }
 
@@ -174,12 +146,18 @@ public interface CommandLockVerification
 
         class RealFactory implements Factory
         {
+            private final Config config;
+
+            RealFactory( Config config )
+            {
+                this.config = config;
+            }
+
             @Override
             public CommandLockVerification create( ResourceLocker locker, ReadableTransactionState txState, NeoStores neoStores )
             {
-                boolean assertionsEnabled = false;
-                assert assertionsEnabled = true;
-                return assertionsEnabled ? new RealChecker( locker, txState, neoStores ) : CommandLockVerification.IGNORE;
+                boolean enabled = config.get( GraphDatabaseInternalSettings.additional_lock_verification );
+                return enabled ? new RealChecker( locker, txState, neoStores ) : CommandLockVerification.IGNORE;
             }
         }
     }

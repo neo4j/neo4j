@@ -19,6 +19,8 @@
  */
 package org.neo4j.internal.recordstorage;
 
+import org.neo4j.internal.counts.RelationshipGroupDegreesStore;
+import org.neo4j.internal.helpers.Numbers;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
@@ -26,6 +28,7 @@ import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.RecordLoadOverride;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.storageengine.api.RelationshipDirection;
 
 import static org.neo4j.kernel.impl.store.record.RecordLoad.ALWAYS;
 
@@ -33,6 +36,7 @@ class RecordRelationshipGroupCursor extends RelationshipGroupRecord implements A
 {
     private final RelationshipStore relationshipStore;
     private final RelationshipGroupStore groupStore;
+    private final RelationshipGroupDegreesStore groupDegreesStore;
     private final PageCursorTracer cursorTracer;
     private final RelationshipRecord edge = new RelationshipRecord( NO_ID );
 
@@ -41,12 +45,13 @@ class RecordRelationshipGroupCursor extends RelationshipGroupRecord implements A
     private boolean open;
     RecordLoadOverride loadMode;
 
-    RecordRelationshipGroupCursor( RelationshipStore relationshipStore, RelationshipGroupStore groupStore, RecordLoadOverride loadMode,
-            PageCursorTracer cursorTracer )
+    RecordRelationshipGroupCursor( RelationshipStore relationshipStore, RelationshipGroupStore groupStore, RelationshipGroupDegreesStore groupDegreesStore,
+            RecordLoadOverride loadMode, PageCursorTracer cursorTracer )
     {
         super( NO_ID );
         this.relationshipStore = relationshipStore;
         this.groupStore = groupStore;
+        this.groupDegreesStore = groupDegreesStore;
         this.cursorTracer = cursorTracer;
         this.loadMode = loadMode;
     }
@@ -97,38 +102,35 @@ class RecordRelationshipGroupCursor extends RelationshipGroupRecord implements A
 
     int outgoingCount()
     {
-        return count( outgoingRawId() );
+        return count( outgoingRawId(), hasExternalDegreesOut(), RelationshipDirection.OUTGOING );
     }
 
     int incomingCount()
     {
-        return count( incomingRawId() );
+        return count( incomingRawId(), hasExternalDegreesIn(), RelationshipDirection.INCOMING );
     }
 
     int loopCount()
     {
-        return count( loopsRawId() );
+        return count( loopsRawId(), hasExternalDegreesLoop(), RelationshipDirection.LOOP );
     }
 
-    private int count( long reference )
+    private int count( long reference, boolean hasExternal, RelationshipDirection direction )
     {
         if ( reference == NO_ID )
         {
             return 0;
+        }
+        if ( hasExternal )
+        {
+            return Numbers.safeCastLongToInt( groupDegreesStore.degree( getId(), direction, cursorTracer ) );
         }
         if ( edgePage == null )
         {
             edgePage = relationshipStore.openPageCursorForReading( reference, cursorTracer );
         }
         relationshipStore.getRecordByCursor( reference, edge, loadMode.orElse( ALWAYS ), edgePage );
-        if ( edge.getFirstNode() == getOwningNode() )
-        {
-            return (int) edge.getFirstPrevRel();
-        }
-        else
-        {
-            return (int) edge.getSecondPrevRel();
-        }
+        return (int) edge.getPrevRel( getOwningNode() );
     }
 
     @Override

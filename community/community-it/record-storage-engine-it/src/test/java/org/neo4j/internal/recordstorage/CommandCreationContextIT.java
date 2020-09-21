@@ -36,6 +36,7 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.lock.LockTracer;
 import org.neo4j.memory.LocalMemoryTracker;
 import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.test.extension.DbmsExtension;
@@ -46,6 +47,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.graphdb.RelationshipType.withName;
+import static org.neo4j.internal.recordstorage.FlatRelationshipModifications.singleCreate;
 import static org.neo4j.internal.recordstorage.RecordStorageCommandReaderFactory.LATEST_LOG_SERIALIZATION;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.lock.ResourceLocker.IGNORE;
@@ -102,7 +104,7 @@ public class CommandCreationContextIT
         try ( var commandCreationContext = storageEngine.newCommandCreationContext( NULL, memoryTracker ) )
         {
             var integrityValidator = mock( IntegrityValidator.class );
-            var recordState = commandCreationContext.createTransactionRecordState( integrityValidator, 1, IGNORE,
+            var recordState = commandCreationContext.createTransactionRecordState( integrityValidator, 1, IGNORE, LockTracer.NONE,
                     LATEST_LOG_SERIALIZATION, RecordAccess.LoadMonitor.NULL_MONITOR );
             long heapBefore = memoryTracker.estimatedHeapMemory();
             for ( int i = 1; i < 1024; i++ )
@@ -120,8 +122,8 @@ public class CommandCreationContextIT
                 ( state, context ) -> state.createRelationshipTypeToken( "type" + context.getIteration(), context.getIteration(), false ),
                 ( state, context ) -> state.createLabelToken( "label" + context.getIteration(), context.getIteration(), false ),
                 ( state, context ) -> state.createPropertyKeyToken( "key" + context.getIteration(), context.getIteration(), false ),
-                ( state, context ) -> state.relCreate( context.getIteration(), context.getIteration(), context.getExistentNodeId(),
-                        context.getExistentNodeId() ),
+                ( state, context ) -> state.relModify( singleCreate( context.getIteration(), context.getIteration(), context.getExistentNodeId(),
+                        context.getExistentNodeId() ) ),
                 ( state, context ) -> state.relAddProperty( context.getExistentRelId(), context.getIteration(), Values.of( context.getIteration() ) ),
                 ( state, context ) -> state.nodeAddProperty( context.existentNodeId, context.getIteration(), Values.of( context.getIteration() ) ) );
     }

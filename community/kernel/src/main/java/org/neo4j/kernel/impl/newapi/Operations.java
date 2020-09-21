@@ -40,6 +40,7 @@ import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.Locks;
+import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.Procedures;
 import org.neo4j.internal.kernel.api.Read;
@@ -56,6 +57,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.CreateConstraintFailureEx
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
+import org.neo4j.internal.kernel.api.helpers.RelationshipSelections;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.ConstraintType;
@@ -108,8 +110,6 @@ import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-import static java.lang.Math.max;
-import static java.lang.Math.min;
 import static java.lang.String.format;
 import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.common.EntityType.RELATIONSHIP;
@@ -122,6 +122,7 @@ import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_PROPERTY_KEY;
 import static org.neo4j.kernel.impl.locking.ResourceIds.indexEntryResourceId;
 import static org.neo4j.kernel.impl.newapi.IndexTxStateUpdater.LabelChangeType.ADDED_LABEL;
 import static org.neo4j.kernel.impl.newapi.IndexTxStateUpdater.LabelChangeType.REMOVED_LABEL;
+import static org.neo4j.lock.ResourceTypes.DEGREES;
 import static org.neo4j.lock.ResourceTypes.INDEX_ENTRY;
 import static org.neo4j.lock.ResourceTypes.SCHEMA_NAME;
 import static org.neo4j.values.storable.Values.NO_VALUE;
@@ -244,12 +245,24 @@ public class Operations implements Write, SchemaWrite
     }
 
     @Override
-    public int nodeDetachDelete( final long nodeId )
+    public int nodeDetachDelete( long nodeId )
     {
         ktx.assertOpen();
-        var deleter = new DetachingRelationshipDeleter( relId -> relationshipDelete( relId, false ) );
-
-        int deletedRelationships = deleter.lockNodesAndDeleteRelationships( nodeId, ktx );
+        commandCreationContext.acquireNodeDeletionLock( ktx.txState(), ktx.statementLocks().pessimistic(), ktx.lockTracer(), nodeId );
+        NodeCursor nodeCursor = ktx.ambientNodeCursor();
+        ktx.dataRead().singleNode( nodeId, nodeCursor );
+        int deletedRelationships = 0;
+        if ( nodeCursor.next() )
+        {
+            try ( var rels = RelationshipSelections.allCursor( ktx.cursors(), nodeCursor, null, cursorTracer ) )
+            {
+                while ( rels.next() )
+                {
+                    relationshipDelete( rels.relationshipReference() );
+                    deletedRelationships++;
+                }
+            }
+        }
 
         //we are already holding the lock
         nodeDelete( nodeId, false );
@@ -263,7 +276,7 @@ public class Operations implements Write, SchemaWrite
         ktx.assertOpen();
 
         sharedSchemaLock( ResourceTypes.RELATIONSHIP_TYPE, relationshipType );
-        lockRelationshipNodes( sourceNode, targetNode );
+        commandCreationContext.acquireRelationshipCreationLock( ktx.txState(), ktx.statementLocks().pessimistic(), ktx.lockTracer(), sourceNode, targetNode );
 
         assertNodeExists( sourceNode );
         assertNodeExists( targetNode );
@@ -278,7 +291,31 @@ public class Operations implements Write, SchemaWrite
     public boolean relationshipDelete( long relationship )
     {
         ktx.assertOpen();
-        return relationshipDelete( relationship, true );
+        TransactionState txState = ktx.txState();
+        if ( txState.relationshipIsAddedInThisTx( relationship ) )
+        {
+            txState.relationshipDoDeleteAddedInThisTx( relationship );
+            return true;
+        }
+
+        allStoreHolder.singleRelationship( relationship, relationshipCursor ); // tx-state aware
+
+        if ( !relationshipCursor.next() )
+        {
+            return false;
+        }
+        commandCreationContext.acquireRelationshipDeletionLock( txState, ktx.statementLocks().pessimistic(), ktx.lockTracer(),
+                relationshipCursor.sourceNodeReference(), relationshipCursor.targetNodeReference(), relationship );
+
+        if ( !allStoreHolder.relationshipExists( relationship ) )
+        {
+            return false;
+        }
+
+        assertAllowsDeleteRelationship( relationshipCursor.type() );
+        txState.relationshipDoDelete( relationship, relationshipCursor.type(),
+                relationshipCursor.sourceNodeReference(), relationshipCursor.targetNodeReference() );
+        return true;
     }
 
     @Override
@@ -286,6 +323,7 @@ public class Operations implements Write, SchemaWrite
             throws EntityNotFoundException, ConstraintValidationException
     {
         sharedSchemaLock( ResourceTypes.LABEL, nodeLabel );
+        acquireExclusiveDegreesLock( node );
         acquireExclusiveNodeLock( node );
 
         singleNode( node );
@@ -393,7 +431,7 @@ public class Operations implements Write, SchemaWrite
 
         if ( lock )
         {
-            ktx.lockClient().acquireExclusive( ktx.lockTracer(), ResourceTypes.NODE, node );
+            commandCreationContext.acquireNodeDeletionLock( ktx.txState(), ktx.lockClient(), ktx.lockTracer(), node );
         }
 
         allStoreHolder.singleNode( node, nodeCursor );
@@ -428,44 +466,6 @@ public class Operations implements Write, SchemaWrite
         int relType = relationshipCursor.type();
         ktx.lockClient().acquireShared( ktx.lockTracer(), ResourceTypes.RELATIONSHIP_TYPE, relType );
         return relType;
-    }
-
-    private boolean relationshipDelete( long relationship, boolean lock )
-    {
-        allStoreHolder.singleRelationship( relationship, relationshipCursor ); // tx-state aware
-
-        if ( relationshipCursor.next() )
-        {
-            if ( lock )
-            {
-                lockRelationshipNodes( relationshipCursor.sourceNodeReference(),
-                        relationshipCursor.targetNodeReference() );
-                acquireExclusiveRelationshipLock( relationship );
-            }
-            if ( !allStoreHolder.relationshipExists( relationship ) )
-            {
-                return false;
-            }
-
-            ktx.assertOpen();
-
-            int type = acquireSharedRelationshipTypeLock();
-
-            TransactionState txState = ktx.txState();
-            if ( txState.relationshipIsAddedInThisTx( relationship ) )
-            {
-                txState.relationshipDoDeleteAddedInThisTx( relationship );
-            }
-            else
-            {
-                assertAllowsDeleteRelationship( type );
-                txState.relationshipDoDelete( relationship, type, relationshipCursor.sourceNodeReference(), relationshipCursor.targetNodeReference() );
-            }
-            return true;
-        }
-
-        // tried to delete relationship that does not exist
-        return false;
     }
 
     private void singleNode( long node ) throws EntityNotFoundException
@@ -584,6 +584,7 @@ public class Operations implements Write, SchemaWrite
     @Override
     public boolean nodeRemoveLabel( long node, int labelId ) throws EntityNotFoundException
     {
+        acquireExclusiveDegreesLock( node );
         acquireExclusiveNodeLock( node );
         ktx.assertOpen();
 
@@ -594,7 +595,6 @@ public class Operations implements Write, SchemaWrite
             //the label wasn't there, nothing to do
             return false;
         }
-
         LongSet added = ktx.txState().nodeStateLabelDiffSets( node ).getAdded();
         if ( !added.contains( labelId ) )
         {
@@ -608,6 +608,20 @@ public class Operations implements Write, SchemaWrite
             updater.onLabelChange( labelId, loadSortedNodePropertyKeyList(), nodeCursor, propertyCursor, REMOVED_LABEL );
         }
         return true;
+    }
+
+    private void acquireExclusiveDegreesLock( long node )
+    {
+        // This is done for e.g. NODE ADD/REMOVE label where we need a stable degree to tell the counts store. Acquiring this lock
+        // will prevent any RELATIONSHIP CREATE/DELETE to happen on this node until this transaction is committed.
+        // What would happen w/o this lock (simplest scenario):
+        // T1: Start TX, add label L on node N, which currently has got 5 relationships
+        // T2: Start TX, create another relationship on N
+        // T1: Go into commit where commands are created and for the added label the relationship degrees are read and placed in a counts command
+        // T2: Go into commit and fully complete commit, i.e. before T1. N now has 6 relationships
+        // T1: Complete the commit
+        // --> N has 6 relationships, but counts store says that it has 5
+        ktx.statementLocks().pessimistic().acquireExclusive( ktx.lockTracer(), DEGREES, node );
     }
 
     @Override
@@ -1417,16 +1431,6 @@ public class Operations implements Write, SchemaWrite
     {
         long lockingId = ResourceIds.schemaNameResourceId( schemaName );
         ktx.lockClient().acquireExclusive( ktx.lockTracer(), SCHEMA_NAME, lockingId );
-    }
-
-    private void lockRelationshipNodes( long startNodeId, long endNodeId )
-    {
-        // Order the locks to lower the risk of deadlocks with other threads creating/deleting rels concurrently
-        acquireExclusiveNodeLock( min( startNodeId, endNodeId ) );
-        if ( startNodeId != endNodeId )
-        {
-            acquireExclusiveNodeLock( max( startNodeId, endNodeId ) );
-        }
     }
 
     private static boolean propertyHasChanged( Value lhs, Value rhs )

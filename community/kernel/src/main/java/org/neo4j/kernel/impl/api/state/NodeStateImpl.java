@@ -26,6 +26,7 @@ import org.eclipse.collections.impl.factory.primitive.IntSets;
 import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
 
 import java.util.Iterator;
+import java.util.function.Predicate;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.kernel.impl.api.state.RelationshipChangesForNode.DiffStrategy;
@@ -34,9 +35,12 @@ import org.neo4j.kernel.impl.util.diffsets.MutableLongDiffSets;
 import org.neo4j.memory.HeapEstimator;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.RelationshipDirection;
+import org.neo4j.storageengine.api.RelationshipVisitor;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.txstate.LongDiffSets;
 import org.neo4j.storageengine.api.txstate.NodeState;
+import org.neo4j.storageengine.api.txstate.RelationshipModifications;
+import org.neo4j.storageengine.api.txstate.RelationshipModifications.RelationshipBatch;
 import org.neo4j.values.storable.Value;
 
 import static java.util.Collections.emptyIterator;
@@ -139,20 +143,23 @@ class NodeStateImpl extends EntityStateImpl implements NodeState
             return IntSets.immutable.empty();
         }
     };
+    private final boolean addedInThisTx;
 
     private MutableLongDiffSets labelDiffSets;
     private RelationshipChangesForNode relationshipsAdded;
     private RelationshipChangesForNode relationshipsRemoved;
+    private boolean deleted;
 
-    static NodeStateImpl createNodeState( long id, CollectionsFactory collectionsFactory, MemoryTracker memoryTracker )
+    static NodeStateImpl createNodeState( long id, boolean addedInThisTx, CollectionsFactory collectionsFactory, MemoryTracker memoryTracker )
     {
         memoryTracker.allocateHeap( SHALLOW_SIZE );
-        return new NodeStateImpl( id, collectionsFactory, memoryTracker );
+        return new NodeStateImpl( id, addedInThisTx, collectionsFactory, memoryTracker );
     }
 
-    private NodeStateImpl( long id, CollectionsFactory collectionsFactory, MemoryTracker memoryTracker )
+    private NodeStateImpl( long id, boolean addedInThisTx, CollectionsFactory collectionsFactory, MemoryTracker memoryTracker )
     {
         super( id, collectionsFactory, memoryTracker );
+        this.addedInThisTx = addedInThisTx;
     }
 
     @Override
@@ -201,14 +208,8 @@ class NodeStateImpl extends EntityStateImpl implements NodeState
     public void clear()
     {
         super.clear();
-        if ( relationshipsAdded != null )
-        {
-            relationshipsAdded.clear();
-        }
-        if ( relationshipsRemoved != null )
-        {
-            relationshipsRemoved.clear();
-        }
+        // Intentionally don't clear the relationships because we need those grouped per node in command creation
+        // Even the added relationships we need to know when to add to the removed set in some cases
         if ( labelDiffSets != null )
         {
             labelDiffSets = null;
@@ -229,12 +230,17 @@ class NodeStateImpl extends EntityStateImpl implements NodeState
         return degree;
     }
 
-    private boolean hasAddedRelationships()
+    boolean hasAddedRelationships()
     {
         return relationshipsAdded != null;
     }
 
-    private boolean hasRemovedRelationships()
+    public boolean hasAddedRelationships( int type )
+    {
+        return relationshipsAdded.hasRelationships( type );
+    }
+
+    boolean hasRemovedRelationships()
     {
         return relationshipsRemoved != null;
     }
@@ -280,5 +286,78 @@ class NodeStateImpl extends EntityStateImpl implements NodeState
             return types;
         }
         return relationshipsAdded != null ? relationshipsAdded.relationshipTypes() : relationshipsRemoved.relationshipTypes();
+    }
+
+    RelationshipBatch additionsAsRelationshipBatch( RelationshipModifications.IdDataDecorator decorator )
+    {
+        return new RelationshipBatchImpl( relationshipsAdded, decorator );
+    }
+
+    RelationshipBatch removalsAsRelationshipBatch( RelationshipModifications.IdDataDecorator decorator )
+    {
+        return new RelationshipBatchImpl( relationshipsRemoved, decorator );
+    }
+
+    void visitAddedIdsSplit( Predicate<RelationshipModifications.NodeRelationshipTypeIds> nodeRelationshipTypeIds,
+            RelationshipModifications.IdDataDecorator idDataDecorator )
+    {
+        if ( hasAddedRelationships() )
+        {
+            relationshipsAdded.visitIdsSplit( nodeRelationshipTypeIds, idDataDecorator );
+        }
+    }
+
+    void visitRemovedIdsSplit( Predicate<RelationshipModifications.NodeRelationshipTypeIds> nodeRelationshipTypeIds )
+    {
+        if ( hasRemovedRelationships() )
+        {
+            relationshipsRemoved.visitIdsSplit( nodeRelationshipTypeIds, RelationshipModifications.noAdditionalDataDecorator() );
+        }
+    }
+
+    boolean isDeleted()
+    {
+        return deleted;
+    }
+
+    boolean isAddedInThisTx()
+    {
+        return addedInThisTx;
+    }
+
+    void markAsDeleted()
+    {
+        this.deleted = true;
+        clear();
+    }
+
+    private static class RelationshipBatchImpl implements RelationshipBatch
+    {
+        private final RelationshipChangesForNode relationships;
+        private final RelationshipModifications.IdDataDecorator decorator;
+
+        RelationshipBatchImpl( RelationshipChangesForNode relationships, RelationshipModifications.IdDataDecorator decorator )
+        {
+            this.relationships = relationships;
+            this.decorator = decorator;
+        }
+
+        @Override
+        public int size()
+        {
+            return relationships != null ? relationships.totalCount() : 0;
+        }
+
+        @Override
+        public boolean isEmpty()
+        {
+            return relationships == null;
+        }
+
+        @Override
+        public <E extends Exception> void forEach( RelationshipVisitor<E> relationship ) throws E
+        {
+            relationships.visitIds( id -> decorator.accept( id, relationship ) );
+        }
     }
 }

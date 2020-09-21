@@ -24,6 +24,8 @@ import java.util.stream.Stream;
 
 public interface ResourceLocker
 {
+    boolean tryExclusiveLock( ResourceType resourceType, long resourceId );
+
     /**
      * Can be grabbed when no other client holds locks on the relevant resources. No other clients can hold locks
      * while one client holds an exclusive lock. If the lock cannot be acquired,
@@ -37,12 +39,46 @@ public interface ResourceLocker
      */
     void acquireExclusive( LockTracer tracer, ResourceType resourceType, long... resourceIds );
 
+    void releaseExclusive( ResourceType resourceType, long... resourceIds );
+
+    void acquireShared( LockTracer tracer, ResourceType resourceType, long... resourceIds );
+
+    void releaseShared( ResourceType resourceType, long... resourceIds );
+
     Stream<ActiveLock> activeLocks();
 
     ResourceLocker PREVENT = new ResourceLocker()
     {
         @Override
+        public boolean tryExclusiveLock( ResourceType resourceType, long resourceId )
+        {
+            throw new UnsupportedOperationException(
+                    "Unexpected call to lock a resource " + resourceType + " " + resourceId );
+        }
+
+        @Override
         public void acquireExclusive( LockTracer tracer, ResourceType resourceType, long... resourceIds )
+        {
+            throw new UnsupportedOperationException(
+                    "Unexpected call to lock a resource " + resourceType + " " + Arrays.toString( resourceIds ) );
+        }
+
+        @Override
+        public void releaseExclusive( ResourceType resourceType, long... resourceIds )
+        {
+            throw new UnsupportedOperationException(
+                    "Unexpected call to lock a resource " + resourceType + " " + Arrays.toString( resourceIds ) );
+        }
+
+        @Override
+        public void acquireShared( LockTracer tracer, ResourceType resourceType, long... resourceIds )
+        {
+            throw new UnsupportedOperationException(
+                    "Unexpected call to lock a resource " + resourceType + " " + Arrays.toString( resourceIds ) );
+        }
+
+        @Override
+        public void releaseShared( ResourceType resourceType, long... resourceIds )
         {
             throw new UnsupportedOperationException(
                     "Unexpected call to lock a resource " + resourceType + " " + Arrays.toString( resourceIds ) );
@@ -58,7 +94,29 @@ public interface ResourceLocker
     ResourceLocker IGNORE = new ResourceLocker()
     {
         @Override
+        public boolean tryExclusiveLock( ResourceType resourceType, long resourceId )
+        {
+            return true;
+        }
+
+        @Override
         public void acquireExclusive( LockTracer tracer, ResourceType resourceType, long... resourceIds )
+        {
+        }
+
+        @Override
+        public void releaseExclusive( ResourceType resourceType, long... resourceIds )
+        {
+        }
+
+        @Override
+        public void acquireShared( LockTracer tracer, ResourceType resourceType, long... resourceIds )
+        {
+
+        }
+
+        @Override
+        public void releaseShared( ResourceType resourceType, long... resourceIds )
         {
         }
 

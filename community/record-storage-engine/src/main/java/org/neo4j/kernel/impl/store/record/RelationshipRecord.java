@@ -21,6 +21,8 @@ package org.neo4j.kernel.impl.store.record;
 
 import java.util.Objects;
 
+import org.neo4j.util.Preconditions;
+
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
@@ -124,9 +126,52 @@ public class RelationshipRecord extends PrimitiveRecord
         return firstPrevRel;
     }
 
+    public long getPrevRel( long nodeId )
+    {
+        assertEitherFirstOrSecondNode( nodeId );
+        return nodeId == firstNode ? firstPrevRel : secondPrevRel;
+    }
+
+    public long getNextRel( long nodeId )
+    {
+        assertEitherFirstOrSecondNode( nodeId );
+        return nodeId == firstNode ? firstNextRel : secondNextRel;
+    }
+
     public void setFirstPrevRel( long firstPrevRel )
     {
         this.firstPrevRel = firstPrevRel;
+    }
+
+    public void setPrevRel( long prevRel, long nodeId )
+    {
+        assertEitherFirstOrSecondNode( nodeId );
+        if ( nodeId == firstNode )
+        {
+            this.firstPrevRel = prevRel;
+        }
+        if ( nodeId == secondNode )
+        {
+            this.secondPrevRel = prevRel;
+        }
+    }
+
+    private void assertEitherFirstOrSecondNode( long nodeId )
+    {
+        Preconditions.checkArgument( nodeId == firstNode || nodeId == secondNode, "%d is neither first nor second node of %s", nodeId, this );
+    }
+
+    public void setNextRel( long nextRel, long nodeId )
+    {
+        assertEitherFirstOrSecondNode( nodeId );
+        if ( nodeId == firstNode )
+        {
+            this.firstNextRel = nextRel;
+        }
+        if ( nodeId == secondNode )
+        {
+            this.secondNextRel = nextRel;
+        }
     }
 
     public long getFirstNextRel()
@@ -167,6 +212,25 @@ public class RelationshipRecord extends PrimitiveRecord
     public void setFirstInFirstChain( boolean firstInFirstChain )
     {
         this.firstInFirstChain = firstInFirstChain;
+    }
+
+    public void setFirstInChain( boolean first, long nodeId )
+    {
+        assertEitherFirstOrSecondNode( nodeId );
+        if ( nodeId == firstNode )
+        {
+            firstInFirstChain = first;
+        }
+        if ( nodeId == secondNode )
+        {
+            firstInSecondChain = first;
+        }
+    }
+
+    public boolean isFirstInChain( long nodeId )
+    {
+        assertEitherFirstOrSecondNode( nodeId );
+        return nodeId == firstNode ? firstInFirstChain : firstInSecondChain;
     }
 
     public boolean isFirstInSecondChain()

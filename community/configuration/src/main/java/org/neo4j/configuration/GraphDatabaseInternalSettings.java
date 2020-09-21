@@ -643,4 +643,21 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
     @Internal
     public static Setting<Duration> config_command_evaluation_timeout =
             newBuilder( "unsupported.dbms.config.command_evaluation_timeout", DURATION, ofSeconds( 30 ) ).build();
+
+    @Internal
+    @Description( "Whether or not to do additional checks for locks when making changes as part of commit. This may be expensive to enable." )
+    public static final Setting<Boolean> additional_lock_verification = newBuilder( "unsupported.dbms.extra_lock_verification", BOOL, false ).build();
+
+    public enum FeatureState
+    {
+        ENABLED, DISABLED, AUTO
+    }
+
+    @Internal
+    @Description( "Enables or disables the relaxed locking scheme for creations and deletions of relationships connected to dense nodes. This feature " +
+            "enables concurrent add/remove relationships. `Auto` detects and keeps the state of an existing store, with disabled for new stores. " +
+            "Note: First time enabling will introduces a new store/commands. Manual enabling may break rolling upgrades." +
+            "Also note: this is a one way switch, once enabled it can not be disabled" )
+    public static final Setting<FeatureState> relaxed_dense_node_locking =
+            newBuilder( "unsupported.dbms.relaxed_dense_node_locking", ofEnum( FeatureState.class ), FeatureState.AUTO ).build();
 }
