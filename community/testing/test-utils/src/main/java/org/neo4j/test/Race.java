@@ -27,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.BooleanSupplier;
+import java.util.function.Consumer;
 import java.util.function.IntFunction;
 
 import static java.lang.System.nanoTime;
@@ -55,7 +56,7 @@ public class Race
     private volatile int maxRandomStartDelay;
     private volatile BooleanSupplier endCondition;
     private volatile boolean failure;
-    private boolean asyncExecution;
+    private Consumer<Throwable> failureAction = f -> {};
 
     public Race withRandomStartDelays()
     {
@@ -98,6 +99,12 @@ public class Race
     {
         long endTimeNano = nanoTime() + unit.toNanos( time );
         this.endCondition = mergeEndCondition( () -> nanoTime() >= endTimeNano );
+        return this;
+    }
+
+    public Race withFailureAction( Consumer<Throwable> failureAction )
+    {
+        this.failureAction = failureAction;
         return this;
     }
 
@@ -165,12 +172,11 @@ public class Race
 
     /**
      * Starts the race and returns without waiting for contestants to complete.
-     * Any exception thrown by contestant will be lost.
+     * @return Async instance for awaiting and get exceptions for the race.
      */
-    public void goAsync() throws Throwable
+    public Async goAsync()
     {
-        asyncExecution = true;
-        go( 0, TimeUnit.MILLISECONDS );
+        return startRace();
     }
 
     /**
@@ -180,7 +186,17 @@ public class Race
      */
     public void go() throws Throwable
     {
-        go( 0, TimeUnit.MILLISECONDS );
+        startRace().await( 0, TimeUnit.MILLISECONDS );
+    }
+
+    /**
+     * Starts the race and waits indefinitely for all contestants to either fail or succeed.
+     *
+     * @throws Throwable on any exception thrown from any contestant.
+     */
+    public void go( long maxWaitTime, TimeUnit unit ) throws Throwable
+    {
+        startRace().await( maxWaitTime, unit );
     }
 
     /**
@@ -205,12 +221,9 @@ public class Race
     /**
      * Starts the race and waits {@code maxWaitTime} for all contestants to either fail or succeed.
      *
-     * @param maxWaitTime max time to wait for all contestants, 0 means indefinite wait.
-     * @param unit {@link TimeUnit} that {£{@code maxWaitTime} is given in.
-     * @throws TimeoutException if all contestants haven't either succeeded or failed within the given time.
-     * @throws Throwable on any exception thrown from any contestant.
+     * @return Async instance for awaiting and get exceptions for the race.
      */
-    public void go( long maxWaitTime, TimeUnit unit ) throws Throwable
+    private Async startRace()
     {
         if ( endCondition == null )
         {
@@ -222,61 +235,67 @@ public class Race
         {
             contestant.start();
         }
-        readySet.await();
+        try
+        {
+            readySet.await();
+        }
+        catch ( InterruptedException e )
+        {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException( "Race couldn't start since race was interrupted while awaiting all contestants to start" );
+        }
         go.countDown();
 
-        if ( asyncExecution )
+        return ( maxWaitTime, unit ) ->
         {
-            return;
-        }
-
-        int errorCount = 0;
-        long maxWaitTimeMillis = MILLISECONDS.convert( maxWaitTime, unit );
-        long waitedSoFar = 0;
-        for ( Contestant contestant : contestants )
-        {
-            if ( maxWaitTime == 0 )
-            {
-                contestant.join();
-            }
-            else
-            {
-                long timeNanoStart = nanoTime();
-                contestant.join( maxWaitTimeMillis - waitedSoFar );
-                waitedSoFar += NANOSECONDS.toMillis( nanoTime() - timeNanoStart );
-                if ( waitedSoFar >= maxWaitTimeMillis )
-                {
-                    throw new TimeoutException( "Didn't complete after " + maxWaitTime + " " + unit );
-                }
-            }
-            if ( contestant.error != null )
-            {
-                errorCount++;
-            }
-        }
-
-        if ( errorCount > 1 )
-        {
-            Throwable errors = new Throwable( "Multiple errors found" );
+            int errorCount = 0;
+            long maxWaitTimeMillis = MILLISECONDS.convert( maxWaitTime, unit );
+            long waitedSoFar = 0;
             for ( Contestant contestant : contestants )
             {
+                if ( maxWaitTime == 0 )
+                {
+                    contestant.join();
+                }
+                else
+                {
+                    long timeNanoStart = nanoTime();
+                    contestant.join( maxWaitTimeMillis - waitedSoFar );
+                    waitedSoFar += NANOSECONDS.toMillis( nanoTime() - timeNanoStart );
+                    if ( waitedSoFar >= maxWaitTimeMillis )
+                    {
+                        throw new TimeoutException( "Didn't complete after " + maxWaitTime + " " + unit );
+                    }
+                }
                 if ( contestant.error != null )
                 {
-                    errors.addSuppressed( contestant.error );
+                    errorCount++;
                 }
             }
-            throw errors;
-        }
-        if ( errorCount == 1 )
-        {
-            for ( Contestant contestant : contestants )
+
+            if ( errorCount > 1 )
             {
-                if ( contestant.error != null )
+                Throwable errors = new Throwable( "Multiple errors found" );
+                for ( Contestant contestant : contestants )
                 {
-                    throw contestant.error;
+                    if ( contestant.error != null )
+                    {
+                        errors.addSuppressed( contestant.error );
+                    }
+                }
+                throw errors;
+            }
+            if ( errorCount == 1 )
+            {
+                for ( Contestant contestant : contestants )
+                {
+                    if ( contestant.error != null )
+                    {
+                        throw contestant.error;
+                    }
                 }
             }
-        }
+        };
     }
 
     public boolean hasFailed()
@@ -335,6 +354,7 @@ public class Race
                 e.printStackTrace();
                 error = e;
                 failure = true; // <-- global flag
+                failureAction.accept( e );
                 throw e;
             }
         }
@@ -344,5 +364,10 @@ public class Race
             int millis = ThreadLocalRandom.current().nextInt( maxRandomStartDelay );
             LockSupport.parkNanos( TimeUnit.MILLISECONDS.toNanos( baseStartDelay + millis ) );
         }
+    }
+
+    public interface Async
+    {
+        void await( long waitTime, TimeUnit unit ) throws Throwable;
     }
 }
