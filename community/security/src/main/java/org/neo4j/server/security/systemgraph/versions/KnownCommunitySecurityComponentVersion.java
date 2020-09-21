@@ -81,13 +81,13 @@ public abstract class KnownCommunitySecurityComponentVersion extends KnownSystem
         }
         else if ( users.size() == 1 )
         {
-            log.info( String.format( "Updating initial user password from `auth.ini` file: %s", initialUser.name() ) );
             Node user = users.get( 0 );
             if ( user.getProperty( "name" ).equals( INITIAL_USER_NAME ) )
             {
                 SystemGraphCredential currentCredentials = SystemGraphCredential.deserialize( user.getProperty( "credentials" ).toString(), secureHasher );
                 if ( currentCredentials.matchesPassword( UTF8.encode( INITIAL_PASSWORD ) ) )
                 {
+                    log.info( "Updating initial user password from `auth.ini` file: %s", initialUser.name() );
                     user.setProperty( "credentials", initialUser.credentials().serialize() );
                     user.setProperty( "passwordChangeRequired", initialUser.passwordChangeRequired() );
                 }
