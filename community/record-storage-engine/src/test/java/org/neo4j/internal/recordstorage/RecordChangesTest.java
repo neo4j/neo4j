@@ -23,6 +23,7 @@ import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.kernel.impl.store.record.RecordLoad;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
@@ -39,7 +40,7 @@ class RecordChangesTest
         }
 
         @Override
-        public Object load( long o, Object additionalData, PageCursorTracer cursorTracer )
+        public Object load( long o, Object additional, RecordLoad load, PageCursorTracer cursorTracer )
         {
             return o;
         }

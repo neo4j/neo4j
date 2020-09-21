@@ -40,7 +40,6 @@ import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 
 import static java.lang.Math.toIntExact;
-import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
 public class Loaders
 {
@@ -137,9 +136,9 @@ public class Loaders
             }
 
             @Override
-            public NodeRecord load( long key, Void additionalData, PageCursorTracer cursorTracer )
+            public NodeRecord load( long key, Void additionalData, RecordLoad load, PageCursorTracer cursorTracer )
             {
-                return store.getRecord( key, store.newRecord(), NORMAL, cursorTracer );
+                return store.getRecord( key, store.newRecord(), load, cursorTracer );
             }
 
             @Override
@@ -177,9 +176,9 @@ public class Loaders
             }
 
             @Override
-            public PropertyRecord load( long key, PrimitiveRecord additionalData, PageCursorTracer cursorTracer )
+            public PropertyRecord load( long key, PrimitiveRecord additionalData, RecordLoad load, PageCursorTracer cursorTracer )
             {
-                PropertyRecord record = store.getRecord( key, store.newRecord(), NORMAL, cursorTracer );
+                PropertyRecord record = store.getRecord( key, store.newRecord(), load, cursorTracer );
                 setOwner( record, additionalData );
                 return record;
             }
@@ -213,9 +212,9 @@ public class Loaders
             }
 
             @Override
-            public RelationshipRecord load( long key, Void additionalData, PageCursorTracer cursorTracer )
+            public RelationshipRecord load( long key, Void additionalData, RecordLoad load, PageCursorTracer cursorTracer )
             {
-                return store.getRecord( key, store.newRecord(), NORMAL, cursorTracer );
+                return store.getRecord( key, store.newRecord(), load, cursorTracer );
             }
 
             @Override
@@ -245,9 +244,9 @@ public class Loaders
             }
 
             @Override
-            public RelationshipGroupRecord load( long key, Integer type, PageCursorTracer cursorTracer )
+            public RelationshipGroupRecord load( long key, Integer type, RecordLoad load, PageCursorTracer cursorTracer )
             {
-                return store.getRecord( key, store.newRecord(), NORMAL, cursorTracer );
+                return store.getRecord( key, store.newRecord(), load, cursorTracer );
             }
 
             @Override
@@ -274,9 +273,9 @@ public class Loaders
             }
 
             @Override
-            public SchemaRecord load( long key, SchemaRule additionalData, PageCursorTracer cursorTracer )
+            public SchemaRecord load( long key, SchemaRule additionalData, RecordLoad load, PageCursorTracer cursorTracer )
             {
-                return store.getRecord( key, store.newRecord(), RecordLoad.NORMAL, cursorTracer );
+                return store.getRecord( key, store.newRecord(), load, cursorTracer );
             }
 
             @Override
@@ -304,9 +303,9 @@ public class Loaders
             }
 
             @Override
-            public PropertyKeyTokenRecord load( long key, Void additionalData, PageCursorTracer cursorTracer )
+            public PropertyKeyTokenRecord load( long key, Void additionalData, RecordLoad load, PageCursorTracer cursorTracer )
             {
-                return store.getRecord( key, store.newRecord(), NORMAL, cursorTracer );
+                return store.getRecord( key, store.newRecord(), load, cursorTracer );
             }
 
             @Override
@@ -335,9 +334,9 @@ public class Loaders
             }
 
             @Override
-            public LabelTokenRecord load( long key, Void additionalData, PageCursorTracer cursorTracer )
+            public LabelTokenRecord load( long key, Void additionalData, RecordLoad load, PageCursorTracer cursorTracer )
             {
-                return store.getRecord( key, store.newRecord(), NORMAL, cursorTracer );
+                return store.getRecord( key, store.newRecord(), load, cursorTracer );
             }
 
             @Override
@@ -366,9 +365,9 @@ public class Loaders
             }
 
             @Override
-            public RelationshipTypeTokenRecord load( long key, Void additionalData, PageCursorTracer cursorTracer )
+            public RelationshipTypeTokenRecord load( long key, Void additionalData, RecordLoad load, PageCursorTracer cursorTracer )
             {
-                return store.getRecord( key, store.newRecord(), NORMAL, cursorTracer );
+                return store.getRecord( key, store.newRecord(), load, cursorTracer );
             }
 
             @Override

@@ -31,6 +31,7 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.Record;
+import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.memory.EmptyMemoryTracker;
@@ -242,7 +243,7 @@ public class RecordBuilders
         }
 
         @Override
-        public T load( long key, E additionalData, PageCursorTracer cursorTracer )
+        public T load( long key, E additionalData, RecordLoad load, PageCursorTracer cursorTracer )
         {
             return records.stream().filter( r -> r.getId() == key ).findFirst().get();
         }

@@ -31,6 +31,7 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.IdUpdateListener;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
+import org.neo4j.kernel.impl.store.record.RecordLoad;
 
 /**
  * Provides direct access to records in a store. Changes are batched up and written whenever transaction is committed.
@@ -51,14 +52,14 @@ public class DirectRecordAccess<RECORD extends AbstractBaseRecord,ADDITIONAL>
     }
 
     @Override
-    public RecordProxy<RECORD, ADDITIONAL> getOrLoad( long key, ADDITIONAL additionalData, PageCursorTracer cursorTracer )
+    public RecordProxy<RECORD, ADDITIONAL> getOrLoad( long key, ADDITIONAL additionalData, RecordLoad load, PageCursorTracer cursorTracer )
     {
         DirectRecordProxy loaded = batch.get( key );
         if ( loaded != null )
         {
             return loaded;
         }
-        return proxy( key, loader.load( key, additionalData, cursorTracer ), additionalData, false, cursorTracer );
+        return proxy( key, loader.load( key, additionalData, load, cursorTracer ), additionalData, false, cursorTracer );
     }
 
     private RecordProxy<RECORD, ADDITIONAL> putInBatch( long key, DirectRecordProxy proxy )
@@ -178,7 +179,7 @@ public class DirectRecordAccess<RECORD extends AbstractBaseRecord,ADDITIONAL>
         @Override
         public RECORD getBefore()
         {
-            return loader.load( key, additionalData, cursorTracer );
+            return loader.load( key, additionalData, RecordLoad.NORMAL, cursorTracer );
         }
 
         @Override

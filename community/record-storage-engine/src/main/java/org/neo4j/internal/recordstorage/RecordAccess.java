@@ -22,12 +22,18 @@ package org.neo4j.internal.recordstorage;
 import java.util.Collection;
 
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.kernel.impl.store.record.RecordLoad;
 
 /**
  * Provides access to records, both for reading and for writing.
  */
 public interface RecordAccess<RECORD,ADDITIONAL>
 {
+    default RecordProxy<RECORD, ADDITIONAL> getOrLoad( long key, ADDITIONAL additionalData, PageCursorTracer cursorTracer )
+    {
+        return getOrLoad( key, additionalData, RecordLoad.NORMAL, cursorTracer );
+    }
+
     /**
      * Gets an already loaded record, or loads it as part of this call if it wasn't. The {@link RecordProxy}
      * returned has means of communicating when to get access to the actual record for reading or writing.
@@ -38,7 +44,7 @@ public interface RecordAccess<RECORD,ADDITIONAL>
      * @param additionalData additional data to put in the record after loaded.
      * @return a {@link RecordProxy} for the record for {@code key}.
      */
-    RecordProxy<RECORD, ADDITIONAL> getOrLoad( long key, ADDITIONAL additionalData, PageCursorTracer cursorTracer );
+    RecordProxy<RECORD, ADDITIONAL> getOrLoad( long key, ADDITIONAL additionalData, RecordLoad load, PageCursorTracer cursorTracer );
 
     RecordProxy<RECORD, ADDITIONAL> getIfLoaded( long key );
 
@@ -90,7 +96,7 @@ public interface RecordAccess<RECORD,ADDITIONAL>
     {
         RECORD newUnused( long key, ADDITIONAL additionalData );
 
-        RECORD load( long key, ADDITIONAL additionalData, PageCursorTracer cursorTracer );
+        RECORD load( long key, ADDITIONAL additionalData, RecordLoad load, PageCursorTracer cursorTracer );
 
         void ensureHeavy( RECORD record, PageCursorTracer cursorTracer );
 
