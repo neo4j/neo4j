@@ -145,7 +145,12 @@ public class TransactionImpl extends EntityValidationTransactionImpl
     @Override
     public void commit()
     {
-        safeTerminalOperation( KernelTransaction::commit );
+        commit( KernelTransaction.NO_MONITOR );
+    }
+
+    public void commit( KernelTransaction.Monitor monitor )
+    {
+        safeTerminalOperation( transaction -> kernelTransaction().commit( monitor ) );
     }
 
     @Override

@@ -103,6 +103,10 @@ public interface KernelTransaction extends AssertOpen, AutoCloseable
      */
     long READ_ONLY_ID = 0;
 
+    Monitor NO_MONITOR = () ->
+    {
+    };
+
     /**
      * Commit and any changes introduced as part of this transaction.
      * Any transaction that was not committed will be rolled back when it will be closed.
@@ -112,7 +116,12 @@ public interface KernelTransaction extends AssertOpen, AutoCloseable
      * @return id of the committed transaction or {@link #ROLLBACK_ID} if transaction was rolled back or
      * {@link #READ_ONLY_ID} if transaction was read-only.
      */
-    long commit() throws TransactionFailureException;
+    long commit( Monitor monitor ) throws TransactionFailureException;
+
+    default long commit() throws TransactionFailureException
+    {
+        return commit( NO_MONITOR );
+    }
 
     /**
      * Roll back and any changes introduced as part of this transaction.
@@ -428,4 +437,13 @@ public interface KernelTransaction extends AssertOpen, AutoCloseable
      * @return database name.
      */
     String getDatabaseName();
+
+    interface Monitor
+    {
+        /**
+         * Called during commit after all logical transaction state have been converted into storage commands,
+         * but before the commands have been applied to the store.
+         */
+        void beforeApplyToStore();
+    }
 }

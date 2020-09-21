@@ -515,9 +515,9 @@ class QueryExecutionLocksIT
         }
 
         @Override
-        public long commit() throws TransactionFailureException
+        public long commit( Monitor monitor ) throws TransactionFailureException
         {
-            return internal.commit();
+            return internal.commit( monitor );
         }
 
         @Override

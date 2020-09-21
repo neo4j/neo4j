@@ -73,7 +73,7 @@ public class StubKernelTransaction implements KernelTransaction
     }
 
     @Override
-    public long commit()
+    public long commit( Monitor monitor )
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
