@@ -27,6 +27,7 @@ import java.util.HashSet;
 import java.util.stream.Stream;
 
 import org.neo4j.kernel.impl.api.LeaseService;
+import org.neo4j.lock.ActiveLock;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.LockType;
 

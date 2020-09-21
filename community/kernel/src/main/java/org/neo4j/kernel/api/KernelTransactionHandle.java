@@ -30,7 +30,7 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.impl.api.TransactionExecutionStatistic;
 import org.neo4j.kernel.impl.api.transaction.trace.TransactionInitializationTrace;
-import org.neo4j.kernel.impl.locking.ActiveLock;
+import org.neo4j.lock.ActiveLock;
 
 /**
  * View of a {@link KernelTransaction} that provides a limited set of actions against the transaction.

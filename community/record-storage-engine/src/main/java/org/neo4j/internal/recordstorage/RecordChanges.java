@@ -25,6 +25,7 @@ import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
 import java.util.Collection;
 
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.util.LocalIntCounter;
@@ -39,17 +40,19 @@ import static org.neo4j.collection.trackable.HeapTrackingCollections.newLongObje
  * @param <RECORD> type of record
  * @param <ADDITIONAL> additional payload
  */
-public class RecordChanges<RECORD,ADDITIONAL> implements RecordAccess<RECORD,ADDITIONAL>
+public class RecordChanges<RECORD extends AbstractBaseRecord,ADDITIONAL> implements RecordAccess<RECORD,ADDITIONAL>
 {
     private final MutableLongObjectMap<RecordProxy<RECORD, ADDITIONAL>> recordChanges;
     private final Loader<RECORD,ADDITIONAL> loader;
     private final MutableInt changeCounter;
+    private final LoadMonitor loadMonitor;
 
-    public RecordChanges( Loader<RECORD,ADDITIONAL> loader, MutableInt globalCounter, MemoryTracker memoryTracker )
+    public RecordChanges( Loader<RECORD,ADDITIONAL> loader, MutableInt globalCounter, MemoryTracker memoryTracker, LoadMonitor loadMonitor )
     {
         this.loader = loader;
         this.recordChanges = newLongObjectMap( memoryTracker );
         this.changeCounter = new LocalIntCounter( globalCounter );
+        this.loadMonitor = loadMonitor;
     }
 
     @Override
@@ -73,7 +76,7 @@ public class RecordChanges<RECORD,ADDITIONAL> implements RecordAccess<RECORD,ADD
         if ( result == null )
         {
             RECORD record = loader.load( key, additionalData, load, cursorTracer );
-            result = new RecordChange<>( recordChanges, changeCounter, key, record, loader, false, additionalData, cursorTracer );
+            result = new RecordChange<>( recordChanges, changeCounter, key, record, loader, false, additionalData, loadMonitor, cursorTracer );
         }
         return result;
     }
@@ -82,7 +85,7 @@ public class RecordChanges<RECORD,ADDITIONAL> implements RecordAccess<RECORD,ADD
     public RecordProxy<RECORD,ADDITIONAL> setRecord( long key, RECORD record, ADDITIONAL additionalData, PageCursorTracer cursorTracer )
     {
         RecordChange<RECORD, ADDITIONAL> recordChange =
-                new RecordChange<>( recordChanges, changeCounter, key, record, loader, false, additionalData, cursorTracer );
+                new RecordChange<>( recordChanges, changeCounter, key, record, loader, false, additionalData, loadMonitor, cursorTracer );
         recordChanges.put( key, recordChange );
         return recordChange;
     }
@@ -103,7 +106,7 @@ public class RecordChanges<RECORD,ADDITIONAL> implements RecordAccess<RECORD,ADD
 
         RECORD record = loader.newUnused( key, additionalData );
         RecordChange<RECORD,ADDITIONAL> change =
-                new RecordChange<>( recordChanges, changeCounter, key, record, loader, true, additionalData, cursorTracer );
+                new RecordChange<>( recordChanges, changeCounter, key, record, loader, true, additionalData, loadMonitor, cursorTracer );
         recordChanges.put( key, change );
         return change;
     }
@@ -114,13 +117,14 @@ public class RecordChanges<RECORD,ADDITIONAL> implements RecordAccess<RECORD,ADD
         return recordChanges.values();
     }
 
-    public static class RecordChange<RECORD,ADDITIONAL> implements RecordProxy<RECORD, ADDITIONAL>
+    public static class RecordChange<RECORD extends AbstractBaseRecord,ADDITIONAL> implements RecordProxy<RECORD, ADDITIONAL>
     {
         private final MutableLongObjectMap<RecordProxy<RECORD, ADDITIONAL>> allChanges;
         private final MutableInt changeCounter;
         private final Loader<RECORD,ADDITIONAL> loader;
 
         private final ADDITIONAL additionalData;
+        private final LoadMonitor loadMonitor;
         private final PageCursorTracer cursorTracer;
         private final RECORD record;
         private final boolean created;
@@ -130,7 +134,8 @@ public class RecordChanges<RECORD,ADDITIONAL> implements RecordAccess<RECORD,ADD
         private boolean changed;
 
         public RecordChange( MutableLongObjectMap<RecordProxy<RECORD, ADDITIONAL>> allChanges, MutableInt changeCounter,
-                long key, RECORD record, Loader<RECORD,ADDITIONAL> loader, boolean created, ADDITIONAL additionalData, PageCursorTracer cursorTracer )
+                long key, RECORD record, Loader<RECORD,ADDITIONAL> loader, boolean created, ADDITIONAL additionalData, LoadMonitor loadMonitor,
+                PageCursorTracer cursorTracer )
         {
             this.allChanges = allChanges;
             this.changeCounter = changeCounter;
@@ -139,6 +144,7 @@ public class RecordChanges<RECORD,ADDITIONAL> implements RecordAccess<RECORD,ADD
             this.loader = loader;
             this.created = created;
             this.additionalData = additionalData;
+            this.loadMonitor = loadMonitor;
             this.cursorTracer = cursorTracer;
         }
 
@@ -176,6 +182,7 @@ public class RecordChanges<RECORD,ADDITIONAL> implements RecordAccess<RECORD,ADD
 
                 if ( previous == null || !previous.isChanged() )
                 {
+                    loadMonitor.markedAsChanged( before );
                     changeCounter.increment();
                 }
 

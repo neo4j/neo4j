@@ -23,6 +23,7 @@ import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -31,30 +32,30 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 class RecordChangesTest
 {
-    private final RecordAccess.Loader<Object, Object> loader = new RecordAccess.Loader<>()
+    private final RecordAccess.Loader<NodeRecord, Object> loader = new RecordAccess.Loader<>()
     {
         @Override
-        public Object newUnused( long o, Object additionalData )
+        public NodeRecord newUnused( long id, Object additionalData )
+        {
+            return new NodeRecord( id );
+        }
+
+        @Override
+        public NodeRecord load( long id, Object additional, RecordLoad load, PageCursorTracer cursorTracer )
+        {
+            return new NodeRecord( id );
+        }
+
+        @Override
+        public void ensureHeavy( NodeRecord o, PageCursorTracer cursorTracer )
+        {
+
+        }
+
+        @Override
+        public NodeRecord copy( NodeRecord o )
         {
             return o;
-        }
-
-        @Override
-        public Object load( long o, Object additional, RecordLoad load, PageCursorTracer cursorTracer )
-        {
-            return o;
-        }
-
-        @Override
-        public void ensureHeavy( Object o, PageCursorTracer cursorTracer )
-        {
-
-        }
-
-        @Override
-        public Object copy( Object o )
-        {
-            return o.toString();
         }
     };
 
@@ -62,7 +63,7 @@ class RecordChangesTest
     void shouldCountChanges()
     {
         // Given
-        RecordChanges<Object, Object> change = new RecordChanges<>( loader, new MutableInt(), INSTANCE );
+        RecordChanges<NodeRecord, Object> change = new RecordChanges<>( loader, new MutableInt(), INSTANCE, RecordAccess.LoadMonitor.NULL_MONITOR );
 
         // When
         change.getOrLoad( 1, null, NULL ).forChangingData();

@@ -102,7 +102,8 @@ public class CommandCreationContextIT
         try ( var commandCreationContext = storageEngine.newCommandCreationContext( NULL, memoryTracker ) )
         {
             var integrityValidator = mock( IntegrityValidator.class );
-            var recordState = commandCreationContext.createTransactionRecordState( integrityValidator, 1, IGNORE, LATEST_LOG_SERIALIZATION );
+            var recordState = commandCreationContext.createTransactionRecordState( integrityValidator, 1, IGNORE,
+                    LATEST_LOG_SERIALIZATION, RecordAccess.LoadMonitor.NULL_MONITOR );
             long heapBefore = memoryTracker.estimatedHeapMemory();
             for ( int i = 1; i < 1024; i++ )
             {

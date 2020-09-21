@@ -31,7 +31,7 @@ class RecordChangeSetTest
     void shouldStartWithSetsInitializedAndEmpty()
     {
         // GIVEN
-        RecordChangeSet changeSet = new RecordChangeSet( mock( Loaders.class ), INSTANCE );
+        RecordChangeSet changeSet = new RecordChangeSet( mock( Loaders.class ), INSTANCE, RecordAccess.LoadMonitor.NULL_MONITOR );
 
         // WHEN
         // nothing really

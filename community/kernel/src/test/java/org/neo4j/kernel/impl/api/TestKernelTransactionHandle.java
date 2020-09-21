@@ -32,7 +32,7 @@ import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.impl.api.transaction.trace.TransactionInitializationTrace;
-import org.neo4j.kernel.impl.locking.ActiveLock;
+import org.neo4j.lock.ActiveLock;
 
 import static java.util.Optional.ofNullable;
 

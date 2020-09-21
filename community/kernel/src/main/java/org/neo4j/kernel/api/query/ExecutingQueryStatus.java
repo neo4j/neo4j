@@ -23,7 +23,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.kernel.impl.locking.ActiveLock;
+import org.neo4j.lock.ActiveLock;
 
 /**
  * Internal representation of the status of an executing query.

@@ -46,7 +46,7 @@ public class RecordChangeSet implements RecordAccessSet
     private final RecordAccess<RelationshipTypeTokenRecord, Void> relationshipTypeTokenChanges;
     private final MutableInt changeCounter = new MutableInt();
 
-    public RecordChangeSet( Loaders loaders, MemoryTracker memoryTracker )
+    public RecordChangeSet( Loaders loaders, MemoryTracker memoryTracker, RecordAccess.LoadMonitor monitor )
     {
         this( loaders.nodeLoader(),
               loaders.propertyLoader(),
@@ -56,7 +56,8 @@ public class RecordChangeSet implements RecordAccessSet
               loaders.propertyKeyTokenLoader(),
               loaders.labelTokenLoader(),
               loaders.relationshipTypeTokenLoader(),
-              memoryTracker );
+              memoryTracker,
+              monitor );
     }
 
     public RecordChangeSet(
@@ -68,16 +69,17 @@ public class RecordChangeSet implements RecordAccessSet
             Loader<PropertyKeyTokenRecord,Void> propertyKeyTokenLoader,
             Loader<LabelTokenRecord,Void> labelTokenLoader,
             Loader<RelationshipTypeTokenRecord,Void> relationshipTypeTokenLoader,
-            MemoryTracker memoryTracker )
+            MemoryTracker memoryTracker,
+            RecordAccess.LoadMonitor monitor )
     {
-        this.nodeRecords = new RecordChanges<>( nodeLoader, changeCounter, memoryTracker );
-        this.propertyRecords = new RecordChanges<>( propertyLoader, changeCounter, memoryTracker );
-        this.relRecords = new RecordChanges<>( relationshipLoader, changeCounter, memoryTracker );
-        this.relGroupRecords = new RecordChanges<>( relationshipGroupLoader, changeCounter, memoryTracker );
-        this.schemaRuleChanges = new RecordChanges<>( schemaRuleLoader, changeCounter, memoryTracker );
-        this.propertyKeyTokenChanges = new RecordChanges<>( propertyKeyTokenLoader, changeCounter, memoryTracker );
-        this.labelTokenChanges = new RecordChanges<>( labelTokenLoader, changeCounter, memoryTracker );
-        this.relationshipTypeTokenChanges = new RecordChanges<>( relationshipTypeTokenLoader, changeCounter, memoryTracker );
+        this.nodeRecords = new RecordChanges<>( nodeLoader, changeCounter, memoryTracker, monitor );
+        this.propertyRecords = new RecordChanges<>( propertyLoader, changeCounter, memoryTracker, monitor );
+        this.relRecords = new RecordChanges<>( relationshipLoader, changeCounter, memoryTracker, monitor );
+        this.relGroupRecords = new RecordChanges<>( relationshipGroupLoader, changeCounter, memoryTracker, monitor );
+        this.schemaRuleChanges = new RecordChanges<>( schemaRuleLoader, changeCounter, memoryTracker, monitor );
+        this.propertyKeyTokenChanges = new RecordChanges<>( propertyKeyTokenLoader, changeCounter, memoryTracker, monitor );
+        this.labelTokenChanges = new RecordChanges<>( labelTokenLoader, changeCounter, memoryTracker, monitor );
+        this.relationshipTypeTokenChanges = new RecordChanges<>( relationshipTypeTokenLoader, changeCounter, memoryTracker, monitor );
     }
 
     @Override

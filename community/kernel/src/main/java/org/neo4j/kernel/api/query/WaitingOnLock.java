@@ -25,7 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.kernel.impl.locking.ActiveLock;
+import org.neo4j.lock.ActiveLock;
 import org.neo4j.lock.LockType;
 import org.neo4j.lock.ResourceType;
 

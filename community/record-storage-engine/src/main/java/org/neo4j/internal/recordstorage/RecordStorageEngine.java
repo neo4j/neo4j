@@ -128,6 +128,8 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     private final IdController idController;
     private final PageCacheTracer cacheTracer;
     private final MemoryTracker otherMemoryTracker;
+    private final CommandLockVerification.Factory commandLockVerificationFactory;
+    private final LockVerificationMonitor.Factory lockVerificationFactory;
     private final GBPTreeCountsStore countsStore;
     private final RelationshipGroupDegreesStore groupDegreesStore;
     private final int denseNodeThreshold;
@@ -155,7 +157,10 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
             PageCacheTracer cacheTracer,
             boolean createStoreIfNotExists,
-            MemoryTracker otherMemoryTracker )
+            MemoryTracker otherMemoryTracker,
+            CommandLockVerification.Factory commandLockVerificationFactory,
+            LockVerificationMonitor.Factory lockVerificationFactory
+    )
     {
         this.databaseLayout = databaseLayout;
         this.tokenHolders = tokenHolders;
@@ -166,6 +171,8 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         this.idController = idController;
         this.cacheTracer = cacheTracer;
         this.otherMemoryTracker = otherMemoryTracker;
+        this.commandLockVerificationFactory = commandLockVerificationFactory;
+        this.lockVerificationFactory = lockVerificationFactory;
 
         StoreFactory factory = new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache, fs, logProvider, cacheTracer );
         neoStores = factory.openAllNeoStores( createStoreIfNotExists );
@@ -366,7 +373,8 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             RecordStorageCommandCreationContext creationContext = (RecordStorageCommandCreationContext) commandCreationContext;
             LogCommandSerialization serialization = RecordStorageCommandReaderFactory.INSTANCE.get( version );
             TransactionRecordState recordState =
-                    creationContext.createTransactionRecordState( integrityValidator, lastTransactionIdWhenStarted, locks, serialization );
+                    creationContext.createTransactionRecordState( integrityValidator, lastTransactionIdWhenStarted, locks, serialization,
+                            lockVerificationFactory.create( locks, txState, neoStores ) );
 
             // Visit transaction state and populate these record state objects
             TxStateVisitor txStateVisitor = new TransactionToRecordStateVisitor( recordState, schemaState,
@@ -382,6 +390,10 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             // Convert record state into commands
             recordState.extractCommands( commands, transactionMemoryTracker );
             countsRecordState.extractCommands( commands, transactionMemoryTracker );
+
+            //Verify sufficient locks
+            CommandLockVerification commandLockVerification = commandLockVerificationFactory.create( locks, txState, neoStores );
+            commandLockVerification.verifySufficientlyLocked( commands );
         }
     }
 

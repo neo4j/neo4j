@@ -17,12 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.locking;
+package org.neo4j.lock;
 
 import java.util.Objects;
-
-import org.neo4j.lock.LockType;
-import org.neo4j.lock.ResourceType;
 
 public class ActiveLock
 {
@@ -79,5 +76,12 @@ public class ActiveLock
     public int hashCode()
     {
         return Objects.hash( resourceType, resourceId, lockType, transactionId );
+    }
+
+    @Override
+    public String toString()
+    {
+        return "ActiveLock{" + "resourceType=" + resourceType + ", lockType=" + lockType + ", resourceId=" + resourceId + ", transactionId=" + transactionId +
+                '}';
     }
 }

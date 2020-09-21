@@ -37,7 +37,7 @@ import java.util.function.Function;
 
 import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.query.QuerySnapshot;
-import org.neo4j.kernel.impl.locking.ActiveLock;
+import org.neo4j.lock.ActiveLock;
 import org.neo4j.lock.ResourceType;
 
 import static java.util.function.Function.identity;

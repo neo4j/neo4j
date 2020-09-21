@@ -208,7 +208,7 @@ public class RecordBuilders
                             group.setType( extra );
                             return group;
                         } ),
-                null, null, null, null, EmptyMemoryTracker.INSTANCE );
+                null, null, null, null, EmptyMemoryTracker.INSTANCE, RecordAccess.LoadMonitor.NULL_MONITOR );
     }
 
     public static RelationshipGroupGetter newRelGroupGetter( AbstractBaseRecord... records )

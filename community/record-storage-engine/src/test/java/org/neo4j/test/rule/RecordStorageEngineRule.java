@@ -28,6 +28,8 @@ import org.neo4j.internal.id.DefaultIdController;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdController;
 import org.neo4j.internal.id.IdGeneratorFactory;
+import org.neo4j.internal.recordstorage.CommandLockVerification;
+import org.neo4j.internal.recordstorage.LockVerificationMonitor;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.recordstorage.TransactionApplierFactoryChain;
 import org.neo4j.internal.schema.ConstraintDescriptor;
@@ -241,7 +243,7 @@ public class RecordStorageEngineRule extends ExternalResource
         {
             super( databaseLayout, config, pageCache, fs, logProvider, tokenHolders, schemaState, constraintSemantics, indexConfigCompleter, lockService,
                     databaseHealth, idGeneratorFactory, idController, RecoveryCleanupWorkCollector.immediate(), PageCacheTracer.NULL, true,
-                    EmptyMemoryTracker.INSTANCE );
+                    EmptyMemoryTracker.INSTANCE, CommandLockVerification.Factory.IGNORE, LockVerificationMonitor.Factory.IGNORE );
             this.transactionApplierTransformer = transactionApplierTransformer;
         }
 

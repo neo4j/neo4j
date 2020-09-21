@@ -20,6 +20,7 @@
 package org.neo4j.lock;
 
 import java.util.Arrays;
+import java.util.stream.Stream;
 
 public interface ResourceLocker
 {
@@ -36,13 +37,35 @@ public interface ResourceLocker
      */
     void acquireExclusive( LockTracer tracer, ResourceType resourceType, long... resourceIds );
 
-    ResourceLocker PREVENT = ( tracer, resourceType, resourceIds ) ->
+    Stream<ActiveLock> activeLocks();
+
+    ResourceLocker PREVENT = new ResourceLocker()
     {
-        throw new UnsupportedOperationException(
-                "Unexpected call to lock a resource " + resourceType + " " + Arrays.toString( resourceIds ) );
+        @Override
+        public void acquireExclusive( LockTracer tracer, ResourceType resourceType, long... resourceIds )
+        {
+            throw new UnsupportedOperationException(
+                    "Unexpected call to lock a resource " + resourceType + " " + Arrays.toString( resourceIds ) );
+        }
+
+        @Override
+        public Stream<ActiveLock> activeLocks()
+        {
+            return Stream.empty();
+        }
     };
 
-    ResourceLocker IGNORE = ( tracer, resourceType, resourceIds ) ->
+    ResourceLocker IGNORE = new ResourceLocker()
     {
+        @Override
+        public void acquireExclusive( LockTracer tracer, ResourceType resourceType, long... resourceIds )
+        {
+        }
+
+        @Override
+        public Stream<ActiveLock> activeLocks()
+        {
+            return Stream.empty();
+        }
     };
 }

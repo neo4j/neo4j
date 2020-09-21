@@ -129,7 +129,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
     {
         return new RecordStorageEngine( databaseLayout, config, pageCache, fs, logProvider, tokenHolders, schemaState, constraintSemantics,
                 indexConfigCompleter, lockService, databaseHealth, idGeneratorFactory, idController, recoveryCleanupWorkCollector, cacheTracer,
-                createStoreIfNotExists, memoryTracker );
+                createStoreIfNotExists, memoryTracker, new CommandLockVerification.Factory.RealFactory(), LockVerificationMonitor.Factory.defaultFactory() );
     }
 
     @Override

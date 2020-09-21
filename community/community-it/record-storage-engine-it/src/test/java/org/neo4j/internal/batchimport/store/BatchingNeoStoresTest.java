@@ -40,6 +40,8 @@ import org.neo4j.internal.counts.CountsBuilder;
 import org.neo4j.internal.counts.GBPTreeCountsStore;
 import org.neo4j.internal.id.DefaultIdController;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
+import org.neo4j.internal.recordstorage.CommandLockVerification;
+import org.neo4j.internal.recordstorage.LockVerificationMonitor;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.recordstorage.RecordStorageReader;
 import org.neo4j.internal.schema.IndexConfigCompleter;
@@ -397,7 +399,8 @@ class BatchingNeoStoresTest
                             new StandardConstraintSemantics(), indexConfigCompleter, LockService.NO_LOCK_SERVICE,
                             new DatabaseHealth( PanicEventGenerator.NO_OP, nullLog ),
                             new DefaultIdGeneratorFactory( fileSystem, immediate() ), new DefaultIdController(),
-                            recoveryCleanupWorkCollector, PageCacheTracer.NULL, true, INSTANCE ) );
+                            recoveryCleanupWorkCollector, PageCacheTracer.NULL, true, INSTANCE, CommandLockVerification.Factory.IGNORE,
+                            LockVerificationMonitor.Factory.IGNORE ) );
             // Create the relationship type token
             TxState txState = new TxState();
             Monitors monitors = new Monitors();

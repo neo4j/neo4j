@@ -33,7 +33,7 @@ import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.graphdb.QueryExecutionType;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.kernel.database.NamedDatabaseId;
-import org.neo4j.kernel.impl.locking.ActiveLock;
+import org.neo4j.lock.ActiveLock;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.LockType;
 import org.neo4j.lock.LockWaitEvent;

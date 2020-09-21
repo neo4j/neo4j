@@ -109,9 +109,9 @@ class RecordStorageCommandCreationContext implements CommandCreationContext
     }
 
     TransactionRecordState createTransactionRecordState( IntegrityValidator integrityValidator, long lastTransactionIdWhenStarted,
-            ResourceLocker locks, LogCommandSerialization commandSerialization )
+            ResourceLocker locks, LogCommandSerialization commandSerialization, RecordAccess.LoadMonitor monitor )
     {
-        RecordChangeSet recordChangeSet = new RecordChangeSet( loaders, memoryTracker );
+        RecordChangeSet recordChangeSet = new RecordChangeSet( loaders, memoryTracker, monitor );
         return new TransactionRecordState( neoStores, integrityValidator,
                 recordChangeSet, lastTransactionIdWhenStarted, locks,
                 relationshipCreator, relationshipDeleter, propertyCreator, propertyDeleter, cursorTracer, memoryTracker, commandSerialization );
