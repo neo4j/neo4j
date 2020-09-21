@@ -19,6 +19,7 @@
  */
 package org.neo4j.logging.internal;
 
+import java.util.Objects;
 import java.util.function.Consumer;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -26,14 +27,15 @@ import javax.annotation.Nullable;
 import org.neo4j.logging.AbstractLog;
 import org.neo4j.logging.Log;
 
-public class ContextualLog extends AbstractLog
+public class PrefixedLog extends AbstractLog
 {
-    private final LogContext logContext;
+    private final String prefix;
     private final Log delegate;
 
-    ContextualLog( LogContext logContext, Log delegate )
+    PrefixedLog( String prefix, Log delegate )
     {
-        this.logContext = logContext;
+        Objects.requireNonNull( prefix );
+        this.prefix = "[" + prefix + "]";
         this.delegate = delegate;
     }
 
@@ -124,10 +126,6 @@ public class ContextualLog extends AbstractLog
 
     private String withPrefix( String message )
     {
-        if ( logContext != null )
-        {
-            return logContext.formatMessage( message );
-        }
-        return message;
+        return prefix + message;
     }
 }

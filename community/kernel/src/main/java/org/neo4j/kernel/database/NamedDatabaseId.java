@@ -23,7 +23,6 @@ import java.util.Objects;
 import java.util.UUID;
 
 import org.neo4j.configuration.helpers.NormalizedDatabaseName;
-import org.neo4j.logging.internal.LogContext;
 
 import static java.util.Objects.requireNonNull;
 
@@ -36,7 +35,7 @@ import static java.util.Objects.requireNonNull;
  * <p>
  * Equality and hashcode are based only on UUID.
  */
-public class NamedDatabaseId implements Comparable<NamedDatabaseId>, LogContext
+public class NamedDatabaseId implements Comparable<NamedDatabaseId>
 {
     private final String name;
     private final DatabaseId databaseId;
@@ -109,11 +108,5 @@ public class NamedDatabaseId implements Comparable<NamedDatabaseId>, LogContext
     public boolean isSystemDatabase()
     {
         return databaseId.isSystemDatabase();
-    }
-
-    @Override
-    public String formatMessage( String message )
-    {
-        return "[" + this.name + "/" + this.databaseId.id() + "] " + message;
     }
 }
