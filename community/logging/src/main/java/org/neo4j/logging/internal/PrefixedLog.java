@@ -35,7 +35,7 @@ public class PrefixedLog extends AbstractLog
     PrefixedLog( String prefix, Log delegate )
     {
         Objects.requireNonNull( prefix );
-        this.prefix = "[" + prefix + "]";
+        this.prefix = "[" + prefix + "] ";
         this.delegate = delegate;
     }
 
