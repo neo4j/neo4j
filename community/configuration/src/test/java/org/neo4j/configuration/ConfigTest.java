@@ -90,6 +90,7 @@ class ConfigTest
         Config config = Config.newBuilder().addSettingsClass( TestSettings.class ).build();
         assertEquals( "hello", config.get( TestSettings.stringSetting ) );
         assertEquals( 1, config.get( TestSettings.intSetting ) );
+        assertEquals( List.of( 1 ), config.get( TestSettings.intListSetting ) );
         assertNull( config.get( TestSettings.boolSetting ) );
     }
 
@@ -947,30 +948,9 @@ class ConfigTest
         static final Setting<Path> absolute =
                 newBuilder( "test.absolute.path", PATH, Path.of( "/another/path/file" ).toAbsolutePath() ).setDependency( midPath ).build();
 
-        private static final SettingValueParser<String> DefaultParser = new SettingValueParser<>()
-        {
-            @Override
-            public String parse( String value )
-            {
-                return value;
-            }
+        static final Setting<String> baseString = newBuilder( "test.default.dependency.base", STRING, "base" ).immutable().build();
 
-            @Override
-            public String getDescription()
-            {
-                return "";
-            }
-
-            @Override
-            public Class<String> getType()
-            {
-                return String.class;
-            }
-        };
-
-        static final Setting<String> baseString = newBuilder( "test.default.dependency.base", DefaultParser, "base" ).immutable().build();
-
-        static final Setting<String> dependingString = newBuilder( "test.default.dependency.dep", DefaultParser, null ).setDependency( baseString ).build();
+        static final Setting<String> dependingString = newBuilder( "test.default.dependency.dep", STRING, null ).setDependency( baseString ).build();
     }
 
     private static void assumeUnixOrWindows()

@@ -32,6 +32,12 @@ import org.neo4j.server.rest.dbms.AuthorizationDisabledFilter;
 import org.neo4j.server.rest.dbms.AuthorizationEnabledFilter;
 import org.neo4j.server.web.WebServer;
 
+/**
+ * The authorization module applies a {@link org.neo4j.server.rest.dbms.AuthorizationFilter AuthorizationFilter} to all paths except those configured in {@link
+ * org.neo4j.server.configuration.ServerSettings#http_auth_allowlist ServerSettings#http_auth_allowlist}.
+ * <p>
+ * It must be enabled as soon as any other module is enabled.
+ */
 public class AuthorizationModule implements ServerModule
 {
     private final WebServer webServer;

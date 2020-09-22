@@ -21,6 +21,8 @@ package org.neo4j.server.rest.discovery;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
+import org.neo4j.server.configuration.ConfigurableServerModules;
+import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.http.cypher.CypherResource;
 
 import static org.neo4j.server.http.cypher.CypherResource.absoluteDatabaseTransactionPath;
@@ -37,8 +39,11 @@ public class CommunityDiscoverableURIs
 
     public static DiscoverableURIs.Builder communityDiscoverableURIsBuilder( Config config, ConnectorPortRegister portRegister )
     {
-        return new DiscoverableURIs.Builder()
-                .addEndpoint( CypherResource.NAME, absoluteDatabaseTransactionPath( config ) )
-                .addBoltEndpoint( config, portRegister );
+        var builder = new DiscoverableURIs.Builder();
+        if ( config.get( ServerSettings.http_enabled_modules ).contains( ConfigurableServerModules.TRANSACTIONAL_ENDPOINTS ) )
+        {
+            builder = builder.addEndpoint( CypherResource.NAME, absoluteDatabaseTransactionPath( config ) );
+        }
+        return builder.addBoltEndpoint( config, portRegister );
     }
 }

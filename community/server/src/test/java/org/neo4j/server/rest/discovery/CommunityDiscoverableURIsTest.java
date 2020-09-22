@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test;
 
 import java.net.InetSocketAddress;
 import java.net.URI;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -30,10 +31,10 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.configuration.helpers.SocketAddress;
+import org.neo4j.server.configuration.ConfigurableServerModules;
 import org.neo4j.server.configuration.ServerSettings;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.internal.helpers.collection.MapUtil.map;
 import static org.neo4j.server.rest.discovery.CommunityDiscoverableURIs.communityDiscoverableURIs;
 
 class CommunityDiscoverableURIsTest
@@ -42,7 +43,16 @@ class CommunityDiscoverableURIsTest
     void shouldAdvertiseTransactionAndManagementURIs()
     {
         var uris = communityDiscoverableURIs( Config.defaults(), null );
-        assertEquals( map( "transaction", "/db/{databaseName}/tx" ), toMap( uris ) );
+        assertEquals( Map.of( "transaction", "/db/{databaseName}/tx" ), toMap( uris ) );
+    }
+
+    @Test
+    void shouldNotAdvertiseDisabledTransactionAndManagementURIs()
+    {
+        var uris = communityDiscoverableURIs(
+                Config.defaults( ServerSettings.http_enabled_modules, EnumSet.complementOf( EnumSet.of( ConfigurableServerModules.TRANSACTIONAL_ENDPOINTS ) ) ),
+                null );
+        assertEquals( Map.of(), toMap( uris ) );
     }
 
     @Test

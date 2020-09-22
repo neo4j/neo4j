@@ -36,16 +36,16 @@ import org.neo4j.server.configuration.ServerSettings;
 public class CypherResource extends AbstractCypherResource
 {
     public static final String NAME = "transaction";
-    private static final String TRANSACTION = "tx";
-    private static final String DB_NAME = "databaseName";
-    static final String DB_TRANSACTION_PATH = "/{" + DB_NAME + "}/" + TRANSACTION;
+    private static final String DB_PATH_PARAM_NAME = "databaseName";
+    private static final String TRANSACTION_PATH_FRAGMENT = "tx";
+    static final String DB_TRANSACTION_PATH = "/{" + DB_PATH_PARAM_NAME + "}/" + TRANSACTION_PATH_FRAGMENT;
 
     public CypherResource( @Context HttpTransactionManager httpTransactionManager,
             @Context UriInfo uriInfo,
             @Context Log log,
             @Context HttpHeaders headers,
             @Context HttpServletRequest request,
-            @PathParam( DB_NAME ) String databaseName )
+            @PathParam( DB_PATH_PARAM_NAME ) String databaseName )
     {
         super( httpTransactionManager, uriInfo, log, headers, request, databaseName );
     }
@@ -61,7 +61,7 @@ public class CypherResource extends AbstractCypherResource
     protected URI cypherUri( UriInfo uriInfo, String databaseName )
     {
         UriBuilder builder = uriInfo.getBaseUriBuilder().path( databaseName );
-        return builder.path( TRANSACTION ).build();
+        return builder.path( TRANSACTION_PATH_FRAGMENT ).build();
     }
 
     public static String absoluteDatabaseTransactionPath( Config config )

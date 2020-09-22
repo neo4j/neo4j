@@ -31,9 +31,11 @@ import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.BiFunction;
 
 import org.neo4j.configuration.helpers.DurationRange;
@@ -81,6 +83,7 @@ import static org.neo4j.configuration.SettingValueParsers.TIMEZONE;
 import static org.neo4j.configuration.SettingValueParsers.TRUE;
 import static org.neo4j.configuration.SettingValueParsers.listOf;
 import static org.neo4j.configuration.SettingValueParsers.ofEnum;
+import static org.neo4j.configuration.SettingValueParsers.setOfEnums;
 import static org.neo4j.configuration.SettingValueParsers.ofPartialEnum;
 import static org.neo4j.graphdb.config.Configuration.EMPTY;
 
@@ -615,6 +618,36 @@ class SettingTest
                 " If setting.name is `BLUE` then it is of size `2` otherwise it is of size `4`.", dependencySetting1.description() );
         assertEquals( "setting.depending.name, an integer which depends on setting.name." +
                 " If setting.name is minimum `3` then it is maximum `3` otherwise it is maximum `7`.", dependencySetting2.description() );
+    }
+
+    @Test
+    void testListOfEnums()
+    {
+        var enumSetting =
+                (SettingImpl<List<Colors>>) SettingImpl.newBuilder( "setting.name", listOf( ofEnum( Colors.class ) ), List.of( Colors.GREEN ) ).build();
+
+        var parsedSetting = enumSetting.parse( "red, blue" );
+        assertEquals( 2, parsedSetting.size() );
+        assertTrue( parsedSetting.containsAll( List.of( Colors.BLUE, Colors.RED ) ) );
+        assertTrue( enumSetting.parse( "" ).isEmpty() );
+        assertEquals( "setting.name, a ',' separated list with elements of type 'one of [BLUE, GREEN, RED]'.",  enumSetting.description());
+        assertEquals( List.of( Colors.GREEN ), enumSetting.defaultValue() );
+        assertThrows( IllegalArgumentException.class, () -> enumSetting.parse( "blue, kaputt" ) );
+    }
+
+    @Test
+    void testSetOfEnums()
+    {
+        var enumSetting =
+                (SettingImpl<Set<Colors>>) SettingImpl.newBuilder( "setting.name", setOfEnums( Colors.class ), EnumSet.of( Colors.GREEN ) ).build();
+
+        var parsedSetting = enumSetting.parse( "red, blue, red" );
+        assertEquals( 2, parsedSetting.size() );
+        assertTrue( parsedSetting.containsAll( List.of( Colors.BLUE, Colors.RED ) ) );
+        assertTrue( enumSetting.parse( "" ).isEmpty() );
+        assertEquals( "setting.name, a ',' separated set with elements of type 'one of [BLUE, GREEN, RED]'.",  enumSetting.description());
+        assertEquals( Set.of( Colors.GREEN ), enumSetting.defaultValue() );
+        assertThrows( IllegalArgumentException.class, () -> enumSetting.parse( "blue, kaputt" ) );
     }
 
     @TestFactory

@@ -22,7 +22,9 @@ package org.neo4j.server.configuration;
 import java.net.URI;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.Description;
@@ -47,6 +49,7 @@ import static org.neo4j.configuration.SettingValueParsers.NORMALIZED_RELATIVE_UR
 import static org.neo4j.configuration.SettingValueParsers.PATH;
 import static org.neo4j.configuration.SettingValueParsers.STRING;
 import static org.neo4j.configuration.SettingValueParsers.listOf;
+import static org.neo4j.configuration.SettingValueParsers.setOfEnums;
 
 @ServiceProvider
 public class ServerSettings implements SettingsDeclaration
@@ -157,6 +160,13 @@ public class ServerSettings implements SettingsDeclaration
     @Description( "Defines a blacklist of http paths that should not be accessed." )
     public static final Setting<List<String>> http_paths_blacklist =
             newBuilder( "unsupported.dbms.http_paths_blacklist", listOf( STRING ), emptyList() ).build();
+
+    @Internal
+    @Description( "Defines the set of modules loaded into the Neo4j web server. " +
+                  "Options include TRANSACTIONAL_ENDPOINTS, BROWSER, UNMANAGED_EXTENSIONS and ENTERPRISE_MANAGEMENT_ENDPOINTS (if applicable)." )
+    public static final Setting<Set<ConfigurableServerModules>> http_enabled_modules =
+            newBuilder( "unsupported.dbms.http_enabled_modules",
+                        setOfEnums( ConfigurableServerModules.class ), EnumSet.allOf( ConfigurableServerModules.class ) ).build();
 
     @Internal
     @Description( "Publicly discoverable bolt:// URI to use for Neo4j Drivers wanting to access the data in this " +

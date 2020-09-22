@@ -76,6 +76,7 @@ import org.neo4j.procedure.impl.ProcedureConfig;
 import org.neo4j.procedure.impl.ProcedureLoginContextTransformer;
 import org.neo4j.procedure.impl.ProcedureTransactionProvider;
 import org.neo4j.procedure.impl.TerminationGuardProvider;
+import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.web.DisabledNeoWebServer;
 import org.neo4j.values.ValueMapper;
 import org.neo4j.values.storable.PointValue;
@@ -172,14 +173,18 @@ public class DatabaseManagementServiceFactory
     }
 
     private Lifecycle createWebServer( AbstractEditionModule edition, DatabaseManagementService managementService,
-            Dependencies globalDependencies, Config config, LogProvider userLogProvider )
+                                       Dependencies globalDependencies, Config config, LogProvider userLogProvider )
     {
-        boolean webServerDisabled = !config.get( HttpConnector.enabled ) && !config.get( HttpsConnector.enabled );
-        if ( webServerDisabled )
+        if ( shouldEnableWebServer( config ) )
         {
-            return new DisabledNeoWebServer();
+            return edition.createWebServer( managementService, globalDependencies, config, userLogProvider, dbmsInfo );
         }
-        return edition.createWebServer( managementService, globalDependencies, config, userLogProvider, dbmsInfo );
+        return new DisabledNeoWebServer();
+    }
+
+    private boolean shouldEnableWebServer( Config config )
+    {
+        return (config.get( HttpConnector.enabled ) || config.get( HttpsConnector.enabled )) && !config.get( ServerSettings.http_enabled_modules ).isEmpty();
     }
 
     private static void startDatabaseServer( GlobalModule globalModule, LifeSupport globalLife, Log internalLog, DatabaseManager<?> databaseManager,

@@ -19,7 +19,7 @@
  */
 package org.neo4j.server;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.function.Supplier;
 
 import org.neo4j.collection.Dependencies;
@@ -28,6 +28,8 @@ import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.server.configuration.ConfigurableServerModules;
+import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.modules.AuthorizationModule;
 import org.neo4j.server.modules.DBMSModule;
 import org.neo4j.server.modules.LegacyTransactionModule;
@@ -52,13 +54,30 @@ public class CommunityNeoWebServer extends AbstractNeoWebServer
     @Override
     protected Iterable<ServerModule> createServerModules()
     {
-        return Arrays.asList(
-                createDBMSModule(),
-                new TransactionModule( webServer, getConfig() ),
-                new LegacyTransactionModule( webServer, getConfig() ),
-                new ThirdPartyJAXRSModule( webServer, getConfig(), userLogProvider ),
-                new Neo4jBrowserModule( webServer ),
-                createAuthorizationModule() );
+        var config = getConfig();
+        var enabledModules = config.get( ServerSettings.http_enabled_modules );
+        var serverModules = new ArrayList<ServerModule>();
+        if ( !enabledModules.isEmpty() )
+        {
+            serverModules.add( createDBMSModule() );
+
+            if ( enabledModules.contains( ConfigurableServerModules.TRANSACTIONAL_ENDPOINTS ) )
+            {
+                serverModules.add( new TransactionModule( webServer, config ) );
+                serverModules.add( new LegacyTransactionModule( webServer, config ) );
+            }
+            if ( enabledModules.contains( ConfigurableServerModules.UNMANAGED_EXTENSIONS ) )
+            {
+                serverModules.add( new ThirdPartyJAXRSModule( webServer, config, userLogProvider ) );
+            }
+            if ( enabledModules.contains( ConfigurableServerModules.BROWSER ) )
+            {
+                serverModules.add( new Neo4jBrowserModule( webServer ) );
+            }
+
+            serverModules.add( createAuthorizationModule() );
+        }
+        return serverModules;
     }
 
     @Override
