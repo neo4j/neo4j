@@ -31,13 +31,11 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.neo4j.server.rest.web.InternalJettyServletRequest;
-
 /**
  * This is the log handler used for http logging.
  * This class overrides the original {@link RequestLogHandler}
  * and rewrite the {@link RequestLogHandler#handle(String, Request, HttpServletRequest, HttpServletResponse)}
- * to be able to accept {@link Request} who does not have a http channel attached with it, such as {@link InternalJettyServletRequest}.
+ * to be able to accept {@link Request} who does not have a http channel attached with it.
  */
 public class HttpChannelOptionalRequestLogHandler extends RequestLogHandler
 {
