@@ -48,10 +48,7 @@ import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.atLeast;
@@ -63,24 +60,22 @@ import static org.mockito.Mockito.when;
 
 public class TransportWriteThrottleTest
 {
+    private static final int DEFAULT_TIMEOUT_IN_MILLIS = 3000;
+
     @Rule
     public OtherThreadRule<Void> otherThread = new OtherThreadRule<>();
 
     private ChannelHandlerContext context;
     private Channel channel;
     private SocketChannelConfig config;
-    private ThrottleLock lock;
     private Attribute lockAttribute;
 
     @Before
     public void setup() throws Exception
     {
-        lock = newThrottleLockMock();
-
         config = mock( SocketChannelConfig.class );
 
         lockAttribute = mock( Attribute.class );
-        when( lockAttribute.get() ).thenReturn( lock );
 
         Attribute durationExceedAttribute = mock( Attribute.class );
         when( durationExceedAttribute.get() ).thenReturn( null );
@@ -88,7 +83,7 @@ public class TransportWriteThrottleTest
         channel = mock( SocketChannel.class, Answers.RETURNS_MOCKS );
         when( channel.config() ).thenReturn( config );
         when( channel.isOpen() ).thenReturn( true );
-        when( channel.remoteAddress() ).thenReturn( InetSocketAddress.createUnresolved( "localhost", 32000 ) );
+        when( channel.remoteAddress() ).thenReturn( InetSocketAddress.createUnresolved( "localhost", 0 ) );
         when( channel.attr( TransportWriteThrottle.LOCK_KEY ) ).thenReturn( lockAttribute );
         when( channel.attr( TransportWriteThrottle.MAX_DURATION_EXCEEDED_KEY ) ).thenReturn( durationExceedAttribute );
 
@@ -112,89 +107,69 @@ public class TransportWriteThrottleTest
         ArgumentCaptor<WriteBufferWaterMark> argument = ArgumentCaptor.forClass( WriteBufferWaterMark.class );
         verify( config ).setWriteBufferWaterMark( argument.capture() );
 
-        assertEquals( 64, argument.getValue().low() );
-        assertEquals( 256, argument.getValue().high() );
+        assertThat( argument.getValue().low() ).isEqualTo( 64 );
+        assertThat( argument.getValue().high() ).isEqualTo( 256 );
     }
 
     @Test
     public void shouldNotLockWhenWritable() throws Exception
     {
         // given
-        TestThrottleLock lockOverride = new TestThrottleLock();
-        TransportThrottle throttle = newThrottleAndInstall( channel, lockOverride );
+        TestThrottleLock lock = new TestThrottleLock();
+        TransportThrottle throttle = newThrottleAndInstall( channel, lock );
         when( channel.isWritable() ).thenReturn( true );
 
         // when
         Future future = otherThread.execute( state ->
-        {
-            throttle.acquire( channel );
-            return null;
-        } );
+                                             {
+                                                 throttle.acquire( channel );
+                                                 return null;
+                                             } );
 
         // expect
-        try
-        {
-            future.get( 2000, TimeUnit.MILLISECONDS );
-        }
-        catch ( Throwable t )
-        {
-            fail( "should not throw" );
-        }
+        future.get( DEFAULT_TIMEOUT_IN_MILLIS, TimeUnit.MILLISECONDS );
 
-        assertTrue( future.isDone() );
-        assertThat( lockOverride.lockCallCount() ).isEqualTo( 0 );
-        assertThat( lockOverride.unlockCallCount() ).isEqualTo( 0 );
+        assertThat( future ).isDone();
+        assertThat( lock.lockCallCount() ).isEqualTo( 0 );
+        assertThat( lock.unlockCallCount() ).isEqualTo( 0 );
     }
 
     @Test
-    public void shouldLockWhenNotWritable() throws Exception
+    public void shouldLockWhenNotWritable()
     {
         // given
-        TestThrottleLock lockOverride = new TestThrottleLock();
-        TransportThrottle throttle = newThrottleAndInstall( channel, lockOverride );
+        TestThrottleLock lock = new TestThrottleLock();
+        TransportThrottle throttle = newThrottleAndInstall( channel, lock );
         when( channel.isWritable() ).thenReturn( false );
 
         // when
         Future<Void> future = otherThread.execute( state ->
-        {
-            throttle.acquire( channel );
-            return null;
-        } );
+                                                   {
+                                                       throttle.acquire( channel );
+                                                       return null;
+                                                   } );
 
         // expect
-        try
-        {
-            future.get( 2000, TimeUnit.MILLISECONDS );
+        assertThatExceptionOfType( TimeoutException.class )
+                .isThrownBy( () -> future.get( DEFAULT_TIMEOUT_IN_MILLIS, TimeUnit.MILLISECONDS ) );
 
-            fail( "should timeout" );
-        }
-        catch ( TimeoutException t )
-        {
-            // expected
-        }
-
-        assertFalse( future.isDone() );
-        assertThat( lockOverride.lockCallCount() ).isGreaterThan( 0 );
-        assertThat( lockOverride.unlockCallCount() ).isEqualTo( 0 );
+        assertThat( future ).isNotDone();
+        assertThat( lock.lockCallCount() ).isGreaterThan( 0 );
+        assertThat( lock.unlockCallCount() ).isEqualTo( 0 );
 
         // stop the thread that is trying to acquire the lock
         // otherwise it remains actively spinning even after the test
         future.cancel( true );
-        try
-        {
-            otherThread.get().awaitFuture( future );
-            fail( "Exception expected" );
-        }
-        catch ( CancellationException ignore )
-        {
-        }
+        assertThatExceptionOfType( CancellationException.class )
+                .isThrownBy( () -> otherThread.get().awaitFuture( future ) );
     }
 
     @Test
     public void shouldResumeWhenWritableOnceAgain() throws Exception
     {
         // given
-        TransportThrottle throttle = newThrottleAndInstall( channel );
+        ThrottleLock lock = newThrottleLockMock();
+        TransportThrottle throttle = newThrottleAndInstall( channel, lock );
         when( channel.isWritable() ).thenReturn( false ).thenReturn( true );
 
         // when
@@ -208,17 +183,16 @@ public class TransportWriteThrottleTest
     @Test
     public void shouldResumeWhenWritabilityChanged() throws Exception
     {
-        TestThrottleLock lockOverride = new TestThrottleLock();
-
         // given
-        TransportThrottle throttle = newThrottleAndInstall( channel, lockOverride );
+        TestThrottleLock lock = new TestThrottleLock();
+        TransportThrottle throttle = newThrottleAndInstall( channel, lock );
         when( channel.isWritable() ).thenReturn( false );
 
         Future<Void> completionFuture = otherThread.execute( state ->
-        {
-            throttle.acquire( channel );
-            return null;
-        } );
+                                                             {
+                                                                 throttle.acquire( channel );
+                                                                 return null;
+                                                             } );
 
         otherThread.get().waitUntilWaiting();
 
@@ -230,73 +204,63 @@ public class TransportWriteThrottleTest
 
         otherThread.get().awaitFuture( completionFuture );
 
-        assertThat( lockOverride.lockCallCount() ).isGreaterThan( 0 );
-        assertThat( lockOverride.unlockCallCount() ).isEqualTo( 1 );
+        assertThat( lock.lockCallCount() ).isGreaterThan( 0 );
+        assertThat( lock.unlockCallCount() ).isEqualTo( 1 );
     }
 
     @Test
     public void shouldThrowThrottleExceptionWhenMaxDurationIsReached() throws Exception
     {
         // given
-        TestThrottleLock lockOverride = new TestThrottleLock();
+        TestThrottleLock lock = new TestThrottleLock();
         FakeClock clock = Clocks.fakeClock( 1, TimeUnit.SECONDS );
-        TransportThrottle throttle = newThrottleAndInstall( channel, lockOverride, clock, Duration.ofSeconds( 5 ) );
+        TransportThrottle throttle = newThrottleAndInstall( channel, lock, clock, Duration.ofSeconds( 5 ) );
         when( channel.isWritable() ).thenReturn( false );
 
         // when
         Future<Void> future = otherThread.execute( state ->
-        {
-            throttle.acquire( channel );
-            return null;
-        } );
+                                                   {
+                                                       throttle.acquire( channel );
+                                                       return null;
+                                                   } );
 
         otherThread.get().waitUntilWaiting();
         clock.forward( 6, TimeUnit.SECONDS );
 
         // expect
-        try
-        {
-            future.get( 1, TimeUnit.MINUTES );
-
-            fail( "expecting ExecutionException" );
-        }
-        catch ( ExecutionException ex )
-        {
-            assertThat( ex.getCause() ).isInstanceOf( TransportThrottleException.class );
-            assertThat( ex.getMessage() ).contains( "will be closed because the client did not consume outgoing buffers for" );
-        }
+        assertThatExceptionOfType( ExecutionException.class )
+                .isThrownBy( () -> future.get( 1, TimeUnit.MINUTES ) )
+                .withCauseInstanceOf( TransportThrottleException.class )
+                .withMessageContaining( "will be closed because the client did not consume outgoing buffers for" );
     }
 
     private TransportThrottle newThrottle()
     {
-        return newThrottle( null, Clocks.systemClock(), Duration.ZERO );
+        try
+        {
+            var lock = newThrottleLockMock();
+            return newThrottle( lock, Clocks.systemClock(), Duration.ZERO );
+        }
+        catch ( InterruptedException e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 
-    private TransportThrottle newThrottle( ThrottleLock lockOverride, Clock clock, Duration maxLockDuration )
+    private TransportThrottle newThrottle( ThrottleLock lock, Clock clock, Duration maxLockDuration )
     {
-        if ( lockOverride != null )
-        {
-            lock = lockOverride;
-
-            when( lockAttribute.get() ).thenReturn( lockOverride );
-        }
-
+        when( lockAttribute.get() ).thenReturn( lock );
         return new TransportWriteThrottle( 64, 256, clock, maxLockDuration, () -> lock );
     }
 
-    private TransportThrottle newThrottleAndInstall( Channel channel )
+    private TransportThrottle newThrottleAndInstall( Channel channel, ThrottleLock lock )
     {
-        return newThrottleAndInstall( channel, null );
+        return newThrottleAndInstall( channel, lock, Clocks.systemClock(), Duration.ZERO );
     }
 
-    private TransportThrottle newThrottleAndInstall( Channel channel, ThrottleLock lockOverride )
+    private TransportThrottle newThrottleAndInstall( Channel channel, ThrottleLock lock, Clock clock, Duration maxLockDuration )
     {
-        return newThrottleAndInstall( channel, lockOverride, Clocks.systemClock(), Duration.ZERO );
-    }
-
-    private TransportThrottle newThrottleAndInstall( Channel channel, ThrottleLock lockOverride, Clock clock, Duration maxLockDuration )
-    {
-        TransportThrottle throttle = newThrottle( lockOverride, clock, maxLockDuration );
+        TransportThrottle throttle = newThrottle( lock, clock, maxLockDuration );
 
         throttle.install( channel );
 
@@ -307,20 +271,20 @@ public class TransportWriteThrottleTest
     {
         ThrottleLock lock = mock( ThrottleLock.class );
         doAnswer( invocation ->
-        {
-            // sleep a bit to prevent the caller thread spinning in a tight loop
-            // every mock invocation is recorded and generates objects, like the stacktrace
-            Thread.sleep( 500 );
-            return null;
-        } ).when( lock ).lock( any(), anyLong() );
+                  {
+                      // sleep a bit to prevent the caller thread spinning in a tight loop
+                      // every mock invocation is recorded and generates objects, like the stacktrace
+                      Thread.sleep( 500 );
+                      return null;
+                  } ).when( lock ).lock( any(), anyLong() );
         return lock;
     }
 
     private static class TestThrottleLock implements ThrottleLock
     {
-        private AtomicInteger lockCount = new AtomicInteger( 0 );
-        private AtomicInteger unlockCount = new AtomicInteger( 0 );
-        private ThrottleLock actualLock = new DefaultThrottleLock();
+        private final AtomicInteger lockCount = new AtomicInteger( 0 );
+        private final AtomicInteger unlockCount = new AtomicInteger( 0 );
+        private final ThrottleLock actualLock = new DefaultThrottleLock();
 
         @Override
         public void lock( Channel channel, long timeout ) throws InterruptedException
@@ -357,7 +321,5 @@ public class TransportWriteThrottleTest
         {
             return unlockCount.get();
         }
-
     }
-
 }
