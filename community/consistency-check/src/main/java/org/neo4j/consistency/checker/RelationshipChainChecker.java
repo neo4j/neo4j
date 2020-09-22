@@ -170,8 +170,8 @@ class RelationshipChainChecker implements Checker
                     boolean consistent;
                     if ( prevOrNext == PREV )
                     {
-                        // 1 is the expected degree of a prev reference for a relationship that is first in chain of length 1
-                        consistent = reference == 1 && isFirstInChain;
+                        // we don't know here if this chain belongs to a group and has external degrees, because if so it could have any value here
+                        consistent = isFirstInChain;
                     }
                     else
                     {

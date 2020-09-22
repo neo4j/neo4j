@@ -157,8 +157,8 @@ class RelationshipChainCheckerTest extends CheckerTestBase
     {
         testRelationshipChainInconsistency( ( relationship1, relationship2 ) -> relationship2.setInUse( false ), report ->
         {
-            report.sourcePrevDoesNotReferenceBack( any() );
-            report.targetPrevDoesNotReferenceBack( any() );
+            report.sourceNextDoesNotReferenceBack( any() );
+            report.targetNextDoesNotReferenceBack( any() );
         } );
     }
 
