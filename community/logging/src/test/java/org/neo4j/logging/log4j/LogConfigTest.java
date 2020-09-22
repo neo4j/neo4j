@@ -31,6 +31,8 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.ZoneOffset;
+import java.util.TimeZone;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.logging.FormattedLogFormat;
@@ -43,6 +45,7 @@ import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.String.format;
+import static java.lang.System.lineSeparator;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @TestDirectoryExtension
@@ -50,8 +53,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 @ResourceLock( Resources.SYSTEM_OUT )
 class LogConfigTest
 {
-    static final String DATE_PATTERN = "\\d\\d\\d\\d-\\d\\d-\\d\\d \\d\\d:\\d\\d:\\d\\d\\.\\d\\d\\d[+-]\\d\\d\\d\\d";
-    private static final String DATE_PATTERN_NO_TIMEZONE = "\\d\\d\\d\\d-\\d\\d-\\d\\d \\d\\d:\\d\\d:\\d\\d\\.\\d\\d\\d";
+    static final String DATE_PATTERN = "\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}\\.\\d{3}[+-]\\d{4}";
+    private static final String DATE_NO_TIMEZONE_PATTERN = "\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}\\.\\d{3}";
     @Inject
     SuppressOutput suppressOutput;
     @Inject
@@ -185,12 +188,12 @@ class LogConfigTest
 
         // First file (the one rotated to targetFile1) should not have the header.
         assertThat( Files.readString( targetFile1 ) )
-                .matches( DATE_PATTERN + format( " %-5s \\[className\\] Long line that will get next message to be written to next file%n", Level.WARN ) );
+                .matches( DATE_PATTERN + format( " %-5s \\[className] Long line that will get next message to be written to next file%n", Level.WARN ) );
 
         assertThat( Files.readString( targetFile ) )
-                .matches( format( DATE_PATTERN + " %-5s \\[o.n.HeaderClassName\\] My Header%n" +
-                                  DATE_PATTERN + " %-5s \\[o.n.HeaderClassName\\] In Two Lines%n" +
-                                  DATE_PATTERN + " %-5s \\[className\\] test2%n", Level.WARN, Level.WARN, Level.WARN ) );
+                .matches( format( DATE_PATTERN + " %-5s \\[o\\.n\\.HeaderClassName] My Header%n" +
+                                  DATE_PATTERN + " %-5s \\[o\\.n\\.HeaderClassName] In Two Lines%n" +
+                                  DATE_PATTERN + " %-5s \\[className] test2%n", Level.WARN, Level.WARN, Level.WARN ) );
     }
 
     @Test
@@ -285,7 +288,31 @@ class LogConfigTest
         Logger logger = ctx.getLogger( "org.neo4j.classname" );
         logger.warn( "test" );
 
-        assertThat( outContent.toString() ).matches( format( DATE_PATTERN_NO_TIMEZONE + "\\+0000 %-5s \\[o.n.classname\\] test%n", Level.WARN ) );
+        assertThat( outContent.toString() ).matches( format( DATE_NO_TIMEZONE_PATTERN + "\\+0000 %-5s \\[o\\.n\\.classname] test%n", Level.WARN ) );
+    }
+
+    @Test
+    void withTimezoneSystem()
+    {
+        TimeZone defaultTimeZone = TimeZone.getDefault();
+        try
+        {
+            TimeZone.setDefault( TimeZone.getTimeZone( ZoneOffset.ofHours( 4 ) ) );
+            ByteArrayOutputStream outContent = new ByteArrayOutputStream();
+
+            ctx = LogConfig.createBuilder( outContent, Level.INFO )
+                           .withTimezone( LogTimeZone.SYSTEM )
+                           .build();
+
+            Logger logger = ctx.getLogger( "org.neo4j.classname" );
+            logger.warn( "test" );
+
+            assertThat( outContent.toString() ).matches( format( DATE_NO_TIMEZONE_PATTERN + "\\+0400 %-5s \\[o\\.n\\.classname] test%n", Level.WARN ) );
+        }
+        finally
+        {
+            TimeZone.setDefault( defaultTimeZone );
+        }
     }
 
     @Test
@@ -300,7 +327,7 @@ class LogConfigTest
         Logger logger = ctx.getLogger( "org.neo4j.classname" );
         logger.warn( "test" );
 
-        assertThat( outContent.toString() ).matches( DATE_PATTERN + format( " %-5s \\[o.n.classname\\] test%n", Level.WARN ) );
+        assertThat( outContent.toString() ).matches( DATE_PATTERN + format( " %-5s \\[o\\.n\\.classname] test%n", Level.WARN ) );
     }
 
     @Test
@@ -332,7 +359,7 @@ class LogConfigTest
         logger.warn( "test" );
 
         assertThat( outContent.toString() ).matches( format(
-                "\\{\"time\": \"" + DATE_PATTERN + "\", \"level\": \"%s\", \"category\": \"o.n.classname\", \"message\": \"test\"\\}%n", Level.WARN ) );
+                "\\{\"time\":\"" + DATE_PATTERN + "\",\"level\":\"%s\",\"category\":\"o\\.n\\.classname\",\"message\":\"test\"}%n", Level.WARN ) );
     }
 
     @Test
@@ -349,7 +376,7 @@ class LogConfigTest
         logger.warn( "test" );
 
         assertThat( outContent.toString() ).matches( format(
-                "\\{\"time\": \"" + DATE_PATTERN + "\", \"level\": \"%s\", \"message\": \"test\"\\}%n", Level.WARN ) );
+                "\\{\"time\":\"" + DATE_PATTERN + "\",\"level\":\"%s\",\"message\":\"test\"}%n", Level.WARN ) );
     }
 
     @Test
@@ -365,8 +392,75 @@ class LogConfigTest
         logger.warn( "test", newThrowable( "stack" ) );
 
         assertThat( outContent.toString() ).matches( format(
-                "\\{\"time\": \"" + DATE_PATTERN +
-                "\", \"level\": \"%s\", \"category\": \"o.n.classname\", \"message\": \"test\", \"stacktrace\": \" stack\"\\}%n", Level.WARN ) );
+                "\\{\"time\":\"" + DATE_PATTERN +
+                "\",\"level\":\"%s\",\"category\":\"o\\.n\\.classname\",\"message\":\"test\",\"stacktrace\":\" stack\"}%n", Level.WARN ) );
+    }
+
+    @Test
+    void jsonFormatStructuredMessage()
+    {
+        ByteArrayOutputStream outContent = new ByteArrayOutputStream();
+
+        ctx = LogConfig.createBuilder( outContent, Level.INFO )
+                       .withFormat( FormattedLogFormat.JSON_FORMAT )
+                       .build();
+
+        Logger logger = ctx.getLogger( "org.neo4j.classname" );
+        logger.info( new MyStructure() );
+
+        assertThat( outContent.toString() ).matches(
+                "\\{\"time\":\"" + DATE_PATTERN + "\",\"level\":\"INFO\",\"category\":\"o\\.n\\.classname\",\"long\":7," +
+                        "\"string1\":\"my string\",\"string2\":\" special\\\\\" string\"}" + lineSeparator() );
+    }
+
+    @Test
+    void jsonFormatStructuredMessageWithException()
+    {
+        ByteArrayOutputStream outContent = new ByteArrayOutputStream();
+
+        ctx = LogConfig.createBuilder( outContent, Level.INFO )
+                       .withFormat( FormattedLogFormat.JSON_FORMAT )
+                       .withCategory( false )
+                       .build();
+
+        Logger logger = ctx.getLogger( "org.neo4j.classname" );
+        logger.info( new MyStructure(), newThrowable( "test" ) );
+
+        assertThat( outContent.toString() ).matches(
+                "\\{\"time\":\"" + DATE_PATTERN + "\",\"level\":\"INFO\",\"long\":7," +
+                        "\"string1\":\"my string\",\"string2\":\" special\\\\\" string\",\"stacktrace\":\" test\"}" + lineSeparator() );
+    }
+
+    @Test
+    void standardFormatWithStructuredMessage()
+    {
+        ByteArrayOutputStream outContent = new ByteArrayOutputStream();
+
+        ctx = LogConfig.createBuilder( outContent, Level.INFO )
+                       .withFormat( FormattedLogFormat.STANDARD_FORMAT )
+                       .build();
+
+        Logger logger = ctx.getLogger( "org.neo4j.classname" );
+        logger.warn( new MyStructure() );
+
+        assertThat( outContent.toString() ).matches( DATE_PATTERN + format( " %-5s \\[o\\.n\\.classname] 1c%n", Level.WARN ) );
+    }
+
+    private static class MyStructure extends StructureAwareMessage
+    {
+        @Override
+        public void asString( StringBuilder stringBuilder )
+        {
+            stringBuilder.append( 1 ).append( "c" );
+        }
+
+        @Override
+        public void asStructure( FieldConsumer fieldConsumer )
+        {
+            fieldConsumer.add( "long", 7L );
+            fieldConsumer.add( "string1", "my string" );
+            fieldConsumer.add( "string2", " special\" string" );
+        }
     }
 
     static Throwable newThrowable( final String stackTrace )

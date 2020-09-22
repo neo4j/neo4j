@@ -117,13 +117,15 @@ public final class LogConfig
 
     private static Neo4jLogLayout getLayout( Builder builder )
     {
+        String datePattern = "yyyy-MM-dd HH:mm:ss.SSSZ";
         if ( builder.format == FormattedLogFormat.STANDARD_FORMAT )
         {
+            String date = "%d{" + datePattern + "}" + (builder.timezone == LogTimeZone.UTC ? "{GMT+0}" : "");
             return Neo4jLogLayout.createLayout( builder.includeCategory ?
-                                                getDateFormat( builder ) + " %-5p [%c{1.}] %m%n" :
-                                                getDateFormat( builder ) + " %-5p %m%n" );
+                    date + " %-5p [%c{1.}] %m%n" :
+                    date + " %-5p %m%n" );
         }
-        return Neo4jJsonLogLayout.createLayout( getDateFormat( builder ), builder.includeCategory );
+        return Neo4jJsonLogLayout.createLayout( datePattern, builder.timezone == LogTimeZone.UTC ? "GMT+0" : null, builder.includeCategory );
     }
 
     private static Appender getAppender( Builder builder, Layout<String> layout )
@@ -174,15 +176,6 @@ public final class LogConfig
                 .withPolicy( policy )
                 .withStrategy( rolloverStrategy )
                 .build();
-    }
-
-    private static String getDateFormat( Builder builder )
-    {
-        if ( builder.timezone == LogTimeZone.UTC )
-        {
-            return "%d{yyyy-MM-dd HH:mm:ss.SSSZ}{GMT+0}";
-        }
-        return "%d{yyyy-MM-dd HH:mm:ss.SSSZ}";
     }
 
     private static Level convertNeo4jLevelToLevel( org.neo4j.logging.Level level )

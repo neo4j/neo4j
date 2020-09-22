@@ -67,6 +67,12 @@ public class Log4jLog extends AbstractLog
     }
 
     @Override
+    public void info( Neo4jLogMessage message )
+    {
+        logger.info( message );
+    }
+
+    @Override
     public void info( @Nonnull String message )
     {
         logger.info( message );
@@ -103,9 +109,21 @@ public class Log4jLog extends AbstractLog
     }
 
     @Override
+    public void error( Neo4jLogMessage message )
+    {
+        logger.error( message );
+    }
+
+    @Override
     public void error( @Nonnull String message )
     {
         logger.error( message );
+    }
+
+    @Override
+    public void error( Neo4jLogMessage message, Throwable throwable )
+    {
+        logger.error( message, throwable );
     }
 
     @Override

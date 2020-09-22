@@ -23,7 +23,9 @@ import java.util.function.Consumer;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-public abstract class AbstractLog implements Log
+import org.neo4j.logging.log4j.LogExtended;
+
+public abstract class AbstractLog implements LogExtended
 {
     @Nonnull
     @Override

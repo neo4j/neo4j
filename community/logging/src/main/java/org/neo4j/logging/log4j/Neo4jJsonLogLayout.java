@@ -26,59 +26,125 @@ import org.apache.logging.log4j.core.config.Node;
 import org.apache.logging.log4j.core.config.plugins.Plugin;
 import org.apache.logging.log4j.core.config.plugins.PluginAttribute;
 import org.apache.logging.log4j.core.config.plugins.PluginFactory;
-import org.apache.logging.log4j.core.layout.PatternLayout;
+import org.apache.logging.log4j.core.pattern.DatePatternConverter;
+import org.apache.logging.log4j.core.pattern.NameAbbreviator;
+import org.apache.logging.log4j.core.pattern.ThrowablePatternConverter;
+import org.apache.logging.log4j.message.Message;
+import org.apache.logging.log4j.util.StringBuilderFormattable;
 
-import static org.apache.logging.log4j.core.layout.PatternLayout.newSerializerBuilder;
+import static org.apache.logging.log4j.util.StringBuilders.escapeJson;
 
 @Plugin( name = "Neo4jJsonLogLayout", category = Node.CATEGORY, elementType = Layout.ELEMENT_TYPE, printObject = true )
 public class Neo4jJsonLogLayout extends Neo4jLogLayout
 {
-    private final Serializer eventSerializerThrowable;
+    private final DatePatternConverter datePatternConverter;
+    private final ThrowablePatternConverter throwablePatternConverter;
+    private final NameAbbreviator abbreviator;
+    private final boolean includeCategory;
 
-    protected Neo4jJsonLogLayout( String datepattern, boolean category, DefaultConfiguration config )
+    protected Neo4jJsonLogLayout( String datePattern, String timeZone, boolean includeCategory, DefaultConfiguration config )
     {
-
-        super( category ?
-               "{\"time\": \"" + datepattern + "\", \"level\": \"%p\", \"category\": \"%c{1.}\", \"message\": \"%enc{%m}{JSON}\"}%n" :
-               "{\"time\": \"" + datepattern + "\", \"level\": \"%p\", \"message\": \"%enc{%m}{JSON}\"}%n",
-                config );
-
-        PatternLayout.SerializerBuilder patternBuilder = newSerializerBuilder()
-                .setConfiguration( config )
-                .setAlwaysWriteExceptions( true )
-                .setDisableAnsi( false )
-                .setNoConsoleNoAnsi( false );
-
-        if ( category )
-        {
-            patternBuilder.setPattern( "{\"time\": \"" + datepattern +
-                                       "\", \"level\": \"%p\", \"category\": \"%c{1.}\", \"message\": \"%enc{%m}{JSON}\"," +
-                                       "%throwable{none} \"stacktrace\": \"%enc{%throwable}{JSON}\"}%n" );
-        }
-        else
-        {
-            patternBuilder.setPattern( "{\"time\": \"" + datepattern +
-                                       "\", \"level\": \"%p\", \"message\": \"%enc{%m}{JSON}\"," +
-                                       "%throwable{none} \"stacktrace\": \"%enc{%throwable}{JSON}\"}%n" );
-        }
-
-        this.eventSerializerThrowable = patternBuilder.build();
+        super( "", config );
+        this.includeCategory = includeCategory;
+        datePatternConverter = DatePatternConverter.newInstance( new String[]{datePattern, timeZone} );
+        throwablePatternConverter = ThrowablePatternConverter.newInstance( config, null );
+        abbreviator = NameAbbreviator.getAbbreviator( "1." );
     }
 
     @PluginFactory
-    public static Neo4jJsonLogLayout createLayout( @PluginAttribute( "datepattern" ) String datepattern,
-            @PluginAttribute( value = "category", defaultBoolean = true ) boolean category )
+    public static Neo4jJsonLogLayout createLayout(
+            @PluginAttribute( "datePattern" ) String datePattern,
+            @PluginAttribute( "timeZone" ) String timeZone,
+            @PluginAttribute( value = "includeCategory", defaultBoolean = true ) boolean includeCategory )
     {
-        return new Neo4jJsonLogLayout( datepattern, category, new DefaultConfiguration() );
+        return new Neo4jJsonLogLayout( datePattern, timeZone, includeCategory, new DefaultConfiguration() );
     }
 
     @Override
     public String toSerializable( LogEvent event )
     {
-        if ( event.getThrown() == null )
+        StringBuilder buffer = new StringBuilder( 128 );
+        buffer.append( "{\"time\":\"" );
+        datePatternConverter.format( event, buffer );
+        buffer.append( "\",\"level\":\"" );
+        buffer.append( event.getLevel().toString() );
+        buffer.append( '"' );
+        if ( includeCategory )
         {
-            return eventSerializer.toSerializable( event );
+            buffer.append( ",\"category\":\"" );
+            abbreviator.abbreviate( event.getLoggerName(), buffer );
+            buffer.append( '"' );
         }
-        return eventSerializerThrowable.toSerializable( event );
+
+        Message message = event.getMessage();
+        if ( message instanceof StructureAwareMessage )
+        {
+            StructureAwareMessage msg = (StructureAwareMessage) message;
+            msg.asStructure( new JsonFieldConsumer( buffer ) );
+        }
+        else  // Normal message
+        {
+            buffer.append( ",\"message\":\"" );
+            final int start = buffer.length();
+            if ( message instanceof StringBuilderFormattable )
+            {
+                ((StringBuilderFormattable) message).formatTo( buffer ); // Garbage-free optimized message
+            }
+            else
+            {
+                buffer.append( message.getFormattedMessage() );
+            }
+            escapeJson( buffer, start );
+            buffer.append( '"' );
+        }
+
+        if ( event.getThrown() != null )
+        {
+            buffer.append( ",\"stacktrace\":\"" );
+            int start = buffer.length();
+            throwablePatternConverter.format( event, buffer );
+            escapeJson( buffer, start );
+            buffer.append( '"' );
+        }
+        buffer.append( '}' ).append( System.lineSeparator() );
+        return buffer.toString();
+    }
+
+    private static class JsonFieldConsumer implements StructureAwareMessage.FieldConsumer
+    {
+        private final StringBuilder buffer;
+
+        private JsonFieldConsumer( StringBuilder buffer )
+        {
+            this.buffer = buffer;
+        }
+
+        @Override
+        public void add( String field, String value )
+        {
+            addField( buffer, field );
+            formatString( buffer, value );
+        }
+
+        @Override
+        public void add( String field, long value )
+        {
+            addField( buffer, field );
+            buffer.append( value );
+        }
+
+        private static void addField( StringBuilder buffer, String field )
+        {
+            buffer.append( ",\"" ).append( field ).append( "\":" );
+        }
+
+        private static void formatString( StringBuilder buffer, Object value )
+        {
+            buffer.append( '"' );
+            int startIndex = buffer.length();
+            buffer.append( value );
+            escapeJson( buffer, startIndex );
+            buffer.append( '"' );
+        }
     }
 }
