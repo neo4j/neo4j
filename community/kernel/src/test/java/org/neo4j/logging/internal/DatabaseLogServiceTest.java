@@ -97,17 +97,6 @@ class DatabaseLogServiceTest
         assertSame( logProvider1, logProvider2 );
     }
 
-    @Test
-    void shouldNotLogPrefixWhenContextIsNull()
-    {
-        logService = new DatabaseLogService( null, new SimpleLogService( logProvider ) );
-        var log = logService.getUserLogProvider().getLog( "MyLog" );
-
-        log.info( "info message" );
-
-        assertLogged( "INFO  [MyLog] info message" );
-    }
-
     private void assertLogged( String message )
     {
         assertThat( outContent.toString() ).contains( message );
