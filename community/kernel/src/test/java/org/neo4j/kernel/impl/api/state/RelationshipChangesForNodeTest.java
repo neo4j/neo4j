@@ -29,6 +29,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Function;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.storageengine.api.RelationshipDirection;
@@ -123,9 +124,9 @@ class RelationshipChangesForNodeTest
         changes.visitIdsSplit( typeIds ->
         {
             Map<RelationshipDirection,MutableLongSet> dirMap = expected.remove( typeIds.type() );
-            visitExpectedIds( typeIds, dirMap, OUTGOING );
-            visitExpectedIds( typeIds, dirMap, INCOMING );
-            visitExpectedIds( typeIds, dirMap, LOOP );
+            visitExpectedIds( typeIds, dirMap, OUTGOING, RelationshipModifications.NodeRelationshipTypeIds::out );
+            visitExpectedIds( typeIds, dirMap, INCOMING, RelationshipModifications.NodeRelationshipTypeIds::in );
+            visitExpectedIds( typeIds, dirMap, LOOP, RelationshipModifications.NodeRelationshipTypeIds::loop );
             assertThat( dirMap ).isEmpty();
             return false;
         }, RelationshipModifications.noAdditionalDataDecorator() );
@@ -158,10 +159,10 @@ class RelationshipChangesForNodeTest
         assertThat( changes.hasRelationships( type ) ).isFalse();
     }
 
-    private void visitExpectedIds( RelationshipModifications.NodeRelationshipTypeIds typeIds,
-            Map<RelationshipDirection,MutableLongSet> dirMap, RelationshipDirection direction )
+    private void visitExpectedIds( RelationshipModifications.NodeRelationshipTypeIds typeIds, Map<RelationshipDirection,MutableLongSet> dirMap,
+            RelationshipDirection direction, Function<RelationshipModifications.NodeRelationshipTypeIds,RelationshipModifications.RelationshipBatch> dude )
     {
-        typeIds.ids( direction ).forEach( ( id, type, startNode, endNode ) -> assertThat( dirMap.get( direction ).remove( id ) ).isTrue() );
+        dude.apply( typeIds ).forEach( ( id, type, startNode, endNode ) -> assertThat( dirMap.get( direction ).remove( id ) ).isTrue() );
         assertThat( dirMap.remove( direction ).isEmpty() );
     }
 }

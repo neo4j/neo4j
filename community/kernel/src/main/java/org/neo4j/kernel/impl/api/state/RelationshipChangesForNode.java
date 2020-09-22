@@ -21,16 +21,15 @@ package org.neo4j.kernel.impl.api.state;
 
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.iterator.MutableLongIterator;
-import org.eclipse.collections.api.map.primitive.IntObjectMap;
 import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
 import org.eclipse.collections.api.set.primitive.IntSet;
 import org.eclipse.collections.api.set.primitive.LongSet;
-import org.eclipse.collections.api.set.primitive.MutableIntSet;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.factory.primitive.IntSets;
 import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
-import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Predicate;
 
 import org.neo4j.collection.trackable.HeapTrackingCollections;
@@ -42,7 +41,6 @@ import org.neo4j.storageengine.api.RelationshipDirection;
 import org.neo4j.storageengine.api.txstate.RelationshipModifications;
 import org.neo4j.storageengine.api.txstate.RelationshipModifications.RelationshipBatch;
 
-import static java.lang.Math.toIntExact;
 import static org.neo4j.collection.PrimitiveLongCollections.concat;
 import static org.neo4j.internal.helpers.collection.Iterators.filter;
 import static org.neo4j.internal.helpers.collection.Iterators.iterator;
@@ -88,9 +86,7 @@ public class RelationshipChangesForNode
     private final DiffStrategy diffStrategy;
     private final MemoryTracker memoryTracker;
 
-    private MutableIntObjectMap<MutableLongSet> outgoing;
-    private MutableIntObjectMap<MutableLongSet> incoming;
-    private MutableIntObjectMap<MutableLongSet> loops;
+    private MutableIntObjectMap<RelationshipSetsByDirection> byType;
 
     static RelationshipChangesForNode createRelationshipChangesForNode( DiffStrategy diffStrategy, MemoryTracker memoryTracker )
     {
@@ -106,50 +102,54 @@ public class RelationshipChangesForNode
 
     public void addRelationship( long relId, int typeId, RelationshipDirection direction )
     {
-        final MutableIntObjectMap<MutableLongSet> relTypeToRelsMap = getTypeToRelMapForDirection( direction );
-        final MutableLongSet rels = relTypeToRelsMap.getIfAbsentPut( typeId, () -> HeapTrackingCollections.newLongSet( memoryTracker ) );
-
-        rels.add( relId );
+        if ( byType == null )
+        {
+            byType = HeapTrackingCollections.newIntObjectHashMap( memoryTracker );
+        }
+        byType.getIfAbsentPutWithKey( typeId, RelationshipSetsByDirection::new ).getOrCreateIds( direction ).add( relId );
     }
 
     public boolean removeRelationship( long relId, int typeId, RelationshipDirection direction )
     {
-        final MutableIntObjectMap<MutableLongSet> relTypeToRelsMap = getTypeToRelMapForDirection( direction );
-        final MutableLongSet rels = relTypeToRelsMap.get( typeId );
-        if ( rels != null && rels.remove( relId ) )
+        if ( byType != null )
         {
-            if ( rels.isEmpty() )
+            RelationshipSetsByDirection byDirection = byType.get( typeId );
+            if ( byDirection != null )
             {
-                relTypeToRelsMap.remove( typeId );
+                MutableLongSet ids = byDirection.getIds( direction );
+                if ( ids != null )
+                {
+                    if ( ids.remove( relId ) )
+                    {
+                        if ( ids.isEmpty() )
+                        {
+                            byDirection.deleteIds( direction );
+                        }
+                        return true;
+                    }
+                }
             }
-            return true;
         }
         return false;
     }
 
     public int augmentDegree( RelationshipDirection direction, int degree, int typeId )
     {
-        switch ( direction )
-        {
-        case INCOMING:
-            return diffStrategy.augmentDegree( degree, degreeDiff( typeId, incoming ) );
-        case OUTGOING:
-            return diffStrategy.augmentDegree( degree, degreeDiff( typeId, outgoing ) );
-        case LOOP:
-            return diffStrategy.augmentDegree( degree, degreeDiff( typeId, loops ) );
-        default:
-            throw new IllegalArgumentException( "Unknown direction: " + direction );
-        }
+        return diffStrategy.augmentDegree( degree, degreeDiff( typeId, direction ) );
     }
 
-    private int degreeDiff( int type, MutableIntObjectMap<MutableLongSet> map )
+    private int degreeDiff( int type, RelationshipDirection direction )
     {
-        if ( map != null )
+        if ( byType != null )
         {
-            MutableLongSet set = map.get( type );
-            if ( set != null )
+            RelationshipSetsByDirection byDirection = byType.get( type );
+            if ( byDirection != null )
             {
-                return set.size();
+                MutableLongSet ids = byDirection.getIds( direction );
+                if ( ids != null )
+                {
+                    return ids.size();
+                }
             }
         }
         return 0;
@@ -157,69 +157,16 @@ public class RelationshipChangesForNode
 
     public void clear()
     {
-        if ( outgoing != null )
+        if ( byType != null )
         {
-            outgoing.clear();
+            byType.clear();
         }
-        if ( incoming != null )
-        {
-            incoming.clear();
-        }
-    }
-
-    private MutableIntObjectMap<MutableLongSet> outgoing()
-    {
-        if ( outgoing == null )
-        {
-            outgoing = HeapTrackingCollections.newIntObjectHashMap( memoryTracker );
-        }
-        return outgoing;
-    }
-
-    private MutableIntObjectMap<MutableLongSet> incoming()
-    {
-        if ( incoming == null )
-        {
-            incoming = HeapTrackingCollections.newIntObjectHashMap( memoryTracker );
-        }
-        return incoming;
-    }
-
-    private MutableIntObjectMap<MutableLongSet> loops()
-    {
-        if ( loops == null )
-        {
-            loops = HeapTrackingCollections.newIntObjectHashMap( memoryTracker );
-        }
-        return loops;
-    }
-
-    private MutableIntObjectMap<MutableLongSet> getTypeToRelMapForDirection( RelationshipDirection direction )
-    {
-        final MutableIntObjectMap<MutableLongSet> relTypeToRelsMap;
-        switch ( direction )
-        {
-            case INCOMING:
-                relTypeToRelsMap = incoming();
-                break;
-            case OUTGOING:
-                relTypeToRelsMap = outgoing();
-                break;
-            case LOOP:
-                relTypeToRelsMap = loops();
-                break;
-            default:
-                throw new IllegalArgumentException( "Unknown direction: " + direction );
-        }
-        return relTypeToRelsMap;
     }
 
     public LongIterator getRelationships()
     {
-        return nonEmptyConcat(
-                primitiveIds( incoming ),
-                primitiveIds( outgoing ),
-                primitiveIds( loops ) );
+        return byType == null ? ImmutableEmptyLongIterator.INSTANCE
+                              : aggregatedIds( RelationshipDirection.INCOMING, RelationshipDirection.OUTGOING, RelationshipDirection.LOOP );
     }
 
     private LongIterator nonEmptyConcat( LongIterator... primitiveIds )
@@ -229,31 +176,79 @@ public class RelationshipChangesForNode
 
     public LongIterator getRelationships( Direction direction )
     {
+        if ( byType == null )
+        {
+            return ImmutableEmptyLongIterator.INSTANCE;
+        }
+
         switch ( direction )
         {
         case INCOMING:
-            return incoming == null && loops == null ? ImmutableEmptyLongIterator.INSTANCE : nonEmptyConcat( primitiveIds( incoming ), primitiveIds( loops ) );
+            return aggregatedIds( RelationshipDirection.INCOMING, RelationshipDirection.LOOP );
         case OUTGOING:
-            return outgoing == null && loops == null ? ImmutableEmptyLongIterator.INSTANCE : nonEmptyConcat( primitiveIds( outgoing ), primitiveIds( loops ) );
+            return aggregatedIds( RelationshipDirection.OUTGOING, RelationshipDirection.LOOP );
         case BOTH:
-            return getRelationships();
+            return aggregatedIds( RelationshipDirection.INCOMING, RelationshipDirection.OUTGOING, RelationshipDirection.LOOP );
         default:
             throw new IllegalArgumentException( "Unknown direction: " + direction );
         }
     }
 
+    private LongIterator aggregatedIds( RelationshipDirection... directions )
+    {
+        List<LongIterator> iterators = new ArrayList<>();
+        for ( RelationshipSetsByDirection byDirection : byType )
+        {
+            for ( RelationshipDirection direction : directions )
+            {
+                addIdIterator( iterators, byDirection, direction );
+            }
+        }
+        return iterators.isEmpty() ? ImmutableEmptyLongIterator.INSTANCE : nonEmptyConcat( iterators.toArray( LongIterator[]::new ) );
+    }
+
+    private void addIdIterator( List<LongIterator> iterators, RelationshipSetsByDirection byDirection, RelationshipDirection direction )
+    {
+        MutableLongSet ids = byDirection.getIds( direction );
+        if ( ids != null )
+        {
+            iterators.add( primitiveIds( ids ) );
+        }
+    }
+
     public LongIterator getRelationships( Direction direction, int type )
     {
+        if ( byType == null )
+        {
+            return ImmutableEmptyLongIterator.INSTANCE;
+        }
+        RelationshipSetsByDirection typeSets = byType.get( type );
+        if ( typeSets == null )
+        {
+            return ImmutableEmptyLongIterator.INSTANCE;
+        }
+
+        MutableLongSet loops = typeSets.getIds( RelationshipDirection.LOOP );
         switch ( direction )
         {
         case INCOMING:
+        {
+            MutableLongSet incoming = typeSets.getIds( RelationshipDirection.INCOMING );
             return incoming == null && loops == null ? ImmutableEmptyLongIterator.INSTANCE :
-                   nonEmptyConcat( primitiveIdsByType( incoming, type ), primitiveIdsByType( loops, type ) );
+                   nonEmptyConcat( primitiveIds( incoming ), primitiveIds( loops ) );
+        }
         case OUTGOING:
-            return outgoing == null && loops == null ? ImmutableEmptyLongIterator.INSTANCE :
-                   nonEmptyConcat( primitiveIdsByType( outgoing, type ), primitiveIdsByType( loops, type ) );
+        {
+            MutableLongSet outging = typeSets.getIds( RelationshipDirection.OUTGOING );
+            return outging == null && loops == null ? ImmutableEmptyLongIterator.INSTANCE :
+                   nonEmptyConcat( primitiveIds( outging ), primitiveIds( loops ) );
+        }
         case BOTH:
-            return nonEmptyConcat( primitiveIdsByType( outgoing, type ), primitiveIdsByType( incoming, type ), primitiveIdsByType( loops, type ) );
+        {
+            MutableLongSet incoming = typeSets.getIds( RelationshipDirection.INCOMING );
+            MutableLongSet outgoing = typeSets.getIds( RelationshipDirection.OUTGOING );
+            return nonEmptyConcat( primitiveIds( outgoing ), primitiveIds( incoming ), primitiveIds( loops ) );
+        }
         default:
             throw new IllegalArgumentException( "Unknown direction: " + direction );
         }
@@ -274,60 +269,32 @@ public class RelationshipChangesForNode
 
     public IntSet relationshipTypes()
     {
-        MutableIntSet types = IntSets.mutable.empty();
-        addRelationshipTypes( types, outgoing );
-        addRelationshipTypes( types, incoming );
-        addRelationshipTypes( types, loops );
-        return types;
+        return byType == null ? IntSets.immutable.empty() : byType.keySet();
     }
 
-    private void addRelationshipTypes( MutableIntSet types, MutableIntObjectMap<MutableLongSet> relationships )
+    private static LongIterator primitiveIds( LongSet relationships )
     {
-        if ( relationships != null )
-        {
-            types.addAll( relationships.keySet() );
-        }
-    }
-
-    private static LongIterator primitiveIds( IntObjectMap<MutableLongSet> map )
-    {
-        if ( map == null )
-        {
-            return ImmutableEmptyLongIterator.INSTANCE;
-        }
-
-        final int size = toIntExact( map.sumOfInt( LongSet::size ) );
-        final MutableLongSet ids = new LongHashSet( size );
-        map.values().forEach( ids::addAll );
-        return ids.longIterator();
-    }
-
-    private static LongIterator primitiveIdsByType( IntObjectMap<MutableLongSet> map, int type )
-    {
-        if ( map == null )
-        {
-            return ImmutableEmptyLongIterator.INSTANCE;
-        }
-        final LongSet relationships = map.get( type );
         return relationships == null ? ImmutableEmptyLongIterator.INSTANCE : relationships.freeze().longIterator();
     }
 
     <E extends Exception> void visitIds( ThrowingLongConsumer<E> visitor ) throws E
     {
-        tryVisitIds( visitor, outgoing );
-        tryVisitIds( visitor, incoming );
-        tryVisitIds( visitor, loops );
-    }
-
-    private <E extends Exception> void tryVisitIds( ThrowingLongConsumer<E> visitor, MutableIntObjectMap<MutableLongSet> ids ) throws E
-    {
-        if ( ids != null )
+        if ( byType != null )
         {
-            for ( MutableLongSet idsBatch : ids.values() )
+            for ( RelationshipSetsByDirection typeSets : byType )
             {
-                for ( MutableLongIterator idIterator = idsBatch.longIterator(); idIterator.hasNext(); )
+                if ( typeSets.ids != null )
                 {
-                    visitor.accept( idIterator.next() );
+                    for ( MutableLongSet ids : typeSets.ids )
+                    {
+                        if ( ids != null )
+                        {
+                            for ( MutableLongIterator idIterator = ids.longIterator(); idIterator.hasNext(); )
+                            {
+                                visitor.accept( idIterator.next() );
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -335,120 +302,137 @@ public class RelationshipChangesForNode
 
     void visitIdsSplit( Predicate<RelationshipModifications.NodeRelationshipTypeIds> idsByType, RelationshipModifications.IdDataDecorator idDataDecorator )
     {
-        // TODO incredibly wasteful: a new set and converting it into a sorted array
-        MutableIntSet allTypes = IntSets.mutable.empty();
-        tryAdd( allTypes, outgoing );
-        tryAdd( allTypes, incoming );
-        tryAdd( allTypes, loops );
-        for ( int type : allTypes.toSortedArray() )
+        if ( byType != null )
         {
-            if ( idsByType.test( new IdsByType( type, idDataDecorator ) ) )
+            for ( RelationshipSetsByDirection typeSets : byType )
             {
-                break;
+                if ( idsByType.test( new IdsByType( typeSets, idDataDecorator ) ) )
+                {
+                    break;
+                }
             }
-        }
-    }
-
-    private static void tryAdd( MutableIntSet allTypes, MutableIntObjectMap<MutableLongSet> relationships )
-    {
-        if ( relationships != null )
-        {
-            allTypes.addAll( relationships.keySet() );
         }
     }
 
     int totalCount()
     {
-        return count( outgoing ) + count( incoming ) + count( loops );
-    }
-
-    private int count( MutableIntObjectMap<MutableLongSet> direction )
-    {
         int count = 0;
-        if ( direction != null )
+        if ( byType != null )
         {
-            for ( MutableLongSet ids : direction.values() )
+            for ( RelationshipSetsByDirection byDirection : byType )
             {
-                count += ids.size();
+                count += count( byDirection, RelationshipDirection.OUTGOING );
+                count += count( byDirection, RelationshipDirection.INCOMING );
+                count += count( byDirection, RelationshipDirection.LOOP );
             }
         }
         return count;
     }
 
+    private int count( RelationshipSetsByDirection byDirection, RelationshipDirection direction )
+    {
+        MutableLongSet ids = byDirection.getIds( direction );
+        return ids != null ? ids.size() : 0;
+    }
+
     private final class IdsByType implements RelationshipModifications.NodeRelationshipTypeIds
     {
-        private final int type;
+        private final RelationshipSetsByDirection byDirection;
         private final RelationshipModifications.IdDataDecorator idDataDecorator;
 
-        IdsByType( int type, RelationshipModifications.IdDataDecorator idDataDecorator )
+        IdsByType( RelationshipSetsByDirection byDirection, RelationshipModifications.IdDataDecorator idDataDecorator )
         {
-            this.type = type;
+            this.byDirection = byDirection;
             this.idDataDecorator = idDataDecorator;
         }
 
         @Override
         public int type()
         {
-            return type;
+            return byDirection.type;
         }
 
         @Override
         public boolean hasOut()
         {
-            return has( outgoing );
+            return has( RelationshipDirection.OUTGOING );
         }
 
         @Override
         public boolean hasIn()
         {
-            return has( incoming );
+            return has( RelationshipDirection.INCOMING );
         }
 
         @Override
         public boolean hasLoop()
         {
-            return has( loops );
+            return has( RelationshipDirection.LOOP );
         }
 
         @Override
         public RelationshipBatch out()
         {
-            return idBatch( outgoing );
+            return idBatch( RelationshipDirection.OUTGOING );
         }
 
         @Override
         public RelationshipBatch in()
         {
-            return idBatch( incoming );
+            return idBatch( RelationshipDirection.INCOMING );
         }
 
         @Override
         public RelationshipBatch loop()
         {
-            return idBatch( loops );
+            return idBatch( RelationshipDirection.LOOP );
         }
 
-        private RelationshipBatch idBatch( MutableIntObjectMap<MutableLongSet> byDirection )
+        private RelationshipBatch idBatch( RelationshipDirection direction )
         {
-            if ( byDirection != null )
-            {
-                MutableLongSet ids = byDirection.get( type );
-                if ( ids != null )
-                {
-                    return idsAsBatch( ids, idDataDecorator );
-                }
-            }
-            return EMPTY_BATCH;
+            MutableLongSet ids = byDirection.getIds( direction );
+            return ids != null ? idsAsBatch( ids, idDataDecorator ) : EMPTY_BATCH;
         }
 
-        private boolean has( MutableIntObjectMap<MutableLongSet> byDirection )
+        private boolean has( RelationshipDirection direction )
         {
-            if ( byDirection != null )
+            return byDirection.getIds( direction ) != null;
+        }
+    }
+
+    private class RelationshipSetsByDirection
+    {
+        private final int type;
+        private MutableLongSet[] ids;
+
+        RelationshipSetsByDirection( int type )
+        {
+            this.type = type;
+        }
+
+        MutableLongSet getIds( RelationshipDirection direction )
+        {
+            return ids == null ? null : ids[direction.ordinal()];
+        }
+
+        MutableLongSet getOrCreateIds( RelationshipDirection direction )
+        {
+            int index = direction.ordinal();
+            if ( ids == null )
             {
-                MutableLongSet ids = byDirection.get( type );
-                return ids != null && !ids.isEmpty();
+                ids = new MutableLongSet[3];
             }
-            return false;
+            if ( ids[index] == null )
+            {
+                ids[index] = HeapTrackingCollections.newLongSet( memoryTracker );
+            }
+            return ids[index];
+        }
+
+        void deleteIds( RelationshipDirection direction )
+        {
+            assert ids[direction.ordinal()].isEmpty();
+            ids[direction.ordinal()] = null;
         }
 
         boolean isEmpty()
