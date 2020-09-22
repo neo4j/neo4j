@@ -240,6 +240,13 @@ org.neo4j.configuration.helpers.DurationRange::hashCode() int public
 org.neo4j.configuration.helpers.DurationRange::parse(java.lang.String) org.neo4j.configuration.helpers.DurationRange public static
 org.neo4j.configuration.helpers.DurationRange::toString() java.lang.String public
 org.neo4j.configuration.helpers.DurationRange::valueToString() java.lang.String public
+org.neo4j.configuration.helpers.GlobbingPattern public final class extends java.lang.Object
+org.neo4j.configuration.helpers.GlobbingPattern::GlobbingPattern(java.lang.String) void public
+org.neo4j.configuration.helpers.GlobbingPattern::create(java.lang.String...) java.util.List<org.neo4j.configuration.helpers.GlobbingPattern> public static
+org.neo4j.configuration.helpers.GlobbingPattern::equals(java.lang.Object) boolean public
+org.neo4j.configuration.helpers.GlobbingPattern::hashCode() int public
+org.neo4j.configuration.helpers.GlobbingPattern::matches(java.lang.String) boolean public
+org.neo4j.configuration.helpers.GlobbingPattern::toString() java.lang.String public
 org.neo4j.configuration.helpers.NormalizedGraphName public class extends java.lang.Object
 org.neo4j.configuration.helpers.NormalizedGraphName::NormalizedGraphName(java.lang.String) void public
 org.neo4j.configuration.helpers.NormalizedGraphName::equals(java.lang.Object) boolean public

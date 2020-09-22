@@ -34,6 +34,7 @@ import java.util.stream.Collectors;
 
 import org.neo4j.configuration.helpers.DatabaseNameValidator;
 import org.neo4j.configuration.helpers.DurationRange;
+import org.neo4j.configuration.helpers.GlobbingPattern;
 import org.neo4j.configuration.helpers.GraphNameValidator;
 import org.neo4j.configuration.helpers.NormalizedDatabaseName;
 import org.neo4j.configuration.helpers.NormalizedGraphName;
@@ -710,6 +711,27 @@ public final class SettingValueParsers
         public Class<NormalizedGraphName> getType()
         {
             return NormalizedGraphName.class;
+        }
+    };
+
+    public static final SettingValueParser<GlobbingPattern> GLOBBING_PATTERN = new SettingValueParser<>()
+    {
+        @Override
+        public GlobbingPattern parse( String value )
+        {
+            return new GlobbingPattern( value );
+        }
+
+        @Override
+        public String getDescription()
+        {
+            return "A simple globbing pattern that can use '*' and '?'.";
+        }
+
+        @Override
+        public Class<GlobbingPattern> getType()
+        {
+            return GlobbingPattern.class;
         }
     };
 
