@@ -21,9 +21,7 @@ import org.neo4j.cypher.internal.v4_0.ast._
 import org.neo4j.cypher.internal.v4_0.ast.semantics.Scope
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SymbolUse
-import org.neo4j.cypher.internal.v4_0.expressions.ExistsSubClause
-import org.neo4j.cypher.internal.expressions.ExpressionWithOuterScope
-import org.neo4j.cypher.internal.expressions.PatternComprehension
+import org.neo4j.cypher.internal.v4_0.expressions.ExpressionWithOuterScope
 import org.neo4j.cypher.internal.v4_0.expressions.ProcedureOutput
 import org.neo4j.cypher.internal.v4_0.expressions.Variable
 import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer.CompilationPhase
