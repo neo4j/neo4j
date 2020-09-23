@@ -40,6 +40,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.function.Consumer;
 
+import org.neo4j.exceptions.UnsatisfiedDependencyException;
 import org.neo4j.logging.Log;
 
 import static org.apache.logging.log4j.core.layout.PatternLayout.newSerializerBuilder;
@@ -78,7 +79,18 @@ public class Neo4jLogLayout extends AbstractStringLayout
         }
         ByteArrayLogger byteArrayLogger = new ByteArrayLogger();
         Log4jLog log = new Log4jLog( byteArrayLogger );
-        headerLogger.accept( log );
+        try
+        {
+            headerLogger.accept( log );
+        }
+        catch ( UnsatisfiedDependencyException e )
+        {
+            // This will happen if we are asked to rotate to the next file before all dependencies are set up.
+            // Most likely scenario would be that a log file already exist on start up that is close to rotating.
+            // The only thing that happens is that the header will not be printed in the beginning of the file,
+            // but since the same diagnostics are printed on start up after all dependencies are met the file
+            // will still get the information only later.
+        }
         return byteArrayLogger.getBytes();
     }
 
