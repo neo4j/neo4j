@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.v3_5.util.InternalException
 trait QueryGraphSolver {
   def plan(queryGraph: QueryGraph, interestingOrder: InterestingOrder, context: LogicalPlanningContext): LogicalPlan
   def planPatternExpression(planArguments: Set[String], expr: PatternExpression, interestingOrder: InterestingOrder, context: LogicalPlanningContext): (LogicalPlan, PatternExpression)
-  def planPatternComprehension(planArguments: Set[String], expr: PatternComprehension, interestingOrder: InterestingOrder, context: LogicalPlanningContext): (LogicalPlan, PatternComprehension)
+  def planPatternComprehension(planArguments: Set[String], expr: PatternComprehension, interestingOrder: InterestingOrder, context: LogicalPlanningContext): LogicalPlan
 }
 
 trait PatternExpressionSolving {
@@ -46,15 +46,14 @@ trait PatternExpressionSolving {
     (plan, namedExpr)
   }
 
-  def planPatternComprehension(planArguments: Set[String], expr: PatternComprehension, interestingOrder: InterestingOrder, context: LogicalPlanningContext): (LogicalPlan, PatternComprehension) = {
+  def planPatternComprehension(planArguments: Set[String], expr: PatternComprehension, interestingOrder: InterestingOrder, context: LogicalPlanningContext): LogicalPlan = {
     val asQueryGraph = expr.asQueryGraph
     val qgArguments = planArguments intersect asQueryGraph.idsWithoutOptionalMatchesOrUpdates
     val qg = asQueryGraph.withArgumentIds(qgArguments).addPredicates(expr.predicate.toIndexedSeq:_*)
-    val plan: LogicalPlan = planQueryGraph(qg, Map.empty, interestingOrder, context)
-    (plan, expr)
+    planQueryGraph(qg, Map.empty, interestingOrder, context)
   }
 
-  private def planQueryGraph(qg: QueryGraph, namedMap: Map[PatternElement, Variable], interestingOrder: InterestingOrder, context: LogicalPlanningContext) = {
+  private def planQueryGraph(qg: QueryGraph, namedMap: Map[PatternElement, Variable], interestingOrder: InterestingOrder, context: LogicalPlanningContext): LogicalPlan = {
     val namedNodes = namedMap.collect { case (_: NodePattern, identifier) => identifier }
     val namedRels = namedMap.collect { case (_: RelationshipChain, identifier) => identifier }
     val patternPlanningContext = context.forExpressionPlanning(namedNodes, namedRels)

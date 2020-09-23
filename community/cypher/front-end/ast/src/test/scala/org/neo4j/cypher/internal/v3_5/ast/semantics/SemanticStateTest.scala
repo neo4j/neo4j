@@ -140,6 +140,35 @@ class SemanticStateTest extends CypherFunSuite {
     s2.symbolTypes("foo") should equal(CTNode: TypeSpec)
   }
 
+  test("should list all symbols from local scope") {
+    val Right(state) =
+      for {
+        next <- SemanticState.clean.declareVariable(Variable("foo")(DummyPosition(0)), CTNode).right
+        next <- next.declareVariable(Variable("bar")(DummyPosition(0)), CTNode).right
+      } yield next
+    state.currentScope.availableSymbolDefinitions should equal(Set(SymbolUse("foo", DummyPosition(0)), SymbolUse("bar", DummyPosition(0))))
+  }
+
+  test("should list all symbols from local scope but not from child scopes") {
+    val Right(state) =
+      for {
+        next <- SemanticState.clean.declareVariable(Variable("foo")(DummyPosition(0)), CTNode).right
+        child <- next.newChildScope.declareVariable(Variable("bar")(DummyPosition(0)), CTNode).right
+      } yield child.popScope
+    state.currentScope.availableSymbolDefinitions should equal(Set(SymbolUse("foo", DummyPosition(0))))
+  }
+
+  test("should list all symbols from local scope and parent scope, but not sibling scope") {
+    val Right((state1, state2)) =
+      for {
+        parent <- SemanticState.clean.declareVariable(Variable("foo")(DummyPosition(0)), CTNode).right
+        sibling <- parent.newChildScope.declareVariable(Variable("bar")(DummyPosition(0)), CTNode).right
+        child <- sibling.newSiblingScope.declareVariable(Variable("baz")(DummyPosition(0)), CTNode).right
+      } yield (child, sibling)
+    state1.currentScope.availableSymbolDefinitions should equal(Set(SymbolUse("foo", DummyPosition(0)), SymbolUse("baz", DummyPosition(0))))
+    state2.currentScope.availableSymbolDefinitions should equal(Set(SymbolUse("foo", DummyPosition(0)), SymbolUse("bar", DummyPosition(0))))
+  }
+
   test("should override symbol in parent") {
     val s1 = SemanticState.clean.declareVariable(Variable("foo")(DummyPosition(0)), CTNode).right.get
     val s2 = s1.newChildScope.declareVariable(Variable("foo")(DummyPosition(0)), CTString).right.get

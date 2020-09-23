@@ -31,6 +31,11 @@ object UnNamedNameGenerator extends PrefixNameGenerator("UNNAMED") {
   }
 }
 
+object AllNameGenerators {
+  def isNamed(x: String): Boolean =
+    Seq(FreshIdNameGenerator, AggregationNameGenerator, NodeNameGenerator, RelNameGenerator, UnNamedNameGenerator).forall(_.isNamed(x))
+}
+
 object PrefixNameGenerator {
   def namePrefix(prefix: String) = s"  $prefix"
 }

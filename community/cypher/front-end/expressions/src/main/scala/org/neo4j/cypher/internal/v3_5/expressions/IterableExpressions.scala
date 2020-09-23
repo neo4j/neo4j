@@ -76,12 +76,12 @@ object ListComprehension {
 
 case class PatternComprehension(namedPath: Option[LogicalVariable], pattern: RelationshipsPattern,
                                 predicate: Option[Expression], projection: Expression)
-                               (val position: InputPosition, val outerScope: Set[LogicalVariable])
-  extends ScopeExpression {
+                               (val position: InputPosition, override val outerScope: Set[Variable])
+  extends ScopeExpression with ExpressionWithOuterScope {
 
   self =>
 
-  def withOuterScope(outerScope: Set[LogicalVariable]): PatternComprehension =
+  override def withOuterScope(outerScope: Set[Variable]): PatternComprehension =
     copy()(position, outerScope)
 
   override val introducedVariables: Set[LogicalVariable] = {

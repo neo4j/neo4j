@@ -21,9 +21,7 @@ import org.neo4j.cypher.internal.v3_5.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.v3_5.ast.semantics.SymbolUse
 import org.neo4j.cypher.internal.v3_5.ast.Statement
 import org.neo4j.cypher.internal.v3_5.ast._
-import org.neo4j.cypher.internal.v3_5.expressions.LogicalVariable
-import org.neo4j.cypher.internal.v3_5.expressions.ProcedureOutput
-import org.neo4j.cypher.internal.v3_5.expressions.Variable
+import org.neo4j.cypher.internal.v3_5.expressions.{ExpressionWithOuterScope, LogicalVariable, ProcedureOutput, Variable}
 import org.neo4j.cypher.internal.v3_5.frontend.phases.CompilationPhaseTracer.CompilationPhase
 import org.neo4j.cypher.internal.v3_5.frontend.phases.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
 import org.neo4j.cypher.internal.v3_5.util.Ref
@@ -46,7 +44,7 @@ object Namespacer extends Phase[BaseContext, BaseState, BaseState] {
 
     val rewriter = renamingRewriter(renamings)
     val newStatement = from.statement().endoRewrite(rewriter)
-    val table = SemanticTable(types = from.semantics().typeTable, recordedScopes = from.semantics().recordedScopes)
+    val table = SemanticTable(types = from.semantics().typeTable, recordedScopes = from.semantics().recordedScopes.mapValues(_.scope))
 
     val newSemanticTable = table.replaceExpressions(rewriter)
     from.withStatement(newStatement).withSemanticTable(newSemanticTable)
@@ -89,9 +87,23 @@ object Namespacer extends Phase[BaseContext, BaseState, BaseState] {
       case i: Variable if ambiguousNames(i.name) && !protectedVariables(Ref(i)) =>
         val symbolDefinition = variableDefinitions(SymbolUse(i))
         val newVariable = i.renameId(s"  ${symbolDefinition.nameWithPosition}")
-        val renaming = Ref(i) -> newVariable
+        val renaming = createVariableRenaming(variableDefinitions, i)
         acc => (acc + renaming, Some(identity))
+      case e: ExpressionWithOuterScope =>
+        val renamings = e.outerScope
+          .filter(v => ambiguousNames(v.name))
+          .foldLeft(Set[(Ref[Variable], Variable)]()) { (innerAcc, v) =>
+            innerAcc + createVariableRenaming(variableDefinitions, v)
+          }
+        acc => (acc ++ renamings, Some(identity))
     }
+
+  private def createVariableRenaming(variableDefinitions: Map[SymbolUse, SymbolUse], v: Variable): (Ref[Variable], Variable) = {
+    val symbolDefinition = variableDefinitions(SymbolUse(v))
+    val newVariable = v.renameId(s"  ${symbolDefinition.nameWithPosition}")
+    val renaming = Ref(v) -> newVariable
+    renaming
+  }
 
   private def renamingRewriter(renamings: VariableRenamings): Rewriter = inSequence(
     bottomUp(Rewriter.lift {
@@ -104,6 +116,14 @@ object Namespacer extends Phase[BaseContext, BaseState, BaseState] {
           case Some(newVariable) => newVariable
           case None              => v
         }
+      case e: ExpressionWithOuterScope =>
+        val newOuterScope = e.outerScope.map(v => {
+          renamings.get(Ref(v)) match {
+            case Some(newVariable) => newVariable
+            case None              => v
+          }
+        })
+        e.withOuterScope(newOuterScope)
     }))
 
 }

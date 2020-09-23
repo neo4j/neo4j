@@ -25,7 +25,8 @@ import org.neo4j.cypher.internal.v3_5.expressions._
 import org.neo4j.cypher.internal.v3_5.expressions.functions.{Coalesce, Exists, Head}
 import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.v3_5.rewriting.rewriters.{PatternExpressionPatternElementNamer, projectNamedPaths}
-import org.neo4j.cypher.internal.v3_5.util.{FreshIdNameGenerator, Rewriter, UnNamedNameGenerator, topDown}
+import org.neo4j.cypher.internal.v3_5.util.AssertionRunner.Thunk
+import org.neo4j.cypher.internal.v3_5.util.{AllNameGenerators, AssertionRunner, FreshIdNameGenerator, Rewriter, UnNamedNameGenerator, topDown}
 
 import scala.collection.mutable
 import scala.reflect.ClassTag
@@ -142,13 +143,14 @@ object PatternExpressionSolver {
     def extractQG(source: LogicalPlan, namedExpr: PatternExpression): QueryGraph = {
       import org.neo4j.cypher.internal.ir.v3_5.helpers.ExpressionConverters._
 
-      val dependencies = namedExpr.
-        dependencies.
-        map(_.name).
-        filter(id => UnNamedNameGenerator.isNamed(id))
-
-      val qgArguments = source.availableSymbols intersect dependencies
-      namedExpr.asQueryGraph.withArgumentIds(qgArguments)
+      val dependencies = namedExpr
+        .dependencies
+        .map(_.name)
+        .filter(id => AllNameGenerators.isNamed(id))
+      AssertionRunner.runUnderAssertion(new Thunk {
+        override def apply(): Unit = if (!dependencies.subsetOf(availableSymbols)) throw new IllegalStateException(s"Trying to plan a PatternExpression where a dependency is not available. Dependencies: $dependencies. Available: $availableSymbols")
+      })
+      namedExpr.asQueryGraph.withArgumentIds(dependencies)
     }
 
     def createPlannerContext(context: LogicalPlanningContext, namedMap: Map[PatternElement, Variable]): LogicalPlanningContext = {
@@ -178,8 +180,11 @@ object PatternExpressionSolver {
       import org.neo4j.cypher.internal.ir.v3_5.helpers.ExpressionConverters._
 
       val queryGraph = namedExpr.asQueryGraph
-      val args = queryGraph.idsWithoutOptionalMatchesOrUpdates intersect availableSymbols
-      queryGraph.withArgumentIds(args)
+      val dependencies = namedExpr.dependencies.map(_.name)
+      AssertionRunner.runUnderAssertion(new Thunk {
+        override def apply(): Unit = if (!dependencies.subsetOf(availableSymbols)) throw new IllegalStateException(s"Trying to plan a PatternComprehension where a dependency is not available. Dependencies: $dependencies. Available: $availableSymbols")
+      })
+      queryGraph.withArgumentIds(dependencies)
     }
 
     def createProjectionToCollect(pattern: PatternComprehension): Expression = pattern.projection
@@ -208,7 +213,7 @@ case class ListSubQueryExpressionSolver[T <: Expression](namer: T => (T, Map[Pat
                                                          interestingOrder: InterestingOrder,
                                                          pathStepBuilder: EveryPath => PathStep = projectNamedPaths.patternPartPathExpression)(implicit m: ClassTag[T]) {
 
-  def solveUsingRollUpApply(source: LogicalPlan, expr: T, maybeKey: Option[String], context: LogicalPlanningContext): (LogicalPlan, Expression) = {
+  def solveUsingRollUpApply(source: LogicalPlan, expr: T, maybeKey: Option[String], context: LogicalPlanningContext): (LogicalPlan, Variable) = {
 
     val key = maybeKey.getOrElse(FreshIdNameGenerator.name(expr.position.bumped()))
     val subQueryPlan = planSubQuery(source, expr, context)
@@ -222,14 +227,37 @@ case class ListSubQueryExpressionSolver[T <: Expression](namer: T => (T, Map[Pat
     val patternExpressions: Seq[T] = expression.findByAllClass[T]
 
     patternExpressions.foldLeft(plan, expression) {
-      case ((planAcc, expressionAcc), patternExpression) =>
-        val (newPlan, introducedVariable) = solveUsingRollUpApply(planAcc, patternExpression, None, context)
+      case ((currentPlan, currentExpression), patternExpression) =>
+        var newPlan: LogicalPlan = null
+        val inner = Rewriter.lift {
+          case `patternExpression` =>
+            val (p, v) = solveUsingRollUpApply(currentPlan, patternExpression, None, context)
+            newPlan = p
+            v
+        }
+        /*
+         * It's important to not go use RollUpApply if the expression we are working with is:
+         *
+         * a) inside a loop. If that is not honored, it will produce the wrong results by not having the correct scope.
+         * b) inside a conditional expression. Otherwise it can be executed even when not strictly needed.
+         * c) inside an expression that accessed only part of the list. Otherwise we do too much work. To avoid that we inject a Limit into the
+         * NestedPlanExpression.
+         */
+        val rewriter = topDown(inner, stopper = {
+          case _: PatternComprehension => false
+          // Loops
+          case _: ScopeExpression => true
+          // Conditionals & List accesses
+          case _: CaseExpression => true
+          case _: ContainerIndex => true
+          case _: ListSlice => true
+          case f: FunctionInvocation => f.function == Exists || f.function == Coalesce || f.function == Head
+          case _ => false
+        })
+        val rewrittenExpression = currentExpression.endoRewrite(rewriter)
 
-        val rewriter = rewriteButStopIfRollUpApplyForbidden(patternExpression, introducedVariable)
-        val rewrittenExpression = expressionAcc.endoRewrite(rewriter)
-
-        if (rewrittenExpression == expressionAcc)
-          (planAcc, expressionAcc.endoRewrite(lastDitch))
+        if (rewrittenExpression == currentExpression)
+          (currentPlan, currentExpression.endoRewrite(lastDitch))
         else
           (newPlan, rewrittenExpression)
     }
