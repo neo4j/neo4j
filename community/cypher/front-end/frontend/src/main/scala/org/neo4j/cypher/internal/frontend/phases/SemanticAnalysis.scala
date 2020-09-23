@@ -41,7 +41,7 @@ case class SemanticAnalysis(warn: Boolean, features: SemanticFeature*)
 
     context.errorHandler(errors)
 
-    val table = SemanticTable(types = state.typeTable, recordedScopes = state.recordedScopes)
+    val table = SemanticTable(types = state.typeTable, recordedScopes = state.recordedScopes.mapValues(_.scope))
     from.withSemanticState(state).withSemanticTable(table)
   }
 

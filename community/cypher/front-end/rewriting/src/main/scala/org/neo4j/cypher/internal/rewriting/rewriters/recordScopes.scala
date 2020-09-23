@@ -28,8 +28,8 @@ case class recordScopes(semanticState: SemanticState) extends Rewriter {
 
   private val instance: Rewriter = topDown(Rewriter.lift {
     case x: PatternComprehension =>
-      x.withOuterScope(semanticState.recordedScopes(x).symbolDefinitions.map(_.asVariable))
+      x.withOuterScope(semanticState.recordedScopes(x).availableSymbolDefinitions.map(_.asVariable))
     case x: ExistsSubClause =>
-      x.withOuterScope(semanticState.recordedScopes(x).symbolDefinitions.map(_.asVariable))
+      x.withOuterScope(semanticState.recordedScopes(x).availableSymbolDefinitions.map(_.asVariable))
   })
 }

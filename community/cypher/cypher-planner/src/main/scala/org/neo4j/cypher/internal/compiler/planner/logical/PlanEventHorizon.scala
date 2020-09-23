@@ -49,7 +49,7 @@ case object PlanEventHorizon extends EventHorizonPlanner {
     val projectedPlan = query.horizon match {
       case aggregatingProjection: AggregatingQueryProjection =>
         val aggregationPlan = aggregation(selectedPlan, aggregatingProjection, query.interestingOrder, previousInterestingOrder, context)
-        // aggregation is the only case where sort happens after the projection. The provided order of the aggretion plan will include
+        // aggregation is the only case where sort happens after the projection. The provided order of the aggregation plan will include
         // renames of the projection, thus we need to rename this as well for the required order before considering planning a sort.
         val sorted = SortPlanner.ensureSortedPlanWithSolved(aggregationPlan, query.interestingOrder, context)
         val limited = skipAndLimit(sorted, query, context)
