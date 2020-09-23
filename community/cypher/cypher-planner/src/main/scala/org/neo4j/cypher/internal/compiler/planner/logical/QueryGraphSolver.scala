@@ -35,7 +35,7 @@ import org.neo4j.exceptions.InternalException
 trait QueryGraphSolver {
   def plan(queryGraph: QueryGraph, interestingOrder: InterestingOrder, context: LogicalPlanningContext): LogicalPlan
   def planPatternExpression(planArguments: Set[String], expr: PatternExpression, context: LogicalPlanningContext): (LogicalPlan, PatternExpression)
-  def planPatternComprehension(planArguments: Set[String], expr: PatternComprehension, context: LogicalPlanningContext): (LogicalPlan, PatternComprehension)
+  def planPatternComprehension(planArguments: Set[String], expr: PatternComprehension, context: LogicalPlanningContext): LogicalPlan
 }
 
 trait PatternExpressionSolving {
@@ -52,15 +52,14 @@ trait PatternExpressionSolving {
     (plan, namedExpr)
   }
 
-  def planPatternComprehension(planArguments: Set[String], expr: PatternComprehension, context: LogicalPlanningContext): (LogicalPlan, PatternComprehension) = {
+  def planPatternComprehension(planArguments: Set[String], expr: PatternComprehension, context: LogicalPlanningContext): LogicalPlan = {
     val queryGraph = asQueryGraph(expr, context.innerVariableNamer)
     val qgArguments = planArguments intersect queryGraph.idsWithoutOptionalMatchesOrUpdates
     val qg = queryGraph.withArgumentIds(qgArguments).addPredicates(expr.predicate.toIndexedSeq:_*)
-    val plan: LogicalPlan = planQueryGraph(qg, Map.empty, context)
-    (plan, expr)
+    planQueryGraph(qg, Map.empty, context)
   }
 
-  private def planQueryGraph(qg: QueryGraph, namedMap: Map[PatternElement, Variable], context: LogicalPlanningContext) = {
+  private def planQueryGraph(qg: QueryGraph, namedMap: Map[PatternElement, Variable], context: LogicalPlanningContext): LogicalPlan = {
     val namedNodes = namedMap.collect { case (_: NodePattern, identifier) => identifier }
     val namedRels = namedMap.collect { case (_: RelationshipChain, identifier) => identifier }
     val patternPlanningContext = context.forExpressionPlanning(namedNodes, namedRels)
