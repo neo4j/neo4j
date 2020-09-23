@@ -1516,15 +1516,6 @@ public class Operations implements Write, SchemaWrite
         return constraint;
     }
 
-    private void assertAllowsWrites()
-    {
-        AccessMode accessMode = ktx.securityContext().mode();
-        if ( !accessMode.allowsWrites() )
-        {
-            throw accessMode.onViolation( format( "Write operations are not allowed for %s.", ktx.securityContext().description() ) );
-        }
-    }
-
     private void assertAllowsCreateNode( int[] labelIds )
     {
         AccessMode accessMode = ktx.securityContext().mode();

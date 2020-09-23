@@ -197,8 +197,8 @@ class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
     }
 
     /**
-     * If the current user is allowed to traverse all labels used in this index and read the properties no matter what label
-     * the node has, we can skip checking on every node we get back.
+     * If the current user is allowed to traverse all labels used in this index and read the properties
+     * of all nodes in the index, we can skip checking on every node we get back.
      */
     private boolean setupSecurity( IndexDescriptor descriptor )
     {
@@ -207,20 +207,41 @@ class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
             accessMode = read.ktx.securityContext().mode();
         }
         propertyIds = descriptor.schema().getPropertyIds();
+        final long[] labelIds = Arrays.stream( descriptor.schema().getEntityTokenIds() ).mapToLong( i -> i ).toArray();
 
-        for ( int label : descriptor.schema().getEntityTokenIds() )
+        for ( long label : labelIds )
         {
+            /*
+             * If there can be nodes in the index that that are disallowed to traverse,
+             * post-filtering is needed.
+             */
             if ( !accessMode.allowsTraverseAllNodesWithLabel( label ) )
             {
                 return false;
             }
         }
+
         for ( int propId : propertyIds )
         {
-             if ( !accessMode.allowsReadPropertyAllLabels( propId ) )
-             {
-                 return false;
-             }
+            /*
+             * If reading the property is denied for some label,
+             * there can be property values in the index that are disallowed,
+             * so post-filtering is needed.
+             */
+            if ( accessMode.disallowsReadPropertyForSomeLabel( propId ) )
+            {
+                return false;
+            }
+
+            /*
+             * If reading the property is not granted for at least one label of the the index,
+             * all property values of this property in the index are disallowed,
+             * so post-filtering is needed.
+             */
+            if ( !accessMode.allowsReadNodeProperty( () -> Labels.from( labelIds ), propId ) )
+            {
+                return false;
+            }
         }
         return true;
     }
