@@ -26,7 +26,6 @@ import picocli.CommandLine.MutuallyExclusiveArgsException;
 
 import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
-import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.Path;
@@ -76,7 +75,7 @@ class CheckConsistencyCommandIT
     void setUp()
     {
         homeDir = testDirectory.homePath();
-        confPath = testDirectory.directoryPath( "conf" );
+        confPath = testDirectory.directory( "conf" );
         prepareDatabase( neo4jLayout.databaseLayout( "mydb" ) );
     }
 
@@ -238,7 +237,7 @@ class CheckConsistencyCommandIT
                     CommandLine.populateCommand( checkConsistencyCommand, "--database=mydb", "--verbose" );
                     checkConsistencyCommand.execute();
                 } );
-        assertThat( commandFailed.getMessage() ).contains( new File( "/the/report/path" ).toString() );
+        assertThat( commandFailed.getMessage() ).contains( Path.of( "/the/report/path" ).toString() );
     }
 
     @Test
@@ -359,7 +358,7 @@ class CheckConsistencyCommandIT
         CheckConsistencyCommand checkConsistencyCommand =
                 new CheckConsistencyCommand( new ExecutionContext( homeDir, confPath ), consistencyCheckService );
 
-        File backupPath = new File( homeDir.toFile(), "dir/does/not/exist" );
+        Path backupPath = homeDir.resolve( "dir/does/not/exist" );
 
         CommandFailedException commandFailed = assertThrows( CommandFailedException.class, () ->
         {
@@ -374,7 +373,7 @@ class CheckConsistencyCommandIT
     {
         ConsistencyCheckService consistencyCheckService = mock( ConsistencyCheckService.class );
 
-        DatabaseLayout backupLayout = Neo4jLayout.ofFlat( testDirectory.directoryPath( "backup" ) ).databaseLayout( DEFAULT_DATABASE_NAME );
+        DatabaseLayout backupLayout = Neo4jLayout.ofFlat( testDirectory.directory( "backup" ) ).databaseLayout( DEFAULT_DATABASE_NAME );
         prepareBackupDatabase( backupLayout );
         CheckConsistencyCommand checkConsistencyCommand =
                 new CheckConsistencyCommand( new ExecutionContext( homeDir, confPath ), consistencyCheckService );

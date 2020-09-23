@@ -93,7 +93,7 @@ class IndexStatisticsStoreTest
 
     private IndexStatisticsStore openStore( PageCacheTracer pageCacheTracer, String fileName )
     {
-        var statisticsStore = new IndexStatisticsStore( pageCache, testDirectory.filePath( fileName ), immediate(), false, pageCacheTracer );
+        var statisticsStore = new IndexStatisticsStore( pageCache, testDirectory.file( fileName ), immediate(), false, pageCacheTracer );
         return lifeSupport.add( statisticsStore );
     }
 
@@ -284,7 +284,7 @@ class IndexStatisticsStoreTest
     void shouldNotStartWithoutFileIfReadOnly()
     {
         final IndexStatisticsStore indexStatisticsStore =
-                new IndexStatisticsStore( pageCache, testDirectory.filePath( "non-existing" ), immediate(), true, PageCacheTracer.NULL );
+                new IndexStatisticsStore( pageCache, testDirectory.file( "non-existing" ), immediate(), true, PageCacheTracer.NULL );
         final Exception e = assertThrows( Exception.class, indexStatisticsStore::init );
         assertTrue( Exceptions.contains( e, t -> t instanceof NoSuchFileException ) );
         assertTrue( Exceptions.contains( e, t -> t instanceof TreeFileNotFoundException ) );
@@ -294,7 +294,7 @@ class IndexStatisticsStoreTest
     @Test
     void shouldNotWriteAnythingInReadOnlyMode() throws IOException
     {
-        final Path file = testDirectory.filePath( "existing" );
+        final Path file = testDirectory.file( "existing" );
 
         // Create store
         IndexStatisticsStore store = new IndexStatisticsStore( pageCache, file, immediate(), false, PageCacheTracer.NULL );

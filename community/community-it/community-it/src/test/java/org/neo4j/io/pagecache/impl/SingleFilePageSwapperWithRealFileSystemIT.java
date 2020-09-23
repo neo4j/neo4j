@@ -28,7 +28,7 @@ public class SingleFilePageSwapperWithRealFileSystemIT extends SingleFilePageSwa
     @Override
     protected Path getPath()
     {
-        return testDir.filePath( super.getPath().getFileName().toString() );
+        return testDir.file( super.getPath().getFileName().toString() );
     }
 
     @Override

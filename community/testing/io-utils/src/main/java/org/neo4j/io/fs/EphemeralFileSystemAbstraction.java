@@ -21,7 +21,6 @@ package org.neo4j.io.fs;
 
 import org.apache.commons.lang3.ArrayUtils;
 
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -33,6 +32,7 @@ import java.io.Writer;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.file.CopyOption;
+import java.nio.file.DirectoryStream;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.OpenOption;
@@ -384,7 +384,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
-    public Path[] listFiles( Path directory, FilenameFilter filter )
+    public Path[] listFiles( Path directory, DirectoryStream.Filter<Path> filter )
     {
         directory = canonicalFile( directory );
         if ( files.containsKey( directory ) )
@@ -400,9 +400,16 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
             Path path = files.next();
             if ( directory.equals( path.getParent() ) )
             {
-                if ( filter.accept( path.getParent().toFile(), path.getFileName().toString() ) )
+                try
                 {
-                    found.add( path );
+                    if ( filter.accept( path ) )
+                    {
+                        found.add( path );
+                    }
+                }
+                catch ( IOException e )
+                {
+                    throw new UncheckedIOException( e );
                 }
             }
         }

@@ -22,12 +22,12 @@ package org.neo4j.kernel.impl.util;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
-import java.util.stream.Stream;
 
 import org.neo4j.common.Validator;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -63,15 +63,15 @@ public final class Validators
         }
         final Pattern pattern = Pattern.compile( fileWithRegexInName );
         List<Path> files = new ArrayList<>();
-        try ( Stream<Path> list = Files.list( directory ) )
+        try ( DirectoryStream<Path> paths = Files.newDirectoryStream( directory ) )
         {
-            list.forEach( file ->
+            for ( Path path : paths )
             {
-                if ( pattern.matcher( file.getFileName().toString() ).matches() )
+                if ( pattern.matcher( path.getFileName().toString() ).matches() )
                 {
-                    files.add( file );
+                    files.add( path );
                 }
-            } );
+            }
         }
         catch ( IOException e )
         {

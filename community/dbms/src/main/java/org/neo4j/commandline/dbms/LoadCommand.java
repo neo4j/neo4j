@@ -88,7 +88,14 @@ public class LoadCommand extends AbstractCommand
         }
         else
         {
-            loadDump();
+            try
+            {
+                loadDump();
+            }
+            catch ( IOException e )
+            {
+                wrapIOException( e );
+            }
         }
     }
 
@@ -107,12 +114,12 @@ public class LoadCommand extends AbstractCommand
         }
     }
 
-    protected void loadDump()
+    protected void loadDump() throws IOException
     {
         Config config = buildConfig();
 
         DatabaseLayout databaseLayout = Neo4jLayout.of( config ).databaseLayout( database.name() );
-        databaseLayout.databaseDirectory().toFile().mkdirs();
+        ctx.fs().mkdirs( databaseLayout.databaseDirectory() );
         try ( Closeable ignore = LockChecker.checkDatabaseLock( databaseLayout ) )
         {
             deleteIfNecessary( databaseLayout, force );

@@ -320,7 +320,7 @@ abstract class NativeIndexProviderTests
 
     private IndexProvider newProvider( boolean readOnly )
     {
-        return factory.create( pageCache, fs, directoriesByProvider( testDirectory.homePath().toAbsolutePath() ), monitor, immediate(), readOnly );
+        return factory.create( pageCache, fs, directoriesByProvider( testDirectory.absolutePath() ), monitor, immediate(), readOnly );
     }
 
     private IndexProvider newProvider()

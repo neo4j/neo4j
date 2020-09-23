@@ -72,7 +72,7 @@ class SslPolicyLoaderTest
     @BeforeEach
     void setup() throws Exception
     {
-        home = testDirectory.directoryPath( "home" );
+        home = testDirectory.directory( "home" );
         baseDir = home.resolve( "certificates/default" );
         publicCertificateFile = baseDir.resolve( "public.crt" );
         privateKeyFile = baseDir.resolve( "private.key" );

@@ -25,7 +25,6 @@ import org.apache.commons.lang3.SystemUtils;
 import org.apache.commons.lang3.reflect.FieldUtils;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -208,16 +207,6 @@ public class Config implements Configuration
                 fromFile( path, false );
             }
             return this;
-        }
-
-        public Builder fromFileNoThrow( File cfg )
-        {
-            return fromFile( cfg.toPath(), false );
-        }
-
-        public Builder fromFile( File cfg )
-        {
-            return fromFile( cfg.toPath(), true );
         }
 
         public Builder fromFile( Path cfg )

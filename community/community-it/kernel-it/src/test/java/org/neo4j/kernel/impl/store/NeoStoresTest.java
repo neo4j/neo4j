@@ -24,7 +24,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.OpenOption;
@@ -492,8 +491,7 @@ public class NeoStoresTest
         {
             neoStores.getMetaDataStore();
         }
-        File file = databaseLayout.metadataStore().toFile();
-        fileSystem.deleteFile( file.toPath() );
+        fileSystem.deleteFile( databaseLayout.metadataStore() );
 
         assertThrows( StoreNotFoundException.class, () ->
         {

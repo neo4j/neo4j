@@ -78,10 +78,10 @@ abstract class TokenStoreTestTemplate<R extends TokenRecord>
     @BeforeEach
     void setUp() throws IOException
     {
-        Path file = dir.filePath( "label-tokens.db" );
-        Path idFile = dir.filePath( "label-tokens.db.id" );
-        Path namesFile = dir.filePath( "label-tokens.db.names" );
-        Path namesIdFile = dir.filePath( "label-tokens.db.names.id" );
+        Path file = dir.file( "label-tokens.db" );
+        Path idFile = dir.file( "label-tokens.db.id" );
+        Path namesFile = dir.file( "label-tokens.db.names" );
+        Path namesIdFile = dir.file( "label-tokens.db.names.id" );
 
         IdGeneratorFactory generatorFactory = new DefaultIdGeneratorFactory( fs, immediate() );
         LogProvider logProvider = NullLogProvider.getInstance();

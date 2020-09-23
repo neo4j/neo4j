@@ -16,6 +16,7 @@ org.neo4j.dbms.api.DatabaseManagementServiceBuilder::getEdition() java.lang.Stri
 org.neo4j.dbms.api.DatabaseManagementServiceBuilder::getEditionFactory(org.neo4j.configuration.Config) java.util.function.Function<org.neo4j.graphdb.factory.module.GlobalModule,org.neo4j.graphdb.factory.module.edition.AbstractEditionModule> protected
 org.neo4j.dbms.api.DatabaseManagementServiceBuilder::homeDirectory java.nio.file.Path protected
 org.neo4j.dbms.api.DatabaseManagementServiceBuilder::loadPropertiesFromFile(java.lang.String) org.neo4j.dbms.api.DatabaseManagementServiceBuilder public
+org.neo4j.dbms.api.DatabaseManagementServiceBuilder::loadPropertiesFromFile(java.nio.file.Path) org.neo4j.dbms.api.DatabaseManagementServiceBuilder public
 org.neo4j.dbms.api.DatabaseManagementServiceBuilder::monitors org.neo4j.monitoring.Monitors protected
 org.neo4j.dbms.api.DatabaseManagementServiceBuilder::newDatabaseManagementService(org.neo4j.configuration.Config, org.neo4j.graphdb.facade.ExternalDependencies) org.neo4j.dbms.api.DatabaseManagementService protected
 org.neo4j.dbms.api.DatabaseManagementServiceBuilder::setConfig(java.util.Map<org.neo4j.graphdb.config.Setting<?>,java.lang.Object>) org.neo4j.dbms.api.DatabaseManagementServiceBuilder public

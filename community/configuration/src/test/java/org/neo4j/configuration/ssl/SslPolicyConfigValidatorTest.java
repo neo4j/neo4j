@@ -58,7 +58,7 @@ class SslPolicyConfigValidatorTest
         // given
         SslPolicyConfig policyConfig = SslPolicyConfig.forScope( SslPolicyScope.TESTING );
 
-        Path homeDir = testDirectory.directoryPath( "home" );
+        Path homeDir = testDirectory.directory( "home" );
         Config config = Config.newBuilder()
                 .set( GraphDatabaseSettings.neo4j_home, homeDir.toAbsolutePath() )
                 .set( policyConfig.base_directory, Path.of( "certificates/testing" ) )
@@ -101,15 +101,15 @@ class SslPolicyConfigValidatorTest
 
         SslPolicyConfig policyConfig = SslPolicyConfig.forScope( SslPolicyScope.TESTING );
 
-        Path homeDir = testDirectory.directoryPath( "home" );
+        Path homeDir = testDirectory.directory( "home" );
 
         builder.set( GraphDatabaseSettings.neo4j_home, homeDir.toAbsolutePath() );
         builder.set( policyConfig.base_directory, Path.of( "certificates/testing" ) );
 
-        Path privateKey = testDirectory.directoryPath( "path/to/my.key" );
-        Path publicCertificate = testDirectory.directoryPath( "path/to/my.crt" );
-        Path trustedDir = testDirectory.directoryPath( "some/other/path/to/trusted" );
-        Path revokedDir = testDirectory.directoryPath( "some/other/path/to/revoked" );
+        Path privateKey = testDirectory.directory( "path/to/my.key" );
+        Path publicCertificate = testDirectory.directory( "path/to/my.crt" );
+        Path trustedDir = testDirectory.directory( "some/other/path/to/trusted" );
+        Path revokedDir = testDirectory.directory( "some/other/path/to/revoked" );
 
         builder.set( policyConfig.private_key, privateKey.toAbsolutePath() );
         builder.set( policyConfig.public_certificate, publicCertificate.toAbsolutePath() );
@@ -175,7 +175,7 @@ class SslPolicyConfigValidatorTest
     void shouldThrowOnUnknownPolicySetting() throws IOException
     {
         // given
-        Path confFile = testDirectory.createFilePath( "test.conf" );
+        Path confFile = testDirectory.createFile( "test.conf" );
         Files.write( confFile, Arrays.asList(
                 "dbms.ssl.policy.testing.trust_all=xyz",
                 "dbms.ssl.policy.testing.color=blue"
@@ -191,7 +191,7 @@ class SslPolicyConfigValidatorTest
     void shouldThrowOnDirectPolicySetting() throws IOException
     {
         // given
-        Path confFile = testDirectory.createFilePath( "test.conf" );
+        Path confFile = testDirectory.createFile( "test.conf" );
         Files.write( confFile, Arrays.asList(
                 "dbms.ssl.policy.base_directory.trust_all=xyz",
                 "dbms.ssl.policy.base_directory=path"
@@ -208,7 +208,7 @@ class SslPolicyConfigValidatorTest
     void shouldIgnoreUnknownNonPolicySettings() throws IOException
     {
         // given
-        Path confFile = testDirectory.createFilePath( "test.conf" );
+        Path confFile = testDirectory.createFile( "test.conf" );
         Files.write( confFile, Arrays.asList(
                 "dbms.ssl.unknown=xyz",
                 "dbms.ssl.something=xyz",

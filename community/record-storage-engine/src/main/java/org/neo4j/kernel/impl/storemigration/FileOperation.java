@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.Path;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 
@@ -44,17 +44,17 @@ enum FileOperation
          */
         @Override
         public void perform( FileSystemAbstraction fs, String fileName,
-                File fromDirectory, boolean skipNonExistentFromFile,
-                File toDirectory, ExistingTargetStrategy existingTargetStrategy )
+                Path fromDirectory, boolean skipNonExistentFromFile,
+                Path toDirectory, ExistingTargetStrategy existingTargetStrategy )
                 throws IOException
         {
-            File fromFile = fromFile( fs, fromDirectory, fileName, skipNonExistentFromFile );
+            Path fromFile = fromFile( fs, fromDirectory, fileName, skipNonExistentFromFile );
             if ( fromFile != null )
             {
-                File toFile = toFile( fs, toDirectory, fileName, existingTargetStrategy );
+                Path toFile = toFile( fs, toDirectory, fileName, existingTargetStrategy );
                 if ( toFile != null )
                 {
-                    fs.copyFile( fromFile.toPath(), toFile.toPath() );
+                    fs.copyFile( fromFile, toFile );
                 }
             }
         }
@@ -72,16 +72,16 @@ enum FileOperation
          */
         @Override
         public void perform( FileSystemAbstraction fs, String fileName,
-                File fromDirectory, boolean skipNonExistentFromFile,
-                File toDirectory, ExistingTargetStrategy existingTargetStrategy )
+                Path fromDirectory, boolean skipNonExistentFromFile,
+                Path toDirectory, ExistingTargetStrategy existingTargetStrategy )
                 throws IOException
         {
-            File fromFile = fromFile( fs, fromDirectory, fileName, skipNonExistentFromFile );
+            Path fromFile = fromFile( fs, fromDirectory, fileName, skipNonExistentFromFile );
             if ( fromFile != null )
             {
                 if ( toFile( fs, toDirectory, fileName, existingTargetStrategy ) != null )
                 {
-                    fs.moveToDirectory( fromFile.toPath(), toDirectory.toPath() );
+                    fs.moveToDirectory( fromFile, toDirectory );
                 }
             }
         }
@@ -90,25 +90,25 @@ enum FileOperation
     {
         @Override
         public void perform( FileSystemAbstraction fs, String fileName,
-                File directory, boolean skipNonExistentFromFile,
-                File unusedFile, ExistingTargetStrategy unused )
+                Path directory, boolean skipNonExistentFromFile,
+                Path unusedFile, ExistingTargetStrategy unused )
         {
-            File file = fromFile( fs, directory, fileName, skipNonExistentFromFile );
+            Path file = fromFile( fs, directory, fileName, skipNonExistentFromFile );
             if ( file != null )
             {
-                fs.deleteFile( file.toPath() );
+                fs.deleteFile( file );
             }
         }
     };
 
     public abstract void perform( FileSystemAbstraction fs, String fileName,
-            File fromDirectory, boolean skipNonExistentFromFile,
-            File toDirectory, ExistingTargetStrategy existingTargetStrategy ) throws IOException;
+            Path fromDirectory, boolean skipNonExistentFromFile,
+            Path toDirectory, ExistingTargetStrategy existingTargetStrategy ) throws IOException;
 
-    private static File fromFile( FileSystemAbstraction fs, File directory, String name, boolean skipNonExistent )
+    private static Path fromFile( FileSystemAbstraction fs, Path directory, String name, boolean skipNonExistent )
     {
-        File fromFile = new File( directory, name );
-        if ( skipNonExistent && !fs.fileExists( fromFile.toPath() ) )
+        Path fromFile = directory.resolve( name );
+        if ( skipNonExistent && !fs.fileExists( fromFile ) )
         {
             return null;
         }
@@ -117,18 +117,18 @@ enum FileOperation
         return fromFile;
     }
 
-    private static File toFile( FileSystemAbstraction fs, File directory, String name,
+    private static Path toFile( FileSystemAbstraction fs, Path directory, String name,
             ExistingTargetStrategy existingTargetStrategy ) throws FileAlreadyExistsException
     {
-        File file = new File( directory, name );
-        if ( fs.fileExists( file.toPath() ) )
+        Path file = directory.resolve( name );
+        if ( fs.fileExists( file ) )
         {
             switch ( existingTargetStrategy )
             {
             case FAIL:
-                throw new FileAlreadyExistsException( file.getAbsolutePath() );
+                throw new FileAlreadyExistsException( file.toAbsolutePath().toString() );
             case OVERWRITE:
-                fs.deleteFile( file.toPath() );
+                fs.deleteFile( file );
                 return file;
             case SKIP:
                 return null;

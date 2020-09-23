@@ -49,16 +49,16 @@ class ZipUtilsTest
     @Test
     void doNotCreateZipArchiveForNonExistentSource() throws IOException
     {
-        Path archiveFile = testDirectory.filePath( "archive.zip" );
-        ZipUtils.zip( fileSystem, testDirectory.filePath( "doesNotExist" ), archiveFile );
+        Path archiveFile = testDirectory.file( "archive.zip" );
+        ZipUtils.zip( fileSystem, testDirectory.file( "doesNotExist" ), archiveFile );
         assertFalse( fileSystem.fileExists( archiveFile ) );
     }
 
     @Test
     void doNotCreateZipArchiveForEmptyDirectory() throws IOException
     {
-        Path archiveFile = testDirectory.filePath( "archive.zip" );
-        Path emptyDirectory = testDirectory.directoryPath( "emptyDirectory" );
+        Path archiveFile = testDirectory.file( "archive.zip" );
+        Path emptyDirectory = testDirectory.directory( "emptyDirectory" );
         ZipUtils.zip( fileSystem, emptyDirectory, archiveFile );
         assertFalse( fileSystem.fileExists( archiveFile ) );
     }
@@ -66,8 +66,8 @@ class ZipUtilsTest
     @Test
     void archiveDirectory() throws IOException
     {
-        Path archiveFile = testDirectory.filePath( "directoryArchive.zip" );
-        Path directory = testDirectory.directoryPath( "directory" );
+        Path archiveFile = testDirectory.file( "directoryArchive.zip" );
+        Path directory = testDirectory.directory( "directory" );
         ((StoreChannel) fileSystem.write( directory.resolve( "a" ) )).close();
         ((StoreChannel) fileSystem.write( directory.resolve( "b" ) )).close();
         ZipUtils.zip( fileSystem, directory, archiveFile );
@@ -79,8 +79,8 @@ class ZipUtilsTest
     @Test
     void archiveDirectoryWithSubdirectories() throws IOException
     {
-        Path archiveFile = testDirectory.filePath( "directoryWithSubdirectoriesArchive.zip" );
-        Path directoryArchive = testDirectory.directoryPath( "directoryWithSubdirs" );
+        Path archiveFile = testDirectory.file( "directoryWithSubdirectoriesArchive.zip" );
+        Path directoryArchive = testDirectory.directory( "directoryWithSubdirs" );
         Path subdir1 = directoryArchive.resolve( "subdir1" );
         Path subdir2 = directoryArchive.resolve( "subdir" );
         fileSystem.mkdir( subdir1 );
@@ -99,8 +99,8 @@ class ZipUtilsTest
     @Test
     void archiveFile() throws IOException
     {
-        Path archiveFile = testDirectory.filePath( "fileArchive.zip" );
-        Path aFile = testDirectory.filePath( "a" );
+        Path archiveFile = testDirectory.file( "fileArchive.zip" );
+        Path aFile = testDirectory.file( "a" );
         ((StoreChannel) fileSystem.write( aFile )).close();
         ZipUtils.zip( fileSystem, aFile, archiveFile );
 
@@ -111,8 +111,8 @@ class ZipUtilsTest
     @Test
     public void supportSpacesInDestinationPath() throws IOException
     {
-        Path archiveFile = testDirectory.filePath( "file archive.zip" );
-        Path aFile = testDirectory.filePath( "a" );
+        Path archiveFile = testDirectory.file( "file archive.zip" );
+        Path aFile = testDirectory.file( "a" );
         ((StoreChannel) fileSystem.write( aFile )).close();
         ZipUtils.zip( fileSystem, aFile, archiveFile );
     }

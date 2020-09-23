@@ -23,7 +23,6 @@ import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -61,7 +60,7 @@ class FileURLAccessRule implements URLAccessRule
 
         try
         {
-            final Path urlPath = Paths.get( url.toURI() );
+            final Path urlPath = Path.of( url.toURI() );
             final Path rootPath = root.normalize().toAbsolutePath();
             // Normalize to prevent dirty tricks like '..'
             final Path result =

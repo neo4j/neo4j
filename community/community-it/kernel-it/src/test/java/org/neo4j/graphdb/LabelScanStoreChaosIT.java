@@ -23,7 +23,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.Set;
-import java.nio.file.Path;
 
 import org.neo4j.internal.index.label.TokenScanStoreTest;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -86,7 +85,7 @@ public class LabelScanStoreChaosIT
         assertEquals( asSet( node ), getAllNodesWithLabel( Labels.First ) );
     }
 
-    private static Path storeFile( DatabaseLayout databaseLayout )
+    private static java.nio.file.Path storeFile( DatabaseLayout databaseLayout )
     {
         return databaseLayout.labelScanStore();
     }
@@ -109,9 +108,9 @@ public class LabelScanStoreChaosIT
         }
     }
 
-    private void scrambleFile( Path path )
+    private void scrambleFile( java.nio.file.Path path )
     {
-        TokenScanStoreTest.scrambleFile( random.random(), path.toFile() );
+        TokenScanStoreTest.scrambleFile( random.random(), path );
     }
 
     private void deleteNode( Node node )

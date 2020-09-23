@@ -135,7 +135,7 @@ class IndexKeyStorageTest
     void shouldNotCreateFileIfNoData() throws IOException
     {
         FileSystemAbstraction fs = directory.getFileSystem();
-        Path makeSureImDeleted = directory.filePath( "makeSureImDeleted" );
+        Path makeSureImDeleted = directory.file( "makeSureImDeleted" );
         try ( IndexKeyStorage<GenericKey> keyStorage = keyStorage( makeSureImDeleted ) )
         {
             assertFalse( fs.fileExists( makeSureImDeleted ), "Expected this file to exist now so that we can assert deletion later." );
@@ -149,7 +149,7 @@ class IndexKeyStorageTest
     void shouldDeleteFileOnCloseWithData() throws IOException
     {
         FileSystemAbstraction fs = directory.getFileSystem();
-        Path makeSureImDeleted = directory.filePath( "makeSureImDeleted" );
+        Path makeSureImDeleted = directory.file( "makeSureImDeleted" );
         try ( IndexKeyStorage<GenericKey> keyStorage = keyStorage( makeSureImDeleted ) )
         {
             keyStorage.add( randomKey( 1 ) );
@@ -163,7 +163,7 @@ class IndexKeyStorageTest
     void shouldDeleteFileOnCloseWithDataBeforeDoneAdding() throws IOException
     {
         FileSystemAbstraction fs = directory.getFileSystem();
-        Path makeSureImDeleted = directory.filePath( "makeSureImDeleted" );
+        Path makeSureImDeleted = directory.file( "makeSureImDeleted" );
         try ( IndexKeyStorage<GenericKey> keyStorage = keyStorage( makeSureImDeleted ) )
         {
             keyStorage.add( randomKey( 1 ) );
@@ -177,7 +177,7 @@ class IndexKeyStorageTest
     {
         FileSystemAbstraction fs = directory.getFileSystem();
         LocalMemoryTracker allocationTracker = new LocalMemoryTracker();
-        Path file = directory.filePath( "file" );
+        Path file = directory.file( "file" );
         try ( UnsafeDirectByteBufferAllocator bufferFactory = new UnsafeDirectByteBufferAllocator();
               IndexKeyStorage<GenericKey> keyStorage = keyStorage( file, bufferFactory, allocationTracker ) )
         {
@@ -219,7 +219,7 @@ class IndexKeyStorageTest
 
     private IndexKeyStorage<GenericKey> keyStorage()
     {
-        return keyStorage( directory.filePath( "file" ) );
+        return keyStorage( directory.file( "file" ) );
     }
 
     private IndexKeyStorage<GenericKey> keyStorage( Path file )

@@ -20,8 +20,6 @@
 package org.neo4j.dbms.api;
 
 import java.io.File;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -187,27 +185,24 @@ public class DatabaseManagementServiceBuilder
         return this;
     }
 
+    /**
+     * @deprecated Use {@link #loadPropertiesFromFile(Path)} instead;
+     */
+    @Deprecated( forRemoval = true )
     public DatabaseManagementServiceBuilder loadPropertiesFromFile( String fileName )
     {
-        try
-        {
-            return loadPropertiesFromURL( new File( fileName ).toURI().toURL() );
-        }
-        catch ( MalformedURLException e )
-        {
-            throw new IllegalArgumentException( "Illegal filename:" + fileName, e );
-        }
+        return loadPropertiesFromFile( Path.of( fileName ) );
     }
 
-    private DatabaseManagementServiceBuilder loadPropertiesFromURL( URL url )
+    public DatabaseManagementServiceBuilder loadPropertiesFromFile( Path path )
     {
         try
         {
-            config.fromFileNoThrow( Path.of( url.toURI() ) );
+            config.fromFileNoThrow( path );
         }
         catch ( Exception e )
         {
-            throw new IllegalArgumentException( "Unable to load " + url, e );
+            throw new IllegalArgumentException( "Unable to load " + path, e );
         }
         return this;
     }

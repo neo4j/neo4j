@@ -22,7 +22,6 @@ package org.neo4j.metatest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 
@@ -47,14 +46,14 @@ class TestEphemeralFileChannel
     @Test
     void smoke() throws Exception
     {
-        StoreChannel channel = fileSystem.write( new File( "yo" ).toPath() );
+        StoreChannel channel = fileSystem.write( Path.of( "yo" ) );
 
         // Clear it because we depend on it to be zeros where we haven't written
         ByteBuffer buffer = allocate( 23, INSTANCE );
         buffer.put( new byte[23] ); // zeros
         buffer.flip();
         channel.write( buffer );
-        channel = fileSystem.write( new File( "yo" ).toPath() );
+        channel = fileSystem.write( Path.of( "yo" ) );
         long longValue = 1234567890L;
 
         // [1].....[2]........[1234567890L]...
@@ -109,14 +108,14 @@ class TestEphemeralFileChannel
     void absoluteVersusRelative() throws Exception
     {
         // GIVEN
-        File file = new File( "myfile" );
-        StoreChannel channel = fileSystem.write( file.toPath() );
+        Path file = Path.of( "myfile" ).toAbsolutePath();
+        StoreChannel channel = fileSystem.write( file );
         byte[] bytes = "test".getBytes();
         channel.write( ByteBuffer.wrap( bytes ) );
         channel.close();
 
         // WHEN
-        channel = fileSystem.read( new File( file.getAbsolutePath() ).toPath() );
+        channel = fileSystem.read( file );
         byte[] readBytes = new byte[bytes.length];
         channel.readAll( ByteBuffer.wrap( readBytes ) );
 

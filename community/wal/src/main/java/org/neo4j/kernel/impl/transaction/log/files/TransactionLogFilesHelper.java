@@ -19,8 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.log.files;
 
-import java.io.File;
-import java.io.FilenameFilter;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.function.Predicate;
@@ -36,7 +35,7 @@ public class TransactionLogFilesHelper
 {
     public static final String DEFAULT_NAME = "neostore.transaction.db";
     public static final String CHECKPOINT_FILE_PREFIX = "checkpoint";
-    static final FilenameFilter DEFAULT_FILENAME_FILTER = new LogicalLogFilenameFilter( quote( DEFAULT_NAME ), quote( CHECKPOINT_FILE_PREFIX ) );
+    static final DirectoryStream.Filter<Path> DEFAULT_FILENAME_FILTER = new LogicalLogFilenameFilter( quote( DEFAULT_NAME ), quote( CHECKPOINT_FILE_PREFIX ) );
     public static final Predicate<String> DEFAULT_FILENAME_PREDICATE = file -> file.startsWith( DEFAULT_NAME ) || file.startsWith( CHECKPOINT_FILE_PREFIX );
 
     private static final String VERSION_SUFFIX = ".";
@@ -45,7 +44,7 @@ public class TransactionLogFilesHelper
 
     private final Path logBaseName;
     private final FileSystemAbstraction fileSystem;
-    private final FilenameFilter filenameFilter;
+    private final DirectoryStream.Filter<Path> filenameFilter;
 
     public TransactionLogFilesHelper( FileSystemAbstraction fileSystem, Path directory )
     {
@@ -75,7 +74,7 @@ public class TransactionLogFilesHelper
         return Long.parseLong( historyLogFilename.substring( index + VERSION_SUFFIX.length() ) );
     }
 
-    FilenameFilter getLogFilenameFilter()
+    DirectoryStream.Filter<Path> getLogFilenameFilter()
     {
         return filenameFilter;
     }
@@ -98,7 +97,7 @@ public class TransactionLogFilesHelper
         }
     }
 
-    private static final class LogicalLogFilenameFilter implements FilenameFilter
+    private static final class LogicalLogFilenameFilter implements DirectoryStream.Filter<Path>
     {
         private final Pattern[] patterns;
 
@@ -109,11 +108,11 @@ public class TransactionLogFilesHelper
         }
 
         @Override
-        public boolean accept( File dir, String name )
+        public boolean accept( Path entry )
         {
             for ( Pattern pattern : patterns )
             {
-                if ( pattern.matcher( name ).matches() )
+                if ( pattern.matcher( entry.getFileName().toString() ).matches() )
                 {
                     return true;
                 }

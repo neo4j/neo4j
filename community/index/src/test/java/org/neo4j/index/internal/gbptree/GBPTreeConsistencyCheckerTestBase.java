@@ -77,7 +77,7 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
     @BeforeEach
     void setUp()
     {
-        indexFile = directory.filePath( "index" );
+        indexFile = directory.file( "index" );
         pageCache = createPageCache();
         layout = getLayout();
         randomValues = random.randomValues();

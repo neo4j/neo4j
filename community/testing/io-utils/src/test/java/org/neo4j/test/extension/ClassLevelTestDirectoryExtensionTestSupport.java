@@ -24,7 +24,6 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.TestInstance;
 
-import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -48,8 +47,7 @@ class ClassLevelTestDirectoryExtensionTestSupport
     @BeforeAll
     void setUp() throws IOException
     {
-        File file = testDirectory.createFile( "f" );
-        channel = fs.write( file.toPath() );
+        channel = fs.write( testDirectory.createFile( "f" ) );
     }
 
     @AfterAll

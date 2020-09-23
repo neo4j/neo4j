@@ -129,7 +129,7 @@ class LuceneSchemaIndexIT
     {
         try ( SchemaIndex index = LuceneSchemaIndexBuilder.create( descriptor, config )
                 .withFileSystem( fileSystem )
-                .withIndexRootFolder( testDir.directoryPath( "partitionedIndexForUpdates" ) )
+                .withIndexRootFolder( testDir.directory( "partitionedIndexForUpdates" ) )
                 .build() )
         {
             index.create();
@@ -148,7 +148,7 @@ class LuceneSchemaIndexIT
     @Test
     void createPopulateDropIndex() throws Exception
     {
-        Path crudOperation = testDir.directoryPath( "indexCRUDOperation" );
+        Path crudOperation = testDir.directory( "indexCRUDOperation" );
         try ( SchemaIndex crudIndex = LuceneSchemaIndexBuilder.create( descriptor, config )
                 .withFileSystem( fileSystem )
                 .withIndexRootFolder( crudOperation.resolve( "crudIndex" ) )
@@ -174,7 +174,7 @@ class LuceneSchemaIndexIT
     {
         try ( SchemaIndex failedIndex = LuceneSchemaIndexBuilder.create( descriptor, config )
                 .withFileSystem( fileSystem )
-                .withIndexRootFolder( testDir.directoryPath( "failedIndexFolder" ).resolve( "failedIndex" ) )
+                .withIndexRootFolder( testDir.directory( "failedIndexFolder" ).resolve( "failedIndex" ) )
                 .build() )
         {
             failedIndex.open();
@@ -193,7 +193,7 @@ class LuceneSchemaIndexIT
     @Test
     void openClosePartitionedIndex() throws IOException
     {
-        Path indexRootFolder = testDir.directoryPath( "reopenIndexFolder" ).resolve( "reopenIndex" );
+        Path indexRootFolder = testDir.directory( "reopenIndexFolder" ).resolve( "reopenIndex" );
         LuceneSchemaIndexBuilder luceneSchemaIndexBuilder =
                 LuceneSchemaIndexBuilder.create( descriptor, config ).withFileSystem( fileSystem ).withIndexRootFolder( indexRootFolder );
         try ( SchemaIndex reopenIndex = luceneSchemaIndexBuilder.build() )
@@ -242,7 +242,7 @@ class LuceneSchemaIndexIT
     {
         SchemaIndex index = LuceneSchemaIndexBuilder.create( descriptor, config )
                 .withFileSystem( fileSystem )
-                .withIndexRootFolder( testDir.directoryPath( "testIndex" ) )
+                .withIndexRootFolder( testDir.directory( "testIndex" ) )
                 .build();
         index.create();
         index.open();
@@ -251,7 +251,7 @@ class LuceneSchemaIndexIT
 
     private List<String> asFileInsidePartitionNames( ResourceIterator<Path> resources )
     {
-        int testDirectoryPathLength = testDir.homeDir().getAbsolutePath().length();
+        int testDirectoryPathLength = testDir.absolutePath().toString().length();
         return asList( resources ).stream()
                 .map( file -> file.toAbsolutePath().toString().substring( testDirectoryPathLength ) )
                 .collect( Collectors.toList() );

@@ -61,8 +61,8 @@ class SetDefaultAdminCommandTest
     @BeforeEach
     void setup() throws IOException, InvalidArgumentsException
     {
-        command = new SetDefaultAdminCommand( new ExecutionContext( testDir.directoryPath( "home" ),
-            testDir.directoryPath( "conf" ), mock( PrintStream.class ), mock( PrintStream.class ), fileSystem ) );
+        command = new SetDefaultAdminCommand( new ExecutionContext( testDir.directory( "home" ),
+            testDir.directory( "conf" ), mock( PrintStream.class ), mock( PrintStream.class ), fileSystem ) );
         final Config config = command.loadNeo4jConfig();
         UserRepository users = CommunitySecurityModule.getUserRepository( config, NullLogProvider.getInstance(),
             fileSystem );

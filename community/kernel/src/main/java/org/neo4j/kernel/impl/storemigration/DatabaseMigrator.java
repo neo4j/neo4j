@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
+import java.io.IOException;
+
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -83,7 +85,7 @@ public class DatabaseMigrator
      *
      * @param forceUpgrade Ignore the value of the {@link GraphDatabaseSettings#allow_upgrade} setting.
      */
-    public void migrate( boolean forceUpgrade )
+    public void migrate( boolean forceUpgrade ) throws IOException
     {
         StoreVersionCheck versionCheck = storageEngineFactory.versionCheck( fs, databaseLayout, config, pageCache, logService, pageCacheTracer );
         LogsUpgrader logsUpgrader = new LogsUpgrader(

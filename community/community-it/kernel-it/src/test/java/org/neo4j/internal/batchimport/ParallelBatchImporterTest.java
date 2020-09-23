@@ -26,10 +26,11 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.lang.reflect.Array;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -227,8 +228,8 @@ public class ParallelBatchImporterTest
             jobScheduler.close();
             if ( !successful )
             {
-                File failureFile = new File( databaseLayout.databaseDirectory().toFile(), "input" );
-                try ( PrintStream out = new PrintStream( failureFile ) )
+                Path failureFile = databaseLayout.databaseDirectory().resolve( "input" );
+                try ( PrintStream out = new PrintStream( Files.newOutputStream( failureFile ) ) )
                 {
                     out.println( "Seed used in this failing run: " + random.seed() );
                     out.println( inputIdGenerator );

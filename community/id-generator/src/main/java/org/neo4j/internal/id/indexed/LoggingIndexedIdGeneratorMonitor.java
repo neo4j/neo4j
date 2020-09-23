@@ -260,7 +260,7 @@ public class LoggingIndexedIdGeneratorMonitor implements IndexedIdGenerator.Moni
             // Prune
             long time = clock.millis();
             long threshold = time - pruneThreshold;
-            for ( Path file : fs.listFiles( path.getParent(), ( dir, name ) -> name.startsWith( path.getFileName() + "-" ) ) )
+            for ( Path file : fs.listFiles( path.getParent(), file -> file.getFileName().toString().startsWith( path.getFileName() + "-" ) ) )
             {
                 if ( millisOf( file ) < threshold )
                 {
@@ -379,7 +379,7 @@ public class LoggingIndexedIdGeneratorMonitor implements IndexedIdGenerator.Moni
     static void dump( FileSystemAbstraction fs, Path baseFile, Dumper dumper ) throws IOException
     {
         Path[] files = fs.listFiles( baseFile.getParent(),
-                ( dir, name ) -> name.startsWith( baseFile.getFileName().toString() ) && !name.endsWith( ".txt" ) );
+                file -> file.getFileName().toString().startsWith( baseFile.getFileName().toString() ) && !file.getFileName().toString().endsWith( ".txt" ) );
         Arrays.sort( files, comparing( LoggingIndexedIdGeneratorMonitor::millisOf ) );
         for ( Path file : files )
         {

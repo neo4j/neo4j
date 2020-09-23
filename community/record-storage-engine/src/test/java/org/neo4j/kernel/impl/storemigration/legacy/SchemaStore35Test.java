@@ -88,7 +88,7 @@ class SchemaStore35Test
         Config config = Config.defaults();
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs, immediate() );
         NullLogProvider logProvider = NullLogProvider.getInstance();
-        store = new SchemaStore35( testDirectory.filePath( "schema35" ), testDirectory.filePath( "schema35.db.id" ), config, IdType.SCHEMA,
+        store = new SchemaStore35( testDirectory.file( "schema35" ), testDirectory.file( "schema35.db.id" ), config, IdType.SCHEMA,
                 idGeneratorFactory, pageCache, logProvider, StandardV3_4.RECORD_FORMATS, immutable.empty() );
         store.initialise( true, NULL );
     }

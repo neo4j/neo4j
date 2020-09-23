@@ -59,10 +59,10 @@ class CsvImporterTest
     void writesReportToSpecifiedReportFile() throws Exception
     {
 
-        Path logDir = testDir.directoryPath( "logs" );
-        Path reportLocation = testDir.filePath( "the_report" );
+        Path logDir = testDir.directory( "logs" );
+        Path reportLocation = testDir.file( "the_report" );
 
-        Path inputFile = testDir.filePath( "foobar.csv" );
+        Path inputFile = testDir.file( "foobar.csv" );
         List<String> lines = Collections.singletonList( "foo\\tbar\\tbaz" );
         Files.write( inputFile, lines, Charset.defaultCharset() );
 
@@ -85,9 +85,9 @@ class CsvImporterTest
     @Test
     void tracePageCacheAccessOnCsvImport() throws IOException
     {
-        Path logDir = testDir.directoryPath( "logs" );
-        Path reportLocation = testDir.filePath( "the_report" );
-        Path inputFile = testDir.filePath( "foobar.csv" );
+        Path logDir = testDir.directory( "logs" );
+        Path reportLocation = testDir.file( "the_report" );
+        Path inputFile = testDir.file( "foobar.csv" );
 
         List<String> lines = List.of( "foo;bar;baz" );
         Files.write( inputFile, lines, Charset.defaultCharset() );

@@ -25,7 +25,6 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
@@ -138,9 +137,9 @@ public class IndexBackupIT
         generateData( label );
         forceCheckpoint( checkPointer );
 
-        assertTrue( firstSnapshotFileNames.stream().map( File::new ).allMatch( file5 -> fileSystem.fileExists( file5.toPath() ) ) );
-        assertTrue( secondSnapshotFileNames.stream().map( File::new ).allMatch( file4 -> fileSystem.fileExists( file4.toPath() ) ) );
-        assertTrue( thirdSnapshotFileNames.stream().map( File::new ).allMatch( file3 -> fileSystem.fileExists( file3.toPath() ) ) );
+        assertTrue( firstSnapshotFileNames.stream().map( Path::of ).allMatch( file5 -> fileSystem.fileExists( file5 ) ) );
+        assertTrue( secondSnapshotFileNames.stream().map( Path::of ).allMatch( file4 -> fileSystem.fileExists( file4 ) ) );
+        assertTrue( thirdSnapshotFileNames.stream().map( Path::of ).allMatch( file3 -> fileSystem.fileExists( file3 ) ) );
 
         firstCheckpointSnapshot.close();
         secondCheckpointSnapshot.close();
@@ -149,9 +148,9 @@ public class IndexBackupIT
         generateData( label );
         forceCheckpoint( checkPointer );
 
-        assertFalse( firstSnapshotFileNames.stream().map( File::new ).anyMatch( file2 -> fileSystem.fileExists( file2.toPath() ) ) );
-        assertFalse( secondSnapshotFileNames.stream().map( File::new ).anyMatch( file1 -> fileSystem.fileExists( file1.toPath() ) ) );
-        assertFalse( thirdSnapshotFileNames.stream().map( File::new ).anyMatch( file -> fileSystem.fileExists( file.toPath() ) ) );
+        assertFalse( firstSnapshotFileNames.stream().map( Path::of ).anyMatch( file2 -> fileSystem.fileExists( file2 ) ) );
+        assertFalse( secondSnapshotFileNames.stream().map( Path::of ).anyMatch( file1 -> fileSystem.fileExists( file1 ) ) );
+        assertFalse( thirdSnapshotFileNames.stream().map( Path::of ).anyMatch( file -> fileSystem.fileExists( file ) ) );
     }
 
     private void compareSnapshotFiles( Set<String> firstSnapshotFileNames, Set<String> secondSnapshotFileNames,
@@ -169,7 +168,7 @@ public class IndexBackupIT
             assertTrue( secondSnapshotFileNames.stream().anyMatch( name -> name.startsWith( path ) ),
                     "Snapshot should contain files for index in path: " + path + "." +
                     describeFileSets( firstSnapshotFileNames, secondSnapshotFileNames ) );
-            assertTrue( fileSystem.fileExists( new File( fileName ).toPath() ), format( "Snapshot segment file '%s' should exist.", fileName ) );
+            assertTrue( fileSystem.fileExists( Path.of( fileName ) ), format( "Snapshot segment file '%s' should exist.", fileName ) );
         }
     }
 

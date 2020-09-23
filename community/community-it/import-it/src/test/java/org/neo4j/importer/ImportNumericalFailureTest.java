@@ -26,8 +26,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import picocli.CommandLine;
 
-import java.io.File;
 import java.io.PrintStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -92,15 +92,15 @@ class ImportNumericalFailureTest
     void failImportOnInvalidData( String type, String val, String expectedError ) throws Exception
     {
 
-        File data = file( databaseLayout, fileName( "whitespace.csv" ) );
-        try ( PrintStream writer = new PrintStream( data ) )
+        Path data = file( databaseLayout, fileName( "whitespace.csv" ) );
+        try ( PrintStream writer = new PrintStream( Files.newOutputStream( data ) ) )
         {
             writer.println( ":LABEL,adult:" + type );
             writer.println( "PERSON," + val );
         }
 
         Exception exception = assertThrows( Exception.class,
-                () -> runImport( databaseLayout.databaseDirectory().toAbsolutePath(), "--quote", "'", "--nodes", data.getAbsolutePath() ) );
+                () -> runImport( databaseLayout.databaseDirectory().toAbsolutePath(), "--quote", "'", "--nodes", data.toAbsolutePath().toString() ) );
         assertExceptionContains( exception, expectedError, InputException.class );
     }
 
@@ -109,9 +109,9 @@ class ImportNumericalFailureTest
         return name;
     }
 
-    private File file( DatabaseLayout databaseLayout, String localname )
+    private Path file( DatabaseLayout databaseLayout, String localname )
     {
-        return databaseLayout.file( localname ).toFile();
+        return databaseLayout.file( localname );
     }
 
     private static void runImport( Path homeDir, String... arguments )

@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
@@ -47,13 +46,13 @@ public final class MigrationTestUtils
     {
     }
 
-    public static void changeVersionNumber( FileSystemAbstraction fileSystem, File storeFile, String versionString )
+    public static void changeVersionNumber( FileSystemAbstraction fileSystem, Path storeFile, String versionString )
             throws IOException
     {
         byte[] versionBytes = UTF8.encode( versionString );
-        try ( StoreChannel fileChannel = fileSystem.write( storeFile.toPath() ) )
+        try ( StoreChannel fileChannel = fileSystem.write( storeFile ) )
         {
-            fileChannel.position( fileSystem.getFileSize( storeFile.toPath() ) - versionBytes.length );
+            fileChannel.position( fileSystem.getFileSize( storeFile ) - versionBytes.length );
             fileChannel.writeAll( ByteBuffer.wrap( versionBytes ) );
         }
     }

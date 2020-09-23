@@ -24,7 +24,6 @@ import org.junit.jupiter.api.Test;
 import picocli.CommandLine;
 
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.FileVisitResult;
@@ -70,6 +69,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex;
 import static org.neo4j.configuration.GraphDatabaseSettings.data_directory;
+import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_max_off_heap_memory;
@@ -209,7 +209,7 @@ class MemoryRecommendationsCommandTest
         Path homeDir = testDirectory.homePath();
         Path configDir = homeDir.resolve( "conf" );
         Path configFile = configDir.resolve( DEFAULT_CONFIG_FILE_NAME );
-        configDir.toFile().mkdirs();
+        Files.createDirectories( configDir );
         store( stringMap( data_directory.name(), homeDir.toString() ), configFile );
 
         MemoryRecommendationsCommand command = new MemoryRecommendationsCommand(
@@ -235,7 +235,7 @@ class MemoryRecommendationsCommandTest
         Path homeDir = testDirectory.homePath();
         Path configDir = homeDir.resolve( "conf" );
         Path configFile = configDir.resolve( DEFAULT_CONFIG_FILE_NAME );
-        configDir.toFile().mkdirs();
+        Files.createDirectories( configDir );
         store( stringMap( data_directory.name(), homeDir.toString(),
                 tx_state_memory_allocation.name(), TransactionStateMemoryAllocation.ON_HEAP.name() ), configFile );
 
@@ -278,15 +278,12 @@ class MemoryRecommendationsCommandTest
     void mustPrintMinimalPageCacheMemorySettingForConfiguredDb() throws Exception
     {
         // given
-        Path homeDir = testDirectory.homePath();
+        Path homeDir = neo4jLayout.homeDirectory();
         Path configDir = homeDir.resolve( "conf" );
-        configDir.toFile().mkdirs();
+        Files.createDirectories( configDir );
         Path configFile = configDir.resolve( DEFAULT_CONFIG_FILE_NAME );
-        String databaseName = "mydb";
-        store( stringMap( data_directory.name(), homeDir.toString() ), configFile );
-        DatabaseLayout databaseLayout = neo4jLayout.databaseLayout( databaseName );
-        DatabaseLayout systemLayout = neo4jLayout.databaseLayout( SYSTEM_DATABASE_NAME );
-        createDatabaseWithNativeIndexes( databaseLayout );
+        Files.createFile( configFile );
+        createDatabaseWithNativeIndexes( homeDir, DEFAULT_DATABASE_NAME );
         PrintStream output = mock( PrintStream.class );
         MemoryRecommendationsCommand command = new MemoryRecommendationsCommand(
                 new ExecutionContext( homeDir, configDir, output, mock( PrintStream.class ), testDirectory.getFileSystem() ) );
@@ -302,6 +299,8 @@ class MemoryRecommendationsCommandTest
         verify( output ).println( contains( max_heap_size.name() + "=" + heap ) );
         verify( output ).println( contains( pagecache_memory.name() + "=" + pagecache ) );
 
+        DatabaseLayout databaseLayout = neo4jLayout.databaseLayout( DEFAULT_DATABASE_NAME );
+        DatabaseLayout systemLayout = neo4jLayout.databaseLayout( SYSTEM_DATABASE_NAME );
         long[] expectedSizes = calculatePageCacheFileSize( databaseLayout );
         long[] systemSizes = calculatePageCacheFileSize( systemLayout );
         long expectedPageCacheSize = expectedSizes[0] + systemSizes[0];
@@ -315,19 +314,18 @@ class MemoryRecommendationsCommandTest
     void includeAllDatabasesToMemoryRecommendations() throws IOException
     {
         PrintStream output = mock( PrintStream.class );
-        Path homeDir = testDirectory.homePath();
+        Path homeDir = neo4jLayout.homeDirectory();
         Path configDir = homeDir.resolve( "conf" );
-        configDir.toFile().mkdirs();
+        Files.createDirectories( configDir );
         Path configFile = configDir.resolve( DEFAULT_CONFIG_FILE_NAME );
-
-        store( stringMap( data_directory.name(), homeDir.toString() ), configFile );
+        Files.createFile( configFile );
 
         long totalPageCacheSize = 0;
         long totalLuceneIndexesSize = 0;
         for ( int i = 0; i < 5; i++ )
         {
             DatabaseLayout databaseLayout = neo4jLayout.databaseLayout( "db" + i );
-            createDatabaseWithNativeIndexes( databaseLayout );
+            createDatabaseWithNativeIndexes( homeDir, databaseLayout.getDatabaseName() );
             long[] expectedSizes = calculatePageCacheFileSize( databaseLayout );
             totalPageCacheSize += expectedSizes[0];
             totalLuceneIndexesSize += expectedSizes[1];
@@ -356,7 +354,7 @@ class MemoryRecommendationsCommandTest
         MutableLong luceneTotal = new MutableLong();
         for ( StoreType storeType : StoreType.values() )
         {
-            long length = databaseLayout.file( storeType.getDatabaseFile() ).toFile().length();
+            long length = Files.size( databaseLayout.file( storeType.getDatabaseFile() ) );
             pageCacheTotal.add( length );
         }
 
@@ -366,32 +364,32 @@ class MemoryRecommendationsCommandTest
             Files.walkFileTree( indexFolder, new SimpleFileVisitor<>()
             {
                 @Override
-                public FileVisitResult visitFile( Path path, BasicFileAttributes attrs )
+                public FileVisitResult visitFile( Path path, BasicFileAttributes attrs ) throws IOException
                 {
-                    File file = path.toFile();
                     Path name = path.getName( path.getNameCount() - 3 );
                     boolean isLuceneFile = (path.getNameCount() >= 3 && name.toString().startsWith( "lucene-" )) ||
                             (path.getNameCount() >= 4 && path.getName( path.getNameCount() - 4 ).toString().equals( "lucene" ));
-                    if ( !FailureStorage.DEFAULT_FAILURE_FILE_NAME.equals( file.getName() ) )
+                    if ( !FailureStorage.DEFAULT_FAILURE_FILE_NAME.equals( path.getFileName().toString() ) )
                     {
-                        (isLuceneFile ? luceneTotal : pageCacheTotal).add( file.length() );
+                        (isLuceneFile ? luceneTotal : pageCacheTotal).add( Files.size( path ) );
                     }
                     return FileVisitResult.CONTINUE;
                 }
             } );
         }
-        pageCacheTotal.add( databaseLayout.labelScanStore().toFile().length() );
+        pageCacheTotal.add( Files.size( databaseLayout.labelScanStore() ) );
         return new long[]{pageCacheTotal.longValue(), luceneTotal.longValue()};
     }
 
-    private static void createDatabaseWithNativeIndexes( DatabaseLayout databaseLayout )
+    private static void createDatabaseWithNativeIndexes( Path homeDirectory, String databaseName )
     {
         // Create one index for every provider that we have
         for ( SchemaIndex schemaIndex : SchemaIndex.values() )
         {
-            DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( databaseLayout.databaseDirectory() ).setConfig(
-                            default_schema_provider, schemaIndex.providerName() ).build();
-            GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
+            DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( homeDirectory )
+                    .setConfig( default_schema_provider, schemaIndex.providerName() )
+                    .setConfig( default_database, databaseName ).build();
+            GraphDatabaseService db = managementService.database( databaseName );
             String key = "key-" + schemaIndex.name();
             try
             {

@@ -23,9 +23,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.file.Path;
 import java.util.zip.Checksum;
 
 import org.neo4j.io.fs.ChecksumMismatchException;
@@ -57,8 +57,8 @@ class ReadAheadChannelTest
     void shouldThrowExceptionForReadAfterEOFIfNotEnoughBytesExist( Constructor constructor ) throws Exception
     {
         // Given
-        File bytesReadTestFile = new File( "bytesReadTest.txt" );
-        StoreChannel storeChannel = fileSystem.write( bytesReadTestFile.toPath() );
+        Path bytesReadTestFile = Path.of( "bytesReadTest.txt" );
+        StoreChannel storeChannel = fileSystem.write( bytesReadTestFile );
         ByteBuffer buffer = ByteBuffers.allocate( 1, INSTANCE );
         buffer.put( (byte) 1 );
         buffer.flip();
@@ -66,7 +66,7 @@ class ReadAheadChannelTest
         storeChannel.force( false );
         storeChannel.close();
 
-        storeChannel = fileSystem.read( bytesReadTestFile.toPath() );
+        storeChannel = fileSystem.read( bytesReadTestFile );
 
         ReadAheadChannel<StoreChannel> channel = constructor.apply( storeChannel, DEFAULT_READ_AHEAD_SIZE );
         assertEquals( (byte) 1, channel.get() );
@@ -80,8 +80,8 @@ class ReadAheadChannelTest
     void shouldReturnValueIfSufficientBytesAreBufferedEvenIfEOFHasBeenEncountered( Constructor constructor ) throws Exception
     {
         // Given
-        File shortReadTestFile = new File( "shortReadTest.txt" );
-        StoreChannel storeChannel = fileSystem.write( shortReadTestFile.toPath() );
+        Path shortReadTestFile = Path.of( "shortReadTest.txt" );
+        StoreChannel storeChannel = fileSystem.write( shortReadTestFile );
         ByteBuffer buffer = ByteBuffers.allocate( 1, INSTANCE );
         buffer.put( (byte) 1 );
         buffer.flip();
@@ -89,7 +89,7 @@ class ReadAheadChannelTest
         storeChannel.force( false );
         storeChannel.close();
 
-        storeChannel = fileSystem.read( shortReadTestFile.toPath() );
+        storeChannel = fileSystem.read( shortReadTestFile );
         ReadAheadChannel<StoreChannel> channel = constructor.apply( storeChannel, DEFAULT_READ_AHEAD_SIZE );
 
         assertThrows( ReadPastEndException.class, channel::getShort );
@@ -102,7 +102,7 @@ class ReadAheadChannelTest
     void shouldHandleRunningOutOfBytesWhenRequestSpansMultipleFiles( Constructor constructor ) throws Exception
     {
         // Given
-        StoreChannel storeChannel1 = fileSystem.write( new File( "foo.1" ).toPath() );
+        StoreChannel storeChannel1 = fileSystem.write( Path.of( "foo.1" ) );
         ByteBuffer buffer = ByteBuffers.allocate( 2, INSTANCE );
         buffer.put( (byte) 0 );
         buffer.put( (byte) 0 );
@@ -113,7 +113,7 @@ class ReadAheadChannelTest
 
         buffer.flip();
 
-        StoreChannel storeChannel2 = fileSystem.read( new File( "foo.2" ).toPath() );
+        StoreChannel storeChannel2 = fileSystem.read( Path.of( "foo.2" ) );
         buffer.put( (byte) 0 );
         buffer.put( (byte) 1 );
         buffer.flip();
@@ -121,8 +121,8 @@ class ReadAheadChannelTest
         storeChannel2.force( false );
         storeChannel2.close();
 
-        storeChannel1 = fileSystem.read( new File( "foo.1" ).toPath() );
-        final StoreChannel storeChannel2Copy = fileSystem.read( new File( "foo.2" ).toPath() );
+        storeChannel1 = fileSystem.read( Path.of( "foo.1" ) );
+        final StoreChannel storeChannel2Copy = fileSystem.read( Path.of( "foo.2" ) );
 
         HookedReadAheadChannel channel = constructor.apply( storeChannel1, DEFAULT_READ_AHEAD_SIZE );
         channel.nextChannelHook = storeChannel2Copy;
@@ -137,13 +137,13 @@ class ReadAheadChannelTest
     void shouldReturnPositionWithinBufferedStream( Constructor constructor ) throws Exception
     {
         // given
-        File file = new File( "foo.txt" );
+        Path file = Path.of( "foo.txt" );
 
         int readAheadSize = 512;
         int fileSize = readAheadSize * 8;
 
         createFile( fileSystem, file, fileSize );
-        ReadAheadChannel<StoreChannel> bufferedReader = constructor.apply( fileSystem.read( file.toPath() ), readAheadSize );
+        ReadAheadChannel<StoreChannel> bufferedReader = constructor.apply( fileSystem.read( file ), readAheadSize );
 
         // when
         for ( int i = 0; i < fileSize / Long.BYTES; i++ )
@@ -164,8 +164,8 @@ class ReadAheadChannelTest
         // given
         Checksum checksum = CHECKSUM_FACTORY.get();
         int checksumValue;
-        File file = new File( "foo.1" );
-        try ( StoreChannel storeChannel = fileSystem.write( file.toPath() ) )
+        Path file = Path.of( "foo.1" );
+        try ( StoreChannel storeChannel = fileSystem.write( file ) )
         {
             ByteBuffer buffer = ByteBuffers.allocate( 6, INSTANCE );
             buffer.put( (byte) 1 );
@@ -179,7 +179,7 @@ class ReadAheadChannelTest
             storeChannel.force( false );
         }
 
-        ReadAheadChannel<StoreChannel> bufferedReader = constructor.apply( fileSystem.read( file.toPath() ), DEFAULT_READ_AHEAD_SIZE );
+        ReadAheadChannel<StoreChannel> bufferedReader = constructor.apply( fileSystem.read( file ), DEFAULT_READ_AHEAD_SIZE );
 
         assertEquals( 1, bufferedReader.get() );
         assertEquals( 2, bufferedReader.get() );
@@ -193,8 +193,8 @@ class ReadAheadChannelTest
     {
         // given
         Checksum checksum = CHECKSUM_FACTORY.get();
-        File file = new File( "foo.1" );
-        try ( StoreChannel storeChannel = fileSystem.write( file.toPath() ) )
+        Path file = Path.of( "foo.1" );
+        try ( StoreChannel storeChannel = fileSystem.write( file ) )
         {
             ByteBuffer buffer = ByteBuffers.allocate( 6, INSTANCE );
             buffer.put( (byte) 1 );
@@ -208,7 +208,7 @@ class ReadAheadChannelTest
             storeChannel.force( false );
         }
 
-        ReadAheadChannel<StoreChannel> bufferedReader = constructor.apply( fileSystem.read( file.toPath() ), DEFAULT_READ_AHEAD_SIZE );
+        ReadAheadChannel<StoreChannel> bufferedReader = constructor.apply( fileSystem.read( file ), DEFAULT_READ_AHEAD_SIZE );
 
         assertEquals( 1, bufferedReader.get() );
         assertEquals( 2, bufferedReader.get() );
@@ -222,9 +222,9 @@ class ReadAheadChannelTest
         // given
         Checksum checksum = CHECKSUM_FACTORY.get();
         int checksumValue;
-        File file = new File( "foo.1" );
+        Path file = Path.of( "foo.1" );
         int testSize = 100;
-        try ( StoreChannel storeChannel = fileSystem.write( file.toPath() ) )
+        try ( StoreChannel storeChannel = fileSystem.write( file ) )
         {
             ByteBuffer buffer = ByteBuffers.allocate( testSize + 4, INSTANCE );
             for ( int i = 0; i < testSize; i++ )
@@ -239,7 +239,7 @@ class ReadAheadChannelTest
             storeChannel.force( false );
         }
 
-        ReadAheadChannel<StoreChannel> bufferedReader = constructor.apply( fileSystem.read( file.toPath() ), testSize / 2 );
+        ReadAheadChannel<StoreChannel> bufferedReader = constructor.apply( fileSystem.read( file ), testSize / 2 );
 
         byte[] in = new byte[testSize];
         bufferedReader.get( in, testSize );
@@ -250,9 +250,9 @@ class ReadAheadChannelTest
         assertEquals( checksumValue, bufferedReader.endChecksumAndValidate() );
     }
 
-    private void createFile( EphemeralFileSystemAbstraction fsa, File name, int bufferSize ) throws IOException
+    private void createFile( EphemeralFileSystemAbstraction fsa, Path name, int bufferSize ) throws IOException
     {
-        StoreChannel storeChannel = fsa.write( name.toPath() );
+        StoreChannel storeChannel = fsa.write( name );
         ByteBuffer buffer = ByteBuffers.allocate( bufferSize, INSTANCE );
         for ( int i = 0; i < bufferSize; i++ )
         {

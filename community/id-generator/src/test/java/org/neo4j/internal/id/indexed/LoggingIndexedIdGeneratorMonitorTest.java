@@ -22,8 +22,9 @@ package org.neo4j.internal.id.indexed;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.BitSet;
 
@@ -61,7 +62,7 @@ class LoggingIndexedIdGeneratorMonitorTest
     void shouldLogAndDumpAllTypesOfCalls() throws IOException
     {
         // given
-        Path file = directory.filePath( "file" );
+        Path file = directory.file( "file" );
         FakeClock clock = Clocks.fakeClock();
         int timeStep = 100;
         try ( LoggingIndexedIdGeneratorMonitor monitor = new LoggingIndexedIdGeneratorMonitor( fs, file, clock, 10, MebiByte, 1, DAYS ) )
@@ -123,11 +124,11 @@ class LoggingIndexedIdGeneratorMonitorTest
     }
 
     @Test
-    void shouldRotateAndPrune()
+    void shouldRotateAndPrune() throws IOException
     {
         // given
         long sizeOfOneEntry = LoggingIndexedIdGeneratorMonitor.HEADER_SIZE + Long.BYTES;
-        Path file = directory.filePath( "file" );
+        Path file = directory.file( "file" );
         FakeClock clock = Clocks.fakeClock();
         int entriesPerFile = 10;
 
@@ -143,9 +144,13 @@ class LoggingIndexedIdGeneratorMonitorTest
                 }
                 clock.forward( 1, SECONDS );
                 monitor.markSessionDone();
-                File parentFile = file.getParent().toFile();
-                File[] files = parentFile.listFiles( pathname -> pathname.getName().startsWith( file.getFileName() + "-" ) );
-                assertEquals( min( i + 1, 4 ), files.length );
+                MutableLong numberOfFiles = new MutableLong();
+                try ( DirectoryStream<Path> paths = Files
+                        .newDirectoryStream( file.getParent(), entry -> entry.getFileName().toString().startsWith( file.getFileName() + "-" ) ) )
+                {
+                    paths.forEach( p -> numberOfFiles.increment() );
+                }
+                assertEquals( min( i + 1, 4 ), numberOfFiles.getValue() );
             }
         }
     }
@@ -154,7 +159,7 @@ class LoggingIndexedIdGeneratorMonitorTest
     void shouldLogAllConcurrentCallsWhileRotatingAndPruning() throws IOException
     {
         // given
-        Path file = directory.filePath( "file" );
+        Path file = directory.file( "file" );
         int numberOfThreads = 4;
         int idsPerThread = 1_000;
         try ( LoggingIndexedIdGeneratorMonitor monitor = new LoggingIndexedIdGeneratorMonitor( fs, file, Clocks.nanoClock(), 1, KibiByte, 1, DAYS ) )
@@ -217,7 +222,7 @@ class LoggingIndexedIdGeneratorMonitorTest
     void shouldDumpLogFilesInCorrectOrder() throws IOException
     {
         // given
-        Path file = directory.filePath( "file" );
+        Path file = directory.file( "file" );
         FakeClock clock = Clocks.fakeClock();
         int numberOfIds = 100;
         try ( LoggingIndexedIdGeneratorMonitor monitor = new LoggingIndexedIdGeneratorMonitor( fs, file, clock, 100, ByteUnit.Byte, 1, SECONDS ) )

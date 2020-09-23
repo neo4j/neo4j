@@ -115,13 +115,13 @@ class RecordStoreVersionTest
     }
 
     private void setupUnsupported( String version ) throws IOException
-        {
-            // doesn't matter which version we pick we are changing it to the wrong one...
-            MigrationTestUtils.findFormatStoreDirectoryForVersion( StandardV3_4.STORE_VERSION, databaseLayout.databaseDirectory() );
-            changeVersionNumber( testDirectory.getFileSystem(), databaseLayout.metadataStore().toFile(), version );
-            Path metadataStore = databaseLayout.metadataStore();
-            MetaDataStore.setRecord( pageCache, metadataStore, STORE_VERSION, MetaDataStore.versionStringToLong( version ), NULL );
-        }
+    {
+        // doesn't matter which version we pick we are changing it to the wrong one...
+        MigrationTestUtils.findFormatStoreDirectoryForVersion( StandardV3_4.STORE_VERSION, databaseLayout.databaseDirectory() );
+        changeVersionNumber( testDirectory.getFileSystem(), databaseLayout.metadataStore(), version );
+        Path metadataStore = databaseLayout.metadataStore();
+        MetaDataStore.setRecord( pageCache, metadataStore, STORE_VERSION, MetaDataStore.versionStringToLong( version ), NULL );
+    }
 
     @ParameterizedTest
     @MethodSource( "unsupportedVersions" )

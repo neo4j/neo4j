@@ -195,7 +195,7 @@ abstract class GBPTreeReadWriteTestBase<KEY,VALUE>
 
     private void setupTest( int pageSize )
     {
-        indexFile = testDirectory.filePath( "index" );
+        indexFile = testDirectory.file( "index" );
         pageCache = StandalonePageCacheFactory.createPageCache( fs, new ThreadPoolJobScheduler(), pageSize );
         layout = getLayout( random, pageCache.pageSize() );
     }

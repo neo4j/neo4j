@@ -66,7 +66,7 @@ class LogVersionUpgradeCheckerIT
     @BeforeEach
     void setUp()
     {
-        databaseLayout = DatabaseLayout.ofFlat( testDirectory.directoryPath( DEFAULT_DATABASE_NAME ) );
+        databaseLayout = DatabaseLayout.ofFlat( testDirectory.directory( DEFAULT_DATABASE_NAME ) );
     }
 
     @Test
@@ -120,7 +120,7 @@ class LogVersionUpgradeCheckerIT
 
         if ( removeCheckpointFile )
         {
-            for ( Path file : fileSystem.listFiles( logFiles.logFilesDirectory(), ( dir, name ) -> name.startsWith( CHECKPOINT_FILE_PREFIX ) ) )
+            for ( Path file : fileSystem.listFiles( logFiles.logFilesDirectory(), path -> path.getFileName().toString().startsWith( CHECKPOINT_FILE_PREFIX ) ) )
             {
                 fileSystem.deleteFile( file );
             }

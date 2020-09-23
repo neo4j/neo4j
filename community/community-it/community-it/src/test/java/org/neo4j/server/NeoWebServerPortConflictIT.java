@@ -50,8 +50,10 @@ public class NeoWebServerPortConflictIT extends ExclusiveWebContainerTestBase
             TestWebContainer testWebContainer = null;
             try
             {
-                testWebContainer = builder( logProvider ).onAddress( contestedAddress ).usingDataDir( folder.directory( name.getMethodName() )
-                        .getAbsolutePath() ).build();
+                testWebContainer = builder( logProvider )
+                        .onAddress( contestedAddress )
+                        .usingDataDir( folder.directory( name.getMethodName() ).toAbsolutePath().toString() )
+                        .build();
                 fail( "Should have reported failure to start" );
             }
             catch ( Exception e )
@@ -87,7 +89,7 @@ public class NeoWebServerPortConflictIT extends ExclusiveWebContainerTestBase
                     .onAddress( unContestedAddress )
                     .onHttpsAddress( httpsAddress )
                     .withHttpsEnabled()
-                    .usingDataDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
+                    .usingDataDir( folder.directory( name.getMethodName() ).toAbsolutePath().toString() )
                     .build();
                 fail( "Should have reported failure to start" );
             }

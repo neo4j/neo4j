@@ -127,7 +127,7 @@ class GBPTreeCountsStoreTest
     void tracePageCacheAccessOnCountStoreOpen() throws IOException
     {
         var pageCacheTracer = new DefaultPageCacheTracer();
-        var file = directory.filePath( "another.file" );
+        var file = directory.file( "another.file" );
 
         assertZeroGlobalTracer( pageCacheTracer );
 
@@ -481,7 +481,7 @@ class GBPTreeCountsStoreTest
     @Test
     void shouldNotStartWithoutFileIfReadOnly()
     {
-        final Path file = directory.filePath( "non-existing" );
+        final Path file = directory.file( "non-existing" );
         final IllegalStateException e = assertThrows( IllegalStateException.class,
                 () -> new GBPTreeCountsStore( pageCache, file, fs, immediate(), CountsBuilder.EMPTY, true, PageCacheTracer.NULL, NO_MONITOR ) );
         assertTrue( Exceptions.contains( e, t -> t instanceof NoSuchFileException ) );
@@ -570,7 +570,7 @@ class GBPTreeCountsStoreTest
     void shouldNotCreateFileOnDumpingNonExistentCountsStore()
     {
         // given
-        Path file = directory.filePath( "abcd" );
+        Path file = directory.file( "abcd" );
 
         // when
         assertThrows( NoSuchFileException.class, () -> GBPTreeCountsStore.dump( pageCache, file, System.out, NULL ) );
@@ -730,7 +730,7 @@ class GBPTreeCountsStoreTest
 
     private Path countsStoreFile()
     {
-        return directory.filePath( "counts.db" );
+        return directory.file( "counts.db" );
     }
 
     private void openCountsStore( CountsBuilder builder ) throws IOException

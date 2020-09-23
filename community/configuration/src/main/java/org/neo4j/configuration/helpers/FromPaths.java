@@ -22,6 +22,7 @@ package org.neo4j.configuration.helpers;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.File;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Objects;
@@ -55,7 +56,8 @@ public class FromPaths
     private Set<Path> getAllFolders( Path path )
     {
         return Arrays.stream( fs.listFiles( path ) )
-                     .filter( p -> p.toFile().isDirectory() ).collect( Collectors.toSet() );
+                     .filter( Files::isDirectory )
+                     .collect( Collectors.toSet() );
     }
 
     private Set<Path> buildPaths( String value )

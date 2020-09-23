@@ -53,7 +53,7 @@ class DetachedCheckpointLogEntryWriterTest
     {
         try ( var buffer = new HeapScopedBuffer( (int) kibiBytes( 1 ), INSTANCE ) )
         {
-            StoreChannel storeChannel = fs.write( directory.createFilePath( "a" ) );
+            StoreChannel storeChannel = fs.write( directory.createFile( "a" ) );
             try ( PhysicalFlushableChecksumChannel writeChannel = new PhysicalFlushableChecksumChannel( storeChannel, buffer ) )
             {
                 var checkpointLogEntryWriter = new DetachedCheckpointLogEntryWriter( writeChannel );
@@ -70,7 +70,7 @@ class DetachedCheckpointLogEntryWriterTest
     {
         try ( var buffer = new HeapScopedBuffer( (int) kibiBytes( 1 ), INSTANCE ) )
         {
-            StoreChannel storeChannel = fs.write( directory.createFilePath( "b" ) );
+            StoreChannel storeChannel = fs.write( directory.createFile( "b" ) );
             try ( PhysicalFlushableChecksumChannel writeChannel = new PhysicalFlushableChecksumChannel( storeChannel, buffer ) )
             {
                 var checkpointLogEntryWriter = new DetachedCheckpointLogEntryWriter( writeChannel );
@@ -91,7 +91,7 @@ class DetachedCheckpointLogEntryWriterTest
     {
         try ( var buffer = new HeapScopedBuffer( (int) kibiBytes( 1 ), INSTANCE ) )
         {
-            StoreChannel storeChannel = fs.write( directory.createFilePath( "b" ) );
+            StoreChannel storeChannel = fs.write( directory.createFile( "b" ) );
             try ( PhysicalFlushableChecksumChannel writeChannel = new PhysicalFlushableChecksumChannel( storeChannel, buffer ) )
             {
                 var checkpointLogEntryWriter = new DetachedCheckpointLogEntryWriter( writeChannel );

@@ -46,7 +46,7 @@ class CrsConfigTest
     @Test
     void testCrsConfigMigration() throws IOException
     {
-        Path confFile = testDirectory.createFilePath( "test.conf" );
+        Path confFile = testDirectory.createFile( "test.conf" );
         Files.write( confFile, Arrays.asList(
                 "unsupported.dbms.db.spatial.crs.cartesian-3d.min.x=1",
                 "unsupported.dbms.db.spatial.crs.cartesian-3d.min.y=2",

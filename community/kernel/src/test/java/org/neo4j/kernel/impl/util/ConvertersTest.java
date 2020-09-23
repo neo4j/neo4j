@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.util;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 
 import org.neo4j.test.extension.Inject;
@@ -29,7 +30,6 @@ import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.kernel.impl.util.Converters.regexFiles;
 
 @TestDirectoryExtension
@@ -49,7 +49,7 @@ class ConvertersTest
         Path file32 = existenceOfFile( "file32" );
 
         // WHEN
-        Path[] files = regexFiles( true ).apply( directory.filePath( "file" ).toAbsolutePath().toString() + ".*" );
+        Path[] files = regexFiles( true ).apply( directory.file( "file" ).toAbsolutePath().toString() + ".*" );
 
         // THEN
         assertArrayEquals( new Path[]{file1, file2, file12, file32, file123}, files );
@@ -57,8 +57,8 @@ class ConvertersTest
 
     private Path existenceOfFile( String name ) throws IOException
     {
-        Path file = directory.filePath( name );
-        assertTrue( file.toFile().createNewFile() );
+        Path file = directory.file( name );
+        Files.createFile( file );
         return file;
     }
 }

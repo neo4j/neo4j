@@ -1233,7 +1233,7 @@ public class BatchInserterImpl implements BatchInserter
     @Override
     public String getStoreDir()
     {
-        return databaseLayout.databaseDirectory().toFile().getPath();
+        return databaseLayout.databaseDirectory().toString();
     }
 
     private static void dumpConfiguration( Config config )

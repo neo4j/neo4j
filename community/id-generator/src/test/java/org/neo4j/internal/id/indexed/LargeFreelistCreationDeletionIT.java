@@ -74,7 +74,7 @@ class LargeFreelistCreationDeletionIT
         for ( int r = 0; r < 3; r++ )
         {
             // Create
-            try ( var freelist = new IndexedIdGenerator( pageCache, directory.filePath( "file.id" ), immediate(), IdType.NODE, false, () -> 0, Long.MAX_VALUE,
+            try ( var freelist = new IndexedIdGenerator( pageCache, directory.file( "file.id" ), immediate(), IdType.NODE, false, () -> 0, Long.MAX_VALUE,
                     false, NULL ) )
             {
                 // Make sure ID cache is filled so that initial allocations won't slide highId unnecessarily.

@@ -43,7 +43,7 @@ class ChannelOutputStreamTest
     {
         try ( EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction() )
         {
-            Path workFile = testDirectory.filePath( "a" );
+            Path workFile = testDirectory.file( "a" );
             fs.mkdirs( testDirectory.homePath() );
             OutputStream out = fs.openAsOutputStream( workFile, false );
 

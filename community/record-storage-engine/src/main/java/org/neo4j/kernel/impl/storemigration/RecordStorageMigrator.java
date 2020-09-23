@@ -24,12 +24,11 @@ import org.eclipse.collections.impl.factory.Sets;
 
 import java.io.BufferedOutputStream;
 import java.io.Closeable;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -437,9 +436,9 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
     {
         prepareBatchImportMigration( sourceDirectoryStructure, migrationDirectoryStructure, oldFormat, newFormat );
 
-        File badFile = sourceDirectoryStructure.file( BadCollector.BAD_FILE_NAME ).toFile();
+        Path badFile = sourceDirectoryStructure.file( BadCollector.BAD_FILE_NAME );
         try ( NeoStores legacyStore = instantiateLegacyStore( oldFormat, sourceDirectoryStructure );
-              OutputStream badOutput = new BufferedOutputStream( new FileOutputStream( badFile, false ) );
+              OutputStream badOutput = new BufferedOutputStream( Files.newOutputStream( badFile ) );
               Collector badCollector = Collectors.badCollector( badOutput, 0 ) )
         {
             Configuration importConfig = new Configuration.Overridden( config )

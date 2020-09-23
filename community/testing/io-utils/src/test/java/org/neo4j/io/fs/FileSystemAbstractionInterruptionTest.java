@@ -23,11 +23,11 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.ClosedChannelException;
+import java.nio.file.Path;
 
 import org.neo4j.io.IOUtils;
 import org.neo4j.test.extension.Inject;
@@ -46,7 +46,7 @@ public class FileSystemAbstractionInterruptionTest
     @Inject
     private TestDirectory testdir;
     private FileSystemAbstraction fs;
-    private File file;
+    private Path file;
     private StoreChannel channel;
     private boolean channelShouldBeClosed;
 
@@ -61,7 +61,7 @@ public class FileSystemAbstractionInterruptionTest
         fs = createFileSystem();
         fs.mkdirs( testdir.homePath() );
         file = testdir.file( "a" );
-        fs.write( file.toPath() ).close();
+        fs.write( file ).close();
         channel = null;
         channelShouldBeClosed = false;
         Thread.currentThread().interrupt();
@@ -181,7 +181,7 @@ public class FileSystemAbstractionInterruptionTest
     private StoreChannel channel( boolean channelShouldBeClosed ) throws IOException
     {
         this.channelShouldBeClosed = channelShouldBeClosed;
-        channel = fs.write( file.toPath() );
+        channel = fs.write( file );
         return channel;
     }
 }

@@ -100,7 +100,7 @@ public class CommunityWebContainerBuilder
         Log log = logProvider.getLog( getClass() );
         Config config = Config.newBuilder()
                 .setDefaults( GraphDatabaseSettings.SERVER_DEFAULTS )
-                .fromFile( configFile.toFile() )
+                .fromFile( configFile )
                 .build();
         config.setLogger( log );
         return new TestWebContainer( build( config ) );

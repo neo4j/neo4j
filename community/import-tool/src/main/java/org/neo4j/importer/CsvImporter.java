@@ -19,7 +19,6 @@
  */
 package org.neo4j.importer;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
@@ -188,7 +187,7 @@ class CsvImporter implements Importer
                     TransactionLogInitializer.getLogFilesInitializer(),
                     memoryTracker );
 
-            printOverview( databaseLayout.databaseDirectory().toFile(), nodeFiles, relationshipFiles, importConfig, stdOut );
+            printOverview( databaseLayout.databaseDirectory(), nodeFiles, relationshipFiles, importConfig, stdOut );
 
             importer.doImport( input );
 
@@ -280,7 +279,7 @@ class CsvImporter implements Importer
         }
     }
 
-    private static void printOverview( File storeDir, Map<Set<String>, List<Path[]>> nodesFiles, Map<String, List<Path[]>> relationshipsFiles,
+    private static void printOverview( Path storeDir, Map<Set<String>, List<Path[]>> nodesFiles, Map<String, List<Path[]>> relationshipsFiles,
         Configuration configuration, PrintStream out )
     {
         out.println( "Neo4j version: " + Version.getNeo4jVersion() );

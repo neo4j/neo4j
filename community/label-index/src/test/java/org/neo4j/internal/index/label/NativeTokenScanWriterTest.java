@@ -71,7 +71,7 @@ class NativeTokenScanWriterTest
     @BeforeEach
     void openTree()
     {
-        tree = new GBPTreeBuilder<>( pageCache, directory.filePath( "file" ), new TokenScanLayout() ).build();
+        tree = new GBPTreeBuilder<>( pageCache, directory.file( "file" ), new TokenScanLayout() ).build();
     }
 
     @AfterEach

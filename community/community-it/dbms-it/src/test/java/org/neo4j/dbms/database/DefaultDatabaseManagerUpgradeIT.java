@@ -81,7 +81,7 @@ class DefaultDatabaseManagerUpgradeIT
         // Create store with standard format. This will be upgraded to high_limit in tests.
         userLogProvider = mock( LogProvider.class, RETURNS_MOCKS );
         databaseLayout = neo4jLayout.databaseLayout( DEFAULT_DATABASE_NAME );
-        Path prepareDirectory = testDirectory.directoryPath( "prepare" );
+        Path prepareDirectory = testDirectory.directory( "prepare" );
         Path workingDirectory = databaseLayout.databaseDirectory();
         MigrationTestUtils.prepareSampleLegacyDatabase( StandardV3_4.STORE_VERSION, fs, workingDirectory, prepareDirectory );
     }

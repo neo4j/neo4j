@@ -24,7 +24,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.api.parallel.Resources;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -151,7 +150,7 @@ class AllNodesInStoreExistInLabelIndexTest
     {
         // given
         someData();
-        File labelIndexFileCopy = copyLabelIndexFile();
+        Path labelIndexFileCopy = copyLabelIndexFile();
 
         // when
         try ( Transaction tx = db.beginTx() )
@@ -173,7 +172,7 @@ class AllNodesInStoreExistInLabelIndexTest
     {
         // given
         List<Pair<Long,Label[]>> nodesInStore = someData();
-        File labelIndexFileCopy = copyLabelIndexFile();
+        Path labelIndexFileCopy = copyLabelIndexFile();
 
         // when
         try ( Transaction tx = db.beginTx() )
@@ -195,7 +194,7 @@ class AllNodesInStoreExistInLabelIndexTest
     {
         // given
         List<Pair<Long,Label[]>> nodesInStore = someData();
-        File labelIndexFileCopy = copyLabelIndexFile();
+        Path labelIndexFileCopy = copyLabelIndexFile();
 
         // when
         try ( Transaction tx = db.beginTx() )
@@ -217,7 +216,7 @@ class AllNodesInStoreExistInLabelIndexTest
     {
         // given
         List<Pair<Long,Label[]>> nodesInStore = someData();
-        File labelIndexFileCopy = copyLabelIndexFile();
+        Path labelIndexFileCopy = copyLabelIndexFile();
 
         // when
         try ( Transaction tx = db.beginTx() )
@@ -276,21 +275,21 @@ class AllNodesInStoreExistInLabelIndexTest
         node.removeLabel( existingNode.other()[0] );
     }
 
-    private void replaceLabelIndexWithCopy( File labelIndexFileCopy ) throws IOException
+    private void replaceLabelIndexWithCopy( Path labelIndexFileCopy ) throws IOException
     {
         managementService.shutdown();
 
         DatabaseLayout databaseLayout = db.databaseLayout();
         fs.deleteFile( databaseLayout.labelScanStore() );
-        fs.copyFile( labelIndexFileCopy.toPath(), databaseLayout.labelScanStore() );
+        fs.copyFile( labelIndexFileCopy, databaseLayout.labelScanStore() );
     }
 
-    private File copyLabelIndexFile() throws IOException
+    private Path copyLabelIndexFile() throws IOException
     {
         DatabaseLayout databaseLayout = db.databaseLayout();
-        File labelIndexFileCopy = databaseLayout.file( "label_index_copy" ).toFile();
+        Path labelIndexFileCopy = databaseLayout.file( "label_index_copy" );
         database.stop();
-        fs.copyFile( databaseLayout.labelScanStore(), labelIndexFileCopy.toPath() );
+        fs.copyFile( databaseLayout.labelScanStore(), labelIndexFileCopy );
         database.start();
         return labelIndexFileCopy;
     }

@@ -45,7 +45,7 @@ public class LinearHistoryPageCacheTracerTest
         try ( RandomPageCacheTestHarness harness = new RandomPageCacheTestHarness() )
         {
             harness.setUseAdversarialIO( true );
-            harness.setBasePath( testDirectory.directoryPath( "makeSomeTestOutput" ) );
+            harness.setBasePath( testDirectory.directory( "makeSomeTestOutput" ) );
             harness.setTracer( linearTracers.getPageCacheTracer() );
             harness.setCommandCount( 100 );
             harness.setConcurrencyLevel( 2 );

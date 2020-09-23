@@ -96,7 +96,7 @@ class UniqueDatabaseIndexPopulatorTest
     @BeforeEach
     void setUp()
     {
-        Path folder = testDir.directoryPath( "folder" );
+        Path folder = testDir.directory( "folder" );
         indexStorage = new PartitionedIndexStorage( directoryFactory, fs, folder );
         index = LuceneSchemaIndexBuilder.create( descriptor, Config.defaults() )
                 .withIndexStorage( indexStorage )

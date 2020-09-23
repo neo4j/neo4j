@@ -116,7 +116,7 @@ class RecoveryRequiredCheckerTest
     @Test
     void shouldBeAbleToRecoverBrokenStoreWithLogsInSeparateAbsoluteLocation() throws Exception
     {
-        Path customTransactionLogsLocation = testDirectory.directoryPath( DEFAULT_TX_LOGS_ROOT_DIR_NAME );
+        Path customTransactionLogsLocation = testDirectory.directory( DEFAULT_TX_LOGS_ROOT_DIR_NAME );
         Config config = Config.newBuilder()
                 .set( GraphDatabaseSettings.neo4j_home, testDirectory.homePath() )
                 .set( transaction_logs_root_path, customTransactionLogsLocation.toAbsolutePath() )
@@ -127,7 +127,7 @@ class RecoveryRequiredCheckerTest
     @Test
     void shouldNotWantToRecoverEmptyStore() throws Exception
     {
-        DatabaseLayout databaseLayout = DatabaseLayout.ofFlat( testDirectory.directoryPath( "dir-without-store" ) );
+        DatabaseLayout databaseLayout = DatabaseLayout.ofFlat( testDirectory.directory( "dir-without-store" ) );
 
         PageCache pageCache = pageCacheExtension.getPageCache( fileSystem );
         RecoveryRequiredChecker checker = getRecoveryCheckerWithDefaultConfig( fileSystem, pageCache, storageEngineFactory );

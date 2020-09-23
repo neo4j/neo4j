@@ -65,7 +65,7 @@ class GBPTreePartialCreateFuzzIT
     void shouldDetectAndThrowIOExceptionOnPartiallyCreatedFile() throws Exception
     {
         // given a crashed-on-open index
-        Path file = testDirectory.filePath( "index" );
+        Path file = testDirectory.file( "index" );
         Process process = new ProcessBuilder( asList( "java", "-cp", System.getProperty( "java.class.path" ), getClass().getName(),
                 file.toAbsolutePath().toString() ) ).redirectError( INHERIT ).redirectOutput( INHERIT ).start();
         Thread.sleep( ThreadLocalRandom.current().nextInt( 1_000 ) );

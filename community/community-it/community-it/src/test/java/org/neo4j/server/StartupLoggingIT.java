@@ -89,8 +89,8 @@ public class StartupLoggingIT extends ExclusiveWebContainerTestBase
     {
         Map<String,String> properties = new HashMap<>();
 
-        properties.put( GraphDatabaseSettings.data_directory.name(), testDir.homeDir().toString() );
-        properties.put( GraphDatabaseSettings.logs_directory.name(), testDir.homeDir().toString() );
+        properties.put( GraphDatabaseSettings.data_directory.name(), testDir.homePath().toString() );
+        properties.put( GraphDatabaseSettings.logs_directory.name(), testDir.homePath().toString() );
         properties.put( GraphDatabaseSettings.allow_upgrade.name(), TRUE );
 
         properties.put( HttpConnector.listen_address.name(), "localhost:0" );
@@ -103,7 +103,7 @@ public class StartupLoggingIT extends ExclusiveWebContainerTestBase
         properties.put( BoltConnector.listen_address.name(), "localhost:0" );
         properties.put( BoltConnector.encryption_level.name(), "DISABLED" );
 
-        properties.put( GraphDatabaseInternalSettings.databases_root_path.name(), testDir.absolutePath().getAbsolutePath() );
+        properties.put( GraphDatabaseInternalSettings.databases_root_path.name(), testDir.absolutePath().toString() );
         return properties;
     }
 

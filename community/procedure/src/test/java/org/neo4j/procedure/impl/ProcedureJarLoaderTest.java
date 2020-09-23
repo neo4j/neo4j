@@ -28,13 +28,11 @@ import net.bytebuddy.implementation.bytecode.StackManipulation;
 import net.bytebuddy.implementation.bytecode.assign.Assigner;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
@@ -242,7 +240,7 @@ public class ProcedureJarLoaderTest
         // when
         assertThrows( ZipException.class, () -> jarloader.loadProceduresFromDir( parentDir( theJar ) ) );
         assertThat( logProvider ).containsMessages(
-                format( "Plugin jar file: %s corrupted.", new File( theJar.toURI() ).toPath() ) );
+                format( "Plugin jar file: %s corrupted.", Path.of( theJar.toURI() ) ) );
     }
 
     @Test
@@ -271,7 +269,7 @@ public class ProcedureJarLoaderTest
                 )
                 .make();
 
-        URL jar = unloaded.toJar( testDirectory.createFile( new Random().nextInt() + ".jar" ) ).toURI().toURL();
+        URL jar = unloaded.toJar( testDirectory.createFile( new Random().nextInt() + ".jar" ).toFile() ).toURI().toURL();
 
         AssertableLogProvider logProvider = new AssertableLogProvider( true );
         ProcedureJarLoader jarloader = new ProcedureJarLoader( procedureCompiler(), logProvider.getLog( ProcedureJarLoader.class ) );
@@ -286,7 +284,7 @@ public class ProcedureJarLoaderTest
     void shouldWorkOnPathsWithSpaces() throws Exception
     {
         // given
-        File fileWithSpacesInName = testDirectory.createFile( new Random().nextInt() + "  some spaces in the filename" + ".jar" );
+        Path fileWithSpacesInName = testDirectory.createFile( new Random().nextInt() + "  some spaces in the filename" + ".jar" );
         URL theJar = new JarBuilder().createJarFor( fileWithSpacesInName, ClassWithOneProcedure.class );
         corruptJar( theJar );
 
@@ -296,7 +294,7 @@ public class ProcedureJarLoaderTest
 
         // when
         assertThrows( ZipException.class, () -> jarloader.loadProceduresFromDir( parentDir( theJar ) ) );
-        assertThat( logProvider ).containsMessages( format( "Plugin jar file: %s corrupted.", fileWithSpacesInName.toPath() ) );
+        assertThat( logProvider ).containsMessages( format( "Plugin jar file: %s corrupted.", fileWithSpacesInName ) );
     }
 
     @Test
@@ -324,14 +322,14 @@ public class ProcedureJarLoaderTest
 
     private void corruptJar( URL jar ) throws IOException, URISyntaxException
     {
-        File jarFile = new File( jar.toURI() ).getCanonicalFile();
-        long fileLength = jarFile.length();
-        byte[] bytes = Files.readAllBytes( Paths.get( jar.toURI() ) );
+        Path jarFile = Path.of( jar.toURI() ).toRealPath();
+        long fileLength = Files.size( jarFile );
+        byte[] bytes = Files.readAllBytes( jarFile );
         for ( long i = fileLength / 2; i < fileLength; i++ )
         {
             bytes[(int) i] = 0;
         }
-        Files.write( jarFile.toPath(), bytes );
+        Files.write( jarFile, bytes );
     }
 
     private URL createJarFor( Class<?> ... targets ) throws IOException

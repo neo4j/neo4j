@@ -66,8 +66,8 @@ class IdGeneratorMigratorTest
     void shouldFindAndStoreDeletedIds() throws IOException
     {
         // given
-        DatabaseLayout db = DatabaseLayout.ofFlat( directory.directoryPath( "from" ) );
-        DatabaseLayout upgrade = DatabaseLayout.ofFlat( directory.directoryPath( "to" ) );
+        DatabaseLayout db = DatabaseLayout.ofFlat( directory.directory( "from" ) );
+        DatabaseLayout upgrade = DatabaseLayout.ofFlat( directory.directory( "to" ) );
         long nodeStoreStartId;
         long stringStoreStartId;
         long relationshipStoreStartId;

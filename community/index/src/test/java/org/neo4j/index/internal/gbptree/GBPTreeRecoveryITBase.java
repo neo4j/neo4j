@@ -100,7 +100,7 @@ abstract class GBPTreeRecoveryITBase<KEY,VALUE>
         // a tree with only small amount of data that has not yet seen checkpoint from outside
         KEY key = key( 1L );
         VALUE value = value( 10L );
-        Path file = directory.filePath( "index" );
+        Path file = directory.file( "index" );
         {
             try ( PageCache pageCache = createPageCache();
                   GBPTree<KEY,VALUE> index = createIndex( pageCache, file );
@@ -179,7 +179,7 @@ abstract class GBPTreeRecoveryITBase<KEY,VALUE>
         assertInitialized();
         // GIVEN
         // a tree which has had random updates and checkpoints in it, load generated with specific seed
-        Path file = directory.filePath( "index" );
+        Path file = directory.file( "index" );
         List<Action> load = generateLoad();
         List<Action> shuffledLoad = randomCausalAwareShuffle( load );
         int lastCheckPointIndex = indexOfLastCheckpoint( load );

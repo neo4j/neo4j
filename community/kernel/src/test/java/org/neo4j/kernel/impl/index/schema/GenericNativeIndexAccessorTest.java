@@ -53,7 +53,7 @@ class GenericNativeIndexAccessorTest
     void dropShouldDeleteEntireIndexFolder()
     {
         // given
-        Path root = testDirectory.directoryPath( "root" );
+        Path root = testDirectory.directory( "root" );
         IndexDirectoryStructure directoryStructure = IndexDirectoryStructure.directoriesByProvider( root ).forProvider( GenericNativeIndexProvider.DESCRIPTOR );
         long indexId = 8;
         IndexDescriptor descriptor = forSchema( SchemaDescriptor.forLabel( 1, 1 ) ).withName( "index" ).materialise( indexId );

@@ -26,14 +26,12 @@ import org.junit.jupiter.api.condition.OS;
 import picocli.CommandLine;
 
 import java.io.Closeable;
-import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.attribute.PosixFilePermission;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -106,8 +104,8 @@ class DumpCommandIT
     void setUp()
     {
         homeDir = testDirectory.homePath();
-        configDir = testDirectory.directoryPath( "config-dir" );
-        archive = testDirectory.filePath( "some-archive.dump" );
+        configDir = testDirectory.directory( "config-dir" );
+        archive = testDirectory.file( "some-archive.dump" );
         dumper = mock( Dumper.class );
         databaseLayout = neo4jLayout.databaseLayout( "foo" );
         databaseDirectory = databaseLayout.databaseDirectory();
@@ -135,7 +133,7 @@ class DumpCommandIT
     @Test
     void shouldCalculateTheDatabaseDirectoryFromConfig() throws Exception
     {
-        Path dataDir = testDirectory.directoryPath( "some-other-path" );
+        Path dataDir = testDirectory.directory( "some-other-path" );
         Path txLogsDir = dataDir.resolve( DEFAULT_TX_LOGS_ROOT_DIR_NAME + "/foo" );
         Path databaseDir = dataDir.resolve( "databases/foo" );
         Files.write( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ), singletonList( formatProperty( data_directory, dataDir ) ) );
@@ -148,8 +146,8 @@ class DumpCommandIT
     @Test
     void shouldCalculateTheTxLogDirectoryFromConfig() throws Exception
     {
-        Path dataDir = testDirectory.directoryPath( "some-other-path" );
-        Path txlogsRoot = testDirectory.directoryPath( "txLogsPath" );
+        Path dataDir = testDirectory.directory( "some-other-path" );
+        Path txlogsRoot = testDirectory.directory( "txLogsPath" );
         Path databaseDir = dataDir.resolve( "databases/foo" );
         Files.write( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ),
                 asList( formatProperty( data_directory, dataDir ),
@@ -164,9 +162,9 @@ class DumpCommandIT
     @DisabledOnOs( OS.WINDOWS )
     void shouldHandleDatabaseSymlink() throws Exception
     {
-        Path realDatabaseDir = testDirectory.directoryPath( "path-to-links/foo" );
+        Path realDatabaseDir = testDirectory.directory( "path-to-links/foo" );
 
-        Path dataDir = testDirectory.directoryPath( "some-other-path" );
+        Path dataDir = testDirectory.directory( "some-other-path" );
         Path databaseDir = dataDir.resolve( "databases/foo" );
         Path txLogsDir = dataDir.resolve( DEFAULT_TX_LOGS_ROOT_DIR_NAME + "/foo" );
 
@@ -184,7 +182,7 @@ class DumpCommandIT
     @Test
     void shouldCalculateTheArchiveNameIfPassedAnExistingDirectory() throws Exception
     {
-        Path to = testDirectory.directoryPath( "some-dir" );
+        Path to = testDirectory.directory( "some-dir" );
         execute( "foo", to );
         verify( dumper ).dump( any( Path.class ), any( Path.class ), eq( to.resolve( "foo.dump" ) ), any(), any() );
     }
@@ -281,12 +279,12 @@ class DumpCommandIT
     void shouldExcludeTheStoreLockFromTheArchiveToAvoidProblemsWithReadingLockedFilesOnWindows()
             throws Exception
     {
-        File lockFile = DatabaseLayout.ofFlat( Path.of( "." ) ).databaseLockFile().toFile();
+        Path lockFile = DatabaseLayout.ofFlat( Path.of( "." ) ).databaseLockFile();
         doAnswer( invocation ->
         {
             Predicate<Path> exclude = invocation.getArgument( 4 );
-            assertThat( exclude.test( Paths.get( lockFile.getName() ) ) ).isEqualTo( true );
-            assertThat( exclude.test( Paths.get( "some-other-file" ) ) ).isEqualTo( false );
+            assertThat( exclude.test( lockFile.getFileName() ) ).isEqualTo( true );
+            assertThat( exclude.test( Path.of( "some-other-file" ) ) ).isEqualTo( false );
             return null;
         } ).when( dumper ).dump(any(), any(), any(), any(), any() );
 
@@ -296,7 +294,7 @@ class DumpCommandIT
     @Test
     void shouldDefaultToGraphDB() throws Exception
     {
-        Path dataDir = testDirectory.directoryPath( "some-other-path" );
+        Path dataDir = testDirectory.directory( "some-other-path" );
         Path txLogsDir = dataDir.resolve( DEFAULT_TX_LOGS_ROOT_DIR_NAME + "/" + DEFAULT_DATABASE_NAME );
         Path databaseDir = dataDir.resolve( "databases/" + DEFAULT_DATABASE_NAME );
         Files.write( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ), singletonList( formatProperty( data_directory, dataDir ) ) );

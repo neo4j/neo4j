@@ -25,8 +25,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.jupiter.api.condition.DisabledOnOs;
-import org.junit.jupiter.api.condition.OS;
 
 import java.nio.file.Path;
 import java.util.Map;
@@ -35,7 +33,6 @@ import java.util.stream.Stream;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.SettingValueParsers;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.HttpConnector;
@@ -109,16 +106,16 @@ public abstract class BaseBootstrapperIT extends ExclusiveWebContainerTestBase
 
     protected String[] getAdditionalArguments()
     {
-        return new String[]{"--home-dir", testDirectory.directory( "home-dir" ).getAbsolutePath(),
-                "-c", configOption( data_directory, testDirectory.homeDir().getAbsolutePath() ),
-                "-c", configOption( logs_directory, testDirectory.homeDir().getAbsolutePath() )};
+        return new String[]{"--home-dir", testDirectory.directory( "home-dir" ).toAbsolutePath().toString(),
+                "-c", configOption( data_directory, testDirectory.absolutePath().toString() ),
+                "-c", configOption( logs_directory, testDirectory.absolutePath().toString() )};
     }
 
     @Test
     public void canSpecifyConfigFile() throws Throwable
     {
         // Given
-        Path configFile = testDirectory.filePath( Config.DEFAULT_CONFIG_FILE_NAME );
+        Path configFile = testDirectory.file( Config.DEFAULT_CONFIG_FILE_NAME );
 
         Map<String,String> properties = stringMap( forced_kernel_id.name(), "ourcustomvalue" );
         properties.putAll( getDefaultRelativeProperties( testDirectory.homePath() ) );
@@ -128,7 +125,7 @@ public abstract class BaseBootstrapperIT extends ExclusiveWebContainerTestBase
 
         // When
         NeoBootstrapper.start( bootstrapper,
-                "--home-dir", testDirectory.directoryPath( "home-dir" ).toAbsolutePath().toString(),
+                "--home-dir", testDirectory.directory( "home-dir" ).toAbsolutePath().toString(),
                 "--config-dir", configFile.getParent().toAbsolutePath().toString() );
 
         // Then
@@ -140,7 +137,7 @@ public abstract class BaseBootstrapperIT extends ExclusiveWebContainerTestBase
     public void canOverrideConfigValues() throws Throwable
     {
         // Given
-        Path configFile = testDirectory.filePath( Config.DEFAULT_CONFIG_FILE_NAME );
+        Path configFile = testDirectory.file( Config.DEFAULT_CONFIG_FILE_NAME );
 
         Map<String,String> properties = stringMap( forced_kernel_id.name(), "thisshouldnotshowup" );
         properties.putAll( getDefaultRelativeProperties( testDirectory.homePath() ) );
@@ -150,7 +147,7 @@ public abstract class BaseBootstrapperIT extends ExclusiveWebContainerTestBase
 
         // When
         NeoBootstrapper.start( bootstrapper,
-                "--home-dir", testDirectory.directory( "home-dir" ).getAbsolutePath(),
+                "--home-dir", testDirectory.directory( "home-dir" ).toAbsolutePath().toString(),
                 "--config-dir", configFile.getParent().toAbsolutePath().toString(),
                 "-c", configOption( forced_kernel_id, "mycustomvalue" ) );
 
@@ -204,14 +201,14 @@ public abstract class BaseBootstrapperIT extends ExclusiveWebContainerTestBase
     @Test
     public void shouldHaveSameLayoutAsEmbedded() throws Exception
     {
-        Path serverDir = testDirectory.directoryPath( "server-dir" );
+        Path serverDir = testDirectory.directory( "server-dir" );
         NeoBootstrapper.start( bootstrapper, withConnectorsOnRandomPortsConfig( "--home-dir", serverDir.toAbsolutePath().toString() ) );
         assertEventually( "Server was not started", bootstrapper::isRunning, Conditions.TRUE, 1, TimeUnit.MINUTES );
         var databaseAPI = (GraphDatabaseAPI) bootstrapper.getDatabaseManagementService().database( DEFAULT_DATABASE_NAME );
         var serverLayout = databaseAPI.databaseLayout().getNeo4jLayout();
         bootstrapper.stop();
 
-        Path embeddedDir = testDirectory.directoryPath( "embedded-dir" );
+        Path embeddedDir = testDirectory.directory( "embedded-dir" );
         DatabaseManagementService dbms = newEmbeddedDbms( embeddedDir );
         Neo4jLayout embeddedLayout = ((GraphDatabaseAPI) dbms.database( DEFAULT_DATABASE_NAME )).databaseLayout().getNeo4jLayout();
         dbms.shutdown();
@@ -248,11 +245,11 @@ public abstract class BaseBootstrapperIT extends ExclusiveWebContainerTestBase
         if ( httpsEnabled )
         {
             //create self signed
-            SelfSignedCertificateFactory.create( testDirectory.homePath().toAbsolutePath() );
+            SelfSignedCertificateFactory.create( testDirectory.absolutePath() );
         }
 
         String[] config = { "-c", httpsEnabled ? configOption( httpsPolicy.enabled, SettingValueParsers.TRUE ) : "",
-                "-c", httpsEnabled ? configOption( httpsPolicy.base_directory, testDirectory.homeDir().getAbsolutePath() ) : "",
+                "-c", httpsEnabled ? configOption( httpsPolicy.base_directory, testDirectory.absolutePath().toString() ) : "",
 
                 "-c", HttpConnector.enabled.name() + "=" + httpEnabled,
                 "-c", HttpConnector.listen_address.name() + "=localhost:0",

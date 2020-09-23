@@ -94,7 +94,7 @@ public class Neo4jWithSocket
     {
         var testName = testInfo.getTestMethod().get().getName();
         testDirectory.prepareDirectory( testInfo.getTestClass().get(), testName );
-        workingDirectory = testDirectory.directoryPath( testName );
+        workingDirectory = testDirectory.directory( testName );
 
         ensureDatabase( settings -> {} );
     }

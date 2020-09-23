@@ -25,19 +25,18 @@ import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.api.parallel.Resources;
 import picocli.CommandLine;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Collections;
 
 import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.dbms.api.DatabaseManagementService;
+import org.neo4j.io.fs.FileUtils;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.SuppressOutputExtension;
@@ -64,16 +63,16 @@ class DiagnosticsReportCommandIT
         assertThat( pid ).isNotEqualTo( 0 );
 
         // Write config file
-        Files.createFile( testDirectory.file( "neo4j.conf" ).toPath() );
+        Files.createFile( testDirectory.file( "neo4j.conf" ) );
 
         // write neo4j.pid file
-        File run = testDirectory.directory( "run" );
-        Files.write( Paths.get( run.getAbsolutePath(), "neo4j.pid" ), String.valueOf( pid ).getBytes() );
+        Path run = testDirectory.directory( "run" );
+        Files.write( run.resolve( "neo4j.pid" ), String.valueOf( pid ).getBytes() );
 
         // Run command, should detect running instance
         try
         {
-            String[] args = {"threads", "--to=" + testDirectory.absolutePath().getAbsolutePath() + "/reports"};
+            String[] args = {"threads", "--to=" + testDirectory.absolutePath() + "/reports"};
             Path homeDir = testDirectory.homePath();
             var ctx = new ExecutionContext( homeDir, homeDir, System.out, System.err, testDirectory.getFileSystem() );
             DiagnosticsReportCommand diagnosticsReportCommand = new DiagnosticsReportCommand( ctx );
@@ -90,12 +89,12 @@ class DiagnosticsReportCommandIT
         }
 
         // Verify that we took a thread dump
-        File reports = testDirectory.directory( "reports" );
-        File[] files = reports.listFiles();
+        Path reports = testDirectory.directory( "reports" );
+        Path[] files = FileUtils.listPaths( reports );
         assertThat( files ).isNotNull();
         assertThat( files.length ).isEqualTo( 1 );
 
-        Path report = files[0].toPath();
+        Path report = files[0];
         final URI uri = URI.create( "jar:file:" + report.toUri().getRawPath() );
 
         try ( FileSystem fs = FileSystems.newFileSystem( uri, Collections.emptyMap() ) )

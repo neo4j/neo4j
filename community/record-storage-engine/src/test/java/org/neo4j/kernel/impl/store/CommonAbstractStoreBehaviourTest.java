@@ -24,7 +24,6 @@ import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Queue;
@@ -265,7 +264,7 @@ class CommonAbstractStoreBehaviourTest
 
         // when
         store.close();
-        fs.deleteFile( new File( MyStore.ID_FILENAME ).toPath() );
+        fs.deleteFile( Path.of( MyStore.ID_FILENAME ) );
         createStore();
         store.start( NULL );
 
@@ -294,7 +293,7 @@ class CommonAbstractStoreBehaviourTest
 
         // when
         store.close();
-        fs.deleteFile( new File( MyStore.STORE_FILENAME ).toPath() );
+        fs.deleteFile( Path.of( MyStore.STORE_FILENAME ) );
         createStore();
         store.start( NULL );
 

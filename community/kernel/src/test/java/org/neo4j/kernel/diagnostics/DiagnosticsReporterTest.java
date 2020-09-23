@@ -61,7 +61,7 @@ class DiagnosticsReporterTest
     {
         DiagnosticsReporter reporter = setupDiagnosticsReporter();
 
-        Path destination = testDirectory.filePath( "logs.zip" );
+        Path destination = testDirectory.file( "logs.zip" );
 
         reporter.dump( Collections.singleton( "logs" ), destination, mock( DiagnosticsReporterProgress.class), true );
 
@@ -78,7 +78,7 @@ class DiagnosticsReporterTest
 
         myProvider.addFile( "logs/a.txt", createNewFileWithContent( "a.txt", "file a") );
 
-        Path destination = testDirectory.filePath( "logs.zip" );
+        Path destination = testDirectory.file( "logs.zip" );
         Set<String> classifiers = new HashSet<>();
         classifiers.add( "logs" );
         classifiers.add( "fail" );
@@ -117,7 +117,7 @@ class DiagnosticsReporterTest
     {
         DiagnosticsReporter reporter = setupDiagnosticsReporter();
 
-        Path destination = testDirectory.filePath( "log files.zip" );
+        Path destination = testDirectory.file( "log files.zip" );
 
         reporter.dump( Collections.singleton( "logs" ), destination, mock( DiagnosticsReporterProgress.class), true );
 
@@ -126,7 +126,7 @@ class DiagnosticsReporterTest
 
     private Path createNewFileWithContent( String name, String content ) throws IOException
     {
-        Path file = testDirectory.filePath( name );
+        Path file = testDirectory.file( name );
         Files.write( file, content.getBytes() );
         return file;
     }

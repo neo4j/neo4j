@@ -69,7 +69,7 @@ class BlockingBootstrapperTest
 
         new Thread( () ->
         {
-            status.set( bootstrapper.start( homeDir.directoryPath( "home-dir" ), Collections.emptyMap() ) );
+            status.set( bootstrapper.start( homeDir.directory( "home-dir" ), Collections.emptyMap() ) );
             exited.set( true );
         } ).start();
 
@@ -106,7 +106,7 @@ class BlockingBootstrapperTest
 
         new Thread( () ->
         {
-            status.set( bootstrapper.start( homeDir.directoryPath( "home-dir" ), null, Collections.emptyMap(), false ) );
+            status.set( bootstrapper.start( homeDir.directory( "home-dir" ), null, Collections.emptyMap(), false ) );
             exited.set( true );
         } ).start();
 

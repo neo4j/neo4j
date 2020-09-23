@@ -19,11 +19,12 @@
  */
 package org.neo4j.test.ports;
 
-import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 
 import static org.neo4j.test.ports.PortConstants.EPHEMERAL_PORT_MAXIMUM;
 
@@ -53,10 +54,9 @@ class PortRepository
                 Files.createFile( portFilePath );
 
                 // write a trace for debugging purposes
-                try ( FileOutputStream fileOutputStream = new FileOutputStream( portFilePath.toFile(), true ) )
+                try ( OutputStream fileOutputStream = Files.newOutputStream( portFilePath, StandardOpenOption.APPEND ) )
                 {
                     fileOutputStream.write( trace.getBytes() );
-                    fileOutputStream.flush();
                 }
 
                 return currentPort++;

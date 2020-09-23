@@ -96,7 +96,7 @@ public abstract class NativeIndexTestUtil<KEY extends NativeIndexKey<KEY>,VALUE 
         valueCreatorUtil = createValueCreatorUtil();
         indexDescriptor = valueCreatorUtil.indexDescriptor();
         layout = createLayout();
-        indexDirectoryStructure = directoriesByProvider( directory.directoryPath( "root" ) ).forProvider( indexDescriptor.getIndexProvider() );
+        indexDirectoryStructure = directoriesByProvider( directory.directory( "root" ) ).forProvider( indexDescriptor.getIndexProvider() );
         this.indexFiles = new IndexFiles( fs, indexDirectoryStructure, indexDescriptor.getId() );
         fs.mkdirs( indexFiles.getStoreFile().getParent() );
         jobScheduler = JobSchedulerFactory.createInitialisedScheduler();

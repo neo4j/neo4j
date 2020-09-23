@@ -21,9 +21,9 @@ package org.neo4j.server.configuration;
 
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 
 import org.neo4j.configuration.Config;
@@ -46,8 +46,8 @@ class ServerSettingsMigratorTest
     @Test
     void testWhitelistSettingsRename() throws IOException
     {
-        File confFile = testDirectory.createFile( "test.conf" );
-        Files.write( confFile.toPath(), List.of( "dbms.security.http_auth_whitelist=a,b" ) );
+        Path confFile = testDirectory.createFile( "test.conf" );
+        Files.write( confFile, List.of( "dbms.security.http_auth_whitelist=a,b" ) );
 
         Config config = Config.newBuilder().fromFile( confFile ).build();
         var logProvider = new AssertableLogProvider();

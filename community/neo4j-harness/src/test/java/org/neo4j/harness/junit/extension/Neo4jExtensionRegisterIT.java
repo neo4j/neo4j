@@ -99,7 +99,7 @@ class Neo4jExtensionRegisterIT
     @Test
     void customExtensionWorkingDirectory( Neo4j neo4j )
     {
-        assertThat( neo4j.config().get( GraphDatabaseSettings.neo4j_home ).toFile().getParentFile().getName() ).startsWith( REGISTERED_TEMP_PREFIX );
+        assertThat( neo4j.config().get( GraphDatabaseSettings.neo4j_home ).getParent().getFileName().toString() ).startsWith( REGISTERED_TEMP_PREFIX );
     }
 
     @Test

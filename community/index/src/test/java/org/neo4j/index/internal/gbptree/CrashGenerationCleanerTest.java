@@ -123,7 +123,7 @@ class CrashGenerationCleanerTest
     {
         PageCache pageCache = pageCacheExtension
                 .getPageCache( fileSystem, config().withPageSize( PAGE_SIZE ).withAccessChecks( true ) );
-        pagedFile = pageCache.map( testDirectory.filePath( FILE_NAME ), PAGE_SIZE, immutable.of( CREATE, DELETE_ON_CLOSE ) );
+        pagedFile = pageCache.map( testDirectory.file( FILE_NAME ), PAGE_SIZE, immutable.of( CREATE, DELETE_ON_CLOSE ) );
     }
 
     @AfterEach

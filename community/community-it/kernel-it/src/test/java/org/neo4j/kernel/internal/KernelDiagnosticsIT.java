@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Set;
@@ -132,9 +133,9 @@ class KernelDiagnosticsIT
     private static void manuallyCountTotalMappedFileSize( Path dir, MutableLong result, NativeIndexFileFilter nativeIndexFilter )
     {
         Set<String> storeFiles = Stream.of( StoreType.values() ).map( type -> type.getDatabaseFile().getName() ).collect( Collectors.toSet() );
-        try ( Stream<Path> list = Files.list( dir ) )
+        try ( DirectoryStream<Path> paths = Files.newDirectoryStream( dir ) )
         {
-            list.forEach( path ->
+            for ( Path path : paths )
             {
                 if ( Files.isDirectory( path ) )
                 {
@@ -152,7 +153,7 @@ class KernelDiagnosticsIT
                         // Preserve behaviour of File.length()
                     }
                 }
-            });
+            }
         }
         catch ( IOException e )
         {

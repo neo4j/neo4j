@@ -66,7 +66,7 @@ class FileUserRepositoryTest
     @BeforeEach
     void setUp()
     {
-        authFile = testDirectory.directoryPath( "dbms" ).resolve( "auth" );
+        authFile = testDirectory.directory( "dbms" ).resolve( "auth" );
     }
 
     @Test

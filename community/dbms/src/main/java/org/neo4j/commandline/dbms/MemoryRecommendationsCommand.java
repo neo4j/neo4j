@@ -22,9 +22,8 @@ package org.neo4j.commandline.dbms;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
-import java.io.File;
-import java.io.FilenameFilter;
 import java.io.IOException;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.function.Predicate;
@@ -299,24 +298,23 @@ class MemoryRecommendationsCommand extends AbstractCommand
         return sumIndexFiles( baseSchemaIndexFolder( databaseDirectory ), getNativeIndexFileFilter( databaseDirectory, true ) );
     }
 
-    private FilenameFilter getNativeIndexFileFilter( Path storeDir, boolean inverse )
+    private DirectoryStream.Filter<Path> getNativeIndexFileFilter( Path storeDir, boolean inverse )
     {
         Predicate<Path> nativeIndexFilter = new NativeIndexFileFilter( storeDir );
-        return ( dir, name ) ->
+        return file ->
         {
-            File file = new File( dir, name );
-            if ( ctx.fs().isDirectory( file.toPath() ) )
+            if ( ctx.fs().isDirectory( file ) )
             {
                 // Always go down directories
                 return true;
             }
-            if ( name.equals( FailureStorage.DEFAULT_FAILURE_FILE_NAME ) )
+            if ( file.getFileName().toString().equals( FailureStorage.DEFAULT_FAILURE_FILE_NAME ) )
             {
                 // Never include failure-storage files
                 return false;
             }
 
-            return inverse != nativeIndexFilter.test( file.toPath() );
+            return inverse != nativeIndexFilter.test( file );
         };
     }
 
@@ -346,7 +344,7 @@ class MemoryRecommendationsCommand extends AbstractCommand
         return fileSystem.fileExists( file ) ? fileSystem.getFileSize( file ) : 0;
     }
 
-    private long sumIndexFiles( Path file, FilenameFilter filter )
+    private long sumIndexFiles( Path file, DirectoryStream.Filter<Path> filter )
     {
         long total = 0;
         if ( ctx.fs().isDirectory( file ) )
@@ -376,7 +374,7 @@ class MemoryRecommendationsCommand extends AbstractCommand
         try
         {
             Config config = Config.newBuilder()
-                    .fromFile( configFile.toFile() )
+                    .fromFile( configFile )
                     .set( GraphDatabaseSettings.neo4j_home, ctx.homeDir().toAbsolutePath() )
                     .build();
             ConfigUtils.disableAllConnectors( config );

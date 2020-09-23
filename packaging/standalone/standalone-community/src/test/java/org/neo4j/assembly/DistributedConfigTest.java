@@ -57,7 +57,7 @@ class DistributedConfigTest
         List<String> mentionedSettings = new ArrayList<>();
         Path of = Path.of( "src", "main", "distribution", "text", "community", "conf", "neo4j.conf" );
         List<String> lines = Files.readAllLines( of );
-        Path newConfig = testDirectory.filePath( "tmp.conf" );
+        Path newConfig = testDirectory.file( "tmp.conf" );
         boolean multiLine = false;
         try ( PrintWriter writer = new PrintWriter( Files.newBufferedWriter( newConfig ) ) )
         {

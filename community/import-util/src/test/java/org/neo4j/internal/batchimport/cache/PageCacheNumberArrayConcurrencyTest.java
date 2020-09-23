@@ -66,7 +66,7 @@ public abstract class PageCacheNumberArrayConcurrencyTest
 
     private void doRace( BiFunction<NumberArray,Integer,Runnable> contestantCreator ) throws Throwable
     {
-        PagedFile file = pageCache.map( testDirectory.filePath( "file" ), pageCache.pageSize(), immutable.of( CREATE, DELETE_ON_CLOSE ) );
+        PagedFile file = pageCache.map( testDirectory.file( "file" ), pageCache.pageSize(), immutable.of( CREATE, DELETE_ON_CLOSE ) );
         Race race = new Race();
         try ( NumberArray array = getNumberArray( file ) )
         {

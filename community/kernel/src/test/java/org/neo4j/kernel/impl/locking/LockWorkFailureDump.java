@@ -19,9 +19,10 @@
  */
 package org.neo4j.kernel.impl.locking;
 
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -29,16 +30,16 @@ import org.neo4j.logging.log4j.Log4jLogProvider;
 
 public class LockWorkFailureDump
 {
-    private final File file;
+    private final Path file;
 
-    public LockWorkFailureDump( File file )
+    public LockWorkFailureDump( Path file )
     {
         this.file = file;
     }
 
-    public File dumpState( Locks lm, LockWorker... workers ) throws IOException
+    public Path dumpState( Locks lm, LockWorker... workers ) throws IOException
     {
-        try ( FileOutputStream out = new FileOutputStream( file, false ) )
+        try ( OutputStream out = Files.newOutputStream( file ) )
         {
             LogProvider logProvider = new Log4jLogProvider( out );
             //  * locks held by the lock manager

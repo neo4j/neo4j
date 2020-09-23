@@ -19,7 +19,6 @@
  */
 package org.neo4j.internal.nativeimpl;
 
-import org.apache.commons.lang3.reflect.FieldUtils;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
@@ -29,11 +28,16 @@ import org.junit.jupiter.api.io.TempDir;
 
 import java.io.FileDescriptor;
 import java.io.IOException;
-import java.io.RandomAccessFile;
+import java.nio.channels.Channel;
+import java.nio.channels.FileChannel;
 import java.nio.file.FileStore;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import static java.nio.file.StandardOpenOption.CREATE;
+import static java.nio.file.StandardOpenOption.READ;
+import static java.nio.file.StandardOpenOption.WRITE;
+import static org.apache.commons.lang3.reflect.FieldUtils.getDeclaredField;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -66,7 +70,7 @@ class LinuxNativeAccessTest
         }
 
         @Test
-        void accessErrorMessageOnError() throws IOException, IllegalAccessException
+        void accessErrorMessageOnError() throws IOException, IllegalAccessException, ClassNotFoundException
         {
             Path file = tempFile.resolve( "file" );
             int descriptor = getClosedDescriptor( file );
@@ -76,7 +80,7 @@ class LinuxNativeAccessTest
         }
 
         @Test
-        void failToPreallocateOnLinuxForIncorrectDescriptor() throws IOException, IllegalAccessException
+        void failToPreallocateOnLinuxForIncorrectDescriptor() throws IOException, IllegalAccessException, ClassNotFoundException
         {
             var preallocateResult = nativeAccess.tryPreallocateSpace( 0, 1024 );
             assertEquals( ERROR, preallocateResult.getErrorCode() );
@@ -92,7 +96,7 @@ class LinuxNativeAccessTest
         }
 
         @Test
-        void preallocateCacheOnLinuxForCorrectDescriptor() throws IOException, IllegalAccessException
+        void preallocateCacheOnLinuxForCorrectDescriptor() throws IOException, IllegalAccessException, ClassNotFoundException
         {
             FileStore fileStore = Files.getFileStore( tempFile );
             long blockSize = fileStore.getBlockSize();
@@ -113,7 +117,7 @@ class LinuxNativeAccessTest
         }
 
         @Test
-        void failToAdviseSequentialOnLinuxForIncorrectDescriptor() throws IOException, IllegalAccessException
+        void failToAdviseSequentialOnLinuxForIncorrectDescriptor() throws IOException, IllegalAccessException, ClassNotFoundException
         {
             var nativeCallResult = nativeAccess.tryAdviseSequentialAccess( 0 );
             assertEquals( ERROR, nativeCallResult.getErrorCode() );
@@ -129,12 +133,12 @@ class LinuxNativeAccessTest
         }
 
         @Test
-        void adviseSequentialAccessOnLinuxForCorrectDescriptor() throws IOException, IllegalAccessException
+        void adviseSequentialAccessOnLinuxForCorrectDescriptor() throws IOException, IllegalAccessException, ClassNotFoundException
         {
             Path file = tempFile.resolve( "correctSequentialFile" );
-            try ( RandomAccessFile randomFile = new RandomAccessFile( file.toFile(), "rw" ) )
+            try ( Channel channel = FileChannel.open( file, READ, WRITE, CREATE ) )
             {
-                int descriptor = getDescriptor( randomFile );
+                int descriptor = getDescriptor( channel );
                 var nativeCallResult = nativeAccess.tryAdviseSequentialAccess( descriptor );
                 assertEquals( 0, nativeCallResult.getErrorCode() );
                 assertFalse( nativeCallResult.isError() );
@@ -142,7 +146,7 @@ class LinuxNativeAccessTest
         }
 
         @Test
-        void failToSkipCacheOnLinuxForIncorrectDescriptor() throws IOException, IllegalAccessException
+        void failToSkipCacheOnLinuxForIncorrectDescriptor() throws IOException, IllegalAccessException, ClassNotFoundException
         {
             assertEquals( ERROR, nativeAccess.tryEvictFromCache( 0 ).getErrorCode() );
             assertEquals( ERROR, nativeAccess.tryEvictFromCache( -1 ).getErrorCode() );
@@ -153,37 +157,38 @@ class LinuxNativeAccessTest
         }
 
         @Test
-        void skipCacheOnLinuxForCorrectDescriptor() throws IOException, IllegalAccessException
+        void skipCacheOnLinuxForCorrectDescriptor() throws IOException, IllegalAccessException, ClassNotFoundException
         {
             Path file = tempFile.resolve( "file" );
-            try ( RandomAccessFile randomFile = new RandomAccessFile( file.toFile(), "rw" ) )
+            try ( Channel channel = FileChannel.open( file, READ, WRITE, CREATE ) )
             {
-                int descriptor = getDescriptor( randomFile );
+                int descriptor = getDescriptor( channel );
                 assertFalse( nativeAccess.tryEvictFromCache( descriptor ).isError() );
             }
         }
     }
 
-    private void preallocate( Path file, long bytes ) throws IOException, IllegalAccessException
+    private void preallocate( Path file, long bytes ) throws IOException, IllegalAccessException, ClassNotFoundException
     {
-        try ( RandomAccessFile randomFile = new RandomAccessFile( file.toFile(), "rw" ) )
+        try ( Channel channel = FileChannel.open( file, READ, WRITE, CREATE ) )
         {
-            int descriptor = getDescriptor( randomFile );
+            int descriptor = getDescriptor( channel );
             assertFalse( nativeAccess.tryPreallocateSpace( descriptor, bytes ).isError() );
         }
     }
 
-    private int getClosedDescriptor( Path file ) throws IOException, IllegalAccessException
+    private int getClosedDescriptor( Path file ) throws IOException, IllegalAccessException, ClassNotFoundException
     {
-        try ( RandomAccessFile randomFile = new RandomAccessFile( file.toFile(), "rw" ) )
+        try ( Channel channel = FileChannel.open( file, READ, WRITE, CREATE ) )
         {
-            return getDescriptor( randomFile );
+            return getDescriptor( channel );
         }
     }
 
-    private int getDescriptor( RandomAccessFile randomFile ) throws IOException, IllegalAccessException
+    private int getDescriptor( Channel channel ) throws ClassNotFoundException, IllegalAccessException
     {
-        FileDescriptor fd = randomFile.getFD();
-        return FieldUtils.getDeclaredField( FileDescriptor.class, "fd", true ).getInt( fd );
+        Class<?> fileChannelImpl = Class.forName( "sun.nio.ch.FileChannelImpl" );
+        FileDescriptor fd = (FileDescriptor) getDeclaredField( fileChannelImpl, "fd", true ).get( channel );
+        return getDeclaredField( FileDescriptor.class, "fd", true ).getInt( fd );
     }
 }

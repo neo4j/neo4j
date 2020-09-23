@@ -21,10 +21,8 @@ package org.neo4j.kernel.impl.security;
 
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
 import java.net.URL;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -66,9 +64,9 @@ class FileURLAccessRuleTest
     @Test
     void shouldThrowWhenRelativePathIsOutsideImportDirectory()
     {
-        assumeFalse( Paths.get( "/" ).relativize( Paths.get( "/../baz.csv" ) ).toString().equals( "baz.csv" ) );
-        File importDir = new File( "/tmp/neo4jtest" ).getAbsoluteFile();
-        final Config config = Config.defaults( GraphDatabaseSettings.load_csv_file_url_root, importDir.toPath() );
+        assumeFalse( Path.of( "/" ).relativize( Path.of( "/../baz.csv" ) ).toString().equals( "baz.csv" ) );
+        Path importDir = Path.of( "/tmp/neo4jtest" ).toAbsolutePath();
+        final Config config = Config.defaults( GraphDatabaseSettings.load_csv_file_url_root, importDir );
         var error = assertThrows( URLAccessValidationError.class, () ->
             URLAccessRules.fileAccess().validate( config, new URL( "file:///../baz.csv" ) ) );
         assertThat( error.getMessage() ).isEqualTo( "file URL points outside configured import directory" );
@@ -77,10 +75,10 @@ class FileURLAccessRuleTest
     @Test
     void shouldAdjustURLToWithinImportDirectory() throws Exception
     {
-        final URL url = new File( "/bar/baz.csv" ).toURI().toURL();
+        final URL url = Path.of( "/bar/baz.csv" ).toUri().toURL();
         final Config config = Config.defaults( GraphDatabaseSettings.load_csv_file_url_root, Path.of( "/var/lib/neo4j/import" ) );
         URL accessURL = URLAccessRules.fileAccess().validate( config, url );
-        URL expected = new File( "/var/lib/neo4j/import/bar/baz.csv" ).toURI().toURL();
+        URL expected = Path.of( "/var/lib/neo4j/import/bar/baz.csv" ).toUri().toURL();
         assertEquals( expected, accessURL );
     }
 }

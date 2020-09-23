@@ -84,7 +84,7 @@ class DatabasePageCacheTest
     @Test
     void mapDatabaseFile() throws IOException
     {
-        Path mapFile = testDirectory.createFilePath( "mapFile" );
+        Path mapFile = testDirectory.createFile( "mapFile" );
         PagedFile pagedFile = databasePageCache.map( mapFile, EMPTY, PAGE_SIZE, immutable.empty() );
 
         assertNotNull( pagedFile );
@@ -94,8 +94,8 @@ class DatabasePageCacheTest
     @Test
     void listExistingDatabaseMappings() throws IOException
     {
-        Path mapFile1 = testDirectory.createFilePath( "mapFile1" );
-        Path mapFile2 = testDirectory.createFilePath( "mapFile2" );
+        Path mapFile1 = testDirectory.createFile( "mapFile1" );
+        Path mapFile2 = testDirectory.createFile( "mapFile2" );
         PagedFile pagedFile = databasePageCache.map( mapFile1, PAGE_SIZE );
         PagedFile pagedFile2 = databasePageCache.map( mapFile2, PAGE_SIZE );
 
@@ -110,10 +110,10 @@ class DatabasePageCacheTest
     {
         try ( DatabasePageCache anotherDatabaseCache = new DatabasePageCache( globalPageCache, EMPTY, null ) )
         {
-            Path mapFile1 = testDirectory.createFilePath( "mapFile1" );
-            Path mapFile2 = testDirectory.createFilePath( "mapFile2" );
-            Path mapFile3 = testDirectory.createFilePath( "mapFile3" );
-            Path mapFile4 = testDirectory.createFilePath( "mapFile4" );
+            Path mapFile1 = testDirectory.createFile( "mapFile1" );
+            Path mapFile2 = testDirectory.createFile( "mapFile2" );
+            Path mapFile3 = testDirectory.createFile( "mapFile3" );
+            Path mapFile4 = testDirectory.createFile( "mapFile4" );
             PagedFile pagedFile = databasePageCache.map( mapFile1, PAGE_SIZE );
             PagedFile pagedFile2 = databasePageCache.map( mapFile2, PAGE_SIZE );
             PagedFile pagedFile3 = anotherDatabaseCache.map( mapFile3, PAGE_SIZE );
@@ -134,10 +134,10 @@ class DatabasePageCacheTest
     {
         try ( DatabasePageCache anotherDatabaseCache = new DatabasePageCache( globalPageCache, EMPTY,  null ) )
         {
-            Path mapFile1 = testDirectory.createFilePath( "mapFile1" );
-            Path mapFile2 = testDirectory.createFilePath( "mapFile2" );
-            Path mapFile3 = testDirectory.createFilePath( "mapFile3" );
-            Path mapFile4 = testDirectory.createFilePath( "mapFile4" );
+            Path mapFile1 = testDirectory.createFile( "mapFile1" );
+            Path mapFile2 = testDirectory.createFile( "mapFile2" );
+            Path mapFile3 = testDirectory.createFile( "mapFile3" );
+            Path mapFile4 = testDirectory.createFile( "mapFile4" );
             databasePageCache.map( mapFile1, PAGE_SIZE );
             databasePageCache.map( mapFile2, PAGE_SIZE );
             anotherDatabaseCache.map( mapFile3, PAGE_SIZE );
@@ -168,10 +168,10 @@ class DatabasePageCacheTest
     {
         try ( DatabasePageCache anotherDatabaseCache = new DatabasePageCache( globalPageCache, EMPTY, null ) )
         {
-            Path mapFile1 = testDirectory.createFilePath( "mapFile1" );
-            Path mapFile2 = testDirectory.createFilePath( "mapFile2" );
-            Path mapFile3 = testDirectory.createFilePath( "mapFile3" );
-            Path mapFile4 = testDirectory.createFilePath( "mapFile4" );
+            Path mapFile1 = testDirectory.createFile( "mapFile1" );
+            Path mapFile2 = testDirectory.createFile( "mapFile2" );
+            Path mapFile3 = testDirectory.createFile( "mapFile3" );
+            Path mapFile4 = testDirectory.createFile( "mapFile4" );
             databasePageCache.map( mapFile1, PAGE_SIZE );
             databasePageCache.map( mapFile2, PAGE_SIZE );
             anotherDatabaseCache.map( mapFile3, PAGE_SIZE );
@@ -197,10 +197,10 @@ class DatabasePageCacheTest
     {
         try ( DatabasePageCache anotherDatabaseCache = new DatabasePageCache( globalPageCache, EMPTY, null ) )
         {
-            Path mapFile1 = testDirectory.createFilePath( "mapFile1" );
-            Path mapFile2 = testDirectory.createFilePath( "mapFile2" );
-            Path mapFile3 = testDirectory.createFilePath( "mapFile3" );
-            Path mapFile4 = testDirectory.createFilePath( "mapFile4" );
+            Path mapFile1 = testDirectory.createFile( "mapFile1" );
+            Path mapFile2 = testDirectory.createFile( "mapFile2" );
+            Path mapFile3 = testDirectory.createFile( "mapFile3" );
+            Path mapFile4 = testDirectory.createFile( "mapFile4" );
             databasePageCache.map( mapFile1, PAGE_SIZE );
             databasePageCache.map( mapFile2, PAGE_SIZE );
             anotherDatabaseCache.map( mapFile3, PAGE_SIZE );
@@ -224,8 +224,8 @@ class DatabasePageCacheTest
     @Test
     void closingFileCloseCacheMapping() throws IOException
     {
-        Path mapFile1 = testDirectory.createFilePath( "mapFile1" );
-        Path mapFile2 = testDirectory.createFilePath( "mapFile2" );
+        Path mapFile1 = testDirectory.createFile( "mapFile1" );
+        Path mapFile2 = testDirectory.createFile( "mapFile2" );
         PagedFile pagedFile1 = databasePageCache.map( mapFile1, PAGE_SIZE );
         PagedFile pagedFile2 = databasePageCache.map( mapFile2, PAGE_SIZE );
 

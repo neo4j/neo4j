@@ -24,10 +24,10 @@ import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermission;
 import java.util.EnumSet;
 
@@ -54,8 +54,8 @@ public class DefaultFileSystemAbstractionTest extends FileSystemAbstractionTest
     @DisabledOnOs( OS.WINDOWS )
     void retrieveFileDescriptor() throws IOException
     {
-        File testFile = testDirectory.file( "testFile" );
-        try ( StoreChannel storeChannel = fsa.write( testFile.toPath() ) )
+        Path testFile = testDirectory.file( "testFile" );
+        try ( StoreChannel storeChannel = fsa.write( testFile ) )
         {
             int fileDescriptor = fsa.getFileDescriptor( storeChannel );
             assertThat( fileDescriptor ).isGreaterThan( 0 );
@@ -66,8 +66,8 @@ public class DefaultFileSystemAbstractionTest extends FileSystemAbstractionTest
     @EnabledOnOs( OS.WINDOWS )
     void retrieveWindowsFileDescriptor() throws IOException
     {
-        File testFile = testDirectory.file( "testFile" );
-        try ( StoreChannel storeChannel = fsa.write( testFile.toPath() ) )
+        Path testFile = testDirectory.file( "testFile" );
+        try ( StoreChannel storeChannel = fsa.write( testFile ) )
         {
             int fileDescriptor = fsa.getFileDescriptor( storeChannel );
             assertThat( fileDescriptor ).isEqualTo( INVALID_FILE_DESCRIPTOR );
@@ -77,9 +77,9 @@ public class DefaultFileSystemAbstractionTest extends FileSystemAbstractionTest
     @Test
     void retrieveFileDescriptorOnClosedChannel() throws IOException
     {
-        File testFile = testDirectory.file( "testFile" );
+        Path testFile = testDirectory.file( "testFile" );
         StoreChannel escapedChannel = null;
-        try ( StoreChannel storeChannel = fsa.write( testFile.toPath() ) )
+        try ( StoreChannel storeChannel = fsa.write( testFile ) )
         {
             escapedChannel = storeChannel;
         }
@@ -91,7 +91,7 @@ public class DefaultFileSystemAbstractionTest extends FileSystemAbstractionTest
     void retrieveBlockSize() throws IOException
     {
         var testFile = testDirectory.createFile( "testBlock" );
-        long blockSize = fsa.getBlockSize( testFile.toPath() );
+        long blockSize = fsa.getBlockSize( testFile );
         assertTrue( isPowerOfTwo( blockSize ), "Observed block size: " + blockSize );
         assertThat( blockSize ).isGreaterThanOrEqualTo( 512L );
     }

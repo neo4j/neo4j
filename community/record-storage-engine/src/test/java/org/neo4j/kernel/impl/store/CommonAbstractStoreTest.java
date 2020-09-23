@@ -137,8 +137,8 @@ class CommonAbstractStoreTest
     @Test
     void failStoreInitializationWhenHeaderRecordCantBeRead() throws IOException
     {
-        Path storeFile = dir.filePath( "a" );
-        Path idFile = dir.filePath( "idFile" );
+        Path storeFile = dir.file( "a" );
+        Path idFile = dir.file( "idFile" );
         PageCache pageCache = mock( PageCache.class );
         PagedFile pagedFile = mock( PagedFile.class );
         PageCursor pageCursor = mock( PageCursor.class );

@@ -22,8 +22,8 @@ package org.neo4j.graphdb;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 
 import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
@@ -44,7 +44,6 @@ import org.neo4j.test.rule.RandomRule;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.collection.PrimitiveLongCollections.closingAsArray;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
@@ -117,14 +116,14 @@ class LabelScanStoreStartupIT
         }
     }
 
-    private void scrambleFile( File file ) throws IOException
+    private void scrambleFile( java.nio.file.Path file ) throws IOException
     {
         TokenScanStoreTest.scrambleFile( random.random(), file );
     }
 
-    private static File storeFile( DatabaseLayout databaseLayout )
+    private static java.nio.file.Path storeFile( DatabaseLayout databaseLayout )
     {
-        return databaseLayout.labelScanStore().toFile();
+        return databaseLayout.labelScanStore();
     }
 
     private void corruptLabelScanStoreFiles( DatabaseLayout databaseLayout ) throws IOException
@@ -132,9 +131,9 @@ class LabelScanStoreStartupIT
         scrambleFile( storeFile( databaseLayout ) );
     }
 
-    private static void deleteLabelScanStoreFiles( DatabaseLayout databaseLayout )
+    private static void deleteLabelScanStoreFiles( DatabaseLayout databaseLayout ) throws IOException
     {
-        assertTrue( storeFile( databaseLayout ).delete() );
+        Files.delete( storeFile( databaseLayout ) );
     }
 
     private static void checkLabelScanStoreAccessible( LabelScanStore labelScanStore ) throws IOException

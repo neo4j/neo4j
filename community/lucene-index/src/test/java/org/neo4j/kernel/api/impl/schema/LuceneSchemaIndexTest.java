@@ -142,7 +142,7 @@ class LuceneSchemaIndexTest
     {
         LuceneSchemaIndexBuilder builder = LuceneSchemaIndexBuilder.create( descriptor, Config.defaults() );
         return builder
-                .withIndexRootFolder( testDir.directoryPath( "index" ).resolve( "testIndex" ) )
+                .withIndexRootFolder( testDir.directory( "index" ).resolve( "testIndex" ) )
                 .withDirectoryFactory( dirFactory )
                 .withFileSystem( fs )
                 .build();

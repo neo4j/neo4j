@@ -97,7 +97,7 @@ public class UniqueIndexRecoveryTest
         dropConstraints();
 
         // when - perform recovery
-        restart( snapshot( storeDir.homePath().toAbsolutePath() ), schemaIndex );
+        restart( snapshot( storeDir.absolutePath() ), schemaIndex );
 
         // then - just make sure the constraint is gone
         try ( Transaction tx = db.beginTx() )
@@ -124,7 +124,7 @@ public class UniqueIndexRecoveryTest
         flushAll(); // persist - recovery will do everything since last log rotate
 
         // WHEN recovery is triggered
-        restart( snapshot( storeDir.homePath().toAbsolutePath() ), schemaIndex );
+        restart( snapshot( storeDir.absolutePath() ), schemaIndex );
 
         // THEN
         // it should just not blow up!
@@ -143,7 +143,7 @@ public class UniqueIndexRecoveryTest
 
     private GraphDatabaseService newDb( SchemaIndex schemaIndex )
     {
-        managementService = new TestDatabaseManagementServiceBuilder( storeDir.homePath().toAbsolutePath() )
+        managementService = new TestDatabaseManagementServiceBuilder( storeDir.absolutePath() )
                 .setConfig( default_schema_provider, schemaIndex.providerName() )
                 .build();
         return managementService.database( DEFAULT_DATABASE_NAME );
@@ -154,7 +154,7 @@ public class UniqueIndexRecoveryTest
         Path snapshotDir = path.resolve( "snapshot-" + new Random().nextInt() );
         FileUtils.copyDirectory( path, snapshotDir, pathName ->
         {
-            String subPath = pathName.toFile().getAbsolutePath().substring( path.toFile().getPath().length() + 1 );
+            String subPath = pathName.toAbsolutePath().toString().substring( path.toString().length() + 1 );
             // since the db is running, exclude the lock files
             return !"store_lock".equals( subPath ) && !subPath.endsWith( "write.lock" );
         } );

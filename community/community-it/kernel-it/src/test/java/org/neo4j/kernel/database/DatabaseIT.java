@@ -23,7 +23,6 @@ import org.eclipse.collections.api.set.ImmutableSet;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.OpenOption;
@@ -130,18 +129,18 @@ class DatabaseIT
     {
         database.stop();
 
-        File databaseDirectory = databaseLayout.databaseDirectory().toFile();
-        File transactionLogsDirectory = databaseLayout.getTransactionLogsDirectory().toFile();
-        assertTrue( fs.fileExists( databaseDirectory.toPath() ) );
-        assertTrue( fs.fileExists( transactionLogsDirectory.toPath() ) );
+        Path databaseDirectory = databaseLayout.databaseDirectory();
+        Path transactionLogsDirectory = databaseLayout.getTransactionLogsDirectory();
+        assertTrue( fs.fileExists( databaseDirectory ) );
+        assertTrue( fs.fileExists( transactionLogsDirectory ) );
 
-        File[] databaseFilesShouldExist = filesToKeepOnTruncation( databaseLayout ).stream().map( Path::toFile ).filter( File::exists ).toArray( File[]::new );
+        Path[] databaseFilesShouldExist = filesToKeepOnTruncation( databaseLayout ).stream().filter( Files::exists ).toArray( Path[]::new );
 
         database.truncate();
 
-        assertTrue( fs.fileExists( databaseDirectory.toPath() ) );
-        assertTrue( fs.fileExists( transactionLogsDirectory.toPath() ) );
-        File[] currentDatabaseFiles = databaseDirectory.listFiles();
+        assertTrue( fs.fileExists( databaseDirectory ) );
+        assertTrue( fs.fileExists( transactionLogsDirectory ) );
+        Path[] currentDatabaseFiles = fs.listFiles( databaseDirectory );
         assertThat( currentDatabaseFiles ).contains( databaseFilesShouldExist );
     }
 
@@ -167,21 +166,21 @@ class DatabaseIT
     @Test
     void filesRecreatedAfterTruncate()
     {
-        File databaseDirectory = databaseLayout.databaseDirectory().toFile();
-        File transactionLogsDirectory = databaseLayout.getTransactionLogsDirectory().toFile();
-        assertTrue( fs.fileExists( databaseDirectory.toPath() ) );
-        assertTrue( fs.fileExists( transactionLogsDirectory.toPath() ) );
+        Path databaseDirectory = databaseLayout.databaseDirectory();
+        Path transactionLogsDirectory = databaseLayout.getTransactionLogsDirectory();
+        assertTrue( fs.fileExists( databaseDirectory ) );
+        assertTrue( fs.fileExists( transactionLogsDirectory ) );
 
-        Path[] databaseFilesBeforeTruncate = fs.listFiles( databaseDirectory.toPath() );
-        Path[] logFilesBeforeTruncate = fs.listFiles( transactionLogsDirectory.toPath() );
+        Path[] databaseFilesBeforeTruncate = fs.listFiles( databaseDirectory );
+        Path[] logFilesBeforeTruncate = fs.listFiles( transactionLogsDirectory );
 
         database.truncate();
 
-        assertTrue( fs.fileExists( databaseDirectory.toPath() ) );
-        assertTrue( fs.fileExists( transactionLogsDirectory.toPath() ) );
+        assertTrue( fs.fileExists( databaseDirectory ) );
+        assertTrue( fs.fileExists( transactionLogsDirectory ) );
 
-        Path[] databaseFiles = fs.listFiles( databaseDirectory.toPath() );
-        Path[] logFiles = fs.listFiles( transactionLogsDirectory.toPath() );
+        Path[] databaseFiles = fs.listFiles( databaseDirectory );
+        Path[] logFiles = fs.listFiles( transactionLogsDirectory );
 
         // files are equal by name - every store file is recreated as result
         assertThat( databaseFilesBeforeTruncate ).contains( databaseFiles );

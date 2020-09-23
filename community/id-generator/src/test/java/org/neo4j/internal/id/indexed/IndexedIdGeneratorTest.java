@@ -111,7 +111,7 @@ class IndexedIdGeneratorTest
     @BeforeEach
     void open()
     {
-        file = directory.filePath( "file" );
+        file = directory.file( "file" );
         idGenerator = new IndexedIdGenerator( pageCache, file, immediate(), IdType.LABEL_TOKEN, false, () -> 0, MAX_ID, false, NULL );
     }
 
@@ -479,7 +479,7 @@ class IndexedIdGeneratorTest
     @Test
     void shouldNotStartWithoutFileIfReadOnly()
     {
-        Path file = directory.filePath( "non-existing" );
+        Path file = directory.file( "non-existing" );
         final IllegalStateException e = assertThrows( IllegalStateException.class,
                 () -> new IndexedIdGenerator( pageCache, file, immediate(), IdType.LABEL_TOKEN, false, () -> 0, MAX_ID, true, NULL ) );
         assertTrue( Exceptions.contains( e, t -> t instanceof NoSuchFileException ) );
@@ -490,7 +490,7 @@ class IndexedIdGeneratorTest
     @Test
     void shouldNotRebuildIfReadOnly()
     {
-        Path file = directory.filePath( "existing" );
+        Path file = directory.file( "existing" );
         new IndexedIdGenerator( pageCache, file, immediate(), IdType.LABEL_TOKEN, false, () -> 0, MAX_ID, false, NULL ).close();
         // Never start id generator means it will need rebuild on next start
 
@@ -506,7 +506,7 @@ class IndexedIdGeneratorTest
     @Test
     void shouldStartInReadOnlyModeIfEmpty() throws IOException
     {
-        Path file = directory.filePath( "existing" );
+        Path file = directory.file( "existing" );
         var indexedIdGenerator = new IndexedIdGenerator( pageCache, file, immediate(), IdType.LABEL_TOKEN, false, () -> 0, MAX_ID, false, NULL );
         indexedIdGenerator.start( NO_FREE_IDS, NULL );
         indexedIdGenerator.close();
@@ -893,7 +893,7 @@ class IndexedIdGeneratorTest
 
     private void assertOperationThrowInReadOnlyMode( Function<IndexedIdGenerator,Executable> operation ) throws IOException
     {
-        Path file = directory.filePath( "existing" );
+        Path file = directory.file( "existing" );
         var indexedIdGenerator = new IndexedIdGenerator( pageCache, file, immediate(), IdType.LABEL_TOKEN, false, () -> 0, MAX_ID, false, NULL );
         indexedIdGenerator.start( NO_FREE_IDS, NULL );
         indexedIdGenerator.close();

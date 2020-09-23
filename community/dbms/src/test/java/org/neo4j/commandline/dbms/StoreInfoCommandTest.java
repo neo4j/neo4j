@@ -71,7 +71,7 @@ class StoreInfoCommandTest
     @BeforeEach
     void setUp() throws Exception
     {
-        homeDir = testDirectory.directoryPath( "home-dir" );
+        homeDir = testDirectory.directory( "home-dir" );
         fooDbDirectory = homeDir.resolve( "data/databases/foo" );
         fooDbLayout = DatabaseLayout.ofFlat( fooDbDirectory );
         fileSystem.mkdirs( fooDbDirectory );
@@ -121,7 +121,7 @@ class StoreInfoCommandTest
         var notADirException = assertThrows( CommandFailedException.class, () -> command.execute() );
         assertThat( notADirException.getMessage() ).contains( "must point to a directory" );
 
-        var dir = testDirectory.directoryPath( "not-a-db" );
+        var dir = testDirectory.directory( "not-a-db" );
         var notADbArgs = args( dir, false, false );
         CommandLine.populateCommand( command, notADbArgs );
         var notADbException = assertThrows( CommandFailedException.class, () -> command.execute() );
@@ -133,7 +133,7 @@ class StoreInfoCommandTest
     {
         var currentFormat = RecordFormatSelector.defaultFormat();
         prepareNeoStoreFile( currentFormat.storeVersion(), fooDbLayout );
-        CommandLine.populateCommand( command, fooDbDirectory.toFile().getAbsolutePath() );
+        CommandLine.populateCommand( command, fooDbDirectory.toAbsolutePath().toString() );
         command.execute();
 
         verify( out ).print( Mockito.<String>argThat( result ->
@@ -146,7 +146,7 @@ class StoreInfoCommandTest
     void readsOlderStoreVersionCorrectly() throws Exception
     {
         prepareNeoStoreFile( StandardV3_4.RECORD_FORMATS.storeVersion(), fooDbLayout );
-        CommandLine.populateCommand( command, fooDbDirectory.toFile().getAbsolutePath() );
+        CommandLine.populateCommand( command, fooDbDirectory.toAbsolutePath().toString() );
         command.execute();
 
         verify( out ).print( Mockito.<String>argThat( result ->
@@ -160,7 +160,7 @@ class StoreInfoCommandTest
     void throwsOnUnknownVersion() throws Exception
     {
         prepareNeoStoreFile( "v9.9.9", fooDbLayout );
-        CommandLine.populateCommand( command, fooDbDirectory.toFile().getAbsolutePath() );
+        CommandLine.populateCommand( command, fooDbDirectory.toAbsolutePath().toString() );
         var exception = assertThrows( Exception.class, () -> command.execute() );
         assertThat( exception ).hasRootCauseInstanceOf( IllegalArgumentException.class );
         assertThat( exception.getMessage() ).contains( "Unknown store version 'v9.9.9'" );
@@ -175,7 +175,7 @@ class StoreInfoCommandTest
         try ( Locker locker = new DatabaseLocker( fileSystem, fooDbLayout ) )
         {
             locker.checkLock();
-            CommandLine.populateCommand( command, fooDbDirectory.toFile().getAbsolutePath() );
+            CommandLine.populateCommand( command, fooDbDirectory.toAbsolutePath().toString() );
             var exception = assertThrows( Exception.class, () -> command.execute() );
             assertEquals( "Failed to execute command as the database 'foo' is in use. Please stop it and try again.", exception.getMessage() );
         }
@@ -307,7 +307,7 @@ class StoreInfoCommandTest
     private String[] args( Path path, boolean all, boolean structured )
     {
         var args = new ArrayList<String>();
-        args.add( path.toFile().getAbsolutePath() );
+        args.add( path.toAbsolutePath().toString() );
 
         if ( all )
         {

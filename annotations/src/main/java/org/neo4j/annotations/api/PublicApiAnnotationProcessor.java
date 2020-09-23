@@ -23,7 +23,6 @@ import java.io.BufferedWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -173,7 +172,7 @@ public class PublicApiAnnotationProcessor extends AbstractProcessor
             if ( !testExecution )
             {
                 // Verify files
-                Path path = Paths.get( file.toUri() );
+                Path path = Path.of( file.toUri() );
                 Path metaPath = getAndAssertParent( path, "META-INF" );
                 Path classesPath = getAndAssertParent( metaPath, "classes" );
                 Path targetPath = getAndAssertParent( classesPath, "target" );

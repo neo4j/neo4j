@@ -442,7 +442,7 @@ class RecoveryIT
         generateSomeData( database );
         managementService.shutdown();
 
-        Path[] txLogFiles = fileSystem.listFiles( buildLogFiles().logFilesDirectory(), ( dir, name ) -> name.startsWith( DEFAULT_NAME ) );
+        Path[] txLogFiles = fileSystem.listFiles( buildLogFiles().logFilesDirectory(), path -> path.getFileName().toString().startsWith( DEFAULT_NAME ) );
         Path databasesDirectory = databaseLayout.getNeo4jLayout().databasesDirectory();
         DatabaseLayout legacyLayout = Neo4jLayout.ofFlat( databasesDirectory ).databaseLayout( databaseLayout.getDatabaseName() );
         LegacyTransactionLogsLocator logsLocator = new LegacyTransactionLogsLocator( Config.defaults(), legacyLayout );

@@ -226,7 +226,7 @@ class BasicSystemGraphRealmIT
 
     private void startSystemGraphRealm() throws Exception
     {
-        Config config = Config.defaults( DatabaseManagementSystemSettings.auth_store_directory, testDirectory.directoryPath( "data/dbms" ) );
+        Config config = Config.defaults( DatabaseManagementSystemSettings.auth_store_directory, testDirectory.directory( "data/dbms" ) );
 
         var systemGraphComponents = new SystemGraphComponents();
         systemGraphComponents.register( new DefaultSystemGraphComponent( config ) );

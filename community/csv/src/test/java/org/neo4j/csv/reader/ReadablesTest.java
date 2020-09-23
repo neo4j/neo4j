@@ -303,7 +303,7 @@ class ReadablesTest
 
     private Path write( String text ) throws IOException
     {
-        Path file = directory.filePath( "plain-text" );
+        Path file = directory.file( "plain-text" );
         try ( OutputStream out = Files.newOutputStream( file ) )
         {
             out.write( text.getBytes() );
@@ -313,7 +313,7 @@ class ReadablesTest
 
     private Path compressWithZip( String text, String... otherEntries ) throws IOException
     {
-        Path file = directory.filePath( "compressed" );
+        Path file = directory.file( "compressed" );
         try ( ZipOutputStream out = new ZipOutputStream( Files.newOutputStream( file ) ) )
         {
             for ( String otherEntry : otherEntries )
@@ -329,7 +329,7 @@ class ReadablesTest
 
     private Path compressWithGZip( String text ) throws IOException
     {
-        Path file = directory.filePath( "compressed" );
+        Path file = directory.file( "compressed" );
         try ( GZIPOutputStream out = new GZIPOutputStream( Files.newOutputStream( file ) ) )
         {
             out.write( text.getBytes() );

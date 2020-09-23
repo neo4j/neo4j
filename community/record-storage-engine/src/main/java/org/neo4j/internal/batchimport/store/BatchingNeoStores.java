@@ -208,7 +208,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
     {
         if ( databaseExistsAndContainsData() )
         {
-            throw new IllegalStateException( databaseLayout.databaseDirectory().toFile() + " already contains data, cannot do import here" );
+            throw new IllegalStateException( databaseLayout.databaseDirectory() + " already contains data, cannot do import here" );
         }
     }
 
@@ -233,7 +233,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
             if ( !storesToKeep.test( type ) )
             {
                 DatabaseFile databaseFile = type.getDatabaseFile();
-                databaseLayout.allFiles( databaseFile ).forEach( fileName -> fileSystem.deleteFile( fileName ) );
+                databaseLayout.allFiles( databaseFile ).forEach( fileSystem::deleteFile );
             }
         }
     }

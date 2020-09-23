@@ -104,7 +104,7 @@ public abstract class GBPTreeConcurrencyITBase<KEY,VALUE>
         int pageSize = 512;
         layout = getLayout( random, pageSize );
         PageCache pageCache = pageCacheExtension.getPageCache( fileSystem, config().withPageSize( pageSize ).withAccessChecks( true ) );
-        return this.index = new GBPTreeBuilder<>( pageCache, testDirectory.filePath( "index" ), layout ).build();
+        return this.index = new GBPTreeBuilder<>( pageCache, testDirectory.file( "index" ), layout ).build();
     }
 
     protected abstract TestLayout<KEY,VALUE> getLayout( RandomRule random, int pageSize );

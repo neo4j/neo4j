@@ -23,8 +23,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.internal.nativeimpl.NativeAccess;
@@ -67,8 +67,8 @@ class LogFileChannelNativeAccessorTest
         when( filesContext.getRotationThreshold() ).thenReturn( new AtomicLong( 5 ) );
 
         channelNativeAccessor = new LogFileChannelNativeAccessor( fileSystem, filesContext );
-        File originalFile = testDirectory.file( "test" );
-        testStoreChannel = fileSystem.write( originalFile.toPath() );
+        Path originalFile = testDirectory.file( "test" );
+        testStoreChannel = fileSystem.write( originalFile );
     }
 
     @AfterEach

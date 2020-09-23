@@ -27,7 +27,6 @@ import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 
 import java.io.Closeable;
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.FileAlreadyExistsException;
@@ -72,7 +71,7 @@ class LoaderTest
     @Test
     void shouldGiveAClearErrorMessageIfTheArchiveDoesntExist() throws IOException
     {
-        Path archive = testDirectory.filePath( "the-archive.dump" );
+        Path archive = testDirectory.file( "the-archive.dump" );
 
         deleteLayoutFolders( databaseLayout );
 
@@ -83,7 +82,7 @@ class LoaderTest
     @Test
     void shouldGiveAClearErrorMessageIfTheArchiveIsNotInGzipFormat() throws IOException
     {
-        Path archive = testDirectory.filePath( "the-archive.dump" );
+        Path archive = testDirectory.file( "the-archive.dump" );
         Files.write( archive, singletonList( "some incorrectly formatted data" ) );
 
         deleteLayoutFolders( databaseLayout );
@@ -95,7 +94,7 @@ class LoaderTest
     @Test
     void shouldGiveAClearErrorMessageIfTheArchiveIsNotInTarFormat() throws IOException
     {
-        Path archive = testDirectory.filePath( "the-archive.dump" );
+        Path archive = testDirectory.file( "the-archive.dump" );
         try ( GzipCompressorOutputStream compressor =
                       new GzipCompressorOutputStream( Files.newOutputStream( archive ) ) )
         {
@@ -113,16 +112,16 @@ class LoaderTest
     @Test
     void shouldGiveAClearErrorMessageIfTheArchiveEntryPointsToRandomPlace() throws IOException
     {
-        Path archive = testDirectory.filePath( "the-archive.dump" );
+        Path archive = testDirectory.file( "the-archive.dump" );
 
         delete( databaseLayout.databaseDirectory() );
         delete( databaseLayout.getTransactionLogsDirectory() );
 
-        final File testFile = testDirectory.file( "testFile" );
+        final Path testFile = testDirectory.file( "testFile" );
         try ( TarArchiveOutputStream tar = new TarArchiveOutputStream(
                 new GzipCompressorOutputStream( Files.newOutputStream( archive, StandardOpenOption.CREATE_NEW ) ) ) )
         {
-            ArchiveEntry archiveEntry = tar.createArchiveEntry( testFile, "../../../../etc/shadow" );
+            ArchiveEntry archiveEntry = tar.createArchiveEntry( testFile.toFile(), "../../../../etc/shadow" );
             tar.putArchiveEntry( archiveEntry );
             tar.closeArchiveEntry();
         }
@@ -134,7 +133,7 @@ class LoaderTest
     @Test
     void shouldGiveAClearErrorIfTheDestinationTxLogAlreadyExists() throws IOException
     {
-        Path archive = testDirectory.filePath( "the-archive.dump" );
+        Path archive = testDirectory.file( "the-archive.dump" );
 
         delete( databaseLayout.databaseDirectory() );
         assertTrue( Files.exists( databaseLayout.getTransactionLogsDirectory() ) );
@@ -146,8 +145,8 @@ class LoaderTest
     @Test
     void shouldGiveAClearErrorMessageIfTheDestinationsParentDirectoryDoesntExist()
     {
-        Path archive = testDirectory.filePath( "the-archive.dump" );
-        Path destination = Paths.get( testDirectory.absolutePath().getAbsolutePath(), "subdir", "the-destination" );
+        Path archive = testDirectory.file( "the-archive.dump" );
+        Path destination = Paths.get( testDirectory.absolutePath().toString(), "subdir", "the-destination" );
         DatabaseLayout databaseLayout = DatabaseLayout.ofFlat( destination );
 
         NoSuchFileException noSuchFileException = assertThrows( NoSuchFileException.class, () -> new Loader().load( archive, databaseLayout ) );
@@ -157,8 +156,8 @@ class LoaderTest
     @Test
     void shouldGiveAClearErrorMessageIfTheTxLogsParentDirectoryDoesntExist() throws IOException
     {
-        Path archive = testDirectory.filePath( "the-archive.dump" );
-        Path txLogsDestination = Paths.get( testDirectory.absolutePath().getAbsolutePath(), "subdir", "txLogs" );
+        Path archive = testDirectory.file( "the-archive.dump" );
+        Path txLogsDestination = Paths.get( testDirectory.absolutePath().toString(), "subdir", "txLogs" );
         Config config = Config.newBuilder()
                 .set( neo4j_home, testDirectory.homePath() )
                 .set( transaction_logs_root_path, txLogsDestination.toAbsolutePath() )
@@ -174,8 +173,8 @@ class LoaderTest
     void shouldGiveAClearErrorMessageIfTheDestinationsParentDirectoryIsAFile()
             throws IOException
     {
-        Path archive = testDirectory.filePath( "the-archive.dump" );
-        Path destination = Paths.get( testDirectory.absolutePath().getAbsolutePath(), "subdir", "the-destination" );
+        Path archive = testDirectory.file( "the-archive.dump" );
+        Path destination = Paths.get( testDirectory.absolutePath().toString(), "subdir", "the-destination" );
         Files.write( destination.getParent(), new byte[0] );
         DatabaseLayout databaseLayout = DatabaseLayout.ofFlat( destination );
 
@@ -189,8 +188,8 @@ class LoaderTest
     void shouldGiveAClearErrorMessageIfTheDestinationsParentDirectoryIsNotWritable()
             throws IOException
     {
-        Path archive = testDirectory.filePath( "the-archive.dump" );
-        Path destination = testDirectory.directoryPath( "subdir/the-destination" );
+        Path archive = testDirectory.file( "the-archive.dump" );
+        Path destination = testDirectory.directory( "subdir/the-destination" );
         DatabaseLayout databaseLayout = DatabaseLayout.ofFlat( destination );
 
         Path parentPath = databaseLayout.databaseDirectory().getParent();
@@ -207,8 +206,8 @@ class LoaderTest
     void shouldGiveAClearErrorMessageIfTheTxLogsParentDirectoryIsNotWritable()
             throws IOException
     {
-        Path archive = testDirectory.filePath( "the-archive.dump" );
-        Path txLogsDirectory = testDirectory.directoryPath( "subdir", "txLogs" );
+        Path archive = testDirectory.file( "the-archive.dump" );
+        Path txLogsDirectory = testDirectory.directory( "subdir", "txLogs" );
         Config config = Config.newBuilder()
                 .set( neo4j_home, testDirectory.homePath() )
                 .set( transaction_logs_root_path, txLogsDirectory.toAbsolutePath() )

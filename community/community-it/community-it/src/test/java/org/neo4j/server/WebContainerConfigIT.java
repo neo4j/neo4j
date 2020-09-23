@@ -65,7 +65,7 @@ public class WebContainerConfigIT extends ExclusiveWebContainerTestBase
     public void shouldRequireAuth() throws Exception
     {
         testWebContainer = serverOnRandomPorts()
-                .usingDataDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
+                .usingDataDir( folder.directory( name.getMethodName() ).toAbsolutePath().toString() )
                 .withProperty( ServerSettings.http_auth_allowlist.name(), "" )
                 .withProperty( GraphDatabaseSettings.auth_enabled.name(), TRUE )
                 .build();
@@ -80,7 +80,7 @@ public class WebContainerConfigIT extends ExclusiveWebContainerTestBase
     public void shouldWhitelist() throws Exception
     {
         testWebContainer = serverOnRandomPorts()
-                .usingDataDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
+                .usingDataDir( folder.directory( name.getMethodName() ).toAbsolutePath().toString() )
                 .withProperty( ServerSettings.http_auth_allowlist.name(), "/" )
                 .withProperty( GraphDatabaseSettings.auth_enabled.name(), TRUE )
                 .build();
@@ -95,7 +95,7 @@ public class WebContainerConfigIT extends ExclusiveWebContainerTestBase
     public void shouldBlacklistPaths() throws Exception
     {
         testWebContainer = serverOnRandomPorts()
-                .usingDataDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
+                .usingDataDir( folder.directory( name.getMethodName() ).toAbsolutePath().toString() )
                 .withProperty( ServerSettings.http_paths_blacklist.name(), "/*" )
                 .build();
 
@@ -110,7 +110,7 @@ public class WebContainerConfigIT extends ExclusiveWebContainerTestBase
     {
         var nonDefaultAddress = new SocketAddress( "0.0.0.0", 0 );
         testWebContainer = CommunityWebContainerBuilder.builder().onAddress( nonDefaultAddress )
-                .usingDataDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
+                .usingDataDir( folder.directory( name.getMethodName() ).toAbsolutePath().toString() )
                 .build();
 
         GraphDatabaseAPI database = testWebContainer.getDefaultDatabase();
@@ -130,7 +130,7 @@ public class WebContainerConfigIT extends ExclusiveWebContainerTestBase
         var dbUri = "a/different/db/uri";
 
         testWebContainer = serverOnRandomPorts()
-                .usingDataDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
+                .usingDataDir( folder.directory( name.getMethodName() ).toAbsolutePath().toString() )
                 .withRelativeDatabaseApiPath( "/" + dbUri )
                 .build();
 
@@ -155,7 +155,7 @@ public class WebContainerConfigIT extends ExclusiveWebContainerTestBase
         var dbUri = "a/different/rest/api/path";
 
         testWebContainer = serverOnRandomPorts()
-                .usingDataDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
+                .usingDataDir( folder.directory( name.getMethodName() ).toAbsolutePath().toString() )
                 .withRelativeRestApiPath( "/" + dbUri )
                 .build();
 
@@ -180,7 +180,7 @@ public class WebContainerConfigIT extends ExclusiveWebContainerTestBase
     public void shouldGenerateWADLWhenExplicitlyEnabledInConfig() throws Exception
     {
         testWebContainer = serverOnRandomPorts().withProperty( ServerSettings.wadl_enabled.name(), TRUE )
-                .usingDataDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
+                .usingDataDir( folder.directory( name.getMethodName() ).toAbsolutePath().toString() )
                 .build();
 
         var wadlUri = URI.create( testWebContainer.getBaseUri() + "application.wadl" );
@@ -196,7 +196,7 @@ public class WebContainerConfigIT extends ExclusiveWebContainerTestBase
     public void shouldNotGenerateWADLWhenNotExplicitlyEnabledInConfig() throws Exception
     {
         testWebContainer = serverOnRandomPorts()
-                .usingDataDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
+                .usingDataDir( folder.directory( name.getMethodName() ).toAbsolutePath().toString() )
                 .build();
 
         var uri = URI.create( testWebContainer.getBaseUri() + "application.wadl" );
@@ -210,7 +210,7 @@ public class WebContainerConfigIT extends ExclusiveWebContainerTestBase
     public void shouldNotGenerateWADLWhenExplicitlyDisabledInConfig() throws Exception
     {
         testWebContainer = serverOnRandomPorts().withProperty( ServerSettings.wadl_enabled.name(), FALSE )
-                .usingDataDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
+                .usingDataDir( folder.directory( name.getMethodName() ).toAbsolutePath().toString() )
                 .build();
 
         var warlUri = URI.create( testWebContainer.getBaseUri() + "application.wadl" );

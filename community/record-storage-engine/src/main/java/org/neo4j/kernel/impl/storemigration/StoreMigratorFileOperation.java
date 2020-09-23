@@ -58,8 +58,8 @@ final class StoreMigratorFileOperation
         {
             if ( file != null )
             {
-                operation.perform( fs, file.getFileName().toString(), fromLayout.databaseDirectory().toFile(), allowSkipNonExistentFiles,
-                        toLayout.databaseDirectory().toFile(), existingTargetStrategy );
+                operation.perform( fs, file.getFileName().toString(), fromLayout.databaseDirectory(), allowSkipNonExistentFiles,
+                        toLayout.databaseDirectory(), existingTargetStrategy );
             }
         }
     }

@@ -129,7 +129,7 @@ class SettingMigratorsTest
     @Test
     void testDefaultDatabaseMigrator() throws IOException
     {
-        Path confFile = testDirectory.createFilePath( "test.conf" );
+        Path confFile = testDirectory.createFile( "test.conf" );
         Files.write( confFile, List.of( "dbms.active_database=foo") );
 
         {
@@ -158,7 +158,7 @@ class SettingMigratorsTest
     @Test
     void testConnectorOldFormatMigration() throws IOException
     {
-        Path confFile = testDirectory.createFilePath( "test.conf" );
+        Path confFile = testDirectory.createFile( "test.conf" );
         Files.write( confFile, Arrays.asList(
                 "dbms.connector.bolt.enabled=true",
                 "dbms.connector.bolt.type=BOLT",
@@ -186,7 +186,7 @@ class SettingMigratorsTest
     @Test
     void testKillQueryVerbose() throws IOException
     {
-        Path confFile = testDirectory.createFilePath( "test.conf" );
+        Path confFile = testDirectory.createFile( "test.conf" );
         Files.write( confFile, List.of( "dbms.procedures.kill_query_verbose=false" ) );
 
         Config config = Config.newBuilder().fromFile( confFile ).build();
@@ -201,7 +201,7 @@ class SettingMigratorsTest
     @Test
     void testMultiThreadedSchemaIndexPopulationEnabled() throws IOException
     {
-        Path confFile = testDirectory.createFilePath( "test.conf" );
+        Path confFile = testDirectory.createFile( "test.conf" );
         Files.write( confFile, List.of( "unsupported.dbms.multi_threaded_schema_index_population_enabled=false" ) );
 
         Config config = Config.newBuilder().fromFile( confFile ).build();
@@ -223,7 +223,7 @@ class SettingMigratorsTest
                 "native-btree-1.0", "native-btree-1.0" );
         for ( String oldSchemaProvider : migrationMap.keySet() )
         {
-            Path confFile = testDirectory.createFilePath( "test.conf" );
+            Path confFile = testDirectory.createFile( "test.conf" );
             Files.write( confFile, List.of( "dbms.index.default_schema_provider=" + oldSchemaProvider ) );
 
             Config config = Config.newBuilder().fromFile( confFile ).build();
@@ -242,7 +242,7 @@ class SettingMigratorsTest
     @Test
     void testMemorySettingsRename() throws IOException
     {
-        Path confFile = testDirectory.createFilePath( "test.conf" );
+        Path confFile = testDirectory.createFile( "test.conf" );
         Files.write( confFile, List.of(
                 "dbms.tx_state.max_off_heap_memory=6g",
                 "dbms.tx_state.off_heap.max_cacheable_block_size=4096",
@@ -268,7 +268,7 @@ class SettingMigratorsTest
     @Test
     void transactionCypherMaxAllocations() throws IOException
     {
-        Path confFile = testDirectory.createFilePath( "test.conf" );
+        Path confFile = testDirectory.createFile( "test.conf" );
         Files.write( confFile, List.of( "cypher.query_max_allocations=6g" ) );
 
         Config config = Config.newBuilder().fromFile( confFile ).build();
@@ -284,7 +284,7 @@ class SettingMigratorsTest
     @Test
     void transactionCypherMaxAllocationsConflict() throws IOException
     {
-        Path confFile = testDirectory.createFilePath( "test.conf" );
+        Path confFile = testDirectory.createFile( "test.conf" );
         Files.write( confFile, List.of(
                 "cypher.query_max_allocations=6g",
                 memory_transaction_max_size.name() + "=7g" ) );
@@ -326,7 +326,7 @@ class SettingMigratorsTest
     @Test
     void testWhitelistRename() throws IOException
     {
-        Path confFile = testDirectory.createFilePath( "test.conf" );
+        Path confFile = testDirectory.createFile( "test.conf" );
         Files.write( confFile, List.of(
                 "dbms.memory.pagecache.warmup.preload.whitelist=a","dbms.security.procedures.whitelist=a,b" ) );
 

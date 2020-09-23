@@ -83,7 +83,7 @@ class LuceneSchemaIndexPopulationIT
     @ValueSource( ints = {7, 11, 14, 20, 35, 58} )
     void partitionedIndexPopulation( int affectedNodes ) throws Exception
     {
-        Path rootFolder = testDir.directoryPath( "partitionIndex" + affectedNodes ).resolve( "uniqueIndex" + affectedNodes );
+        Path rootFolder = testDir.directory( "partitionIndex" + affectedNodes ).resolve( "uniqueIndex" + affectedNodes );
         try ( SchemaIndex uniqueIndex = LuceneSchemaIndexBuilder.create( descriptor, Config.defaults() )
                 .withFileSystem( fileSystem )
                 .withIndexRootFolder( rootFolder ).build() )

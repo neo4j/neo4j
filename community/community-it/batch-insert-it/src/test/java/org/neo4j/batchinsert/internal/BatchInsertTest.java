@@ -1511,7 +1511,7 @@ class BatchInsertTest
     {
 
         return Config.newBuilder()
-                .set( neo4j_home, testDirectory.homePath().toAbsolutePath() )
+                .set( neo4j_home, testDirectory.absolutePath() )
                 .set( preallocate_logical_logs, false )
                 .set( GraphDatabaseSettings.dense_node_threshold, denseNodeThreshold )
                 .build();

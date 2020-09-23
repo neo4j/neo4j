@@ -98,7 +98,7 @@ class InProcessServerBuilderIT
     void shouldLaunchAServerInSpecifiedDirectory() throws IOException
     {
         // Given
-        Path workDir = directory.directoryPath( "specific" );
+        Path workDir = directory.directory( "specific" );
 
         // When
         try ( Neo4j neo4j = getTestBuilder( workDir ).build() )
@@ -128,7 +128,7 @@ class InProcessServerBuilderIT
         // When
         SslPolicyConfig pem = SslPolicyConfig.forScope( HTTPS );
 
-        var certificates = directory.directoryPath( "certificates" );
+        var certificates = directory.directory( "certificates" );
         SelfSignedCertificateFactory.create( certificates, "private.key", "public.crt" );
         Files.createDirectories( certificates.resolve( "trusted" ) );
         Files.createDirectories(  certificates.resolve( "revoked" ) );
@@ -348,7 +348,7 @@ class InProcessServerBuilderIT
 
     private void testStartupWithConnectors( boolean httpEnabled, boolean httpsEnabled, boolean boltEnabled )
     {
-        var certificates = directory.directoryPath( "certificates" );
+        var certificates = directory.directory( "certificates" );
         Neo4jBuilder serverBuilder = Neo4jBuilders.newInProcessBuilder( directory.homePath() )
                 .withConfig( HttpConnector.enabled, httpEnabled )
                 .withConfig( HttpConnector.listen_address, new SocketAddress( 0 ) )

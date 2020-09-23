@@ -23,10 +23,10 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -64,8 +64,8 @@ class EphemeralFileSystemTest
     @Test
     void allowStoreThatExceedDefaultSize() throws IOException
     {
-        File aFile = new File( "test" );
-        StoreChannel channel = fs.write( aFile.toPath() );
+        Path aFile = Path.of( "test" );
+        StoreChannel channel = fs.write( aFile );
 
         ByteBuffer buffer = allocate( Long.BYTES, INSTANCE );
         int mebiBytes = (int) ByteUnit.mebiBytes( 1 );
@@ -87,9 +87,9 @@ class EphemeralFileSystemTest
             // given
             int numberOfBytesForced = 8;
 
-            File aFile = new File( "yo" );
+            Path aFile = Path.of( "yo" );
 
-            StoreChannel channel = fs.write( aFile.toPath() );
+            StoreChannel channel = fs.write( aFile );
             writeLong( channel, 1111 );
 
             // when
@@ -98,7 +98,7 @@ class EphemeralFileSystemTest
             fs.crash();
 
             // then
-            StoreChannel readChannel = fs.read( aFile.toPath() );
+            StoreChannel readChannel = fs.read( aFile );
             assertEquals( numberOfBytesForced, readChannel.size() );
 
             assertEquals( 1111, readLong( readChannel ).getLong() );
@@ -111,7 +111,7 @@ class EphemeralFileSystemTest
         ExecutorService executorService = Executors.newCachedThreadPool();
         try ( EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction() )
         {
-            File aFile = new File( "contendedFile" );
+            Path aFile = Path.of( "contendedFile" );
             for ( int attempt = 0; attempt < 100; attempt++ )
             {
                 Collection<Callable<Void>> workers = new ArrayList<>();
@@ -121,7 +121,7 @@ class EphemeralFileSystemTest
                     {
                         try
                         {
-                            StoreChannel channel = fs.write( aFile.toPath() );
+                            StoreChannel channel = fs.write( aFile );
                             channel.position( 0 );
                             writeLong( channel, 1 );
                         }
@@ -141,7 +141,7 @@ class EphemeralFileSystemTest
 
                 List<Future<Void>> futures = executorService.invokeAll( workers );
                 Futures.getAllResults( futures );
-                verifyFileIsEitherEmptyOrContainsLongIntegerValueOne( fs.write( aFile.toPath() ) );
+                verifyFileIsEitherEmptyOrContainsLongIntegerValueOne( fs.write( aFile ) );
             }
         }
         finally
@@ -161,7 +161,7 @@ class EphemeralFileSystemTest
             {
                 try ( EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction() )
                 {
-                    File aFile = new File( "contendedFile" );
+                    Path aFile = Path.of( "contendedFile" );
 
                     Collection<Callable<Void>> workers = new ArrayList<>();
                     for ( int i = 0; i < 100; i++ )
@@ -170,7 +170,7 @@ class EphemeralFileSystemTest
                         {
                             try
                             {
-                                StoreChannel channel = fs.write( aFile.toPath() );
+                                StoreChannel channel = fs.write( aFile );
                                 channel.position( channel.size() );
                                 writeLong( channel, 1 );
                             }
@@ -183,7 +183,7 @@ class EphemeralFileSystemTest
 
                         workers.add( () ->
                         {
-                            StoreChannel channel = fs.write( aFile.toPath() );
+                            StoreChannel channel = fs.write( aFile );
                             channel.force( true );
                             return null;
                         } );
@@ -193,7 +193,7 @@ class EphemeralFileSystemTest
                     Futures.getAllResults( futures );
 
                     fs.crash();
-                    verifyFileIsFullOfLongIntegerOnes( fs.write( aFile.toPath() ) );
+                    verifyFileIsFullOfLongIntegerOnes( fs.write( aFile ) );
                 }
             }
         }
@@ -208,19 +208,19 @@ class EphemeralFileSystemTest
     {
         try ( EphemeralFileSystemAbstraction fileSystemAbstraction = new EphemeralFileSystemAbstraction() )
         {
-            File testDir = new File( "testDir" );
-            File testFile = new File( "testFile" );
-            fileSystemAbstraction.mkdir( testDir.toPath() );
-            fileSystemAbstraction.write( testFile.toPath() );
+            Path testDir = Path.of( "testDir" );
+            Path testFile = Path.of( "testFile" );
+            fileSystemAbstraction.mkdir( testDir );
+            fileSystemAbstraction.write( testFile );
 
-            assertTrue( fileSystemAbstraction.fileExists( testFile.toPath() ) );
-            assertTrue( fileSystemAbstraction.fileExists( testFile.toPath() ) );
+            assertTrue( fileSystemAbstraction.fileExists( testFile ) );
+            assertTrue( fileSystemAbstraction.fileExists( testFile ) );
 
             fileSystemAbstraction.close();
 
             assertTrue( fileSystemAbstraction.isClosed() );
-            assertFalse( fileSystemAbstraction.fileExists( testFile.toPath() ) );
-            assertFalse( fileSystemAbstraction.fileExists( testFile.toPath() ) );
+            assertFalse( fileSystemAbstraction.fileExists( testFile ) );
+            assertFalse( fileSystemAbstraction.fileExists( testFile ) );
         }
     }
 

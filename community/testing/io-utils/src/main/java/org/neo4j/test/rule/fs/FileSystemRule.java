@@ -21,7 +21,6 @@ package org.neo4j.test.rule.fs;
 
 import org.junit.rules.ExternalResource;
 
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -30,6 +29,7 @@ import java.io.UncheckedIOException;
 import java.io.Writer;
 import java.nio.charset.Charset;
 import java.nio.file.CopyOption;
+import java.nio.file.DirectoryStream;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.Set;
@@ -174,7 +174,7 @@ public abstract class FileSystemRule<FS extends FileSystemAbstraction> extends E
     }
 
     @Override
-    public Path[] listFiles( Path directory, FilenameFilter filter )
+    public Path[] listFiles( Path directory, DirectoryStream.Filter<Path> filter )
     {
         return fs.listFiles( directory, filter );
     }

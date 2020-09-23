@@ -112,7 +112,7 @@ public class UniquenessRecoveryTest
         assumeNotNull( PID ); // this test can only run on UNIX
 
         // given
-        Path path = dir.homePath().toAbsolutePath();
+        Path path = dir.absolutePath();
         System.out.println( "in path: " + path );
         ProcessBuilder prototype = new ProcessBuilder( "java", "-ea", "-Xmx1G", "-Djava.awt.headless=true",
                 "-Dforce_create_constraint=" + config.force_create_constraint,

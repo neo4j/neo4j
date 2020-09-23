@@ -50,7 +50,7 @@ class LuceneSchemaIndexBuilderTest
         try ( SchemaIndex schemaIndex = LuceneSchemaIndexBuilder.create( descriptor, getReadOnlyConfig() )
                 .withFileSystem( fileSystemRule )
                 .withOperationalMode( true )
-                .withIndexRootFolder( testDir.directoryPath( "a" ) )
+                .withIndexRootFolder( testDir.directory( "a" ) )
                 .build() )
         {
             assertTrue( schemaIndex.isReadOnly(), "Builder should construct read only index." );
@@ -63,7 +63,7 @@ class LuceneSchemaIndexBuilderTest
         try ( SchemaIndex schemaIndex = LuceneSchemaIndexBuilder.create( descriptor, getDefaultConfig() )
                 .withFileSystem( fileSystemRule )
                 .withOperationalMode( true )
-                .withIndexRootFolder( testDir.directoryPath( "b" ) )
+                .withIndexRootFolder( testDir.directory( "b" ) )
                 .build() )
         {
             assertFalse( schemaIndex.isReadOnly(), "Builder should construct writable index." );

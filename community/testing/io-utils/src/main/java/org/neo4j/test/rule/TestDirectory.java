@@ -25,18 +25,17 @@ import org.junit.rules.ExternalResource;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.io.UncheckedIOException;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Random;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.FileUtils;
 import org.neo4j.util.VisibleForTesting;
 
 import static java.lang.String.format;
@@ -75,10 +74,10 @@ public class TestDirectory extends ExternalResource
     private static final long JVM_EXECUTION_HASH = new Random().nextLong();
 
     private final FileSystemAbstraction fileSystem;
-    private File testClassBaseFolder;
+    private Path testClassBaseFolder;
     private Class<?> owningTest;
     private boolean keepDirectoryAfterSuccessfulTest;
-    private File directory;
+    private Path directory;
 
     private TestDirectory( FileSystemAbstraction fileSystem )
     {
@@ -152,18 +151,9 @@ public class TestDirectory extends ExternalResource
         return this;
     }
 
-    public File absolutePath()
+    public Path absolutePath()
     {
-        return homeDir().getAbsoluteFile();
-    }
-
-    public File homeDir()
-    {
-        if ( !isInitialised() )
-        {
-            throw new IllegalStateException( "Not initialized" );
-        }
-        return directory;
+        return homePath().toAbsolutePath();
     }
 
     public Path homePath()
@@ -172,17 +162,12 @@ public class TestDirectory extends ExternalResource
         {
             throw new IllegalStateException( "Not initialized" );
         }
-        return directory.toPath();
-    }
-
-    public File homeDir( String homeDirName )
-    {
-        return directory( homeDirName );
+        return directory;
     }
 
     public Path homePath( String homeDirName )
     {
-        return directory( homeDirName ).toPath();
+        return directory( homeDirName );
     }
 
     public boolean isInitialised()
@@ -190,14 +175,14 @@ public class TestDirectory extends ExternalResource
         return directory != null;
     }
 
-    public File directory( String name, String... path )
+    public Path directory( String name )
     {
-        File dir = FileUtils.path( homePath(), path ).resolve( name ).toFile();
+        Path dir = homePath().resolve( name );
         createDirectory( dir );
         return dir;
     }
 
-    public Path directoryPath( String name, String... path )
+    public Path directory( String name, String... path )
     {
         Path dir = homePath();
         for ( String s : path )
@@ -209,12 +194,12 @@ public class TestDirectory extends ExternalResource
         return dir;
     }
 
-    public File file( String name, String... path )
+    public Path file( String name )
     {
-        return FileUtils.path( homePath(), path ).resolve( name ).toFile();
+        return homePath().resolve( name );
     }
 
-    public Path filePath( String name, String... path )
+    public Path file( String name, String... path )
     {
         Path dir = homePath();
         for ( String s : path )
@@ -224,17 +209,10 @@ public class TestDirectory extends ExternalResource
         return dir.resolve( name );
     }
 
-    public File createFile( String name, String... path )
+    public Path createFile( String name )
     {
-        File file = file( name, path );
+        Path file = file( name );
         ensureFileExists( file );
-        return file;
-    }
-
-    public Path createFilePath( String name, String... path )
-    {
-        Path file = filePath( name, path );
-        ensureFileExists( file.toFile() );
         return file;
     }
 
@@ -250,14 +228,9 @@ public class TestDirectory extends ExternalResource
         return format( "%s[\"%s\"]", getClass().getSimpleName(), testDirectoryName );
     }
 
-    public File cleanDirectory( String name ) throws IOException
+    public Path cleanDirectory( String name ) throws IOException
     {
-        return clean( fileSystem, new File( ensureBase(), name ) );
-    }
-
-    public Path cleanDirectoryPath( String name ) throws IOException
-    {
-        return cleanPath( fileSystem, ensureBase().toPath().resolve( name ) );
+        return cleanPath( fileSystem, ensureBase().resolve( name ) );
     }
 
     public void complete( boolean success ) throws IOException
@@ -266,7 +239,7 @@ public class TestDirectory extends ExternalResource
         {
             if ( success && isInitialised() && !keepDirectoryAfterSuccessfulTest )
             {
-                fileSystem.deleteRecursively( directory.toPath() );
+                fileSystem.deleteRecursively( directory );
             }
             directory = null;
         }
@@ -290,7 +263,7 @@ public class TestDirectory extends ExternalResource
 
     }
 
-    public File prepareDirectoryForTest( String test ) throws IOException
+    public Path prepareDirectoryForTest( String test ) throws IOException
     {
         String dir = "test" + DigestUtils.md5Hex( JVM_EXECUTION_HASH + test );
         evaluateClassBaseTestFolder();
@@ -309,30 +282,18 @@ public class TestDirectory extends ExternalResource
         prepareDirectory( description.getTestClass(), description.getMethodName() );
     }
 
-    private void ensureFileExists( File file )
+    private void ensureFileExists( Path file )
     {
         try
         {
-            if ( !fileSystem.fileExists( file.toPath() ) )
+            if ( !fileSystem.fileExists( file ) )
             {
-                fileSystem.write( file.toPath() ).close();
+                fileSystem.write( file ).close();
             }
         }
         catch ( IOException e )
         {
             throw new UncheckedIOException( "Failed to create file: " + file, e );
-        }
-    }
-
-    private void createDirectory( File directory )
-    {
-        try
-        {
-            fileSystem.mkdirs( directory.toPath() );
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( "Failed to create directory: " + directory, e );
         }
     }
 
@@ -348,13 +309,13 @@ public class TestDirectory extends ExternalResource
         }
     }
 
-    private static File clean( FileSystemAbstraction fs, File dir ) throws IOException
+    private static Path clean( FileSystemAbstraction fs, Path dir ) throws IOException
     {
-        if ( fs.fileExists( dir.toPath() ) )
+        if ( fs.fileExists( dir ) )
         {
-            fs.deleteRecursively( dir.toPath() );
+            fs.deleteRecursively( dir );
         }
-        fs.mkdirs( dir.toPath() );
+        fs.mkdirs( dir );
         return dir;
     }
 
@@ -377,10 +338,10 @@ public class TestDirectory extends ExternalResource
         testClassBaseFolder = testDataDirectoryOf( owningTest );
     }
 
-    private static File testDataDirectoryOf( Class<?> owningTest )
+    private static Path testDataDirectoryOf( Class<?> owningTest )
     {
-        File testData = new File( locateTarget( owningTest ), "test data" );
-        return new File( testData, shorten( owningTest.getName() ) ).getAbsoluteFile();
+        Path testData = locateTarget( owningTest ).resolve( "test data" );
+        return testData.resolve( shorten( owningTest.getName() ) ).toAbsolutePath();
     }
 
     private static String shorten( String owningTestName )
@@ -401,7 +362,7 @@ public class TestDirectory extends ExternalResource
     private void register( String test, String dir )
     {
         try ( PrintStream printStream =
-                new PrintStream( fileSystem.openAsOutputStream( new File( ensureBase(), ".register" ).toPath(), true ), false, StandardCharsets.UTF_8 ) )
+                new PrintStream( fileSystem.openAsOutputStream( ensureBase().resolve( ".register" ), true ), false, StandardCharsets.UTF_8 ) )
         {
             printStream.print( format( "%s = %s%n", dir, test ) );
         }
@@ -411,20 +372,20 @@ public class TestDirectory extends ExternalResource
         }
     }
 
-    private File ensureBase()
+    private Path ensureBase()
     {
         if ( testClassBaseFolder == null )
         {
             evaluateClassBaseTestFolder();
         }
-        if ( fileSystem.fileExists( testClassBaseFolder.toPath() ) && !fileSystem.isDirectory( testClassBaseFolder.toPath() ) )
+        if ( fileSystem.fileExists( testClassBaseFolder ) && !fileSystem.isDirectory( testClassBaseFolder ) )
         {
             throw new IllegalStateException( testClassBaseFolder + " exists and is not a directory!" );
         }
 
         try
         {
-            fileSystem.mkdirs( testClassBaseFolder.toPath() );
+            fileSystem.mkdirs( testClassBaseFolder );
         }
         catch ( IOException e )
         {
@@ -433,21 +394,21 @@ public class TestDirectory extends ExternalResource
         return testClassBaseFolder;
     }
 
-    private static File locateTarget( Class<?> owningTest )
+    private static Path locateTarget( Class<?> owningTest )
     {
         try
         {
-            File codeSource = new File( owningTest.getProtectionDomain().getCodeSource().getLocation().toURI() );
-            if ( codeSource.isDirectory() )
+            Path codeSource = Path.of( owningTest.getProtectionDomain().getCodeSource().getLocation().toURI() );
+            if ( Files.isDirectory( codeSource ) )
             {
                 // code loaded from a directory
-                return codeSource.getParentFile();
+                return codeSource.getParent();
             }
         }
         catch ( URISyntaxException e )
         {
             // ignored
         }
-        return new File( "target" );
+        return Path.of( "target" );
     }
 }

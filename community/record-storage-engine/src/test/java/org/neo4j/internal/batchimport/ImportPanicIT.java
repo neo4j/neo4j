@@ -123,7 +123,7 @@ class ImportPanicIT
 
     private Path nodeCsvFileWithBrokenEntries() throws IOException
     {
-        Path file = testDirectory.filePath( "broken-node-data.csv" );
+        Path file = testDirectory.file( "broken-node-data.csv" );
         try ( PrintWriter writer = new PrintWriter(
                 testDirectory.getFileSystem().openAsWriter( file, StandardCharsets.UTF_8, false ) ) )
         {

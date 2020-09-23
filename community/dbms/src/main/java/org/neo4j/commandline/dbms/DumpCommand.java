@@ -20,7 +20,6 @@
 package org.neo4j.commandline.dbms;
 
 import java.io.Closeable;
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
@@ -34,8 +33,6 @@ import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.Converters.DatabaseNameConverter;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.ConfigUtils;
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.helpers.NormalizedDatabaseName;
 import org.neo4j.dbms.archive.CompressionFormat;
 import org.neo4j.dbms.archive.Dumper;
@@ -127,9 +124,9 @@ public class DumpCommand extends AbstractCommand
         try
         {
             CompressionFormat format = selectCompressionFormat( ctx.err() );
-            File lockFile = databaseLayout.databaseLockFile().toFile();
+            Path lockFile = databaseLayout.databaseLockFile();
             dumper.dump( databasePath, databaseLayout.getTransactionLogsDirectory(), archive,
-                    format, path -> Objects.equals( path.getFileName().toString(), lockFile.getName() ) );
+                    format, path -> Objects.equals( path.getFileName().toString(), lockFile.getFileName().toString() ) );
         }
         catch ( FileAlreadyExistsException e )
         {

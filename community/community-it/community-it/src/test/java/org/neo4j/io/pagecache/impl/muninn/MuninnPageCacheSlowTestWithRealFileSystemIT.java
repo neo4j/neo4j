@@ -42,6 +42,6 @@ class MuninnPageCacheSlowTestWithRealFileSystemIT extends MuninnPageCacheSlowIT
     {
         return super.createFixture()
                     .withFileSystemAbstraction( DefaultFileSystemAbstraction::new )
-                    .withFileConstructor( directory::filePath );
+                    .withFileConstructor( directory::file );
     }
 }

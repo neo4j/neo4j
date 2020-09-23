@@ -31,8 +31,8 @@ import org.junit.platform.launcher.TestIdentifier;
 import org.junit.platform.launcher.core.LauncherDiscoveryRequestBuilder;
 import org.junit.platform.launcher.core.LauncherFactory;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
@@ -76,11 +76,11 @@ class TestDirectoryExtensionTestSupport
     @Test
     void testDirectoryInitialisedForUsage()
     {
-        File directory = testDirectory.homeDir();
+        Path directory = testDirectory.homePath();
         assertNotNull( directory );
-        assertTrue( directory.exists() );
+        assertTrue( Files.exists( directory ) );
         Path targetTestData = Paths.get( "target", "test data" );
-        assertTrue( directory.getAbsolutePath().contains( targetTestData.toString() ) );
+        assertTrue( directory.toAbsolutePath().toString().contains( targetTestData.toString() ) );
     }
 
     @Test
@@ -92,9 +92,9 @@ class TestDirectoryExtensionTestSupport
     @Test
     void createTestFile()
     {
-        File file = testDirectory.createFile( "a" );
-        assertEquals( "a", file.getName() );
-        assertTrue( fileSystem.fileExists( file.toPath() ) );
+        Path file = testDirectory.createFile( "a" );
+        assertEquals( "a", file.getFileName().toString() );
+        assertTrue( fileSystem.fileExists( file ) );
     }
 
     @Test
@@ -102,9 +102,9 @@ class TestDirectoryExtensionTestSupport
     {
         CONTEXT.clear();
         execute( "failAndKeepDirectory" );
-        File failedFile = CONTEXT.getValue( CREATED_TEST_FILE_PAIRS_KEY );
+        Path failedFile = CONTEXT.getValue( CREATED_TEST_FILE_PAIRS_KEY );
         assertNotNull( failedFile );
-        assertTrue( failedFile.exists() );
+        assertTrue( Files.exists( failedFile ) );
     }
 
     @Test
@@ -112,9 +112,9 @@ class TestDirectoryExtensionTestSupport
     {
         CONTEXT.clear();
         execute( "executeAndCleanupDirectory" );
-        File greenTestFail = CONTEXT.getValue( SUCCESSFUL_TEST_FILE_KEY );
+        Path greenTestFail = CONTEXT.getValue( SUCCESSFUL_TEST_FILE_KEY );
         assertNotNull( greenTestFail );
-        assertFalse( greenTestFail.exists() );
+        assertFalse( Files.exists( greenTestFail ) );
     }
 
     @Test
@@ -125,18 +125,18 @@ class TestDirectoryExtensionTestSupport
         CONTEXT.clear();
         FailedTestExecutionListener failedTestListener = new FailedTestExecutionListener();
         execute( "lockFileAndFailToDeleteDirectory", failedTestListener );
-        File lockedFile = CONTEXT.getValue( LOCKED_TEST_FILE_KEY );
+        Path lockedFile = CONTEXT.getValue( LOCKED_TEST_FILE_KEY );
 
         assertNotNull( lockedFile );
-        assertTrue( lockedFile.setReadable( true, true ) );
-        FileUtils.deleteDirectory( lockedFile.toPath() );
+        assertTrue( lockedFile.toFile().setReadable( true, true ) );
+        FileUtils.deleteDirectory( lockedFile );
         failedTestListener.assertTestObserver();
     }
 
     @Test
     void failedTestShouldKeepDirectoryInPerClassLifecycle()
     {
-        List<Pair<File,Boolean>> pairs = executeAndReturnCreatedFiles( DirectoryExtensionLifecycleVerificationTest.PerClassTest.class, 6 );
+        List<Pair<Path,Boolean>> pairs = executeAndReturnCreatedFiles( DirectoryExtensionLifecycleVerificationTest.PerClassTest.class, 6 );
         for ( var pair : pairs )
         {
             assertThat( pair.first() ).exists();
@@ -146,7 +146,7 @@ class TestDirectoryExtensionTestSupport
     @Test
     void failedTestShouldNotKeepDirectoryInPerMethodLifecycle()
     {
-        List<Pair<File,Boolean>> pairs = executeAndReturnCreatedFiles( DirectoryExtensionLifecycleVerificationTest.PerMethodTest.class, 6 );
+        List<Pair<Path,Boolean>> pairs = executeAndReturnCreatedFiles( DirectoryExtensionLifecycleVerificationTest.PerMethodTest.class, 6 );
         for ( var pair : pairs )
         {
             if ( pair.other() )
@@ -160,11 +160,11 @@ class TestDirectoryExtensionTestSupport
         }
     }
 
-    private static List<Pair<File,Boolean>> executeAndReturnCreatedFiles( Class testClass, int count )
+    private static List<Pair<Path,Boolean>> executeAndReturnCreatedFiles( Class<?> testClass, int count )
     {
         CONTEXT.clear();
         executeClass( testClass );
-        List<Pair<File,Boolean>> pairs = CONTEXT.getValue( CREATED_TEST_FILE_PAIRS_KEY );
+        List<Pair<Path,Boolean>> pairs = CONTEXT.getValue( CREATED_TEST_FILE_PAIRS_KEY );
         assertNotNull( pairs );
         assertThat( pairs.size() ).isEqualTo( count );
         return pairs;

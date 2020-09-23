@@ -130,7 +130,7 @@ class GBPTreeTest
     void setUp() throws IOException
     {
         executor = Executors.newFixedThreadPool( Runtime.getRuntime().availableProcessors() );
-        indexFile = testDirectory.filePath( "index" );
+        indexFile = testDirectory.file( "index" );
         defaultPageSize = toIntExact( blockSize( testDirectory.homePath() ) );
     }
 
@@ -1292,7 +1292,7 @@ class GBPTreeTest
         // GIVEN
         try ( EphemeralFileSystemAbstraction ephemeralFs = new EphemeralFileSystemAbstraction() )
         {
-            ephemeralFs.mkdirs( indexFile.toFile().getParentFile().toPath() );
+            ephemeralFs.mkdirs( indexFile.getParent() );
             PageCache pageCache = pageCacheExtension.getPageCache( ephemeralFs );
             EphemeralFileSystemAbstraction snapshot;
             try ( GBPTree<MutableLong, MutableLong> index = index( pageCache ).build() )
@@ -1689,7 +1689,7 @@ class GBPTreeTest
         PageCache pageCache = createPageCache( defaultPageSize );
         TreeFileNotFoundException e = assertThrows( TreeFileNotFoundException.class, () -> index( pageCache ).withReadOnly( true ).build() );
         assertThat( e.getMessage() ).contains( "Can not create new tree file in read only mode" );
-        assertThat( e.getMessage() ).contains( indexFile.toFile().getAbsolutePath() );
+        assertThat( e.getMessage() ).contains( indexFile.toAbsolutePath().toString() );
     }
 
     @Test

@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.diagnostics;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -122,7 +121,7 @@ public class KernelDiagnosticsOfflineReportProvider extends DiagnosticsOfflineRe
         {
             if ( fs.isDirectory( file ) )
             {
-                listContentOfDirectory( file, prefix + File.separator + file.getFileName(), sb );
+                listContentOfDirectory( file, prefix + file.getFileSystem().getSeparator() + file.getFileName(), sb );
             }
             else
             {

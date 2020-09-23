@@ -24,13 +24,13 @@ import org.apache.commons.compress.utils.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.BufferedInputStream;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Base64;
 import java.util.concurrent.ThreadLocalRandom;
@@ -121,14 +121,14 @@ public class HttpCopier implements PushToCloudCommand.Copier
 
     private static String base64Encode( String username, char[] password )
     {
-        String plainToken = new StringBuilder( username ).append( ':' ).append( password ).toString();
+        String plainToken = username + ':' + String.valueOf( password );
         return Base64.getEncoder().encodeToString( plainToken.getBytes() );
     }
 
     private static long calculateCrc32HashOfFile( Path source ) throws IOException
     {
         CRC32 crc = new CRC32();
-        try ( InputStream inputStream = new BufferedInputStream( new FileInputStream( source.toFile() ) ) )
+        try ( InputStream inputStream = new BufferedInputStream( Files.newInputStream( source ) ) )
         {
             int cnt;
             while ( (cnt = inputStream.read()) != -1 )
@@ -172,7 +172,7 @@ public class HttpCopier implements PushToCloudCommand.Copier
         {
             String bearerTokenHeader = "Bearer " + bearerToken;
             long crc32Sum = calculateCrc32HashOfFile( source );
-            URL signedURL = initiateCopy( verbose, safeUrl( consoleURL + "/import" ), crc32Sum, source.toFile().length(), bearerTokenHeader );
+            URL signedURL = initiateCopy( verbose, safeUrl( consoleURL + "/import" ), crc32Sum, Files.size( source ), bearerTokenHeader );
             URL uploadLocation = initiateResumableUpload( verbose, signedURL );
             long sourceLength = ctx.fs().getFileSize( source );
 
@@ -208,11 +208,11 @@ public class HttpCopier implements PushToCloudCommand.Copier
 
             if ( deleteSourceAfterImport )
             {
-                source.toFile().delete();
+                Files.delete( source );
             }
             else
             {
-                ctx.out().println( String.format( "It is safe to delete the dump file now: %s", source.toFile().getAbsolutePath() ) );
+                ctx.out().println( String.format( "It is safe to delete the dump file now: %s", source.toAbsolutePath() ) );
             }
         }
         catch ( InterruptedException | IOException e )
@@ -485,7 +485,7 @@ public class HttpCopier implements PushToCloudCommand.Copier
             }
             connection.setDoOutput( true );
             uploadProgress.rewindTo( position );
-            try ( InputStream sourceStream = new FileInputStream( source.toFile() );
+            try ( InputStream sourceStream = Files.newInputStream( source );
                   OutputStream targetStream = connection.getOutputStream() )
             {
                 safeSkip( sourceStream, position );
@@ -688,7 +688,7 @@ public class HttpCopier implements PushToCloudCommand.Copier
         debugErrorResponse( true, connection );
         return new CommandFailedException( "We encountered a problem while communicating to the Neo4j Aura system. \n" +
                                            "You can re-try using the existing dump by running this command: \n" +
-                                           String.format( "neo4j-admin push-to-cloud --%s=%s --%s=%s", "dump", dump.toFile().getAbsolutePath(), "bolt-uri",
+                                           String.format( "neo4j-admin push-to-cloud --%s=%s --%s=%s", "dump", dump.toAbsolutePath(), "bolt-uri",
                                                           boltUri ) );
     }
 

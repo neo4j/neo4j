@@ -247,7 +247,7 @@ class IndexedIdGeneratorRecoverabilityTest
 
     private IndexedIdGenerator instantiateFreelist()
     {
-        return new IndexedIdGenerator( pageCache, testDirectory.filePath( ID_FILE_NAME ), immediate(), ID_TYPE, true, () -> 0, Long.MAX_VALUE, false, NULL );
+        return new IndexedIdGenerator( pageCache, testDirectory.file( ID_FILE_NAME ), immediate(), ID_TYPE, true, () -> 0, Long.MAX_VALUE, false, NULL );
     }
 
     private static PageCache getPageCache( FileSystemAbstraction fs )

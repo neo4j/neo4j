@@ -177,7 +177,7 @@ class LogHeaderReaderTest
     void shouldReadALogHeaderFromAFile() throws IOException
     {
         // given
-        final Path file = testDirectory.filePath( "ReadLogHeader" );
+        final Path file = testDirectory.file( "ReadLogHeader" );
 
         final ByteBuffer buffer = ByteBuffers.allocate( CURRENT_FORMAT_LOG_HEADER_SIZE, INSTANCE );
         buffer.putLong( encodeLogVersion( expectedLogVersion, CURRENT_LOG_FORMAT_VERSION ) );
@@ -204,7 +204,7 @@ class LogHeaderReaderTest
     void shouldFailWhenUnableToReadALogHeaderFromAFile() throws IOException
     {
         // given
-        final Path file = testDirectory.filePath( "ReadLogHeader" );
+        final Path file = testDirectory.file( "ReadLogHeader" );
         ((StoreChannel) fileSystem.write( file )).close();
         IncompleteLogHeaderException exception = assertThrows( IncompleteLogHeaderException.class, () -> readLogHeader( fileSystem, file, INSTANCE ) );
         assertThat( exception.getMessage() ).contains( file.getFileName().toString() );

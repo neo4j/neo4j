@@ -64,7 +64,7 @@ class PageCacheExtensionTest
     @Test
     void pageCacheCanFindFileCreatedByTestDirectory() throws IOException
     {
-        Path testFile = testDirectory.createFilePath( "testFile" );
+        Path testFile = testDirectory.createFile( "testFile" );
         try ( PagedFile map = pageCache.map( testFile, 4096 ) )
         {
             assertNotNull( map );

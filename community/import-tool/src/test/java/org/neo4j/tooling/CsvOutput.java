@@ -20,10 +20,10 @@
 package org.neo4j.tooling;
 
 import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -50,21 +50,21 @@ public class CsvOutput implements BatchImporter
         String apply( InputEntity entity, Deserialization<String> deserialization, Header header );
     }
 
-    private final File targetDirectory;
+    private final Path targetDirectory;
     private final Header nodeHeader;
     private final Header relationshipHeader;
     private Configuration config;
     private final Deserialization<String> deserialization;
 
-    public CsvOutput( File targetDirectory, Header nodeHeader, Header relationshipHeader, Configuration config )
+    public CsvOutput( Path targetDirectory, Header nodeHeader, Header relationshipHeader, Configuration config ) throws IOException
     {
         this.targetDirectory = targetDirectory;
-        assert targetDirectory.isDirectory();
+        assert Files.isDirectory( targetDirectory );
         this.nodeHeader = nodeHeader;
         this.relationshipHeader = relationshipHeader;
         this.config = config;
         this.deserialization = new StringDeserialization( config );
-        targetDirectory.mkdirs();
+        Files.createDirectories( targetDirectory );
     }
 
     @Override
@@ -127,7 +127,6 @@ public class CsvOutput implements BatchImporter
 
     private PrintStream file( String name ) throws IOException
     {
-        return new PrintStream( new BufferedOutputStream( new FileOutputStream( new File( targetDirectory, name ) ),
-                (int) mebiBytes( 1 ) ) );
+        return new PrintStream( new BufferedOutputStream( Files.newOutputStream( targetDirectory.resolve( name ) ), (int) mebiBytes( 1 ) ) );
     }
 }

@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
@@ -128,7 +128,7 @@ public class StoreUpgrader
      * @param layout The layout of the existing database store.
      * @param forceUpgrade If {@code true}, the value of the {@link GraphDatabaseSettings#allow_upgrade} setting is ignored.
      */
-    public void migrateIfNeeded( DatabaseLayout layout, boolean forceUpgrade )
+    public void migrateIfNeeded( DatabaseLayout layout, boolean forceUpgrade ) throws IOException
     {
         // nothing to migrate
         if ( !Files.exists( layout.databaseDirectory() ) )
@@ -145,7 +145,7 @@ public class StoreUpgrader
         {
             DatabaseLayout migrationStructure = DatabaseLayout.ofFlat( layout.file( MIGRATION_DIRECTORY ) );
 
-            cleanupLegacyLeftOverDirsIn( layout.databaseDirectory().toFile() );
+            cleanupLegacyLeftOverDirsIn( layout.databaseDirectory() );
 
             Path migrationStateFile = migrationStructure.file( MIGRATION_STATUS_FILE );
             // if migration directory exists than we might have failed to move files into the store dir so do it again
@@ -263,15 +263,17 @@ public class StoreUpgrader
         return config.get( GraphDatabaseSettings.allow_upgrade );
     }
 
-    private void cleanupLegacyLeftOverDirsIn( File databaseDirectory )
+    private void cleanupLegacyLeftOverDirsIn( Path databaseDirectory ) throws IOException
     {
-        File[] leftOverDirs = databaseDirectory.listFiles(
-                ( file, name ) -> file.isDirectory() && MIGRATION_LEFTOVERS_PATTERN.matcher( name ).matches() );
-        if ( leftOverDirs != null )
+
+        try ( DirectoryStream<Path> paths = Files.newDirectoryStream( databaseDirectory ) )
         {
-            for ( File leftOverDir : leftOverDirs )
+            for ( Path path : paths )
             {
-                deleteSilently( leftOverDir );
+                if ( MIGRATION_LEFTOVERS_PATTERN.matcher( path.getFileName().toString() ).matches() )
+                {
+                    deleteSilently( path );
+                }
             }
         }
     }
@@ -342,11 +344,11 @@ public class StoreUpgrader
         fileSystem.mkdir( migrationDirectory );
     }
 
-    private void deleteSilently( File dir )
+    private void deleteSilently( Path dir )
     {
         try
         {
-            fileSystem.deleteRecursively( dir.toPath() );
+            fileSystem.deleteRecursively( dir );
         }
         catch ( IOException e )
         {

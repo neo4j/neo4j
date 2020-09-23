@@ -117,7 +117,7 @@ public class ProfilerExtension extends StatefulFieldExtension<Profiler> implemen
 
                 if ( testDir != null && testDir.isInitialised() )
                 {
-                    Path profileOutputFile = testDir.createFilePath( "profiler-output.txt" );
+                    Path profileOutputFile = testDir.createFile( "profiler-output.txt" );
                     FileSystemAbstraction fs = testDir.getFileSystem();
 
                     try ( OutputStream out = fs.openAsOutputStream( profileOutputFile, false ) )

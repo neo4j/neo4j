@@ -51,7 +51,7 @@ class WriterTest
     @BeforeEach
     void setupTree()
     {
-        tree = new GBPTreeBuilder<>( pageCache, directory.filePath( "tree" ), longLayout().withFixedSize( true ).build() ).build();
+        tree = new GBPTreeBuilder<>( pageCache, directory.file( "tree" ), longLayout().withFixedSize( true ).build() ).build();
     }
 
     @AfterEach

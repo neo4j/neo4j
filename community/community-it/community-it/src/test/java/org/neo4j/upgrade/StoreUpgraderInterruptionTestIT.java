@@ -126,7 +126,7 @@ public class StoreUpgraderInterruptionTestIT
         jobScheduler = new ThreadPoolJobScheduler();
         neo4jLayout = Neo4jLayout.of( directory.homePath() );
         workingDatabaseLayout = neo4jLayout.databaseLayout( DEFAULT_DATABASE_NAME );
-        prepareDirectory = directory.directoryPath( "prepare" );
+        prepareDirectory = directory.directory( "prepare" );
         legacyTransactionLogsLocator = new LegacyTransactionLogsLocator( Config.defaults(), workingDatabaseLayout );
         pageCache = pageCacheRule.getPageCache( fs );
         baselineFormat = RecordFormatSelector.selectForVersion( version );

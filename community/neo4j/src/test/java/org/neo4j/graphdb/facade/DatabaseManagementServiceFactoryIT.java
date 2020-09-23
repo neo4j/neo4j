@@ -27,6 +27,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import java.nio.file.Files;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
@@ -142,7 +143,7 @@ class DatabaseManagementServiceFactoryIT
             DatabaseManagementServiceFactory databaseManagementServiceFactory =
                     new DatabaseManagementServiceFactory( DbmsInfo.COMMUNITY, CommunityEditionModule::new );
             Config cfg = Config.newBuilder()
-                               .set( neo4j_home, testDirectory.homePath().toAbsolutePath() )
+                               .set( neo4j_home, testDirectory.absolutePath() )
                                .set( preallocate_logical_logs, false )
                                .build();
             return databaseManagementServiceFactory.build( cfg, GraphDatabaseDependencies.newDependencies() );
@@ -176,7 +177,7 @@ class DatabaseManagementServiceFactoryIT
                                                             Class<? extends Exception> expectedException, String execptedMessage )
         {
 
-            assertTrue( testDirectory.directory( "certificates", "certificates", "https" ).isDirectory() );
+            assertTrue( Files.isDirectory( testDirectory.directory( "certificates", "certificates", "https" ) ) );
             Config cfg = Config.newBuilder()
                                .set( neo4j_home, testDirectory.homePath().toAbsolutePath() )
                                .set( preallocate_logical_logs, false )

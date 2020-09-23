@@ -30,7 +30,8 @@ import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
@@ -65,15 +66,15 @@ class DirectoryExtensionLifecycleVerificationTest
     @Test
     void executeAndCleanupDirectory()
     {
-        File file = directory.createFile( "a" );
-        assertTrue( file.exists() );
+        Path file = directory.createFile( "a" );
+        assertTrue( Files.exists( file) );
         CONTEXT.setValue( SUCCESSFUL_TEST_FILE_KEY, file );
     }
 
     @Test
     void failAndKeepDirectory()
     {
-        File file = directory.createFile( "b" );
+        Path file = directory.createFile( "b" );
         CONTEXT.setValue( CREATED_TEST_FILE_PAIRS_KEY, file );
         throw new RuntimeException( "simulate test failure" );
     }
@@ -81,9 +82,9 @@ class DirectoryExtensionLifecycleVerificationTest
     @Test
     void lockFileAndFailToDeleteDirectory()
     {
-        File nonDeletableDirectory = directory.directory( "c" );
+        Path nonDeletableDirectory = directory.directory( "c" );
         CONTEXT.setValue( LOCKED_TEST_FILE_KEY, nonDeletableDirectory );
-        assertTrue( nonDeletableDirectory.setReadable( false, false ) );
+        assertTrue( nonDeletableDirectory.toFile().setReadable( false, false ) );
     }
 
     @Nested
@@ -127,7 +128,7 @@ class DirectoryExtensionLifecycleVerificationTest
         {
             var filename = UUID.randomUUID().toString();
             var file = testDirectory.createFile( filename );
-            List<Pair<File,Boolean>> pairs = CONTEXT.getValue( CREATED_TEST_FILE_PAIRS_KEY );
+            List<Pair<Path,Boolean>> pairs = CONTEXT.getValue( CREATED_TEST_FILE_PAIRS_KEY );
             pairs = pairs == null ? new LinkedList<>() : pairs;
             pairs.add( Pair.of( file, fail ) );
             CONTEXT.setValue( CREATED_TEST_FILE_PAIRS_KEY, pairs );

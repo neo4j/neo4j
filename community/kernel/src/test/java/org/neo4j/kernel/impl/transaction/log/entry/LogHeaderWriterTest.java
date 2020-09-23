@@ -103,7 +103,7 @@ class LogHeaderWriterTest
     void shouldWriteALogHeaderInAStoreChannel() throws IOException
     {
         // given
-        final Path file = testDirectory.filePath( "WriteLogHeader" );
+        final Path file = testDirectory.file( "WriteLogHeader" );
         final StoreChannel channel = fileSystem.write( file );
 
         // when

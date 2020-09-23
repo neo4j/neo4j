@@ -20,7 +20,6 @@
 package org.neo4j.io.fs;
 
 import java.io.Closeable;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -28,6 +27,7 @@ import java.io.Reader;
 import java.io.Writer;
 import java.nio.charset.Charset;
 import java.nio.file.CopyOption;
+import java.nio.file.DirectoryStream;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
@@ -111,7 +111,7 @@ public interface FileSystemAbstraction extends Closeable
 
     Path[] listFiles( Path directory );
 
-    Path[] listFiles( Path directory, FilenameFilter filter );
+    Path[] listFiles( Path directory, DirectoryStream.Filter<Path> filter );
 
     boolean isDirectory( Path file );
 

@@ -24,12 +24,10 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Objects;
 
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -101,23 +99,6 @@ public abstract class Neo4jTestCase
             tx = graphDb.beginTx();
         }
         return tx;
-    }
-
-    public static void deleteFileOrDirectory( File file )
-    {
-        if ( !file.exists() )
-        {
-            return;
-        }
-
-        if ( file.isDirectory() )
-        {
-            for ( File child : Objects.requireNonNull( file.listFiles() ) )
-            {
-                deleteFileOrDirectory( child );
-            }
-        }
-        assertTrue( "delete " + file, file.delete() );
     }
 
     protected static GraphDatabaseService graphDb()

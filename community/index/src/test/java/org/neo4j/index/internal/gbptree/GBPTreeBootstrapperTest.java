@@ -136,8 +136,8 @@ class GBPTreeBootstrapperTest
         this.scheduler = new ThreadPoolJobScheduler();
         this.pageCache = StandalonePageCacheFactory.createPageCache( fs, scheduler, testSetup.pageSize );
         this.zipName = testSetup.zipName;
-        this.storeFile = dir.filePath( STORE );
-        this.zipFile = dir.filePath( zipName );
+        this.storeFile = dir.file( STORE );
+        this.zipFile = dir.file( zipName );
     }
 
     private static String pathify( String name )

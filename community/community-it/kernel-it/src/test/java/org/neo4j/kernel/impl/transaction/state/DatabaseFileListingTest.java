@@ -24,6 +24,8 @@ import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -174,7 +176,7 @@ class DatabaseFileListingTest
     @Test
     void shouldListTransactionLogsFromCustomAbsoluteLocationWhenConfigured() throws IOException
     {
-        Path customLogLocation = testDirectory.directoryPath( "customLogLocation" );
+        Path customLogLocation = testDirectory.directory( "customLogLocation" );
         verifyLogFilesWithCustomPathListing( customLogLocation.toAbsolutePath() );
     }
 
@@ -182,16 +184,36 @@ class DatabaseFileListingTest
     void shouldListTxLogFiles() throws Exception
     {
         assertTrue( database.listStoreFiles( true ).stream()
-                .map( metaData -> metaData.path().getFileName().toString() )
-                .anyMatch( fileName -> DEFAULT_FILENAME_FILTER.accept( null, fileName ) ) );
+                .map( metaData -> metaData.path().getFileName() )
+                .anyMatch( fileName ->
+                {
+                    try
+                    {
+                        return DEFAULT_FILENAME_FILTER.accept( fileName );
+                    }
+                    catch ( IOException e )
+                    {
+                        throw new UncheckedIOException( e );
+                    }
+                } ) );
     }
 
     @Test
     void shouldNotListTxLogFiles() throws Exception
     {
         assertTrue( database.listStoreFiles( false ).stream()
-                .map( metaData -> metaData.path().getFileName().toString() )
-                .noneMatch( fileName -> DEFAULT_FILENAME_FILTER.accept( null, fileName ) ) );
+                .map( metaData -> metaData.path().getFileName() )
+                .noneMatch( fileName ->
+                {
+                    try
+                    {
+                        return DEFAULT_FILENAME_FILTER.accept( fileName );
+                    }
+                    catch ( IOException e )
+                    {
+                        throw new UncheckedIOException( e );
+                    }
+                } ) );
     }
 
     @Test
@@ -266,10 +288,10 @@ class DatabaseFileListingTest
     private void createIndexDbFile() throws IOException
     {
         DatabaseLayout databaseLayout = db.databaseLayout();
-        final File indexFile = databaseLayout.file( "index.db" ).toFile();
-        if ( !indexFile.exists() )
+        final Path indexFile = databaseLayout.file( "index.db" );
+        if ( Files.notExists( indexFile ) )
         {
-            assertTrue( indexFile.createNewFile() );
+            Files.createFile( indexFile );
         }
     }
 

@@ -24,7 +24,6 @@ import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -35,6 +34,7 @@ import java.io.Writer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.Charset;
 import java.nio.file.CopyOption;
+import java.nio.file.DirectoryStream;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.OpenOption;
@@ -42,6 +42,7 @@ import java.nio.file.Path;
 import java.nio.file.WatchService;
 import java.util.Set;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import org.neo4j.io.fs.watcher.DefaultFileSystemWatcher;
 import org.neo4j.io.fs.watcher.FileWatcher;
@@ -216,14 +217,13 @@ public class DefaultFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
-    public Path[] listFiles( Path directory, FilenameFilter filter )
+    public Path[] listFiles( Path directory, DirectoryStream.Filter<Path> filter )
     {
         try
         {
-            final File filterDir = directory.toFile();
-            try ( Stream<Path> list = Files.list( directory ) )
+            try ( DirectoryStream<Path> paths = Files.newDirectoryStream( directory, filter ) )
             {
-                return list.filter( file -> filter.accept( filterDir, file.getFileName().toString() ) ).toArray( Path[]::new );
+                return StreamSupport.stream( paths.spliterator(), false ).toArray( Path[]::new );
             }
         }
         catch ( IOException ignored )

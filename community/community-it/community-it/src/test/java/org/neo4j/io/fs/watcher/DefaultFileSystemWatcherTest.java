@@ -70,8 +70,8 @@ class DefaultFileSystemWatcherTest
         try ( DefaultFileSystemWatcher watcher = new DefaultFileSystemWatcher(
                 FileSystems.getDefault().newWatchService() ) )
         {
-            Path directory1 = testDirectory.directoryPath( "test1" );
-            Path directory2 = testDirectory.directoryPath( "test2" );
+            Path directory1 = testDirectory.directory( "test1" );
+            Path directory2 = testDirectory.directory( "test2" );
             WatchedResource watchedResource1 = watcher.watch( directory1 );
             WatchedResource watchedResource2 = watcher.watch( directory2 );
             assertNotSame( watchedResource1, watchedResource2 );

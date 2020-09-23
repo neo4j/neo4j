@@ -905,7 +905,7 @@ class HttpCopierTest
 
     private Path createDump() throws IOException
     {
-        Path file = directory.filePath( "something" );
+        Path file = directory.file( "something" );
         Files.createFile( file );
         Files.write( file, "this is simply some weird dump data, but may do the trick for this test of uploading it".getBytes() );
         return file;

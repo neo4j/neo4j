@@ -19,8 +19,6 @@
  */
 package org.neo4j.io.fs;
 
-import java.io.File;
-import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Stream;
@@ -41,7 +39,7 @@ public final class StreamFilesRecursive
      * Return a stream of {@link FileHandle file handles} for every file in the given directory, and its
      * sub-directories.
      * <p>
-     * Alternatively, if the {@link File} given as an argument refers to a file instead of a directory, then a stream
+     * Alternatively, if the {@link Path} given as an argument refers to a file instead of a directory, then a stream
      * will be returned with a file handle for just that file.
      * <p>
      * The stream is based on a snapshot of the file tree, so changes made to the tree using the returned file handles
@@ -55,9 +53,8 @@ public final class StreamFilesRecursive
      * @param directory The base directory to start streaming files from, or the specific individual file to stream.
      * @param fs The {@link FileSystemAbstraction} to use for manipulating files.
      * @return A {@link Stream} of {@link FileHandle}s
-     * @throws IOException If an I/O error occurs, possibly with the canonicalisation of the paths.
      */
-    public static Stream<FileHandle> streamFilesRecursive( Path directory, FileSystemAbstraction fs ) throws IOException
+    public static Stream<FileHandle> streamFilesRecursive( Path directory, FileSystemAbstraction fs )
     {
         Path canonicalizedDirectory = directory.toAbsolutePath().normalize();
         // We grab a snapshot of the file tree to avoid seeing the same file twice or more due to renames.

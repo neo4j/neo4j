@@ -144,7 +144,7 @@ public class StoreUpgraderTest
     {
         String version = formats.storeVersion();
         databaseLayout = neo4jLayout.databaseLayout( "db-" + version );
-        prepareDatabaseDirectory = testDirectory.directoryPath( "prepare_" + version );
+        prepareDatabaseDirectory = testDirectory.directory( "prepare_" + version );
         prepareSampleDatabase( version, fileSystem, databaseLayout, prepareDatabaseDirectory );
     }
 
@@ -194,7 +194,7 @@ public class StoreUpgraderTest
     void shouldRefuseToUpgradeIfAnyOfTheStoresWereNotShutDownCleanly( RecordFormats formats ) throws IOException
     {
         init( formats );
-        Path comparisonDirectory = testDirectory.directoryPath(
+        Path comparisonDirectory = testDirectory.directory(
             "shouldRefuseToUpgradeIfAnyOfTheStoresWereNotShutDownCleanly-comparison" );
         removeCheckPointFromTxLog( fileSystem, databaseLayout.databaseDirectory() );
         fileSystem.deleteRecursively( comparisonDirectory );
@@ -210,7 +210,7 @@ public class StoreUpgraderTest
     void shouldRefuseToUpgradeIfAllOfTheStoresWereNotShutDownCleanly( RecordFormats formats ) throws IOException
     {
         init( formats );
-        Path comparisonDirectory = testDirectory.directoryPath(
+        Path comparisonDirectory = testDirectory.directory(
             "shouldRefuseToUpgradeIfAllOfTheStoresWereNotShutDownCleanly-comparison" );
         removeCheckPointFromTxLog( fileSystem, databaseLayout.databaseDirectory() );
         fileSystem.deleteRecursively( comparisonDirectory );
@@ -399,7 +399,7 @@ public class StoreUpgraderTest
     {
         init( formats );
 
-        Path txRoot = testDirectory.directoryPath( "customTxRoot" );
+        Path txRoot = testDirectory.directory( "customTxRoot" );
         AssertableLogProvider logProvider = new AssertableLogProvider();
         StoreVersionCheck check = getVersionCheck( pageCache );
 
@@ -429,7 +429,7 @@ public class StoreUpgraderTest
     {
         init( formats );
 
-        Path txRoot = testDirectory.directoryPath( "customTxRoot" );
+        Path txRoot = testDirectory.directory( "customTxRoot" );
         AssertableLogProvider logProvider = new AssertableLogProvider();
         StoreVersionCheck check = getVersionCheck( pageCache );
 

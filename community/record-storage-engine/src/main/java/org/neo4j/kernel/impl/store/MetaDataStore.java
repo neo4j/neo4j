@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.store;
 
 import org.eclipse.collections.api.set.ImmutableSet;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
@@ -259,7 +258,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
      * This method only works for neostore files of the current version.
      *
      * @param pageCache {@link PageCache} the {@code neostore} file lives in.
-     * @param neoStore {@link File} pointing to the neostore.
+     * @param neoStore {@link Path} pointing to the neostore.
      * @param position record {@link Position}.
      * @param value value to write in that record.
      * @param cursorTracer underlying page cursor tracer.
@@ -320,7 +319,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
      * Reads a record from a neostore file.
      *
      * @param pageCache {@link PageCache} the {@code neostore} file lives in.
-     * @param neoStore {@link File} pointing to the neostore.
+     * @param neoStore {@link Path} pointing to the neostore.
      * @param position record {@link Position}.
      * @param cursorTracer underlying page cursor tracer.
      * @return the read record value specified by {@link Position}.

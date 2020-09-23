@@ -26,7 +26,6 @@ import org.junit.jupiter.api.condition.OS;
 import picocli.CommandLine;
 
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.AccessDeniedException;
@@ -86,10 +85,10 @@ class LoadCommandTest
     @BeforeEach
     void setUp() throws IOException
     {
-        homeDir = testDirectory.directoryPath( "home-dir" );
+        homeDir = testDirectory.directory( "home-dir" );
         prepareFooDatabaseDirectory();
-        configDir = testDirectory.directoryPath( "config-dir" );
-        archive = testDirectory.directoryPath( "some-archive.dump" );
+        configDir = testDirectory.directory( "config-dir" );
+        archive = testDirectory.directory( "some-archive.dump" );
         loader = mock( Loader.class );
     }
 
@@ -99,8 +98,8 @@ class LoadCommandTest
                 .set( GraphDatabaseSettings.neo4j_home, homeDir.toAbsolutePath() )
                 .set( default_database, "foo" )
                 .build();
-        File databaseDirectory  = DatabaseLayout.of( config ).databaseDirectory().toFile();
-        testDirectory.getFileSystem().mkdirs( databaseDirectory.toPath() );
+        Path databaseDirectory  = DatabaseLayout.of( config ).databaseDirectory();
+        testDirectory.getFileSystem().mkdirs( databaseDirectory );
     }
 
     @Test
@@ -154,7 +153,7 @@ class LoadCommandTest
     void shouldCalculateTheDatabaseDirectoryFromConfig()
             throws IOException, CommandFailedException, IncorrectFormat
     {
-        Path dataDir = testDirectory.directoryPath( "some-other-path" );
+        Path dataDir = testDirectory.directory( "some-other-path" );
         Path databaseDir = dataDir.resolve( "databases/foo" );
         Path transactionLogsDir = dataDir.resolve( DEFAULT_TX_LOGS_ROOT_DIR_NAME );
         Files.createDirectories( databaseDir );
@@ -168,8 +167,8 @@ class LoadCommandTest
     @Test
     void shouldCalculateTheTxLogDirectoryFromConfig() throws Exception
     {
-        Path dataDir = testDirectory.directoryPath( "some-other-path" );
-        Path txLogsDir = testDirectory.directoryPath( "txLogsPath" );
+        Path dataDir = testDirectory.directory( "some-other-path" );
+        Path txLogsDir = testDirectory.directory( "txLogsPath" );
         Path databaseDir = dataDir.resolve( "databases/foo" );
         Files.write( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ),
                 asList( formatProperty( data_directory, dataDir ),
@@ -184,10 +183,10 @@ class LoadCommandTest
     @DisabledOnOs( OS.WINDOWS )
     void shouldHandleSymlinkToDatabaseDir() throws IOException, CommandFailedException, IncorrectFormat
     {
-        Path symDir = testDirectory.directoryPath( "path-to-links" );
+        Path symDir = testDirectory.directory( "path-to-links" );
         Path realDatabaseDir = symDir.resolve( "foo" );
 
-        Path dataDir = testDirectory.directoryPath( "some-other-path" );
+        Path dataDir = testDirectory.directory( "some-other-path" );
         Path databaseDir = dataDir.resolve( "databases/foo" );
         Path txLogsDir = dataDir.resolve( DEFAULT_TX_LOGS_ROOT_DIR_NAME );
         Path databasesDir = dataDir.resolve( "databases" );

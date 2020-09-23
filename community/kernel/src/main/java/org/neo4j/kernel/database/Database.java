@@ -589,7 +589,7 @@ public class Database extends LifecycleAdapter
      * A database can be upgraded <em>after</em> it has been {@link #init() initialized},
      * and <em>before</em> it is {@link #start() started}.
      */
-    private void upgradeStore( DatabaseConfig databaseConfig, DatabasePageCache databasePageCache, MemoryTracker memoryTracker )
+    private void upgradeStore( DatabaseConfig databaseConfig, DatabasePageCache databasePageCache, MemoryTracker memoryTracker ) throws IOException
     {
         createDatabaseMigrator( databaseConfig, databasePageCache, memoryTracker ).migrate( false );
     }
@@ -918,7 +918,7 @@ public class Database extends LifecycleAdapter
         }
     }
 
-    public synchronized void upgrade( boolean startAfterUpgrade )
+    public synchronized void upgrade( boolean startAfterUpgrade ) throws IOException
     {
         if ( started )
         {

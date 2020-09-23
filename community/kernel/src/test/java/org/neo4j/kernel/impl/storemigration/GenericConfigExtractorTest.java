@@ -101,7 +101,7 @@ class GenericConfigExtractorTest
         // given
         AssertableLogProvider logProvider = new AssertableLogProvider();
         Log myLog = logProvider.getLog( getClass() );
-        Path genericFile = directory.filePath( "genericFile" );
+        Path genericFile = directory.file( "genericFile" );
         assertFalse( fs.fileExists( genericFile ) );
 
         // when
@@ -117,7 +117,7 @@ class GenericConfigExtractorTest
     {
         // given
         unzip( getClass(), ZIP_FAILED_GENERIC_35_FILE, directory.homePath() );
-        Path genericFile = directory.filePath( FAILED_GENERIC_35_FILE );
+        Path genericFile = directory.file( FAILED_GENERIC_35_FILE );
         AssertableLogProvider logProvider = new AssertableLogProvider();
         Log myLog = logProvider.getLog( getClass() );
 
@@ -138,7 +138,7 @@ class GenericConfigExtractorTest
         // given
         AssertableLogProvider logProvider = new AssertableLogProvider();
         Log myLog = logProvider.getLog( getClass() );
-        Path genericFile = directory.filePath( "genericFile" );
+        Path genericFile = directory.file( "genericFile" );
         corruptFile( fs, genericFile );
 
         // when
@@ -154,7 +154,7 @@ class GenericConfigExtractorTest
     {
         // given
         unzip( getClass(), ZIP_HEALTHY_GENERIC_35_FILE, directory.homePath() );
-        Path genericFile = directory.filePath( HEALTHY_GENERIC_35_FILE );
+        Path genericFile = directory.file( HEALTHY_GENERIC_35_FILE );
 
         // and
         assertTrue( fs.fileExists( genericFile ) );

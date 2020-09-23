@@ -77,7 +77,7 @@ class PartitionedSeekTest
     {
         // Make keys larger with padding so they fill up tree faster, but not beyond entry limit.
         layout = SimpleLongLayout.longLayout().build();
-        treeFile = testDirectory.filePath( "tree" );
+        treeFile = testDirectory.file( "tree" );
     }
 
     @Test

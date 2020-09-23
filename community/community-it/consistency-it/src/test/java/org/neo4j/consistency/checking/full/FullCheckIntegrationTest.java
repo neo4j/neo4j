@@ -29,11 +29,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.api.parallel.Resources;
 
-import java.io.File;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -129,6 +129,8 @@ import org.neo4j.util.Bits;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
+import static java.nio.file.StandardOpenOption.READ;
+import static java.nio.file.StandardOpenOption.WRITE;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -2126,7 +2128,11 @@ public class FullCheckIntegrationTest
     @Test
     void shouldReportMissingCountsStore() throws Exception
     {
-        shouldReportBadCountsStore( File::delete );
+        shouldReportBadCountsStore( path ->
+        {
+            Files.delete( path );
+            return true;
+        } );
     }
 
     @Test
@@ -2151,10 +2157,10 @@ public class FullCheckIntegrationTest
         on( check ).andThatsAllFolks();
     }
 
-    private void shouldReportBadCountsStore( ThrowingFunction<File,Boolean,IOException> fileAction ) throws Exception
+    private void shouldReportBadCountsStore( ThrowingFunction<Path,Boolean,IOException> fileAction ) throws Exception
     {
         // given
-        boolean corrupted = fileAction.apply( fixture.databaseLayout().countStore().toFile() );
+        boolean corrupted = fileAction.apply( fixture.databaseLayout().countStore() );
         assertTrue( corrupted );
 
         // When
@@ -2238,13 +2244,12 @@ public class FullCheckIntegrationTest
         };
     }
 
-    private boolean corruptFileIfExists( File file ) throws IOException
+    private boolean corruptFileIfExists( Path file ) throws IOException
     {
-        if ( file.exists() )
+        if ( Files.exists( file ) )
         {
-            try ( RandomAccessFile accessFile = new RandomAccessFile( file, "rw" ) )
+            try ( FileChannel channel = FileChannel.open( file, READ, WRITE ) )
             {
-                FileChannel channel = accessFile.getChannel();
                 ByteBuffer buffer = ByteBuffers.allocate( 30, INSTANCE );
                 while ( buffer.hasRemaining() )
                 {

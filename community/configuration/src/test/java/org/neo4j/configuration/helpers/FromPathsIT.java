@@ -23,9 +23,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
+import java.nio.file.FileSystems;
 import java.nio.file.Path;
+import java.util.Iterator;
 import java.util.Set;
-import java.util.StringJoiner;
 
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
@@ -34,6 +35,7 @@ import org.neo4j.test.rule.TestDirectory;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 @TestDirectoryExtension
 class FromPathsIT
@@ -51,10 +53,10 @@ class FromPathsIT
     @BeforeEach
     void setUp()
     {
-        this.neo4j1Directory = testDirectory.directory( "neo4j", "db1" ).toPath();
-        this.mongo1Directory = testDirectory.directory( "mongo", "db1" ).toPath();
-        this.redis1Directory = testDirectory.directory( "redis", "db1" ).toPath();
-        this.neo4j2Directory = testDirectory.directory( "neo4j", "db2" ).toPath();
+        this.neo4j1Directory = testDirectory.directory( "neo4j", "db1" );
+        this.mongo1Directory = testDirectory.directory( "mongo", "db1" );
+        this.redis1Directory = testDirectory.directory( "redis", "db1" );
+        this.neo4j2Directory = testDirectory.directory( "neo4j", "db2" );
         this.dbRoot1Directory = neo4j1Directory.getParent();
         this.dbRoot2Directory = neo4j2Directory.getParent();
     }
@@ -134,12 +136,13 @@ class FromPathsIT
     @Test
     void inputShouldNotPointToTheRootOfTheFileSystem()
     {
-        final var roots = File.listRoots();
-        if ( roots.length == 0 )
+        Iterator<Path> rootDirectories = FileSystems.getDefault().getRootDirectories().iterator();
+        if ( !rootDirectories.hasNext() )
         {
-            return;
+            //noinspection ConstantConditions
+            assumeTrue( false ); // Report as ignored
         }
-        var exception = assertThrows( IllegalArgumentException.class, () -> assertValid( roots[0].toPath().toAbsolutePath().toString() ) );
+        var exception = assertThrows( IllegalArgumentException.class, () -> assertValid( rootDirectories.next().toAbsolutePath().toString() ) );
         assertThat( exception.getMessage() ).contains( "should not point to the root of the file system" );
     }
 
@@ -156,11 +159,6 @@ class FromPathsIT
 
     private String concatenateSubPath( String... paths )
     {
-        StringJoiner result = new StringJoiner( File.separator );
-        for ( String path : paths )
-        {
-            result.add( path );
-        }
-        return result.toString();
+        return String.join( File.separator, paths );
     }
 }

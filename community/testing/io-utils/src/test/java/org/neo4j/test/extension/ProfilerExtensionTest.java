@@ -29,9 +29,9 @@ import org.junit.platform.launcher.TestIdentifier;
 import org.junit.platform.launcher.core.LauncherDiscoveryRequestBuilder;
 import org.junit.platform.launcher.core.LauncherFactory;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -52,8 +52,8 @@ class ProfilerExtensionTest
     {
         CONTEXT.clear();
         execute( ProfilerExtensionVerificationTest.class, "testThatPasses" );
-        File testDir = CONTEXT.getValue( TEST_DIR );
-        assertFalse( testDir.exists() ); // The TestDirectory extension deletes the test directory when the test passes.
+        Path testDir = CONTEXT.getValue( TEST_DIR );
+        assertFalse( Files.exists( testDir ) ); // The TestDirectory extension deletes the test directory when the test passes.
     }
 
     @Test
@@ -61,13 +61,13 @@ class ProfilerExtensionTest
     {
         CONTEXT.clear();
         execute( ProfilerExtensionVerificationTest.class, "testThatFails" );
-        File testDir = CONTEXT.getValue( TEST_DIR );
-        assertTrue( testDir.exists() );
-        assertTrue( testDir.isDirectory() );
-        File profileData = new File( testDir, "profiler-output.txt" );
-        assertTrue( profileData.exists() );
-        assertTrue( profileData.isFile() );
-        try ( Stream<String> lines = Files.lines( profileData.toPath() ) )
+        Path testDir = CONTEXT.getValue( TEST_DIR );
+        assertTrue( Files.exists( testDir ) );
+        assertTrue( Files.isDirectory( testDir ) );
+        Path profileData = testDir.resolve( "profiler-output.txt" );
+        assertTrue( Files.exists( profileData ) );
+        assertTrue( Files.isRegularFile( profileData ) );
+        try ( Stream<String> lines = Files.lines( profileData ) )
         {
             assertTrue( lines.anyMatch( line -> line.contains( "someVeryExpensiveComputation" ) ) );
         }

@@ -44,7 +44,7 @@ public class AcceptorConfigurationIT extends ExclusiveWebContainerTestBase
     public void serverShouldNotHangWithThreadPoolSizeSmallerThanCpuCount() throws Exception
     {
         testWebContainer = serverOnRandomPorts().withMaxJettyThreads( 3 )
-                .usingDataDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
+                .usingDataDir( folder.directory( name.getMethodName() ).toAbsolutePath().toString() )
                 .build();
 
         assertThat( GET( testWebContainer.getBaseUri().toString() ).status() ).isEqualTo( 200 );

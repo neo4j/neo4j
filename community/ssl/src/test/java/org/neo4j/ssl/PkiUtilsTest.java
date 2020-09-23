@@ -98,7 +98,7 @@ class PkiUtilsTest
     @Test
     void shouldReadEncryptedPrivateKey() throws Exception
     {
-        Path keyFile = testDirectory.filePath( "private.key" );
+        Path keyFile = testDirectory.file( "private.key" );
         URL resource = this.getClass().getResource( "test-certificates/encrypted/private.key" );
         copy( resource, keyFile );
 
@@ -109,7 +109,7 @@ class PkiUtilsTest
     @Test
     void shouldThrowOnMissingPassphraseForEncryptedPrivateKey() throws Exception
     {
-        Path keyFile = testDirectory.filePath( "private.key" );
+        Path keyFile = testDirectory.file( "private.key" );
         URL resource = this.getClass().getResource( "test-certificates/encrypted/private.key" );
         copy( resource, keyFile );
 

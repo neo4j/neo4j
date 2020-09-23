@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.locking;
 
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
@@ -164,8 +164,8 @@ abstract class RWLockCompatibility extends LockCompatibilityTestSupport
         catch ( Exception e )
         {
             LockWorkFailureDump dumper = new LockWorkFailureDump( testDir.file( getClass().getSimpleName() ) );
-            File file = dumper.dumpState( locks, t1, t2, t3, t4 );
-            throw new RuntimeException( "Failed, forensics information dumped to " + file.getAbsolutePath(), e );
+            Path file = dumper.dumpState( locks, t1, t2, t3, t4 );
+            throw new RuntimeException( "Failed, forensics information dumped to " + file.toAbsolutePath(), e );
         }
         finally
         {

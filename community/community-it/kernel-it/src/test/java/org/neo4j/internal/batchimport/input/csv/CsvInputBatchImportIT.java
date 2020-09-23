@@ -220,7 +220,7 @@ class CsvInputBatchImportIT
 
     private Path relationshipDataAsFile( List<InputEntity> relationshipData ) throws IOException
     {
-        Path file = testDirectory.filePath( "relationships.csv" );
+        Path file = testDirectory.file( "relationships.csv" );
         try ( Writer writer = fileSystem.openAsWriter( file, StandardCharsets.UTF_8, false ) )
         {
             // Header
@@ -237,7 +237,7 @@ class CsvInputBatchImportIT
 
     private Path nodeDataAsFile( List<InputEntity> nodeData ) throws IOException
     {
-        Path file = testDirectory.filePath( "nodes.csv" );
+        Path file = testDirectory.file( "nodes.csv" );
         try ( Writer writer = fileSystem.openAsWriter( file, StandardCharsets.UTF_8, false ) )
         {
             // Header

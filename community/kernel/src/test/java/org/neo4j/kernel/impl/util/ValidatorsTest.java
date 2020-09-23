@@ -71,6 +71,6 @@ class ValidatorsTest
 
     private void existenceOfFile( String name ) throws IOException
     {
-        Files.createFile( directory.filePath( name ) );
+        Files.createFile( directory.file( name ) );
     }
 }

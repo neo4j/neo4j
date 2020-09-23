@@ -55,7 +55,7 @@ class PageCacheLongArrayTest
     @Test
     void verifyPageCacheLongArray() throws Exception
     {
-        PagedFile file = pageCache.map( testDirectory.filePath( "file" ), pageCache.pageSize(), immutable.of( CREATE,  DELETE_ON_CLOSE ) );
+        PagedFile file = pageCache.map( testDirectory.file( "file" ), pageCache.pageSize(), immutable.of( CREATE,  DELETE_ON_CLOSE ) );
 
         try ( LongArray array = new PageCacheLongArray( file, NULL, COUNT, 0, 0 ) )
         {

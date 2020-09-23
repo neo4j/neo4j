@@ -27,7 +27,6 @@ import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.function.ThrowingSupplier;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -338,7 +337,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
     void creatingSwapperForFileMustTakeLockOnFile() throws Exception
     {
         PageSwapperFactory factory = createSwapperFactory( fileSystem );
-        Path file = testDir.filePath( "file" );
+        Path file = testDir.file( "file" );
         ((StoreChannel) fileSystem.write( file )).close();
 
         PageSwapper pageSwapper = createSwapper( factory, file, 4, NO_CALLBACK, false );
@@ -359,7 +358,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
     void creatingSwapperForInternallyLockedFileMustThrow() throws Exception
     {
         PageSwapperFactory factory = createSwapperFactory( fileSystem );
-        Path file = testDir.filePath( "file" );
+        Path file = testDir.file( "file" );
 
         StoreFileChannel channel = fileSystem.write( file );
 
@@ -375,7 +374,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
     void creatingSwapperForExternallyLockedFileMustThrow() throws Exception
     {
         PageSwapperFactory factory = createSwapperFactory( fileSystem );
-        Path file = testDir.filePath( "file" );
+        Path file = testDir.file( "file" );
 
         ((StoreChannel) fileSystem.write( file )).close();
 
@@ -383,8 +382,8 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
                 getJavaExecutable().toString(),
                 "-cp", getClassPath(),
                 LockThisFileProgram.class.getCanonicalName(), file.toAbsolutePath().toString() );
-        File wd = new File( "target/test-classes" ).getAbsoluteFile();
-        pb.directory( wd );
+        Path wd = Path.of( "target/test-classes" ).toAbsolutePath();
+        pb.directory( wd.toFile() );
         Process process = pb.start();
         BufferedReader stdout = new BufferedReader( new InputStreamReader( process.getInputStream() ) );
         InputStream stderr = process.getErrorStream();
@@ -423,7 +422,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
     void mustUnlockFileWhenThePageSwapperIsClosed() throws Exception
     {
         PageSwapperFactory factory = createSwapperFactory( fileSystem );
-        Path file = testDir.filePath( "file" );
+        Path file = testDir.file( "file" );
         ((StoreChannel) fileSystem.write( file )).close();
 
         createSwapper( factory, file, 4, NO_CALLBACK, false ).close();
@@ -440,7 +439,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
     void fileMustRemainLockedEvenIfChannelIsClosedByStrayInterrupt() throws Exception
     {
         PageSwapperFactory factory = createSwapperFactory( fileSystem );
-        Path file = testDir.filePath( "file" );
+        Path file = testDir.file( "file" );
         ((StoreChannel) fileSystem.write( file )).close();
 
         PageSwapper pageSwapper = createSwapper( factory, file, 4, NO_CALLBACK, false );
@@ -482,7 +481,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
                 };
             }
         } );
-        Path file = testDir.filePath( "file" );
+        Path file = testDir.file( "file" );
         try ( StoreChannel ch = fileSystem.write( file );
                 FileLock ignore = ch.tryLock() )
         {

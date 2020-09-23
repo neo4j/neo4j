@@ -23,11 +23,12 @@ import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
@@ -168,13 +169,13 @@ public class SessionExtension implements BeforeEachCallback, AfterEachCallback
 
     public URL putTmpFile( String prefix, String suffix, String contents ) throws IOException
     {
-        var tmpFile = File.createTempFile( prefix, suffix, null );
-        tmpFile.deleteOnExit();
-        try ( PrintWriter out = new PrintWriter( tmpFile, StandardCharsets.UTF_8 ) )
+        Path tempFile = Files.createTempFile( prefix, suffix );
+        tempFile.toFile().deleteOnExit();
+        try ( PrintWriter out = new PrintWriter( Files.newOutputStream( tempFile ), false, StandardCharsets.UTF_8 ) )
         {
             out.println( contents);
         }
-        return tmpFile.toURI().toURL();
+        return tempFile.toUri().toURL();
     }
 
     public SessionExtension withAuthEnabled( boolean authEnabled )

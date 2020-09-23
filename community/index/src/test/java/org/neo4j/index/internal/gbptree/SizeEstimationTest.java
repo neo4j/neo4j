@@ -68,7 +68,7 @@ class SizeEstimationTest
     private <KEY,VALUE> void assertEstimateSizeCorrectly( TestLayout<KEY,VALUE> layout ) throws IOException
     {
         try ( GBPTree<KEY,VALUE> tree =
-                new GBPTreeBuilder<>( pageCache, testDirectory.filePath( "tree" ), layout ).build() )
+                new GBPTreeBuilder<>( pageCache, testDirectory.file( "tree" ), layout ).build() )
         {
             // given
             int count = random.nextInt( 500, 2_500 );

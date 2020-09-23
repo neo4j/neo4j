@@ -162,7 +162,7 @@ class RecordStorageMigratorIT
         throws Exception
     {
         // GIVEN a legacy database
-        Path prepare = testDirectory.directoryPath( "prepare" );
+        Path prepare = testDirectory.directory( "prepare" );
         var fs = testDirectory.getFileSystem();
         MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, databaseLayout.databaseDirectory(), prepare );
         // and a state of the migration saying that it has done the actual migration
@@ -192,7 +192,7 @@ class RecordStorageMigratorIT
     {
         // GIVEN a legacy database
 
-        Path prepare = testDirectory.directoryPath( "prepare" );
+        Path prepare = testDirectory.directory( "prepare" );
         var fs = testDirectory.getFileSystem();
         MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, databaseLayout.databaseDirectory(), prepare );
 
@@ -224,7 +224,7 @@ class RecordStorageMigratorIT
     {
         // GIVEN a legacy database
 
-        Path prepare = testDirectory.directoryPath( "prepare" );
+        Path prepare = testDirectory.directory( "prepare" );
         var fs = testDirectory.getFileSystem();
         MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, databaseLayout.databaseDirectory(), prepare );
         // and a state of the migration saying that it has done the actual migration
@@ -256,7 +256,7 @@ class RecordStorageMigratorIT
     {
         // GIVEN a legacy database
 
-        Path prepare = testDirectory.directoryPath( "prepare" );
+        Path prepare = testDirectory.directory( "prepare" );
         var fs = testDirectory.getFileSystem();
         MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, databaseLayout.databaseDirectory(), prepare );
         // and a state of the migration saying that it has done the actual migration
@@ -282,7 +282,7 @@ class RecordStorageMigratorIT
     {
         // given
 
-        Path prepare = testDirectory.directoryPath( "prepare" );
+        Path prepare = testDirectory.directory( "prepare" );
         var fs = testDirectory.getFileSystem();
         MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, databaseLayout.databaseDirectory(), prepare );
         // and a state of the migration saying that it has done the actual migration
@@ -307,7 +307,7 @@ class RecordStorageMigratorIT
     {
         // Given we have an old store full of random schema rules.
 
-        Path prepare = testDirectory.directoryPath( "prepare" );
+        Path prepare = testDirectory.directory( "prepare" );
         var fs = testDirectory.getFileSystem();
         MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, databaseLayout.databaseDirectory(), prepare );
         // and a state of the migration saying that it has done the actual migration

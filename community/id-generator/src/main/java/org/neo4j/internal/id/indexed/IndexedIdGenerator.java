@@ -23,7 +23,6 @@ import org.eclipse.collections.api.list.primitive.MutableLongList;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.eclipse.collections.impl.factory.primitive.LongLists;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.NoSuchFileException;
@@ -659,7 +658,7 @@ public class IndexedIdGenerator implements IdGenerator
      * Reads contents of a header in an existing {@link IndexedIdGenerator}.
      *
      * @param pageCache {@link PageCache} to map id generator in.
-     * @param path {@link File} pointing to the id generator.
+     * @param path {@link Path} pointing to the id generator.
      * @return {@link Optional} with the data embedded inside the {@link HeaderReader} if the id generator existed and the header was read correctly,
      * otherwise {@link Optional#empty()}.
      */
@@ -686,7 +685,7 @@ public class IndexedIdGenerator implements IdGenerator
      * Dumps the contents of an {@link IndexedIdGenerator} as human-readable text.
      *
      * @param pageCache {@link PageCache} to map id generator in.
-     * @param path {@link File} pointing to the id generator.
+     * @param path {@link Path} pointing to the id generator.
      * @param cacheTracer underlying page cache tracer
      * @throws IOException if the file was missing or some other I/O error occurred.
      */

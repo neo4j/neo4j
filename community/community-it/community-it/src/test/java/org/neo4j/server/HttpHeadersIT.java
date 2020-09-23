@@ -113,7 +113,7 @@ public class HttpHeadersIT extends ExclusiveWebContainerTestBase
     {
         var builder = serverOnRandomPorts()
                 .withHttpsEnabled()
-                .usingDataDir( folder.directory( name.getMethodName() ).getAbsolutePath() );
+                .usingDataDir( folder.directory( name.getMethodName() ).toAbsolutePath().toString() );
 
         if ( hstsValue != null )
         {

@@ -82,7 +82,7 @@ class LuceneSchemaIndexUniquenessVerificationIT
         Factory<IndexWriterConfig> configFactory = new TestConfigFactory();
         index = LuceneSchemaIndexBuilder.create( descriptor, Config.defaults() )
                 .withFileSystem( fileSystem )
-                .withIndexRootFolder( testDir.directoryPath( "uniquenessVerification" ).resolve( "index" ) )
+                .withIndexRootFolder( testDir.directory( "uniquenessVerification" ).resolve( "index" ) )
                 .withWriterConfig( configFactory )
                 .withDirectoryFactory( DirectoryFactory.PERSISTENT )
                 .build();

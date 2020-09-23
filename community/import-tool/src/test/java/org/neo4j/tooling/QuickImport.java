@@ -19,8 +19,8 @@
  */
 package org.neo4j.tooling;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.csv.reader.CharSeeker;
@@ -87,7 +87,7 @@ public class QuickImport
         long relationshipCount = parseLongWithUnit( args.get( "relationships", null ) );
         int labelCount = args.getNumber( "labels", 4 ).intValue();
         int relationshipTypeCount = args.getNumber( "relationship-types", 4 ).intValue();
-        File dir = new File( args.get( "into" ) );
+        Path dir = Path.of( args.get( "into" ) );
         long randomSeed = args.getNumber( "random-seed", currentTimeMillis() ).longValue();
         Configuration config = Configuration.COMMAS;
 
@@ -102,7 +102,7 @@ public class QuickImport
         String dbConfigFileName = args.get( "db-config", null );
         if ( dbConfigFileName != null )
         {
-            dbConfig = Config.newBuilder().fromFile( new File( dbConfigFileName ) ).build();
+            dbConfig = Config.newBuilder().fromFile( Path.of( dbConfigFileName ) ).build();
         }
         else
         {
@@ -165,7 +165,7 @@ public class QuickImport
                 System.out.println( "Seed " + randomSeed );
                 final JobScheduler jobScheduler = life.add( createScheduler() );
                 consumer = BatchImporterFactory.withHighestPriority().instantiate(
-                        DatabaseLayout.ofFlat( dir.toPath() ), fileSystem, null, PageCacheTracer.NULL, importConfig, new SimpleLogService( logging, logging ),
+                        DatabaseLayout.ofFlat( dir ), fileSystem, null, PageCacheTracer.NULL, importConfig, new SimpleLogService( logging, logging ),
                         defaultVisible(), EMPTY, dbConfig, RecordFormatSelector.selectForConfig( dbConfig, logging ), NO_MONITOR, jobScheduler,
                         Collector.EMPTY, TransactionLogInitializer.getLogFilesInitializer(), INSTANCE );
             }

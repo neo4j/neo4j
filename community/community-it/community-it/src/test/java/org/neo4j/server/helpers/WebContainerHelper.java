@@ -19,7 +19,7 @@
  */
 package org.neo4j.server.helpers;
 
-import java.io.File;
+import java.nio.file.Path;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -59,7 +59,7 @@ public final class WebContainerHelper
         return createContainer( CommunityWebContainerBuilder.builder(), false, null );
     }
 
-    public static TestWebContainer createReadOnlyContainer( File path ) throws Exception
+    public static TestWebContainer createReadOnlyContainer( Path path ) throws Exception
     {
         CommunityWebContainerBuilder builder = CommunityWebContainerBuilder.builder();
         builder.withProperty( "dbms.connector.bolt.listen_address", ":0" );
@@ -78,7 +78,7 @@ public final class WebContainerHelper
         return createContainer( builder, false, null );
     }
 
-    private static TestWebContainer createContainer( CommunityWebContainerBuilder builder, boolean persistent, File path ) throws Exception
+    private static TestWebContainer createContainer( CommunityWebContainerBuilder builder, boolean persistent, Path path ) throws Exception
     {
         if ( persistent )
         {
@@ -86,7 +86,7 @@ public final class WebContainerHelper
         }
         builder.onRandomPorts();
         return builder
-              .usingDataDir( path != null ? path.getAbsolutePath() : null )
+              .usingDataDir( path != null ? path.toAbsolutePath().toString() : null )
               .build();
     }
 

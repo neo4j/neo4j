@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.storemigration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 
@@ -56,7 +55,6 @@ class SchemaIndexMigratorTest
     private TestDirectory testDirectory;
 
     private final FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
-    private final File home = mock( File.class );
     private final ProgressReporter progressReporter = mock( ProgressReporter.class );
     private final IndexProvider indexProvider = mock( IndexProvider.class );
     private DatabaseLayout databaseLayout;
@@ -65,8 +63,8 @@ class SchemaIndexMigratorTest
     @BeforeEach
     void setup()
     {
-        databaseLayout = Neo4jLayout.of( testDirectory.directoryPath( "store" ) ).databaseLayout( DEFAULT_DATABASE_NAME );
-        migrationLayout = Neo4jLayout.of( testDirectory.directoryPath( "migrationDir" ) ).databaseLayout( DEFAULT_DATABASE_NAME );
+        databaseLayout = Neo4jLayout.of( testDirectory.directory( "store" ) ).databaseLayout( DEFAULT_DATABASE_NAME );
+        migrationLayout = Neo4jLayout.of( testDirectory.directory( "migrationDir" ) ).databaseLayout( DEFAULT_DATABASE_NAME );
     }
 
     @Test

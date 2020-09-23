@@ -71,9 +71,6 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.neo4j.net.ConnectionTrackingIT.TestConnector.BOLT;
-import static org.neo4j.net.ConnectionTrackingIT.TestConnector.HTTP;
-import static org.neo4j.net.ConnectionTrackingIT.TestConnector.HTTPS;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME;
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -92,6 +89,9 @@ import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.internal.helpers.collection.Iterators.single;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.Terminated;
+import static org.neo4j.net.ConnectionTrackingIT.TestConnector.BOLT;
+import static org.neo4j.net.ConnectionTrackingIT.TestConnector.HTTP;
+import static org.neo4j.net.ConnectionTrackingIT.TestConnector.HTTPS;
 import static org.neo4j.server.configuration.ServerSettings.webserver_max_threads;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 import static org.neo4j.test.server.HTTP.RawPayload;
@@ -130,7 +130,7 @@ class ConnectionTrackingIT
     void beforeAll()
     {
         neo4j = (InProcessNeo4j) new InProcessNeo4jBuilder( dir.homePath() )
-                .withConfig( neo4j_home, dir.homePath().toAbsolutePath() )
+                .withConfig( neo4j_home, dir.absolutePath() )
                 .withConfig( auth_enabled, true )
                 .withConfig( HttpConnector.enabled, true )
                 .withConfig( HttpsConnector.enabled, true )

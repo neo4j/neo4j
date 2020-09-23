@@ -73,7 +73,7 @@ class IdRangeMarkerTest
     @BeforeEach
     void instantiateTree()
     {
-        this.tree = new GBPTreeBuilder<>( pageCache, directory.filePath( "file.id" ), layout ).build();
+        this.tree = new GBPTreeBuilder<>( pageCache, directory.file( "file.id" ), layout ).build();
     }
 
     @AfterEach

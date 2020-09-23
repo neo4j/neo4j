@@ -2437,14 +2437,14 @@ class ImportCommandTest
 
     private String getTransactionLogsRoot()
     {
-        return databaseLayout.getTransactionLogsDirectory().toFile().getParentFile().getAbsolutePath();
+        return databaseLayout.getTransactionLogsDirectory().getParent().toAbsolutePath().toString();
     }
 
     private Path prepareDefaultConfigFile() throws IOException
     {
         Path dbConfig = file( "neo4j.properties" );
         store( Map.of(
-                neo4j_home.name(), testDirectory.homeDir().getAbsolutePath(),
+                neo4j_home.name(), testDirectory.absolutePath().toString(),
                 preallocate_logical_logs.name(), FALSE
         ), dbConfig );
 
@@ -2468,7 +2468,7 @@ class ImportCommandTest
 
     private void runImport( String... arguments )
     {
-        runImport( testDirectory.homePath().toAbsolutePath(), arguments );
+        runImport( testDirectory.absolutePath(), arguments );
     }
 
     private void runImport( Path homeDir, String... arguments )
@@ -2480,7 +2480,7 @@ class ImportCommandTest
         if ( !list.contains( "--report-file" ) ) // make sure we write in test directory if not specified
         {
             list.add( "--report-file" );
-            list.add( testDirectory.file( "import.report" ).getAbsolutePath() );
+            list.add( testDirectory.file( "import.report" ).toAbsolutePath().toString() );
         }
 
         new CommandLine( cmd ).setUseSimplifiedAtFiles( true ).parseArgs( list.toArray( new String[0] ) );

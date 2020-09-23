@@ -30,7 +30,6 @@ import org.mockito.InOrder;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
@@ -48,7 +47,6 @@ import java.util.function.IntPredicate;
 
 import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
-import org.neo4j.common.Subject;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.exceptions.UnderlyingStorageException;
@@ -129,7 +127,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-import static org.neo4j.common.Subject.ANONYMOUS;
 import static org.neo4j.common.Subject.AUTH_DISABLED;
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE30;
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10;
@@ -582,7 +579,7 @@ class IndexingServiceTest
         IndexingService indexing = newIndexingServiceWithMockedDependencies(
                 mock( IndexPopulator.class ), indexAccessor,
                 new DataUpdates( ), rule1, rule2 );
-        File theFile = new File( "Blah" );
+        Path theFile = Path.of( "Blah" );
 
         when( indexAccessor.snapshotFiles()).thenAnswer( newResourceIterator( theFile ) );
         when( indexProvider.getInitialState( rule1, NULL ) ).thenReturn( ONLINE );
@@ -612,7 +609,7 @@ class IndexingServiceTest
         IndexingService indexing = newIndexingServiceWithMockedDependencies(
                 populator, indexAccessor,
                 new DataUpdates(), index1, index2 );
-        File theFile = new File( "Blah" );
+        Path theFile = Path.of( "Blah" );
 
         doAnswer( waitForLatch( populatorLatch ) ).when( populator ).create();
         when( indexAccessor.snapshotFiles() ).thenAnswer( newResourceIterator( theFile ) );
@@ -1426,9 +1423,9 @@ class IndexingServiceTest
         };
     }
 
-    private static Answer<ResourceIterator<File>> newResourceIterator( final File theFile )
+    private static Answer<ResourceIterator<Path>> newResourceIterator( final Path theFile )
     {
-        return invocationOnMock -> asResourceIterator(iterator( theFile ));
+        return invocationOnMock -> asResourceIterator( iterator( theFile ) );
     }
 
     private EntityUpdates addNodeUpdate( long nodeId, Object propertyValue )

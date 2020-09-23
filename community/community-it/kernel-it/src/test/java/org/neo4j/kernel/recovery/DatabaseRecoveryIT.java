@@ -24,7 +24,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
@@ -341,7 +340,7 @@ class DatabaseRecoveryIT
         // between applying transactions normally and recovering them after a crash, index update wise.
 
         // given
-        Path storeDir = directory.homePath().toAbsolutePath();
+        Path storeDir = directory.absolutePath();
         EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
         UpdateCapturingIndexProvider updateCapturingIndexProvider = new UpdateCapturingIndexProvider( IndexProvider.EMPTY, new HashMap<>() );
         GraphDatabaseAPI db = startDatabase( storeDir, fs, updateCapturingIndexProvider );
@@ -795,16 +794,16 @@ class DatabaseRecoveryIT
         DatabaseLayout restoreDbLayout = Neo4jLayout.of( directory.homePath( "restore-db" ) ).databaseLayout( DEFAULT_DATABASE_NAME );
         fileSystem.mkdirs( restoreDbLayout.databaseDirectory() );
         fileSystem.mkdirs( restoreDbLayout.getTransactionLogsDirectory() );
-        copy( fileSystem, databaseLayout.getTransactionLogsDirectory().toFile(), restoreDbLayout.getTransactionLogsDirectory().toFile() );
-        copy( fileSystem, databaseLayout.databaseDirectory().toFile(), restoreDbLayout.databaseDirectory().toFile() );
+        copy( fileSystem, databaseLayout.getTransactionLogsDirectory(), restoreDbLayout.getTransactionLogsDirectory() );
+        copy( fileSystem, databaseLayout.databaseDirectory(), restoreDbLayout.databaseDirectory() );
         return restoreDbLayout;
     }
 
-    private static void copy( FileSystemAbstraction fs, File fromDirectory, File toDirectory ) throws IOException
+    private static void copy( FileSystemAbstraction fs, Path fromDirectory, Path toDirectory ) throws IOException
     {
-        assertTrue( fs.isDirectory( fromDirectory.toPath() ) );
-        assertTrue( fs.isDirectory( toDirectory.toPath() ) );
-        fs.copyRecursively( fromDirectory.toPath(), toDirectory.toPath() );
+        assertTrue( fs.isDirectory( fromDirectory ) );
+        assertTrue( fs.isDirectory( toDirectory ) );
+        fs.copyRecursively( fromDirectory, toDirectory );
     }
 
     private GraphDatabaseAPI startDatabase( Path homeDir, EphemeralFileSystemAbstraction fs, UpdateCapturingIndexProvider indexProvider )

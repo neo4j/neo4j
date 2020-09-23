@@ -41,7 +41,7 @@ class FirstStartupIT
     void shouldBeEmptyWhenFirstStarted()
     {
         // When
-        var storeDir = testDir.homePath().toAbsolutePath();
+        var storeDir = testDir.absolutePath();
         DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( storeDir ).build();
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
 

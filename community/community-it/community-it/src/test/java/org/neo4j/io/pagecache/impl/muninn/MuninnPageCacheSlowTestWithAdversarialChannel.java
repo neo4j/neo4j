@@ -29,7 +29,7 @@ public class MuninnPageCacheSlowTestWithAdversarialChannel extends MuninnPageCac
     {
         return super.createFixture()
                 .withFileSystemAbstraction( AdversarialChannelDefaultFileSystemAbstraction::new )
-                .withFileConstructor( directory::filePath );
+                .withFileConstructor( directory::file );
     }
 
 }

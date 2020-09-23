@@ -20,11 +20,10 @@
 package org.neo4j.internal.index.label;
 
 import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.io.UncheckedIOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
@@ -251,7 +250,7 @@ public class TokenScanWriteMonitor implements NativeTokenScanWriter.WriteMonitor
             // Prune
             long time = clock.millis();
             long threshold = time - pruneThreshold;
-            for ( Path file : fs.listFiles( storeDir, ( dir, name ) -> name.startsWith( file.getFileName() + "-" ) ) )
+            for ( Path file : fs.listFiles( storeDir, name -> name.getFileName().toString().startsWith( file.getFileName() + "-" ) ) )
             {
                 long timestamp = millisOf( file );
                 if ( timestamp < threshold )
@@ -411,9 +410,9 @@ public class TokenScanWriteMonitor implements NativeTokenScanWriter.WriteMonitor
         {
             if ( redirectsToFile )
             {
-                File outFile = new File( writeLogBaseFile( databaseLayout, entityType ).toAbsolutePath() + ".txt" );
+                Path outFile = Path.of( writeLogBaseFile( databaseLayout, entityType ).toAbsolutePath() + ".txt" );
                 System.out.println( "Redirecting output to " + outFile );
-                out = new PrintStream( new BufferedOutputStream( new FileOutputStream( outFile ) ) );
+                out = new PrintStream( new BufferedOutputStream( Files.newOutputStream( outFile ) ) );
             }
             Dumper dumper = new PrintStreamDumper( out );
             dump( fs, databaseLayout, dumper, txFilter, entityType );
@@ -429,7 +428,7 @@ public class TokenScanWriteMonitor implements NativeTokenScanWriter.WriteMonitor
     {
         Path writeLogFile = writeLogBaseFile( databaseLayout, entityType );
         String writeLogFileBaseName = writeLogFile.getFileName().toString();
-        Path[] files = fs.listFiles( databaseLayout.databaseDirectory(), ( dir, name ) -> name.startsWith( writeLogFileBaseName ) );
+        Path[] files = fs.listFiles( databaseLayout.databaseDirectory(), name -> name.getFileName().toString().startsWith( writeLogFileBaseName ) );
         Arrays.sort( files, comparing( file -> file.getFileName().toString().equals( writeLogFileBaseName ) ? 0 : millisOf( file ) ) );
         long session = 0;
         for ( Path file : files )

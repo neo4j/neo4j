@@ -123,7 +123,7 @@ class CommitContentionTest
 
     private GraphDatabaseService createDb()
     {
-        Config cfg = Config.defaults( neo4j_home, testDirectory.homePath().toAbsolutePath() );
+        Config cfg = Config.defaults( neo4j_home, testDirectory.absolutePath() );
         managementService = new DatabaseManagementServiceFactory( DbmsInfo.COMMUNITY, globalModule -> new CommunityEditionModule( globalModule )
         {
             @Override

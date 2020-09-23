@@ -26,7 +26,6 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.ZoneId;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -77,7 +76,7 @@ class TimeZonesTest
     @Test
     void tzidsOrderMustNotChange() throws URISyntaxException, IOException
     {
-        Path path = Paths.get( TimeZones.class.getResource( "/TZIDS" ).toURI() );
+        Path path = Path.of( TimeZones.class.getResource( "/TZIDS" ).toURI() );
         String timeZonesInfo = Files.readString( path ).replace( "\r\n", "\n" );
         byte[] timeZonesHash = DigestUtils.sha256( timeZonesInfo );
         assertThat( timeZonesHash ).isEqualTo(

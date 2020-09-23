@@ -19,7 +19,6 @@
  */
 package org.neo4j.server;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -141,10 +140,10 @@ public final class WebContainerTestUtils
 
     public static void withCSVFile( int rowCount, BlockWithCSVFileURL block ) throws Exception
     {
-        File file = File.createTempFile( "file", ".csv", null );
+        Path file = Files.createTempFile( "file", ".csv" );
         try
         {
-            try ( PrintWriter writer = new PrintWriter( file ) )
+            try ( PrintWriter writer = new PrintWriter( Files.newOutputStream( file ) ) )
             {
                 for ( int i = 0; i < rowCount; ++i )
                 {
@@ -152,12 +151,12 @@ public final class WebContainerTestUtils
                 }
             }
 
-            String url = file.toURI().toURL().toString().replace( "\\", "\\\\" );
+            String url = file.toUri().toURL().toString().replace( "\\", "\\\\" );
             block.execute( url );
         }
         finally
         {
-            file.delete();
+            Files.delete( file );
         }
     }
 

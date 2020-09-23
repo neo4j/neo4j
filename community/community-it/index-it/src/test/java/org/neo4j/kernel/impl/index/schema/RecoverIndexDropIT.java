@@ -161,7 +161,7 @@ class RecoverIndexDropIT
     private CommittedTransactionRepresentation prepareDropTransaction() throws IOException
     {
         DatabaseManagementService managementService =
-                new TestDatabaseManagementServiceBuilder( directory.directoryPath( "preparation" ) ).build();
+                new TestDatabaseManagementServiceBuilder( directory.directory( "preparation" ) ).build();
         GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         try
         {

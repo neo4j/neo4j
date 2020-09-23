@@ -24,7 +24,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -173,7 +172,7 @@ class StoreMigratorTest
     @Test
     void extractTransactionInformationFromLogsInCustomAbsoluteLocation() throws Exception
     {
-        Path customLogLocation = testDirectory.directoryPath( "customLogLocation" );
+        Path customLogLocation = testDirectory.directory( "customLogLocation" );
         extractTransactionalInformationFromLogs( customLogLocation.toAbsolutePath() );
     }
 
@@ -236,8 +235,8 @@ class StoreMigratorTest
         // Prepare migrator and file
         RecordStorageMigrator migrator = newStoreMigrator();
         DatabaseLayout dbLayout = databaseLayout;
-        File neoStore = dbLayout.metadataStore().toFile();
-        neoStore.createNewFile();
+        Path neoStore = dbLayout.metadataStore();
+        Files.createFile( neoStore );
 
         // Monitor what happens
         MyProgressReporter progressReporter = new MyProgressReporter();

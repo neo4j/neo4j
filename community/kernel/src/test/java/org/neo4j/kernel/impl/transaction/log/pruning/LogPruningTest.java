@@ -23,7 +23,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 
-import java.io.File;
 import java.nio.file.Path;
 import java.util.stream.LongStream;
 
@@ -81,8 +80,8 @@ class LogPruningTest
         LogPruning pruning = new LogPruningImpl( fs, logFiles, logProvider, factory, clock, config );
         pruning.pruneLogs( 5 );
         InOrder order = inOrder( fs );
-        order.verify( fs ).deleteFile( new File( "3" ).toPath() );
-        order.verify( fs ).deleteFile( new File( "4" ).toPath() );
+        order.verify( fs ).deleteFile( Path.of( "3" ) );
+        order.verify( fs ).deleteFile( Path.of( "4" ) );
         // Log file 5 is not deleted; it's the lowest version expected to remain after pruning.
         verifyNoMoreInteractions( fs );
     }

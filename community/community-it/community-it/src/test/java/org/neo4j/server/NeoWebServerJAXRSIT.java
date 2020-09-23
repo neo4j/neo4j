@@ -74,7 +74,7 @@ public class NeoWebServerJAXRSIT extends ExclusiveWebContainerTestBase
         testWebContainer = CommunityWebContainerBuilder.serverOnRandomPorts()
                 .withThirdPartyJaxRsPackage( "org.dummy.web.service",
                         DummyThirdPartyWebService.DUMMY_WEB_SERVICE_MOUNT_POINT )
-                .usingDataDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
+                .usingDataDir( folder.directory( name.getMethodName() ).toAbsolutePath().toString() )
                 .build();
 
         var httpClient = newBuilder().followRedirects( NORMAL ).build();

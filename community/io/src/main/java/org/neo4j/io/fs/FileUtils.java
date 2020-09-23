@@ -25,12 +25,10 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
-import java.io.RandomAccessFile;
 import java.io.UncheckedIOException;
 import java.io.Writer;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-import java.nio.channels.SeekableByteChannel;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.CopyOption;
@@ -66,6 +64,7 @@ import static java.nio.file.Files.walkFileTree;
 import static java.nio.file.StandardCopyOption.COPY_ATTRIBUTES;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static java.nio.file.StandardOpenOption.READ;
+import static java.nio.file.StandardOpenOption.WRITE;
 import static java.util.Collections.singleton;
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.function.Predicates.alwaysTrue;
@@ -258,9 +257,9 @@ public final class FileUtils
 
     public static void truncateFile( Path file, long position ) throws IOException
     {
-        try ( RandomAccessFile access = new RandomAccessFile( file.toFile(), "rw" ) )
+        try ( FileChannel channel = FileChannel.open( file, READ, WRITE ) )
         {
-            windowsSafeIOOperation( () -> ((SeekableByteChannel) access.getChannel()).truncate( position ) );
+            windowsSafeIOOperation( () -> channel.truncate( position ) );
         }
     }
 
@@ -610,7 +609,6 @@ public final class FileUtils
      */
     public static Path[] listPaths( Path dir )
     {
-         // TODO we should stop using this!
         try
         {
             try ( Stream<Path> list = Files.list( dir ) )

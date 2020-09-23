@@ -51,7 +51,7 @@ abstract class FileSystemUtilsTest
     @Test
     void shouldCheckExistingEmptyDirectory()
     {
-        Path existingEmptyDir = testDirectory.directoryPath( "existingEmptyDir" );
+        Path existingEmptyDir = testDirectory.directory( "existingEmptyDir" );
 
         assertTrue( FileSystemUtils.isEmptyOrNonExistingDirectory( fs, existingEmptyDir ) );
     }
@@ -59,7 +59,7 @@ abstract class FileSystemUtilsTest
     @Test
     void dropDirectoryWithFile() throws IOException
     {
-        Path directory = testDirectory.directoryPath( "directory" );
+        Path directory = testDirectory.directory( "directory" );
         fs.openAsOutputStream( directory.resolve( "a" ), false ).close();
 
         assertEquals( 1, fs.listFiles( directory ).length );
@@ -72,7 +72,7 @@ abstract class FileSystemUtilsTest
     @Test
     void shouldCheckExistingNonEmptyDirectory() throws Exception
     {
-        Path existingEmptyDir = testDirectory.directoryPath( "existingEmptyDir" );
+        Path existingEmptyDir = testDirectory.directory( "existingEmptyDir" );
         fs.write( existingEmptyDir.resolve( "someFile" ) ).close();
 
         assertFalse( FileSystemUtils.isEmptyOrNonExistingDirectory( fs, existingEmptyDir ) );
@@ -81,7 +81,7 @@ abstract class FileSystemUtilsTest
     @Test
     void shouldCheckExistingFile()
     {
-        Path existingFile = testDirectory.createFilePath( "existingFile" );
+        Path existingFile = testDirectory.createFile( "existingFile" );
 
         assertFalse( FileSystemUtils.isEmptyOrNonExistingDirectory( fs, existingFile ) );
     }
@@ -89,7 +89,7 @@ abstract class FileSystemUtilsTest
     @Test
     void shouldCheckSizeOfFile() throws Exception
     {
-        Path file = testDirectory.createFilePath( "a" );
+        Path file = testDirectory.createFile( "a" );
 
         try ( var fileWriter = fs.openAsWriter( file, UTF_8, false ) )
         {
@@ -102,7 +102,7 @@ abstract class FileSystemUtilsTest
     @Test
     void shouldCheckSizeOfDirectory() throws Exception
     {
-        Path dir = testDirectory.directoryPath( "dir" );
+        Path dir = testDirectory.directory( "dir" );
         Path file1 = dir.resolve( "file1" );
         Path file2 = dir.resolve( "file2" );
 

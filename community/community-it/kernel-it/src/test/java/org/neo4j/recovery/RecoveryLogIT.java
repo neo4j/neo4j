@@ -67,7 +67,7 @@ class RecoveryLogIT
     void transactionsRecoveryLogContainsTimeSpent() throws IOException
     {
         //Create database with forced recovery
-        Path tmpLogDir = testDirectory.directoryPath("logs");
+        Path tmpLogDir = testDirectory.directory("logs");
         managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homePath() ).build();
         GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         StorageEngineFactory storageEngineFactory = db.getDependencyResolver().resolveDependency( StorageEngineFactory.class );

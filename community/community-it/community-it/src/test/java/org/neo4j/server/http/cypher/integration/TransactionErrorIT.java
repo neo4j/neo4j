@@ -23,9 +23,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.PrintStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.server.rest.ParameterizedTransactionEndpointsTestBase;
@@ -86,20 +86,20 @@ public class TransactionErrorIT extends ParameterizedTransactionEndpointsTestBas
 
     @ParameterizedTest
     @MethodSource( "argumentsProvider" )
-    @SuppressWarnings( "ResultOfMethodCallIgnored" )
     public void begin_and_execute_periodic_commit_that_fails( String txUri ) throws Exception
     {
-        File file = File.createTempFile("begin_and_execute_periodic_commit_that_fails", ".csv").getAbsoluteFile();
+        Path file = Files.createTempFile("begin_and_execute_periodic_commit_that_fails", ".csv").toAbsolutePath();
         try
         {
-            PrintStream out = new PrintStream( new FileOutputStream( file ) );
-            out.println("1");
-            out.println("2");
-            out.println("0");
-            out.println("3");
-            out.close();
+            try ( PrintStream out = new PrintStream( Files.newOutputStream( file ) ) )
+            {
+                out.println( "1" );
+                out.println( "2" );
+                out.println( "0" );
+                out.println( "3" );
+            }
 
-            String url = file.toURI().toURL().toString().replace("\\", "\\\\");
+            String url = file.toUri().toURL().toString().replace("\\", "\\\\");
             String query = "USING PERIODIC COMMIT 1 LOAD CSV FROM \\\"" + url + "\\\" AS line CREATE ({name: 1/toInteger(line[0])});";
 
             // begin and execute and commit
@@ -114,7 +114,7 @@ public class TransactionErrorIT extends ParameterizedTransactionEndpointsTestBas
         }
         finally
         {
-            file.delete();
+            Files.delete( file );
         }
     }
 

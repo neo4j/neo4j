@@ -335,7 +335,7 @@ class IndexRecoveryIT
     {
         if ( db != null )
         {
-            Path snapshotDir = testDirectory.directoryPath( "snapshot" );
+            Path snapshotDir = testDirectory.directory( "snapshot" );
             synchronized ( lock )
             {
                 snapshotFs( snapshotDir );

@@ -25,9 +25,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import java.io.File;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
@@ -69,6 +67,8 @@ import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.RandomRule;
 
+import static java.nio.file.StandardOpenOption.READ;
+import static java.nio.file.StandardOpenOption.WRITE;
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -171,8 +171,8 @@ public class TokenScanStoreTest
     void shouldRestartPopulationIfIndexFileWasNeverFullyInitialized() throws IOException
     {
         // given
-        File labelScanStoreFile = databaseLayout.labelScanStore().toFile();
-        fileSystem.write( labelScanStoreFile.toPath() ).close();
+        Path labelScanStoreFile = databaseLayout.labelScanStore();
+        fileSystem.write( labelScanStoreFile ).close();
         TrackingMonitor monitor = new TrackingMonitor();
         LifeSupport life = new LifeSupport();
 
@@ -682,7 +682,7 @@ public class TokenScanStoreTest
 
     private void corruptIndex( DatabaseLayout databaseLayout ) throws IOException
     {
-        File lssFile = databaseLayout.labelScanStore().toFile();
+        Path lssFile = databaseLayout.labelScanStore();
         scrambleFile( lssFile );
     }
 
@@ -802,15 +802,14 @@ public class TokenScanStoreTest
         start( data, false );
     }
 
-    void scrambleFile( File file ) throws IOException
+    void scrambleFile( Path file ) throws IOException
     {
         scrambleFile( random.random(), file );
     }
 
-    public static void scrambleFile( Random random, File file )
+    public static void scrambleFile( Random random, Path file )
     {
-        try ( RandomAccessFile fileAccess = new RandomAccessFile( file, "rw" );
-                FileChannel channel = fileAccess.getChannel() )
+        try ( FileChannel channel = FileChannel.open( file, READ, WRITE ) )
         {
             // The files will be small, so OK to allocate a buffer for the full size
             byte[] bytes = new byte[(int) channel.size()];

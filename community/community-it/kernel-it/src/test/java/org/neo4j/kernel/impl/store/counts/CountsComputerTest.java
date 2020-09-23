@@ -22,8 +22,8 @@ package org.neo4j.kernel.impl.store.counts;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.configuration.Config;
@@ -316,9 +316,9 @@ class CountsComputerTest
         }
     }
 
-    private File countsStoreFile()
+    private Path countsStoreFile()
     {
-        return databaseLayout.countStore().toFile();
+        return databaseLayout.countStore();
     }
 
     private static long getLastTxId( GraphDatabaseAPI db )
@@ -353,7 +353,7 @@ class CountsComputerTest
 
     private void cleanupCountsForRebuilding()
     {
-        fileSystem.deleteFile( countsStoreFile().toPath() );
+        fileSystem.deleteFile( countsStoreFile() );
     }
 
     private GBPTreeCountsStore createCountsStore() throws IOException

@@ -48,7 +48,7 @@ class Neo4jLayoutTest
     @Test
     void storeLayoutForAbsoluteFile()
     {
-        Path storeDir = testDirectory.directoryPath( "store" );
+        Path storeDir = testDirectory.directory( "store" );
         Neo4jLayout storeLayout = Neo4jLayout.of( Config.defaults( databases_root_path, storeDir ) );
         assertEquals( storeDir, storeLayout.databasesDirectory() );
     }
@@ -70,7 +70,7 @@ class Neo4jLayoutTest
         Path basePath = testDirectory.homePath("notCanonical");
         Path notCanonicalPath = basePath.resolve( "../anotherLocation" );
         Neo4jLayout storeLayout = Neo4jLayout.of( notCanonicalPath );
-        assertEquals( testDirectory.directoryPath( "anotherLocation" ), storeLayout.homeDirectory() );
+        assertEquals( testDirectory.directory( "anotherLocation" ), storeLayout.homeDirectory() );
     }
 
     @Test
@@ -88,7 +88,7 @@ class Neo4jLayoutTest
         Neo4jLayout layout = Neo4jLayout.of( testDirectory.homePath() );
         Path serverIdFile = layout.serverIdFile();
         assertEquals( "server_id", serverIdFile.getFileName().toString() );
-        assertEquals( testDirectory.directoryPath( DEFAULT_DATA_DIR_NAME ), serverIdFile.getParent() );
+        assertEquals( testDirectory.directory( DEFAULT_DATA_DIR_NAME ), serverIdFile.getParent() );
     }
 
     @Test
@@ -99,13 +99,15 @@ class Neo4jLayoutTest
     }
 
     @Test
-    void storeLayoutDatabasesOnlyBasedOnSubfolders()
+    void storeLayoutDatabasesOnlyBasedOnSubfolders() throws IOException
     {
-        Neo4jLayout layout = Neo4jLayout.of( testDirectory.homePath() );
+        Path homeDirectory = testDirectory.homePath();
+        Neo4jLayout layout = Neo4jLayout.of( homeDirectory );
 
-        testDirectory.directory( "abc", DEFAULT_DATA_DIR_NAME, DEFAULT_DATABASES_ROOT_DIR_NAME );
-        testDirectory.directory( "bcd", DEFAULT_DATA_DIR_NAME, DEFAULT_DATABASES_ROOT_DIR_NAME );
-        testDirectory.createFile( "cde", DEFAULT_DATA_DIR_NAME, DEFAULT_DATABASES_ROOT_DIR_NAME );
+        Path databases = homeDirectory.resolve( DEFAULT_DATA_DIR_NAME ).resolve( DEFAULT_DATABASES_ROOT_DIR_NAME );
+        Files.createDirectories( databases.resolve( "abc" ) );
+        Files.createDirectories( databases.resolve( "bcd" ) );
+        Files.createFile( databases.resolve( "cde" ) );
 
         Collection<DatabaseLayout> layouts = layout.databaseLayouts();
         assertEquals( 2, layouts.size() );

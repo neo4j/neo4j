@@ -59,7 +59,7 @@ class FileUtilsTest
     @BeforeEach
     void beforeEach()
     {
-        path = testDirectory.directoryPath( "path" );
+        path = testDirectory.directory( "path" );
     }
 
     @Test
@@ -108,7 +108,7 @@ class FileUtilsTest
     @Test
     void deletePathRecursively() throws IOException
     {
-        Path root = testDirectory.directoryPath( "a" );
+        Path root = testDirectory.directory( "a" );
         Path child = root.resolve( "b" );
         Path file = child.resolve( "c" );
 
@@ -124,7 +124,7 @@ class FileUtilsTest
     @Test
     void deletePathRecursivelyWithFilter() throws IOException
     {
-        Path root = testDirectory.directoryPath( "a" );
+        Path root = testDirectory.directory( "a" );
         Path child = root.resolve( "b" );
         Path file = child.resolve( "c" );
 
@@ -148,7 +148,7 @@ class FileUtilsTest
     @Test
     void deleteNestedPathRecursivelyWithFilter() throws IOException
     {
-        Path root = testDirectory.directoryPath( "a" );
+        Path root = testDirectory.directory( "a" );
         Path child = root.resolve( "a" );
         Path file = child.resolve( "aaFile" );
 

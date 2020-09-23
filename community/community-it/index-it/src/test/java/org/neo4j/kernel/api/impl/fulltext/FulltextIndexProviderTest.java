@@ -26,7 +26,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.ResourceLock;
 
-import java.io.File;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -69,6 +68,7 @@ import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.pagecache.PageCache;
@@ -199,12 +199,12 @@ class FulltextIndexProviderTest
         try ( KernelTransactionImplementation transaction = getKernelTransaction() )
         {
             IndexDescriptor descriptor = transaction.schemaRead().indexGetForName( NAME );
-            File indexDir = Path.of( db.databaseLayout().databaseDirectory().toFile().getAbsolutePath(),
-                    "schema", "index", descriptor.getIndexProvider().name(), "" + descriptor.getId() ).toFile();
-            List<File> listFiles = List.of( requireNonNull( indexDir.listFiles() ) );
-            assertTrue( listFiles.contains( new File( indexDir, "failure-message" ) ) );
-            assertTrue( listFiles.contains( new File( indexDir, "1" ) ) );
-            assertTrue( listFiles.contains( new File( indexDir, indexDir.getName() + ".tx" ) ) );
+            Path indexDir = Path.of( db.databaseLayout().databaseDirectory().toAbsolutePath().toString(),
+                    "schema", "index", descriptor.getIndexProvider().name(), "" + descriptor.getId() );
+            List<Path> listFiles = List.of( requireNonNull( FileUtils.listPaths( indexDir ) ) );
+            assertTrue( listFiles.contains( indexDir.resolve( "failure-message" ) ) );
+            assertTrue( listFiles.contains( indexDir.resolve( "1" ) ) );
+            assertTrue( listFiles.contains( indexDir.resolve( indexDir.getFileName() + ".tx" ) ) );
         }
     }
 

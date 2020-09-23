@@ -273,7 +273,7 @@ class CsvInputEstimateCalculationIT
     private DataFactory generateData( Header.Factory factory, MutableLong start, long count,
             long nodeCount, String headerString, String fileName, Groups groups ) throws IOException
     {
-        Path file = testDirectory.filePath( fileName );
+        Path file = testDirectory.file( fileName );
         Header header = factory.create( charSeeker( wrap( headerString ), COMMAS, false ), COMMAS, IdType.INTEGER, groups );
         Distribution<String> distribution = new Distribution<>( new String[] {"Token"} );
         Deserialization<String> deserialization = new StringDeserialization( COMMAS );

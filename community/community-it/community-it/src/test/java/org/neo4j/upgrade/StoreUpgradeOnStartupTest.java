@@ -100,7 +100,7 @@ public class StoreUpgradeOnStartupTest
         workingDatabaseLayout = Neo4jLayout.of( workingHomeDir ).databaseLayout( DEFAULT_DATABASE_NAME );
         check = new RecordStoreVersionCheck( fileSystem, pageCache, workingDatabaseLayout, NullLogProvider.getInstance(),
                 Config.defaults(), NULL );
-        Path prepareDirectory = testDir.directoryPath( "prepare_" + version );
+        Path prepareDirectory = testDir.directory( "prepare_" + version );
         prepareSampleLegacyDatabase( version, fileSystem, workingDatabaseLayout.databaseDirectory(), prepareDirectory );
         baselineFormat = RecordFormatSelector.selectForVersion( version );
         successorFormat = RecordFormatSelector.findSuccessor( baselineFormat ).orElse( baselineFormat );

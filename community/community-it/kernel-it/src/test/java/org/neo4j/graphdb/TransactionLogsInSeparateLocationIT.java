@@ -56,7 +56,7 @@ class TransactionLogsInSeparateLocationIT
     @Test
     void databaseWithTransactionLogsInSeparateAbsoluteLocation() throws IOException
     {
-        Path txDirectory = testDirectory.directoryPath( "transaction-logs" );
+        Path txDirectory = testDirectory.directory( "transaction-logs" );
         Config config = Config.newBuilder()
                 .set( neo4j_home, testDirectory.homePath() )
                 .set( transaction_logs_root_path, txDirectory.toAbsolutePath() )

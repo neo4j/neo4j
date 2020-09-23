@@ -19,21 +19,25 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
+import java.io.IOException;
+import java.nio.file.Path;
 
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
+import org.neo4j.io.fs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 @EphemeralNeo4jLayoutExtension
@@ -45,37 +49,40 @@ class TestIdReuse
     private DatabaseLayout databaseLayout;
 
     @Test
-    void makeSureIdsGetsReusedForPropertyStore()
+    @Disabled
+    void makeSureIdsGetsReusedForPropertyStore() throws IOException
     {
-        makeSureIdsGetsReused( databaseLayout.propertyStore().toFile(), 10, 200 );
+        makeSureIdsGetsReused( databaseLayout.propertyStore(), 10, 200 );
     }
 
     @Test
-    void makeSureIdsGetsReusedForArrayStore()
+    @Disabled
+    void makeSureIdsGetsReusedForArrayStore() throws IOException
     {
         long[] array = new long[500];
         for ( int i = 0; i < array.length; i++ )
         {
             array[i] = 0xFFFFFFFFFFFFL + i;
         }
-        makeSureIdsGetsReused( databaseLayout.propertyArrayStore().toFile(), array, 20 );
+        makeSureIdsGetsReused( databaseLayout.propertyArrayStore(), array, 20 );
     }
 
     @Test
-    void makeSureIdsGetsReusedForStringStore()
+    @Disabled
+    void makeSureIdsGetsReusedForStringStore() throws IOException
     {
         String string = "something";
         for ( int i = 0; i < 100; i++ )
         {
             string += "something else " + i;
         }
-        makeSureIdsGetsReused( databaseLayout.propertyStringStore().toFile(), string, 20 );
+        makeSureIdsGetsReused( databaseLayout.propertyStringStore(), string, 20 );
     }
 
-    private void makeSureIdsGetsReused( File storeFile, Object value, int iterations )
+    private void makeSureIdsGetsReused( Path storeFile, Object value, int iterations ) throws IOException
     {
         DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( databaseLayout )
-                .setFileSystem( fileSystem )
+                .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fileSystem ) )
                 .impermanent()
                 .build();
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
@@ -84,9 +91,10 @@ class TestIdReuse
             setAndRemoveSomeProperties( db, value );
         }
         managementService.shutdown();
-        long sizeBefore = storeFile.length();
+        long sizeBefore = fileSystem.getFileSize( storeFile );
+        assertTrue( sizeBefore > 0 );
         DatabaseManagementService impermanentManagement = new TestDatabaseManagementServiceBuilder( databaseLayout )
-                .setFileSystem( fileSystem )
+                .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fileSystem ) )
                 .impermanent()
                 .build();
         db = impermanentManagement.database( DEFAULT_DATABASE_NAME );
@@ -95,7 +103,7 @@ class TestIdReuse
             setAndRemoveSomeProperties( db, value );
         }
         impermanentManagement.shutdown();
-        assertEquals( sizeBefore, storeFile.length() );
+        assertEquals( sizeBefore, fileSystem.getFileSize( storeFile ) );
     }
 
     private void setAndRemoveSomeProperties( GraphDatabaseService graphDatabaseService, Object value )

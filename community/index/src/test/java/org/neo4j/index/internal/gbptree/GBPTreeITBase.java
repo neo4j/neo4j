@@ -79,7 +79,7 @@ abstract class GBPTreeITBase<KEY,VALUE>
         int pageSize = 512;
         layout = getLayout( random, pageSize );
         PageCache pageCache = pageCacheExtension.getPageCache( fileSystem, config().withPageSize( pageSize ).withAccessChecks( true ) );
-        return index = new GBPTreeBuilder<>( pageCache, testDirectory.filePath( "index" ), layout ).build();
+        return index = new GBPTreeBuilder<>( pageCache, testDirectory.file( "index" ), layout ).build();
     }
 
     private Writer<KEY,VALUE> createWriter( GBPTree<KEY,VALUE> index ) throws IOException

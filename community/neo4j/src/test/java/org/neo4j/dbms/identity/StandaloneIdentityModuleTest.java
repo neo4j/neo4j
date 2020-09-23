@@ -47,7 +47,7 @@ public class StandaloneIdentityModuleTest
     void shouldCreateServerIdAndReReadIt() throws IOException
     {
         // given
-        var dataDir = testDirectory.filePath( DEFAULT_DATA_DIR_NAME );
+        var dataDir = testDirectory.file( DEFAULT_DATA_DIR_NAME );
         var layout = Neo4jLayout.of( testDirectory.homePath() );
         var fs = testDirectory.getFileSystem();
         assertFalse( fs.fileExists( dataDir ) );

@@ -19,8 +19,9 @@
  */
 package org.neo4j.kernel.impl.transaction.log.files;
 
-import java.io.FilenameFilter;
 import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Path;
 
 import org.neo4j.internal.helpers.ArrayUtil;
@@ -36,7 +37,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
  */
 public class TransactionLogFiles extends LifecycleAdapter implements LogFiles
 {
-    public static final FilenameFilter DEFAULT_FILENAME_FILTER = TransactionLogFilesHelper.DEFAULT_FILENAME_FILTER;
+    public static final DirectoryStream.Filter<Path> DEFAULT_FILENAME_FILTER = TransactionLogFilesHelper.DEFAULT_FILENAME_FILTER;
 
     private final CheckpointFile checkpointLogFile;
     private final TransactionLogFile logFile;
@@ -87,7 +88,14 @@ public class TransactionLogFiles extends LifecycleAdapter implements LogFiles
     @Override
     public boolean isLogFile( Path path )
     {
-        return DEFAULT_FILENAME_FILTER.accept( null, path.toFile().getName() );
+        try
+        {
+            return DEFAULT_FILENAME_FILTER.accept( path );
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
     }
 
     @Override

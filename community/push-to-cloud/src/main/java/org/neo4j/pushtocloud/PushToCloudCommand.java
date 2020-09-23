@@ -20,7 +20,6 @@ import org.apache.commons.io.FileUtils;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -63,11 +62,11 @@ public class PushToCloudCommand extends AbstractCommand
     @Option( names = "--dump",
             description = "'/path/to/my-neo4j-database-dump-file' Path to an existing database dump for upload. " +
                           "This argument cannot be used together with --database." )
-    private File dump;
+    private Path dump;
     @Option( names = {"--temp-file-location", "--dump-to"},
             description = "'/path/to/temp-file' Target path for temporary database dump file to be uploaded. " +
                           "Used in combination with the --database argument." )
-    private File tmpDumpFile;
+    private Path tmpDumpFile;
     @Option( names = "--bolt-uri", arity = "1", required = true,
             description = "'neo4j://mydatabaseid.databases.neo4j.io' Bolt URI of target database" )
     private String boltURI;
@@ -173,7 +172,7 @@ public class PushToCloudCommand extends AbstractCommand
         return String.format( "https://console%s.neo4j.io/v1/databases/%s", environment == null ? "" : environment, databaseId );
     }
 
-    private Path initiateSource( ExecutionContext ctx, File dump, NormalizedDatabaseName database, File to ) throws CommandFailedException
+    private Path initiateSource( ExecutionContext ctx, Path dump, NormalizedDatabaseName database, Path to ) throws CommandFailedException
     {
         // Either a dump or database name (of a stopped database) can be provided
         if ( dump != null && database != null )
@@ -182,17 +181,16 @@ public class PushToCloudCommand extends AbstractCommand
         }
         else if ( dump != null )
         {
-            Path path = dump.toPath();
-            if ( !Files.exists( path ) )
+            if ( Files.notExists( dump ) )
             {
-                throw new CommandFailedException( format( "The provided dump '%s' file doesn't exist", path ) );
+                throw new CommandFailedException( format( "The provided dump '%s' file doesn't exist", dump ) );
             }
-            return path;
+            return dump;
         }
         else
         {
 
-            Path dumpFile = to != null ? to.toPath() : ctx.homeDir().resolve( "dump-of-" + database + "-" + currentTimeMillis() );
+            Path dumpFile = to != null ? to : ctx.homeDir().resolve( "dump-of-" + database + "-" + currentTimeMillis() );
             if ( Files.exists( dumpFile ) )
             {
                 throw new CommandFailedException( format( "The provided dump-to target '%s' file already exists", dumpFile ) );
@@ -202,7 +200,7 @@ public class PushToCloudCommand extends AbstractCommand
         }
     }
 
-    private long sourceSize( ExecutionContext ctx, File dump, NormalizedDatabaseName database ) throws CommandFailedException
+    private long sourceSize( ExecutionContext ctx, Path dump, NormalizedDatabaseName database ) throws CommandFailedException
     {
         // Either a dump or database name (of a stopped database) can be provided
         if ( dump != null && database != null )
@@ -211,11 +209,10 @@ public class PushToCloudCommand extends AbstractCommand
         }
         else if ( dump != null )
         {
-            Path path = dump.toPath();
             Loader.DumpMetaData metaData;
             try
             {
-                metaData = new Loader( System.out ).getMetaData( path );
+                metaData = new Loader( System.out ).getMetaData( dump );
             }
             catch ( IOException e )
             {
@@ -225,7 +222,7 @@ public class PushToCloudCommand extends AbstractCommand
         }
         else
         {
-            File configFile = ctx.confDir().resolve( Config.DEFAULT_CONFIG_FILE_NAME ).toFile();
+            Path configFile = ctx.confDir().resolve( Config.DEFAULT_CONFIG_FILE_NAME );
 
             DatabaseLayout layout = Neo4jLayout.of( getConfig( configFile ) ).databaseLayout( database.name() );
             long storeFilesSize = FileUtils.sizeOf( layout.databaseDirectory().toFile() );
@@ -243,11 +240,11 @@ public class PushToCloudCommand extends AbstractCommand
         }
     }
 
-    private Config getConfig( File configFile )
+    private Config getConfig( Path configFile )
     {
-        if ( !ctx.fs().fileExists( configFile.toPath() ) )
+        if ( !ctx.fs().fileExists( configFile ) )
         {
-            throw new CommandFailedException( "Unable to find config file, tried: " + configFile.getAbsolutePath() );
+            throw new CommandFailedException( "Unable to find config file, tried: " + configFile.toAbsolutePath() );
         }
         try
         {
@@ -258,7 +255,7 @@ public class PushToCloudCommand extends AbstractCommand
         }
         catch ( Exception e )
         {
-            throw new CommandFailedException( "Failed to read config file: " + configFile.getAbsolutePath(), e );
+            throw new CommandFailedException( "Failed to read config file: " + configFile.toAbsolutePath(), e );
         }
     }
 

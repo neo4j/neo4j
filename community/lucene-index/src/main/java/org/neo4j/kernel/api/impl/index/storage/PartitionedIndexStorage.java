@@ -22,7 +22,6 @@ package org.neo4j.kernel.api.impl.index.storage;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.store.Directory;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Collections;
@@ -132,7 +131,7 @@ public class PartitionedIndexStorage
     }
 
     /**
-     * For the given {@link File folder} removes all nested folders from both {@link FileSystemAbstraction file system}
+     * For the given {@link Path folder} removes all nested folders from both {@link FileSystemAbstraction file system}
      * and {@link Directory lucene directories}.
      *
      * @param folder the folder to clean up.
@@ -145,7 +144,7 @@ public class PartitionedIndexStorage
     }
 
     /**
-     * For the given {@link File folder} removes the folder itself and all nested folders from both
+     * For the given {@link Path folder} removes the folder itself and all nested folders from both
      * {@link FileSystemAbstraction file system} and {@link Directory lucene directories}.
      *
      * @param folder the folder to remove.
@@ -167,7 +166,7 @@ public class PartitionedIndexStorage
     /**
      * Opens all {@link Directory lucene directories} contained in the {@link #getIndexFolder() index folder}.
      *
-     * @return the map from file system  {@link File directory} to the corresponding {@link Directory lucene directory}.
+     * @return the map from file system  {@link Path directory} to the corresponding {@link Directory lucene directory}.
      * @throws IOException if opening of some lucene directory (via {@link DirectoryFactory#open(Path)}) fails.
      */
     public Map<Path,Directory> openIndexDirectories() throws IOException
@@ -217,7 +216,7 @@ public class PartitionedIndexStorage
     }
 
     /**
-     * Removes content of the lucene directory denoted by the given {@link File file}. This might seem unnecessary
+     * Removes content of the lucene directory denoted by the given {@link Path file}. This might seem unnecessary
      * since we cleanup the folder using {@link FileSystemAbstraction file system} but in fact for testing we often use
      * in-memory directories whose content can't be removed via the file system.
      * <p>

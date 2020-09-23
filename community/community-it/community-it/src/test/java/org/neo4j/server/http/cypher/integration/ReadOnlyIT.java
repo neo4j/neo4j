@@ -47,7 +47,7 @@ public class ReadOnlyIT extends ExclusiveWebContainerTestBase
     public void setup() throws Exception
     {
         cleanTheDatabase( readOnlyContainer );
-        readOnlyContainer = createReadOnlyContainer( dir.homeDir() );
+        readOnlyContainer = createReadOnlyContainer( dir.homePath() );
         http = HTTP.withBaseUri( readOnlyContainer.getBaseUri() );
     }
 

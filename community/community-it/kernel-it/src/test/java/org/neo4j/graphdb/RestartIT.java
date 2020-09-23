@@ -42,7 +42,7 @@ class RestartIT
     {
         // Given an existing store
         testDir.cleanup();
-        var storeDir = testDir.homePath().toAbsolutePath();
+        var storeDir = testDir.absolutePath();
         var oldManagementService = new TestDatabaseManagementServiceBuilder( storeDir ).build();
         oldManagementService.shutdown();
 

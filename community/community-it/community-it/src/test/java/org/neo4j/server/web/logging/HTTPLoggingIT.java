@@ -145,9 +145,9 @@ public class HTTPLoggingIT extends ExclusiveWebContainerTestBase
 
         return serverOnRandomPorts().withDefaultDatabaseTuning().persistent()
                 .withProperty( ServerSettings.http_logging_enabled.name(), httpLoggingEnabledValue )
-                .withProperty( GraphDatabaseSettings.logs_directory.name(), logDirectory.getAbsolutePath() )
+                .withProperty( GraphDatabaseSettings.logs_directory.name(), logDirectory.toAbsolutePath().toString() )
                 .withProperty( BoltConnector.listen_address.name(), ":0" )
-                .usingDataDir( testDirectory.directory( directoryPrefix + "-dbdir" ).getAbsolutePath() )
+                .usingDataDir( testDirectory.directory( directoryPrefix + "-dbdir" ).toAbsolutePath().toString() )
                 .build();
     }
 

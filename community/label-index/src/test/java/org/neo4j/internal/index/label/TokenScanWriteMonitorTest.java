@@ -25,14 +25,16 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -45,7 +47,6 @@ import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 
 import static java.lang.Long.min;
-import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -74,7 +75,7 @@ class TokenScanWriteMonitorTest
     }
 
     @Test
-    void shouldRotateExistingFileOnOpen()
+    void shouldRotateExistingFileOnOpen() throws IOException
     {
         // given
         TokenScanWriteMonitor writeMonitor = new TokenScanWriteMonitor( fs, databaseLayout, NODE );
@@ -85,7 +86,15 @@ class TokenScanWriteMonitorTest
         secondWriteMonitor.close();
 
         // then
-        assertEquals( 2, requireNonNull( databaseLayout.databaseDirectory().toFile().listFiles( ( dir, name ) -> name.startsWith( baseName ) ) ).length );
+        long count = 0;
+        try ( DirectoryStream<Path> paths = Files.newDirectoryStream( databaseLayout.databaseDirectory(), baseName + "*" ) )
+        {
+            for ( Path path : paths )
+            {
+                count++;
+            }
+        }
+        assertEquals( 2, count );
     }
 
     @Test
@@ -190,17 +199,18 @@ class TokenScanWriteMonitorTest
     }
 
     @Test
-    void shouldRotateAtConfiguredThreshold()
+    void shouldRotateAtConfiguredThreshold() throws IOException
     {
         // given
-        File storeDir = databaseLayout.databaseDirectory().toFile();
+        Path storeDir = databaseLayout.databaseDirectory();
         int rotationThreshold = 1_000;
         RecordingMonitor monitor = new RecordingMonitor();
         TokenScanWriteMonitor writeMonitor = new TokenScanWriteMonitor( fs, databaseLayout, rotationThreshold, ByteUnit.Byte, 1, TimeUnit.DAYS,
                 NODE, monitor, Clocks.nanoClock() );
 
         // when
-        for ( int i = 0; requireNonNull( storeDir.listFiles() ).length < 5; i++ )
+
+        for ( int i = 0; numberOfFilesIn( storeDir ) < 5; i++ )
         {
             writeMonitor.range( i, 1 );
             writeMonitor.prepareAdd( i, 5 );
@@ -257,6 +267,14 @@ class TokenScanWriteMonitorTest
         List<Path> filesAfter = Arrays.asList( fs.listFiles( databaseLayout.databaseDirectory() ) );
         assertThat( filesAfter.size() ).isEqualTo( 1 );
         assertThat( filesAfter.get( 0 ).getFileName().toString() ).contains( databaseLayout.relationshipTypeScanStore().getFileName().toString() );
+    }
+
+    private long numberOfFilesIn( Path storeDir ) throws IOException
+    {
+        try ( Stream<Path> list = Files.list( storeDir ) )
+        {
+            return list.count();
+        }
     }
 
     private static class RecordingMonitor implements TokenScanWriteMonitor.Monitor

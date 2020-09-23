@@ -54,7 +54,7 @@ class LegacyTransactionLogsLocatorTest
     @Test
     void transactionLogsDirectoryEqualsToLogicalLogLegacySettingsWhenConfigured()
     {
-        Path customDirectory = testDirectory.directoryPath( "customDirectory" );
+        Path customDirectory = testDirectory.directory( "customDirectory" );
         Config config = Config.defaults( GraphDatabaseInternalSettings.logical_logs_location, customDirectory.toAbsolutePath() );
         LegacyTransactionLogsLocator logsLocator = new LegacyTransactionLogsLocator( config, databaseLayout );
         assertEquals( customDirectory, logsLocator.getTransactionLogsDirectory() );
@@ -63,7 +63,7 @@ class LegacyTransactionLogsLocatorTest
     @Test
     void transactionLogsDirectoryEqualsToDatabaseDirectoryForSystemDatabase()
     {
-        Path customDirectory = testDirectory.directoryPath( "customDirectory" );
+        Path customDirectory = testDirectory.directory( "customDirectory" );
         Config config = Config.defaults( GraphDatabaseInternalSettings.logical_logs_location, customDirectory.toAbsolutePath() );
         DatabaseLayout systemDbLayout = neo4jLayout.databaseLayout( GraphDatabaseSettings.SYSTEM_DATABASE_NAME );
         LegacyTransactionLogsLocator logsLocator = new LegacyTransactionLogsLocator( config, systemDbLayout );

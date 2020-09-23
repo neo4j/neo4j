@@ -284,7 +284,7 @@ public abstract class FileSystemAbstractionTest
     {
         try ( FileWatcher fileWatcher = fsa.fileWatcher() )
         {
-            assertNotNull( fileWatcher.watch( testDirectory.directoryPath( "testDirectory" ) ) );
+            assertNotNull( fileWatcher.watch( testDirectory.directory( "testDirectory" ) ) );
         }
     }
 

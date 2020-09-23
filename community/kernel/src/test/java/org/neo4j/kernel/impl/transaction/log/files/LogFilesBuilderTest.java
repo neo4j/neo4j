@@ -157,7 +157,7 @@ class LogFilesBuilderTest
     @Test
     void buildContextWithCustomAbsoluteLogFilesLocations() throws Throwable
     {
-        Path customLogDirectory = testDirectory.directoryPath( "absoluteCustomLogDirectory" );
+        Path customLogDirectory = testDirectory.directory( "absoluteCustomLogDirectory" );
         Config config = Config.newBuilder()
                 .set( neo4j_home, testDirectory.homePath() )
                 .set( transaction_logs_root_path, customLogDirectory.toAbsolutePath() )

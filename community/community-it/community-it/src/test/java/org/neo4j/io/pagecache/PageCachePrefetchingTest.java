@@ -61,7 +61,7 @@ class PageCachePrefetchingTest
     @BeforeEach
     void setUp()
     {
-        file = dir.createFilePath( "file" );
+        file = dir.createFile( "file" );
         tracer = new DefaultPageCursorTracer( new DefaultPageCacheTracer(), "test" );
     }
 

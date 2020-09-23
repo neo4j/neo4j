@@ -71,7 +71,7 @@ class NonUniqueDatabaseIndexPopulatorTest
     @BeforeEach
     void setUp()
     {
-        Path folder = testDir.directoryPath( "folder" );
+        Path folder = testDir.directory( "folder" );
         PartitionedIndexStorage indexStorage = new PartitionedIndexStorage( dirFactory, fileSystem, folder );
 
         IndexDescriptor descriptor = IndexPrototype.forSchema( labelSchemaDescriptor ).withName( "index" ).materialise( 13 );

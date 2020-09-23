@@ -24,7 +24,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InOrder;
 import picocli.CommandLine;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.Files;
@@ -81,8 +80,8 @@ class PushToCloudCommandTest
     @BeforeAll
     void setUp() throws IOException
     {
-        homeDir = directory.directoryPath( "home-dir" );
-        Path configDir = directory.directoryPath( "config-dir" );
+        homeDir = directory.directory( "home-dir" );
+        Path configDir = directory.directory( "config-dir" );
         Path configFile = configDir.resolve( "neo4j.conf" );
         Files.createFile( configFile );
         PrintStream nullOutputStream = new PrintStream( NullOutputStream.nullOutputStream() );
@@ -106,7 +105,7 @@ class PushToCloudCommandTest
         managementService.database( databaseLayout.getDatabaseName() );
         managementService.shutdown();
 
-        dump = directory.filePath( "some-archive.dump" );
+        dump = directory.file( "some-archive.dump" );
         new RealDumpCreator( ctx ).dumpDatabase( DBNAME, dump );
     }
 
@@ -190,7 +189,7 @@ class PushToCloudCommandTest
 
         // when
         String databaseName = DBNAME;
-        Path dumpFile = directory.filePath( "some-dump-file" );
+        Path dumpFile = directory.file( "some-dump-file" );
         String[] args =
                 {"--database", databaseName,
                  "--dump-to", dumpFile.toString(),
@@ -216,7 +215,7 @@ class PushToCloudCommandTest
 
         // when
         String databaseName = DBNAME;
-        Path dumpFile = directory.filePath( "some-dump-file-that-exists" );
+        Path dumpFile = directory.file( "some-dump-file-that-exists" );
         Files.write( dumpFile, "some data".getBytes() );
         String[] args =
                 {"--database", databaseName,
@@ -235,7 +234,7 @@ class PushToCloudCommandTest
 
         // when
         String[] args = {
-                "--dump", directory.filePath( "some-dump-file" ).toString(),
+                "--dump", directory.file( "some-dump-file" ).toString(),
                 "--database", DBNAME,
                 "--bolt-uri", SOME_EXAMPLE_BOLT_URI};
         int returnValue = new CommandLine( command ).execute( args );
@@ -405,9 +404,9 @@ class PushToCloudCommandTest
         PushToCloudCommand command = command().copier( mockedTargetCommunicator() ).build();
 
         // when
-        File dumpFile = directory.file( "some-dump-file" );
+        Path dumpFile = directory.file( "some-dump-file" );
         String[] args = {
-                "--dump", dumpFile.getAbsolutePath(),
+                "--dump", dumpFile.toAbsolutePath().toString(),
                 "--bolt-uri", SOME_EXAMPLE_BOLT_URI};
         int returnValue = new CommandLine( command ).execute( args );
         assertNotEquals( 0, returnValue, "Expected command to fail" );

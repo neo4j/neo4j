@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import java.io.File;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
@@ -65,7 +64,7 @@ import org.neo4j.kernel.impl.store.record.SchemaRecord;
 public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequence
 {
     /**
-     * @return the {@link File} that backs this store.
+     * @return the {@link Path} that backs this store.
      */
     Path getStorageFile();
 

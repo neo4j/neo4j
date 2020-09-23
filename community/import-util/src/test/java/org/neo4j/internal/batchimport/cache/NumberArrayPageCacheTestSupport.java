@@ -36,7 +36,7 @@ public class NumberArrayPageCacheTestSupport
     {
         DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
         TestDirectory testDirectory = TestDirectory.testDirectory( testClass, fileSystem );
-        Path dir = testDirectory.prepareDirectoryForTest( "test" ).toPath();
+        Path dir = testDirectory.prepareDirectoryForTest( "test" );
         ThreadPoolJobScheduler scheduler = new ThreadPoolJobScheduler();
         PageCache pageCache = StandalonePageCacheFactory.createPageCache( fileSystem, scheduler, PageCacheTracer.NULL );
         return new Fixture( pageCache, fileSystem, dir, scheduler );

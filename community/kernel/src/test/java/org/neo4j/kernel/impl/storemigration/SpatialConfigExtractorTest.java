@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.storemigration;
 import org.eclipse.collections.api.tuple.Pair;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
@@ -126,8 +125,8 @@ class SpatialConfigExtractorTest
         // given
         AssertableLogProvider logProvider = new AssertableLogProvider();
         Log myLog = logProvider.getLog( getClass() );
-        SpatialFile spatialFile = new SpatialFile( CoordinateReferenceSystem.WGS84, directory.filePath( "spatialFile" ) );
-        corruptFile( fs, spatialFile.getIndexFile().toFile() );
+        SpatialFile spatialFile = new SpatialFile( CoordinateReferenceSystem.WGS84, directory.file( "spatialFile" ) );
+        corruptFile( fs, spatialFile.getIndexFile() );
 
         // when
         SpatialConfigExtractor.indexConfigFromSpatialFile( pageCache, singletonList( spatialFile ), NULL, myLog );
@@ -142,7 +141,7 @@ class SpatialConfigExtractorTest
     {
         // given
         unzip( getClass(), ZIP_HEALTHY_SPATIAL_35_DIR, directory.homePath() );
-        Path spatialDir = directory.filePath( HEALTHY_SPATIAL_35_DIR );
+        Path spatialDir = directory.file( HEALTHY_SPATIAL_35_DIR );
 
         // and
         assertTrue( fs.fileExists( spatialDir ) );
@@ -162,9 +161,9 @@ class SpatialConfigExtractorTest
                         " Index will be recreated with currently configured settings instead, indexFile=" + genericFile.toAbsolutePath() );
     }
 
-    private static void corruptFile( FileSystemAbstraction fs, File spatialFile ) throws IOException
+    private static void corruptFile( FileSystemAbstraction fs, Path spatialFile ) throws IOException
     {
-        try ( StoreChannel write = fs.write( spatialFile.toPath() ) )
+        try ( StoreChannel write = fs.write( spatialFile ) )
         {
             int size = 100;
             byte[] bytes = new byte[size];
@@ -173,7 +172,7 @@ class SpatialConfigExtractorTest
             byteBuffer.put( bytes );
             write.writeAll( byteBuffer );
         }
-        assertTrue( fs.fileExists( spatialFile.toPath() ) );
+        assertTrue( fs.fileExists( spatialFile ) );
     }
 
     private static void assertExpectedIndexConfig( IndexConfig indexConfig )

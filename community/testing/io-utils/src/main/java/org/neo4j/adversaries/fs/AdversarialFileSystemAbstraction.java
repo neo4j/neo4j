@@ -19,7 +19,6 @@
  */
 package org.neo4j.adversaries.fs;
 
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -28,6 +27,7 @@ import java.io.UnsupportedEncodingException;
 import java.io.Writer;
 import java.nio.charset.Charset;
 import java.nio.file.CopyOption;
+import java.nio.file.DirectoryStream;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
@@ -121,7 +121,7 @@ public class AdversarialFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
-    public Path[] listFiles( Path directory, FilenameFilter filter )
+    public Path[] listFiles( Path directory, DirectoryStream.Filter<Path> filter )
     {
         adversary.injectFailure( SecurityException.class );
         return delegate.listFiles( directory, filter );

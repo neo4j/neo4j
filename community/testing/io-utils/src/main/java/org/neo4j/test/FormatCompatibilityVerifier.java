@@ -54,7 +54,7 @@ public abstract class FormatCompatibilityVerifier
     @Test
     public void shouldDetectFormatChange() throws Throwable
     {
-        Path storeFile = globalDir.filePath( storeFileName() );
+        Path storeFile = globalDir.file( storeFileName() );
         doShouldDetectFormatChange( zipName(), storeFile );
     }
 
@@ -78,7 +78,7 @@ public abstract class FormatCompatibilityVerifier
         {
             // First time this test is run, eh?
             createStoreFile( storeFile );
-            ZipUtils.zip( globalFs.get(), storeFile, globalDir.filePath( zipName ) );
+            ZipUtils.zip( globalFs.get(), storeFile, globalDir.file( zipName ) );
             tellDeveloperToCommitThisFormatVersion( zipName );
         }
         assertTrue( zipName + " seems to be missing from resources directory",
@@ -96,7 +96,7 @@ public abstract class FormatCompatibilityVerifier
 
             ((FileSystemAbstraction) globalFs.get()).deleteFile( storeFile );
             createStoreFile( storeFile );
-            ZipUtils.zip( globalFs.get(), storeFile, globalDir.filePath( zipName ) );
+            ZipUtils.zip( globalFs.get(), storeFile, globalDir.file( zipName ) );
 
             tellDeveloperToCommitThisFormatVersion( zipName );
         }

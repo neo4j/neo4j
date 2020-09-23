@@ -28,12 +28,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
+import java.io.UncheckedIOException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 
 import org.neo4j.graphdb.Resource;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -106,7 +106,7 @@ public class Loader
     {
         if ( Files.exists( databaseLayout.metadataStore() ) )
         {
-            throw new FileAlreadyExistsException( databaseLayout.metadataStore().toFile().getAbsolutePath() );
+            throw new FileAlreadyExistsException( databaseLayout.metadataStore().toAbsolutePath().toString() );
         }
     }
 
@@ -130,9 +130,16 @@ public class Loader
     private static Path determineEntryDestination( ArchiveEntry entry, Path databaseDestination,
             Path transactionLogsDirectory )
     {
-        String entryName = Paths.get( entry.getName() ).getFileName().toString();
-        return TransactionLogFiles.DEFAULT_FILENAME_FILTER.accept( null, entryName ) ? transactionLogsDirectory
-                                                                                     : databaseDestination;
+        Path entryName = Path.of( entry.getName() ).getFileName();
+        try
+        {
+            return TransactionLogFiles.DEFAULT_FILENAME_FILTER.accept( entryName ) ? transactionLogsDirectory
+                                                                                         : databaseDestination;
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
     }
 
     private ArchiveEntry nextEntry( ArchiveInputStream stream, Path archive ) throws IncorrectFormat

@@ -25,7 +25,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -460,7 +459,7 @@ class ConfigTest
     void shouldLogIfConfigFileCouldNotBeFound()
     {
         Log log = mock( Log.class );
-        Path confFile = testDirectory.filePath( "test.conf" ); // Note: we don't create the file.
+        Path confFile = testDirectory.file( "test.conf" ); // Note: we don't create the file.
 
         Config config = Config.emptyBuilder().fromFileNoThrow( confFile ).build();
 
@@ -475,9 +474,9 @@ class ConfigTest
     {
         AssertableLogProvider logProvider = new AssertableLogProvider( true );
         Log log = logProvider.getLog( Config.class );
-        File confFile = testDirectory.file( "test.conf" );
-        assertTrue( confFile.createNewFile() );
-        assumeTrue( confFile.setReadable( false ) );
+        Path confFile = testDirectory.file( "test.conf" );
+        assertTrue( confFile.toFile().createNewFile() );
+        assumeTrue( confFile.toFile().setReadable( false ) );
 
         Config config = Config.emptyBuilder().fromFileNoThrow( confFile ).build();
         config.setLogger( log );
@@ -488,7 +487,7 @@ class ConfigTest
     @Test
     void canReadConfigFile() throws IOException
     {
-        Path confFile = testDirectory.filePath( "test.conf" );
+        Path confFile = testDirectory.file( "test.conf" );
         Files.write( confFile, Collections.singletonList( GraphDatabaseSettings.default_database.name() + "=foo" ) );
 
         assertEquals( "foo", Config.newBuilder().fromFile( confFile ).build().get( GraphDatabaseSettings.default_database ) );
@@ -501,7 +500,7 @@ class ConfigTest
     {
         assertThrows( IllegalArgumentException.class, () ->
         {
-            File confFile = testDirectory.file( "test.conf" );
+            Path confFile = testDirectory.file( "test.conf" );
 
             Config.emptyBuilder().fromFile( confFile ).build();
         } );
@@ -511,9 +510,9 @@ class ConfigTest
     @DisabledForRoot
     void mustThrowIfConfigFileCoutNotBeRead() throws IOException
     {
-        File confFile = testDirectory.file( "test.conf" );
-        assertTrue( confFile.createNewFile() );
-        assumeTrue( confFile.setReadable( false ) );
+        Path confFile = testDirectory.file( "test.conf" );
+        assertTrue( confFile.toFile().createNewFile() );
+        assumeTrue( confFile.toFile().setReadable( false ) );
         assertThrows( IllegalArgumentException.class, () -> Config.emptyBuilder().fromFile( confFile ).build() );
     }
 
@@ -521,7 +520,7 @@ class ConfigTest
     void mustWarnIfFileContainsDuplicateSettings() throws Exception
     {
         Log log = mock( Log.class );
-        Path confFile = testDirectory.createFilePath( "test.conf" );
+        Path confFile = testDirectory.createFile( "test.conf" );
         Files.write( confFile, Arrays.asList(
                 ExternalSettings.initial_heap_size.name() + "=5g",
                 ExternalSettings.initial_heap_size.name() + "=4g",
@@ -590,7 +589,7 @@ class ConfigTest
     @Test
     void testStrictValidation() throws IOException
     {
-        Path confFile = testDirectory.createFilePath( "test.conf" );
+        Path confFile = testDirectory.createFile( "test.conf" );
         Files.write( confFile, Collections.singletonList( "some_unrecognized_garbage=true" ) );
 
         Config.Builder builder = Config.newBuilder().fromFile( confFile );
@@ -616,7 +615,7 @@ class ConfigTest
     @Test
     void testDoesNotLogChangedJvmArgs() throws IOException
     {
-        Path confFile = testDirectory.createFilePath( "test.conf" );
+        Path confFile = testDirectory.createFile( "test.conf" );
         Files.write( confFile, List.of( "dbms.jvm.additional=-XX:+UseG1GC", "dbms.jvm.additional=-XX:+AlwaysPreTouch",
                 "dbms.jvm.additional=-XX:+UnlockExperimentalVMOptions", "dbms.jvm.additional=-XX:+TrustFinalNonStaticFields" ) );
 
@@ -739,7 +738,7 @@ class ConfigTest
         assumeUnixOrWindows();
         String command = IS_OS_WINDOWS ? "cmd.exe /c set /a" : "expr";
 
-        Path confFile = testDirectory.file( "test.conf" ).toPath();
+        Path confFile = testDirectory.file( "test.conf" );
         if ( IS_OS_WINDOWS )
         {
             Files.createFile( confFile );
@@ -757,7 +756,7 @@ class ConfigTest
         Files.write( confFile, List.of( String.format("%s=$(%s 3 + 3)", TestSettings.intSetting.name(), command ) ) );
 
         //Given
-        Config config = Config.newBuilder().allowCommandExpansion().addSettingsClass( TestSettings.class ).fromFile( confFile.toFile() ).build();
+        Config config = Config.newBuilder().allowCommandExpansion().addSettingsClass( TestSettings.class ).fromFile( confFile ).build();
 
         //Then
         assertEquals( 6, config.get( TestSettings.intSetting ) );
@@ -767,7 +766,7 @@ class ConfigTest
     void shouldNotEvaluateWithIncorrectFilePermission() throws IOException
     {
         assumeUnixOrWindows();
-        Path confFile = testDirectory.file( "test.conf" ).toPath();
+        Path confFile = testDirectory.file( "test.conf" );
         if ( IS_OS_WINDOWS )
         {
             Files.createFile( confFile );
@@ -787,7 +786,7 @@ class ConfigTest
         Files.write( confFile, List.of( TestSettings.intSetting.name() + "=$(foo bar)" ) );
 
         //Given
-        Config.Builder builder = Config.newBuilder().allowCommandExpansion().addSettingsClass( TestSettings.class ).fromFile( confFile.toFile() );
+        Config.Builder builder = Config.newBuilder().allowCommandExpansion().addSettingsClass( TestSettings.class ).fromFile( confFile );
 
         //Then
         String msg = assertThrows( IllegalArgumentException.class, builder::build ).getMessage();

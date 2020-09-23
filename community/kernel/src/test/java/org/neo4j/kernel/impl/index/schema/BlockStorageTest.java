@@ -77,7 +77,7 @@ class BlockStorageTest
     @BeforeEach
     void setup()
     {
-        file = directory.filePath( "block" );
+        file = directory.file( "block" );
         fileSystem = directory.getFileSystem();
         layout = SimpleLongLayout.longLayout()
                 .withFixedSize( random.nextBoolean() )

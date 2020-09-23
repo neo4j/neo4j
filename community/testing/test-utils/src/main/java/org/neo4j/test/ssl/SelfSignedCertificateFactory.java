@@ -34,7 +34,6 @@ import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 import org.bouncycastle.util.io.pem.PemObject;
 import org.bouncycastle.util.io.pem.PemWriter;
 
-import java.io.File;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
@@ -189,11 +188,10 @@ public class SelfSignedCertificateFactory
         catch ( UnsupportedOperationException ignore )
         {
             // Fallback for windows
-            File file = path.toFile();
-            file.setReadable( false, false );
-            file.setWritable( false, false );
-            file.setReadable( true );
-            file.setWritable( true );
+            path.toFile().setReadable( false, false );
+            path.toFile().setWritable( false, false );
+            path.toFile().setReadable( true );
+            path.toFile().setWritable( true );
         }
     }
 }

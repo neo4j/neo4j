@@ -51,7 +51,7 @@ class DatabaseLayoutTest
     @Test
     void databaseLayoutForAbsoluteFile()
     {
-        Path databaseDir = testDirectory.directoryPath( "neo4j" );
+        Path databaseDir = testDirectory.directory( "neo4j" );
         DatabaseLayout databaseLayout = DatabaseLayout.ofFlat( databaseDir );
         assertEquals( databaseLayout.databaseDirectory(), databaseDir );
     }
@@ -70,10 +70,10 @@ class DatabaseLayoutTest
     @Test
     void databaseLayoutUseCanonicalRepresentation()
     {
-        Path dbDir = testDirectory.directoryPath( "notCanonical" );
+        Path dbDir = testDirectory.directory( "notCanonical" );
         Path notCanonicalPath = dbDir.resolve( "../anotherdatabase" ) ;
         DatabaseLayout databaseLayout = DatabaseLayout.ofFlat( notCanonicalPath );
-        assertEquals( testDirectory.directoryPath( "anotherdatabase" ), databaseLayout.databaseDirectory() );
+        assertEquals( testDirectory.directory( "anotherdatabase" ), databaseLayout.databaseDirectory() );
     }
 
     @Test

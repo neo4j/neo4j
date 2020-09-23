@@ -89,7 +89,7 @@ class KernelDiagnosticsTest
         // file structure:
         //   storeDir/indexDir/indexFile (1 kB)
         //   storeDir/neostore (3 kB)
-        Path storeDir = testDirectory.directoryPath( "storedir" );
+        Path storeDir = testDirectory.directory( "storedir" );
         DatabaseLayout layout = DatabaseLayout.ofFlat( storeDir );
         Path indexDir = directory( storeDir, "indexDir" );
         file( indexDir, "indexFile", (int) kibiBytes( 1 ) );

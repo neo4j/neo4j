@@ -28,7 +28,6 @@ import org.junit.jupiter.api.parallel.Resources;
 import picocli.CommandLine;
 
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.Files;
@@ -97,15 +96,15 @@ public class DiagnosticsReportCommandTest
     @BeforeEach
     void setUp() throws Exception
     {
-        homeDir = testDirectory.directoryPath( "home-dir" );
-        configDir = testDirectory.directoryPath( "config-dir" );
+        homeDir = testDirectory.directory( "home-dir" );
+        configDir = testDirectory.directory( "config-dir" );
 
         // Touch config
         configFile = configDir.resolve( "neo4j.conf" );
         Files.createFile( configFile );
 
         // To make sure files are resolved from the working directory
-        originalUserDir = System.setProperty( "user.dir", testDirectory.absolutePath().getAbsolutePath() );
+        originalUserDir = System.setProperty( "user.dir", testDirectory.absolutePath().toString() );
 
         ctx = new ExecutionContext( homeDir, configDir, System.out, System.err, fs );
     }
@@ -241,12 +240,12 @@ public class DiagnosticsReportCommandTest
         CommandLine.populateCommand( diagnosticsReportCommand, args );
         diagnosticsReportCommand.execute();
 
-        File other = testDirectory.directory( "other" );
-        assertThat( ctx.fs().fileExists( other.toPath() ) ).isEqualTo( true );
-        assertThat( ctx.fs().listFiles( other.toPath() ).length ).isEqualTo( 1 );
+        Path other = testDirectory.directory( "other" );
+        assertThat( ctx.fs().fileExists( other ) ).isEqualTo( true );
+        assertThat( ctx.fs().listFiles( other ).length ).isEqualTo( 1 );
 
         // Default should be empty
-        File reports = new File( testDirectory.homeDir(), "reports" );
-        assertThat( ctx.fs().fileExists( reports.toPath() ) ).isEqualTo( false );
+        Path reports = testDirectory.homePath().resolve( "reports" );
+        assertThat( ctx.fs().fileExists( reports ) ).isEqualTo( false );
     }
 }

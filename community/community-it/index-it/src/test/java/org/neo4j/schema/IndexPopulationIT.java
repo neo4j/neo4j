@@ -211,7 +211,7 @@ class IndexPopulationIT
     void shutdownDatabaseDuringIndexPopulations()
     {
         AssertableLogProvider assertableLogProvider = new AssertableLogProvider( true );
-        Path storeDir = directory.directoryPath( "shutdownDbTest" );
+        Path storeDir = directory.directory( "shutdownDbTest" );
         Label testLabel = Label.label( "testLabel" );
         String propertyName = "testProperty";
         DatabaseManagementService managementService =

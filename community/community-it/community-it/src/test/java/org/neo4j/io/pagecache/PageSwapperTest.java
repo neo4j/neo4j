@@ -1231,7 +1231,7 @@ public abstract class PageSwapperTest
 
     private Path file( String filename ) throws IOException
     {
-        Path file = testDir.filePath( filename );
+        Path file = testDir.file( filename );
         mkdirs( file.getParent() );
         return file;
     }
