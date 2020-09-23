@@ -25,9 +25,7 @@ import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.StringReader;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
@@ -42,8 +40,6 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.MediaType;
 
-import org.neo4j.string.UTF8;
-
 public class InternalJettyServletRequest extends Request
 {
     private class Input extends ServletInputStream
@@ -53,9 +49,9 @@ public class InternalJettyServletRequest extends Request
         private int position;
         private ReadListener readListener;
 
-        Input( String data )
+        Input( String encoding, String data ) throws UnsupportedEncodingException
         {
-            bytes = UTF8.encode( data );
+            bytes = data.getBytes( encoding );
         }
 
         @Override
@@ -114,7 +110,6 @@ public class InternalJettyServletRequest extends Request
     private final Map<String, Object> headers;
     private final Cookie[] cookies;
     private final Input input;
-    private final BufferedReader inputReader;
     private String contentType;
     private final String method;
     private final InternalJettyServletResponse response;
@@ -133,9 +128,7 @@ public class InternalJettyServletRequest extends Request
             String encoding, InternalJettyServletResponse res, RequestData requestData ) throws UnsupportedEncodingException
     {
         super( null, null );
-
-        this.input = new Input( body );
-        this.inputReader = new BufferedReader( new StringReader( body ) );
+        this.input = new Input( encoding, body );
 
         this.contentType = contentType;
         this.cookies = cookies;
@@ -188,12 +181,6 @@ public class InternalJettyServletRequest extends Request
     public String getProtocol()
     {
         return "HTTP/1.1";
-    }
-
-    @Override
-    public BufferedReader getReader()
-    {
-        return inputReader;
     }
 
     @Override
