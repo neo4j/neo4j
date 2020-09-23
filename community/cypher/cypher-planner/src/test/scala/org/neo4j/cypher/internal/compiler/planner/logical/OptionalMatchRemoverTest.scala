@@ -354,7 +354,7 @@ assert_that(
     val onError = SyntaxExceptionCreator.throwOnError(exceptionFactory)
     val result = SemanticChecker.check(ast)
     onError(result.errors)
-    val table = SemanticTable(types = result.state.typeTable, recordedScopes = result.state.recordedScopes)
+    val table = SemanticTable(types = result.state.typeTable, recordedScopes = result.state.recordedScopes.mapValues(_.scope))
     StatementConverters.toPlannerQuery(ast.asInstanceOf[Query], table)
   }
 

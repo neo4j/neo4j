@@ -222,6 +222,13 @@ object SemanticState {
 
     def symbolNames: Set[String] = scope.symbolNames
 
+    /**
+     * Local symbol names of this scope and all parent scopes.
+     */
+    def availableSymbolDefinitions: Set[SymbolUse] = {
+      scope.symbolDefinitions ++ location.up.toSet.flatMap((l: ScopeZipper.Location) => l.availableSymbolDefinitions)
+    }
+
     def importValuesFromScope(other: Scope, exclude: Set[String] = Set.empty): ScopeLocation =
       location.replace(scope.importValuesFromScope(other, exclude))
 
@@ -250,7 +257,7 @@ object SemanticState {
 
 case class SemanticState(currentScope: ScopeLocation,
                          typeTable: ASTAnnotationMap[Expression, ExpressionTypeInfo],
-                         recordedScopes: ASTAnnotationMap[ASTNode, Scope],
+                         recordedScopes: ASTAnnotationMap[ASTNode, ScopeLocation],
                          notifications: Set[InternalNotification] = Set.empty,
                          features: Set[SemanticFeature] = Set.empty,
                          initialWith: Boolean = false,
@@ -349,10 +356,10 @@ case class SemanticState(currentScope: ScopeLocation,
     )
 
   def recordCurrentScope(astNode: ASTNode): SemanticState =
-    copy(recordedScopes = recordedScopes.updated(astNode, currentScope.scope))
+    copy(recordedScopes = recordedScopes.updated(astNode, currentScope))
 
   def scope(astNode: ASTNode): Option[Scope] =
-    recordedScopes.get(astNode)
+    recordedScopes.get(astNode).map(_.scope)
 
   def withFeature(feature: SemanticFeature): SemanticState = copy(features = features + feature)
 }

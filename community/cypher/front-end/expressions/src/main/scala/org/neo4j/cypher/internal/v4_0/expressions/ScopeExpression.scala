@@ -42,3 +42,13 @@ case class ExtractScope(variable: LogicalVariable, innerPredicate: Option[Expres
 case class ReduceScope(accumulator: LogicalVariable, variable: LogicalVariable, expression: Expression)(val position: InputPosition) extends ScopeExpression {
   val introducedVariables = Set(accumulator, variable)
 }
+
+/**
+ * A scope expression which also keeps track of the scope around it.
+ */
+trait ExpressionWithOuterScope extends Expression {
+  self: ScopeExpression =>
+
+  def outerScope: Set[Variable]
+  def withOuterScope(outerScope: Set[Variable]): Expression
+}

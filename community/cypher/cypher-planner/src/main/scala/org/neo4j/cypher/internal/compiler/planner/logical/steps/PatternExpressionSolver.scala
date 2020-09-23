@@ -19,16 +19,26 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
+import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
+import org.neo4j.cypher.internal.compiler.planner.logical.patternExpressionRewriter
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.selectPatternPredicates.onePredicate
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.selectPatternPredicates.planPredicates
-import org.neo4j.cypher.internal.compiler.planner.logical.{LogicalPlanningContext, patternExpressionRewriter}
+import org.neo4j.cypher.internal.ir.HasMappableExpressions
 import org.neo4j.cypher.internal.ir.InterestingOrder
-import org.neo4j.cypher.internal.ir.{HasMappableExpressions, QueryGraph}
-import org.neo4j.cypher.internal.logical.plans.{Argument, LogicalPlan}
+import org.neo4j.cypher.internal.ir.QueryGraph
+import org.neo4j.cypher.internal.logical.plans.Argument
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.v4_0.expressions._
-import org.neo4j.cypher.internal.v4_0.expressions.functions.{Coalesce, Exists, Head}
-import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.{PatternExpressionPatternElementNamer, projectNamedPaths}
-import org.neo4j.cypher.internal.v4_0.util.{FreshIdNameGenerator, Rewriter, UnNamedNameGenerator, topDown}
+import org.neo4j.cypher.internal.v4_0.expressions.functions.Coalesce
+import org.neo4j.cypher.internal.v4_0.expressions.functions.Exists
+import org.neo4j.cypher.internal.v4_0.expressions.functions.Head
+import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.PatternExpressionPatternElementNamer
+import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.projectNamedPaths
+import org.neo4j.cypher.internal.v4_0.util.AllNameGenerators
+import org.neo4j.cypher.internal.v4_0.util.AssertionRunner
+import org.neo4j.cypher.internal.v4_0.util.FreshIdNameGenerator
+import org.neo4j.cypher.internal.v4_0.util.Rewriter
+import org.neo4j.cypher.internal.v4_0.util.topDown
 
 import scala.collection.mutable
 import scala.reflect.ClassTag
@@ -164,13 +174,12 @@ object PatternExpressionSolver {
     def extractQG(source: LogicalPlan, namedExpr: PatternExpression): QueryGraph = {
       import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters._
 
-      val dependencies = namedExpr.
-        dependencies.
-        map(_.name).
-        filter(id => UnNamedNameGenerator.isNamed(id))
-
-      val qgArguments = source.availableSymbols intersect dependencies
-      asQueryGraph(namedExpr, context.innerVariableNamer).withArgumentIds(qgArguments)
+      val dependencies = namedExpr
+        .dependencies
+        .map(_.name)
+        .filter(id => AllNameGenerators.isNamed(id))
+      AssertionRunner.runUnderAssertion(() => if (!dependencies.subsetOf(availableSymbols)) throw new IllegalStateException(s"Trying to plan a PatternExpression where a dependency is not available. Dependencies: $dependencies. Available: $availableSymbols"))
+      asQueryGraph(namedExpr, context.innerVariableNamer).withArgumentIds(dependencies)
     }
 
     def createPlannerContext(context: LogicalPlanningContext, namedMap: Map[PatternElement, Variable]): LogicalPlanningContext = {
@@ -200,8 +209,9 @@ object PatternExpressionSolver {
       import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters._
 
       val queryGraph = asQueryGraph(namedExpr, context.innerVariableNamer)
-      val args = queryGraph.idsWithoutOptionalMatchesOrUpdates intersect availableSymbols
-      queryGraph.withArgumentIds(args)
+      val dependencies = namedExpr.dependencies.map(_.name)
+      AssertionRunner.runUnderAssertion(() => if (!dependencies.subsetOf(availableSymbols)) throw new IllegalStateException(s"Trying to plan a PatternComprehension where a dependency is not available. Dependencies: $dependencies. Available: $availableSymbols"))
+      queryGraph.withArgumentIds(dependencies)
     }
 
     def createProjectionToCollect(pattern: PatternComprehension): Expression = pattern.projection
@@ -253,15 +263,40 @@ object PatternExpressionSolver {
 
       patternExpressions.foldLeft(RewriteResult(plan, expression, Set.empty)) {
         case (RewriteResult(currentPlan, currentExpression, introducedVariables), patternExpression) =>
-          val (newPlan, newVar) = solveUsingRollUpApply(currentPlan, patternExpression, None, context)
-
-          val rewriter = rewriteButStopIfRollUpApplyForbidden(patternExpression, newVar)
+          var newPlan: LogicalPlan = null
+          var newVariable: Variable = null
+          val inner = Rewriter.lift {
+            case `patternExpression` =>
+              val (p, v) = solveUsingRollUpApply(currentPlan, patternExpression, None, context)
+              newPlan = p
+              newVariable = v
+              v
+          }
+          /*
+           * It's important to not go use RollUpApply if the expression we are working with is:
+           *
+           * a) inside a loop. If that is not honored, it will produce the wrong results by not having the correct scope.
+           * b) inside a conditional expression. Otherwise it can be executed even when not strictly needed.
+           * c) inside an expression that accessed only part of the list. Otherwise we do too much work. To avoid that we inject a Limit into the
+           * NestedPlanExpression.
+           */
+          val rewriter = topDown(inner, stopper = {
+            case _: PatternComprehension => false
+            // Loops
+            case _: ScopeExpression => true
+            // Conditionals & List accesses
+            case _: CaseExpression => true
+            case _: ContainerIndex => true
+            case _: ListSlice => true
+            case f: FunctionInvocation => f.function == Exists || f.function == Coalesce || f.function == Head
+            case _ => false
+          })
           val rewrittenExpression = currentExpression.endoRewrite(rewriter)
 
           if (rewrittenExpression == currentExpression) {
             RewriteResult(currentPlan, currentExpression.endoRewrite(patternExpressionRewriter), introducedVariables)
           } else {
-            RewriteResult(newPlan, rewrittenExpression, introducedVariables + newVar.name)
+            RewriteResult(newPlan, rewrittenExpression, introducedVariables + newVariable.name)
           }
       }
     }
@@ -283,33 +318,6 @@ object PatternExpressionSolver {
                                       InterestingOrder.empty, innerContext)
       val nullableIdentifiers = (qg.patternNodes ++ qg.patternRelationships.map(_.name)).filter(source.availableSymbols)
       PlannedSubQuery(columnName = collectionName, innerPlan = projectedInner, nullableIdentifiers = nullableIdentifiers)
-    }
-
-    /*
-    * It's important to not go use RollUpApply if the expression we are working with is:
-    *
-    * a) inside a loop. If that is not honored, it will produce the wrong results by not having the correct scope.
-    * b) inside a conditional expression. Otherwise it can be executed even when not strictly needed.
-    * c) inside an expression that accessed only part of the list. Otherwise we do too much work. To avoid that we inject a Limit into the
-    *    NestedPlanExpression.
-    *
-    */
-    private def rewriteButStopIfRollUpApplyForbidden(oldExp: Expression, newExp: Expression): Rewriter = {
-      val inner = Rewriter.lift {
-        case exp if exp == oldExp =>
-          newExp
-      }
-      topDown(inner, stopper = {
-        case _: PatternComprehension => false
-        // Loops
-        case _: ScopeExpression => true
-        // Conditionals & List accesses
-        case _: CaseExpression => true
-        case _: ContainerIndex => true
-        case _: ListSlice => true
-        case f: FunctionInvocation => f.function == Exists || f.function == Coalesce || f.function == Head
-        case _ => false
-      })
     }
   }
 
