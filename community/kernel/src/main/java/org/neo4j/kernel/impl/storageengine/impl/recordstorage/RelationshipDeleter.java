@@ -201,12 +201,12 @@ class RelationshipDeleter
         RelationshipRecord firstRel = relRecords.getOrLoad( firstRelId, null ).forChangingLinkage();
         if ( nodeId == firstRel.getFirstNode() )
         {
-            firstRel.setFirstPrevRel( firstInChain ? relCount( nodeId, rel ) - 1 : relCount( nodeId, firstRel ) - 1 );
+            firstRel.setFirstPrevRel( firstInChain ? relCount( nodeId, rel ) - 1 : firstRel.getFirstPrevRel() - 1 );
             firstRel.setFirstInFirstChain( true );
         }
         if ( nodeId == firstRel.getSecondNode() )
         {
-            firstRel.setSecondPrevRel( firstInChain ? relCount( nodeId, rel ) - 1 : relCount( nodeId, firstRel ) - 1 );
+            firstRel.setSecondPrevRel( firstInChain ? relCount( nodeId, rel ) - 1 : firstRel.getSecondPrevRel() - 1 );
             firstRel.setFirstInSecondChain( true );
         }
     }
