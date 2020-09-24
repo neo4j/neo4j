@@ -31,6 +31,8 @@ import org.neo4j.cypher.internal.compiler.phases.CompilationPhases.planPipeLine
 import org.neo4j.cypher.internal.compiler.phases.CompilationPhases.prepareForCaching
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
+import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.cypherCompilerConfig
+import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.innerVariableNamer
 import org.neo4j.cypher.internal.compiler.planner.logical.ExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CardinalityModel
@@ -78,6 +80,7 @@ import org.neo4j.cypher.internal.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.rewriting.RewriterStepSequencer.newPlain
 import org.neo4j.cypher.internal.rewriting.ValidatingRewriterStepSequencer
 import org.neo4j.cypher.internal.rewriting.rewriters.GeneratingNamer
+import org.neo4j.cypher.internal.rewriting.rewriters.InnerVariableNamer
 import org.neo4j.cypher.internal.rewriting.rewriters.Never
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.Cost
@@ -92,22 +95,17 @@ import org.neo4j.internal.helpers.collection.Visitable
 import org.neo4j.kernel.impl.util.dbstructure.DbStructureVisitor
 import org.scalatest.matchers.BeMatcher
 import org.scalatest.matchers.MatchResult
+import org.scalatest.mockito.MockitoSugar
 
 import scala.reflect.ClassTag
 
-trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstructionTestSupport with LogicalPlanConstructionTestSupport {
-  self: CypherFunSuite =>
+object LogicalPlanningTestSupport2 extends MockitoSugar {
 
   val pushdownPropertyReads: Boolean = true
   val readPropertiesFromCursor: Boolean = false
+  val innerVariableNamer: InnerVariableNamer = new GeneratingNamer
 
-  val parser = new CypherParser
-  val rewriterSequencer: String => ValidatingRewriterStepSequencer = RewriterStepSequencer.newValidating
-  val innerVariableNamer = new GeneratingNamer
-  var astRewriter = new ASTRewriter(rewriterSequencer, literalExtraction = Never, innerVariableNamer = innerVariableNamer)
-  final var planner = QueryPlanner
-  var queryGraphSolver: QueryGraphSolver = createQueryGraphSolver()
-  val cypherCompilerConfig = CypherPlannerConfiguration(
+  val cypherCompilerConfig: CypherPlannerConfiguration = CypherPlannerConfiguration(
     queryCacheSize = 100,
     statsDivergenceCalculator = StatsDivergenceCalculator.divergenceNoDecayCalculator(0.5, 1000),
     useErrorsOverWarnings = false,
@@ -122,20 +120,42 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     readPropertiesFromCursor = false,
     useJavaCCParser = true
   )
-  val realConfig = RealLogicalPlanningConfiguration(cypherCompilerConfig)
 
   def createQueryGraphSolver(solverConfig: IDPSolverConfig = DefaultIDPSolverConfig): QueryGraphSolver = {
     new IDPQueryGraphSolver(SingleComponentPlanner(mock[IDPQueryGraphSolverMonitor], solverConfig), cartesianProductsOrValueJoins, mock[IDPQueryGraphSolverMonitor])
   }
 
-  def createInitState(queryString: String): BaseState = InitialState(queryString, None, IDPPlannerName)
-
-  def pipeLine(): Transformer[PlannerContext, BaseState, LogicalPlanState] = {
+  def pipeLine(pushdownPropertyReads: Boolean = pushdownPropertyReads,
+               readPropertiesFromCursor: Boolean = readPropertiesFromCursor,
+               innerVariableNamer: InnerVariableNamer = innerVariableNamer,
+  ): Transformer[PlannerContext, BaseState, LogicalPlanState] = {
     // if you ever want to have parameters in here, fix the map
     parsing(ParsingConfig(newPlain, innerVariableNamer, literalExtraction = Never, parameterTypeMapping = Map.empty, useJavaCCParser = cypherCompilerConfig.useJavaCCParser)) andThen
       prepareForCaching andThen
       planPipeLine(newPlain, pushdownPropertyReads = pushdownPropertyReads, readPropertiesFromCursor = readPropertiesFromCursor)
   }
+
+}
+
+trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstructionTestSupport with LogicalPlanConstructionTestSupport {
+  self: CypherFunSuite =>
+
+  val parser = new CypherParser
+  val pushdownPropertyReads: Boolean = LogicalPlanningTestSupport2.pushdownPropertyReads
+  val readPropertiesFromCursor: Boolean = LogicalPlanningTestSupport2.readPropertiesFromCursor
+  val innerVariableNamer: InnerVariableNamer = LogicalPlanningTestSupport2.innerVariableNamer
+  val rewriterSequencer: String => ValidatingRewriterStepSequencer = RewriterStepSequencer.newValidating
+  var astRewriter = new ASTRewriter(rewriterSequencer, literalExtraction = Never, innerVariableNamer = innerVariableNamer)
+  final var planner = QueryPlanner
+  var queryGraphSolver: QueryGraphSolver = LogicalPlanningTestSupport2.createQueryGraphSolver()
+
+  val realConfig = RealLogicalPlanningConfiguration(cypherCompilerConfig)
+
+  def createInitState(queryString: String): BaseState = InitialState(queryString, None, IDPPlannerName)
+
+  def pipeLine(): Transformer[PlannerContext, BaseState, LogicalPlanState] = LogicalPlanningTestSupport2.pipeLine(
+    pushdownPropertyReads, readPropertiesFromCursor, innerVariableNamer
+  )
 
   implicit class LogicalPlanningEnvironment[C <: LogicalPlanningConfiguration](config: C) {
     lazy val semanticTable: SemanticTable = config.updateSemanticTableWithTokens(SemanticTable())

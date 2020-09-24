@@ -19,8 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
+import java.util.concurrent.atomic.AtomicLong
+
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.LogicalPlanToPlanBuilderString
+
+import scala.io.AnsiColor
 
 trait CostComparisonListener {
   def report[X](projector: X => LogicalPlan,
@@ -37,50 +42,45 @@ object devNullListener extends CostComparisonListener {
 }
 
 object SystemOutCostLogger extends CostComparisonListener {
+
+  private val comparisonId = new AtomicLong()
+  private val prefix = "\t"
+  private def blue(str: String) = AnsiColor.BLUE + str + AnsiColor.RESET
+  private def green(str: String) = AnsiColor.GREEN + str + AnsiColor.RESET
+  private def magenta(str: String) = AnsiColor.MAGENTA + str + AnsiColor.RESET
+  private def magenta_bold(str: String) = AnsiColor.MAGENTA + AnsiColor.BOLD + AnsiColor.UNDERLINED + str + AnsiColor.RESET
+  private def indent(level: Int, str: String) = {
+    val ind = prefix * level
+    ind + str.replaceAll(System.lineSeparator(), System.lineSeparator() + ind)
+  }
+
   def report[X](projector: X => LogicalPlan,
                 input: Iterable[X],
                 inputOrdering: Ordering[X],
                 context: LogicalPlanningContext): Unit = {
-    def stringTo(level: Int, plan: LogicalPlan): String = {
-      def indent(level: Int, in: String): String = level match {
-        case 0 => in
-        case _ => System.lineSeparator() + "  " * level + in
-      }
 
-      val cost = context.cost(plan, context.input, context.planningAttributes.cardinalities)
-      val thisPlan = indent(level, s"${plan.getClass.getSimpleName} costs $cost cardinality ${context.planningAttributes.cardinalities.get(plan.id)}")
-      val l = plan.lhs.map(p => stringTo(level + 1, p)).getOrElse("")
-      val r = plan.rhs.map(p => stringTo(level + 1, p)).getOrElse("")
-      thisPlan + l + r
+    def costString(plan: LogicalPlan) = {
+      val cost = context.cost(plan, context.input, context.planningAttributes.cardinalities).gummyBears
+      val cardinality = context.planningAttributes.cardinalities.get(plan.id).amount
+      magenta(" // cost ") + magenta_bold(cost.toString) + magenta(" cardinality ") + magenta_bold(cardinality.toString)
     }
 
-    val sortedPlans = input.toIndexedSeq.sorted(inputOrdering).map(projector)
+    val plansInOrder = input.toIndexedSeq.sorted(inputOrdering).map(projector)
 
-    if (sortedPlans.size > 1) {
-      println("- Get best of:")
-      for (plan <- sortedPlans) {
+    if (plansInOrder.size > 1) {
+      val id = comparisonId.getAndIncrement()
+      println(s"$id: Get best of:")
+      for ((plan, index) <- plansInOrder.zipWithIndex) {
+        val winner = if (index == 0) green(" [winner]") else ""
+        val header = blue(s"$index: Plan #${plan.debugId}") + winner
+        val planWithCosts = LogicalPlanToPlanBuilderString(plan, extra = costString)
+        val hints = s"(hints: ${context.planningAttributes.solveds.get(plan.id).numHints})"
 
-        val planTextWithCosts = stringTo(0, plan).replaceAll(System.lineSeparator(), System.lineSeparator() + "\t\t")
-        val planText = plan.toString.replaceAll(System.lineSeparator(), System.lineSeparator() + "\t\t")
-        println("=-" * 10)
-        println(s"* Plan #${plan.debugId}")
-        println(s"\t$planTextWithCosts")
-        println(s"\t$planText")
-        println(s"\t\tHints(${context.planningAttributes.solveds.get(plan.id).numHints})")
-        println(s"\t\tlhs: ${plan.lhs}")
+        println(indent(1, header))
+        println(indent(2, planWithCosts))
+        println(indent(2, hints))
+        println()
       }
-
-      val best = sortedPlans.head
-      println("!¡" * 10)
-      println("- Best is:")
-      println(s"Plan #${best.debugId}")
-      println(s"\t${best.toString}")
-      val planTextWithCosts = stringTo(0, best)
-      println(s"\t$planTextWithCosts")
-      println(s"\t\tHints(${context.planningAttributes.solveds.get(best.id).numHints})")
-      println(s"\t\tlhs: ${best.lhs}")
-      println("!¡" * 10)
-      println()
     }
   }
 }

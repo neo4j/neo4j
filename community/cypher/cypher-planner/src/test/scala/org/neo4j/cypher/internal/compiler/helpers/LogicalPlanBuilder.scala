@@ -34,7 +34,7 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.util.attribution.SameId
 import org.neo4j.cypher.internal.util.symbols.CypherType
 
-class LogicalPlanBuilder extends AbstractLogicalPlanBuilder[LogicalPlan, LogicalPlanBuilder](new LogicalPlanResolver) {
+class LogicalPlanBuilder(wholePlan: Boolean = true) extends AbstractLogicalPlanBuilder[LogicalPlan, LogicalPlanBuilder](new LogicalPlanResolver, wholePlan) {
 
   class CardinalitiesWithDefault extends Cardinalities {
     override def get(id: Id): Cardinality =

@@ -53,10 +53,11 @@ case object QueryPlanner
 
   override def process(from: LogicalPlanState, context: PlannerContext): LogicalPlanState = {
     val debugCosts = context.debugOptions.contains("dumpcosts")
+    val systemOutCostLogger = context.debugOptions.contains("systemoutcostlogger") || java.lang.Boolean.getBoolean("pickBestPlan.VERBOSE")
 
     val costComparisonListener = if (debugCosts)
       new ReportCostComparisonsAsRows
-    else if (java.lang.Boolean.getBoolean("pickBestPlan.VERBOSE"))
+    else if (systemOutCostLogger)
       SystemOutCostLogger
     else
       devNullListener
