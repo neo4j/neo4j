@@ -62,14 +62,7 @@ import org.neo4j.values.virtual.VirtualValues;
 import static java.lang.Double.parseDouble;
 import static java.lang.Long.parseLong;
 import static java.lang.String.format;
-import static java.math.RoundingMode.CEILING;
-import static java.math.RoundingMode.DOWN;
-import static java.math.RoundingMode.FLOOR;
-import static java.math.RoundingMode.HALF_DOWN;
-import static java.math.RoundingMode.HALF_EVEN;
 import static java.math.RoundingMode.HALF_UP;
-import static java.math.RoundingMode.UNNECESSARY;
-import static java.math.RoundingMode.UP;
 import static org.neo4j.values.storable.Values.EMPTY_STRING;
 import static org.neo4j.values.storable.Values.FALSE;
 import static org.neo4j.values.storable.Values.NO_VALUE;
@@ -1489,7 +1482,7 @@ public final class CypherFunctions
         }
     }
 
-    private static int asInt( AnyValue value )
+    public static int asInt( AnyValue value )
     {
         return (int) asLong( value );
     }
