@@ -151,6 +151,10 @@ public interface Degrees
 
     interface Mutator
     {
-        void add( int type, int outgoing, int incoming, int loop );
+        /**
+         * Returns <code>true</code> if computation should continue otherwis
+         * <code>false</code>
+         */
+        boolean add( int type, int outgoing, int incoming, int loop );
     }
 }

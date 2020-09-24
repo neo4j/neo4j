@@ -36,9 +36,10 @@ public class EagerDegrees implements Degrees, Degrees.Mutator
     private MutableIntObjectMap<Degree> degrees;
 
     @Override
-    public void add( int type, int outgoing, int incoming, int loop )
+    public boolean add( int type, int outgoing, int incoming, int loop )
     {
         getOrCreateDegree( type ).add( outgoing, incoming, loop );
+        return true;
     }
 
     public void addOutgoing( int type, int count )

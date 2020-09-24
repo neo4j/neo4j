@@ -173,6 +173,12 @@ public class StubNodeCursor extends DefaultCloseListenable implements NodeCursor
     }
 
     @Override
+    public int degree( int maxDegree, RelationshipSelection selection )
+    {
+        return Math.min( maxDegree, this.degree );
+    }
+
+    @Override
     public void setTracer( KernelReadTracer tracer )
     {
         throw new UnsupportedOperationException( "not implemented" );

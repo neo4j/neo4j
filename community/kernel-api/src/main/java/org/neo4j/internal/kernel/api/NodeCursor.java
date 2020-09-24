@@ -66,4 +66,16 @@ public interface NodeCursor extends Cursor
      * @return the total degree of all selected relationship types and direction.
      */
     int degree( RelationshipSelection selection );
+
+    /**
+     * Returns a min(degree(selection), maxDegree).
+     *
+     * Allows computation to finish early if what you are interested is only if the
+     * degree is above or below a certain limit.
+     *
+     * @param maxDegree the maximum degree
+     * @param selection which types/directions to get degrees for.
+     * @return min(degree(selection), maxDegree).
+     */
+    int degree( int maxDegree, RelationshipSelection selection );
 }

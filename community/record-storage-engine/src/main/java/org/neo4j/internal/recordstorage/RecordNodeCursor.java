@@ -250,7 +250,10 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
                     {
                         incoming++;
                     }
-                    mutator.add( relationshipCursor.type(), outgoing, incoming, loop );
+                    if ( !mutator.add( relationshipCursor.type(), outgoing, incoming, loop ) )
+                    {
+                        return;
+                    }
                 }
             }
         }
@@ -279,7 +282,10 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
                     {
                         incoming = groupCursor.incomingCount();
                     }
-                    mutator.add( groupCursor.getType(), outgoing, incoming, loop );
+                    if ( !mutator.add( groupCursor.getType(), outgoing, incoming, loop ) )
+                    {
+                        return;
+                    }
                     if ( typeLimited && ++criteriaMet >= numCriteria )
                     {
                         break;

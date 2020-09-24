@@ -24,11 +24,23 @@ import org.neo4j.storageengine.api.Degrees;
 public class SingleDegree implements Degrees.Mutator
 {
     private int total;
+    private final int maxDegree;
+
+    public SingleDegree()
+    {
+        this( Integer.MAX_VALUE );
+    }
+
+    public SingleDegree( int maxDegree )
+    {
+        this.maxDegree = maxDegree;
+    }
 
     @Override
-    public void add( int type, int outgoing, int incoming, int loop )
+    public boolean add( int type, int outgoing, int incoming, int loop )
     {
         this.total += outgoing + incoming + loop;
+        return this.total < maxDegree;
     }
 
     public int getTotal()

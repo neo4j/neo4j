@@ -247,6 +247,14 @@ class DefaultNodeCursor extends TraceableCursor implements NodeCursor
         return degrees.getTotal();
     }
 
+    @Override
+    public int degree( int maxDegree, RelationshipSelection selection )
+    {
+        SingleDegree degrees = new SingleDegree( maxDegree );
+        fillDegrees( selection, degrees );
+        return Math.min(degrees.getTotal(), maxDegree);
+    }
+
     private void fillDegrees( RelationshipSelection selection, Degrees.Mutator degrees )
     {
         boolean hasChanges = hasChanges();
