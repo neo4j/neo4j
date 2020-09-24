@@ -250,6 +250,21 @@ case class CommunityExpressionConverter(tokenContext: TokenContext) extends Expr
           id)
 
       case e: internal.expressions.GetDegree => getDegree(id, e, self)
+      case internal.expressions.HasDegreeGreaterThan(node, relType, dir, degree) =>
+        val typ = relType.map(relType => UnresolvedRelType(relType.name))
+        commands.expressions.HasDegreeGreaterThan(self.toCommandExpression(id, node), typ, dir, self.toCommandExpression(id, degree))
+      case internal.expressions.HasDegreeGreaterThanOrEqual(node, relType, dir, degree) =>
+        val typ = relType.map(relType => UnresolvedRelType(relType.name))
+        commands.expressions.HasDegreeGreaterThanOrEqual(self.toCommandExpression(id, node), typ, dir, self.toCommandExpression(id, degree))
+      case internal.expressions.HasDegree(node, relType, dir, degree) =>
+        val typ = relType.map(relType => UnresolvedRelType(relType.name))
+        commands.expressions.HasDegree(self.toCommandExpression(id, node), typ, dir, self.toCommandExpression(id, degree))
+      case internal.expressions.HasDegreeLessThan(node, relType, dir, degree) =>
+        val typ = relType.map(relType => UnresolvedRelType(relType.name))
+        commands.expressions.HasDegreeLessThan(self.toCommandExpression(id, node), typ, dir, self.toCommandExpression(id, degree))
+      case internal.expressions.HasDegreeGreaterThanOrEqual(node, relType, dir, degree) =>
+        val typ = relType.map(relType => UnresolvedRelType(relType.name))
+        commands.expressions.HasDegreeLessThanOrEqual(self.toCommandExpression(id, node), typ, dir, self.toCommandExpression(id, degree))
       case e: PrefixSeekRangeWrapper => commands.expressions
         .PrefixSeekRangeExpression(e.range.map(self.toCommandExpression(id,_)))
       case e: InequalitySeekRangeWrapper => InequalitySeekRangeExpression(e.range.mapBounds(self.toCommandExpression(id,_)))
