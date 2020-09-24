@@ -29,7 +29,6 @@ import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.internal.kernel.api.procs.UserAggregator;
 import org.neo4j.internal.kernel.api.procs.UserFunctionHandle;
-import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.values.AnyValue;
 
 public interface Procedures
@@ -114,14 +113,6 @@ public interface Procedures
      */
     AnyValue functionCall( int id, AnyValue[] arguments ) throws ProcedureException;
 
-    /** Invoke a read-only function by id, and set the transaction's access mode to
-     * {@link AccessMode.Static#READ READ} for the duration of the function execution.
-     * @param id the id of the function.
-     * @param arguments the function arguments.
-     * @throws ProcedureException if there was an exception thrown during function execution.
-     */
-    AnyValue functionCallOverride( int id, AnyValue[] arguments ) throws ProcedureException;
-
     /**
      * Create a read-only aggregation function by id
      * @param id the id of the function
@@ -129,11 +120,4 @@ public interface Procedures
      * @throws ProcedureException if there was an exception thrown during function execution.
      */
     UserAggregator aggregationFunction( int id ) throws ProcedureException;
-
-    /** Invoke a read-only aggregation function by id, and set the transaction's access mode to
-     * {@link AccessMode.Static#READ READ} for the duration of the function execution.
-     * @param id the id of the function.
-     * @throws ProcedureException if there was an exception thrown during function execution.
-     */
-    UserAggregator aggregationFunctionOverride( int id ) throws ProcedureException;
 }

@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import java.util.regex.Matcher;
 import java.util.function.Predicate;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.neo4j.internal.kernel.api.security.LoginContext;
@@ -61,10 +61,7 @@ class TokenHoldersIdLookup implements LoginContext.IdLookup
     @Override
     public int[] getProcedureIds( String procedureGlobbing )
     {
-        String escaped = escapeSpecialCharacters( procedureGlobbing );
-        String escapedString = escaped.replaceAll( "\\*", ".*" )
-                                      .replaceAll( "\\?", ".{1}" );
-        Predicate<String> matcherPredicate = Pattern.compile( escapedString, CASE_INSENSITIVE ).asMatchPredicate();
+        Predicate<String> matcherPredicate = predicate( procedureGlobbing );
         return globalProcedures.getIdsOfProceduresMatching( p -> matcherPredicate.test( p.signature().name().toString() ) );
     }
 
@@ -72,6 +69,20 @@ class TokenHoldersIdLookup implements LoginContext.IdLookup
     public int[] getAdminProcedureIds()
     {
         return globalProcedures.getIdsOfProceduresMatching( p -> p.signature().admin() );
+    }
+
+    @Override
+    public int[] getFunctionIds( String functionGlobbing )
+    {
+        Predicate<String> matcherPredicate = predicate( functionGlobbing );
+        return globalProcedures.getIdsOfFunctionsMatching( f -> matcherPredicate.test( f.signature().name().toString() ) );
+    }
+
+    @Override
+    public int[] getAggregatingFunctionIds( String functionGlobbing )
+    {
+        Predicate<String> matcherPredicate = predicate( functionGlobbing );
+        return globalProcedures.getIdsOfAggregatingFunctionsMatching( f -> matcherPredicate.test( f.signature().name().toString() ) );
     }
 
     // These are characters that have special meaning in java regex, * and ? are omitted since we have special handling for those
@@ -82,10 +93,13 @@ class TokenHoldersIdLookup implements LoginContext.IdLookup
     private final String escapedSpecialCharacters = specialCharacters.replaceAll( ".", "\\\\$0" );
     private final Pattern specialCharacterPattern = Pattern.compile( "[" + escapedSpecialCharacters + "]" );
 
-    private String escapeSpecialCharacters( String s )
+    private Predicate<String> predicate( String globbing )
     {
-        Matcher m = specialCharacterPattern.matcher( s );
+        Matcher m = specialCharacterPattern.matcher( globbing );
         // escape all special character that were found
-        return m.replaceAll( "\\\\$0" );
+        String escaped = m.replaceAll( "\\\\$0" );
+        String escapedString = escaped.replaceAll( "\\*", ".*" )
+                                      .replaceAll( "\\?", ".{1}" );
+        return Pattern.compile( escapedString, CASE_INSENSITIVE ).asMatchPredicate();
     }
 }

@@ -52,6 +52,8 @@ public class ProcedureRegistry
     private final ProcedureHolder<CallableProcedure> procedures = new ProcedureHolder<>();
     private final ProcedureHolder<CallableUserFunction> functions = new ProcedureHolder<>();
     private final ProcedureHolder<CallableUserAggregationFunction> aggregationFunctions = new ProcedureHolder<>();
+    private final Set<Integer> builtInFunctionIds = new HashSet<>();
+    private final Set<Integer> builtInAggregatingFunctionIds = new HashSet<>();
 
     /**
      * Register a new procedure.
@@ -99,7 +101,7 @@ public class ProcedureRegistry
      *
      * @param function the function.
      */
-    public void register( CallableUserFunction function, boolean overrideCurrentImplementation ) throws ProcedureException
+    public void register( CallableUserFunction function, boolean overrideCurrentImplementation, boolean builtIn ) throws ProcedureException
     {
         UserFunctionSignature signature = function.signature();
         QualifiedName name = signature.name();
@@ -126,6 +128,10 @@ public class ProcedureRegistry
                         "Unable to register function, because the name `%s` is already in use.", name );
             }
         }
+        if ( builtIn )
+        {
+            builtInFunctionIds.add( functions.idOf( name ) );
+        }
     }
 
     /**
@@ -133,7 +139,7 @@ public class ProcedureRegistry
      *
      * @param function the function.
      */
-    public void register( CallableUserAggregationFunction function, boolean overrideCurrentImplementation ) throws ProcedureException
+    public void register( CallableUserAggregationFunction function, boolean overrideCurrentImplementation, boolean builtIn ) throws ProcedureException
     {
         UserFunctionSignature signature = function.signature();
         QualifiedName name = signature.name();
@@ -159,6 +165,10 @@ public class ProcedureRegistry
                 throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
                         "Unable to register aggregation function, because the name `%s` is already in use.", name );
             }
+        }
+        if ( builtIn )
+        {
+            builtInAggregatingFunctionIds.add( aggregationFunctions.idOf( name ) );
         }
     }
 
@@ -292,8 +302,34 @@ public class ProcedureRegistry
         return functions.all().stream().map( CallableUserFunction::signature );
     }
 
+    int[] getIdsOfFunctionsMatching( Predicate<CallableUserFunction> predicate )
+    {
+        return functions.all().stream()
+                        .filter( predicate )
+                        .mapToInt( f -> functions.idOf( f.signature().name() ) )
+                        .toArray();
+    }
+
+    boolean isBuiltInFunction( int id )
+    {
+        return builtInFunctionIds.contains( id );
+    }
+
     public Stream<UserFunctionSignature> getAllAggregatingFunctions()
     {
         return aggregationFunctions.all().stream().map( CallableUserAggregationFunction::signature );
+    }
+
+    int[] getIdsOfAggregatingFunctionsMatching( Predicate<CallableUserAggregationFunction> predicate )
+    {
+        return aggregationFunctions.all().stream()
+                                   .filter( predicate )
+                                   .mapToInt( f -> aggregationFunctions.idOf( f.signature().name() ) )
+                                   .toArray();
+    }
+
+    boolean isBuiltInAggregatingFunction( int id )
+    {
+        return builtInAggregatingFunctionIds.contains( id );
     }
 }

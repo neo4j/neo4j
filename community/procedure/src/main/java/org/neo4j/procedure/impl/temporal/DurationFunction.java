@@ -61,11 +61,11 @@ class DurationFunction implements CallableUserFunction
 
     static void register( GlobalProcedures globalProcedures ) throws ProcedureException
     {
-        globalProcedures.register( new DurationFunction() );
-        globalProcedures.register( new Between( "between" ) );
-        globalProcedures.register( new Between( "inMonths" ) );
-        globalProcedures.register( new Between( "inDays" ) );
-        globalProcedures.register( new Between( "inSeconds" ) );
+        globalProcedures.registerBuiltInFunctions( new DurationFunction() );
+        globalProcedures.registerBuiltInFunctions( new Between( "between" ) );
+        globalProcedures.registerBuiltInFunctions( new Between( "inMonths" ) );
+        globalProcedures.registerBuiltInFunctions( new Between( "inDays" ) );
+        globalProcedures.registerBuiltInFunctions( new Between( "inSeconds" ) );
     }
 
     @Override

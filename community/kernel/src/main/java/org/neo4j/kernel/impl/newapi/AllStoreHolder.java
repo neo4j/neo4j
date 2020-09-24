@@ -895,25 +895,13 @@ public class AllStoreHolder extends Read
     @Override
     public AnyValue functionCall( int id, AnyValue[] arguments ) throws ProcedureException
     {
-        return callFunction( id, arguments, new RestrictedAccessMode( ktx.securityContext().mode(), AccessMode.Static.READ ) );
-    }
-
-    @Override
-    public AnyValue functionCallOverride( int id, AnyValue[] arguments ) throws ProcedureException
-    {
-        return callFunction( id, arguments, new OverriddenAccessMode( ktx.securityContext().mode(), AccessMode.Static.READ ) );
+        return callFunction( id, arguments );
     }
 
     @Override
     public UserAggregator aggregationFunction( int id ) throws ProcedureException
     {
-        return aggregationFunction( id, new RestrictedAccessMode( ktx.securityContext().mode(), AccessMode.Static.READ ) );
-    }
-
-    @Override
-    public UserAggregator aggregationFunctionOverride( int id ) throws ProcedureException
-    {
-        return aggregationFunction( id, new OverriddenAccessMode( ktx.securityContext().mode(), AccessMode.Static.READ ) );
+        return createAggregationFunction( id );
     }
 
     @Override
@@ -985,23 +973,42 @@ public class AllStoreHolder extends Read
         };
     }
 
-    private AnyValue callFunction( int id, AnyValue[] input, final AccessMode mode ) throws ProcedureException
+    private AnyValue callFunction( int id, AnyValue[] input ) throws ProcedureException
     {
         ktx.assertOpen();
 
-        SecurityContext securityContext = ktx.securityContext().withMode( mode );
+        AccessMode mode = ktx.securityContext().mode();
+        if ( !globalProcedures.isBuiltInFunction( id ) && !mode.allowsExecuteFunction( id ) )
+        {
+            throw new AuthorizationViolationException(
+                    format( "Executing user defined function is not allowed for %s.", ktx.securityContext().description() ) );
+        }
+
+        final SecurityContext securityContext = mode.shouldBoostFunction( id ) ?
+                                                ktx.securityContext().withMode( new OverriddenAccessMode( mode, AccessMode.Static.READ ) ) :
+                                                ktx.securityContext().withMode( new RestrictedAccessMode( mode, AccessMode.Static.READ ) );
+
         try ( KernelTransaction.Revertable ignore = ktx.overrideWith( securityContext ) )
         {
             return globalProcedures.callFunction( prepareContext( securityContext, ProcedureCallContext.EMPTY ), id, input );
         }
     }
 
-    private UserAggregator aggregationFunction( int id, final AccessMode mode )
-            throws ProcedureException
+    private UserAggregator createAggregationFunction( int id ) throws ProcedureException
     {
         ktx.assertOpen();
 
-        SecurityContext securityContext = ktx.securityContext().withMode( mode );
+        AccessMode mode = ktx.securityContext().mode();
+        if ( !globalProcedures.isBuiltInAggregatingFunction( id ) && !mode.allowsExecuteAggregatingFunction( id ) )
+        {
+            throw new AuthorizationViolationException(
+                    format( "Executing aggregating user defined function is not allowed for %s.", ktx.securityContext().description() ) );
+        }
+
+        final SecurityContext securityContext = mode.shouldBoostAggregatingFunction( id ) ?
+                                                ktx.securityContext().withMode( new OverriddenAccessMode( mode, AccessMode.Static.READ ) ) :
+                                                ktx.securityContext().withMode( new RestrictedAccessMode( mode, AccessMode.Static.READ ) );
+
         try ( KernelTransaction.Revertable ignore = ktx.overrideWith( securityContext ) )
         {
             UserAggregator aggregator = globalProcedures.createAggregationFunction( prepareContext( securityContext, ProcedureCallContext.EMPTY ), id );

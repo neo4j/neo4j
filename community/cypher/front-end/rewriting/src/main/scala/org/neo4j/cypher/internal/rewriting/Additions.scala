@@ -29,7 +29,9 @@ import org.neo4j.cypher.internal.ast.DenyPrivilege
 import org.neo4j.cypher.internal.ast.DropConstraintOnName
 import org.neo4j.cypher.internal.ast.DropIndexOnName
 import org.neo4j.cypher.internal.ast.ExecuteAdminProcedureAction
+import org.neo4j.cypher.internal.ast.ExecuteBoostedFunctionAction
 import org.neo4j.cypher.internal.ast.ExecuteBoostedProcedureAction
+import org.neo4j.cypher.internal.ast.ExecuteFunctionAction
 import org.neo4j.cypher.internal.ast.ExecuteProcedureAction
 import org.neo4j.cypher.internal.ast.GrantPrivilege
 import org.neo4j.cypher.internal.ast.IfExistsDoNothing
@@ -148,6 +150,24 @@ object Additions {
         throw cypherExceptionFactory.syntaxException("EXECUTE BOOSTED PROCEDURE is not supported in this Cypher version.", p.position)
       case p@RevokePrivilege(DbmsPrivilege(ExecuteAdminProcedureAction), _, _, _, _, _) =>
         throw cypherExceptionFactory.syntaxException("EXECUTE ADMIN PROCEDURES is not supported in this Cypher version.", p.position)
+
+      // GRANT EXECUTE [BOOSTED] [USER [DEFINED]] FUNCTION ...
+      case p@GrantPrivilege(DbmsPrivilege(ExecuteFunctionAction), _, _, _, _) =>
+        throw cypherExceptionFactory.syntaxException("EXECUTE FUNCTION is not supported in this Cypher version.", p.position)
+      case p@GrantPrivilege(DbmsPrivilege(ExecuteBoostedFunctionAction), _, _, _, _) =>
+        throw cypherExceptionFactory.syntaxException("EXECUTE BOOSTED FUNCTION is not supported in this Cypher version.", p.position)
+
+      // DENY EXECUTE [BOOSTED] [USER [DEFINED]] FUNCTION ...
+      case p@DenyPrivilege(DbmsPrivilege(ExecuteFunctionAction), _, _, _, _) =>
+        throw cypherExceptionFactory.syntaxException("EXECUTE FUNCTION is not supported in this Cypher version.", p.position)
+      case p@DenyPrivilege(DbmsPrivilege(ExecuteBoostedFunctionAction), _, _, _, _) =>
+        throw cypherExceptionFactory.syntaxException("EXECUTE BOOSTED FUNCTION is not supported in this Cypher version.", p.position)
+
+      // REVOKE EXECUTE [BOOSTED] [USER [DEFINED]] FUNCTION ...
+      case p@RevokePrivilege(DbmsPrivilege(ExecuteFunctionAction), _, _, _, _, _) =>
+        throw cypherExceptionFactory.syntaxException("EXECUTE FUNCTION is not supported in this Cypher version.", p.position)
+      case p@RevokePrivilege(DbmsPrivilege(ExecuteBoostedFunctionAction), _, _, _, _, _) =>
+        throw cypherExceptionFactory.syntaxException("EXECUTE BOOSTED FUNCTION is not supported in this Cypher version.", p.position)
     }
   }
 }

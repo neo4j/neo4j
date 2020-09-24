@@ -484,19 +484,7 @@ class DefaultRelationshipTraversalCursorTest
         }
 
         @Override
-        public AnyValue functionCallOverride( int id, AnyValue[] arguments )
-        {
-            return null;
-        }
-
-        @Override
         public UserAggregator aggregationFunction( int id )
-        {
-            return null;
-        }
-
-        @Override
-        public UserAggregator aggregationFunctionOverride( int id )
         {
             return null;
         }

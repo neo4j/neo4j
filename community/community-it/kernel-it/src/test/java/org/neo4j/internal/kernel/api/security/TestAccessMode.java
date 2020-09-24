@@ -155,6 +155,30 @@ public class TestAccessMode implements AccessMode
     }
 
     @Override
+    public boolean allowsExecuteFunction( int id )
+    {
+        return true;
+    }
+
+    @Override
+    public boolean shouldBoostFunction( int id )
+    {
+        return false;
+    }
+
+    @Override
+    public boolean allowsExecuteAggregatingFunction( int id )
+    {
+        return true;
+    }
+
+    @Override
+    public boolean shouldBoostAggregatingFunction( int id )
+    {
+        return false;
+    }
+
+    @Override
     public boolean allowsSetLabel( long labelId )
     {
         return allowWrite;

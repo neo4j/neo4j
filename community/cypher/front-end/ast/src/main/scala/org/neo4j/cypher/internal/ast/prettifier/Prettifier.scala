@@ -66,8 +66,11 @@ import org.neo4j.cypher.internal.ast.DropView
 import org.neo4j.cypher.internal.ast.DumpData
 import org.neo4j.cypher.internal.ast.ElementQualifier
 import org.neo4j.cypher.internal.ast.ElementsAllQualifier
+import org.neo4j.cypher.internal.ast.ExecutePrivilegeQualifier
 import org.neo4j.cypher.internal.ast.Foreach
 import org.neo4j.cypher.internal.ast.FromGraph
+import org.neo4j.cypher.internal.ast.FunctionAllQualifier
+import org.neo4j.cypher.internal.ast.FunctionQualifier
 import org.neo4j.cypher.internal.ast.GrantPrivilege
 import org.neo4j.cypher.internal.ast.GrantRolesToUsers
 import org.neo4j.cypher.internal.ast.GraphPrivilege
@@ -96,7 +99,6 @@ import org.neo4j.cypher.internal.ast.OnMatch
 import org.neo4j.cypher.internal.ast.OrderBy
 import org.neo4j.cypher.internal.ast.PrivilegeQualifier
 import org.neo4j.cypher.internal.ast.ProcedureAllQualifier
-import org.neo4j.cypher.internal.ast.ProcedurePrivilegeQualifier
 import org.neo4j.cypher.internal.ast.ProcedureQualifier
 import org.neo4j.cypher.internal.ast.ProcedureResult
 import org.neo4j.cypher.internal.ast.ProcedureResultItem
@@ -164,6 +166,7 @@ import org.neo4j.cypher.internal.ast.YieldOrWhere
 import org.neo4j.cypher.internal.expressions.CoerceTo
 import org.neo4j.cypher.internal.expressions.ImplicitProcedureArgument
 import org.neo4j.cypher.internal.expressions.LabelName
+import org.neo4j.cypher.internal.expressions.Namespace
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.ParameterWithOldSyntax
 import org.neo4j.cypher.internal.expressions.Property
@@ -338,19 +341,19 @@ case class Prettifier(
       case x @ RevokeRolesFromUsers(roleNames, userNames) =>
         s"${x.name} ${roleNames.map(Prettifier.escapeName).mkString(", ")} FROM ${userNames.map(Prettifier.escapeName).mkString(", ")}"
 
-      case x @ GrantPrivilege(DbmsPrivilege(_), _, _, qualifiers: List[ProcedurePrivilegeQualifier], roleNames) =>
+      case x @ GrantPrivilege(DbmsPrivilege(_), _, _, qualifiers: List[ExecutePrivilegeQualifier], roleNames) =>
         s"${x.name}${Prettifier.extractQualifierString(qualifiers)} ON DBMS TO ${Prettifier.escapeNames(roleNames)}"
 
       case x @ GrantPrivilege(DbmsPrivilege(_), _, _, _, roleNames) =>
         s"${x.name} ON DBMS TO ${Prettifier.escapeNames(roleNames)}"
 
-      case x @ DenyPrivilege(DbmsPrivilege(_), _, _, qualifiers: List[ProcedurePrivilegeQualifier], roleNames) =>
+      case x @ DenyPrivilege(DbmsPrivilege(_), _, _, qualifiers: List[ExecutePrivilegeQualifier], roleNames) =>
         s"${x.name}${Prettifier.extractQualifierString(qualifiers)} ON DBMS TO ${Prettifier.escapeNames(roleNames)}"
 
       case x @ DenyPrivilege(DbmsPrivilege(_), _, _, _, roleNames) =>
         s"${x.name} ON DBMS TO ${Prettifier.escapeNames(roleNames)}"
 
-      case x @ RevokePrivilege(DbmsPrivilege(_), _, _, qualifiers: List[ProcedurePrivilegeQualifier], roleNames, _) =>
+      case x @ RevokePrivilege(DbmsPrivilege(_), _, _, qualifiers: List[ExecutePrivilegeQualifier], roleNames, _) =>
         s"${x.name}${Prettifier.extractQualifierString(qualifiers)} ON DBMS FROM ${Prettifier.escapeNames(roleNames)}"
 
       case x @ RevokePrivilege(DbmsPrivilege(_), _, _, _, roleNames, _) =>
@@ -823,15 +826,21 @@ object Prettifier {
   }
 
   def extractQualifierPart(qualifier: List[PrivilegeQualifier]): Option[String] = {
+    def stringifyQualifiedName(nameSpace: Namespace, name: String) = {
+      val namespace = nameSpace.parts.map(ExpressionStringifier.backtick(_, globbing = true)).mkString(".")
+      val prefix = if (namespace.isEmpty) "" else namespace + "."
+      prefix + ExpressionStringifier.backtick(name, globbing = true)
+    }
+
     def stringify: PartialFunction[PrivilegeQualifier,String] = {
       case LabelQualifier(name) => ExpressionStringifier.backtick(name)
       case RelationshipQualifier(name) => ExpressionStringifier.backtick(name)
       case ElementQualifier(name) => ExpressionStringifier.backtick(name)
       case UserQualifier(name) => escapeName(name)
       case ProcedureQualifier(nameSpace, procedureName) =>
-        val namespace = nameSpace.parts.map(ExpressionStringifier.backtick(_, globbing = true)).mkString(".")
-        val prefix = if (namespace.isEmpty) "" else namespace + "."
-        prefix + ExpressionStringifier.backtick(procedureName.name, globbing = true)
+        stringifyQualifiedName(nameSpace, procedureName.name)
+      case FunctionQualifier(nameSpace, functionName) =>
+        stringifyQualifiedName(nameSpace, functionName.name)
     }
 
     qualifier match {
@@ -850,6 +859,8 @@ object Prettifier {
       case AllDatabasesQualifier() :: Nil => None
       case p@ProcedureQualifier(_, _) :: _ => Some(p.map(stringify).mkString(", "))
       case ProcedureAllQualifier() :: Nil => Some("*")
+      case p@FunctionQualifier(_, _) :: _ => Some(p.map(stringify).mkString(", "))
+      case FunctionAllQualifier() :: Nil => Some("*")
       case _ => Some("<unknown>")
     }
   }

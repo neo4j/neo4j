@@ -96,10 +96,13 @@ import org.neo4j.cypher.internal.ast.DumpData
 import org.neo4j.cypher.internal.ast.ElementQualifier
 import org.neo4j.cypher.internal.ast.ElementsAllQualifier
 import org.neo4j.cypher.internal.ast.ExecuteAdminProcedureAction
+import org.neo4j.cypher.internal.ast.ExecuteBoostedFunctionAction
 import org.neo4j.cypher.internal.ast.ExecuteBoostedProcedureAction
+import org.neo4j.cypher.internal.ast.ExecuteFunctionAction
 import org.neo4j.cypher.internal.ast.ExecuteProcedureAction
 import org.neo4j.cypher.internal.ast.Foreach
 import org.neo4j.cypher.internal.ast.FromGraph
+import org.neo4j.cypher.internal.ast.FunctionQualifier
 import org.neo4j.cypher.internal.ast.GrantPrivilege
 import org.neo4j.cypher.internal.ast.GrantRolesToUsers
 import org.neo4j.cypher.internal.ast.GraphAction
@@ -130,6 +133,7 @@ import org.neo4j.cypher.internal.ast.OnMatch
 import org.neo4j.cypher.internal.ast.OrderBy
 import org.neo4j.cypher.internal.ast.PeriodicCommitHint
 import org.neo4j.cypher.internal.ast.PrivilegeCommand
+import org.neo4j.cypher.internal.ast.PrivilegeQualifier
 import org.neo4j.cypher.internal.ast.ProcedureQualifier
 import org.neo4j.cypher.internal.ast.ProcedureResult
 import org.neo4j.cypher.internal.ast.ProcedureResultItem
@@ -1315,8 +1319,14 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
 
   def _revokeType: Gen[RevokeType] = oneOf(RevokeGrantType()(pos), RevokeDenyType()(pos), RevokeBothType()(pos))
 
-  def _graphAction: Gen[GraphAction] = oneOf(
-    TraverseAction, ReadAction, MatchAction, MergeAdminAction, CreateElementAction, DeleteElementAction, WriteAction, RemoveLabelAction, SetLabelAction, SetPropertyAction, AllGraphAction
+  def _dbmsAction: Gen[DbmsAction] = oneOf(
+    AllDbmsAction,
+    ExecuteProcedureAction, ExecuteBoostedProcedureAction, ExecuteAdminProcedureAction,
+    ExecuteFunctionAction, ExecuteBoostedFunctionAction,
+    AllUserActions, ShowUserAction, CreateUserAction, SetUserStatusAction, SetPasswordsAction, AlterUserAction, DropUserAction,
+    AllRoleActions, ShowRoleAction, CreateRoleAction, DropRoleAction, AssignRoleAction, RemoveRoleAction,
+    AllDatabaseManagementActions, CreateDatabaseAction, DropDatabaseAction,
+    AllPrivilegeActions, ShowPrivilegeAction, AssignPrivilegeAction, RemovePrivilegeAction
   )
 
   def _databaseAction: Gen[DatabaseAction] = oneOf(
@@ -1328,13 +1338,31 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     AllTransactionActions, ShowTransactionAction, TerminateTransactionAction
   )
 
-  def _dbmsAction: Gen[DbmsAction] = oneOf(
-    AllDbmsAction, ExecuteAdminProcedureAction,
-    AllUserActions, ShowUserAction, CreateUserAction, SetUserStatusAction, SetPasswordsAction, AlterUserAction, DropUserAction,
-    AllRoleActions, ShowRoleAction, CreateRoleAction, DropRoleAction, AssignRoleAction, RemoveRoleAction,
-    AllDatabaseManagementActions, CreateDatabaseAction, DropDatabaseAction,
-    AllPrivilegeActions, ShowPrivilegeAction, AssignPrivilegeAction, RemovePrivilegeAction
+  def _graphAction: Gen[GraphAction] = oneOf(
+    TraverseAction, ReadAction, MatchAction, MergeAdminAction, CreateElementAction, DeleteElementAction, WriteAction, RemoveLabelAction, SetLabelAction, SetPropertyAction, AllGraphAction
   )
+
+  def _dbmsQualifier(dbmsAction: DbmsAction): Gen[List[PrivilegeQualifier]] =
+    if (dbmsAction == ExecuteProcedureAction || dbmsAction == ExecuteBoostedProcedureAction) {
+      // Procedures
+      for {
+        procedureNamespace <- _namespace
+        procedureName <- _procedureName
+        procedures <- oneOrMore(ProcedureQualifier(procedureNamespace, procedureName)(pos))
+        qualifier <- frequency(7 -> procedures, 3 -> List(ProcedureQualifier(Namespace()(pos), ProcedureName("*")(pos))(pos)))
+      } yield qualifier
+    } else if (dbmsAction == ExecuteFunctionAction || dbmsAction == ExecuteBoostedFunctionAction) {
+      // Functions
+      for {
+        functionNamespace <- _namespace
+        functionName <- _functionName
+        functions <- oneOrMore(FunctionQualifier(functionNamespace, functionName)(pos))
+        qualifier <- frequency(7 -> functions, 3 -> List(FunctionQualifier(Namespace()(pos), FunctionName("*")(pos))(pos)))
+      } yield qualifier
+    } else {
+      // All other dbms privileges have AllQualifier
+      List(AllQualifier()(pos))
+    }
 
   def _databaseQualifier(haveUserQualifier: Boolean): Gen[List[DatabasePrivilegeQualifier]] =
     if (haveUserQualifier) {
@@ -1392,26 +1420,13 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
 
   def _dbmsPrivilege: Gen[PrivilegeCommand] = for {
     dbmsAction      <- _dbmsAction
+    qualifier       <- _dbmsQualifier(dbmsAction)
     roleNames       <- _listOfNameOfEither
     revokeType      <- _revokeType
-    dbmsGrant       = GrantPrivilege.dbmsAction(dbmsAction, roleNames)(pos)
-    dbmsDeny        = DenyPrivilege.dbmsAction(dbmsAction, roleNames)(pos)
-    dbmsRevoke      = RevokePrivilege.dbmsAction(dbmsAction, roleNames, revokeType)(pos)
+    dbmsGrant       = GrantPrivilege.dbmsAction(dbmsAction, roleNames, qualifier)(pos)
+    dbmsDeny        = DenyPrivilege.dbmsAction(dbmsAction, roleNames, qualifier)(pos)
+    dbmsRevoke      = RevokePrivilege.dbmsAction(dbmsAction, roleNames, revokeType, qualifier)(pos)
     dbms            <- oneOf(dbmsGrant, dbmsDeny, dbmsRevoke)
-  } yield dbms
-
-  def _qualifiedDbmsPrivilege: Gen[PrivilegeCommand] = for {
-    dbmsAction         <- oneOf(ExecuteProcedureAction, ExecuteBoostedProcedureAction)
-    procedureNamespace <- _namespace
-    procedureName      <- _procedureName
-    procedures         <- oneOrMore(ProcedureQualifier(procedureNamespace, procedureName)(pos))
-    qualifier          <- frequency(7 -> procedures, 3 -> List(ProcedureQualifier(Namespace()(pos), ProcedureName("*")(pos))(pos)))
-    roleNames          <- _listOfNameOfEither
-    revokeType         <- _revokeType
-    dbmsGrant          = GrantPrivilege.dbmsAction(dbmsAction, roleNames, qualifier)(pos)
-    dbmsDeny           = DenyPrivilege.dbmsAction(dbmsAction, roleNames, qualifier)(pos)
-    dbmsRevoke         = RevokePrivilege.dbmsAction(dbmsAction, roleNames, revokeType, qualifier)(pos)
-    dbms               <- oneOf(dbmsGrant, dbmsDeny, dbmsRevoke)
   } yield dbms
 
   def _databasePrivilege: Gen[PrivilegeCommand] = for {
@@ -1443,7 +1458,6 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
   def _privilegeCommand: Gen[AdministrationCommand] = oneOf(
     _showPrivileges,
     _dbmsPrivilege,
-    _qualifiedDbmsPrivilege,
     _databasePrivilege,
     _graphPrivilege
   )

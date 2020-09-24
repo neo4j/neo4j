@@ -72,6 +72,9 @@ trait Literals extends Parser
   def FunctionName: Rule1[expressions.FunctionName] =
     rule("a function name") { SymbolicNameString ~~>> (expressions.FunctionName(_) ) }.memoMismatches
 
+  def GlobbedFunctionName: Rule1[expressions.FunctionName] =
+    rule("a globbed function name") { GlobbedSymbolicNameString ~~>> (expressions.FunctionName(_) ) }.memoMismatches
+
   def PropertyKeyName: Rule1[expressions.PropertyKeyName] =
     rule("a property key name") { SymbolicNameString ~~>> (expressions.PropertyKeyName(_) ) }.memoMismatches
 

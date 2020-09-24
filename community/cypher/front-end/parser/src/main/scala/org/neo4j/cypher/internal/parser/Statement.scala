@@ -345,13 +345,25 @@ trait Statement extends Parser
   }
 
   private def QualifiedDbmsAction: Rule2[List[ast.PrivilegeQualifier], ast.AdminAction] = rule("qualified dbms action") {
-    keyword("EXECUTE") ~~ ProcedureKeyword ~~ ProcedureIdentifier ~> (_ => ast.ExecuteProcedureAction) |
-    keyword("EXECUTE BOOSTED") ~~ ProcedureKeyword ~~ ProcedureIdentifier ~> (_ => ast.ExecuteBoostedProcedureAction)
+    keyword("EXECUTE") ~~ Procedure ~> (_ => ast.ExecuteProcedureAction) |
+    keyword("EXECUTE BOOSTED") ~~ Procedure ~> (_ => ast.ExecuteBoostedProcedureAction) |
+    keyword("EXECUTE") ~~ Function ~> (_ => ast.ExecuteFunctionAction) |
+    keyword("EXECUTE BOOSTED") ~~ Function ~> (_ => ast.ExecuteBoostedFunctionAction)
   }
+
+  private def Procedure: Rule1[List[ast.PrivilegeQualifier]] = ProcedureKeyword ~~ ProcedureIdentifier
 
   private def ProcedureIdentifier: Rule1[List[ast.PrivilegeQualifier]] = rule("procedure identifier") {
     oneOrMore(group(GlobbedNamespace ~ GlobbedProcedureName), separator = CommaSep) ~~>>
       { procedures => pos => procedures.map(p => ast.ProcedureQualifier(p._1, p._2)(pos)) }
+  }
+
+  private def Function: Rule1[List[ast.PrivilegeQualifier]] =
+    group(optional(keyword("USER") ~~ optional(keyword("DEFINED"))) ~~ FunctionKeyword) ~~ FunctionIdentifier
+
+  private def FunctionIdentifier: Rule1[List[ast.PrivilegeQualifier]] = rule("function identifier") {
+    oneOrMore(group(GlobbedNamespace ~ GlobbedFunctionName), separator = CommaSep) ~~>>
+      { functions => pos => functions.map(p => ast.FunctionQualifier(p._1, p._2)(pos)) }
   }
 
   // Database specific
@@ -557,6 +569,8 @@ trait Statement extends Parser
   private def PasswordKeyword: Rule0 = keyword("PASSWORDS") | keyword("PASSWORD")
 
   private def ProcedureKeyword: Rule0 = keyword("PROCEDURES") | keyword("PROCEDURE")
+
+  private def FunctionKeyword: Rule0 = keyword("FUNCTIONS") | keyword("FUNCTION")
 
   private def AdminKeyword: Rule0 = keyword("ADMINISTRATOR") | keyword("ADMIN")
 

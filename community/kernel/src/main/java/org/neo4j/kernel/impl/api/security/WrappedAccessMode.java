@@ -65,6 +65,30 @@ abstract class WrappedAccessMode implements AccessMode
     }
 
     @Override
+    public boolean allowsExecuteFunction( int id )
+    {
+        return original.allowsExecuteFunction( id );
+    }
+
+    @Override
+    public boolean shouldBoostFunction( int id )
+    {
+        return original.shouldBoostFunction( id );
+    }
+
+    @Override
+    public boolean allowsExecuteAggregatingFunction( int id )
+    {
+        return original.allowsExecuteAggregatingFunction( id );
+    }
+
+    @Override
+    public boolean shouldBoostAggregatingFunction( int id )
+    {
+        return original.shouldBoostFunction( id );
+    }
+
+    @Override
     public boolean isOverridden()
     {
         return true;

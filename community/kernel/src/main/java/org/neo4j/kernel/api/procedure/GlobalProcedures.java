@@ -59,6 +59,8 @@ public interface GlobalProcedures
 
     void registerBuiltInFunctions( Class<?> func ) throws KernelException;
 
+    void registerBuiltInFunctions( CallableUserFunction function ) throws ProcedureException;
+
     void registerFunction( Class<?> func ) throws KernelException;
 
     void registerAggregationFunction( Class<?> func, boolean overrideCurrentImplementation ) throws KernelException;
@@ -76,6 +78,14 @@ public interface GlobalProcedures
     UserFunctionHandle function( QualifiedName name );
 
     UserFunctionHandle aggregationFunction( QualifiedName name );
+
+    int[] getIdsOfFunctionsMatching( Predicate<CallableUserFunction> predicate );
+
+    int[] getIdsOfAggregatingFunctionsMatching( Predicate<CallableUserAggregationFunction> predicate );
+
+    boolean isBuiltInFunction( int id );
+
+    boolean isBuiltInAggregatingFunction( int id );
 
     Set<ProcedureSignature> getAllProcedures();
 

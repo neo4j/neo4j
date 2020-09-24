@@ -200,6 +200,30 @@ public interface AccessMode
         }
 
         @Override
+        public boolean allowsExecuteFunction( int id )
+        {
+            return true;
+        }
+
+        @Override
+        public boolean shouldBoostFunction( int id )
+        {
+            return procedureBoost;
+        }
+
+        @Override
+        public boolean allowsExecuteAggregatingFunction( int id )
+        {
+            return true;
+        }
+
+        @Override
+        public boolean shouldBoostAggregatingFunction( int id )
+        {
+            return procedureBoost;
+        }
+
+        @Override
         public boolean allowsSetLabel( long labelId )
         {
             return write;
@@ -320,6 +344,38 @@ public interface AccessMode
      * @return true if the procedure with this id should be executed with boosted privileges
      */
     boolean shouldBoostProcedure( int procedureId );
+
+    /**
+     * Check if execution of a user defined function is allowed
+     * @param id id of the function
+     * @return true if the function with this id is allowed to be executed
+     */
+    boolean allowsExecuteFunction( int id );
+
+    /**
+     * Check if execution of a user defined function should be done with boosted privileges.
+     * <p>
+     * <strong>Note: this does not check if execution is allowed</strong>
+     * @param id id of the function
+     * @return true if the function with this id should be executed with boosted privileges
+     */
+    boolean shouldBoostFunction( int id );
+
+    /**
+     * Check if execution of a aggregating user defined function is allowed
+     * @param id id of the function
+     * @return true if the function with this id is allowed to be executed
+     */
+    boolean allowsExecuteAggregatingFunction( int id );
+
+    /**
+     * Check if execution of a aggregating user defined function should be done with boosted privileges.
+     * <p>
+     * <strong>Note: this does not check if execution is allowed</strong>
+     * @param id id of the function
+     * @return true if the function with this id should be executed with boosted privileges
+     */
+    boolean shouldBoostAggregatingFunction( int id );
 
     boolean allowsSetLabel( long labelId );
 

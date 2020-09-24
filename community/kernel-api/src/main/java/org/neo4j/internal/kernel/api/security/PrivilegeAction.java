@@ -42,9 +42,9 @@ public enum PrivilegeAction
 
     SET_PROPERTY,
 
-    /** Execute procedure */
+    /** Execute procedure or user defined function */
     EXECUTE,
-    /** Execute procedure with elevated access */
+    /** Execute procedure or user defined function with elevated access */
     EXECUTE_BOOSTED,
     /** Execute @Admin procedure with elevated access */
     EXECUTE_ADMIN,

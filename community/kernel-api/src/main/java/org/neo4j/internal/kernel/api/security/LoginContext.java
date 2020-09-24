@@ -69,6 +69,10 @@ public interface LoginContext
 
         int[] getAdminProcedureIds();
 
+        int[] getFunctionIds( String functionGlobbing );
+
+        int[] getAggregatingFunctionIds( String functionGlobbing );
+
         IdLookup EMPTY = new IdLookup()
         {
             @Override
@@ -97,6 +101,18 @@ public interface LoginContext
 
             @Override
             public int[] getAdminProcedureIds()
+            {
+                return NO_SUCH_PROCEDURE;
+            }
+
+            @Override
+            public int[] getFunctionIds( String functionGlobbing )
+            {
+                return NO_SUCH_PROCEDURE;
+            }
+
+            @Override
+            public int[] getAggregatingFunctionIds( String functionGlobbing )
             {
                 return NO_SUCH_PROCEDURE;
             }

@@ -36,9 +36,6 @@ object CallSupport {
 
   def callFunction(transactionalContext: TransactionalContext, id: Int, args: Array[AnyValue],
                    allowed: Array[String]): AnyValue = {
-    if (shouldBoostOldWay(transactionalContext, allowed))
-      transactionalContext.kernelTransaction().procedures().functionCallOverride(id, args)
-    else
       transactionalContext.kernelTransaction().procedures().functionCall(id, args)
   }
 
@@ -59,13 +56,7 @@ object CallSupport {
     callProcedure(args, transactionalContext.kernelTransaction().procedures().procedureCallDbms(id, _, context))
 
   def aggregateFunction(transactionalContext: TransactionalContext, id: Int, allowed: Array[String]): UserDefinedAggregator = {
-    val aggregator: UserAggregator =
-      if (shouldBoostOldWay(transactionalContext, allowed))
-        transactionalContext.kernelTransaction().procedures().aggregationFunctionOverride(id)
-      else
-        transactionalContext.kernelTransaction().procedures().aggregationFunction(id)
-
-    userDefinedAggregator(aggregator)
+    userDefinedAggregator(transactionalContext.kernelTransaction().procedures().aggregationFunction(id))
   }
 
   private def callProcedure(args: Array[AnyValue], call: KernelProcedureCall): Iterator[Array[AnyValue]] = {
@@ -87,6 +78,7 @@ object CallSupport {
     }
   }
 
+  // TODO: kill me
   private def shouldBoostOldWay(transactionalContext: TransactionalContext, allowed: Array[String]): Boolean = {
     // We have to be careful with elevation, since we cannot elevate permissions in a nested procedure call
     // above the original allowed procedure mode. We enforce this by checking if mode is already an overridden mode.
