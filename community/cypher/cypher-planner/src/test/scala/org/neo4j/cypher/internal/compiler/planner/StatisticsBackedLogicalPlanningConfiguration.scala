@@ -43,6 +43,7 @@ import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
 import org.neo4j.cypher.internal.planner.spi.InstrumentedGraphStatistics
 import org.neo4j.cypher.internal.planner.spi.MutableGraphStatisticsSnapshot
 import org.neo4j.cypher.internal.planner.spi.PlanContext
+import org.neo4j.cypher.internal.planner.spi.TokenContext
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.PropertyKeyId
@@ -59,6 +60,7 @@ trait StatisticsBackedLogicalPlanningSupport {
 object StatisticsBackedLogicalPlanningConfigurationBuilder {
   case class Options(
     debug: Set[String] = Set(),
+    connectComponentsPlanner: Boolean = false,
   )
 }
 
@@ -190,6 +192,11 @@ class StatisticsBackedLogicalPlanningConfigurationBuilder() {
   }
 
   def enablePrintCostComparisons(enable: Boolean = true): this.type = enableDebugOption("printCostComparisons", enable)
+
+  def enableConnectComponentsPlanner(enable: Boolean = true): this.type = {
+    options = options.copy(connectComponentsPlanner = enable)
+    this
+  }
 
   def build(): StatisticsBackedLogicalPlanningConfiguration = {
     require(cardinalities.allNodes.isDefined, "Please specify allNodesCardinality using `setAllNodesCardinality`.")
@@ -329,7 +336,9 @@ class StatisticsBackedLogicalPlanningConfiguration(
     val context = ContextHelper.create(
       planContext = planContext,
       cypherExceptionFactory = exceptionFactory,
-      queryGraphSolver = LogicalPlanningTestSupport2.createQueryGraphSolver(),
+      queryGraphSolver =
+        if (options.connectComponentsPlanner) LogicalPlanningTestSupport2.createQueryGraphSolverWithComponentConnectorPlanner()
+        else LogicalPlanningTestSupport2.createQueryGraphSolver(),
       metrics = metrics,
       config = cypherCompilerConfig,
       logicalPlanIdGen = idGen,
