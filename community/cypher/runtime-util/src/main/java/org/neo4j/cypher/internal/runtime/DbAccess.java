@@ -21,10 +21,10 @@ package org.neo4j.cypher.internal.runtime;
 
 import java.util.Optional;
 
-import org.neo4j.util.CalledFromGeneratedCode;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
+import org.neo4j.util.CalledFromGeneratedCode;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
@@ -73,6 +73,18 @@ public interface DbAccess extends EntityById
             int property,
             RelationshipScanCursor relationshipScanCursor,
             PropertyCursor propertyCursor );
+
+    int nodeGetOutgoingDegree( int maxDegree, long node, NodeCursor nodeCursor );
+
+    int nodeGetOutgoingDegree( int maxDegree, long node, int relationship, NodeCursor nodeCursor );
+
+    int nodeGetIncomingDegree( int maxDegree, long node, NodeCursor nodeCursor );
+
+    int nodeGetIncomingDegree( int maxDegree, long node, int relationship, NodeCursor nodeCursor );
+
+    int nodeGetTotalDegree( int maxDegree, long node, NodeCursor nodeCursor );
+
+    int nodeGetTotalDegree( int maxDegree, long node, int relationship, NodeCursor nodeCursor );
 
     int nodeGetOutgoingDegree( long node, NodeCursor nodeCursor );
 

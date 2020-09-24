@@ -423,6 +423,30 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     }
   }
 
+  override def nodeGetOutgoingDegree(maxDegree: Int, node: Long, nodeCursor: NodeCursor): Int = {
+    reads().singleNode(node, nodeCursor)
+    if (!nodeCursor.next()) 0
+    else {
+      Nodes.count(maxDegree, nodeCursor, org.neo4j.graphdb.Direction.OUTGOING)
+    }
+  }
+
+  override def nodeGetIncomingDegree(maxDegree: Int, node: Long, nodeCursor: NodeCursor): Int = {
+    reads().singleNode(node, nodeCursor)
+    if (!nodeCursor.next()) 0
+    else {
+      Nodes.count(maxDegree, nodeCursor, org.neo4j.graphdb.Direction.INCOMING)
+    }
+  }
+
+  override def nodeGetTotalDegree(maxDegree: Int, node: Long, nodeCursor: NodeCursor): Int = {
+    reads().singleNode(node, nodeCursor)
+    if (!nodeCursor.next()) 0
+    else {
+      Nodes.count(maxDegree, nodeCursor, org.neo4j.graphdb.Direction.BOTH)
+    }
+  }
+
   override def nodeGetOutgoingDegree(node: Long, nodeCursor: NodeCursor): Int = {
     reads().singleNode(node, nodeCursor)
     if (!nodeCursor.next()) 0
@@ -439,6 +463,30 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     reads().singleNode(node, nodeCursor)
     if (!nodeCursor.next()) 0
     else Nodes.countAll(nodeCursor)
+  }
+
+  override def nodeGetOutgoingDegree(maxDegree: Int, node: Long, relationship: Int, nodeCursor: NodeCursor): Int = {
+    reads().singleNode(node, nodeCursor)
+    if (!nodeCursor.next()) 0
+    else {
+      Nodes.count(maxDegree, nodeCursor, relationship, org.neo4j.graphdb.Direction.OUTGOING)
+    }
+  }
+
+  override def nodeGetIncomingDegree(maxDegree: Int, node: Long, relationship: Int, nodeCursor: NodeCursor): Int = {
+    reads().singleNode(node, nodeCursor)
+    if (!nodeCursor.next()) 0
+    else {
+      Nodes.count(maxDegree, nodeCursor, relationship, org.neo4j.graphdb.Direction.INCOMING)
+    }
+  }
+
+  override def nodeGetTotalDegree(maxDegree: Int, node: Long, relationship: Int, nodeCursor: NodeCursor): Int = {
+    reads().singleNode(node, nodeCursor)
+    if (!nodeCursor.next()) 0
+    else {
+      Nodes.count(maxDegree, nodeCursor, relationship, org.neo4j.graphdb.Direction.BOTH)
+    }
   }
 
   override def nodeGetOutgoingDegree(node: Long, relationship: Int, nodeCursor: NodeCursor): Int = {

@@ -180,6 +180,17 @@ trait QueryContext extends TokenContext with DbAccess {
 
   def getImportURL(url: URL): Either[String,URL]
 
+  def nodeGetDegree(maxDegree:Int, node: Long, dir: SemanticDirection, nodeCursor: NodeCursor): Int = dir match {
+    case SemanticDirection.OUTGOING => nodeGetOutgoingDegree(maxDegree, node, nodeCursor)
+    case SemanticDirection.INCOMING => nodeGetIncomingDegree(maxDegree, node, nodeCursor)
+    case SemanticDirection.BOTH => nodeGetTotalDegree(maxDegree, node, nodeCursor)
+  }
+
+  def nodeGetDegree(maxDegree: Int, node: Long, dir: SemanticDirection, relTypeId: Int, nodeCursor: NodeCursor): Int = dir match {
+    case SemanticDirection.OUTGOING => nodeGetOutgoingDegree(maxDegree, node, relTypeId, nodeCursor)
+    case SemanticDirection.INCOMING => nodeGetIncomingDegree(maxDegree, node, relTypeId, nodeCursor)
+    case SemanticDirection.BOTH => nodeGetTotalDegree(maxDegree, node, relTypeId, nodeCursor)
+  }
   def nodeGetDegree(node: Long, dir: SemanticDirection, nodeCursor: NodeCursor): Int = dir match {
     case SemanticDirection.OUTGOING => nodeGetOutgoingDegree(node, nodeCursor)
     case SemanticDirection.INCOMING => nodeGetIncomingDegree(node, nodeCursor)

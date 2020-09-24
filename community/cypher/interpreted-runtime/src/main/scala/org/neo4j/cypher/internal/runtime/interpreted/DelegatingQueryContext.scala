@@ -250,6 +250,18 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
 
   override def getImportURL(url: URL): Either[String,URL] = inner.getImportURL(url)
 
+  override def nodeGetOutgoingDegree(maxDegree: Int, node: Long, nodeCursor: NodeCursor): Int = singleDbHit(inner.nodeGetOutgoingDegree(maxDegree, node, nodeCursor))
+
+  override def nodeGetOutgoingDegree(maxDegree: Int, node: Long, relationship: Int, nodeCursor: NodeCursor): Int = singleDbHit(inner.nodeGetOutgoingDegree(maxDegree, node, relationship, nodeCursor))
+
+  override def nodeGetIncomingDegree(maxDegree: Int, node: Long, nodeCursor: NodeCursor): Int = singleDbHit(inner.nodeGetIncomingDegree(maxDegree, node, nodeCursor))
+
+  override def nodeGetIncomingDegree(maxDegree: Int, node: Long, relationship: Int, nodeCursor: NodeCursor): Int = singleDbHit(inner.nodeGetIncomingDegree(maxDegree, node, relationship, nodeCursor))
+
+  override def nodeGetTotalDegree(maxDegree: Int, node: Long, nodeCursor: NodeCursor): Int = singleDbHit(inner.nodeGetTotalDegree(maxDegree, node, nodeCursor))
+
+  override def nodeGetTotalDegree(maxDegree: Int, node: Long, relationship: Int, nodeCursor: NodeCursor): Int = singleDbHit(inner.nodeGetTotalDegree(maxDegree, node, relationship, nodeCursor))
+
   override def nodeGetOutgoingDegree(node: Long, nodeCursor: NodeCursor): Int = singleDbHit(inner.nodeGetOutgoingDegree(node, nodeCursor))
 
   override def nodeGetOutgoingDegree(node: Long, relationship: Int, nodeCursor: NodeCursor): Int = singleDbHit(inner.nodeGetOutgoingDegree(node, relationship, nodeCursor))
