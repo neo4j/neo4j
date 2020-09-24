@@ -141,7 +141,8 @@ public class DatabaseManagementServiceFactory
         globalLife.add( edition.createSystemGraphInitializer( globalModule, databaseManager ) );
 
         var dbmsRuntimeSystemGraphComponent = new DbmsRuntimeSystemGraphComponent( globalModule.getGlobalConfig() );
-        globalModule.getSystemGraphComponents().register( dbmsRuntimeSystemGraphComponent );
+        // temporary disable the DBMS runtime component
+        // globalModule.getSystemGraphComponents().register( dbmsRuntimeSystemGraphComponent );
 
         edition.createSecurityModule( globalModule );
         SecurityProvider securityProvider = edition.getSecurityProvider();

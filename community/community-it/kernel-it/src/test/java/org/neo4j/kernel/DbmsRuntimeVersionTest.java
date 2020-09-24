@@ -20,6 +20,7 @@
 package org.neo4j.kernel;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.dbms.database.DatabaseContext;
@@ -52,6 +53,7 @@ class DbmsRuntimeVersionTest
         systemDb = databaseManager.getDatabaseContext( NAMED_SYSTEM_DATABASE_ID ).get().databaseFacade();
     }
 
+    @Disabled( "Temporarily disabling until DBMS runtime system component is registered again" )
     @Test
     void testBasicVersionLifecycle()
     {
