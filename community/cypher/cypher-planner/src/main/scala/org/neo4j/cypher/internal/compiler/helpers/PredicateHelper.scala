@@ -27,6 +27,11 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.FunctionName
 import org.neo4j.cypher.internal.expressions.GreaterThan
+import org.neo4j.cypher.internal.expressions.HasDegree
+import org.neo4j.cypher.internal.expressions.HasDegreeGreaterThan
+import org.neo4j.cypher.internal.expressions.HasDegreeGreaterThanOrEqual
+import org.neo4j.cypher.internal.expressions.HasDegreeLessThan
+import org.neo4j.cypher.internal.expressions.HasDegreeLessThanOrEqual
 import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.In
 import org.neo4j.cypher.internal.expressions.IterablePredicateExpression
@@ -80,6 +85,7 @@ object PredicateHelper {
       case  _:Ands | _: Ors | _: In | _:BooleanLiteral | _:HasLabels | _:AndedPropertyInequalities |  _:IterablePredicateExpression => true
       case _:ExistsSubClause => true
       case _:CoerceToPredicate => true
+      case _: HasDegreeGreaterThan | _: HasDegreeGreaterThanOrEqual | _: HasDegree | _: HasDegreeLessThan | _: HasDegreeLessThanOrEqual => true
       case _ => false
     }
   }

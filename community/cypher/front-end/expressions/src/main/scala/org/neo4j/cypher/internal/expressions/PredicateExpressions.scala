@@ -246,3 +246,33 @@ final case class GreaterThanOrEqual(lhs: Expression, rhs: Expression)(val positi
   override def negated: InequalityExpression = LessThan(lhs, rhs)(position)
   override def swapped: InequalityExpression = LessThanOrEqual(rhs, lhs)(position)
 }
+
+case class HasDegreeLessThan(node: Expression,
+                             relType: Option[RelTypeName],
+                             dir: SemanticDirection,
+                             degree: Expression
+                            )(val position: InputPosition) extends Expression
+
+case class HasDegreeLessThanOrEqual(node: Expression,
+                                    relType: Option[RelTypeName],
+                                    dir: SemanticDirection,
+                                    degree: Expression
+                                   )(val position: InputPosition) extends Expression
+
+case class HasDegreeGreaterThan(node: Expression,
+                                relType: Option[RelTypeName],
+                                dir: SemanticDirection,
+                                degree: Expression
+                               )(val position: InputPosition) extends Expression
+
+case class HasDegreeGreaterThanOrEqual(node: Expression,
+                                       relType: Option[RelTypeName],
+                                       dir: SemanticDirection,
+                                       degree: Expression
+                                      )(val position: InputPosition) extends Expression
+
+case class HasDegree(node: Expression,
+                     relType: Option[RelTypeName],
+                     dir: SemanticDirection,
+                     degree: Expression
+                    )(val position: InputPosition) extends Expression
