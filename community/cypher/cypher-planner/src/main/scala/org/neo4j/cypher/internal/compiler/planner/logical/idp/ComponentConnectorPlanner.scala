@@ -22,11 +22,14 @@ package org.neo4j.cypher.internal.compiler.planner.logical.idp
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.QueryPlannerKit
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.IDPQueryGraphSolver.extraRequirementForInterestingOrder
+import org.neo4j.cypher.internal.compiler.planner.logical.idp.IDPTable.SORTED_BIT
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.cartesianProductsOrValueJoins.planLotsOfCartesianProducts
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.time.Stopwatch
+
+import scala.collection.BitSet
 
 /**
  * This class is responsible for connecting all disconnected logical plans, which can be
@@ -43,31 +46,36 @@ case class ComponentConnectorPlanner(singleComponentPlanner: SingleComponentPlan
     CartesianProductComponentConnector,
     NestedIndexJoinComponentConnector(singleComponentPlanner),
     ValueHashJoinComponentConnector,
+    OptionalMatchConnector,
   )
 
-  // Ideas:
-  // - If NIJ connector and VHJ connector == empty step solver && components > 8 then fallback to leftdeep CP tree.
-  // - Conditional connectors: Only ask CPCC if no hash join found for goal.
-  def apply(components: Set[PlannedComponent],
-            queryGraph: QueryGraph,
-            interestingOrder: InterestingOrder,
-            context: LogicalPlanningContext,
-            kit: QueryPlannerKit,
-            singleComponentPlanner: SingleComponentPlannerTrait): Set[PlannedComponent] = {
-    require(components.size > 1, "Can't connect less than 2 components.")
+  override def connectComponentsAndSolveOptionalMatch(components: Set[PlannedComponent],
+                                                      queryGraph: QueryGraph,
+                                                      interestingOrder: InterestingOrder,
+                                                      context: LogicalPlanningContext,
+                                                      kit: QueryPlannerKit,
+                                                      singleComponentPlanner: SingleComponentPlannerTrait): LogicalPlan = {
+//    require(components.size > 1, "Can't connect less than 2 components.")
+
 
     // kit.select plans predicates and shortest path patterns. If nothing is left in this area, we can skip IDP.
     val allSolved = components.flatMap(_.queryGraph.selections.predicates)
     val notYetSolved = queryGraph.selections.predicates -- allSolved
-    if (notYetSolved.isEmpty && queryGraph.shortestPathPatterns.isEmpty) {
-      // If there are no predicates left to be solved, that also means no joins are possible (because they would need to join on a predicate).
-      // Also, the order of cartesian products does not need a search algorithm, since no Selections can be put in-between.
-      // The best plan is a simple left-deep tree of cartesian products.
-      Set(planLotsOfCartesianProducts(components, queryGraph, context, kit, considerSelections = false))
+    val bestPlans = if (notYetSolved.isEmpty && queryGraph.optionalMatches.isEmpty && queryGraph.shortestPathPatterns.isEmpty) {
+      if (components.size == 1) {
+        // If there is only 1 component and no optional matches there is nothing we need to do.
+        components.head.plan
+      } else {
+        // If there are no predicates left to be solved, that also means no joins are possible (because they would need to join on a predicate).
+        // Also, the order of cartesian products does not need a search algorithm, since no Selections can be put in-between.
+        // The best plan is a simple left-deep tree of cartesian products.
+        planLotsOfCartesianProducts(components, queryGraph, context, kit, considerSelections = false).plan
+      }
     } else {
-      val bestPlans = connectWithIDP(components, queryGraph, interestingOrder, context, kit)
-      Set(PlannedComponent(queryGraph, bestPlans))
+      connectWithIDP(components, queryGraph, interestingOrder, context, kit)
     }
+    // Best sorted plan, if available, otherwise best overall plan
+    bestPlans.bestResultFulfillingReq.getOrElse(bestPlans.bestResult)
   }
 
   private def connectWithIDP(components: Set[PlannedComponent],
@@ -76,8 +84,11 @@ case class ComponentConnectorPlanner(singleComponentPlanner: SingleComponentPlan
                              context: LogicalPlanningContext,
                              kit: QueryPlannerKit): BestResults[LogicalPlan] = {
     val orderRequirement = extraRequirementForInterestingOrder(context, interestingOrder)
-
-    val generators = connectors.map(_.solverStep(queryGraph, interestingOrder, kit))
+    val goalBitAllocation = GoalBitAllocation(
+      numComponents = components.size,
+      numOptionalMatches = queryGraph.optionalMatches.size
+    )
+    val generators = connectors.map(_.solverStep(goalBitAllocation, queryGraph, interestingOrder, kit))
     val generator = IDPQueryGraphSolver.composeGenerators(queryGraph, interestingOrder, kit, context, generators)
 
     val solver = new IDPSolver[QueryGraph, LogicalPlan, LogicalPlanningContext](
@@ -97,12 +108,39 @@ case class ComponentConnectorPlanner(singleComponentPlanner: SingleComponentPlan
         ((Set(queryGraph), true), bestSortedResult)
       }
     }
-    val initialTodo = components.map(_.queryGraph)
+    // This is ordered such that components come before optional matches, which is required for GoalBitAllocation to work.
+    val initialTodo = components.toSeq.map(_.queryGraph) ++ queryGraph.optionalMatches
 
     solver(seed, initialTodo, context)
   }
 }
 
 trait ComponentConnector {
-  def solverStep(queryGraph: QueryGraph, interestingOrder: InterestingOrder, kit: QueryPlannerKit): ComponentConnectorSolverStep
+  def solverStep(goalBitAllocation: GoalBitAllocation, queryGraph: QueryGraph, interestingOrder: InterestingOrder, kit: QueryPlannerKit): ComponentConnectorSolverStep
+}
+
+/**
+ * Helper class to keep track of which bit areas in a Goal refer to either components or optional matches.
+ * @param numComponents the number of disconnected components to solve.
+ * @param numOptionalMatches the number of optional matches to solve.
+ */
+case class GoalBitAllocation(numComponents: Int, numOptionalMatches: Int) {
+  private val numSorted = 1
+  private val startSorted = SORTED_BIT
+  private val startComponents = startSorted + numSorted
+  private val startOptionals = startComponents + numComponents
+  private val startCompacted = startOptionals + numOptionalMatches
+
+  /**
+   * @param goal a goal that potentially contains bits for components and optional matches.
+   * @return the largest subset of the given goal that only refers to components.
+   */
+  def componentsGoal(goal: Goal): Goal = Goal(goal.bitSet.range(startComponents, startOptionals))
+
+  /**
+   * @param goal a goal that potentially contains bits for components and optional matches.
+   * @return the largest subset of the given goal that only refers to optional matches.
+   */
+  def optionalMatchesGoal(goal: Goal): Goal = Goal(goal.bitSet.range(startOptionals, startCompacted))
+
 }

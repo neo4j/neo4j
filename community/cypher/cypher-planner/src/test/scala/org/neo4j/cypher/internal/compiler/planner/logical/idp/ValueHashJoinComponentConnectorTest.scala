@@ -50,7 +50,7 @@ class ValueHashJoinComponentConnectorTest extends CypherFunSuite with LogicalPla
       table.put(register(registry, mQg), sorted = false, mPlan)
       val goal = register(registry, nQg, mQg)
 
-      val step = ValueHashJoinComponentConnector.solverStep(fullQg, order, kit)
+      val step = ValueHashJoinComponentConnector.solverStep(GoalBitAllocation(2, 0), fullQg, order, kit)
       val plans = step(registry, goal, table, ctx).toSeq
       plans should contain theSameElementsAs (Seq(
         ValueHashJoin(nPlan, mPlan, joinPred),
@@ -94,7 +94,7 @@ class ValueHashJoinComponentConnectorTest extends CypherFunSuite with LogicalPla
       table.put(register(registry, nQg, oQg), sorted = false, noPlan)
       val goal = register(registry, nQg, mQg, oQg)
 
-      val step = ValueHashJoinComponentConnector.solverStep(fullQg, order, kit)
+      val step = ValueHashJoinComponentConnector.solverStep(GoalBitAllocation(3, 0), fullQg, order, kit)
       val plans = step(registry, goal, table, ctx).toSeq
       plans should contain theSameElementsAs (Seq(
         ValueHashJoin(nPlan, moPlan, joinPred1),
@@ -132,7 +132,7 @@ class ValueHashJoinComponentConnectorTest extends CypherFunSuite with LogicalPla
       table.put(register(registry, mQg), sorted = false, mPlan)
       val goal = register(registry, nQg, mQg)
 
-      val step = ValueHashJoinComponentConnector.solverStep(fullQg, order, kit)
+      val step = ValueHashJoinComponentConnector.solverStep(GoalBitAllocation(2, 0), fullQg, order, kit)
       val plans = step(registry, goal, table, ctx).toSeq
       plans shouldBe empty
     }

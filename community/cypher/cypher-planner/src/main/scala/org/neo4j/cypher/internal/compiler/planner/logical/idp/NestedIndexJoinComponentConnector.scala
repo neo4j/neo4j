@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 case class NestedIndexJoinComponentConnector(singleComponentPlanner: SingleComponentPlannerTrait)
   extends ComponentConnector {
 
-  def solverStep(queryGraph: QueryGraph, interestingOrder: InterestingOrder, kit: QueryPlannerKit): ComponentConnectorSolverStep = {
+  def solverStep(goalBitAllocation: GoalBitAllocation, queryGraph: QueryGraph, interestingOrder: InterestingOrder, kit: QueryPlannerKit): ComponentConnectorSolverStep = {
     val predicatesWithDependencies: Array[(Expression, Array[String])] =
       queryGraph.selections.flatPredicates
                 .map(pred => (pred, pred.dependencies.map(_.name).toArray))
@@ -43,12 +43,11 @@ case class NestedIndexJoinComponentConnector(singleComponentPlanner: SingleCompo
       IDPSolverStep.empty[QueryGraph, LogicalPlan, LogicalPlanningContext]
     } else {
       (registry: IdRegistry[QueryGraph], goal: Goal, table: IDPCache[LogicalPlan], context: LogicalPlanningContext) => {
+        val componentsGoal = goalBitAllocation.componentsGoal(goal) // This will not contain optional match bits or compacted bits.
         for {
           // We cannot plan NIJ if the RHS is more than one component or optional matches because that would require us to recurse into
           // JoinDisconnectedQueryGraphComponents instead of SingleComponentPlannerTrait.
-          rightGoal <- goal.subGoals(1)
-          // Getting subGoals if size 1 can still give us compacted goals, so we need to post-filter the actual size
-          if registry.explodedSize(rightGoal.bitSet) == 1
+          rightGoal <- componentsGoal.subGoals(1)
           rightPlan <- table(rightGoal).iterator
 
           containsOptionals = context.planningAttributes.solveds.get(rightPlan.id).asSinglePlannerQuery.lastQueryGraph.optionalMatches.nonEmpty

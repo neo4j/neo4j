@@ -35,7 +35,7 @@ trait OptionalSolver {
 case object applyOptional extends OptionalSolver {
   override def apply(optionalQg: QueryGraph, lhs: LogicalPlan, interestingOrder: InterestingOrder, context: LogicalPlanningContext): Option[LogicalPlan] = {
     val innerContext: LogicalPlanningContext = context.withUpdatedCardinalityInformation(lhs)
-    val inner = context.strategy.plan(optionalQg, interestingOrder, innerContext)
+    val inner = context.strategy.plan(optionalQg, interestingOrder, innerContext) // TODO BestResults?
     val rhs = context.logicalPlanProducer.planOptional(inner, lhs.availableSymbols, innerContext)
     val applied = context.logicalPlanProducer.planApply(lhs, rhs, context)
 

@@ -439,17 +439,11 @@ case class QueryGraph(// !!! If you change anything here, make sure to update th
   override def equals(in: scala.Any): Boolean = in match {
     case other: QueryGraph if other canEqual this =>
 
-      val optionals = if (optionalMatches.isEmpty) {
-        true
-      } else {
-        compareOptionalMatches(other)
-      }
-
       patternRelationships == other.patternRelationships &&
         patternNodes == other.patternNodes &&
         argumentIds == other.argumentIds &&
         selections == other.selections &&
-        optionals &&
+        optionalMatches.toSet == other.optionalMatches.toSet &&
         hints == other.hints &&
         shortestPathPatterns == other.shortestPathPatterns &&
         mutatingPatterns == other.mutatingPatterns
@@ -461,31 +455,9 @@ case class QueryGraph(// !!! If you change anything here, make sure to update th
   override def canEqual(that: Any): Boolean = that.isInstanceOf[QueryGraph]
 
   override lazy val hashCode: Int = {
-    val optionals = if(optionalMatches.nonEmpty && containsIndependentOptionalMatches)
-      optionalMatches.toSet
-    else
-      optionalMatches
-
-    ScalaRunTime._hashCode((patternRelationships, patternNodes, argumentIds, selections, optionals, hints.groupBy(identity), shortestPathPatterns, mutatingPatterns))
+    ScalaRunTime._hashCode((patternRelationships, patternNodes, argumentIds, selections, optionalMatches.toSet, hints.groupBy(identity), shortestPathPatterns, mutatingPatterns))
   }
 
-  private lazy val containsIndependentOptionalMatches = {
-    val nonOptional = idsWithoutOptionalMatchesOrUpdates -- argumentIds
-
-    val result = this.optionalMatches.foldLeft(false) {
-      case (acc, oqg) =>
-        acc || (oqg.dependencies -- nonOptional).nonEmpty
-    }
-
-    result
-  }
-
-  private def compareOptionalMatches(other: QueryGraph) = {
-    if (containsIndependentOptionalMatches) {
-      optionalMatches.toSet == other.optionalMatches.toSet
-    } else
-      optionalMatches == other.optionalMatches
-  }
 }
 
 object QueryGraph {

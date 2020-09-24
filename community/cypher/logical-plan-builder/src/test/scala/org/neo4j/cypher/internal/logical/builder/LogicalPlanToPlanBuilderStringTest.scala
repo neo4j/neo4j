@@ -44,7 +44,7 @@ import scala.collection.mutable
 import scala.tools.nsc.Settings
 import scala.tools.nsc.interpreter.IMain
 
-class LogicalPlanToLogicalPlanBuilderStringTest extends CypherFunSuite with TestName {
+class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
 
   private val testedOperators = mutable.Set[String]()
 

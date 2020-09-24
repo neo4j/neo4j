@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 case object ValueHashJoinComponentConnector
   extends ComponentConnector {
 
-  def solverStep(queryGraph: QueryGraph, interestingOrder: InterestingOrder, kit: QueryPlannerKit): ComponentConnectorSolverStep = {
+  def solverStep(goalBitAllocation: GoalBitAllocation, queryGraph: QueryGraph, interestingOrder: InterestingOrder, kit: QueryPlannerKit): ComponentConnectorSolverStep = {
     val predicates = joinPredicateCandidates(queryGraph.selections.flatPredicates)
 
     if (predicates.isEmpty) {

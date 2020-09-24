@@ -79,21 +79,20 @@ class CartesianProductsOrValueJoinsTest extends CypherFunSuite with LogicalPlann
   }
 
   test("should plan cartesian product between 2 pattern nodes") {
-    val expectedPlans: Seq[BestResults[LogicalPlan]] = List(planA, planB).permutations.map { l =>
+    val expectedPlans = List(planA, planB).permutations.map { l =>
       val (a, b) = (l.head, l(1))
       CartesianProduct(
         a,
         b
       )
-    }
-      .map(BestResults(_, None))
-      .toSeq
+    }.toSeq
+
     testThis(
       graph = QueryGraph(patternNodes = Set("a", "b")),
       input = (planningAttributes: PlanningAttributes) => Set(
         PlannedComponent(QueryGraph(patternNodes = Set("a")), BestResults(allNodesScan("a", planningAttributes), None)),
         PlannedComponent(QueryGraph(patternNodes = Set("b")), BestResults(allNodesScan("b", planningAttributes), None))),
-      expectedPlans = expectedPlans :_*)
+      expectedPlans = expectedPlans)
   }
 
   test("should plan cartesian product between 3 pattern nodes") {
@@ -112,9 +111,7 @@ class CartesianProductsOrValueJoinsTest extends CypherFunSuite with LogicalPlann
             c
           )
         )
-      }
-        .map(BestResults(_, None))
-        .toSeq: _*)
+      }.toSeq)
   }
 
   test("should plan cartesian product between lots of pattern nodes") {
@@ -124,8 +121,8 @@ class CartesianProductsOrValueJoinsTest extends CypherFunSuite with LogicalPlann
       input = (planningAttributes: PlanningAttributes) => (chars map { x =>
         PlannedComponent(QueryGraph(patternNodes = Set(x.toString)), BestResults(allNodesScan(x.toString, planningAttributes), None))
       }).toSet,
-      assertion = (x: BestPlans) => {
-        val leaves = x.bestResult.leaves
+      assertion = (x: LogicalPlan) => {
+        val leaves = x.leaves
         leaves.toSet should equal((chars map { x => allNodesScan(x.toString) }).toSet)
         leaves.size should equal(chars.size)
       }
@@ -198,9 +195,7 @@ class CartesianProductsOrValueJoinsTest extends CypherFunSuite with LogicalPlann
         List((planA, "a"), (planB, "b")).permutations.map { l =>
           val ((a, aName), (b, bName)) = (l.head, l(1))
           ValueHashJoin(a, b, equals(prop(aName, "id"), prop(bName, "id")))
-        }
-          .map(BestResults(_, None))
-          .toSeq: _*)
+        }.toSeq)
   }
 
   test("should plan hash joins between 3 pattern nodes") {
@@ -231,9 +226,7 @@ class CartesianProductsOrValueJoinsTest extends CypherFunSuite with LogicalPlann
               )
             )
           }
-        }
-          .map(BestResults(_, None))
-          .toSeq: _*)
+        }.toSeq)
   }
 
   test("should recognize value joins") {
@@ -356,14 +349,14 @@ class CartesianProductsOrValueJoinsTest extends CypherFunSuite with LogicalPlann
           BestResults(AllNodesScan("b", Set.empty), None)), Cardinality(1), context.planningAttributes),
       )
 
-      cartesianProductsOrValueJoins(givenPlans, cfg.qg, InterestingOrder.empty, context, kit, SingleComponentPlanner(mock[IDPQueryGraphSolverMonitor]))
+      cartesianProductsOrValueJoins.connectComponentsAndSolveOptionalMatch(givenPlans, cfg.qg, InterestingOrder.empty, context, kit, SingleComponentPlanner(mock[IDPQueryGraphSolverMonitor]))
 
       rhsInputCardinalities shouldEqual Set(lhsCardinality)
     }
   }
 
 
-  private def testThis(graph: QueryGraph, input: PlanningAttributes => Set[PlannedComponent], assertion: BestResults[LogicalPlan] => Unit): Unit = {
+  private def testThis(graph: QueryGraph, input: PlanningAttributes => Set[PlannedComponent], assertion: LogicalPlan => Unit): Unit = {
     new given {
       qg = graph
       cardinality = mapCardinality {
@@ -375,17 +368,13 @@ class CartesianProductsOrValueJoinsTest extends CypherFunSuite with LogicalPlann
     }.withLogicalPlanningContext { (cfg, context) =>
       val kit = context.config.toKit(InterestingOrder.empty, context)
 
-      var plans: Set[PlannedComponent] = input(context.planningAttributes)
-      while (plans.size > 1) {
-        plans = cartesianProductsOrValueJoins(plans, cfg.qg, InterestingOrder.empty, context, kit, SingleComponentPlanner(mock[IDPQueryGraphSolverMonitor]))
-      }
-
-      val result = plans.head.plan
+      val singleComponents = input(context.planningAttributes)
+      val result = cartesianProductsOrValueJoins.connectComponentsAndSolveOptionalMatch(singleComponents, cfg.qg, InterestingOrder.empty, context, kit, SingleComponentPlanner(mock[IDPQueryGraphSolverMonitor]))
 
       assertion(result)
     }
   }
 
-  private def testThis(graph: QueryGraph, input: PlanningAttributes => Set[PlannedComponent], expectedPlans: BestPlans*): Unit =
-    testThis(graph, input, (result: BestPlans) => {expectedPlans should contain(result);()})
+  private def testThis(graph: QueryGraph, input: PlanningAttributes => Set[PlannedComponent], expectedPlans: Seq[LogicalPlan]): Unit =
+    testThis(graph, input, (result: LogicalPlan) => {expectedPlans should contain(result);()})
 }

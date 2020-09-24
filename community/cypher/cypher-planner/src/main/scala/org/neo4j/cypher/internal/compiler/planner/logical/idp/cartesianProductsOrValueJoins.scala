@@ -34,13 +34,19 @@ import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.CartesianOrdering
 import org.neo4j.cypher.internal.util.Cost
 
+import scala.annotation.tailrec
+
+/**
+ * Responsible for connecting disconnected components that have already been planned in isolation,
+ * and also responsible for solving optional matches.
+ */
 trait JoinDisconnectedQueryGraphComponents {
-  def apply(componentPlans: Set[PlannedComponent],
-            fullQG: QueryGraph,
-            interestingOrder: InterestingOrder,
-            context: LogicalPlanningContext,
-            kit: QueryPlannerKit,
-            singleComponentPlanner: SingleComponentPlannerTrait): Set[PlannedComponent]
+  def connectComponentsAndSolveOptionalMatch(plans: Set[PlannedComponent],
+                                             qg: QueryGraph,
+                                             interestingOrder: InterestingOrder,
+                                             context: LogicalPlanningContext,
+                                             kit: QueryPlannerKit,
+                                             singleComponentPlanner: SingleComponentPlannerTrait): LogicalPlan
 }
 
 case class PlannedComponent(queryGraph: QueryGraph, plan: BestPlans)
@@ -67,12 +73,58 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
 
   val COMPONENT_THRESHOLD_FOR_CARTESIAN_PRODUCT = 8
 
-  def apply(plans: Set[PlannedComponent],
-            qg: QueryGraph,
-            interestingOrder: InterestingOrder,
-            context: LogicalPlanningContext,
-            kit: QueryPlannerKit,
-            singleComponentPlanner: SingleComponentPlannerTrait): Set[PlannedComponent] = {
+  override def connectComponentsAndSolveOptionalMatch(plans: Set[PlannedComponent],
+                                                      qg: QueryGraph,
+                                                      interestingOrder: InterestingOrder,
+                                                      context: LogicalPlanningContext,
+                                                      kit: QueryPlannerKit,
+                                                      singleComponentPlanner: SingleComponentPlannerTrait): LogicalPlan = {
+
+    @tailrec
+    def recurse(plans: Set[PlannedComponent], optionalMatches: Seq[QueryGraph]): (Set[PlannedComponent], Seq[QueryGraph]) = {
+      if (optionalMatches.nonEmpty) {
+        // If we have optional matches left to solve - start with that
+        val firstOptionalMatch = optionalMatches.head
+        val applicablePlan = plans.find(p => firstOptionalMatch.argumentIds subsetOf p.plan.bestResult.availableSymbols)
+
+        applicablePlan match {
+          case Some(t@PlannedComponent(solvedQg, p)) =>
+            val candidates = context.config.optionalSolvers.flatMap(solver => solver(firstOptionalMatch, p.bestResult, interestingOrder, context))
+            val best = kit.pickBest(candidates).get
+            recurse(plans - t + PlannedComponent(solvedQg, BestResults(best, None)), optionalMatches.tail)
+
+          case None =>
+            // If we couldn't find any optional match we can take on, produce the best cartesian product possible
+            recurse(connectComponentsStep(plans, qg, interestingOrder, context, kit, singleComponentPlanner), optionalMatches)
+        }
+      } else if (plans.size > 1) {
+
+        recurse(connectComponentsStep(plans, qg, interestingOrder, context, kit, singleComponentPlanner), optionalMatches)
+      } else (plans, optionalMatches)
+    }
+
+    val (resultingPlans, optionalMatches) = recurse(plans, qg.optionalMatches)
+    require(resultingPlans.size == 1)
+    require(optionalMatches.isEmpty)
+    // Best sorted plan, if available, otherwise best overall plan
+    val bestPlans = resultingPlans.head.plan
+    bestPlans.bestResultFulfillingReq.getOrElse(bestPlans.bestResult)
+  }
+
+  /**
+   * Connects components step-wise, i.e. it will  connect at least 2 components.
+   * Greedily chooses the cheapest option to connect at each step.
+   *
+   * @param plans the so-far connected components
+   * @param qg the whole query graph
+   * @return a smaller set of connected components, by connecting 2 or more together.
+   */
+  private def connectComponentsStep(plans: Set[PlannedComponent],
+                                    qg: QueryGraph,
+                                    interestingOrder: InterestingOrder,
+                                    context: LogicalPlanningContext,
+                                    kit: QueryPlannerKit,
+                                    singleComponentPlanner: SingleComponentPlannerTrait): Set[PlannedComponent] = {
     require(plans.size > 1, "Can't connect less than 2 components.")
 
     /*

@@ -73,7 +73,7 @@ case class SingleComponentPlanner(monitor: IDPQueryGraphSolverMonitor,
         monitor.initTableFor(qg)
         val seed = initTable(qg, kit, leaves, context, interestingOrder)
         monitor.startIDPIterationFor(qg)
-        val result = solver(seed, qg.patternRelationships, context)
+        val result = solver(seed, qg.patternRelationships.toSeq, context)
         monitor.endIDPIterationFor(qg, result.bestResult)
 
         BestResults(result.bestResult, result.bestResultFulfillingReq)

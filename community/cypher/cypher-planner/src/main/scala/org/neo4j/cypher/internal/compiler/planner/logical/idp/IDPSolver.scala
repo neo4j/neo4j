@@ -74,10 +74,15 @@ class IDPSolver[Solvable, Result, Context](generator: IDPSolverStep[Solvable, Re
                                            monitor: IDPSolverMonitor,
                                            stopWatchFactory: () => Stopwatch) {
 
-  def apply(seed: Seed[Solvable, Result], initialToDo: Set[Solvable], context: Context): BestResults[Result] = {
+  /**
+   * Run the IDP solver
+   *
+   * The Goal which is created from initialTodo will have the bits in the same order as initialTodo.
+   */
+  def apply(seed: Seed[Solvable, Result], initialToDo: Seq[Solvable], context: Context): BestResults[Result] = {
     val registry = registryFactory()
-    val table = tableFactory(registry, seed)
     var toDo = Goal(registry.registerAll(initialToDo))
+    val table = tableFactory(registry, seed)
 
     // utility functions
     val goalSelector: Selector[(Goal, Result)] = projectingSelector.apply[(Goal, Result)](_._2, _)

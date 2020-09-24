@@ -53,7 +53,7 @@ class IDPSolverTest extends CypherFunSuite {
       (Set('d'), false) -> "d"
     )
 
-    val solution = solver(seed, Set('a', 'b', 'c', 'd'), context)
+    val solution = solver(seed, Seq('a', 'b', 'c', 'd'), context)
 
     solution should equal(BestResults("abcd", None))
     verify(monitor).foundPlanAfter(1)
@@ -79,7 +79,7 @@ class IDPSolverTest extends CypherFunSuite {
       (Set('d'), false) -> "d"
     )
 
-    val solution = solver(seed, Set('a', 'b', 'c', 'd'), context)
+    val solution = solver(seed, Seq('a', 'b', 'c', 'd'), context)
 
     solution should equal(BestResults("ABCD", Some("ABCD")))
     verify(monitor).foundPlanAfter(1)
@@ -105,10 +105,39 @@ class IDPSolverTest extends CypherFunSuite {
       (Set('D'), false) -> "D"
     )
 
-    val solution = solver(seed, Set('A', 'B', 'C', 'D'), context)
+    val solution = solver(seed, Seq('A', 'B', 'C', 'D'), context)
 
     solution should equal(BestResults("ABCD", Some("abcd")))
     verify(monitor).foundPlanAfter(1)
+  }
+
+  test("Registers solvables in the order given by initial todo") {
+    val monitor = mock[IDPSolverMonitor]
+    val registry = IdRegistry[Char]
+    val solver = new IDPSolver[Char, String, Unit](
+      monitor = monitor,
+      generator = stringAppendingSolverStep(),
+      registryFactory = () => registry,
+      projectingSelector = firstLongest,
+      maxTableSize = 16,
+      extraRequirement = ExtraRequirement.empty,
+      iterationDurationLimit = Int.MaxValue,
+      stopWatchFactory = neverTimesOut
+    )
+
+    val seed = Seq(
+      (Set('a'), false) -> "a",
+      (Set('b'), false) -> "b",
+      (Set('c'), false) -> "c",
+      (Set('d'), false) -> "d"
+    )
+
+    val todo = Seq('b', 'a', 'd', 'c')
+
+    solver(seed, todo, context)
+
+    // Offset by one due to the bit representing sorted
+    todo.indices.flatMap(i => registry.lookup(i+1)) should equal(todo)
   }
 
   test("Compacts table at size limit") {
@@ -139,7 +168,7 @@ class IDPSolverTest extends CypherFunSuite {
       (Set('h'), false) -> "h"
     )
 
-    solver(seed, Set('a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'), context)
+    solver(seed, Seq('a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'), context)
 
     verify(monitor).startIteration(1)
     verify(monitor).endIteration(1, 2, 16)
@@ -197,7 +226,7 @@ class IDPSolverTest extends CypherFunSuite {
     }
     val result = seed.foldLeft(Seq.empty[Char]) { (acc, t) =>
       acc ++ t._1._1
-    }.toSet
+    }
 
     solver(seed, result, context)
 

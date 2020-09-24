@@ -25,8 +25,10 @@ import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.cartesianProductsOrValueJoins.COMPONENT_THRESHOLD_FOR_CARTESIAN_PRODUCT
 import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.logical.plans.AllNodesScan
 import org.neo4j.cypher.internal.logical.plans.Apply
+import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.CacheProperties
 import org.neo4j.cypher.internal.logical.plans.CartesianProduct
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
@@ -35,11 +37,13 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlanToPlanBuilderString
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexScan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
+import org.neo4j.cypher.internal.logical.plans.OptionalExpand
 import org.neo4j.cypher.internal.logical.plans.RangeQueryExpression
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.SingleQueryExpression
 import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
 import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
+import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 import scala.util.Random
@@ -293,13 +297,63 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
     ).withDefaultValue(1.0)
 
     val plan = new given {
-      cardinality = selectivitiesCardinality(selectivities, qg => Math.pow(100.0, qg.connectedComponents.size))
+      supercardinality = {
+        case (RegularSinglePlannerQuery(qg, _, _, _, _), input) =>
+          val baseCardinality = Math.pow(100.0, qg.connectedComponents.size) * input.inboundCardinality.amount
+          qg.selections.predicates.foldLeft(baseCardinality){ case (rows, predicate) => rows * selectivities(predicate.expr)}
+      }
+    }.getLogicalPlanFor(
+      """
+        |MATCH (n:N), (m:M), (o:O) WHERE n.prop = m.prop
+        |OPTIONAL MATCH (n)-[r1]-(m)-[r2]-(x)
+        |RETURN n
+        |""".stripMargin,
+      stripProduceResults = false,
+      queryGraphSolver = createQueryGraphSolverWithComponentConnectorPlanner()
+    )._2
+
+    println(org.neo4j.cypher.internal.logical.plans.LogicalPlanToPlanBuilderString(plan))
+
+    plan should equal(
+      new LogicalPlanBuilder()
+        .produceResults("n")
+        .cartesianProduct()
+        .|.nodeByLabelScan("o", "O", IndexOrderNone)
+        .apply()
+        .|.optional("n", "m")
+        .|.filter("not r1 = r2")
+        .|.expandInto("(n)-[r1]-(m)")
+        .|.expandAll("(m)-[r2]-(x)")
+        .|.argument("n", "m")
+        .valueHashJoin("n.prop = m.prop")
+        .|.nodeByLabelScan("m", "M", IndexOrderNone)
+        .nodeByLabelScan("n", "N", IndexOrderNone)
+        .build()
+    )
+  }
+
+  test("optional match that requires 2 components to be connected should be solved before other components are connected 2") {
+    val selectivities = Map[Expression, Double](
+      hasLabels("n", "N") -> 0.4,
+      hasLabels("m", "M") -> 0.5,
+      hasLabels("o", "O") -> 0.9,
+    ).withDefaultValue(1.0)
+
+    val plan = new given {
+      supercardinality = {
+        case (RegularSinglePlannerQuery(qg, _, _, _, _), input) =>
+          val baseCardinality = Math.pow(100.0, qg.connectedComponents.size) * input.inboundCardinality.amount
+          qg.selections.predicates.foldLeft(baseCardinality){ case (rows, predicate) => rows * selectivities(predicate.expr)}
+      }
     }.getLogicalPlanFor(
       """
         |MATCH (n:N), (m:M), (o:O)
         |OPTIONAL MATCH (n)-[r1]-(m)-[r2]-(x)
         |RETURN n
-        |""".stripMargin, stripProduceResults = false)._2
+        |""".stripMargin,
+      stripProduceResults = false,
+      queryGraphSolver = createQueryGraphSolverWithComponentConnectorPlanner()
+    )._2
 
     plan should equal(
       new LogicalPlanBuilder()
@@ -319,6 +373,142 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
     )
   }
 
+  test("When ordering by a variable introduced by an optional match, choose a plan that keeps the order from the optional match subplan") {
+    val selectivities = Map[Expression, Double](
+      hasLabels("n", "N") -> 0.4,
+      hasLabels("m", "M") -> 0.5,
+      hasLabels("o", "O") -> 0.3, // o is cheapest but connecting to it last is better anyway, since we can sort earlier.
+    ).withDefaultValue(1.0)
+
+    val plan = new given {
+      supercardinality = {
+        case (RegularSinglePlannerQuery(qg, _, _, _, _), input) =>
+          val baseCardinality = Math.pow(100.0, qg.connectedComponents.size) * input.inboundCardinality.amount
+          qg.selections.predicates.foldLeft(baseCardinality){ case (rows, predicate) => rows * selectivities(predicate.expr)}
+      }
+    }.getLogicalPlanFor(
+      """
+        |MATCH (n:N), (m:M), (o:O)
+        |OPTIONAL MATCH (n)-[r1]-(m)-[r2]-(x)
+        |RETURN n ORDER BY x.prop
+        |""".stripMargin,
+      stripProduceResults = false,
+      queryGraphSolver = createQueryGraphSolverWithComponentConnectorPlanner()
+    )._2
+
+    plan should equal(
+      new LogicalPlanBuilder()
+        .produceResults("n")
+        .cartesianProduct()
+        .|.nodeByLabelScan("o", "O", IndexOrderNone)
+        .leftOuterHashJoin("n", "m") // Keeps RHS order
+        .|.filter("not r1 = r2")
+        .|.expandAll("(m)-[r1]-(n)")
+        .|.expandAll("(x)-[r2]-(m)")
+        .|.sort(Seq(Ascending("x.prop")))
+        .|.projection("x.prop AS `x.prop`")
+        .|.allNodeScan("x")
+        .cartesianProduct()
+        .|.nodeByLabelScan("m", "M", IndexOrderNone)
+        .nodeByLabelScan("n", "N", IndexOrderNone)
+        .build()
+    )
+  }
+
+  test("When ordering by a variable introduced before the optional match, choose a plan that keeps the order through solving the optional match") {
+    val selectivities = Map[Expression, Double](
+      hasLabels("n", "N") -> 0.4,
+      hasLabels("m", "M") -> 0.5,
+      hasLabels("o", "O") -> 0.3, // o is cheapest but connecting to it last is better anyway, since we can sort earlier.
+    ).withDefaultValue(1.0)
+
+    val plan = new given {
+      supercardinality = {
+        case (RegularSinglePlannerQuery(qg, _, _, _, _), input) =>
+          val baseCardinality = Math.pow(100.0, qg.connectedComponents.size) * input.inboundCardinality.amount
+          qg.selections.predicates.foldLeft(baseCardinality){ case (rows, predicate) => rows * selectivities(predicate.expr)}
+      }
+    }.getLogicalPlanFor(
+      """
+        |MATCH (n:N), (m:M), (o:O)
+        |OPTIONAL MATCH (n)-[r1]-(m)-[r2]-(x)
+        |RETURN n ORDER BY m.prop
+        |""".stripMargin,
+      stripProduceResults = false,
+      queryGraphSolver = createQueryGraphSolverWithComponentConnectorPlanner()
+    )._2
+
+    println(org.neo4j.cypher.internal.logical.plans.LogicalPlanToPlanBuilderString(plan))
+
+    plan should equal(
+      new LogicalPlanBuilder()
+        .produceResults("n")
+        .cartesianProduct()
+        .|.nodeByLabelScan("o", "O", IndexOrderNone)
+        .rightOuterHashJoin("n", "m")
+        .|.cartesianProduct()
+        .|.|.nodeByLabelScan("n", "N", IndexOrderNone)
+        .|.sort(Seq(Ascending("m.prop")))
+        .|.nodeByLabelScan("m", "M", IndexOrderNone)
+        .filter("not r1 = r2")
+        .expandAll("(m)-[r1]-(n)")
+        .expandAll("(x)-[r2]-(m)")
+        .allNodeScan("x")
+        .build()
+    )
+  }
+
+  test("Should connect many components and solve many optional matches") {
+    val componentVars = (0 to 20).map(i => s"n$i")
+    val components = (0 to 20).map(i => s"(n$i)").mkString(", ")
+    val optionalMatchVars = (0 to 20).map(i => s"x$i")
+    val optionalMatches = (0 to 20).map(i => s"OPTIONAL MATCH (n$i)--(x$i)").mkString("\n")
+
+    val plan = planFor(
+      s"""
+        |MATCH $components
+        |$optionalMatches
+        |RETURN *
+        |""".stripMargin,
+      stripProduceResults = false,
+      queryGraphSolver = createQueryGraphSolverWithComponentConnectorPlanner()
+    )._2
+
+    val allNodesScanned = plan.treeFold(Seq.empty[String]) {
+      case a: AllNodesScan =>  ids => TraverseChildren(ids :+ a.idName)
+    }
+    val optionalExpanded = plan.treeFold(Seq.empty[String]) {
+      case o: OptionalExpand => ids => TraverseChildren(ids :+ o.to)
+    }
+
+    plan.availableSymbols should contain allElementsOf (componentVars ++ optionalMatchVars)
+    allNodesScanned should contain theSameElementsAs componentVars
+    optionalExpanded should contain theSameElementsAs optionalMatchVars
+  }
+
+  test("Should plan dependent and independent optional matches") {
+    val plan = planFor(
+      s"""
+         |MATCH (n), (m)
+         |OPTIONAL MATCH (n)--(x)
+         |OPTIONAL MATCH (y)
+         |RETURN *
+         |""".stripMargin,
+      stripProduceResults = false,
+      queryGraphSolver = createQueryGraphSolverWithComponentConnectorPlanner()
+    )._2
+
+    val allNodesScanned = plan.treeFold(Seq.empty[String]) {
+      case a: AllNodesScan =>  ids => TraverseChildren(ids :+ a.idName)
+    }
+    val optionalExpanded = plan.treeFold(Seq.empty[String]) {
+      case o: OptionalExpand => ids => TraverseChildren(ids :+ o.to)
+    }
+
+    plan.availableSymbols should contain allElementsOf Seq("n", "m", "x", "y")
+    allNodesScanned should contain theSameElementsAs Seq("n", "m", "y")
+    optionalExpanded should contain theSameElementsAs Seq("x")
+  }
 
   test("shortest path should not fail to get planned after nested index join") {
     val selectivities = Map[Expression, Double](
@@ -345,8 +535,6 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
         .|.nodeIndexOperator("n:N(loc = ???)", paramExpr = Some(prop("m", "loc")), argumentIds = Set("m"))
         .nodeByLabelScan("m", "M")
         .build()
-    )
+      )
   }
-
-
 }

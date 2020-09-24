@@ -86,7 +86,7 @@ object IDPQueryGraphSolver {
  * written by Donald Kossmann and Konrad Stocker
  */
 case class IDPQueryGraphSolver(singleComponentSolver: SingleComponentPlannerTrait,
-                               cartesianProductsOrValueJoins: JoinDisconnectedQueryGraphComponents,
+                               componentConnector: JoinDisconnectedQueryGraphComponents,
                                monitor: IDPQueryGraphSolverMonitor) extends QueryGraphSolver with PatternExpressionSolving {
 
   override def plan(queryGraph: QueryGraph, interestingOrder: InterestingOrder, context: LogicalPlanningContext): LogicalPlan = {
@@ -95,7 +95,7 @@ case class IDPQueryGraphSolver(singleComponentSolver: SingleComponentPlannerTrai
     val plans = if (components.isEmpty) planEmptyComponent(queryGraph, context, kit) else planComponents(components, interestingOrder, context, kit)
 
     monitor.startConnectingComponents(queryGraph)
-    val result = connectComponentsAndSolveOptionalMatch(plans.toSet, queryGraph, interestingOrder, context, kit)
+    val result = componentConnector.connectComponentsAndSolveOptionalMatch(plans.toSet, queryGraph, interestingOrder, context, kit, singleComponentSolver)
     monitor.endConnectingComponents(queryGraph, result)
     result
   }
@@ -121,40 +121,6 @@ case class IDPQueryGraphSolver(singleComponentSolver: SingleComponentPlannerTrai
     val result: LogicalPlan = kit.select(plan, queryGraph)
     monitor.emptyComponentPlanned(queryGraph, result)
     Seq(PlannedComponent(queryGraph, BestResults(result, None)))
-  }
-
-  private def connectComponentsAndSolveOptionalMatch(plans: Set[PlannedComponent], qg: QueryGraph, interestingOrder: InterestingOrder, context: LogicalPlanningContext, kit: QueryPlannerKit): LogicalPlan = {
-
-    @tailrec
-    def recurse(plans: Set[PlannedComponent], optionalMatches: Seq[QueryGraph]): (Set[PlannedComponent], Seq[QueryGraph]) = {
-      if (optionalMatches.nonEmpty) {
-        // If we have optional matches left to solve - start with that
-        val firstOptionalMatch = optionalMatches.head
-        val applicablePlan = plans.find(p => firstOptionalMatch.argumentIds subsetOf p.plan.bestResult.availableSymbols)
-
-        applicablePlan match {
-          case Some(t@PlannedComponent(solvedQg, p)) =>
-            // TODO: Compare best plan with best sorted plan, instead of just returning the best plan
-          val candidates = context.config.optionalSolvers.flatMap(solver => solver(firstOptionalMatch, p.bestResult, interestingOrder, context))
-            val best = kit.pickBest(candidates).get
-            recurse(plans - t + PlannedComponent(solvedQg, BestResults(best, None)), optionalMatches.tail)
-
-          case None =>
-            // If we couldn't find any optional match we can take on, produce the best cartesian product possible
-            recurse(cartesianProductsOrValueJoins(plans, qg, interestingOrder, context, kit, singleComponentSolver), optionalMatches)
-        }
-      } else if (plans.size > 1) {
-
-        recurse(cartesianProductsOrValueJoins(plans, qg, interestingOrder, context, kit, singleComponentSolver), optionalMatches)
-      } else (plans, optionalMatches)
-    }
-
-    val (resultingPlans, optionalMatches) = recurse(plans, qg.optionalMatches)
-    require(resultingPlans.size == 1)
-    require(optionalMatches.isEmpty)
-    // Best sorted plan, if available, otherwise best overall plan
-    val bestPlans = resultingPlans.head.plan
-    bestPlans.bestResultFulfillingReq.getOrElse(bestPlans.bestResult)
   }
 }
 
