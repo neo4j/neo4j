@@ -24,12 +24,11 @@ import org.neo4j.cypher.internal.compiler.planner.logical.QueryPlannerKit
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.IDPQueryGraphSolver.extraRequirementForInterestingOrder
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.IDPTable.SORTED_BIT
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.cartesianProductsOrValueJoins.planLotsOfCartesianProducts
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.BestPlans
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.time.Stopwatch
-
-import scala.collection.BitSet
 
 /**
  * This class is responsible for connecting all disconnected logical plans, which can be
@@ -54,14 +53,12 @@ case class ComponentConnectorPlanner(singleComponentPlanner: SingleComponentPlan
                                                       interestingOrder: InterestingOrder,
                                                       context: LogicalPlanningContext,
                                                       kit: QueryPlannerKit,
-                                                      singleComponentPlanner: SingleComponentPlannerTrait): LogicalPlan = {
-//    require(components.size > 1, "Can't connect less than 2 components.")
-
+                                                      singleComponentPlanner: SingleComponentPlannerTrait): BestPlans = {
 
     // kit.select plans predicates and shortest path patterns. If nothing is left in this area, we can skip IDP.
     val allSolved = components.flatMap(_.queryGraph.selections.predicates)
     val notYetSolved = queryGraph.selections.predicates -- allSolved
-    val bestPlans = if (notYetSolved.isEmpty && queryGraph.optionalMatches.isEmpty && queryGraph.shortestPathPatterns.isEmpty) {
+    if (notYetSolved.isEmpty && queryGraph.optionalMatches.isEmpty && queryGraph.shortestPathPatterns.isEmpty) {
       if (components.size == 1) {
         // If there is only 1 component and no optional matches there is nothing we need to do.
         components.head.plan
@@ -74,15 +71,13 @@ case class ComponentConnectorPlanner(singleComponentPlanner: SingleComponentPlan
     } else {
       connectWithIDP(components, queryGraph, interestingOrder, context, kit)
     }
-    // Best sorted plan, if available, otherwise best overall plan
-    bestPlans.bestResultFulfillingReq.getOrElse(bestPlans.bestResult)
   }
 
   private def connectWithIDP(components: Set[PlannedComponent],
                              queryGraph: QueryGraph,
                              interestingOrder: InterestingOrder,
                              context: LogicalPlanningContext,
-                             kit: QueryPlannerKit): BestResults[LogicalPlan] = {
+                             kit: QueryPlannerKit): BestPlans = {
     val orderRequirement = extraRequirementForInterestingOrder(context, interestingOrder)
     val goalBitAllocation = GoalBitAllocation(
       numComponents = components.size,

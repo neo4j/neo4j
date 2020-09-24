@@ -46,7 +46,7 @@ trait JoinDisconnectedQueryGraphComponents {
                                              interestingOrder: InterestingOrder,
                                              context: LogicalPlanningContext,
                                              kit: QueryPlannerKit,
-                                             singleComponentPlanner: SingleComponentPlannerTrait): LogicalPlan
+                                             singleComponentPlanner: SingleComponentPlannerTrait): BestPlans
 }
 
 case class PlannedComponent(queryGraph: QueryGraph, plan: BestPlans)
@@ -78,7 +78,7 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
                                                       interestingOrder: InterestingOrder,
                                                       context: LogicalPlanningContext,
                                                       kit: QueryPlannerKit,
-                                                      singleComponentPlanner: SingleComponentPlannerTrait): LogicalPlan = {
+                                                      singleComponentPlanner: SingleComponentPlannerTrait): BestPlans = {
 
     @tailrec
     def recurse(plans: Set[PlannedComponent], optionalMatches: Seq[QueryGraph]): (Set[PlannedComponent], Seq[QueryGraph]) = {
@@ -89,7 +89,9 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
 
         applicablePlan match {
           case Some(t@PlannedComponent(solvedQg, p)) =>
-            val candidates = context.config.optionalSolvers.flatMap(solver => solver(firstOptionalMatch, p.bestResult, interestingOrder, context))
+            val candidates = context.config.optionalSolvers
+                                    .flatMap(solver => solver(firstOptionalMatch, p.bestResult, interestingOrder, context))
+                                    .map(_.bestResult)
             val best = kit.pickBest(candidates).get
             recurse(plans - t + PlannedComponent(solvedQg, BestResults(best, None)), optionalMatches.tail)
 
@@ -106,9 +108,7 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
     val (resultingPlans, optionalMatches) = recurse(plans, qg.optionalMatches)
     require(resultingPlans.size == 1)
     require(optionalMatches.isEmpty)
-    // Best sorted plan, if available, otherwise best overall plan
-    val bestPlans = resultingPlans.head.plan
-    bestPlans.bestResultFulfillingReq.getOrElse(bestPlans.bestResult)
+    resultingPlans.head.plan
   }
 
   /**

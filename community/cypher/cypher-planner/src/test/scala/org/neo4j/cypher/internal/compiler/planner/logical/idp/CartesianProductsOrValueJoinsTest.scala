@@ -211,22 +211,23 @@ class CartesianProductsOrValueJoinsTest extends CypherFunSuite with LogicalPlann
         PlannedComponent(QueryGraph(patternNodes = Set("a")), BestResults(allNodesScan("a", planningAttributes), None)),
         PlannedComponent(QueryGraph(patternNodes = Set("b")), BestResults(allNodesScan("b", planningAttributes), None)),
         PlannedComponent(QueryGraph(patternNodes = Set("c")), BestResults(allNodesScan("c", planningAttributes), None))),
-      expectedPlans =
-        List((planA, "a"), (planB, "b"), (planC, "c")).permutations.flatMap { l =>
-          val ((a, aName), (b, bName), (c, cName)) = (l.head, l(1), l(2))
-          // permutate equals order
-          List(prop(bName, "id"), prop(cName, "id")).permutations.map { l2 =>
-            val (prop1, prop2) = (l2.head, l2(1))
-            Selection(Seq(
-              equals(prop(aName, "id"), prop2)),
-              ValueHashJoin(
-                a,
-                ValueHashJoin(b, c, equals(prop(bName, "id"), prop(cName, "id"))),
-                equals(prop(aName, "id"), prop1)
-              )
-            )
-          }
-        }.toSeq)
+      expectedPlans = for {
+        List((xPlan, xProp), (yPlan, yProp), (zPlan, zProp)) <- List((planA, prop("a", "id")), (planB, prop("b", "id")), (planC, prop("c", "id"))).permutations.toSeq
+        xyEq <- List(equals(xProp, yProp), equals(yProp, xProp))
+        yzEq = equals(yProp, zProp)
+        xzEq = equals(xProp, zProp)
+        allEqs = Set(xyEq, yzEq, xzEq)
+        if Set(eq1, eq2, eq3).forall(eq => allEqs(eq) || allEqs(eq.switchSides))
+        } yield Selection(
+          Seq(xyEq),
+          ValueHashJoin(
+            xPlan,
+            ValueHashJoin(yPlan, zPlan, yzEq),
+            xzEq
+          )
+        )
+      //xProp = c
+    )
   }
 
   test("should recognize value joins") {
@@ -371,7 +372,7 @@ class CartesianProductsOrValueJoinsTest extends CypherFunSuite with LogicalPlann
       val singleComponents = input(context.planningAttributes)
       val result = cartesianProductsOrValueJoins.connectComponentsAndSolveOptionalMatch(singleComponents, cfg.qg, InterestingOrder.empty, context, kit, SingleComponentPlanner(mock[IDPQueryGraphSolverMonitor]))
 
-      assertion(result)
+      assertion(result.result)
     }
   }
 

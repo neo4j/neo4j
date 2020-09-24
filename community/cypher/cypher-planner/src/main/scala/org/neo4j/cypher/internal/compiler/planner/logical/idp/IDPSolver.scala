@@ -48,6 +48,10 @@ object ExtraRequirement {
   val empty: ExtraRequirement[Any] = (_: Any) => false
 }
 
+/**
+ * @param bestResult The best result overall. May or may not fulfill the extra requirement
+ * @param bestResultFulfillingReq The best result that fulfills the extra requirement. May be the same as bestResult.
+ */
 case class BestResults[+Result](bestResult: Result,
                                 bestResultFulfillingReq: Option[Result]) {
   def map[B](f: Result => B): BestResults[B] = BestResults(f(bestResult), bestResultFulfillingReq.map(f))
@@ -55,6 +59,10 @@ case class BestResults[+Result](bestResult: Result,
    * Returns iterator over all unique results
    */
   def allResults: Iterator[Result] = (Set(bestResult) ++ bestResultFulfillingReq).toIterator
+  /**
+   * Gets the bestResultFulfillingReq if present, otherwise gets bestResult
+   */
+  def result: Result = bestResultFulfillingReq.getOrElse(bestResult)
 }
 
 /**
@@ -174,15 +182,16 @@ class IDPSolver[Solvable, Result, Context](generator: IDPSolverStep[Solvable, Re
     monitor.foundPlanAfter(iterations)
 
     val (plansFulfillingReq, plans) =  table.plans
-      .map { case ((key, fulfilsReq), result) => (registry.explode(key.bitSet), fulfilsReq) -> result }
-      .partition { case ((_, fulfilsReq), _) => fulfilsReq }
+      .map { case ((_, fulfilsReq), result) => (fulfilsReq, result) }
+      .partition { case (fulfilsReq, _) => fulfilsReq }
 
     val (_, bestResult) = plans
       .toSingleOption
       .getOrElse(throw new AssertionError("Expected a single plan to be left in the plan table"))
 
     if (plansFulfillingReq.hasNext) {
-      val (_, plan) = plansFulfillingReq.toSingleOption
+      val (_, plan) = plansFulfillingReq
+        .toSingleOption
         .getOrElse(throw new AssertionError("Expected a single plan that fulfils the requirements to be left in the plan table"))
 
       BestResults(bestResult, Some(plan))

@@ -29,24 +29,27 @@ import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
 trait OptionalSolver {
-  def apply(qg: QueryGraph, lp: LogicalPlan, interestingOrder: InterestingOrder, context: LogicalPlanningContext): Option[LogicalPlan]
+  def apply(qg: QueryGraph, lp: LogicalPlan, interestingOrder: InterestingOrder, context: LogicalPlanningContext): Option[BestPlans]
 }
 
 case object applyOptional extends OptionalSolver {
-  override def apply(optionalQg: QueryGraph, lhs: LogicalPlan, interestingOrder: InterestingOrder, context: LogicalPlanningContext): Option[LogicalPlan] = {
+  override def apply(optionalQg: QueryGraph, lhs: LogicalPlan, interestingOrder: InterestingOrder, context: LogicalPlanningContext): Option[BestPlans] = {
     val innerContext: LogicalPlanningContext = context.withUpdatedCardinalityInformation(lhs)
-    val inner = context.strategy.plan(optionalQg, interestingOrder, innerContext) // TODO BestResults?
-    val rhs = context.logicalPlanProducer.planOptional(inner, lhs.availableSymbols, innerContext)
-    val applied = context.logicalPlanProducer.planApply(lhs, rhs, context)
+    val inner = context.strategy.plan(optionalQg, interestingOrder, innerContext)
+    val bestPlans = inner.map { inner =>
+      val rhs = context.logicalPlanProducer.planOptional(inner, lhs.availableSymbols, innerContext)
+      val applied = context.logicalPlanProducer.planApply(lhs, rhs, context)
 
-    // Often the Apply can be rewritten into an OptionalExpand. We want to do that before cost estimating against the hash joins, otherwise that
-    // is not a fair comparison (as they cannot be rewritten to something cheaper).
-    Some(unnestOptional(applied).asInstanceOf[LogicalPlan])
+      // Often the Apply can be rewritten into an OptionalExpand. We want to do that before cost estimating against the hash joins, otherwise that
+      // is not a fair comparison (as they cannot be rewritten to something cheaper).
+      unnestOptional(applied).asInstanceOf[LogicalPlan]
+    }
+    Some(bestPlans)
   }
 }
 
 abstract class outerHashJoin extends OptionalSolver {
-  override def apply(optionalQg: QueryGraph, side1: LogicalPlan, interestingOrder: InterestingOrder, context: LogicalPlanningContext): Option[LogicalPlan] = {
+  override def apply(optionalQg: QueryGraph, side1: LogicalPlan, interestingOrder: InterestingOrder, context: LogicalPlanningContext): Option[BestPlans] = {
     val joinNodes = optionalQg.argumentIds
     val solvedHints = optionalQg.joinHints.filter { hint =>
       val hintVariables = hint.variables.map(_.name).toSet
@@ -58,30 +61,38 @@ abstract class outerHashJoin extends OptionalSolver {
     // arguments and we delete the arguments below.
     // If not, then we're probably under an apply that will stay, so we need to force the cardinality to be multiplied by the incoming
     // cardinality.
-    val side2Context = if (!side1.isInstanceOf[Argument]) context.copy(input = context.input.copy(alwaysMultiply = true)) else context
+    val side2Context =
+      if (!side1.isInstanceOf[Argument]) context.copy(input = context.input.copy(alwaysMultiply = true))
+      else context
 
-    val side2 = context.strategy.plan(optionalQg.withoutArguments().withoutHints(solvedHints.map(_.asInstanceOf[Hint])), interestingOrder, side2Context)
+    val side2InterestingOrder = side2Order(interestingOrder)
+    val side2Plans = context.strategy.plan(optionalQg.withoutArguments().withoutHints(solvedHints.map(_.asInstanceOf[Hint])), side2InterestingOrder, side2Context)
 
     if (joinNodes.nonEmpty &&
       joinNodes.forall(side1.availableSymbols) &&
       joinNodes.forall(optionalQg.patternNodes)) {
-      Some(produceJoin(context, joinNodes, side1, side2, solvedHints))
+      val bestPlans = side2Plans.map(side2 => produceJoin(context, joinNodes, side1, side2, solvedHints))
+      Some(bestPlans)
     } else {
       None
     }
   }
 
   def produceJoin(context: LogicalPlanningContext, joinNodes: Set[String], side1: LogicalPlan, side2: LogicalPlan, solvedHints: Set[UsingJoinHint]): LogicalPlan
+  def side2Order(interestingOrder: InterestingOrder): InterestingOrder
 }
 
 case object leftOuterHashJoin extends outerHashJoin {
   override def produceJoin(context: LogicalPlanningContext, joinNodes: Set[String], lhs: LogicalPlan, rhs: LogicalPlan, solvedHints: Set[UsingJoinHint]): LogicalPlan = {
     context.logicalPlanProducer.planLeftOuterHashJoin(joinNodes, lhs, rhs, solvedHints, context)
   }
+  override def side2Order(interestingOrder: InterestingOrder): InterestingOrder = interestingOrder
 }
 
 case object rightOuterHashJoin extends outerHashJoin {
   override def produceJoin(context: LogicalPlanningContext, joinNodes: Set[String], rhs: LogicalPlan, lhs: LogicalPlan, solvedHints: Set[UsingJoinHint]): LogicalPlan = {
     context.logicalPlanProducer.planRightOuterHashJoin(joinNodes, lhs, rhs, solvedHints, context)
   }
+  // No need to solve ordering on the lhs since it will get destroyed by the join
+  override def side2Order(interestingOrder: InterestingOrder): InterestingOrder = InterestingOrder.empty
 }

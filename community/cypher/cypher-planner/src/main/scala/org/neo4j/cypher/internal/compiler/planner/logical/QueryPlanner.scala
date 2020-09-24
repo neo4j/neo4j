@@ -162,7 +162,8 @@ case object planPart extends PartPlanner {
       case Some(mode) if !context.input.strictness.contains(mode) => context.withStrictness(mode)
       case _ => context
     }
-    ctx.strategy.plan(query.queryGraph, interestingOrderForPart(query, rhsPart), ctx)
+    val plans = ctx.strategy.plan(query.queryGraph, interestingOrderForPart(query, rhsPart), ctx)
+    plans.result
   }
 
   // Extract the interesting InterestingOrder for this part of the query

@@ -293,7 +293,7 @@ object PatternExpressionSolver {
       //  i) There is no way of expressing order within a pattern comprehension
       //  ii) It can lead to endless recursion in case the sort expression contains the subquery we are solving
       //      e.g. `n{.name, Thing_Has_Thing2:[ (n)-[:Has]->(thing2:Thing2)| n.name ]} ORDER BY n.name`
-      val innerPlan = context.strategy.plan(qg, InterestingOrder.empty, context)
+      val innerPlan = context.strategy.plan(qg, InterestingOrder.empty, context).result
       val collectionName = FreshIdNameGenerator.name(expr.position)
       val projectedPath = projectionCreator(expr)
       val projectedInner = projection(innerPlan, Map(collectionName -> projectedPath), Map(collectionName -> projectedPath), context)

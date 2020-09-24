@@ -26,12 +26,11 @@ import org.neo4j.cypher.internal.compiler.planner.logical.QueryPlannerKit
 import org.neo4j.cypher.internal.compiler.planner.logical.SortPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.SortPlanner.SatisfiedForPlan
 import org.neo4j.cypher.internal.compiler.planner.logical.SortPlanner.orderSatisfaction
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.BestPlans
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.planShortestPaths
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
-
-import scala.annotation.tailrec
 
 trait IDPQueryGraphSolverMonitor extends IDPSolverMonitor {
   def noIDPIterationFor(graph: QueryGraph, result: LogicalPlan): Unit
@@ -89,15 +88,16 @@ case class IDPQueryGraphSolver(singleComponentSolver: SingleComponentPlannerTrai
                                componentConnector: JoinDisconnectedQueryGraphComponents,
                                monitor: IDPQueryGraphSolverMonitor) extends QueryGraphSolver with PatternExpressionSolving {
 
-  override def plan(queryGraph: QueryGraph, interestingOrder: InterestingOrder, context: LogicalPlanningContext): LogicalPlan = {
+  override def plan(queryGraph: QueryGraph, interestingOrder: InterestingOrder, context: LogicalPlanningContext): BestPlans = {
     val kit = kitWithShortestPathSupport(context.config.toKit(interestingOrder, context), context)
     val components = queryGraph.connectedComponents
-    val plans = if (components.isEmpty) planEmptyComponent(queryGraph, context, kit) else planComponents(components, interestingOrder, context, kit)
+    val plannedComponents =
+      if (components.isEmpty)
+        planEmptyComponent(queryGraph, context, kit)
+      else
+        planComponents(components, interestingOrder, context, kit)
 
-    monitor.startConnectingComponents(queryGraph)
-    val result = componentConnector.connectComponentsAndSolveOptionalMatch(plans.toSet, queryGraph, interestingOrder, context, kit, singleComponentSolver)
-    monitor.endConnectingComponents(queryGraph, result)
-    result
+    connectComponentsAndSolveOptionalMatch(plannedComponents, queryGraph, interestingOrder, context, kit)
   }
 
   private def kitWithShortestPathSupport(kit: QueryPlannerKit, context: LogicalPlanningContext) =
@@ -121,6 +121,17 @@ case class IDPQueryGraphSolver(singleComponentSolver: SingleComponentPlannerTrai
     val result: LogicalPlan = kit.select(plan, queryGraph)
     monitor.emptyComponentPlanned(queryGraph, result)
     Seq(PlannedComponent(queryGraph, BestResults(result, None)))
+  }
+
+  private def connectComponentsAndSolveOptionalMatch(plannedComponents: Seq[PlannedComponent],
+                                                     queryGraph: QueryGraph,
+                                                     interestingOrder: InterestingOrder,
+                                                     context: LogicalPlanningContext,
+                                                     kit: QueryPlannerKit): BestPlans = {
+    monitor.startConnectingComponents(queryGraph)
+    val bestPlans = componentConnector.connectComponentsAndSolveOptionalMatch(plannedComponents.toSet, queryGraph, interestingOrder, context, kit, singleComponentSolver)
+    monitor.endConnectingComponents(queryGraph, bestPlans.result)
+    bestPlans
   }
 }
 

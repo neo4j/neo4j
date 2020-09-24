@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.planner.logical.idp
 
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.QueryPlannerKit
-import org.neo4j.cypher.internal.compiler.planner.logical.steps.applyOptional
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
@@ -39,9 +38,9 @@ case object OptionalMatchConnector
         leftPlan <- table(leftGoal).iterator
         canPlan = optionalQg.argumentIds subsetOf leftPlan.availableSymbols
         if canPlan
-        _ = println(s"solving: $optionalQg on top of: $leftPlan")
         optionalSolver <- context.config.optionalSolvers
-        plan <- optionalSolver(optionalQg, leftPlan, interestingOrder, context)
+        bestPlans <- optionalSolver(optionalQg, leftPlan, interestingOrder, context).toIterator
+        plan <- bestPlans.allResults
       } yield plan
     }
 }

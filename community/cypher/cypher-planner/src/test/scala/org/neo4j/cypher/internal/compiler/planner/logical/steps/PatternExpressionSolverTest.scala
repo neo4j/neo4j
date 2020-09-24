@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher.beLike
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.QueryGraphSolver
+import org.neo4j.cypher.internal.compiler.planner.logical.idp.BestResults
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.expressions.RelationshipChain
@@ -69,9 +70,9 @@ class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTes
 
   private def mockStrategyWithMultiplePlans(strategy: QueryGraphSolver, plans: LogicalPlan*): Unit = {
     val planIter = plans.iterator
-    when(strategy.plan(any(), any(), any())).thenAnswer(new Answer[LogicalPlan] {
-      override def answer(invocation: InvocationOnMock): LogicalPlan = {
-        planIter.next()
+    when(strategy.plan(any(), any(), any())).thenAnswer(new Answer[BestResults[LogicalPlan]] {
+      override def answer(invocation: InvocationOnMock): BestResults[LogicalPlan] = {
+        BestResults(planIter.next(), None)
       }
     })
   }

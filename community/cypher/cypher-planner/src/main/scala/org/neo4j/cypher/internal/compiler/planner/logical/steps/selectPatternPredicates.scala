@@ -106,7 +106,7 @@ case object selectPatternPredicates extends SelectionCandidateGenerator {
       case (acc, p) => acc.addPredicates(e.outerScope.map(id => id.name), p)
     }
 
-    context.strategy.plan(new_qg, interestingOrder, context)
+    context.strategy.plan(new_qg, interestingOrder, context).result
   }
 
   def planPredicates(lhs: LogicalPlan,

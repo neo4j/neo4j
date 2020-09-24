@@ -45,6 +45,8 @@ import org.neo4j.cypher.internal.compiler.planner.logical.MetricsFactory
 import org.neo4j.cypher.internal.compiler.planner.logical.QueryGraphSolver
 import org.neo4j.cypher.internal.compiler.planner.logical.QueryPlannerConfiguration
 import org.neo4j.cypher.internal.compiler.planner.logical.SimpleMetricsFactory
+import org.neo4j.cypher.internal.compiler.planner.logical.idp.BestResults
+import org.neo4j.cypher.internal.compiler.planner.logical.idp.ComponentConnectorPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.DefaultIDPSolverConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.IDPQueryGraphSolver
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.IDPQueryGraphSolverMonitor
@@ -161,8 +163,8 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
 
   def newMockedStrategy(plan: LogicalPlan) = {
     val strategy = mock[QueryGraphSolver]
-    when(strategy.plan(any(), any(), any())).thenAnswer(new Answer[LogicalPlan] {
-      override def answer(invocation: InvocationOnMock): LogicalPlan = {
+    when(strategy.plan(any(), any(), any())).thenAnswer(new Answer[BestResults[LogicalPlan]] {
+      override def answer(invocation: InvocationOnMock): BestResults[LogicalPlan] = {
         val context = invocation.getArgument[LogicalPlanningContext](2)
         val solveds = context.planningAttributes.solveds
         val cardinalities = context.planningAttributes.cardinalities
@@ -170,7 +172,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
         solveds.set(plan.id, SinglePlannerQuery.empty)
         cardinalities.set(plan.id, 0.0)
         providedOrders.set(plan.id, ProvidedOrder.empty)
-        plan
+        BestResults(plan, None)
       }
     })
     strategy
