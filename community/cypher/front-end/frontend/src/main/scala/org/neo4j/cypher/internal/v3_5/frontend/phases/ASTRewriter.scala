@@ -31,7 +31,6 @@ class ASTRewriter(rewriterSequencer: String => RewriterStepSequencer,
   def rewrite(queryText: String, statement: Statement, semanticState: SemanticState): (Statement, Map[String, Any], Set[RewriterCondition]) = {
 
     val contract = rewriterSequencer("ASTRewriter")(
-      recordScopes(semanticState),
       expandStar(semanticState),
       desugarMapProjection(semanticState),
       normalizeComparisons,
