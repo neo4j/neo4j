@@ -664,7 +664,7 @@ public class BuiltInDbmsProcedures
         {
             return new TransactionMarkForTerminationFailedResult( transactionId, currentUser, "Unable to kill closing transactions." );
         }
-        log.debug( "User %s terminated transaction %d.", currentUser, transactionId );
+        log.debug( "User %s terminated transaction %s.", currentUser, transactionId );
         handle.markForTermination( Status.Transaction.Terminated );
         return new TransactionMarkForTerminationResult( transactionId, handle.subject().username() );
     }
