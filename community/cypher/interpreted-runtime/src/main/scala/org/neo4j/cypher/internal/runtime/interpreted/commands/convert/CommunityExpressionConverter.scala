@@ -262,7 +262,7 @@ case class CommunityExpressionConverter(tokenContext: TokenContext) extends Expr
       case internal.expressions.HasDegreeLessThan(node, relType, dir, degree) =>
         val typ = relType.map(relType => UnresolvedRelType(relType.name))
         commands.expressions.HasDegreeLessThan(self.toCommandExpression(id, node), typ, dir, self.toCommandExpression(id, degree))
-      case internal.expressions.HasDegreeGreaterThanOrEqual(node, relType, dir, degree) =>
+      case internal.expressions.HasDegreeLessThanOrEqual(node, relType, dir, degree) =>
         val typ = relType.map(relType => UnresolvedRelType(relType.name))
         commands.expressions.HasDegreeLessThanOrEqual(self.toCommandExpression(id, node), typ, dir, self.toCommandExpression(id, degree))
       case e: PrefixSeekRangeWrapper => commands.expressions
