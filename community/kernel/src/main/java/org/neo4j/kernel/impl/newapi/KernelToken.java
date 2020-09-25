@@ -29,7 +29,6 @@ import org.neo4j.internal.kernel.api.Token;
 import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
-import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.internal.kernel.api.exceptions.schema.TokenCapacityExceededKernelException;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.PrivilegeAction;
@@ -41,6 +40,8 @@ import org.neo4j.token.TokenHolders;
 import org.neo4j.token.api.NamedToken;
 import org.neo4j.token.api.TokenHolder;
 import org.neo4j.token.api.TokenNotFoundException;
+
+import static org.neo4j.internal.kernel.api.TokenWrite.checkValidTokenName;
 
 public class KernelToken implements Token
 {
@@ -235,15 +236,6 @@ public class KernelToken implements Token
     {
         ktx.assertOpen();
         return store.relationshipTypeCount();
-    }
-
-    private static String checkValidTokenName( String name ) throws IllegalTokenNameException
-    {
-        if ( name == null || name.isEmpty() || name.contains( "\0" ) )
-        {
-            throw new IllegalTokenNameException( name );
-        }
-        return name;
     }
 
     private int getOrCreateForName( TokenHolder tokens, PrivilegeAction action, String name ) throws KernelException

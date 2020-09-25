@@ -46,6 +46,7 @@ import org.neo4j.token.api.NamedToken;
 import static java.lang.Integer.parseInt;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -116,10 +117,7 @@ class BatchingTokenRepositoryTest
     void shouldFlushNewTokens()
     {
         // given
-
-        try ( NeoStores stores = new StoreFactory( databaseLayout, Config.defaults(),
-                new DefaultIdGeneratorFactory( fileSystem, immediate() ), pageCache, fileSystem, NullLogProvider.getInstance() ).openNeoStores( true,
-                StoreType.PROPERTY_KEY_TOKEN, StoreType.PROPERTY_KEY_TOKEN_NAME ) )
+        try ( NeoStores stores = newNeoStores( StoreType.PROPERTY_KEY_TOKEN, StoreType.PROPERTY_KEY_TOKEN_NAME ) )
         {
             TokenStore<PropertyKeyTokenRecord> tokenStore = stores.getPropertyKeyTokenStore();
             int rounds = 3;
@@ -150,5 +148,25 @@ class BatchingTokenRepositoryTest
                 assertEquals( token.id(), parseInt( token.name() ) );
             }
         }
+    }
+
+    @Test
+    void shouldCheckTokenNamesForValidity()
+    {
+        try ( NeoStores neoStores = newNeoStores( StoreType.LABEL_TOKEN, StoreType.LABEL_TOKEN_NAME );
+              BatchingTokenRepository.BatchingLabelTokenRepository repository =
+                      new BatchingTokenRepository.BatchingLabelTokenRepository( neoStores.getLabelTokenStore() ) )
+        {
+            assertThrows( IllegalArgumentException.class, () -> repository.getOrCreateId( null ) );
+            assertThrows( IllegalArgumentException.class, () -> repository.getOrCreateId( "" ) );
+            assertThrows( IllegalArgumentException.class, () -> repository.getOrCreateId( (Object) "" ) ); // the string-or-integer method
+            assertThrows( IllegalArgumentException.class, () -> repository.getOrCreateIds( new String[]{"abc", "", null} ) );
+        }
+    }
+
+    private NeoStores newNeoStores( StoreType... storeTypes )
+    {
+        return new StoreFactory( databaseLayout, Config.defaults(), new DefaultIdGeneratorFactory( fileSystem, immediate() ), pageCache, fileSystem,
+                NullLogProvider.getInstance() ).openNeoStores( true, storeTypes );
     }
 }
