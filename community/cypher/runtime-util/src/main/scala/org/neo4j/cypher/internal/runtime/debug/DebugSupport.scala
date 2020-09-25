@@ -39,6 +39,7 @@ object DebugSupport {
   final val Reset   = "\u001b[0m"
 
   /** DEBUG CONFIGURATION **/
+  final val PHYSICAL_PLANNING = new DebugLog(false, "")
 
   final val TIMELINE = new DebugTimeline(false)
 
