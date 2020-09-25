@@ -50,7 +50,6 @@ import org.neo4j.cypher.internal.rewriting.rewriters.normalizeMatchPredicates
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizeNotEquals
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizeSargablePredicates
 import org.neo4j.cypher.internal.rewriting.rewriters.parameterValueTypeReplacement
-import org.neo4j.cypher.internal.rewriting.rewriters.recordScopes
 import org.neo4j.cypher.internal.rewriting.rewriters.replaceLiteralDynamicPropertyLookups
 import org.neo4j.cypher.internal.rewriting.rewriters.sensitiveLiteralReplacement
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
@@ -67,7 +66,6 @@ class ASTRewriter(rewriterSequencer: String => RewriterStepSequencer,
               cypherExceptionFactory: CypherExceptionFactory): (Statement, Map[String, Any], Set[RewriterCondition]) = {
 
     val contract = rewriterSequencer("ASTRewriter")(
-      recordScopes(semanticState),
       expandStar(semanticState),
       desugarMapProjection(semanticState),
       moveWithPastMatch,
