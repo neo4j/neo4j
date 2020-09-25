@@ -25,13 +25,13 @@ import org.eclipse.collections.impl.factory.primitive.IntObjectMaps;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 
-import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.consistency.LookupAccessorsFromRunningDb;
 import org.neo4j.consistency.checking.cache.CacheAccess;
 import org.neo4j.consistency.checking.cache.CacheSlots;
 import org.neo4j.consistency.checking.cache.DefaultCacheAccess;
@@ -46,15 +46,12 @@ import org.neo4j.consistency.statistics.Counts;
 import org.neo4j.consistency.store.DirectRecordAccess;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.exceptions.KernelException;
-import org.neo4j.function.ThrowingFunction;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.batchimport.cache.NumberArrayFactory;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.internal.index.label.LabelScanStore;
 import org.neo4j.internal.index.label.RelationshipTypeScanStore;
-import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.recordstorage.SchemaStorage;
@@ -67,13 +64,9 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.index.IndexAccessor;
-import org.neo4j.kernel.impl.api.index.AbstractDelegatingIndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
-import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.api.index.OnlineIndexProxy;
 import org.neo4j.kernel.impl.store.InlineNodeLabels;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
@@ -99,7 +92,6 @@ import org.neo4j.token.TokenHolders;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
@@ -223,7 +215,7 @@ class CheckerTestBase
         IndexProviderMap indexProviders = dependencies.resolveDependency( IndexProviderMap.class );
         IndexingService indexingService = dependencies.resolveDependency( IndexingService.class );
         IndexAccessors indexAccessors = new IndexAccessors( indexProviders, neoStores, new IndexSamplingConfig( config ),
-                new LookupAccessorsFromRunningDb( indexingService ), PageCacheTracer.NULL, tokenHolders );
+                new LookupAccessorsFromRunningDb( indexingService, false ), PageCacheTracer.NULL, tokenHolders );
         ConsistencySummaryStatistics inconsistenciesSummary = new ConsistencySummaryStatistics();
         InconsistencyReport report = new InconsistencyReport( new InconsistencyMessageLogger( NullLog.getInstance() ), inconsistenciesSummary );
         monitor = mock( ConsistencyReporter.Monitor.class );
@@ -416,34 +408,5 @@ class CheckerTestBase
             prop.addPropertyBlock( property );
         }
         propertyStore.updateRecord( prop, PageCursorTracer.NULL );
-    }
-
-    private static class LookupAccessorsFromRunningDb implements ThrowingFunction<IndexDescriptor,IndexAccessor,IOException>
-    {
-        private final IndexingService indexingService;
-
-        LookupAccessorsFromRunningDb( IndexingService indexingService )
-        {
-            this.indexingService = indexingService;
-        }
-
-        @Override
-        public IndexAccessor apply( IndexDescriptor indexDescriptor )
-        {
-            try
-            {
-                IndexProxy proxy = indexingService.getIndexProxy( indexDescriptor );
-                while ( proxy instanceof AbstractDelegatingIndexProxy )
-                {
-                    proxy = ((AbstractDelegatingIndexProxy) proxy).getDelegate();
-                }
-                assertEquals( InternalIndexState.ONLINE, proxy.getState() );
-                return ((OnlineIndexProxy) proxy).accessor();
-            }
-            catch ( IndexNotFoundKernelException e )
-            {
-                throw new RuntimeException( e );
-            }
-        }
     }
 }

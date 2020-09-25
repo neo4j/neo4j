@@ -275,7 +275,7 @@ public class ConsistencyCheckService
                     new DirectStoreAccess( storeAccess, labelScanStore, relationshipTypeScanstore, indexes, tokenHolders, indexStatisticsStore,
                             idGeneratorFactory );
             FullCheck check = new FullCheck( progressFactory, statistics, numberOfThreads, consistencyFlags, config, verbose, NodeBasedMemoryLimiter.DEFAULT );
-            summary = check.execute( pageCache, stores, countsManager, pageCacheTracer, memoryTracker, new DuplicatingLog( log, reportLog ) );
+            summary = check.execute( pageCache, stores, countsManager, null, pageCacheTracer, memoryTracker, new DuplicatingLog( log, reportLog ) );
         }
         finally
         {

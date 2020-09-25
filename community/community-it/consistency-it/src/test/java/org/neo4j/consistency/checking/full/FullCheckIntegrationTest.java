@@ -30,10 +30,6 @@ import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.api.parallel.Resources;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -44,6 +40,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
@@ -51,7 +48,6 @@ import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.checking.GraphStoreFixture;
-import org.neo4j.consistency.checking.GraphStoreFixture.Applier;
 import org.neo4j.consistency.checking.GraphStoreFixture.IdGenerator;
 import org.neo4j.consistency.checking.GraphStoreFixture.TransactionDataBuilder;
 import org.neo4j.consistency.newchecker.NodeBasedMemoryLimiter;
@@ -59,7 +55,6 @@ import org.neo4j.consistency.report.ConsistencySummaryStatistics;
 import org.neo4j.consistency.store.DirectStoreAccess;
 import org.neo4j.counts.CountsStore;
 import org.neo4j.exceptions.KernelException;
-import org.neo4j.function.ThrowingFunction;
 import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -73,16 +68,13 @@ import org.neo4j.internal.index.label.LabelScanStore;
 import org.neo4j.internal.index.label.RelationshipTypeScanStoreSettings;
 import org.neo4j.internal.index.label.TokenScanStore;
 import org.neo4j.internal.index.label.TokenScanWriter;
-import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.recordstorage.SchemaRuleAccess;
-import org.neo4j.internal.recordstorage.StoreTokens;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
-import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -123,15 +115,12 @@ import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.string.UTF8;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.SuppressOutputExtension;
-import org.neo4j.test.extension.pagecache.PageCacheExtension;
+import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.token.TokenHolders;
 import org.neo4j.util.Bits;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-import static java.nio.file.StandardOpenOption.READ;
-import static java.nio.file.StandardOpenOption.WRITE;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -153,7 +142,6 @@ import static org.neo4j.internal.kernel.api.TokenRead.ANY_RELATIONSHIP_TYPE;
 import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.internal.schema.IndexPrototype.uniqueForSchema;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
-import static org.neo4j.io.fs.FileUtils.writeAll;
 import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.api.schema.SchemaTestUtil.SIMPLE_NAME_LOOKUP;
@@ -175,7 +163,7 @@ import static org.neo4j.test.mockito.mock.Property.property;
 import static org.neo4j.test.mockito.mock.Property.set;
 import static org.neo4j.util.Bits.bits;
 
-@PageCacheExtension
+@EphemeralTestDirectoryExtension
 @ExtendWith( SuppressOutputExtension.class )
 @ResourceLock( Resources.SYSTEM_OUT )
 public class FullCheckIntegrationTest
@@ -187,8 +175,6 @@ public class FullCheckIntegrationTest
     private static final Object VALUE2 = "value2";
     private final TokenNameLookup tokenNameLookup = SIMPLE_NAME_LOOKUP;
 
-    @Inject
-    private PageCache pageCache;
     @Inject
     private TestDirectory testDirectory;
     protected GraphStoreFixture fixture;
@@ -211,7 +197,7 @@ public class FullCheckIntegrationTest
     }
 
     @AfterEach
-    void tearDown() throws Exception
+    void tearDown()
     {
         fixture.close();
     }
@@ -482,13 +468,11 @@ public class FullCheckIntegrationTest
     void shouldReportNodesThatAreNotIndexed() throws Exception
     {
         // given
-        IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );
         Iterator<IndexDescriptor> indexDescriptorIterator = getIndexDescriptors();
         while ( indexDescriptorIterator.hasNext() )
         {
             IndexDescriptor indexDescriptor = indexDescriptorIterator.next();
-            IndexAccessor accessor = fixture.directStoreAccess().indexes().
-                    lookup( indexDescriptor.getIndexProvider() ).getOnlineAccessor( indexDescriptor, samplingConfig, tokenNameLookup );
+            IndexAccessor accessor = fixture.indexAccessorLookup().apply( indexDescriptor );
             try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
             {
                 for ( long nodeId : indexedNodes )
@@ -500,8 +484,6 @@ public class FullCheckIntegrationTest
                     }
                 }
             }
-            accessor.force( IOLimiter.UNLIMITED, NULL );
-            accessor.close();
         }
 
         // when
@@ -531,13 +513,11 @@ public class FullCheckIntegrationTest
             }
         } );
 
-        IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );
         Iterator<IndexDescriptor> indexRuleIterator = getIndexDescriptors();
         while ( indexRuleIterator.hasNext() )
         {
             IndexDescriptor indexRule = indexRuleIterator.next();
-            try ( IndexAccessor accessor = fixture.directStoreAccess().indexes().lookup( indexRule.getIndexProvider() ).getOnlineAccessor( indexRule,
-                    samplingConfig, tokenNameLookup ) )
+            try ( IndexAccessor accessor = fixture.indexAccessorLookup().apply( indexRule ) )
             {
                 try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
                 {
@@ -704,23 +684,20 @@ public class FullCheckIntegrationTest
     {
         final long[] labels = new long[labelCount + 1]; // allocate enough labels to need three records
         final List<Integer> createdLabels = new ArrayList<>();
-        try ( Applier applier = fixture.createApplier() )
+        for ( int i = 1/*leave space for the node id*/; i < labels.length; i++ )
         {
-            for ( int i = 1/*leave space for the node id*/; i < labels.length; i++ )
-            {
-                final int offset = i;
-                applier.apply( new GraphStoreFixture.Transaction()
-                { // Neo4j can create no more than one label per transaction...
-                    @Override
-                    protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
-                            GraphStoreFixture.IdGenerator next )
-                    {
-                        Integer label = next.label();
-                        tx.nodeLabel( (int) (labels[offset] = label), "label:" + offset, false );
-                        createdLabels.add( label );
-                    }
-                } );
-            }
+            final int offset = i;
+            fixture.apply( new GraphStoreFixture.Transaction()
+            { // Neo4j can create no more than one label per transaction...
+                @Override
+                protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
+                        GraphStoreFixture.IdGenerator next )
+                {
+                    Integer label = next.label();
+                    tx.nodeLabel( (int) (labels[offset] = label), "label:" + offset, false );
+                    createdLabels.add( label );
+                }
+            } );
         }
         final List<DynamicRecord> chain = new ArrayList<>();
         fixture.apply( new GraphStoreFixture.Transaction()
@@ -1162,19 +1139,19 @@ public class FullCheckIntegrationTest
     void shouldReportPropertyKeyNameInconsistencies() throws Exception
     {
         // given
-        final Reference<Integer> inconsistentName = new Reference<>();
+        final Reference<int[]> propertyKeyNameIds = new Reference<>();
         fixture.apply( new GraphStoreFixture.Transaction()
         {
             @Override
             protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
                                             GraphStoreFixture.IdGenerator next )
             {
-                inconsistentName.set( next.propertyKey() );
-                tx.propertyKey( inconsistentName.get(), "FOO", false );
+                int[] dynamicIds = tx.propertyKey( next.propertyKey(), "FOO", false );
+                propertyKeyNameIds.set( dynamicIds );
             }
         } );
         StoreAccess access = fixture.directStoreAccess().nativeStores();
-        DynamicRecord record = access.getPropertyKeyNameStore().getRecord( inconsistentName.get() + 1,
+        DynamicRecord record = access.getPropertyKeyNameStore().getRecord( propertyKeyNameIds.get()[0],
                 access.getPropertyKeyNameStore().newRecord(), FORCE, NULL );
         record.setNextBlock( record.getId() );
         access.getPropertyKeyNameStore().updateRecord( record, NULL );
@@ -1231,19 +1208,19 @@ public class FullCheckIntegrationTest
     void shouldReportPropertyKeyInconsistencies() throws Exception
     {
         // given
-        final Reference<Integer> inconsistentKey = new Reference<>();
+        final Reference<int[]> propertyKeyNameIds = new Reference<>();
         fixture.apply( new GraphStoreFixture.Transaction()
         {
             @Override
             protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
                                             GraphStoreFixture.IdGenerator next )
             {
-                inconsistentKey.set( next.propertyKey() );
-                tx.propertyKey( inconsistentKey.get(), "FOO", false );
+                int[] nameIds = tx.propertyKey( next.propertyKey(), "FOO", false );
+                propertyKeyNameIds.set( nameIds );
             }
         } );
         StoreAccess access = fixture.directStoreAccess().nativeStores();
-        DynamicRecord record = access.getPropertyKeyNameStore().getRecord( inconsistentKey.get() + 1,
+        DynamicRecord record = access.getPropertyKeyNameStore().getRecord( propertyKeyNameIds.get()[0],
                 access.getPropertyKeyNameStore().newRecord(), FORCE, NULL );
         record.setInUse( false );
         access.getPropertyKeyNameStore().updateRecord( record, NULL );
@@ -2129,22 +2106,6 @@ public class FullCheckIntegrationTest
     }
 
     @Test
-    void shouldReportMissingCountsStore() throws Exception
-    {
-        shouldReportBadCountsStore( path ->
-        {
-            Files.delete( path );
-            return true;
-        } );
-    }
-
-    @Test
-    void shouldReportBrokenCountsStore() throws Exception
-    {
-        shouldReportBadCountsStore( this::corruptFileIfExists );
-    }
-
-    @Test
     void shouldWarnIfConfiguredToValidateRelationshipTypeScanStoreButItIsDisabled() throws ConsistencyCheckIncompleteException
     {
         // given
@@ -2160,19 +2121,6 @@ public class FullCheckIntegrationTest
         on( check ).andThatsAllFolks();
     }
 
-    private void shouldReportBadCountsStore( ThrowingFunction<Path,Boolean,IOException> fileAction ) throws Exception
-    {
-        // given
-        boolean corrupted = fileAction.apply( fixture.databaseLayout().countStore() );
-        assertTrue( corrupted );
-
-        // When
-        ConsistencySummaryStatistics stats = check();
-
-        // Then report will be filed on Node inconsistent with the Property completing the circle
-        on( stats ).verify( RecordType.COUNTS, 1 );
-    }
-
     protected Map<Setting<?>,Object> getSettings()
     {
         return MapUtil.genericMap( GraphDatabaseInternalSettings.experimental_consistency_checker, false );
@@ -2180,7 +2128,7 @@ public class FullCheckIntegrationTest
 
     private GraphStoreFixture createFixture()
     {
-        return new GraphStoreFixture( getRecordFormatName(), pageCache, testDirectory )
+        return new GraphStoreFixture( getRecordFormatName(), testDirectory )
         {
             @Override
             protected void generateInitialData( GraphDatabaseService db )
@@ -2190,7 +2138,6 @@ public class FullCheckIntegrationTest
                 try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
                 {
                     KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
-                    TokenRead tokenRead = ktx.tokenRead();
                     TokenWrite tokenWrite = ktx.tokenWrite();
                     label1 = tokenWrite.labelGetOrCreateForName( "label1" );
                     label2 = tokenWrite.labelGetOrCreateForName( "label2" );
@@ -2245,25 +2192,6 @@ public class FullCheckIntegrationTest
                 return getSettings();
             }
         };
-    }
-
-    private boolean corruptFileIfExists( Path file ) throws IOException
-    {
-        if ( Files.exists( file ) )
-        {
-            try ( FileChannel channel = FileChannel.open( file, READ, WRITE ) )
-            {
-                ByteBuffer buffer = ByteBuffers.allocate( 30, INSTANCE );
-                while ( buffer.hasRemaining() )
-                {
-                    buffer.put( (byte) 9 );
-                }
-                buffer.flip();
-                writeAll( channel, buffer );
-            }
-            return true;
-        }
-        return false;
     }
 
     private void shouldReportCircularPropertyRecordChain( RecordType expectedInconsistentRecordType, EntityCreator entityCreator ) throws Exception
@@ -2341,7 +2269,7 @@ public class FullCheckIntegrationTest
     {
         FullCheck checker = new FullCheck( ProgressMonitorFactory.NONE, fixture.getAccessStatistics(), defaultConsistencyCheckThreadsNumber(),
                 consistencyFlags, config, false, memoryLimit() );
-        return checker.execute( pageCache, stores, counts, PageCacheTracer.NULL, INSTANCE,
+        return checker.execute( pageCache, stores, counts, fixture.indexAccessorLookup(), PageCacheTracer.NULL, INSTANCE,
                 new Log4jLogProvider( System.out ).getLog( "test" ) );
     }
 
@@ -2422,7 +2350,7 @@ public class FullCheckIntegrationTest
                     GraphStoreFixture.IdGenerator next )
             {
                 int labelId = next.label();
-                tx.nodeLabel( labelId, "label", false );
+                tx.nodeLabel( labelId, "label_" + labelId, false );
                 id.setValue( labelId );
             }
         } );
@@ -2446,7 +2374,7 @@ public class FullCheckIntegrationTest
                     GraphStoreFixture.IdGenerator next )
             {
                 int propertyKeyId = next.propertyKey();
-                tx.propertyKey( propertyKeyId, propertyKey, false );
+                tx.propertyKey( propertyKeyId, propertyKey + "_" + propertyKeyId, false );
                 id.setValue( propertyKeyId );
             }
         } );
@@ -2475,13 +2403,16 @@ public class FullCheckIntegrationTest
 
     private void createIndexRule( final int labelId, final int... propertyKeyIds ) throws Exception
     {
+        AtomicReference<String> indexName = new AtomicReference<>();
         fixture.apply( new GraphStoreFixture.Transaction()
         {
             @Override
             protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx, GraphStoreFixture.IdGenerator next ) throws KernelException
             {
                 int id = (int) next.schema();
-                IndexDescriptor index = forSchema( forLabel( labelId, propertyKeyIds ), DESCRIPTOR ).withName( "index_" + id ).materialise( id );
+                String name = "index_" + id;
+                IndexDescriptor index = forSchema( forLabel( labelId, propertyKeyIds ), DESCRIPTOR ).withName( name ).materialise( id );
+                indexName.set( name );
                 index = tx.completeConfiguration( index );
 
                 SchemaRecord before = new SchemaRecord( id );
@@ -2490,6 +2421,24 @@ public class FullCheckIntegrationTest
                 serializeRule( index, after, tx, next );
 
                 tx.createSchema( before, after, index );
+            }
+        } );
+        fixture.apply( tx ->
+        {
+            try
+            {
+                tx.schema().awaitIndexOnline( indexName.get(), 30, TimeUnit.SECONDS );
+            }
+            catch ( RuntimeException e )
+            {
+                if ( e.getCause() instanceof KernelException )
+                {
+                    // this is OK since many createIndex calls will create invalid indexes
+                }
+                else
+                {
+                    throw e;
+                }
             }
         } );
     }
@@ -2551,10 +2500,7 @@ public class FullCheckIntegrationTest
 
     private Iterator<IndexDescriptor> getIndexDescriptors()
     {
-        StoreAccess storeAccess = fixture.directStoreAccess().nativeStores();
-        TokenHolders tokenHolders = StoreTokens.readOnlyTokenHolders( storeAccess.getRawNeoStores(), NULL );
-        SchemaRuleAccess schema = SchemaRuleAccess.getSchemaRuleAccess( storeAccess.getSchemaStore(), tokenHolders );
-        return schema.indexesGetAll( NULL );
+        return fixture.getIndexDescriptors();
     }
 
     private static class Reference<T>

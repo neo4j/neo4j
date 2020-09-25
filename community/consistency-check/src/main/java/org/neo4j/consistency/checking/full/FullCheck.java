@@ -102,12 +102,13 @@ public class FullCheck
     }
 
     public ConsistencySummaryStatistics execute( PageCache pageCache, DirectStoreAccess stores, ThrowingSupplier<CountsStore,IOException> countsSupplier,
-            PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker, Log log ) throws ConsistencyCheckIncompleteException
+            IndexAccessors.IndexAccessorLookup indexAccessorLookup, PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker, Log log )
+            throws ConsistencyCheckIncompleteException
     {
         ConsistencySummaryStatistics summary = new ConsistencySummaryStatistics();
         InconsistencyReport report = new InconsistencyReport( new InconsistencyMessageLogger( log ), summary );
         CountsStore countsStore = getCountsStore( countsSupplier, log, summary );
-        execute( pageCache, stores, report, countsStore, pageCacheTracer, memoryTracker );
+        execute( pageCache, stores, report, countsStore, indexAccessorLookup, pageCacheTracer, memoryTracker );
 
         if ( !summary.isConsistent() )
         {
@@ -149,10 +150,11 @@ public class FullCheck
     }
 
     void execute( PageCache pageCache, final DirectStoreAccess directStoreAccess, final InconsistencyReport report, CountsStore countsStore,
-            PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker ) throws ConsistencyCheckIncompleteException
+            IndexAccessors.IndexAccessorLookup indexAccessorLookup, PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker )
+            throws ConsistencyCheckIncompleteException
     {
-        try ( IndexAccessors indexes = new IndexAccessors( directStoreAccess.indexes(), directStoreAccess.nativeStores().getRawNeoStores(),
-                samplingConfig, pageCacheTracer, directStoreAccess.tokenHolders().lookupWithIds() ) )
+        try ( IndexAccessors indexes = new IndexAccessors( directStoreAccess.indexes(), directStoreAccess.nativeStores().getRawNeoStores(), samplingConfig,
+                indexAccessorLookup, pageCacheTracer, directStoreAccess.tokenHolders().lookupWithIds() ) )
         {
             if ( !config.get( RelationshipTypeScanStoreSettings.enable_relationship_type_scan_store ) && flags.isCheckRelationshipTypeScanStore() )
             {
@@ -172,9 +174,9 @@ public class FullCheck
 
             if ( !useExperimentalChecker )
             {
-                CacheAccess cacheAccess =
-                        new DefaultCacheAccess( DefaultCacheAccess.defaultByteArray( directStoreAccess.nativeStores().getNodeStore().getHighId(),
-                                memoryTracker ), statistics.getCounts(), threads );
+                CacheAccess cacheAccess = new DefaultCacheAccess(
+                        DefaultCacheAccess.defaultByteArray( directStoreAccess.nativeStores().getNodeStore().getHighId(), memoryTracker ),
+                        statistics.getCounts(), threads );
                 RecordAccess recordAccess = recordAccess( directStoreAccess.nativeStores(), cacheAccess, pageCacheTracer );
                 OwnerCheck ownerCheck = new OwnerCheck( flags.isCheckPropertyOwners() );
                 CountsBuilderDecorator countsBuilder = new CountsBuilderDecorator( directStoreAccess.nativeStores() );

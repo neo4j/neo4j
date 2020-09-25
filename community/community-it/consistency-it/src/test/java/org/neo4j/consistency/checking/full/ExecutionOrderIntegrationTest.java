@@ -43,10 +43,9 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
-import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.SuppressOutputExtension;
-import org.neo4j.test.extension.pagecache.PageCacheExtension;
+import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -59,13 +58,11 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.test.mockito.mock.Property.property;
 import static org.neo4j.test.mockito.mock.Property.set;
 
-@PageCacheExtension
+@TestDirectoryExtension
 @ExtendWith( SuppressOutputExtension.class )
 @ResourceLock( Resources.SYSTEM_OUT )
 public class ExecutionOrderIntegrationTest
 {
-    @Inject
-    private PageCache pageCache;
     @Inject
     private TestDirectory testDirectory;
 
@@ -74,7 +71,7 @@ public class ExecutionOrderIntegrationTest
     @BeforeEach
     void setUp()
     {
-        fixture = new GraphStoreFixture( getRecordFormatName(), pageCache, testDirectory )
+        fixture = new GraphStoreFixture( getRecordFormatName(), testDirectory )
         {
             @Override
             protected void generateInitialData( GraphDatabaseService graphDb )
@@ -117,7 +114,7 @@ public class ExecutionOrderIntegrationTest
 
         // when
         singlePass.execute( fixture.getInstantiatedPageCache(), fixture.directStoreAccess(),
-                new InconsistencyReport( logger, singlePassSummary ), fixture.counts().get(), NULL, INSTANCE );
+                new InconsistencyReport( logger, singlePassSummary ), fixture.counts().get(), null, NULL, INSTANCE );
 
         // then
         verifyNoInteractions( logger );

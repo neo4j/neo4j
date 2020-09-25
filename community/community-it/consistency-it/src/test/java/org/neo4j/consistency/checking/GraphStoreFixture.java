@@ -20,19 +20,21 @@
 package org.neo4j.consistency.checking;
 
 import org.apache.commons.lang3.mutable.MutableInt;
+import org.eclipse.collections.api.iterator.LongIterator;
 
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 
 import org.neo4j.common.DependencyResolver;
-import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.consistency.LookupAccessorsFromRunningDb;
+import org.neo4j.consistency.checking.index.IndexAccessors;
 import org.neo4j.consistency.statistics.AccessStatistics;
-import org.neo4j.consistency.statistics.AccessStatsKeepingStoreAccess;
 import org.neo4j.consistency.statistics.DefaultCounts;
 import org.neo4j.consistency.statistics.Statistics;
 import org.neo4j.consistency.statistics.VerboseStatistics;
@@ -44,39 +46,27 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
-import org.neo4j.internal.counts.CountsBuilder;
-import org.neo4j.internal.counts.GBPTreeCountsStore;
-import org.neo4j.internal.id.DefaultIdGeneratorFactory;
+import org.neo4j.internal.helpers.collection.PrefetchingIterator;
+import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.index.label.LabelScanStore;
 import org.neo4j.internal.index.label.RelationshipTypeScanStore;
-import org.neo4j.internal.index.label.TokenScanStore;
+import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
-import org.neo4j.internal.recordstorage.RecordStorageReader;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
-import org.neo4j.io.IOUtils;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
-import org.neo4j.kernel.extension.DatabaseExtensions;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
-import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
-import org.neo4j.kernel.impl.api.scan.FullLabelStream;
-import org.neo4j.kernel.impl.api.scan.FullRelationshipTypeStream;
-import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
-import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.TokenStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
@@ -85,19 +75,9 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
-import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
-import org.neo4j.kernel.impl.transaction.state.storeview.NeoStoreIndexStoreView;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.lock.LockService;
-import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLog;
-import org.neo4j.logging.NullLogProvider;
-import org.neo4j.logging.internal.LogService;
-import org.neo4j.logging.internal.SimpleLogService;
-import org.neo4j.memory.MemoryTracker;
-import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageNodeCursor;
@@ -107,23 +87,18 @@ import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 import org.neo4j.token.DelegatingTokenHolder;
-import org.neo4j.token.ReadOnlyTokenCreator;
 import org.neo4j.token.TokenCreator;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.token.api.NamedToken;
 import org.neo4j.token.api.TokenHolder;
+import org.neo4j.util.Preconditions;
 
 import static java.lang.System.currentTimeMillis;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.consistency.ConsistencyCheckService.defaultConsistencyCheckThreadsNumber;
-import static org.neo4j.consistency.internal.SchemaIndexExtensionLoader.instantiateExtensions;
-import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
-import static org.neo4j.internal.counts.GBPTreeCountsStore.NO_MONITOR;
 import static org.neo4j.internal.kernel.api.TokenRead.ANY_LABEL;
 import static org.neo4j.internal.recordstorage.StoreTokens.allReadableTokens;
-import static org.neo4j.internal.recordstorage.StoreTokens.readOnlyTokenHolders;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
@@ -132,61 +107,98 @@ public abstract class GraphStoreFixture implements AutoCloseable
     private DirectStoreAccess directStoreAccess;
     private Statistics statistics;
     private final boolean keepStatistics;
-    private NeoStores neoStore;
-    private StorageReader storeReader;
-    private long schemaId;
-    private long nodeId;
-    private int labelId;
-    private long nodeLabelsId;
-    private long relId;
-    private long relGroupId;
-    private int propId;
-    private long stringPropId;
-    private long arrayPropId;
-    private int relTypeId;
-    private int propKeyId;
-    private DefaultFileSystemAbstraction fileSystem;
-    private final LifeSupport storeLife = new LifeSupport();
-    private final LifeSupport fixtureLife = new LifeSupport();
+    private long[] highIds = new long[StoreType.values().length];
 
     /**
      * Record format used to generate initial database.
      */
     private String formatName;
-    private final PageCache pageCache;
+    private PageCache pageCache;
     private final TestDirectory testDirectory;
-    private LabelScanStore labelScanStore;
-    private RelationshipTypeScanStore relationshipTypeScanStore;
-    private IndexStatisticsStore indexStatisticsStore;
-    private ThreadPoolJobScheduler jobScheduler;
-    private CountsStore counts;
 
-    private GraphStoreFixture( boolean keepStatistics, String formatName, PageCache pageCache, TestDirectory testDirectory )
+    private DatabaseManagementService managementService;
+    private GraphDatabaseAPI database;
+    private TransactionRepresentationCommitProcess commitProcess;
+    private TransactionIdStore transactionIdStore;
+    private NeoStores neoStores;
+    private IndexingService indexingService;
+    private StoreAccess storeAccess;
+    private RecordStorageEngine storageEngine;
+    private CountsAccessor countsStore;
+
+    private GraphStoreFixture( boolean keepStatistics, String formatName, TestDirectory testDirectory )
     {
         this.keepStatistics = keepStatistics;
         this.formatName = formatName;
-        this.pageCache = pageCache;
         this.testDirectory = testDirectory;
+        startDatabaseAndExtractComponents();
         generateInitialData();
     }
 
-    protected GraphStoreFixture( String formatName, PageCache pageCache, TestDirectory testDirectory )
+    protected GraphStoreFixture( String formatName, TestDirectory testDirectory )
     {
-        this( false, formatName, pageCache, testDirectory );
+        this( false, formatName, testDirectory );
+    }
+
+    private void startDatabaseAndExtractComponents()
+    {
+        managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homePath() )
+                .setFileSystem( testDirectory.getFileSystem() )
+                .setConfig( GraphDatabaseSettings.record_format, formatName )
+                // Some tests using this fixture were written when the label_block_size was 60 and so hardcoded
+                // tests and records around that. Those tests could change, but the simpler option is to just
+                // keep the block size to 60 and let them be.
+                .setConfig( GraphDatabaseInternalSettings.label_block_size, 60 )
+                .setConfig( GraphDatabaseInternalSettings.consistency_check_on_apply, false )
+                .setConfig( getConfig() )
+                .build();
+        database = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
+        DependencyResolver dependencyResolver = database.getDependencyResolver();
+
+        commitProcess = new TransactionRepresentationCommitProcess(
+                dependencyResolver.resolveDependency( TransactionAppender.class ),
+                dependencyResolver.resolveDependency( StorageEngine.class ) );
+        transactionIdStore = database.getDependencyResolver().resolveDependency(
+                TransactionIdStore.class );
+
+        storageEngine = dependencyResolver.resolveDependency( RecordStorageEngine.class );
+        neoStores = storageEngine.testAccessNeoStores();
+        indexingService = dependencyResolver.resolveDependency( IndexingService.class );
+        storeAccess = new StoreAccess( neoStores ).initialize();
+        directStoreAccess = new DirectStoreAccess( storeAccess,
+                dependencyResolver.resolveDependency( LabelScanStore.class ),
+                dependencyResolver.resolveDependency( RelationshipTypeScanStore.class ),
+                dependencyResolver.resolveDependency( IndexProviderMap.class ),
+                dependencyResolver.resolveDependency( TokenHolders.class ),
+                dependencyResolver.resolveDependency( IndexStatisticsStore.class ),
+                dependencyResolver.resolveDependency( IdGeneratorFactory.class ) );
+        countsStore = storageEngine.countsAccessor();
+        statistics = keepStatistics ? new VerboseStatistics( new AccessStatistics(), new DefaultCounts( defaultConsistencyCheckThreadsNumber() ),
+                NullLog.getInstance() ) : Statistics.NONE;
+        pageCache = dependencyResolver.resolveDependency( PageCache.class );
+
     }
 
     @Override
-    public void close() throws Exception
+    public void close()
     {
-        stop();
-        storeLife.shutdown();
-        fixtureLife.shutdown();
-        IOUtils.closeAllSilently( fileSystem );
+        managementService.shutdown();
     }
 
     public void apply( Transaction transaction ) throws KernelException
     {
-        applyTransaction( transaction );
+        TransactionRepresentation representation =
+                transaction.representation( idGenerator(), transactionIdStore.getLastCommittedTransactionId(), neoStores, indexingService );
+        commitProcess.commit( new TransactionToApply( representation, NULL ), CommitEvent.NULL, TransactionApplicationMode.EXTERNAL );
+    }
+
+    public void apply( Consumer<org.neo4j.graphdb.Transaction> tx )
+    {
+        try ( org.neo4j.graphdb.Transaction transaction = database.beginTx() )
+        {
+            tx.accept( transaction );
+            transaction.commit();
+        }
     }
 
     public DirectStoreAccess directStoreAccess()
@@ -196,7 +208,7 @@ public abstract class GraphStoreFixture implements AutoCloseable
 
     public DirectStoreAccess readOnlyDirectStoreAccess()
     {
-        return directStoreAccess( true );
+        return directStoreAccess( false );
     }
 
     public PageCache getInstantiatedPageCache()
@@ -206,140 +218,18 @@ public abstract class GraphStoreFixture implements AutoCloseable
 
     private DirectStoreAccess directStoreAccess( boolean readOnly )
     {
-        if ( directStoreAccess == null )
-        {
-            fileSystem = new DefaultFileSystemAbstraction();
-            jobScheduler = new ThreadPoolJobScheduler( "Fixture-" );
-            LogProvider logProvider = NullLogProvider.getInstance();
-            Config config = Config.newBuilder()
-                    .set( GraphDatabaseSettings.read_only, readOnly )
-                    .set( getConfig() )
-                    .build();
-            DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem, immediate() );
-            StoreFactory storeFactory = new StoreFactory( databaseLayout(), config, idGeneratorFactory, pageCache, fileSystem, logProvider,
-                    PageCacheTracer.NULL );
-            neoStore = storeFactory.openAllNeoStores();
-            StoreAccess nativeStores;
-            if ( keepStatistics )
-            {
-                AccessStatistics accessStatistics = new AccessStatistics();
-                statistics = new VerboseStatistics( accessStatistics,
-                        new DefaultCounts( defaultConsistencyCheckThreadsNumber() ), NullLog.getInstance() );
-                nativeStores = new AccessStatsKeepingStoreAccess( neoStore, accessStatistics );
-            }
-            else
-            {
-                statistics = Statistics.NONE;
-                nativeStores = new StoreAccess( neoStore );
-            }
-            nativeStores.initialize();
-            fixtureLife.start();
-            storeLife.start();
-
-            IndexStoreView indexStoreView = new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE,
-                    () -> new RecordStorageReader( nativeStores.getRawNeoStores() ) );
-
-            Monitors monitors = new Monitors();
-            labelScanStore = startLabelScanStore( pageCache, indexStoreView, monitors, readOnly );
-            relationshipTypeScanStore = startRelationshipTypeScanStore( pageCache, indexStoreView, monitors, readOnly, config );
-            IndexProviderMap indexes = createIndexes( pageCache, config, logProvider, monitors);
-            indexStatisticsStore = startIndexStatisticsStore( readOnly );
-            directStoreAccess = new DirectStoreAccess( nativeStores, labelScanStore, relationshipTypeScanStore, indexes, readOnlyTokenHolders( neoStore, NULL ),
-                    indexStatisticsStore, idGeneratorFactory );
-            storeReader = new RecordStorageReader( neoStore );
-        }
+        Preconditions.checkState( !readOnly, "Doesn't support read-only yet" );
         return directStoreAccess;
-    }
-
-    private IndexStatisticsStore startIndexStatisticsStore( boolean readOnly )
-    {
-        final IndexStatisticsStore indexStatisticsStore = new IndexStatisticsStore( pageCache, databaseLayout(), immediate(), readOnly, PageCacheTracer.NULL );
-        try
-        {
-            indexStatisticsStore.init();
-            indexStatisticsStore.start();
-        }
-        catch ( Exception e )
-        {
-            throw new RuntimeException( e );
-        }
-        return indexStatisticsStore;
     }
 
     public ThrowingSupplier<CountsStore,IOException> counts()
     {
-        return () ->
-        {
-            if ( counts == null )
-            {
-                counts = new GBPTreeCountsStore( pageCache, databaseLayout().countStore(), fileSystem, RecoveryCleanupWorkCollector.immediate(),
-                        new CountsBuilder()
-                        {
-                            @Override
-                            public void initialize( CountsAccessor.Updater updater, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
-                            {
-                                throw new UnsupportedOperationException( "Should not be rebuilt" );
-                            }
-
-                            @Override
-                            public long lastCommittedTxId()
-                            {
-                                return 0;
-                            }
-                        }, true, PageCacheTracer.NULL, NO_MONITOR );
-                counts.start( NULL, INSTANCE );
-            }
-            return counts;
-        };
+        return () -> (CountsStore) countsStore;
     }
 
-    private LabelScanStore startLabelScanStore( PageCache pageCache, IndexStoreView indexStoreView, Monitors monitors, boolean readOnly )
+    public IndexAccessors.IndexAccessorLookup indexAccessorLookup()
     {
-        FullLabelStream labelStream = new FullLabelStream( indexStoreView );
-        LabelScanStore labelScanStore = TokenScanStore.labelScanStore( pageCache, databaseLayout(), fileSystem, labelStream, readOnly, monitors, immediate(),
-                PageCacheTracer.NULL, INSTANCE );
-        try
-        {
-            labelScanStore.init();
-            labelScanStore.start();
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
-        }
-        return labelScanStore;
-    }
-
-    private RelationshipTypeScanStore startRelationshipTypeScanStore( PageCache pageCache, IndexStoreView indexStoreView, Monitors monitors, boolean readOnly,
-            Config config )
-    {
-        FullRelationshipTypeStream typeStream = new FullRelationshipTypeStream( indexStoreView );
-        RelationshipTypeScanStore relationshipTypeScanStore =
-                TokenScanStore.toggledRelationshipTypeScanStore( pageCache, databaseLayout(), fileSystem, typeStream, readOnly, monitors, immediate(), config,
-                        PageCacheTracer.NULL, INSTANCE );
-        try
-        {
-            relationshipTypeScanStore.init();
-            relationshipTypeScanStore.start();
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
-        }
-        return relationshipTypeScanStore;
-    }
-
-    private IndexProviderMap createIndexes( PageCache pageCache, Config config, LogProvider logProvider, Monitors monitors )
-    {
-        LogService logService = new SimpleLogService( logProvider, logProvider );
-        TokenHolders tokenHolders = new TokenHolders(
-                new DelegatingTokenHolder( new ReadOnlyTokenCreator(), TokenHolder.TYPE_PROPERTY_KEY ),
-                new DelegatingTokenHolder( new ReadOnlyTokenCreator(), TokenHolder.TYPE_LABEL ),
-                new DelegatingTokenHolder( new ReadOnlyTokenCreator(), TokenHolder.TYPE_RELATIONSHIP_TYPE ) );
-        DatabaseExtensions extensions = fixtureLife.add( instantiateExtensions( databaseLayout(), fileSystem, config, logService,
-                                                                                pageCache, jobScheduler, RecoveryCleanupWorkCollector.ignore(),
-                                                                                DbmsInfo.COMMUNITY, monitors, tokenHolders ) );
-        return fixtureLife.add( new DefaultIndexProviderMap( extensions, config ) );
+        return new LookupAccessorsFromRunningDb( indexingService, true/*prevent close*/ );
     }
 
     public DatabaseLayout databaseLayout()
@@ -354,7 +244,8 @@ public abstract class GraphStoreFixture implements AutoCloseable
 
     public EntityUpdates nodeAsUpdates( long nodeId )
     {
-        try ( StorageNodeCursor nodeCursor = storeReader.allocateNodeCursor( NULL );
+        try ( StorageReader storeReader = storageEngine.newReader();
+              StorageNodeCursor nodeCursor = storeReader.allocateNodeCursor( NULL );
               StoragePropertyCursor propertyCursor = storeReader.allocatePropertyCursor( NULL, INSTANCE ) )
         {
             nodeCursor.single( nodeId );
@@ -371,6 +262,36 @@ public abstract class GraphStoreFixture implements AutoCloseable
             }
             return update.build();
         }
+    }
+
+    public Iterator<IndexDescriptor> getIndexDescriptors()
+    {
+        LongIterator ids = indexingService.getIndexIds().longIterator();
+        return new PrefetchingIterator<>()
+        {
+            @Override
+            protected IndexDescriptor fetchNextOrNull()
+            {
+                if ( ids.hasNext() )
+                {
+                    long indexId = ids.next();
+                    try
+                    {
+                        return indexingService.getIndexProxy( indexId ).getDescriptor();
+                    }
+                    catch ( IndexNotFoundKernelException e )
+                    {
+                        throw new IllegalStateException( e );
+                    }
+                }
+                return null;
+            }
+        };
+    }
+
+    public NeoStores neoStores()
+    {
+        return neoStores;
     }
 
     @FunctionalInterface
@@ -409,7 +330,7 @@ public abstract class GraphStoreFixture implements AutoCloseable
         return ( name, internal ) ->
         {
             MutableInt keyId = new MutableInt();
-            applyTransaction( new Transaction()
+            apply( new Transaction()
             {
                 @Override
                 protected void transactionData( TransactionDataBuilder tx, IdGenerator next )
@@ -444,66 +365,71 @@ public abstract class GraphStoreFixture implements AutoCloseable
 
     public class IdGenerator
     {
+        private long nextId( StoreType type )
+        {
+            return highIds[type.ordinal()]++;
+        }
+
         public long schema()
         {
-            return schemaId++;
+            return nextId( StoreType.SCHEMA );
         }
 
         public long node()
         {
-            return nodeId++;
+            return nextId( StoreType.NODE );
         }
 
         public int label()
         {
-            return labelId++;
+            return (int) nextId( StoreType.LABEL_TOKEN );
         }
 
         public long nodeLabel()
         {
-            return nodeLabelsId++;
+            return nextId( StoreType.NODE_LABEL );
         }
 
         public long relationship()
         {
-            return relId++;
+            return nextId( StoreType.RELATIONSHIP );
         }
 
         public long relationshipGroup()
         {
-            return relGroupId++;
+            return nextId( StoreType.RELATIONSHIP_GROUP );
         }
 
         public long property()
         {
-            return propId++;
+            return nextId( StoreType.PROPERTY );
         }
 
         public long stringProperty()
         {
-            return stringPropId++;
+            return nextId( StoreType.PROPERTY_STRING );
         }
 
         public long arrayProperty()
         {
-            return arrayPropId++;
+            return nextId( StoreType.PROPERTY_ARRAY );
         }
 
         public int relationshipType()
         {
-            return relTypeId++;
+            return (int) nextId( StoreType.RELATIONSHIP_TYPE_TOKEN );
         }
 
         public int propertyKey()
         {
-            return propKeyId++;
+            return (int) nextId( StoreType.PROPERTY_KEY_TOKEN );
         }
 
         void updateCorrespondingIdGenerators( NeoStores neoStores )
         {
-            neoStores.getNodeStore().setHighestPossibleIdInUse( nodeId );
-            neoStores.getRelationshipStore().setHighestPossibleIdInUse( relId );
-            neoStores.getRelationshipGroupStore().setHighestPossibleIdInUse( relGroupId );
+            neoStores.getNodeStore().setHighestPossibleIdInUse( highIds[StoreType.NODE.ordinal()] );
+            neoStores.getRelationshipStore().setHighestPossibleIdInUse( highIds[StoreType.RELATIONSHIP.ordinal()] );
+            neoStores.getRelationshipGroupStore().setHighestPossibleIdInUse( highIds[StoreType.RELATIONSHIP_GROUP.ordinal()] );
         }
     }
 
@@ -513,12 +439,15 @@ public abstract class GraphStoreFixture implements AutoCloseable
         private final NodeStore nodes;
         private final IndexingService indexingService;
         private final TokenHolders tokenHolders;
-        private final AtomicInteger propKeyDynIds = new AtomicInteger( 1 );
-        private final AtomicInteger labelDynIds = new AtomicInteger( 1 );
-        private final AtomicInteger relTypeDynIds = new AtomicInteger( 1 );
+        private final AtomicInteger propKeyDynIds;
+        private final AtomicInteger labelDynIds;
+        private final AtomicInteger relTypeDynIds;
 
         TransactionDataBuilder( TransactionWriter writer, NeoStores neoStores, IdGenerator next, IndexingService indexingService )
         {
+            this.propKeyDynIds = new AtomicInteger( (int) neoStores.getPropertyKeyTokenStore().getNameStore().getHighId() );
+            this.labelDynIds = new AtomicInteger( (int) neoStores.getLabelTokenStore().getNameStore().getHighId() );
+            this.relTypeDynIds = new AtomicInteger( (int) neoStores.getRelationshipTypeTokenStore().getNameStore().getHighId() );
             this.writer = writer;
             this.nodes = neoStores.getNodeStore();
             this.indexingService = indexingService;
@@ -578,22 +507,28 @@ public abstract class GraphStoreFixture implements AutoCloseable
             writer.createSchema( before, after, rule );
         }
 
-        public void propertyKey( int id, String key, boolean internal )
+        public int[] propertyKey( int id, String key, boolean internal )
         {
-            writer.propertyKey( id, key, internal, dynIds( id, propKeyDynIds, key ) );
+            int[] dynamicIds = dynIds( id, propKeyDynIds, key );
+            writer.propertyKey( id, key, internal, dynamicIds );
             tokenHolders.propertyKeyTokens().addToken( new NamedToken( key, id ) );
+            return dynamicIds;
         }
 
-        public void nodeLabel( int id, String name, boolean internal )
+        public int[] nodeLabel( int id, String name, boolean internal )
         {
-            writer.label( id, name, internal, dynIds( id, labelDynIds, name ) );
+            int[] dynamicIds = dynIds( id, labelDynIds, name );
+            writer.label( id, name, internal, dynamicIds );
             tokenHolders.labelTokens().addToken( new NamedToken( name, id ) );
+            return dynamicIds;
         }
 
-        public void relationshipType( int id, String relationshipType, boolean internal )
+        public int[] relationshipType( int id, String relationshipType, boolean internal )
         {
-            writer.relationshipType( id, relationshipType, internal, dynIds( id, relTypeDynIds, relationshipType ) );
+            int[] dynamicIds = dynIds( id, relTypeDynIds, relationshipType );
+            writer.relationshipType( id, relationshipType, internal, dynamicIds );
             tokenHolders.relationshipTypeTokens().addToken( new NamedToken( relationshipType, id ) );
+            return dynamicIds;
         }
 
         public void create( NodeRecord node )
@@ -687,121 +622,12 @@ public abstract class GraphStoreFixture implements AutoCloseable
 
     protected abstract void generateInitialData( GraphDatabaseService graphDb );
 
-    void stop() throws IOException
-    {
-        if ( directStoreAccess != null )
-        {
-            storeLife.shutdown();
-            storeReader.close();
-            neoStore.close();
-            labelScanStore.shutdown();
-            relationshipTypeScanStore.shutdown();
-            indexStatisticsStore.shutdown();
-            jobScheduler.shutdown();
-            directStoreAccess = null;
-            if ( counts != null )
-            {
-                counts.close();
-                counts = null;
-            }
-        }
-    }
-
-    public class Applier implements AutoCloseable
-    {
-        private final GraphDatabaseAPI database;
-        private final TransactionRepresentationCommitProcess commitProcess;
-        private final TransactionIdStore transactionIdStore;
-        private final NeoStores neoStores;
-        private final DatabaseManagementService managementService;
-        private final IndexingService indexingService;
-
-        Applier()
-        {
-            managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homePath() )
-                    .setConfig( GraphDatabaseInternalSettings.consistency_check_on_apply, false )
-                    .setConfig( getConfig() )
-                    .build();
-            database = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
-            DependencyResolver dependencyResolver = database.getDependencyResolver();
-
-            commitProcess = new TransactionRepresentationCommitProcess(
-                    dependencyResolver.resolveDependency( TransactionAppender.class ),
-                    dependencyResolver.resolveDependency( StorageEngine.class ) );
-            transactionIdStore = database.getDependencyResolver().resolveDependency(
-                    TransactionIdStore.class );
-
-            neoStores = dependencyResolver.resolveDependency( RecordStorageEngine.class )
-                    .testAccessNeoStores();
-            indexingService = dependencyResolver.resolveDependency( IndexingService.class );
-        }
-
-        public void apply( Transaction transaction ) throws KernelException
-        {
-            TransactionRepresentation representation =
-                    transaction.representation( idGenerator(), transactionIdStore.getLastCommittedTransactionId(), neoStores, indexingService );
-            commitProcess.commit( new TransactionToApply( representation, NULL ), CommitEvent.NULL, TransactionApplicationMode.EXTERNAL );
-        }
-
-        @Override
-        public void close()
-        {
-            managementService.shutdown();
-        }
-    }
-
-    public Applier createApplier()
-    {
-        return new Applier();
-    }
-
-    private void applyTransaction( Transaction transaction ) throws KernelException
-    {
-        // TODO you know... we could have just appended the transaction representation to the log
-        // and the next startup of the store would do recovery where the transaction would have been
-        // applied and all would have been well.
-
-        try ( Applier applier = createApplier() )
-        {
-            applier.apply( transaction );
-        }
-    }
-
     private void generateInitialData()
     {
-        TestDatabaseManagementServiceBuilder builder = new TestDatabaseManagementServiceBuilder( testDirectory.homePath() );
-        DatabaseManagementService managementService = builder
-                .setConfig( GraphDatabaseSettings.record_format, formatName )
-                // Some tests using this fixture were written when the label_block_size was 60 and so hardcoded
-                // tests and records around that. Those tests could change, but the simpler option is to just
-                // keep the block size to 60 and let them be.
-                .setConfig( GraphDatabaseInternalSettings.label_block_size, 60 )
-                .setConfig( GraphDatabaseInternalSettings.consistency_check_on_apply, false )
-                .setConfig( getConfig() ).build();
-        // Some tests using this fixture were written when the label_block_size was 60 and so hardcoded
-        // tests and records around that. Those tests could change, but the simpler option is to just
-        // keep the block size to 60 and let them be.
-        GraphDatabaseAPI graphDb = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
-        try
+        generateInitialData( database );
+        for ( StoreType storeType : StoreAccess.ACCESSIBLE_STORE_TYPES )
         {
-            generateInitialData( graphDb );
-            RecordStorageEngine storageEngine = graphDb.getDependencyResolver().resolveDependency( RecordStorageEngine.class );
-            StoreAccess stores = new StoreAccess( storageEngine.testAccessNeoStores() ).initialize();
-            schemaId = stores.getSchemaStore().getHighId();
-            nodeId = stores.getNodeStore().getHighId();
-            labelId = (int) stores.getLabelTokenStore().getHighId();
-            nodeLabelsId = stores.getNodeDynamicLabelStore().getHighId();
-            relId = stores.getRelationshipStore().getHighId();
-            relGroupId = stores.getRelationshipGroupStore().getHighId();
-            propId = (int) stores.getPropertyStore().getHighId();
-            stringPropId = stores.getStringStore().getHighId();
-            arrayPropId = stores.getArrayStore().getHighId();
-            relTypeId = (int) stores.getRelationshipTypeTokenStore().getHighId();
-            propKeyId = (int) stores.getPropertyKeyNameStore().getHighId();
-        }
-        finally
-        {
-            managementService.shutdown();
+            highIds[storeType.ordinal()] = storeAccess.getStore( storeType ).getHighId();
         }
     }
 

@@ -42,37 +42,40 @@ import org.neo4j.consistency.ConsistencyCheckService.Result;
 import org.neo4j.consistency.checking.GraphStoreFixture;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.full.ConsistencyFlags;
-import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.internal.helpers.Strings;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.internal.recordstorage.RecordStorageCommandReaderFactory;
-import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
+import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
+import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.kernel.lifecycle.Lifespan;
+import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.memory.MemoryPools;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.SuppressOutputExtension;
-import org.neo4j.test.extension.pagecache.PageCacheExtension;
+import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.time.Clocks;
 
 import static java.lang.String.format;
 import static java.nio.file.Files.exists;
@@ -82,8 +85,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE30;
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10;
 import static org.neo4j.configuration.GraphDatabaseSettings.record_format;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
@@ -91,7 +92,7 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.test.mockito.mock.Property.property;
 import static org.neo4j.test.mockito.mock.Property.set;
 
-@PageCacheExtension
+@TestDirectoryExtension
 @Neo4jLayoutExtension
 @ExtendWith( SuppressOutputExtension.class )
 @ResourceLock( Resources.SYSTEM_OUT )
@@ -100,19 +101,16 @@ public class ConsistencyCheckServiceIntegrationTest
     @Inject
     private TestDirectory testDirectory;
     @Inject
-    private PageCache pageCache;
-    @Inject
     private FileSystemAbstraction fs;
     @Inject
     private DatabaseLayout databaseLayout;
 
     private GraphStoreFixture fixture;
-    private DatabaseManagementService managementService;
 
     @BeforeEach
     void setUp()
     {
-        fixture = new GraphStoreFixture( getRecordFormatName(), pageCache, testDirectory )
+        fixture = new GraphStoreFixture( getRecordFormatName(), testDirectory )
         {
             @Override
             protected void generateInitialData( GraphDatabaseService graphDb )
@@ -135,7 +133,7 @@ public class ConsistencyCheckServiceIntegrationTest
     }
 
     @AfterEach
-    void tearDown() throws Exception
+    void tearDown()
     {
         fixture.close();
     }
@@ -166,14 +164,25 @@ public class ConsistencyCheckServiceIntegrationTest
         prepareDbWithDeletedRelationshipPartOfTheChain();
         ConsistencyCheckService service = new ConsistencyCheckService( new Date() );
         var pageCacheTracer = new DefaultPageCacheTracer();
-        var result = service.runFullConsistencyCheck( fixture.databaseLayout(), Config.defaults( settings() ), ProgressMonitorFactory.NONE,
-                NullLogProvider.getInstance(), testDirectory.getFileSystem(), pageCache, false, ConsistencyFlags.DEFAULT, pageCacheTracer, INSTANCE );
+        fixture.close();
+        JobScheduler jobScheduler = JobSchedulerFactory.createScheduler();
+        ConfiguringPageCacheFactory pageCacheFactory =
+                new ConfiguringPageCacheFactory( testDirectory.getFileSystem(), Config.defaults( GraphDatabaseSettings.pagecache_memory, "8m" ),
+                        pageCacheTracer, NullLog.getInstance(), EmptyVersionContextSupplier.EMPTY, jobScheduler, Clocks.nanoClock(),
+                        new MemoryPools( false ) );
+        try ( Lifespan life = new Lifespan( jobScheduler );
+              PageCache pageCache = pageCacheFactory.getOrCreatePageCache() )
+        {
+            var result = service.runFullConsistencyCheck( fixture.databaseLayout(), Config.defaults( settings() ), ProgressMonitorFactory.NONE,
+                    NullLogProvider.getInstance(), testDirectory.getFileSystem(), pageCache, false, ConsistencyFlags.DEFAULT,
+                    pageCacheTracer, INSTANCE );
 
-        assertFalse( result.isSuccessful() );
-        assertThat( pageCacheTracer.pins() ).isGreaterThanOrEqualTo( 74 );
-        assertThat( pageCacheTracer.unpins() ).isGreaterThanOrEqualTo( 74 );
-        assertThat( pageCacheTracer.hits() ).isGreaterThanOrEqualTo( 35 );
-        assertThat( pageCacheTracer.faults() ).isGreaterThanOrEqualTo( 39 );
+            assertFalse( result.isSuccessful() );
+            assertThat( pageCacheTracer.pins() ).isGreaterThanOrEqualTo( 74 );
+            assertThat( pageCacheTracer.unpins() ).isGreaterThanOrEqualTo( 74 );
+            assertThat( pageCacheTracer.hits() ).isGreaterThanOrEqualTo( 35 );
+            assertThat( pageCacheTracer.faults() ).isGreaterThanOrEqualTo( 39 );
+        }
     }
 
     @Test
@@ -246,23 +255,15 @@ public class ConsistencyCheckServiceIntegrationTest
         // given
         ConsistencyCheckService service = new ConsistencyCheckService();
         Config configuration = Config.defaults( settings() );
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homePath() ).setConfig( settings() ).build();
-        GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
 
         String propertyKey = "itemId";
         Label label = Label.label( "Item" );
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.schema().constraintFor( label ).assertPropertyIsUnique( propertyKey ).create();
-            tx.commit();
-        }
-        try ( Transaction tx = db.beginTx() )
+        fixture.apply( tx -> tx.schema().constraintFor( label ).assertPropertyIsUnique( propertyKey ).create() );
+        fixture.apply( tx ->
         {
             set( tx.createNode( label ), property( propertyKey, 973305894188596880L ) );
             set( tx.createNode( label ), property( propertyKey, 973305894188596864L ) );
-            tx.commit();
-        }
-        managementService.shutdown();
+        } );
 
         // when
         Result result = runFullConsistencyCheck( service, configuration );
@@ -275,14 +276,10 @@ public class ConsistencyCheckServiceIntegrationTest
     void shouldReportMissingSchemaIndex() throws Exception
     {
         // given
-
-        GraphDatabaseService gds = getGraphDatabaseService( testDirectory.homePath() );
-
         Label label = Label.label( "label" );
         String propKey = "propKey";
-        createIndex( gds, label, propKey );
-
-        managementService.shutdown();
+        createIndex( label, propKey );
+        fixture.close();
 
         // when
         Path schemaDir = findFile( databaseLayout, "schema" );
@@ -307,17 +304,12 @@ public class ConsistencyCheckServiceIntegrationTest
         String propKey = "propKey";
 
         // Given a lucene index
-        GraphDatabaseService db =
-                getGraphDatabaseService( databaseLayout.databaseDirectory(),
-                        Map.of( GraphDatabaseSettings.default_schema_provider, NATIVE30.providerName() ) );
-        createIndex( db, label, propKey );
-        try ( Transaction tx = db.beginTx() )
+        createIndex( label, propKey );
+        fixture.apply( tx ->
         {
             tx.createNode( label ).setProperty( propKey, 1 );
             tx.createNode( label ).setProperty( propKey, "string" );
-            tx.commit();
-        }
-        managementService.shutdown();
+        } );
 
         ConsistencyCheckService service = new ConsistencyCheckService();
         Config configuration = Config.newBuilder()
@@ -328,19 +320,10 @@ public class ConsistencyCheckServiceIntegrationTest
         assertTrue( result.isSuccessful() );
     }
 
-    private static void createIndex( GraphDatabaseService gds, Label label, String propKey )
+    private void createIndex( Label label, String propKey )
     {
-        try ( Transaction tx = gds.beginTx() )
-        {
-            tx.schema().indexFor( label ).on( propKey ).create();
-            tx.commit();
-        }
-
-        try ( Transaction tx = gds.beginTx() )
-        {
-            tx.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
-            tx.commit();
-        }
+        fixture.apply( tx -> tx.schema().indexFor( label ).on( propKey ).create() );
+        fixture.apply( tx -> tx.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES ) );
     }
 
     private static Path findFile( DatabaseLayout databaseLayout, String targetFile )
@@ -353,74 +336,41 @@ public class ConsistencyCheckServiceIntegrationTest
         return file;
     }
 
-    private GraphDatabaseService getGraphDatabaseService( Path homeDir )
-    {
-        return getGraphDatabaseService( homeDir, Map.of() );
-    }
-
-    private GraphDatabaseService getGraphDatabaseService( Path homeDir, Map<Setting<?>, Object> settings )
-    {
-        TestDatabaseManagementServiceBuilder builder = new TestDatabaseManagementServiceBuilder( homeDir );
-        builder.setConfig( settings() );
-        builder.setConfig( settings );
-
-        managementService = builder.build();
-        return managementService.database( DEFAULT_DATABASE_NAME );
-    }
-
     private void prepareDbWithDeletedRelationshipPartOfTheChain()
     {
-        DatabaseManagementService managementService =
-                new TestDatabaseManagementServiceBuilder( testDirectory.homePath() ).setConfig( record_format, getRecordFormatName() ).build();
-        GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
-        try
+        RelationshipType relationshipType = RelationshipType.withName( "testRelationshipType" );
+        fixture.apply( tx ->
         {
+            Node node1 = set( tx.createNode() );
+            Node node2 = set( tx.createNode(), property( "key", "value" ) );
+            node1.createRelationshipTo( node2, relationshipType );
+            node1.createRelationshipTo( node2, relationshipType );
+            node1.createRelationshipTo( node2, relationshipType );
+            node1.createRelationshipTo( node2, relationshipType );
+            node1.createRelationshipTo( node2, relationshipType );
+            node1.createRelationshipTo( node2, relationshipType );
+        } );
 
-            RelationshipType relationshipType = RelationshipType.withName( "testRelationshipType" );
-            try ( Transaction tx = db.beginTx() )
-            {
-                Node node1 = set( tx.createNode() );
-                Node node2 = set( tx.createNode(), property( "key", "value" ) );
-                node1.createRelationshipTo( node2, relationshipType );
-                node1.createRelationshipTo( node2, relationshipType );
-                node1.createRelationshipTo( node2, relationshipType );
-                node1.createRelationshipTo( node2, relationshipType );
-                node1.createRelationshipTo( node2, relationshipType );
-                node1.createRelationshipTo( node2, relationshipType );
-                tx.commit();
-            }
-
-            RecordStorageEngine recordStorageEngine = db.getDependencyResolver().resolveDependency( RecordStorageEngine.class );
-
-            NeoStores neoStores = recordStorageEngine.testAccessNeoStores();
-            RelationshipStore relationshipStore = neoStores.getRelationshipStore();
-            RelationshipRecord relationshipRecord = new RelationshipRecord( -1 );
-            RelationshipRecord record = relationshipStore.getRecord( 4, relationshipRecord, RecordLoad.FORCE, NULL );
-            record.setInUse( false );
-            relationshipStore.updateRecord( relationshipRecord, NULL );
-        }
-        finally
-        {
-            managementService.shutdown();
-        }
+        NeoStores neoStores = fixture.neoStores();
+        RelationshipStore relationshipStore = neoStores.getRelationshipStore();
+        RelationshipRecord relationshipRecord = new RelationshipRecord( -1 );
+        RelationshipRecord record = relationshipStore.getRecord( 4, relationshipRecord, RecordLoad.FORCE, NULL );
+        record.setInUse( false );
+        relationshipStore.updateRecord( relationshipRecord, NULL );
     }
 
     private void nonRecoveredDatabase() throws IOException
     {
         Path tmpLogDir = testDirectory.homePath().resolve( "logs" );
         fs.mkdir( tmpLogDir );
-        DatabaseManagementService managementService =
-                new TestDatabaseManagementServiceBuilder( testDirectory.homePath() ).setConfig( settings() ).build();
-        GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
 
         RelationshipType relationshipType = RelationshipType.withName( "testRelationshipType" );
-        try ( Transaction tx = db.beginTx() )
+        fixture.apply( tx ->
         {
             Node node1 = set( tx.createNode() );
             Node node2 = set( tx.createNode(), property( "key", "value" ) );
             node1.createRelationshipTo( node2, relationshipType );
-            tx.commit();
-        }
+        } );
         Path[] txLogs = fs.listFiles( LogFilesBuilder.logFilesBasedOnlyBuilder( databaseLayout.getTransactionLogsDirectory(), fs )
                                                       .withCommandReaderFactory( RecordStorageCommandReaderFactory.INSTANCE )
                                                       .build().logFilesDirectory() );
@@ -428,7 +378,7 @@ public class ConsistencyCheckServiceIntegrationTest
         {
             fs.copyToDirectory( file, tmpLogDir );
         }
-        managementService.shutdown();
+        fixture.close();
         for ( Path txLog : txLogs )
         {
             fs.deleteFile( txLog );
@@ -469,9 +419,10 @@ public class ConsistencyCheckServiceIntegrationTest
         return runFullConsistencyCheck( service, configuration, fixture.databaseLayout() );
     }
 
-    private static Result runFullConsistencyCheck( ConsistencyCheckService service, Config configuration, DatabaseLayout databaseLayout )
+    private Result runFullConsistencyCheck( ConsistencyCheckService service, Config configuration, DatabaseLayout databaseLayout )
             throws ConsistencyCheckIncompleteException
     {
+        fixture.close();
         return service.runFullConsistencyCheck( databaseLayout,
                 configuration, ProgressMonitorFactory.NONE, NullLogProvider.getInstance(), false );
     }

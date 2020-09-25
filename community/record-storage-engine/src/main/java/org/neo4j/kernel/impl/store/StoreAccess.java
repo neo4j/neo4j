@@ -19,6 +19,10 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.Function;
+
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -47,6 +51,24 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.imme
  */
 public class StoreAccess
 {
+    public static final StoreType[] ACCESSIBLE_STORE_TYPES;
+    private static final Map<StoreType,Function<StoreAccess,RecordStore<?>>> STORE_MAPPINGS = new HashMap<>();
+    static
+    {
+        STORE_MAPPINGS.put( StoreType.SCHEMA, StoreAccess::getSchemaStore );
+        STORE_MAPPINGS.put( StoreType.NODE, StoreAccess::getNodeStore );
+        STORE_MAPPINGS.put( StoreType.LABEL_TOKEN, StoreAccess::getLabelTokenStore );
+        STORE_MAPPINGS.put( StoreType.NODE_LABEL, StoreAccess::getNodeDynamicLabelStore );
+        STORE_MAPPINGS.put( StoreType.RELATIONSHIP, StoreAccess::getRelationshipStore );
+        STORE_MAPPINGS.put( StoreType.RELATIONSHIP_GROUP, StoreAccess::getRelationshipGroupStore );
+        STORE_MAPPINGS.put( StoreType.PROPERTY, StoreAccess::getPropertyStore );
+        STORE_MAPPINGS.put( StoreType.PROPERTY_STRING, StoreAccess::getStringStore );
+        STORE_MAPPINGS.put( StoreType.PROPERTY_ARRAY, StoreAccess::getArrayStore );
+        STORE_MAPPINGS.put( StoreType.RELATIONSHIP_TYPE_TOKEN, StoreAccess::getRelationshipTypeTokenStore );
+        STORE_MAPPINGS.put( StoreType.PROPERTY_KEY_TOKEN, StoreAccess::getPropertyKeyTokenStore );
+        ACCESSIBLE_STORE_TYPES = STORE_MAPPINGS.keySet().toArray( new StoreType[0] );
+    }
+
     // Top level stores
     private SchemaStore schemaStore;
     private RecordStore<NodeRecord> nodeStore;
@@ -181,6 +203,11 @@ public class StoreAccess
     public RecordStore<DynamicRecord> getPropertyKeyNameStore()
     {
         return propertyKeyNameStore;
+    }
+
+    public <T extends AbstractBaseRecord> RecordStore<T> getStore( StoreType type )
+    {
+        return (RecordStore<T>) STORE_MAPPINGS.get( type ).apply( this );
     }
 
     private static RecordStore<DynamicRecord> wrapNodeDynamicLabelStore( RecordStore<DynamicRecord> store )

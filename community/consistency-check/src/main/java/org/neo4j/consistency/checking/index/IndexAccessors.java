@@ -32,7 +32,6 @@ import java.util.stream.Collectors;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.common.TokenNameLookup;
-import org.neo4j.function.ThrowingFunction;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.recordstorage.SchemaRuleAccess;
 import org.neo4j.internal.recordstorage.StoreTokens;
@@ -67,7 +66,7 @@ public class IndexAccessors implements Closeable
             IndexProviderMap providers,
             NeoStores neoStores,
             IndexSamplingConfig samplingConfig,
-            ThrowingFunction<IndexDescriptor,IndexAccessor,IOException> accessorLookup,
+            IndexAccessorLookup accessorLookup,
             PageCacheTracer pageCacheTracer,
             TokenNameLookup tokenNameLookup )
             throws IOException
@@ -115,7 +114,7 @@ public class IndexAccessors implements Closeable
             }
         }
 
-        // Default to the instantiate new accessors
+        // Default to instantiate new accessors
         accessorLookup = accessorLookup != null ? accessorLookup
                                                 : index -> provider( providers, index ).getOnlineAccessor( index, samplingConfig, tokenNameLookup );
         for ( IndexDescriptor indexRule : onlineIndexRules )
@@ -205,5 +204,10 @@ public class IndexAccessors implements Closeable
             IOUtils.closeAllUnchecked( readers.values() );
             readers.clear();
         }
+    }
+
+    public interface IndexAccessorLookup
+    {
+        IndexAccessor apply( IndexDescriptor indexDescriptor ) throws IOException;
     }
 }
