@@ -38,6 +38,7 @@ import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.kernel.impl.newapi.Cursors;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.memory.ScopedMemoryTracker;
@@ -136,14 +137,14 @@ public class CachingExpandInto implements AutoCloseable
 
         if ( secondDegree == 0 )
         {
-            return RelationshipTraversalCursor.EMPTY;
+            return Cursors.emptyTraversalCursor( read );
         }
         boolean secondNodeHasCheapDegrees = secondDegree != EXPENSIVE_DEGREE;
 
         //Check firstNode, note that nodeCursor is now pointing at firstNode
         if ( !singleNode( read, nodeCursor, firstNode ) )
         {
-            return RelationshipTraversalCursor.EMPTY;
+            return Cursors.emptyTraversalCursor( read );
         }
         boolean firstNodeHasCheapDegrees = nodeCursor.supportsFastDegreeLookup();
 
