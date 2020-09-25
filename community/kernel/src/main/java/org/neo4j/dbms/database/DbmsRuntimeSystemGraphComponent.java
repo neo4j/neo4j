@@ -81,9 +81,17 @@ public class DbmsRuntimeSystemGraphComponent extends AbstractSystemGraphComponen
     public void upgradeToCurrent( GraphDatabaseService systemDb ) throws Exception
     {
         SystemGraphComponent.executeWithFullAccess( systemDb, tx ->
-                tx.findNodes( DbmsRuntimeRepository.DBMS_RUNTIME_LABEL )
-                  .stream()
-                  .forEach( node -> node.setProperty( DbmsRuntimeRepository.VERSION_PROPERTY, DbmsRuntimeRepository.LATEST_VERSION.getVersionNumber() ) ) );
+        {
+            // New components are not currently initialised in cluster deployment when new binaries are booted on top of an existing database.
+            // This is a known shortcoming of the lifecycle and a state transfer from UNINITIALIZED to CURRENT must be supported
+            // as a workaround until it is fixed.
+            var node = tx.findNodes( DbmsRuntimeRepository.DBMS_RUNTIME_LABEL )
+                         .stream()
+                         .findFirst()
+                         .orElseGet( () -> tx.createNode( DbmsRuntimeRepository.DBMS_RUNTIME_LABEL ) );
+
+            node.setProperty( DbmsRuntimeRepository.VERSION_PROPERTY, DbmsRuntimeRepository.LATEST_VERSION.getVersionNumber() );
+        } );
     }
 
     private boolean is41Database( Transaction tx )

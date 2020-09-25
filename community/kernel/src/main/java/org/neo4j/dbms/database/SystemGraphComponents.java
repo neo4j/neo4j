@@ -131,7 +131,11 @@ public class SystemGraphComponents implements SystemGraphComponent
         SystemGraphComponent.executeWithFullAccess( system, tx -> components.stream().filter( c ->
         {
                         Status status = c.detect( tx );
-            return status == Status.UNSUPPORTED_BUT_CAN_UPGRADE || status == Status.REQUIRES_UPGRADE;
+            return status == Status.UNSUPPORTED_BUT_CAN_UPGRADE || status == Status.REQUIRES_UPGRADE
+                    // New components are not currently initialised in cluster deployment when new binaries are booted on top of an existing database.
+                    // This is a known shortcoming of the lifecycle and a state transfer from UNINITIALIZED to CURRENT must be supported
+                    // as a workaround until it is fixed.
+                    || status == Status.UNINITIALIZED;
         } ).forEach( componentsToUpgrade::add ) );
         return componentsToUpgrade;
     }

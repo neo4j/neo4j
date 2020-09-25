@@ -109,6 +109,30 @@ class DbmsRuntimeSystemGraphComponentTest
         assertStatus( SystemGraphComponent.Status.REQUIRES_UPGRADE );
     }
 
+    @Test
+    void testUpgrade() throws Exception
+    {
+        createDbmsRuntimeNode( DbmsRuntimeVersion.V4_1 );
+
+        assertStatus( SystemGraphComponent.Status.REQUIRES_UPGRADE );
+
+        systemGraphComponents.upgradeToCurrent( fakeSystemDb );
+
+        assertDbmsRuntimeNode( DbmsRuntimeRepository.LATEST_VERSION.getVersionNumber() );
+        assertStatus( SystemGraphComponent.Status.CURRENT );
+    }
+
+    @Test
+    void upgradeFromUninitialized() throws Exception
+    {
+        assertStatus( SystemGraphComponent.Status.UNINITIALIZED );
+
+        systemGraphComponents.upgradeToCurrent( fakeSystemDb );
+
+        assertDbmsRuntimeNode( DbmsRuntimeRepository.LATEST_VERSION.getVersionNumber() );
+        assertStatus( SystemGraphComponent.Status.CURRENT );
+    }
+
     private void assertDbmsRuntimeNode( int expectedVersion )
     {
         int foundVersion = userDatabase.executeTransactionally( "MATCH (n:DbmsRuntime) RETURN n.version AS version", Map.of(), result ->
