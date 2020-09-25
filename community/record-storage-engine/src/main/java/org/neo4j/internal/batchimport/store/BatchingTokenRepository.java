@@ -29,6 +29,8 @@ import java.util.function.ToIntFunction;
 
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.internal.kernel.api.TokenWrite;
+import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.impl.store.TokenStore;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
@@ -71,7 +73,15 @@ public abstract class BatchingTokenRepository<RECORD extends TokenRecord> implem
      */
     public int getOrCreateId( String name )
     {
-        assert name != null;
+        try
+        {
+            TokenWrite.checkValidTokenName( name );
+        }
+        catch ( IllegalTokenNameException e )
+        {
+            throw new IllegalArgumentException( e );
+        }
+
         Integer id = tokens.get( name );
         if ( id == null )
         {
