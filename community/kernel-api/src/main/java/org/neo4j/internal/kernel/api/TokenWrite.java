@@ -125,4 +125,19 @@ public interface TokenWrite
      * @throws TokenCapacityExceededKernelException if too many relationship types would be created by this call, compared to the token id space available.
      */
     void relationshipTypeGetOrCreateForNames( String[] relationshipTypes, int[] ids ) throws KernelException;
+
+    /**
+     * Checks that the provided token name is a valid one.
+     * @param name the token name to check.
+     * @return the token name, for convenience.
+     * @throws IllegalTokenNameException if the token name is not valid.
+     */
+    static String checkValidTokenName( String name ) throws IllegalTokenNameException
+    {
+        if ( name == null || name.isEmpty() || name.contains( "\0" ) )
+        {
+            throw new IllegalTokenNameException( name );
+        }
+        return name;
+    }
 }
