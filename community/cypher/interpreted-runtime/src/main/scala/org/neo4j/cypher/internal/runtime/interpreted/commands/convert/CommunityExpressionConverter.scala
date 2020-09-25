@@ -272,6 +272,8 @@ case class CommunityExpressionConverter(tokenContext: TokenContext) extends Expr
       case _: internal.expressions.Parameter => throw new InternalException("`Parameter` should have been rewritten away")
       case _: ExistsSubClause => throw new InternalException("`ExistsSubClause` should have been rewritten away")
       case CoerceToPredicate(inner) => predicates.CoercedPredicate(self.toCommandExpression(id, inner))
+      case e: internal.expressions.CollectAll=>
+        commands.expressions.CollectAll(self.toCommandExpression(id, e.arguments.head))
       case _ => null
     }
 
