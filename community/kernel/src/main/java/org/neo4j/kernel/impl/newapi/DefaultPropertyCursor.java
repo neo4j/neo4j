@@ -33,6 +33,7 @@ import org.neo4j.storageengine.api.txstate.EntityState;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 
+import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_ENTITY;
 import static org.neo4j.kernel.impl.newapi.Read.NO_ID;
 import static org.neo4j.token.api.TokenConstants.NO_TOKEN;
 
@@ -104,6 +105,16 @@ public class DefaultPropertyCursor extends TraceableCursor implements PropertyCu
             this.propertiesState = null;
             this.txStateChangedProperties = null;
         }
+    }
+
+    void initEmptyRelationship( Read read, AssertOpen assertOpen )
+    {
+        init( read, assertOpen );
+        storeCursor.initRelationshipProperties( NO_ID );
+        this.entityReference = NO_SUCH_ENTITY;
+
+        this.propertiesState = null;
+        this.txStateChangedProperties = null;
     }
 
     private void init( Read read, AssertOpen assertOpen )

@@ -873,16 +873,16 @@ abstract class OptionalExpandIntoTestBase[CONTEXT <: RuntimeContext](
     val expected = for {
       (start, end, zeroRel, oneRel, idx) <- nodesAndRels
     } yield {
-      if (idx % 2 == 0)
+      if (idx % 2 == 0) {
         Array[Any](start, end, zeroRel)
-      else
+      } else {
         Array[Any](start, end, oneRel)
-    }
+      }}
 
     runtimeResult should beColumns("x", "y", "r").withRows(expected)
   }
 
-  test("should be able access property on nulled relationship") {
+  test("should be able access property nulled relationship") {
     // given
     given {
       nodeGraph(1)
@@ -893,6 +893,29 @@ abstract class OptionalExpandIntoTestBase[CONTEXT <: RuntimeContext](
       .produceResults("res")
       .projection("r.prop AS res")
       .optionalExpandInto("(x)-[r]->(y)")
+      .cartesianProduct()
+      .|.allNodeScan("y")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("res").withSingleRow(null)
+  }
+
+  test("should be able access property on nulled relationship, property token existing") {
+    // given
+    given {
+      val n = nodeGraph(1).head
+      n.createRelationshipTo(n, RelationshipType.withName("R")).setProperty("prop", "hello")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("res")
+      .projection("r.prop AS res")
+      .optionalExpandInto("(x)-[r:S]->(y)")
       .cartesianProduct()
       .|.allNodeScan("y")
       .allNodeScan("x")
