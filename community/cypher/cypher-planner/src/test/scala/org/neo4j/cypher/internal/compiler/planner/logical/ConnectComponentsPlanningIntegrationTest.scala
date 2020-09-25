@@ -291,8 +291,12 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
       .build()
   }
 
-  // TODO is there any way we can have two prop equalities have different selectivity without indexes?
-  test("should plan value hash join for the most selective predicate") {
+  test("should plan value hash join for one of two predicates") {
+
+    // The implementation should choose the most selective predicate
+    // as the hash join predicate, but this situation can't appear in
+    // production dbs, since the only way to affect the selectivities would be
+    // to add indexes, making us plan NIJ instead
 
     val plan = plannerBuilder()
       .setAllNodesCardinality(100)
