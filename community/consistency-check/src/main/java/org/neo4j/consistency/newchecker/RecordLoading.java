@@ -33,6 +33,7 @@ import java.util.function.Consumer;
 
 import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.report.ConsistencyReport;
+import org.neo4j.function.ThrowingIntFunction;
 import org.neo4j.internal.schema.PropertySchemaType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
@@ -279,9 +280,23 @@ class RecordLoading
         return chainIsOk;
     }
 
+    static <RECORD extends AbstractBaseRecord,TOKEN extends TokenRecord> boolean checkValidInternalToken(
+            RECORD entity, int token, TokenHolder tokens, TokenStore<TOKEN> tokenStore, BiConsumer<RECORD,Integer> illegalTokenReport,
+            BiConsumer<RECORD,TOKEN> unusedReporter, PageCursorTracer cursorTracer )
+    {
+        return checkValidToken( entity, token, tokens, tokenStore, illegalTokenReport, unusedReporter, tokens::getInternalTokenById, cursorTracer );
+    }
+
     static <RECORD extends AbstractBaseRecord,TOKEN extends TokenRecord> boolean checkValidToken(
             RECORD entity, int token, TokenHolder tokens, TokenStore<TOKEN> tokenStore, BiConsumer<RECORD,Integer> illegalTokenReport,
             BiConsumer<RECORD,TOKEN> unusedReporter, PageCursorTracer cursorTracer )
+    {
+        return checkValidToken( entity, token, tokens, tokenStore, illegalTokenReport, unusedReporter, tokens::getTokenById, cursorTracer );
+    }
+
+    private static <RECORD extends AbstractBaseRecord,TOKEN extends TokenRecord> boolean checkValidToken(
+            RECORD entity, int token, TokenHolder tokens, TokenStore<TOKEN> tokenStore, BiConsumer<RECORD,Integer> illegalTokenReport,
+            BiConsumer<RECORD,TOKEN> unusedReporter, ThrowingIntFunction<NamedToken,TokenNotFoundException> tokenGetter, PageCursorTracer cursorTracer )
     {
         if ( token < 0 )
         {
@@ -297,17 +312,9 @@ class RecordLoading
             }
             catch ( TokenNotFoundException tnfe )
             {
-                try
-                {
-                    tokens.getInternalTokenById( token );
-                    // It's in use, good
-                }
-                catch ( TokenNotFoundException itnfe )
-                {
-                    TOKEN tokenRecord = tokenStore.getRecord( token, tokenStore.newRecord(), RecordLoad.FORCE, cursorTracer );
-                    unusedReporter.accept( entity, tokenRecord );
-                    return false;
-                }
+                TOKEN tokenRecord = tokenStore.getRecord( token, tokenStore.newRecord(), RecordLoad.FORCE, cursorTracer );
+                unusedReporter.accept( entity, tokenRecord );
+                return false;
             }
             // Regardless of whether or not it's in use apparently we're expected to count it
             return true;

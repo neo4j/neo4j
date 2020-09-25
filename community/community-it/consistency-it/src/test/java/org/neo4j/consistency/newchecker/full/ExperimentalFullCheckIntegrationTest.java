@@ -32,16 +32,23 @@ import org.neo4j.consistency.checking.GraphStoreFixture;
 import org.neo4j.consistency.checking.full.FullCheckIntegrationTest;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.kernel.impl.store.record.PropertyBlock;
+import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.experimental_consistency_checker_stop_threshold;
 import static org.neo4j.internal.kernel.api.TokenRead.ANY_LABEL;
 import static org.neo4j.internal.kernel.api.TokenRead.ANY_RELATIONSHIP_TYPE;
+import static org.neo4j.kernel.impl.store.record.Record.NO_LABELS_FIELD;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
+import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
+import static org.neo4j.kernel.impl.store.record.Record.NO_PREVIOUS_PROPERTY;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 
 public class ExperimentalFullCheckIntegrationTest extends FullCheckIntegrationTest
@@ -243,6 +250,44 @@ public class ExperimentalFullCheckIntegrationTest extends FullCheckIntegrationTe
         // then
         on( stats ).verify( RecordType.RELATIONSHIP, 2 )
                 .andThatsAllFolks();
+    }
+
+    @Test
+    void shouldDetectInvalidUseOfInternalPropertyKeyTokens() throws Exception
+    {
+        // given
+        fixture.apply( new GraphStoreFixture.Transaction()
+        {
+            @Override
+            protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
+                    GraphStoreFixture.IdGenerator next )
+            {
+                int propertyKey = next.propertyKey();
+                tx.propertyKey( propertyKey, "FOO", true );
+                long nextProp = next.property();
+                PropertyRecord property = new PropertyRecord( nextProp ).initialize( true, NO_PREVIOUS_PROPERTY.longValue(), NO_NEXT_PROPERTY.longValue() );
+                PropertyBlock block = new PropertyBlock();
+                block.setSingleBlock( propertyKey | (((long) PropertyType.INT.intValue()) << 24) | (666L << 28) );
+                property.addPropertyBlock( block );
+                tx.create( property );
+                tx.create( new NodeRecord( next.node() ).initialize( true, nextProp, false, NO_NEXT_RELATIONSHIP.longValue(), NO_LABELS_FIELD.longValue() ) );
+            }
+        } );
+
+        // when
+        ConsistencySummaryStatistics stats = check();
+
+        // then
+        assertFalse( stats.isConsistent() );
+        on( stats ).verify( RecordType.PROPERTY, 1 )
+                .andThatsAllFolks();
+    }
+
+    @Disabled( "New checker detects correct usage of internal vs non-internal tokens" )
+    @Test
+    protected void shouldNotBeConfusedByInternalPropertyKeyTokens() throws Exception
+    {
+        super.shouldNotBeConfusedByInternalPropertyKeyTokens();
     }
 
     @Disabled( "New checker checks the live graph, i.e. anything that can be reached from the used nodes/relationships" )

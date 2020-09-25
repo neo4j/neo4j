@@ -1236,7 +1236,7 @@ public class FullCheckIntegrationTest
     }
 
     @Test
-    void shouldNotBeConfusedByInternalPropertyKeyTokens() throws Exception
+    protected void shouldNotBeConfusedByInternalPropertyKeyTokens() throws Exception
     {
         // given
         fixture.apply( new GraphStoreFixture.Transaction()

@@ -54,7 +54,7 @@ import org.neo4j.kernel.impl.store.record.TokenRecord;
 import org.neo4j.kernel.impl.storemigration.legacy.SchemaRuleKind;
 import org.neo4j.token.TokenHolders;
 
-import static org.neo4j.consistency.newchecker.RecordLoading.checkValidToken;
+import static org.neo4j.consistency.newchecker.RecordLoading.checkValidInternalToken;
 import static org.neo4j.consistency.newchecker.RecordLoading.safeLoadDynamicRecordChain;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 
@@ -296,7 +296,7 @@ class SchemaChecker
         @Override
         public void processSpecific( LabelSchemaDescriptor schema )
         {
-            checkValidToken( null, schema.getLabelId(), tokenHolders.labelTokens(), neoStores.getLabelTokenStore(), ( record, id ) -> {},
+            checkValidInternalToken( null, schema.getLabelId(), tokenHolders.labelTokens(), neoStores.getLabelTokenStore(), ( record, id ) -> {},
                     ( ignore, token ) -> reporter.forSchema( record ).labelNotInUse( token ), cursorTracer );
             checkValidPropertyKeyIds( schema );
         }
@@ -304,7 +304,7 @@ class SchemaChecker
         @Override
         public void processSpecific( RelationTypeSchemaDescriptor schema )
         {
-            checkValidToken( null, schema.getRelTypeId(), tokenHolders.relationshipTypeTokens(), neoStores.getRelationshipTypeTokenStore(),
+            checkValidInternalToken( null, schema.getRelTypeId(), tokenHolders.relationshipTypeTokens(), neoStores.getRelationshipTypeTokenStore(),
                     ( record, id ) -> {}, ( ignore, token ) -> reporter.forSchema( record ).relationshipTypeNotInUse( token ), cursorTracer );
             checkValidPropertyKeyIds( schema );
         }
@@ -317,14 +317,14 @@ class SchemaChecker
             case NODE:
                 for ( int labelTokenId : schema.getEntityTokenIds() )
                 {
-                    checkValidToken( null, labelTokenId, tokenHolders.labelTokens(), neoStores.getLabelTokenStore(), ( record, id ) -> {},
+                    checkValidInternalToken( null, labelTokenId, tokenHolders.labelTokens(), neoStores.getLabelTokenStore(), ( record, id ) -> {},
                             ( ignore, token ) -> reporter.forSchema( record ).labelNotInUse( token ), cursorTracer );
                 }
                 break;
             case RELATIONSHIP:
                 for ( int relationshipTypeTokenId : schema.getEntityTokenIds() )
                 {
-                    checkValidToken( null, relationshipTypeTokenId, tokenHolders.relationshipTypeTokens(), neoStores.getRelationshipTypeTokenStore(),
+                    checkValidInternalToken( null, relationshipTypeTokenId, tokenHolders.relationshipTypeTokens(), neoStores.getRelationshipTypeTokenStore(),
                             ( record, id ) -> {}, ( ignore, token ) -> reporter.forSchema( record ).relationshipTypeNotInUse( token ), cursorTracer );
                 }
                 break;
@@ -338,7 +338,7 @@ class SchemaChecker
         {
             for ( int propertyKeyId : schema.getPropertyIds() )
             {
-                checkValidToken( null, propertyKeyId, tokenHolders.propertyKeyTokens(), neoStores.getPropertyKeyTokenStore(), ( record, id ) -> {},
+                checkValidInternalToken( null, propertyKeyId, tokenHolders.propertyKeyTokens(), neoStores.getPropertyKeyTokenStore(), ( record, id ) -> {},
                         ( ignore, token ) -> reporter.forSchema( record ).propertyKeyNotInUse( token ), cursorTracer );
             }
         }
