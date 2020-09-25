@@ -104,6 +104,11 @@ public class ProcedureRegistry
         UserFunctionSignature signature = function.signature();
         QualifiedName name = signature.name();
 
+        if ( aggregationFunctions.get( name ) != null )
+        {
+            throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
+                    "Unable to register function, because the name `%s` is already in use as an aggregation function.", name );
+        }
         CallableUserFunction oldImplementation = functions.get( name );
         if ( oldImplementation == null )
         {
@@ -133,7 +138,12 @@ public class ProcedureRegistry
         UserFunctionSignature signature = function.signature();
         QualifiedName name = signature.name();
 
-        CallableUserFunction oldImplementation = functions.get( name );
+        if ( functions.get( name ) != null )
+        {
+            throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
+                    "Unable to register aggregation function, because the name `%s` is already in use as a function.", name );
+        }
+        CallableUserAggregationFunction oldImplementation = aggregationFunctions.get( name );
         if ( oldImplementation == null )
         {
             aggregationFunctions.put( name, function, signature.caseInsensitive() );
