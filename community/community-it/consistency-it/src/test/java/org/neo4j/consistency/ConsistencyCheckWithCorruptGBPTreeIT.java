@@ -26,9 +26,6 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.parallel.ResourceLock;
-import org.junit.jupiter.api.parallel.Resources;
 
 import java.io.IOException;
 import java.io.StringWriter;
@@ -72,7 +69,6 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
-import org.neo4j.test.extension.SuppressOutputExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.String.format;
@@ -92,8 +88,6 @@ import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.kernel.impl.scheduler.JobSchedulerFactory.createInitialisedScheduler;
 
 @TestInstance( TestInstance.Lifecycle.PER_CLASS )
-@ExtendWith( SuppressOutputExtension.class )
-@ResourceLock( Resources.SYSTEM_OUT )
 class ConsistencyCheckWithCorruptGBPTreeIT
 {
     private static final Label label = Label.label( "label" );
@@ -514,10 +508,6 @@ class ConsistencyCheckWithCorruptGBPTreeIT
         ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance() );
 
         assertTrue( result.isSuccessful(), "Expected store to be considered inconsistent." );
-        try ( var reader = fs.openAsReader( result.reportFile(), UTF_8 ) )
-        {
-            readLines( reader ).forEach( System.out::println );
-        }
         assertResultContainsMessage( result,
                 "Index was dirty on startup which means it was not shutdown correctly and need to be cleaned up with a successful recovery." );
     }

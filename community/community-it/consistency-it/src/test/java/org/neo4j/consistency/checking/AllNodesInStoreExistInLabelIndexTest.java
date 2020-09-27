@@ -21,8 +21,6 @@ package org.neo4j.consistency.checking;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.parallel.ResourceLock;
-import org.junit.jupiter.api.parallel.Resources;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -49,7 +47,6 @@ import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.extension.SuppressOutputExtension;
 import org.neo4j.test.rule.RandomRule;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -63,8 +60,7 @@ import static org.neo4j.test.TestLabels.LABEL_THREE;
 import static org.neo4j.test.TestLabels.LABEL_TWO;
 
 @DbmsExtension
-@ExtendWith( {RandomExtension.class, SuppressOutputExtension.class} )
-@ResourceLock( Resources.SYSTEM_OUT )
+@ExtendWith( RandomExtension.class )
 class AllNodesInStoreExistInLabelIndexTest
 {
     @Inject
@@ -381,6 +377,6 @@ class AllNodesInStoreExistInLabelIndexTest
         ConsistencyCheckService service = new ConsistencyCheckService();
         DatabaseLayout databaseLayout = db.databaseLayout();
         Config config = Config.defaults( logs_directory, databaseLayout.databaseDirectory() );
-        return service.runFullConsistencyCheck( databaseLayout, config, NONE, log, true, ConsistencyFlags.DEFAULT );
+        return service.runFullConsistencyCheck( databaseLayout, config, NONE, log, false, ConsistencyFlags.DEFAULT );
     }
 }

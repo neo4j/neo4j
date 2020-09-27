@@ -25,10 +25,9 @@ import org.eclipse.collections.api.map.primitive.IntObjectMap;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.parallel.ResourceLock;
-import org.junit.jupiter.api.parallel.Resources;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -114,7 +113,6 @@ import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.string.UTF8;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.SuppressOutputExtension;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.util.Bits;
@@ -164,8 +162,6 @@ import static org.neo4j.test.mockito.mock.Property.set;
 import static org.neo4j.util.Bits.bits;
 
 @EphemeralTestDirectoryExtension
-@ExtendWith( SuppressOutputExtension.class )
-@ResourceLock( Resources.SYSTEM_OUT )
 public class FullCheckIntegrationTest
 {
     private static final IndexProviderDescriptor DESCRIPTOR = GenericNativeIndexProvider.DESCRIPTOR;
@@ -177,7 +173,13 @@ public class FullCheckIntegrationTest
 
     @Inject
     private TestDirectory testDirectory;
+
     protected GraphStoreFixture fixture;
+    private final ByteArrayOutputStream logStream = new ByteArrayOutputStream();
+    private final Log4jLogProvider logProvider = new Log4jLogProvider( logStream );
+
+    @RegisterExtension
+    ExtendFailureMessageWatcher watcher = new ExtendFailureMessageWatcher( () -> String.format( "%n%s%n", logStream.toString() ) );
 
     protected int label1;
     protected int label2;
@@ -2270,7 +2272,7 @@ public class FullCheckIntegrationTest
         FullCheck checker = new FullCheck( ProgressMonitorFactory.NONE, fixture.getAccessStatistics(), defaultConsistencyCheckThreadsNumber(),
                 consistencyFlags, config, false, memoryLimit() );
         return checker.execute( pageCache, stores, counts, fixture.indexAccessorLookup(), PageCacheTracer.NULL, INSTANCE,
-                new Log4jLogProvider( System.out ).getLog( "test" ) );
+                logProvider.getLog( "test" ) );
     }
 
     protected NodeBasedMemoryLimiter.Factory memoryLimit()
