@@ -86,7 +86,7 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.NullLog;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.pagecache.PageCacheExtension;
+import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.values.storable.Value;
@@ -106,15 +106,12 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.values.storable.Values.intArray;
 import static org.neo4j.values.storable.Values.stringValue;
 
-@PageCacheExtension
+@EphemeralTestDirectoryExtension
 class CheckerTestBase
 {
     static final int NUMBER_OF_THREADS = 4;
     static final long NULL = NULL_REFERENCE.longValue();
     static final int IDS_PER_CHUNK = 100;
-
-    @Inject
-    PageCache pageCache;
 
     @Inject
     TestDirectory directory;
@@ -138,11 +135,13 @@ class CheckerTestBase
     private CountsState countsState;
     private CacheAccess cacheAccess;
     private TokenHolders tokenHolders;
+    private PageCache pageCache;
 
     @BeforeEach
     void setUpDb() throws Exception
     {
         TestDatabaseManagementServiceBuilder builder = new TestDatabaseManagementServiceBuilder( directory.homePath() );
+        builder.setFileSystem( directory.getFileSystem() );
         configure( builder );
         dbms = builder.build();
         db = (GraphDatabaseAPI) dbms.database( GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
@@ -169,6 +168,7 @@ class CheckerTestBase
         cacheAccess = new DefaultCacheAccess( NumberArrayFactory.HEAP.newDynamicByteArray( 10_000, new byte[MAX_BYTES], INSTANCE ),
                 Counts.NONE, NUMBER_OF_THREADS );
         cacheAccess.setCacheSlotSizes( DEFAULT_SLOT_SIZES );
+        pageCache = dependencies.resolveDependency( PageCache.class );
     }
 
     @AfterEach
