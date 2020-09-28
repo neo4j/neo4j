@@ -19,16 +19,14 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.configuration.GraphDatabaseSettings
+import org.neo4j.configuration.GraphDatabaseSettings.auth_enabled
 import org.neo4j.graphdb.config.Setting
 
 class CommunityPrivilegeAdministrationCommandAcceptanceTest extends CommunityAdministrationCommandAcceptanceTestBase {
 
-  override def databaseConfig(): Map[Setting[_], Object] = super.databaseConfig() ++ Map(GraphDatabaseSettings.auth_enabled -> java.lang.Boolean.TRUE)
+  override def databaseConfig(): Map[Setting[_], Object] = super.databaseConfig() ++ Map(auth_enabled -> java.lang.Boolean.TRUE)
 
-  // Tests for showing privileges
-
-  test("should fail on showing privileges from community") {
+  test("should fail on showing all privileges from community") {
     assertFailure("SHOW ALL PRIVILEGES", "Unsupported administration command: SHOW ALL PRIVILEGES")
   }
 
@@ -38,7 +36,7 @@ class CommunityPrivilegeAdministrationCommandAcceptanceTest extends CommunityAdm
     assertFailure("SHOW ROLES role1, $role2 PRIVILEGES", "Unsupported administration command: SHOW ROLES role1, $role2 PRIVILEGES")
   }
 
-  test("should fail on showing user privileges for non-existing user with correct error message") {
+  test("should fail on showing user privileges from community") {
     assertFailure("SHOW USER foo PRIVILEGES", "Unsupported administration command: SHOW USER foo PRIVILEGES")
     assertFailure("SHOW USER $foo PRIVILEGES", "Unsupported administration command: SHOW USER $foo PRIVILEGES")
     assertFailure("SHOW USERS $foo, bar PRIVILEGES", "Unsupported administration command: SHOW USERS $foo, bar PRIVILEGES")

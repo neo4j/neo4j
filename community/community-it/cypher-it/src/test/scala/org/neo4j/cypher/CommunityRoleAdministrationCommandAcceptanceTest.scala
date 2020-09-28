@@ -19,43 +19,34 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.configuration.GraphDatabaseSettings
+import org.neo4j.configuration.GraphDatabaseSettings.auth_enabled
 import org.neo4j.graphdb.config.Setting
 
 class CommunityRoleAdministrationCommandAcceptanceTest extends CommunityAdministrationCommandAcceptanceTestBase {
 
-  override def databaseConfig(): Map[Setting[_], Object] = super.databaseConfig() ++ Map(GraphDatabaseSettings.auth_enabled -> java.lang.Boolean.TRUE)
+  override def databaseConfig(): Map[Setting[_], Object] = super.databaseConfig() ++ Map(auth_enabled -> java.lang.Boolean.TRUE)
 
   test("should fail on showing roles from community") {
     assertFailure("SHOW ROLES", "Unsupported administration command: SHOW ROLES")
-  }
-
-  test("should fail on showing roles with users from community") {
     assertFailure("SHOW POPULATED ROLES WITH USERS", "Unsupported administration command: SHOW POPULATED ROLES WITH USERS")
   }
 
   test("should fail on creating role from community") {
     assertFailure("CREATE ROLE foo IF NOT EXISTS", "Unsupported administration command: CREATE ROLE foo IF NOT EXISTS")
     assertFailure("CREATE OR REPLACE ROLE foo", "Unsupported administration command: CREATE OR REPLACE ROLE foo")
-  }
-
-  test("should fail on creating role from community with correct error message") {
     assertFailure("CREATE ROLE foo", "Unsupported administration command: CREATE ROLE foo")
     assertFailure("CREATE ROLE $foo", "Unsupported administration command: CREATE ROLE $foo")
   }
 
-  test("should fail on creating role as copy of non-existing role with correct error message") {
+  test("should fail on creating role as copy of role from community") {
     assertFailure("CREATE ROLE foo AS COPY OF bar", "Unsupported administration command: CREATE ROLE foo AS COPY OF bar")
     assertFailure("CREATE ROLE foo AS COPY OF $bar", "Unsupported administration command: CREATE ROLE foo AS COPY OF $bar")
   }
 
-  test("should fail on dropping non-existing role from community") {
-    assertFailure("DROP ROLE foo IF EXISTS", "Unsupported administration command: DROP ROLE foo IF EXISTS")
-  }
-
-  test("should fail on dropping non-existing role from community with correct error message") {
+  test("should fail on dropping role from community") {
     assertFailure("DROP ROLE foo", "Unsupported administration command: DROP ROLE foo")
     assertFailure("DROP ROLE $foo", "Unsupported administration command: DROP ROLE $foo")
+    assertFailure("DROP ROLE foo IF EXISTS", "Unsupported administration command: DROP ROLE foo IF EXISTS")
   }
 
   test("should fail on granting role to user from community") {
@@ -63,7 +54,7 @@ class CommunityRoleAdministrationCommandAcceptanceTest extends CommunityAdminist
     assertFailure("GRANT ROLE $r TO $u", "Unsupported administration command: GRANT ROLE $r TO $u")
   }
 
-  test("should fail on revoking non-existing role from user") {
+  test("should fail on revoking role from user from community") {
     assertFailure("REVOKE ROLE custom FROM neo4j", "Unsupported administration command: REVOKE ROLE custom FROM neo4j")
     assertFailure("REVOKE ROLE $r FROM $u", "Unsupported administration command: REVOKE ROLE $r FROM $u")
   }

@@ -19,8 +19,9 @@
  */
 package org.neo4j.cypher
 
+import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
 import org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME
-import org.neo4j.kernel.api.security.AuthManager
+import org.neo4j.exceptions.DatabaseAdministrationException
 
 abstract class CommunityAdministrationCommandAcceptanceTestBase extends ExecutionEngineFunSuite with GraphDatabaseTestSupport {
 
@@ -29,13 +30,21 @@ abstract class CommunityAdministrationCommandAcceptanceTestBase extends Executio
     selectDatabase(SYSTEM_DATABASE_NAME)
   }
 
-  def authManager: AuthManager = graph.getDependencyResolver.resolveDependency(classOf[AuthManager])
-
   def assertFailure(command: String, errorMsg: String): Unit = {
     the[Exception] thrownBy {
       // WHEN
       execute(command)
       // THEN
     } should have message errorMsg
+  }
+
+  def assertFailWhenNotOnSystem(command: String, errorMsgCommand: String): Unit = {
+    selectDatabase(DEFAULT_DATABASE_NAME)
+    the[DatabaseAdministrationException] thrownBy {
+      // WHEN
+      execute(command)
+      // THEN
+    } should have message
+      s"This is an administration command and it should be executed against the system database: $errorMsgCommand"
   }
 }
