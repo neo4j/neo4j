@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.ast.prettifier.Prettifier
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.frontend.PlannerName
+import org.neo4j.cypher.internal.frontend.helpers.TestContext
 import org.neo4j.cypher.internal.parser.ParserFixture.parser
 import org.neo4j.cypher.internal.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.rewriting.rewriters.Never
@@ -63,9 +64,7 @@ trait RewritePhaseTest {
   def assertRewritten(from: String, to: String, semanticTableExpressions: List[Expression], features: SemanticFeature*): Unit = {
     val fromOutState: BaseState = prepareFrom(from, features: _*)
 
-    val toAst = parseAndRewrite(to, features: _*)
-    val toInState = InitialState(to, None, plannerName, maybeStatement = Some(toAst), maybeSemantics = Some(toAst.semanticState(features: _*)))
-    val toOutState = rewriterPhaseForExpected.transform(toInState, ContextHelper.create())
+    val toOutState = prepareFrom(to, features: _*)
 
     fromOutState.statement() should equal(toOutState.statement())
     semanticTableExpressions.foreach { e =>
@@ -92,7 +91,7 @@ trait RewritePhaseTest {
 
  def prepareFrom(from: String, features: SemanticFeature*): BaseState = {
     val fromAst = parseAndRewrite(from, features: _*)
-    val fromInState = InitialState(from, None, plannerName, maybeStatement = Some(fromAst), maybeSemantics = Some(fromAst.semanticState(features: _*)))
+    val fromInState = SemanticAnalysis(warn = false, features: _*).process(InitialState(from, None, plannerName, maybeStatement = Some(fromAst)), TestContext())
     val fromOutState = rewriterPhaseUnderTest.transform(fromInState, ContextHelper.create())
     fromOutState
   }
