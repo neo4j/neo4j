@@ -38,13 +38,14 @@ import org.neo4j.storageengine.api.TransactionIdStore;
 public class TestVersionContext extends TransactionVersionContext
 {
     private boolean wrongLastClosedTxId = true;
+    private int numIsDirtyCalls;
     private int additionalAttempts;
     private boolean stayDirty;
     private Exception lastMarkAsDirtyCall;
     private Exception additionalAttemptsCall;
     private volatile Predicate<Thread> threadFilter = Predicates.alwaysTrue();
 
-    private TestVersionContext( LongSupplier transactionIdSupplier )
+    public TestVersionContext( LongSupplier transactionIdSupplier )
     {
         super( transactionIdSupplier );
     }
@@ -75,6 +76,7 @@ public class TestVersionContext extends TransactionVersionContext
     @Override
     public boolean isDirty()
     {
+        numIsDirtyCalls++;
         boolean dirty = super.isDirty();
         if ( dirty )
         {
@@ -105,6 +107,11 @@ public class TestVersionContext extends TransactionVersionContext
         }
     }
 
+    public int getNumIsDirtyCalls()
+    {
+        return numIsDirtyCalls;
+    }
+
     public int getAdditionalAttempts()
     {
         return additionalAttempts;
@@ -123,7 +130,12 @@ public class TestVersionContext extends TransactionVersionContext
     public void onlyCareAboutCurrentThread()
     {
         Thread threadToFilterOn = Thread.currentThread();
-        threadFilter = t -> t.equals( threadToFilterOn );
+        setThreadFilter( t -> t.equals( threadToFilterOn ) );
+    }
+
+    public void setThreadFilter( Predicate<Thread> filter )
+    {
+        this.threadFilter = filter;
     }
 
     public static TestVersionContext testCursorContext( LongSupplier idSupplier )
