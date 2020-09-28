@@ -30,7 +30,6 @@ import org.apache.lucene.util.Bits;
 
 import java.io.IOException;
 import java.util.Iterator;
-import java.util.List;
 
 import org.neo4j.internal.helpers.collection.BoundedIterable;
 import org.neo4j.internal.helpers.collection.PrefetchingIterator;
@@ -112,16 +111,16 @@ public class LucenePartitionAllDocumentsReader implements BoundedIterable<Docume
 
         return new FilteredDocIdSetIterator( allDocs )
         {
-            List<LeafReaderContext> leaves = reader.leaves();
+            final Iterator<LeafReaderContext> leaves = reader.leaves().iterator();
             Bits currentLiveDocs;
             int currentMaxDoc = -1;
 
             @Override
             protected boolean match( int doc )
             {
-                if ( doc > currentMaxDoc && !leaves.isEmpty() )
+                if ( doc > currentMaxDoc && leaves.hasNext() )
                 {
-                    LeafReaderContext leaf = leaves.remove( 0 );
+                    LeafReaderContext leaf = leaves.next();
                     LeafReader reader = leaf.reader();
                     currentLiveDocs = reader.getLiveDocs();
                     currentMaxDoc = reader.maxDoc();
