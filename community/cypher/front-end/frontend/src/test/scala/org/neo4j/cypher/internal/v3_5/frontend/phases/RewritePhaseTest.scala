@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.v3_5.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.v3_5.ast.semantics.SyntaxExceptionCreator
 import org.neo4j.cypher.internal.v3_5.expressions.Expression
 import org.neo4j.cypher.internal.v3_5.frontend.PlannerName
+import org.neo4j.cypher.internal.v3_5.frontend.helpers.TestContext
 import org.neo4j.cypher.internal.v3_5.parser.ParserFixture.parser
 import org.neo4j.cypher.internal.v3_5.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.v3_5.rewriting.rewriters.Never
@@ -64,9 +65,7 @@ trait RewritePhaseTest {
     val fromInState = InitialState(from, None, plannerName, maybeStatement = Some(fromAst), maybeSemantics = Some(fromAst.semanticState(features: _*)))
     val fromOutState = rewriterPhaseUnderTest.transform(fromInState, ContextHelper.create())
 
-    val toAst = parseAndRewrite(to, features: _*)
-    val toInState = InitialState(to, None, plannerName, maybeStatement = Some(toAst), maybeSemantics = Some(toAst.semanticState(features: _*)))
-    val toOutState = rewriterPhaseForExpected.transform(toInState, ContextHelper.create())
+    val toOutState = prepareFrom(to, features: _*)
 
     fromOutState.statement() should equal(toOutState.statement())
     semanticTableExpressions.foreach { e =>
@@ -80,5 +79,12 @@ trait RewritePhaseTest {
     val cleanedAst = parsedAst.endoRewrite(inSequence(normalizeWithAndReturnClauses(mkException)))
     val (rewrittenAst, _, _) = astRewriter.rewrite(queryText, cleanedAst, cleanedAst.semanticState(features: _*))
     rewrittenAst
+  }
+
+ def prepareFrom(from: String, features: SemanticFeature*): BaseState = {
+    val fromAst = parseAndRewrite(from, features: _*)
+    val fromInState = SemanticAnalysis(warn = false, features: _*).process(InitialState(from, None, plannerName, maybeStatement = Some(fromAst)), TestContext())
+    val fromOutState = rewriterPhaseUnderTest.transform(fromInState, ContextHelper.create())
+    fromOutState
   }
 }
