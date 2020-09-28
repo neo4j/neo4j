@@ -84,6 +84,7 @@ public enum ComponentVersion
     ENTERPRISE_SECURITY_41D1( 3, SECURITY_PRIVILEGE_COMPONENT, Neo4jVersions.VERSION_41D1 ),
     ENTERPRISE_SECURITY_41( 4, SECURITY_PRIVILEGE_COMPONENT, Neo4jVersions.VERSION_41 ),
     ENTERPRISE_SECURITY_42D4( 5, SECURITY_PRIVILEGE_COMPONENT, Neo4jVersions.VERSION_42D4 ),
+    ENTERPRISE_SECURITY_42D6( 6, SECURITY_PRIVILEGE_COMPONENT, Neo4jVersions.VERSION_42D6 ),
 
     ENTERPRISE_SECURITY_UNKNOWN_VERSION( UNKNOWN_VERSION, SECURITY_PRIVILEGE_COMPONENT, String.format( "no '%s' graph found", SECURITY_PRIVILEGE_COMPONENT ) ),
     ENTERPRISE_SECURITY_FUTURE_VERSION( Integer.MIN_VALUE, SECURITY_PRIVILEGE_COMPONENT, "Unrecognized future version" ),
@@ -99,7 +100,7 @@ public enum ComponentVersion
     // Static variables for SECURITY_PRIVILEGE_COMPONENT versions
     public static final int FIRST_VALID_ENTERPRISE_SECURITY_COMPONENT_VERSION = ENTERPRISE_SECURITY_35.getVersion();
     public static final int FIRST_RUNTIME_SUPPORTED_ENTERPRISE_SECURITY_COMPONENT_VERSION = ENTERPRISE_SECURITY_40.getVersion();
-    public static final int LATEST_ENTERPRISE_SECURITY_COMPONENT_VERSION = ENTERPRISE_SECURITY_42D4.getVersion();
+    public static final int LATEST_ENTERPRISE_SECURITY_COMPONENT_VERSION = ENTERPRISE_SECURITY_42D6.getVersion();
 
     private final String componentName;
     private final int version;
@@ -175,6 +176,7 @@ public enum ComponentVersion
         public static final String VERSION_41D1 = "Neo4j 4.1.0-Drop01";
         public static final String VERSION_41 = "Neo4j 4.1";
         public static final String VERSION_42D4 = "Neo4j 4.2.0-Drop04";
+        public static final String VERSION_42D6 = "Neo4j 4.2.0-Drop06";
 
         public static final int UNKNOWN_VERSION = -1;
     }
