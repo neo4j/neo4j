@@ -221,9 +221,7 @@ abstract class LeftOuterHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edi
                                   } yield Array(x, y, y)
     runtimeResult should beColumns("x", "y", "y2").withRows(expectedResultRows)
   }
-
-//  //>>>>>>>>>>>>>>>>>>>>>>
-
+  
   test("should work when LHS is empty") {
     val nodes = given {
       val randomSmallIntProps: PartialFunction[Int, Map[String, Any]] = {
