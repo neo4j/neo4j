@@ -22,10 +22,12 @@ package org.neo4j.kernel.impl.api;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.Status;
 
+import static org.neo4j.configuration.GraphDatabaseSettings.max_concurrent_transactions;
+
 public class MaximumTransactionLimitExceededException extends TransactionFailureException implements Status.HasStatus
 {
     private static final String MAXIMUM_TRANSACTIONS_LIMIT_MESSAGE =
-            "Unable to start new transaction since limit of concurrently executed transactions is reached.";
+            "Unable to start new transaction since limit of concurrently executed transactions is reached. See setting " + max_concurrent_transactions.name();
 
     MaximumTransactionLimitExceededException()
     {
