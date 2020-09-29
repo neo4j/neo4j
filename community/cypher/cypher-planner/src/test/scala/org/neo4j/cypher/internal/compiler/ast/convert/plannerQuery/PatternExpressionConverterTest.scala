@@ -105,5 +105,5 @@ class PatternExpressionConverterTest extends CypherFunSuite with LogicalPlanning
   }
 
   def createPatternExpression(n1: NodePattern, r: RelationshipPattern, n2: NodePattern): PatternExpression =
-    PatternExpression(RelationshipsPattern(RelationshipChain(n1, r, n2) _) _)
+    PatternExpression(RelationshipsPattern(RelationshipChain(n1, r, n2) _) _)(Set.empty)
 }

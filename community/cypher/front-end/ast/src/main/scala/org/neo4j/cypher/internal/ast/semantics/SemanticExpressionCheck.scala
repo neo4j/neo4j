@@ -372,8 +372,18 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
           specifyType(if (x.pattern.single) CTPath else CTList(CTPath), x)
 
       case x:PatternExpression =>
-        SemanticPatternCheck.check(Pattern.SemanticContext.Expression, x.pattern) chain
-          specifyType(CTList(CTPath), x)
+        SemanticState.recordCurrentScope(x) chain
+          withScopedState {
+            SemanticPatternCheck.check(Pattern.SemanticContext.Match, x.pattern) chain {
+              (state: SemanticState) => {
+                val errors = x.pattern.element.allVariables.toSeq.collect {
+                  case v if state.recordedScopes(x).symbol(v.name).isEmpty && !SemanticPatternCheck.variableIsGenerated(v) =>
+                    SemanticError(s"PatternExpressions are not allowed to introduce new variables: '${v.name}'.", v.position)
+                }
+                SemanticCheckResult(state, errors)
+              }
+            }
+          } chain specifyType(CTList(CTPath), x)
 
       case x:IterablePredicateExpression =>
         FilteringExpressions.checkPredicateDefined(x) chain

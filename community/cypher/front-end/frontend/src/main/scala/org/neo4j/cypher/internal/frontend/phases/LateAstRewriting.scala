@@ -17,7 +17,6 @@
 package org.neo4j.cypher.internal.frontend.phases
 
 import org.neo4j.cypher.internal.rewriting.rewriters.collapseMultipleInPredicates
-import org.neo4j.cypher.internal.rewriting.rewriters.nameUpdatingClauses
 import org.neo4j.cypher.internal.rewriting.rewriters.projectNamedPaths
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.inSequence
@@ -25,7 +24,6 @@ import org.neo4j.cypher.internal.util.inSequence
 object LateAstRewriting extends StatementRewriter {
   override def instance(context: BaseContext): Rewriter = inSequence(
     collapseMultipleInPredicates,
-    nameUpdatingClauses,
     projectNamedPaths
 //    enableCondition(containsNamedPathOnlyForShortestPath), // TODO Re-enable
   )

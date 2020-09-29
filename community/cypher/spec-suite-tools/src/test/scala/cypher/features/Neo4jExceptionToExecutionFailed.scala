@@ -159,6 +159,8 @@ object Neo4jExceptionToExecutionFailed {
       UNDEFINED_VARIABLE
     else if (msg.matches(semanticError("In a WITH/RETURN with DISTINCT or an aggregation, it is not possible to access variables declared before the WITH/RETURN: .+")))
       UNDEFINED_VARIABLE
+    else if (msg.matches(semanticError("PatternExpressions are not allowed to introduce new variables: .+")))
+      UNDEFINED_VARIABLE
     else if (msg.matches(semanticError("Type mismatch: .+ defined with conflicting type .+ \\(expected .+\\)")))
       VARIABLE_TYPE_CONFLICT
     else if (msg.matches(semanticError("Cannot use the same relationship variable '.+' for multiple patterns")))

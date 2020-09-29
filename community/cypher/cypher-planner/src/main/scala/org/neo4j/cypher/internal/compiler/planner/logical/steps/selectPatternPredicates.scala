@@ -82,7 +82,7 @@ case object selectPatternPredicates extends CandidateGenerator[LogicalPlan] {
     val(namedMap, qg) = e.patternElements.foldLeft(emptyTuple) { (acc, patternElement) =>
       patternElement match {
         case elem: RelationshipChain =>
-          val patternExpr = PatternExpression(RelationshipsPattern(elem)(elem.position))
+          val patternExpr = PatternExpression(RelationshipsPattern(elem)(elem.position))(e.outerScope)
           val (namedExpr, namedMap) = PatternExpressionPatternElementNamer.apply(patternExpr)
           val qg = extractQG(lhs, namedExpr, context)
 

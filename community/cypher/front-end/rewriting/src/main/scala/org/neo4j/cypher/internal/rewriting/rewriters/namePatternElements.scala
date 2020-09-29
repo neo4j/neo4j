@@ -16,12 +16,15 @@
  */
 package org.neo4j.cypher.internal.rewriting.rewriters
 
+import org.neo4j.cypher.internal.ast.Create
 import org.neo4j.cypher.internal.ast.Match
-import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.ast.Merge
+import org.neo4j.cypher.internal.expressions.PatternComprehension
+import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.bottomUp
 
-case object nameMatchPatternElements extends Rewriter {
+case object namePatternElements extends Rewriter {
 
   def apply(that: AnyRef): AnyRef = instance(that)
 
@@ -29,7 +32,19 @@ case object nameMatchPatternElements extends Rewriter {
     case m: Match =>
       val rewrittenPattern = m.pattern.endoRewrite(nameAllPatternElements.namingRewriter)
       m.copy(pattern = rewrittenPattern)(m.position)
+    case create@Create(pattern) =>
+      val rewrittenPattern = pattern.endoRewrite(nameAllPatternElements.namingRewriter)
+      create.copy(pattern = rewrittenPattern)(create.position)
+    case merge@Merge(pattern, _, _) =>
+      val rewrittenPattern = pattern.endoRewrite(nameAllPatternElements.namingRewriter)
+      merge.copy(pattern = rewrittenPattern)(merge.position)
+    case p: PatternExpression =>
+      val rewrittenPattern = p.pattern.endoRewrite(nameAllPatternElements.namingRewriter)
+      p.copy(pattern = rewrittenPattern)(p.outerScope)
+    case p: PatternComprehension =>
+      val rewrittenPattern = p.pattern.endoRewrite(nameAllPatternElements.namingRewriter)
+      p.copy(pattern = rewrittenPattern)(p.position, p.outerScope)
   }
 
-  private val instance = bottomUp(rewriter, _.isInstanceOf[Expression])
+  private val instance = bottomUp(rewriter)
 }

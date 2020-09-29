@@ -43,23 +43,27 @@ case object getDegreeRewriter extends Rewriter {
 
   private def rewriter = Rewriter.lift {
     // LENGTH( (a)-[]->() )
-    case func@FunctionInvocation(_, _, _, IndexedSeq(PatternExpression(RelationshipsPattern(RelationshipChain(NodePattern(Some(node), List(), None, _), RelationshipPattern(None, types, None, None, dir, _, _), NodePattern(None, List(), None ,_))))))
-      if func.function == functions.Length || func.function == functions.Size =>
-      calculateUsingGetDegree(func, node, types, dir)
-
-    // LENGTH( ()-[]->(a) )
-    case func@FunctionInvocation(_, _, _, IndexedSeq(PatternExpression(RelationshipsPattern(RelationshipChain(NodePattern(None, List(), None, _), RelationshipPattern(None, types, None, None, dir, _, _), NodePattern(Some(node), List(), None, _))))))
-      if func.function == functions.Length || func.function == functions.Size =>
-      calculateUsingGetDegree(func, node, types, dir.reversed)
+    case func@FunctionInvocation(_, _, _, IndexedSeq(pe@PatternExpression(RelationshipsPattern(RelationshipChain(NodePattern(Some(node), List(), None, _), RelationshipPattern(Some(rel), types, None, None, dir, _, _), NodePattern(Some(otherNode), List(), None ,_))))))
+      if (func.function == functions.Length || func.function == functions.Size) =>
+      val peDeps = pe.dependencies
+      if (peDeps.contains(node) && !peDeps.contains(rel) && !peDeps.contains(otherNode)) {
+        calculateUsingGetDegree(func, node, types, dir)
+      } else if(!peDeps.contains(node) && !peDeps.contains(rel) && peDeps.contains(otherNode)) {
+        calculateUsingGetDegree(func, otherNode, types, dir.reversed)
+      } else {
+        func
+      }
 
     // EXISTS( (a)-[]->() ) rewritten to GetDegree( (a)-[]->() ) > 0
-    case func@FunctionInvocation(_, _, _, IndexedSeq(PatternExpression(RelationshipsPattern(RelationshipChain(NodePattern(Some(node), List(), None, _), RelationshipPattern(None, types, None, None, dir, _, _), NodePattern(None, List(), None, _))))))
+    case func@FunctionInvocation(_, _, _, IndexedSeq(pe@PatternExpression(RelationshipsPattern(RelationshipChain(NodePattern(Some(node), List(), None, _), RelationshipPattern(Some(rel), types, None, None, dir, _, _), NodePattern(Some(otherNode), List(), None, _))))))
       if func.function == functions.Exists  =>
-      GreaterThan(calculateUsingGetDegree(func, node, types, dir), SignedDecimalIntegerLiteral("0")(func.position))(func.position)
-
-    // EXISTS( ()-[]->(a) ) rewritten to GetDegree( (a)-[]->() ) > 0
-    case func@FunctionInvocation(_, _, _, IndexedSeq(PatternExpression(RelationshipsPattern(RelationshipChain(NodePattern(None, List(), None, _), RelationshipPattern(None, types, None, None, dir, _, _), NodePattern(Some(node), List(), None, _))))))
-      if func.function == functions.Exists =>
-      GreaterThan(calculateUsingGetDegree(func, node, types, dir.reversed), SignedDecimalIntegerLiteral("0")(func.position))(func.position)
+      val peDeps = pe.dependencies
+      if (peDeps.contains(node) && !peDeps.contains(rel) && !peDeps.contains(otherNode)) {
+        GreaterThan(calculateUsingGetDegree(func, node, types, dir), SignedDecimalIntegerLiteral("0")(func.position))(func.position)
+      } else if(!peDeps.contains(node) && !peDeps.contains(rel) && peDeps.contains(otherNode)) {
+        GreaterThan(calculateUsingGetDegree(func, otherNode, types, dir.reversed), SignedDecimalIntegerLiteral("0")(func.position))(func.position)
+      } else {
+        func
+      }
   }
 }

@@ -46,24 +46,16 @@ trait PatternExpressionSolving {
   def planPatternExpression(planArguments: Set[String], expr: PatternExpression, context: LogicalPlanningContext): (LogicalPlan, PatternExpression) = {
     val dependencies = expr.dependencies.map(_.name)
     val qgArguments = planArguments intersect dependencies
-    val (namedExpr, namedMap) = PatternExpressionPatternElementNamer(expr)
-    val qg = asQueryGraph(namedExpr, context.innerVariableNamer).withArgumentIds(qgArguments)
-    val plan = planQueryGraph(qg, namedMap, context)
-    (plan, namedExpr)
+    val qg = asQueryGraph(expr, context.innerVariableNamer).withArgumentIds(qgArguments)
+    val plan = self.plan(qg, InterestingOrder.empty, context)
+    (plan, expr)
   }
 
   def planPatternComprehension(planArguments: Set[String], expr: PatternComprehension, context: LogicalPlanningContext): LogicalPlan = {
     val queryGraph = asQueryGraph(expr, context.innerVariableNamer)
     val qgArguments = planArguments intersect queryGraph.idsWithoutOptionalMatchesOrUpdates
     val qg = queryGraph.withArgumentIds(qgArguments).addPredicates(expr.predicate.toIndexedSeq:_*)
-    planQueryGraph(qg, Map.empty, context)
-  }
-
-  private def planQueryGraph(qg: QueryGraph, namedMap: Map[PatternElement, Variable], context: LogicalPlanningContext): LogicalPlan = {
-    val namedNodes = namedMap.collect { case (_: NodePattern, identifier) => identifier }
-    val namedRels = namedMap.collect { case (_: RelationshipChain, identifier) => identifier }
-    val patternPlanningContext = context.forExpressionPlanning(namedNodes, namedRels)
-    self.plan(qg, InterestingOrder.empty, patternPlanningContext)
+    self.plan(qg, InterestingOrder.empty, context)
   }
 }
 

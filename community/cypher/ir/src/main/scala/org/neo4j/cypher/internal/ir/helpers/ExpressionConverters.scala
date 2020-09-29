@@ -96,14 +96,12 @@ object ExpressionConverters {
 
     val rewrittenChain = relChain.endoRewrite(topDown(Rewriter.lift(normalizer.replace)))
 
-    val deps = predicates.flatMap(_.dependencies).map(_.name)
     val patternContent = rewrittenChain.destructed
     val qg = QueryGraph(
       patternRelationships = patternContent.rels.toSet,
       patternNodes = patternContent.nodeIds.toSet
     ).addPredicates(predicates: _*)
-    qg.addArgumentIds((qg.idsWithoutOptionalMatchesOrUpdates.filter(_.isNamed) ++ deps).toIndexedSeq)
-    // TODO Next Step: Be clever and find out if deps are necessary here and only then add dependencies
+    qg.addArgumentIds(qg.idsWithoutOptionalMatchesOrUpdates.filter(_.isNamed).toIndexedSeq)
   }
 
   implicit class PredicateConverter(val predicate: Expression) extends AnyVal {

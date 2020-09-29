@@ -704,7 +704,7 @@ class Neo4jASTFactory(query: String)
       case paths: ShortestPaths =>
         ShortestPathExpression(paths)
       case _ =>
-        PatternExpression(RelationshipsPattern(pattern.element.asInstanceOf[RelationshipChain])(p))
+        PatternExpression(RelationshipsPattern(pattern.element.asInstanceOf[RelationshipChain])(p))(Set.empty)
     }
 
   override def existsSubQuery(p: InputPosition,

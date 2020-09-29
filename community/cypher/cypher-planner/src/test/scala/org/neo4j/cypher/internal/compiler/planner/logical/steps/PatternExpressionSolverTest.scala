@@ -166,7 +166,7 @@ class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTes
 
   private def newPatExpr(left: String, position: Int, rightE: Either[Int, String], relNameE: Either[Int, String], dir: SemanticDirection): PatternExpression = {
     def getNameAndPosition(rightE: Either[Int, String]) = rightE match {
-      case Left(i) => (None, DummyPosition(i))
+      case Left(i) => (Some(varFor(s"  REL$i")), DummyPosition(i))
       case Right(name) => (Some(varFor(name)), pos)
     }
 
@@ -176,6 +176,6 @@ class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTes
     PatternExpression(RelationshipsPattern(RelationshipChain(
       NodePattern(Some(varFor(left)), Seq.empty, None) _,
       RelationshipPattern(relName, Seq.empty, None, None, dir)(relPos),
-      NodePattern(right, Seq.empty, None)(rightPos)) _)(DummyPosition(position)))
+      NodePattern(right, Seq.empty, None)(rightPos)) _)(DummyPosition(position)))(Set.empty)
   }
 }

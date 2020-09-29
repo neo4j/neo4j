@@ -160,8 +160,8 @@ Feature: SkipLimitAcceptance
     When executing query:
       """
       MATCH (p:Person)
-      RETURN p.name AS name
-      LIMIT size((a)-->(c))
+      RETURN p.name AS name, p
+      LIMIT size(()-->())
       """
     Then a SyntaxError should be raised at compile time: NonConstantExpression
 
@@ -175,8 +175,8 @@ Feature: SkipLimitAcceptance
     When executing query:
       """
       MATCH (p:Person)
-      RETURN p.name AS name
-      SKIP size((a)-->(c))
+      RETURN p.name AS name, p
+      SKIP size(()-->())
       """
     Then a SyntaxError should be raised at compile time: NonConstantExpression
 

@@ -43,6 +43,7 @@ import org.neo4j.cypher.internal.expressions.RelationshipsPattern
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.ShortestPaths
 import org.neo4j.cypher.internal.util.ASTNode
+import org.neo4j.cypher.internal.util.AllNameGenerators
 import org.neo4j.cypher.internal.util.DeprecatedRepeatedRelVarInPatternExpression
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.UnboundedShortestPathNotification
@@ -236,8 +237,6 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
       SemanticExpressionCheck.simple(x.properties) chain
         expectType(CTMap.covariant, x.properties)
 
-    def variableIsGenerated(variable: LogicalVariable): Boolean = variable.name.startsWith("  UNNAMED") || variable.name.startsWith("  REL")
-
     def checkForLegacyTypeSeparator: SemanticCheck = x match {
       case RelationshipPattern(variable, _, length, properties, _, true, _) if (variable.isDefined && !variableIsGenerated(variable.get)) || length.isDefined || properties.isDefined =>
         error(
@@ -257,6 +256,8 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
       checkNotUndirectedWhenCreating chain
       checkBaseVariable(ctx, x.baseRel, CTRelationship)
   }
+
+  def variableIsGenerated(variable: LogicalVariable): Boolean = !AllNameGenerators.isNamed(variable.name)
 
   def declareVariables(ctx: SemanticContext, element: PatternElement): SemanticCheck =
     element match {

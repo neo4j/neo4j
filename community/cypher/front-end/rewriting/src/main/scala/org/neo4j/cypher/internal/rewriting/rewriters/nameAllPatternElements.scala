@@ -19,8 +19,9 @@ package org.neo4j.cypher.internal.rewriting.rewriters
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.util.NodeNameGenerator
+import org.neo4j.cypher.internal.util.RelNameGenerator
 import org.neo4j.cypher.internal.util.Rewriter
-import org.neo4j.cypher.internal.util.UnNamedNameGenerator
 import org.neo4j.cypher.internal.util.bottomUp
 
 case object nameAllPatternElements extends Rewriter {
@@ -29,11 +30,11 @@ case object nameAllPatternElements extends Rewriter {
 
   val namingRewriter: Rewriter = bottomUp(Rewriter.lift {
     case pattern: NodePattern if pattern.variable.isEmpty =>
-      val syntheticName = UnNamedNameGenerator.name(pattern.position.bumped())
+      val syntheticName = NodeNameGenerator.name(pattern.position.bumped())
       pattern.copy(variable = Some(Variable(syntheticName)(pattern.position)))(pattern.position)
 
     case pattern: RelationshipPattern if pattern.variable.isEmpty  =>
-      val syntheticName = UnNamedNameGenerator.name(pattern.position.bumped())
+      val syntheticName = RelNameGenerator.name(pattern.position.bumped())
       pattern.copy(variable = Some(Variable(syntheticName)(pattern.position)))(pattern.position)
   })
 }

@@ -16,6 +16,16 @@
  */
 package org.neo4j.cypher.internal.expressions
 
-case class PatternExpression(pattern: RelationshipsPattern) extends Expression {
-  def position = pattern.position
+case class PatternExpression(pattern: RelationshipsPattern)(override val outerScope: Set[Variable]) extends ScopeExpression with ExpressionWithOuterScope {
+  override def position = pattern.position
+
+  override def introducedVariables: Set[LogicalVariable] = pattern.element.allVariables -- outerScope
+
+  override def withOuterScope(outerScope: Set[Variable]): PatternExpression = copy()(outerScope)
+
+  override def dup(children: Seq[AnyRef]): this.type = {
+    PatternExpression(
+      children.head.asInstanceOf[RelationshipsPattern]
+    )(outerScope).asInstanceOf[this.type]
+  }
 }

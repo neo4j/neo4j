@@ -158,7 +158,7 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
           RETURN DISTINCT b as b""").
     is_rewritten_to(
       """MATCH (a)
-          OPTIONAL MATCH (a)-[r:T1]->(b) WHERE (b)-[:T2]->()
+          OPTIONAL MATCH (a)-[r:T1]->(b) WHERE (b)-[`  UNNAMED0`:T2]->(`  UNNAMED-3`)
           RETURN DISTINCT b as b""")
 
   assert_that(
@@ -167,7 +167,7 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
           RETURN DISTINCT b as b""").
     is_rewritten_to(
       """MATCH (a)
-          OPTIONAL MATCH (a)-[r:T1]->(b) WHERE b:B and (b)-[:T2]->()
+          OPTIONAL MATCH (a)-[r:T1]->(b) WHERE b:B and (b)-[`  UNNAMED0`:T2]->(`  UNNAMED-3`)
           RETURN DISTINCT b as b""")
 
   assert_that(
@@ -182,8 +182,17 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
           RETURN DISTINCT b as b""").
     is_rewritten_to(
       """MATCH (a)
-          OPTIONAL MATCH (a)-[r:T1]->(b) WHERE (b)-[:T2]->(:A:B {id: 42, foo: 'apa'})
+          OPTIONAL MATCH (a)-[r:T1]->(b) WHERE (b)-[`  UNNAMED0`:T2]->(`  UNNAMED-4`:A:B {id: 42, foo: 'apa'})
           RETURN DISTINCT b as b""")
+
+  assert_that(
+    """MATCH (a:A)
+      |OPTIONAL MATCH (z)-[IS_A]->(thing) WHERE z:Z
+      |RETURN a AS a, count(distinct z.key) as zCount""".stripMargin).
+    is_rewritten_to(
+      """MATCH (a:A)
+        |OPTIONAL MATCH (z) WHERE (z)-[`  UNNAMED0`]->(`  UNNAMED-3`) AND z:Z
+        |RETURN a AS a, count(distinct z.key) as zCount""".stripMargin)
 
   assert_that(
     """OPTIONAL MATCH (a)-[r1]->(b)-[r2]->(c) WHERE a:A and b:B and c:C and a <> b

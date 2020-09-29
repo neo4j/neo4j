@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Or
 import org.neo4j.cypher.internal.expressions.Pattern
 import org.neo4j.cypher.internal.expressions.PatternExpression
+import org.neo4j.cypher.internal.expressions.RelationshipsPattern
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.InputPosition
 import org.parboiled.scala.EMPTY
@@ -184,7 +185,7 @@ trait Expressions extends Parser
     | group(keyword("SINGLE") ~~ "(" ~~ FilterExpression ~~ ")") ~~>> (expressions.SingleIterablePredicate(_, _, _))
     | Exists
     | ShortestPathPattern ~~> expressions.ShortestPathExpression
-    | RelationshipsPattern ~~> PatternExpression
+    | RelationshipsPattern ~~> (PatternExpression(_)(Set.empty))
     | parenthesizedExpression
     | FunctionInvocation
     | Variable

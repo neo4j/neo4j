@@ -19,6 +19,7 @@ package org.neo4j.cypher.internal.rewriting.rewriters
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.expressions.ExistsSubClause
 import org.neo4j.cypher.internal.expressions.PatternComprehension
+import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.topDown
 
@@ -27,6 +28,8 @@ case class recordScopes(semanticState: SemanticState) extends Rewriter {
   def apply(that: AnyRef): AnyRef = instance.apply(that)
 
   private val instance: Rewriter = topDown(Rewriter.lift {
+    case x: PatternExpression =>
+      x.withOuterScope(semanticState.recordedScopes(x).availableSymbolDefinitions.map(_.asVariable))
     case x: PatternComprehension =>
       x.withOuterScope(semanticState.recordedScopes(x).availableSymbolDefinitions.map(_.asVariable))
     case x: ExistsSubClause =>

@@ -40,9 +40,7 @@ import org.neo4j.cypher.internal.rewriting.rewriters.foldConstants
 import org.neo4j.cypher.internal.rewriting.rewriters.inlineNamedPathsInPatternComprehensions
 import org.neo4j.cypher.internal.rewriting.rewriters.literalReplacement
 import org.neo4j.cypher.internal.rewriting.rewriters.moveWithPastMatch
-import org.neo4j.cypher.internal.rewriting.rewriters.nameMatchPatternElements
-import org.neo4j.cypher.internal.rewriting.rewriters.namePatternComprehensionPatternElements
-import org.neo4j.cypher.internal.rewriting.rewriters.nameUpdatingClauses
+import org.neo4j.cypher.internal.rewriting.rewriters.namePatternElements
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizeArgumentOrder
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizeComparisons
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizeExistsPatternExpressions
@@ -74,10 +72,9 @@ class ASTRewriter(rewriterSequencer: String => RewriterStepSequencer,
       enableCondition(noDuplicatesInReturnItems),
       enableCondition(containsNoReturnAll),
       foldConstants(cypherExceptionFactory),
-      nameMatchPatternElements,
-      nameUpdatingClauses,
-      enableCondition(noUnnamedPatternElementsInMatch),
       normalizeExistsPatternExpressions(semanticState),
+      namePatternElements,
+      enableCondition(noUnnamedPatternElementsInMatch),
       normalizeMatchPredicates,
       normalizeNotEquals,
       enableCondition(containsNoNodesOfType[NotEquals]),
@@ -86,7 +83,6 @@ class ASTRewriter(rewriterSequencer: String => RewriterStepSequencer,
       enableCondition(normalizedEqualsArguments),
       AddUniquenessPredicates(innerVariableNamer),
       replaceLiteralDynamicPropertyLookups,
-      namePatternComprehensionPatternElements,
       enableCondition(noUnnamedPatternElementsInPatternComprehension),
       inlineNamedPathsInPatternComprehensions
     )

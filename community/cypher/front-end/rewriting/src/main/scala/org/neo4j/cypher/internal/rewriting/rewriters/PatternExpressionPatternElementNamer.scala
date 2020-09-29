@@ -38,7 +38,7 @@ object PatternExpressionPatternElementNamer {
   def apply(expr: PatternExpression): (PatternExpression, Map[PatternElement, Variable]) = {
     val unnamedMap = nameUnnamedPatternElements(expr.pattern)
     val namedPattern = expr.pattern.endoRewrite(namePatternElementsFromMap(unnamedMap))
-    val namedExpr = expr.copy(pattern = namedPattern)
+    val namedExpr = expr.copy(pattern = namedPattern)(expr.outerScope)
     (namedExpr, unnamedMap)
   }
 
@@ -46,13 +46,6 @@ object PatternExpressionPatternElementNamer {
     val unnamedMap = nameUnnamedPatternElements(expr.patterns)
     val namedPattern = expr.patterns.map(_.endoRewrite(namePatternElementsFromMap(unnamedMap)))
     val namedExpr = expr.copy(patterns = namedPattern)(expr.position)
-    (namedExpr, unnamedMap)
-  }
-
-  def apply(expr: PatternComprehension): (PatternComprehension, Map[PatternElement, Variable]) = {
-    val unnamedMap = nameUnnamedPatternElements(expr.pattern)
-    val namedPattern = expr.pattern.endoRewrite(namePatternElementsFromMap(unnamedMap))
-    val namedExpr = expr.copy(pattern = namedPattern)(expr.position, expr.outerScope)
     (namedExpr, unnamedMap)
   }
 

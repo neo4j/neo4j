@@ -29,27 +29,78 @@ import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.RelationshipsPattern
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.functions.Exists
+import org.neo4j.cypher.internal.expressions.functions.Length
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class getDegreeRewriterTest extends CypherFunSuite with AstConstructionTestSupport {
 
+  // All pattern elements have been named at this point, so the outer scope of PatternExpression is used to signal which expressions come from the outside.
+  // In the test names, empty names denote anonymous notes, i.e. ones that do not come from the outside.
+
   test("Rewrite exists( (a)-[:FOO]->() ) to GetDegree( (a)-[:FOO]->() ) > 0") {
-    val incoming = Exists.asInvocation(
+    val incoming = Exists(
       PatternExpression(RelationshipsPattern(RelationshipChain(NodePattern(Some(varFor("a")), Seq.empty, None)(pos),
-        RelationshipPattern(None, Seq(RelTypeName("FOO")(pos)), None, None, SemanticDirection.OUTGOING)(pos),
-        NodePattern(None, Seq.empty, None)(pos))(pos))(pos)))(pos)
+        RelationshipPattern(Some(varFor("r")), Seq(RelTypeName("FOO")(pos)), None, None, SemanticDirection.OUTGOING)(pos),
+        NodePattern(Some(varFor("b")), Seq.empty, None)(pos))(pos))(pos))(Set(varFor("a"))))(pos)
     val expected = greaterThan(GetDegree(varFor("a"), Some(RelTypeName("FOO")(pos)), SemanticDirection.OUTGOING)(pos), literalInt(0))
 
     getDegreeRewriter(incoming) should equal(expected)
   }
 
   test("Rewrite exists( ()-[:FOO]->(a) ) to GetDegree( (a)<-[:FOO]-() ) > 0") {
-    val incoming = Exists.asInvocation(
-      PatternExpression(RelationshipsPattern(RelationshipChain(NodePattern(None, Seq.empty, None)(pos),
-        RelationshipPattern(None, Seq(RelTypeName("FOO")(pos)), None, None, SemanticDirection.OUTGOING)(pos),
-        NodePattern(Some(varFor("a")), Seq.empty, None)(pos))(pos))(pos)))(pos)
+    val incoming = Exists(
+      PatternExpression(RelationshipsPattern(RelationshipChain(NodePattern(Some(varFor("b")), Seq.empty, None)(pos),
+        RelationshipPattern(Some(varFor("r")), Seq(RelTypeName("FOO")(pos)), None, None, SemanticDirection.OUTGOING)(pos),
+        NodePattern(Some(varFor("a")), Seq.empty, None)(pos))(pos))(pos))(Set((varFor("a")))))(pos)
     val expected = greaterThan(GetDegree(varFor("a"), Some(RelTypeName("FOO")(pos)), SemanticDirection.INCOMING)(pos), literalInt(0))
 
     getDegreeRewriter(incoming) should equal(expected)
+  }
+
+  test("Rewrite length( (a)-[:FOO]->() ) to GetDegree( (a)-[:FOO]->() )") {
+    val incoming = Length(
+      PatternExpression(RelationshipsPattern(RelationshipChain(NodePattern(Some(varFor("a")), Seq.empty, None)(pos),
+        RelationshipPattern(Some(varFor("r")), Seq(RelTypeName("FOO")(pos)), None, None, SemanticDirection.OUTGOING)(pos),
+        NodePattern(Some(varFor("b")), Seq.empty, None)(pos))(pos))(pos))(Set(varFor("a"))))(pos)
+    val expected = GetDegree(varFor("a"), Some(RelTypeName("FOO")(pos)), SemanticDirection.OUTGOING)(pos)
+
+    getDegreeRewriter(incoming) should equal(expected)
+  }
+
+  test("Rewrite length( ()-[:FOO]->(a) ) to GetDegree( (a)<-[:FOO]-() )") {
+    val incoming = Length(
+      PatternExpression(RelationshipsPattern(RelationshipChain(NodePattern(Some(varFor("b")), Seq.empty, None)(pos),
+        RelationshipPattern(Some(varFor("r")), Seq(RelTypeName("FOO")(pos)), None, None, SemanticDirection.OUTGOING)(pos),
+        NodePattern(Some(varFor("a")), Seq.empty, None)(pos))(pos))(pos))(Set((varFor("a")))))(pos)
+    val expected = GetDegree(varFor("a"), Some(RelTypeName("FOO")(pos)), SemanticDirection.INCOMING)(pos)
+
+    getDegreeRewriter(incoming) should equal(expected)
+  }
+
+  test("Does not rewrite exists( (a)-[:FOO]->(b) )") {
+    val incoming = Exists(
+      PatternExpression(RelationshipsPattern(RelationshipChain(NodePattern(Some(varFor("a")), Seq.empty, None)(pos),
+        RelationshipPattern(Some(varFor("r")), Seq(RelTypeName("FOO")(pos)), None, None, SemanticDirection.OUTGOING)(pos),
+        NodePattern(Some(varFor("b")), Seq.empty, None)(pos))(pos))(pos))(Set(varFor("a"), varFor("b"))))(pos)
+
+    getDegreeRewriter(incoming) should equal(incoming)
+  }
+
+  test("Does not rewrite length( (a)-[:FOO]->(b) ) ") {
+    val incoming = Length(
+      PatternExpression(RelationshipsPattern(RelationshipChain(NodePattern(Some(varFor("a")), Seq.empty, None)(pos),
+        RelationshipPattern(Some(varFor("r")), Seq(RelTypeName("FOO")(pos)), None, None, SemanticDirection.OUTGOING)(pos),
+        NodePattern(Some(varFor("b")), Seq.empty, None)(pos))(pos))(pos))(Set(varFor("a"), varFor("b"))))(pos)
+
+    getDegreeRewriter(incoming) should equal(incoming)
+  }
+
+  test("Does not rewrite length( (a)-[r:FOO]->() ) ") {
+    val incoming = Length(
+      PatternExpression(RelationshipsPattern(RelationshipChain(NodePattern(Some(varFor("a")), Seq.empty, None)(pos),
+        RelationshipPattern(Some(varFor("r")), Seq(RelTypeName("FOO")(pos)), None, None, SemanticDirection.OUTGOING)(pos),
+        NodePattern(Some(varFor("b")), Seq.empty, None)(pos))(pos))(pos))(Set(varFor("a"), varFor("b"))))(pos)
+
+    getDegreeRewriter(incoming) should equal(incoming)
   }
 }

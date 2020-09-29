@@ -547,8 +547,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       NodePattern(Some(Variable("a")(pos)), Seq(), None) _,
       RelationshipPattern(Some(Variable(relName)(pos)), Seq.empty, None, None, OUTGOING) _,
       NodePattern(Some(Variable(nodeName)(pos)), Seq(), None) _
-    ) _) _))_
-    val predicate= Predicate(Set("a", relName, nodeName), exp)
+    ) _) _)(Set(Variable(relName)(pos), Variable(nodeName)(pos))))_
+    val predicate= Predicate(Set("a"), exp)
     val selections = Selections(Set(predicate))
 
     query.queryGraph.selections should equal(selections)
@@ -593,9 +593,9 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       NodePattern(Some(Variable("a")(pos)), Seq(), None) _,
       RelationshipPattern(Some(Variable(relName)(pos)), Seq.empty, None, None, OUTGOING) _,
       NodePattern(Some(Variable(nodeName)(pos)), Seq(), None) _
-    ) _) _))_
+    ) _) _)(Set(Variable(relName)(pos), Variable(nodeName)(pos))))_
     val exp2 = in(prop("a", "prop"), listOfInt(42))
-    val orPredicate = Predicate(Set("a", relName, nodeName), ors(exp1, exp2))
+    val orPredicate = Predicate(Set("a"), ors(exp1, exp2))
     val selections = Selections(Set(orPredicate))
 
     query.queryGraph.selections should equal(selections)
@@ -613,9 +613,9 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       NodePattern(Some(Variable("a")(pos)), Seq(), None) _,
       RelationshipPattern(Some(Variable(relName)(pos)), Seq.empty, None, None, OUTGOING) _,
       NodePattern(Some(Variable(nodeName)(pos)), Seq(), None) _
-    ) _) _))_
+    ) _) _)(Set(Variable(relName)(pos), Variable(nodeName)(pos))))_
     val exp2 = in(prop("a", "prop"), listOfInt(42))
-    val orPredicate = Predicate(Set("a", relName, nodeName), ors(exp1, exp2))
+    val orPredicate = Predicate(Set("a"), ors(exp1, exp2))
     val selections = Selections(Set(orPredicate))
 
     query.queryGraph.selections should equal(selections)
@@ -633,10 +633,10 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       NodePattern(Some(Variable("a")(pos)), Seq(), None) _,
       RelationshipPattern(Some(Variable(relName)(pos)), Seq.empty, None, None, OUTGOING) _,
       NodePattern(Some(Variable(nodeName)(pos)), Seq(), None) _
-    ) _) _))_
+    ) _) _)(Set(Variable(relName)(pos), Variable(nodeName)(pos))))_
     val exp2 = in(prop("a", "prop"), listOfInt(42))
     val exp3 = in(prop("a", "prop2"), listOfInt(21))
-    val orPredicate = Predicate(Set("a", relName, nodeName), ors(exp1, exp2, exp3))
+    val orPredicate = Predicate(Set("a"), ors(exp1, exp2, exp3))
 
     val selections = Selections(Set(orPredicate))
 
@@ -930,14 +930,14 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val patternExpression = PatternExpression(RelationshipsPattern(RelationshipChain(
       NodePattern(Some(varFor("  owner@20")), Seq.empty, None)(pos),
       RelationshipPattern(Some(varFor("  REL62")), Seq.empty, None, None, BOTH)(pos),
-      NodePattern(Some(varFor("  NODE64")), Seq.empty, None)(pos))(pos))(pos))
+      NodePattern(Some(varFor("  NODE64")), Seq.empty, None)(pos))(pos))(pos))(Set(varFor("  REL62"), varFor("  NODE64")))
 
     val expectation = RegularSinglePlannerQuery(
       queryGraph = QueryGraph(patternNodes = Set("  owner@7")),
       horizon = AggregatingQueryProjection(
         groupingExpressions = Map("  owner@20" -> varFor("  owner@7")),
         aggregationExpressions = Map("collected" -> CountStar()(pos)),
-        selections = Selections(Set(Predicate(Set("  owner@20", "  REL62", "  NODE64"),
+        selections = Selections(Set(Predicate(Set("  owner@20"),
           exists(patternExpression))))),
       tail = Some(RegularSinglePlannerQuery(
         queryGraph = QueryGraph(argumentIds = Set("collected", "  owner@20")),

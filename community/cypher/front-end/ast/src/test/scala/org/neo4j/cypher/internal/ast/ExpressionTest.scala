@@ -54,7 +54,7 @@ class ExpressionTest extends CypherFunSuite with AstConstructionTestSupport {
     )_
     val expr: Expression = ExtractExpression(
       varFor("x"),
-      PatternExpression(pat),
+      PatternExpression(pat)(Set(varFor("n"), varFor("k"))),
       None,
       Some(function("head", function("nodes", varFor("x"))))
     )_
@@ -79,7 +79,7 @@ class ExpressionTest extends CypherFunSuite with AstConstructionTestSupport {
     )_
     val expr: Expression = ExtractExpression(
       varFor("x"),
-      PatternExpression(pat),
+      PatternExpression(pat)(Set(varFor("n"), varFor("k"))),
       None,
       Some(innerExpr)
     )_
@@ -166,7 +166,7 @@ class ExpressionTest extends CypherFunSuite with AstConstructionTestSupport {
         RelationshipPattern(None, Seq.empty, None, None, SemanticDirection.OUTGOING)_,
         NodePattern(Some(varFor("k")), Seq.empty, None)_
       )_
-    )_)
+    )_)(Set.empty)
 
     val callNodes: Expression = function("nodes", varFor("x"))
     val callHead: Expression = function("head", callNodes)

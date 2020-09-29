@@ -248,8 +248,8 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
       OptionalExpand(
         OptionalExpand(
           AllNodesScan("a", Set.empty),
-          "a", SemanticDirection.OUTGOING, List(RelTypeName("R1") _), "x1", "  UNNAMED29", ExpandAll, None),
-        "a", SemanticDirection.OUTGOING, List(RelTypeName("R2") _), "x2", "  UNNAMED60", ExpandAll, None)
+          "a", SemanticDirection.OUTGOING, List(RelTypeName("R1") _), "x1", "  REL29", ExpandAll, None),
+        "a", SemanticDirection.OUTGOING, List(RelTypeName("R2") _), "x2", "  REL60", ExpandAll, None)
     )
   }
 

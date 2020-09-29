@@ -53,6 +53,7 @@ import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Rewritable.RewritableAny
 import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.UnNamedNameGenerator
 import org.neo4j.cypher.internal.util.topDown
 
 import scala.annotation.tailrec
@@ -207,10 +208,11 @@ case object OptionalMatchRemover extends PlannerQueryRewriter {
   }
 
   private def toAst(elementsToKeep: Set[String], predicates: Map[String, LabelsAndEquality], gen: PositionGenerator, pattern: PatternRelationship) = {
-    def createVariable(name: String): Option[Variable] =
-      if (!elementsToKeep(name))
-        None
-      else {
+    def createVariable(name: String): Some[Variable] =
+      if (!elementsToKeep(name)) {
+        val pos = gen.nextPosition()
+        Some(Variable(UnNamedNameGenerator.name(pos))(pos))
+      } else {
         Some(Variable(name)(gen.nextPosition()))
       }
 
@@ -227,7 +229,7 @@ case object OptionalMatchRemover extends PlannerQueryRewriter {
     val relPattern = RelationshipPattern(relName, pattern.types, length = None, properties = None, pattern.dir)(
       gen.nextPosition())
     val chain = RelationshipChain(leftNode, relPattern, rightNode)(gen.nextPosition())
-    PatternExpression(RelationshipsPattern(chain)(gen.nextPosition()))
+    PatternExpression(RelationshipsPattern(chain)(gen.nextPosition()))(Set.empty)
   }
 
   implicit class FlatMapWithTailable(in: IndexedSeq[QueryGraph]) {

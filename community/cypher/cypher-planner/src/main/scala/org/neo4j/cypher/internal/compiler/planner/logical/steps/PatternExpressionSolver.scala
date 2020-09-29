@@ -192,19 +192,9 @@ object PatternExpressionSolver {
                                       context: LogicalPlanningContext): ListSubQueryExpressionSolver[PatternExpression] = {
 
     def extractQG(source: LogicalPlan, namedExpr: PatternExpression): QueryGraph = {
-
-      val dependencies = namedExpr
-        .dependencies
-        .map(_.name)
-        .filter(id => AllNameGenerators.isNamed(id))
+      val dependencies = namedExpr.dependencies.map(_.name)
       AssertMacros.checkOnlyWhenAssertionsAreEnabled(dependencies.subsetOf(availableSymbols), s"Trying to plan a PatternExpression where a dependency is not available. Dependencies: $dependencies. Available: $availableSymbols")
       asQueryGraph(namedExpr, context.innerVariableNamer).withArgumentIds(dependencies)
-    }
-
-    def createPlannerContext(context: LogicalPlanningContext, namedMap: Map[PatternElement, Variable]): LogicalPlanningContext = {
-      val namedNodes = namedMap.collect { case (elem: NodePattern, identifier) => identifier }
-      val namedRels = namedMap.collect { case (elem: RelationshipChain, identifier) => identifier }
-      context.forExpressionPlanning(namedNodes, namedRels)
     }
 
     def createPathExpression(pattern: PatternExpression): PathExpression = {
@@ -215,9 +205,7 @@ object PatternExpressionSolver {
     }
 
     ListSubQueryExpressionSolver[PatternExpression](
-      namer = PatternExpressionPatternElementNamer.apply,
       extractQG = extractQG,
-      createPlannerContext = createPlannerContext,
       projectionCreator = createPathExpression,
       patternExpressionRewriter = patternExpressionRewriter(availableSymbols, context))
   }
@@ -225,33 +213,23 @@ object PatternExpressionSolver {
   private def solvePatternComprehensions(availableSymbols: Set[String],
                                          context: LogicalPlanningContext): ListSubQueryExpressionSolver[PatternComprehension] = {
     def extractQG(source: LogicalPlan, namedExpr: PatternComprehension) = {
-      val queryGraph = asQueryGraph(namedExpr, context.innerVariableNamer)
       val dependencies = namedExpr.dependencies.map(_.name)
       AssertMacros.checkOnlyWhenAssertionsAreEnabled(dependencies.subsetOf(availableSymbols), s"Trying to plan a PatternComprehension where a dependency is not available. Dependencies: $dependencies. Available: $availableSymbols")
-      queryGraph.withArgumentIds(dependencies)
+      asQueryGraph(namedExpr, context.innerVariableNamer).withArgumentIds(dependencies)
     }
 
     def createProjectionToCollect(pattern: PatternComprehension): Expression = pattern.projection
 
-    def createPlannerContext(context: LogicalPlanningContext, namedMap: Map[PatternElement, Variable]): LogicalPlanningContext = {
-      val namedNodes = namedMap.collect { case (elem: NodePattern, identifier) => identifier }
-      val namedRels = namedMap.collect { case (elem: RelationshipChain, identifier) => identifier }
-      context.forExpressionPlanning(namedNodes, namedRels)
-    }
 
     ListSubQueryExpressionSolver[PatternComprehension](
-      namer = PatternExpressionPatternElementNamer.apply,
       extractQG = extractQG,
-      createPlannerContext = createPlannerContext,
       projectionCreator = createProjectionToCollect,
       patternExpressionRewriter = patternExpressionRewriter(availableSymbols, context))
   }
 
   private case class RewriteResult(currentPlan: LogicalPlan, currentExpression: Expression, introducedVariables: Set[String])
 
-  private case class ListSubQueryExpressionSolver[T <: Expression](namer: T => (T, Map[PatternElement, Variable]),
-                                                                   extractQG: (LogicalPlan, T) => QueryGraph,
-                                                                   createPlannerContext: (LogicalPlanningContext, Map[PatternElement, Variable]) => LogicalPlanningContext,
+  private case class ListSubQueryExpressionSolver[T <: Expression](extractQG: (LogicalPlan, T) => QueryGraph,
                                                                    projectionCreator: T => Expression,
                                                                    patternExpressionRewriter: Rewriter,
                                                                    pathStepBuilder: EveryPath => PathStep = projectNamedPaths.patternPartPathExpression)
@@ -298,6 +276,7 @@ object PatternExpressionSolver {
            */
           val rewriter = topDown(inner, stopper = {
             case _: PatternComprehension => false
+            case _: PatternExpression => false
             // Loops
             case _: ScopeExpression => true
             // Conditionals & List accesses
@@ -318,19 +297,16 @@ object PatternExpressionSolver {
     }
 
     private def planSubQuery(source: LogicalPlan, expr: T, context: LogicalPlanningContext) = {
-      val (namedExpr, namedMap) = namer(expr)
-
-      val qg = extractQG(source, namedExpr)
-      val innerContext = createPlannerContext(context, namedMap)
+      val qg = extractQG(source, expr)
 
       //We don't retain the interesting order because
       //  i) There is no way of expressing order within a pattern comprehension
       //  ii) It can lead to endless recursion in case the sort expression contains the subquery we are solving
       //      e.g. `n{.name, Thing_Has_Thing2:[ (n)-[:Has]->(thing2:Thing2)| n.name ]} ORDER BY n.name`
-      val innerPlan = innerContext.strategy.plan(qg, InterestingOrder.empty, innerContext)
+      val innerPlan = context.strategy.plan(qg, InterestingOrder.empty, context)
       val collectionName = FreshIdNameGenerator.name(expr.position)
-      val projectedPath = projectionCreator(namedExpr)
-      val projectedInner = projection(innerPlan, Map(collectionName -> projectedPath), Map(collectionName -> projectedPath), innerContext)
+      val projectedPath = projectionCreator(expr)
+      val projectedInner = projection(innerPlan, Map(collectionName -> projectedPath), Map(collectionName -> projectedPath), context)
       PlannedSubQuery(columnName = collectionName, innerPlan = projectedInner)
     }
   }

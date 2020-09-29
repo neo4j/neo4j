@@ -148,9 +148,9 @@ object triadicSelectionFinder extends CandidateGenerator[LogicalPlan] {
     RelationshipsPattern(
     RelationshipChain(
     NodePattern(Some(Variable(predicateFrom)), List(), None, _),
-    RelationshipPattern(None, predicateTypes, None, None, predicateDir, _, _),
+    RelationshipPattern(Some(rel), predicateTypes, None, None, predicateDir, _, _),
     NodePattern(Some(Variable(predicateTo)), List(), None, _))))
-      if predicateFrom == from && predicateTo == to && predicateTypes == types && predicateDir == dir => true
+      if predicateFrom == from && predicateTo == to && predicateTypes == types && predicateDir == dir && !pattern.dependencies.contains(rel) => true
     case _ => false
   }
 }

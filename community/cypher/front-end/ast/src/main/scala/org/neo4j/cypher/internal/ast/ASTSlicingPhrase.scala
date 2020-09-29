@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.expressions.Literal
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.PathExpression
 import org.neo4j.cypher.internal.expressions.PatternComprehension
+import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.UnsignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.util.ASTNode
@@ -57,7 +58,10 @@ trait ASTSlicingPhrase extends SemanticCheckable with SemanticAnalysisTooling {
 
   private def doesNotTouchTheGraph: SemanticCheck = {
     val badExpressionFound = expression.treeExists {
-      case _: PatternComprehension | PathExpression => true
+      case _: PatternComprehension |
+           _: PatternExpression |
+           _: PathExpression =>
+        true
     }
     when(badExpressionFound) {
       error(s"It is not allowed to refer to variables in $name", expression.position)

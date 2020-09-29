@@ -691,7 +691,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
 
   def _patternExpr: Gen[PatternExpression] = for {
     pattern <- _relationshipsPattern
-  } yield PatternExpression(pattern)
+  } yield PatternExpression(pattern)(Set.empty)
 
   def _shortestPaths: Gen[ShortestPaths] = for {
     element <- _patternElement

@@ -1036,6 +1036,72 @@ class SemanticAnalysisErrorMessagesTest extends CypherFunSuite {
     context.errors should be(empty)
   }
 
+  test("Should disallow introducing variables in pattern expressions") {
+    val query = "MATCH (x) WHERE (x)-[r]-(y) RETURN x"
+
+    val startState = initStartState(query, Map.empty)
+    val context = new ErrorCollectingContext()
+
+    pipeline.transform(startState, context)
+
+    context.errors.map(_.msg) should equal(List(
+      "PatternExpressions are not allowed to introduce new variables: 'r'.",
+      "PatternExpressions are not allowed to introduce new variables: 'y'."
+    ))
+  }
+
+  test("Skip with PatternComprehension should complain") {
+    val query = "RETURN 1 SKIP size([(a)-->(b) | a.prop])"
+
+    val startState = initStartState(query, Map.empty)
+    val context = new ErrorCollectingContext()
+
+    pipeline.transform(startState, context)
+
+    context.errors.map(_.msg) should equal(List(
+      "It is not allowed to refer to variables in SKIP"
+    ))
+  }
+
+  test("Skip with PatternExpression should complain") {
+    val query = "RETURN 1 SKIP size(()-->())"
+
+    val startState = initStartState(query, Map.empty)
+    val context = new ErrorCollectingContext()
+
+    pipeline.transform(startState, context)
+
+    context.errors.map(_.msg) should equal(List(
+      "It is not allowed to refer to variables in SKIP"
+    ))
+  }
+
+  test("Limit with PatternComprehension should complain") {
+    val query = "RETURN 1 LIMIT size([(a)-->(b) | a.prop])"
+
+    val startState = initStartState(query, Map.empty)
+    val context = new ErrorCollectingContext()
+
+    pipeline.transform(startState, context)
+
+    context.errors.map(_.msg) should equal(List(
+      "It is not allowed to refer to variables in LIMIT"
+    ))
+  }
+
+  test("Limit with PatternExpression should complain") {
+    val query = "RETURN 1 LIMIT size(()-->())"
+
+    val startState = initStartState(query, Map.empty)
+    val context = new ErrorCollectingContext()
+
+    pipeline.transform(startState, context)
+
+    context.errors.map(_.msg) should equal(List(
+      "It is not allowed to refer to variables in LIMIT"
+    ))
+  }
+
   private def initStartState(query: String, initialFields: Map[String, CypherType]) =
     InitialState(query, None, NoPlannerName, initialFields)
 }
