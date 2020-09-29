@@ -763,14 +763,13 @@ public class GraphDatabaseSettings implements SettingsDeclaration
 
     @Deprecated( since = "4.2.0", forRemoval = true )
     @Description( "The default role that can execute all procedures and user-defined functions that are not covered " +
-            "by the `" + "dbms.security.procedures.roles" + "` setting. If the `" + "dbms.security.procedures.default_allowed" +
-            "` setting is the empty string (default), procedures will be executed according to the same security " +
-            "rules as normal Cypher statements. " +
-            "This setting (if not empty string) will be translated to 'GRANT EXECUTE BOOSTED PROCEDURE *' for that role. " +
-            "If `" + "dbms.security.procedures.roles" + "`is not empty, any procedure that this role is not mapped to will result in a " +
-            "'DENY EXECUTE BOOSTED PROCEDURE procedure' for this role. " +
+            "by the `" + "dbms.security.procedures.roles" + "` setting. " +
+            "This setting (if not empty string) will be translated to 'GRANT EXECUTE BOOSTED PROCEDURE *' " +
+            "and 'GRANT EXECUTE BOOSTED FUNCTION *' for that role. " +
+            "If `" + "dbms.security.procedures.roles" + "`is not empty, any procedure/function that this role is not mapped to will result in a " +
+            "'DENY EXECUTE BOOSTED PROCEDURE name' and 'DENY EXECUTE BOOSTED FUNCTION name' for this role. " +
             "Any privilege mapped in this way cannot be revoked, instead the config must be changed and will take effect after a restart." +
-            "Deprecated: Replaced by EXECUTE PROCEDURE and EXECUTE BOOSTED PROCEDURE privileges." )
+            "Deprecated: Replaced by EXECUTE PROCEDURE, EXECUTE BOOSTED PROCEDURE, EXECUTE FUNCTION and EXECUTE BOOSTED FUNCTION privileges." )
     public static final Setting<String> default_allowed = newBuilder( "dbms.security.procedures.default_allowed", STRING, "" ).build();
 
     @Deprecated( since = "4.2.0", forRemoval = true )
@@ -781,9 +780,10 @@ public class GraphDatabaseSettings implements SettingsDeclaration
             "all procedures in the `apoc.load` namespace that starts with `json` and the role `TriggerHappy` " +
             "to execute the specific procedure `apoc.trigger.add`. Procedures not matching any of these " +
             "patterns will be subject to the `" + "dbms.security.procedures.default_allowed" + "` setting. " +
-            "This setting (if not empty string) will be translated to 'GRANT EXECUTE BOOSTED PROCEDURE procedure' privileges for the mapped roles. " +
+            "This setting (if not empty string) will be translated to 'GRANT EXECUTE BOOSTED PROCEDURE name' and " +
+            "'GRANT EXECUTE BOOSTED FUNCTION name' privileges for the mapped roles. " +
             "Any privilege mapped in this way cannot be revoked, instead the config must be changed and will take effect after a restart." +
-            "Deprecated: Replaced by EXECUTE PROCEDURE and EXECUTE BOOSTED PROCEDURE privileges." )
+            "Deprecated: Replaced by EXECUTE PROCEDURE, EXECUTE BOOSTED PROCEDURE, EXECUTE FUNCTION and EXECUTE BOOSTED FUNCTION privileges." )
     public static final Setting<String> procedure_roles = newBuilder( "dbms.security.procedures.roles", STRING, "" ).build();
 
     @Description( "Default network interface to listen for incoming connections. " +
