@@ -17,9 +17,39 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.config
+package org.neo4j.cypher.internal.compiler
 
-// TODO make logic config for this
+import org.neo4j.cypher.internal.config.StatsDivergenceCalculatorConfig
+
+object StatsDivergenceCalculator {
+  val inverse = "inverse"
+  val exponential = "exponential"
+  val none = "none"
+  val similarityTolerance = 0.0001
+
+  def divergenceCalculatorFor(config: StatsDivergenceCalculatorConfig): StatsDivergenceCalculator = {
+    val StatsDivergenceCalculatorConfig(name, initialThreshold, targetThreshold, initialMillis, targetMillis) = config
+    divergenceCalculatorFor(name, initialThreshold, targetThreshold, initialMillis, targetMillis)
+  }
+
+  def divergenceCalculatorFor(name: String, initialThreshold: Double, targetThreshold: Double, initialMillis: Long, targetMillis: Long): StatsDivergenceCalculator = {
+    if (targetThreshold <= similarityTolerance || initialThreshold - targetThreshold <= similarityTolerance || targetMillis <= initialMillis) {
+      // Input values that disable the threshold decay algorithm
+      StatsDivergenceNoDecayCalculator(initialThreshold, initialMillis)
+    } else {
+      // Input is valid, select decay algorithm, the GraphDatabaseSettings will limit the possible values
+      name.toLowerCase match {
+        case "none" => StatsDivergenceNoDecayCalculator(initialThreshold, initialMillis)
+        case "exponential" => StatsDivergenceExponentialDecayCalculator(initialThreshold, targetThreshold, initialMillis, targetMillis)
+        case _ => StatsDivergenceInverseDecayCalculator(initialThreshold, targetThreshold, initialMillis, targetMillis)
+      }
+    }
+  }
+
+  def divergenceNoDecayCalculator(threshold: Double, ttl: Long): StatsDivergenceNoDecayCalculator =
+    StatsDivergenceNoDecayCalculator(threshold, ttl)
+}
+
 sealed trait StatsDivergenceCalculator {
   val initialThreshold: Double
   val initialMillis: Long
@@ -52,28 +82,4 @@ case class StatsDivergenceNoDecayCalculator(initialThreshold: Double, initialMil
   def decay(millisSinceThreshold: Long): Double = {
     initialThreshold
   }
-}
-
-object StatsDivergenceCalculator {
-  val inverse = "inverse"
-  val exponential = "exponential"
-  val none = "none"
-  val similarityTolerance = 0.0001
-
-  def divergenceCalculatorFor(name: String, initialThreshold: Double, targetThreshold: Double, initialMillis: Long, targetMillis: Long): StatsDivergenceCalculator = {
-    if (targetThreshold <= similarityTolerance || initialThreshold - targetThreshold <= similarityTolerance || targetMillis <= initialMillis) {
-      // Input values that disable the threshold decay algorithm
-      StatsDivergenceNoDecayCalculator(initialThreshold, initialMillis)
-    } else {
-      // Input is valid, select decay algorithm, the GraphDatabaseSettings will limit the possible values
-      name.toLowerCase match {
-        case "none" => StatsDivergenceNoDecayCalculator(initialThreshold, initialMillis)
-        case "exponential" => StatsDivergenceExponentialDecayCalculator(initialThreshold, targetThreshold, initialMillis, targetMillis)
-        case _ => StatsDivergenceInverseDecayCalculator(initialThreshold, targetThreshold, initialMillis, targetMillis)
-      }
-    }
-  }
-
-  def divergenceNoDecayCalculator(threshold: Double, ttl: Long) =
-    StatsDivergenceNoDecayCalculator(threshold, ttl)
 }

@@ -34,7 +34,6 @@ import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.compiler.planner.logical.MetricsFactory
 import org.neo4j.cypher.internal.compiler.planner.logical.debug.DebugPrinter
 import org.neo4j.cypher.internal.config.CypherConfiguration
-import org.neo4j.cypher.internal.config.StatsDivergenceCalculator
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.frontend.phases.InitialState
@@ -112,7 +111,7 @@ object CypherPlannerConfiguration {
   def fromCypherConfiguration(config: CypherConfiguration, cfg: Config, planSystemCommands: Boolean): CypherPlannerConfiguration =
     CypherPlannerConfiguration(
       queryCacheSize = config.queryCacheSize,
-      statsDivergenceCalculator = CypherConfiguration.statsDivergenceFromConfig(cfg),
+      statsDivergenceCalculator = StatsDivergenceCalculator.divergenceCalculatorFor(config.statsDivergenceCalculator),
       useErrorsOverWarnings = config.useErrorsOverWarnings,
       idpMaxTableSize = config.idpMaxTableSize,
       idpIterationDuration = config.idpIterationDuration,

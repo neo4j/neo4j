@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit.MILLISECONDS
 import java.util.concurrent.TimeUnit.SECONDS
 
 import org.mockito.Mockito.when
-import org.neo4j.cypher.internal.config.StatsDivergenceCalculator
+import org.neo4j.cypher.internal.compiler.StatsDivergenceCalculator
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.GraphStatisticsSnapshot
 import org.neo4j.cypher.internal.planner.spi.NodesWithLabelCardinality

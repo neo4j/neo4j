@@ -24,6 +24,7 @@ import java.time.Clock
 
 import org.neo4j.cypher.internal.QueryCache.ParameterTypeMap
 import org.neo4j.cypher.internal.cache.CaffeineCacheFactory
+import org.neo4j.cypher.internal.compiler.StatsDivergenceCalculator
 import org.neo4j.cypher.internal.config.CypherConfiguration
 import org.neo4j.cypher.internal.expressions.functions.FunctionInfo
 import org.neo4j.cypher.internal.options.CypherExecutionMode
@@ -87,7 +88,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
 
   private val planStalenessCaller =
     new DefaultPlanStalenessCaller[ExecutableQuery](clock,
-      config.statsDivergenceCalculator,
+      StatsDivergenceCalculator.divergenceCalculatorFor(config.statsDivergenceCalculator),
       lastCommittedTxIdProvider,
       planReusabilitiy,
       log)
