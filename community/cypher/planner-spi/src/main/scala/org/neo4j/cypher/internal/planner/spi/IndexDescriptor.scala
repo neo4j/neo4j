@@ -45,13 +45,6 @@ object IndexOrderCapability {
   case object BOTH extends BASE(true, true)
 }
 
-// Preparser
-//   Parser
-//   Ast Analysis / typing
-//   Ast Rewrites
-// Planning
-
-
 object IndexDescriptor {
   /**
    * Given the actual types of properties (one for a single-property index and multiple for a composite index)

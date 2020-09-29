@@ -72,7 +72,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
   // HELPER OBJECTS
   private val defaultQueryExecutionMonitor = kernelMonitors.newMonitor(classOf[QueryExecutionMonitor])
 
-  private val preParser = new PreParser(config, config.queryCacheSize, cacheFactory)
+  private val preParser = new PreParser(config, cacheFactory)
   private val lastCommittedTxIdProvider = LastCommittedTxIdProvider(queryService)
   private def planReusabilitiy(executableQuery: ExecutableQuery,
                                transactionalContext: TransactionalContext): ReusabilityState =

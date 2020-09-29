@@ -75,7 +75,6 @@ case class FabricFrontEnd(
 
     private val preParser = new PreParser(
       cypherConfig,
-      cypherConfig.queryCacheSize,
       cacheFactory
     )
 

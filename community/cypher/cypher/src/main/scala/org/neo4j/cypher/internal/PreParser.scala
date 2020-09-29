@@ -65,6 +65,9 @@ class PreParser(
   planCacheSize: Int,
   cacheFactory: CaffeineCacheFactory) {
 
+  def this(configuration: CypherConfiguration, cacheFactory: CaffeineCacheFactory) =
+    this(configuration, configuration.queryCacheSize, cacheFactory)
+
   private val preParsedQueries = new LFUCache[String, PreParsedQuery](cacheFactory, planCacheSize)
 
   /**
