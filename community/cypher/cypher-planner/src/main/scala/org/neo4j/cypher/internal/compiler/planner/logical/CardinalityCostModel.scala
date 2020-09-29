@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
+import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CostModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.expressions.Expression
@@ -82,7 +83,7 @@ object CardinalityCostModel extends CostModel {
   val PROPERTY_ACCESS_DB_HITS = 2
   val LABEL_CHECK_DB_HITS = 1
 
-  private def costPerRow(plan: LogicalPlan, cardinality: Cardinality): CostPerRow = plan match {
+  private def costPerRow(plan: LogicalPlan, cardinality: Cardinality, semanticTable: SemanticTable): CostPerRow = plan match {
     /*
      * These constants are approximations derived from test runs,
      * see ActualCostCalculationTest
@@ -94,7 +95,7 @@ object CardinalityCostModel extends CostModel {
     => 1.0
 
     case Selection(predicate, _)
-    => costPerRowFor(predicate)
+    => costPerRowFor(predicate, semanticTable)
 
     case _: AllNodesScan
     => 1.2
@@ -155,9 +156,9 @@ object CardinalityCostModel extends CostModel {
     case _ => plan.lhs.map(p => cardinalities.get(p.id)).getOrElse(cardinalities.get(plan.id))
   }
 
-  def costPerRowFor(expression: Expression): CostPerRow = {
+  def costPerRowFor(expression: Expression, semanticTable: SemanticTable): CostPerRow = {
     val noOfStoreAccesses = expression.treeFold(0) {
-      case _: Property => count => TraverseChildren(count + PROPERTY_ACCESS_DB_HITS)
+      case x: Property if semanticTable.isNodeNoFail(x.map) || semanticTable.isRelationshipNoFail(x.map) => count => TraverseChildren(count + PROPERTY_ACCESS_DB_HITS)
       case _: HasLabels => count => TraverseChildren(count + LABEL_CHECK_DB_HITS)
       case _ => count => TraverseChildren(count)
     }
@@ -167,22 +168,22 @@ object CardinalityCostModel extends CostModel {
       DEFAULT_COST_PER_ROW
   }
 
-  def costFor(plan: LogicalPlan, input: QueryGraphSolverInput, cardinalities: Cardinalities): Cost = {
+  def costFor(plan: LogicalPlan, input: QueryGraphSolverInput, semanticTable: SemanticTable, cardinalities: Cardinalities): Cost = {
     val cost = plan match {
       case CartesianProduct(lhs, rhs) =>
         val lhsCardinality = Cardinality.max(Cardinality.SINGLE, cardinalities.get(lhs.id))
-        costFor(lhs, input, cardinalities) + lhsCardinality * costFor(rhs, input, cardinalities)
+        costFor(lhs, input, semanticTable, cardinalities) + lhsCardinality * costFor(rhs, input, semanticTable, cardinalities)
 
       case ApplyVariants(lhs, rhs) =>
-        val lCost = costFor(lhs, input, cardinalities)
-        val rCost = costFor(rhs, input, cardinalities)
+        val lCost = costFor(lhs, input, semanticTable, cardinalities)
+        val rCost = costFor(rhs, input, semanticTable, cardinalities)
 
         // the rCost has already been multiplied by the lhs cardinality
         lCost + rCost
 
       case HashJoin(lhs, rhs) =>
-        val lCost = costFor(lhs, input, cardinalities)
-        val rCost = costFor(rhs, input, cardinalities)
+        val lCost = costFor(lhs, input, semanticTable, cardinalities)
+        val rCost = costFor(rhs, input, semanticTable, cardinalities)
 
         val lhsCardinality = cardinalities.get(lhs.id)
         val rhsCardinality = cardinalities.get(rhs.id)
@@ -192,10 +193,10 @@ object CardinalityCostModel extends CostModel {
           rhsCardinality * PROBE_SEARCH_COST
 
       case _ =>
-        val lhsCost = plan.lhs.map(p => costFor(p, input, cardinalities)).getOrElse(Cost(0))
-        val rhsCost = plan.rhs.map(p => costFor(p, input, cardinalities)).getOrElse(Cost(0))
+        val lhsCost = plan.lhs.map(p => costFor(p, input, semanticTable, cardinalities)).getOrElse(Cost(0))
+        val rhsCost = plan.rhs.map(p => costFor(p, input, semanticTable, cardinalities)).getOrElse(Cost(0))
         val planCardinality = cardinalityForPlan(plan, cardinalities)
-        val rowCost = costPerRow(plan, planCardinality)
+        val rowCost = costPerRow(plan, planCardinality, semanticTable)
         val costForThisPlan = planCardinality * rowCost
         val totalCost = costForThisPlan + lhsCost + rhsCost
         totalCost

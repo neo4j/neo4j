@@ -113,7 +113,6 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
       }
       cost = {
         case (_: Apply, _, _) => Double.MaxValue
-        case x => parent.costModel()(x)
       }
     } getLogicalPlanFor "MATCH (a:X)-[r1]->(b) OPTIONAL MATCH (b)-[r2]->(c:Y) RETURN b")._2 should equal(
       LeftOuterHashJoin(Set("b"),
@@ -143,7 +142,6 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
       }
       cost = {
         case (_: Apply, _, _) => Double.MaxValue
-        case x => parent.costModel()(x)
       }
     } getLogicalPlanFor "MATCH (a:X)-[r1]->(b) OPTIONAL MATCH (b)-[r2]->(c:Y) RETURN b")._2 should equal(
       RightOuterHashJoin(Set("b"),

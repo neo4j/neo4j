@@ -59,7 +59,7 @@ class LogicalQueryBuilder(tokenResolver: Resolver)
   }
 
   override def newVariable(variable: Variable): Unit = {
-    semanticTable = semanticTable.addVariable(variable)
+    semanticTable = semanticTable.addTypeInfoCTAny(variable)
   }
 
   def withProvidedOrder(order: ProvidedOrder): this.type = {

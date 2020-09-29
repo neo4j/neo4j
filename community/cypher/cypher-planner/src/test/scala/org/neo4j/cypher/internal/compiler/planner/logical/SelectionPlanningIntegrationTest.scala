@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher.beLike
+import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.Expression
@@ -32,7 +33,7 @@ import org.neo4j.cypher.internal.util.PredicateOrdering
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class SelectionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
+class SelectionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 with LogicalPlanningIntegrationTestSupport {
 
   /**
    * The assumptions on the ordering for these selectivities is based on that [[PredicateOrdering]] is used.
@@ -75,6 +76,33 @@ class SelectionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
         `otherLabel`
       )),
         NodeByLabelScan("n", LabelName("Label"), `noArgs`, IndexOrderNone)
+      ) => ()
+    }
+  }
+
+  test("should pick more selective predicate first, even if it accesses a deeply nested property") {
+    val nProp = greaterThan(prop("n", "prop"), literalInt(2))
+    val nPropChain = equals(
+      prop(prop(prop(prop(prop(prop(prop("n", "foo"), "bar"), "baz"), "blob"), "boing"), "peng"), "brrt"),
+      literalInt(2))
+
+    val plan = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setLabelCardinality("N", 10)
+      .setLabelCardinality("M", 9)
+      .build()
+      .plan("MATCH (n:N) WHERE n.foo.bar.baz.blob.boing.peng.brrt = 2 AND n.prop > 2 RETURN n")
+
+    val noArgs = Set.empty[String]
+
+    plan.stripProduceResults should beLike {
+      // We cannot use "plan should equal ..." because equality for [[Ands]] is overridden to not care about the order.
+      // But unapply takes the order into account for [[Ands]].
+      case Selection(Ands(Seq(
+      `nPropChain`, // more selective, but needs to access deeply nested property
+      `nProp`,
+      )),
+      NodeByLabelScan("n", LabelName("N"), `noArgs`, IndexOrderNone)
       ) => ()
     }
   }

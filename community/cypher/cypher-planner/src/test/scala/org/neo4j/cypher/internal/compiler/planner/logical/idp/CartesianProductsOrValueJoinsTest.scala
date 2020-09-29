@@ -46,6 +46,8 @@ import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.symbols.CTInteger
+import org.neo4j.cypher.internal.util.symbols.CTNode
+import org.neo4j.cypher.internal.util.symbols.CTRelationship
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class CartesianProductsOrValueJoinsTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
@@ -337,6 +339,8 @@ class CartesianProductsOrValueJoinsTest extends CypherFunSuite with LogicalPlann
           rhsInputCardinalities = rhsInputCardinalities + input.inboundCardinality
           1.0
       }
+      addTypeToSemanticTable(varFor("a"), CTNode)
+      addTypeToSemanticTable(varFor("b"), CTNode)
     }.withLogicalPlanningContext { (cfg, context) =>
       val kit = context.config.toKit(InterestingOrder.empty, context)
 
@@ -365,6 +369,9 @@ class CartesianProductsOrValueJoinsTest extends CypherFunSuite with LogicalPlann
         case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("c") => 3000.0
         case _ => 100.0
       }
+      addTypeToSemanticTable(varFor("a"), CTNode)
+      addTypeToSemanticTable(varFor("b"), CTNode)
+      addTypeToSemanticTable(varFor("c"), CTNode)
     }.withLogicalPlanningContext { (cfg, context) =>
       val kit = context.config.toKit(InterestingOrder.empty, context)
 

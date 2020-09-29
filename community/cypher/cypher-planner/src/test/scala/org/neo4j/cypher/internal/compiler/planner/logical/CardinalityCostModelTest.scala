@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
+import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.PROPERTY_ACCESS_DB_HITS
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
@@ -51,7 +52,7 @@ class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSu
           ), cardinalities, 10.0), "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r1"), cardinalities, 100.0)
       ), cardinalities, 10.0)
 
-    costFor(plan, QueryGraphSolverInput.empty, cardinalities) should equal(Cost(231))
+    costFor(plan, QueryGraphSolverInput.empty, SemanticTable(), cardinalities) should equal(Cost(231))
   }
 
   test("should introduce increase cost when estimating an eager operator and laziness is preferred") {
@@ -66,7 +67,7 @@ class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSu
     val pleaseLazy = QueryGraphSolverInput.empty.withPreferredStrictness(LazyMode)
     val whatever = QueryGraphSolverInput.empty
 
-    costFor(plan, whatever, cardinalities) should be < costFor(plan, pleaseLazy, cardinalities)
+    costFor(plan, whatever, SemanticTable(), cardinalities) should be < costFor(plan, pleaseLazy, SemanticTable(), cardinalities)
   }
 
   test("non-lazy plan should be penalized when estimating cost wrt a lazy one when laziness is preferred") {
@@ -100,10 +101,10 @@ class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSu
     ), eagerCardinalities, 250.0)
 
     val whatever = QueryGraphSolverInput.empty
-    costFor(lazyPlan, whatever, lazyCardinalities) should be > costFor(eagerPlan, whatever, eagerCardinalities)
+    costFor(lazyPlan, whatever, SemanticTable(), lazyCardinalities) should be > costFor(eagerPlan, whatever, SemanticTable(), eagerCardinalities)
 
     val pleaseLazy = QueryGraphSolverInput.empty.withPreferredStrictness(LazyMode)
-    costFor(lazyPlan, pleaseLazy, lazyCardinalities) should be < costFor(eagerPlan, pleaseLazy, eagerCardinalities)
+    costFor(lazyPlan, pleaseLazy, SemanticTable(), lazyCardinalities) should be < costFor(eagerPlan, pleaseLazy, SemanticTable(), eagerCardinalities)
   }
 
   test("multiple property expressions are counted for in cost") {
@@ -116,13 +117,43 @@ class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSu
     val numberOfPredicates = 3
     val costForSelection = cardinality * numberOfPredicates * PROPERTY_ACCESS_DB_HITS
     val costForArgument = cardinality * .1
-    costFor(plan, QueryGraphSolverInput.empty, cardinalities) should equal(Cost(costForSelection + costForArgument))
+    costFor(plan, QueryGraphSolverInput.empty, SemanticTable().addNode(varFor("a")), cardinalities) should equal(Cost(costForSelection + costForArgument))
+  }
+
+  test("deeply nested property access does not increase cost") {
+    val cardinalities = new Cardinalities
+    val cardinality = 10.0
+
+    val shallowPredicate = propEquality("a", "prop1", 42)
+    val ap0 = prop("a", "foo")
+    val ap1 = prop(ap0, "bar")
+    val ap2 = prop(ap1, "baz")
+    val ap3 = prop(ap2, "blob")
+    val ap4 = prop(ap3, "boing")
+    val ap5 = prop(ap4, "peng")
+    val ap6 = prop(ap5, "brrt")
+    val deepPredicate = equals(ap6, literalInt(2))
+    val semanticTable = SemanticTable()
+      .addNode(varFor("a"))
+      .addTypeInfoCTAny(ap0)
+      .addTypeInfoCTAny(ap1)
+      .addTypeInfoCTAny(ap2)
+      .addTypeInfoCTAny(ap3)
+      .addTypeInfoCTAny(ap4)
+      .addTypeInfoCTAny(ap5)
+      .addTypeInfoCTAny(ap6)
+
+    val plan1 = setC(Selection(List(shallowPredicate), setC(Argument(Set("a")), cardinalities, cardinality)), cardinalities, cardinality)
+    val plan2 = setC(Selection(List(deepPredicate), setC(Argument(Set("a")), cardinalities, cardinality)), cardinalities, cardinality)
+
+    costFor(plan1, QueryGraphSolverInput.empty, semanticTable, cardinalities) should equal(costFor(plan2, QueryGraphSolverInput.empty, semanticTable, cardinalities))
   }
 
   private def costFor(plan: LogicalPlan,
                       input: QueryGraphSolverInput,
+                      semanticTable: SemanticTable,
                       cardinalities: Cardinalities): Cost = {
-    CardinalityCostModel.costFor(plan, input, cardinalities)
+    CardinalityCostModel.costFor(plan, input, semanticTable, cardinalities)
   }
 
 }

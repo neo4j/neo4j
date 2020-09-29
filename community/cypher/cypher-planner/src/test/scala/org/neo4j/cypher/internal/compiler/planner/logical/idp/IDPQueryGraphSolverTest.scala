@@ -50,6 +50,7 @@ import org.neo4j.cypher.internal.logical.plans.ProjectEndpoints
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
 import org.neo4j.cypher.internal.util.Cardinality
+import org.neo4j.cypher.internal.util.symbols.CTRelationship
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.scalatest.exceptions.TestFailedException
 
@@ -256,6 +257,8 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
         "A" -> Cardinality(10),
         "B" -> Cardinality(10)
       )
+      addTypeToSemanticTable(varFor("r1"), CTRelationship)
+      addTypeToSemanticTable(varFor("r2"), CTRelationship)
     }.withLogicalPlanningContext { (cfg, ctx) =>
       val plan = queryGraphSolver.plan(cfg.qg, InterestingOrder.empty, ctx).result
       plan should equal(

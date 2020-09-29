@@ -90,7 +90,7 @@ class ReportCostComparisonsAsRows extends CostComparisonListener {
         case _ => System.lineSeparator() + "  " * level + in
       }
 
-      val cost = context.cost.costFor(plan, context.input, context.planningAttributes.cardinalities)
+      val cost = context.cost.costFor(plan, context.input, context.semanticTable, context.planningAttributes.cardinalities)
       val thisPlan = indent(level, s"${plan.getClass.getSimpleName} costs $cost cardinality ${context.planningAttributes.cardinalities.get(plan.id)}")
       val l = plan.lhs.map(p => stringTo(level + 1, p)).getOrElse("")
       val r = plan.rhs.map(p => stringTo(level + 1, p)).getOrElse("")
@@ -103,7 +103,7 @@ class ReportCostComparisonsAsRows extends CostComparisonListener {
     val theseRows: immutable.Seq[Row] = sortedPlans.map { plan =>
       val planText = plan.toString.replaceAll(System.lineSeparator(), System.lineSeparator())
       val planTextWithCosts = stringTo(0, plan).replaceAll(System.lineSeparator(), System.lineSeparator())
-      val cost = context.cost.costFor(plan, context.input, context.planningAttributes.cardinalities)
+      val cost = context.cost.costFor(plan, context.input, context.semanticTable, context.planningAttributes.cardinalities)
       val cardinality = context.planningAttributes.cardinalities.get(plan.id)
 
       Row(comparisonCount, plan.id, planText, planTextWithCosts, cost, cardinality, winner.id == plan.id)

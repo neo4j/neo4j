@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
+import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.phases.CompilationContains
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
@@ -100,7 +101,7 @@ case object QueryPlanner
   }
 
   private def getMetricsFrom(context: PlannerContext) = if (context.debugOptions.contains("inverse_cost")) {
-    context.metrics.copy(cost = (v1: LogicalPlan, v2: QueryGraphSolverInput, v3: Cardinalities) => -context.metrics.cost.costFor(v1, v2, v3))
+    context.metrics.copy(cost = (v1: LogicalPlan, v2: QueryGraphSolverInput, v3: SemanticTable, v4: Cardinalities) => -context.metrics.cost.costFor(v1, v2, v3, v4))
   } else {
     context.metrics
   }

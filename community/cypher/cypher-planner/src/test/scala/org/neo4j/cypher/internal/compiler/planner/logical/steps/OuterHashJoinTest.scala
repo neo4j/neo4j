@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.steps
 import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.ast.Hint
 import org.neo4j.cypher.internal.ast.UsingJoinHint
+import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.planner.logical.ExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
@@ -57,7 +58,7 @@ class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport w
 
     val factory = newMockedMetricsFactory
 
-    when(factory.newCostModel(config)).thenReturn((plan: LogicalPlan, _: QueryGraphSolverInput, _: Cardinalities) => plan match {
+    when(factory.newCostModel(config)).thenReturn((plan: LogicalPlan, _: QueryGraphSolverInput, _: SemanticTable, _: Cardinalities) => plan match {
       case AllNodesScan(`bNode`, _) => Cost(1) // Make sure we start the inner plan using b
       case _ => Cost(1000)
     })
@@ -88,7 +89,7 @@ class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport w
     )
 
     val factory = newMockedMetricsFactory
-    when(factory.newCostModel(config)).thenReturn((plan: LogicalPlan, _: QueryGraphSolverInput, _: Cardinalities) => plan match {
+    when(factory.newCostModel(config)).thenReturn((plan: LogicalPlan, _: QueryGraphSolverInput, _: SemanticTable, _: Cardinalities) => plan match {
       case AllNodesScan(`bNode`, _) => Cost(1) // Make sure we start the inner plan using b
       case _ => Cost(1000)
     })
@@ -122,7 +123,7 @@ class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport w
     )
 
     val factory = newMockedMetricsFactory
-    when(factory.newCostModel(config)).thenReturn((plan: LogicalPlan, _: QueryGraphSolverInput, _: Cardinalities) => plan match {
+    when(factory.newCostModel(config)).thenReturn((plan: LogicalPlan, _: QueryGraphSolverInput, _: SemanticTable, _: Cardinalities) => plan match {
       case AllNodesScan(`bNode`, _) => Cost(1) // Make sure we start the inner plan using b
       case _ => Cost(1000)
     })

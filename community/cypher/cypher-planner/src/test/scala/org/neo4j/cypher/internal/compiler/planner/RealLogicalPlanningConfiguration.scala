@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner
 
+import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
 import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel
 import org.neo4j.cypher.internal.compiler.planner.logical.ExpressionEvaluator
@@ -42,8 +43,8 @@ case class RealLogicalPlanningConfiguration(cypherCompilerConfig: CypherPlannerC
   }
 
   //noinspection ScalaUnnecessaryParentheses
-  override def costModel(): PartialFunction[(LogicalPlan, QueryGraphSolverInput, Cardinalities), Cost] = {
-    case (plan: LogicalPlan, input: QueryGraphSolverInput, cardinalities: Cardinalities) => CardinalityCostModel.costFor(plan, input, cardinalities)
+  override def costModel(): PartialFunction[(LogicalPlan, QueryGraphSolverInput, SemanticTable, Cardinalities), Cost] = {
+    case (plan: LogicalPlan, input: QueryGraphSolverInput, semanticTable: SemanticTable, cardinalities: Cardinalities) => CardinalityCostModel.costFor(plan, input, semanticTable, cardinalities)
   }
 
   override def graphStatistics: GraphStatistics = HardcodedGraphStatistics

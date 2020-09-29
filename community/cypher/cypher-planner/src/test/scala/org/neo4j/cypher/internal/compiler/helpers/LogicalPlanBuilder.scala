@@ -57,7 +57,7 @@ class LogicalPlanBuilder(wholePlan: Boolean = true, resolver: Resolver = new Log
   }
 
   override def newVariable(variable: Variable): Unit = {
-    semanticTable = semanticTable.addVariable(variable)
+    semanticTable = semanticTable.addTypeInfoCTAny(variable)
   }
 
   def getSemanticTable: SemanticTable = semanticTable

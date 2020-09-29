@@ -89,6 +89,7 @@ import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.UnwindCollection
 import org.neo4j.cypher.internal.logical.plans.VarExpand
 import org.neo4j.cypher.internal.logical.plans.VariablePredicate
+import org.neo4j.cypher.internal.util.symbols.CTRelationship
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.Extractors.MapKeys
 import org.neo4j.cypher.internal.util.test_helpers.Extractors.SetExtractor
@@ -904,7 +905,9 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
         |MERGE ()-[r:R {foo: reduce(sum=0, x IN [(a)-->(b) | b.age] | sum + x)}]->() RETURN r
       """.stripMargin
 
-    planFor(q)._2 should beLike {
+    new given {
+      addTypeToSemanticTable(varFor("r"), CTRelationship)
+    }.getLogicalPlanFor(q)._2 should beLike {
       case AntiConditionalApply(
       Optional(
                Selection(_,

@@ -88,9 +88,19 @@ class SemanticTable(
 
   def isNodeCollection(expr: String): Boolean = getTypeFor(expr) == CTList(CTNode).invariant
 
-  def isNode(expr: LogicalVariable): Boolean = types(expr).specified == CTNode.invariant
+  def isNode(expr: Expression): Boolean = types(expr).specified == CTNode.invariant
 
-  def isRelationship(expr: LogicalVariable): Boolean = types(expr).specified == CTRelationship.invariant
+  /**
+   * Same as isNode, but will simply return false if no semantic information is available instead of failing.
+   */
+  def isNodeNoFail(expr: Expression): Boolean = types.get(expr).map(_.specified).contains(CTNode.invariant)
+
+  def isRelationship(expr: Expression): Boolean = types(expr).specified == CTRelationship.invariant
+
+  /**
+   * Same as isRelationship, but will simply return false if no semantic information is available instead of failing.
+   */
+  def isRelationshipNoFail(expr: Expression): Boolean = types.get(expr).map(_.specified).contains(CTRelationship.invariant)
 
   def addNode(expr: Variable): SemanticTable =
     copy(types = types.updated(expr, ExpressionTypeInfo(CTNode.invariant, None)))
@@ -98,7 +108,7 @@ class SemanticTable(
   def addRelationship(expr: Variable): SemanticTable =
     copy(types = types.updated(expr, ExpressionTypeInfo(CTRelationship.invariant, None)))
 
-  def addVariable(expr: Variable): SemanticTable =
+  def addTypeInfoCTAny(expr: Expression): SemanticTable =
     copy(types = types.updated(expr, ExpressionTypeInfo(CTAny.invariant, None)))
 
   def replaceExpressions(rewriter: Rewriter): SemanticTable = {

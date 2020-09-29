@@ -225,7 +225,7 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int],
     oneChildPlan(state),
     twoChildPlan(state),
   ).suchThat {
-    case WithState(plan, state) => CardinalityCostModel.costFor(plan, QueryGraphSolverInput.empty, state.cardinalities) <= costLimit
+    case WithState(plan, state) => CardinalityCostModel.costFor(plan, QueryGraphSolverInput.empty, state.semanticTable, state.cardinalities) <= costLimit
   }
 
   def innerLogicalPlanWithAtLeastOneSymbol(state: State): Gen[WithState[LogicalPlan]] =

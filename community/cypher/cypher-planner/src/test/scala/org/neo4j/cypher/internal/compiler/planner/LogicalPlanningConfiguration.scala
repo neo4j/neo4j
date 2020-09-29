@@ -46,7 +46,7 @@ import scala.collection.mutable
 trait LogicalPlanningConfiguration {
   def updateSemanticTableWithTokens(in: SemanticTable): SemanticTable
   def cardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel, expressionEvaluator: ExpressionEvaluator): CardinalityModel
-  def costModel(): PartialFunction[(LogicalPlan, QueryGraphSolverInput, Cardinalities), Cost]
+  def costModel(): PartialFunction[(LogicalPlan, QueryGraphSolverInput, SemanticTable, Cardinalities), Cost]
   def graphStatistics: GraphStatistics
   def indexes: Map[IndexDef, IndexType]
   def constraints: Set[(String, Set[String])]

@@ -106,7 +106,14 @@ class StubbedLogicalPlanningConfiguration(val parent: LogicalPlanningConfigurati
 
   lazy val labelsById: Map[Int, String] = indexes.keys.map(_.label).zipWithIndex.map(_.swap).toMap
 
-  override def costModel(): PartialFunction[(LogicalPlan, QueryGraphSolverInput, Cardinalities), Cost] = cost.orElse(parent.costModel())
+  override def costModel(): PartialFunction[(LogicalPlan, QueryGraphSolverInput, SemanticTable, Cardinalities), Cost] = {
+    case (lp, input, semanticTable, cardinalities) =>
+      if (cost.isDefinedAt((lp, input, cardinalities))) {
+        cost((lp, input, cardinalities))
+      } else {
+        parent.costModel()((lp, input, semanticTable, cardinalities))
+      }
+  }
 
   override def cardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel, evaluator: ExpressionEvaluator): CardinalityModel = {
     new CardinalityModel {

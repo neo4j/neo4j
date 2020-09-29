@@ -35,4 +35,7 @@ object CachedFunction {
 
   def apply[A, B, C, D](f: (A, B, C) => D): (A, B, C) => D =
     Function.untupled(apply(f.tupled))
+
+  def apply[A, B, C, D, E](f: (A, B, C, D) => E): (A, B, C, D) => E =
+    Function.untupled(apply(f.tupled))
 }

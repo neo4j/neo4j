@@ -201,7 +201,7 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
 
     def sortCriteria(c: Component): (Cost, Cardinality) = {
       val cardinality = context.planningAttributes.cardinalities(c.plan.id)
-      val cost = context.cost.costFor(c.plan, context.input, context.planningAttributes.cardinalities)
+      val cost = context.cost.costFor(c.plan, context.input, context.semanticTable, context.planningAttributes.cardinalities)
       (cost, cardinality)
     }
 
