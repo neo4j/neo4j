@@ -52,15 +52,16 @@ case object QueryPlanner
   override def postConditions = Set(CompilationContains[LogicalPlan])
 
   override def process(from: LogicalPlanState, context: PlannerContext): LogicalPlanState = {
-    val debugCosts = context.debugOptions.contains("dumpcosts")
-    val systemOutCostLogger = context.debugOptions.contains("systemoutcostlogger") || java.lang.Boolean.getBoolean("pickBestPlan.VERBOSE")
+    val costComparisonsAsRows = context.debugOptions.contains("reportCostComparisonsAsRows")
+    val printCostComparisons = context.debugOptions.contains("printCostComparisons") || java.lang.Boolean.getBoolean("pickBestPlan.VERBOSE")
 
-    val costComparisonListener = if (debugCosts)
-      new ReportCostComparisonsAsRows
-    else if (systemOutCostLogger)
-      SystemOutCostLogger
-    else
-      devNullListener
+    val costComparisonListener =
+      if (costComparisonsAsRows)
+        new ReportCostComparisonsAsRows
+      else if (printCostComparisons)
+        SystemOutCostLogger
+      else
+        devNullListener
 
     val planningAttributes = from.planningAttributes
     val logicalPlanProducer = LogicalPlanProducer(context.metrics.cardinality, planningAttributes, context.logicalPlanIdGen)

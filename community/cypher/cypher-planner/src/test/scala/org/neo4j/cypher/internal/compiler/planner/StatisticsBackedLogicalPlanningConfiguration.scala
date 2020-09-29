@@ -308,7 +308,7 @@ class StatisticsBackedLogicalPlanningConfigurationBuilder() {
     this
   }
 
-  def enableSystemOutCostLogger(enable: Boolean = true): this.type = enableDebugOption("systemoutcostlogger", enable)
+  def enablePrintCostComparisons(enable: Boolean = true): this.type = enableDebugOption("printCostComparisons", enable)
 
 }
 
