@@ -59,7 +59,6 @@ trait StatisticsBackedLogicalPlanningSupport {
 object StatisticsBackedLogicalPlanningConfigurationBuilder {
   case class Options(
     debug: Set[String] = Set(),
-    connectComponentsPlanner: Boolean = false,
   )
 }
 
@@ -311,11 +310,6 @@ class StatisticsBackedLogicalPlanningConfigurationBuilder() {
 
   def enableSystemOutCostLogger(enable: Boolean = true): this.type = enableDebugOption("systemoutcostlogger", enable)
 
-  def enableConnectComponentsPlanner(enable: Boolean = true): this.type = {
-    options = options.copy(connectComponentsPlanner = enable)
-    this
-  }
-
 }
 
 
@@ -333,9 +327,7 @@ class StatisticsBackedLogicalPlanningConfiguration(
     val context = ContextHelper.create(
       planContext = planContext,
       cypherExceptionFactory = exceptionFactory,
-      queryGraphSolver =
-        if (options.connectComponentsPlanner) LogicalPlanningTestSupport2.createQueryGraphSolverWithComponentConnectorPlanner()
-        else LogicalPlanningTestSupport2.createQueryGraphSolver(),
+      queryGraphSolver = LogicalPlanningTestSupport2.createQueryGraphSolver(),
       metrics = metrics,
       config = cypherCompilerConfig,
       logicalPlanIdGen = idGen,
