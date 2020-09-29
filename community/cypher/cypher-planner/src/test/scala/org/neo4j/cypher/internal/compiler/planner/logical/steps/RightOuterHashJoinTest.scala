@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
+import org.neo4j.cypher.internal.ir.ordering.RequiredOrderCandidate
 import org.neo4j.cypher.internal.logical.plans.AllNodesScan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.RightOuterHashJoin
@@ -68,6 +69,35 @@ class RightOuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupp
     val plans = rightOuterHashJoin(optionalQg, left, InterestingOrder.empty, context).toSeq
 
     plans should equal(Seq(RightOuterHashJoin(Set(aNode), innerPlan, left)))
+  }
+
+  test("should supply no interesting order when planning LHS") {
+    // MATCH a OPTIONAL MATCH a-->b
+    val optionalQg = QueryGraph(
+      patternNodes = Set(aNode, bNode),
+      patternRelationships = Set(r1Rel),
+      argumentIds = Set(aNode)
+    )
+
+    val factory = newMockedMetricsFactory
+    when(factory.newCostModel(config)).thenReturn((plan: LogicalPlan, _: QueryGraphSolverInput, _: Cardinalities) => plan match {
+      case AllNodesScan(`bNode`, _) => Cost(1) // Make sure we start the inner plan using b
+      case _ => Cost(1000)
+    })
+    val unordered = InterestingOrder.empty
+    val ordered = InterestingOrder.required(RequiredOrderCandidate.asc(varFor(bNode)))
+
+    val unorderedPlan = newMockedLogicalPlan(bNode, "iAmUnordered")
+    val orderedPlan = newMockedLogicalPlan(bNode, "iAmOrdered")
+
+    val context = newMockedLogicalPlanningContext(
+      planContext = newMockedPlanContext(),
+      metrics = factory.newMetrics(hardcodedStatistics, mock[ExpressionEvaluator], config),
+      strategy = newMockedStrategyWithOrder(Map(ordered -> orderedPlan, unordered -> unorderedPlan)))
+    val right = newMockedLogicalPlanWithPatterns(context.planningAttributes, idNames = Set(aNode))
+    val plans = rightOuterHashJoin(optionalQg, right, ordered, context).toSeq
+
+    plans should equal(Seq(RightOuterHashJoin(Set(aNode), unorderedPlan, right)))
   }
 
   test("solve optional match with hint") {

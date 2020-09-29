@@ -80,6 +80,7 @@ import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.StrictnessMode
+import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.logical.plans.FieldSignature
 import org.neo4j.cypher.internal.logical.plans.LazyLogicalPlan
@@ -165,6 +166,25 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     val strategy = mock[QueryGraphSolver]
     when(strategy.plan(any(), any(), any())).thenAnswer(new Answer[BestResults[LogicalPlan]] {
       override def answer(invocation: InvocationOnMock): BestResults[LogicalPlan] = {
+        val context = invocation.getArgument[LogicalPlanningContext](2)
+        val solveds = context.planningAttributes.solveds
+        val cardinalities = context.planningAttributes.cardinalities
+        val providedOrders = context.planningAttributes.providedOrders
+        solveds.set(plan.id, SinglePlannerQuery.empty)
+        cardinalities.set(plan.id, 0.0)
+        providedOrders.set(plan.id, ProvidedOrder.empty)
+        BestResults(plan, None)
+      }
+    })
+    strategy
+  }
+
+  def newMockedStrategyWithOrder(plans: Map[InterestingOrder, LogicalPlan]) = {
+    val strategy = mock[QueryGraphSolver]
+    when(strategy.plan(any(), any(), any())).thenAnswer(new Answer[BestResults[LogicalPlan]] {
+      override def answer(invocation: InvocationOnMock): BestResults[LogicalPlan] = {
+        val interestingOrder = invocation.getArgument[InterestingOrder](1)
+        val plan = plans(interestingOrder)
         val context = invocation.getArgument[LogicalPlanningContext](2)
         val solveds = context.planningAttributes.solveds
         val cardinalities = context.planningAttributes.cardinalities
