@@ -170,20 +170,20 @@ object Additions {
       case d@DropIndexOnName(_, true, _) =>
         throw cypherExceptionFactory.syntaxException("Dropping index using `IF EXISTS` is not supported in this Cypher version.", d.position)
 
-      // CREATE CONSTRAINT [name] IF NOT EXISTS ...
-      case c@CreateNodeKeyConstraint(_, _, _, _, ifExistsDo, _) if ifExistsDo == IfExistsDoNothing() =>
+      // CREATE CONSTRAINT [name] IF NOT EXISTS ON ... IS NODE KEY
+      case c@CreateNodeKeyConstraint(_, _, _, _, IfExistsDoNothing(), _) =>
         throw cypherExceptionFactory.syntaxException("Creating node key constraint using `IF NOT EXISTS` is not supported in this Cypher version.", c.position)
 
-      // CREATE CONSTRAINT [name] IF NOT EXISTS ...
-      case c@CreateUniquePropertyConstraint(_, _, _, _, ifExistsDo, _) if ifExistsDo == IfExistsDoNothing() =>
+      // CREATE CONSTRAINT [name] IF NOT EXISTS ON ... IS UNIQUE
+      case c@CreateUniquePropertyConstraint(_, _, _, _, IfExistsDoNothing(), _) =>
         throw cypherExceptionFactory.syntaxException("Creating uniqueness constraint using `IF NOT EXISTS` is not supported in this Cypher version.", c.position)
 
-      // CREATE CONSTRAINT [name] IF NOT EXISTS ...
-      case c@CreateNodePropertyExistenceConstraint(_, _, _, _, ifExistsDo, _) if ifExistsDo == IfExistsDoNothing() =>
+      // CREATE CONSTRAINT [name] IF NOT EXISTS ON () ... EXISTS
+      case c@CreateNodePropertyExistenceConstraint(_, _, _, _, IfExistsDoNothing(), _) =>
         throw cypherExceptionFactory.syntaxException("Creating node existence constraint using `IF NOT EXISTS` is not supported in this Cypher version.", c.position)
 
-      // CREATE CONSTRAINT [name] IF NOT EXISTS ...
-      case c@CreateRelationshipPropertyExistenceConstraint(_, _, _, _, ifExistsDo, _) if ifExistsDo == IfExistsDoNothing() =>
+      // CREATE CONSTRAINT [name] IF NOT EXISTS ON ()-[]-() ... EXISTS
+      case c@CreateRelationshipPropertyExistenceConstraint(_, _, _, _, IfExistsDoNothing(), _) =>
         throw cypherExceptionFactory.syntaxException("Creating relationship existence constraint using `IF NOT EXISTS` is not supported in this Cypher version.", c.position)
 
       // DROP CONSTRAINT name IF EXISTS

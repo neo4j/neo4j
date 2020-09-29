@@ -145,7 +145,7 @@ case class CreateNodeKeyConstraint(variable: Variable, label: LabelName, propert
   override def withGraph(useGraph: Option[GraphSelection]): SchemaCommand = copy(useGraph = useGraph)(position)
 
   override def semanticCheck: SemanticCheck =  ifExistsDo match {
-    case IfExistsInvalidSyntax() | IfExistsReplace() => SemanticError(s"Failed to create node key constraint2: `OR REPLACE` cannot be used together with this command.", position)
+    case IfExistsInvalidSyntax() | IfExistsReplace() => SemanticError(s"Failed to create node key constraint: `OR REPLACE` cannot be used together with this command.", position)
     case _ => super.semanticCheck
   }
 }
