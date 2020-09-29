@@ -105,7 +105,7 @@ public class RecoveryStartInformationProvider implements ThrowingSupplier<Recove
 
         if ( !logTailInformation.isRecoveryRequired() )
         {
-            monitor.noCommitsAfterLastCheckPoint( lastCheckPoint != null ? lastCheckPoint.getLogPosition() : null );
+            monitor.noCommitsAfterLastCheckPoint( lastCheckPoint != null ? lastCheckPoint.getTransactionLogPosition() : null );
             return NO_RECOVERY_REQUIRED;
         }
         if ( logTailInformation.logsMissing() )
@@ -126,9 +126,9 @@ public class RecoveryStartInformationProvider implements ThrowingSupplier<Recove
                 LogPosition position = tryExtractHeaderSize();
                 return createRecoveryInformation( position, txIdAfterLastCheckPoint );
             }
-            LogPosition checkpointLogPosition = lastCheckPoint.getLogPosition();
+            LogPosition checkpointLogPosition = lastCheckPoint.getTransactionLogPosition();
             monitor.commitsAfterLastCheckPoint( checkpointLogPosition, txIdAfterLastCheckPoint );
-            return createRecoveryInformation( lastCheckPoint.getLogPosition(), txIdAfterLastCheckPoint );
+            return createRecoveryInformation( lastCheckPoint.getTransactionLogPosition(), txIdAfterLastCheckPoint );
         }
         else
         {
@@ -145,7 +145,7 @@ public class RecoveryStartInformationProvider implements ThrowingSupplier<Recove
         catch ( IOException e )
         {
             monitor.failToExtractInitialFileHeader( e );
-            // we can't event read header, lets assume we need to recover from the most latest format and from the beginning
+            // we can't even read header, lets assume we need to recover from the latest format and from the beginning
             return new LogPosition( 0, CURRENT_FORMAT_LOG_HEADER_SIZE );
         }
     }

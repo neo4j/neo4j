@@ -99,6 +99,7 @@ public class DefaultRecoveryService implements RecoveryService
             log.warn( "Recovery detected that transaction logs were missing. " +
                     "Resetting offset of last closed transaction to point to the head of %d transaction log file.", logVersion );
             transactionIdStore.resetLastClosedTransaction( lastClosedTransaction[0], logVersion, CURRENT_FORMAT_LOG_HEADER_SIZE, true, cursorTracer );
+            logVersionRepository.setCurrentLogVersion( logVersion, cursorTracer );
             return;
         }
         if ( lastRecoveredTransaction != null )

@@ -50,6 +50,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
+import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.storageengine.api.LogVersionRepository;
@@ -580,8 +581,12 @@ class TransactionLogFileTest
         @Override
         public StoreChannel write( Path fileName ) throws IOException
         {
-            capturingChannel = new CapturingStoreChannel( super.write( fileName ) );
-            return capturingChannel;
+            if ( fileName.toString().contains( TransactionLogFilesHelper.DEFAULT_NAME ) )
+            {
+                capturingChannel = new CapturingStoreChannel( super.write( fileName ) );
+                return capturingChannel;
+            }
+            return super.write( fileName );
         }
 
         public CapturingStoreChannel getCapturingChannel()

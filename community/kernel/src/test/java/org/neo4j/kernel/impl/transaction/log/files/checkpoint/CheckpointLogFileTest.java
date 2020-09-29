@@ -65,7 +65,7 @@ class CheckpointLogFileTest
     @Inject
     private LifeSupport life;
 
-    private final long rotationThreshold = ByteUnit.mebiBytes( 1 );
+    private final long rotationThreshold = ByteUnit.kibiBytes( 1 );
     private final DatabaseHealth databaseHealth = new DatabaseHealth( PanicEventGenerator.NO_OP, NullLog.getInstance() );
     private final LogVersionRepository logVersionRepository = new SimpleLogVersionRepository( 1L );
     private final TransactionIdStore transactionIdStore = new SimpleTransactionIdStore( 2L, 0, BASE_TX_COMMIT_TIMESTAMP, 0, 0 );
@@ -94,7 +94,7 @@ class CheckpointLogFileTest
     @Test
     void provideMatchedCheckpointFiles()
     {
-        Path[] matchedFiles = checkpointFile.getMatchedFiles();
+        Path[] matchedFiles = checkpointFile.getDetachedCheckpointFiles();
         assertThat( matchedFiles ).hasSize( 1 );
         assertEquals( matchedFiles[0], checkpointFile.getCurrentFile() );
     }
@@ -107,21 +107,50 @@ class CheckpointLogFileTest
 
         var firstLogPosition = new LogPosition( 1, 2 );
         checkpointAppender.checkPoint( NULL, firstLogPosition, Instant.now(), "test" );
-        assertEquals( firstLogPosition, checkpointFile.findLatestCheckpoint().orElseThrow().getLogPosition() );
+        assertEquals( firstLogPosition, checkpointFile.findLatestCheckpoint().orElseThrow().getTransactionLogPosition() );
 
         var secondLogPosition = new LogPosition( 2, 3 );
         checkpointAppender.checkPoint( NULL, secondLogPosition, Instant.now(), "test" );
-        assertEquals( secondLogPosition, checkpointFile.findLatestCheckpoint().orElseThrow().getLogPosition() );
+        assertEquals( secondLogPosition, checkpointFile.findLatestCheckpoint().orElseThrow().getTransactionLogPosition() );
 
         var thirdLogPosition = new LogPosition( 3, 4 );
         checkpointAppender.checkPoint( NULL, thirdLogPosition, Instant.now(), "test" );
-        assertEquals( thirdLogPosition, checkpointFile.findLatestCheckpoint().orElseThrow().getLogPosition() );
+        assertEquals( thirdLogPosition, checkpointFile.findLatestCheckpoint().orElseThrow().getTransactionLogPosition() );
 
         var checkpointInfos = checkpointFile.reachableCheckpoints();
         assertThat( checkpointInfos ).hasSize( 3 );
-        assertThat( checkpointInfos.get( 0 ) ).hasFieldOrPropertyWithValue( "logPosition", firstLogPosition );
-        assertThat( checkpointInfos.get( 1 ) ).hasFieldOrPropertyWithValue( "logPosition", secondLogPosition );
-        assertThat( checkpointInfos.get( 2 ) ).hasFieldOrPropertyWithValue( "logPosition", thirdLogPosition );
+        assertThat( checkpointInfos.get( 0 ) ).hasFieldOrPropertyWithValue( "transactionLogPosition", firstLogPosition );
+        assertThat( checkpointInfos.get( 1 ) ).hasFieldOrPropertyWithValue( "transactionLogPosition", secondLogPosition );
+        assertThat( checkpointInfos.get( 2 ) ).hasFieldOrPropertyWithValue( "transactionLogPosition", thirdLogPosition );
+    }
+
+    @Test
+    void reachableCheckpointsShouldBeSorted() throws IOException
+    {
+        // Write 6 checkpoints to get one rotation and see that reachableCheckpoints are correctly sorted with several checkpoint files
+        var checkpointAppender = checkpointFile.getCheckpointAppender();
+
+        var firstLogPosition = new LogPosition( 1, 2 );
+        checkpointAppender.checkPoint( NULL, firstLogPosition, Instant.now(), "test" );
+        var secondLogPosition = new LogPosition( 2, 3 );
+        checkpointAppender.checkPoint( NULL, secondLogPosition, Instant.now(), "test" );
+        var thirdLogPosition = new LogPosition( 3, 4 );
+        checkpointAppender.checkPoint( NULL, thirdLogPosition, Instant.now(), "test" );
+        var fourthLogPosition = new LogPosition( 4, 5 );
+        checkpointAppender.checkPoint( NULL, fourthLogPosition, Instant.now(), "test" );
+        var fifthLogPosition = new LogPosition( 5, 6 );
+        checkpointAppender.checkPoint( NULL, fifthLogPosition, Instant.now(), "test" );
+        var sixthLogPosition = new LogPosition( 6, 7 );
+        checkpointAppender.checkPoint( NULL, sixthLogPosition, Instant.now(), "test" );
+
+        var checkpointInfos = checkpointFile.reachableCheckpoints();
+        assertThat( checkpointInfos ).hasSize( 6 );
+        assertThat( checkpointInfos.get( 0 ) ).hasFieldOrPropertyWithValue( "transactionLogPosition", firstLogPosition );
+        assertThat( checkpointInfos.get( 1 ) ).hasFieldOrPropertyWithValue( "transactionLogPosition", secondLogPosition );
+        assertThat( checkpointInfos.get( 2 ) ).hasFieldOrPropertyWithValue( "transactionLogPosition", thirdLogPosition );
+        assertThat( checkpointInfos.get( 3 ) ).hasFieldOrPropertyWithValue( "transactionLogPosition", fourthLogPosition );
+        assertThat( checkpointInfos.get( 4 ) ).hasFieldOrPropertyWithValue( "transactionLogPosition", fifthLogPosition );
+        assertThat( checkpointInfos.get( 5 ) ).hasFieldOrPropertyWithValue( "transactionLogPosition", sixthLogPosition );
     }
 
     @Test
@@ -145,7 +174,6 @@ class CheckpointLogFileTest
         return LogFilesBuilder.builder( databaseLayout, fileSystem )
                 .withRotationThreshold( rotationThreshold )
                 .withTransactionIdStore( transactionIdStore )
-                .withSeparateFilesForCheckpoint( true )
                 .withDatabaseHealth( databaseHealth )
                 .withLogVersionRepository( logVersionRepository )
                 .withLogEntryReader( logEntryReader() )

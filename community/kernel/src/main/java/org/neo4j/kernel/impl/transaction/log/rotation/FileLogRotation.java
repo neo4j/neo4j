@@ -51,7 +51,7 @@ public class FileLogRotation implements LogRotation
             LogRotationMonitor monitor )
     {
         return new FileLogRotation( checkpointLogFile, clock, databaseHealth, monitor,
-                () -> logFile.getLogFileInformation().committingEntryId(), checkpointLogFile::getCurrentLogVersion );
+                () -> logFile.getLogFileInformation().committingEntryId(), checkpointLogFile::getCurrentDetachedLogVersion );
     }
 
     public static LogRotation transactionLogRotation( LogFiles logFiles, Clock clock, Health databaseHealth, LogRotationMonitor monitor )

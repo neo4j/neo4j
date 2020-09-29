@@ -28,12 +28,12 @@ import org.junit.jupiter.params.provider.MethodSource;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
-import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
@@ -46,8 +46,8 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
+import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.impl.transaction.log.files.LogTailInformation;
-import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.monitoring.Monitors;
@@ -62,6 +62,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.fail_on_corrupted_log_files;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.transaction.log.TestLogEntryReader.logEntryReader;
 import static org.neo4j.kernel.impl.transaction.log.files.checkpoint.InlinedLogTailScanner.NO_TRANSACTION_ID;
@@ -106,7 +107,21 @@ abstract class AbstractLogTailScannerTest
         logFiles = createLogFiles();
     }
 
-    protected abstract LogFiles createLogFiles() throws IOException;
+    LogFiles createLogFiles() throws IOException
+    {
+        return LogFilesBuilder
+                .activeFilesBuilder( databaseLayout, fs, pageCache )
+                .withLogVersionRepository( logVersionRepository )
+                .withTransactionIdStore( transactionIdStore )
+                .withLogEntryReader( logEntryReader() )
+                .withStoreId( StoreId.UNKNOWN )
+                .withLogProvider( logProvider )
+                .withConfig( Config.defaults( fail_on_corrupted_log_files, false ) )
+                .build();
+    }
+
+    protected abstract void writeCheckpoint( LogEntryWriter transactionLogWriter, CheckpointFile separateCheckpointFile, LogPosition logPosition )
+            throws IOException;
 
     @Test
     void detectMissingLogFiles()
@@ -543,14 +558,7 @@ abstract class AbstractLogTailScannerTest
                             Entry target = checkPointEntry.withPositionOfEntry;
                             LogPosition logPosition = target != null ? positions.get( target ) : currentPosition;
                             assert logPosition != null : "No registered log position for " + target;
-                            if ( checkpointFile instanceof LegacyCheckpointLogFile )
-                            {
-                                writer.writeLegacyCheckPointEntry( logPosition );
-                            }
-                            else
-                            {
-                                checkpointFile.getCheckpointAppender().checkPoint( LogCheckPointEvent.NULL, logPosition, Instant.now(), "test" );
-                            }
+                            writeCheckpoint( writer, checkpointFile, logPosition );
                         }
                         else if ( entry instanceof PositionEntry )
                         {

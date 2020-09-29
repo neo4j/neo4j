@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.transaction.log.files.checkpoint;
 
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -28,47 +27,34 @@ import java.util.Optional;
 import org.neo4j.kernel.impl.transaction.log.LogEntryCursor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
-import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckpointAppender;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryInlinedCheckPoint;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.files.LogTailInformation;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesContext;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 import static java.util.Collections.emptyList;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
 
-public class LegacyCheckpointLogFile extends LifecycleAdapter implements CheckpointFile
+public class LegacyCheckpointLogFile
 {
-    private static final Path[] NO_SEPARATE_FILES = new Path[0];
     private final InlinedLogTailScanner logTailScanner;
     private final TransactionLogFiles logFiles;
     private final TransactionLogFilesContext context;
-    private final LegacyCheckpointAppender checkpointAppender;
 
     public LegacyCheckpointLogFile( TransactionLogFiles logFiles, TransactionLogFilesContext context )
     {
         this.logFiles = logFiles;
         this.context = context;
         this.logTailScanner = new InlinedLogTailScanner( logFiles, context );
-        this.checkpointAppender = new LegacyCheckpointAppender( logFiles.getLogFile(), context );
     }
 
-    @Override
-    public void start() throws Exception
-    {
-        checkpointAppender.start();
-    }
-
-    @Override
     public Optional<CheckpointInfo> findLatestCheckpoint()
     {
         return Optional.ofNullable( getTailInformation().lastCheckPoint );
     }
 
-    @Override
     public List<CheckpointInfo> reachableCheckpoints() throws IOException
     {
         var logFile = logFiles.getLogFile();
@@ -107,52 +93,8 @@ public class LegacyCheckpointLogFile extends LifecycleAdapter implements Checkpo
         return checkpoints;
     }
 
-    @Override
-    public CheckpointAppender getCheckpointAppender()
-    {
-        return checkpointAppender;
-    }
-
-    @Override
     public LogTailInformation getTailInformation()
     {
         return logTailScanner.getTailInformation();
-    }
-
-    @Override
-    public Path getCurrentFile()
-    {
-        return logFiles.getLogFile().getHighestLogFile();
-    }
-
-    @Override
-    public Path[] getMatchedFiles()
-    {
-        return NO_SEPARATE_FILES;
-    }
-
-    @Override
-    public long getCurrentLogVersion()
-    {
-        return logFiles.getLogFile().getHighestLogVersion();
-    }
-
-    @Override
-    public long getCheckpointLogFileVersion( Path checkpointLogFile )
-    {
-        return logFiles.getLogFile().getLogVersion( checkpointLogFile );
-    }
-
-    @Override
-    public boolean rotationNeeded()
-    {
-        return false;
-    }
-
-    @Override
-    public Path rotate()
-    {
-        // we do not rotate checkpoint file here since its rotated by transaction logs rotation automatically
-        return getCurrentFile();
     }
 }

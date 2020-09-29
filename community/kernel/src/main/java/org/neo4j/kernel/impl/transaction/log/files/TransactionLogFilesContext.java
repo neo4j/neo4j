@@ -26,6 +26,7 @@ import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.dbms.database.TransactionLogVersionProvider;
 import org.neo4j.internal.nativeimpl.NativeAccess;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.database.DatabaseTracers;
@@ -56,7 +57,7 @@ public class TransactionLogFilesContext
     private final boolean failOnCorruptedLogFiles;
     private final Supplier<StoreId> storeId;
     private final DatabaseHealth databaseHealth;
-    private final boolean useSeparateCheckpointFiles;
+    private final TransactionLogVersionProvider transactionLogVersionProvider;
     private final Clock clock;
     private final Config config;
 
@@ -64,8 +65,8 @@ public class TransactionLogFilesContext
             LongSupplier lastCommittedTransactionIdSupplier, LongSupplier committingTransactionIdSupplier, Supplier<LogPosition> lastClosedPositionSupplier,
             Supplier<LogVersionRepository> logVersionRepositorySupplier,FileSystemAbstraction fileSystem, LogProvider logProvider,
             DatabaseTracers databaseTracers, Supplier<StoreId> storeId, NativeAccess nativeAccess,
-            MemoryTracker memoryTracker, Monitors monitors, boolean failOnCorruptedLogFiles, DatabaseHealth databaseHealth, boolean useSeparateCheckpointFiles,
-            Clock clock, Config config )
+            MemoryTracker memoryTracker, Monitors monitors, boolean failOnCorruptedLogFiles, DatabaseHealth databaseHealth,
+            TransactionLogVersionProvider TransactionLogVersionProvider, Clock clock, Config config )
     {
         this.rotationThreshold = rotationThreshold;
         this.tryPreallocateTransactionLogs = tryPreallocateTransactionLogs;
@@ -83,7 +84,7 @@ public class TransactionLogFilesContext
         this.monitors = monitors;
         this.failOnCorruptedLogFiles = failOnCorruptedLogFiles;
         this.databaseHealth = databaseHealth;
-        this.useSeparateCheckpointFiles = useSeparateCheckpointFiles;
+        this.transactionLogVersionProvider = TransactionLogVersionProvider;
         this.clock = clock;
         this.config = config;
     }
@@ -168,9 +169,9 @@ public class TransactionLogFilesContext
         return databaseHealth;
     }
 
-    public boolean useSeparateCheckpointFiles()
+    public TransactionLogVersionProvider getTransactionLogVersionProvider()
     {
-        return useSeparateCheckpointFiles;
+        return transactionLogVersionProvider;
     }
 
     public Clock getClock()

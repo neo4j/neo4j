@@ -37,6 +37,7 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.storageengine.api.StorageEngineFactory;
+import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
@@ -116,7 +117,7 @@ class LogVersionUpgradeCheckerIT
     {
         VersionAwareLogEntryReader logEntryReader = new VersionAwareLogEntryReader( StorageEngineFactory.selectStorageEngine().commandReaderFactory() );
         LogFiles logFiles = LogFilesBuilder.activeFilesBuilder( databaseLayout, fileSystem, pageCache )
-                .withLogEntryReader( logEntryReader ).build();
+                .withLogEntryReader( logEntryReader ).withStoreId( StoreId.UNKNOWN ).build();
 
         if ( removeCheckpointFile )
         {

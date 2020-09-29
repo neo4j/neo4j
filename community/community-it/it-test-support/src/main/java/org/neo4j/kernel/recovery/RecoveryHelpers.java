@@ -38,15 +38,14 @@ public final class RecoveryHelpers
      { // non-constructable
      }
 
-     public static void removeLastCheckpointRecordFromLastLogFile( DatabaseLayout dbLayout, FileSystemAbstraction fs,
-             boolean useSeparateCheckpointFiles ) throws IOException
+     public static void removeLastCheckpointRecordFromLastLogFile( DatabaseLayout dbLayout, FileSystemAbstraction fs ) throws IOException
      {
-          LogFiles logFiles = buildLogFiles( dbLayout, fs, useSeparateCheckpointFiles );
+          LogFiles logFiles = buildLogFiles( dbLayout, fs );
           var checkpointFile = logFiles.getCheckpointFile();
           Optional<CheckpointInfo> latestCheckpoint = checkpointFile.findLatestCheckpoint();
           latestCheckpoint.ifPresent( checkpointInfo ->
               {
-              LogPosition entryPosition = useSeparateCheckpointFiles ? checkpointInfo.getEntryPosition() : checkpointInfo.getLogPosition();
+              LogPosition entryPosition = checkpointInfo.getCheckpointEntryPosition();
               try ( StoreChannel storeChannel = fs.write( checkpointFile.getCurrentFile() ) )
               {
                   storeChannel.truncate( entryPosition.getByteOffset() );
@@ -58,13 +57,11 @@ public final class RecoveryHelpers
           } );
      }
 
-     private static LogFiles buildLogFiles( DatabaseLayout dbLayout, FileSystemAbstraction fs,
-             boolean useSeparateCheckpointFiles ) throws IOException
+     private static LogFiles buildLogFiles( DatabaseLayout dbLayout, FileSystemAbstraction fs ) throws IOException
      {
           return LogFilesBuilder
                   .logFilesBasedOnlyBuilder( dbLayout.getTransactionLogsDirectory(), fs )
                   .withCommandReaderFactory( StorageEngineFactory.selectStorageEngine().commandReaderFactory() )
-                  .withSeparateFilesForCheckpoint( useSeparateCheckpointFiles )
                   .build();
      }
 }

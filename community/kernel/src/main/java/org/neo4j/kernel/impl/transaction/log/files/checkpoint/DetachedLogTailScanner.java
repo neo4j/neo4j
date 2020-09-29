@@ -81,7 +81,7 @@ public class DetachedLogTailScanner extends AbstractLogTailScanner
                 var exceptionMessage = format( "Last available %s checkpoint does not point to a valid location in transaction logs.", checkpoint );
                 throwUnableToCleanRecover( new RuntimeException( exceptionMessage ) );
             }
-            // out last checkpoint is not valid (we have a pointer to non existent place) lets try to find last one that looks correct
+            // our last checkpoint is not valid (we have a pointer to non existent place) lets try to find last one that looks correct
             List<CheckpointInfo> checkpointInfos = checkPointFile.reachableCheckpoints();
             // we know that last one is not valid so no reason to double check that again
             ListIterator<CheckpointInfo> reverseCheckpoints = checkpointInfos.listIterator( checkpointInfos.size() - 1 );
@@ -105,7 +105,7 @@ public class DetachedLogTailScanner extends AbstractLogTailScanner
     private LogTailInformation validCheckpointLogTail( LogFile logFile, long highestLogVersion, long lowestLogVersion, CheckpointInfo checkpoint )
             throws IOException
     {
-        var entries = getFirstTransactionIdAfterCheckpoint( logFile, checkpoint.getLogPosition() );
+        var entries = getFirstTransactionIdAfterCheckpoint( logFile, checkpoint.getTransactionLogPosition() );
         return new LogTailInformation( checkpoint, entries.isPresent(), entries.getCommitId(), lowestLogVersion == UNKNOWN, highestLogVersion,
                 entries.getEntryVersion(), checkpoint.storeId() );
     }
@@ -119,7 +119,8 @@ public class DetachedLogTailScanner extends AbstractLogTailScanner
 
     private StartCommitEntries getFirstTransactionId( LogFile logFile, long lowestLogVersion ) throws IOException
     {
-        var logPosition = new LogPosition( lowestLogVersion, CURRENT_FORMAT_LOG_HEADER_SIZE );
+        var logPosition = logFile.versionExists( lowestLogVersion ) ? logFile.extractHeader( lowestLogVersion ).getStartPosition()
+                                                                    : new LogPosition( lowestLogVersion, CURRENT_FORMAT_LOG_HEADER_SIZE );
         return getFirstTransactionIdAfterCheckpoint( logFile, logPosition );
     }
 
@@ -129,7 +130,7 @@ public class DetachedLogTailScanner extends AbstractLogTailScanner
      */
     private boolean isValidCheckpoint( LogFile logFile, CheckpointInfo checkpointInfo ) throws IOException
     {
-        LogPosition logPosition = checkpointInfo.getLogPosition();
+        LogPosition logPosition = checkpointInfo.getTransactionLogPosition();
         long logVersion = logPosition.getLogVersion();
         if ( !logFile.versionExists( logVersion ) )
         {
@@ -142,7 +143,7 @@ public class DetachedLogTailScanner extends AbstractLogTailScanner
         }
         LogHeader logHeader = logFile.extractHeader( logVersion );
         StoreId headerStoreId = logHeader.getStoreId();
-        return StoreId.UNKNOWN.equals( headerStoreId ) || headerStoreId.equals( checkpointInfo.storeId() );
+        return StoreId.UNKNOWN.equals( headerStoreId ) || headerStoreId.equalsIgnoringUpdate( checkpointInfo.storeId() );
     }
 
     private StartCommitEntries getFirstTransactionIdAfterCheckpoint( LogFile logFile, LogPosition logPosition ) throws IOException
@@ -150,12 +151,14 @@ public class DetachedLogTailScanner extends AbstractLogTailScanner
         boolean corruptedTransactionLogs = false;
         LogEntryStart start = null;
         LogEntryCommit commit = null;
-        LogPosition lookupPosition = logPosition;
+        LogPosition lookupPosition = null;
         long logVersion = logPosition.getLogVersion();
         try
         {
             while ( logFile.versionExists( logVersion ) )
             {
+                lookupPosition = lookupPosition == null ? logPosition : logFile.extractHeader( logVersion ).getStartPosition();
+
                 try ( var reader = logFile.getReader( lookupPosition, NO_MORE_CHANNELS );
                       var cursor = new LogEntryCursor( logEntryReader, reader ) )
                 {
@@ -179,7 +182,6 @@ public class DetachedLogTailScanner extends AbstractLogTailScanner
                 }
                 verifyReaderPosition( logVersion, logEntryReader.lastPosition() );
                 logVersion++;
-                lookupPosition = new LogPosition( logVersion, CURRENT_FORMAT_LOG_HEADER_SIZE );
             }
         }
         catch ( Error | ClosedByInterruptException e )

@@ -30,9 +30,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
+import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemUtils;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
@@ -43,6 +46,8 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper;
+import org.neo4j.kernel.impl.transaction.log.files.checkpoint.CheckpointFile;
+import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.test.extension.Inject;
@@ -60,7 +65,9 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 class CorruptedLogsTruncatorTest
 {
     private static final long SINGLE_LOG_FILE_SIZE = CURRENT_FORMAT_LOG_HEADER_SIZE + 9L;
-    private static final int TOTAL_NUMBER_OF_LOG_FILES = 12;
+    private static final int TOTAL_NUMBER_OF_TRANSACTION_LOG_FILES = 12;
+    // There is one file for the separate checkpoints as well
+    private static final int TOTAL_NUMBER_OF_LOG_FILES = 13;
 
     @Inject
     private FileSystemAbstraction fs;
@@ -85,6 +92,7 @@ class CorruptedLogsTruncatorTest
                 .withTransactionIdStore( transactionIdStore )
                 .withLogEntryReader( logEntryReader() )
                 .withStoreId( StoreId.UNKNOWN )
+                .withConfig( Config.newBuilder().set( GraphDatabaseInternalSettings.checkpoint_logical_log_rotation_threshold, 1024L ).build() )
                 .build();
         life.add( logFiles );
         logPruner = new CorruptedLogsTruncator( databaseDirectory, logFiles, fs, INSTANCE );
@@ -113,7 +121,7 @@ class CorruptedLogsTruncatorTest
         long highestLogVersion = logFile.getHighestLogVersion();
         long fileSizeBeforePrune = Files.size( logFile.getHighestLogFile() );
         LogPosition endOfLogsPosition = new LogPosition( highestLogVersion, fileSizeBeforePrune );
-        assertEquals( TOTAL_NUMBER_OF_LOG_FILES - 1, highestLogVersion );
+        assertEquals( TOTAL_NUMBER_OF_TRANSACTION_LOG_FILES - 1, highestLogVersion );
 
         logPruner.truncate( endOfLogsPosition );
 
@@ -170,13 +178,26 @@ class CorruptedLogsTruncatorTest
         int bytesToPrune = 7;
         long byteOffset = fileSizeBeforePrune - bytesToPrune;
         LogPosition prunePosition = new LogPosition( highestCorrectLogFileIndex, byteOffset );
+        CheckpointFile checkpointFile = logFiles.getCheckpointFile();
+        checkpointFile.getCheckpointAppender().checkPoint( LogCheckPointEvent.NULL,
+                new LogPosition( highestCorrectLogFileIndex, byteOffset - 1 ), Instant.now(), "within okay transactions");
+        /* Write checkpoints that should be truncated. Write enough to get them get them in two files. */
+        for ( int i = 0; i < 5; i++ )
+        {
+            checkpointFile.getCheckpointAppender().checkPoint( LogCheckPointEvent.NULL,
+                    new LogPosition( highestCorrectLogFileIndex, byteOffset + 1 ), Instant.now(), "in the part being truncated");
+        }
+
         life.shutdown();
 
         logPruner.truncate( prunePosition );
 
         life.start();
-        assertEquals( 6, logFiles.logFiles().length );
+
+        // 6 transaction log files and a checkpoint file
+        assertEquals( 7, logFiles.logFiles().length );
         assertEquals( byteOffset, Files.size( highestCorrectLogFile ) );
+        assertEquals( CURRENT_FORMAT_LOG_HEADER_SIZE + 192 /* one checkpoint */ , Files.size( checkpointFile.getCurrentFile() ) );
 
         Path corruptedLogsDirectory = databaseDirectory.resolve( CorruptedLogsTruncator.CORRUPTED_TX_LOGS_BASE_NAME );
         assertTrue( Files.exists( corruptedLogsDirectory ) );
@@ -188,15 +209,18 @@ class CorruptedLogsTruncatorTest
         checkArchiveName( highestCorrectLogFileIndex, byteOffset, corruptedLogsArchive );
         try ( ZipFile zipFile = new ZipFile( corruptedLogsArchive ) )
         {
-            assertEquals( 7, zipFile.size() );
+            assertEquals( 9, zipFile.size() );
             checkEntryNameAndSize( zipFile, highestCorrectLogFile.getFileName().toString(), bytesToPrune );
             long nextLogFileIndex = highestCorrectLogFileIndex + 1;
-            int lastFileIndex = TOTAL_NUMBER_OF_LOG_FILES - 1;
+            int lastFileIndex = TOTAL_NUMBER_OF_TRANSACTION_LOG_FILES - 1;
             for ( long index = nextLogFileIndex; index < lastFileIndex; index++ )
             {
                 checkEntryNameAndSize( zipFile, TransactionLogFilesHelper.DEFAULT_NAME + "." + index, SINGLE_LOG_FILE_SIZE );
             }
             checkEntryNameAndSize( zipFile, TransactionLogFilesHelper.DEFAULT_NAME + "." + lastFileIndex, highestLogFileLength );
+            checkEntryNameAndSize( zipFile, TransactionLogFilesHelper.CHECKPOINT_FILE_PREFIX + ".0", 192 * 4 /* checkpoints */ );
+            checkEntryNameAndSize( zipFile, TransactionLogFilesHelper.CHECKPOINT_FILE_PREFIX + ".1",
+                    CURRENT_FORMAT_LOG_HEADER_SIZE + 192 /* one checkpoint */ );
         }
     }
 

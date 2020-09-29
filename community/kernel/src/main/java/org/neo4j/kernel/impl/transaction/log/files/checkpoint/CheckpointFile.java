@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.log.files.checkpoint;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
@@ -48,6 +47,12 @@ public interface CheckpointFile extends Lifecycle, RotatableFile
     List<CheckpointInfo> reachableCheckpoints() throws IOException;
 
     /**
+     * List of all reachable checkpoints in separate checkpoint files from earliest to latest available
+     * @return list of checkpoints, empty list if not reachable checkpoints are available in the separate files
+     */
+    List<CheckpointInfo> getReachableDetachedCheckpoints() throws IOException;
+
+    /**
      * @return appender that aware how and where to append checkpoint record in particular implementation of the checkpoint file
      */
     CheckpointAppender getCheckpointAppender();
@@ -63,19 +68,25 @@ public interface CheckpointFile extends Lifecycle, RotatableFile
     Path getCurrentFile();
 
     /**
-     * @return set of files that used (were used before or used now) to store checkpoints.
-     * Can be empty if there is no specific files for checkpoints and they are stores somewhere else
+     * @param logVersion version of the checkpoint file to get
+     * @return checkpoint file of the requested version
      */
-    Path[] getMatchedFiles();
+    Path getDetachedCheckpointFileForVersion( long logVersion );
+
+    /**
+     * @return set of files that are used to store checkpoints.
+     * Can be empty if there is no specific files for checkpoints and they are stored somewhere else
+     */
+    Path[] getDetachedCheckpointFiles();
 
     /**
      * @return checkpoint file version that is currently used to store checkpoints into
      */
-    long getCurrentLogVersion();
+    long getCurrentDetachedLogVersion();
 
     /**
      * @param checkpointLogFile checkpoint log file
      * @return Version of the provided checkpoint file
      */
-    long getCheckpointLogFileVersion( Path checkpointLogFile );
+    long getDetachedCheckpointLogFileVersion( Path checkpointLogFile );
 }

@@ -155,7 +155,7 @@ class TransactionLogFilesTest
     @Test
     void checkpointAndLogFilesAreIncludedInTheListOfFiles() throws Exception
     {
-        LogFiles files = createLogFiles( true );
+        LogFiles files = createLogFiles();
 
         fileSystem.write( createTransactionLogFile( databaseLayout, getVersionedLogFileName( 1 ) ) ).close();
         fileSystem.write( createTransactionLogFile( databaseLayout, getVersionedLogFileName(  2 ) ) ).close();
@@ -278,16 +278,10 @@ class TransactionLogFilesTest
 
     private LogFiles createLogFiles() throws Exception
     {
-        return createLogFiles( false );
-    }
-
-    private LogFiles createLogFiles( boolean useSeparateCheckpointLogs ) throws Exception
-    {
         var files = LogFilesBuilder
                 .builder( databaseLayout, fileSystem )
                 .withTransactionIdStore( new SimpleTransactionIdStore() )
                 .withLogVersionRepository( new SimpleLogVersionRepository() )
-                .withSeparateFilesForCheckpoint( useSeparateCheckpointLogs )
                 .withLogEntryReader( new VersionAwareLogEntryReader( new TestCommandReaderFactory() ) )
                 .withStoreId( StoreId.UNKNOWN )
                 .build();

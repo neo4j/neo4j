@@ -33,7 +33,6 @@ import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.Inject;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.checkpoint_logical_log_keep_threshold;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.checkpoint_logical_log_rotation_threshold;
 import static org.neo4j.io.ByteUnit.kibiBytes;
@@ -47,7 +46,6 @@ public class CheckpointLogPruningIT
     private LogFiles logFiles;
     @Inject
     private CheckPointer checkPointer;
-    private boolean  useSeparateCheckpointLogs;
 
     @ExtensionCallback
     void configure( TestDatabaseManagementServiceBuilder builder )
@@ -58,7 +56,6 @@ public class CheckpointLogPruningIT
     @Test
     void pruneObsoleteCheckpointLogFiles() throws IOException
     {
-        assumeTrue( useSeparateCheckpointLogs );
         var checkpointFile = logFiles.getCheckpointFile();
 
         var reason = "checkpoint for rotation test";
@@ -66,7 +63,7 @@ public class CheckpointLogPruningIT
         {
             checkPointer.forceCheckPoint( new SimpleTriggerInfo( reason ) );
         }
-        var matchedFiles = checkpointFile.getMatchedFiles();
+        var matchedFiles = checkpointFile.getDetachedCheckpointFiles();
         assertThat( matchedFiles ).hasSize( 2 );
         assertThat( matchedFiles )
                 .areAtLeastOne( fineNameCondition( "checkpoint.20" ) )
@@ -76,7 +73,6 @@ public class CheckpointLogPruningIT
     @Test
     void doNotPruneFilesUntilConfigured() throws IOException
     {
-        assumeTrue( useSeparateCheckpointLogs );
         var checkpointFile = logFiles.getCheckpointFile();
 
         var reason = "checkpoint for rotation test";
@@ -84,7 +80,7 @@ public class CheckpointLogPruningIT
         {
             checkPointer.forceCheckPoint( new SimpleTriggerInfo( reason ) );
         }
-        var matchedFiles = checkpointFile.getMatchedFiles();
+        var matchedFiles = checkpointFile.getDetachedCheckpointFiles();
         assertThat( matchedFiles ).hasSize( 2 );
         assertThat( matchedFiles )
                 .areAtLeastOne( fineNameCondition( "checkpoint.0" ) )
@@ -92,9 +88,8 @@ public class CheckpointLogPruningIT
     }
 
     @Test
-    void pruneAsSoonAsHaveAnyAligableFiles() throws IOException
+    void pruneAsSoonAsHaveAnyEligibleFiles() throws IOException
     {
-        assumeTrue( useSeparateCheckpointLogs );
         var checkpointFile = logFiles.getCheckpointFile();
 
         var reason = "checkpoint for rotation test";
@@ -102,7 +97,7 @@ public class CheckpointLogPruningIT
         {
             checkPointer.forceCheckPoint( new SimpleTriggerInfo( reason ) );
         }
-        var matchedFiles = checkpointFile.getMatchedFiles();
+        var matchedFiles = checkpointFile.getDetachedCheckpointFiles();
         assertThat( matchedFiles ).hasSize( 2 );
         assertThat( matchedFiles )
                 .areAtLeastOne( fineNameCondition( "checkpoint.1" ) )

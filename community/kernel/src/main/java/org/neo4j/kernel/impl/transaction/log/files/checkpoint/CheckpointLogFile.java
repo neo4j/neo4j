@@ -139,12 +139,11 @@ public class CheckpointLogFile extends LifecycleAdapter implements CheckpointFil
             return emptyList();
         }
 
-        long lowestVersion = versionVisitor.getLowestVersion();
-        long currentVersion = highestVersion;
+        long currentVersion = versionVisitor.getLowestVersion();
 
         var checkpointReader = new VersionAwareLogEntryReader( NO_COMMANDS, INSTANCE, true );
         var checkpoints = new ArrayList<CheckpointInfo>();
-        while ( currentVersion >= lowestVersion )
+        while ( currentVersion <= highestVersion )
         {
             try ( var channel = channelAllocator.openLogChannel( currentVersion );
                     var reader = new ReadAheadLogChannel( channel, NO_MORE_CHANNELS, context.getMemoryTracker() );
@@ -162,10 +161,16 @@ public class CheckpointLogFile extends LifecycleAdapter implements CheckpointFil
                     checkpoints.add(  new CheckpointInfo( checkpoint, lastCheckpointLocation ) );
                     lastLocation = reader.getCurrentPosition();
                 }
-                currentVersion--;
+                currentVersion++;
             }
         }
         return checkpoints;
+    }
+
+    @Override
+    public List<CheckpointInfo> getReachableDetachedCheckpoints() throws IOException
+    {
+        return reachableCheckpoints();
     }
 
     @Override
@@ -183,17 +188,23 @@ public class CheckpointLogFile extends LifecycleAdapter implements CheckpointFil
     @Override
     public Path getCurrentFile()
     {
-        return fileHelper.getLogFileForVersion( getCurrentLogVersion() );
+        return fileHelper.getLogFileForVersion( getCurrentDetachedLogVersion() );
     }
 
     @Override
-    public Path[] getMatchedFiles()
+    public Path getDetachedCheckpointFileForVersion( long logVersion )
+    {
+        return fileHelper.getLogFileForVersion( logVersion );
+    }
+
+    @Override
+    public Path[] getDetachedCheckpointFiles()
     {
         return fileHelper.getMatchedFiles();
     }
 
     @Override
-    public long getCurrentLogVersion()
+    public long getCurrentDetachedLogVersion()
     {
         var versionVisitor = new RangeLogVersionVisitor();
         fileHelper.accept( versionVisitor );
@@ -201,7 +212,7 @@ public class CheckpointLogFile extends LifecycleAdapter implements CheckpointFil
     }
 
     @Override
-    public long getCheckpointLogFileVersion( Path checkpointLogFile )
+    public long getDetachedCheckpointLogFileVersion( Path checkpointLogFile )
     {
         return fileHelper.getLogVersion( checkpointLogFile );
     }

@@ -65,9 +65,7 @@ import org.neo4j.storageengine.api.LogVersionRepository;
 
 import static java.lang.Math.min;
 import static java.lang.Runtime.getRuntime;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryParserSetVersion.LogEntryV4_0;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
-import static org.neo4j.kernel.impl.transaction.log.entry.TransactionLogVersionSelector.LATEST;
 
 /**
  * {@link LogFile} backed by one or more files in a {@link FileSystemAbstraction}.
@@ -126,8 +124,7 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile
         seekChannelPosition( currentLogVersion );
 
         writer = new PositionAwarePhysicalFlushableChecksumChannel( channel, new NativeScopedBuffer( calculateLogBufferSize(), memoryTracker ) );
-        transactionLogWriter = new TransactionLogWriter( writer, new DbmsLogEntryWriterFactory(
-                context.useSeparateCheckpointFiles() ? LATEST::version : () -> LogEntryV4_0 ) );
+        transactionLogWriter = new TransactionLogWriter( writer, new DbmsLogEntryWriterFactory( context.getTransactionLogVersionProvider() ) );
     }
 
     // In order to be able to write into a logfile after life.stop during shutdown sequence

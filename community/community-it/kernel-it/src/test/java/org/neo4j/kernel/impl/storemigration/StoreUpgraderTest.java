@@ -420,7 +420,7 @@ public class StoreUpgraderTest
 
         Set<String> logFileNames = getLogFileNames( databaseTransactionLogsHome );
         assertThat( logFileNames ).isNotEmpty();
-        assertEquals( getLogFileNames( prepareDatabaseDirectory ), logFileNames );
+        assertThat( logFileNames ).containsAll( getLogFileNames( prepareDatabaseDirectory ) );
     }
 
     @ParameterizedTest
@@ -621,7 +621,7 @@ public class StoreUpgraderTest
         // let's assume there is at least a checkpoint
         assertNotNull( logTailInformation.lastCheckPoint );
 
-        LogPosition logPosition = logTailInformation.lastCheckPoint.getLogPosition();
+        LogPosition logPosition = logTailInformation.lastCheckPoint.getTransactionLogPosition();
         Path logFile = logFiles.getLogFile().getLogFileForVersion( logPosition.getLogVersion() );
         long byteOffset = logPosition.getByteOffset();
         fileSystem.truncate( logFile, byteOffset );

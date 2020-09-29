@@ -74,8 +74,8 @@ class LogPruningIT
         // Checkpoint to make sure strategy is evaluated
         checkPointer.forceCheckPoint( triggerInfo );
 
-        // Make sure file is still there since we have disable pruning
-        assertThat( countTransactionLogs( logFiles ) ).isEqualTo( 3 );
+        // Make sure file is still there since we have disable pruning. 3 transaction logs and 1 separate checkpoint file.
+        assertThat( countTransactionLogs( logFiles ) ).isEqualTo( 4 );
 
         // Change pruning to true
         config.setDynamic( keep_logical_logs, FALSE, "LogPruningIT" );
@@ -84,7 +84,7 @@ class LogPruningIT
         checkPointer.forceCheckPoint( triggerInfo );
 
         // Make sure file is removed
-        assertThat( countTransactionLogs( logFiles ) ).isEqualTo( 2 );
+        assertThat( countTransactionLogs( logFiles ) ).isEqualTo( 3 );
     }
 
     private void writeTransactionsAndRotateTwice() throws IOException

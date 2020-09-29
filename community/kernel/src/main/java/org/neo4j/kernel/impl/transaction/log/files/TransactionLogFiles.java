@@ -26,8 +26,7 @@ import java.nio.file.Path;
 
 import org.neo4j.internal.helpers.ArrayUtil;
 import org.neo4j.kernel.impl.transaction.log.files.checkpoint.CheckpointFile;
-import org.neo4j.kernel.impl.transaction.log.files.checkpoint.CheckpointLogFile;
-import org.neo4j.kernel.impl.transaction.log.files.checkpoint.LegacyCheckpointLogFile;
+import org.neo4j.kernel.impl.transaction.log.files.checkpoint.CompositeCheckpointLogFile;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
@@ -48,7 +47,7 @@ public class TransactionLogFiles extends LifecycleAdapter implements LogFiles
     {
         this.logsDirectory = logsDirectory;
         this.logFile = new TransactionLogFile( this, context, name );
-        this.checkpointLogFile = context.useSeparateCheckpointFiles() ? new CheckpointLogFile( this, context ) : new LegacyCheckpointLogFile( this, context );
+        this.checkpointLogFile = new CompositeCheckpointLogFile( this, context );
     }
 
     @Override
@@ -82,7 +81,7 @@ public class TransactionLogFiles extends LifecycleAdapter implements LogFiles
     @Override
     public Path[] logFiles()
     {
-        return ArrayUtil.concat( logFile.getMatchedFiles(), checkpointLogFile.getMatchedFiles() );
+        return ArrayUtil.concat( logFile.getMatchedFiles(), checkpointLogFile.getDetachedCheckpointFiles() );
     }
 
     @Override

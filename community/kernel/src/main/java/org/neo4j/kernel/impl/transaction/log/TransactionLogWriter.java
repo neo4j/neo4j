@@ -53,6 +53,7 @@ public class TransactionLogWriter
         return writer.writeCommitEntry( transactionId, transaction.getTimeCommitted() );
     }
 
+    @VisibleForTesting
     public void legacyCheckPoint( LogPosition logPosition ) throws IOException
     {
         LogEntryWriter<FlushablePositionAwareChecksumChannel> writer = logEntryWriterFactory.createEntryWriter( channel );

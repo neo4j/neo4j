@@ -158,12 +158,12 @@ public abstract class AbstractLogTailScanner
             long oldestVersionFound, byte latestLogEntryVersion, CheckpointInfo latestCheckPoint,
             boolean corruptedTransactionLogs, StoreId storeId ) throws IOException
     {
-        LogPosition checkPointLogPosition = latestCheckPoint.getLogPosition();
+        LogPosition checkPointLogPosition = latestCheckPoint.getTransactionLogPosition();
         InlinedLogTailScanner.ExtractedTransactionRecord transactionRecord = extractFirstTxIdAfterPosition( checkPointLogPosition, highestLogVersion );
         long firstTxIdAfterPosition = transactionRecord.getId();
         boolean startRecordAfterCheckpoint = (firstTxIdAfterPosition != NO_TRANSACTION_ID) ||
                 ((latestStartEntry != null) &&
-                        (latestStartEntry.getStartPosition().compareTo( latestCheckPoint.getLogPosition() ) >= 0));
+                        (latestStartEntry.getStartPosition().compareTo( latestCheckPoint.getTransactionLogPosition() ) >= 0));
         boolean corruptedLogs = transactionRecord.isFailure() || corruptedTransactionLogs;
         return new LogTailInformation( latestCheckPoint, corruptedLogs || startRecordAfterCheckpoint,
                 firstTxIdAfterPosition, oldestVersionFound == UNKNOWN, highestLogVersion, latestLogEntryVersion, storeId );

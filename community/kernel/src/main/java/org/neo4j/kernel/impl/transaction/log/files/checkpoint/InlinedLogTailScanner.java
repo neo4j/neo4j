@@ -42,7 +42,6 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.StoreId;
 
-import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.files.RangeLogVersionVisitor.UNKNOWN;
 import static org.neo4j.storageengine.api.LogVersionRepository.INITIAL_LOG_VERSION;
 
@@ -104,7 +103,7 @@ public class InlinedLogTailScanner extends AbstractLogTailScanner
                 LogHeader logHeader = logFile.extractHeader( version );
                 storeId = logHeader.getStoreId();
                 LogEntry entry;
-                long position = CURRENT_FORMAT_LOG_HEADER_SIZE;
+                long position = logHeader.getStartPosition().getByteOffset();
                 long channelVersion = version;
                 while ( cursor.next() )
                 {

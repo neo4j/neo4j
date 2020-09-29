@@ -29,6 +29,7 @@ import java.util.function.Supplier;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
+import org.neo4j.dbms.database.TransactionLogVersionProvider;
 import org.neo4j.internal.nativeimpl.NativeAccess;
 import org.neo4j.internal.nativeimpl.NativeAccessProvider;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -37,6 +38,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
+import org.neo4j.kernel.impl.transaction.log.entry.TransactionLogVersionSelector;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
@@ -98,7 +100,7 @@ public class LogFilesBuilder
     private Monitors monitors;
     private StoreId storeId;
     private NativeAccess nativeAccess;
-    private boolean useSeparateCheckpointFiles;
+    private TransactionLogVersionProvider transactionLogVersionProvider = TransactionLogVersionSelector.LATEST::version;
 
     private LogFilesBuilder()
     {
@@ -164,9 +166,9 @@ public class LogFilesBuilder
         return this;
     }
 
-    public LogFilesBuilder withSeparateFilesForCheckpoint( boolean useSeparateCheckpointFiles )
+    public LogFilesBuilder withTransactionLogVersionProvider( TransactionLogVersionProvider transactionLogVersionProvider )
     {
-        this.useSeparateCheckpointFiles = useSeparateCheckpointFiles;
+        this.transactionLogVersionProvider = transactionLogVersionProvider;
         return this;
     }
 
@@ -308,7 +310,7 @@ public class LogFilesBuilder
         return new TransactionLogFilesContext( rotationThreshold, tryPreallocateTransactionLogs, logEntryReader, lastCommittedIdSupplier,
                 committingTransactionIdSupplier, lastClosedTransactionPositionSupplier, logVersionRepositorySupplier,
                 fileSystem, logProvider, databaseTracers, storeIdSupplier, nativeAccess, memoryTracker, monitors, config.get( fail_on_corrupted_log_files ),
-                health, useSeparateCheckpointFiles, clock, config );
+                health, transactionLogVersionProvider, clock, config );
     }
 
     private Clock getClock()

@@ -36,7 +36,6 @@ import org.neo4j.test.extension.Inject;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.checkpoint_logical_log_keep_threshold;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.checkpoint_logical_log_rotation_threshold;
 import static org.neo4j.io.ByteUnit.kibiBytes;
@@ -50,7 +49,6 @@ public class CheckpointLogFileRotationIT
     private GraphDatabaseService database;
     @Inject
     private LogFiles logFiles;
-    private boolean  useSeparateCheckpointLogs;
 
     @ExtensionCallback
     void configure( TestDatabaseManagementServiceBuilder builder )
@@ -61,7 +59,6 @@ public class CheckpointLogFileRotationIT
     @Test
     void rotateCheckpointLogFiles() throws IOException
     {
-        assumeTrue( useSeparateCheckpointLogs );
         var checkpointFile = logFiles.getCheckpointFile();
         var checkpointAppender = checkpointFile.getCheckpointAppender();
         LogPosition logPosition = new LogPosition( 1000, 12345 );
@@ -70,7 +67,7 @@ public class CheckpointLogFileRotationIT
         {
             checkpointAppender.checkPoint( NULL, logPosition, Instant.now(), reason );
         }
-        var matchedFiles = checkpointFile.getMatchedFiles();
+        var matchedFiles = checkpointFile.getDetachedCheckpointFiles();
         assertThat( matchedFiles ).hasSize( 22 );
         for ( var fileWithCheckpoints : matchedFiles )
         {
@@ -89,7 +86,6 @@ public class CheckpointLogFileRotationIT
     @Test
     void doNotRotateWhileCheckpointsAreFitting() throws IOException
     {
-        assumeTrue( useSeparateCheckpointLogs );
         var checkpointFile = logFiles.getCheckpointFile();
         var checkpointAppender = checkpointFile.getCheckpointAppender();
         LogPosition logPosition = new LogPosition( 1000, 12345 );
@@ -98,13 +94,12 @@ public class CheckpointLogFileRotationIT
         {
             checkpointAppender.checkPoint( NULL, logPosition, Instant.now(), reason );
         }
-        assertThat( checkpointFile.getMatchedFiles() ).hasSize( 1 );
+        assertThat( checkpointFile.getDetachedCheckpointFiles() ).hasSize( 1 );
     }
 
     @Test
     void afterRotationNewFileHaveHeader() throws IOException
     {
-        assumeTrue( useSeparateCheckpointLogs );
         var checkpointFile = logFiles.getCheckpointFile();
         var checkpointAppender = checkpointFile.getCheckpointAppender();
         LogPosition logPosition = new LogPosition( 1000, 12345 );
@@ -113,12 +108,12 @@ public class CheckpointLogFileRotationIT
         {
             checkpointAppender.checkPoint( NULL, logPosition, Instant.now(), reason );
         }
-        Path[] matchedFiles = checkpointFile.getMatchedFiles();
+        Path[] matchedFiles = checkpointFile.getDetachedCheckpointFiles();
         assertThat( matchedFiles ).hasSize( 2 );
         boolean headerFileFound = false;
         for ( Path matchedFile : matchedFiles )
         {
-            if ( checkpointFile.getCheckpointLogFileVersion( matchedFile ) == 1 )
+            if ( checkpointFile.getDetachedCheckpointLogFileVersion( matchedFile ) == 1 )
             {
                 assertThat( matchedFile.toFile() ).hasSize( CURRENT_FORMAT_LOG_HEADER_SIZE );
                 headerFileFound = true;

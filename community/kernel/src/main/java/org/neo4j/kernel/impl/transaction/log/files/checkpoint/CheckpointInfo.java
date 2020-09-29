@@ -26,35 +26,35 @@ import org.neo4j.storageengine.api.StoreId;
 
 public class CheckpointInfo
 {
-    private final LogPosition logPosition;
-    private final LogPosition entryPosition;
+    private final LogPosition transactionLogPosition;
+    private final LogPosition checkpointEntryPosition;
     private final StoreId storeId;
 
-    public CheckpointInfo( LogEntryInlinedCheckPoint checkpoint, StoreId storeId, LogPosition entryPosition )
+    public CheckpointInfo( LogEntryInlinedCheckPoint checkpoint, StoreId storeId, LogPosition checkpointEntryPosition )
     {
-        this( checkpoint.getLogPosition(), storeId, entryPosition );
+        this( checkpoint.getLogPosition(), storeId, checkpointEntryPosition );
     }
 
-    public CheckpointInfo( LogEntryDetachedCheckpoint checkpoint, LogPosition entryPosition )
+    public CheckpointInfo( LogEntryDetachedCheckpoint checkpoint, LogPosition checkpointEntryPosition )
     {
-        this( checkpoint.getLogPosition(), checkpoint.getStoreId(), entryPosition );
+        this( checkpoint.getLogPosition(), checkpoint.getStoreId(), checkpointEntryPosition );
     }
 
-    public CheckpointInfo( LogPosition logPosition, StoreId storeId, LogPosition entryPosition )
+    public CheckpointInfo( LogPosition transactionLogPosition, StoreId storeId, LogPosition checkpointEntryPosition )
     {
-        this.logPosition = logPosition;
+        this.transactionLogPosition = transactionLogPosition;
         this.storeId = storeId;
-        this.entryPosition = entryPosition;
+        this.checkpointEntryPosition = checkpointEntryPosition;
     }
 
-    public LogPosition getLogPosition()
+    public LogPosition getTransactionLogPosition()
     {
-        return logPosition;
+        return transactionLogPosition;
     }
 
-    public LogPosition getEntryPosition()
+    public LogPosition getCheckpointEntryPosition()
     {
-        return entryPosition;
+        return checkpointEntryPosition;
     }
 
     public StoreId storeId()

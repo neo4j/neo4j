@@ -43,7 +43,6 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
-import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.impl.transaction.log.files.checkpoint.CheckpointInfo;
@@ -83,7 +82,6 @@ class RelationshipTypeScanStoreIT
     DatabaseLayout databaseLayout;
     @Inject
     RandomRule random;
-    private boolean useSeparateCheckpointLogs;
 
     @ExtensionCallback
     void configuration( TestDatabaseManagementServiceBuilder builder )
@@ -370,13 +368,12 @@ class RelationshipTypeScanStoreIT
         try
         {
             LogFiles logFiles = buildLogFiles();
-            LogFile logFile = logFiles.getLogFile();
             Optional<CheckpointInfo> latestCheckpoint = logFiles.getCheckpointFile().findLatestCheckpoint();
             if ( latestCheckpoint.isPresent() )
             {
-                try ( StoreChannel storeChannel = fs.write( logFile.getHighestLogFile() ) )
+                try ( StoreChannel storeChannel = fs.write( logFiles.getCheckpointFile().getCurrentFile() ) )
                 {
-                    storeChannel.truncate( latestCheckpoint.get().getEntryPosition().getByteOffset() );
+                    storeChannel.truncate( latestCheckpoint.get().getCheckpointEntryPosition().getByteOffset() );
                 }
             }
         }

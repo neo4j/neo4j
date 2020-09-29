@@ -141,7 +141,7 @@ public class DetachedCheckpointAppender extends LifecycleAdapter implements Chec
 
     private PhysicalLogVersionedStoreChannel rotateChannel( PhysicalLogVersionedStoreChannel channel, PageCursorTracer cursorTracer ) throws IOException
     {
-        long newLogVersion = logVersionRepository.incrementAndGetVersion( cursorTracer );
+        long newLogVersion = logVersionRepository.incrementAndGetCheckpointLogVersion( cursorTracer );
         writer.prepareForFlush().flush();
         var newChannel = channelAllocator.createLogChannel( newLogVersion, context::committingTransactionId );
         channel.close();

@@ -57,6 +57,7 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.internal.locker.DatabaseLocker;
 import org.neo4j.kernel.internal.locker.Locker;
 import org.neo4j.kernel.lifecycle.Lifespan;
+import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.DisabledForRoot;
 import org.neo4j.test.extension.Inject;
@@ -217,6 +218,7 @@ class DumpCommandIT
         LogFiles logFiles = LogFilesBuilder.builder( databaseLayout, testDirectory.getFileSystem() )
                 .withLogVersionRepository( new SimpleLogVersionRepository() )
                 .withTransactionIdStore( new SimpleTransactionIdStore() )
+                .withStoreId( StoreId.UNKNOWN )
                 .build();
         try ( Lifespan ignored = new Lifespan( logFiles ) )
         {

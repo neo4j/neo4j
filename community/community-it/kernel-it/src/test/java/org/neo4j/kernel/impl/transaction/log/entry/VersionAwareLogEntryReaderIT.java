@@ -63,7 +63,7 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FO
 class VersionAwareLogEntryReaderIT
 {
     // this offset includes log header and transaction that create node on test setup
-    private static final long END_OF_DATA_OFFSET = CURRENT_FORMAT_LOG_HEADER_SIZE + 131L;
+    private static final long END_OF_DATA_OFFSET = CURRENT_FORMAT_LOG_HEADER_SIZE + 109L;
     @Inject
     private FileSystemAbstraction fs;
     @Inject

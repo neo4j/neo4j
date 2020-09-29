@@ -103,20 +103,20 @@ public class LogPruningImpl implements LogPruning
     private void cleanupCheckpointLogFiles()
     {
         var checkpointFile = logFiles.getCheckpointFile();
-        var checkpointFiles = checkpointFile.getMatchedFiles();
+        var checkpointFiles = checkpointFile.getDetachedCheckpointFiles();
         if ( isNotEmpty( checkpointFiles ) && checkpointFiles.length > checkpointFilesToKeep )
         {
-            long highestVersionToRemove = checkpointFile.getCurrentLogVersion() - checkpointFilesToKeep;
+            long highestVersionToRemove = checkpointFile.getCurrentDetachedLogVersion() - checkpointFilesToKeep;
             int filesDeleted = 0;
             for ( Path file : checkpointFiles )
             {
-                if ( checkpointFile.getCheckpointLogFileVersion( file ) <= highestVersionToRemove )
+                if ( checkpointFile.getDetachedCheckpointLogFileVersion( file ) <= highestVersionToRemove )
                 {
                     fs.deleteFile( file );
                     filesDeleted++;
                 }
             }
-            log.info( "Pruned " + filesDeleted + " checkpoint checkpoint log files. Lowest preserved version: " + highestVersionToRemove + 1 );
+            log.info( "Pruned " + filesDeleted + " checkpoint log files. Lowest preserved version: " + highestVersionToRemove + 1 );
         }
     }
 

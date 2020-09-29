@@ -41,6 +41,7 @@ import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.log.LogHeaderCache;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
+import org.neo4j.kernel.impl.transaction.log.entry.TransactionLogVersionSelector;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
@@ -120,6 +121,7 @@ class TransactionLogChannelAllocatorIT
                 () -> 1L, () -> new LogPosition( 0, 1 ),
                 SimpleLogVersionRepository::new, fileSystem, NullLogProvider.getInstance(), DatabaseTracers.EMPTY, () -> StoreId.UNKNOWN,
                 NativeAccessProvider.getNativeAccess(), EmptyMemoryTracker.INSTANCE, new Monitors(), true,
-                new DatabaseHealth( PanicEventGenerator.NO_OP, NullLog.getInstance() ), false, Clock.systemUTC(), Config.defaults() );
+                new DatabaseHealth( PanicEventGenerator.NO_OP, NullLog.getInstance() ), TransactionLogVersionSelector.LATEST::version,
+                Clock.systemUTC(), Config.defaults() );
     }
 }

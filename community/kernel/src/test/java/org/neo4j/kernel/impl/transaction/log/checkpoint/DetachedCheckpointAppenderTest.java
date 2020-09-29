@@ -110,9 +110,9 @@ class DetachedCheckpointAppenderTest
 
         var checkpoints = checkpointFile.reachableCheckpoints();
         assertThat( checkpoints ).hasSize( 3 );
-        assertThat( checkpoints.get( 0 ) ).hasFieldOrPropertyWithValue( "logPosition", logPosition1 );
-        assertThat( checkpoints.get( 1 ) ).hasFieldOrPropertyWithValue( "logPosition", logPosition2 );
-        assertThat( checkpoints.get( 2 ) ).hasFieldOrPropertyWithValue( "logPosition", logPosition3 );
+        assertThat( checkpoints.get( 0 ) ).hasFieldOrPropertyWithValue( "transactionLogPosition", logPosition1 );
+        assertThat( checkpoints.get( 1 ) ).hasFieldOrPropertyWithValue( "transactionLogPosition", logPosition2 );
+        assertThat( checkpoints.get( 2 ) ).hasFieldOrPropertyWithValue( "transactionLogPosition", logPosition3 );
     }
 
     private LogFiles buildLogFiles() throws IOException
@@ -120,7 +120,6 @@ class DetachedCheckpointAppenderTest
         return LogFilesBuilder.builder( databaseLayout, fileSystem )
                 .withRotationThreshold( rotationThreshold )
                 .withTransactionIdStore( transactionIdStore )
-                .withSeparateFilesForCheckpoint( true )
                 .withDatabaseHealth( databaseHealth )
                 .withLogVersionRepository( logVersionRepository )
                 .withLogEntryReader( logEntryReader() )

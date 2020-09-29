@@ -24,6 +24,8 @@ import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -33,6 +35,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
 import org.neo4j.common.ProgressReporter;
+import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.dbms.database.DatabaseStartAbortedException;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.helpers.collection.Visitor;
@@ -58,6 +62,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
+import org.neo4j.kernel.impl.transaction.log.entry.TransactionLogVersionSelector;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
@@ -95,9 +100,8 @@ import static org.neo4j.io.ByteUnit.KibiByte;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.kernel.database.DatabaseIdFactory.from;
 import static org.neo4j.kernel.impl.transaction.log.TestLogEntryReader.logEntryReader;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryParserSetV4_0.V4_0;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryParserSetV4_2.V4_2;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.writeLogHeader;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_LOG_FORMAT_VERSION;
 import static org.neo4j.kernel.impl.transaction.log.files.ChannelNativeAccessor.EMPTY_ACCESSOR;
 import static org.neo4j.kernel.recovery.RecoveryStartInformation.NO_RECOVERY_REQUIRED;
@@ -131,19 +135,17 @@ class TransactionLogsRecoveryTest
     private Path storeDir;
     private Lifecycle schemaLife;
     private LifeSupport life;
-    private boolean useSeparateLogFiles;
 
     @BeforeEach
     void setUp() throws Exception
     {
-        useSeparateLogFiles = false;
         storeDir = testDirectory.homePath();
         logFiles = LogFilesBuilder.builder( databaseLayout, fileSystem )
                 .withLogVersionRepository( logVersionRepository )
                 .withTransactionIdStore( transactionIdStore )
                 .withLogEntryReader( logEntryReader() )
                 .withStoreId( StoreId.UNKNOWN )
-                .withSeparateFilesForCheckpoint( useSeparateLogFiles )
+                .withConfig( Config.newBuilder().set( GraphDatabaseInternalSettings.fail_on_corrupted_log_files, false ).build() )
                 .build();
         life = new LifeSupport();
         life.add( logFiles );
@@ -277,8 +279,9 @@ class TransactionLogsRecoveryTest
         }
     }
 
-    @Test
-    void shouldSeeThatACleanDatabaseShouldNotRequireRecovery() throws Exception
+    @ParameterizedTest( name = "{0}" )
+    @CsvSource( {"separateCheckpoints,true", "legacyCheckpoints,false"} )
+    void shouldSeeThatACleanDatabaseShouldNotRequireRecovery( String name, boolean useSeparateLogFiles ) throws Exception
     {
         Path file = logFiles.getLogFile().getLogFileForVersion( logVersion );
 
@@ -380,11 +383,46 @@ class TransactionLogsRecoveryTest
             writer.writeCommitEntry( 1L, 2L );
             Consumer<LogPositionMarker> other = pair.other();
             other.accept( marker );
+            var checkpointFile = logFiles.getCheckpointFile();
+            var checkpointAppender = checkpointFile.getCheckpointAppender();
+            checkpointAppender.checkPoint( LogCheckPointEvent.NULL, marker.newPosition(), Instant.now(), "test" );
+
+            // write incomplete tx to trigger recovery
+            writer.writeStartEntry( 5L, 4L, 0, new byte[0] );
             return true;
         } );
         assertTrue( recover( storeDir, logFiles ) );
 
         assertEquals( marker.getByteOffset(), Files.size( file ) );
+        assertEquals( CURRENT_FORMAT_LOG_HEADER_SIZE + 192 /* one checkpoint */, Files.size( logFiles.getCheckpointFile().getCurrentFile() ) );
+    }
+
+    @Test
+    void shouldTruncateInvalidCheckpointAndAllCorruptTransactions() throws IOException
+    {
+        Path file = logFiles.getLogFile().getLogFileForVersion( logVersion );
+        LogPositionMarker marker = new LogPositionMarker();
+        writeSomeData( file, pair ->
+        {
+            LogEntryWriter writer = pair.first();
+            writer.writeStartEntry( 1L, 1L, BASE_TX_CHECKSUM, ArrayUtils.EMPTY_BYTE_ARRAY );
+            writer.writeCommitEntry( 1L, 2L );
+            Consumer<LogPositionMarker> other = pair.other();
+            other.accept( marker );
+            var checkpointFile = logFiles.getCheckpointFile();
+            var checkpointAppender = checkpointFile.getCheckpointAppender();
+            checkpointAppender.checkPoint( LogCheckPointEvent.NULL, marker.newPosition(), Instant.now(),"valid checkpoint" );
+            checkpointAppender.checkPoint( LogCheckPointEvent.NULL, new LogPosition( marker.getLogVersion() + 1, marker.getByteOffset() ), Instant.now(),
+                    "invalid checkpoint" );
+
+            // incomplete tx
+            writer.writeStartEntry( 5L, 4L, 0, new byte[0] );
+            return true;
+        } );
+        assertTrue( recover( storeDir, logFiles ) );
+
+        assertEquals( marker.getByteOffset(), Files.size( file ) );
+        assertEquals( CURRENT_FORMAT_LOG_HEADER_SIZE + 192 /* one checkpoint */, Files.size( logFiles.getCheckpointFile().getCurrentFile() ) );
     }
 
     @Test
@@ -571,7 +609,7 @@ class TransactionLogsRecoveryTest
                     throw new RuntimeException( e );
                 }
             };
-            LogEntryWriter first = new LogEntryWriter( writableLogChannel, useSeparateLogFiles ? V4_2 : V4_0 );
+            LogEntryWriter first = new LogEntryWriter( writableLogChannel, TransactionLogVersionSelector.LATEST );
             visitor.visit( Pair.of( first, consumer ) );
         }
     }

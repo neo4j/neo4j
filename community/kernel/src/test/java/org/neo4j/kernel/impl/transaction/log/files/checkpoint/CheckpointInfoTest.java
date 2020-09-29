@@ -38,9 +38,9 @@ class CheckpointInfoTest
         LogPosition position = new LogPosition( 1, 2 );
         var checkpointInfo = new CheckpointInfo( new LogEntryInlinedCheckPoint( logPosition ), storeId, position );
 
-        assertSame( logPosition, checkpointInfo.getLogPosition() );
+        assertSame( logPosition, checkpointInfo.getTransactionLogPosition() );
         assertSame( storeId, checkpointInfo.storeId() );
-        assertSame( position, checkpointInfo.getEntryPosition() );
+        assertSame( position, checkpointInfo.getCheckpointEntryPosition() );
     }
 
     @Test
@@ -51,8 +51,8 @@ class CheckpointInfoTest
         LogPosition position = new LogPosition( 1, 2 );
         var checkpointInfo = new CheckpointInfo( new LogEntryDetachedCheckpoint( (byte) 1, logPosition, 2, storeId, "checkpoint" ), position );
 
-        assertSame( logPosition, checkpointInfo.getLogPosition() );
+        assertSame( logPosition, checkpointInfo.getTransactionLogPosition() );
         assertSame( storeId, checkpointInfo.storeId() );
-        assertSame( position, checkpointInfo.getEntryPosition() );
+        assertSame( position, checkpointInfo.getCheckpointEntryPosition() );
     }
 }
