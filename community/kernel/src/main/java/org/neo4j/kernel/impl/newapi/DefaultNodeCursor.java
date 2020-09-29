@@ -282,7 +282,10 @@ class DefaultNodeCursor extends TraceableCursor implements NodeCursor
                     int outgoing = selection.test( RelationshipDirection.OUTGOING ) ? nodeTxState.augmentDegree( RelationshipDirection.OUTGOING, 0, type ) : 0;
                     int incoming = selection.test( RelationshipDirection.INCOMING ) ? nodeTxState.augmentDegree( RelationshipDirection.INCOMING, 0, type ) : 0;
                     int loop = selection.test( RelationshipDirection.LOOP ) ? nodeTxState.augmentDegree( RelationshipDirection.LOOP, 0, type ) : 0;
-                    degrees.add( type, outgoing, incoming, loop );
+                    if ( !degrees.add( type, outgoing, incoming, loop ) )
+                    {
+                        return;
+                    }
                 }
             }
         }
