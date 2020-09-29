@@ -32,7 +32,6 @@ public class SecureHasher
 {
     private final String hashAlgorithm;
     private final int hashIterations;
-    private final String versionNumber = SecureHasherConfigurations.CURRENT_VERSION;
     private static final int SALT_BYTES_SIZE = 32;
 
     private RandomNumberGenerator randomNumberGenerator;
@@ -41,12 +40,9 @@ public class SecureHasher
 
     public SecureHasher()
     {
-        SecureHasherConfiguration configuration = SecureHasherConfigurations.configurations.get( versionNumber );
-        hashAlgorithm = configuration.algorithm;
-        hashIterations = configuration.iterations;
+        this( SecureHasherConfigurations.CURRENT_VERSION );
     }
 
-    // test only constructor
     public SecureHasher( String version )
     {
         SecureHasherConfiguration configuration = SecureHasherConfigurations.configurations.get( version );
@@ -66,7 +62,7 @@ public class SecureHasher
 
     public SimpleHash hash( byte[] source )
     {
-        ByteSource salt = generateRandomSalt( SALT_BYTES_SIZE );
+        ByteSource salt = generateRandomSalt();
         return new SimpleHash( hashAlgorithm, source, salt, hashIterations );
     }
 
@@ -99,8 +95,8 @@ public class SecureHasher
         return matcher;
     }
 
-    private ByteSource generateRandomSalt( int bytesSize )
+    private ByteSource generateRandomSalt()
     {
-        return getRandomNumberGenerator().nextBytes( bytesSize );
+        return getRandomNumberGenerator().nextBytes( SecureHasher.SALT_BYTES_SIZE );
     }
 }
