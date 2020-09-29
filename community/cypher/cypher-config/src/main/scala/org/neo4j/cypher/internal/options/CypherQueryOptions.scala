@@ -143,11 +143,10 @@ case object CypherExecutionMode extends CypherOptionCompanion[CypherExecutionMod
   cypherConfigField = None
 ) {
 
-  case object normal extends CypherExecutionMode("normal")
+  case object default extends CypherExecutionMode("normal")
   case object profile extends CypherExecutionMode("profile")
   case object explain extends CypherExecutionMode("explain")
 
-  val default: CypherExecutionMode = normal
   val values: Set[CypherExecutionMode] = Set(profile, explain)
 }
 
@@ -316,7 +315,8 @@ case object CypherDebugOption extends CypherKeyValueOptionCompanion[CypherDebugO
   setting = None,
   cypherConfigField = None,
 ) {
-  case object none extends CypherDebugOption("none")
+  // Unused. We need to have a default
+  case object default extends CypherDebugOption("none")
   case object tostring extends CypherDebugOption("tostring")
   case object reportCostComparisonsAsRows extends CypherDebugOption("reportcostcomparisonsasrows")
   case object printCostComparisons extends CypherDebugOption("printcostcomparisons")
@@ -331,8 +331,6 @@ case object CypherDebugOption extends CypherKeyValueOptionCompanion[CypherDebugO
   case object logicalPlan extends CypherDebugOption("logicalplan")
   case object fabricLogPlan extends CypherDebugOption("fabriclogplan")
   case object fabricLogRecords extends CypherDebugOption("fabriclogrecords")
-
-  override def default: CypherDebugOption = none
 
   override def values: Set[CypherDebugOption] = Set(
     tostring,

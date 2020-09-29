@@ -80,7 +80,7 @@ case class FabricFrontEnd(
     )
 
     def executionType(options: QueryOptions, inFabricContext: Boolean): FabricPlan.ExecutionType = options.executionMode match {
-      case CypherExecutionMode.normal  => FabricPlan.Execute
+      case CypherExecutionMode.default => FabricPlan.Execute
       case CypherExecutionMode.explain => FabricPlan.Explain
       case CypherExecutionMode.profile if inFabricContext => Errors.semantic("'PROFILE' not supported in Fabric context")
       case CypherExecutionMode.profile => FabricPlan.PROFILE

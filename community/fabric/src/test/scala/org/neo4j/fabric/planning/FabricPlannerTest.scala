@@ -713,7 +713,7 @@ class FabricPlannerTest
       val expectedInner = QueryOptions(
         offset = InputPosition.NONE,
         isPeriodicCommit = false,
-        executionMode = CypherExecutionMode.normal,
+        executionMode = CypherExecutionMode.default,
         version = CypherVersion.v4_2,
         planner = CypherPlannerOption.cost,
         runtime = CypherRuntimeOption.parallel,

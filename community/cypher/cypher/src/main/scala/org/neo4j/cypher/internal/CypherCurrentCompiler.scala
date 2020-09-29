@@ -326,7 +326,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
       val innerExecutionMode = queryOptions.executionMode match {
         case CypherExecutionMode.explain => ExplainMode
         case CypherExecutionMode.profile => ProfileMode
-        case CypherExecutionMode.normal => NormalMode
+        case CypherExecutionMode.default => NormalMode
       }
 
       val monitor = if (isOutermostQuery) queryMonitor else QueryExecutionMonitor.NO_OP
