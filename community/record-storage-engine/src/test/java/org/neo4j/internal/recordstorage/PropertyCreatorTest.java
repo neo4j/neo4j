@@ -82,7 +82,7 @@ class PropertyCreatorTest
                 pageCache, fileSystem, NullLogProvider.getInstance(), PageCacheTracer.NULL ).openNeoStores( true,
                 StoreType.PROPERTY, StoreType.PROPERTY_STRING, StoreType.PROPERTY_ARRAY );
         propertyStore = neoStores.getPropertyStore();
-        records = new DirectRecordAccess<>( propertyStore, Loaders.propertyLoader( propertyStore ) );
+        records = new DirectRecordAccess<>( propertyStore, Loaders.propertyLoader( propertyStore, NULL ) );
         var pageCacheTracer = new DefaultPageCacheTracer();
         cursorTracer = pageCacheTracer.createPageCursorTracer( "propertyStore" );
         creator = new PropertyCreator( propertyStore, new PropertyTraverser( NULL ), cursorTracer, INSTANCE );

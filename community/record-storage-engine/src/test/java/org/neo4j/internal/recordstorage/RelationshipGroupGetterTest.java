@@ -89,16 +89,16 @@ class RelationshipGroupGetterTest
 
             // WHEN trying to find relationship group 7
             RecordAccess<RelationshipGroupRecord, Integer> access =
-                    new DirectRecordAccess<>( store, Loaders.relationshipGroupLoader( store ) );
+                    new DirectRecordAccess<>( store, Loaders.relationshipGroupLoader( store, NULL ) );
             RelationshipGroupPosition result = groupGetter.getRelationshipGroup( node, 7, access, RelationshipGroupGetter.RelationshipGroupMonitor.EMPTY );
 
             // THEN only groups 2, 4 and 10 should have been loaded
             InOrder verification = inOrder( store );
-            verification.verify( store ).getRecord( eq( group2.getId() ), any( RelationshipGroupRecord.class ), any( RecordLoad.class ), any() );
-            verification.verify( store ).getRecord( eq( group4.getId() ), any( RelationshipGroupRecord.class ), any( RecordLoad.class ), any() );
-            verification.verify( store ).getRecord( eq( group10.getId() ), any( RelationshipGroupRecord.class ), any( RecordLoad.class ), any() );
+            verification.verify( store ).getRecordByCursor( eq( group2.getId() ), any( RelationshipGroupRecord.class ), any( RecordLoad.class ), any() );
+            verification.verify( store ).getRecordByCursor( eq( group4.getId() ), any( RelationshipGroupRecord.class ), any( RecordLoad.class ), any() );
+            verification.verify( store ).getRecordByCursor( eq( group10.getId() ), any( RelationshipGroupRecord.class ), any( RecordLoad.class ), any() );
             verification.verify( store, never() )
-                    .getRecord( eq( group23.getId() ), any( RelationshipGroupRecord.class ), any( RecordLoad.class ), any() );
+                    .getRecordByCursor( eq( group23.getId() ), any( RelationshipGroupRecord.class ), any( RecordLoad.class ), any() );
 
             // it should also be reported as not found
             assertNull( result.group() );

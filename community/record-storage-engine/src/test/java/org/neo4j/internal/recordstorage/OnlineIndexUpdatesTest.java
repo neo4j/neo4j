@@ -124,7 +124,7 @@ class OnlineIndexUpdatesTest
         propertyPhysicalToLogicalConverter = new PropertyPhysicalToLogicalConverter( neoStores.getPropertyStore(), PageCursorTracer.NULL );
         life.start();
         propertyCreator = new PropertyCreator( neoStores.getPropertyStore(), new PropertyTraverser( PageCursorTracer.NULL ), PageCursorTracer.NULL, INSTANCE );
-        recordAccess = new DirectRecordAccess<>( neoStores.getPropertyStore(), Loaders.propertyLoader( propertyStore ) );
+        recordAccess = new DirectRecordAccess<>( neoStores.getPropertyStore(), Loaders.propertyLoader( propertyStore, PageCursorTracer.NULL ) );
     }
 
     @AfterEach

@@ -369,7 +369,7 @@ public class BatchInserterImpl implements BatchInserter
             actions = new BatchSchemaActions();
 
             // Record access
-            recordAccess = new DirectRecordAccessSet( neoStores, idGeneratorFactory );
+            recordAccess = new DirectRecordAccessSet( neoStores, idGeneratorFactory, cursorTracer );
             relationshipGroupGetter = new RelationshipGroupGetter( relationshipGroupStore, cursorTracer );
             long externalDegreesThreshold = relaxedLockingForDenseNodes ? DEFAULT_EXTERNAL_DEGREES_THRESHOLD_SWITCH : Long.MAX_VALUE;
             relationshipCreator = new RelationshipCreator( relationshipGroupStore.getStoreHeaderInt(), externalDegreesThreshold, cursorTracer );
@@ -1140,6 +1140,7 @@ public class BatchInserterImpl implements BatchInserter
             repopulateAllIndexes( labelIndex, relationshipTypeIndex );
             idGeneratorFactory.visit( IdGenerator::markHighestWrittenAtHighId );
             neoStores.flush( IOLimiter.UNLIMITED, cursorTracer );
+            recordAccess.close();
             createEmptyTransactionLog();
         }
         catch ( IOException e )

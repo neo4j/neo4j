@@ -1643,7 +1643,7 @@ class TransactionRecordStateTest
 
     private TransactionRecordState newTransactionRecordState()
     {
-        Loaders loaders = new Loaders( neoStores );
+        Loaders loaders = new Loaders( neoStores, NULL );
         recordChangeSet = new RecordChangeSet( loaders, INSTANCE, RecordAccess.LoadMonitor.NULL_MONITOR );
         PropertyTraverser propertyTraverser = new PropertyTraverser( NULL );
         RelationshipGroupGetter relationshipGroupGetter = new RelationshipGroupGetter( neoStores.getRelationshipGroupStore(), NULL );

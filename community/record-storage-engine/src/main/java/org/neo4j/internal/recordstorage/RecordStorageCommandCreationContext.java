@@ -50,7 +50,7 @@ class RecordStorageCommandCreationContext extends CommandCreationLocking impleme
         this.cursorTracer = cursorTracer;
         this.neoStores = neoStores;
         this.memoryTracker = memoryTracker;
-        this.loaders = new Loaders( neoStores );
+        this.loaders = new Loaders( neoStores, cursorTracer );
         RelationshipGroupGetter relationshipGroupGetter = new RelationshipGroupGetter( neoStores.getRelationshipGroupStore(), cursorTracer );
         PropertyTraverser propertyTraverser = new PropertyTraverser( cursorTracer );
         this.propertyDeleter = new PropertyDeleter( propertyTraverser, cursorTracer );
@@ -107,6 +107,7 @@ class RecordStorageCommandCreationContext extends CommandCreationLocking impleme
     @Override
     public void close()
     {
+        loaders.close();
     }
 
     TransactionRecordState createTransactionRecordState( IntegrityValidator integrityValidator, long lastTransactionIdWhenStarted,

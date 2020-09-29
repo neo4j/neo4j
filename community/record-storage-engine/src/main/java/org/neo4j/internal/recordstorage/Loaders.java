@@ -21,6 +21,8 @@ package org.neo4j.internal.recordstorage;
 
 import org.neo4j.internal.recordstorage.RecordAccess.Loader;
 import org.neo4j.internal.schema.SchemaRule;
+import org.neo4j.io.IOUtils;
+import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -30,7 +32,6 @@ import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
-import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
@@ -41,18 +42,18 @@ import org.neo4j.kernel.impl.store.record.SchemaRecord;
 
 import static java.lang.Math.toIntExact;
 
-public class Loaders
+public class Loaders implements AutoCloseable
 {
-    private final Loader<NodeRecord,Void> nodeLoader;
-    private final Loader<PropertyRecord,PrimitiveRecord> propertyLoader;
-    private final Loader<RelationshipRecord,Void> relationshipLoader;
-    private final Loader<RelationshipGroupRecord,Integer> relationshipGroupLoader;
-    private final Loader<SchemaRecord, SchemaRule> schemaRuleLoader;
-    private final Loader<PropertyKeyTokenRecord,Void> propertyKeyTokenLoader;
-    private final Loader<LabelTokenRecord,Void> labelTokenLoader;
-    private final Loader<RelationshipTypeTokenRecord,Void> relationshipTypeTokenLoader;
+    private final RecordLoader<NodeRecord,Void> nodeLoader;
+    private final RecordLoader<PropertyRecord,PrimitiveRecord> propertyLoader;
+    private final RecordLoader<RelationshipRecord,Void> relationshipLoader;
+    private final RecordLoader<RelationshipGroupRecord,Integer> relationshipGroupLoader;
+    private final RecordLoader<SchemaRecord, SchemaRule> schemaRuleLoader;
+    private final RecordLoader<PropertyKeyTokenRecord,Void> propertyKeyTokenLoader;
+    private final RecordLoader<LabelTokenRecord,Void> labelTokenLoader;
+    private final RecordLoader<RelationshipTypeTokenRecord,Void> relationshipTypeTokenLoader;
 
-    public Loaders( NeoStores neoStores )
+    public Loaders( NeoStores neoStores, PageCursorTracer cursorTracer )
     {
         this(
                 neoStores.getNodeStore(),
@@ -62,7 +63,8 @@ public class Loaders
                 neoStores.getPropertyKeyTokenStore(),
                 neoStores.getRelationshipTypeTokenStore(),
                 neoStores.getLabelTokenStore(),
-                neoStores.getSchemaStore() );
+                neoStores.getSchemaStore(),
+                cursorTracer );
     }
 
     public Loaders(
@@ -73,16 +75,24 @@ public class Loaders
             RecordStore<PropertyKeyTokenRecord> propertyKeyTokenStore,
             RecordStore<RelationshipTypeTokenRecord> relationshipTypeTokenStore,
             RecordStore<LabelTokenRecord> labelTokenStore,
-            SchemaStore schemaStore )
+            SchemaStore schemaStore,
+            PageCursorTracer cursorTracer )
     {
-        nodeLoader = nodeLoader( nodeStore );
-        propertyLoader = propertyLoader( propertyStore );
-        relationshipLoader = relationshipLoader( relationshipStore );
-        relationshipGroupLoader = relationshipGroupLoader( relationshipGroupStore );
-        schemaRuleLoader = schemaRuleLoader( schemaStore );
-        propertyKeyTokenLoader = propertyKeyTokenLoader( propertyKeyTokenStore );
-        labelTokenLoader = labelTokenLoader( labelTokenStore );
-        relationshipTypeTokenLoader = relationshipTypeTokenLoader( relationshipTypeTokenStore );
+        nodeLoader = nodeLoader( nodeStore, cursorTracer );
+        propertyLoader = propertyLoader( propertyStore, cursorTracer );
+        relationshipLoader = relationshipLoader( relationshipStore, cursorTracer );
+        relationshipGroupLoader = relationshipGroupLoader( relationshipGroupStore, cursorTracer );
+        schemaRuleLoader = schemaRuleLoader( schemaStore, cursorTracer );
+        propertyKeyTokenLoader = propertyKeyTokenLoader( propertyKeyTokenStore, cursorTracer );
+        labelTokenLoader = labelTokenLoader( labelTokenStore, cursorTracer );
+        relationshipTypeTokenLoader = relationshipTypeTokenLoader( relationshipTypeTokenStore, cursorTracer );
+    }
+
+    @Override
+    public void close()
+    {
+        IOUtils.closeAllUnchecked( nodeLoader, propertyLoader, relationshipLoader, relationshipGroupLoader, schemaRuleLoader, propertyKeyTokenLoader,
+                labelTokenLoader, relationshipTypeTokenLoader );
     }
 
     public Loader<NodeRecord,Void> nodeLoader()
@@ -125,26 +135,14 @@ public class Loaders
         return relationshipTypeTokenLoader;
     }
 
-    public static Loader<NodeRecord,Void> nodeLoader( final RecordStore<NodeRecord> store )
+    public static RecordLoader<NodeRecord,Void> nodeLoader( final RecordStore<NodeRecord> store, PageCursorTracer cursorTracer )
     {
-        return new Loader<>()
+        return new RecordLoader<>( store, cursorTracer )
         {
             @Override
             public NodeRecord newUnused( long key, Void additionalData )
             {
                 return andMarkAsCreated( new NodeRecord( key ) );
-            }
-
-            @Override
-            public NodeRecord load( long key, Void additionalData, RecordLoad load, PageCursorTracer cursorTracer )
-            {
-                return store.getRecord( key, store.newRecord(), load, cursorTracer );
-            }
-
-            @Override
-            public void ensureHeavy( NodeRecord record, PageCursorTracer cursorTracer )
-            {
-                store.ensureHeavy( record, cursorTracer );
             }
 
             @Override
@@ -155,9 +153,9 @@ public class Loaders
         };
     }
 
-    public static Loader<PropertyRecord,PrimitiveRecord> propertyLoader( final PropertyStore store )
+    public static RecordLoader<PropertyRecord,PrimitiveRecord> propertyLoader( final PropertyStore store, PageCursorTracer cursorTracer )
     {
-        return new Loader<>()
+        return new RecordLoader<>( store, cursorTracer )
         {
             @Override
             public PropertyRecord newUnused( long key, PrimitiveRecord additionalData )
@@ -178,18 +176,9 @@ public class Loaders
             @Override
             public PropertyRecord load( long key, PrimitiveRecord additionalData, RecordLoad load, PageCursorTracer cursorTracer )
             {
-                PropertyRecord record = store.getRecord( key, store.newRecord(), load, cursorTracer );
+                PropertyRecord record = super.load( key, additionalData, load, cursorTracer );
                 setOwner( record, additionalData );
                 return record;
-            }
-
-            @Override
-            public void ensureHeavy( PropertyRecord record, PageCursorTracer cursorTracer )
-            {
-                for ( PropertyBlock block : record )
-                {
-                    store.ensureHeavy( block, cursorTracer );
-                }
             }
 
             @Override
@@ -200,26 +189,14 @@ public class Loaders
         };
     }
 
-    public static Loader<RelationshipRecord,Void> relationshipLoader(
-            final RecordStore<RelationshipRecord> store )
+    public static RecordLoader<RelationshipRecord,Void> relationshipLoader( final RecordStore<RelationshipRecord> store, PageCursorTracer cursorTracer )
     {
-        return new Loader<>()
+        return new RecordLoader<>( store, cursorTracer )
         {
             @Override
             public RelationshipRecord newUnused( long key, Void additionalData )
             {
                 return andMarkAsCreated( new RelationshipRecord( key ) );
-            }
-
-            @Override
-            public RelationshipRecord load( long key, Void additionalData, RecordLoad load, PageCursorTracer cursorTracer )
-            {
-                return store.getRecord( key, store.newRecord(), load, cursorTracer );
-            }
-
-            @Override
-            public void ensureHeavy( RelationshipRecord record, PageCursorTracer cursorTracer )
-            {   // Nothing to load
             }
 
             @Override
@@ -230,10 +207,10 @@ public class Loaders
         };
     }
 
-    public static Loader<RelationshipGroupRecord,Integer> relationshipGroupLoader(
-            final RecordStore<RelationshipGroupRecord> store )
+    public static RecordLoader<RelationshipGroupRecord,Integer> relationshipGroupLoader( final RecordStore<RelationshipGroupRecord> store,
+            PageCursorTracer cursorTracer )
     {
-        return new Loader<>()
+        return new RecordLoader<>( store, cursorTracer )
         {
             @Override
             public RelationshipGroupRecord newUnused( long key, Integer type )
@@ -244,17 +221,6 @@ public class Loaders
             }
 
             @Override
-            public RelationshipGroupRecord load( long key, Integer type, RecordLoad load, PageCursorTracer cursorTracer )
-            {
-                return store.getRecord( key, store.newRecord(), load, cursorTracer );
-            }
-
-            @Override
-            public void ensureHeavy( RelationshipGroupRecord record, PageCursorTracer cursorTracer )
-            {   // Not needed
-            }
-
-            @Override
             public RelationshipGroupRecord copy( RelationshipGroupRecord record )
             {
                 return new RelationshipGroupRecord( record );
@@ -262,25 +228,14 @@ public class Loaders
         };
     }
 
-    private static Loader<SchemaRecord, SchemaRule> schemaRuleLoader( final SchemaStore store )
+    private static RecordLoader<SchemaRecord, SchemaRule> schemaRuleLoader( final SchemaStore store, PageCursorTracer cursorTracer )
     {
-        return new Loader<>()
+        return new RecordLoader<>( store, cursorTracer )
         {
             @Override
             public SchemaRecord newUnused( long key, SchemaRule additionalData )
             {
                 return andMarkAsCreated( new SchemaRecord( key ) );
-            }
-
-            @Override
-            public SchemaRecord load( long key, SchemaRule additionalData, RecordLoad load, PageCursorTracer cursorTracer )
-            {
-                return store.getRecord( key, store.newRecord(), load, cursorTracer );
-            }
-
-            @Override
-            public void ensureHeavy( SchemaRecord record, PageCursorTracer cursorTracer )
-            {
             }
 
             @Override
@@ -291,27 +246,15 @@ public class Loaders
         };
     }
 
-    public static Loader<PropertyKeyTokenRecord,Void> propertyKeyTokenLoader(
-            final RecordStore<PropertyKeyTokenRecord> store )
+    public static RecordLoader<PropertyKeyTokenRecord,Void> propertyKeyTokenLoader( final RecordStore<PropertyKeyTokenRecord> store,
+            PageCursorTracer cursorTracer )
     {
-        return new Loader<>()
+        return new RecordLoader<>( store, cursorTracer )
         {
             @Override
             public PropertyKeyTokenRecord newUnused( long key, Void additionalData )
             {
                 return andMarkAsCreated( new PropertyKeyTokenRecord( toIntExact( key ) ) );
-            }
-
-            @Override
-            public PropertyKeyTokenRecord load( long key, Void additionalData, RecordLoad load, PageCursorTracer cursorTracer )
-            {
-                return store.getRecord( key, store.newRecord(), load, cursorTracer );
-            }
-
-            @Override
-            public void ensureHeavy( PropertyKeyTokenRecord record, PageCursorTracer cursorTracer )
-            {
-                store.ensureHeavy( record, cursorTracer );
             }
 
             @Override
@@ -322,27 +265,14 @@ public class Loaders
         };
     }
 
-    public static Loader<LabelTokenRecord,Void> labelTokenLoader(
-            final RecordStore<LabelTokenRecord> store )
+    public static RecordLoader<LabelTokenRecord,Void> labelTokenLoader( final RecordStore<LabelTokenRecord> store, PageCursorTracer cursorTracer )
     {
-        return new Loader<>()
+        return new RecordLoader<>( store, cursorTracer )
         {
             @Override
             public LabelTokenRecord newUnused( long key, Void additionalData )
             {
                 return andMarkAsCreated( new LabelTokenRecord( toIntExact( key ) ) );
-            }
-
-            @Override
-            public LabelTokenRecord load( long key, Void additionalData, RecordLoad load, PageCursorTracer cursorTracer )
-            {
-                return store.getRecord( key, store.newRecord(), load, cursorTracer );
-            }
-
-            @Override
-            public void ensureHeavy( LabelTokenRecord record, PageCursorTracer cursorTracer )
-            {
-                store.ensureHeavy( record, cursorTracer );
             }
 
             @Override
@@ -353,27 +283,15 @@ public class Loaders
         };
     }
 
-    public static Loader<RelationshipTypeTokenRecord,Void> relationshipTypeTokenLoader(
-            final RecordStore<RelationshipTypeTokenRecord> store )
+    public static RecordLoader<RelationshipTypeTokenRecord,Void> relationshipTypeTokenLoader( final RecordStore<RelationshipTypeTokenRecord> store,
+            PageCursorTracer cursorTracer )
     {
-        return new Loader<>()
+        return new RecordLoader<>( store, cursorTracer )
         {
             @Override
             public RelationshipTypeTokenRecord newUnused( long key, Void additionalData )
             {
                 return andMarkAsCreated( new RelationshipTypeTokenRecord( toIntExact( key ) ) );
-            }
-
-            @Override
-            public RelationshipTypeTokenRecord load( long key, Void additionalData, RecordLoad load, PageCursorTracer cursorTracer )
-            {
-                return store.getRecord( key, store.newRecord(), load, cursorTracer );
-            }
-
-            @Override
-            public void ensureHeavy( RelationshipTypeTokenRecord record, PageCursorTracer cursorTracer )
-            {
-                store.ensureHeavy( record, cursorTracer );
             }
 
             @Override
@@ -388,5 +306,37 @@ public class Loaders
     {
         record.setCreated();
         return record;
+    }
+
+    private abstract static class RecordLoader<R extends AbstractBaseRecord,A> implements Loader<R,A>, AutoCloseable
+    {
+        private final RecordStore<R> store;
+        private final PageCursor cursor;
+
+        RecordLoader( RecordStore<R> store, PageCursorTracer cursorTracer )
+        {
+            this.store = store;
+            this.cursor = store.openPageCursorForReading( 0, cursorTracer );
+        }
+
+        @Override
+        public void ensureHeavy( R record, PageCursorTracer cursorTracer )
+        {
+            store.ensureHeavy( record, cursorTracer );
+        }
+
+        @Override
+        public R load( long key, A additionalData, RecordLoad load, PageCursorTracer cursorTracer )
+        {
+            R record = store.newRecord();
+            store.getRecordByCursor( key, record, load, cursor );
+            return record;
+        }
+
+        @Override
+        public void close()
+        {
+            cursor.close();
+        }
     }
 }

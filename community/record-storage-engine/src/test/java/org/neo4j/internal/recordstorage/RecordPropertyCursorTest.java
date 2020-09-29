@@ -172,7 +172,7 @@ public class RecordPropertyCursorTest
 
     protected long storeValuesAsPropertyChain( PropertyCreator creator, NodeRecord owner, Value[] values )
     {
-        DirectRecordAccessSet access = new DirectRecordAccessSet( neoStores, idGeneratorFactory );
+        DirectRecordAccessSet access = new DirectRecordAccessSet( neoStores, idGeneratorFactory, NULL );
         long firstPropertyId = creator.createPropertyChain( owner, blocksOf( creator, values ), access.getPropertyRecords() );
         access.commit();
         return firstPropertyId;

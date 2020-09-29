@@ -22,10 +22,10 @@ package org.neo4j.internal.recordstorage;
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.schema.SchemaRule;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RecordStore;
-import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
@@ -36,7 +36,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 
-public class DirectRecordAccessSet implements RecordAccessSet
+public class DirectRecordAccessSet implements RecordAccessSet, AutoCloseable
 {
     private final DirectRecordAccess<NodeRecord, Void> nodeRecords;
     private final DirectRecordAccess<PropertyRecord,PrimitiveRecord> propertyRecords;
@@ -47,8 +47,9 @@ public class DirectRecordAccessSet implements RecordAccessSet
     private final DirectRecordAccess<LabelTokenRecord, Void> labelTokenRecords;
     private final DirectRecordAccess[] all;
     private final IdGeneratorFactory idGeneratorFactory;
+    private final Loaders loaders;
 
-    public DirectRecordAccessSet( NeoStores neoStores, IdGeneratorFactory idGeneratorFactory )
+    public DirectRecordAccessSet( NeoStores neoStores, IdGeneratorFactory idGeneratorFactory, PageCursorTracer cursorTracer )
     {
         RecordStore<NodeRecord> nodeStore = neoStores.getNodeStore();
         PropertyStore propertyStore = neoStores.getPropertyStore();
@@ -57,9 +58,7 @@ public class DirectRecordAccessSet implements RecordAccessSet
         RecordStore<PropertyKeyTokenRecord> propertyKeyTokenStore = neoStores.getPropertyKeyTokenStore();
         RecordStore<RelationshipTypeTokenRecord> relationshipTypeTokenStore = neoStores.getRelationshipTypeTokenStore();
         RecordStore<LabelTokenRecord> labelTokenStore = neoStores.getLabelTokenStore();
-        SchemaStore schemaStore = neoStores.getSchemaStore();
-        Loaders loaders = new Loaders( nodeStore, propertyStore, relationshipStore, relationshipGroupStore,
-                propertyKeyTokenStore, relationshipTypeTokenStore, labelTokenStore, schemaStore );
+        loaders = new Loaders( neoStores, cursorTracer );
         nodeRecords = new DirectRecordAccess<>( nodeStore, loaders.nodeLoader() );
         propertyRecords = new DirectRecordAccess<>( propertyStore, loaders.propertyLoader() );
         relationshipRecords = new DirectRecordAccess<>( relationshipStore, loaders.relationshipLoader() );
@@ -155,5 +154,11 @@ public class DirectRecordAccessSet implements RecordAccessSet
             total += access.changeSize();
         }
         return total;
+    }
+
+    @Override
+    public void close()
+    {
+        loaders.close();
     }
 }
