@@ -17,6 +17,7 @@
 package org.neo4j.cypher.internal.parser
 
 import org.neo4j.cypher.internal.ast
+import org.neo4j.cypher.internal.ast.Yield
 import org.neo4j.cypher.internal.expressions
 import org.parboiled.scala.Parser
 import org.parboiled.scala.Rule1
@@ -186,6 +187,8 @@ trait Clauses extends Parser
     group(Expression ~~ keyword("AS") ~~ Variable) ~~>> (ast.AliasedReturnItem(_, _))
       | group(Expression ~> (s => s)) ~~>> (ast.UnaliasedReturnItem(_, _))
   )
+
+  def Yield: Rule1[Yield] = (keyword("YIELD") ~~ YieldBody) ~~>> (ast.Yield(_, _, _, _, _))
 
   def YieldBody: Rule5[ast.ReturnItems, Option[ast.OrderBy], Option[ast.Skip], Option[ast.Limit], Option[ast.Where]] = {
     YieldItems ~~

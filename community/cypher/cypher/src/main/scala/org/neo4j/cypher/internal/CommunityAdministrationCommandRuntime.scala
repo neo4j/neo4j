@@ -134,11 +134,10 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
       )
 
     // SHOW USERS
-    case ShowUsers(source, symbols, yields, where, returns) => (context, parameterMapping) =>
+    case ShowUsers(source, symbols, yields, returns) => (context, parameterMapping) =>
       SystemCommandExecutionPlan("ShowUsers", normalExecutionEngine,
         s"""MATCH (u:User)
           |WITH u.name as user, null as roles, u.passwordChangeRequired AS passwordChangeRequired, null as suspended
-          |${AdministrationShowCommandUtils.generateWhereClause(where)}
           |${AdministrationShowCommandUtils.generateReturnClause(symbols, yields, returns, Seq("user"))}
           |""".stripMargin,
         VirtualValues.EMPTY_MAP,
@@ -240,7 +239,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
       )
 
     // SHOW DATABASES | SHOW DEFAULT DATABASE | SHOW DATABASE foo
-    case ShowDatabase(scope, symbols, yields, where, returns) => (_, _) =>
+    case ShowDatabase(scope, symbols, yields, returns) => (_, _) =>
       val paramGenerator: (Transaction, SecurityContext) => MapValue = (tx, securityContext) => generateShowAccessibleDatabasesParameter(tx, securityContext)
       val (extraFilter, params, paramConverter) = scope match {
         // show default database
@@ -258,13 +257,11 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
         case _ => ("", VirtualValues.EMPTY_MAP, IdentityConverter)
       }
       val returnClause = AdministrationShowCommandUtils.generateReturnClause(symbols, yields, returns, Seq("name"))
-      val filtering = AdministrationShowCommandUtils.generateWhereClause(where)
 
       val query = s"""MATCH (d: Database)
                      |WHERE d.name IN $$`$accessibleDbsKey` $extraFilter
                      |CALL dbms.database.state(d.name) yield status, error, address, role
                      |WITH d.name as name, address, role, d.status as requestedStatus, status as currentStatus, error, d.default as default
-                     |$filtering
                      |$returnClause""".stripMargin
       SystemCommandExecutionPlan(scope.showCommandName, normalExecutionEngine, query, params, parameterGenerator = paramGenerator, parameterConverter = paramConverter)
 

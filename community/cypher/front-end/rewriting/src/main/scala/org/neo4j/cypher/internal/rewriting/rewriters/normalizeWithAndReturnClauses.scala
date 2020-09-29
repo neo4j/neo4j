@@ -39,10 +39,7 @@ import org.neo4j.cypher.internal.ast.Yield
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.Variable
-import org.neo4j.cypher.internal.rewriting.Deprecations
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
-import org.neo4j.cypher.internal.util.DeprecatedHexLiteralSyntax
-import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.util.InternalNotificationLogger
 import org.neo4j.cypher.internal.util.MissingAliasNotification
 import org.neo4j.cypher.internal.util.Rewriter
@@ -73,20 +70,20 @@ case class normalizeWithAndReturnClauses(cypherExceptionFactory: CypherException
   def apply(that: AnyRef): AnyRef = that match {
     case q@Query(_, queryPart) => q.copy(part = rewriteTopLevelQueryPart(queryPart))(q.position)
 
-    case s@ShowPrivileges(_, yieldOrWhere, returns) =>
-      s.copy(yieldOrWhere = rewriteOptionalYield(yieldOrWhere), returns = returns.map(addAliasesToReturn))(s.position)
+    case s@ShowPrivileges(_, Some(Left((yields, returns)))) =>
+      s.copy(yieldOrWhere = Some(Left(addAliasesToYield(yields),returns.map(addAliasesToReturn))))(s.position)
         .withGraph(s.useGraph)
 
-    case s@ShowDatabase(_, yieldOrWhere, returns) =>
-      s.copy(yieldOrWhere = rewriteOptionalYield(yieldOrWhere), returns = returns.map(addAliasesToReturn))(s.position)
+    case s@ShowDatabase(_, Some(Left((yields, returns)))) =>
+      s.copy(yieldOrWhere = Some(Left(addAliasesToYield(yields),returns.map(addAliasesToReturn))))(s.position)
         .withGraph(s.useGraph)
 
-    case s@ShowUsers(yieldOrWhere, returns) =>
-      s.copy(yieldOrWhere = rewriteOptionalYield(yieldOrWhere), returns = returns.map(addAliasesToReturn))(s.position)
+    case s@ShowUsers(Some(Left((yields, returns)))) =>
+      s.copy(yieldOrWhere = Some(Left(addAliasesToYield(yields),returns.map(addAliasesToReturn))))(s.position)
         .withGraph(s.useGraph)
 
-    case s@ShowRoles(_, _, yieldOrWhere, returns) =>
-      s.copy(yieldOrWhere = rewriteOptionalYield(yieldOrWhere), returns = returns.map(addAliasesToReturn))(s.position)
+    case s@ShowRoles(_, _, Some(Left((yields, returns)))) =>
+      s.copy(yieldOrWhere = Some(Left(addAliasesToYield(yields),returns.map(addAliasesToReturn))))(s.position)
         .withGraph(s.useGraph)
 
     case x => x
@@ -112,11 +109,6 @@ case class normalizeWithAndReturnClauses(cypherExceptionFactory: CypherException
       case x => x
     }
     singleQuery.copy(clauses = newClauses)(singleQuery.position).endoRewrite(rewriteProjectionsRecursively)
-  }
-
-  private def rewriteOptionalYield(or: Option[Either[Yield, Where]]): Option[Either[Yield, Where]] = or match {
-    case Some(Left(y)) => Some(Left(addAliasesToYield(y)))
-    case other => other
   }
 
   private def addAliasesToReturn(r: Return): Return = r.copy(returnItems = aliasUnaliasedReturnItems(r.returnItems, warnForMissingAliases = false))(r.position)

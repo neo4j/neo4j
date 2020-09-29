@@ -19,6 +19,7 @@ package org.neo4j.cypher.internal.frontend.phases
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
 import org.neo4j.cypher.internal.rewriting.Deprecations
 import org.neo4j.cypher.internal.rewriting.rewriters.expandCallWhere
+import org.neo4j.cypher.internal.rewriting.rewriters.expandShowWhere
 import org.neo4j.cypher.internal.rewriting.rewriters.insertWithBetweenOptionalMatchAndMatch
 import org.neo4j.cypher.internal.rewriting.rewriters.mergeInPredicates
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizeWithAndReturnClauses
@@ -33,6 +34,7 @@ case class PreparatoryRewriting(deprecations: Deprecations) extends Phase[BaseCo
       normalizeWithAndReturnClauses(context.cypherExceptionFactory, context.notificationLogger),
       insertWithBetweenOptionalMatchAndMatch,
       expandCallWhere,
+      expandShowWhere,
       replaceDeprecatedCypherSyntax(deprecations),
       mergeInPredicates))
 

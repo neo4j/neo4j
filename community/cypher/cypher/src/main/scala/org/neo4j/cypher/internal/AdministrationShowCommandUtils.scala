@@ -26,7 +26,6 @@ import org.neo4j.cypher.internal.ast.Return
 import org.neo4j.cypher.internal.ast.ReturnItem
 import org.neo4j.cypher.internal.ast.ReturnItems
 import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
-import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.ast.With
 import org.neo4j.cypher.internal.ast.Yield
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
@@ -38,7 +37,7 @@ import org.neo4j.cypher.internal.util.InputPosition
 object AdministrationShowCommandUtils {
 
   private val prettifier = Prettifier(ExpressionStringifier {
-    case ParameterFromSlot(_, name, _) => s"$$${ExpressionStringifier.backtick(name, alwaysBacktick = false)}"
+    case ParameterFromSlot(_, name, _) => s"$$${ExpressionStringifier.backtick(name)}"
     case expression => ExpressionStringifier.failingExtender(expression)
   }).IndentingQueryPrettifier()
 
@@ -71,10 +70,6 @@ object AdministrationShowCommandUtils {
       case Some(projectionClause) => projectionClause.returnItems.items.map(ri => ri.alias.get.name).toList
       case None => previousScope
     }
-  }
-
-  def generateWhereClause(where: Option[Where]) :String = {
-    where.map(prettifier.asString).getOrElse("")
   }
 
   def generateReturnClause(defaultSymbols: List[String], yields: Option[Yield], returns: Option[Return], defaultOrder: Seq[String]): String = {

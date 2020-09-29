@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.ast.NamedDatabaseScope
 import org.neo4j.cypher.internal.ast.Return
 import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.ast.Yield
+import org.neo4j.cypher.internal.ast.YieldOrWhere
 
 class MultiDatabaseAdministrationCommandParserTest extends AdministrationCommandParserTestBase {
   private val literalFooBar = literal("foo.bar")
@@ -32,73 +33,74 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationCommand
   // SHOW DATABASE
 
   Seq(
-    ("DATABASES", ast.ShowDatabase.apply(AllDatabasesScope()(pos), _: Option[Either[Yield, Where]], _: Option[Return]) _),
-    ("DEFAULT DATABASE", ast.ShowDatabase.apply(DefaultDatabaseScope()(pos), _: Option[Either[Yield, Where]], _: Option[Return]) _),
-    ("DATABASE $db", ast.ShowDatabase.apply(NamedDatabaseScope(param("db"))(pos), _: Option[Either[Yield, Where]], _: Option[Return]) _),
-    ("DATABASE neo4j", ast.ShowDatabase.apply(NamedDatabaseScope(literal("neo4j"))(pos), _: Option[Either[Yield, Where]], _: Option[Return]) _)
+    ("DATABASES", ast.ShowDatabase.apply(AllDatabasesScope()(pos), _: YieldOrWhere) _),
+    ("DEFAULT DATABASE", ast.ShowDatabase.apply(DefaultDatabaseScope()(pos), _: YieldOrWhere) _),
+    ("DATABASE $db", ast.ShowDatabase.apply(NamedDatabaseScope(param("db"))(pos), _: YieldOrWhere) _),
+    ("DATABASE neo4j", ast.ShowDatabase.apply(NamedDatabaseScope(literal("neo4j"))(pos), _: YieldOrWhere) _)
   ).foreach { case (dbType, privilege) =>
 
     test(s"SHOW $dbType") {
-      yields(privilege(None, None))
+      yields(privilege(None))
     }
 
     test(s"SHOW $dbType WHERE access = 'GRANTED'") {
-      yields(privilege(Some(Right(where(equals(accessVar, grantedString)))), None))
+      yields(privilege(Some(Right(where(equals(accessVar, grantedString))))))
     }
 
     test(s"SHOW $dbType WHERE access = 'GRANTED' AND action = 'match'") {
       val accessPredicate = equals(accessVar, grantedString)
       val matchPredicate = equals(varFor(actionString), literalString("match"))
-      yields(privilege(Some(Right(where(and(accessPredicate, matchPredicate)))), None))
+      yields(privilege(Some(Right(where(and(accessPredicate, matchPredicate))))))
     }
 
     test(s"SHOW $dbType YIELD access ORDER BY access") {
       val orderByClause = orderBy(sortItem(accessVar))
       val columns = yieldClause(returnItems(variableReturnItem(accessString)), Some(orderByClause))
-      yields(privilege(Some(Left(columns)), None))
+      yields(privilege(Some(Left((columns, None)))))
     }
 
     test(s"SHOW $dbType YIELD access ORDER BY access WHERE access ='none'") {
       val orderByClause = orderBy(sortItem(accessVar))
       val whereClause = where(equals(accessVar, noneString))
       val columns = yieldClause(returnItems(variableReturnItem(accessString)), Some(orderByClause), where = Some(whereClause))
-      yields(privilege(Some(Left(columns)), None))
+      yields(privilege(Some(Left((columns, None)))))
     }
 
     test(s"SHOW $dbType YIELD access ORDER BY access SKIP 1 LIMIT 10 WHERE access ='none'") {
       val orderByClause = orderBy(sortItem(accessVar))
       val whereClause = where(equals(accessVar, noneString))
       val columns = yieldClause(returnItems(variableReturnItem(accessString)), Some(orderByClause), Some(skip(1)), Some(limit(10)), Some(whereClause))
-      yields(privilege(Some(Left(columns)), None))
+      yields(privilege(Some(Left((columns, None)))))
     }
 
     test(s"SHOW $dbType YIELD access SKIP -1") {
       val columns = yieldClause(returnItems(variableReturnItem(accessString)), skip = Some(skip(-1)))
-      yields(privilege(Some(Left(columns)), None))
+      yields(privilege(Some(Left((columns, None)))))
     }
 
     test(s"SHOW $dbType YIELD access ORDER BY access RETURN access") {
       yields(privilege(
-        Some(Left(yieldClause(returnItems(variableReturnItem(accessString)), Some(orderBy(sortItem(accessVar)))))),
-        Some(returnClause(returnItems(variableReturnItem(accessString))))
+        Some(Left((yieldClause(returnItems(variableReturnItem(accessString)), Some(orderBy(sortItem(accessVar)))),
+          Some(returnClause(returnItems(variableReturnItem(accessString))))
+        )))
       ))
     }
 
     test(s"SHOW $dbType WHERE access = 'GRANTED' RETURN action") {
-      yields(privilege(Some(Right(where(equals(accessVar, grantedString)))), Some(returnClause(returnItems(variableReturnItem(actionString))))))
+      failsToParse
     }
 
     test(s"SHOW $dbType YIELD * RETURN *") {
-      yields(privilege(Some(Left(yieldClause(returnAllItems))), Some(returnClause(returnAllItems))))
+      yields(privilege(Some(Left((yieldClause(returnAllItems),Some(returnClause(returnAllItems)))))))
     }
   }
 
   test("SHOW DATABASE `foo.bar`") {
-    yields(ast.ShowDatabase(NamedDatabaseScope(literalFooBar)(pos), None, None))
+    yields(ast.ShowDatabase(NamedDatabaseScope(literalFooBar)(pos), None))
   }
 
   test("SHOW DATABASE foo.bar") {
-    yields(ast.ShowDatabase(NamedDatabaseScope(literalFooBar)(pos), None, None))
+    yields(ast.ShowDatabase(NamedDatabaseScope(literalFooBar)(pos), None))
   }
 
   test("SHOW DATABASE") {

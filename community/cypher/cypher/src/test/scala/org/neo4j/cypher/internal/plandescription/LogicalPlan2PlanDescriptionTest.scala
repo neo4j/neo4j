@@ -1116,7 +1116,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   test("Admin") {
     val adminPlanDescription: PlanDescriptionImpl = planDescription(id, "AdministrationCommand", NoChildren, Seq.empty, Set.empty)
 
-    assertGood(attach(ShowUsers(privLhsLP, List(), None, None, None), 1.0), adminPlanDescription)
+    assertGood(attach(ShowUsers(privLhsLP, List(), None, None), 1.0), adminPlanDescription)
 
     assertGood(attach(
       CreateUser(privLhsLP, util.Left("name"), isEncryptedPassword = false, varFor("password"), requirePasswordChange = false, suspended = None),1.0), adminPlanDescription)
@@ -1127,7 +1127,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(attach(SetOwnPassword(StringLiteral("oldPassword")(pos), StringLiteral("newPassword")(pos)), 1.0), adminPlanDescription)
 
-    assertGood(attach(ShowRoles(privLhsLP, withUsers = false, showAll = true, List(), None, None, None), 1.0), adminPlanDescription)
+    assertGood(attach(ShowRoles(privLhsLP, withUsers = false, showAll = true, List(), None, None), 1.0), adminPlanDescription)
 
     assertGood(attach(DropRole(privLhsLP, util.Left("role")), 1.0), adminPlanDescription)
 
@@ -1175,10 +1175,10 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       1.0), adminPlanDescription)
 
     assertGood(attach(
-      ShowPrivileges(Some(privLhsLP), ShowUsersPrivileges(List(util.Left("user1"), util.Right(parameter("user2", CTString))))(pos), List(), None, None, None),
+      ShowPrivileges(Some(privLhsLP), ShowUsersPrivileges(List(util.Left("user1"), util.Right(parameter("user2", CTString))))(pos), List(), None, None),
       1.0), adminPlanDescription)
 
-    assertGood(attach(ShowDatabase(ast.AllDatabasesScope()(pos), List("foo", "bar"), None, None, None), 1.0), adminPlanDescription)
+    assertGood(attach(ShowDatabase(ast.AllDatabasesScope()(pos), List("foo", "bar"), None, None), 1.0), adminPlanDescription)
 
     assertGood(attach(CreateDatabase(privLhsLP, util.Left("db1")), 1.0), adminPlanDescription)
 

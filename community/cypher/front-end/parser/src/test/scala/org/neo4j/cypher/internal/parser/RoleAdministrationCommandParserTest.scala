@@ -25,60 +25,59 @@ class RoleAdministrationCommandParserTest extends AdministrationCommandParserTes
   //  Showing roles
 
   test("SHOW ROLES") {
-    yields(ast.ShowRoles(withUsers = false, showAll = true, None, None))
+    yields(ast.ShowRoles(withUsers = false, showAll = true, None))
   }
 
   test("CATALOG SHOW ALL ROLES") {
-    yields(ast.ShowRoles(withUsers = false, showAll = true, None, None))
+    yields(ast.ShowRoles(withUsers = false, showAll = true, None))
   }
 
   test("CATALOG SHOW POPULATED ROLES") {
-    yields(ast.ShowRoles(withUsers = false, showAll = false, None, None))
+    yields(ast.ShowRoles(withUsers = false, showAll = false, None))
   }
 
   test("SHOW ROLES WITH USERS") {
-    yields(ast.ShowRoles(withUsers = true, showAll = true, None, None))
+    yields(ast.ShowRoles(withUsers = true, showAll = true, None))
   }
 
   test("CATALOG SHOW ALL ROLES WITH USERS") {
-    yields(ast.ShowRoles(withUsers = true, showAll = true, None, None))
+    yields(ast.ShowRoles(withUsers = true, showAll = true, None))
   }
 
   test("SHOW POPULATED ROLES WITH USERS") {
-    yields(ast.ShowRoles(withUsers = true, showAll = false, None, None))
+    yields(ast.ShowRoles(withUsers = true, showAll = false, None))
   }
 
   test("CATALOG SHOW ALL ROLES YIELD role") {
-    yields(ast.ShowRoles(withUsers = false, showAll = true, Some(Left(yieldClause(returnItems(variableReturnItem(roleString))))), None))
+    yields(ast.ShowRoles(withUsers = false, showAll = true, Some(Left((yieldClause(returnItems(variableReturnItem(roleString))), None)))))
   }
 
   test("CATALOG SHOW ALL ROLES WHERE role='PUBLIC'") {
-    yields(ast.ShowRoles(withUsers = false, showAll = true, Some(Right(where(equals(varFor(roleString), literalString("PUBLIC"))))), None))
+    yields(ast.ShowRoles(withUsers = false, showAll = true, Some(Right(where(equals(varFor(roleString), literalString("PUBLIC")))))))
   }
 
   test("SHOW ALL ROLES YIELD role RETURN role") {
     yields(ast.ShowRoles(withUsers = false, showAll = true,
-      Some(Left(yieldClause(returnItems(variableReturnItem(roleString))))),
+      Some(Left((yieldClause(returnItems(variableReturnItem(roleString))),
       Some(returnClause(returnItems(variableReturnItem(roleString))))
-    ))
+    )))))
   }
 
   test("SHOW POPULATED ROLES YIELD role WHERE role='PUBLIC' RETURN role") {
     yields(ast.ShowRoles(withUsers = false, showAll = false,
-      Some(Left(yieldClause(returnItems(variableReturnItem(roleString)), where = Some(where(equals(varFor(roleString), literalString("PUBLIC"))))))),
-      Some(returnClause(returnItems(variableReturnItem(roleString))))
-    ))
+      Some(Left((yieldClause(returnItems(variableReturnItem(roleString)), where = Some(where(equals(varFor(roleString), literalString("PUBLIC"))))),
+        Some(returnClause(returnItems(variableReturnItem(roleString))))
+    )))))
   }
 
   test("SHOW POPULATED ROLES YIELD * RETURN *") {
-    yields(ast.ShowRoles(withUsers = false, showAll = false, Some(Left(yieldClause(returnAllItems))), Some(returnClause(returnAllItems))))
+    yields(ast.ShowRoles(withUsers = false, showAll = false, Some(Left((yieldClause(returnAllItems), Some(returnClause(returnAllItems)))))))
   }
 
   test("SHOW ROLES WITH USERS YIELD * LIMIT 10 WHERE foo='bar' RETURN some,columns LIMIT 10") {
     yields(ast.ShowRoles(withUsers = true, showAll = true,
-      Some(Left(yieldClause(returnAllItems, limit = Some(limit(10)), where = Some(where(equals(varFor("foo"), literalString("bar"))))))),
-      Some(returnClause(returnItems(variableReturnItem("some"), variableReturnItem("columns")), limit = Some(limit(10))))
-    ))
+      Some(Left((yieldClause(returnAllItems, limit = Some(limit(10)), where = Some(where(equals(varFor("foo"), literalString("bar"))))),Some(returnClause(returnItems(variableReturnItem("some"), variableReturnItem("columns")), limit = Some(limit(10))))
+    )))))
   }
 
   test("CATALOG SHOW ROLE") {

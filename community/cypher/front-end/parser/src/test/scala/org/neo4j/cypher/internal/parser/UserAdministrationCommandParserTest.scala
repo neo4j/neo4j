@@ -36,64 +36,64 @@ class UserAdministrationCommandParserTest extends AdministrationCommandParserTes
   //  Showing user
 
   test("SHOW USERS") {
-    yields(ast.ShowUsers(None, None))
+    yields(ast.ShowUsers(None))
   }
 
   test("CATALOG SHOW USERS") {
-    yields(ast.ShowUsers(None, None))
+    yields(ast.ShowUsers(None))
   }
 
   test("SHOW USERS WHERE user = 'GRANTED'") {
-    yields(ast.ShowUsers(Some(Right(where(equals(varUser, grantedString)))), None))
+    yields(ast.ShowUsers(Some(Right(where(equals(varUser, grantedString))))))
   }
 
   test("SHOW USERS WHERE user = 'GRANTED' AND action = 'match'") {
     val accessPredicate = equals(varUser, grantedString)
     val matchPredicate = equals(varFor(actionString), literalString("match"))
-    yields(ast.ShowUsers(Some(Right(where(and(accessPredicate, matchPredicate)))), None))
+    yields(ast.ShowUsers(Some(Right(where(and(accessPredicate, matchPredicate))))))
   }
 
   test("SHOW USERS YIELD user ORDER BY user") {
     val columns = yieldClause(returnItems(variableReturnItem(userString)), Some(orderBy(sortItem(varUser))))
-    yields(ast.ShowUsers(Some(Left(columns)), None))
+    yields(ast.ShowUsers(Some(Left((columns, None)))))
   }
 
   test("SHOW USERS YIELD user ORDER BY user WHERE user ='none'") {
     val orderByClause = orderBy(sortItem(varUser))
     val whereClause = where(equals(varUser, noneString))
     val columns = yieldClause(returnItems(variableReturnItem(userString)), Some(orderByClause), where = Some(whereClause))
-    yields(ast.ShowUsers(Some(Left(columns)), None))
+    yields(ast.ShowUsers(Some(Left((columns, None)))))
   }
 
   test("SHOW USERS YIELD user ORDER BY user SKIP 1 LIMIT 10 WHERE user ='none'") {
     val orderByClause = orderBy(sortItem(varUser))
     val whereClause = where(equals(varUser, noneString))
     val columns = yieldClause(returnItems(variableReturnItem(userString)), Some(orderByClause), Some(skip(1)), Some(limit(10)), Some(whereClause))
-    yields(ast.ShowUsers(Some(Left(columns)), None))
+    yields(ast.ShowUsers(Some(Left((columns, None)))))
   }
 
   test("SHOW USERS YIELD user SKIP -1") {
     val columns = yieldClause(returnItems(variableReturnItem(userString)), skip = Some(skip(-1)))
-    yields(ast.ShowUsers(Some(Left(columns)), None))
+    yields(ast.ShowUsers(Some(Left((columns, None)))))
   }
 
   test("SHOW USERS YIELD user RETURN user ORDER BY user") {
     yields(ast.ShowUsers(
-      Some(Left(yieldClause(returnItems(variableReturnItem(userString))))),
+      Some(Left((yieldClause(returnItems(variableReturnItem(userString))),
       Some(returnClause(returnItems(variableReturnItem(userString)), Some(orderBy(sortItem(varUser)))))
-    ))
+    )))))
   }
 
   test("SHOW USERS YIELD user, suspended as suspended WHERE suspended RETURN DISTINCT user") {
     val suspendedVar = varFor("suspended")
     yields(ast.ShowUsers(
-      Some(Left(yieldClause(returnItems(variableReturnItem(userString), aliasedReturnItem(suspendedVar)), where = Some(where(suspendedVar))))),
+      Some(Left((yieldClause(returnItems(variableReturnItem(userString), aliasedReturnItem(suspendedVar)), where = Some(where(suspendedVar))),
       Some(returnClause(returnItems(variableReturnItem(userString)), distinct = true))
-    ))
+    )))))
   }
 
   test("SHOW USERS YIELD * RETURN *") {
-    yields(ast.ShowUsers(Some(Left(yieldClause(returnAllItems))), Some(returnClause(returnAllItems))))
+    yields(ast.ShowUsers(Some(Left((yieldClause(returnAllItems), Some(returnClause(returnAllItems)))))))
   }
 
   test("CATALOG SHOW USER") {

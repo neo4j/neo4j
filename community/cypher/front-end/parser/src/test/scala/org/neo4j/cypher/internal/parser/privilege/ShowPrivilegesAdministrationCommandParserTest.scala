@@ -22,63 +22,63 @@ import org.neo4j.cypher.internal.parser.AdministrationCommandParserTestBase
 class ShowPrivilegesAdministrationCommandParserTest extends AdministrationCommandParserTestBase {
 
   test("SHOW PRIVILEGES") {
-    yields(ast.ShowPrivileges(ast.ShowAllPrivileges()(pos), None, None))
+    yields(ast.ShowPrivileges(ast.ShowAllPrivileges()(pos), None))
   }
 
   test("catalog show privileges") {
-    yields(ast.ShowPrivileges(ast.ShowAllPrivileges()(pos), None, None))
+    yields(ast.ShowPrivileges(ast.ShowAllPrivileges()(pos), None))
   }
 
   test("SHOW ALL PRIVILEGES") {
-    yields(ast.ShowPrivileges(ast.ShowAllPrivileges()(pos), None, None))
+    yields(ast.ShowPrivileges(ast.ShowAllPrivileges()(pos), None))
   }
 
   test("SHOW USER user PRIVILEGES") {
-    yields(ast.ShowPrivileges(ast.ShowUsersPrivileges(List(literalUser))(pos), None, None))
+    yields(ast.ShowPrivileges(ast.ShowUsersPrivileges(List(literalUser))(pos), None))
   }
 
   test("SHOW USERS $user PRIVILEGES") {
-    yields(ast.ShowPrivileges(ast.ShowUsersPrivileges(List(paramUser))(pos), None, None))
+    yields(ast.ShowPrivileges(ast.ShowUsersPrivileges(List(paramUser))(pos), None))
   }
 
   test("SHOW USER `us%er` PRIVILEGES") {
-    yields(ast.ShowPrivileges(ast.ShowUsersPrivileges(List(literal("us%er")))(pos), None, None))
+    yields(ast.ShowPrivileges(ast.ShowUsersPrivileges(List(literal("us%er")))(pos), None))
   }
 
   test("SHOW USER user, $user PRIVILEGES") {
-    yields(ast.ShowPrivileges(ast.ShowUsersPrivileges(List(literalUser, paramUser))(pos), None, None))
+    yields(ast.ShowPrivileges(ast.ShowUsersPrivileges(List(literalUser, paramUser))(pos), None))
   }
 
   test("SHOW USERS user1, $user, user2 PRIVILEGES") {
-    yields(ast.ShowPrivileges(ast.ShowUsersPrivileges(List(literalUser1, paramUser, literal("user2")))(pos), None, None))
+    yields(ast.ShowPrivileges(ast.ShowUsersPrivileges(List(literalUser1, paramUser, literal("user2")))(pos), None))
   }
 
   test("SHOW USER PRIVILEGES") {
-    yields(ast.ShowPrivileges(ast.ShowUserPrivileges(None)(pos), None, None))
+    yields(ast.ShowPrivileges(ast.ShowUserPrivileges(None)(pos), None))
   }
 
   test("SHOW USERS PRIVILEGES") {
-    yields(ast.ShowPrivileges(ast.ShowUserPrivileges(None)(pos), None, None))
+    yields(ast.ShowPrivileges(ast.ShowUserPrivileges(None)(pos), None))
   }
 
   test("SHOW ROLE role PRIVILEGES") {
-    yields(ast.ShowPrivileges(ast.ShowRolesPrivileges(List(literalRole))(pos), None, None))
+    yields(ast.ShowPrivileges(ast.ShowRolesPrivileges(List(literalRole))(pos), None))
   }
 
   test("SHOW ROLE $role PRIVILEGES") {
-    yields(ast.ShowPrivileges(ast.ShowRolesPrivileges(List(paramRole))(pos), None, None))
+    yields(ast.ShowPrivileges(ast.ShowRolesPrivileges(List(paramRole))(pos), None))
   }
 
   test("SHOW ROLES `ro%le` PRIVILEGES") {
-    yields(ast.ShowPrivileges(ast.ShowRolesPrivileges(List(literal("ro%le")))(pos), None, None))
+    yields(ast.ShowPrivileges(ast.ShowRolesPrivileges(List(literal("ro%le")))(pos), None))
   }
 
   test("SHOW ROLE role1, $roleParam, role2, role3 PRIVILEGES") {
-    yields(ast.ShowPrivileges(ast.ShowRolesPrivileges(List(literalRole1, param("roleParam"), literalRole2, literal("role3")))(pos), None, None))
+    yields(ast.ShowPrivileges(ast.ShowRolesPrivileges(List(literalRole1, param("roleParam"), literalRole2, literal("role3")))(pos), None))
   }
 
   test("SHOW ROLES role1, $roleParam1, role2, $roleParam2 PRIVILEGES") {
-    yields(ast.ShowPrivileges(ast.ShowRolesPrivileges(List(literalRole1, param("roleParam1"), literalRole2, param("roleParam2")))(pos), None, None))
+    yields(ast.ShowPrivileges(ast.ShowRolesPrivileges(List(literalRole1, param("roleParam1"), literalRole2, param("roleParam2")))(pos), None))
   }
 
   // yield / skip / limit / order by / where
@@ -93,26 +93,26 @@ class ShowPrivilegesAdministrationCommandParserTest extends AdministrationComman
   ).foreach { case (privType, privilege) =>
 
     test(s"SHOW $privType PRIVILEGES WHERE access = 'GRANTED'") {
-      yields(ast.ShowPrivileges(privilege, Some(Right(where(equals(accessVar, grantedString)))), None))
+      yields(ast.ShowPrivileges(privilege, Some(Right(where(equals(accessVar, grantedString))))))
     }
 
     test(s"SHOW $privType PRIVILEGES WHERE access = 'GRANTED' AND action = 'match'") {
       val accessPredicate = equals(accessVar, grantedString)
       val matchPredicate = equals(varFor(actionString), literalString("match"))
-      yields(ast.ShowPrivileges(privilege, Some(Right(where(and(accessPredicate, matchPredicate)))), None))
+      yields(ast.ShowPrivileges(privilege, Some(Right(where(and(accessPredicate, matchPredicate))))))
     }
 
     test(s"SHOW $privType PRIVILEGES YIELD access ORDER BY access") {
       val orderByClause = orderBy(sortItem(accessVar))
       val columns = yieldClause(returnItems(variableReturnItem(accessString)), Some(orderByClause))
-      yields(ast.ShowPrivileges(privilege, Some(Left(columns)), None))
+      yields(ast.ShowPrivileges(privilege, Some(Left(columns, None))))
     }
 
     test(s"SHOW $privType PRIVILEGES YIELD access ORDER BY access WHERE access ='none'") {
       val orderByClause = orderBy(sortItem(accessVar))
       val whereClause = where(equals(accessVar, noneString))
       val columns = yieldClause(returnItems(variableReturnItem(accessString)), Some(orderByClause), where = Some(whereClause))
-      yields(ast.ShowPrivileges(privilege, Some(Left(columns)), None))
+      yields(ast.ShowPrivileges(privilege, Some(Left(columns, None))))
     }
 
     test(s"SHOW $privType PRIVILEGES YIELD access ORDER BY access SKIP 1 LIMIT 10 WHERE access ='none'") {
@@ -120,12 +120,12 @@ class ShowPrivilegesAdministrationCommandParserTest extends AdministrationComman
       val whereClause = where(equals(accessVar, noneString))
       val columns = yieldClause(returnItems(variableReturnItem(accessString)), Some(orderByClause),
         Some(skip(1)), Some(limit(10)), Some(whereClause))
-      yields(ast.ShowPrivileges(privilege, Some(Left(columns)), None))
+      yields(ast.ShowPrivileges(privilege, Some(Left(columns, None))))
     }
 
     test(s"SHOW $privType PRIVILEGES YIELD access SKIP -1") {
       val columns = yieldClause(returnItems(variableReturnItem(accessString)), skip = Some(skip(-1)))
-      yields(ast.ShowPrivileges(privilege, Some(Left(columns)), None))
+      yields(ast.ShowPrivileges(privilege, Some(Left(columns, None))))
     }
 
     test(s"SHOW $privType PRIVILEGES YIELD access, action RETURN access, count(action) ORDER BY access") {
@@ -135,15 +135,14 @@ class ShowPrivilegesAdministrationCommandParserTest extends AdministrationComman
       val countColumn = returnItem(count(varFor(actionString)), "count(action)")
       val yieldColumns = yieldClause(returnItems(accessColumn, actionColumn))
       val returns = returnClause(returnItems(accessColumn, countColumn), Some(orderByClause))
-      yields(ast.ShowPrivileges(privilege, Some(Left(yieldColumns)), Some(returns)))
+      yields(ast.ShowPrivileges(privilege, Some(Left((yieldColumns, Some(returns))))))
     }
 
     test(s"SHOW $privType PRIVILEGES YIELD access, action SKIP 1 RETURN access, action") {
       val returnItemsPart = returnItems(variableReturnItem(accessString), variableReturnItem(actionString))
       yields(ast.ShowPrivileges(privilege,
-        Some(Left(yieldClause(returnItemsPart, skip = Some(skip(1))))),
-        Some(returnClause(returnItemsPart))
-      ))
+        Some(Left((yieldClause(returnItemsPart, skip = Some(skip(1))),Some(returnClause(returnItemsPart))
+      )))))
     }
 
     test(s"SHOW $privType PRIVILEGES YIELD access, action WHERE access = 'none' RETURN action") {
@@ -151,13 +150,13 @@ class ShowPrivilegesAdministrationCommandParserTest extends AdministrationComman
       val actionColumn = variableReturnItem(actionString)
       val whereClause = where(equals(accessVar, noneString))
       yields(ast.ShowPrivileges(privilege,
-        Some(Left(yieldClause(returnItems(accessColumn, actionColumn), where = Some(whereClause)))),
-        Some(returnClause(returnItems(actionColumn)))
-      ))
+        Some(Left((yieldClause(returnItems(accessColumn, actionColumn), where = Some(whereClause)),
+        Some(returnClause(returnItems(actionColumn)))))
+      )))
     }
 
     test(s"SHOW $privType PRIVILEGES YIELD * RETURN *") {
-      yields(ast.ShowPrivileges(privilege, Some(Left(yieldClause(returnAllItems))), Some(returnClause(returnAllItems))))
+      yields(ast.ShowPrivileges(privilege, Some(Left((yieldClause(returnAllItems), Some(returnClause(returnAllItems)))))))
     }
   }
 

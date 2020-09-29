@@ -61,7 +61,7 @@ abstract class SecurityAdministrationLogicalPlan(source: Option[AdministrationCo
 }
 
 // Security administration commands
-case class ShowUsers(source: PrivilegePlan, override val returnColumns: List[String], yields: Option[Yield], where: Option[Where], returns: Option[Return])
+case class ShowUsers(source: PrivilegePlan, override val returnColumns: List[String], yields: Option[Yield], returns: Option[Return])
                     (implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
 
 case class CreateUser(source: SecurityAdministrationLogicalPlan, userName: Either[String, Parameter], isEncryptedPassword: Boolean, initialPassword: Expression,
@@ -77,7 +77,6 @@ case class ShowRoles(source: PrivilegePlan,
                      showAll: Boolean,
                      override val returnColumns: List[String],
                      yields: Option[Yield],
-                     where: Option[Where],
                      returns: Option[Return])(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
 
 case class CreateRole(source: SecurityAdministrationLogicalPlan, roleName: Either[String, Parameter])(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
@@ -117,7 +116,6 @@ case class ShowPrivileges(source: Option[PrivilegePlan],
                           scope: ShowPrivilegeScope,
                           override val returnColumns: List[String],
                           yields: Option[Yield],
-                          where: Option[Where],
                           returns: Option[Return])(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(source)
 
 case class LogSystemCommand(source: AdministrationCommandLogicalPlan, command: String)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
@@ -129,7 +127,6 @@ case class EnsureNodeExists(source: PrivilegePlan, label: String, name: Either[S
 case class ShowDatabase(scope: DatabaseScope,
                         override val returnColumns: List[String],
                         yields: Option[Yield],
-                        where: Option[Where],
                         returns: Option[Return])(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan
 
 case class CreateDatabase(source: AdministrationCommandLogicalPlan, databaseName: Either[String, Parameter])(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan(Some(source))

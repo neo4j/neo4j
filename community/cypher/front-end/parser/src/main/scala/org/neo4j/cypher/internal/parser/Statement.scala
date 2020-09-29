@@ -72,7 +72,7 @@ trait Statement extends Parser
   // User management commands
 
   def ShowUsers: Rule1[ast.ShowUsers] = rule("SHOW USERS") {
-    keyword("SHOW USERS") ~~ ShowCommandClauses ~~>> (ast.ShowUsers(_,_))
+    keyword("SHOW USERS") ~~ optional(ShowCommandClauses) ~~>> (ast.ShowUsers(_))
   }
 
   def CreateUser: Rule1[ast.CreateUser] = rule("CREATE USER") {
@@ -179,9 +179,9 @@ trait Statement extends Parser
 
   def ShowRoles: Rule1[ast.ShowRoles] = rule("SHOW ROLES") {
     //SHOW [ ALL | POPULATED ] ROLES WITH USERS
-    group(ShowAllRoles ~~ keyword("WITH USERS") ~~ ShowCommandClauses) ~~>> (ast.ShowRoles(withUsers = true, _, _, _)) |
+    group(ShowAllRoles ~~ keyword("WITH USERS") ~~ optional(ShowCommandClauses)) ~~>> (ast.ShowRoles(withUsers = true, _, _)) |
     // SHOW [ ALL | POPULATED ] ROLES
-    group(ShowAllRoles ~~ ShowCommandClauses) ~~>> (ast.ShowRoles(withUsers = false, _, _, _))
+    group(ShowAllRoles ~~ optional(ShowCommandClauses)) ~~>> (ast.ShowRoles(withUsers = false, _, _))
   }
 
   private def ShowAllRoles: Rule1[Boolean] = rule("return true for SHOW ALL ROLES, false for SHOW POPULATED ROLES") {
@@ -217,7 +217,7 @@ trait Statement extends Parser
   // Privilege commands
 
   def ShowPrivileges: Rule1[ast.ShowPrivileges] = rule("SHOW PRIVILEGES") {
-    group(keyword("SHOW") ~~ ScopeForShowPrivileges ~~ ShowCommandClauses ~~>> ((scope, yld, rtn) => ast.ShowPrivileges(scope, yld, rtn)))
+    group(keyword("SHOW") ~~ ScopeForShowPrivileges ~~ optional(ShowCommandClauses) ~~>> ((scope, yld) => ast.ShowPrivileges(scope, yld)))
   }
 
   private def ScopeForShowPrivileges: Rule1[ast.ShowPrivilegeScope] = rule("show privilege scope") {
@@ -451,7 +451,7 @@ trait Statement extends Parser
   // Database management commands
 
   def ShowDatabase: Rule1[ast.ShowDatabase] = rule("SHOW DATABASE") {
-    group(keyword("SHOW") ~~ ScopeForShowDatabase) ~~ ShowCommandClauses ~~>> (ast.ShowDatabase(_,_,_))
+    group(keyword("SHOW") ~~ ScopeForShowDatabase) ~~ optional(ShowCommandClauses) ~~>> (ast.ShowDatabase(_,_))
   }
 
   private def ScopeForShowDatabase: Rule1[ast.DatabaseScope] = rule("show database scope") {
@@ -512,12 +512,9 @@ trait Statement extends Parser
 
   // Shared help methods
 
-  private def ShowCommandClauses: Rule2[Option[Either[ast.Yield, ast.Where]], Option[ast.Return]] = rule("YIELD ... WHERE .. RETURN .. for SHOW commands") {
-    optional(
-      keyword("YIELD") ~~ YieldBody ~~>> ((returnItems, maybeOrderBy, maybeSkip, maybeLimit, maybeWhere) =>
-        pos => Left(ast.Yield(returnItems, maybeOrderBy, maybeSkip, maybeLimit, maybeWhere)(pos))) |
-      Where ~~>> (where => _ => Right(where))
-    ) ~~ optional(ReturnWithoutGraph)
+  private def ShowCommandClauses: Rule1[Either[(ast.Yield, Option[ast.Return]), ast.Where]] = rule("YIELD, WHERE") {
+    (Yield ~~ optional(ReturnWithoutGraph)) ~~> ((y,r) => Left(y,r)) |
+      (Where ~~>> (where => _ => Right(where)))
   }
 
   def SymbolicNameOrStringParameter: Rule1[Either[String, Parameter]] =
