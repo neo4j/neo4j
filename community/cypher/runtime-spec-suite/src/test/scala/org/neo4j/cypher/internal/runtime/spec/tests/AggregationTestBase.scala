@@ -1181,7 +1181,8 @@ trait UserDefinedAggregationSupport[CONTEXT <: RuntimeContext] {
       .build()
     val twoArguments = UserFunctionSignature.functionSignature("test", "foo2")
       .out(Neo4jTypes.NTInteger)
-      .in("in", Neo4jTypes.NTInteger)
+      .in("in1", Neo4jTypes.NTInteger)
+      .in("in2", Neo4jTypes.NTInteger)
       .build()
 
     Seq(
