@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.logical.builder
 
+import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.DecimalDoubleLiteral
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.Expression
@@ -176,8 +177,9 @@ trait Resolver {
 
 /**
  * Test help utility for hand-writing objects needing logical plans.
+ * @param wholePlan Validate that we are creating a whole plan
  */
-abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[T, IMPL]](protected val resolver: Resolver) {
+abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[T, IMPL]](protected val resolver: Resolver, wholePlan: Boolean = true) {
 
   self: IMPL =>
 
@@ -389,7 +391,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     val p = patternParser.parse(pattern)
     p.length match {
       case SimplePatternLength =>
-        val pred = predicate.map(Parser.parseExpression)
+        val pred = predicate.map(Parser.parseExpression).map(p => Ands(Seq(p))(p.position))
         appendAtCurrentIndent(UnaryOperator(lp =>
           OptionalExpand(lp, p.from, p.dir, p.relTypes, p.to, p.relName, ExpandAll, pred, getExpandProperties(p.from, p.relName, cacheNodeProperties, cacheRelProperties)
     )(_)))
@@ -403,7 +405,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     val p = patternParser.parse(pattern)
     p.length match {
       case SimplePatternLength =>
-        val pred = predicate.map(Parser.parseExpression)
+        val pred = predicate.map(Parser.parseExpression).map(p => Ands(Seq(p))(p.position))
         appendAtCurrentIndent(UnaryOperator(lp => OptionalExpand(lp, p.from, p.dir, p.relTypes, p.to, p.relName, ExpandInto, pred)(_)))
       case _ =>
         throw new IllegalArgumentException("Cannot have optional expand with variable length pattern")
@@ -843,33 +845,39 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
 
   protected def appendAtCurrentIndent(operatorBuilder: OperatorBuilder): IMPL = {
     if (tree == null) {
-      throw new IllegalStateException("Must call produceResult before adding other operators.")
+      if (wholePlan) {
+        throw new IllegalStateException("Must call produceResult before adding other operators.")
+      } else {
+        tree = new Tree(operatorBuilder)
+        looseEnds += tree
+      }
+    } else {
+      val newTree = new Tree(operatorBuilder)
+
+      def appendAtIndent(): Unit = {
+        val parent = looseEnds(indent)
+        parent.left = Some(newTree)
+        looseEnds(indent) = newTree
+      }
+
+      indent - (looseEnds.size - 1) match {
+        case 1 => // new rhs
+          val parent = looseEnds.last
+          parent.right = Some(newTree)
+          looseEnds += newTree
+
+        case 0 => // append to lhs
+          appendAtIndent()
+
+        case -1 => // end of rhs
+          appendAtIndent()
+          looseEnds.remove(looseEnds.size - 1)
+
+        case _ =>
+          throw new IllegalStateException("out of bounds")
+      }
+      indent = 0
     }
-
-    val newTree = new Tree(operatorBuilder)
-    def appendAtIndent(): Unit = {
-      val parent = looseEnds(indent)
-      parent.left = Some(newTree)
-      looseEnds(indent) = newTree
-    }
-
-    indent - (looseEnds.size - 1) match {
-      case 1 => // new rhs
-        val parent = looseEnds.last
-        parent.right = Some(newTree)
-        looseEnds += newTree
-
-      case 0 => // append to lhs
-        appendAtIndent()
-
-      case -1 => // end of rhs
-        appendAtIndent()
-        looseEnds.remove(looseEnds.size - 1)
-
-      case _ =>
-        throw new IllegalStateException("out of bounds")
-    }
-    indent = 0
     self
   }
 
