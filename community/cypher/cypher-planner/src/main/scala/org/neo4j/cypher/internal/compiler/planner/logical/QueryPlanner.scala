@@ -100,9 +100,7 @@ case object QueryPlanner
   }
 
   private def getMetricsFrom(context: PlannerContext) = if (context.debugOptions.contains("inverse_cost")) {
-    context.metrics.copy(cost = new CostModel {
-      override def apply(v1: LogicalPlan, v2: QueryGraphSolverInput, v3: Cardinalities): Cost = -context.metrics.cost(v1, v2, v3)
-    })
+    context.metrics.copy(cost = (v1: LogicalPlan, v2: QueryGraphSolverInput, v3: Cardinalities) => -context.metrics.cost.costFor(v1, v2, v3))
   } else {
     context.metrics
   }

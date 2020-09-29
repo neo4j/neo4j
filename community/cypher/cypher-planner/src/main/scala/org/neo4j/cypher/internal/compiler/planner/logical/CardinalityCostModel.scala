@@ -94,7 +94,7 @@ object CardinalityCostModel extends CostModel {
     => 1.0
 
     case Selection(predicate, _)
-    => apply(predicate)
+    => costPerRowFor(predicate)
 
     case _: AllNodesScan
     => 1.2
@@ -155,7 +155,7 @@ object CardinalityCostModel extends CostModel {
     case _ => plan.lhs.map(p => cardinalities.get(p.id)).getOrElse(cardinalities.get(plan.id))
   }
 
-  def apply(expression: Expression): CostPerRow = {
+  def costPerRowFor(expression: Expression): CostPerRow = {
     val noOfStoreAccesses = expression.treeFold(0) {
       case _: Property => count => TraverseChildren(count + PROPERTY_ACCESS_DB_HITS)
       case _: HasLabels => count => TraverseChildren(count + LABEL_CHECK_DB_HITS)
@@ -167,22 +167,22 @@ object CardinalityCostModel extends CostModel {
       DEFAULT_COST_PER_ROW
   }
 
-  def apply(plan: LogicalPlan, input: QueryGraphSolverInput, cardinalities: Cardinalities): Cost = {
+  def costFor(plan: LogicalPlan, input: QueryGraphSolverInput, cardinalities: Cardinalities): Cost = {
     val cost = plan match {
       case CartesianProduct(lhs, rhs) =>
         val lhsCardinality = Cardinality.max(Cardinality.SINGLE, cardinalities.get(lhs.id))
-        apply(lhs, input, cardinalities) + lhsCardinality * apply(rhs, input, cardinalities)
+        costFor(lhs, input, cardinalities) + lhsCardinality * costFor(rhs, input, cardinalities)
 
       case ApplyVariants(lhs, rhs) =>
-        val lCost = apply(lhs, input, cardinalities)
-        val rCost = apply(rhs, input, cardinalities)
+        val lCost = costFor(lhs, input, cardinalities)
+        val rCost = costFor(rhs, input, cardinalities)
 
         // the rCost has already been multiplied by the lhs cardinality
         lCost + rCost
 
       case HashJoin(lhs, rhs) =>
-        val lCost = apply(lhs, input, cardinalities)
-        val rCost = apply(rhs, input, cardinalities)
+        val lCost = costFor(lhs, input, cardinalities)
+        val rCost = costFor(rhs, input, cardinalities)
 
         val lhsCardinality = cardinalities.get(lhs.id)
         val rhsCardinality = cardinalities.get(rhs.id)
@@ -192,8 +192,8 @@ object CardinalityCostModel extends CostModel {
           rhsCardinality * PROBE_SEARCH_COST
 
       case _ =>
-        val lhsCost = plan.lhs.map(p => apply(p, input, cardinalities)).getOrElse(Cost(0))
-        val rhsCost = plan.rhs.map(p => apply(p, input, cardinalities)).getOrElse(Cost(0))
+        val lhsCost = plan.lhs.map(p => costFor(p, input, cardinalities)).getOrElse(Cost(0))
+        val rhsCost = plan.rhs.map(p => costFor(p, input, cardinalities)).getOrElse(Cost(0))
         val planCardinality = cardinalityForPlan(plan, cardinalities)
         val rowCost = costPerRow(plan, planCardinality)
         val costForThisPlan = planCardinality * rowCost

@@ -1386,7 +1386,7 @@ object LogicalPlanProducer {
       }
 
       def sortCriteria(predicate: Expression): (CostPerRow, Selectivity) = {
-        val costPerRow = CardinalityCostModel.apply(predicate)
+        val costPerRow = CardinalityCostModel.costPerRowFor(predicate)
         val solved = solvedBeforePredicate.updateTailOrSelf(_.amendQueryGraph(_.addPredicates(predicate)))
         val cardinality = cardinalityModel(solved, queryGraphSolverInput, semanticTable)
         val selectivity = (cardinality / incomingCardinality).getOrElse(Selectivity.ONE)

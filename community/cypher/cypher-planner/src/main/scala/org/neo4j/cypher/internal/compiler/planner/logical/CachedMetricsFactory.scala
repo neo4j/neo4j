@@ -23,26 +23,27 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
 import org.neo4j.cypher.internal.compiler.helpers.CachedFunction
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CardinalityModel
+import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CostModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphCardinalityModel
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.ExpressionSelectivityCalculator
 import org.neo4j.cypher.internal.ir.PlannerQueryPart
 import org.neo4j.cypher.internal.ir.QueryGraph
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
 import org.neo4j.cypher.internal.util.Cardinality
 
 case class CachedMetricsFactory(metricsFactory: MetricsFactory) extends MetricsFactory {
   def newCardinalityEstimator(queryGraphCardinalityModel: QueryGraphCardinalityModel, evaluator: ExpressionEvaluator): CardinalityModel = {
     val wrapped: CardinalityModel = metricsFactory.newCardinalityEstimator(queryGraphCardinalityModel, evaluator)
     val cached = CachedFunction[PlannerQueryPart, Metrics.QueryGraphSolverInput, SemanticTable, Cardinality] { (a, b, c) => wrapped(a, b, c) }
-    new CardinalityModel {
-      override def apply(query: PlannerQueryPart, input: Metrics.QueryGraphSolverInput, semanticTable: SemanticTable): Cardinality = {
-        cached.apply(query, input, semanticTable)
-      }
-    }
+    (query: PlannerQueryPart, input: Metrics.QueryGraphSolverInput, semanticTable: SemanticTable) => cached.apply(query, input, semanticTable)
   }
 
-  def newCostModel(config: CypherPlannerConfiguration) =
-    CachedFunction(metricsFactory.newCostModel(config: CypherPlannerConfiguration))
+  def newCostModel(config: CypherPlannerConfiguration): CostModel = {
+    val cached = CachedFunction(metricsFactory.newCostModel(config: CypherPlannerConfiguration).costFor _)
+    (plan: LogicalPlan, input: Metrics.QueryGraphSolverInput, cardinalities: PlanningAttributes.Cardinalities) => cached(plan, input, cardinalities)
+  }
 
   def newQueryGraphCardinalityModel(statistics: GraphStatistics): QueryGraphCardinalityModel = {
     val wrapped: QueryGraphCardinalityModel = metricsFactory.newQueryGraphCardinalityModel(statistics)

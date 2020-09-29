@@ -68,7 +68,9 @@ object Metrics {
   // This metric calculates how expensive executing a logical plan is.
   // (e.g. by looking at cardinality, expression selectivity and taking into account the effort
   // required to execute a step)
-  type CostModel = (LogicalPlan, QueryGraphSolverInput, Cardinalities) => Cost
+  trait CostModel {
+    def costFor(plan: LogicalPlan, input: QueryGraphSolverInput, cardinalities: Cardinalities): Cost
+  }
 
   // This metric estimates how many rows of data a logical plan produces
   // (e.g. by asking the database for statistics)
