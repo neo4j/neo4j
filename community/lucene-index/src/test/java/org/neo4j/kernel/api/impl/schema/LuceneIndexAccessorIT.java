@@ -29,6 +29,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 
+import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -95,7 +96,7 @@ public class LuceneIndexAccessorIT
         int nodes = 100;
         MutableLongSet expectedNodes = LongSets.mutable.withInitialCapacity( nodes );
         populateWithInitialNodes( nodes, expectedNodes );
-        try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( indexDescriptor, samplingConfig ) )
+        try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( indexDescriptor, samplingConfig, mock( TokenNameLookup.class ) ) )
         {
             // when
             removeSomeNodes( nodes / 2, accessor, expectedNodes );
@@ -125,7 +126,8 @@ public class LuceneIndexAccessorIT
     private void populateWithInitialNodes( int nodes, MutableLongSet expectedNodes ) throws IndexEntryConflictException
     {
         IndexPopulator populator =
-                indexProvider.getPopulator( indexDescriptor, samplingConfig, ByteBufferFactory.heapBufferFactory( (int) kibiBytes( 100 ) ), INSTANCE );
+                indexProvider.getPopulator( indexDescriptor, samplingConfig, ByteBufferFactory.heapBufferFactory( (int) kibiBytes( 100 ) ), INSTANCE,
+                        mock( TokenNameLookup.class ) );
         Collection<IndexEntryUpdate<IndexDescriptor>> initialData = new ArrayList<>();
         for ( long id = 0; id < nodes; id++ )
         {
