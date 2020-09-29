@@ -162,7 +162,7 @@ public final class Cursors
         @Override
         public long targetNodeReference()
         {
-            return NO_SUCH_RELATIONSHIP_TYPE;
+            return NO_SUCH_NODE;
         }
 
         @Override
