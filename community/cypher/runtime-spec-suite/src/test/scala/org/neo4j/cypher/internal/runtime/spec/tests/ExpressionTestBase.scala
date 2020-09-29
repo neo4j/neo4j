@@ -493,6 +493,90 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
     val expected = for (i <- 0 until size) yield Array[Any](i, true)
     runtimeResult should beColumns("x", "y").withRows(expected)
   }
+
+  test("AND: should fail if all predicates fail for some input") {
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("y")
+      .projection("1/x > 1 AND 1/x > 1 AND 1/x > 1 AS y")
+      .input(variables = Seq("x"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(Array[Any](1), Array[Any](0), Array[Any](1)))
+
+    an[org.neo4j.exceptions.ArithmeticException] should be thrownBy consume(runtimeResult)
+  }
+
+  test("AND: should return FALSE if at least one predicate is FALSE") {
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("y")
+      .projection("1/x > 1 AND TRUE AND FALSE AS y")
+      .input(variables = Seq("x"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(Array[Any](1), Array[Any](0), Array[Any](1)))
+
+    runtimeResult should beColumns("y").withRows(singleColumn(List(false, false, false)))
+  }
+
+  test("AND: should fail if one predicate fails and no other is FALSE") {
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("y")
+      .projection("1/x > 1 AND TRUE AND TRUE AS y")
+      .input(variables = Seq("x"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(Array[Any](1), Array[Any](0), Array[Any](1)))
+
+    an[org.neo4j.exceptions.ArithmeticException] should be thrownBy consume(runtimeResult)
+  }
+
+  test("OR: should fail if all predicates fail for some input") {
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("y")
+      .projection("1/x > 0 OR 1/x > 0 OR 1/x > 0 AS y")
+      .input(variables = Seq("x"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(Array[Any](1), Array[Any](0), Array[Any](1)))
+
+    an[org.neo4j.exceptions.ArithmeticException] should be thrownBy consume(runtimeResult)
+  }
+
+  test("OR: should return TRUE if at least one predicate is TRUE") {
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("y")
+      .projection("1/x > 0 OR FALSE OR TRUE AS y")
+      .input(variables = Seq("x"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(Array[Any](1), Array[Any](0), Array[Any](1)))
+
+    runtimeResult should beColumns("y").withRows(singleColumn(List(true, true, true)))
+  }
+
+  test("OR: should fail if one predicate fails and no other is FALSE") {
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("y")
+      .projection("1/x > 0 OR FALSE OR FALSE AS y")
+      .input(variables = Seq("x"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(Array[Any](1), Array[Any](0), Array[Any](1)))
+
+    an[org.neo4j.exceptions.ArithmeticException] should be thrownBy consume(runtimeResult)
+  }
 }
 
 // Supported by all non-parallel runtimes
