@@ -346,5 +346,11 @@ public class ProcedureTransactionProvider implements ThrowingFunction<Context,Tr
         {
             return transaction.getRelationshipTypeById( type );
         }
+
+        @Override
+        public void addCloseCallback( TransactionClosedCallback callback )
+        {
+            transaction.addCloseCallback( callback );
+        }
     }
 }

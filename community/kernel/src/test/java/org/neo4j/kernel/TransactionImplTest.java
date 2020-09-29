@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel;
 
+import org.apache.commons.lang3.mutable.MutableLong;
 import org.junit.jupiter.api.Test;
 
 import java.util.Optional;
@@ -124,5 +125,35 @@ class TransactionImplTest
         assertFalse( terminationReason1.isPresent() );
         assertTrue( terminationReason2.isPresent() );
         assertEquals( Status.Transaction.Terminated, terminationReason2.get() );
+    }
+
+    @Test
+    void fireCallbackOnClose()
+    {
+        KernelTransaction kernelTransaction = mock( KernelTransaction.class );
+        MutableLong calls = new MutableLong();
+
+        // commit
+        try ( TransactionImpl tx = new TransactionImpl( tokenHolders, contextFactory, availabilityGuard, engine, kernelTransaction, null, null ) )
+        {
+            tx.addCloseCallback( calls::increment );
+            tx.commit();
+        }
+
+        // and rollback
+        try ( TransactionImpl tx = new TransactionImpl( tokenHolders, contextFactory, availabilityGuard, engine, kernelTransaction, null, null ) )
+        {
+            tx.addCloseCallback( calls::increment );
+            tx.rollback();
+        }
+
+        // and nothing
+        try ( TransactionImpl tx = new TransactionImpl( tokenHolders, contextFactory, availabilityGuard, engine, kernelTransaction, null, null ) )
+        {
+            tx.addCloseCallback( calls::increment );
+        }
+
+        // should all invoke the callback
+        assertEquals( 3, calls.longValue() );
     }
 }

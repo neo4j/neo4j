@@ -19,8 +19,10 @@
  */
 package org.neo4j.kernel.impl.coreapi;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -114,6 +116,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl
     private final TransactionExceptionMapper exceptionMapper;
     private KernelTransaction transaction;
     private boolean closed;
+    private List<TransactionClosedCallback> closeCallbacks;
 
     public TransactionImpl( TokenHolders tokenHolders, TransactionalContextFactory contextFactory,
             DatabaseAvailabilityGuard availabilityGuard, QueryExecutionEngine executionEngine,
@@ -531,6 +534,16 @@ public class TransactionImpl extends EntityValidationTransactionImpl
         }
     }
 
+    @Override
+    public void addCloseCallback( TransactionClosedCallback callback )
+    {
+        if ( closeCallbacks == null )
+        {
+            closeCallbacks = new ArrayList<>( 4 );
+        }
+        closeCallbacks.add( callback );
+    }
+
     private void safeTerminalOperation( TransactionalOperation operation )
     {
         try
@@ -542,6 +555,11 @@ public class TransactionImpl extends EntityValidationTransactionImpl
             operation.perform( transaction );
             closed = true;
             transaction = null;
+
+            if ( closeCallbacks != null )
+            {
+                closeCallbacks.forEach( TransactionClosedCallback::transactionClosed );
+            }
         }
         catch ( Exception e )
         {

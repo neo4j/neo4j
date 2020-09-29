@@ -64,4 +64,21 @@ public interface InternalTransaction extends Transaction, TransactionalEntityFac
     String getDatabaseName();
 
     <E extends Entity> E validateSameDB( E entity );
+
+    /**
+     * Attach a callback that will be called when the transaction is closed. This can be used by e.g. procedures to register
+     * resources that should be closed together with the transaction.
+     *
+     * @param callback to be invoked when the transaction is closed.
+     */
+    default void addCloseCallback( TransactionClosedCallback callback )
+    {
+        throw new UnsupportedOperationException( "This transaction implementation does not allow close callbacks" );
+    }
+
+    @FunctionalInterface
+    interface TransactionClosedCallback
+    {
+        void transactionClosed();
+    }
 }
