@@ -65,6 +65,7 @@ object CypherConfiguration {
       config.get(GraphDatabaseInternalSettings.cypher_expression_recompilation_limit),
       CypherOperatorEngineOption(config.get(GraphDatabaseInternalSettings.cypher_operator_engine).toString),
       CypherInterpretedPipesFallbackOption(config.get(GraphDatabaseInternalSettings.cypher_pipelined_interpreted_pipes_fallback).toString),
+      config.get(GraphDatabaseInternalSettings.cypher_pipelined_operator_fusion_over_pipeline_limit).intValue(),
       new ConfigMemoryTrackingController(config),
       config.get(GraphDatabaseInternalSettings.cypher_enable_runtime_monitors),
       config.get(GraphDatabaseInternalSettings.cypher_parser) != GraphDatabaseInternalSettings.CypherParser.PARBOILED
@@ -130,6 +131,7 @@ case class CypherConfiguration(version: CypherVersion,
                                recompilationLimit: Int,
                                operatorEngine: CypherOperatorEngineOption,
                                interpretedPipesFallback: CypherInterpretedPipesFallbackOption,
+                               operatorFusionOverPipelineLimit: Int,
                                memoryTrackingController: MemoryTrackingController,
                                enableMonitors: Boolean,
                                useJavaCCParser: Boolean) {
@@ -138,6 +140,7 @@ case class CypherConfiguration(version: CypherVersion,
     CypherRuntimeConfiguration(
       pipelinedBatchSizeSmall = pipelinedBatchSizeSmall,
       pipelinedBatchSizeBig = pipelinedBatchSizeBig,
+      operatorFusionOverPipelineLimit = operatorFusionOverPipelineLimit,
       schedulerTracing = toSchedulerTracingConfiguration(doSchedulerTracing, schedulerTracingFile),
       lenientCreateRelationship = lenientCreateRelationship,
       memoryTrackingController = memoryTrackingController,

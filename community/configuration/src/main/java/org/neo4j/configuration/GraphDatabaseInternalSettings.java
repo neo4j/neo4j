@@ -237,6 +237,12 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
                     CypherPipelinedInterpretedPipesFallback.DEFAULT ).build();
 
     @Internal
+    @Description( "The maximum number of operator fusions over pipelines (i.e. where an operator that would normally be considered pipeline-breaking, " +
+                  "e.g. expand), that is considered before a pipeline break is forced." )
+    public static final Setting<Integer> cypher_pipelined_operator_fusion_over_pipeline_limit =
+            newBuilder( "unsupported.cypher.pipelined.operator_fusion_over_pipeline_limit", INT, 8 ).build();
+
+    @Internal
     @Description( "When enabled property reads will - as much as possible - be pushed down to be read at the same time as we are " +
                   "visiting a node or relationship. This means that in some cases we will read properties at a higher cardinality point" +
                   " which will lead to worse performance. However depending on the store format and how expensive the property read will be " +
