@@ -91,7 +91,6 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
           case Some(t@PlannedComponent(solvedQg, p)) =>
             val candidates = context.config.optionalSolvers
                                     .flatMap(solver => solver(firstOptionalMatch, p.bestResult, interestingOrder, context))
-                                    .map(_.bestResult)
             val best = kit.pickBest(candidates).get
             recurse(plans - t + PlannedComponent(solvedQg, BestResults(best, None)), optionalMatches.tail)
 

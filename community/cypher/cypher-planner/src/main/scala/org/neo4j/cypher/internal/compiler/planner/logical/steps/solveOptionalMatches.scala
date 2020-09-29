@@ -29,14 +29,14 @@ import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
 trait OptionalSolver {
-  def apply(qg: QueryGraph, lp: LogicalPlan, interestingOrder: InterestingOrder, context: LogicalPlanningContext): Option[BestPlans]
+  def apply(qg: QueryGraph, lp: LogicalPlan, interestingOrder: InterestingOrder, context: LogicalPlanningContext): Iterator[LogicalPlan]
 }
 
 case object applyOptional extends OptionalSolver {
-  override def apply(optionalQg: QueryGraph, lhs: LogicalPlan, interestingOrder: InterestingOrder, context: LogicalPlanningContext): Option[BestPlans] = {
+  override def apply(optionalQg: QueryGraph, lhs: LogicalPlan, interestingOrder: InterestingOrder, context: LogicalPlanningContext): Iterator[LogicalPlan] = {
     val innerContext: LogicalPlanningContext = context.withUpdatedCardinalityInformation(lhs)
     val inner = context.strategy.plan(optionalQg, interestingOrder, innerContext)
-    val bestPlans = inner.map { inner =>
+    inner.allResults.map { inner =>
       val rhs = context.logicalPlanProducer.planOptional(inner, lhs.availableSymbols, innerContext)
       val applied = context.logicalPlanProducer.planApply(lhs, rhs, context)
 
@@ -44,12 +44,11 @@ case object applyOptional extends OptionalSolver {
       // is not a fair comparison (as they cannot be rewritten to something cheaper).
       unnestOptional(applied).asInstanceOf[LogicalPlan]
     }
-    Some(bestPlans)
   }
 }
 
 abstract class outerHashJoin extends OptionalSolver {
-  override def apply(optionalQg: QueryGraph, side1: LogicalPlan, interestingOrder: InterestingOrder, context: LogicalPlanningContext): Option[BestPlans] = {
+  override def apply(optionalQg: QueryGraph, side1: LogicalPlan, interestingOrder: InterestingOrder, context: LogicalPlanningContext): Iterator[LogicalPlan] = {
     val joinNodes = optionalQg.argumentIds
     val solvedHints = optionalQg.joinHints.filter { hint =>
       val hintVariables = hint.variables.map(_.name).toSet
@@ -71,10 +70,9 @@ abstract class outerHashJoin extends OptionalSolver {
     if (joinNodes.nonEmpty &&
       joinNodes.forall(side1.availableSymbols) &&
       joinNodes.forall(optionalQg.patternNodes)) {
-      val bestPlans = side2Plans.map(side2 => produceJoin(context, joinNodes, side1, side2, solvedHints))
-      Some(bestPlans)
+      side2Plans.allResults.map(side2 => produceJoin(context, joinNodes, side1, side2, solvedHints))
     } else {
-      None
+      Iterator.empty
     }
   }
 

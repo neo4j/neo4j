@@ -39,8 +39,7 @@ case object OptionalMatchConnector
         canPlan = optionalQg.argumentIds subsetOf leftPlan.availableSymbols
         if canPlan
         optionalSolver <- context.config.optionalSolvers
-        bestPlans <- optionalSolver(optionalQg, leftPlan, interestingOrder, context).toIterator
-        plan <- bestPlans.allResults
+        plan <- optionalSolver(optionalQg, leftPlan, interestingOrder, context)
       } yield plan
     }
 }
