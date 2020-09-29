@@ -77,5 +77,5 @@ public interface NodeCursor extends Cursor
      * @param selection which types/directions to get degrees for.
      * @return min(degree(selection), maxDegree).
      */
-    int degree( int maxDegree, RelationshipSelection selection );
+    int degreeWithMax( int maxDegree, RelationshipSelection selection );
 }

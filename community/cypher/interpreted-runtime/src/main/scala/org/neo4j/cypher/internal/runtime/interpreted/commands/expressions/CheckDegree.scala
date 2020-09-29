@@ -33,10 +33,10 @@ import org.neo4j.values.virtual.NodeValue
 
 abstract class CheckDegree(node: Expression, typ: Option[KeyToken], direction: SemanticDirection, maxDegree: Expression) extends NullInNullOutExpression(node) {
   protected val getDegree: (Int, QueryState, Long) => Long = typ match {
-    case None    => (max, state, node) => state.query.nodeGetDegree(max, node, direction, state.cursors.nodeCursor)
+    case None    => (max, state, node) => state.query.nodeGetDegreeWithMax(max, node, direction, state.cursors.nodeCursor)
     case Some(t) => (max, state, node) => t.getOptId(state.query) match {
       case None            => 0
-      case Some(relTypeId) => state.query.nodeGetDegree(max, node, direction, relTypeId, state.cursors.nodeCursor)
+      case Some(relTypeId) => state.query.nodeGetDegreeWithMax(max, node, direction, relTypeId, state.cursors.nodeCursor)
     }
   }
 

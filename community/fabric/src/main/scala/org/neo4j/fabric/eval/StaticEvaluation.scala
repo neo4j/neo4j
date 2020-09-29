@@ -306,17 +306,17 @@ object StaticEvaluation {
 
     override def relationshipHasProperty(node: Long, property: Int, relationshipScanCursor: RelationshipScanCursor, propertyCursor: PropertyCursor): Boolean = notAvailable()
 
-    override def nodeGetOutgoingDegree(maxDegree: Int, node: Long, nodeCursor: NodeCursor): Int = notAvailable()
+    override def nodeGetOutgoingDegreeWithMax(maxDegree: Int, node: Long, nodeCursor: NodeCursor): Int = notAvailable()
 
-    override def nodeGetOutgoingDegree(maxDegree: Int, node: Long, relationship: Int, nodeCursor: NodeCursor): Int = notAvailable()
+    override def nodeGetOutgoingDegreeWithMax(maxDegree: Int, node: Long, relationship: Int, nodeCursor: NodeCursor): Int = notAvailable()
 
-    override def nodeGetIncomingDegree(maxDegree: Int, node: Long, nodeCursor: NodeCursor): Int = notAvailable()
+    override def nodeGetIncomingDegreeWithMax(maxDegree: Int, node: Long, nodeCursor: NodeCursor): Int = notAvailable()
 
-    override def nodeGetIncomingDegree(maxDegree: Int, node: Long, relationship: Int, nodeCursor: NodeCursor): Int = notAvailable()
+    override def nodeGetIncomingDegreeWithMax(maxDegree: Int, node: Long, relationship: Int, nodeCursor: NodeCursor): Int = notAvailable()
 
-    override def nodeGetTotalDegree(maxDegree: Int, node: Long, nodeCursor: NodeCursor): Int = notAvailable()
+    override def nodeGetTotalDegreeWithMax(maxDegree: Int, node: Long, nodeCursor: NodeCursor): Int = notAvailable()
 
-    override def nodeGetTotalDegree(maxDegree: Int, node: Long, relationship: Int, nodeCursor: NodeCursor): Int = notAvailable()
+    override def nodeGetTotalDegreeWithMax(maxDegree: Int, node: Long, relationship: Int, nodeCursor: NodeCursor): Int = notAvailable()
 
     override def nodeGetOutgoingDegree(node: Long, nodeCursor: NodeCursor): Int = notAvailable()
 

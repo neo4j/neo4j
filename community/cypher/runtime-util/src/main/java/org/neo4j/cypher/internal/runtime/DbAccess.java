@@ -74,17 +74,17 @@ public interface DbAccess extends EntityById
             RelationshipScanCursor relationshipScanCursor,
             PropertyCursor propertyCursor );
 
-    int nodeGetOutgoingDegree( int maxDegree, long node, NodeCursor nodeCursor );
+    int nodeGetOutgoingDegreeWithMax( int maxDegree, long node, NodeCursor nodeCursor );
 
-    int nodeGetOutgoingDegree( int maxDegree, long node, int relationship, NodeCursor nodeCursor );
+    int nodeGetOutgoingDegreeWithMax( int maxDegree, long node, int relationship, NodeCursor nodeCursor );
 
-    int nodeGetIncomingDegree( int maxDegree, long node, NodeCursor nodeCursor );
+    int nodeGetIncomingDegreeWithMax( int maxDegree, long node, NodeCursor nodeCursor );
 
-    int nodeGetIncomingDegree( int maxDegree, long node, int relationship, NodeCursor nodeCursor );
+    int nodeGetIncomingDegreeWithMax( int maxDegree, long node, int relationship, NodeCursor nodeCursor );
 
-    int nodeGetTotalDegree( int maxDegree, long node, NodeCursor nodeCursor );
+    int nodeGetTotalDegreeWithMax( int maxDegree, long node, NodeCursor nodeCursor );
 
-    int nodeGetTotalDegree( int maxDegree, long node, int relationship, NodeCursor nodeCursor );
+    int nodeGetTotalDegreeWithMax( int maxDegree, long node, int relationship, NodeCursor nodeCursor );
 
     int nodeGetOutgoingDegree( long node, NodeCursor nodeCursor );
 

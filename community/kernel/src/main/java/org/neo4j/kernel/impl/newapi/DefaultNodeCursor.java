@@ -248,7 +248,7 @@ class DefaultNodeCursor extends TraceableCursor implements NodeCursor
     }
 
     @Override
-    public int degree( int maxDegree, RelationshipSelection selection )
+    public int degreeWithMax( int maxDegree, RelationshipSelection selection )
     {
         SingleDegree degrees = new SingleDegree( maxDegree );
         fillDegrees( selection, degrees );

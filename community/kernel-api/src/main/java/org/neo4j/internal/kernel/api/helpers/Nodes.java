@@ -124,13 +124,13 @@ public final class Nodes
         return nodeCursor.degree( selection( direction ) );
     }
 
-    public static int count( int maxDegree, NodeCursor nodeCursor, Direction direction )
+    public static int countWithMax( int maxDegree, NodeCursor nodeCursor, Direction direction )
     {
-        return nodeCursor.degree( maxDegree, selection( direction ));
+        return nodeCursor.degreeWithMax( maxDegree, selection( direction ));
     }
 
-    public static int count( int maxDegree, NodeCursor nodeCursor, int type, Direction direction )
+    public static int countWithMax( int maxDegree, NodeCursor nodeCursor, int type, Direction direction )
     {
-        return nodeCursor.degree( maxDegree, selection( type, direction ));
+        return nodeCursor.degreeWithMax( maxDegree, selection( type, direction ));
     }
 }

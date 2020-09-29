@@ -162,21 +162,21 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def relationshipAsMap(id: Long, relationshipCursor: RelationshipScanCursor, propertyCursor: PropertyCursor): MapValue =
     translateException(tokenNameLookup, inner.relationshipAsMap(id, relationshipCursor, propertyCursor))
 
-  override def nodeGetOutgoingDegree(maxDegree: Int, node: Long, nodeCursor: NodeCursor): Int = translateException(tokenNameLookup, inner.nodeGetOutgoingDegree(maxDegree, node, nodeCursor))
+  override def nodeGetOutgoingDegreeWithMax(maxDegree: Int, node: Long, nodeCursor: NodeCursor): Int = translateException(tokenNameLookup, inner.nodeGetOutgoingDegreeWithMax(maxDegree, node, nodeCursor))
 
-  override def nodeGetOutgoingDegree(maxDegree: Int, node: Long, relationship: Int, nodeCursor: NodeCursor): Int = translateException(tokenNameLookup, inner.nodeGetOutgoingDegree(maxDegree, node, relationship, nodeCursor))
-
-
-  override def nodeGetIncomingDegree(maxDegree: Int, node: Long, nodeCursor: NodeCursor): Int = translateException(tokenNameLookup, inner.nodeGetIncomingDegree(maxDegree, node, nodeCursor))
+  override def nodeGetOutgoingDegreeWithMax(maxDegree: Int, node: Long, relationship: Int, nodeCursor: NodeCursor): Int = translateException(tokenNameLookup, inner.nodeGetOutgoingDegreeWithMax(maxDegree, node, relationship, nodeCursor))
 
 
-  override def nodeGetIncomingDegree(maxDegree: Int, node: Long, relationship: Int, nodeCursor: NodeCursor): Int = translateException(tokenNameLookup, inner.nodeGetIncomingDegree(maxDegree, node, relationship, nodeCursor))
+  override def nodeGetIncomingDegreeWithMax(maxDegree: Int, node: Long, nodeCursor: NodeCursor): Int = translateException(tokenNameLookup, inner.nodeGetIncomingDegreeWithMax(maxDegree, node, nodeCursor))
 
 
-  override def nodeGetTotalDegree(maxDegree: Int, node: Long, nodeCursor: NodeCursor): Int = translateException(tokenNameLookup, inner.nodeGetTotalDegree(maxDegree, node, nodeCursor))
+  override def nodeGetIncomingDegreeWithMax(maxDegree: Int, node: Long, relationship: Int, nodeCursor: NodeCursor): Int = translateException(tokenNameLookup, inner.nodeGetIncomingDegreeWithMax(maxDegree, node, relationship, nodeCursor))
 
 
-  override def nodeGetTotalDegree(maxDegree: Int, node: Long, relationship: Int, nodeCursor: NodeCursor): Int = translateException(tokenNameLookup, inner.nodeGetTotalDegree(maxDegree, node, relationship, nodeCursor))
+  override def nodeGetTotalDegreeWithMax(maxDegree: Int, node: Long, nodeCursor: NodeCursor): Int = translateException(tokenNameLookup, inner.nodeGetTotalDegreeWithMax(maxDegree, node, nodeCursor))
+
+
+  override def nodeGetTotalDegreeWithMax(maxDegree: Int, node: Long, relationship: Int, nodeCursor: NodeCursor): Int = translateException(tokenNameLookup, inner.nodeGetTotalDegreeWithMax(maxDegree, node, relationship, nodeCursor))
 
 
   override def nodeGetOutgoingDegree(node: Long, nodeCursor: NodeCursor): Int =
