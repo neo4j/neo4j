@@ -36,6 +36,7 @@ import org.neo4j.string.UTF8;
 public class LegacyCredential implements Credential
 {
     static final String DIGEST_ALGO = "SHA-256";
+    static final int ITERATIONS = 1;
 
     public static final LegacyCredential INACCESSIBLE = new LegacyCredential( new byte[]{}, new byte[]{} );
 
@@ -90,7 +91,7 @@ public class LegacyCredential implements Credential
     {
         String encodedSalt = HexString.encodeHexString( this.salt() );
         String encodedPassword = HexString.encodeHexString( this.passwordHash() );
-        return String.join( CREDENTIAL_SEPARATOR, LegacyCredential.DIGEST_ALGO, encodedPassword, encodedSalt );
+        return String.join( CREDENTIAL_SEPARATOR, LegacyCredential.DIGEST_ALGO, encodedPassword, encodedSalt, String.valueOf( ITERATIONS ) );
     }
 
     /**

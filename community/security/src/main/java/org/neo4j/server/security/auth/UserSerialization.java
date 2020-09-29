@@ -21,7 +21,9 @@ package org.neo4j.server.security.auth;
 
 import org.neo4j.cypher.internal.security.FormatException;
 import org.neo4j.cypher.internal.security.SecureHasher;
+import org.neo4j.cypher.internal.security.SecureHasherConfigurations;
 import org.neo4j.cypher.internal.security.SystemGraphCredential;
+import org.neo4j.exceptions.InvalidArgumentException;
 import org.neo4j.kernel.impl.security.Credential;
 import org.neo4j.kernel.impl.security.User;
 import org.neo4j.string.HexString;
@@ -80,20 +82,41 @@ public class UserSerialization extends FileRepositorySerializer<User>
     private Credential deserializeCredentials( String part, int lineNumber ) throws FormatException
     {
         String[] split = part.split( CREDENTIAL_SEPARATOR, -1 );
+        String algorithm = split[0];
+        int iterations;
+        String hasherVersion;
+
         if ( split.length == 4 )
         {
-            return SystemGraphCredential.deserialize( part, new SecureHasher() );
+            iterations = Integer.parseInt( split[3] );
         }
-        if ( split.length != 3 )
+        else if ( split.length == 3 )
+        {
+            iterations = LegacyCredential.ITERATIONS;
+        }
+        else
         {
             throw new FormatException( format( "wrong number of credential fields [line %d]", lineNumber ) );
         }
-        if ( !split[0].equals( LegacyCredential.DIGEST_ALGO ) )
+
+        try
         {
-            throw new FormatException( format( "unknown digest \"%s\" [line %d]", split[0], lineNumber ) );
+            hasherVersion = SecureHasherConfigurations.getVersionForConfiguration( algorithm, iterations );
         }
-        byte[] decodedPassword = HexString.decodeHexString( split[1] );
-        byte[] decodedSalt = HexString.decodeHexString( split[2] );
-        return new LegacyCredential( decodedSalt, decodedPassword );
+        catch ( InvalidArgumentException e )
+        {
+            throw new FormatException( format( "unknown digest \"%s\" [line %d]:", part, lineNumber ) );
+        }
+
+        if ( hasherVersion.equals( "0" ) )
+        {
+            byte[] decodedPassword = HexString.decodeHexString( split[1] );
+            byte[] decodedSalt = HexString.decodeHexString( split[2] );
+            return new LegacyCredential( decodedSalt, decodedPassword );
+        }
+        else
+        {
+            return SystemGraphCredential.deserialize( part, new SecureHasher( hasherVersion ) );
+        }
     }
 }

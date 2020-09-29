@@ -23,7 +23,7 @@ import java.util.Map;
 
 import org.neo4j.exceptions.InvalidArgumentException;
 
-abstract class SecureHasherConfigurations
+public abstract class SecureHasherConfigurations
 {
     static final String CURRENT_VERSION = "1";
 
@@ -34,7 +34,7 @@ abstract class SecureHasherConfigurations
             "1", new SecureHasherConfiguration( "SHA-256", 1024 )
     );
 
-    static String getVersionForConfiguration( String algorithm, int iterations )
+    public static String getVersionForConfiguration( String algorithm, int iterations )
     {
         var entry = configurations.entrySet().stream().filter(
                 configuration -> configuration.getValue().algorithm.equals( algorithm ) &&
