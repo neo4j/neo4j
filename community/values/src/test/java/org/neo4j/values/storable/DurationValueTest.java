@@ -443,6 +443,7 @@ class DurationValueTest
         assertEquals( duration( 22, 23, 0, 0 ), durationBetween( date( 2016, 1, 27 ), date( 2017, 12, 20 ) ) );
         assertEquals( duration( 0, 693, 0, 0 ), between( DAYS, date( 2016, 1, 27 ), date( 2017, 12, 20 ) ) );
         assertEquals( duration( 22, 0, 0, 0 ), between( MONTHS, date( 2016, 1, 27 ), date( 2017, 12, 20 ) ) );
+        assertEquals( duration( 0, 0, 24 * 60 * 60, 0 ), between( SECONDS, date( 2016, 1, 27 ), date( 2016, 1, 28 ) ) );
     }
 
     @Test
@@ -476,7 +477,11 @@ class DurationValueTest
     void shouldComputeDurationBetweenDateAndTime()
     {
         assertEquals( parse( "PT14H32M11S" ), durationBetween( date( 2017, 12, 21 ), localTime( 14, 32, 11, 0 ) ) );
+        assertEquals( parse( "PT14H32M11S" ), between( SECONDS, date( 2017, 12, 21 ), localTime( 14, 32, 11, 0 ) ) );
+        assertEquals( parse( "P0D" ), between( DAYS, date( 2017, 12, 21 ), localTime( 14, 32, 11, 0 ) ) );
         assertEquals( parse( "-PT14H32M11S" ), durationBetween( localTime( 14, 32, 11, 0 ), date( 2017, 12, 21 ) ) );
+        assertEquals( parse( "-PT14H32M11S" ), between( SECONDS, localTime( 14, 32, 11, 0 ), date( 2017, 12, 21 ) ) );
+        assertEquals( parse( "P0D" ), between( DAYS, localTime( 14, 32, 11, 0 ), date( 2017, 12, 21 ) ) );
         assertEquals( parse( "PT14H32M11S" ), durationBetween( date( 2017, 12, 21 ), time( 14, 32, 11, 0, UTC ) ) );
         assertEquals( parse( "-PT14H32M11S" ), durationBetween( time( 14, 32, 11, 0, UTC ), date( 2017, 12, 21 ) ) );
         assertEquals( parse( "PT14H32M11S" ), durationBetween(

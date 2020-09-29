@@ -186,8 +186,19 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
         TemporalValue from = this;
         TemporalValue to = (TemporalValue) endExclusive;
 
-        from = attachTime( from );
-        to = attachTime( to );
+        if ( unit.isTimeBased() )
+        {
+            from = attachTime( from );
+            to = attachTime( to );
+        }
+        else if ( from.isSupported( ChronoField.SECOND_OF_DAY ) && !to.isSupported( ChronoField.SECOND_OF_DAY ) )
+        {
+            to = attachTime( to );
+        }
+        else if ( to.isSupported( ChronoField.SECOND_OF_DAY ) && !from.isSupported( ChronoField.SECOND_OF_DAY ) )
+        {
+            from = attachTime( from );
+        }
 
         if ( from.isSupported( ChronoField.MONTH_OF_YEAR ) && !to.isSupported( ChronoField.MONTH_OF_YEAR ) )
         {
