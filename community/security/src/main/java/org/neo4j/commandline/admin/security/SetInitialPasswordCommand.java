@@ -34,7 +34,6 @@ import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.security.auth.CommunitySecurityModule;
 import org.neo4j.server.security.auth.FileUserRepository;
-import org.neo4j.server.security.auth.LegacyCredential;
 import org.neo4j.server.security.auth.ListSnapshot;
 import org.neo4j.string.UTF8;
 import org.neo4j.util.VisibleForTesting;
@@ -50,7 +49,7 @@ import static picocli.CommandLine.Parameters;
         description = "Sets the initial password of the initial admin user ('" + INITIAL_USER_NAME + "'). " +
                       "And removes the requirement to change password on first login."
 )
-public class SetInitialPasswordCommand extends AbstractCommand
+public class SetInitialPasswordCommand extends AbstractCommand implements PasswordCommand
 {
     @Option( names = "--require-password-change", defaultValue = "false",
             description = "Require the user to change their password on first login." )
@@ -89,7 +88,7 @@ public class SetInitialPasswordCommand extends AbstractCommand
             {
                 userRepository.start();
                 userRepository.create(
-                        new User.Builder( INITIAL_USER_NAME, LegacyCredential.forPassword( UTF8.encode( password ) ) )
+                        new User.Builder( INITIAL_USER_NAME, createCredentialForPassword( UTF8.encode( password ) ) )
                                 .withRequiredPasswordChange( changeRequired )
                                 .build()
                     );
@@ -120,7 +119,7 @@ public class SetInitialPasswordCommand extends AbstractCommand
                 if ( users.values().size() == 1 )
                 {
                     User user = users.values().get( 0 );
-                    if ( INITIAL_USER_NAME.equals( user.name() ) && user.credentials().matchesPassword( INITIAL_PASSWORD ) )
+                    if ( INITIAL_USER_NAME.equals( user.name() ) && user.credentials().matchesPassword( UTF8.encode( INITIAL_PASSWORD ) ) )
                     {
                         // We allow overwriting an unmodified default neo4j user
                         result = false;

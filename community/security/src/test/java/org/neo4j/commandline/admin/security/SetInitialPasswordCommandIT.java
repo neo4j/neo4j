@@ -35,6 +35,7 @@ import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.impl.security.User;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.security.auth.FileUserRepository;
+import org.neo4j.string.UTF8;
 import org.neo4j.test.extension.EphemeralFileSystemExtension;
 import org.neo4j.test.extension.Inject;
 
@@ -202,7 +203,7 @@ class SetInitialPasswordCommandIT
         userRepository.start();
         User neo4j = userRepository.getUserByName( AuthManager.INITIAL_USER_NAME );
         assertNotNull( neo4j );
-        assertTrue( neo4j.credentials().matchesPassword( password ) );
+        assertTrue( neo4j.credentials().matchesPassword( UTF8.encode( password ) ) );
         assertThat( neo4j.hasFlag( User.PASSWORD_CHANGE_REQUIRED ) ).isEqualTo( passwordChangeRequired );
     }
 
