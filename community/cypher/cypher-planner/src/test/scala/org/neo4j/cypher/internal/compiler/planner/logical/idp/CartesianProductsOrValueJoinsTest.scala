@@ -226,7 +226,6 @@ class CartesianProductsOrValueJoinsTest extends CypherFunSuite with LogicalPlann
             xzEq
           )
         )
-      //xProp = c
     )
   }
 
