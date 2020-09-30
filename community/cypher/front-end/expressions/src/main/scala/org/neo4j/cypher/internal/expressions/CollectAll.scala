@@ -23,4 +23,6 @@ import org.neo4j.cypher.internal.util.InputPosition
  *
  * @param expr the expression to collect
   */
-case class CollectAll(expr: Expression)(val position: InputPosition) extends Expression
+case class CollectAll(expr: Expression)(val position: InputPosition) extends Expression {
+  override def asCanonicalStringVal: String = s"collect_all(${expr.asCanonicalStringVal})"
+}
