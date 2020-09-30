@@ -19,12 +19,13 @@
  */
 package org.neo4j.cypher.operations;
 
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
+import org.neo4j.collection.trackable.HeapTrackingCollections;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.virtual.ListValue;
@@ -54,7 +55,7 @@ public class InCache
             };
         }
 
-    public Value check( AnyValue value, ListValue list )
+    public Value check( AnyValue value, ListValue list, MemoryTracker memoryTracker )
     {
         if ( list.isEmpty() )
         {
@@ -67,20 +68,21 @@ public class InCache
         else
         {
             InCacheChecker checker = seen.computeIfAbsent( list,
-                                                           k -> new InCacheChecker( list.iterator() ) );
+                                                           k -> new InCacheChecker( list.iterator(), memoryTracker ) );
             return checker.check( value );
         }
     }
 
     private static class InCacheChecker
     {
-        private final Set<AnyValue> seen = new HashSet<>();
+        private final Set<AnyValue> seen;
         private final Iterator<AnyValue> iterator;
         private boolean seenUndefined;
 
-        private InCacheChecker( Iterator<AnyValue> iterator )
+        private InCacheChecker( Iterator<AnyValue> iterator, MemoryTracker memoryTracker )
         {
             this.iterator = iterator;
+            this.seen = HeapTrackingCollections.newSet( memoryTracker );
         }
 
         private Value check( AnyValue value )

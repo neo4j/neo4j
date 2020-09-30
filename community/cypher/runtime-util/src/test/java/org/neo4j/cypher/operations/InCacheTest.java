@@ -20,17 +20,22 @@
 package org.neo4j.cypher.operations;
 
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import org.neo4j.memory.EmptyMemoryTracker;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.VirtualValues;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.neo4j.values.storable.Values.FALSE;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 import static org.neo4j.values.storable.Values.TRUE;
@@ -56,7 +61,7 @@ class InCacheTest
 
         for ( Entry<Value,Value> entry : shuffled( expected ) )
         {
-            assertThat( cache.check( entry.getKey(), list ) ).isEqualTo( entry.getValue() );
+            assertThat( cache.check( entry.getKey(), list, EmptyMemoryTracker.INSTANCE ) ).isEqualTo( entry.getValue() );
         }
     }
 
@@ -76,7 +81,7 @@ class InCacheTest
 
         for ( Entry<Value,Value> entry : shuffled( expected ) )
         {
-            assertThat( cache.check( entry.getKey(), list ) ).isEqualTo( entry.getValue() );
+            assertThat( cache.check( entry.getKey(), list, EmptyMemoryTracker.INSTANCE) ).isEqualTo( entry.getValue() );
         }
     }
 
@@ -87,10 +92,27 @@ class InCacheTest
         InCache cache = new InCache();
 
         //when
-        Value check = cache.check( NO_VALUE, VirtualValues.EMPTY_LIST );
+        Value check = cache.check( NO_VALUE, VirtualValues.EMPTY_LIST, EmptyMemoryTracker.INSTANCE );
 
         //then
         assertThat( check ).isEqualTo( FALSE );
+    }
+
+    @Test
+    void shouldTrackMemory()
+    {
+        //given
+        InCache cache = new InCache();
+        ListValue list = list( stringValue( "a" ), stringValue( "b" ), stringValue( "c" ) );
+
+        //when
+        MemoryTracker memoryTracker = mock( MemoryTracker.class );
+        cache.check( stringValue( "a" ), list, memoryTracker);
+
+        //then
+        ArgumentCaptor<Long> arg = ArgumentCaptor.forClass( Long.class );
+        verify( memoryTracker ).allocateHeap( arg.capture() );
+        assertThat( arg.getValue() ).isGreaterThan( 0 );
     }
 
     private <K, V> Iterable<Entry<K,V>> shuffled( Map<K,V> map )
