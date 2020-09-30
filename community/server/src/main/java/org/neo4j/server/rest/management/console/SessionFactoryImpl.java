@@ -46,6 +46,7 @@ public class SessionFactoryImpl implements ConsoleSessionFactory
     {
         this.request = request;
         this.httpSession = request.getSession(true);
+        this.request.changeSessionId();
         this.cypherExecutor = cypherExecutor;
 
         enableEngines( supportedEngines );
