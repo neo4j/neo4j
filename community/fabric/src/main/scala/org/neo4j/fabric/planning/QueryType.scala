@@ -35,9 +35,15 @@ sealed trait QueryType
 
 object QueryType {
 
-  case object Read extends QueryType
-  case object ReadPlusUnresolved extends QueryType
-  case object Write extends QueryType
+  case object Read extends QueryType {
+    override def toString: String = "Read query"
+  }
+  case object ReadPlusUnresolved extends QueryType {
+    override def toString: String = "Read query (with unresolved procedures)"
+  }
+  case object Write extends QueryType {
+    override def toString: String = "Write query"
+  }
 
   // Java access helpers
   val READ: QueryType = Read
