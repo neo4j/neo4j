@@ -31,6 +31,7 @@ import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -69,6 +70,7 @@ import org.neo4j.kernel.impl.transaction.log.TransactionLogWriter;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.entry.IncompleteLogHeaderException;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryParserSetVersion;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.TransactionLogVersionSelector;
 import org.neo4j.kernel.impl.transaction.log.entry.UnsupportedLogVersionException;
@@ -761,7 +763,8 @@ class RecoveryCorruptedTransactionLogIT
 
     private byte randomInvalidVersionsBytes()
     {
-        return (byte) random.nextInt( TransactionLogVersionSelector.LATEST.versionByte() + 1, Byte.MAX_VALUE );
+        int highestVersionByte = Arrays.stream( LogEntryParserSetVersion.values() ).mapToInt( LogEntryParserSetVersion::getVersionByte ).max().getAsInt();
+        return (byte) random.nextInt( highestVersionByte + 1, Byte.MAX_VALUE );
     }
 
     private byte randomBytes()
