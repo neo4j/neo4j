@@ -51,10 +51,18 @@ public class RotatingLogFileWriter implements Closeable
     private final Logger log;
     private final Neo4jLoggerContext ctx;
 
-    // NOTE that the header has no implicit newline so that must be added in the header string if desired.
-    public RotatingLogFileWriter( FileSystemAbstraction fs, Path logPath, long rotationThreshold, int maxArchives, String header )
+    /**
+     * @param fs The filesystem abstraction. Rotating files will only be created for DefaultFileSystemAbstraction, for other abstractions no rotation is done.
+     * @param logPath Path of the log file.
+     * @param rotationThreshold The threshold to rotate on in bytes.
+     * @param maxArchives The maximum number of archive files to keep.
+     * @param fileSuffix File suffix of the archive files. If the file suffix ends with '.gz' or '.zip' the resulting archive will be compressed using
+     *                   the compression scheme that matches the suffix. Empty string if no additional file suffix should be added.
+     * @param header String to print at beginning of each new file. Note that the header has no implicit newline so that must be added in the string if desired.
+     */
+    public RotatingLogFileWriter( FileSystemAbstraction fs, Path logPath, long rotationThreshold, int maxArchives, String fileSuffix, String header )
     {
-        ctx = setupLogFile( fs, logPath, rotationThreshold, maxArchives, header );
+        ctx = setupLogFile( fs, logPath, rotationThreshold, maxArchives, fileSuffix, header );
         log = ctx.getLogger( "" );
     }
 
@@ -69,7 +77,8 @@ public class RotatingLogFileWriter implements Closeable
         ctx.close();
     }
 
-    private Neo4jLoggerContext setupLogFile( FileSystemAbstraction fileSystemAbstraction, Path logPath, long rotationThreshold, int maxArchives, String header )
+    private Neo4jLoggerContext setupLogFile( FileSystemAbstraction fileSystemAbstraction, Path logPath, long rotationThreshold, int maxArchives,
+            String fileSuffix, String header )
     {
         try
         {
@@ -93,7 +102,7 @@ public class RotatingLogFileWriter implements Closeable
                         .setName( APPENDER_NAME )
                         .setLayout( layout )
                         .withFileName( logPath.toString() )
-                        .withFilePattern( logPath + ".%i" )
+                        .withFilePattern( logPath + ".%i" + fileSuffix )
                         .withPolicy( SizeBasedTriggeringPolicy.createPolicy( String.valueOf( rotationThreshold ) ) )
                         .withStrategy( DefaultRolloverStrategy.newBuilder().withMax( String.valueOf( maxArchives ) ).withFileIndex( "min" ).build() )
                         .build();
