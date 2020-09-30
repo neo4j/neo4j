@@ -19,13 +19,21 @@
  */
 package org.neo4j.cypher.internal.runtime
 
+import org.neo4j.cypher.internal.runtime.GrowingArray.DEFAULT_SIZE
+import org.neo4j.cypher.internal.runtime.GrowingArray.SHALLOW_SIZE
+import org.neo4j.memory.HeapEstimator.shallowSizeOfInstance
+import org.neo4j.memory.HeapEstimator.shallowSizeOfObjectArray
+import org.neo4j.memory.MemoryTracker
+
 /**
  * Random access data structure which grows dynamically as elements are added.
  */
-class GrowingArray[T <: AnyRef] {
+class GrowingArray[T <: AnyRef](memoryTracker: MemoryTracker) extends AutoCloseable {
 
-  private var array: Array[AnyRef] = new Array[AnyRef](4)
+  private var trackedMemory = shallowSizeOfObjectArray(DEFAULT_SIZE)
+  memoryTracker.allocateHeap(trackedMemory + SHALLOW_SIZE)
   private var highWaterMark: Int = 0
+  private var array: Array[AnyRef] = new Array[AnyRef](DEFAULT_SIZE)
 
   /**
    * Set an element at a given index, and grows the underlying structure if needed.
@@ -84,6 +92,13 @@ class GrowingArray[T <: AnyRef] {
    */
   def isDefinedAt(index: Int): Boolean = array.isDefinedAt(index) && array(index) != null
 
+  override def close(): Unit = {
+    if (array != null) {
+      memoryTracker.releaseHeap(trackedMemory)
+      array = null
+    }
+  }
+
   private def ensureCapacity(size: Int): Unit = {
     if (this.highWaterMark < size) {
       this.highWaterMark = size
@@ -91,9 +106,19 @@ class GrowingArray[T <: AnyRef] {
 
     if (array.length < size) {
       val temp = array
+      val oldHeapUsage = trackedMemory
+      val oldLenght = temp.length
       val newLength = math.max(array.length * 2, size)
+      trackedMemory = shallowSizeOfObjectArray(newLength)
+      memoryTracker.allocateHeap(trackedMemory)
       array = new Array[AnyRef](newLength)
       System.arraycopy(temp, 0, array, 0, temp.length)
+      memoryTracker.releaseHeap(oldHeapUsage)
     }
   }
+}
+
+object GrowingArray {
+  val DEFAULT_SIZE: Int = 4
+  val SHALLOW_SIZE: Long = shallowSizeOfInstance(classOf[GrowingArray[_]])
 }

@@ -145,12 +145,12 @@ case object NoOpQueryMemoryTracker extends QueryMemoryTracker {
 
 object BoundedQueryMemoryTracker {
   def apply(transactionMemoryTracker: MemoryTracker): BoundedQueryMemoryTracker = {
-    new BoundedQueryMemoryTracker(transactionMemoryTracker, new MemoryTrackerPerOperator)
+    new BoundedQueryMemoryTracker(transactionMemoryTracker, new MemoryTrackerPerOperator(transactionMemoryTracker))
   }
 
   class OperatorMemoryTracker(queryMemoryTracker: MemoryTracker) extends HighWaterScopedMemoryTracker(queryMemoryTracker)
 
-  class MemoryTrackerPerOperator extends GrowingArray[MemoryTracker]
+  class MemoryTrackerPerOperator(memoryTracker: MemoryTracker) extends GrowingArray[MemoryTracker](memoryTracker)
 
 }
 
