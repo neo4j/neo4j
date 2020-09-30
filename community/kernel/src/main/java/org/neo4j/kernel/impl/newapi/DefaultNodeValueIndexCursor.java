@@ -234,13 +234,16 @@ class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
             }
 
             /*
-             * If reading the property is not granted for at least one label of the the index,
-             * all property values of this property in the index are disallowed,
+             * If reading the property is not granted for all labels of the the index,
+             * there can be property values in the index that are disallowed,
              * so post-filtering is needed.
              */
-            if ( !accessMode.allowsReadNodeProperty( () -> Labels.from( labelIds ), propId ) )
+            for ( long label : labelIds )
             {
-                return false;
+                if ( !accessMode.allowsReadNodeProperty( () -> Labels.from( label ), propId ) )
+                {
+                    return false;
+                }
             }
         }
         return true;
