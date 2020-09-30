@@ -583,7 +583,8 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
 
   test("should create user with old configuration encrypted password") {
     // GIVEN
-    val encryptedPassword = getMaskedEncodedPasswordOldConfiguration(password)
+    val version = "0"
+    val encryptedPassword = getMaskedEncodedPassword(password, version)
 
     // WHEN
     execute(s"CREATE USER $username SET ENCRYPTED PASSWORD '$encryptedPassword'")
@@ -970,7 +971,8 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
   test("should alter user with old configuration encrypted password") {
     // GIVEN
     prepareUser()
-    val encryptedPassword = getMaskedEncodedPasswordOldConfiguration(newPassword)
+    val version = "0"
+    val encryptedPassword = getMaskedEncodedPassword(newPassword, version)
 
     // WHEN
     execute(s"ALTER USER $username SET ENCRYPTED PASSWORD '$encryptedPassword'")
@@ -1307,8 +1309,8 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     SystemGraphCredential.maskSerialized(credential.serialize())
   }
 
-  private def getMaskedEncodedPasswordOldConfiguration(password: String): String = {
-    val hasher = new SecureHasher("0")
+  private def getMaskedEncodedPassword(password: String, version: String): String = {
+    val hasher = new SecureHasher(version)
     val credential = SystemGraphCredential.createCredentialForPassword(password.getBytes, hasher)
     SystemGraphCredential.maskSerialized(credential.serialize())
   }
