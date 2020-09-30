@@ -45,6 +45,7 @@ import org.neo4j.fabric.executor.FabricRemoteExecutor;
 import org.neo4j.fabric.executor.FabricStatementLifecycles.StatementLifecycle;
 import org.neo4j.fabric.executor.Location;
 import org.neo4j.fabric.executor.SingleDbTransaction;
+import org.neo4j.fabric.planning.QueryType;
 import org.neo4j.fabric.planning.StatementType;
 import org.neo4j.fabric.stream.StatementResult;
 import org.neo4j.graphdb.TransactionTerminatedException;
@@ -126,7 +127,23 @@ public class FabricTransactionImpl implements FabricTransaction, CompositeTransa
             var oldType = statementType.get();
             if ( oldType != type )
             {
-                throw new FabricException( Status.Transaction.ForbiddenDueToTransactionType, "Tried to execute %s after executing %s", type, oldType );
+                var queryAfterQuery = type.isQuery() && oldType.isQuery();
+                var readQueryAfterSchema = type.isReadQuery() && oldType.isSchemaCommand();
+                var schemaAfterReadQuery = type.isSchemaCommand() && oldType.isReadQuery();
+                var allowedCombination = queryAfterQuery || readQueryAfterSchema || schemaAfterReadQuery;
+                if ( allowedCombination )
+                {
+                    var writeQueryAfterReadQuery = queryAfterQuery && !type.isReadQuery() && oldType.isReadQuery();
+                    var upgrade = writeQueryAfterReadQuery || schemaAfterReadQuery;
+                    if ( upgrade )
+                    {
+                        statementType.set( type );
+                    }
+                }
+                else
+                {
+                    throw new FabricException( Status.Transaction.ForbiddenDueToTransactionType, "Tried to execute %s after executing %s", type, oldType );
+                }
             }
         }
     }
@@ -134,12 +151,7 @@ public class FabricTransactionImpl implements FabricTransaction, CompositeTransa
     public boolean isSchemaTransaction()
     {
         var type = statementType.get();
-        if ( type != null && type == StatementType.SCHEMA_COMMAND() )
-        {
-            return true;
-        }
-
-        return false;
+        return type != null && type.isSchemaCommand();
     }
 
     @Override
@@ -239,7 +251,7 @@ public class FabricTransactionImpl implements FabricTransaction, CompositeTransa
         try
         {
             doOnChildren( readingTransactions, writingTransaction, operation )
-                    .forEach( error -> allFailures.add( new ErrorRecord( "Failed to rollback a child transaction", error  ) ) );
+                    .forEach( error -> allFailures.add( new ErrorRecord( "Failed to rollback a child transaction", error ) ) );
         }
         catch ( Exception e )
         {

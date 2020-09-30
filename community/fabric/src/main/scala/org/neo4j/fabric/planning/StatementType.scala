@@ -21,28 +21,36 @@ package org.neo4j.fabric.planning
 
 import org.neo4j.cypher.internal.ast
 
-sealed trait StatementType
+sealed trait StatementType {
+  // Java access helpers
+  def isQuery: Boolean = false
+  def isReadQuery: Boolean = false
+  def isSchemaCommand: Boolean = false
+  def isAdminCommand: Boolean = false
+}
 
 object StatementType {
 
-  case object Query extends StatementType {
-    override def toString: String = "Query"
+  case class Query(queryType: QueryType) extends StatementType {
+    override def toString: String = queryType.toString
+    override def isQuery: Boolean = true
+    override def isReadQuery: Boolean = queryType match {
+      case QueryType.Read => true
+      case _              => false
+    }
   }
   case object SchemaCommand extends StatementType {
     override def toString: String = "Schema modification"
+    override def isSchemaCommand: Boolean = true
   }
   case object AdminCommand extends StatementType {
     override def toString: String = "Administration command"
+    override def isAdminCommand: Boolean = true
   }
-
-  // Java access helpers
-  val QUERY: StatementType = Query
-  val SCHEMA_COMMAND: StatementType = SchemaCommand
-  val ADMIN_COMMAND: StatementType = AdminCommand
 
   def of(statement: ast.Statement): StatementType =
     statement match {
-      case _: ast.Query                 => Query
+      case q: ast.Query                 => Query(QueryType.of(q))
       case _: ast.SchemaCommand         => SchemaCommand
       case _: ast.AdministrationCommand => AdminCommand
     }
