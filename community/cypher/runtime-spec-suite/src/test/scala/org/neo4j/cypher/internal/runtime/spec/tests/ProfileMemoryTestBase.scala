@@ -272,6 +272,24 @@ abstract class ProfileMemoryTestBase[CONTEXT <: RuntimeContext](edition: Edition
     assertOnMemory(logicalQuery, NO_INPUT, 4, 1, 2)
   }
 
+  test("should profile memory of IN") {
+    given {
+      nodePropertyGraph(SIZE, {
+        case _ => Map("p" -> Array(1, 2, 3, 4))
+      })
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("y")
+      .projection("43 IN x.p AS y")
+      .allNodeScan("x")
+      .build()
+
+    // then
+    assertOnMemory(logicalQuery, NO_INPUT, 3, 1)
+  }
+
   //noinspection SameParameterValue
   protected def assertOnMemory(logicalQuery: LogicalQuery, input: InputValues, numOperators: Int, allocatingOperators: Int*): Unit = {
     val runtimeResult = profile(logicalQuery, runtime, input.stream())

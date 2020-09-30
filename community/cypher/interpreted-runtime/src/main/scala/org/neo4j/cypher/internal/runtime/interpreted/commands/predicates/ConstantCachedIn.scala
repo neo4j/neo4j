@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
+import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 
@@ -35,7 +36,7 @@ This class is used for making the common <exp> IN <constant-expression> fast
 It uses a cache for the <constant-expression>, and turns it into a Set, for fast existence checking.
 The key for the cache is the expression and not the value, which saves in execution speed
  */
-case class ConstantCachedIn(value: Expression, list: Expression) extends Predicate with ListSupport {
+case class ConstantCachedIn(value: Expression, list: Expression, id: Id) extends Predicate with ListSupport {
 
   // These two are here to make the fields accessible without conflicting with the case classes
   override def isMatch(ctx: ReadableRow, state: QueryState): Option[Boolean] = {
@@ -45,7 +46,7 @@ case class ConstantCachedIn(value: Expression, list: Expression) extends Predica
         NullListChecker
       else {
         val input = makeTraversable(listValue)
-        if (input.isEmpty) AlwaysFalseChecker else new BuildUp(input)
+        if (input.isEmpty) AlwaysFalseChecker else new BuildUp(input, state.memoryTracker.memoryTrackerForOperator(id.x))
       }
       new InCheckContainer(checker)
     })
@@ -59,7 +60,7 @@ case class ConstantCachedIn(value: Expression, list: Expression) extends Predica
 
   override def arguments: Seq[Expression] = Seq(list)
 
-  override def rewrite(f: Expression => Expression): Expression = f(ConstantCachedIn(value.rewrite(f), list.rewrite(f)))
+  override def rewrite(f: Expression => Expression): Expression = f(ConstantCachedIn(value.rewrite(f), list.rewrite(f), id))
 }
 
 /*
@@ -67,7 +68,7 @@ This class is used for making the common <exp> IN <rhs-expression> fast
 
 It uses a cache for the <rhs-expression> value, and turns it into a Set, for fast existence checking
  */
-case class DynamicCachedIn(value: Expression, list: Expression) extends Predicate with ListSupport {
+case class DynamicCachedIn(value: Expression, list: Expression, id: Id) extends Predicate with ListSupport {
 
   // These two are here to make the fields accessible without conflicting with the case classes
   override def isMatch(ctx: ReadableRow, state: QueryState): Option[Boolean] = {
@@ -82,7 +83,7 @@ case class DynamicCachedIn(value: Expression, list: Expression) extends Predicat
       return Some(false)
 
     val inChecker = state.cachedIn.getOrElseUpdate(traversable, {
-      val checker = new BuildUp(traversable)
+      val checker = new BuildUp(traversable, state.memoryTracker.memoryTrackerForOperator(id.x))
       new InCheckContainer(checker)
     })
 
@@ -96,13 +97,13 @@ case class DynamicCachedIn(value: Expression, list: Expression) extends Predicat
   override def children: Seq[AstNode[_]] = Seq(value, list)
 
 
-  override def rewrite(f: Expression => Expression): Expression = f(DynamicCachedIn(value.rewrite(f), list.rewrite(f)))
+  override def rewrite(f: Expression => Expression): Expression = f(DynamicCachedIn(value.rewrite(f), list.rewrite(f), id))
 }
 
 object CachedIn {
   def unapply(arg: Expression): Option[(Expression, Expression)] = arg match {
-    case DynamicCachedIn(value, list) => Some((value, list))
-    case ConstantCachedIn(value, list) => Some((value, list))
+    case DynamicCachedIn(value, list, _) => Some((value, list))
+    case ConstantCachedIn(value, list, _) => Some((value, list))
     case _ => None
   }
 }

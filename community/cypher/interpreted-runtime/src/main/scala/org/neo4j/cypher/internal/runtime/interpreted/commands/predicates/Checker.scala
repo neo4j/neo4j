@@ -21,13 +21,14 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.predicates
 
 import java.util
 
+import org.neo4j.collection.trackable.HeapTrackingCollections
 import org.neo4j.cypher.internal.macros.AssertMacros.checkOnlyWhenAssertionsAreEnabled
+import org.neo4j.memory.EmptyMemoryTracker
+import org.neo4j.memory.MemoryTracker
 import org.neo4j.values.AnyValue
 import org.neo4j.values.Equality
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.ListValue
-
-import scala.collection.mutable
 
 /**
  * This is a class that handles IN checking. With a cache. It's a state machine, and
@@ -37,10 +38,10 @@ trait Checker {
   def contains(value: AnyValue): (Option[Boolean], Checker)
 }
 
-class BuildUp(list: ListValue) extends Checker {
+class BuildUp(list: ListValue, memoryTracker: MemoryTracker = EmptyMemoryTracker.INSTANCE) extends Checker {
   val iterator: util.Iterator[AnyValue] = list.iterator()
   checkOnlyWhenAssertionsAreEnabled(iterator.hasNext)
-  private val cachedSet: mutable.Set[AnyValue] = new mutable.HashSet[AnyValue]
+  private val cachedSet = HeapTrackingCollections.newSet[AnyValue](memoryTracker)
   override def contains(value: AnyValue): (Option[Boolean], Checker) = {
     if (value eq Values.NO_VALUE) (None, this)
     else {
@@ -86,9 +87,9 @@ case object NullListChecker extends Checker {
 }
 
 // This is the final form for this cache.
-class SetChecker(cachedSet: mutable.Set[AnyValue], falseResult: Option[Boolean]) extends Checker {
+class SetChecker(cachedSet: java.util.Set[AnyValue], falseResult: Option[Boolean]) extends Checker {
 
-  checkOnlyWhenAssertionsAreEnabled(cachedSet.nonEmpty)
+  checkOnlyWhenAssertionsAreEnabled(!cachedSet.isEmpty)
 
   override def contains(value: AnyValue): (Option[Boolean], Checker) = {
     if (value eq Values.NO_VALUE)

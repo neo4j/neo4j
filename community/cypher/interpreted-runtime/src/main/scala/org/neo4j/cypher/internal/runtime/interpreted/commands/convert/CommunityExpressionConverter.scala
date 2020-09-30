@@ -553,16 +553,16 @@ case class CommunityExpressionConverter(tokenContext: TokenContext) extends Expr
 
   private def in(id: Id, e: internal.expressions.In, self: ExpressionConverters) = e.rhs match {
     case value: internal.expressions.Parameter =>
-      predicates.ConstantCachedIn(self.toCommandExpression(id, e.lhs), self.toCommandExpression(id, value))
+      predicates.ConstantCachedIn(self.toCommandExpression(id, e.lhs), self.toCommandExpression(id, value), id)
 
     case value@internal.expressions.ListLiteral(expressions) if expressions.isEmpty =>
       predicates.Not(predicates.True())
 
     case value@internal.expressions.ListLiteral(expressions) if expressions.forall(_.isInstanceOf[internal.expressions.Literal]) =>
-      predicates.ConstantCachedIn(self.toCommandExpression(id, e.lhs), self.toCommandExpression(id, value))
+      predicates.ConstantCachedIn(self.toCommandExpression(id, e.lhs), self.toCommandExpression(id, value), id)
 
     case _ =>
-      predicates.DynamicCachedIn(self.toCommandExpression(id, e.lhs), self.toCommandExpression(id, e.rhs))
+      predicates.DynamicCachedIn(self.toCommandExpression(id, e.lhs), self.toCommandExpression(id, e.rhs), id)
   }
 
   private def caseExpression(id: Id, e: internal.expressions.CaseExpression, self: ExpressionConverters) = e.expression match {
