@@ -463,9 +463,14 @@ public class MultipleIndexPopulator
     private void flush( IndexPopulation population )
     {
         phaseTracker.enterPhase( PhaseTracker.Phase.WRITE );
-        activeTasks.incrementAndGet();
         List<IndexEntryUpdate<?>> batch = population.takeCurrentBatchFromScan();
 
+        if ( batch.isEmpty() )
+        {
+            return;
+        }
+
+        activeTasks.incrementAndGet();
         jobScheduler.schedule( Group.INDEX_POPULATION_WORK,
                 new JobMonitoringParams( subject, databaseName, "Index scan batch for '" + population.indexDescriptor.getName() + "'" ),
                 () ->

@@ -330,7 +330,7 @@ class IndexingServiceTest
         order.verify( populator, times( 1 ) ).add( any( Collection.class ), any( PageCursorTracer.class ) );
         order.verify( populator ).scanCompleted( any( PhaseTracker.class ), any( IndexPopulator.PopulationWorkScheduler.class ),
                 any( PageCursorTracer.class ) );
-        order.verify( populator, times( 2 ) ).add( any( Collection.class ), any( PageCursorTracer.class ) );
+        order.verify( populator, times( 1 ) ).add( any( Collection.class ), any( PageCursorTracer.class ) );
         order.verify( populator ).newPopulatingUpdater( propertyAccessor, NULL );
         order.verify( updater ).close();
         order.verify( populator ).sample( NULL );
@@ -1403,7 +1403,7 @@ class IndexingServiceTest
         }
 
         @Override
-        public void add( Collection<? extends IndexEntryUpdate<?>> updates, PageCursorTracer cursorTracer )
+        public void scanCompleted( PhaseTracker phaseTracker, PopulationWorkScheduler jobScheduler, PageCursorTracer cursorTracer )
         {
             latch.waitForAllToStart();
         }
