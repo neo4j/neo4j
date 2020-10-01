@@ -25,9 +25,6 @@ import org.neo4j.cypher.internal.config.CypherConfiguration
 import org.neo4j.cypher.internal.options.CypherQueryOptions.ILLEGAL_EXPRESSION_ENGINE_RUNTIME_COMBINATIONS
 import org.neo4j.cypher.internal.options.CypherQueryOptions.ILLEGAL_INTERPRETED_PIPES_FALLBACK_RUNTIME_COMBINATIONS
 import org.neo4j.cypher.internal.options.CypherQueryOptions.ILLEGAL_OPERATOR_ENGINE_RUNTIME_COMBINATIONS
-import org.neo4j.cypher.internal.options.CypherQueryOptions.ILLEGAL_PLANNER_RUNTIME_COMBINATIONS
-import org.neo4j.cypher.internal.options.CypherQueryOptions.ILLEGAL_PLANNER_VERSION_COMBINATIONS
-import org.neo4j.exceptions.InvalidArgumentException
 
 /**
  * Collects all cypher options that can be set on query basis (pre-parser options)
@@ -45,12 +42,6 @@ case class CypherQueryOptions(
   connectComponentsPlanner: CypherConnectComponentsPlannerOption,
   debugOptions: CypherDebugOptions
 ) {
-  if (ILLEGAL_PLANNER_RUNTIME_COMBINATIONS((planner, runtime)))
-    throw new InvalidCypherOption(s"Unsupported PLANNER - RUNTIME combination: ${planner.name} - ${runtime.name}")
-
-  if (ILLEGAL_PLANNER_VERSION_COMBINATIONS((planner, version)))
-    throw new InvalidCypherOption(s"Unsupported PLANNER - VERSION combination: ${planner.name} - ${version.name}")
-
   if (ILLEGAL_EXPRESSION_ENGINE_RUNTIME_COMBINATIONS((expressionEngine, runtime)))
     throw new InvalidCypherOption(s"Cannot combine EXPRESSION ENGINE '${expressionEngine.name}' with RUNTIME '${runtime.name}'")
 
@@ -113,8 +104,6 @@ object CypherQueryOptions {
     }
   }
 
-  private final val ILLEGAL_PLANNER_RUNTIME_COMBINATIONS: Set[(CypherPlannerOption, CypherRuntimeOption)] = Set.empty
-  private final val ILLEGAL_PLANNER_VERSION_COMBINATIONS: Set[(CypherPlannerOption, CypherVersion)] = Set.empty
   private final val ILLEGAL_EXPRESSION_ENGINE_RUNTIME_COMBINATIONS: Set[(CypherExpressionEngineOption, CypherRuntimeOption)] =
     Set(
       (CypherExpressionEngineOption.compiled, CypherRuntimeOption.interpreted))
