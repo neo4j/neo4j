@@ -380,15 +380,31 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
 
   def expandInto(pattern: String): IMPL = expand(pattern, ExpandInto)
 
+  def optionalExpandAllAst(pattern: String,
+                           predicate: Expression,
+                           cacheNodeProperties: Seq[String] = Seq.empty,
+                           cacheRelProperties: Seq[String] = Seq.empty): IMPL =
+    optionalExpandAll(
+      patternParser.parse(pattern),
+      Some(predicate),
+      cacheNodeProperties,
+      cacheRelProperties,
+    )
+
+
   def optionalExpandAll(pattern: String,
-                        predicate: Option[String] = None): IMPL = {
-    val p = patternParser.parse(pattern)
-    p.length match {
+                        predicate: Option[String] = None): IMPL =
+    optionalExpandAll(
+      patternParser.parse(pattern),
+      predicate.map(Parser.parseExpression).map(p => Ands(Seq(p))(p.position)),
+    )
+
+  private def optionalExpandAll(pattern: PatternParser.Pattern,
+                                predicate: Option[Expression]): IMPL = {
+    pattern.length match {
       case SimplePatternLength =>
-        val pred = predicate.map(Parser.parseExpression).map(p => Ands(Seq(p))(p.position))
         appendAtCurrentIndent(UnaryOperator(lp =>
-          OptionalExpand(lp, p.from, p.dir, p.relTypes, p.to, p.relName, ExpandAll, pred
-    )(_)))
+          OptionalExpand(lp, pattern.from, pattern.dir, pattern.relTypes, pattern.to, pattern.relName, ExpandAll, predicate)(_)))
       case _ =>
         throw new IllegalArgumentException("Cannot have optional expand with variable length pattern")
     }

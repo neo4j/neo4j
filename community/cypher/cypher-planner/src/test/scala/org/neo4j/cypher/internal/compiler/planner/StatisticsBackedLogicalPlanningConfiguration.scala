@@ -316,7 +316,7 @@ class StatisticsBackedLogicalPlanningConfigurationBuilder() {
     new StatisticsBackedLogicalPlanningConfiguration(
       tokens,
       planContext,
-      options = options,
+      options,
     )
   }
 }
