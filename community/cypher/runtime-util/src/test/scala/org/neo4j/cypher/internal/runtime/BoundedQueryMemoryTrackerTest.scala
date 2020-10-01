@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.runtime
 
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.memory.HeapEstimator.shallowSizeOfObjectArray
 import org.neo4j.memory.LocalMemoryTracker
 import org.neo4j.memory.Measurable
 import org.neo4j.memory.MemoryLimitExceededException
@@ -95,7 +96,8 @@ class BoundedQueryMemoryTrackerTest extends CypherFunSuite {
 
   test("Throws exception if memory exceeds threshold") {
     // Given
-    val tracker = BoundedQueryMemoryTracker(TestMemoryTracker(20))
+    val sizeOfGrowingArray = shallowSizeOfObjectArray(GrowingArray.DEFAULT_SIZE) + GrowingArray.SHALLOW_SIZE
+    val tracker = BoundedQueryMemoryTracker(TestMemoryTracker(20 + sizeOfGrowingArray))
     // When
     tracker.allocated(10, 0)
     tracker.allocated(5, 0)
