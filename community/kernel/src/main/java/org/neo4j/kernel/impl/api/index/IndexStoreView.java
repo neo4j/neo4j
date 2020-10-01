@@ -100,6 +100,8 @@ public interface IndexStoreView
 
     IndexStoreView EMPTY = new Adaptor();
 
+    boolean isEmpty();
+
     class Adaptor implements IndexStoreView
     {
         @SuppressWarnings( "unchecked" )
@@ -124,6 +126,12 @@ public interface IndexStoreView
         public NodePropertyAccessor newPropertyAccessor( PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
         {
             return NodePropertyAccessor.EMPTY;
+        }
+
+        @Override
+        public boolean isEmpty()
+        {
+            return true;
         }
     }
 }

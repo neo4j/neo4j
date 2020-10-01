@@ -827,7 +827,16 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
 
     private void startIndexPopulation( IndexPopulationJob job )
     {
-        populationJobController.startIndexPopulation( job );
+        if ( storeView.isEmpty() )
+        {
+            // Creating indexes and constraints on an empty database, before ingesting data doesn't need to do unnecessary scheduling juggling,
+            // instead just run it on the caller thread.
+            job.run();
+        }
+        else
+        {
+            populationJobController.startIndexPopulation( job );
+        }
     }
 
     private String indexStateInfo( String tag, InternalIndexState state, IndexDescriptor descriptor )

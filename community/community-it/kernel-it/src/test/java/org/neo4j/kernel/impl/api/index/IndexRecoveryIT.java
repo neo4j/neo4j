@@ -144,6 +144,7 @@ class IndexRecoveryIT
             when( mockedIndexProvider
                     .getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any(), any(), any( TokenNameLookup.class ) ) ).thenReturn(
                     indexPopulatorWithControlledCompletionTiming( populationSemaphore ) );
+            createSomeData();
             createIndex( myLabel );
 
             // And Given
@@ -205,6 +206,7 @@ class IndexRecoveryIT
             when( mockedIndexProvider
                     .getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any(), any(), any( TokenNameLookup.class ) ) ).thenReturn(
                     indexPopulatorWithControlledCompletionTiming( populationSemaphore ) );
+            createSomeData();
             createIndex( myLabel );
 
             // And Given
@@ -505,6 +507,15 @@ class IndexRecoveryIT
         public void recoveryCompleted( int numberOfRecoveredTransactions, long recoveryTimeInMilliseconds )
         {
             recoverySemaphore.release();
+        }
+    }
+
+    private void createSomeData()
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.createNode();
+            tx.commit();
         }
     }
 }

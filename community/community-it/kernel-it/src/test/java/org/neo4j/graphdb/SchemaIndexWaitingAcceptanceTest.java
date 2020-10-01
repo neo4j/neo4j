@@ -19,6 +19,7 @@
  */
 package org.neo4j.graphdb;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
@@ -52,6 +53,16 @@ public class SchemaIndexWaitingAcceptanceTest
         List<ExtensionFactory<?>> extensions = Collections.singletonList( singleInstanceIndexProviderFactory( "test", provider ) );
         builder.setExtensions( extensions ).noOpSystemGraphInitializer();
         builder.setConfig( default_schema_provider, provider.getProviderDescriptor().name() );
+    }
+
+    @BeforeEach
+    void createSomeData()
+    {
+        try ( Transaction tx = database.beginTx() )
+        {
+            tx.createNode();
+            tx.commit();
+        }
     }
 
     @Test

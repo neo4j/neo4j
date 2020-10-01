@@ -103,6 +103,12 @@ public class DynamicIndexStoreView implements IndexStoreView
                 propertyUpdateVisitor, relationshipTypeIds, propertyKeyIdFilter, cursorTracer, memoryTracker );
     }
 
+    @Override
+    public boolean isEmpty()
+    {
+        return neoStoreIndexStoreView.isEmpty();
+    }
+
     private boolean useAllNodeStoreScan( int[] labelIds, PageCursorTracer cursorTracer )
     {
         try

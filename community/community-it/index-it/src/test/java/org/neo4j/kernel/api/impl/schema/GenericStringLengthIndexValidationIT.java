@@ -51,6 +51,6 @@ public class GenericStringLengthIndexValidationIT extends StringLengthIndexValid
     protected String expectedPopulationFailureCauseMessage()
     {
         return "Property value is too large to index, please see index documentation for limitations. Index: Index( id=1, name='index_71616483', " +
-                "type='GENERAL BTREE', schema=(:LABEL_ONE {largeString}), indexProvider='native-btree-1.0' ), entity id: 0";
+                "type='GENERAL BTREE', schema=(:LABEL_ONE {largeString}), indexProvider='native-btree-1.0' ), entity id: ";
     }
 }

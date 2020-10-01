@@ -58,8 +58,9 @@ import static org.neo4j.test.TestLabels.LABEL_ONE;
 public abstract class StringLengthIndexValidationIT
 {
     private static final String propKey = "largeString";
-    private static final AtomicBoolean trapPopulation = new AtomicBoolean();
-    private static final Barrier.Control populationScanFinished = new Barrier.Control();
+
+    private final AtomicBoolean trapPopulation = new AtomicBoolean();
+    private final Barrier.Control populationScanFinished = new Barrier.Control();
     private final int singleKeySizeLimit = getSingleKeySizeLimit();
     private final GraphDatabaseSettings.SchemaIndex schemaIndex = getSchemaIndex();
 
@@ -169,6 +170,11 @@ public abstract class StringLengthIndexValidationIT
     public void externalUpdatesMustNotFailIndexPopulationIfWithinIndexKeySizeLimit() throws InterruptedException
     {
         trapPopulation.set( true );
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.createNode();
+            tx.commit();
+        }
 
         // Create index should be fine
         try ( Transaction tx = db.beginTx() )
@@ -201,6 +207,11 @@ public abstract class StringLengthIndexValidationIT
     public void externalUpdatesMustFailIndexPopulationIfExceedingIndexKeySizeLimit() throws InterruptedException
     {
         trapPopulation.set( true );
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.createNode();
+            tx.commit();
+        }
 
         // Create index should be fine
         try ( Transaction tx = db.beginTx() )

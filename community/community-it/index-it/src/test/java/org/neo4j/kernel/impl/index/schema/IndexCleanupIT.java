@@ -134,6 +134,7 @@ public class IndexCleanupIT
             }
         };
         configureDb( schemaIndex );
+        createSomeData();
         Monitors monitors = db.getDependencyResolver().resolveDependency( Monitors.class );
         monitors.addMonitorListener( trappingMonitor );
         createIndex( db, false );
@@ -207,5 +208,14 @@ public class IndexCleanupIT
         Path schemaDir = dbDir.resolve( "schema" );
         Path indexDir = schemaDir.resolve( "index" );
         return fs.listFiles( indexDir );
+    }
+
+    private void createSomeData()
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.createNode().setProperty( propertyKey, "abc" );
+            tx.commit();
+        }
     }
 }

@@ -73,4 +73,13 @@ public class NeoStoreIndexStoreView implements IndexStoreView
     {
         return new DefaultNodePropertyAccessor( storageEngine.get(), cursorTracer, memoryTracker );
     }
+
+    @Override
+    public boolean isEmpty()
+    {
+        try ( StorageReader reader = storageEngine.get() )
+        {
+            return reader.nodesGetCount( PageCursorTracer.NULL ) == 0 && reader.relationshipsGetCount() == 0;
+        }
+    }
 }
