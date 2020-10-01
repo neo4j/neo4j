@@ -72,6 +72,11 @@ trait SinglePlannerQuery extends PlannerQueryPart {
     case Some(_) => throw new InternalException("Attempt to set a second tail on a query graph")
   }
 
+  def withoutTail: SinglePlannerQuery = tail match {
+    case None => this
+    case _ => copy(tail = None)
+  }
+
   def withInput(queryInput: Seq[String]): SinglePlannerQuery =
     copy(input = Some(queryInput), queryGraph = queryGraph.copy(argumentIds = queryGraph.argumentIds ++ queryInput))
 

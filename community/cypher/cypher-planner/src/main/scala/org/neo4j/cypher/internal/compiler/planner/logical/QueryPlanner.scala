@@ -163,7 +163,7 @@ case object planPart extends PartPlanner {
       case _ => context
     }
 
-    val maybeLimitSelectivity = limitSelectivityForPart(query, context)
+    val maybeLimitSelectivity = limitSelectivityForPart(query.withoutTail, context)
 
     val plans = ctx.strategy.plan(
       query.queryGraph,

@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.PROPERTY_ACCESS_DB_HITS
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
@@ -36,6 +37,7 @@ import org.neo4j.cypher.internal.logical.plans.Projection
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.util.Cost
+import org.neo4j.cypher.internal.util.Selectivity
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
@@ -156,4 +158,52 @@ class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSu
     CardinalityCostModel.costFor(plan, input, semanticTable, cardinalities)
   }
 
+  test("lazy plans should be cheaper when limit selectivity is < 1.0") {
+    val builder = new LogicalPlanBuilder(wholePlan = false)
+    val plan = builder
+      .filter("n:Label").withCardinality(47)
+      .allNodeScan("n").withCardinality(123)
+      .build()
+
+    val semanticTable = SemanticTable().addNode(varFor("n"))
+
+    val withoutLimit = QueryGraphSolverInput.empty
+    val withLimit = QueryGraphSolverInput.empty.withLimitSelectivity(Selectivity.of(0.5).get)
+
+    costFor(plan, withLimit, semanticTable, builder.cardinalities) should be < costFor(plan, withoutLimit, semanticTable, builder.cardinalities)
+  }
+
+  test("hash join should be cheaper when limit selectivity is < 1.0") {
+    val builder = new LogicalPlanBuilder(wholePlan = false)
+    val plan = builder
+      .nodeHashJoin("b").withCardinality(56)
+      .|.expandAll("(c)-[:REL]->(b)").withCardinality(78)
+      .|.nodeByLabelScan("c", "C").withCardinality(321)
+      .filter("b:B").withCardinality(77)
+      .expandAll("(a)-[:REL]->(b)").withCardinality(42)
+      .nodeByLabelScan("a", "A").withCardinality(123)
+      .build()
+
+    val semanticTable = SemanticTable().addNode(varFor("n"))
+
+    val withoutLimit = QueryGraphSolverInput.empty
+    val withLimit = QueryGraphSolverInput.empty.withLimitSelectivity(Selectivity.of(0.5).get)
+
+    costFor(plan, withLimit, semanticTable, builder.cardinalities) should be < costFor(plan, withoutLimit, semanticTable, builder.cardinalities)
+  }
+
+  test("eager plans should cost the same regardless of limit selectivity") {
+    val builder = new LogicalPlanBuilder(wholePlan = false)
+    val plan = builder
+      .aggregation(Seq("n.prop AS x"), Seq("max(n.val) AS y"))
+      .allNodeScan("n").withCardinality(123)
+      .build()
+
+    val semanticTable = SemanticTable().addNode(varFor("n"))
+
+    val withoutLimit = QueryGraphSolverInput.empty
+    val withLimit = QueryGraphSolverInput.empty.withLimitSelectivity(Selectivity.of(0.5).get)
+
+    costFor(plan, withLimit, semanticTable, builder.cardinalities) should equal(costFor(plan, withoutLimit, semanticTable, builder.cardinalities))
+  }
 }

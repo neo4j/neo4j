@@ -78,6 +78,7 @@ case class Cost(gummyBears: Double) extends Ordered[Cost] {
 
 object Cost {
   implicit def lift(amount: Double): Cost = Cost(amount)
+  val ZERO: Cost = Cost(0)
 }
 
 object CostPerRow {

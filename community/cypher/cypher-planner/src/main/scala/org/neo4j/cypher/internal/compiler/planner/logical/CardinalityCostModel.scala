@@ -26,22 +26,19 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.ir.LazyMode
-import org.neo4j.cypher.internal.logical.plans.AbstractLetSelectOrSemiApply
+import org.neo4j.cypher.internal.ir.StrictnessMode
 import org.neo4j.cypher.internal.logical.plans.AbstractLetSemiApply
-import org.neo4j.cypher.internal.logical.plans.AbstractSelectOrSemiApply
 import org.neo4j.cypher.internal.logical.plans.AbstractSemiApply
 import org.neo4j.cypher.internal.logical.plans.AggregatingPlan
 import org.neo4j.cypher.internal.logical.plans.AllNodesScan
-import org.neo4j.cypher.internal.logical.plans.AntiConditionalApply
-import org.neo4j.cypher.internal.logical.plans.Apply
+import org.neo4j.cypher.internal.logical.plans.ApplyPlan
 import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.CartesianProduct
-import org.neo4j.cypher.internal.logical.plans.ConditionalApply
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
+import org.neo4j.cypher.internal.logical.plans.EagerLogicalPlan
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.ExpandInto
 import org.neo4j.cypher.internal.logical.plans.FindShortestPaths
-import org.neo4j.cypher.internal.logical.plans.ForeachApply
 import org.neo4j.cypher.internal.logical.plans.LeftOuterHashJoin
 import org.neo4j.cypher.internal.logical.plans.Limit
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
@@ -57,7 +54,6 @@ import org.neo4j.cypher.internal.logical.plans.Optional
 import org.neo4j.cypher.internal.logical.plans.ProcedureCall
 import org.neo4j.cypher.internal.logical.plans.ProjectEndpoints
 import org.neo4j.cypher.internal.logical.plans.RightOuterHashJoin
-import org.neo4j.cypher.internal.logical.plans.RollUpApply
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.Skip
 import org.neo4j.cypher.internal.logical.plans.Sort
@@ -72,6 +68,7 @@ import org.neo4j.cypher.internal.util.Cost
 import org.neo4j.cypher.internal.util.CostPerRow
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.Multiplier
+import org.neo4j.cypher.internal.util.Selectivity
 
 object CardinalityCostModel extends CostModel {
 
@@ -152,9 +149,8 @@ object CardinalityCostModel extends CostModel {
     => DEFAULT_COST_PER_ROW
   }
 
-  private def cardinalityForPlan(plan: LogicalPlan, cardinalities: Cardinalities): Cardinality = plan match {
-    case _ => plan.lhs.map(p => cardinalities.get(p.id)).getOrElse(cardinalities.get(plan.id))
-  }
+  private def cardinalityForPlan(plan: LogicalPlan, cardinalities: Cardinalities): Cardinality =
+    plan.lhs.map(p => cardinalities.get(p.id)).getOrElse(cardinalities.get(plan.id))
 
   def costPerRowFor(expression: Expression, semanticTable: SemanticTable): CostPerRow = {
     val noOfStoreAccesses = expression.treeFold(0) {
@@ -168,68 +164,84 @@ object CardinalityCostModel extends CostModel {
       DEFAULT_COST_PER_ROW
   }
 
-  def costFor(plan: LogicalPlan, input: QueryGraphSolverInput, semanticTable: SemanticTable, cardinalities: Cardinalities): Cost = {
-    val cost = plan match {
-      case CartesianProduct(lhs, rhs) =>
-        val lhsCardinality = Cardinality.max(Cardinality.SINGLE, cardinalities.get(lhs.id))
-        costFor(lhs, input, semanticTable, cardinalities) + lhsCardinality * costFor(rhs, input, semanticTable, cardinalities)
+  def costFor(plan: LogicalPlan,
+              input: QueryGraphSolverInput,
+              semanticTable: SemanticTable,
+              cardinalities: Cardinalities): Cost =
+    calculateCost(plan, input.limitSelectivity, input.strictness, cardinalities, semanticTable)
 
-      case ApplyVariants(lhs, rhs) =>
-        val lCost = costFor(lhs, input, semanticTable, cardinalities)
-        val rCost = costFor(rhs, input, semanticTable, cardinalities)
+  private final case class EffectiveCardinalities(currentPlanWorkload: Cardinality, lhs: Cardinality, rhs: Cardinality)
 
-        // the rCost has already been multiplied by the lhs cardinality
-        lCost + rCost
+  private def calculateCost(plan: LogicalPlan,
+                            limitSelectivity: Selectivity,
+                            strictness: Option[StrictnessMode],
+                            cardinalities: Cardinalities,
+                            semanticTable: SemanticTable): Cost = {
+    val (lhsLimitSelectivity, rhsLimitSelectivity) = childrenLimitSelectivities(plan, limitSelectivity)
 
-      case HashJoin(lhs, rhs) =>
-        val lCost = costFor(lhs, input, semanticTable, cardinalities)
-        val rCost = costFor(rhs, input, semanticTable, cardinalities)
+    val lhsCost = plan.lhs.map(p => calculateCost(p, lhsLimitSelectivity, strictness, cardinalities, semanticTable)) getOrElse Cost.ZERO
+    val rhsCost = plan.rhs.map(p => calculateCost(p, rhsLimitSelectivity, strictness, cardinalities, semanticTable)) getOrElse Cost.ZERO
 
-        val lhsCardinality = cardinalities.get(lhs.id)
-        val rhsCardinality = cardinalities.get(rhs.id)
+    val effectiveCardinalitiess = EffectiveCardinalities(
+      cardinalityForPlan(plan, cardinalities) * lhsLimitSelectivity,
+      plan.lhs.map(p => cardinalities.get(p.id) * lhsLimitSelectivity) getOrElse Cardinality.EMPTY,
+      plan.rhs.map(p => cardinalities.get(p.id) * rhsLimitSelectivity) getOrElse Cardinality.EMPTY
+    )
 
-        lCost + rCost +
-          lhsCardinality * PROBE_BUILD_COST +
-          rhsCardinality * PROBE_SEARCH_COST
+    val cost = combinedCostForPlan(plan, effectiveCardinalitiess, lhsCost, rhsCost, semanticTable)
 
-      case _ =>
-        val lhsCost = plan.lhs.map(p => costFor(p, input, semanticTable, cardinalities)).getOrElse(Cost(0))
-        val rhsCost = plan.rhs.map(p => costFor(p, input, semanticTable, cardinalities)).getOrElse(Cost(0))
-        val planCardinality = cardinalityForPlan(plan, cardinalities)
-        val rowCost = costPerRow(plan, planCardinality, semanticTable)
-        val costForThisPlan = planCardinality * rowCost
-        val totalCost = costForThisPlan + lhsCost + rhsCost
-        totalCost
-    }
-
-    input.strictness match {
+    strictness match {
       case Some(LazyMode) if !LazyMode(plan) => cost * EAGERNESS_MULTIPLIER
       case _ => cost
     }
   }
 
-  object HashJoin {
-    def unapply(x: Any): Option[(LogicalPlan, LogicalPlan)] = x match {
-      case NodeHashJoin(_, l, r) => Some(l -> r)
-      case LeftOuterHashJoin(_, l, r) => Some(l -> r)
-      case RightOuterHashJoin(_, l, r) => Some(l -> r)
-      case ValueHashJoin(l, r, _) => Some(l -> r)
-      case _ => None
-    }
+  private def childrenLimitSelectivities(plan: LogicalPlan, incomingLimitSelectivity: Selectivity): (Selectivity, Selectivity) = plan match {
+    case _: CartesianProduct =>
+      val sqrt = Selectivity.of(math.sqrt(incomingLimitSelectivity.factor)).getOrElse(Selectivity.ONE)
+      (sqrt, sqrt)
+
+    case HashJoin() =>
+      (Selectivity.ONE, incomingLimitSelectivity)
+
+    case _: EagerLogicalPlan =>
+      (Selectivity.ONE, Selectivity.ONE)
+
+    case _ =>
+      (incomingLimitSelectivity, incomingLimitSelectivity)
   }
 
-  object ApplyVariants {
-    def unapply(x: Any): Option[(LogicalPlan, LogicalPlan)] = x match {
-      case Apply(l, r) => Some(l -> r)
-      case RollUpApply(l, r, _, _) => Some(l -> r)
-      case ConditionalApply(l, r, _) => Some(l -> r)
-      case AntiConditionalApply(l, r, _) => Some(l -> r)
-      case ForeachApply(l, r, _, _) => Some(l -> r)
-      case p: AbstractLetSelectOrSemiApply => Some(p.lhs.get -> p.rhs.get)
-      case p: AbstractSelectOrSemiApply => Some(p.lhs.get -> p.rhs.get)
-      case p: AbstractSemiApply => Some(p.lhs.get -> p.rhs.get)
-      case p: AbstractLetSemiApply => Some(p.lhs.get -> p.rhs.get)
-      case _ => None
+  private def combinedCostForPlan(plan: LogicalPlan,
+                                  effectiveCardinalities: EffectiveCardinalities,
+                                  lhsCost: Cost,
+                                  rhsCost: Cost,
+                                  semanticTable: SemanticTable): Cost = plan match {
+    case _: CartesianProduct =>
+      val lhsCardinality = Cardinality.max(Cardinality.SINGLE, effectiveCardinalities.lhs)
+      lhsCost + lhsCardinality * rhsCost
+
+    case _: ApplyPlan =>
+      // the rCost has already been multiplied by the lhs cardinality
+      lhsCost + rhsCost
+
+    case HashJoin() =>
+      lhsCost + rhsCost +
+        effectiveCardinalities.lhs * PROBE_BUILD_COST +
+        effectiveCardinalities.rhs * PROBE_SEARCH_COST
+
+    case _ =>
+      val rowCost = costPerRow(plan, effectiveCardinalities.currentPlanWorkload, semanticTable)
+      val costForThisPlan = effectiveCardinalities.currentPlanWorkload * rowCost
+      costForThisPlan + lhsCost + rhsCost
+  }
+
+  object HashJoin {
+    def unapply(x: LogicalPlan): Boolean = x match {
+      case _: NodeHashJoin |
+           _: LeftOuterHashJoin |
+           _: RightOuterHashJoin |
+           _: ValueHashJoin => true
+      case _ => false
     }
   }
 }
