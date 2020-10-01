@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.phases.CompilationContains
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
-import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CostModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.SystemOutCostLogger
@@ -36,11 +35,13 @@ import org.neo4j.cypher.internal.ir.DistinctQueryProjection
 import org.neo4j.cypher.internal.ir.PeriodicCommit
 import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.ir.PlannerQueryPart
+import org.neo4j.cypher.internal.ir.QueryPagination
+import org.neo4j.cypher.internal.ir.QueryProjection
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.UnionQuery
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
-import org.neo4j.cypher.internal.util.Cost
+import org.neo4j.cypher.internal.util.Selectivity
 
 case object QueryPlanner
   extends Phase[PlannerContext, LogicalPlanState, LogicalPlanState] {
@@ -161,7 +162,14 @@ case object planPart extends PartPlanner {
       case Some(mode) if !context.input.strictness.contains(mode) => context.withStrictness(mode)
       case _ => context
     }
-    val plans = ctx.strategy.plan(query.queryGraph, interestingOrderForPart(query, rhsPart), ctx)
+
+    val maybeLimitSelectivity = limitSelectivityForPart(query, context)
+
+    val plans = ctx.strategy.plan(
+      query.queryGraph,
+      interestingOrderForPart(query, rhsPart),
+      maybeLimitSelectivity.fold(ctx)(ctx.withLimitSelectivity))
+
     plans.result
   }
 
@@ -186,6 +194,20 @@ case object planPart extends PartPlanner {
           else
             interestingOrder
       }
+  }
+
+  private def limitSelectivityForPart(query: SinglePlannerQuery, context: LogicalPlanningContext): Option[Selectivity] = {
+    query.horizon match {
+      case proj: QueryProjection if proj.queryPagination.limit.isDefined =>
+        val cardinalityModel = context.metrics.cardinality(_, context.input, context.semanticTable)
+        val cardinalityWithLimit = cardinalityModel(query)
+        val cardinalityWithoutLimit = cardinalityModel(
+          query.updateQueryProjection(_ => proj.withPagination(QueryPagination.empty)))
+
+        cardinalityWithLimit / cardinalityWithoutLimit
+
+      case _ => None
+    }
   }
 }
 

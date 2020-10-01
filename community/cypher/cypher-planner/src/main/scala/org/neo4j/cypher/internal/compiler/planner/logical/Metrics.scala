@@ -44,17 +44,21 @@ import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.Cost
 import org.neo4j.cypher.internal.util.CypherException
+import org.neo4j.cypher.internal.util.Selectivity
 
 object Metrics {
 
 
   object QueryGraphSolverInput {
 
-    def empty = QueryGraphSolverInput(Map.empty, Cardinality(1), strictness = None)
+    def empty: QueryGraphSolverInput = QueryGraphSolverInput(Map.empty, Cardinality(1), strictness = None)
   }
 
-  case class QueryGraphSolverInput(labelInfo: LabelInfo, inboundCardinality: Cardinality,
-                                   strictness: Option[StrictnessMode], alwaysMultiply: Boolean = false) {
+  case class QueryGraphSolverInput(labelInfo: LabelInfo,
+                                   inboundCardinality: Cardinality,
+                                   strictness: Option[StrictnessMode],
+                                   alwaysMultiply: Boolean = false,
+                                   limitSelectivity: Selectivity = Selectivity.ONE) {
 
     def recurse(fromPlan: LogicalPlan, solveds: Solveds, cardinalities: Cardinalities): QueryGraphSolverInput = {
       val newCardinalityInput = cardinalities.get(fromPlan.id)
@@ -63,6 +67,7 @@ object Metrics {
     }
 
     def withPreferredStrictness(strictness: StrictnessMode): QueryGraphSolverInput = copy(strictness = Some(strictness))
+    def withLimitSelectivity(s: Selectivity): QueryGraphSolverInput = copy(limitSelectivity = s)
   }
 
   // This metric calculates how expensive executing a logical plan is.

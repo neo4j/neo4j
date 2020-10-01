@@ -35,6 +35,7 @@ import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
 import org.neo4j.cypher.internal.rewriting.rewriters.InnerVariableNamer
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.InternalNotificationLogger
+import org.neo4j.cypher.internal.util.Selectivity
 import org.neo4j.cypher.internal.util.attribution.IdGen
 
 case class LogicalPlanningContext(planContext: PlanContext,
@@ -63,6 +64,9 @@ case class LogicalPlanningContext(planContext: PlanContext,
                                   idGen: IdGen) {
   def withStrictness(strictness: StrictnessMode): LogicalPlanningContext =
     copy(input = input.withPreferredStrictness(strictness))
+
+  def withLimitSelectivity(s: Selectivity): LogicalPlanningContext =
+    copy(input = input.withLimitSelectivity(s))
 
   def withAggregationProperties(properties: Set[(String, String)]): LogicalPlanningContext =
     copy(aggregatingProperties = properties)
