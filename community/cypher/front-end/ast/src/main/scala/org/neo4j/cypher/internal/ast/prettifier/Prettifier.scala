@@ -270,7 +270,7 @@ case class Prettifier(
     }
     val commandString = adminCommand match {
 
-      case x @ ShowUsers(yields) =>
+      case x @ ShowUsers(yields,_) =>
         val (y: String, r: String) = showClausesAsString(yields)
         s"${x.name}$y$r"
 
@@ -306,7 +306,7 @@ case class Prettifier(
       case x @ SetOwnPassword(newPassword, currentPassword) =>
         s"${x.name} FROM ${expr.escapePassword(currentPassword)} TO ${expr.escapePassword(newPassword)}"
 
-      case x @ ShowRoles(withUsers, _, yields) =>
+      case x @ ShowRoles(withUsers, _, yields,_) =>
         val (y: String, r: String) = showClausesAsString(yields)
         s"${x.name}${if (withUsers) " WITH USERS" else ""}$y$r"
 
@@ -416,11 +416,11 @@ case class Prettifier(
         val (resourceName, scope) = Prettifier.extractScope(resource, graphScope, qualifier)
         s"${x.name} {$resourceName} ON $scope FROM ${Prettifier.escapeNames(roleNames)}"
 
-      case ShowPrivileges(scope, yields) =>
+      case ShowPrivileges(scope, yields,_) =>
         val (y: String, r: String) = showClausesAsString(yields)
         s"SHOW ${Prettifier.extractScope(scope)} PRIVILEGES$y$r"
 
-      case x @ ShowDatabase(scope, yields) =>
+      case x @ ShowDatabase(scope, yields,_) =>
         val (y: String, r: String) = showClausesAsString(yields)
         val optionalName = scope match {
           case NamedDatabaseScope(dbName) => s" ${Prettifier.escapeName(dbName)}"

@@ -29,10 +29,10 @@ import org.neo4j.cypher.internal.util.bottomUp
 case object expandShowWhere extends Rewriter {
 
     private val instance = bottomUp(Rewriter.lift {
-      case s @ ShowDatabase(_, Some(Right(where))) => s.copy(yieldOrWhere = Some(Left((whereToYield(where), None))))(s.position)
-      case s @ ShowRoles(_, _, Some(Right(where))) => s.copy(yieldOrWhere = Some(Left((whereToYield(where), None))))(s.position)
-      case s @ ShowPrivileges(_, Some(Right(where))) => s.copy(yieldOrWhere = Some(Left((whereToYield(where), None))))(s.position)
-      case s @ ShowUsers(Some(Right(where))) => s.copy(yieldOrWhere = Some(Left((whereToYield(where), None))))(s.position)
+      case s @ ShowDatabase(_, Some(Right(where)),_) => s.copy(yieldOrWhere = Some(Left((whereToYield(where), None))))(s.position)
+      case s @ ShowRoles(_, _, Some(Right(where)), _) => s.copy(yieldOrWhere = Some(Left((whereToYield(where), None))))(s.position)
+      case s @ ShowPrivileges(_, Some(Right(where)),_) => s.copy(yieldOrWhere = Some(Left((whereToYield(where), None))))(s.position)
+      case s @ ShowUsers(Some(Right(where)),_) => s.copy(yieldOrWhere = Some(Left((whereToYield(where), None))))(s.position)
     })
 
     private def whereToYield(where: Where): Yield =
