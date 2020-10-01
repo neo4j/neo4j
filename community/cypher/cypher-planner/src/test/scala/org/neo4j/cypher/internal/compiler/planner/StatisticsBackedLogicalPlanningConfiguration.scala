@@ -168,17 +168,17 @@ class StatisticsBackedLogicalPlanningConfigurationBuilder() {
         throw new IllegalArgumentException(s"Invalid relationship pattern $pat. Expected something like ()-[]-(), (:A)-[:R]->(), (:A)<-[]-(), etc.")
     }
 
-    def asString(relDef: RelDef): String = {
-      val f = relDef.fromLabel.fold("")(l => ":" + l)
-      val r = relDef.relType.fold("")(l => ":" + l)
-      val t = relDef.toLabel.fold("")(l => ":" + l)
-      s"($f)-[$r]->($t)"
-    }
-
     val all: RelDef = RelDef(None, None, None)
   }
 
-  case class RelDef(fromLabel: Option[String], relType: Option[String], toLabel: Option[String])
+  case class RelDef(fromLabel: Option[String], relType: Option[String], toLabel: Option[String]) {
+    override def toString(): String = {
+      val f = fromLabel.fold("")(l => ":" + l)
+      val r = relType.fold("")(l => ":" + l)
+      val t = toLabel.fold("")(l => ":" + l)
+      s"($f)-[$r]->($t)"
+    }
+  }
 
   private def fail(message: String): Nothing =
     throw new IllegalStateException(message)
@@ -221,7 +221,7 @@ class StatisticsBackedLogicalPlanningConfigurationBuilder() {
           relType = relTypeId.map(_.id).map(tokens.getRelTypeName),
           toLabel = toLabelId.map(_.id).map(tokens.getLabelName),
         )
-        cardinalities.relationships.getOrElse(relDef, fail(s"No cardinality set for relationship ${RelDef.asString(relDef)}"))
+        cardinalities.relationships.getOrElse(relDef, fail(s"No cardinality set for relationship $relDef"))
       }
 
       override def uniqueValueSelectivity(index: IndexDescriptor): Option[Selectivity] = {
