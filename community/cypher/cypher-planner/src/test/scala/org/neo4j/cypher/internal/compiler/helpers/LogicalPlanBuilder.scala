@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder.FakeLeafPla
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder
+import org.neo4j.cypher.internal.logical.builder.Resolver
 import org.neo4j.cypher.internal.logical.plans.LogicalLeafPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
@@ -34,7 +35,7 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.util.attribution.SameId
 import org.neo4j.cypher.internal.util.symbols.CypherType
 
-class LogicalPlanBuilder(wholePlan: Boolean = true) extends AbstractLogicalPlanBuilder[LogicalPlan, LogicalPlanBuilder](new LogicalPlanResolver, wholePlan) {
+class LogicalPlanBuilder(wholePlan: Boolean = true, resolver: Resolver = new LogicalPlanResolver) extends AbstractLogicalPlanBuilder[LogicalPlan, LogicalPlanBuilder](resolver, wholePlan) {
 
   class CardinalitiesWithDefault extends Cardinalities {
     override def get(id: Id): Cardinality =

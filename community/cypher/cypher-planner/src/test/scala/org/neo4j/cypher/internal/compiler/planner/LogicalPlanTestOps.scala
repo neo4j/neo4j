@@ -19,17 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.planner
 
-import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlanToPlanBuilderString
 import org.neo4j.cypher.internal.logical.plans.ProduceResult
 import org.scalactic.Prettifier
 
 trait LogicalPlanTestOps {
-
-  protected def planBuilder() = new LogicalPlanBuilder()
-
-  protected def subPlanBuilder() = new LogicalPlanBuilder(wholePlan = false)
 
   implicit class LogicalPlanOps(plan: LogicalPlan) {
 
@@ -47,6 +42,7 @@ trait LogicalPlanTestOps {
       LogicalPlanToPlanBuilderString(plan)
   }
 
+  // Gives asLogicalPlanBuilderString:s in ScalaTest error messages
   implicit val logicalPlanScalaTestPrettifier: Prettifier = {
     case plan: LogicalPlan => "\n" + plan.asLogicalPlanBuilderString() + "\n"
     case other             => Prettifier.default(other)

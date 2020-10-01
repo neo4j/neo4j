@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.planner
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.compiler.NotImplementedPlanContext
+import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanResolver
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.cypherCompilerConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.ExpressionEvaluator
@@ -42,7 +43,6 @@ import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
 import org.neo4j.cypher.internal.planner.spi.InstrumentedGraphStatistics
 import org.neo4j.cypher.internal.planner.spi.MutableGraphStatisticsSnapshot
 import org.neo4j.cypher.internal.planner.spi.PlanContext
-import org.neo4j.cypher.internal.planner.spi.TokenContext
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.PropertyKeyId
@@ -64,7 +64,7 @@ object StatisticsBackedLogicalPlanningConfigurationBuilder {
 
 class StatisticsBackedLogicalPlanningConfigurationBuilder() {
 
-  private val tokens: TokenContext = new LogicalPlanResolver()
+  private val tokens = new LogicalPlanResolver()
   private object indexes extends FakeIndexAndConstraintManagement {
     def getIndexes: Map[IndexDef, IndexType] = indexes
     def getConstraints: Set[(String, Set[String])] = constraints
@@ -79,7 +79,7 @@ class StatisticsBackedLogicalPlanningConfigurationBuilder() {
     val uniqueValue: mutable.Map[IndexDef, Double] = mutable.Map[IndexDef, Double]()
     val propExists: mutable.Map[IndexDef, Double] = mutable.Map[IndexDef, Double]()
   }
-  var options = StatisticsBackedLogicalPlanningConfigurationBuilder.Options()
+  private var options = StatisticsBackedLogicalPlanningConfigurationBuilder.Options()
 
   def addLabel(label: String): this.type = {
     tokens.getLabelId(label)
@@ -183,6 +183,14 @@ class StatisticsBackedLogicalPlanningConfigurationBuilder() {
   private def fail(message: String): Nothing =
     throw new IllegalStateException(message)
 
+
+  def enableDebugOption(option: String, enable: Boolean = true): this.type = {
+    options = options.copy(debug = if (enable) options.debug + option else options.debug - option)
+    this
+  }
+
+  def enablePrintCostComparisons(enable: Boolean = true): this.type = enableDebugOption("printCostComparisons", enable)
+
   def build(): StatisticsBackedLogicalPlanningConfiguration = {
     require(cardinalities.allNodes.isDefined, "Please specify allNodesCardinality using `setAllNodesCardinality`.")
     cardinalities.allNodes.foreach(anc =>
@@ -229,91 +237,85 @@ class StatisticsBackedLogicalPlanningConfigurationBuilder() {
       }
     }
 
+    val planContext: PlanContext = new NotImplementedPlanContext() {
+      override def statistics: InstrumentedGraphStatistics =
+        InstrumentedGraphStatistics(graphStatistics, new MutableGraphStatisticsSnapshot())
+
+      override def indexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
+        val labelName = tokens.getLabelName(labelId)
+        indexes.getIndexes.collect {
+          case (indexDef, indexType) if labelName == indexDef.label =>
+            newIndexDescriptor(indexDef, indexType)
+        }
+      }.iterator
+
+      override def uniqueIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
+        val labelName = tokens.getLabelName(labelId)
+        indexes.getIndexes.collect {
+          case (indexDef, indexType) if labelName == indexDef.label && indexType.isUnique =>
+            newIndexDescriptor(indexDef, indexType)
+        }
+      }.iterator
+
+      override def getPropertiesWithExistenceConstraint(labelName: String): Set[String] = {
+        indexes.getConstraints.collect { case (`labelName`, properties) => properties }.flatten
+      }
+
+      override def procedureSignature(name: QualifiedName): ProcedureSignature = {
+        indexes.getProcedureSignatures.find(_.name == name).getOrElse(fail(s"No procedure signature for $name"))
+      }
+
+      override def indexExistsForLabel(labelId: Int): Boolean = {
+        val labelName = tokens.getLabelName(labelId)
+        indexes.getIndexes.keys.exists(_.label == labelName)
+      }
+
+      override def indexExistsForLabelAndProperties(labelName: String, propertyKey: Seq[String]): Boolean =
+        indexes.getIndexes.contains(IndexDef(labelName, propertyKey))
+
+      override def indexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = {
+        val indexDef = IndexDef(labelName, propertyKeys)
+        indexes.getIndexes.get(indexDef).map(indexType => newIndexDescriptor(indexDef, indexType))
+      }
+
+      override def getOptPropertyKeyId(propertyKeyName: String): Option[Int] = {
+        tokens.getOptPropertyKeyId(propertyKeyName)
+      }
+
+      override def getOptLabelId(labelName: String): Option[Int] =
+        tokens.getOptLabelId(labelName)
+
+      override def getOptRelTypeId(relType: String): Option[Int] =
+        tokens.getOptRelTypeId(relType)
+
+      private def newIndexDescriptor(indexDef: IndexDef, indexType: IndexType): IndexDescriptor = {
+        // Our fake index either can always or never return property values
+        val canGetValue = if (indexType.withValues) CanGetValue else DoNotGetValue
+        val valueCapability: ValueCapability = _ => indexDef.propertyKeys.map(_ => canGetValue)
+        val orderCapability: OrderCapability = _ => indexType.withOrdering
+
+        val props = indexDef.propertyKeys.map(p => PropertyKeyId(tokens.getPropertyKeyId(p)))
+        val label = LabelId(tokens.getLabelId(indexDef.label))
+
+        IndexDescriptor(
+          label,
+          props,
+          valueCapability = valueCapability,
+          orderCapability = orderCapability,
+          isUnique = indexType.isUnique
+        )
+      }
+    }
     new StatisticsBackedLogicalPlanningConfiguration(
-      new NotImplementedPlanContext() {
-        override def statistics: InstrumentedGraphStatistics =
-          InstrumentedGraphStatistics(graphStatistics, new MutableGraphStatisticsSnapshot())
-
-        override def indexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
-          val labelName = tokens.getLabelName(labelId)
-          indexes.getIndexes.collect {
-            case (indexDef, indexType) if labelName == indexDef.label =>
-              newIndexDescriptor(indexDef, indexType)
-          }
-        }.iterator
-
-        override def uniqueIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
-          val labelName = tokens.getLabelName(labelId)
-          indexes.getIndexes.collect {
-            case (indexDef, indexType) if labelName == indexDef.label && indexType.isUnique =>
-              newIndexDescriptor(indexDef, indexType)
-          }
-        }.iterator
-
-        override def getPropertiesWithExistenceConstraint(labelName: String): Set[String] = {
-          indexes.getConstraints.collect { case (`labelName`, properties) => properties }.flatten
-        }
-
-        override def procedureSignature(name: QualifiedName): ProcedureSignature = {
-          indexes.getProcedureSignatures.find(_.name == name).getOrElse(fail(s"No procedure signature for $name"))
-        }
-
-        override def indexExistsForLabel(labelId: Int): Boolean = {
-          val labelName = tokens.getLabelName(labelId)
-          indexes.getIndexes.keys.exists(_.label == labelName)
-        }
-
-        override def indexExistsForLabelAndProperties(labelName: String, propertyKey: Seq[String]): Boolean =
-          indexes.getIndexes.contains(IndexDef(labelName, propertyKey))
-
-        override def indexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = {
-          val indexDef = IndexDef(labelName, propertyKeys)
-          indexes.getIndexes.get(indexDef).map(indexType => newIndexDescriptor(indexDef, indexType))
-        }
-
-        override def getOptPropertyKeyId(propertyKeyName: String): Option[Int] = {
-          tokens.getOptPropertyKeyId(propertyKeyName)
-        }
-
-        override def getOptLabelId(labelName: String): Option[Int] =
-          tokens.getOptLabelId(labelName)
-
-        override def getOptRelTypeId(relType: String): Option[Int] =
-          tokens.getOptRelTypeId(relType)
-
-        private def newIndexDescriptor(indexDef: IndexDef, indexType: IndexType): IndexDescriptor = {
-          // Our fake index either can always or never return property values
-          val canGetValue = if (indexType.withValues) CanGetValue else DoNotGetValue
-          val valueCapability: ValueCapability = _ => indexDef.propertyKeys.map(_ => canGetValue)
-          val orderCapability: OrderCapability = _ => indexType.withOrdering
-
-          val props = indexDef.propertyKeys.map(p => PropertyKeyId(tokens.getPropertyKeyId(p)))
-          val label = LabelId(tokens.getLabelId(indexDef.label))
-
-          IndexDescriptor(
-            label,
-            props,
-            valueCapability = valueCapability,
-            orderCapability = orderCapability,
-            isUnique = indexType.isUnique
-          )
-        }
-      },
+      tokens,
+      planContext,
       options = options,
     )
   }
-
-  def enableDebugOption(option: String, enable: Boolean = true): this.type = {
-    options = options.copy(debug = if (enable) options.debug + option else options.debug - option)
-    this
-  }
-
-  def enablePrintCostComparisons(enable: Boolean = true): this.type = enableDebugOption("printCostComparisons", enable)
-
 }
 
-
 class StatisticsBackedLogicalPlanningConfiguration(
+  resolver: LogicalPlanResolver,
   planContext: PlanContext,
   options: StatisticsBackedLogicalPlanningConfigurationBuilder.Options,
 ) extends LogicalPlanConstructionTestSupport
@@ -336,4 +338,7 @@ class StatisticsBackedLogicalPlanningConfiguration(
     val state = InitialState(queryString, None, IDPPlannerName)
     LogicalPlanningTestSupport2.pipeLine().transform(state, context).logicalPlan
   }
+
+  def planBuilder(): LogicalPlanBuilder = new LogicalPlanBuilder(wholePlan = true, resolver)
+  def subPlanBuilder(): LogicalPlanBuilder = new LogicalPlanBuilder(wholePlan = false, resolver)
 }
