@@ -26,6 +26,7 @@ import java.util.function.Consumer;
 
 import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.internal.diagnostics.DiagnosticsLogger;
@@ -51,22 +52,30 @@ public class DbmsDiagnosticsManager
     private static final int CONCISE_DATABASE_DUMP_THRESHOLD = getInteger( DbmsDiagnosticsManager.class, "conciseDumpThreshold", 10 );
     private static final int CONCISE_DATABASE_NAMES_PER_ROW = 5;
     private final Dependencies dependencies;
+    private final boolean enabled;
     private final Log log;
 
     public DbmsDiagnosticsManager( Dependencies dependencies, LogService logService )
     {
         this.log = logService.getInternalLog( DiagnosticsManager.class );
         this.dependencies = dependencies;
+        this.enabled = dependencies.resolveDependency( Config.class ).get( GraphDatabaseInternalSettings.dump_diagnostics );
     }
 
     public void dumpSystemDiagnostics()
     {
-        dumpSystemDiagnostics( log );
+        if ( enabled )
+        {
+            dumpSystemDiagnostics( log );
+        }
     }
 
     public void dumpDatabaseDiagnostics( Database database )
     {
-        dumpDatabaseDiagnostics( database, log, false );
+        if ( enabled )
+        {
+            dumpDatabaseDiagnostics( database, log, false );
+        }
     }
 
     public void dumpAll()
@@ -76,8 +85,11 @@ public class DbmsDiagnosticsManager
 
     public void dumpAll( Log log )
     {
-        dumpSystemDiagnostics( log );
-        dumpAllDatabases( log );
+        if ( enabled )
+        {
+            dumpSystemDiagnostics( log );
+            dumpAllDatabases( log );
+        }
     }
 
     private void dumpAllDatabases( Log log )

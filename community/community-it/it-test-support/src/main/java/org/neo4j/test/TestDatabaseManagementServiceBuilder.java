@@ -147,7 +147,8 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
                      .setDefault( GraphDatabaseSettings.pagecache_memory, "8m" )
                      .setDefault( GraphDatabaseSettings.logical_log_rotation_threshold, ByteUnit.kibiBytes( 128 ) )
                      .setDefault( BoltConnector.enabled, FALSE )
-                     .build();
+                     .setDefault( GraphDatabaseInternalSettings.dump_diagnostics, false )
+                .build();
     }
 
     public FileSystemAbstraction getFileSystem()

@@ -32,7 +32,6 @@ import static org.neo4j.logging.LogAssertions.assertThat;
 
 class DiagnosticsLoggingTest
 {
-
     @Test
     void shouldSeeExpectedDiagnostics()
     {
@@ -42,6 +41,7 @@ class DiagnosticsLoggingTest
                 .impermanent()
                 .setConfig( GraphDatabaseInternalSettings.dump_configuration, true )
                 .setConfig( GraphDatabaseSettings.pagecache_memory, "4M" )
+                .setConfig( GraphDatabaseInternalSettings.dump_diagnostics, true )
                 .build();
         try
         {

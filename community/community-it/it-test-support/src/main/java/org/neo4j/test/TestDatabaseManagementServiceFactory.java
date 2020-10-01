@@ -72,13 +72,12 @@ public class TestDatabaseManagementServiceFactory extends DatabaseManagementServ
             return new ImpermanentTestDatabaseGlobalModule( config, dependencies, this.dbmsInfo );
         }
 
-        return new TestDatabaseGlobalModule( config, dependencies, this.dbmsInfo );
+        return new TestDatabaseGlobalModule( config, this.dbmsInfo, dependencies );
     }
 
     class TestDatabaseGlobalModule extends GlobalModule
     {
-
-        TestDatabaseGlobalModule( Config config, ExternalDependencies dependencies, DbmsInfo dbmsInfo )
+        TestDatabaseGlobalModule( Config config, DbmsInfo dbmsInfo, ExternalDependencies dependencies )
         {
             super( config, dbmsInfo, dependencies );
         }
@@ -124,10 +123,9 @@ public class TestDatabaseManagementServiceFactory extends DatabaseManagementServ
 
     private class ImpermanentTestDatabaseGlobalModule extends TestDatabaseGlobalModule
     {
-
         ImpermanentTestDatabaseGlobalModule( Config config, ExternalDependencies dependencies, DbmsInfo dbmsInfo )
         {
-            super( config, dependencies, dbmsInfo );
+            super( config, dbmsInfo, dependencies );
         }
 
         @Override

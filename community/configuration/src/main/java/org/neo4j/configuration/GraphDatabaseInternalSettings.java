@@ -530,4 +530,9 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
     @Description( "The name of the user that should be allowed to call dbms.upgrade when `unsupported.dbms.upgrade_restriction_enabled` is enabled" )
     public static final Setting<String> upgrade_username =
             newBuilder( "unsupported.dbms.upgrade_procedure_username", STRING, "upgrade_user" ).build();
+
+    @Internal
+    @Description( "Whether or not to dump system and database diagnostics. This takes a non-negligible amount of time to do and therefore " +
+            "test databases can disable this to reduce startup times" )
+    public static final Setting<Boolean> dump_diagnostics = newBuilder( "unsupported.dbms.dump_diagnostics", BOOL, Boolean.TRUE ).build();
 }

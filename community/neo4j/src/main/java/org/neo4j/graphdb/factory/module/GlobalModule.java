@@ -144,6 +144,11 @@ public class GlobalModule
     private final GlobalMemoryGroupTracker otherMemoryPool;
     private final SystemGraphComponents systemGraphComponents;
 
+    /**
+     * @param globalConfig configuration affecting global aspects of the system.
+     * @param dbmsInfo the type of dbms this module manages.
+     * @param externalDependencies optional external dependencies provided by caller.
+     */
     public GlobalModule( Config globalConfig, DbmsInfo dbmsInfo, ExternalDependencies externalDependencies )
     {
         externalDependencyResolver = externalDependencies.dependencies() != null ? externalDependencies.dependencies() : new Dependencies();

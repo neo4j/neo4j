@@ -26,6 +26,7 @@ import java.nio.file.Path;
 import java.util.Optional;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.DatabaseStateService;
 import org.neo4j.dbms.api.DatabaseManagementService;
@@ -258,6 +259,7 @@ class DatabaseStartupTest
         AssertableLogProvider logProvider = new AssertableLogProvider();
         DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( databaseLayout )
                 .setInternalLogProvider( logProvider )
+                .setConfig( GraphDatabaseInternalSettings.dump_diagnostics, true )
                 .build();
         managementService.database( DEFAULT_DATABASE_NAME );
         try
