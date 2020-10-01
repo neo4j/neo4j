@@ -35,11 +35,11 @@ class SchemaCommandParserTest
   // Create index
 
   test("CREATE INDEX ON :Person(name)") {
-    yields(ast.CreateIndex(labelName("Person"), List(propertyKeyName("name"))))
+    yields(ast.CreateIndexOldSyntax(labelName("Person"), List(propertyKeyName("name"))))
   }
 
   test("CREATE INDEX ON :Person(name,age)") {
-    yields(ast.CreateIndex(labelName("Person"), List(propertyKeyName("name"), propertyKeyName("age"))))
+    yields(ast.CreateIndexOldSyntax(labelName("Person"), List(propertyKeyName("name"), propertyKeyName("age"))))
   }
 
   test("CREATE INDEX my_index ON :Person(name)") {
@@ -53,51 +53,51 @@ class SchemaCommandParserTest
   // new syntax
 
   test("CREATE INDEX FOR (n:Person) ON (n.name)") {
-    yields(ast.CreateIndexNewSyntax(varFor("n"), labelName("Person"), List(prop("n", "name")), None, IfExistsThrowError))
+    yields(ast.CreateIndex(varFor("n"), labelName("Person"), List(prop("n", "name")), None, IfExistsThrowError))
   }
 
   test("USE neo4j CREATE INDEX FOR (n:Person) ON (n.name)") {
-    yields(ast.CreateIndexNewSyntax(varFor("n"), labelName("Person"), List(prop("n", "name")), None, IfExistsThrowError, Some(use(varFor("neo4j")))))
+    yields(ast.CreateIndex(varFor("n"), labelName("Person"), List(prop("n", "name")), None, IfExistsThrowError, Some(use(varFor("neo4j")))))
   }
 
   test("CREATE INDEX FOR (n:Person) ON (n.name, n.age)") {
-    yields(ast.CreateIndexNewSyntax(varFor("n"), labelName("Person"), List(prop("n", "name"), prop("n", "age")), None, IfExistsThrowError))
+    yields(ast.CreateIndex(varFor("n"), labelName("Person"), List(prop("n", "name"), prop("n", "age")), None, IfExistsThrowError))
   }
 
   test("CREATE INDEX my_index FOR (n:Person) ON (n.name)") {
-    yields(ast.CreateIndexNewSyntax(varFor("n"), labelName("Person"), List(prop("n", "name")), Some("my_index"), IfExistsThrowError))
+    yields(ast.CreateIndex(varFor("n"), labelName("Person"), List(prop("n", "name")), Some("my_index"), IfExistsThrowError))
   }
 
   test("CREATE INDEX my_index FOR (n:Person) ON (n.name, n.age)") {
-    yields(ast.CreateIndexNewSyntax(varFor("n"), labelName("Person"), List(prop("n", "name"), prop("n", "age")), Some("my_index"), IfExistsThrowError))
+    yields(ast.CreateIndex(varFor("n"), labelName("Person"), List(prop("n", "name"), prop("n", "age")), Some("my_index"), IfExistsThrowError))
   }
 
   test("CREATE INDEX `$my_index` FOR (n:Person) ON (n.name)") {
-    yields(ast.CreateIndexNewSyntax(varFor("n"), labelName("Person"), List(prop("n", "name")), Some("$my_index"), IfExistsThrowError))
+    yields(ast.CreateIndex(varFor("n"), labelName("Person"), List(prop("n", "name")), Some("$my_index"), IfExistsThrowError))
   }
 
   test("CREATE OR REPLACE INDEX FOR (n:Person) ON (n.name)") {
-    yields(ast.CreateIndexNewSyntax(varFor("n"), labelName("Person"), List(prop("n", "name")), None, IfExistsReplace))
+    yields(ast.CreateIndex(varFor("n"), labelName("Person"), List(prop("n", "name")), None, IfExistsReplace))
   }
 
   test("CREATE OR REPLACE INDEX my_index FOR (n:Person) ON (n.name, n.age)") {
-    yields(ast.CreateIndexNewSyntax(varFor("n"), labelName("Person"), List(prop("n", "name"), prop("n", "age")), Some("my_index"), IfExistsReplace))
+    yields(ast.CreateIndex(varFor("n"), labelName("Person"), List(prop("n", "name"), prop("n", "age")), Some("my_index"), IfExistsReplace))
   }
 
   test("CREATE OR REPLACE INDEX IF NOT EXISTS FOR (n:Person) ON (n.name)") {
-    yields(ast.CreateIndexNewSyntax(varFor("n"), labelName("Person"), List(prop("n", "name")), None, IfExistsInvalidSyntax))
+    yields(ast.CreateIndex(varFor("n"), labelName("Person"), List(prop("n", "name")), None, IfExistsInvalidSyntax))
   }
 
   test("CREATE OR REPLACE INDEX my_index IF NOT EXISTS FOR (n:Person) ON (n.name)") {
-    yields(ast.CreateIndexNewSyntax(varFor("n"), labelName("Person"), List(prop("n", "name")), Some("my_index"), IfExistsInvalidSyntax))
+    yields(ast.CreateIndex(varFor("n"), labelName("Person"), List(prop("n", "name")), Some("my_index"), IfExistsInvalidSyntax))
   }
 
   test("CREATE INDEX IF NOT EXISTS FOR (n:Person) ON (n.name, n.age)") {
-    yields(ast.CreateIndexNewSyntax(varFor("n"), labelName("Person"), List(prop("n", "name"), prop("n", "age")), None, IfExistsDoNothing))
+    yields(ast.CreateIndex(varFor("n"), labelName("Person"), List(prop("n", "name"), prop("n", "age")), None, IfExistsDoNothing))
   }
 
   test("CREATE INDEX my_index IF NOT EXISTS FOR (n:Person) ON (n.name)") {
-    yields(ast.CreateIndexNewSyntax(varFor("n"), labelName("Person"), List(prop("n", "name")), Some("my_index"), IfExistsDoNothing))
+    yields(ast.CreateIndex(varFor("n"), labelName("Person"), List(prop("n", "name")), Some("my_index"), IfExistsDoNothing))
   }
 
   test("CREATE INDEX $my_index FOR (n:Person) ON (n.name)") {

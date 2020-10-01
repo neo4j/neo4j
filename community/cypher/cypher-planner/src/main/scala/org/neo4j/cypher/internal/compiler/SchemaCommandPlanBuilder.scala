@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler
 
 import org.neo4j.cypher.internal.ast.CreateIndex
-import org.neo4j.cypher.internal.ast.CreateIndexNewSyntax
+import org.neo4j.cypher.internal.ast.CreateIndexOldSyntax
 import org.neo4j.cypher.internal.ast.CreateNodeKeyConstraint
 import org.neo4j.cypher.internal.ast.CreateNodePropertyExistenceConstraint
 import org.neo4j.cypher.internal.ast.CreateRelationshipPropertyExistenceConstraint
@@ -114,12 +114,12 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
         Some(plans.DropConstraintOnName(name, ifExists))
 
       // CREATE INDEX ON :LABEL(prop)
-      case CreateIndex(label, props, _) =>
+      case CreateIndexOldSyntax(label, props, _) =>
         Some(plans.CreateIndex(None, label, props, None))
 
       // CREATE INDEX FOR (n:LABEL) ON (n.prop)
       // CREATE INDEX name FOR (n:LABEL) ON (n.prop)
-      case CreateIndexNewSyntax(_, label, props, name, ifExistsDo, _) =>
+      case CreateIndex(_, label, props, name, ifExistsDo, _) =>
         val propKeys = props.map(_.propertyKey)
         val source = ifExistsDo match {
           case IfExistsDoNothing => Some(plans.DoNothingIfExistsForIndex(label, propKeys, name))

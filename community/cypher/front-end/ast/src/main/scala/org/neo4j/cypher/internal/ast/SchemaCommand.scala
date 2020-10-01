@@ -38,12 +38,12 @@ sealed trait SchemaCommand extends Statement {
   override def returnColumns: List[LogicalVariable] = List.empty
 }
 
-case class CreateIndex(label: LabelName, properties: List[PropertyKeyName], useGraph: Option[GraphSelection] = None)(val position: InputPosition) extends SchemaCommand {
+case class CreateIndexOldSyntax(label: LabelName, properties: List[PropertyKeyName], useGraph: Option[GraphSelection] = None)(val position: InputPosition) extends SchemaCommand {
   override def withGraph(useGraph: Option[GraphSelection]): SchemaCommand = copy(useGraph = useGraph)(position)
   def semanticCheck = Seq()
 }
 
-case class CreateIndexNewSyntax(variable: Variable, label: LabelName, properties: List[Property], name: Option[String], ifExistsDo: IfExistsDo, useGraph: Option[GraphSelection] = None)(val position: InputPosition)
+case class CreateIndex(variable: Variable, label: LabelName, properties: List[Property], name: Option[String], ifExistsDo: IfExistsDo, useGraph: Option[GraphSelection] = None)(val position: InputPosition)
   extends SchemaCommand with SemanticAnalysisTooling {
   override def withGraph(useGraph: Option[GraphSelection]): SchemaCommand = copy(useGraph = useGraph)(position)
   override def semanticCheck = ifExistsDo match {

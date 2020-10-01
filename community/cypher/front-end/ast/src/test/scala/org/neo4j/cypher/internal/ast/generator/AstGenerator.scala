@@ -55,7 +55,7 @@ import org.neo4j.cypher.internal.ast.CreateDatabaseAction
 import org.neo4j.cypher.internal.ast.CreateElementAction
 import org.neo4j.cypher.internal.ast.CreateIndex
 import org.neo4j.cypher.internal.ast.CreateIndexAction
-import org.neo4j.cypher.internal.ast.CreateIndexNewSyntax
+import org.neo4j.cypher.internal.ast.CreateIndexOldSyntax
 import org.neo4j.cypher.internal.ast.CreateNodeKeyConstraint
 import org.neo4j.cypher.internal.ast.CreateNodeLabelAction
 import org.neo4j.cypher.internal.ast.CreateNodePropertyExistenceConstraint
@@ -1147,14 +1147,14 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     props <- oneOrMore(_variableProperty)
   } yield props
 
-  def _createIndex: Gen[CreateIndexNewSyntax] = for {
+  def _createIndex: Gen[CreateIndex] = for {
     variable   <- _variable
     labelName  <- _labelName
     props      <- _listOfProperties
     name       <- option(_identifier)
     ifExistsDo <- _ifExistsDo
     use        <- option(_use)
-  } yield CreateIndexNewSyntax(variable, labelName, props, name, ifExistsDo, use)(pos)
+  } yield CreateIndex(variable, labelName, props, name, ifExistsDo, use)(pos)
 
   def _dropIndex: Gen[DropIndexOnName] = for {
     name     <- _identifier
@@ -1166,7 +1166,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     labelName <- _labelName
     props     <- oneOrMore(_propertyKeyName)
     use       <- option(_use)
-    command   <- oneOf(CreateIndex(labelName, props, use)(pos), DropIndex(labelName, props, use)(pos))
+    command   <- oneOf(CreateIndexOldSyntax(labelName, props, use)(pos), DropIndex(labelName, props, use)(pos))
   } yield command
 
   def _createConstraint: Gen[SchemaCommand] = for {
