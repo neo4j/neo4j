@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
+import org.neo4j.collection.trackable.HeapTrackingCollections
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
@@ -32,8 +33,6 @@ import org.neo4j.values.virtual.NodeReference
 import org.neo4j.values.virtual.NodeValue
 import org.neo4j.values.virtual.RelationshipValue
 import org.neo4j.values.virtual.VirtualNodeValue
-
-import scala.collection.mutable
 
 trait VarLengthPredicate {
   def filterNode(row: CypherRow, state:QueryState)(node: NodeValue): Boolean
@@ -64,7 +63,7 @@ case class VarLengthExpandPipe(source: Pipe,
 
   private def varLengthExpand(node: NodeValue, state: QueryState, maxDepth: Option[Int],
                               row: CypherRow): Iterator[(NodeValue, RelationshipContainer)] = {
-    val stack = new mutable.ArrayStack[(NodeValue, RelationshipContainer)]
+    val stack = HeapTrackingCollections.newStack[(NodeValue, RelationshipContainer)](state.memoryTracker.memoryTrackerForOperator(id.x))
     stack.push((node, RelationshipContainer.EMPTY))
 
     new Iterator[(NodeValue, RelationshipContainer)] {
@@ -92,7 +91,7 @@ case class VarLengthExpandPipe(source: Pipe,
         (node, projectedRels)
       }
 
-      def hasNext: Boolean = stack.nonEmpty
+      def hasNext: Boolean = !stack.isEmpty
     }
   }
 
