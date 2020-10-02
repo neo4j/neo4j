@@ -511,7 +511,7 @@ public class HeapTrackingArrayList<E> implements List<E>, AutoCloseable
      */
     private Object[] grow( int minimumCapacity )
     {
-        int newCapacity = newCapacity( minimumCapacity );
+        int newCapacity = newCapacity( minimumCapacity, elementData.length );
 
         long oldHeapUsage = trackedSize;
         trackedSize = shallowSizeOfObjectArray( newCapacity );
@@ -523,9 +523,8 @@ public class HeapTrackingArrayList<E> implements List<E>, AutoCloseable
         return elementData;
     }
 
-    private int newCapacity( int minimumCapacity )
+    static int newCapacity( int minimumCapacity, int oldCapacity )
     {
-        int oldCapacity = elementData.length;
         int newCapacity = oldCapacity + (oldCapacity >> 1);
         if ( newCapacity - minimumCapacity <= 0 )
         {
