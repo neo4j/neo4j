@@ -27,6 +27,7 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.MetaDataStore;
+import org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat;
 import org.neo4j.storageengine.api.LogVersionRepository;
 
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.CHECKPOINT_LOG_VERSION;
@@ -113,7 +114,8 @@ public class ReadOnlyLogVersionRepository implements LogVersionRepository
     {
         try
         {
-            return MetaDataStore.getRecord( pageCache, neoStore, position, cursorTracer );
+            long logVersion = MetaDataStore.getRecord( pageCache, neoStore, position, cursorTracer );
+            return logVersion != MetaDataRecordFormat.FIELD_NOT_PRESENT ? logVersion : NOT_EXISTING_VERSION;
         }
         catch ( NoSuchFileException ignore )
         {
