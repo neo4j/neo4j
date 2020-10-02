@@ -178,6 +178,14 @@ class HeapTrackingLongArrayListTest
     }
 
     @Test
+    void peek()
+    {
+        assertEquals( 100, aList.size(), "Returned incorrect size for exiting list" );
+        assertEquals( 99, aList.peek() );
+        assertEquals( 100, aList.size(), "Returned incorrect size for exiting list" );
+    }
+
+    @Test
     void push()
     {
         assertEquals( 100, aList.size(), "Returned incorrect size for exiting list" );

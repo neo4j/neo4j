@@ -24,6 +24,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.ConcurrentModificationException;
+import java.util.EmptyStackException;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
@@ -46,7 +47,7 @@ import static org.neo4j.util.Preconditions.requireNonNegative;
  * @param <E> element type
  */
 @SuppressWarnings( "unchecked" )
-public class HeapTrackingArrayList<E> implements List<E>, AutoCloseable
+public class HeapTrackingArrayList<E> implements List<E>, HeapTrackingStack<E>
 {
     private static final long SHALLOW_SIZE = shallowSizeOfInstance( HeapTrackingArrayList.class );
 
@@ -380,6 +381,32 @@ public class HeapTrackingArrayList<E> implements List<E>, AutoCloseable
             throw new ConcurrentModificationException();
         }
         modCount++;
+    }
+
+    @Override
+    public E peek()
+    {
+        if ( size == 0 )
+        {
+            throw new EmptyStackException();
+        }
+        return elementData(size - 1);
+    }
+
+    @Override
+    public void push( E item )
+    {
+        add( item );
+    }
+
+    @Override
+    public E pop()
+    {
+        if ( size == 0 )
+        {
+            throw new EmptyStackException();
+        }
+        return remove( size - 1);
     }
 
     @Override
