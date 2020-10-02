@@ -29,9 +29,6 @@ import scala.util.Random
 /**
  * This class allows to order steps with dependencies and combine them given a [[StepAccumulator]]
  *
- * @param stepAccumulator
- * @tparam S
- * @tparam ACC
  */
 case class StepSequencer[S <: Step, ACC](stepAccumulator: StepAccumulator[S, ACC]) {
   /**
@@ -186,9 +183,18 @@ object StepSequencer {
    * These two criteria are weighted equally.
    */
   private def heuristicStepOrdering[S <: Step](numberOfTimesEachStepIsinvalidated: Map[S, Int], allSteps: Seq[S]): Ordering[S] = {
-    // Putting the steps in a random order will help us discover dependencies we didn't know about.
-    // If a query is suddenly failing because the order of steps changed, it is likely that there is a dependency we didn't capture.
-    val allStepsInRandomOrder = Random.shuffle(allSteps)
+    val fixedProductionSeed = 42L
+    // In production, let's use the same seed to generate the same sequences reproducibly
+    val random = new Random(fixedProductionSeed)
+    if (AssertionRunner.isAssertionsEnabled) {
+      val seed = random.nextLong()
+      // If tests start failing because of a wrong order, print the seed here and use to reproduce the same order.
+      random.setSeed(seed)
+      // Putting the steps in a random order in test setup will help us discover dependencies we didn't know about.
+      // If a query is suddenly failing because the order of steps changed, it is likely that there is a dependency we didn't capture.
+    }
+
+    val allStepsInRandomOrder = random.shuffle(allSteps)
     (x, y) => {
       val diffInvalidating = y.invalidatedConditions.size - x.invalidatedConditions.size
       val diffInvalidated = numberOfTimesEachStepIsinvalidated(x) - numberOfTimesEachStepIsinvalidated(y)
