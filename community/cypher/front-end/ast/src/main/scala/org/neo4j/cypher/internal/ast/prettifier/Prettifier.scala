@@ -427,7 +427,7 @@ case class Prettifier(
         val (resourceName, scope) = Prettifier.extractScope(resource, graphScope, qualifier)
         s"${x.name} {$resourceName} ON $scope FROM ${Prettifier.escapeNames(roleNames)}"
 
-      case ShowPrivileges(scope, yields,_) =>
+      case ShowPrivileges(scope, _, yields,_) =>
         val (y: String, r: String) = showClausesAsString(yields)
         s"SHOW ${Prettifier.extractScope(scope)} PRIVILEGES$y$r"
 

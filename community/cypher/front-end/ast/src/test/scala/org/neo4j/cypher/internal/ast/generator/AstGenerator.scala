@@ -1430,8 +1430,9 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     showUser2  = ShowUserPrivileges(None)(pos)
     showAll    = ShowAllPrivileges()(pos)
     scope      <- oneOf(showRole, showUser1, showUser2, showAll)
+    asRevoke   <- option(boolean)
     yields     <- option(_eitherYieldOrWhere)
-  } yield ShowPrivileges(scope, yields)(pos)
+  } yield ShowPrivileges(scope, asRevoke, yields)(pos)
 
   def _dbmsPrivilege: Gen[PrivilegeCommand] = for {
     dbmsAction      <- _dbmsAction

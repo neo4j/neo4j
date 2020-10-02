@@ -721,7 +721,10 @@ final case class RevokePrivilege(privilege: PrivilegeType,
 
 }
 
-final case class ShowPrivileges(scope: ShowPrivilegeScope, override val yieldOrWhere: YieldOrWhere, override val defaultColumnSet: List[ShowColumn])(val position: InputPosition) extends ReadAdministrationCommand {
+final case class ShowPrivileges(scope: ShowPrivilegeScope,
+                                asRevoke: Option[Boolean],
+                                override val yieldOrWhere: YieldOrWhere,
+                                override val defaultColumnSet: List[ShowColumn])(val position: InputPosition) extends ReadAdministrationCommand {
   override def name = "SHOW PRIVILEGE"
 
   override def semanticCheck: SemanticCheck =
@@ -730,13 +733,13 @@ final case class ShowPrivileges(scope: ShowPrivilegeScope, override val yieldOrW
 }
 
 object ShowPrivileges{
-  def apply(scope: ShowPrivilegeScope, yieldOrWhere: YieldOrWhere)(position:InputPosition): ShowPrivileges = {
+  def apply(scope: ShowPrivilegeScope, asRevoke: Option[Boolean], yieldOrWhere: YieldOrWhere)(position:InputPosition): ShowPrivileges = {
     val columns = List(ShowColumn("access")(position), ShowColumn("action")(position), ShowColumn("resource")(position),
       ShowColumn("graph")(position), ShowColumn("segment")(position), ShowColumn("role")(position)) ++ (scope match {
           case _: ShowUserPrivileges | _: ShowUsersPrivileges => List(ShowColumn("user")(position))
           case _ => List.empty
         })
-    ShowPrivileges(scope, yieldOrWhere, columns)(position)
+    ShowPrivileges(scope, asRevoke, yieldOrWhere, columns)(position)
   }
 }
 
