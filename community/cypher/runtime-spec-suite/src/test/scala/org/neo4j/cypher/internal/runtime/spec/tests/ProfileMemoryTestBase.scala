@@ -290,6 +290,22 @@ abstract class ProfileMemoryTestBase[CONTEXT <: RuntimeContext](edition: Edition
     assertOnMemory(logicalQuery, NO_INPUT, 3, 1)
   }
 
+  test("should profile memory of varExpand") {
+    given {
+      circleGraph(SIZE)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("y")
+      .expand("(x)-[r*1..4]->(y)")
+      .allNodeScan("x")
+      .build()
+
+    // then
+    assertOnMemory(logicalQuery, NO_INPUT, 3, 1)
+  }
+
   //noinspection SameParameterValue
   protected def assertOnMemory(logicalQuery: LogicalQuery, input: InputValues, numOperators: Int, allocatingOperators: Int*): Unit = {
     val runtimeResult = profile(logicalQuery, runtime, input.stream())
