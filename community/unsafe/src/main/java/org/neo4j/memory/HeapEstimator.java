@@ -163,7 +163,7 @@ public final class HeapEstimator
 
     public static long sizeOfLongArray( int size )
     {
-        return alignObjectSize( (long) ARRAY_HEADER_BYTES + (long) LONG_SIZE * size );
+        return alignObjectSize( (long) ARRAY_HEADER_BYTES + (long) Long.BYTES * size );
     }
 
     public static long sizeOfObjectArray( long elementSize, int size )

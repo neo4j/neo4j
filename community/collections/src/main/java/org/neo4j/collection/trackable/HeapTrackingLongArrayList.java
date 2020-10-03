@@ -29,7 +29,7 @@ import org.neo4j.memory.MemoryTracker;
 
 import static org.neo4j.collection.trackable.HeapTrackingArrayList.newCapacity;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
-import static org.neo4j.memory.HeapEstimator.sizeOf;
+import static org.neo4j.memory.HeapEstimator.sizeOfLongArray;
 import static org.neo4j.util.Preconditions.requireNonNegative;
 
 public class HeapTrackingLongArrayList implements LongArrayList, HeapTrackingLongStack
@@ -56,7 +56,10 @@ public class HeapTrackingLongArrayList implements LongArrayList, HeapTrackingLon
     public static HeapTrackingLongArrayList newLongArrayList( int initialSize, MemoryTracker memoryTracker )
     {
         requireNonNegative( initialSize );
-        return new HeapTrackingLongArrayList( initialSize, memoryTracker );
+        requireNonNegative( initialSize );
+        long trackedSize = sizeOfLongArray( initialSize );
+        memoryTracker.allocateHeap( SHALLOW_SIZE + trackedSize );
+        return new HeapTrackingLongArrayList( initialSize, memoryTracker, trackedSize );
     }
 
     /**
@@ -75,11 +78,10 @@ public class HeapTrackingLongArrayList implements LongArrayList, HeapTrackingLon
         return newLongArrayList( initialSize, memoryTracker );
     }
 
-    private HeapTrackingLongArrayList( int initialSize, MemoryTracker memoryTracker )
+    private HeapTrackingLongArrayList( int initialSize, MemoryTracker memoryTracker, long trackedSize )
     {
+        this.trackedSize = sizeOfLongArray( initialSize );
         this.elementData = new long[initialSize];
-        this.trackedSize = sizeOf( this.elementData );
-        memoryTracker.allocateHeap( SHALLOW_SIZE + trackedSize );
         this.memoryTracker = memoryTracker;
     }
 
@@ -220,9 +222,9 @@ public class HeapTrackingLongArrayList implements LongArrayList, HeapTrackingLon
     {
         int newCapacity = newCapacity( minimumCapacity, elementData.length );
         long oldHeapUsage = trackedSize;
-        long[] newItems = new long[newCapacity];
-        trackedSize = sizeOf( newItems );
+        trackedSize = sizeOfLongArray( newCapacity );
         memoryTracker.allocateHeap( trackedSize );
+        long[] newItems = new long[newCapacity];
         System.arraycopy( elementData, 0, newItems, 0, Math.min( size, newCapacity ) );
         elementData = newItems;
         memoryTracker.releaseHeap( oldHeapUsage );
