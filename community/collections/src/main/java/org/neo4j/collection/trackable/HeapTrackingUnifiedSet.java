@@ -30,7 +30,7 @@ import static org.neo4j.memory.HeapEstimator.alignObjectSize;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 
 @SuppressWarnings( "ExternalizableWithoutPublicNoArgConstructor" )
-class HeapTrackingUnifiedSet<T> extends UnifiedSet<T> implements AutoCloseable
+public class HeapTrackingUnifiedSet<T> extends UnifiedSet<T> implements AutoCloseable
 {
     private static final long SHALLOW_SIZE = shallowSizeOfInstance( HeapTrackingUnifiedSet.class );
     private final MemoryTracker memoryTracker;

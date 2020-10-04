@@ -36,6 +36,7 @@ import org.neo4j.values.virtual.ListValue
  */
 trait Checker {
   def contains(value: AnyValue): (Option[Boolean], Checker)
+  def close(): Unit
 }
 
 class BuildUp(list: ListValue, memoryTracker: MemoryTracker = EmptyMemoryTracker.INSTANCE) extends Checker {
@@ -70,24 +71,31 @@ class BuildUp(list: ListValue, memoryTracker: MemoryTracker = EmptyMemoryTracker
       (None, NullListChecker)
     } else {
       val falseResult = if (foundMatch == Equality.UNDEFINED) None else Some(false)
-      val nextState = if (iterator.hasNext) this else new SetChecker(cachedSet, falseResult)
+      val nextState = if (iterator.hasNext) this else new SetChecker(cachedSet, falseResult, Some(cachedSet))
       val result = if (foundMatch == Equality.TRUE) Some(true) else falseResult
 
       (result, nextState)
     }
   }
+
+  override def close(): Unit = {
+    cachedSet.close()
+  }
 }
 
 case object AlwaysFalseChecker extends Checker {
   override def contains(value: AnyValue): (Option[Boolean], Checker) = (Some(false), this)
+
+  override def close(): Unit = {}
 }
 
 case object NullListChecker extends Checker {
   override def contains(value: AnyValue): (Option[Boolean], Checker) = (None, this)
+  override def close(): Unit = {}
 }
 
 // This is the final form for this cache.
-class SetChecker(cachedSet: java.util.Set[AnyValue], falseResult: Option[Boolean]) extends Checker {
+class SetChecker(cachedSet: java.util.Set[AnyValue], falseResult: Option[Boolean], resource: Option[AutoCloseable] = None) extends Checker {
 
   checkOnlyWhenAssertionsAreEnabled(!cachedSet.isEmpty)
 
@@ -100,4 +108,6 @@ class SetChecker(cachedSet: java.util.Set[AnyValue], falseResult: Option[Boolean
       (result, this)
     }
   }
+
+  override def close(): Unit = resource.foreach(_.close())
 }

@@ -22,9 +22,9 @@ package org.neo4j.cypher.operations;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Set;
 
 import org.neo4j.collection.trackable.HeapTrackingCollections;
+import org.neo4j.collection.trackable.HeapTrackingUnifiedSet;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.Value;
@@ -34,7 +34,7 @@ import static org.neo4j.values.storable.Values.FALSE;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 import static org.neo4j.values.storable.Values.TRUE;
 
-public class InCache
+public class InCache implements AutoCloseable
 {
         private final LinkedHashMap<ListValue,InCacheChecker> seen;
 
@@ -73,9 +73,15 @@ public class InCache
         }
     }
 
-    private static class InCacheChecker
+    @Override
+    public void close()
     {
-        private final Set<AnyValue> seen;
+        seen.values().forEach( InCacheChecker::close );
+    }
+
+    private static class InCacheChecker implements AutoCloseable
+    {
+        private final HeapTrackingUnifiedSet<AnyValue> seen;
         private final Iterator<AnyValue> iterator;
         private boolean seenUndefined;
 
@@ -118,6 +124,12 @@ public class InCache
                 }
                 return seenUndefined ? NO_VALUE : FALSE;
             }
+        }
+
+        @Override
+        public void close()
+        {
+            seen.close();
         }
     }
 }

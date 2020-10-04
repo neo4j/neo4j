@@ -99,6 +99,9 @@ class QueryState(val query: QueryContext,
 
   override def close(): Unit = {
     cursors.close()
+    cachedIn.cache.foreach {
+      case (f, g) => g.checker.close
+    }
   }
 }
 
