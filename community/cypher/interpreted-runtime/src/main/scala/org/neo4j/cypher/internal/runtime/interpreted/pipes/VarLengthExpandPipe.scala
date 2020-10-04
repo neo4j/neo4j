@@ -66,7 +66,7 @@ case class VarLengthExpandPipe(source: Pipe,
     val stack = HeapTrackingCollections.newStack[(NodeValue, RelationshipContainer)](state.memoryTracker.memoryTrackerForOperator(id.x))
     stack.push((node, RelationshipContainer.EMPTY))
 
-    new Iterator[(NodeValue, RelationshipContainer)] {
+    new ClosingIterator[(NodeValue, RelationshipContainer)] {
       def next(): (NodeValue, RelationshipContainer) = {
         val (node, rels) = stack.pop()
         if (rels.size < maxDepth.getOrElse(Int.MaxValue) && filteringStep.filterNode(row, state)(node)) {
@@ -91,7 +91,9 @@ case class VarLengthExpandPipe(source: Pipe,
         (node, projectedRels)
       }
 
-      def hasNext: Boolean = !stack.isEmpty
+      def innerHasNext: Boolean = !stack.isEmpty
+
+      override protected[this] def closeMore(): Unit = stack.close()
     }
   }
 
