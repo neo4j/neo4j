@@ -2363,7 +2363,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void mustNotFlushCleanPagesWhenEvicting()
     {
-        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SEMI_LONG_TIMEOUT_MILLIS ), () ->
         {
             final AtomicBoolean observedWrite = new AtomicBoolean();
             FileSystemAbstraction fs = new DelegatingFileSystemAbstraction( this.fs )
