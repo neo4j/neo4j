@@ -45,12 +45,13 @@ import static java.util.Arrays.stream;
 import static java.util.stream.Collectors.toCollection;
 import static org.neo4j.test.extension.SuppressOutputExtension.SUPPRESS_OUTPUT_NAMESPACE;
 import static org.neo4j.util.FeatureToggles.flag;
+import static org.neo4j.util.FeatureToggles.getLong;
 
 public class ThreadLeakageGuardExtension implements AfterAllCallback, BeforeAllCallback
 {
     private static final boolean PRINT_ONLY = flag( ThreadLeakageGuardExtension.class, "PRINT_ONLY", false );
 
-    private static final long MAXIMUM_WAIT_TIME_MILLIS = 90_000;
+    private static final long MAXIMUM_WAIT_TIME_MILLIS = getLong( ThreadLeakageGuardExtension.class, "MAXIMUM_WAIT_TIME_MILLIS", 90_000 );
     private static final String KEY = "ThreadLeakageExtension";
     private static final ExtensionContext.Namespace NAMESPACE = ExtensionContext.Namespace.create( KEY );
     private final StacktraceHolderException stacktraceHolderException = new StacktraceHolderException();
@@ -72,7 +73,11 @@ public class ThreadLeakageGuardExtension implements AfterAllCallback, BeforeAllC
             "neo4j.TransactionTimeoutMonitor",  //Sometimes erroneously leaked on database shutdown, possible race-condition, to be fixed!
             "neo4j.CheckPoint",                 //Sometimes erroneously leaked on database shutdown, possible race-condition, to be fixed!
             "neo4j.IndexSampling",              //Sometimes erroneously leaked on database shutdown, possible race-condition, to be fixed!
-            "junit-jupiter-timeout-watcher"
+            "junit-jupiter-timeout-watcher",
+            "tc-okhttp-stream",                 //TestContainers monitoring thread. Might be possible to remove once we are on testcontainers 1.15.x
+            "OkHttp ConnectionPool",            //TestContainers connection pool. Might be possible to remove once we are on testcontainers 1.15.x
+            "Okio Watchdog",                    //TestContainers watchdog. Might be possible to remove once we are on testcontainers 1.15.x
+            "testcontainers-ryuk"               //TestContainers reaper. Might be possible to remove once we are on testcontainers 1.15.x
     );
 
     @Override
