@@ -92,15 +92,15 @@ case object selectPatternPredicates extends SelectionCandidateGenerator {
       patternElement match {
         case elem: RelationshipChain =>
           val patternExpr = PatternExpression(RelationshipsPattern(elem)(elem.position))(e.outerScope)
-          val (namedExpr, namedMap) = PatternExpressionPatternElementNamer.apply(patternExpr)
-          val qg = extractQG(lhs, namedExpr, context)
+          val (namedExpr, namedMap) = PatternExpressionPatternElementNamer.apply(patternExpr) // TODO name ExistsSubClause ealier
+          val qg = asQueryGraph(namedExpr, lhs.availableSymbols, context.innerVariableNamer)
 
           (acc._1 ++ namedMap, acc._2 ++ qg)
 
         case elem: NodePattern =>
           val patternExpr = NodePatternExpression(List(elem))(elem.position)
-          val (namedExpr, namedMap) = PatternExpressionPatternElementNamer.apply(patternExpr)
-          val qg = extractQG(lhs, namedExpr, context)
+          val (namedExpr, namedMap) = PatternExpressionPatternElementNamer.apply(patternExpr)  // TODO name ExistsSubClause ealier
+          val qg = asQueryGraph(namedExpr, lhs.availableSymbols)
 
           (acc._1 ++ namedMap, acc._2 ++ qg)
       }
@@ -113,25 +113,6 @@ case object selectPatternPredicates extends SelectionCandidateGenerator {
 
     val innerContext = createPlannerContext(context, namedMap)
     innerContext.strategy.plan(new_qg, interestingOrder, innerContext)
-  }
-
-  private def extractQG(source: LogicalPlan, namedExpr: NodePatternExpression, context: LogicalPlanningContext): QueryGraph = {
-    val qgArguments = getQueryGraphArguments(source, namedExpr)
-    asQueryGraph(namedExpr, context.innerVariableNamer).withArgumentIds(qgArguments)
-  }
-
-  private def extractQG(source: LogicalPlan, namedExpr: PatternExpression, context: LogicalPlanningContext): QueryGraph = {
-    val qgArguments = getQueryGraphArguments(source, namedExpr)
-    asQueryGraph(namedExpr, context.innerVariableNamer).withArgumentIds(qgArguments)
-  }
-
-  private def getQueryGraphArguments(source: LogicalPlan, namedExpr: Expression) = {
-    val dependencies = namedExpr.
-      dependencies.
-      map(_.name).
-      filter(id => UnNamedNameGenerator.isNamed(id))
-
-    source.availableSymbols intersect dependencies
   }
 
   private def createPlannerContext(context: LogicalPlanningContext, namedMap: Map[PatternElement, Variable]): LogicalPlanningContext = {
@@ -228,8 +209,7 @@ case object selectPatternPredicates extends SelectionCandidateGenerator {
 
   private def rhsPlan(lhs: LogicalPlan, pattern: PatternExpression, ctx: LogicalPlanningContext) = {
     val context = ctx.withUpdatedCardinalityInformation(lhs)
-    val (plan, _) = context.strategy.planPatternExpression(lhs.availableSymbols, pattern, context)
-    plan
+    context.strategy.planPatternExpression(lhs.availableSymbols, pattern, context)
   }
 
   private def onePredicate(expressions: Set[Expression]): Expression = if (expressions.size == 1)

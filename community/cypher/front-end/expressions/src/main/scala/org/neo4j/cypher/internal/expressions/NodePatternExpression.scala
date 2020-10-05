@@ -18,5 +18,4 @@ package org.neo4j.cypher.internal.expressions
 
 import org.neo4j.cypher.internal.util.InputPosition
 
-case class NodePatternExpression(patterns: List[NodePattern]) (val position: InputPosition) extends Expression {
-}
+case class NodePatternExpression(patterns: List[NodePattern])(val position: InputPosition) extends Expression

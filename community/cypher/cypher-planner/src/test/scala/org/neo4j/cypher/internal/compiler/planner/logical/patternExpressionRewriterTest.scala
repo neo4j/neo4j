@@ -118,18 +118,14 @@ class patternExpressionRewriterTest extends CypherFunSuite with LogicalPlanningT
   private def newPatExpr(left: String, right: String): PatternExpression = {
     PatternExpression(RelationshipsPattern(RelationshipChain(
       NodePattern(Some(varFor(left)), Seq.empty, None) _,
-      RelationshipPattern(None, Seq.empty, None, None, SemanticDirection.OUTGOING) _,
+      RelationshipPattern(Some(varFor("  REL666")), Seq.empty, None, None, SemanticDirection.OUTGOING) _,
       NodePattern(Some(varFor(right)), Seq.empty, None) _) _) _)(Set.empty)
   }
 
   private def createStrategy: QueryGraphSolver = {
     val strategy = mock[QueryGraphSolver]
     when(strategy.planPatternExpression(any[Set[String]], any[PatternExpression], any[LogicalPlanningContext])).thenAnswer(
-      (invocation: InvocationOnMock) => {
-        val expr: PatternExpression = invocation.getArgument(1)
-        val (namedExpr, _) = PatternExpressionPatternElementNamer(expr)
-        (dummyPlan, namedExpr)
-      })
+      (_: InvocationOnMock) => dummyPlan)
     strategy
   }
 }
