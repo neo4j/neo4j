@@ -39,9 +39,9 @@ class PatternExpressionConverterTest extends CypherFunSuite with LogicalPlanning
 
   private val aNode = NodePattern(Some(varFor("a")), Seq.empty, None)_
   private val bNode = NodePattern(Some(varFor("b")), Seq.empty, None)_
-  private val anonymousNode = NodePattern(Some(varFor("  UNNAMED1")), Seq.empty, None)_
   private val rRel = RelationshipPattern(Some(varFor("r")), Seq.empty, None, None, SemanticDirection.OUTGOING)_
   private val TYP: RelTypeName = RelTypeName("TYP")_
+  private val dependencies = Set("a", "r", "b")
 
   private val rRelWithType = rRel.copy(types = Seq(TYP)) _
   private val planRel = PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
@@ -52,12 +52,12 @@ class PatternExpressionConverterTest extends CypherFunSuite with LogicalPlanning
     val patternExpression = createPatternExpression(aNode, rRel, bNode)
 
     // When
-    val qg = asQueryGraph(patternExpression, new GeneratingNamer)
+    val qg = asQueryGraph(patternExpression, dependencies, new GeneratingNamer)
 
     // Then
     qg.selections should equal(Selections())
     qg.patternRelationships should equal(Set(planRel))
-    qg.argumentIds should equal(Set("a", "r", "b"))
+    qg.argumentIds should equal(dependencies)
     qg.patternNodes should equal(Set("a", "b"))
   }
 
@@ -66,27 +66,13 @@ class PatternExpressionConverterTest extends CypherFunSuite with LogicalPlanning
     val patternExpression = createPatternExpression(aNode, rRelWithType, bNode)
 
     // When
-    val qg = asQueryGraph(patternExpression, new GeneratingNamer)
+    val qg = asQueryGraph(patternExpression, dependencies, new GeneratingNamer)
 
     // Then
     qg.selections should equal(Selections())
     qg.patternRelationships should equal(Set(planRelWithType))
-    qg.argumentIds should equal(Set("a", "r", "b"))
+    qg.argumentIds should equal(dependencies)
     qg.patternNodes should equal(Set("a", "b"))
-  }
-
-  test("(a)-[r]->(  UNNAMED1)") {
-    // Given
-    val patternExpression = createPatternExpression(aNode, rRel, anonymousNode)
-
-    // When
-    val qg = asQueryGraph(patternExpression, new GeneratingNamer)
-
-    // Then
-    qg.selections should equal(Selections())
-    qg.patternRelationships should equal(Set(planRel.copy(nodes = ("a", "  UNNAMED1"))))
-    qg.argumentIds should equal(Set("a", "r"))
-    qg.patternNodes should equal(Set("a", "  UNNAMED1"))
   }
 
   test("(a)-[r]->(b:Label)") {
@@ -94,13 +80,13 @@ class PatternExpressionConverterTest extends CypherFunSuite with LogicalPlanning
     val patternExpression = createPatternExpression(aNode, rRel, bNode.copy(labels = Seq(labelName("Label")))(pos))
 
     // When
-    val qg = asQueryGraph(patternExpression, new GeneratingNamer)
+    val qg = asQueryGraph(patternExpression, dependencies, new GeneratingNamer)
 
     // Then
     val predicate = hasLabels("b", "Label")
     qg.selections should equal(Selections(Set(Predicate(Set("b"), predicate))))
     qg.patternRelationships should equal(Set(planRel))
-    qg.argumentIds should equal(Set("a", "r", "b"))
+    qg.argumentIds should equal(dependencies)
     qg.patternNodes should equal(Set("a", "b"))
   }
 

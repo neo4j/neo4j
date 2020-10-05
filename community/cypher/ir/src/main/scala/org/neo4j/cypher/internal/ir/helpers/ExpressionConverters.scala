@@ -41,15 +41,31 @@ import org.neo4j.cypher.internal.rewriting.rewriters.InnerVariableNamer
 import org.neo4j.cypher.internal.rewriting.rewriters.LabelPredicateNormalizer
 import org.neo4j.cypher.internal.rewriting.rewriters.MatchPredicateNormalizerChain
 import org.neo4j.cypher.internal.rewriting.rewriters.PropertyPredicateNormalizer
+import org.neo4j.cypher.internal.util.AllNameGenerators
 import org.neo4j.cypher.internal.util.Rewriter
-import org.neo4j.cypher.internal.util.UnNamedNameGenerator.NameString
 import org.neo4j.cypher.internal.util.UnNamedNameGenerator.isNamed
 import org.neo4j.cypher.internal.util.topDown
 
 object ExpressionConverters {
   val normalizer = MatchPredicateNormalizerChain(PropertyPredicateNormalizer, LabelPredicateNormalizer)
 
-  def asQueryGraph(exp: PatternExpression, innerVariableNamer: InnerVariableNamer): QueryGraph = {
+  private def getQueryGraphArguments(expr: Expression, availableSymbols: Set[String]) = {
+    val dependencies = expr
+      .dependencies
+      .map(_.name)
+      .filter(id => AllNameGenerators.isNamed(id))
+    availableSymbols intersect dependencies
+  }
+
+  /**
+   * Turn a PatternExpression into a query graph.
+   *
+   * @param exp the pattern expression
+   * @param availableSymbols all symbols available in the outer scope. Only used to assert that all dependencies can be satisfied.
+   */
+  def asQueryGraph(exp: PatternExpression,
+                   availableSymbols: Set[String],
+                   innerVariableNamer: InnerVariableNamer): QueryGraph = {
     val addUniquenessPredicates = AddUniquenessPredicates(innerVariableNamer)
     val uniqueRels = addUniquenessPredicates.collectUniqueRels(exp.pattern)
     val uniquePredicates = addUniquenessPredicates.createPredicatesFor(uniqueRels, exp.pattern.position)
@@ -62,27 +78,44 @@ object ExpressionConverters {
     val rewrittenChain = relChain.endoRewrite(topDown(Rewriter.lift(normalizer.replace)))
 
     val patternContent = rewrittenChain.destructed
-    val qg = QueryGraph(
+    QueryGraph(
       patternRelationships = patternContent.rels.toSet,
-      patternNodes = patternContent.nodeIds.toSet
+      patternNodes = patternContent.nodeIds.toSet,
+      argumentIds = getQueryGraphArguments(exp, availableSymbols)
     ).addPredicates(predicates: _*)
-    qg.addArgumentIds(qg.idsWithoutOptionalMatchesOrUpdates.filter(_.isNamed).toIndexedSeq)
   }
 
-  def asQueryGraph(exp: NodePatternExpression, innerVariableNamer: InnerVariableNamer): QueryGraph = {
+  /**
+   * Turn a NodePatternExpression into a query graph
+   * @param exp the NodePatternExpression
+   * @param availableSymbols all symbols available in the outer scope. Unfortunately used to to intersect with wrongly computed dependencies.
+   */
+  def asQueryGraph(exp: NodePatternExpression,
+                   availableSymbols: Set[String]): QueryGraph = {
     val predicates: Seq[Expression] = exp.patterns.collect {
       case pattern if normalizer.extract.isDefinedAt(pattern) => normalizer.extract(pattern)
     }.flatten
 
     val rewrittenPattern = exp.patterns.map(_.endoRewrite(topDown(Rewriter.lift(normalizer.replace))))
 
-    val qg = QueryGraph(
-      patternNodes = rewrittenPattern.map(_.variable.get.name).toSet
+    val dependencies = exp.dependencies.map(_.name)
+    val qgArguments = availableSymbols intersect dependencies
+
+    QueryGraph(
+      patternNodes = rewrittenPattern.map(_.variable.get.name).toSet,
+      argumentIds = qgArguments
     ).addPredicates(predicates: _*)
-    qg.addArgumentIds(qg.idsWithoutOptionalMatchesOrUpdates.filter(_.isNamed).toIndexedSeq)
   }
 
-  def asQueryGraph(exp: PatternComprehension, innerVariableNamer: InnerVariableNamer): QueryGraph = {
+  /**
+   * Turn a PatternComprehension into a query graph.
+   *
+   * @param exp the pattern comprehension
+   * @param availableSymbols all symbols available in the outer scope. Only used to assert that all dependencies can be satisfied.
+   */
+  def asQueryGraph(exp: PatternComprehension,
+                   availableSymbols: Set[String],
+                   innerVariableNamer: InnerVariableNamer): QueryGraph = {
     val addUniquenessPredicates = AddUniquenessPredicates(innerVariableNamer)
     val uniqueRels = addUniquenessPredicates.collectUniqueRels(exp.pattern)
     val uniquePredicates = addUniquenessPredicates.createPredicatesFor(uniqueRels, exp.pattern.position)
@@ -94,14 +127,12 @@ object ExpressionConverters {
 
     val rewrittenChain = relChain.endoRewrite(topDown(Rewriter.lift(normalizer.replace)))
 
-    val deps = predicates.flatMap(_.dependencies).map(_.name)
     val patternContent = rewrittenChain.destructed
-    val qg = QueryGraph(
+    QueryGraph(
       patternRelationships = patternContent.rels.toSet,
-      patternNodes = patternContent.nodeIds.toSet
+      patternNodes = patternContent.nodeIds.toSet,
+      argumentIds = getQueryGraphArguments(exp, availableSymbols)
     ).addPredicates(predicates: _*)
-    qg.addArgumentIds((qg.idsWithoutOptionalMatchesOrUpdates.filter(_.isNamed) ++ deps).toIndexedSeq)
-    // TODO Next Step: Be clever and find out if deps are necessary here and only then add dependencies
   }
 
   implicit class PredicateConverter(val predicate: Expression) extends AnyVal {

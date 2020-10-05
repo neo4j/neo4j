@@ -40,7 +40,6 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
 import org.neo4j.cypher.internal.rewriting.rewriters.PatternExpressionPatternElementNamer
 import org.neo4j.cypher.internal.util.FreshIdNameGenerator
-import org.neo4j.cypher.internal.util.UnNamedNameGenerator
 
 case object selectPatternPredicates extends CandidateGenerator[LogicalPlan] {
 
@@ -84,14 +83,14 @@ case object selectPatternPredicates extends CandidateGenerator[LogicalPlan] {
         case elem: RelationshipChain =>
           val patternExpr = PatternExpression(RelationshipsPattern(elem)(elem.position))
           val (namedExpr, namedMap) = PatternExpressionPatternElementNamer.apply(patternExpr)
-          val qg = extractQG(lhs, namedExpr, context)
+          val qg = asQueryGraph(namedExpr, lhs.availableSymbols, context.innerVariableNamer)
 
           (acc._1 ++ namedMap, acc._2 ++ qg)
 
         case elem: NodePattern =>
           val patternExpr = NodePatternExpression(List(elem))(elem.position)
           val (namedExpr, namedMap) = PatternExpressionPatternElementNamer.apply(patternExpr)
-          val qg = extractQG(lhs, namedExpr, context)
+          val qg = asQueryGraph(namedExpr, lhs.availableSymbols)
 
           (acc._1 ++ namedMap, acc._2 ++ qg)
       }
@@ -104,25 +103,6 @@ case object selectPatternPredicates extends CandidateGenerator[LogicalPlan] {
 
     val innerContext = createPlannerContext(context, namedMap)
     innerContext.strategy.plan(new_qg, interestingOrder, innerContext)
-  }
-
-  private def extractQG(source: LogicalPlan, namedExpr: NodePatternExpression, context: LogicalPlanningContext): QueryGraph = {
-    val qgArguments = getQueryGraphArguments(source, namedExpr)
-    asQueryGraph(namedExpr, context.innerVariableNamer).withArgumentIds(qgArguments)
-  }
-
-  private def extractQG(source: LogicalPlan, namedExpr: PatternExpression, context: LogicalPlanningContext): QueryGraph = {
-    val qgArguments = getQueryGraphArguments(source, namedExpr)
-    asQueryGraph(namedExpr, context.innerVariableNamer).withArgumentIds(qgArguments)
-  }
-
-  private def getQueryGraphArguments(source: LogicalPlan, namedExpr: Expression) = {
-    val dependencies = namedExpr.
-      dependencies.
-      map(_.name).
-      filter(id => UnNamedNameGenerator.isNamed(id))
-
-    source.availableSymbols intersect dependencies
   }
 
   private def createPlannerContext(context: LogicalPlanningContext, namedMap: Map[PatternElement, Variable]): LogicalPlanningContext = {

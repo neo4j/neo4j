@@ -192,13 +192,7 @@ object PatternExpressionSolver {
                                       context: LogicalPlanningContext): ListSubQueryExpressionSolver[PatternExpression] = {
 
     def extractQG(source: LogicalPlan, namedExpr: PatternExpression): QueryGraph = {
-
-      val dependencies = namedExpr
-        .dependencies
-        .map(_.name)
-        .filter(id => AllNameGenerators.isNamed(id))
-      AssertMacros.checkOnlyWhenAssertionsAreEnabled(dependencies.subsetOf(availableSymbols), s"Trying to plan a PatternExpression where a dependency is not available. Dependencies: $dependencies. Available: $availableSymbols")
-      asQueryGraph(namedExpr, context.innerVariableNamer).withArgumentIds(dependencies)
+      asQueryGraph(namedExpr, availableSymbols, context.innerVariableNamer)
     }
 
     def createPlannerContext(context: LogicalPlanningContext, namedMap: Map[PatternElement, Variable]): LogicalPlanningContext = {
@@ -225,10 +219,7 @@ object PatternExpressionSolver {
   private def solvePatternComprehensions(availableSymbols: Set[String],
                                          context: LogicalPlanningContext): ListSubQueryExpressionSolver[PatternComprehension] = {
     def extractQG(source: LogicalPlan, namedExpr: PatternComprehension) = {
-      val queryGraph = asQueryGraph(namedExpr, context.innerVariableNamer)
-      val dependencies = namedExpr.dependencies.map(_.name)
-      AssertMacros.checkOnlyWhenAssertionsAreEnabled(dependencies.subsetOf(availableSymbols), s"Trying to plan a PatternComprehension where a dependency is not available. Dependencies: $dependencies. Available: $availableSymbols")
-      queryGraph.withArgumentIds(dependencies)
+      asQueryGraph(namedExpr, source.availableSymbols, context.innerVariableNamer)
     }
 
     def createProjectionToCollect(pattern: PatternComprehension): Expression = pattern.projection
