@@ -30,7 +30,6 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 trait IDPSolverConfig {
   def maxTableSize: Int = 128
   def iterationDurationLimit: Long = 1000
-
 }
 
 trait SingleComponentIDPSolverConfig extends IDPSolverConfig {

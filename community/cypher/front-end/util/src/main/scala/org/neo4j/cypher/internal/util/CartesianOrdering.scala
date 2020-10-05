@@ -22,15 +22,7 @@ package org.neo4j.cypher.internal.util
  */
 object CartesianOrdering extends Ordering[(Cost, Cardinality)] {
   override def compare(side0: (Cost, Cardinality), side1: (Cost, Cardinality)): Int = {
-    val side0Xside1 = costFor(side0, side1)
-    val side1Xside0 = costFor(side1, side0)
-    if (side0Xside1 > side1Xside0) {
-      1
-    } else if (side0Xside1 < side1Xside0) {
-      -1
-    } else {
-      0
-    }
+    costFor(side0, side1).compare(costFor(side1, side0))
   }
 
   /**

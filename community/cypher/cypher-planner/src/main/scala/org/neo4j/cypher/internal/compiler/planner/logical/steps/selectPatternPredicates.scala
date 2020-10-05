@@ -53,23 +53,19 @@ case object selectPatternPredicates extends SelectionCandidateGenerator {
       pattern <- unsolvedPredicates.iterator.filter(containsPatternPredicates)
       if queryGraph.argumentIds.subsetOf(lhs.availableSymbols)
     } yield {
-        pattern match {
+        val plan = pattern match {
           case e:ExistsSubClause =>
             val innerPlan = planInnerOfSubquery(lhs, context, interestingOrder, e)
-            val plan = context.logicalPlanProducer.planSemiApply(lhs, innerPlan, e, context)
-            SelectionCandidate(plan, Set(e))
+            context.logicalPlanProducer.planSemiApply(lhs, innerPlan, e, context)
           case p@Not(e: ExistsSubClause) =>
             val innerPlan = planInnerOfSubquery(lhs, context, interestingOrder, e)
-            val plan = context.logicalPlanProducer.planAntiSemiApply(lhs, innerPlan, p, context)
-            SelectionCandidate(plan, Set(p))
+            context.logicalPlanProducer.planAntiSemiApply(lhs, innerPlan, p, context)
           case p@Exists(patternExpression: PatternExpression) =>
             val rhs = rhsPlan(lhs, patternExpression, context)
-            val plan = context.logicalPlanProducer.planSemiApply(lhs, rhs, p, context)
-            SelectionCandidate(plan, Set(p))
+            context.logicalPlanProducer.planSemiApply(lhs, rhs, p, context)
           case p@Not(Exists(patternExpression: PatternExpression)) =>
             val rhs = rhsPlan(lhs, patternExpression, context)
-            val plan = context.logicalPlanProducer.planAntiSemiApply(lhs, rhs, p, context)
-            SelectionCandidate(plan, Set(p))
+            context.logicalPlanProducer.planAntiSemiApply(lhs, rhs, p, context)
           case o@Ors(exprs) =>
             val (patternExpressions, expressions) = exprs.partition {
               case ExistsSubClause(_, _) => true
@@ -83,9 +79,9 @@ case object selectPatternPredicates extends SelectionCandidateGenerator {
               exprs.forall(solvedPredicates.contains),
               "planPredicates is supposed to solve all predicates in an OR clause."
             )
-            val planWithSolved = context.logicalPlanProducer.solvePredicate(plan, o)
-            SelectionCandidate(planWithSolved, Set(o))
+            context.logicalPlanProducer.solvePredicate(plan, o)
         }
+        SelectionCandidate(plan, Set(pattern))
       }
   }
 
