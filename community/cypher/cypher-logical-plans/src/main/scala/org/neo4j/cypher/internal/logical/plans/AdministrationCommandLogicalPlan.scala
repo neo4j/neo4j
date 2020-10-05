@@ -120,6 +120,7 @@ case class RevokeGraphAction(source: PrivilegePlan, action: GraphAction, resoure
 
 case class ShowPrivileges(source: Option[PrivilegePlan],
                           scope: ShowPrivilegeScope,
+                          asRevoke: Option[Boolean],
                           override val returnColumns: List[String],
                           yields: Option[Yield],
                           returns: Option[Return])(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(source)

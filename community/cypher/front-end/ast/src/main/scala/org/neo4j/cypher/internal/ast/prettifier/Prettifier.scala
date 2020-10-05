@@ -431,6 +431,15 @@ case class Prettifier(
         val (y: String, r: String) = showClausesAsString(yields)
         s"SHOW ${Prettifier.extractScope(scope)} PRIVILEGES$y$r"
 
+      case ShowPrivileges(scope, asRevoke, yields, _) =>
+        val (y: String, r: String) = showClausesAsString(yields)
+        val a = asRevoke match {
+          case Some(false) => " AS COMMAND"
+          case Some(true) => " AS REVOKE COMMAND"
+          case None => ""
+        }
+        s"SHOW ${Prettifier.extractScope(scope)} PRIVILEGES$a$y$r"
+
       case x @ ShowDatabase(scope, yields,_) =>
         val (y: String, r: String) = showClausesAsString(yields)
         val optionalName = scope match {

@@ -817,6 +817,22 @@ class PrettifierIT extends CypherFunSuite {
       "show roles $role1,abc, $role2,$role3 privileges" ->
         "SHOW ROLES $role1, abc, $role2, $role3 PRIVILEGES",
 
+      "show privileges as command" ->
+        "SHOW ALL PRIVILEGES AS COMMAND",
+
+      "show privileges as revoke command" ->
+        "SHOW ALL PRIVILEGES AS REVOKE COMMAND",
+
+      "show privileges as revoke command yield command order by command" ->
+        """SHOW ALL PRIVILEGES AS REVOKE COMMAND
+          |  YIELD command
+          |    ORDER BY command ASCENDING""".stripMargin,
+
+      "show user privileges as command where access = 'GRANTED' and action = 'match'" ->
+        """SHOW USER PRIVILEGES AS COMMAND
+          |  WHERE access = "GRANTED" AND action = "match"""".stripMargin,
+
+
       "catalog show databases" ->
         "SHOW DATABASES",
 
