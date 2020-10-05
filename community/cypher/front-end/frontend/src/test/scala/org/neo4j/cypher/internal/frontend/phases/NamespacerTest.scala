@@ -171,9 +171,9 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with
       List(varFor("  a@7"), varFor("  a@49"))
     ),
     TestCase(
-      "MATCH (n) WHERE EXISTS { MATCH (n)-->(p) } WITH n as m, 1 as n RETURN m, n",
-      "MATCH (`  n@7`) WHERE EXISTS { MATCH (`  n@7`)-->(p) } WITH `  n@7` as m, 1 as `  n@61` RETURN m, `  n@61`",
-      List(varFor("  n@7"), varFor("  n@61"))
+      "MATCH (n) WHERE EXISTS { MATCH (n)-[r]->(p) } WITH n as m, 1 as n RETURN m, n",
+      "MATCH (`  n@7`) WHERE EXISTS { MATCH (`  n@7`)-[r]->(p) } WITH `  n@7` as m, 1 as `  n@64` RETURN m, `  n@64`",
+      List(varFor("  n@7"), varFor("  n@64"))
     )
   )
 

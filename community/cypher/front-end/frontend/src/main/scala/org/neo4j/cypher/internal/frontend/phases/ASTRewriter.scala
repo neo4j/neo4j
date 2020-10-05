@@ -42,7 +42,7 @@ import org.neo4j.cypher.internal.rewriting.rewriters.foldConstants
 import org.neo4j.cypher.internal.rewriting.rewriters.inlineNamedPathsInPatternComprehensions
 import org.neo4j.cypher.internal.rewriting.rewriters.literalReplacement
 import org.neo4j.cypher.internal.rewriting.rewriters.moveWithPastMatch
-import org.neo4j.cypher.internal.rewriting.rewriters.namePatternElements
+import org.neo4j.cypher.internal.rewriting.rewriters.nameAllPatternElements
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizeArgumentOrder
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizeComparisons
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizeExistsPatternExpressions
@@ -79,7 +79,7 @@ class ASTRewriter(rewriterSequencer: String => RewriterStepSequencer,
       enableCondition(containsNoReturnAll),
       foldConstants(cypherExceptionFactory),
       normalizeExistsPatternExpressions(semanticState),
-      namePatternElements,
+      nameAllPatternElements,
       enableCondition(noUnnamedPatternElementsInMatch),
       normalizeMatchPredicates,
       normalizeNotEquals,

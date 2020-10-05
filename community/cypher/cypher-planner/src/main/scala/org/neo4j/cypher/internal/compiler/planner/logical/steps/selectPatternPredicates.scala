@@ -38,7 +38,6 @@ import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters.asQueryGraph
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.macros.AssertMacros
-import org.neo4j.cypher.internal.rewriting.rewriters.PatternExpressionPatternElementNamer
 import org.neo4j.cypher.internal.util.FreshIdNameGenerator
 import org.neo4j.cypher.internal.util.UnNamedNameGenerator
 
@@ -88,21 +87,17 @@ case object selectPatternPredicates extends SelectionCandidateGenerator {
   def planInnerOfSubquery(lhs: LogicalPlan, context: LogicalPlanningContext, interestingOrder: InterestingOrder, e: ExistsSubClause): LogicalPlan = {
     // Creating a query graph by combining all extracted query graphs created by each entry of the patternElements
     val emptyTuple = (Map.empty[PatternElement, Variable], QueryGraph.empty)
-    val(namedMap, qg) = e.patternElements.foldLeft(emptyTuple) { (acc, patternElement) =>
+    val qg = e.patternElements.foldLeft(QueryGraph.empty) { (acc, patternElement) =>
       patternElement match {
         case elem: RelationshipChain =>
           val patternExpr = PatternExpression(RelationshipsPattern(elem)(elem.position))(e.outerScope)
-          val (namedExpr, namedMap) = PatternExpressionPatternElementNamer.apply(patternExpr) // TODO name ExistsSubClause ealier
-          val qg = asQueryGraph(namedExpr, lhs.availableSymbols, context.innerVariableNamer)
-
-          (acc._1 ++ namedMap, acc._2 ++ qg)
+          val qg = asQueryGraph(patternExpr, lhs.availableSymbols, context.innerVariableNamer)
+          acc ++ qg
 
         case elem: NodePattern =>
           val patternExpr = NodePatternExpression(List(elem))(elem.position)
-          val (namedExpr, namedMap) = PatternExpressionPatternElementNamer.apply(patternExpr)  // TODO name ExistsSubClause ealier
-          val qg = asQueryGraph(namedExpr, lhs.availableSymbols)
-
-          (acc._1 ++ namedMap, acc._2 ++ qg)
+          val qg = asQueryGraph(patternExpr, lhs.availableSymbols)
+          acc ++ qg
       }
     }
 
@@ -111,14 +106,7 @@ case object selectPatternPredicates extends SelectionCandidateGenerator {
       case (acc, p) => acc.addPredicates(e.outerScope.map(id => id.name), p)
     }
 
-    val innerContext = createPlannerContext(context, namedMap)
-    innerContext.strategy.plan(new_qg, interestingOrder, innerContext)
-  }
-
-  private def createPlannerContext(context: LogicalPlanningContext, namedMap: Map[PatternElement, Variable]): LogicalPlanningContext = {
-    val namedNodes = namedMap.collect { case (elem: NodePattern, identifier) => identifier }
-    val namedRels = namedMap.collect { case (elem: RelationshipChain, identifier) => identifier }
-    context.forExpressionPlanning(namedNodes, namedRels)
+    context.strategy.plan(new_qg, interestingOrder, context)
   }
 
   def planPredicates(lhs: LogicalPlan,

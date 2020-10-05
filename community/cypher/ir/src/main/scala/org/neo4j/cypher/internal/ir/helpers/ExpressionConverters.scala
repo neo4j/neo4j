@@ -162,46 +162,8 @@ object ExpressionConverters {
           acc => TraverseChildren(acc)
         case p: Expression =>
           acc => SkipChildren(acc + Predicate(p.idNames -- outerScope, p))
-      }.map(filterUnnamed)
-    }
-
-    // TODO PatternExpression have correct dependencies nowadays
-    private def filterUnnamed(predicate: Predicate): Predicate = predicate match {
-      case Predicate(deps, e: PatternExpression) =>
-        Predicate(deps.filter(x => isNamed(x)), e)
-      case Predicate(deps, e@Not(_: PatternExpression)) =>
-        Predicate(deps.filter(x => isNamed(x)), e)
-      case Predicate(deps, ors@Ors(exprs)) =>
-        val newDeps = exprs.foldLeft(Set.empty[String]) { (acc, exp) =>
-          exp match {
-            case e: PatternExpression =>
-              acc ++ e.idNames.filter(x => isNamed(x))
-            case e@Not(_: PatternExpression) =>
-              acc ++ e.idNames.filter(x => isNamed(x))
-            case e if e.treeExists { case _: PatternExpression => true} =>
-              acc ++ (e.idNames -- unnamedIdNamesInNestedPatternExpressions(e))
-            case e =>
-              acc ++ e.idNames
-          }
-        }
-        Predicate(newDeps, ors)
-      case Predicate(deps, expr) if expr.treeExists { case _: PatternExpression => true} =>
-        Predicate(deps -- unnamedIdNamesInNestedPatternExpressions(expr), expr)
-      case p => p
-    }
-
-    private def unnamedIdNamesInNestedPatternExpressions(expression: Expression) = {
-      val patternExpressions = expression.treeFold(Seq.empty[PatternExpression]) {
-        case p: PatternExpression => acc => SkipChildren(acc :+ p)
       }
-
-      val unnamedIdsInPatternExprs = patternExpressions.flatMap(_.idNames)
-        .filterNot(x => isNamed(x))
-        .toSet
-
-      unnamedIdsInPatternExprs
     }
-
   }
 
   implicit class IdExtractor(val exp: Expression) extends AnyVal {

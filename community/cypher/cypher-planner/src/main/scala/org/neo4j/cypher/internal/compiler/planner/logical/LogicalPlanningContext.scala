@@ -73,15 +73,6 @@ case class LogicalPlanningContext(planContext: PlanContext,
   def withUpdatedSemanticTable(semanticTable: SemanticTable): LogicalPlanningContext =
     if(semanticTable == this.semanticTable) this else copy(semanticTable = semanticTable)
 
-  def forExpressionPlanning(nodes: Iterable[Variable], rels: Iterable[Variable]): LogicalPlanningContext = {
-    val tableWithNodes = nodes.foldLeft(semanticTable) { case (table, node) => table.addNode(node) }
-    val tableWithRels = rels.foldLeft(tableWithNodes) { case (table, rel) => table.addRelationship(rel) }
-    copy(
-      input = input.copy(inboundCardinality = Cardinality.max(input.inboundCardinality, Cardinality(1))),
-      semanticTable = tableWithRels
-    )
-  }
-
   def withAddedLeafPlanUpdater(newUpdater: LeafPlanUpdater): LogicalPlanningContext = {
     copy(leafPlanUpdater = ChainedUpdater(leafPlanUpdater, newUpdater))
   }

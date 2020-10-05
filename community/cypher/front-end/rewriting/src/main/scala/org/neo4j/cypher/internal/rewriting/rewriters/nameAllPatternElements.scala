@@ -18,6 +18,7 @@ package org.neo4j.cypher.internal.rewriting.rewriters
 
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
+import org.neo4j.cypher.internal.expressions.ShortestPathExpression
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.NodeNameGenerator
 import org.neo4j.cypher.internal.util.RelNameGenerator
@@ -28,7 +29,7 @@ case object nameAllPatternElements extends Rewriter {
 
   override def apply(in: AnyRef): AnyRef = namingRewriter.apply(in)
 
-  val namingRewriter: Rewriter = bottomUp(Rewriter.lift {
+  private val namingRewriter: Rewriter = bottomUp(Rewriter.lift {
     case pattern: NodePattern if pattern.variable.isEmpty =>
       val syntheticName = NodeNameGenerator.name(pattern.position.bumped())
       pattern.copy(variable = Some(Variable(syntheticName)(pattern.position)))(pattern.position)
@@ -36,5 +37,8 @@ case object nameAllPatternElements extends Rewriter {
     case pattern: RelationshipPattern if pattern.variable.isEmpty  =>
       val syntheticName = RelNameGenerator.name(pattern.position.bumped())
       pattern.copy(variable = Some(Variable(syntheticName)(pattern.position)))(pattern.position)
+  }, stopper = {
+    case _: ShortestPathExpression => true
+    case _ => false
   })
 }

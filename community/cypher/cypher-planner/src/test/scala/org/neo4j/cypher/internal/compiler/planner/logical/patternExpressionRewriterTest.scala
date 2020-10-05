@@ -36,7 +36,6 @@ import org.neo4j.cypher.internal.logical.plans.AllNodesScan
 import org.neo4j.cypher.internal.logical.plans.NestedPlanExistsExpression
 import org.neo4j.cypher.internal.logical.plans.NestedPlanExpression
 import org.neo4j.cypher.internal.logical.plans.Selection
-import org.neo4j.cypher.internal.rewriting.rewriters.PatternExpressionPatternElementNamer
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class patternExpressionRewriterTest extends CypherFunSuite with LogicalPlanningTestSupport {

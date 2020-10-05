@@ -35,7 +35,6 @@ import org.neo4j.cypher.internal.compiler.StatsDivergenceCalculator
 import org.neo4j.cypher.internal.compiler.TestSignatureResolvingPlanContext
 import org.neo4j.cypher.internal.compiler.phases.CreatePlannerQuery
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
-import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.compiler.phases.RewriteProcedureCalls
 import org.neo4j.cypher.internal.compiler.planner.logical.ExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
@@ -56,16 +55,13 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.devNullListener
 import org.neo4j.cypher.internal.compiler.test_helpers.ContextHelper
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LabelName
-import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.frontend.phases.ASTRewriter
 import org.neo4j.cypher.internal.frontend.phases.AstRewriting
-import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.CNFNormalizer
-import org.neo4j.cypher.internal.frontend.phases.Do
 import org.neo4j.cypher.internal.frontend.phases.LateAstRewriting
 import org.neo4j.cypher.internal.frontend.phases.Monitors
 import org.neo4j.cypher.internal.frontend.phases.Namespacer
@@ -101,15 +97,12 @@ import org.neo4j.cypher.internal.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.rewriting.RewriterStepSequencer.newPlain
 import org.neo4j.cypher.internal.rewriting.rewriters.GeneratingNamer
 import org.neo4j.cypher.internal.rewriting.rewriters.Never
-import org.neo4j.cypher.internal.rewriting.rewriters.PatternExpressionPatternElementNamer
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.InternalNotificationLogger
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.PropertyKeyId
 import org.neo4j.cypher.internal.util.RelTypeId
-import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.attribution.IdGen
-import org.neo4j.cypher.internal.util.bottomUp
 import org.neo4j.cypher.internal.util.devNullLogger
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -321,18 +314,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
       rewriteEqualityToInPredicate andThen
       CNFNormalizer andThen
       LateAstRewriting andThen
-      // This fakes pattern expression naming for testing purposes
-      // In the actual code path, this renaming happens as part of planning
-      //
-      // cf. QueryPlanningStrategy
-      //
-      Do(rewriteStuff _) andThen
       CreatePlannerQuery
-
-  private def rewriteStuff(input: BaseState, context: PlannerContext): BaseState = {
-    val newStatement = input.statement().endoRewrite(namePatternPredicatePatternElements)
-    input.withStatement(newStatement)
-  }
 
   def buildPlannerQuery(query: String,
                         procLookup: Option[QualifiedName => ProcedureSignature] = None,
@@ -355,17 +337,6 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
 
     output.query
   }
-}
-
-case object namePatternPredicatePatternElements extends Rewriter {
-
-  override def apply(in: AnyRef): AnyRef = instance.apply(in)
-
-  private val instance: Rewriter = bottomUp(Rewriter.lift {
-    case expr: PatternExpression =>
-      val (rewrittenExpr, _) = PatternExpressionPatternElementNamer(expr)
-      rewrittenExpr
-  })
 }
 
 case class FakePlan(availableSymbols: Set[String] = Set.empty, propertyMap: Map[Property, String] = Map.empty)(implicit idGen: IdGen)
