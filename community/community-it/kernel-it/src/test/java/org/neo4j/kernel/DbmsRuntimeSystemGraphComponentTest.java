@@ -57,14 +57,13 @@ class DbmsRuntimeSystemGraphComponentTest
     private GraphDatabaseService fakeSystemDb;
 
     private final SystemGraphComponents systemGraphComponents = new SystemGraphComponents();
-    private final DbmsRuntimeSystemGraphComponent dbmsRuntimeSystemGraphComponent =
-            new DbmsRuntimeSystemGraphComponent( Config.newBuilder().set( GraphDatabaseSettings.allow_single_automatic_upgrade, false ).build() );
+    private DbmsRuntimeSystemGraphComponent dbmsRuntimeSystemGraphComponent;
 
     @BeforeEach
     void beforeEach()
     {
         fakeSystemDb = new FakeSystemDb( userDatabase );
-        systemGraphComponents.register( dbmsRuntimeSystemGraphComponent );
+        initDbmsComponent( false );
     }
 
     @Test
@@ -85,6 +84,20 @@ class DbmsRuntimeSystemGraphComponentTest
         assertDbmsRuntimeNode( DbmsRuntimeVersion.V4_1.getVersionNumber() );
 
         assertStatus( SystemGraphComponent.Status.REQUIRES_UPGRADE );
+    }
+
+    @Test
+    void testInitialisationOnExistingDatabaseWithAutomaticUpgrade()
+    {
+        systemGraphComponents.deregister( DbmsRuntimeSystemGraphComponent.COMPONENT_NAME );
+        initDbmsComponent( true );
+
+        userDatabase.executeTransactionally( "CREATE (:Version)" );
+
+        systemGraphComponents.initializeSystemGraph( fakeSystemDb );
+        assertDbmsRuntimeNode( DbmsRuntimeRepository.LATEST_VERSION.getVersionNumber() );
+
+        assertStatus( SystemGraphComponent.Status.CURRENT );
     }
 
     @Test
@@ -131,6 +144,15 @@ class DbmsRuntimeSystemGraphComponentTest
 
         assertDbmsRuntimeNode( DbmsRuntimeRepository.LATEST_VERSION.getVersionNumber() );
         assertStatus( SystemGraphComponent.Status.CURRENT );
+    }
+
+    private void initDbmsComponent( boolean automaticUpgrade )
+    {
+        var config = Config.newBuilder()
+                           .set( GraphDatabaseSettings.allow_single_automatic_upgrade, automaticUpgrade )
+                           .build();
+        dbmsRuntimeSystemGraphComponent = new DbmsRuntimeSystemGraphComponent( config );
+        systemGraphComponents.register( dbmsRuntimeSystemGraphComponent );
     }
 
     private void assertDbmsRuntimeNode( int expectedVersion )

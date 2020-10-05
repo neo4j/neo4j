@@ -22,6 +22,7 @@ package org.neo4j.dbms.database;
 import java.util.Optional;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -68,7 +69,7 @@ public class DbmsRuntimeSystemGraphComponent extends AbstractSystemGraphComponen
     protected void initializeSystemGraphModel( Transaction tx )
     {
         DbmsRuntimeVersion dbmsRuntimeVersion = DbmsRuntimeRepository.LATEST_VERSION;
-        if ( is41Database( tx ) )
+        if ( !config.get( GraphDatabaseSettings.allow_single_automatic_upgrade ) && is41Database( tx ) )
         {
             dbmsRuntimeVersion = DbmsRuntimeVersion.V4_1;
         }
