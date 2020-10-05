@@ -276,20 +276,30 @@ case class PruningVarLengthExpandPipe(source: Pipe,
       depth = -1
     }
     def canContinue: Boolean = inputRow != null
+
+    private def satisfiesPredicate(node: VirtualNodeValue) = {
+      node match {
+        case n: NodeValue => filteringStep.filterNode(inputRow, queryState)(n)
+        case _ => filteringStep.filterNode(inputRow, queryState)(queryState.query.nodeById(node.id()))
+      }
+    }
+
     def next(): ExecutionContext = {
       val endNode =
         if (depth == -1) {
           val fromValue = inputRow.getByName(fromName)
           fromValue match {
-            case node: NodeValue =>
+            case node: NodeValue if filteringStep.filterNode(inputRow, queryState)(node) =>
                 pushStartNode(node)
 
             case nodeRef: NodeReference =>
               val node = queryState.query.nodeOps.getById(nodeRef.id)
-              pushStartNode(node)
+              if (filteringStep.filterNode(inputRow, queryState)(node)) {
+                pushStartNode(node)
+              } else null
 
-            case IsNoValue() =>
-              null
+            case _: VirtualNodeValue => null
+            case IsNoValue() => null
 
             case _ =>
               error(s"Expected variable `$fromName` to be a node, got $fromValue")
