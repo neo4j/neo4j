@@ -605,7 +605,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         int valueSize = layout.valueSize( value );
         if ( keyValueSizeTooLarge( keySize, valueSize ) )
         {
-            throw new IllegalArgumentException( "Index key-value size it to large. Please see index documentation for limitations." );
+            throw new IllegalArgumentException( "Index key-value size it too large. Please see index documentation for limitations." );
         }
     }
 

@@ -92,7 +92,7 @@ class InternalTreeLogicDynamicSizeTest extends InternalTreeLogicTestBase<RawByte
     {
         initialize();
         var e = assertThrows( IllegalArgumentException.class, () -> insert( key, value ) );
-        assertThat( e.getMessage() ).contains( "Index key-value size it to large. Please see index documentation for limitations." );
+        assertThat( e.getMessage() ).contains( "Index key-value size it too large. Please see index documentation for limitations." );
     }
 
     @Test
