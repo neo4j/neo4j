@@ -257,7 +257,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
     private def getQueryContext(transactionalContext: TransactionalContext, debugOptions: Set[String], taskCloser: TaskCloser) = {
       val (threadSafeCursorFactory, resourceManager) = executionPlan.threadSafeExecutionResources() match {
         case Some((tFactory, rFactory)) => (tFactory, rFactory(resourceMonitor))
-        case None => (null, new ResourceManager(resourceMonitor))
+        case None => (null, new ResourceManager(resourceMonitor, transactionalContext.kernelTransaction().memoryTracker()))
       }
       val txContextWrapper = TransactionalContextWrapper(transactionalContext, threadSafeCursorFactory)
       val statement = transactionalContext.statement()

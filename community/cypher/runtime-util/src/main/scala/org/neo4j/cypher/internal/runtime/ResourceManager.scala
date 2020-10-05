@@ -20,14 +20,19 @@
 package org.neo4j.cypher.internal.runtime
 
 import org.neo4j.cypher.internal.runtime.ResourceManager.INITIAL_CAPACITY
+import org.neo4j.cypher.internal.runtime.SingleThreadedResourcePool.SHALLOW_SIZE
 import org.neo4j.internal.helpers.Exceptions
 import org.neo4j.internal.kernel.api.AutoCloseablePlus
 import org.neo4j.internal.kernel.api.CloseListener
+import org.neo4j.memory.EmptyMemoryTracker
+import org.neo4j.memory.HeapEstimator.shallowSizeOfInstance
+import org.neo4j.memory.HeapEstimator.shallowSizeOfObjectArray
+import org.neo4j.memory.MemoryTracker
 
 import scala.collection.JavaConverters.asScalaIteratorConverter
 
-class ResourceManager(monitor: ResourceMonitor = ResourceMonitor.NOOP) extends CloseableResource with CloseListener {
-  protected val resources: ResourcePool = new SingleThreadedResourcePool(INITIAL_CAPACITY, monitor)
+class ResourceManager(monitor: ResourceMonitor = ResourceMonitor.NOOP, memoryTracker: MemoryTracker = EmptyMemoryTracker.INSTANCE) extends CloseableResource with CloseListener {
+  protected val resources: ResourcePool = new SingleThreadedResourcePool(INITIAL_CAPACITY, monitor, memoryTracker)
 
   /**
    * Trace a resource
@@ -102,9 +107,11 @@ trait ResourcePool {
  * @param capacity the initial capacity of the pool
  * @param monitor the monitor to call on close
  */
-class SingleThreadedResourcePool(capacity: Int, monitor: ResourceMonitor) extends ResourcePool {
+class SingleThreadedResourcePool(capacity: Int, monitor: ResourceMonitor, memoryTracker: MemoryTracker) extends ResourcePool {
   private var highMark: Int = 0
   private var closeables: Array[AutoCloseablePlus] = new Array[AutoCloseablePlus](capacity)
+  private var trackedSize = shallowSizeOfObjectArray(capacity)
+  memoryTracker.allocateHeap(SHALLOW_SIZE + trackedSize)
 
   def add(resource: AutoCloseablePlus): Unit = {
     ensureCapacity()
@@ -152,6 +159,9 @@ class SingleThreadedResourcePool(capacity: Int, monitor: ResourceMonitor) extend
 
   def clear(): Unit = {
     highMark = 0
+    if (closeables != null) {
+      memoryTracker.releaseHeap(trackedSize)
+    }
   }
 
   def closeAll(): Unit = {
@@ -176,13 +186,23 @@ class SingleThreadedResourcePool(capacity: Int, monitor: ResourceMonitor) extend
       clear()
     }
   }
+
   private def ensureCapacity(): Unit = {
     if (closeables.length <= highMark) {
       val temp = closeables
-      closeables = new Array[AutoCloseablePlus](closeables.length * 2)
+      val oldHeapUsage = trackedSize
+      val newSize = closeables.length * 2
+      trackedSize = shallowSizeOfObjectArray(newSize)
+      memoryTracker.allocateHeap(trackedSize)
+      closeables = new Array[AutoCloseablePlus](newSize)
       System.arraycopy(temp, 0, closeables, 0, temp.length)
+      memoryTracker.releaseHeap(oldHeapUsage)
     }
   }
+}
+
+object SingleThreadedResourcePool {
+  private val SHALLOW_SIZE = shallowSizeOfInstance(classOf[SingleThreadedResourcePool])
 }
 
 class ThreadSafeResourcePool(monitor: ResourceMonitor) extends ResourcePool {

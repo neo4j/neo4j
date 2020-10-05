@@ -26,6 +26,7 @@ import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.internal.kernel.api.AutoCloseablePlus
 import org.neo4j.internal.kernel.api.CloseListener
+import org.neo4j.memory.EmptyMemoryTracker
 
 import scala.util.Try
 
@@ -140,7 +141,7 @@ class ResourceManagerTest extends CypherFunSuite {
 
   test("Resource pool should be able to grow beyond initial capacity") {
     //given
-    val pool = new SingleThreadedResourcePool(4, mock[ResourceMonitor])
+    val pool = new SingleThreadedResourcePool(4, mock[ResourceMonitor], EmptyMemoryTracker.INSTANCE)
 
     //when
     pool.add(mock[AutoCloseablePlus])
@@ -161,7 +162,7 @@ class ResourceManagerTest extends CypherFunSuite {
                           new DummyResource)
     for (i <- resources.indices) {
       //given
-      val pool = new SingleThreadedResourcePool(4, mock[ResourceMonitor])
+      val pool = new SingleThreadedResourcePool(4, mock[ResourceMonitor], EmptyMemoryTracker.INSTANCE)
       resources.foreach(pool.add)
       val toRemove = resources(i)
 
@@ -177,7 +178,7 @@ class ResourceManagerTest extends CypherFunSuite {
 
   test("Should be able to clear") {
     //given
-    val pool = new SingleThreadedResourcePool(4, mock[ResourceMonitor])
+    val pool = new SingleThreadedResourcePool(4, mock[ResourceMonitor], EmptyMemoryTracker.INSTANCE)
     pool.add(mock[AutoCloseablePlus])
     pool.add(mock[AutoCloseablePlus])
     pool.add(mock[AutoCloseablePlus])
@@ -199,7 +200,7 @@ class ResourceManagerTest extends CypherFunSuite {
                             new DummyResource,
                             new DummyResource,
                             new DummyResource)
-      val pool = new SingleThreadedResourcePool(4, mock[ResourceMonitor])
+      val pool = new SingleThreadedResourcePool(4, mock[ResourceMonitor], EmptyMemoryTracker.INSTANCE)
       resources.foreach(pool.add)
       pool.remove(resources(i))
 
