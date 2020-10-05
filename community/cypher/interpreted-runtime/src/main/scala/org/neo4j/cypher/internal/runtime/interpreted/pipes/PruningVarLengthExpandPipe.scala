@@ -289,15 +289,17 @@ case class PruningVarLengthExpandPipe(source: Pipe,
         if (depth == -1) {
           val fromValue = inputRow.getByName(fromName)
           fromValue match {
-            case node: NodeValue =>
+            case node: NodeValue if filteringStep.filterNode(inputRow, queryState)(node) =>
                 pushStartNode(node)
 
             case nodeRef: NodeReference =>
               val node = queryState.query.nodeOps.getById(nodeRef.id)
-              pushStartNode(node)
+              if (filteringStep.filterNode(inputRow, queryState)(node)) {
+                pushStartNode(node)
+              } else null
 
-            case IsNoValue() =>
-              null
+            case _: VirtualNodeValue => null
+            case IsNoValue() => null
 
             case _ =>
               error(s"Expected variable `$fromName` to be a node, got $fromValue")
