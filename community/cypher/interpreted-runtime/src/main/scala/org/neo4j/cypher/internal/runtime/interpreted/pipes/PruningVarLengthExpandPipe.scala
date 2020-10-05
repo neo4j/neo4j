@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.v3_5.util.InternalException
 import org.neo4j.cypher.internal.v3_5.util.attribution.Id
 import org.neo4j.cypher.internal.v3_5.expressions.SemanticDirection
 import org.neo4j.values.storable.{Value, Values}
+import org.neo4j.values.virtual.NodeValue
 import org.neo4j.values.virtual.{RelationshipValue, VirtualNodeValue}
 
 case class PruningVarLengthExpandPipe(source: Pipe,
@@ -264,18 +265,27 @@ case class PruningVarLengthExpandPipe(source: Pipe,
       depth = -1
     }
     def canContinue: Boolean = inputRow != null
+
+    private def satisfiesPredicate(node: VirtualNodeValue) = {
+      node match {
+        case n: NodeValue => filteringStep.filterNode(inputRow, queryState)(n)
+        case _ => filteringStep.filterNode(inputRow, queryState)(queryState.query.nodeById(node.id()))
+      }
+    }
+
     def next(): ExecutionContext = {
       val endNode =
         if (depth == -1) {
           val fromValue = inputRow.getOrElse(fromName, error(s"Required variable `$fromName` is not in context"))
           fromValue match {
-            case node: VirtualNodeValue =>
+            case node: VirtualNodeValue if satisfiesPredicate(node) =>
               push( node = node,
                 pathLength = 0,
                 expandMap = new LongObjectHashMap[NodeState](),
                 prevLocalRelIndex = -1,
                 prevNodeState = NodeState.NOOP )
 
+            case _: VirtualNodeValue => null
             case x: Value if x == Values.NO_VALUE =>
               null
 
