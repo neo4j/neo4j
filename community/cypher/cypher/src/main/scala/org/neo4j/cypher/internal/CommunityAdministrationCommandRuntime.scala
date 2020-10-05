@@ -111,13 +111,13 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
     case AssertDbmsAdmin(actions) => (_, _) =>
       AuthorizationPredicateExecutionPlan((_, securityContext) => actions.forall { action =>
         securityContext.allowsAdminAction(new AdminActionOnResource(ActionMapper.asKernelAction(action), DatabaseScope.ALL, Segment.ALL))
-      }, violationMessage = PERMISSION_DENIED)
+      }, violationMessage = "Permission denied for " + actions.map(a => a.name).sorted.mkString(" and/or ") + ".")  //sorting is important to keep error messages stable
 
     // Check Admin Rights for DBMS commands or self
     case AssertDbmsAdminOrSelf(user, actions) => (_, _) =>
       AuthorizationPredicateExecutionPlan((params, securityContext) => securityContext.subject().hasUsername(runtimeValue(user, params)) || actions.forall { action =>
         securityContext.allowsAdminAction(new AdminActionOnResource(ActionMapper.asKernelAction(action), DatabaseScope.ALL, Segment.ALL))
-      }, violationMessage = PERMISSION_DENIED)
+      }, violationMessage = "Permission denied for " + actions.map(a => a.name).sorted.mkString(" and/or ") + ".")  //sorting is important to keep error messages stable
 
     // Check that the specified user is not the logged in user (eg. for some CREATE/DROP/ALTER USER commands)
     case AssertNotCurrentUser(source, userName, verb, violationMessage) => (context, parameterMapping) =>
@@ -130,7 +130,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
     case AssertDatabaseAdmin(action, database) => (_, _) =>
       AuthorizationPredicateExecutionPlan((params, securityContext) =>
         securityContext.allowsAdminAction(new AdminActionOnResource(ActionMapper.asKernelAction(action), new DatabaseScope(runtimeValue(database, params)), Segment.ALL)),
-        violationMessage = PERMISSION_DENIED
+        violationMessage = "Permission denied for " + action.name + "."
       )
 
     // SHOW USERS
