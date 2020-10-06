@@ -62,6 +62,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.ConstraintType;
+import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexPrototype;
@@ -840,14 +841,20 @@ public class Operations implements Write, SchemaWrite
     @Override
     public IndexDescriptor indexCreate( SchemaDescriptor schema, String indexName ) throws KernelException
     {
-        return indexCreate( schema, config.get( GraphDatabaseSettings.default_schema_provider ), indexName );
+        return indexCreate( schema, config.get( GraphDatabaseSettings.default_schema_provider ), IndexConfig.empty(), indexName );
     }
 
     @Override
-    public IndexDescriptor indexCreate( SchemaDescriptor schema, String provider, String name ) throws KernelException
+    public IndexDescriptor indexCreate( SchemaDescriptor schema, IndexConfig indexConfig, String indexName ) throws KernelException
+    {
+        return indexCreate( schema, config.get( GraphDatabaseSettings.default_schema_provider ), indexConfig, indexName );
+    }
+
+    @Override
+    public IndexDescriptor indexCreate( SchemaDescriptor schema, String provider, IndexConfig indexConfig, String name ) throws KernelException
     {
         IndexProviderDescriptor providerDescriptor = indexProviders.indexProviderByName( provider );
-        IndexPrototype prototype = IndexPrototype.forSchema( schema, providerDescriptor ).withName( name );
+        IndexPrototype prototype = IndexPrototype.forSchema( schema, providerDescriptor ).withName( name ).withIndexConfig( indexConfig );
         return indexCreate( prototype );
     }
 

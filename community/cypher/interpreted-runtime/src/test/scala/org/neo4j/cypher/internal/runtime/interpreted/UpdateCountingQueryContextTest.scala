@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.runtime.RelationshipOperations
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.Relationship
+import org.neo4j.internal.schema.IndexConfig
 import org.neo4j.internal.schema.IndexPrototype
 import org.neo4j.internal.schema.SchemaDescriptor
 import org.neo4j.values.storable.Values
@@ -64,7 +65,7 @@ class UpdateCountingQueryContextTest extends CypherFunSuite {
     }
   } )
 
-  when(inner.addIndexRule(anyInt(), any(), any()))
+  when(inner.addIndexRule(anyInt(), any(), any(), any(), any()))
     .thenReturn(IndexPrototype.forSchema(SchemaDescriptor.forLabel(1, 2)).withName("index_1").materialise(1))
 
   var context: UpdateCountingQueryContext = _
@@ -171,13 +172,13 @@ class UpdateCountingQueryContextTest extends CypherFunSuite {
   }
 
   test("add_index") {
-    context.addIndexRule(0, Array(1), None)
+    context.addIndexRule(0, Array(1), None, None, IndexConfig.empty)
 
     context.getStatistics should equal(QueryStatistics(indexesAdded = 1))
   }
 
   test("add_index with name") {
-    context.addIndexRule(0, Array(1), Some("name"))
+    context.addIndexRule(0, Array(1), Some("name"), None, IndexConfig.empty)
 
     context.getStatistics should equal(QueryStatistics(indexesAdded = 1))
   }

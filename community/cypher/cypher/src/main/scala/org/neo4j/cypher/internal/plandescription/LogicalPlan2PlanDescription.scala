@@ -292,13 +292,13 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         PlanDescriptionImpl(id, "RelationshipCountFromCountStore", NoChildren, Seq(Details(info)), variables)
 
       case DoNothingIfExistsForIndex(labelName, propertyKeyNames, nameOption) =>
-        PlanDescriptionImpl(id, s"DoNothingIfExists(INDEX)", NoChildren, Seq(Details(indexSchemaInfo(nameOption, labelName, propertyKeyNames))), variables)
+        PlanDescriptionImpl(id, s"DoNothingIfExists(INDEX)", NoChildren, Seq(Details(indexInfo(nameOption, labelName, propertyKeyNames, Map.empty))), variables)
 
-      case CreateIndex(_, labelName, propertyKeyNames, nameOption) => // Can be both a leaf plan and a middle plan so need to be in both places
-        PlanDescriptionImpl(id, "CreateIndex", NoChildren, Seq(Details(indexSchemaInfo(nameOption, labelName, propertyKeyNames))), variables)
+      case CreateIndex(_, labelName, propertyKeyNames, nameOption, options) => // Can be both a leaf plan and a middle plan so need to be in both places
+        PlanDescriptionImpl(id, "CreateIndex", NoChildren, Seq(Details(indexInfo(nameOption, labelName, propertyKeyNames, options))), variables)
 
       case DropIndex(labelName, propertyKeyNames) =>
-        PlanDescriptionImpl(id, "DropIndex", NoChildren, Seq(Details(indexSchemaInfo(None, labelName, propertyKeyNames))), variables)
+        PlanDescriptionImpl(id, "DropIndex", NoChildren, Seq(Details(indexInfo(None, labelName, propertyKeyNames, Map.empty))), variables)
 
       case DropIndexOnName(name, _) =>
         PlanDescriptionImpl(id, "DropIndex", NoChildren, Seq(Details(pretty"INDEX ${asPrettyString(name)}")), variables)
@@ -601,8 +601,8 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         }
         PlanDescriptionImpl(id, s"VarLengthExpand($modeDescr)", children, Seq(Details(pretty"$expandDescription$predicatesDescription")), variables)
 
-      case CreateIndex(_, labelName, propertyKeyNames, nameOption) => // Can be both a leaf plan and a middle plan so need to be in both places
-        PlanDescriptionImpl(id, "CreateIndex", children, Seq(Details(indexSchemaInfo(nameOption, labelName, propertyKeyNames))), variables)
+      case CreateIndex(_, labelName, propertyKeyNames, nameOption, options) => // Can be both a leaf plan and a middle plan so need to be in both places
+        PlanDescriptionImpl(id, "CreateIndex", children, Seq(Details(indexInfo(nameOption, labelName, propertyKeyNames, options))), variables)
 
       case CreateUniquePropertyConstraint(_, node, label, properties: Seq[Property], nameOption) => // Can be both a leaf plan and a middle plan so need to be in both places
         val details = Details(constraintInfo(nameOption, node, scala.util.Left(label), properties, scala.util.Right("IS UNIQUE")))
@@ -996,14 +996,15 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
     if (caches.isEmpty) pretty"" else caches.map(asPrettyString(_)).mkPrettyString(", ", ", ", "")
   }
 
-  private def indexSchemaInfo(nameOption: Option[String], label: LabelName, properties: Seq[PropertyKeyName]): PrettyString = {
+  private def indexInfo(nameOption: Option[String], label: LabelName, properties: Seq[PropertyKeyName], options: Map[String, Expression]): PrettyString = {
     val name = nameOption match {
       case Some(n) => pretty" ${asPrettyString(n)}"
       case _ => pretty""
     }
     val propertyString = properties.map(asPrettyString(_)).mkPrettyString("(", SEPARATOR, ")")
     val prettyLabel = asPrettyString(label.name)
-    pretty"INDEX$name FOR (:$prettyLabel) ON $propertyString"
+    val prettyOptions = if (options.nonEmpty) pretty" OPTIONS ${options.map({ case (s, e) => pretty"${asPrettyString(s)}: ${asPrettyString(e)}" }).mkPrettyString("{", SEPARATOR, "}")}" else pretty""
+    pretty"INDEX$name FOR (:$prettyLabel) ON $propertyString$prettyOptions"
   }
 
   private def constraintInfo(nameOption: Option[String], entity: String, entityType: Either[LabelName, RelTypeName], properties: Seq[Property], assertion: Either[String, String]): PrettyString = {

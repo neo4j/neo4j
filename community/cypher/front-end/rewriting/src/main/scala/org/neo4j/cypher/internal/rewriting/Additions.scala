@@ -54,7 +54,7 @@ object Additions {
       case u: UseGraph =>
         throw cypherExceptionFactory.syntaxException("The USE clause is not supported in this Cypher version.", u.position)
 
-      // CREATE INDEX [name] FOR (n:Label) ON (n.prop)
+      // CREATE INDEX [name] [IF NOT EXISTS] FOR (n:Label) ON (n.prop)
       case c: CreateIndex =>
         throw cypherExceptionFactory.syntaxException("Creating index using this syntax is not supported in this Cypher version.", c.position)
 
@@ -168,6 +168,10 @@ object Additions {
         throw cypherExceptionFactory.syntaxException("EXECUTE FUNCTION is not supported in this Cypher version.", p.position)
       case p@RevokePrivilege(DbmsPrivilege(ExecuteBoostedFunctionAction), _, _, _, _, _) =>
         throw cypherExceptionFactory.syntaxException("EXECUTE BOOSTED FUNCTION is not supported in this Cypher version.", p.position)
+
+      // CREATE INDEX ... OPTIONS {...}
+      case c@CreateIndex(_, _, _, _, _, options, _) if options.nonEmpty =>
+        throw cypherExceptionFactory.syntaxException("Creating index with options is not supported in this Cypher version.", c.position)
     }
   }
 }

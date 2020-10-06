@@ -464,7 +464,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     // This is ManyQueryExpression with only a single expression. That is possible to get, but the test utility IndexSeek cannot create those.
     assertGood(
       attach(NodeUniqueIndexSeek("x", LabelToken("Label", LabelId(0)), Seq(IndexedProperty(PropertyKeyToken("Prop", PropertyKeyId(0)), DoNotGetValue)),
-        ManyQueryExpression(ListLiteral(Seq(StringLiteral("Andres")(pos)))(pos)), Set.empty, IndexOrderNone), 95.0),
+        ManyQueryExpression(ListLiteral(Seq(stringLiteral("Andres")))(pos)), Set.empty, IndexOrderNone), 95.0),
       planDescription(id, "NodeUniqueIndexSeek", NoChildren, Seq(details("UNIQUE x:Label(Prop) WHERE Prop = \"Andres\"")), Set("x")))
 
     assertGood(
@@ -473,7 +473,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           FunctionInvocation(MapExpression(Seq(
             (key("x"), number("1")),
             (key("y"), number("2")),
-            (key("crs"), StringLiteral("cartesian")(pos))
+            (key("crs"), stringLiteral("cartesian"))
           ))(pos), FunctionName(Point.name)(pos)), number("10"), inclusive = true
         ))(pos)),
         Set.empty, IndexOrderNone),
@@ -526,11 +526,11 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
   test("LoadCSV") {
     assertGood(
-      attach(LoadCSV(lhsLP, StringLiteral("file:///tmp/foo.csv")(pos), "u", NoHeaders, None, legacyCsvQuoteEscaping = false, csvBufferSize = 2), 27.6),
+      attach(LoadCSV(lhsLP, stringLiteral("file:///tmp/foo.csv"), "u", NoHeaders, None, legacyCsvQuoteEscaping = false, csvBufferSize = 2), 27.6),
       planDescription(id, "LoadCSV", SingleChild(lhsPD), Seq(details("u")), Set("u", "a")))
 
     assertGood(
-      attach(LoadCSV(lhsLP, StringLiteral("file:///tmp/foo.csv")(pos), "  UNNAMED2", NoHeaders, None, legacyCsvQuoteEscaping = false, csvBufferSize = 2), 27.6),
+      attach(LoadCSV(lhsLP, stringLiteral("file:///tmp/foo.csv"), "  UNNAMED2", NoHeaders, None, legacyCsvQuoteEscaping = false, csvBufferSize = 2), 27.6),
       planDescription(id, "LoadCSV", SingleChild(lhsPD), Seq(details(anonVar("2"))), Set(anonVar("2"), "a")))
   }
 
@@ -579,14 +579,17 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   }
 
   test("CreateIndex") {
-    assertGood(attach(CreateIndex(None, label("Label"), List(key("prop")), Some("$indexName")), 63.2),
+    assertGood(attach(CreateIndex(None, label("Label"), List(key("prop")), Some("$indexName"), Map.empty), 63.2),
       planDescription(id, "CreateIndex", NoChildren, Seq(details("INDEX `$indexName` FOR (:Label) ON (prop)")), Set.empty))
 
-    assertGood(attach(CreateIndex(None, label("Label"), List(key("prop")), None), 63.2),
+    assertGood(attach(CreateIndex(None, label("Label"), List(key("prop")), None, Map.empty), 63.2),
       planDescription(id, "CreateIndex", NoChildren, Seq(details("INDEX FOR (:Label) ON (prop)")), Set.empty))
 
+    assertGood(attach(CreateIndex(None, label("Label"), List(key("prop")), Some("$indexName"), Map("indexProvider" -> stringLiteral("native-btree-1.0"))), 63.2),
+      planDescription(id, "CreateIndex", NoChildren, Seq(details("""INDEX `$indexName` FOR (:Label) ON (prop) OPTIONS {indexProvider: "native-btree-1.0"}""")), Set.empty))
+
     assertGood(attach(CreateIndex(Some(DoNothingIfExistsForIndex(label("Label"), List(key("prop")), None)),
-      label("Label"), List(key("prop")), None), 63.2),
+      label("Label"), List(key("prop")), None, Map.empty), 63.2),
       planDescription(id, "CreateIndex", SingleChild(
         planDescription(id, "DoNothingIfExists(INDEX)", NoChildren, Seq(details("INDEX FOR (:Label) ON (prop)")), Set.empty)
       ), Seq(details("INDEX FOR (:Label) ON (prop)")), Set.empty))
@@ -795,7 +798,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   test("Create") {
     val properties = MapExpression(Seq(
       (key("y"), number("1")),
-      (key("crs"), StringLiteral("cartesian")(pos))))(pos)
+      (key("crs"), stringLiteral("cartesian"))))(pos)
 
     assertGood(
       attach(Create(lhsLP, Seq(CreateNode("x", Seq.empty, None)), Seq(CreateRelationship("r", "x", relType("R"), "y", SemanticDirection.INCOMING, None))), 32.2),
@@ -974,7 +977,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     // NOTE: currently tests only assert that we do NOT render anything other than the introduced variable
     val properties = MapExpression(Seq(
       (key("y"), number("1")),
-      (key("crs"), StringLiteral("cartesian")(pos))))(pos)
+      (key("crs"), stringLiteral("cartesian"))))(pos)
 
     assertGood(attach(MergeCreateNode(lhsLP, "x", Seq(label("L1"), label("L2")), Some(properties)), 113.0),
       planDescription(id, "MergeCreateNode", SingleChild(lhsPD), Seq(details("x")), Set("a", "x")))
@@ -1131,7 +1134,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(attach(AlterUser(privLhsLP, util.Left("name"), isEncryptedPassword = Some(true), None, requirePasswordChange = Some(true), suspended = Some(false)), 1.0), adminPlanDescription)
 
-    assertGood(attach(SetOwnPassword(StringLiteral("oldPassword")(pos), StringLiteral("newPassword")(pos)), 1.0), adminPlanDescription)
+    assertGood(attach(SetOwnPassword(stringLiteral("oldPassword"), stringLiteral("newPassword")), 1.0), adminPlanDescription)
 
     assertGood(attach(ShowRoles(privLhsLP, withUsers = false, showAll = true, List(), None, None), 1.0), adminPlanDescription)
 
@@ -1416,4 +1419,6 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   private def number(i: String): SignedDecimalIntegerLiteral = SignedDecimalIntegerLiteral(i)(pos)
 
   private def parameter(p: String, t: CypherType): Parameter = Parameter(p, t)(pos)
+
+  private def stringLiteral(s: String): StringLiteral = StringLiteral(s)(pos)
 }

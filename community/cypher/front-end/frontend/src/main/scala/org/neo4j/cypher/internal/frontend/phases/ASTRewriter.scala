@@ -17,6 +17,7 @@
 package org.neo4j.cypher.internal.frontend.phases
 
 import org.neo4j.cypher.internal.ast.AdministrationCommand
+import org.neo4j.cypher.internal.ast.SchemaCommand
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
@@ -51,6 +52,7 @@ import org.neo4j.cypher.internal.rewriting.rewriters.parameterValueTypeReplaceme
 import org.neo4j.cypher.internal.rewriting.rewriters.replaceLiteralDynamicPropertyLookups
 import org.neo4j.cypher.internal.rewriting.rewriters.sensitiveLiteralReplacement
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
+import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.symbols.CypherType
 
 class ASTRewriter(rewriterSequencer: String => RewriterStepSequencer,
@@ -93,6 +95,7 @@ class ASTRewriter(rewriterSequencer: String => RewriterStepSequencer,
     val rewrittenStatementWithParameterTypes = rewrittenStatement.endoRewrite(replaceParameterValueTypes)
     val (extractParameters, extractedParameters) = statement match {
       case _ : AdministrationCommand => sensitiveLiteralReplacement(rewrittenStatementWithParameterTypes)
+      case _ : SchemaCommand => Rewriter.noop -> Map.empty[String, Any]
       case _ => literalReplacement(rewrittenStatementWithParameterTypes, literalExtraction)
     }
 

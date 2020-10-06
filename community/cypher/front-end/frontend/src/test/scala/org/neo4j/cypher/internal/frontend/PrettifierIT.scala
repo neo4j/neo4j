@@ -153,7 +153,7 @@ class PrettifierIT extends CypherFunSuite {
       "create INDEX FOR (n:A) ON (n.p)" ->
         "CREATE INDEX FOR (n:A) ON (n.p)",
 
-      "create INDEX FOR (n:A) ON (n.p1, n.p2, n.p3)" ->
+      "create btree INDEX FOR (n:A) ON (n.p1, n.p2, n.p3)" ->
         "CREATE INDEX FOR (n:A) ON (n.p1, n.p2, n.p3)",
 
       "create INDEX foo FOR (n:A) ON (n.p)" ->
@@ -164,6 +164,21 @@ class PrettifierIT extends CypherFunSuite {
 
       "create INDEX `$foo` FOR (n:A) ON (n.p1, n.p2, n.p3)" ->
         "CREATE INDEX `$foo` FOR (n:A) ON (n.p1, n.p2, n.p3)",
+
+      "CREATE index FOR (n:Person) on (n.name) OPtiONS {indexProvider: 'native-btree-1.0'}" ->
+        """CREATE INDEX FOR (n:Person) ON (n.name) OPTIONS {indexProvider: "native-btree-1.0"}""",
+
+      "create BTREE INDEX for (n:Person) ON (n.name) OPTIONS {`indexProvider`: 'lucene+native-3.0', indexConfig: {`spatial.cartesian.max`: [100.0,100.0], `spatial.cartesian.min`: [-100.0,-100.0] }}" ->
+        """CREATE INDEX FOR (n:Person) ON (n.name) OPTIONS {indexProvider: "lucene+native-3.0", indexConfig: {`spatial.cartesian.max`: [100.0, 100.0], `spatial.cartesian.min`: [-100.0, -100.0]}}""",
+
+      "create BTREE INDEX myIndex for (n:Person) ON (n.name) OPTIONS {indexConfig: {`spatial.wgs-84.max`: [60.0,40.0], `spatial.wgs-84.min`: [-60.0,-40.0] }}" ->
+        """CREATE INDEX myIndex FOR (n:Person) ON (n.name) OPTIONS {indexConfig: {`spatial.wgs-84.max`: [60.0, 40.0], `spatial.wgs-84.min`: [-60.0, -40.0]}}""",
+
+      "CREATE index FOR (n:Person) on (n.name) OPtiONS {nonValidOption : 42, `backticks.stays.when.needed`: 'theAnswer'}" ->
+        """CREATE INDEX FOR (n:Person) ON (n.name) OPTIONS {nonValidOption: 42, `backticks.stays.when.needed`: "theAnswer"}""",
+
+      "CREATE index FOR (n:Person) on (n.name) OPtiONS {}" ->
+        """CREATE INDEX FOR (n:Person) ON (n.name)""",
 
       "create or REPLACE INDEX FOR (n:A) ON (n.p)" ->
         "CREATE OR REPLACE INDEX FOR (n:A) ON (n.p)",

@@ -134,7 +134,7 @@ class FabricPlannerTest
 
       parse(remote.query)
         .shouldEqual(
-          CreateIndex(varFor("n"), labelName("Label"), List(prop("n", "prop")), Some("myIndex"), IfExistsThrowError)(pos)
+          CreateIndex(varFor("n"), labelName("Label"), List(prop("n", "prop")), Some("myIndex"), IfExistsThrowError, Map.empty)(pos)
         )
     }
 

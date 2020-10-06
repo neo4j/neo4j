@@ -27,6 +27,7 @@ import org.neo4j.internal.kernel.api.security.PrivilegeAction;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.ConstraintType;
+import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
@@ -77,10 +78,17 @@ public class RestrictedSchemaWrite implements SchemaWrite
     }
 
     @Override
-    public IndexDescriptor indexCreate( SchemaDescriptor schema, String provider, String name ) throws KernelException
+    public IndexDescriptor indexCreate( SchemaDescriptor schema, IndexConfig indexConfig, String name ) throws KernelException
     {
         assertSchemaWrites( PrivilegeAction.CREATE_INDEX );
-        return inner.indexCreate( schema, provider, name );
+        return inner.indexCreate( schema, indexConfig, name );
+    }
+
+    @Override
+    public IndexDescriptor indexCreate( SchemaDescriptor schema, String provider, IndexConfig indexConfig, String name ) throws KernelException
+    {
+        assertSchemaWrites( PrivilegeAction.CREATE_INDEX );
+        return inner.indexCreate( schema, provider, indexConfig, name );
     }
 
     @Override

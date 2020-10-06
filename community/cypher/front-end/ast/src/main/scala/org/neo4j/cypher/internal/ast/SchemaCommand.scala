@@ -20,6 +20,7 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticAnalysisTooling
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheck
 import org.neo4j.cypher.internal.ast.semantics.SemanticError
 import org.neo4j.cypher.internal.ast.semantics.SemanticExpressionCheck
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.Property
@@ -43,26 +44,29 @@ case class CreateIndexOldSyntax(label: LabelName, properties: List[PropertyKeyNa
   def semanticCheck = Seq()
 }
 
-case class CreateIndex(variable: Variable, label: LabelName, properties: List[Property], name: Option[String], ifExistsDo: IfExistsDo, useGraph: Option[GraphSelection] = None)(val position: InputPosition)
+case class CreateIndex(variable: Variable, label: LabelName, properties: List[Property], name: Option[String], ifExistsDo: IfExistsDo, options: Map[String, Expression], useGraph: Option[GraphSelection] = None)(val position: InputPosition)
   extends SchemaCommand with SemanticAnalysisTooling {
   override def withGraph(useGraph: Option[GraphSelection]): SchemaCommand = copy(useGraph = useGraph)(position)
-  override def semanticCheck = ifExistsDo match {
+  override def semanticCheck: SemanticCheck = ifExistsDo match {
     case IfExistsInvalidSyntax | IfExistsReplace => SemanticError(s"Failed to create index: `OR REPLACE` cannot be used together with this command.", position)
     case _ =>
-      declareVariable(variable, CTNode) chain
-        SemanticExpressionCheck.simple(properties) chain
-        semanticCheckFold(properties) {
-          property =>
-            when(!property.map.isInstanceOf[Variable]) {
-              error("Cannot index nested properties", property.position)
-            }
-        }
+      if (options.filterKeys(k => !k.equalsIgnoreCase("indexProvider") && !k.equalsIgnoreCase("indexConfig")).nonEmpty)
+        SemanticError(s"Failed to create index: Invalid option provided, valid options are `indexProvider` and `indexConfig`.", position)
+      else
+        declareVariable(variable, CTNode) chain
+          SemanticExpressionCheck.simple(properties) chain
+          semanticCheckFold(properties) {
+            property =>
+              when(!property.map.isInstanceOf[Variable]) {
+                error("Cannot index nested properties", property.position)
+              }
+          }
   }
 }
 
 case class DropIndex(label: LabelName, properties: List[PropertyKeyName], useGraph: Option[GraphSelection] = None)(val position: InputPosition) extends SchemaCommand {
   override def withGraph(useGraph: Option[GraphSelection]): SchemaCommand = copy(useGraph = useGraph)(position)
-  def property = properties.head
+  def property: PropertyKeyName = properties.head
   def semanticCheck = Seq()
 }
 

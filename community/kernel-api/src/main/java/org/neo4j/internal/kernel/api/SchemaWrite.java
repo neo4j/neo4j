@@ -23,6 +23,7 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.ConstraintType;
+import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
@@ -70,11 +71,22 @@ public interface SchemaWrite
      * Create index from schema descriptor
      *
      * @param schema description of the index
-     * @param provider name of the desired index provider implementation, never {@code null}
+     * @param indexConfig settings for this index
      * @param name name of the index, or {@code null} to get a generated index name
      * @return the newly created index
      */
-    IndexDescriptor indexCreate( SchemaDescriptor schema, String provider, String name ) throws KernelException;
+    IndexDescriptor indexCreate( SchemaDescriptor schema, IndexConfig indexConfig, String name ) throws KernelException;
+
+    /**
+     * Create index from schema descriptor
+     *
+     * @param schema description of the index
+     * @param provider name of the desired index provider implementation, never {@code null}
+     * @param indexConfig settings for this index
+     * @param name name of the index, or {@code null} to get a generated index name
+     * @return the newly created index
+     */
+    IndexDescriptor indexCreate( SchemaDescriptor schema, String provider, IndexConfig indexConfig, String name ) throws KernelException;
 
     /**
      * Drop the given index

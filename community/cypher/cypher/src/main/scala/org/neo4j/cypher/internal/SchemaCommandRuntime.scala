@@ -19,10 +19,17 @@
  */
 package org.neo4j.cypher.internal
 
+import java.util.Collections
+
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
+import org.neo4j.cypher.internal.expressions.DoubleLiteral
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LabelName
+import org.neo4j.cypher.internal.expressions.ListLiteral
+import org.neo4j.cypher.internal.expressions.MapExpression
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RelTypeName
+import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.logical.plans.ConstraintType
 import org.neo4j.cypher.internal.logical.plans.CreateIndex
 import org.neo4j.cypher.internal.logical.plans.CreateNodeKeyConstraint
@@ -54,8 +61,16 @@ import org.neo4j.cypher.internal.runtime.slottedParameters
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.PropertyKeyId
 import org.neo4j.exceptions.CantCompileQueryException
+import org.neo4j.graphdb.schema.IndexSettingImpl.FULLTEXT_ANALYZER
+import org.neo4j.graphdb.schema.IndexSettingImpl.FULLTEXT_EVENTUALLY_CONSISTENT
+import org.neo4j.graphdb.schema.IndexSettingUtil
 import org.neo4j.internal.schema.ConstraintDescriptor
+import org.neo4j.kernel.api.exceptions.InvalidArgumentsException
+import org.neo4j.kernel.impl.index.schema.FulltextIndexProviderFactory
+import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider
+import org.neo4j.kernel.impl.index.schema.fusion.NativeLuceneFusionIndexProviderFactory30
 
+import scala.collection.JavaConverters.mapAsJavaMapConverter
 import scala.util.Try
 
 /**
@@ -157,13 +172,19 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
       })
 
     // CREATE INDEX ON :LABEL(prop)
-    // CREATE INDEX FOR (n:LABEL) ON (n.prop)
-    // CREATE INDEX name FOR (n:LABEL) ON (n.prop)
-    case CreateIndex(source, label, props, name) => (context, parameterMapping) =>
+    // CREATE INDEX [name] [IF NOT EXISTS] FOR (n:LABEL) ON (n.prop) [OPTIONS {...}]
+    case CreateIndex(source, label, props, name, options) => (context, parameterMapping) =>
+      val lowerCaseOptions = options.map { case (k, v) => (k.toLowerCase, v) }
+      val maybeIndexProvider = lowerCaseOptions.get("indexprovider")
+      val maybeConfig = lowerCaseOptions.get("indexconfig")
+
       SchemaWriteExecutionPlan("CreateIndex", ctx => {
+        val indexProvider = if (maybeIndexProvider.isDefined) Some(assertValidIndexProvider(maybeIndexProvider.get)) else None
+        val configMap: java.util.Map[String, Object] = if (maybeConfig.isDefined) assertValidAndTransformConfig(maybeConfig.get) else Collections.emptyMap()
+        val indexConfig = IndexSettingUtil.toIndexConfigFromStringObjectMap(configMap)
         val labelId = ctx.getOrCreateLabelId(label.name)
         val propertyKeyIds = props.map(p => propertyToId(ctx)(p).id)
-        ctx.addIndexRule(labelId, propertyKeyIds, name)
+        ctx.addIndexRule(labelId, propertyKeyIds, name, indexProvider, indexConfig)
         SuccessResult
       }, source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context, parameterMapping)))
 
@@ -176,7 +197,7 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
         SuccessResult
       })
 
-    // DROP INDEX name
+    // DROP INDEX name [IF EXISTS]
     case DropIndexOnName(name, ifExists) => (_, _) =>
       SchemaWriteExecutionPlan("DropIndex", ctx => {
         if (!ifExists || ctx.indexExists(name)) {
@@ -242,4 +263,51 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
 
   private def typePropWithName(ctx: QueryContext)(relType: RelTypeName, prop: PropertyKeyName, name: Option[String]) =
     (ctx.getOrCreateRelTypeId(relType.name), ctx.getOrCreatePropertyKeyId(prop.name), name)
+
+  private def assertValidIndexProvider(indexProvider: Expression): String = indexProvider match {
+    case s: StringLiteral =>
+      val indexProviderValue = s.value
+
+      if (indexProviderValue.equalsIgnoreCase(FulltextIndexProviderFactory.DESCRIPTOR.name()))
+        throw new InvalidArgumentsException(
+          s"""Could not create index with specified index provider '$indexProviderValue'.
+             |To create fulltext index, please use 'db.index.fulltext.createNodeIndex' or 'db.index.fulltext.createRelationshipIndex'.""".stripMargin)
+
+      if (!indexProviderValue.equalsIgnoreCase(GenericNativeIndexProvider.DESCRIPTOR.name()) &&
+        !indexProviderValue.equalsIgnoreCase(NativeLuceneFusionIndexProviderFactory30.DESCRIPTOR.name()))
+        throw new InvalidArgumentsException(s"Could not create index with specified index provider '$indexProviderValue'.")
+
+      indexProviderValue
+
+    case _ =>
+      throw new InvalidArgumentsException(s"Could not create index with specified index provider '${indexProvider.asCanonicalStringVal}'. Expected String value.")
+  }
+
+  private def assertValidAndTransformConfig(config: Expression): java.util.Map[String, Object] = {
+    val exceptionWrongType =
+      new InvalidArgumentsException(s"Could not create index with specified index config '${config.asCanonicalStringVal}'. Expected a map from String to Double[].")
+
+    // for indexProvider BTREE:
+    //    current keys: spatial.* (cartesian.|cartesian-3d.|wgs-84.|wgs-84-3d.) + (min|max)
+    //    current values: Double[]
+    config match {
+      case MapExpression(items) =>
+        if (items.exists { case (p, _) => p.name.equalsIgnoreCase(FULLTEXT_ANALYZER.getSettingName) || p.name.equalsIgnoreCase(FULLTEXT_EVENTUALLY_CONSISTENT.getSettingName) })
+          throw new InvalidArgumentsException(
+            s"""Could not create index with specified index config '${config.asCanonicalStringVal}', contains fulltext config options.
+               |To create fulltext index, please use 'db.index.fulltext.createNodeIndex' or 'db.index.fulltext.createRelationshipIndex'.""".stripMargin)
+
+        items.map {
+        case (p, e: ListLiteral) =>
+          val configValue: Object = e.expressions.map {
+            case d: DoubleLiteral => d.value
+            case _ => throw exceptionWrongType
+          }.toArray
+          (p.name, configValue)
+        case _ => throw exceptionWrongType
+      }.toMap.asJava
+      case _ =>
+        throw exceptionWrongType
+    }
+  }
 }

@@ -21,12 +21,14 @@ import org.neo4j.cypher.internal.ast.IfExistsDoNothing
 import org.neo4j.cypher.internal.ast.IfExistsInvalidSyntax
 import org.neo4j.cypher.internal.ast.IfExistsReplace
 import org.neo4j.cypher.internal.ast.IfExistsThrowError
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.Variable
 import org.parboiled.scala.Parser
 import org.parboiled.scala.Rule1
 import org.parboiled.scala.Rule3
+import org.parboiled.scala.Rule4
 import org.parboiled.scala.group
 
 trait SchemaCommand extends Parser
@@ -63,33 +65,38 @@ trait SchemaCommand extends Parser
     oneOrMore(WS ~ VariablePropertyExpression, separator = CommaSep)
   }
 
+  def options: Rule1[Map[String, Expression]] = rule {
+    keyword("OPTIONS") ~~ group(ch('{') ~~ zeroOrMore(SymbolicNameString ~~ ch(':') ~~ Expression, separator = CommaSep) ~~ ch('}')) ~~>> (l => _ => l.toMap)
+  }
+
   def CreateIndexOldSyntax: Rule1[ast.CreateIndexOldSyntax] = rule {
     group(keyword("CREATE INDEX ON") ~~ NodeLabel ~~ "(" ~~ PropertyKeyNames ~~ ")") ~~>> (ast.CreateIndexOldSyntax(_, _))
   }
 
   def CreateIndex: Rule1[ast.CreateIndex] = rule {
     // without name
-    group(keyword("CREATE OR REPLACE INDEX IF NOT EXISTS FOR") ~~ IndexPatternSyntax) ~~>>
-      ((variable, label, properties) => ast.CreateIndex(variable, label, properties.toList, None, IfExistsInvalidSyntax)) |
-    group(keyword("CREATE OR REPLACE INDEX FOR") ~~ IndexPatternSyntax) ~~>>
-      ((variable, label, properties) => ast.CreateIndex(variable, label, properties.toList, None, IfExistsReplace)) |
-    group(keyword("CREATE INDEX IF NOT EXISTS FOR") ~~ IndexPatternSyntax) ~~>>
-      ((variable, label, properties) => ast.CreateIndex(variable, label, properties.toList, None, IfExistsDoNothing)) |
-    group(keyword("CREATE INDEX FOR") ~~ IndexPatternSyntax) ~~>>
-      ((variable, label, properties) => ast.CreateIndex(variable, label, properties.toList, None, IfExistsThrowError)) |
+    group((keyword("CREATE OR REPLACE BTREE INDEX IF NOT EXISTS FOR") | keyword("CREATE OR REPLACE INDEX IF NOT EXISTS FOR")) ~~ IndexPatternSyntax) ~~>>
+      ((variable, label, properties, options) => ast.CreateIndex(variable, label, properties.toList, None, IfExistsInvalidSyntax, options)) |
+    group((keyword("CREATE OR REPLACE BTREE INDEX FOR") | keyword("CREATE OR REPLACE INDEX FOR")) ~~ IndexPatternSyntax) ~~>>
+      ((variable, label, properties, options) => ast.CreateIndex(variable, label, properties.toList, None, IfExistsReplace, options)) |
+    group((keyword("CREATE BTREE INDEX IF NOT EXISTS FOR") | keyword("CREATE INDEX IF NOT EXISTS FOR")) ~~ IndexPatternSyntax) ~~>>
+      ((variable, label, properties, options) => ast.CreateIndex(variable, label, properties.toList, None, IfExistsDoNothing, options)) |
+    group( (keyword("CREATE BTREE INDEX FOR") | keyword("CREATE INDEX FOR")) ~~ IndexPatternSyntax) ~~>>
+      ((variable, label, properties, options) => ast.CreateIndex(variable, label, properties.toList, None, IfExistsThrowError, options)) |
     // with name
-    group(keyword("CREATE OR REPLACE INDEX") ~~ SymbolicNameString ~~ keyword("IF NOT EXISTS FOR") ~~ IndexPatternSyntax) ~~>>
-      ((name, variable, label, properties) => ast.CreateIndex(variable, label, properties.toList, Some(name), IfExistsInvalidSyntax)) |
-    group(keyword("CREATE OR REPLACE INDEX") ~~ SymbolicNameString ~~ keyword("FOR") ~~ IndexPatternSyntax) ~~>>
-      ((name, variable, label, properties) => ast.CreateIndex(variable, label, properties.toList, Some(name), IfExistsReplace)) |
-    group(keyword("CREATE INDEX") ~~ SymbolicNameString ~~ keyword("IF NOT EXISTS FOR") ~~ IndexPatternSyntax) ~~>>
-      ((name, variable, label, properties) => ast.CreateIndex(variable, label, properties.toList, Some(name), IfExistsDoNothing)) |
-    group(keyword("CREATE INDEX") ~~ SymbolicNameString ~~ keyword("FOR") ~~ IndexPatternSyntax) ~~>>
-      ((name, variable, label, properties) => ast.CreateIndex(variable, label, properties.toList, Some(name), IfExistsThrowError))
+    group((keyword("CREATE OR REPLACE BTREE INDEX") | keyword("CREATE OR REPLACE INDEX")) ~~ SymbolicNameString ~~ keyword("IF NOT EXISTS FOR") ~~ IndexPatternSyntax) ~~>>
+      ((name, variable, label, properties, options) => ast.CreateIndex(variable, label, properties.toList, Some(name), IfExistsInvalidSyntax, options)) |
+    group((keyword("CREATE OR REPLACE BTREE INDEX") | keyword("CREATE OR REPLACE INDEX")) ~~ SymbolicNameString ~~ keyword("FOR") ~~ IndexPatternSyntax) ~~>>
+      ((name, variable, label, properties, options) => ast.CreateIndex(variable, label, properties.toList, Some(name), IfExistsReplace, options)) |
+    group((keyword("CREATE BTREE INDEX") | keyword("CREATE INDEX")) ~~ SymbolicNameString ~~ keyword("IF NOT EXISTS FOR") ~~ IndexPatternSyntax) ~~>>
+      ((name, variable, label, properties, options) => ast.CreateIndex(variable, label, properties.toList, Some(name), IfExistsDoNothing, options)) |
+    group((keyword("CREATE BTREE INDEX") | keyword("CREATE INDEX"))~~ SymbolicNameString ~~ keyword("FOR") ~~ IndexPatternSyntax) ~~>>
+      ((name, variable, label, properties, options) => ast.CreateIndex(variable, label, properties.toList, Some(name), IfExistsThrowError, options))
   }
 
-  def IndexPatternSyntax: Rule3[Variable, LabelName, Seq[Property]] = rule {
-    group("(" ~~ Variable ~~ NodeLabel ~~ ")" ~~ keyword("ON") ~~ "(" ~~ VariablePropertyExpressions ~~ ")")
+  def IndexPatternSyntax: Rule4[Variable, LabelName, Seq[Property], Map[String, Expression]] = rule {
+    group("(" ~~ Variable ~~ NodeLabel ~~ ")" ~~ keyword("ON") ~~ "(" ~~ VariablePropertyExpressions ~~ ")" ~~ options) |
+    group("(" ~~ Variable ~~ NodeLabel ~~ ")" ~~ keyword("ON") ~~ "(" ~~ VariablePropertyExpressions ~~ ")") ~> (_ => Map.empty)
   }
 
   def DropIndex: Rule1[ast.DropIndex] = rule {

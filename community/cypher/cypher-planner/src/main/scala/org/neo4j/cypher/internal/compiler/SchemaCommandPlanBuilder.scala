@@ -57,7 +57,7 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
   override def postConditions: Set[Condition] = Set.empty
 
   override def process(from: BaseState, context: PlannerContext): LogicalPlanState = {
-    implicit val idGen = new SequentialIdGen()
+    implicit val idGen: SequentialIdGen = new SequentialIdGen()
     val maybeLogicalPlan: Option[LogicalPlan] = from.statement() match {
       // CREATE CONSTRAINT ON (node:Label) ASSERT (node.prop1,node.prop2) IS NODE KEY
       case CreateNodeKeyConstraint(node, label, props, name, ifExistsDo, _) =>
@@ -115,23 +115,22 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
 
       // CREATE INDEX ON :LABEL(prop)
       case CreateIndexOldSyntax(label, props, _) =>
-        Some(plans.CreateIndex(None, label, props, None))
+        Some(plans.CreateIndex(None, label, props, None, Map.empty))
 
-      // CREATE INDEX FOR (n:LABEL) ON (n.prop)
-      // CREATE INDEX name FOR (n:LABEL) ON (n.prop)
-      case CreateIndex(_, label, props, name, ifExistsDo, _) =>
+      // CREATE INDEX [name] [IF NOT EXISTS] FOR (n:LABEL) ON (n.prop) [OPTIONS {...}]
+      case CreateIndex(_, label, props, name, ifExistsDo, options, _) =>
         val propKeys = props.map(_.propertyKey)
         val source = ifExistsDo match {
           case IfExistsDoNothing => Some(plans.DoNothingIfExistsForIndex(label, propKeys, name))
           case _ => None
         }
-        Some(plans.CreateIndex(source, label, propKeys, name))
+        Some(plans.CreateIndex(source, label, propKeys, name, options))
 
       // DROP INDEX ON :LABEL(prop)
       case DropIndex(label, props, _) =>
         Some(plans.DropIndex(label, props))
 
-      // DROP INDEX name
+      // DROP INDEX name [IF EXISTS]
       case DropIndexOnName(name, ifExists, _) =>
         Some(plans.DropIndexOnName(name, ifExists))
 

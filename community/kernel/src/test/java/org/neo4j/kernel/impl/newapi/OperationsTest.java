@@ -51,6 +51,7 @@ import org.neo4j.internal.kernel.api.helpers.TestRelationshipChain;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.ConstraintDescriptor;
+import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
@@ -997,7 +998,7 @@ class OperationsTest
         operations.indexCreate( IndexPrototype.forSchema(
                 SchemaDescriptor.fulltext( NODE, new int[] {2, 3}, new int[] {1, 2} ) )
                 .withIndexType( IndexType.FULLTEXT ) );
-        operations.indexCreate( SchemaDescriptor.forLabel( 3, 1 ), "provider-1.0", null );
+        operations.indexCreate( SchemaDescriptor.forLabel( 3, 1 ), "provider-1.0", IndexConfig.empty(), null );
         IndexDescriptor[] indexDescriptors = txState.indexChanges().getAdded()
                 .stream()
                 .sorted( Comparator.comparing( d -> d.schema().getEntityTokenIds()[0] ) )

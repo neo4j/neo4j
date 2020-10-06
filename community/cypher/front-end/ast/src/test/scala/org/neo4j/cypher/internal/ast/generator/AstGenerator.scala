@@ -566,6 +566,10 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     items <- zeroOrMore(tuple(_propertyKeyName, _expression))
   } yield MapExpression(items)(pos)
 
+  def _mapStringKeys: Gen[Map[String, Expression]] = for {
+    items <- zeroOrMore(tuple(_identifier, _expression))
+  } yield items.toMap
+
   def _property: Gen[Property] = for {
     map <- _expression
     key <- _propertyKeyName
@@ -1153,8 +1157,9 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     props      <- _listOfProperties
     name       <- option(_identifier)
     ifExistsDo <- _ifExistsDo
+    options    <- _mapStringKeys
     use        <- option(_use)
-  } yield CreateIndex(variable, labelName, props, name, ifExistsDo, use)(pos)
+  } yield CreateIndex(variable, labelName, props, name, ifExistsDo, options, use)(pos)
 
   def _dropIndex: Gen[DropIndexOnName] = for {
     name     <- _identifier

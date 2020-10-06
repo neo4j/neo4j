@@ -32,11 +32,14 @@ import org.neo4j.graphdb.Result
 import org.neo4j.graphdb.schema.ConstraintDefinition
 import org.neo4j.graphdb.schema.ConstraintType
 import org.neo4j.graphdb.schema.IndexDefinition
+import org.neo4j.graphdb.schema.IndexSetting
 import org.neo4j.internal.helpers.collection.Iterables
 import org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED
+import org.neo4j.internal.schema.IndexProviderDescriptor
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.KernelTransaction.Type
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
+import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory
 import org.neo4j.kernel.impl.query.TransactionalContext
@@ -44,6 +47,7 @@ import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats
 import org.neo4j.kernel.impl.util.ValueUtils
 
 import scala.collection.JavaConverters.iterableAsScalaIterableConverter
+import scala.collection.JavaConverters.mapAsScalaMapConverter
 
 trait GraphIcing {
 
@@ -165,6 +169,20 @@ trait GraphIcing {
         val label = Iterables.single( index.getLabels ).name()
         val properties = index.getPropertyKeys.asScala.toList
         (label, properties)
+      } )
+    }
+
+    def getIndexConfig(name: String): Map[IndexSetting, AnyRef] = {
+      withTx( tx =>  {
+        val index = tx.schema().getIndexByName(name)
+        index.getIndexConfiguration.asScala.toMap
+      } )
+    }
+
+    def getIndexProvider(name: String): IndexProviderDescriptor = {
+      withTx( tx =>  {
+        val index: IndexDefinitionImpl = tx.schema().getIndexByName(name).asInstanceOf[IndexDefinitionImpl] // only implementation of interface
+        index.getIndexReference.getIndexProvider
       } )
     }
 

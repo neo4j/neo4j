@@ -25,8 +25,9 @@ import org.neo4j.common.EntityType;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.SchemaWrite;
-import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.FulltextSchemaDescriptor;
+import org.neo4j.internal.schema.IndexConfig;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
@@ -42,7 +43,8 @@ import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 
 public class IndexCreateIT extends KernelIntegrationTest
 {
-    private static final IndexCreator INDEX_CREATOR = SchemaWrite::indexCreate;
+    private static final IndexCreator INDEX_CREATOR =
+            ( schemaWrite, schema, provider, name ) -> schemaWrite.indexCreate( schema, provider, IndexConfig.empty(), name );
     private static final IndexCreator UNIQUE_CONSTRAINT_CREATOR = ( schemaWrite, schema, provider, name ) -> schemaWrite.uniquePropertyConstraintCreate(
             IndexPrototype.uniqueForSchema( schema, schemaWrite.indexProviderByName( provider ) ).withName( name ) );
 

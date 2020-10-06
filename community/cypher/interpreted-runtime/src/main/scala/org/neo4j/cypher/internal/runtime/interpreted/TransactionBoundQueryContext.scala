@@ -80,6 +80,7 @@ import org.neo4j.internal.kernel.api.helpers.RelationshipSelections.outgoingCurs
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext
 import org.neo4j.internal.schema.ConstraintDescriptor
 import org.neo4j.internal.schema.ConstraintType
+import org.neo4j.internal.schema.IndexConfig
 import org.neo4j.internal.schema.IndexDescriptor
 import org.neo4j.internal.schema.IndexPrototype
 import org.neo4j.internal.schema.SchemaDescriptor
@@ -781,10 +782,13 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     ids
   }
 
-  override def addIndexRule(labelId: Int, propertyKeyIds: Seq[Int], name: Option[String]): IndexDescriptor = {
+  override def addIndexRule(labelId: Int, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[String], indexConfig: IndexConfig): IndexDescriptor = {
     val ktx = transactionalContext.kernelTransaction
     try {
-      ktx.schemaWrite().indexCreate(SchemaDescriptor.forLabel(labelId, propertyKeyIds: _*), name.orNull)
+      if (provider.isEmpty)
+        ktx.schemaWrite().indexCreate(SchemaDescriptor.forLabel(labelId, propertyKeyIds: _*), indexConfig, name.orNull)
+      else
+        ktx.schemaWrite().indexCreate(SchemaDescriptor.forLabel(labelId, propertyKeyIds: _*), provider.get, indexConfig, name.orNull)
     } catch {
       case e: EquivalentSchemaRuleAlreadyExistsException =>
         val indexReference = ktx.schemaRead().index(SchemaDescriptor.forLabel(labelId, propertyKeyIds: _*)).next()

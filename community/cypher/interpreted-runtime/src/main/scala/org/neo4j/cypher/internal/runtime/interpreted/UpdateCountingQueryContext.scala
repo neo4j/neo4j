@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.runtime.RelationshipOperations
 import org.neo4j.internal.kernel.api.NodeCursor
 import org.neo4j.internal.kernel.api.RelationshipScanCursor
 import org.neo4j.internal.schema.ConstraintDescriptor
+import org.neo4j.internal.schema.IndexConfig
 import org.neo4j.internal.schema.IndexDescriptor
 import org.neo4j.values.storable.Value
 import org.neo4j.values.virtual.NodeValue
@@ -110,8 +111,8 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
     removed
   }
 
-  override def addIndexRule(labelId: Int, propertyKeyIds: Seq[Int], name: Option[String]): IndexDescriptor = {
-    val result = inner.addIndexRule(labelId, propertyKeyIds, name)
+  override def addIndexRule(labelId: Int, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[String], indexConfig: IndexConfig): IndexDescriptor = {
+    val result = inner.addIndexRule(labelId, propertyKeyIds, name, provider, indexConfig)
     indexesAdded.increase()
     result
   }
