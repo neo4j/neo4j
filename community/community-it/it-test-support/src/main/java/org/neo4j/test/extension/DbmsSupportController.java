@@ -33,10 +33,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
 
 import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
+import org.neo4j.configuration.connectors.BoltConnector;
+import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -44,6 +47,7 @@ import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.testdirectory.TestDirectorySupportExtension;
 import org.neo4j.test.rule.TestDirectory;
 
+import static java.lang.Boolean.TRUE;
 import static java.util.Collections.addAll;
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 import static org.apache.commons.lang3.reflect.FieldUtils.getFieldsListWithAnnotation;
@@ -88,10 +92,11 @@ public class DbmsSupportController
         // Find closest configuration
         TestConfiguration configuration = getConfigurationFromAnnotations(
                 getTestAnnotation( DbmsExtension.class ),
-                getTestAnnotation( ImpermanentDbmsExtension.class ) );
+                getTestAnnotation( ImpermanentDbmsExtension.class ),
+                getTestAnnotation( BoltDbmsExtension.class ) );
 
         // Make service
-        var dbms = buildDbms( configuration.configurationCallback, callback );
+        var dbms = buildDbms( configuration, callback );
         var databaseToStart = isNotEmpty( databaseName ) ? databaseName : getDatabaseName( dbms );
         startDatabase( databaseToStart );
     }
@@ -148,11 +153,12 @@ public class DbmsSupportController
                 .or( () -> context.getTestClass().map( cls -> cls.getAnnotation( annotationType ) ) );
     }
 
-    public DatabaseManagementService buildDbms( String configurationCallback, UnaryOperator<TestDatabaseManagementServiceBuilder> callback )
+    protected DatabaseManagementService buildDbms( TestConfiguration testConfiguration, UnaryOperator<TestDatabaseManagementServiceBuilder> callback )
     {
         var testDir = getTestDirectory();
         var builder = createBuilder( testDir.homePath(), testDir.getFileSystem() );
-        maybeInvokeCallback( testInstances.getInnermostInstance(), builder, configurationCallback );
+        testConfiguration.implicitConfigurationCallback.accept( builder );
+        maybeInvokeCallback( testInstances.getInnermostInstance(), builder, testConfiguration.configurationCallback );
         builder = callback.apply( builder );
         dbms = builder.build();
         ExtensionContext.Store store = getStore( context );
@@ -336,6 +342,15 @@ public class DbmsSupportController
                 ImpermanentDbmsExtension annotation = (ImpermanentDbmsExtension) annotations[0];
                 return new TestConfiguration( annotation.configurationCallback() );
             }
+            if ( annotations[0] instanceof BoltDbmsExtension )
+            {
+                BoltDbmsExtension annotation = (BoltDbmsExtension) annotations[0];
+                return new TestConfiguration(
+                        annotation.configurationCallback(),
+                        dbmsBuilder -> dbmsBuilder.setConfig( BoltConnector.enabled, TRUE )
+                                                  .overrideDefaultSetting( BoltConnector.listen_address, new SocketAddress( "localhost", 0 ) )
+                );
+            }
         }
 
         // Either we don't recognise the annotation type, or no special configuration was requested.
@@ -344,15 +359,24 @@ public class DbmsSupportController
     }
 
     /**
-     * Since annotations can't be extended we use this internal class to represent the annotated values
+     * Test configuration extracted from a test extension annotation.
      */
-    private static class TestConfiguration
+    protected static class TestConfiguration
     {
+        // a callback for configuration enhancements provided by the test
         private final String configurationCallback;
+        // a callback for configuration enhancements implicit for the used annotation
+        private final Consumer<TestDatabaseManagementServiceBuilder> implicitConfigurationCallback;
 
-        private TestConfiguration( String configurationCallback )
+        public TestConfiguration( String configurationCallback )
+        {
+            this( configurationCallback, dbmsBuilder -> { } );
+        }
+
+        public TestConfiguration( String configurationCallback, Consumer<TestDatabaseManagementServiceBuilder> implicitConfigurationCallback )
         {
             this.configurationCallback = configurationCallback;
+            this.implicitConfigurationCallback = implicitConfigurationCallback;
         }
     }
 }

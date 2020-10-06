@@ -44,7 +44,7 @@ import org.neo4j.fabric.executor.FabricExecutor;
 import org.neo4j.fabric.transaction.FabricTransactionInfo;
 import org.neo4j.fabric.transaction.TransactionManager;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.test.extension.DbmsExtension;
+import org.neo4j.test.extension.BoltDbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.values.virtual.MapValue;
 
@@ -59,7 +59,7 @@ import static org.neo4j.internal.helpers.Strings.joinAsLines;
 import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 
-@DbmsExtension
+@BoltDbmsExtension
 @TestInstance( TestInstance.Lifecycle.PER_CLASS )
 class CommunityEditionEndToEndTest
 {

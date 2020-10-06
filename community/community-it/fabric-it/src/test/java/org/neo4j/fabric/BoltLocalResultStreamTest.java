@@ -35,12 +35,12 @@ import org.neo4j.driver.internal.shaded.reactor.core.publisher.Flux;
 import org.neo4j.driver.internal.shaded.reactor.core.publisher.Mono;
 import org.neo4j.driver.reactive.RxResult;
 import org.neo4j.driver.reactive.RxTransaction;
-import org.neo4j.test.extension.DbmsExtension;
+import org.neo4j.test.extension.BoltDbmsExtension;
 import org.neo4j.test.extension.Inject;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@DbmsExtension
+@BoltDbmsExtension
 @TestInstance( TestInstance.Lifecycle.PER_CLASS )
 class BoltLocalResultStreamTest
 {
