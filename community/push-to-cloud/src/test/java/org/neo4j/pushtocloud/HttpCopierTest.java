@@ -148,7 +148,7 @@ class HttpCopierTest
         assertTrue( Files.exists( source ) );
     }
 
-    private void runHappyPathTest( Path source, boolean sourceProvided ) throws CommandFailedException
+    private void runHappyPathTest( Path source, boolean sourceProvided ) throws CommandFailedException, IOException
     {
         // given
         ControlledProgressListener progressListener = new ControlledProgressListener();
@@ -318,11 +318,12 @@ class HttpCopierTest
     {
         // given
         HttpCopier copier = new HttpCopier( ctx );
-        wireMock.stubFor( initiateSizeRequest( "fakeToken", 100000000 ).willReturn( aResponse()
-                                                                                            .withStatus( HTTP_UNPROCESSABLE_ENTITY ) ) );
+        String errorBody = format( "{\"Message\":\"Store is too big for this neo4j aura instance.\",\"Reason\":\"ImportExceedsMaxSize\"}" );
+        ResponseDefinitionBuilder response = aResponse().withStatus( HTTP_UNPROCESSABLE_ENTITY ).withBody( errorBody );
+        wireMock.stubFor( initiateSizeRequest( "fakeToken", 100000000 ).willReturn( response ) );
         // when/then
-        assertThrows( CommandFailedException.class, containsString( "insufficient space" ),
-                      () -> copier.checkSize( false, TEST_CONSOLE_URL, 100000000, "fakeToken" ) );
+        assertThrows( CommandFailedException.class, containsString( "too big" ),
+                () -> copier.checkSize( false, TEST_CONSOLE_URL, PushToCloudCommand.Size.ofDump( 100000000 ), "fakeToken" ) );
     }
 
     @Test
@@ -330,10 +331,10 @@ class HttpCopierTest
     {
         // given
         HttpCopier copier = new HttpCopier( ctx );
-        wireMock.stubFor( initiateSizeRequest( "fakeToken", 100000000 ).willReturn( aResponse()
-                                                                                            .withStatus( HTTP_OK ) ) );
+        ResponseDefinitionBuilder response = aResponse().withStatus( HTTP_OK );
+        wireMock.stubFor( initiateSizeRequest( "fakeToken", 100000000 ).willReturn( response ) );
         // when/then
-        copier.checkSize( false, TEST_CONSOLE_URL, 100000000, "fakeToken" );
+        copier.checkSize( false, TEST_CONSOLE_URL, PushToCloudCommand.Size.ofDump( 100000000 ), "fakeToken" );
         verify( postRequestedFor( urlEqualTo( "/import/size" ) ) );
     }
 
@@ -911,10 +912,11 @@ class HttpCopierTest
         return file;
     }
 
-    private void authenticateAndCopy( PushToCloudCommand.Copier copier, Path source, boolean sourceProvided, String username, char[] password )
-            throws CommandFailedException
+    private void authenticateAndCopy( PushToCloudCommand.Copier copier, Path path, boolean sourceProvided, String username, char[] password )
+            throws CommandFailedException, IOException
     {
         String bearerToken = copier.authenticate( false, TEST_CONSOLE_URL, username, password, false );
+        PushToCloudCommand.Source source = new PushToCloudCommand.Source( path, PushToCloudCommand.Size.ofDump( Files.size( path ) ) );
         copier.copy( true, TEST_CONSOLE_URL, "bolt+routing://deadbeef.databases.neo4j.io", source, sourceProvided, bearerToken );
     }
 
