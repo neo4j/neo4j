@@ -27,8 +27,6 @@ public interface LongArrayList
 
     boolean add( long item );
 
-    void add( long e, long[] elementData, int s );
-
     void add( int index, long element );
 
     int size();

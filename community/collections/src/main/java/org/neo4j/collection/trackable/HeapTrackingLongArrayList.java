@@ -56,7 +56,6 @@ public class HeapTrackingLongArrayList implements LongArrayList, HeapTrackingLon
     public static HeapTrackingLongArrayList newLongArrayList( int initialSize, MemoryTracker memoryTracker )
     {
         requireNonNegative( initialSize );
-        requireNonNegative( initialSize );
         long trackedSize = sizeOfLongArray( initialSize );
         memoryTracker.allocateHeap( SHALLOW_SIZE + trackedSize );
         return new HeapTrackingLongArrayList( initialSize, memoryTracker, trackedSize );
@@ -123,8 +122,7 @@ public class HeapTrackingLongArrayList implements LongArrayList, HeapTrackingLon
         return oldValue;
     }
 
-    @Override
-    public void add( long e, long[] elementData, int s )
+    private void add( long e, long[] elementData, int s )
     {
         if ( s == elementData.length )
         {
