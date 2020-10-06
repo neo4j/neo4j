@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.logical.builder.Resolver
 import org.neo4j.cypher.internal.logical.plans.ProcedureSignature
 import org.neo4j.cypher.internal.logical.plans.QualifiedName
 import org.neo4j.cypher.internal.logical.plans.UserFunctionSignature
+import org.neo4j.cypher.internal.options.CypherDebugOptions
 import org.neo4j.cypher.internal.plandescription.InternalPlanDescription
 import org.neo4j.cypher.internal.runtime.InputDataStream
 import org.neo4j.cypher.internal.runtime.InputValues
@@ -99,7 +100,7 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
   private var kernel: Kernel = _
   val ANY_VALUE_ORDERING: Ordering[AnyValue] = Ordering.comparatorToOrdering(AnyValues.COMPARATOR)
   val logProvider: AssertableLogProvider = new AssertableLogProvider()
-  val debugOptions: Set[String] = Set.empty[String]
+  val debugOptions: CypherDebugOptions = CypherDebugOptions.default
 
   override protected def beforeEach(): Unit = {
     DebugLog.beginTime()

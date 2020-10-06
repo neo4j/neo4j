@@ -72,7 +72,7 @@ object CodeGeneration {
 
   object CodeGenerationMode {
     def fromDebugOptions(debugOptions: CypherDebugOptions): CodeGenerationMode = {
-      if(debugOptions.contains(GENERATE_JAVA_SOURCE_DEBUG_OPTION)) {
+      if(debugOptions.generateJavaSourceEnabled) {
         val saveSourceToFileLocation = Option(System.getProperty(GENERATED_SOURCE_LOCATION_PROPERTY)).map(Paths.get(_))
         val saver = new CodeSaver(debugOptions.showJavaSourceEnabled, debugOptions.showBytecodeEnabled, saveSourceToFileLocation)
         SourceCodeGeneration(saver)

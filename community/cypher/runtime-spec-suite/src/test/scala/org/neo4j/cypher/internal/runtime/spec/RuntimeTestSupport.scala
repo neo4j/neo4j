@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.ResourceManagerFactory
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.RuntimeContextManager
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
+import org.neo4j.cypher.internal.options.CypherDebugOptions
 import org.neo4j.cypher.internal.options.CypherVersion
 import org.neo4j.cypher.internal.plandescription.InternalPlanDescription
 import org.neo4j.cypher.internal.plandescription.PlanDescriptionBuilder
@@ -73,7 +74,7 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
                                                     val edition: Edition[CONTEXT],
                                                     val workloadMode: Boolean,
                                                     val logProvider: LogProvider,
-                                                    val debugOptions: Set[String] = Set.empty,
+                                                    val debugOptions: CypherDebugOptions = CypherDebugOptions.default,
                                                    ) extends RuntimeExecutionSupport[CONTEXT] {
 
   private val cypherGraphDb = new GraphDatabaseCypherService(graphDb)
@@ -284,15 +285,10 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
 
     val cypherConfiguration: CypherConfiguration = edition.cypherConfig()
 
-    val queryOptions = PreParser.queryOptions(Seq.empty,
+    val queryOptions = PreParser.queryOptions(List.empty,
       InputPosition.NONE,
       isPeriodicCommit = false,
-      cypherConfiguration.version,
-      cypherConfiguration.planner,
-      cypherConfiguration.runtime,
-      cypherConfiguration.expressionEngineOption,
-      cypherConfiguration.operatorEngine,
-      cypherConfiguration.interpretedPipesFallback)
+      cypherConfiguration)
 
     runtimeContextManager.create(queryContext,
                                  queryContext.transactionalContext.transaction.schemaRead(),
