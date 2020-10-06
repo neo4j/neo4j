@@ -18,6 +18,7 @@ package org.neo4j.pushtocloud;
 
 import picocli.CommandLine;
 
+import java.io.File;
 import java.nio.file.Path;
 
 import org.neo4j.cli.CommandFailedException;
@@ -36,12 +37,13 @@ class RealDumpCreator implements PushToCloudCommand.DumpCreator
     }
 
     @Override
-    public void dumpDatabase( String database, Path targetDumpFile ) throws CommandFailedException
+    public File dumpDatabase( String database, Path targetDumpFile ) throws CommandFailedException
     {
         String[] args = array(
                 "--database", database,
                 "--to", targetDumpFile.toString() );
         new CommandLine( new DumpCommandProvider().createCommand( ctx ) ).execute( args );
         ctx.out().printf( "Dumped contents of database '%s' into '%s'%n", database, targetDumpFile );
+        return targetDumpFile.toFile();
     }
 }
