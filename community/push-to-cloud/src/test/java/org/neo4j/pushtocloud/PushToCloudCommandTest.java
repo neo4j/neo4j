@@ -50,13 +50,12 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectorySupportExtension;
 import org.neo4j.test.rule.TestDirectory;
 
-import static java.util.Objects.requireNonNull;
 import static java.lang.String.format;
+import static java.util.Objects.requireNonNull;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.inOrder;
@@ -195,14 +194,15 @@ class PushToCloudCommandTest
         PushToCloudCommand command = command().copier( targetCommunicator ).build();
 
         // when
-        Path dump = this.dump;
+        PushToCloudCommand.Size size = PushToCloudCommand.Size.ofDump( PushToCloudCommand.readSizeFromDumpMetaData( dump.toFile() ) );
+        PushToCloudCommand.Source source = new PushToCloudCommand.Source( this.dump, size );
         String[] args = {"--dump", dump.toString(),
                          "--bolt-uri", SOME_EXAMPLE_BOLT_URI};
         new CommandLine( command ).execute( args );
 
         // then
-        verify( targetCommunicator ).checkSize( anyBoolean(), any(), anyLong(), any() );
-        verify( targetCommunicator ).copy( anyBoolean(), any(), any(), eq( dump ), eq( false ), any() );
+        verify( targetCommunicator ).checkSize( anyBoolean(), any(), any(), any() );
+        verify( targetCommunicator ).copy( anyBoolean(), any(), any(), eq( source ), eq( false ), any() );
     }
 
     @Test
@@ -210,7 +210,8 @@ class PushToCloudCommandTest
     {
         // given
         Copier targetCommunicator = mockedTargetCommunicator();
-        DumpCreator dumpCreator = mock( DumpCreator.class );
+        DumpCreator dumpCreator = mockedDumpCreator();
+
         PushToCloudCommand command = command()
                 .copier( targetCommunicator )
                 .dumpCreator( dumpCreator )
@@ -226,7 +227,7 @@ class PushToCloudCommandTest
 
         // then
         verify( dumpCreator ).dumpDatabase( eq( databaseName ), any() );
-        verify( targetCommunicator ).checkSize( anyBoolean(), any(), anyLong(), any() );
+        verify( targetCommunicator ).checkSize( anyBoolean(), any(), any(), any() );
         verify( targetCommunicator ).copy( anyBoolean(), any(), any(), any(), eq( true ), any() );
     }
 
@@ -235,7 +236,7 @@ class PushToCloudCommandTest
     {
         // given
         Copier targetCommunicator = mockedTargetCommunicator();
-        DumpCreator dumpCreator = mock( DumpCreator.class );
+        DumpCreator dumpCreator = mockedDumpCreator();
         PushToCloudCommand command = command()
                 .copier( targetCommunicator )
                 .dumpCreator( dumpCreator )
@@ -261,7 +262,7 @@ class PushToCloudCommandTest
     {
         // given
         Copier targetCommunicator = mockedTargetCommunicator();
-        DumpCreator dumpCreator = mock( DumpCreator.class );
+        DumpCreator dumpCreator = mockedDumpCreator();
         PushToCloudCommand command = command()
                 .copier( targetCommunicator )
                 .dumpCreator( dumpCreator )
@@ -435,7 +436,7 @@ class PushToCloudCommandTest
     public void shouldChooseToDumpDefaultDatabaseIfNeitherDumpNorDatabaseIsGiven() throws IOException, CommandFailedException
     {
         // given
-        DumpCreator dumpCreator = mock( DumpCreator.class );
+        DumpCreator dumpCreator = mockedDumpCreator();
         Copier copier = mock( Copier.class );
         PushToCloudCommand command = command()
                 .dumpCreator( dumpCreator )
@@ -508,7 +509,7 @@ class PushToCloudCommandTest
     {
         // given
         Copier copier = mockedTargetCommunicator();
-        DumpCreator dumper = mock( DumpCreator.class );
+        DumpCreator dumper = mockedDumpCreator();
         PushToCloudCommand command = command().copier( copier ).dumpCreator( dumper ).build();
 
         // when
@@ -528,6 +529,13 @@ class PushToCloudCommandTest
         Copier copier = mock( Copier.class );
         when( copier.authenticate( anyBoolean(), any(), any(), any(), anyBoolean() ) ).thenReturn( "abc" );
         return copier;
+    }
+
+    private DumpCreator mockedDumpCreator() throws CommandFailedException
+    {
+        DumpCreator dumpCreator = mock( DumpCreator.class );
+        when( dumpCreator.dumpDatabase( anyString(), any() ) ).thenReturn( dump.toFile() );
+        return dumpCreator;
     }
 
     private Builder command()
@@ -563,7 +571,7 @@ class PushToCloudCommandTest
     {
         private final Map<Setting<?>,String> settings = new HashMap<>();
         private ExecutionContext executionContext = ctx;
-        private DumpCreator dumpCreator = mock( DumpCreator.class );
+        private DumpCreator dumpCreator = mockedDumpCreator();
         private Copier targetCommunicator;
         private PushToCloudConsole console = PushToCloudConsole.fakeConsole( "tomte", "tomtar" );
 
