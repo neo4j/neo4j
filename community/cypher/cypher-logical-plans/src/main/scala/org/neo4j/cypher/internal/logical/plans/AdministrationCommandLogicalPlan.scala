@@ -120,10 +120,16 @@ case class RevokeGraphAction(source: PrivilegePlan, action: GraphAction, resoure
 
 case class ShowPrivileges(source: Option[PrivilegePlan],
                           scope: ShowPrivilegeScope,
-                          asRevoke: Option[Boolean],
                           override val returnColumns: List[String],
                           yields: Option[Yield],
                           returns: Option[Return])(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(source)
+
+case class ShowPrivilegeCommands(source: Option[PrivilegePlan],
+                                 scope: ShowPrivilegeScope,
+                                 asRevoke: Boolean,
+                                 override val returnColumns: List[String],
+                                 yields: Option[Yield],
+                                 returns: Option[Return])(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(source)
 
 case class LogSystemCommand(source: AdministrationCommandLogicalPlan, command: String)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
 case class DoNothingIfNotExists(source: PrivilegePlan, label: String, name: Either[String, Parameter], valueMapper: String => String = s => s)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))

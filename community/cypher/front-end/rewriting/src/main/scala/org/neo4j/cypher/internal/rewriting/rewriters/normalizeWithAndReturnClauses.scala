@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.ast.Return
 import org.neo4j.cypher.internal.ast.ReturnItems
 import org.neo4j.cypher.internal.ast.ShowCurrentUser
 import org.neo4j.cypher.internal.ast.ShowDatabase
+import org.neo4j.cypher.internal.ast.ShowPrivilegeCommands
 import org.neo4j.cypher.internal.ast.ShowPrivileges
 import org.neo4j.cypher.internal.ast.ShowRoles
 import org.neo4j.cypher.internal.ast.ShowUsers
@@ -71,7 +72,11 @@ case class normalizeWithAndReturnClauses(cypherExceptionFactory: CypherException
   def apply(that: AnyRef): AnyRef = that match {
     case q@Query(_, queryPart) => q.copy(part = rewriteTopLevelQueryPart(queryPart))(q.position)
 
-    case s@ShowPrivileges(_, _, Some(Left((yields, returns))),_) =>
+    case s@ShowPrivileges(_, Some(Left((yields, returns))),_) =>
+      s.copy(yieldOrWhere = Some(Left(addAliasesToYield(yields),returns.map(addAliasesToReturn))))(s.position)
+        .withGraph(s.useGraph)
+
+    case s@ShowPrivilegeCommands(_, _, Some(Left((yields, returns))),_) =>
       s.copy(yieldOrWhere = Some(Left(addAliasesToYield(yields),returns.map(addAliasesToReturn))))(s.position)
         .withGraph(s.useGraph)
 

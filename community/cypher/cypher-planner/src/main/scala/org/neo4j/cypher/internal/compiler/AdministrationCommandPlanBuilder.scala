@@ -65,6 +65,7 @@ import org.neo4j.cypher.internal.ast.SetUserStatusAction
 import org.neo4j.cypher.internal.ast.ShowCurrentUser
 import org.neo4j.cypher.internal.ast.ShowDatabase
 import org.neo4j.cypher.internal.ast.ShowPrivilegeAction
+import org.neo4j.cypher.internal.ast.ShowPrivilegeCommands
 import org.neo4j.cypher.internal.ast.ShowPrivileges
 import org.neo4j.cypher.internal.ast.ShowRoleAction
 import org.neo4j.cypher.internal.ast.ShowRoles
@@ -323,23 +324,42 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // SHOW USER user PRIVILEGES
-      case sp @ ShowPrivileges(scope: ShowUserPrivileges, asRevoke, _,_) =>
+      case sp @ ShowPrivileges(scope: ShowUserPrivileges, _,_) =>
         val user = scope.user
         val source = if (user.isDefined) Some(plans.AssertDbmsAdminOrSelf(user.get, Seq(ShowPrivilegeAction, ShowUserAction))) else None
-        Some(plans.ShowPrivileges(source, scope, asRevoke, sp.defaultColumnNames, sp.yields, sp.returns))
+        Some(plans.ShowPrivileges(source, scope, sp.defaultColumnNames, sp.yields, sp.returns))
 
       // SHOW USERS user1, user2 PRIVILEGES
-      case sp @ ShowPrivileges(scope: ShowUsersPrivileges, asRevoke, _,_) =>
+      case sp @ ShowPrivileges(scope: ShowUsersPrivileges, _,_) =>
         val (newScope, source) = {
           val users = scope.users
           if (users.size > 1) (scope, Some(plans.AssertDbmsAdmin(Seq(ShowPrivilegeAction, ShowUserAction))))
           else (ShowUserPrivileges(Some(users.head))(scope.position), Some(plans.AssertDbmsAdminOrSelf(users.head, Seq(ShowPrivilegeAction, ShowUserAction))))
         }
-        Some(plans.ShowPrivileges(source, newScope, asRevoke, sp.defaultColumnNames, sp.yields, sp.returns))
+        Some(plans.ShowPrivileges(source, newScope, sp.defaultColumnNames, sp.yields, sp.returns))
 
       // SHOW [ALL | ROLE role | ROLES role1, role2] PRIVILEGES
-      case sp @ ShowPrivileges(scope, asRevoke, _,_) =>
-        Some(plans.ShowPrivileges(Some(plans.AssertDbmsAdmin(ShowPrivilegeAction)), scope, asRevoke, sp.defaultColumnNames, sp.yields, sp.returns))
+      case sp @ ShowPrivileges(scope, _, _) =>
+        Some(plans.ShowPrivileges(Some(plans.AssertDbmsAdmin(ShowPrivilegeAction)), scope, sp.defaultColumnNames, sp.yields, sp.returns))
+
+      // SHOW USER user PRIVILEGES AS [REVOKE] COMMAND
+      case sp @ ShowPrivilegeCommands(scope: ShowUserPrivileges, asRevoke, _,_) =>
+        val user = scope.user
+        val source = if (user.isDefined) Some(plans.AssertDbmsAdminOrSelf(user.get, Seq(ShowPrivilegeAction, ShowUserAction))) else None
+        Some(plans.ShowPrivilegeCommands(source, scope, asRevoke, sp.defaultColumnNames, sp.yields, sp.returns))
+
+      // SHOW USERS user1, user2 PRIVILEGES AS [REVOKE] COMMAND
+      case sp @ ShowPrivilegeCommands(scope: ShowUsersPrivileges, asRevoke, _, _) =>
+        val (newScope, source) = {
+          val users = scope.users
+          if (users.size > 1) (scope, Some(plans.AssertDbmsAdmin(Seq(ShowPrivilegeAction, ShowUserAction))))
+          else (ShowUserPrivileges(Some(users.head))(scope.position), Some(plans.AssertDbmsAdminOrSelf(users.head, Seq(ShowPrivilegeAction, ShowUserAction))))
+        }
+        Some(plans.ShowPrivilegeCommands(source, newScope, asRevoke, sp.defaultColumnNames, sp.yields, sp.returns))
+
+      // SHOW [ALL | ROLE role | ROLES role1, role2] PRIVILEGES AS [REVOKE] COMMAND
+      case sp @ ShowPrivilegeCommands(scope, asRevoke, _, returns) =>
+        Some(plans.ShowPrivilegeCommands(Some(plans.AssertDbmsAdmin(ShowPrivilegeAction)), scope, asRevoke, sp.defaultColumnNames, sp.yields, sp.returns))
 
       // SHOW DATABASES | SHOW DEFAULT DATABASE | SHOW DATABASE foo
       case sd @ ShowDatabase(scope, _,_) =>

@@ -223,10 +223,9 @@ trait Statement extends Parser
   }
 
   // Privilege commands
-
-  def ShowPrivileges: Rule1[ast.ShowPrivileges] = rule("SHOW PRIVILEGES") {
-    group(keyword("SHOW") ~~ ScopeForShowPrivileges ~~ keyword("AS") ~~ asRevoke ~~ optional(ShowCommandClauses) ~~>> ((scope, revoke, yld) => ast.ShowPrivileges(scope, Some(revoke), yld))) |
-    group(keyword("SHOW") ~~ ScopeForShowPrivileges ~~ optional(ShowCommandClauses) ~~>> ((scope, yld) => ast.ShowPrivileges(scope, None, yld)))
+  def ShowPrivileges: Rule1[ast.ReadAdministrationCommand] = rule("SHOW PRIVILEGES") {
+    group(keyword("SHOW") ~~ ScopeForShowPrivileges ~~ asCommand ~~ optional(ShowCommandClauses) ~~>> ((scope, revoke, yld) => ast.ShowPrivilegeCommands(scope, revoke, yld))) |
+    group(keyword("SHOW") ~~ ScopeForShowPrivileges ~~ optional(ShowCommandClauses) ~~>> ((scope, yld) => ast.ShowPrivileges(scope, yld)))
   }
 
   private def ScopeForShowPrivileges: Rule1[ast.ShowPrivilegeScope] = rule("show privilege scope") {
@@ -236,9 +235,9 @@ trait Statement extends Parser
     optional(keyword("ALL")) ~~ keyword("PRIVILEGES") ~~~> ast.ShowAllPrivileges()
   }
 
-  private def asRevoke: Rule1[Boolean] = rule("AS COMMAND") {
-    keyword("COMMAND") ~> (_ => false) |
-    keyword("REVOKE COMMAND") ~> (_ => true)
+  private def asCommand: Rule1[Boolean] = rule("AS COMMAND") {
+    keyword("AS COMMAND") ~> (_ => false) |
+    keyword("AS REVOKE COMMAND") ~> (_ => true)
   }
 
   //` ... ON DBMS TO role`

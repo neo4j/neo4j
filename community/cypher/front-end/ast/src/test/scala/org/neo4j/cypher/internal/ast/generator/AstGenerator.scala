@@ -179,6 +179,7 @@ import org.neo4j.cypher.internal.ast.ShowAllPrivileges
 import org.neo4j.cypher.internal.ast.ShowCurrentUser
 import org.neo4j.cypher.internal.ast.ShowDatabase
 import org.neo4j.cypher.internal.ast.ShowPrivilegeAction
+import org.neo4j.cypher.internal.ast.ShowPrivilegeCommands
 import org.neo4j.cypher.internal.ast.ShowPrivileges
 import org.neo4j.cypher.internal.ast.ShowRoleAction
 import org.neo4j.cypher.internal.ast.ShowRoles
@@ -1430,9 +1431,19 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     showUser2  = ShowUserPrivileges(None)(pos)
     showAll    = ShowAllPrivileges()(pos)
     scope      <- oneOf(showRole, showUser1, showUser2, showAll)
-    asRevoke   <- option(boolean)
     yields     <- option(_eitherYieldOrWhere)
-  } yield ShowPrivileges(scope, asRevoke, yields)(pos)
+  } yield ShowPrivileges(scope, yields)(pos)
+
+  def _showPrivilegeCommands: Gen[ShowPrivilegeCommands] = for {
+    names      <- _listOfNameOfEither
+    showRole   = ShowRolesPrivileges(names)(pos)
+    showUser1  = ShowUsersPrivileges(names)(pos)
+    showUser2  = ShowUserPrivileges(None)(pos)
+    showAll    = ShowAllPrivileges()(pos)
+    scope      <- oneOf(showRole, showUser1, showUser2, showAll)
+    asRevoke   <- boolean
+    yields     <- option(_eitherYieldOrWhere)
+  } yield ShowPrivilegeCommands(scope, asRevoke, yields)(pos)
 
   def _dbmsPrivilege: Gen[PrivilegeCommand] = for {
     dbmsAction      <- _dbmsAction
@@ -1473,6 +1484,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
 
   def _privilegeCommand: Gen[AdministrationCommand] = oneOf(
     _showPrivileges,
+    _showPrivilegeCommands,
     _dbmsPrivilege,
     _databasePrivilege,
     _graphPrivilege

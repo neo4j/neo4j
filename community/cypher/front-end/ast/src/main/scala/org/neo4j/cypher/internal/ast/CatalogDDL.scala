@@ -722,7 +722,6 @@ final case class RevokePrivilege(privilege: PrivilegeType,
 }
 
 final case class ShowPrivileges(scope: ShowPrivilegeScope,
-                                asRevoke: Option[Boolean],
                                 override val yieldOrWhere: YieldOrWhere,
                                 override val defaultColumnSet: List[ShowColumn])(val position: InputPosition) extends ReadAdministrationCommand {
   override def name = "SHOW PRIVILEGE"
@@ -733,16 +732,37 @@ final case class ShowPrivileges(scope: ShowPrivilegeScope,
 }
 
 object ShowPrivileges{
-  def apply(scope: ShowPrivilegeScope, asRevoke: Option[Boolean], yieldOrWhere: YieldOrWhere)(position:InputPosition): ShowPrivileges = {
+  def apply(scope: ShowPrivilegeScope, yieldOrWhere: YieldOrWhere)(position:InputPosition): ShowPrivileges = {
     val columns = List(ShowColumn("access")(position), ShowColumn("action")(position), ShowColumn("resource")(position),
       ShowColumn("graph")(position), ShowColumn("segment")(position), ShowColumn("role")(position)) ++ (scope match {
           case _: ShowUserPrivileges | _: ShowUsersPrivileges => List(ShowColumn("user")(position))
           case _ => List.empty
         })
-    ShowPrivileges(scope, asRevoke, yieldOrWhere, columns)(position)
+    ShowPrivileges(scope, yieldOrWhere, columns)(position)
   }
 }
 
+final case class ShowPrivilegeCommands(scope: ShowPrivilegeScope,
+                                       asRevoke: Boolean,
+                                       override val yieldOrWhere: YieldOrWhere,
+                                       override val defaultColumnSet: List[ShowColumn])(val position: InputPosition) extends ReadAdministrationCommand {
+  override def name = "SHOW PRIVILEGE COMMANDS"
+
+  override def semanticCheck: SemanticCheck =
+    super.semanticCheck chain
+      SemanticState.recordCurrentScope(this)
+}
+
+object ShowPrivilegeCommands{
+  def apply(scope: ShowPrivilegeScope, asRevoke: Boolean, yieldOrWhere: YieldOrWhere)(position:InputPosition): ShowPrivilegeCommands = {
+    val columns = List(ShowColumn("access")(position), ShowColumn("action")(position), ShowColumn("resource")(position),
+      ShowColumn("graph")(position), ShowColumn("segment")(position), ShowColumn("role")(position)) ++ (scope match {
+      case _: ShowUserPrivileges | _: ShowUsersPrivileges => List(ShowColumn("user")(position))
+      case _ => List.empty
+    })
+    ShowPrivilegeCommands(scope, asRevoke, yieldOrWhere, columns)(position)
+  }
+}
 
 final case class ShowDatabase(scope: DatabaseScope, override val yieldOrWhere: YieldOrWhere, override val defaultColumnSet: List[ShowColumn])(val position: InputPosition) extends ReadAdministrationCommand {
 

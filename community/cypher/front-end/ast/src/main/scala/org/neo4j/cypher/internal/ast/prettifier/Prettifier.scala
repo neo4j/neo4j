@@ -131,6 +131,7 @@ import org.neo4j.cypher.internal.ast.SetPropertyItem
 import org.neo4j.cypher.internal.ast.ShowAllPrivileges
 import org.neo4j.cypher.internal.ast.ShowCurrentUser
 import org.neo4j.cypher.internal.ast.ShowDatabase
+import org.neo4j.cypher.internal.ast.ShowPrivilegeCommands
 import org.neo4j.cypher.internal.ast.ShowPrivilegeScope
 import org.neo4j.cypher.internal.ast.ShowPrivileges
 import org.neo4j.cypher.internal.ast.ShowRoles
@@ -427,18 +428,14 @@ case class Prettifier(
         val (resourceName, scope) = Prettifier.extractScope(resource, graphScope, qualifier)
         s"${x.name} {$resourceName} ON $scope FROM ${Prettifier.escapeNames(roleNames)}"
 
-      case ShowPrivileges(scope, _, yields,_) =>
+      case ShowPrivileges(scope, yields, _) =>
         val (y: String, r: String) = showClausesAsString(yields)
         s"SHOW ${Prettifier.extractScope(scope)} PRIVILEGES$y$r"
 
-      case ShowPrivileges(scope, asRevoke, yields, _) =>
+      case ShowPrivilegeCommands(scope, asRevoke, yields, _) =>
         val (y: String, r: String) = showClausesAsString(yields)
-        val a = asRevoke match {
-          case Some(false) => " AS COMMAND"
-          case Some(true) => " AS REVOKE COMMAND"
-          case None => ""
-        }
-        s"SHOW ${Prettifier.extractScope(scope)} PRIVILEGES$a$y$r"
+        val asCommand = if (asRevoke) " AS REVOKE COMMAND" else " AS COMMAND"
+        s"SHOW ${Prettifier.extractScope(scope)} PRIVILEGES$asCommand$y$r"
 
       case x @ ShowDatabase(scope, yields,_) =>
         val (y: String, r: String) = showClausesAsString(yields)
