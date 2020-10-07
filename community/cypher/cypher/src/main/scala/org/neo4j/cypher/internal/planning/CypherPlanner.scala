@@ -408,8 +408,9 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
         )
         val singleComponentPlanner = SingleComponentPlanner(monitor, solverConfig)
         val componentConnectorPlanner = connectComponentsPlannerOption match {
-          case CypherConnectComponentsPlannerOption.idp => ComponentConnectorPlanner(singleComponentPlanner, solverConfig, monitor)
-          case _                                        => cartesianProductsOrValueJoins
+          case CypherConnectComponentsPlannerOption.idp |
+               CypherConnectComponentsPlannerOption.default => ComponentConnectorPlanner(singleComponentPlanner, solverConfig, monitor)
+          case CypherConnectComponentsPlannerOption.greedy  => cartesianProductsOrValueJoins
         }
         IDPQueryGraphSolver(singleComponentPlanner, componentConnectorPlanner, monitor)
 
