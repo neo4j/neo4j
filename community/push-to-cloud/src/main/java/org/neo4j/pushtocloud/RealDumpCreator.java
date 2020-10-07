@@ -37,13 +37,13 @@ class RealDumpCreator implements PushToCloudCommand.DumpCreator
     }
 
     @Override
-    public File dumpDatabase( String database, Path targetDumpFile ) throws CommandFailedException
+    public Path dumpDatabase( String database, Path targetDumpFile ) throws CommandFailedException
     {
         String[] args = array(
                 "--database", database,
                 "--to", targetDumpFile.toString() );
         new CommandLine( new DumpCommandProvider().createCommand( ctx ) ).execute( args );
         ctx.out().printf( "Dumped contents of database '%s' into '%s'%n", database, targetDumpFile );
-        return targetDumpFile.toFile();
+        return targetDumpFile;
     }
 }

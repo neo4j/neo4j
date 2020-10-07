@@ -162,10 +162,10 @@ public class HttpCopier implements PushToCloudCommand.Copier
         try
         {
             String bearerTokenHeader = "Bearer " + bearerToken;
-            long crc32Sum = calculateCrc32HashOfFile( source.path );
-            URL signedURL = initiateCopy( verbose, safeUrl( consoleURL + "/import" ), crc32Sum, source.size, bearerTokenHeader );
+            long crc32Sum = calculateCrc32HashOfFile( source.path() );
+            URL signedURL = initiateCopy( verbose, safeUrl( consoleURL + "/import" ), crc32Sum, source.size(), bearerTokenHeader );
             URL uploadLocation = initiateResumableUpload( verbose, signedURL );
-            long sourceLength = ctx.fs().getFileSize( source.path );
+            long sourceLength = ctx.fs().getFileSize( source.path() );
 
             // Enter the resume:able upload loop
             long position = 0;
@@ -173,7 +173,7 @@ public class HttpCopier implements PushToCloudCommand.Copier
             ThreadLocalRandom random = ThreadLocalRandom.current();
             ProgressTrackingOutputStream.Progress
                     uploadProgress = new ProgressTrackingOutputStream.Progress( progressListenerFactory.create( "Upload", sourceLength ), position );
-            while ( !resumeUpload( verbose, source.path, boltUri, sourceLength, position, uploadLocation, uploadProgress ) )
+            while ( !resumeUpload( verbose, source.path(), boltUri, sourceLength, position, uploadLocation, uploadProgress ) )
             {
                 position = getResumablePosition( verbose, sourceLength, uploadLocation );
                 if ( position == POSITION_UPLOAD_COMPLETED )
@@ -193,17 +193,17 @@ public class HttpCopier implements PushToCloudCommand.Copier
             }
             uploadProgress.done();
 
-            triggerImportProtocol( verbose, safeUrl( consoleURL + "/import/upload-complete" ), boltUri, source.path, crc32Sum, bearerTokenHeader );
+            triggerImportProtocol( verbose, safeUrl( consoleURL + "/import/upload-complete" ), boltUri, source.path(), crc32Sum, bearerTokenHeader );
 
             doStatusPolling( verbose, consoleURL, bearerToken, sourceLength );
 
             if ( deleteSourceAfterImport )
             {
-                Files.delete( source.path );
+                Files.delete( source.path() );
             }
             else
             {
-                ctx.out().println( String.format( "It is safe to delete the dump file now: %s", source.path.toAbsolutePath() ) );
+                ctx.out().println( String.format( "It is safe to delete the dump file now: %s", source.path().toAbsolutePath() ) );
             }
         }
         catch ( InterruptedException | IOException e )

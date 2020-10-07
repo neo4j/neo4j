@@ -20,14 +20,14 @@ import org.apache.commons.io.FileUtils;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
-import java.io.BufferedInputStream;
+import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Optional;
+import java.util.function.LongConsumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -41,6 +41,7 @@ import org.neo4j.configuration.helpers.NormalizedDatabaseName;
 import org.neo4j.dbms.archive.Loader;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
+import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper;
 
 import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;
@@ -129,16 +130,8 @@ public class PushToCloudCommand extends AbstractCommand
             String consoleURL = buildConsoleURI( boltURI );
             String bearerToken = copier.authenticate( verbose, consoleURL, username, pass, overwrite );
 
-            Size size = sourceSize( ctx, dump, database );
-            verbose( "Checking database size %s fits at %s\n", size.humanize(), consoleURL );
-            copier.checkSize( verbose, consoleURL, size, bearerToken );
-
-            Source source = initiateSource( ctx, dump, database, tmpDumpFile );
-            // only mark dump to delete after processing, if we just created it
-            boolean deleteDump = dump == null;
-
-            verbose( "Uploading data of %s to %s\n", size.humanize(), consoleURL );
-            copier.copy( verbose, consoleURL, boltURI, source, deleteDump, bearerToken );
+            Uploader uploader = prepareUploader( dump, database, tmpDumpFile );
+            uploader.process( consoleURL, bearerToken );
         }
         catch ( Exception e )
         {
@@ -188,7 +181,7 @@ public class PushToCloudCommand extends AbstractCommand
         return String.format( "https://console%s.neo4j.io/v1/databases/%s", environment == null ? "" : environment, databaseId );
     }
 
-    private Source initiateSource( ExecutionContext ctx, Path dump, NormalizedDatabaseName database, Path to ) throws CommandFailedException
+    private Uploader prepareUploader( Path dump, NormalizedDatabaseName database, Path to ) throws CommandFailedException
     {
         // Either a dump or database name (of a stopped database) can be provided
         if ( dump != null && database != null )
@@ -197,42 +190,95 @@ public class PushToCloudCommand extends AbstractCommand
         }
         else if ( dump != null )
         {
-            if ( Files.notExists( dump ) )
-            {
-                throw new CommandFailedException( format( "The provided dump '%s' file doesn't exist", dump ) );
-            }
-            return new Source( dump, Size.ofDump( dumpSize( dump ) ) );
+            return makeDumpUploader( dump );
         }
         else
         {
-            Path dumpPath = to != null ? to : ctx.homeDir().resolve( "dump-of-" + database.name() + "-" + currentTimeMillis() );
-            if ( Files.exists( dumpPath ) )
-            {
-                throw new CommandFailedException( format( "The provided dump-to target '%s' file already exists", dumpPath ) );
-            }
-            Path dumpFile = dumpCreator.dumpDatabase( database.name(), dumpPath );
-            return new Source( dumpPath, Size.of( dumpSize( dumpFile ), fullSize( ctx, database ) ) );
+            return makeFullUploader( to );
         }
     }
 
-    private Size sourceSize( ExecutionContext ctx, Path dump, NormalizedDatabaseName database ) throws CommandFailedException
+    public DumpUploader makeDumpUploader( Path dump )
     {
-        // Either a dump or database name (of a stopped database) can be provided
-        if ( dump != null && database != null )
+        if ( Files.notExists( dump ) )
         {
-            throw new CommandFailedException( "Provide either a dump or database name, not both" );
+            throw new CommandFailedException( format( "The provided dump '%s' file doesn't exist", dump ) );
         }
-        else if ( dump != null && database == null )
+        return new DumpUploader( new Source( dump, Size.ofDump( dumpSize( dump ) ) ) );
+    }
+
+    public FullUploader makeFullUploader( Path to )
+    {
+        Path dumpPath = to != null ? to : ctx.homeDir().resolve( "dump-of-" + database.name() + "-" + currentTimeMillis() );
+        if ( Files.exists( dumpPath ) )
         {
-            return Size.ofDump( dumpSize( dump ) );
+            throw new CommandFailedException( format( "The provided dump-to target '%s' file already exists", dumpPath ) );
         }
-        else if ( dump != null && database != null ) // TODO consider actually making this case work
+        return new FullUploader( new Source( dumpPath, Size.ofFull( fullSize( ctx, database ) ) ) );
+    }
+
+    static abstract class Uploader
+    {
+        protected final Source source;
+
+        Uploader( Source source )
         {
-            return Size.of( dumpSize( dump ), fullSize( ctx, database ) );
+            this.source = source;
         }
-        else
+
+        Size size()
         {
-            return Size.ofFull( fullSize( ctx, database ) );
+            return source.size();
+        }
+
+        Path path()
+        {
+            return source.path();
+        }
+
+        abstract void process( String consoleURL, String bearerToken );
+    }
+
+    class DumpUploader extends Uploader
+    {
+        DumpUploader( Source source )
+        {
+            super( source );
+        }
+
+        void process( String consoleURL, String bearerToken )
+        {
+            // Check size of dump (estimating full database as 4X dumpfile)
+            verbose( "Checking database size %s fits at %s\n", size().humanize(), consoleURL );
+            copier.checkSize( verbose, consoleURL, size(), bearerToken );
+
+            // Upload dumpFile
+            verbose( "Uploading data of %s to %s\n", size().humanize(), consoleURL );
+            copier.copy( verbose, consoleURL, boltURI, source, false, bearerToken );
+        }
+    }
+
+    class FullUploader extends Uploader
+    {
+        FullUploader( Source source )
+        {
+            super( source );
+        }
+
+        void process( String consoleURL, String bearerToken )
+        {
+            // Check size of full database
+            verbose( "Checking database size %s fits at %s\n", size().humanize(), consoleURL );
+            copier.checkSize( verbose, consoleURL, size(), bearerToken );
+
+            // Dump database to dumpFile
+            Path dumpFile = dumpCreator.dumpDatabase( database.name(), path() );
+            //noinspection OptionalGetWithoutIsPresent
+            source.setSize( Size.of( dumpSize( dumpFile ), size().fullSize.get() ) );
+
+            // Upload dumpFile
+            verbose( "Uploading data of %s to %s\n", size().humanize(), consoleURL );
+            copier.copy( verbose, consoleURL, boltURI, source, true, bearerToken );
         }
     }
 
@@ -242,15 +288,7 @@ public class PushToCloudCommand extends AbstractCommand
 
         DatabaseLayout layout = Neo4jLayout.of( getConfig( configFile ) ).databaseLayout( database.name() );
         long storeFilesSize = FileUtils.sizeOf( layout.databaseDirectory().toFile() );
-        long txLogSize;
-        try
-        {
-            txLogSize = FileUtils.sizeOf( layout.getTransactionLogsDirectory().toFile() );
-        }
-        catch ( IllegalArgumentException e )
-        {
-            txLogSize = 0;
-        }
+        long txLogSize = readTxLogsSize( layout.getTransactionLogsDirectory() );
         long size = txLogSize + storeFilesSize;
         verbose( "Determined FullSize=%d bytes from storeFileSize=%d + txLogSize=%d in database '%s'\n", size, storeFilesSize, txLogSize, database.name() );
         return size;
@@ -261,6 +299,46 @@ public class PushToCloudCommand extends AbstractCommand
         long sizeInBytes = readSizeFromDumpMetaData( dump );
         verbose( "Determined DumpSize=%d bytes from dump at %s\n", sizeInBytes, dump );
         return sizeInBytes;
+    }
+
+    private long readTxLogsSize( Path txLogs )
+    {
+        long txLogSize = 0;
+        if ( Files.exists(txLogs) )
+        {
+            if ( Files.isDirectory(txLogs) )
+            {
+                String[] logs = txLogs.toFile().list( ( dir, name ) -> name.startsWith( TransactionLogFilesHelper.DEFAULT_NAME ) );
+                if ( logs != null && logs.length > 0 )
+                {
+                    TxSizeSetter setSize = new TxSizeSetter( logs.length );
+                    Arrays.stream( logs ).mapToLong( name -> new File( txLogs.toFile(), name ).length() ).max().ifPresent( setSize );
+                    txLogSize = setSize.txLogSize;
+                }
+            }
+            else
+            {
+                throw new IllegalArgumentException( "Cannot determine size of transaction logs: " + txLogs + " is not a directory" );
+            }
+        }
+        return txLogSize;
+    }
+
+    private static class TxSizeSetter implements LongConsumer
+    {
+        long txLogSize;
+        final long count;
+
+        TxSizeSetter( int count )
+        {
+            this.count = count;
+        }
+
+        public void accept( long size )
+        {
+            // After uploading a full database, the transaction logs were observed to be truncated to 10 files
+            txLogSize = Math.min( 10, count ) * size;
+        }
     }
 
     public static long readSizeFromDumpMetaData( Path dump )
@@ -298,13 +376,28 @@ public class PushToCloudCommand extends AbstractCommand
 
     public static class Source
     {
-        final Path path;
-        final Size size;
+        private final Path path;
+        private Size size;
 
         public Source( Path path, Size size )
         {
             this.path = path;
             this.size = size;
+        }
+
+        public Path path()
+        {
+            return path;
+        }
+
+        public Size size()
+        {
+            return size;
+        }
+
+        protected void setSize( Size newSize )
+        {
+            this.size = newSize;
         }
 
         @Override
@@ -331,8 +424,8 @@ public class PushToCloudCommand extends AbstractCommand
     public static class Size
     {
         public static final long COMPRESSION = 4;
-        final Optional<Long> dumpSize;
-        final Optional<Long> fullSize;
+        private final Optional<Long> dumpSize;
+        private final Optional<Long> fullSize;
 
         private Size( Optional<Long> dumpSize, Optional<Long> fullSize )
         {
