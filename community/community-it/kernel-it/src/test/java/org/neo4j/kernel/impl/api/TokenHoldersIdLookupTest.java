@@ -232,6 +232,10 @@ class TokenHoldersIdLookupTest
         ids = idLookup.getFunctionIds( "tes*.func??" );
         assertThat( ids ).hasSize( 1 );
         assertThat( ids[0] ).isEqualTo( funcName2id.get( "test.func42" ) );
+
+        ids = idLookup.getFunctionIds( "tes*.fun?42" );
+        assertThat( ids ).hasSize( 1 );
+        assertThat( ids[0] ).isEqualTo( funcName2id.get( "test.func42" ) );
     }
 
     public static class TestProcedures

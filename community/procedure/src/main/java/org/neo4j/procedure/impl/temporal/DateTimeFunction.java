@@ -91,8 +91,8 @@ class DateTimeFunction extends TemporalFunction<DateTimeValue>
     @Override
     void registerMore( GlobalProcedures globalProcedures ) throws ProcedureException
     {
-        globalProcedures.registerBuiltInFunctions( new FromEpoch() );
-        globalProcedures.registerBuiltInFunctions( new FromEpochMillis() );
+        globalProcedures.registerBuiltIn( new FromEpoch() );
+        globalProcedures.registerBuiltIn( new FromEpochMillis() );
     }
 
     private static class FromEpoch implements CallableUserFunction

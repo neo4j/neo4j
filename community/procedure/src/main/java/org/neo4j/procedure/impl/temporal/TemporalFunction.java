@@ -110,11 +110,11 @@ public abstract class TemporalFunction<T extends AnyValue> implements CallableUs
 
     private static void register( TemporalFunction<?> base, GlobalProcedures globalProcedures ) throws ProcedureException
     {
-        globalProcedures.registerBuiltInFunctions( base );
-        globalProcedures.registerBuiltInFunctions( new Now<>( base, "transaction" ) );
-        globalProcedures.registerBuiltInFunctions( new Now<>( base, "statement" ) );
-        globalProcedures.registerBuiltInFunctions( new Now<>( base, "realtime" ) );
-        globalProcedures.registerBuiltInFunctions( new Truncate<>( base ) );
+        globalProcedures.registerBuiltIn( base );
+        globalProcedures.registerBuiltIn( new Now<>( base, "transaction" ) );
+        globalProcedures.registerBuiltIn( new Now<>( base, "statement" ) );
+        globalProcedures.registerBuiltIn( new Now<>( base, "realtime" ) );
+        globalProcedures.registerBuiltIn( new Truncate<>( base ) );
         base.registerMore( globalProcedures );
     }
 

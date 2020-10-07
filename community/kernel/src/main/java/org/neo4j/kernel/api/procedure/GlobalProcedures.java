@@ -47,6 +47,8 @@ public interface GlobalProcedures
 
     void register( CallableUserFunction function, boolean overrideCurrentImplementation ) throws ProcedureException;
 
+    void registerBuiltIn( CallableUserFunction function ) throws ProcedureException;
+
     void register( CallableUserAggregationFunction function, boolean overrideCurrentImplementation ) throws ProcedureException;
 
     void register( CallableProcedure proc, boolean overrideCurrentImplementation ) throws ProcedureException;
@@ -58,8 +60,6 @@ public interface GlobalProcedures
     void registerProcedure( Class<?> proc, boolean overrideCurrentImplementation, String warning ) throws KernelException;
 
     void registerBuiltInFunctions( Class<?> func ) throws KernelException;
-
-    void registerBuiltInFunctions( CallableUserFunction function ) throws ProcedureException;
 
     void registerFunction( Class<?> func ) throws KernelException;
 

@@ -96,6 +96,13 @@ public class LazyProcedures implements GlobalProcedures, Consumer<Supplier<Globa
     }
 
     @Override
+    public void registerBuiltIn( CallableUserFunction function ) throws ProcedureException
+    {
+        init();
+        globalProcedures.registerBuiltIn( function );
+    }
+
+    @Override
     public void register( CallableUserAggregationFunction function, boolean overrideCurrentImplementation ) throws ProcedureException
     {
         init();
@@ -135,13 +142,6 @@ public class LazyProcedures implements GlobalProcedures, Consumer<Supplier<Globa
     {
         init();
         globalProcedures.registerBuiltInFunctions( func );
-    }
-
-    @Override
-    public void registerBuiltInFunctions( CallableUserFunction function ) throws ProcedureException
-    {
-        init();
-        globalProcedures.registerBuiltInFunctions( function );
     }
 
     @Override

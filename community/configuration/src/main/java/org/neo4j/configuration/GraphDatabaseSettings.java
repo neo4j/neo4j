@@ -766,7 +766,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration
             "by the `" + "dbms.security.procedures.roles" + "` setting. " +
             "This setting (if not empty string) will be translated to 'GRANT EXECUTE BOOSTED PROCEDURE *' " +
             "and 'GRANT EXECUTE BOOSTED FUNCTION *' for that role. " +
-            "If `" + "dbms.security.procedures.roles" + "`is not empty, any procedure/function that this role is not mapped to will result in a " +
+            "If `" + "dbms.security.procedures.roles" + "`is not empty, any procedure or function that this role is not mapped to will result in a " +
             "'DENY EXECUTE BOOSTED PROCEDURE name' and 'DENY EXECUTE BOOSTED FUNCTION name' for this role. " +
             "Any privilege mapped in this way cannot be revoked, instead the config must be changed and will take effect after a restart." +
             "Deprecated: Replaced by EXECUTE PROCEDURE, EXECUTE BOOSTED PROCEDURE, EXECUTE FUNCTION and EXECUTE BOOSTED FUNCTION privileges." )

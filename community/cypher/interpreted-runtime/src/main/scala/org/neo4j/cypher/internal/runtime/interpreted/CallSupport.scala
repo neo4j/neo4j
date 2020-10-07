@@ -77,12 +77,4 @@ object CallSupport {
       }
     }
   }
-
-  // TODO: kill me
-  private def shouldBoostOldWay(transactionalContext: TransactionalContext, allowed: Array[String]): Boolean = {
-    // We have to be careful with elevation, since we cannot elevate permissions in a nested procedure call
-    // above the original allowed procedure mode. We enforce this by checking if mode is already an overridden mode.
-    val accessMode = transactionalContext.securityContext.mode()
-    allowed.nonEmpty && !accessMode.isOverridden && accessMode.shouldBoostAccessForProcedureWith(allowed)
-  }
 }

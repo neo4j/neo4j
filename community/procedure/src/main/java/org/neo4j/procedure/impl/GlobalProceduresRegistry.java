@@ -121,12 +121,17 @@ public class GlobalProceduresRegistry extends LifecycleAdapter implements Global
     @Override
     public void register( CallableUserFunction function, boolean overrideCurrentImplementation ) throws ProcedureException
     {
-        register( function, overrideCurrentImplementation, false );
+        registry.register( function, overrideCurrentImplementation, false );
     }
 
-    private void register( CallableUserFunction function, boolean overrideCurrentImplementation, boolean builtIn ) throws ProcedureException
+    /**
+     * Register a new built in function. This method must not be called concurrently with {@link #function(QualifiedName)}.
+     * @param function the function.
+     */
+    @Override
+    public void registerBuiltIn( CallableUserFunction function ) throws ProcedureException
     {
-        registry.register( function, overrideCurrentImplementation, builtIn );
+        registry.register( function, false, true );
     }
 
     /**
@@ -196,12 +201,6 @@ public class GlobalProceduresRegistry extends LifecycleAdapter implements Global
         {
             register( function, false );
         }
-    }
-
-    @Override
-    public void registerBuiltInFunctions( CallableUserFunction function ) throws ProcedureException
-    {
-        register( function, false, true );
     }
 
     /**

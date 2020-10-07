@@ -27,7 +27,6 @@ import java.util.Optional;
 import org.neo4j.internal.helpers.collection.Iterables;
 
 import static java.util.Collections.unmodifiableList;
-import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTAny;
 
 /**
  * This describes the signature of a function, made up of its namespace, name, and input/output description.
@@ -213,10 +212,5 @@ public final class UserFunctionSignature
     public static Builder functionSignature( String[] namespace, String name )
     {
         return new Builder( namespace, name );
-    }
-
-    public static QualifiedName functionName( String... namespaceAndName )
-    {
-        return functionSignature( namespaceAndName ).out( NTAny ).build().name();
     }
 }
