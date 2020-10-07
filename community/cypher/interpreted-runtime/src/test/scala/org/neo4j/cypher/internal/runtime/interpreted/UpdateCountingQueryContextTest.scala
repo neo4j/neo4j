@@ -196,13 +196,13 @@ class UpdateCountingQueryContextTest extends CypherFunSuite {
   }
 
   test("create_unique_constraint") {
-    context.createUniqueConstraint(0, Array(1), None)
+    context.createUniqueConstraint(0, Array(1), None, None, IndexConfig.empty)
 
     context.getStatistics should equal(QueryStatistics(uniqueConstraintsAdded = 1))
   }
 
   test("create_unique_constraint with name") {
-    context.createUniqueConstraint(0, Array(1), Some("name"))
+    context.createUniqueConstraint(0, Array(1), Some("name"), None, IndexConfig.empty)
 
     context.getStatistics should equal(QueryStatistics(uniqueConstraintsAdded = 1))
   }
@@ -250,13 +250,13 @@ class UpdateCountingQueryContextTest extends CypherFunSuite {
   }
 
   test("create node key constraint") {
-    context.createNodeKeyConstraint(0, Array(1), None)
+    context.createNodeKeyConstraint(0, Array(1), None, None, IndexConfig.empty)
 
     context.getStatistics should equal(QueryStatistics(nodekeyConstraintsAdded = 1))
   }
 
   test("create node key constraint with name") {
-    context.createNodeKeyConstraint(0, Array(1), Some("name"))
+    context.createNodeKeyConstraint(0, Array(1), Some("name"), None, IndexConfig.empty)
 
     context.getStatistics should equal(QueryStatistics(nodekeyConstraintsAdded = 1))
   }

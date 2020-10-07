@@ -612,31 +612,37 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   }
 
   test("CreateUniquePropertyConstraint") {
-    assertGood(attach(CreateUniquePropertyConstraint(None, " x", label("Label"), Seq(prop(" x", "prop")), None), 63.2),
+    assertGood(attach(CreateUniquePropertyConstraint(None, " x", label("Label"), Seq(prop(" x", "prop")), None, Map.empty), 63.2),
       planDescription(id, "CreateConstraint", NoChildren, Seq(details("CONSTRAINT ON (` x`:Label) ASSERT (` x`.prop) IS UNIQUE")), Set.empty))
 
-    assertGood(attach(CreateUniquePropertyConstraint(None, "x", label("Label"), Seq(prop("x", "prop")), Some("constraintName")), 63.2),
+    assertGood(attach(CreateUniquePropertyConstraint(None, "x", label("Label"), Seq(prop("x", "prop")), Some("constraintName"), Map.empty), 63.2),
       planDescription(id, "CreateConstraint", NoChildren, Seq(details("CONSTRAINT constraintName ON (x:Label) ASSERT (x.prop) IS UNIQUE")), Set.empty))
 
-    assertGood(attach(CreateUniquePropertyConstraint(None, "x", label("Label"), Seq(prop("x", "prop1"), prop("x", "prop2")), Some("constraintName")), 63.2),
+    assertGood(attach(CreateUniquePropertyConstraint(None, "x", label("Label"), Seq(prop("x", "prop1"), prop("x", "prop2")), Some("constraintName"), Map.empty), 63.2),
       planDescription(id, "CreateConstraint", NoChildren, Seq(details("CONSTRAINT constraintName ON (x:Label) ASSERT (x.prop1, x.prop2) IS UNIQUE")), Set.empty))
 
+    assertGood(attach(CreateUniquePropertyConstraint(None, "x", label("Label"), List(prop("x", "prop")), Some("$constraintName"), Map("indexProvider" -> stringLiteral("native-btree-1.0"))), 63.2),
+      planDescription(id, "CreateConstraint", NoChildren, Seq(details("""CONSTRAINT `$constraintName` ON (x:Label) ASSERT (x.prop) IS UNIQUE OPTIONS {indexProvider: "native-btree-1.0"}""")), Set.empty))
+
     assertGood(attach(CreateUniquePropertyConstraint(Some(DoNothingIfExistsForConstraint(" x", scala.util.Left(label("Label")), Seq(prop(" x", "prop")), Uniqueness, None)),
-      " x", label("Label"), Seq(prop(" x", "prop")), None), 63.2),
+      " x", label("Label"), Seq(prop(" x", "prop")), None, Map.empty), 63.2),
       planDescription(id, "CreateConstraint", SingleChild(
         planDescription(id, "DoNothingIfExists(CONSTRAINT)", NoChildren, Seq(details("CONSTRAINT ON (` x`:Label) ASSERT (` x`.prop) IS UNIQUE")), Set.empty)
       ), Seq(details("CONSTRAINT ON (` x`:Label) ASSERT (` x`.prop) IS UNIQUE")), Set.empty))
   }
 
   test("CreateNodeKeyConstraint") {
-    assertGood(attach(CreateNodeKeyConstraint(None, " x", label("Label"), Seq(prop(" x", "prop")), None), 63.2),
+    assertGood(attach(CreateNodeKeyConstraint(None, " x", label("Label"), Seq(prop(" x", "prop")), None, Map.empty), 63.2),
       planDescription(id, "CreateConstraint", NoChildren, Seq(details("CONSTRAINT ON (` x`:Label) ASSERT (` x`.prop) IS NODE KEY")), Set.empty))
 
-    assertGood(attach(CreateNodeKeyConstraint(None, "x", label("Label"), Seq(prop("x", "prop1"), prop("x", "prop2")), Some("constraintName")), 63.2),
+    assertGood(attach(CreateNodeKeyConstraint(None, "x", label("Label"), Seq(prop("x", "prop1"), prop("x", "prop2")), Some("constraintName"), Map.empty), 63.2),
       planDescription(id, "CreateConstraint", NoChildren, Seq(details("CONSTRAINT constraintName ON (x:Label) ASSERT (x.prop1, x.prop2) IS NODE KEY")), Set.empty))
 
+    assertGood(attach(CreateNodeKeyConstraint(None, "x", label("Label"), List(prop("x", "prop")), Some("$constraintName"), Map("indexProvider" -> stringLiteral("native-btree-1.0"))), 63.2),
+      planDescription(id, "CreateConstraint", NoChildren, Seq(details("""CONSTRAINT `$constraintName` ON (x:Label) ASSERT (x.prop) IS NODE KEY OPTIONS {indexProvider: "native-btree-1.0"}""")), Set.empty))
+
     assertGood(attach(CreateNodeKeyConstraint(Some(DoNothingIfExistsForConstraint(" x", scala.util.Left(label("Label")), Seq(prop(" x", "prop")), NodeKey, Some("constraintName"))),
-      " x", label("Label"), Seq(prop(" x", "prop")), Some("constraintName")), 63.2),
+      " x", label("Label"), Seq(prop(" x", "prop")), Some("constraintName"), Map.empty), 63.2),
       planDescription(id, "CreateConstraint", SingleChild(
         planDescription(id, "DoNothingIfExists(CONSTRAINT)", NoChildren, Seq(details("CONSTRAINT constraintName ON (` x`:Label) ASSERT (` x`.prop) IS NODE KEY")), Set.empty)
       ), Seq(details("CONSTRAINT constraintName ON (` x`:Label) ASSERT (` x`.prop) IS NODE KEY")), Set.empty))

@@ -164,6 +164,7 @@ import org.neo4j.cypher.internal.ast.WriteAction
 import org.neo4j.cypher.internal.ast.Yield
 import org.neo4j.cypher.internal.ast.YieldOrWhere
 import org.neo4j.cypher.internal.expressions.CoerceTo
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.ImplicitProcedureArgument
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.Namespace
@@ -205,6 +206,8 @@ case class Prettifier(
         case IfExistsThrowError    => s"CREATE $schemaType $nameString"
       }
     }
+    def optionsToString(options: Map[String, Expression]) =
+      if (options.nonEmpty) s" OPTIONS ${options.map({ case (s, e) => s"${backtick(s)}: ${expr(e)}" }).mkString("{", ", ", "}")}" else ""
 
     val useString = asString(command.useGraph)
     val commandString = command match {
@@ -214,8 +217,7 @@ case class Prettifier(
 
       case CreateIndex(Variable(variable), LabelName(label), properties, name, ifExistsDo, options, _) =>
         val startOfCommand = getStartOfCommand(name, ifExistsDo, "INDEX")
-        val optionsString = if (options.nonEmpty) s" OPTIONS ${options.map({ case (s, e) => s"${backtick(s)}: ${expr(e)}" }).mkString("{", ", ", "}")}" else ""
-        s"${startOfCommand}FOR (${backtick(variable)}:${backtick(label)}) ON ${propertiesToString(properties)}$optionsString"
+        s"${startOfCommand}FOR (${backtick(variable)}:${backtick(label)}) ON ${propertiesToString(properties)}${optionsToString(options)}"
 
       case DropIndex(LabelName(label), properties, _) =>
         s"DROP INDEX ON :${backtick(label)}${properties.map(p => backtick(p.name)).mkString("(", ", ", ")")}"
@@ -224,16 +226,16 @@ case class Prettifier(
         val ifExistsString = if (ifExists) " IF EXISTS" else ""
         s"DROP INDEX ${backtick(name)}$ifExistsString"
 
-      case CreateNodeKeyConstraint(Variable(variable), LabelName(label), properties, name, ifExistsDo, _) =>
+      case CreateNodeKeyConstraint(Variable(variable), LabelName(label), properties, name, ifExistsDo, options, _) =>
         val startOfCommand = getStartOfCommand(name, ifExistsDo, "CONSTRAINT")
-        s"${startOfCommand}ON (${backtick(variable)}:${backtick(label)}) ASSERT ${propertiesToString(properties)} IS NODE KEY"
+        s"${startOfCommand}ON (${backtick(variable)}:${backtick(label)}) ASSERT ${propertiesToString(properties)} IS NODE KEY${optionsToString(options)}"
 
       case DropNodeKeyConstraint(Variable(variable), LabelName(label), properties, _) =>
         s"DROP CONSTRAINT ON (${backtick(variable)}:${backtick(label)}) ASSERT ${propertiesToString(properties)} IS NODE KEY"
 
-      case CreateUniquePropertyConstraint(Variable(variable), LabelName(label), properties, name, ifExistsDo, _) =>
+      case CreateUniquePropertyConstraint(Variable(variable), LabelName(label), properties, name, ifExistsDo, options, _) =>
         val startOfCommand = getStartOfCommand(name, ifExistsDo, "CONSTRAINT")
-        s"${startOfCommand}ON (${backtick(variable)}:${backtick(label)}) ASSERT ${propertiesToString(properties)} IS UNIQUE"
+        s"${startOfCommand}ON (${backtick(variable)}:${backtick(label)}) ASSERT ${propertiesToString(properties)} IS UNIQUE${optionsToString(options)}"
 
       case DropUniquePropertyConstraint(Variable(variable), LabelName(label), properties, _) =>
         s"DROP CONSTRAINT ON (${backtick(variable)}:${backtick(label)}) ASSERT ${propertiesToString(properties)} IS UNIQUE"

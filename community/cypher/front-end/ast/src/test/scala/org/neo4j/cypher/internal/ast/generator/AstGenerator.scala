@@ -1182,10 +1182,11 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     prop                <- _variableProperty
     name                <- option(_identifier)
     ifExistsDo          <- _ifExistsDo
+    options             <- _mapStringKeys
     use                 <- option(_use)
-    nodeKey             = CreateNodeKeyConstraint(variable, labelName, props, name, ifExistsDo, use)(pos)
-    uniqueness          = CreateUniquePropertyConstraint(variable, labelName, Seq(prop), name, ifExistsDo, use)(pos)
-    compositeUniqueness = CreateUniquePropertyConstraint(variable, labelName, props, name, ifExistsDo, use)(pos)
+    nodeKey             = CreateNodeKeyConstraint(variable, labelName, props, name, ifExistsDo, options, use)(pos)
+    uniqueness          = CreateUniquePropertyConstraint(variable, labelName, Seq(prop), name, ifExistsDo, options, use)(pos)
+    compositeUniqueness = CreateUniquePropertyConstraint(variable, labelName, props, name, ifExistsDo, options, use)(pos)
     nodeExistence       = CreateNodePropertyExistenceConstraint(variable, labelName, prop, name, ifExistsDo, use)(pos)
     relExistence        = CreateRelationshipPropertyExistenceConstraint(variable, relTypeName, prop, name, ifExistsDo, use)(pos)
     command             <- oneOf(nodeKey, uniqueness, compositeUniqueness, nodeExistence, relExistence)

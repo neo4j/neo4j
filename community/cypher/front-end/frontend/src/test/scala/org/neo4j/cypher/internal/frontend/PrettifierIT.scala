@@ -240,6 +240,21 @@ class PrettifierIT extends CypherFunSuite {
       "create CONSTRAINT `$foo` ON (n:A) ASSERT (n.p1, n.p2) IS NODE KEY" ->
         "CREATE CONSTRAINT `$foo` ON (n:A) ASSERT (n.p1, n.p2) IS NODE KEY",
 
+      "CREATE constraint ON (n:A) ASSERT (n.p) IS NODE KEY OPtiONS {indexProvider: 'native-btree-1.0'}" ->
+        """CREATE CONSTRAINT ON (n:A) ASSERT (n.p) IS NODE KEY OPTIONS {indexProvider: "native-btree-1.0"}""",
+
+      "create CONSTRAINT myConstraint ON (n:A) assert (n.p) IS NODE KEY OPTIONS {`indexProvider`: 'lucene+native-3.0', indexConfig: {`spatial.cartesian.max`: [100.0,100.0], `spatial.cartesian.min`: [-100.0,-100.0] }}" ->
+        """CREATE CONSTRAINT myConstraint ON (n:A) ASSERT (n.p) IS NODE KEY OPTIONS {indexProvider: "lucene+native-3.0", indexConfig: {`spatial.cartesian.max`: [100.0, 100.0], `spatial.cartesian.min`: [-100.0, -100.0]}}""",
+
+      "create CONSTRAINT ON (n:A) assert (n.p) IS NODE KEY OPTIONS {indexConfig: {`spatial.wgs-84.max`: [60.0,40.0], `spatial.wgs-84.min`: [-60.0,-40.0] }}" ->
+        """CREATE CONSTRAINT ON (n:A) ASSERT (n.p) IS NODE KEY OPTIONS {indexConfig: {`spatial.wgs-84.max`: [60.0, 40.0], `spatial.wgs-84.min`: [-60.0, -40.0]}}""",
+
+      "CREATE constraint ON (n:A) ASSERT (n.p) IS NODE KEY OPtiONS {nonValidOption : 42, `backticks.stays.when.needed`: 'theAnswer'}" ->
+        """CREATE CONSTRAINT ON (n:A) ASSERT (n.p) IS NODE KEY OPTIONS {nonValidOption: 42, `backticks.stays.when.needed`: "theAnswer"}""",
+
+      "CREATE constraint ON (n:A) ASSERT (n.p) IS NODE KEY OPtiONS {}" ->
+        """CREATE CONSTRAINT ON (n:A) ASSERT (n.p) IS NODE KEY""",
+
       "drop CONSTRAINT ON (n:A) ASSERT (n.p) IS NODE KEY" ->
         "DROP CONSTRAINT ON (n:A) ASSERT (n.p) IS NODE KEY",
 
@@ -263,6 +278,21 @@ class PrettifierIT extends CypherFunSuite {
 
       "create or REPLACE CONSTRAINT foo ON (n:A) ASSERT n.p IS UNIQUE" ->
         "CREATE OR REPLACE CONSTRAINT foo ON (n:A) ASSERT (n.p) IS UNIQUE",
+
+      "CREATE constraint ON (n:A) ASSERT (n.p) IS UNIQUE OPtiONS {indexProvider: 'native-btree-1.0'}" ->
+        """CREATE CONSTRAINT ON (n:A) ASSERT (n.p) IS UNIQUE OPTIONS {indexProvider: "native-btree-1.0"}""",
+
+      "create CONSTRAINT myConstraint ON (n:A) assert (n.p) IS UNIQUE OPTIONS {`indexProvider`: 'lucene+native-3.0', indexConfig: {`spatial.cartesian.max`: [100.0,100.0], `spatial.cartesian.min`: [-100.0,-100.0] }}" ->
+        """CREATE CONSTRAINT myConstraint ON (n:A) ASSERT (n.p) IS UNIQUE OPTIONS {indexProvider: "lucene+native-3.0", indexConfig: {`spatial.cartesian.max`: [100.0, 100.0], `spatial.cartesian.min`: [-100.0, -100.0]}}""",
+
+      "create CONSTRAINT ON (n:A) assert (n.p) IS UNIQUE OPTIONS {indexConfig: {`spatial.wgs-84.max`: [60.0,40.0], `spatial.wgs-84.min`: [-60.0,-40.0] }}" ->
+        """CREATE CONSTRAINT ON (n:A) ASSERT (n.p) IS UNIQUE OPTIONS {indexConfig: {`spatial.wgs-84.max`: [60.0, 40.0], `spatial.wgs-84.min`: [-60.0, -40.0]}}""",
+
+      "CREATE constraint ON (n:A) ASSERT (n.p) IS UNIQUE OPtiONS {nonValidOption : 42, `backticks.stays.when.needed`: 'theAnswer'}" ->
+        """CREATE CONSTRAINT ON (n:A) ASSERT (n.p) IS UNIQUE OPTIONS {nonValidOption: 42, `backticks.stays.when.needed`: "theAnswer"}""",
+
+      "CREATE constraint ON (n:A) ASSERT (n.p) IS UNIQUE OPtiONS {}" ->
+        """CREATE CONSTRAINT ON (n:A) ASSERT (n.p) IS UNIQUE""",
 
       "create CONSTRAINT ON (n:A) ASSERT (n.p1, n.p2) IS UNIQUE" ->
         "CREATE CONSTRAINT ON (n:A) ASSERT (n.p1, n.p2) IS UNIQUE",

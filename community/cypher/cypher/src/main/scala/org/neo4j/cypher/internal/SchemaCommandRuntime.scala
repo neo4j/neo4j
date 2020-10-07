@@ -65,6 +65,7 @@ import org.neo4j.graphdb.schema.IndexSettingImpl.FULLTEXT_ANALYZER
 import org.neo4j.graphdb.schema.IndexSettingImpl.FULLTEXT_EVENTUALLY_CONSISTENT
 import org.neo4j.graphdb.schema.IndexSettingUtil
 import org.neo4j.internal.schema.ConstraintDescriptor
+import org.neo4j.internal.schema.IndexConfig
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException
 import org.neo4j.kernel.impl.index.schema.FulltextIndexProviderFactory
 import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider
@@ -97,12 +98,13 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
     } else None
 
   val logicalToExecutable: PartialFunction[LogicalPlan, (RuntimeContext, ParameterMapping) => ExecutionPlan] = {
-    // CREATE CONSTRAINT ON (node:Label) ASSERT (node.prop1,node.prop2) IS NODE KEY
-    case CreateNodeKeyConstraint(source, _, label, props, name) => (context, parameterMapping) =>
+    // CREATE CONSTRAINT [name] [IF NOT EXISTS] ON (node:Label) ASSERT (node.prop1,node.prop2) IS NODE KEY [OPTIONS {...}]
+    case CreateNodeKeyConstraint(source, _, label, props, name, options) => (context, parameterMapping) =>
       SchemaWriteExecutionPlan("CreateNodeKeyConstraint", ctx => {
+        val (indexProvider, indexConfig) = getValidProviderAndConfig(options, "node key constraint")
         val labelId = ctx.getOrCreateLabelId(label.name)
         val propertyKeyIds = props.map(p => propertyToId(ctx)(p.propertyKey).id)
-        ctx.createNodeKeyConstraint(labelId, propertyKeyIds, name)
+        ctx.createNodeKeyConstraint(labelId, propertyKeyIds, name, indexProvider, indexConfig)
         SuccessResult
       }, source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context, parameterMapping)))
 
@@ -115,13 +117,14 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
         SuccessResult
       })
 
-    // CREATE CONSTRAINT ON (node:Label) ASSERT node.prop IS UNIQUE
-    // CREATE CONSTRAINT ON (node:Label) ASSERT (node.prop1,node.prop2) IS UNIQUE
-    case CreateUniquePropertyConstraint(source, _, label, props, name) => (context, parameterMapping) =>
+    // CREATE CONSTRAINT [name] [IF NOT EXISTS] ON (node:Label) ASSERT node.prop IS UNIQUE [OPTIONS {...}]
+    // CREATE CONSTRAINT [name] [IF NOT EXISTS] ON (node:Label) ASSERT (node.prop1,node.prop2) IS UNIQUE [OPTIONS {...}]
+    case CreateUniquePropertyConstraint(source, _, label, props, name, options) => (context, parameterMapping) =>
       SchemaWriteExecutionPlan("CreateUniqueConstraint", ctx => {
+        val (indexProvider, indexConfig) = getValidProviderAndConfig(options, "uniqueness constraint")
         val labelId = ctx.getOrCreateLabelId(label.name)
         val propertyKeyIds = props.map(p => propertyToId(ctx)(p.propertyKey).id)
-        ctx.createUniqueConstraint(labelId, propertyKeyIds, name)
+        ctx.createUniqueConstraint(labelId, propertyKeyIds, name, indexProvider, indexConfig)
         SuccessResult
       }, source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context, parameterMapping)))
 
@@ -135,34 +138,35 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
         SuccessResult
       })
 
-    // CREATE CONSTRAINT ON (node:Label) ASSERT node.prop EXISTS
+    // CREATE CONSTRAINT [name] [IF NOT EXISTS] ON (node:Label) ASSERT EXISTS node.prop
     case CreateNodePropertyExistenceConstraint(source, label, prop, name) => (context, parameterMapping) =>
       SchemaWriteExecutionPlan("CreateNodePropertyExistenceConstraint", ctx => {
         (ctx.createNodePropertyExistenceConstraint _).tupled(labelPropWithName(ctx)(label, prop.propertyKey, name))
         SuccessResult
       }, source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context, parameterMapping)))
 
-    // DROP CONSTRAINT ON (node:Label) ASSERT node.prop EXISTS
+    // DROP CONSTRAINT ON (node:Label) ASSERT EXISTS node.prop
     case DropNodePropertyExistenceConstraint(label, prop) => (_, _) =>
       SchemaWriteExecutionPlan("DropNodePropertyExistenceConstraint", ctx => {
         (ctx.dropNodePropertyExistenceConstraint _).tupled(labelProp(ctx)(label, prop.propertyKey))
         SuccessResult
       })
 
-    // CREATE CONSTRAINT ON ()-[r:R]-() ASSERT r.prop EXISTS
+    // CREATE CONSTRAINT [name] [IF NOT EXISTS] ON ()-[r:R]-() ASSERT EXISTS r.prop
     case CreateRelationshipPropertyExistenceConstraint(source, relType, prop, name) => (context, parameterMapping) =>
       SchemaWriteExecutionPlan("CreateRelationshipPropertyExistenceConstraint", ctx => {
         (ctx.createRelationshipPropertyExistenceConstraint _).tupled(typePropWithName(ctx)(relType, prop.propertyKey, name))
         SuccessResult
       }, source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context, parameterMapping)))
 
-    // DROP CONSTRAINT ON ()-[r:R]-() ASSERT r.prop EXISTS
+    // DROP CONSTRAINT ON ()-[r:R]-() ASSERT EXISTS r.prop
     case DropRelationshipPropertyExistenceConstraint(relType, prop) => (_, _) =>
       SchemaWriteExecutionPlan("DropRelationshipPropertyExistenceConstraint", ctx => {
         (ctx.dropRelationshipPropertyExistenceConstraint _).tupled(typeProp(ctx)(relType, prop.propertyKey))
         SuccessResult
       })
 
+    // DROP CONSTRAINT name [IF EXISTS]
     case DropConstraintOnName(name, ifExists) => (_, _) =>
       SchemaWriteExecutionPlan("DropConstraint", ctx => {
         if (!ifExists || ctx.constraintExists(name)) {
@@ -174,14 +178,8 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
     // CREATE INDEX ON :LABEL(prop)
     // CREATE INDEX [name] [IF NOT EXISTS] FOR (n:LABEL) ON (n.prop) [OPTIONS {...}]
     case CreateIndex(source, label, props, name, options) => (context, parameterMapping) =>
-      val lowerCaseOptions = options.map { case (k, v) => (k.toLowerCase, v) }
-      val maybeIndexProvider = lowerCaseOptions.get("indexprovider")
-      val maybeConfig = lowerCaseOptions.get("indexconfig")
-
       SchemaWriteExecutionPlan("CreateIndex", ctx => {
-        val indexProvider = if (maybeIndexProvider.isDefined) Some(assertValidIndexProvider(maybeIndexProvider.get)) else None
-        val configMap: java.util.Map[String, Object] = if (maybeConfig.isDefined) assertValidAndTransformConfig(maybeConfig.get) else Collections.emptyMap()
-        val indexConfig = IndexSettingUtil.toIndexConfigFromStringObjectMap(configMap)
+        val (indexProvider, indexConfig) = getValidProviderAndConfig(options, "index")
         val labelId = ctx.getOrCreateLabelId(label.name)
         val propertyKeyIds = props.map(p => propertyToId(ctx)(p).id)
         ctx.addIndexRule(labelId, propertyKeyIds, name, indexProvider, indexConfig)
@@ -264,28 +262,40 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
   private def typePropWithName(ctx: QueryContext)(relType: RelTypeName, prop: PropertyKeyName, name: Option[String]) =
     (ctx.getOrCreateRelTypeId(relType.name), ctx.getOrCreatePropertyKeyId(prop.name), name)
 
-  private def assertValidIndexProvider(indexProvider: Expression): String = indexProvider match {
+  private def getValidProviderAndConfig(options: Map[String, Expression], schemaType: String): (Option[String], IndexConfig) = {
+    val lowerCaseOptions = options.map { case (k, v) => (k.toLowerCase, v) }
+    val maybeIndexProvider = lowerCaseOptions.get("indexprovider")
+    val maybeConfig = lowerCaseOptions.get("indexconfig")
+
+    val indexProvider = if (maybeIndexProvider.isDefined) Some(assertValidIndexProvider(maybeIndexProvider.get, schemaType)) else None
+    val configMap: java.util.Map[String, Object] = if (maybeConfig.isDefined) assertValidAndTransformConfig(maybeConfig.get, schemaType) else Collections.emptyMap()
+    val indexConfig = IndexSettingUtil.toIndexConfigFromStringObjectMap(configMap)
+
+    (indexProvider, indexConfig)
+  }
+
+  private def assertValidIndexProvider(indexProvider: Expression, schemaType: String): String = indexProvider match {
     case s: StringLiteral =>
       val indexProviderValue = s.value
 
       if (indexProviderValue.equalsIgnoreCase(FulltextIndexProviderFactory.DESCRIPTOR.name()))
         throw new InvalidArgumentsException(
-          s"""Could not create index with specified index provider '$indexProviderValue'.
+          s"""Could not create $schemaType with specified index provider '$indexProviderValue'.
              |To create fulltext index, please use 'db.index.fulltext.createNodeIndex' or 'db.index.fulltext.createRelationshipIndex'.""".stripMargin)
 
       if (!indexProviderValue.equalsIgnoreCase(GenericNativeIndexProvider.DESCRIPTOR.name()) &&
         !indexProviderValue.equalsIgnoreCase(NativeLuceneFusionIndexProviderFactory30.DESCRIPTOR.name()))
-        throw new InvalidArgumentsException(s"Could not create index with specified index provider '$indexProviderValue'.")
+        throw new InvalidArgumentsException(s"Could not create $schemaType with specified index provider '$indexProviderValue'.")
 
       indexProviderValue
 
     case _ =>
-      throw new InvalidArgumentsException(s"Could not create index with specified index provider '${indexProvider.asCanonicalStringVal}'. Expected String value.")
+      throw new InvalidArgumentsException(s"Could not create $schemaType with specified index provider '${indexProvider.asCanonicalStringVal}'. Expected String value.")
   }
 
-  private def assertValidAndTransformConfig(config: Expression): java.util.Map[String, Object] = {
+  private def assertValidAndTransformConfig(config: Expression, schemaType: String): java.util.Map[String, Object] = {
     val exceptionWrongType =
-      new InvalidArgumentsException(s"Could not create index with specified index config '${config.asCanonicalStringVal}'. Expected a map from String to Double[].")
+      new InvalidArgumentsException(s"Could not create $schemaType with specified index config '${config.asCanonicalStringVal}'. Expected a map from String to Double[].")
 
     // for indexProvider BTREE:
     //    current keys: spatial.* (cartesian.|cartesian-3d.|wgs-84.|wgs-84-3d.) + (min|max)
@@ -294,7 +304,7 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
       case MapExpression(items) =>
         if (items.exists { case (p, _) => p.name.equalsIgnoreCase(FULLTEXT_ANALYZER.getSettingName) || p.name.equalsIgnoreCase(FULLTEXT_EVENTUALLY_CONSISTENT.getSettingName) })
           throw new InvalidArgumentsException(
-            s"""Could not create index with specified index config '${config.asCanonicalStringVal}', contains fulltext config options.
+            s"""Could not create $schemaType with specified index config '${config.asCanonicalStringVal}', contains fulltext config options.
                |To create fulltext index, please use 'db.index.fulltext.createNodeIndex' or 'db.index.fulltext.createRelationshipIndex'.""".stripMargin)
 
         items.map {

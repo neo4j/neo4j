@@ -110,57 +110,57 @@ trait SchemaCommand extends Parser
 
   def CreateUniqueConstraint: Rule1[ast.CreateUniquePropertyConstraint] = rule {
     // without name
-    group(keyword("CREATE OR REPLACE CONSTRAINT IF NOT EXISTS") ~~ UniqueConstraintSyntax) ~~>>
-      ((variable, label, property) => ast.CreateUniquePropertyConstraint(variable, label, Seq(property), None, IfExistsInvalidSyntax)) |
-    group(keyword("CREATE OR REPLACE CONSTRAINT") ~~ UniqueConstraintSyntax) ~~>>
-      ((variable, label, property) => ast.CreateUniquePropertyConstraint(variable, label, Seq(property), None, IfExistsReplace)) |
-    group(keyword("CREATE CONSTRAINT IF NOT EXISTS") ~~ UniqueConstraintSyntax) ~~>>
-      ((variable, label, property) => ast.CreateUniquePropertyConstraint(variable, label, Seq(property), None, IfExistsDoNothing)) |
-    group(keyword("CREATE CONSTRAINT") ~~ UniqueConstraintSyntax) ~~>>
-      ((variable, label, property) => ast.CreateUniquePropertyConstraint(variable, label, Seq(property), None, IfExistsThrowError)) |
+    group(keyword("CREATE OR REPLACE CONSTRAINT IF NOT EXISTS") ~~ UniqueConstraintWithOptionsSyntax) ~~>>
+      ((variable, label, property, options) => ast.CreateUniquePropertyConstraint(variable, label, Seq(property), None, IfExistsInvalidSyntax, options)) |
+    group(keyword("CREATE OR REPLACE CONSTRAINT") ~~ UniqueConstraintWithOptionsSyntax) ~~>>
+      ((variable, label, property, options) => ast.CreateUniquePropertyConstraint(variable, label, Seq(property), None, IfExistsReplace, options)) |
+    group(keyword("CREATE CONSTRAINT IF NOT EXISTS") ~~ UniqueConstraintWithOptionsSyntax) ~~>>
+      ((variable, label, property, options) => ast.CreateUniquePropertyConstraint(variable, label, Seq(property), None, IfExistsDoNothing, options)) |
+    group(keyword("CREATE CONSTRAINT") ~~ UniqueConstraintWithOptionsSyntax) ~~>>
+      ((variable, label, property, options) => ast.CreateUniquePropertyConstraint(variable, label, Seq(property), None, IfExistsThrowError, options)) |
     // with name
-    group(keyword("CREATE OR REPLACE CONSTRAINT") ~~ SymbolicNameString ~~ keyword("IF NOT EXISTS") ~~ UniqueConstraintSyntax) ~~>>
-      ((name, variable, label, property) => ast.CreateUniquePropertyConstraint(variable, label, Seq(property), Some(name), IfExistsInvalidSyntax)) |
-    group(keyword("CREATE OR REPLACE CONSTRAINT") ~~ SymbolicNameString ~~ UniqueConstraintSyntax) ~~>>
-      ((name, variable, label, property) => ast.CreateUniquePropertyConstraint(variable, label, Seq(property), Some(name), IfExistsReplace)) |
-    group(keyword("CREATE CONSTRAINT") ~~ SymbolicNameString ~~ keyword("IF NOT EXISTS") ~~ UniqueConstraintSyntax) ~~>>
-      ((name, variable, label, property) => ast.CreateUniquePropertyConstraint(variable, label, Seq(property), Some(name), IfExistsDoNothing)) |
-    group(keyword("CREATE CONSTRAINT") ~~ SymbolicNameString ~~ UniqueConstraintSyntax) ~~>>
-      ((name, variable, label, property) => ast.CreateUniquePropertyConstraint(variable, label, Seq(property), Some(name), IfExistsThrowError))
+    group(keyword("CREATE OR REPLACE CONSTRAINT") ~~ SymbolicNameString ~~ keyword("IF NOT EXISTS") ~~ UniqueConstraintWithOptionsSyntax) ~~>>
+      ((name, variable, label, property, options) => ast.CreateUniquePropertyConstraint(variable, label, Seq(property), Some(name), IfExistsInvalidSyntax, options)) |
+    group(keyword("CREATE OR REPLACE CONSTRAINT") ~~ SymbolicNameString ~~ UniqueConstraintWithOptionsSyntax) ~~>>
+      ((name, variable, label, property, options) => ast.CreateUniquePropertyConstraint(variable, label, Seq(property), Some(name), IfExistsReplace, options)) |
+    group(keyword("CREATE CONSTRAINT") ~~ SymbolicNameString ~~ keyword("IF NOT EXISTS") ~~ UniqueConstraintWithOptionsSyntax) ~~>>
+      ((name, variable, label, property, options) => ast.CreateUniquePropertyConstraint(variable, label, Seq(property), Some(name), IfExistsDoNothing, options)) |
+    group(keyword("CREATE CONSTRAINT") ~~ SymbolicNameString ~~ UniqueConstraintWithOptionsSyntax) ~~>>
+      ((name, variable, label, property, options) => ast.CreateUniquePropertyConstraint(variable, label, Seq(property), Some(name), IfExistsThrowError, options))
   }
 
   def CreateUniqueCompositeConstraint: Rule1[ast.CreateUniquePropertyConstraint] = rule {
     // without name
-    group(keyword("CREATE OR REPLACE CONSTRAINT IF NOT EXISTS") ~~ UniqueCompositeConstraintSyntax) ~~>> (ast.CreateUniquePropertyConstraint(_, _, _, None, IfExistsInvalidSyntax)) |
-    group(keyword("CREATE OR REPLACE CONSTRAINT") ~~ UniqueCompositeConstraintSyntax) ~~>> (ast.CreateUniquePropertyConstraint(_, _, _, None, IfExistsReplace)) |
-    group(keyword("CREATE CONSTRAINT IF NOT EXISTS") ~~ UniqueCompositeConstraintSyntax) ~~>> (ast.CreateUniquePropertyConstraint(_, _, _, None, IfExistsDoNothing)) |
-    group(keyword("CREATE CONSTRAINT") ~~ UniqueCompositeConstraintSyntax) ~~>> (ast.CreateUniquePropertyConstraint(_, _, _, None, IfExistsThrowError)) |
+    group(keyword("CREATE OR REPLACE CONSTRAINT IF NOT EXISTS") ~~ UniqueCompositeConstraintWithOptionsSyntax) ~~>> (ast.CreateUniquePropertyConstraint(_, _, _, None, IfExistsInvalidSyntax, _)) |
+    group(keyword("CREATE OR REPLACE CONSTRAINT") ~~ UniqueCompositeConstraintWithOptionsSyntax) ~~>> (ast.CreateUniquePropertyConstraint(_, _, _, None, IfExistsReplace, _)) |
+    group(keyword("CREATE CONSTRAINT IF NOT EXISTS") ~~ UniqueCompositeConstraintWithOptionsSyntax) ~~>> (ast.CreateUniquePropertyConstraint(_, _, _, None, IfExistsDoNothing, _)) |
+    group(keyword("CREATE CONSTRAINT") ~~ UniqueCompositeConstraintWithOptionsSyntax) ~~>> (ast.CreateUniquePropertyConstraint(_, _, _, None, IfExistsThrowError, _)) |
     // with name
-    group(keyword("CREATE OR REPLACE CONSTRAINT") ~~ SymbolicNameString ~~ keyword("IF NOT EXISTS") ~~ UniqueCompositeConstraintSyntax) ~~>>
-      ((name, variable, labelName, properties) => ast.CreateUniquePropertyConstraint(variable, labelName, properties, Some(name), IfExistsInvalidSyntax)) |
-    group(keyword("CREATE OR REPLACE CONSTRAINT") ~~ SymbolicNameString ~~ UniqueCompositeConstraintSyntax) ~~>>
-      ((name, variable, labelName, properties) => ast.CreateUniquePropertyConstraint(variable, labelName, properties, Some(name), IfExistsReplace)) |
-    group(keyword("CREATE CONSTRAINT") ~~ SymbolicNameString ~~ keyword("IF NOT EXISTS") ~~ UniqueCompositeConstraintSyntax) ~~>>
-      ((name, variable, labelName, properties) => ast.CreateUniquePropertyConstraint(variable, labelName, properties, Some(name), IfExistsDoNothing)) |
-    group(keyword("CREATE CONSTRAINT") ~~ SymbolicNameString ~~ UniqueCompositeConstraintSyntax) ~~>>
-      ((name, variable, labelName, properties) => ast.CreateUniquePropertyConstraint(variable, labelName, properties, Some(name), IfExistsThrowError))
+    group(keyword("CREATE OR REPLACE CONSTRAINT") ~~ SymbolicNameString ~~ keyword("IF NOT EXISTS") ~~ UniqueCompositeConstraintWithOptionsSyntax) ~~>>
+      ((name, variable, labelName, properties, options) => ast.CreateUniquePropertyConstraint(variable, labelName, properties, Some(name), IfExistsInvalidSyntax, options)) |
+    group(keyword("CREATE OR REPLACE CONSTRAINT") ~~ SymbolicNameString ~~ UniqueCompositeConstraintWithOptionsSyntax) ~~>>
+      ((name, variable, labelName, properties, options) => ast.CreateUniquePropertyConstraint(variable, labelName, properties, Some(name), IfExistsReplace, options)) |
+    group(keyword("CREATE CONSTRAINT") ~~ SymbolicNameString ~~ keyword("IF NOT EXISTS") ~~ UniqueCompositeConstraintWithOptionsSyntax) ~~>>
+      ((name, variable, labelName, properties, options) => ast.CreateUniquePropertyConstraint(variable, labelName, properties, Some(name), IfExistsDoNothing, options)) |
+    group(keyword("CREATE CONSTRAINT") ~~ SymbolicNameString ~~ UniqueCompositeConstraintWithOptionsSyntax) ~~>>
+      ((name, variable, labelName, properties, options) => ast.CreateUniquePropertyConstraint(variable, labelName, properties, Some(name), IfExistsThrowError, options))
   }
 
   def CreateNodeKeyConstraint: Rule1[ast.CreateNodeKeyConstraint] = rule {
     // without name
-    group(keyword("CREATE OR REPLACE CONSTRAINT IF NOT EXISTS") ~~ NodeKeyConstraintSyntax) ~~>> (ast.CreateNodeKeyConstraint(_, _, _, None, IfExistsInvalidSyntax)) |
-    group(keyword("CREATE OR REPLACE CONSTRAINT") ~~ NodeKeyConstraintSyntax) ~~>> (ast.CreateNodeKeyConstraint(_, _, _, None, IfExistsReplace)) |
-    group(keyword("CREATE CONSTRAINT IF NOT EXISTS") ~~ NodeKeyConstraintSyntax) ~~>> (ast.CreateNodeKeyConstraint(_, _, _, None, IfExistsDoNothing)) |
-    group(keyword("CREATE CONSTRAINT") ~~ NodeKeyConstraintSyntax) ~~>> (ast.CreateNodeKeyConstraint(_, _, _, None, IfExistsThrowError)) |
+    group(keyword("CREATE OR REPLACE CONSTRAINT IF NOT EXISTS") ~~ NodeKeyConstraintWithOptionsSyntax) ~~>> (ast.CreateNodeKeyConstraint(_, _, _, None, IfExistsInvalidSyntax, _)) |
+    group(keyword("CREATE OR REPLACE CONSTRAINT") ~~ NodeKeyConstraintWithOptionsSyntax) ~~>> (ast.CreateNodeKeyConstraint(_, _, _, None, IfExistsReplace, _)) |
+    group(keyword("CREATE CONSTRAINT IF NOT EXISTS") ~~ NodeKeyConstraintWithOptionsSyntax) ~~>> (ast.CreateNodeKeyConstraint(_, _, _, None, IfExistsDoNothing, _)) |
+    group(keyword("CREATE CONSTRAINT") ~~ NodeKeyConstraintWithOptionsSyntax) ~~>> (ast.CreateNodeKeyConstraint(_, _, _, None, IfExistsThrowError, _)) |
     // with name
-    group(keyword("CREATE OR REPLACE CONSTRAINT") ~~ SymbolicNameString ~~ keyword("IF NOT EXISTS") ~~ NodeKeyConstraintSyntax) ~~>>
-      ((name, variable, labelName, property) => ast.CreateNodeKeyConstraint(variable, labelName, property, Some(name), IfExistsInvalidSyntax)) |
-    group(keyword("CREATE OR REPLACE CONSTRAINT") ~~ SymbolicNameString ~~ NodeKeyConstraintSyntax) ~~>>
-      ((name, variable, labelName, property) => ast.CreateNodeKeyConstraint(variable, labelName, property, Some(name), IfExistsReplace)) |
-    group(keyword("CREATE CONSTRAINT") ~~ SymbolicNameString ~~ keyword("IF NOT EXISTS") ~~ NodeKeyConstraintSyntax) ~~>>
-      ((name, variable, labelName, property) => ast.CreateNodeKeyConstraint(variable, labelName, property, Some(name), IfExistsDoNothing)) |
-    group(keyword("CREATE CONSTRAINT") ~~ SymbolicNameString ~~ NodeKeyConstraintSyntax) ~~>>
-      ((name, variable, labelName, property) => ast.CreateNodeKeyConstraint(variable, labelName, property, Some(name), IfExistsThrowError))
+    group(keyword("CREATE OR REPLACE CONSTRAINT") ~~ SymbolicNameString ~~ keyword("IF NOT EXISTS") ~~ NodeKeyConstraintWithOptionsSyntax) ~~>>
+      ((name, variable, labelName, property, options) => ast.CreateNodeKeyConstraint(variable, labelName, property, Some(name), IfExistsInvalidSyntax, options)) |
+    group(keyword("CREATE OR REPLACE CONSTRAINT") ~~ SymbolicNameString ~~ NodeKeyConstraintWithOptionsSyntax) ~~>>
+      ((name, variable, labelName, property, options) => ast.CreateNodeKeyConstraint(variable, labelName, property, Some(name), IfExistsReplace, options)) |
+    group(keyword("CREATE CONSTRAINT") ~~ SymbolicNameString ~~ keyword("IF NOT EXISTS") ~~ NodeKeyConstraintWithOptionsSyntax) ~~>>
+      ((name, variable, labelName, property, options) => ast.CreateNodeKeyConstraint(variable, labelName, property, Some(name), IfExistsDoNothing, options)) |
+    group(keyword("CREATE CONSTRAINT") ~~ SymbolicNameString ~~ NodeKeyConstraintWithOptionsSyntax) ~~>>
+      ((name, variable, labelName, property, options) => ast.CreateNodeKeyConstraint(variable, labelName, property, Some(name), IfExistsThrowError, options))
   }
 
   def CreateNodePropertyExistenceConstraint: Rule1[ast.CreateNodePropertyExistenceConstraint] = rule {
@@ -226,11 +226,26 @@ trait SchemaCommand extends Parser
   private def NodeKeyConstraintSyntax: Rule3[Variable, LabelName, Seq[Property]] = keyword("ON") ~~ "(" ~~ Variable ~~ NodeLabel ~~ ")" ~~
     keyword("ASSERT") ~~ "(" ~~ VariablePropertyExpressions ~~ ")" ~~ keyword("IS NODE KEY")
 
+  private def NodeKeyConstraintWithOptionsSyntax: Rule4[Variable, LabelName, Seq[Property], Map[String, Expression]] = rule {
+    NodeKeyConstraintSyntax ~~ options |
+    NodeKeyConstraintSyntax ~> (_ => Map.empty)
+  }
+
   private def UniqueConstraintSyntax: Rule3[Variable, LabelName, Property] = keyword("ON") ~~ "(" ~~ Variable ~~ NodeLabel ~~ ")" ~~
     keyword("ASSERT") ~~ VariablePropertyExpression ~~ keyword("IS UNIQUE")
 
+  private def UniqueConstraintWithOptionsSyntax: Rule4[Variable, LabelName, Property, Map[String, Expression]] = rule {
+    UniqueConstraintSyntax ~~ options |
+    UniqueConstraintSyntax ~> (_ => Map.empty)
+  }
+
   private def UniqueCompositeConstraintSyntax: Rule3[Variable, LabelName, Seq[Property]] = keyword("ON") ~~ "(" ~~ Variable ~~ NodeLabel ~~ ")" ~~
     keyword("ASSERT") ~~ "(" ~~ VariablePropertyExpressions ~~ ")" ~~ keyword("IS UNIQUE")
+
+  private def UniqueCompositeConstraintWithOptionsSyntax: Rule4[Variable, LabelName, Seq[Property], Map[String, Expression]] = rule {
+    UniqueCompositeConstraintSyntax ~~ options |
+    UniqueCompositeConstraintSyntax ~> (_ => Map.empty)
+  }
 
   private def NodePropertyExistenceConstraintSyntax = keyword("ON") ~~ "(" ~~ Variable ~~ NodeLabel ~~ ")" ~~
     keyword("ASSERT EXISTS") ~~ "(" ~~ VariablePropertyExpression ~~ ")"

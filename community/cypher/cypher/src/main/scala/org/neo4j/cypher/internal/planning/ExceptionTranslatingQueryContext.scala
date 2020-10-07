@@ -201,14 +201,14 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def nodeGetTotalDegree(node: Long, relationship: Int, nodeCursor: NodeCursor): Int =
     translateException(tokenNameLookup, inner.nodeGetTotalDegree(node, relationship, nodeCursor))
 
-  override def createNodeKeyConstraint(labelId: Int, propertyKeyIds: Seq[Int], name: Option[String]): Unit =
-    translateException(tokenNameLookup, inner.createNodeKeyConstraint(labelId, propertyKeyIds, name))
+  override def createNodeKeyConstraint(labelId: Int, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[String], indexConfig: IndexConfig): Unit =
+    translateException(tokenNameLookup, inner.createNodeKeyConstraint(labelId, propertyKeyIds, name, provider, indexConfig))
 
   override def dropNodeKeyConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Unit =
     translateException(tokenNameLookup, inner.dropNodeKeyConstraint(labelId, propertyKeyIds))
 
-  override def createUniqueConstraint(labelId: Int, propertyKeyIds: Seq[Int], name: Option[String]): Unit =
-    translateException(tokenNameLookup, inner.createUniqueConstraint(labelId, propertyKeyIds, name))
+  override def createUniqueConstraint(labelId: Int, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[String], indexConfig: IndexConfig): Unit =
+    translateException(tokenNameLookup, inner.createUniqueConstraint(labelId, propertyKeyIds, name, provider, indexConfig))
 
   override def dropUniqueConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Unit =
     translateException(tokenNameLookup, inner.dropUniqueConstraint(labelId, propertyKeyIds))

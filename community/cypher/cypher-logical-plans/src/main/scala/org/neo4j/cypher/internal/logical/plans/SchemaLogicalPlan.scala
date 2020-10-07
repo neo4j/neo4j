@@ -39,12 +39,12 @@ abstract class SchemaLogicalPlan(idGen: IdGen) extends LogicalPlan(idGen) {
 
 }
 
-case class CreateNodeKeyConstraint(source: Option[DoNothingIfExistsForConstraint], node: String, label: LabelName, props: Seq[Property], name: Option[String])(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen) {
+case class CreateNodeKeyConstraint(source: Option[DoNothingIfExistsForConstraint], node: String, label: LabelName, props: Seq[Property], name: Option[String], options: Map[String, Expression])(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen) {
   override def lhs: Option[LogicalPlan] = source
 }
 case class DropNodeKeyConstraint(label: LabelName, props: Seq[Property])(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen)
 
-case class CreateUniquePropertyConstraint(source: Option[DoNothingIfExistsForConstraint], node: String, label: LabelName, props: Seq[Property], name: Option[String])(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen) {
+case class CreateUniquePropertyConstraint(source: Option[DoNothingIfExistsForConstraint], node: String, label: LabelName, props: Seq[Property], name: Option[String], options: Map[String, Expression])(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen) {
   override def lhs: Option[LogicalPlan] = source
 }
 case class DropUniquePropertyConstraint(label: LabelName, props: Seq[Property])(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen)

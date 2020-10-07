@@ -213,14 +213,14 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
     map
   }
 
-  override def createNodeKeyConstraint(labelId: Int, propertyKeyIds: Seq[Int], name: Option[String]): Unit =
-    singleDbHit(inner.createNodeKeyConstraint(labelId, propertyKeyIds, name))
+  override def createNodeKeyConstraint(labelId: Int, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[String], indexConfig: IndexConfig): Unit =
+    singleDbHit(inner.createNodeKeyConstraint(labelId, propertyKeyIds, name, provider, indexConfig))
 
   override def dropNodeKeyConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Unit =
     singleDbHit(inner.dropNodeKeyConstraint(labelId, propertyKeyIds))
 
-  override def createUniqueConstraint(labelId: Int, propertyKeyIds: Seq[Int], name: Option[String]): Unit =
-    singleDbHit(inner.createUniqueConstraint(labelId, propertyKeyIds, name))
+  override def createUniqueConstraint(labelId: Int, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[String], indexConfig: IndexConfig): Unit =
+    singleDbHit(inner.createUniqueConstraint(labelId, propertyKeyIds, name, provider, indexConfig))
 
   override def dropUniqueConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Unit =
     singleDbHit(inner.dropUniqueConstraint(labelId, propertyKeyIds))

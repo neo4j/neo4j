@@ -156,12 +156,12 @@ trait QueryContext extends TokenContext with DbAccess {
   def getNodesByLabelPrimitive(id: Int, indexOrder: IndexOrder): ClosingLongIterator
 
   /* return true if the constraint was created, false if preexisting, throws if failed */
-  def createNodeKeyConstraint(labelId: Int, propertyKeyIds: Seq[Int], name: Option[String]): Unit
+  def createNodeKeyConstraint(labelId: Int, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[String], indexConfig: IndexConfig): Unit
 
   def dropNodeKeyConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Unit
 
   /* return true if the constraint was created, false if preexisting, throws if failed */
-  def createUniqueConstraint(labelId: Int, propertyKeyIds: Seq[Int], name: Option[String]): Unit
+  def createUniqueConstraint(labelId: Int, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[String], indexConfig: IndexConfig): Unit
 
   def dropUniqueConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Unit
 

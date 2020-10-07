@@ -139,8 +139,8 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
     inner.constraintExists(matchFn, entityId, properties: _*)
   }
 
-  override def createNodeKeyConstraint(labelId: Int, propertyKeyIds: Seq[Int], name: Option[String]): Unit = {
-    inner.createNodeKeyConstraint(labelId, propertyKeyIds, name)
+  override def createNodeKeyConstraint(labelId: Int, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[String], indexConfig: IndexConfig): Unit = {
+    inner.createNodeKeyConstraint(labelId, propertyKeyIds, name, provider, indexConfig)
     nodekeyConstraintsAdded.increase()
   }
 
@@ -149,8 +149,8 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
     nodekeyConstraintsRemoved.increase()
   }
 
-  override def createUniqueConstraint(labelId: Int, propertyKeyIds: Seq[Int], name: Option[String]): Unit = {
-    inner.createUniqueConstraint(labelId, propertyKeyIds, name)
+  override def createUniqueConstraint(labelId: Int, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[String], indexConfig: IndexConfig): Unit = {
+    inner.createUniqueConstraint(labelId, propertyKeyIds, name, provider, indexConfig)
     uniqueConstraintsAdded.increase()
   }
 

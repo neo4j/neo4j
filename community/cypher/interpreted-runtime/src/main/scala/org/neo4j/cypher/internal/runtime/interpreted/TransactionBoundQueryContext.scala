@@ -817,17 +817,31 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     transactionalContext.kernelTransaction.schemaRead().constraintsGetForSchema(SchemaDescriptor.forLabel(entityId, properties: _*)).asScala.exists(matchFn) ||
       transactionalContext.kernelTransaction.schemaRead().constraintsGetForSchema(SchemaDescriptor.forRelType(entityId, properties: _*)).asScala.exists(matchFn)
 
-  override def createNodeKeyConstraint(labelId: Int, propertyKeyIds: Seq[Int], name: Option[String]): Unit =
-    transactionalContext.kernelTransaction.schemaWrite().nodeKeyConstraintCreate(
-      IndexPrototype.uniqueForSchema(SchemaDescriptor.forLabel(labelId, propertyKeyIds: _*)).withName(name.orNull))
+  override def createNodeKeyConstraint(labelId: Int,
+                                       propertyKeyIds: Seq[Int],
+                                       name: Option[String],
+                                       provider: Option[String],
+                                       indexConfig: IndexConfig): Unit = {
+    val schemaWrite = transactionalContext.kernelTransaction.schemaWrite()
+    val indexPrototype = if (provider.isEmpty) IndexPrototype.uniqueForSchema(SchemaDescriptor.forLabel(labelId, propertyKeyIds: _*))
+                         else IndexPrototype.uniqueForSchema(SchemaDescriptor.forLabel(labelId, propertyKeyIds: _*), schemaWrite.indexProviderByName(provider.get))
+    schemaWrite.nodeKeyConstraintCreate(indexPrototype.withName(name.orNull).withIndexConfig(indexConfig))
+  }
 
   override def dropNodeKeyConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Unit =
     transactionalContext.kernelTransaction.schemaWrite()
       .constraintDrop(SchemaDescriptor.forLabel(labelId, propertyKeyIds: _*), ConstraintType.UNIQUE_EXISTS)
 
-  override def createUniqueConstraint(labelId: Int, propertyKeyIds: Seq[Int], name: Option[String]): Unit =
-    transactionalContext.kernelTransaction.schemaWrite().uniquePropertyConstraintCreate(
-      IndexPrototype.uniqueForSchema(SchemaDescriptor.forLabel(labelId, propertyKeyIds: _*)).withName(name.orNull))
+  override def createUniqueConstraint(labelId: Int,
+                                      propertyKeyIds: Seq[Int],
+                                      name: Option[String],
+                                      provider: Option[String],
+                                      indexConfig: IndexConfig): Unit = {
+    val schemaWrite = transactionalContext.kernelTransaction.schemaWrite()
+    val indexPrototype = if (provider.isEmpty) IndexPrototype.uniqueForSchema(SchemaDescriptor.forLabel(labelId, propertyKeyIds: _*))
+                         else IndexPrototype.uniqueForSchema(SchemaDescriptor.forLabel(labelId, propertyKeyIds: _*), schemaWrite.indexProviderByName(provider.get))
+    schemaWrite.uniquePropertyConstraintCreate(indexPrototype.withName(name.orNull).withIndexConfig(indexConfig))
+  }
 
   override def dropUniqueConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Unit =
     transactionalContext.kernelTransaction.schemaWrite()
