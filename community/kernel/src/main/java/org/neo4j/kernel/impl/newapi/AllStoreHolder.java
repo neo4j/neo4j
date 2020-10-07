@@ -981,7 +981,7 @@ public class AllStoreHolder extends Read
         if ( !globalProcedures.isBuiltInFunction( id ) && !mode.allowsExecuteFunction( id ) )
         {
             throw new AuthorizationViolationException(
-                    format( "Executing user defined function is not allowed for %s.", ktx.securityContext().description() ) );
+                    format( "Executing a user defined function is not allowed for %s.", ktx.securityContext().description() ) );
         }
 
         final SecurityContext securityContext = mode.shouldBoostFunction( id ) ?
@@ -1002,7 +1002,7 @@ public class AllStoreHolder extends Read
         if ( !globalProcedures.isBuiltInAggregatingFunction( id ) && !mode.allowsExecuteAggregatingFunction( id ) )
         {
             throw new AuthorizationViolationException(
-                    format( "Executing aggregating user defined function is not allowed for %s.", ktx.securityContext().description() ) );
+                    format( "Executing a user defined aggregating function is not allowed for %s.", ktx.securityContext().description() ) );
         }
 
         final SecurityContext securityContext = mode.shouldBoostAggregatingFunction( id ) ?
