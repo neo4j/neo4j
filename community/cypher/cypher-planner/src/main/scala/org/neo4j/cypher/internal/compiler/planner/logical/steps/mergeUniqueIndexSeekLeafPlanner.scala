@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.steps
 import org.neo4j.cypher.internal.ast.UsingIndexHint
 import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlansForVariable
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
+import org.neo4j.cypher.internal.compiler.planner.logical.NoRestrictions
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LabelToken
 import org.neo4j.cypher.internal.ir.QueryGraph
@@ -45,7 +46,7 @@ import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
  *    /  \
  * (ui1) (ui2)
  */
-object mergeUniqueIndexSeekLeafPlanner extends AbstractIndexSeekLeafPlanner {
+object mergeUniqueIndexSeekLeafPlanner extends AbstractIndexSeekLeafPlanner(NoRestrictions) {
 
   override def apply(qg: QueryGraph, interestingOrder: InterestingOrder, context: LogicalPlanningContext): Seq[LogicalPlan] = {
     val resultPlans: Set[LeafPlansForVariable] = producePlanFor(qg.selections.flatPredicates.toSet, qg, interestingOrder, context)

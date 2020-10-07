@@ -43,28 +43,28 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
 object QueryPlannerConfiguration {
 
-  private def leafPlanFromExpressions(symbolsThatShouldOnlyUseIndexLeafPlanners: Set[String]): IndexedSeq[LeafPlanner with LeafPlanFromExpressions] = IndexedSeq(
+  private def leafPlanFromExpressions(restrictions: LeafPlanRestrictions): IndexedSeq[LeafPlanner with LeafPlanFromExpressions] = IndexedSeq(
     // MATCH (n) WHERE id(n) IN ... RETURN n
-    idSeekLeafPlanner(symbolsThatShouldOnlyUseIndexLeafPlanners),
+    idSeekLeafPlanner(restrictions.symbolsThatShouldOnlyUseIndexLeafPlanners),
 
     // MATCH (n) WHERE n.prop IN ... RETURN n
-    indexSeekLeafPlanner,
+    indexSeekLeafPlanner(restrictions),
 
     // MATCH (n) WHERE has(n.prop) RETURN n
     // MATCH (n:Person) WHERE n.prop CONTAINS ...
-    indexScanLeafPlanner(symbolsThatShouldOnlyUseIndexLeafPlanners),
+    indexScanLeafPlanner(restrictions.symbolsThatShouldOnlyUseIndexLeafPlanners),
 
     // MATCH (n:Person) RETURN n
-    labelScanLeafPlanner(symbolsThatShouldOnlyUseIndexLeafPlanners)
+    labelScanLeafPlanner(restrictions.symbolsThatShouldOnlyUseIndexLeafPlanners)
   )
 
-  private def allLeafPlanners(symbolsThatShouldOnlyUseIndexLeafPlanners: Set[String]): IndexedSeq[LeafPlanner] = {
-    val expressionLeafPlanners = leafPlanFromExpressions(symbolsThatShouldOnlyUseIndexLeafPlanners)
+  private def allLeafPlanners(restrictions: LeafPlanRestrictions): IndexedSeq[LeafPlanner] = {
+    val expressionLeafPlanners = leafPlanFromExpressions(restrictions)
     expressionLeafPlanners ++ IndexedSeq(
-      argumentLeafPlanner(symbolsThatShouldOnlyUseIndexLeafPlanners),
+      argumentLeafPlanner(restrictions.symbolsThatShouldOnlyUseIndexLeafPlanners),
 
       // MATCH (n) RETURN n
-      allNodesLeafPlanner(symbolsThatShouldOnlyUseIndexLeafPlanners),
+      allNodesLeafPlanner(restrictions.symbolsThatShouldOnlyUseIndexLeafPlanners),
 
       // Handles OR between other leaf planners
       OrLeafPlanner(expressionLeafPlanners))
@@ -74,8 +74,8 @@ object QueryPlannerConfiguration {
    * When doing nested index joins, we have certain variables for which we only want to allow index seeks.
    * This method returns leaf planners that will not produce any other plans for these variables.
    */
-  def leafPlannersForNestedIndexJoins(symbolsThatShouldOnlyUseIndexLeafPlanners: Set[String]): LeafPlannerIterable = {
-    LeafPlannerList(allLeafPlanners(symbolsThatShouldOnlyUseIndexLeafPlanners))
+  def leafPlannersForNestedIndexJoins(restrictions: LeafPlanRestrictions): LeafPlannerIterable = {
+    LeafPlannerList(allLeafPlanners(restrictions))
   }
 
   val default: QueryPlannerConfiguration = {
@@ -94,7 +94,7 @@ object QueryPlannerConfiguration {
         applyOptional,
         outerHashJoin,
       ),
-      leafPlanners = LeafPlannerList(allLeafPlanners(Set.empty)),
+      leafPlanners = LeafPlannerList(allLeafPlanners(NoRestrictions)),
       updateStrategy = defaultUpdateStrategy
     )
 

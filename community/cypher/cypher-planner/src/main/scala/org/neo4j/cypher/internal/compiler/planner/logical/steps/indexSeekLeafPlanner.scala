@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
 import org.neo4j.cypher.internal.ast.UsingIndexHint
+import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlanRestrictions
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LabelToken
@@ -30,7 +31,7 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.QueryExpression
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
 
-object indexSeekLeafPlanner extends AbstractIndexSeekLeafPlanner {
+case class indexSeekLeafPlanner(restrictions: LeafPlanRestrictions) extends AbstractIndexSeekLeafPlanner(restrictions) {
   override protected def constructPlan(idName: String,
                                        label: LabelToken,
                                        properties: Seq[IndexedProperty],

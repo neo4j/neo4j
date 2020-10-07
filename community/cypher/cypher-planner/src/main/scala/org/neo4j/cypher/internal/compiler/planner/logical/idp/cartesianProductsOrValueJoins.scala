@@ -35,6 +35,7 @@ import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.CartesianOrdering
 import org.neo4j.cypher.internal.util.Cost
 import org.neo4j.exceptions.InternalException
+import org.neo4j.cypher.internal.compiler.planner.logical.OnlyIndexPlansFor
 
 import scala.annotation.tailrec
 
@@ -355,29 +356,34 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
       .addPredicates(predicate)
       .addHints(rhsQG.hints)
 
-    val symbolsThatShouldOnlyUseIndexLeafPlanners: Set[String] = predicate.dependencies.map(_.name).intersect(rhsQG.patternNodes)
+    val (leftSymbols, rightSymbols) = predicate.dependencies.map(_.name).partition(lhsQG.patternNodes.contains)
+    rightSymbols.toSeq match {
+      case Seq(rightSymbol) =>
+        val contextForRhs = context.withUpdatedCardinalityInformation(lhsPlan)
+          .withConfig(context.config.withLeafPlanners(
+            QueryPlannerConfiguration.leafPlannersForNestedIndexJoins(OnlyIndexPlansFor(rightSymbol, leftSymbols))
+          ))
 
-    val contextForRhs = context.withUpdatedCardinalityInformation(lhsPlan)
-      .withConfig(context.config.withLeafPlanners(
-        QueryPlannerConfiguration.leafPlannersForNestedIndexJoins(symbolsThatShouldOnlyUseIndexLeafPlanners)
-      ))
+        val rhsPlans = try {
+          // planComponent throws if it can't find a solution, which is normally the expected behavior.
+          // Here, however, restricting the leaf planners might lead to no solutions found and that is OK.
+          Some(singleComponentPlanner.planComponent(rhsQgWithLhsArguments, contextForRhs, kit, interestingOrder))
+        } catch {
+          case _:InternalException =>
+            None
+        }
 
-    val rhsPlans = try {
-      // planComponent throws if it can't fins a solution, which is normally the expected behavior.
-      // Here, however, restricting the leaf planners might lead to no solutions found and that is OK.
-      Some(singleComponentPlanner.planComponent(rhsQgWithLhsArguments, contextForRhs, kit, interestingOrder))
-    } catch {
-      case _:InternalException =>
-        None
+        // Keep only RHSs that actually leverage the data from the LHS to use an index.
+        // The reason is that otherwise, we are producing a cartesian product disguising as an Apply, and
+        // this confuses the cost model
+        rhsPlans.fold[Iterator[LogicalPlan]](Iterator.empty)(_.allResults.collect {
+          case rhsPlan if containsDependentIndexSeeks(rhsPlan) =>
+            context.logicalPlanProducer.planApply(lhsPlan, rhsPlan, context)
+        })
+      case _ =>
+        // If there are more than one dependency on RHS symbols, no index can solve the predicate
+        Iterator.empty
     }
-
-    // Keep only RHSs that actually leverage the data from the LHS to use an index.
-    // The reason is that otherwise, we are producing a cartesian product disguising as an Apply, and
-    // this confuses the cost model
-    rhsPlans.fold[Iterator[LogicalPlan]](Iterator.empty)(_.allResults.collect {
-      case rhsPlan if containsDependentIndexSeeks(rhsPlan) =>
-        context.logicalPlanProducer.planApply(lhsPlan, rhsPlan, context)
-    })
   }
 
   /**

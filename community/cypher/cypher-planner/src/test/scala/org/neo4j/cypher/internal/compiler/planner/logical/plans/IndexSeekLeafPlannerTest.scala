@@ -22,10 +22,14 @@ package org.neo4j.cypher.internal.compiler.planner.logical.plans
 import org.neo4j.cypher.internal.ast.UsingIndexHint
 import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher.beLike
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
+import org.neo4j.cypher.internal.compiler.planner.logical.NoRestrictions
+import org.neo4j.cypher.internal.compiler.planner.logical.OnlyIndexPlansFor
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.indexSeekLeafPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.mergeUniqueIndexSeekLeafPlanner
 import org.neo4j.cypher.internal.expressions.AndedPropertyInequalities
+import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.In
 import org.neo4j.cypher.internal.expressions.LabelToken
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
@@ -55,6 +59,13 @@ import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters.PredicateConverter
+import org.neo4j.cypher.internal.logical.plans.ManyQueryExpression
+import org.neo4j.cypher.internal.logical.plans.NodeIndexScan
+import org.neo4j.cypher.internal.logical.plans.PointDistanceRange
+import org.neo4j.cypher.internal.logical.plans.PointDistanceSeekRangeWrapper
+import org.neo4j.cypher.internal.logical.plans.PrefixRange
+import org.neo4j.cypher.internal.logical.plans.PrefixSeekRangeWrapper
 
 class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
@@ -75,7 +86,7 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
       qg = queryGraph(inPredicate, hasLabel("Awesome"))
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val resultPlans = indexSeekLeafPlanner(cfg.qg, InterestingOrder.empty, ctx)
+      val resultPlans = indexSeekLeafPlanner(NoRestrictions)(cfg.qg, InterestingOrder.empty, ctx)
 
       // then
       resultPlans shouldBe empty
@@ -90,7 +101,7 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
       uniqueIndexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val resultPlans = indexSeekLeafPlanner(cfg.qg, InterestingOrder.empty, ctx)
+      val resultPlans = indexSeekLeafPlanner(NoRestrictions)(cfg.qg, InterestingOrder.empty, ctx)
 
       // then
       resultPlans.head should beLike {
@@ -107,7 +118,7 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
       indexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val resultPlans = indexSeekLeafPlanner(cfg.qg, InterestingOrder.empty, ctx)
+      val resultPlans = indexSeekLeafPlanner(NoRestrictions)(cfg.qg, InterestingOrder.empty, ctx)
 
       // then
       resultPlans should beLike {
@@ -131,7 +142,7 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
       indexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val resultPlans = indexSeekLeafPlanner(cfg.qg, InterestingOrder.empty, ctx).toSet
+      val resultPlans = indexSeekLeafPlanner(NoRestrictions)(cfg.qg, InterestingOrder.empty, ctx).toSet
 
       // then
       val labelToken = LabelToken("Awesome", LabelId(0))
@@ -172,7 +183,7 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
       indexOn("Awesome", "prop", "prop2")
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val resultPlans = indexSeekLeafPlanner(cfg.qg, InterestingOrder.empty, ctx).toSet
+      val resultPlans = indexSeekLeafPlanner(NoRestrictions)(cfg.qg, InterestingOrder.empty, ctx).toSet
 
       // then
       val labelToken = LabelToken("Awesome", LabelId(0))
@@ -214,7 +225,7 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
       indexOn("Awesome", "prop2", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val resultPlans = indexSeekLeafPlanner(cfg.qg, InterestingOrder.empty, ctx).toSet
+      val resultPlans = indexSeekLeafPlanner(NoRestrictions)(cfg.qg, InterestingOrder.empty, ctx).toSet
 
       // then
       val labelToken = LabelToken("Awesome", LabelId(0))
@@ -251,7 +262,7 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
       indexOn("Awesome", "prop", "prop2", "prop3")
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val resultPlans = indexSeekLeafPlanner(cfg.qg, InterestingOrder.empty, ctx).toSet
+      val resultPlans = indexSeekLeafPlanner(NoRestrictions)(cfg.qg, InterestingOrder.empty, ctx).toSet
 
       // then
       val expected = Set()
@@ -268,7 +279,7 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
       indexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val resultPlans = indexSeekLeafPlanner(cfg.qg, InterestingOrder.empty, ctx)
+      val resultPlans = indexSeekLeafPlanner(NoRestrictions)(cfg.qg, InterestingOrder.empty, ctx)
 
       // then
       resultPlans should beLike {
@@ -285,7 +296,7 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
       indexOn("Awesome", "prop").providesValues()
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val resultPlans = indexSeekLeafPlanner(cfg.qg, InterestingOrder.empty, ctx)
+      val resultPlans = indexSeekLeafPlanner(NoRestrictions)(cfg.qg, InterestingOrder.empty, ctx)
 
       // then
       resultPlans should beLike {
@@ -304,7 +315,7 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
       indexOn("Awesome", "prop", "prop2")
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val resultPlans = indexSeekLeafPlanner(cfg.qg, InterestingOrder.empty, ctx)
+      val resultPlans = indexSeekLeafPlanner(NoRestrictions)(cfg.qg, InterestingOrder.empty, ctx)
 
       // then
       resultPlans should beLike {
@@ -342,7 +353,7 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     }.withLogicalPlanningContext { (cfg, ctx) =>
 
       // when
-      val resultPlans = indexSeekLeafPlanner(cfg.qg, InterestingOrder.empty, ctx)
+      val resultPlans = indexSeekLeafPlanner(NoRestrictions)(cfg.qg, InterestingOrder.empty, ctx)
 
       // then
       resultPlans should beLike {
@@ -373,7 +384,7 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
       indexOn("Awesome", propertyNames:_*)
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val resultPlans = indexSeekLeafPlanner(cfg.qg, InterestingOrder.empty, ctx)
+      val resultPlans = indexSeekLeafPlanner(NoRestrictions)(cfg.qg, InterestingOrder.empty, ctx)
 
       // then
       resultPlans should beLike {
@@ -407,7 +418,7 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
       val x = cfg.x
-      val resultPlans = indexSeekLeafPlanner(cfg.qg, InterestingOrder.empty, ctx)
+      val resultPlans = indexSeekLeafPlanner(NoRestrictions)(cfg.qg, InterestingOrder.empty, ctx)
 
       // then
       resultPlans should beLike {
@@ -425,10 +436,119 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
       indexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val resultPlans = indexSeekLeafPlanner(cfg.qg, InterestingOrder.empty, ctx)
+      val resultPlans = indexSeekLeafPlanner(NoRestrictions)(cfg.qg, InterestingOrder.empty, ctx)
 
       // then
       resultPlans shouldBe empty
+    }
+  }
+
+  test("plans only index plans that match the dependencies of the restriction") {
+    val nProp: Property = prop("n", "prop")
+    val xProp: Property = prop("x", "prop")
+    val nPropEqualsXProp = Equals(nProp, xProp)(pos)
+    val xPropExpr = SingleQueryExpression(xProp)
+    val nPropEquals = equals(lit42, nProp)
+    new given {
+      addTypeToSemanticTable(lit42, CTInteger.invariant)
+      addTypeToSemanticTable(lit6, CTInteger.invariant)
+      val predicates: Set[Expression] = Set(
+        hasLabels("n", "Awesome"),
+        hasLabels("x", "Awesome"),
+        in(nProp, listOf(lit42)),
+        AndedPropertyInequalities(varFor("n"), nProp, NonEmptyList(lessThan(nProp, lit6))),
+        nPropEquals,
+        startsWith(nProp, literalString("foo")),
+        endsWith(nProp, literalString("foo")),
+        contains(nProp, literalString("foo")),
+        greaterThan(lit42, function("distance", nProp, function("point", mapOfInt("x" -> 1, "y" -> 2)))),
+        nPropEqualsXProp,
+      )
+
+      qg = QueryGraph(
+        selections = Selections(predicates.flatMap(_.asPredicates)),
+        patternNodes = Set("n", "x"),
+        argumentIds = Set("x")
+      )
+
+      indexOn("Awesome", "prop")
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      // when
+      val restriction = OnlyIndexPlansFor("n", Set("x"))
+      val resultPlans = indexSeekLeafPlanner(restriction)(cfg.qg, InterestingOrder.empty, ctx).toSet
+
+      // then
+      val labelToken = LabelToken("Awesome", LabelId(0))
+      val nPropToken = PropertyKeyToken("prop", PropertyKeyId(0))
+
+      val expected = Set(
+        NodeIndexSeek(idName, labelToken, Seq(IndexedProperty(nPropToken, CanGetValue)), xPropExpr, Set("x"), IndexOrderNone),
+      )
+
+      resultPlans shouldEqual expected
+    }
+  }
+
+  test("plans index plans for unrestricted variables") {
+    val nProp: Property = prop("n", "prop")
+    val xProp: Property = prop("x", "prop")
+    val nPropEqualsXProp = Equals(nProp, xProp)(pos)
+    val xPropExpr = SingleQueryExpression(xProp)
+    val nPropEquals = equals(lit42, nProp)
+    val nPropIn = in(nProp, listOf(lit6, lit42))
+    val nPropLessThan = AndedPropertyInequalities(varFor("n"), nProp, NonEmptyList(lessThan(nProp, lit6)))
+    val literalFoo = literalString("foo")
+    val nPropStartsWith = startsWith(nProp, literalFoo)
+    val nPropEndsWith = endsWith(nProp, literalFoo)
+    val nPropContains = contains(nProp, literalFoo)
+    val point = function("point", mapOfInt("x" -> 1, "y" -> 2))
+    val nPropDistance = greaterThan(lit42, function("distance", nProp, point))
+    new given {
+      addTypeToSemanticTable(nProp, CTInteger.invariant)
+      addTypeToSemanticTable(lit42, CTInteger.invariant)
+      addTypeToSemanticTable(lit6, CTInteger.invariant)
+
+      val predicates: Set[Expression] = Set(
+        hasLabels("n", "Awesome"),
+        hasLabels("m", "Awesome"),
+        hasLabels("x", "Awesome"),
+        nPropIn,
+        nPropLessThan,
+        nPropEquals,
+        nPropStartsWith,
+        nPropEndsWith,
+        nPropContains,
+        nPropDistance,
+        nPropEqualsXProp,
+      )
+
+      qg = QueryGraph(
+        selections = Selections(predicates.flatMap(_.asPredicates)),
+        patternNodes = Set("n", "m", "x"),
+        argumentIds = Set("x")
+      )
+
+      indexOn("Awesome", "prop")
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      // when
+      val restriction = OnlyIndexPlansFor("m", Set("x"))
+      val resultPlans = indexSeekLeafPlanner(restriction)(cfg.qg, InterestingOrder.empty, ctx).toSet
+
+      // then
+      val labelToken = LabelToken("Awesome", LabelId(0))
+      val nPropToken = PropertyKeyToken("prop", PropertyKeyId(0))
+
+      val expected = Set(
+        NodeIndexSeek(idName, labelToken, Seq(IndexedProperty(nPropToken, CanGetValue)), ManyQueryExpression(listOf(lit6, lit42)), Set("x"), IndexOrderNone),
+        NodeIndexSeek(idName, labelToken, Seq(IndexedProperty(nPropToken, DoNotGetValue)), RangeQueryExpression(InequalitySeekRangeWrapper(RangeLessThan(NonEmptyList(ExclusiveBound(lit6))))(pos)), Set("x"), IndexOrderNone),
+        NodeIndexSeek(idName, labelToken, Seq(IndexedProperty(nPropToken, CanGetValue)), SingleQueryExpression(lit42), Set("x"), IndexOrderNone),
+        NodeIndexSeek(idName, labelToken, Seq(IndexedProperty(nPropToken, DoNotGetValue)), RangeQueryExpression(PrefixSeekRangeWrapper(PrefixRange(literalFoo))(pos)), Set("x"), IndexOrderNone),
+        NodeIndexSeek(idName, labelToken, Seq(IndexedProperty(nPropToken, DoNotGetValue)), RangeQueryExpression(PointDistanceSeekRangeWrapper(PointDistanceRange(point, lit42, inclusive = false))(pos)), Set("x"), IndexOrderNone),
+        NodeIndexScan(idName, labelToken, Seq(IndexedProperty(nPropToken, DoNotGetValue)), Set("x"), IndexOrderNone),
+        NodeIndexSeek(idName, labelToken, Seq(IndexedProperty(nPropToken, CanGetValue)), xPropExpr, Set("x"), IndexOrderNone),
+      )
+
+      resultPlans shouldEqual expected
     }
   }
 
@@ -440,7 +560,7 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
       uniqueIndexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val resultPlans = indexSeekLeafPlanner(cfg.qg, InterestingOrder.empty, ctx)
+      val resultPlans = indexSeekLeafPlanner(NoRestrictions)(cfg.qg, InterestingOrder.empty, ctx)
 
       // then
       resultPlans should beLike {
@@ -457,7 +577,7 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
       uniqueIndexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val resultPlans = indexSeekLeafPlanner(cfg.qg, InterestingOrder.empty, ctx)
+      val resultPlans = indexSeekLeafPlanner(NoRestrictions)(cfg.qg, InterestingOrder.empty, ctx)
 
       // then
       resultPlans should beLike {
@@ -474,7 +594,7 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
       uniqueIndexOn("Awesome", "prop").providesValues()
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val resultPlans = indexSeekLeafPlanner(cfg.qg, InterestingOrder.empty, ctx)
+      val resultPlans = indexSeekLeafPlanner(NoRestrictions)(cfg.qg, InterestingOrder.empty, ctx)
 
       // then
       resultPlans should beLike {
@@ -493,7 +613,7 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
       indexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val resultPlans = indexSeekLeafPlanner(cfg.qg, InterestingOrder.empty, ctx)
+      val resultPlans = indexSeekLeafPlanner(NoRestrictions)(cfg.qg, InterestingOrder.empty, ctx)
 
       // then
       resultPlans should beLike {
@@ -516,7 +636,7 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
       uniqueIndexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val resultPlans = indexSeekLeafPlanner(cfg.qg, InterestingOrder.empty, ctx)
+      val resultPlans = indexSeekLeafPlanner(NoRestrictions)(cfg.qg, InterestingOrder.empty, ctx)
 
       // then
       resultPlans should beLike {
