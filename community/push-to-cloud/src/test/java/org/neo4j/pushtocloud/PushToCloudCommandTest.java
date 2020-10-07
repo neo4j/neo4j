@@ -194,15 +194,14 @@ class PushToCloudCommandTest
         PushToCloudCommand command = command().copier( targetCommunicator ).build();
 
         // when
-        PushToCloudCommand.Size size = PushToCloudCommand.Size.ofDump( PushToCloudCommand.readSizeFromDumpMetaData( dump.toFile() ) );
-        PushToCloudCommand.Source source = new PushToCloudCommand.Source( this.dump, size );
+        PushToCloudCommand.Uploader uploader = command.makeDumpUploader( this.dump.toFile() );
         String[] args = {"--dump", dump.toString(),
                          "--bolt-uri", SOME_EXAMPLE_BOLT_URI};
         new CommandLine( command ).execute( args );
 
         // then
         verify( targetCommunicator ).checkSize( anyBoolean(), any(), any(), any() );
-        verify( targetCommunicator ).copy( anyBoolean(), any(), any(), eq( source ), eq( false ), any() );
+        verify( targetCommunicator ).copy( anyBoolean(), any(), any(), eq( uploader.source ), eq( false ), any() );
     }
 
     @Test
