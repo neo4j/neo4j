@@ -19,34 +19,18 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.neo4j.internal.kernel.api.TokenSet;
-import org.neo4j.storageengine.api.StoragePropertyCursor;
+import org.neo4j.storageengine.api.StorageRelationshipTraversalCursor;
 
-class FullAccessPropertyCursor extends DefaultPropertyCursor
+public class FullAccessRelationshipTraversalCursor extends DefaultRelationshipTraversalCursor
 {
-    FullAccessPropertyCursor( CursorPool<DefaultPropertyCursor> pool, StoragePropertyCursor storeCursor )
+    FullAccessRelationshipTraversalCursor( CursorPool<DefaultRelationshipTraversalCursor> pool, StorageRelationshipTraversalCursor storeCursor )
     {
-        super( pool, storeCursor, null, null );
+        super( pool, storeCursor, null );
     }
 
     @Override
     final boolean allowed()
     {
         return true;
-    }
-
-    @Override
-    public TokenSet get()
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
-     * Only used for security checks
-     */
-    @Override
-    public int getAsInt()
-    {
-        throw new UnsupportedOperationException();
     }
 }

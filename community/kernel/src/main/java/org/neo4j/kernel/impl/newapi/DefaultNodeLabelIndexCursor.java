@@ -48,14 +48,14 @@ class DefaultNodeLabelIndexCursor extends IndexCursor<IndexProgressor> implement
     private final PrimitiveSortedMergeJoin sortedMergeJoin = new PrimitiveSortedMergeJoin();
 
     private final CursorPool<DefaultNodeLabelIndexCursor> pool;
-    private final DefaultNodeCursor nodeCursor;
+    private final DefaultNodeCursor securityNodeCursor;
     private AccessMode accessMode;
     private boolean shortcutSecurity;
 
-    DefaultNodeLabelIndexCursor( CursorPool<DefaultNodeLabelIndexCursor> pool, DefaultNodeCursor nodeCursor )
+    DefaultNodeLabelIndexCursor( CursorPool<DefaultNodeLabelIndexCursor> pool, DefaultNodeCursor securityNodeCursor )
     {
         this.pool = pool;
-        this.nodeCursor = nodeCursor;
+        this.securityNodeCursor = securityNodeCursor;
         this.node = NO_ID;
     }
 
@@ -125,14 +125,10 @@ class DefaultNodeLabelIndexCursor extends IndexCursor<IndexProgressor> implement
 
     private void initSecurity( int label )
     {
-        if ( accessMode == null )
-        {
-            accessMode = read.ktx.securityContext().mode();
-        }
-        shortcutSecurity = accessMode.allowsTraverseAllNodesWithLabel( label );
+        shortcutSecurity = allowsTraverseAllNodesWithLabel( label );
     }
 
-    protected boolean allowed( long reference, TokenSet labels )
+    boolean allowed( long reference, TokenSet labels )
     {
         if ( shortcutSecurity )
         {
@@ -140,10 +136,19 @@ class DefaultNodeLabelIndexCursor extends IndexCursor<IndexProgressor> implement
         }
         if ( labels == null )
         {
-            read.singleNode( reference, nodeCursor );
-            return nodeCursor.next();
+            read.singleNode( reference, securityNodeCursor );
+            return securityNodeCursor.next();
         }
         return accessMode.allowsTraverseNode( labels.all() );
+    }
+
+    boolean allowsTraverseAllNodesWithLabel( int label )
+    {
+        if ( accessMode == null )
+        {
+            accessMode = read.ktx.securityContext().mode();
+        }
+        return accessMode.allowsTraverseAllNodesWithLabel( label );
     }
 
     @Override
@@ -275,7 +280,10 @@ class DefaultNodeLabelIndexCursor extends IndexCursor<IndexProgressor> implement
 
     public void release()
     {
-        nodeCursor.close();
-        nodeCursor.release();
+        if ( securityNodeCursor != null )
+        {
+            securityNodeCursor.close();
+            securityNodeCursor.release();
+        }
     }
 }

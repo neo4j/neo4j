@@ -42,8 +42,8 @@ public class DefaultPropertyCursor extends TraceableCursor implements PropertyCu
     private static final int NODE = -2;
     private Read read;
     private final StoragePropertyCursor storeCursor;
-    private final FullAccessNodeCursor nodeCursor;
-    private final FullAccessRelationshipScanCursor relCursor;
+    private final FullAccessNodeCursor securityNodeCursor;
+    private final FullAccessRelationshipScanCursor securityRelCursor;
     private EntityState propertiesState;
     private Iterator<StorageProperty> txStateChangedProperties;
     private StorageProperty txStateValue;
@@ -56,12 +56,12 @@ public class DefaultPropertyCursor extends TraceableCursor implements PropertyCu
     private int type = NO_TOKEN;
 
     DefaultPropertyCursor( CursorPool<DefaultPropertyCursor> pool, StoragePropertyCursor storeCursor,
-                           FullAccessNodeCursor nodeCursor, FullAccessRelationshipScanCursor relCursor )
+                           FullAccessNodeCursor securityNodeCursor, FullAccessRelationshipScanCursor securityRelCursor )
     {
         this.pool = pool;
         this.storeCursor = storeCursor;
-        this.nodeCursor = nodeCursor;
-        this.relCursor = relCursor;
+        this.securityNodeCursor = securityNodeCursor;
+        this.securityRelCursor = securityRelCursor;
     }
 
     void initNode( long nodeReference, long reference, Read read, AssertOpen assertOpen )
@@ -265,6 +265,8 @@ public class DefaultPropertyCursor extends TraceableCursor implements PropertyCu
     /**
      * Gets the label while ignoring removes in the tx state. Implemented as a Supplier so that we don't need additional
      * allocations.
+     *
+     * Only used for security checks
      */
     @Override
     public TokenSet get()
@@ -273,13 +275,16 @@ public class DefaultPropertyCursor extends TraceableCursor implements PropertyCu
 
         if ( labels == null )
         {
-            read.singleNode( entityReference, nodeCursor );
-            nodeCursor.next();
-            labels = nodeCursor.labelsIgnoringTxStateSetRemove();
+            read.singleNode( entityReference, securityNodeCursor );
+            securityNodeCursor.next();
+            labels = securityNodeCursor.labelsIgnoringTxStateSetRemove();
         }
         return labels;
     }
 
+    /**
+     * Only used for security checks
+     */
     @Override
     public int getAsInt()
     {
@@ -287,9 +292,9 @@ public class DefaultPropertyCursor extends TraceableCursor implements PropertyCu
 
         if ( type < 0 )
         {
-            read.singleRelationship( entityReference, relCursor );
-            relCursor.next();
-            this.type = relCursor.type();
+            read.singleRelationship( entityReference, securityRelCursor );
+            securityRelCursor.next();
+            this.type = securityRelCursor.type();
         }
         return type;
     }
@@ -305,10 +310,16 @@ public class DefaultPropertyCursor extends TraceableCursor implements PropertyCu
     public void release()
     {
         storeCursor.close();
-        nodeCursor.close();
-        nodeCursor.release();
-        relCursor.close();
-        relCursor.release();
+        if ( securityNodeCursor != null )
+        {
+            securityNodeCursor.close();
+            securityNodeCursor.release();
+        }
+        if ( securityRelCursor != null )
+        {
+            securityRelCursor.close();
+            securityRelCursor.release();
+        }
     }
 
     private boolean isNode()

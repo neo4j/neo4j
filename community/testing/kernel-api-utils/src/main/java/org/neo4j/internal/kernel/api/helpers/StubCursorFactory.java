@@ -44,10 +44,13 @@ public class StubCursorFactory implements CursorFactory
     private final Queue<RelationshipScanCursor> relationshipScanCursors = new ArrayDeque<>();
     private final Queue<RelationshipScanCursor> fullRelationshipScanCursors = new ArrayDeque<>();
     private final Queue<RelationshipTraversalCursor> relationshipTraversalCursors = new LinkedList<>();
+    private final Queue<RelationshipTraversalCursor> fullRelationshipTraversalCursors = new LinkedList<>();
     private final Queue<PropertyCursor> propertyCursors = new ArrayDeque<>();
     private final Queue<PropertyCursor> fullPropertyCursors = new ArrayDeque<>();
     private final Queue<NodeValueIndexCursor> nodeValueIndexCursors = new ArrayDeque<>();
+    private final Queue<NodeValueIndexCursor> fullNodeValueIndexCursors = new ArrayDeque<>();
     private final Queue<NodeLabelIndexCursor> nodeLabelIndexCursors = new ArrayDeque<>();
+    private final Queue<NodeLabelIndexCursor> fullNodeLabelIndexCursors = new ArrayDeque<>();
     private final Queue<RelationshipIndexCursor> relationshipIndexCursors = new ArrayDeque<>();
     private final Queue<RelationshipTypeIndexCursor> relationshipTypeIndexCursors = new ArrayDeque<>();
 
@@ -92,6 +95,12 @@ public class StubCursorFactory implements CursorFactory
     }
 
     @Override
+    public RelationshipTraversalCursor allocateFullAccessRelationshipTraversalCursor( PageCursorTracer cursorTracer )
+    {
+        return poll( fullRelationshipTraversalCursors );
+    }
+
+    @Override
     public PropertyCursor allocatePropertyCursor( PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
     {
         return poll( propertyCursors );
@@ -110,9 +119,21 @@ public class StubCursorFactory implements CursorFactory
     }
 
     @Override
+    public NodeValueIndexCursor allocateFullAccessNodeValueIndexCursor( PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
+    {
+        return poll( fullNodeValueIndexCursors );
+    }
+
+    @Override
     public NodeLabelIndexCursor allocateNodeLabelIndexCursor( PageCursorTracer cursorTracer )
     {
         return poll( nodeLabelIndexCursors );
+    }
+
+    @Override
+    public NodeLabelIndexCursor allocateFullAccessNodeLabelIndexCursor( PageCursorTracer cursorTracer )
+    {
+        return poll( fullNodeLabelIndexCursors );
     }
 
     @Override

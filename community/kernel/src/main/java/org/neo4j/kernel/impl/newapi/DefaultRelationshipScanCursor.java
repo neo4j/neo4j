@@ -36,13 +36,13 @@ class DefaultRelationshipScanCursor extends DefaultRelationshipCursor<StorageRel
     private long single;
     private LongIterator addedRelationships;
     private CursorPool<DefaultRelationshipScanCursor> pool;
-    private final DefaultNodeCursor nodeCursor;
+    private final DefaultNodeCursor securityNodeCursor;
 
-    DefaultRelationshipScanCursor( CursorPool<DefaultRelationshipScanCursor> pool, StorageRelationshipScanCursor storeCursor, DefaultNodeCursor nodeCursor )
+    DefaultRelationshipScanCursor( CursorPool<DefaultRelationshipScanCursor> pool, StorageRelationshipScanCursor storeCursor, DefaultNodeCursor securityNodeCursor )
     {
         super( storeCursor );
         this.pool = pool;
-        this.nodeCursor = nodeCursor;
+        this.securityNodeCursor = securityNodeCursor;
     }
 
     void scan( int type, Read read )
@@ -126,11 +126,11 @@ class DefaultRelationshipScanCursor extends DefaultRelationshipCursor<StorageRel
         {
             return true;
         }
-        read.singleNode( storeCursor.sourceNodeReference(), nodeCursor );
-        if ( nodeCursor.next() )
+        read.singleNode( storeCursor.sourceNodeReference(), securityNodeCursor );
+        if ( securityNodeCursor.next() )
         {
-            read.singleNode( storeCursor.targetNodeReference(), nodeCursor );
-            return nodeCursor.next();
+            read.singleNode( storeCursor.targetNodeReference(), securityNodeCursor );
+            return securityNodeCursor.next();
         }
         return false;
     }
@@ -192,7 +192,10 @@ class DefaultRelationshipScanCursor extends DefaultRelationshipCursor<StorageRel
     public void release()
     {
         storeCursor.close();
-        nodeCursor.close();
-        nodeCursor.release();
+        if ( securityNodeCursor != null )
+        {
+            securityNodeCursor.close();
+            securityNodeCursor.release();
+        }
     }
 }

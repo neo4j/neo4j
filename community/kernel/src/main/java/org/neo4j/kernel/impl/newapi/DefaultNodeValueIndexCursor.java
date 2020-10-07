@@ -89,16 +89,16 @@ class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
     private IndexOrder indexOrder;
     private final MemoryTracker memoryTracker;
     private final CursorPool<DefaultNodeValueIndexCursor> pool;
-    private final DefaultNodeCursor nodeCursor;
+    private final DefaultNodeCursor securityNodeCursor;
     private final SortedMergeJoin sortedMergeJoin = new SortedMergeJoin();
     private AccessMode accessMode;
     private boolean shortcutSecurity;
     private int[] propertyIds;
 
-    DefaultNodeValueIndexCursor( CursorPool<DefaultNodeValueIndexCursor> pool, DefaultNodeCursor nodeCursor, MemoryTracker memoryTracker )
+    DefaultNodeValueIndexCursor( CursorPool<DefaultNodeValueIndexCursor> pool, DefaultNodeCursor securityNodeCursor, MemoryTracker memoryTracker )
     {
         this.pool = pool;
-        this.nodeCursor = nodeCursor;
+        this.securityNodeCursor = securityNodeCursor;
         this.memoryTracker = memoryTracker;
         node = NO_ID;
         score = Float.NaN;
@@ -202,6 +202,11 @@ class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
      */
     private boolean setupSecurity( IndexDescriptor descriptor )
     {
+        if ( allowsAll() )
+        {
+            return true;
+        }
+
         if ( accessMode == null )
         {
             accessMode = read.ktx.securityContext().mode();
@@ -282,27 +287,32 @@ class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
         }
     }
 
-    protected boolean allowed( long reference )
+    boolean allowed( long reference )
     {
         if ( shortcutSecurity )
         {
             return true;
         }
-        read.singleNode( reference, nodeCursor );
-        if ( !nodeCursor.next() )
+        read.singleNode( reference, securityNodeCursor );
+        if ( !securityNodeCursor.next() )
         {
             // This node is not visible to this security context
             return false;
         }
 
         boolean allowed = true;
-        long[] labels = nodeCursor.labelsIgnoringTxStateSetRemove().all();
+        long[] labels = securityNodeCursor.labelsIgnoringTxStateSetRemove().all();
         for ( int prop : propertyIds )
         {
             allowed &= accessMode.allowsReadNodeProperty( () -> Labels.from( labels ), prop );
         }
 
         return allowed;
+    }
+
+    boolean allowsAll()
+    {
+        return false;
     }
 
     @Override
@@ -695,7 +705,10 @@ class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
 
     public void release()
     {
-        nodeCursor.close();
-        nodeCursor.release();
+        if ( securityNodeCursor != null )
+        {
+            securityNodeCursor.close();
+            securityNodeCursor.release();
+        }
     }
 }

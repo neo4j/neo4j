@@ -146,6 +146,24 @@ public abstract class DefaultPooledCursorsTestBase<G extends KernelAPIReadTestSu
     }
 
     @Test
+    void shouldReuseFullAccessRelationshipTraversalCursor()
+    {
+        NodeCursor node = cursors.allocateNodeCursor( NULL );
+        RelationshipTraversalCursor c1 = cursors.allocateFullAccessRelationshipTraversalCursor( NULL );
+
+        read.singleNode( startNode, node );
+        node.next();
+        node.relationships( c1, ALL_RELATIONSHIPS );
+
+        node.close();
+        c1.close();
+
+        RelationshipTraversalCursor c2 = cursors.allocateFullAccessRelationshipTraversalCursor( NULL );
+        assertEquals( c1, c2 );
+        c2.close();
+    }
+
+    @Test
     void shouldReusePropertyCursor()
     {
         NodeCursor node = cursors.allocateNodeCursor( NULL );
@@ -199,6 +217,23 @@ public abstract class DefaultPooledCursorsTestBase<G extends KernelAPIReadTestSu
     }
 
     @Test
+    void shouldReuseFullAccessNodeValueIndexCursor() throws Exception
+    {
+        int prop = token.propertyKey( "prop" );
+        IndexDescriptor indexDescriptor = tx.schemaRead().indexGetForName( NODE_PROP_INDEX_NAME );
+        Predicates.awaitEx( () -> tx.schemaRead().indexGetState( indexDescriptor ) == ONLINE, 1, MINUTES );
+        IndexReadSession indexSession = tx.dataRead().indexReadSession( indexDescriptor );
+
+        NodeValueIndexCursor c1 = cursors.allocateFullAccessNodeValueIndexCursor( NULL, EmptyMemoryTracker.INSTANCE);
+        read.nodeIndexSeek( indexSession, c1, IndexQueryConstraints.unconstrained(), IndexQuery.exact( prop, "zero" ) );
+        c1.close();
+
+        NodeValueIndexCursor c2 = cursors.allocateFullAccessNodeValueIndexCursor( NULL, EmptyMemoryTracker.INSTANCE);
+        assertEquals( c1, c2 );
+        c2.close();
+    }
+
+    @Test
     void shouldReuseNodeLabelIndexCursor() throws Exception
     {
         try ( KernelTransaction tx = beginTransaction() )
@@ -208,6 +243,21 @@ public abstract class DefaultPooledCursorsTestBase<G extends KernelAPIReadTestSu
             c1.close();
 
             NodeLabelIndexCursor c2 = tx.cursors().allocateNodeLabelIndexCursor( NULL );
+            assertEquals( c1, c2 );
+            c2.close();
+        }
+    }
+
+    @Test
+    void shouldReuseFullAccessNodeLabelIndexCursor() throws Exception
+    {
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            NodeLabelIndexCursor c1 = tx.cursors().allocateFullAccessNodeLabelIndexCursor( NULL );
+            tx.dataRead().nodeLabelScan( 1, c1, IndexOrder.NONE );
+            c1.close();
+
+            NodeLabelIndexCursor c2 = tx.cursors().allocateFullAccessNodeLabelIndexCursor( NULL );
             assertEquals( c1, c2 );
             c2.close();
         }

@@ -261,7 +261,7 @@ class DefaultNodeCursor extends TraceableCursor implements NodeCursor
         NodeState nodeTxState = hasChanges ? read.txState().getNodeState( nodeReference() ) : null;
         if ( currentAddedInTx == NO_ID )
         {
-            if ( accessMode.allowsTraverseAllRelTypes() && accessMode.allowsTraverseAllLabels() )
+            if ( allowsTraverseAll() )
             {
                 storeCursor.degrees( selection, degrees, true );
             }
@@ -338,6 +338,15 @@ class DefaultNodeCursor extends TraceableCursor implements NodeCursor
         return accessMode.allowsTraverseAllLabels() || accessMode.allowsTraverseNode( storeCursor.labels() );
     }
 
+    boolean allowsTraverseAll()
+    {
+        if ( accessMode == null )
+        {
+            accessMode = read.ktx.securityContext().mode();
+        }
+        return accessMode.allowsTraverseAllRelTypes() && accessMode.allowsTraverseAllLabels();
+    }
+
     @Override
     public void closeInternal()
     {
@@ -347,7 +356,10 @@ class DefaultNodeCursor extends TraceableCursor implements NodeCursor
             checkHasChanges = true;
             addedNodes = ImmutableEmptyLongIterator.INSTANCE;
             storeCursor.reset();
-            securityStoreCursor.reset();
+            if ( securityStoreCursor != null )
+            {
+                securityStoreCursor.reset();
+            }
             accessMode = null;
 
             pool.accept( this );
@@ -406,7 +418,10 @@ class DefaultNodeCursor extends TraceableCursor implements NodeCursor
     void release()
     {
         storeCursor.close();
-        securityStoreCursor.close();
+        if ( securityStoreCursor != null )
+        {
+            securityStoreCursor.close();
+        }
     }
 
     private class SecureRelationshipSelection extends RelationshipSelection

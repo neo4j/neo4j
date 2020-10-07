@@ -102,6 +102,14 @@ public class ManagedTestCursors implements CursorFactory
     }
 
     @Override
+    public RelationshipTraversalCursor allocateFullAccessRelationshipTraversalCursor( PageCursorTracer cursorTracer )
+    {
+        RelationshipTraversalCursor n = cursors.allocateFullAccessRelationshipTraversalCursor( cursorTracer );
+        allCursors.add( n );
+        return n;
+    }
+
+    @Override
     public PropertyCursor allocatePropertyCursor( PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
     {
         PropertyCursor n = cursors.allocatePropertyCursor( cursorTracer, memoryTracker );
@@ -126,9 +134,25 @@ public class ManagedTestCursors implements CursorFactory
     }
 
     @Override
+    public NodeValueIndexCursor allocateFullAccessNodeValueIndexCursor( PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
+    {
+        NodeValueIndexCursor n = cursors.allocateFullAccessNodeValueIndexCursor( cursorTracer, memoryTracker );
+        allCursors.add( n );
+        return n;
+    }
+
+    @Override
     public NodeLabelIndexCursor allocateNodeLabelIndexCursor( PageCursorTracer cursorTracer )
     {
         NodeLabelIndexCursor n = cursors.allocateNodeLabelIndexCursor( cursorTracer );
+        allCursors.add( n );
+        return n;
+    }
+
+    @Override
+    public NodeLabelIndexCursor allocateFullAccessNodeLabelIndexCursor( PageCursorTracer cursorTracer )
+    {
+        NodeLabelIndexCursor n = cursors.allocateFullAccessNodeLabelIndexCursor( cursorTracer );
         allCursors.add( n );
         return n;
     }

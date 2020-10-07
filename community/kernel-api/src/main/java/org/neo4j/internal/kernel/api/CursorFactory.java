@@ -42,6 +42,8 @@ public interface CursorFactory
 
     RelationshipTraversalCursor allocateRelationshipTraversalCursor( PageCursorTracer cursorTracer );
 
+    RelationshipTraversalCursor allocateFullAccessRelationshipTraversalCursor( PageCursorTracer cursorTracer );
+
     // properties
 
     PropertyCursor allocatePropertyCursor( PageCursorTracer cursorTracer, MemoryTracker memoryTracker );
@@ -52,7 +54,11 @@ public interface CursorFactory
 
     NodeValueIndexCursor allocateNodeValueIndexCursor( PageCursorTracer cursorTracer, MemoryTracker memoryTracker );
 
+    NodeValueIndexCursor allocateFullAccessNodeValueIndexCursor( PageCursorTracer cursorTracer, MemoryTracker memoryTracker );
+
     NodeLabelIndexCursor allocateNodeLabelIndexCursor( PageCursorTracer cursorTracer );
+
+    NodeLabelIndexCursor allocateFullAccessNodeLabelIndexCursor( PageCursorTracer cursorTracer );
 
     RelationshipIndexCursor allocateRelationshipIndexCursor( PageCursorTracer cursorTracer );
 

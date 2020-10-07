@@ -167,7 +167,7 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Stora
         super.removeTracer();
     }
 
-    private boolean allowed()
+    boolean allowed()
     {
         if ( mode == null )
         {
@@ -216,8 +216,11 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Stora
     public void release()
     {
         storeCursor.close();
-        nodeCursor.close();
-        nodeCursor.release();
+        if ( nodeCursor != null )
+        {
+            nodeCursor.close();
+            nodeCursor.release();
+        }
     }
 
     @Override

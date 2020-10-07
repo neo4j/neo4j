@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.RelationshipIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
+import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.StorageReader;
@@ -39,6 +40,7 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
     private DefaultRelationshipScanCursor relationshipScanCursor;
     private FullAccessRelationshipScanCursor fullAccessRelationshipScanCursor;
     private DefaultRelationshipTraversalCursor relationshipTraversalCursor;
+    private FullAccessRelationshipTraversalCursor fullAccessRelationshipTraversalCursor;
     private DefaultPropertyCursor propertyCursor;
     private FullAccessPropertyCursor fullAccessPropertyCursor;
     private DefaultNodeValueIndexCursor nodeValueIndexCursor;
@@ -88,8 +90,7 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
     {
         if ( fullAccessNodeCursor == null )
         {
-            return trace( new FullAccessNodeCursor( this::acceptFullAccess,
-                    storageReader.allocateNodeCursor( cursorTracer ), storageReader.allocateNodeCursor( cursorTracer ) ) );
+            return trace( new FullAccessNodeCursor( this::acceptFullAccess, storageReader.allocateNodeCursor( cursorTracer ) ) );
         }
 
         try
@@ -147,9 +148,7 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
     {
         if ( fullAccessRelationshipScanCursor == null )
         {
-            return trace( new FullAccessRelationshipScanCursor( this::acceptFullAccess, storageReader.allocateRelationshipScanCursor( cursorTracer ),
-                    new FullAccessNodeCursor( this::acceptFullAccess,
-                                              storageReader.allocateNodeCursor( cursorTracer ), storageReader.allocateNodeCursor( cursorTracer ) ) ) );
+            return trace( new FullAccessRelationshipScanCursor( this::acceptFullAccess, storageReader.allocateRelationshipScanCursor( cursorTracer ) ) );
         }
 
         try
@@ -203,14 +202,42 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
     }
 
     @Override
+    public RelationshipTraversalCursor allocateFullAccessRelationshipTraversalCursor( PageCursorTracer cursorTracer )
+    {
+        if ( fullAccessRelationshipTraversalCursor == null )
+        {
+            return trace( new FullAccessRelationshipTraversalCursor( this::acceptFullAccess,
+                                                                     storageReader.allocateRelationshipTraversalCursor( cursorTracer ) ) );
+        }
+
+        try
+        {
+            return fullAccessRelationshipTraversalCursor;
+        }
+        finally
+        {
+            fullAccessRelationshipTraversalCursor = null;
+        }
+    }
+
+    private void acceptFullAccess( DefaultRelationshipTraversalCursor cursor )
+    {
+        if ( fullAccessRelationshipTraversalCursor != null )
+        {
+            fullAccessRelationshipTraversalCursor.release();
+        }
+        cursor.removeTracer();
+        fullAccessRelationshipTraversalCursor = (FullAccessRelationshipTraversalCursor) cursor;
+    }
+
+    @Override
     public DefaultPropertyCursor allocatePropertyCursor( PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
     {
         if ( propertyCursor == null )
         {
-            FullAccessNodeCursor nodeCursor = new FullAccessNodeCursor( this::acceptFullAccess,
-                    storageReader.allocateNodeCursor( cursorTracer ), storageReader.allocateNodeCursor( cursorTracer ) );
+            FullAccessNodeCursor nodeCursor = new FullAccessNodeCursor( this::acceptFullAccess, storageReader.allocateNodeCursor( cursorTracer ) );
             FullAccessRelationshipScanCursor relCursor = new FullAccessRelationshipScanCursor(
-                    this::acceptFullAccess, storageReader.allocateRelationshipScanCursor( cursorTracer ), nodeCursor );
+                    this::acceptFullAccess, storageReader.allocateRelationshipScanCursor( cursorTracer ) );
             return trace( new DefaultPropertyCursor( this::accept, storageReader.allocatePropertyCursor( cursorTracer, memoryTracker ), nodeCursor,
                     relCursor ) );
         }
@@ -240,12 +267,7 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
     {
         if ( fullAccessPropertyCursor == null )
         {
-            FullAccessNodeCursor nodeCursor = new FullAccessNodeCursor( this::acceptFullAccess,
-                    storageReader.allocateNodeCursor( cursorTracer ), storageReader.allocateNodeCursor( cursorTracer ) );
-            FullAccessRelationshipScanCursor relCursor = new FullAccessRelationshipScanCursor(
-                    this::acceptFullAccess, storageReader.allocateRelationshipScanCursor( cursorTracer ), nodeCursor );
-            return trace( new FullAccessPropertyCursor( this::acceptFullAccess, storageReader.allocatePropertyCursor( cursorTracer, memoryTracker ),
-                    nodeCursor, relCursor ) );
+            return trace( new FullAccessPropertyCursor( this::acceptFullAccess, storageReader.allocatePropertyCursor( cursorTracer, memoryTracker ) ) );
         }
 
         try
@@ -298,15 +320,12 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
         nodeValueIndexCursor = cursor;
     }
 
-    FullAccessNodeValueIndexCursor allocateFullAccessNodeValueIndexCursor( PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
+    @Override
+    public FullAccessNodeValueIndexCursor allocateFullAccessNodeValueIndexCursor( PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
     {
         if ( fullAccessNodeValueIndexCursor == null )
         {
-            return trace( new FullAccessNodeValueIndexCursor( this::acceptFullAccess,
-                                                              new FullAccessNodeCursor( this::acceptFullAccess,
-                                                                                        storageReader.allocateNodeCursor( cursorTracer ),
-                                                                                        storageReader.allocateNodeCursor( cursorTracer ) ),
-                                                              memoryTracker ) );
+            return trace( new FullAccessNodeValueIndexCursor( this::acceptFullAccess, memoryTracker ) );
         }
 
         try
@@ -358,12 +377,12 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
         nodeLabelIndexCursor = cursor;
     }
 
-    DefaultNodeLabelIndexCursor allocateFullAccessNodeLabelIndexCursor( PageCursorTracer cursorTracer )
+    @Override
+    public DefaultNodeLabelIndexCursor allocateFullAccessNodeLabelIndexCursor( PageCursorTracer cursorTracer )
     {
         if ( fullAccessNodeLabelIndexCursor == null )
         {
-            return trace( new FullAccessNodeLabelIndexCursor( this::acceptFullAccess, new FullAccessNodeCursor(
-                    this::acceptFullAccess, storageReader.allocateNodeCursor( cursorTracer ), storageReader.allocateNodeCursor( cursorTracer ) ) ) );
+            return trace( new FullAccessNodeLabelIndexCursor( this::acceptFullAccess ) );
         }
 
         try
@@ -471,6 +490,11 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
         {
             relationshipTraversalCursor.release();
             relationshipTraversalCursor = null;
+        }
+        if ( fullAccessRelationshipTraversalCursor != null )
+        {
+            fullAccessRelationshipTraversalCursor.release();
+            fullAccessRelationshipTraversalCursor = null;
         }
         if ( propertyCursor != null )
         {

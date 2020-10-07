@@ -28,13 +28,19 @@ import org.neo4j.storageengine.api.StorageNodeCursor;
  */
 class FullAccessNodeCursor extends DefaultNodeCursor
 {
-    FullAccessNodeCursor( CursorPool<DefaultNodeCursor> pool, StorageNodeCursor storeCursor, StorageNodeCursor securityStoreCursor )
+    FullAccessNodeCursor( CursorPool<DefaultNodeCursor> pool, StorageNodeCursor storeCursor )
     {
-        super( pool, storeCursor, securityStoreCursor );
+        super( pool, storeCursor, null );
     }
 
     @Override
     final boolean allowsTraverse()
+    {
+        return true;
+    }
+
+    @Override
+    final boolean allowsTraverseAll()
     {
         return true;
     }

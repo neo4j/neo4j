@@ -54,8 +54,7 @@ public class DefaultThreadSafeCursors extends DefaultCursors implements CursorFa
     @Override
     public FullAccessNodeCursor allocateFullAccessNodeCursor( PageCursorTracer cursorTracer )
     {
-        return trace( new FullAccessNodeCursor(
-                DefaultNodeCursor::release, storageReader.allocateNodeCursor( cursorTracer ), storageReader.allocateNodeCursor( cursorTracer ) ) );
+        return trace( new FullAccessNodeCursor( DefaultNodeCursor::release, storageReader.allocateNodeCursor( cursorTracer ) ) );
     }
 
     @Override
@@ -69,7 +68,7 @@ public class DefaultThreadSafeCursors extends DefaultCursors implements CursorFa
     public FullAccessRelationshipScanCursor allocateFullAccessRelationshipScanCursor( PageCursorTracer cursorTracer )
     {
         return trace( new FullAccessRelationshipScanCursor( DefaultRelationshipScanCursor::release,
-                storageReader.allocateRelationshipScanCursor( cursorTracer ), allocateFullAccessNodeCursor( cursorTracer ) ) );
+                storageReader.allocateRelationshipScanCursor( cursorTracer ) ) );
     }
 
     @Override
@@ -77,6 +76,13 @@ public class DefaultThreadSafeCursors extends DefaultCursors implements CursorFa
     {
         return trace( new DefaultRelationshipTraversalCursor( DefaultRelationshipTraversalCursor::release,
                 storageReader.allocateRelationshipTraversalCursor( cursorTracer ), allocateNodeCursor( cursorTracer ) ) );
+    }
+
+    @Override
+    public DefaultRelationshipTraversalCursor allocateFullAccessRelationshipTraversalCursor( PageCursorTracer cursorTracer )
+    {
+        return trace( new FullAccessRelationshipTraversalCursor( DefaultRelationshipTraversalCursor::release,
+                storageReader.allocateRelationshipTraversalCursor( cursorTracer ) ) );
     }
 
     @Override
@@ -91,8 +97,7 @@ public class DefaultThreadSafeCursors extends DefaultCursors implements CursorFa
     public PropertyCursor allocateFullAccessPropertyCursor( PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
     {
         return trace( new FullAccessPropertyCursor( DefaultPropertyCursor::release,
-                storageReader.allocatePropertyCursor( cursorTracer, memoryTracker ), allocateFullAccessNodeCursor( cursorTracer ),
-                allocateFullAccessRelationshipScanCursor( cursorTracer ) ) );
+                storageReader.allocatePropertyCursor( cursorTracer, memoryTracker ) ) );
     }
 
     @Override
@@ -103,9 +108,21 @@ public class DefaultThreadSafeCursors extends DefaultCursors implements CursorFa
     }
 
     @Override
+    public NodeValueIndexCursor allocateFullAccessNodeValueIndexCursor( PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
+    {
+        return trace( new FullAccessNodeValueIndexCursor( DefaultNodeValueIndexCursor::release, memoryTracker ) );
+    }
+
+    @Override
     public NodeLabelIndexCursor allocateNodeLabelIndexCursor( PageCursorTracer cursorTracer )
     {
         return trace( new DefaultNodeLabelIndexCursor( DefaultNodeLabelIndexCursor::release, allocateNodeCursor( cursorTracer ) ) );
+    }
+
+    @Override
+    public NodeLabelIndexCursor allocateFullAccessNodeLabelIndexCursor( PageCursorTracer cursorTracer )
+    {
+        return trace( new FullAccessNodeLabelIndexCursor( DefaultNodeLabelIndexCursor::release ) );
     }
 
     @Override
