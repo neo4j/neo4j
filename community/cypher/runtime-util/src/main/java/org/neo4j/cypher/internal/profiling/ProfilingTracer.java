@@ -192,7 +192,12 @@ public class ProfilingTracer implements QueryProfiler, QueryProfile
             long pageCacheHits = statisticProvider.getPageCacheHits();
             long pageCacheFaults = statisticProvider.getPageCacheMisses();
             long executionTime = clock.nanoTime() - start;
-            data.update( executionTime, hitCount, rowCount, pageCacheHits - pageCountHitsStart, pageCacheFaults - pageCountMissesStart, OperatorProfile.NO_DATA );
+            data.update( executionTime,
+                         hitCount,
+                         rowCount,
+                         pageCacheHits - pageCountHitsStart,
+                         pageCacheFaults - pageCountMissesStart,
+                         OperatorProfile.NO_DATA );
         }
     }
 }
