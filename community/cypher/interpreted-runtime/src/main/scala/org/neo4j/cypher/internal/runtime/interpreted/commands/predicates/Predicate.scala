@@ -394,6 +394,43 @@ case class NonEmpty(collection: Expression) extends Predicate {
   override def children: Seq[AstNode[_]] = Seq(collection)
 }
 
+case class HasLabelOrType(entity: Expression, labelOrType: String) extends Predicate {
+
+  override def isMatch(ctx: ReadableRow, state: QueryState): Option[Boolean] = entity(ctx, state) match {
+
+    case IsNoValue() =>
+      None
+
+    case node: VirtualNodeValue =>
+      val nodeId = node.id
+      val queryCtx = state.query
+      val token = state.query.nodeLabel(labelOrType)
+      if (token == StatementConstants.NO_SUCH_LABEL) Some(false)
+      else Some(queryCtx.isLabelSetOnNode(token, nodeId, state.cursors.nodeCursor))
+
+    case relationship: VirtualRelationshipValue =>
+      val relId = relationship.id
+      val queryCtx = state.query
+      val token = state.query.relationshipType(labelOrType)
+      if (token == StatementConstants.NO_SUCH_RELATIONSHIP_TYPE) Some(false)
+      else Some(queryCtx.isTypeSetOnRelationship(token, relId, state.cursors.relationshipScanCursor))
+
+    case value =>
+      throw new CypherTypeException(
+        s"Expected $value to be a Node or Relationship, but it was a ${value.getClass.getName}")
+  }
+
+  override def toString = s"$entity:$labelOrType"
+
+  override def rewrite(f: Expression => Expression): Expression = f(HasLabelOrType(entity.rewrite(f), labelOrType))
+
+  override def children: Seq[Expression] = Seq(entity)
+
+  override def arguments: Seq[Expression] = Seq(entity)
+
+  override def containsIsNull = false
+}
+
 case class HasLabel(entity: Expression, label: KeyToken) extends Predicate {
 
   override def isMatch(ctx: ReadableRow, state: QueryState): Option[Boolean] = entity(ctx, state) match {
@@ -419,6 +456,37 @@ case class HasLabel(entity: Expression, label: KeyToken) extends Predicate {
   override def rewrite(f: Expression => Expression): Expression = f(HasLabel(entity.rewrite(f), label.typedRewrite[KeyToken](f)))
 
   override def children: Seq[Expression] = Seq(label, entity)
+
+  override def arguments: Seq[Expression] = Seq(entity)
+
+  override def containsIsNull = false
+}
+
+case class HasType(entity: Expression, typ: KeyToken) extends Predicate {
+
+  override def isMatch(ctx: ReadableRow, state: QueryState): Option[Boolean] = entity(ctx, state) match {
+
+    case IsNoValue() =>
+      None
+
+    case value =>
+      val relationship = CastSupport.castOrFail[VirtualRelationshipValue](value)
+      val relationshipId = relationship.id
+      val queryCtx = state.query
+
+      typ.getOptId(state.query) match {
+        case None =>
+          Some(false)
+        case Some(relTypeId) =>
+          Some(queryCtx.isTypeSetOnRelationship(relTypeId, relationshipId, state.cursors.relationshipScanCursor))
+      }
+  }
+
+  override def toString = s"$entity:${typ.name}"
+
+  override def rewrite(f: Expression => Expression): Expression = f(HasType(entity.rewrite(f), typ.typedRewrite[KeyToken](f)))
+
+  override def children: Seq[Expression] = Seq(typ, entity)
 
   override def arguments: Seq[Expression] = Seq(entity)
 

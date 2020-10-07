@@ -106,6 +106,8 @@ public interface DbAccess extends EntityById
 
     boolean isLabelSetOnNode( int label, long id, NodeCursor nodeCursor );
 
+    boolean isTypeSetOnRelationship( int typ, long id, RelationshipScanCursor relationshipCursor );
+
     String getPropertyKeyName( int token );
 
     MapValue nodeAsMap( long id, NodeCursor nodeCursor, PropertyCursor propertyCursor );

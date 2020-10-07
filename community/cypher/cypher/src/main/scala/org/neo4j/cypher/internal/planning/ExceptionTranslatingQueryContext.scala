@@ -250,6 +250,9 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def isLabelSetOnNode(label: Int, node: Long, nodeCursor: NodeCursor): Boolean =
     translateException(tokenNameLookup, inner.isLabelSetOnNode(label, node, nodeCursor))
 
+  override def isTypeSetOnRelationship(typ: Int, relationship: Long, relationshipCursor: RelationshipScanCursor): Boolean =
+    translateException(tokenNameLookup, inner.isTypeSetOnRelationship(typ, relationship, relationshipCursor))
+
   override def getRelTypeId(relType: String): Int =
     translateException(tokenNameLookup, inner.getRelTypeId(relType))
 

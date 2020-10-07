@@ -188,6 +188,10 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     CursorUtils.nodeHasLabel(reads(), nodeCursor, node, label)
   }
 
+  override def isTypeSetOnRelationship(typ: Int, id: Long, relationshipCursor: RelationshipScanCursor): Boolean = {
+    CursorUtils.relationshipHasType(reads(), relationshipCursor, id, typ)
+  }
+
   override def getOrCreateLabelId(labelName: String): Int = {
     val id = tokenRead.nodeLabel(labelName)
     if (id != TokenRead.NO_TOKEN) id

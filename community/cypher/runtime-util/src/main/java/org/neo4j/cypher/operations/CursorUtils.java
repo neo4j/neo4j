@@ -173,6 +173,26 @@ public final class CursorUtils
         return nodeCursor.hasLabel( label );
     }
 
+    /**
+     * Checks if given relationship has a given type.
+     *
+     * @param read The current Read instance
+     * @param relationshipCursor The relationship cursor to use
+     * @param relationship The id of the relationship
+     * @param type The id of the tyoe
+     * @return {@code true} if the relationship has the type, otherwise {@code false}
+     */
+    public static boolean relationshipHasType( Read read, RelationshipScanCursor relationshipCursor, long relationship, int type )
+    {
+        read.singleRelationship( relationship, relationshipCursor );
+        if ( !relationshipCursor.next() )
+        {
+            return false;
+        }
+
+        return relationshipCursor.type() == type;
+    }
+
     public static RelationshipTraversalCursor nodeGetRelationships( Read read, CursorFactory cursors, NodeCursor node,
             long nodeId, Direction direction, int[] types, PageCursorTracer cursorTracer )
     {

@@ -188,7 +188,9 @@ case class CommunityExpressionConverter(tokenContext: TokenContext) extends Expr
       case e: internal.expressions.CaseExpression => caseExpression(id, e, self)
       case e: internal.expressions.ShortestPathExpression => commands.expressions
         .ShortestPathExpression(e.pattern.asLegacyPatterns(id, None, self).head, operatorId = id)
+      case e: internal.expressions.HasLabelsOrTypes => hasLabelsOrTypes(id, e, self)
       case e: internal.expressions.HasLabels => hasLabels(id, e, self)
+      case e: internal.expressions.HasTypes => hasTypes(id, e, self)
       case e: internal.expressions.ListLiteral => commands.expressions.ListLiteral(toCommandExpression(id, e.expressions, self): _*)
       case e: internal.expressions.MapExpression => commands.expressions.LiteralMap(mapItems(id, e.items, self))
       case e: internal.expressions.ListSlice => commands.expressions
@@ -577,11 +579,28 @@ case class CommunityExpressionConverter(tokenContext: TokenContext) extends Expr
       commands.expressions.GenericCase(predicateAlternatives, toCommandExpression(id, e.default, self))
   }
 
+  private def hasLabelsOrTypes(id: Id, e: internal.expressions.HasLabelsOrTypes, self: ExpressionConverters): Predicate = {
+    val preds = e.labels.map {
+      l =>
+        predicates.HasLabelOrType(self.toCommandExpression(id, e.expression), l.name): Predicate
+    }
+    commands.predicates.Ands(preds: _*)
+  }
+
   private def hasLabels(id: Id, e: internal.expressions.HasLabels, self: ExpressionConverters): Predicate = {
     val preds = e.labels.map {
       l =>
         predicates.HasLabel(self.toCommandExpression(id, e.expression),
           commands.values.KeyToken.Unresolved(l.name, commands.values.TokenType.Label)): Predicate
+    }
+    commands.predicates.Ands(preds: _*)
+  }
+
+  private def hasTypes(id: Id, e: internal.expressions.HasTypes, self: ExpressionConverters): Predicate = {
+    val preds = e.types.map {
+      l =>
+        predicates.HasType(self.toCommandExpression(id, e.expression),
+          commands.values.KeyToken.Unresolved(l.name, commands.values.TokenType.RelType)): Predicate
     }
     commands.predicates.Ands(preds: _*)
   }
