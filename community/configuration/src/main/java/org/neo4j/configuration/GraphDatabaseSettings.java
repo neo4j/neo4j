@@ -153,7 +153,9 @@ public class GraphDatabaseSettings implements SettingsDeclaration
             "The `high_limit` format is available for Enterprise Edition only. " +
             "It is required if you have a graph that is larger than 34 billion nodes, 34 billion relationships, or 68 billion properties. " +
             "A change of the record format is irreversible. " +
-            "Certain operations may suffer from a performance penalty of up to 10%, which is why this format is not switched on by default." )
+            "Certain operations may suffer from a performance penalty of up to 10%, which is why this format is not switched on by default. " +
+            "However, if you want to change the configured record format value, you must also set `dbms.allow_upgrade=true`, " +
+            "because the setting implies a one-way store format migration." )
     public static final Setting<String> record_format = newBuilder( "dbms.record_format", STRING, "" ).build();
 
     // Cypher settings
