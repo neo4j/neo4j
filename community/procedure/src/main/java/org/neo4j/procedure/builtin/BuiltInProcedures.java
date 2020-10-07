@@ -463,9 +463,10 @@ public class BuiltInProcedures
         return result.stream();
     }
 
+    @Deprecated
     @Description( "Create a named schema index with specified index provider and configuration (optional). " +
             "Yield: name, labels, properties, providerName, status" )
-    @Procedure( name = "db.createIndex", mode = SCHEMA )
+    @Procedure( name = "db.createIndex", mode = SCHEMA, deprecatedBy = "CREATE INDEX command" )
     public Stream<SchemaIndexInfo> createIndex(
             @Name( "indexName" ) String indexName,
             @Name( "labels" ) List<String> labels,
