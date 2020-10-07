@@ -1552,7 +1552,7 @@ EXPRESSION HasLabels(EXPRESSION subject) :
 }
 {
   labels=NodeLabels()
-  { return astFactory.hasLabels(subject, labels); }
+  { return astFactory.hasLabelsOrTypes(subject, labels); }
 }
 
 Token NodeLabel() :

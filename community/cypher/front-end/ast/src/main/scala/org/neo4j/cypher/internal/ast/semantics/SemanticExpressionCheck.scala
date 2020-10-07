@@ -48,6 +48,8 @@ import org.neo4j.cypher.internal.expressions.GetDegree
 import org.neo4j.cypher.internal.expressions.GreaterThan
 import org.neo4j.cypher.internal.expressions.GreaterThanOrEqual
 import org.neo4j.cypher.internal.expressions.HasLabels
+import org.neo4j.cypher.internal.expressions.HasLabelsOrTypes
+import org.neo4j.cypher.internal.expressions.HasTypes
 import org.neo4j.cypher.internal.expressions.HexIntegerLiteral
 import org.neo4j.cypher.internal.expressions.ImplicitProcedureArgument
 import org.neo4j.cypher.internal.expressions.In
@@ -326,9 +328,19 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
       case x:ImplicitProcedureArgument =>
         specifyType(x.parameterType.covariant, x)
 
+      case x:HasLabelsOrTypes =>
+        check(ctx, x.expression, x +: parents) chain
+          expectType(CTNode.covariant | CTRelationship.covariant, x.expression) chain
+          specifyType(CTBoolean, x)
+
       case x:HasLabels =>
         check(ctx, x.expression, x +: parents) chain
           expectType(CTNode.covariant, x.expression) chain
+          specifyType(CTBoolean, x)
+
+      case x:HasTypes =>
+        check(ctx, x.expression, x +: parents) chain
+          expectType(CTRelationship.covariant, x.expression) chain
           specifyType(CTBoolean, x)
 
         // ITERABLES

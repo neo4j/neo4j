@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.ir.helpers
 import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.HasLabels
+import org.neo4j.cypher.internal.expressions.HasTypes
 import org.neo4j.cypher.internal.expressions.NodePatternExpression
 import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.Ors
@@ -116,6 +117,12 @@ object ExpressionConverters {
           acc => val newAcc = acc ++ labels.map { label =>
                 Predicate(Set(name), p.copy(labels = Seq(label))(p.position))
             }
+            SkipChildren(newAcc)
+        // r:T
+        case p@HasTypes(Variable(name), types) =>
+          acc => val newAcc = acc ++ types.map { typ =>
+            Predicate(Set(name), p.copy(types = Seq(typ))(p.position))
+          }
             SkipChildren(newAcc)
         // and
         case _: Ands =>

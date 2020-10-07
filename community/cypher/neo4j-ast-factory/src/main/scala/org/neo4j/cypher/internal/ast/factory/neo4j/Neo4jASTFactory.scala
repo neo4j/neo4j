@@ -101,7 +101,7 @@ import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.FunctionName
 import org.neo4j.cypher.internal.expressions.GreaterThan
 import org.neo4j.cypher.internal.expressions.GreaterThanOrEqual
-import org.neo4j.cypher.internal.expressions.HasLabels
+import org.neo4j.cypher.internal.expressions.HasLabelsOrTypes
 import org.neo4j.cypher.internal.expressions.In
 import org.neo4j.cypher.internal.expressions.InvalidNotEquals
 import org.neo4j.cypher.internal.expressions.IsNotNull
@@ -510,8 +510,8 @@ class Neo4jASTFactory(query: String)
     MapExpression(pairs)(p)
   }
 
-  override def hasLabels(subject: Expression, labels: util.List[StringPos[InputPosition]]): Expression =
-    HasLabels(subject, labels.asScala.toList.map(sp => LabelName(sp.string)(sp.pos)))(subject.position)
+  override def hasLabelsOrTypes(subject: Expression, labels: util.List[StringPos[InputPosition]]): Expression =
+    HasLabelsOrTypes(subject, labels.asScala.toList.map(sp => LabelName(sp.string)(sp.pos)))(subject.position)
 
   override def property(subject: Expression, propertyKeyName: StringPos[InputPosition]): Property =
     Property(subject, PropertyKeyName(propertyKeyName.string)(propertyKeyName.pos))(subject.position)

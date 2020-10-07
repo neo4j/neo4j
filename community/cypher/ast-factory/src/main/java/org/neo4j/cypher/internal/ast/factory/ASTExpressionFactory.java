@@ -69,7 +69,7 @@ public interface ASTExpressionFactory<
 
     EXPRESSION mapLiteral( POS p, List<StringPos<POS>> keys, List<EXPRESSION> values );
 
-    EXPRESSION hasLabels( EXPRESSION subject, List<StringPos<POS>> labels );
+    EXPRESSION hasLabelsOrTypes( EXPRESSION subject, List<StringPos<POS>> labels );
 
     PROPERTY property( EXPRESSION subject, StringPos<POS> propertyKeyName );
 

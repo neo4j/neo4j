@@ -22,3 +22,13 @@ case class HasLabels(expression: Expression, labels: Seq[LabelName])(val positio
 
   override def asCanonicalStringVal = s"${expression.asCanonicalStringVal}${labels.map(_.asCanonicalStringVal).mkString(":", ":", "")}"
 }
+
+case class HasLabelsOrTypes(expression: Expression, labels: Seq[LabelName])(val position: InputPosition) extends Expression {
+
+  override def asCanonicalStringVal = s"${expression.asCanonicalStringVal}${labels.map(_.asCanonicalStringVal).mkString(":", ":", "")}"
+}
+
+case class HasTypes(expression: Expression, types: Seq[RelTypeName])(val position: InputPosition) extends Expression {
+
+  override def asCanonicalStringVal = s"${expression.asCanonicalStringVal}${types.map(_.asCanonicalStringVal).mkString(":", ":", "")}"
+}

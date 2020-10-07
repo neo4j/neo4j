@@ -440,7 +440,7 @@ public class LiteralInterpreter implements ASTFactory<NULL,NULL,NULL,NULL,NULL,N
     }
 
     @Override
-    public Object hasLabels( Object subject, List<StringPos<NULL>> labels )
+    public Object hasLabelsOrTypes( Object subject, List<StringPos<NULL>> labels )
     {
         throw new UnsupportedOperationException( "hasLabels is not a literal" );
     }

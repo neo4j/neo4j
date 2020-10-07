@@ -21,6 +21,7 @@ import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.GreaterThan
 import org.neo4j.cypher.internal.expressions.GreaterThanOrEqual
 import org.neo4j.cypher.internal.expressions.HasLabels
+import org.neo4j.cypher.internal.expressions.HasTypes
 import org.neo4j.cypher.internal.expressions.InvalidNotEquals
 import org.neo4j.cypher.internal.expressions.LessThan
 import org.neo4j.cypher.internal.expressions.LessThanOrEqual
@@ -49,6 +50,9 @@ case object normalizeComparisons extends Rewriter {
       InvalidNotEquals(lhs.endoRewrite(copyVariables), rhs.endoRewrite(copyVariables))(c.position)
     case c@HasLabels(expr, labels) if labels.size > 1 =>
       val hasLabels = labels.map(l => HasLabels(expr.endoRewrite(copyVariables), Seq(l))(c.position))
+      Ands(hasLabels)(c.position)
+    case c@HasTypes(expr, types) if types.size > 1 =>
+      val hasLabels = types.map(l => HasTypes(expr.endoRewrite(copyVariables), Seq(l))(c.position))
       Ands(hasLabels)(c.position)
   })
 }

@@ -24,7 +24,6 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Or
 import org.neo4j.cypher.internal.expressions.Pattern
 import org.neo4j.cypher.internal.expressions.PatternExpression
-import org.neo4j.cypher.internal.expressions.RelationshipsPattern
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.InputPosition
 import org.parboiled.scala.EMPTY
@@ -155,7 +154,7 @@ trait Expressions extends Parser
   private def Expression2: Rule1[expressions.Expression] = rule("an expression") {
     Expression1 ~ zeroOrMore(WS ~ (
         PropertyLookup
-      | NodeLabels ~~>> (expressions.HasLabels(_: expressions.Expression, _))
+      | NodeLabels ~~>> (expressions.HasLabelsOrTypes(_: expressions.Expression, _))
       |  "[" ~~ Expression ~~ "]" ~~>> (expressions.ContainerIndex(_: expressions.Expression, _))
       | "[" ~~ optional(Expression) ~~ ".." ~~ optional(Expression) ~~ "]" ~~>> (expressions.ListSlice(_: expressions.Expression, _, _))
     ))

@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.rewriting.conditions.containsNoNodesOfType
 import org.neo4j.cypher.internal.rewriting.conditions.containsNoReturnAll
 import org.neo4j.cypher.internal.rewriting.conditions.noDuplicatesInReturnItems
+import org.neo4j.cypher.internal.rewriting.conditions.noHasLabelsOrTypes
 import org.neo4j.cypher.internal.rewriting.conditions.noReferenceEqualityAmongVariables
 import org.neo4j.cypher.internal.rewriting.conditions.noUnnamedPatternElementsInMatch
 import org.neo4j.cypher.internal.rewriting.conditions.noUnnamedPatternElementsInPatternComprehension
@@ -45,6 +46,7 @@ import org.neo4j.cypher.internal.rewriting.rewriters.namePatternElements
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizeArgumentOrder
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizeComparisons
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizeExistsPatternExpressions
+import org.neo4j.cypher.internal.rewriting.rewriters.normalizeHasLabelsAndHasType
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizeMatchPredicates
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizeNotEquals
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizeSargablePredicates
@@ -65,6 +67,8 @@ class ASTRewriter(rewriterSequencer: String => RewriterStepSequencer,
               cypherExceptionFactory: CypherExceptionFactory): (Statement, Map[String, Any], Set[RewriterCondition]) = {
 
     val contract = rewriterSequencer("ASTRewriter")(
+      normalizeHasLabelsAndHasType(semanticState),
+      enableCondition(noHasLabelsOrTypes),
       expandStar(semanticState),
       desugarMapProjection(semanticState),
       moveWithPastMatch,
