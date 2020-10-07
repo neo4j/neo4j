@@ -658,7 +658,7 @@ object IntermediateRepresentation {
                        params: IntermediateRepresentation*): IntermediateRepresentation =
     InvokeSideEffect(owner, method, params)
 
-  def load(variable: String): IntermediateRepresentation = Load(variable)
+  def load(variable: String): Load = Load(variable)
 
   def load(variable: LocalVariable): IntermediateRepresentation = Load(variable.name)
 
@@ -762,8 +762,14 @@ object IntermediateRepresentation {
 
   def assign(variable: LocalVariable, value: IntermediateRepresentation): AssignToLocalVariable = AssignToLocalVariable(variable.name, value)
 
+  def declareAndAssign(typeReference: TypeReference, load: Load, value: IntermediateRepresentation): IntermediateRepresentation =
+    declareAndAssign(typeReference, load.variable, value)
+
   def declareAndAssign(typeReference: TypeReference, name: String, value: IntermediateRepresentation): IntermediateRepresentation =
-    block(declare(typeReference, name), assign(name, value))
+    block(declareAndAssignList(typeReference, name, value) :_*)
+
+  def declareAndAssignList(typeReference: TypeReference, name: String, value: IntermediateRepresentation): Seq[IntermediateRepresentation] =
+    Seq(declare(typeReference, name), assign(name, value))
 
   def returns(value: IntermediateRepresentation): IntermediateRepresentation = Returns(value)
 

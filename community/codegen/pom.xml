@@ -107,6 +107,14 @@
             <artifactId>neo4j-values</artifactId>
             <version>${project.version}</version>
         </dependency>
+
+        <!-- test  -->
+
+        <dependency>
+            <groupId>org.scalatest</groupId>
+            <artifactId>scalatest_${scala.binary.version}</artifactId>
+        </dependency>
+
     </dependencies>
 
     <build>
