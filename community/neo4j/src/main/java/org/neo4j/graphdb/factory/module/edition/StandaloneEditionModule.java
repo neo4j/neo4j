@@ -24,7 +24,7 @@ import java.util.function.Supplier;
 
 import org.neo4j.collection.Dependencies;
 import org.neo4j.dbms.DatabaseStateService;
-import org.neo4j.dbms.DefaultDatabaseStateService;
+import org.neo4j.dbms.CommunityDatabaseStateService;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.dbms.database.DbmsRuntimeRepository;
 import org.neo4j.dbms.database.DefaultDatabaseManager;
@@ -86,7 +86,7 @@ public abstract class StandaloneEditionModule extends AbstractEditionModule
     public DatabaseManager<StandaloneDatabaseContext> createDatabaseManager( GlobalModule globalModule )
     {
         var databaseManager = new DefaultDatabaseManager( globalModule, this );
-        databaseStateService = new DefaultDatabaseStateService( databaseManager );
+        databaseStateService = new CommunityDatabaseStateService( databaseManager );
 
         globalModule.getGlobalLife().add( databaseManager );
         globalModule.getGlobalDependencies().satisfyDependency( databaseManager );

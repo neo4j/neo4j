@@ -19,7 +19,7 @@
  */
 package org.neo4j.dbms;
 
-enum DefaultOperatorState implements OperatorState
+public enum DefaultOperatorState implements OperatorState
 {
     STOPPED( "offline" ),
     STARTED( "online" ),

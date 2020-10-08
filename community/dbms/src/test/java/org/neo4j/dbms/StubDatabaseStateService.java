@@ -22,35 +22,44 @@ package org.neo4j.dbms;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 
 import org.neo4j.kernel.database.NamedDatabaseId;
-
-import static org.neo4j.dbms.DefaultOperatorState.UNKNOWN;
 
 public class StubDatabaseStateService implements DatabaseStateService
 {
     private final Map<NamedDatabaseId,DatabaseState> databaseStates;
+    private final Function<NamedDatabaseId,DatabaseState> unknownFactory;
 
-    public StubDatabaseStateService()
+    public StubDatabaseStateService( Function<NamedDatabaseId,DatabaseState> unknownFactory )
     {
+        this.unknownFactory = unknownFactory;
         this.databaseStates = Collections.emptyMap();
     }
 
-    public StubDatabaseStateService( Map<NamedDatabaseId,DatabaseState> databaseStates )
+    public StubDatabaseStateService( Map<NamedDatabaseId,DatabaseState> databaseStates,
+            Function<NamedDatabaseId,DatabaseState> unknownFactory )
     {
         this.databaseStates = databaseStates;
+        this.unknownFactory = unknownFactory;
     }
 
     @Override
-    public OperatorState stateOfDatabase( NamedDatabaseId namedDatabaseId )
+    public DatabaseState stateOfDatabase( NamedDatabaseId namedDatabaseId )
     {
         var state = databaseStates.get( namedDatabaseId );
-        return state == null ? UNKNOWN : state.operatorState();
+        return state == null ? unknownFactory.apply( namedDatabaseId ) : state;
     }
 
     @Override
     public Optional<Throwable> causeOfFailure( NamedDatabaseId namedDatabaseId )
     {
         return Optional.ofNullable( databaseStates.get( namedDatabaseId ) ).flatMap( DatabaseState::failure );
+    }
+
+    @Override
+    public Map<NamedDatabaseId,DatabaseState> stateOfAllDatabases()
+    {
+        return Map.copyOf( databaseStates );
     }
 }

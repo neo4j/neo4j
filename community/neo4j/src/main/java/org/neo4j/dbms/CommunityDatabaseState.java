@@ -23,19 +23,31 @@ import java.util.Optional;
 
 import org.neo4j.kernel.database.NamedDatabaseId;
 
-final class CommunityDatabaseState implements DatabaseState
+public final class CommunityDatabaseState implements DatabaseState
 {
     private final NamedDatabaseId namedDatabaseId;
+    private final boolean unknown;
     private final boolean isStarted;
     private final boolean hasFailed;
     private final Throwable failureCause;
 
-    CommunityDatabaseState( NamedDatabaseId namedDatabaseId, boolean isStarted, boolean hasFailed, Throwable failureCause )
+    public CommunityDatabaseState( NamedDatabaseId namedDatabaseId, boolean isStarted, boolean hasFailed, Throwable failureCause )
+    {
+        this( namedDatabaseId, isStarted, hasFailed, false, failureCause );
+    }
+
+    private CommunityDatabaseState( NamedDatabaseId namedDatabaseId, boolean isStarted, boolean hasFailed, boolean unknown, Throwable failureCause )
     {
         this.namedDatabaseId = namedDatabaseId;
         this.isStarted = isStarted;
         this.hasFailed = hasFailed;
         this.failureCause = failureCause;
+        this.unknown = unknown;
+    }
+
+    public static CommunityDatabaseState unknown( NamedDatabaseId namedDatabaseId )
+    {
+        return new CommunityDatabaseState( namedDatabaseId, false, false, true, null );
     }
 
     @Override
@@ -47,7 +59,8 @@ final class CommunityDatabaseState implements DatabaseState
     @Override
     public OperatorState operatorState()
     {
-        return isStarted ? DefaultOperatorState.STARTED : DefaultOperatorState.STOPPED;
+        return unknown ? DefaultOperatorState.UNKNOWN :
+               isStarted ? DefaultOperatorState.STARTED : DefaultOperatorState.STOPPED;
     }
 
     @Override

@@ -19,7 +19,9 @@
  */
 package org.neo4j.dbms;
 
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.dbms.database.DefaultDatabaseManager;
@@ -29,30 +31,41 @@ import org.neo4j.kernel.database.NamedDatabaseId;
 /**
  * Database State Service for the community edition of the dbms
  */
-public final class DefaultDatabaseStateService implements DatabaseStateService
+public final class CommunityDatabaseStateService implements DatabaseStateService
 {
     private final DatabaseManager<StandaloneDatabaseContext> databaseManager;
 
-    public DefaultDatabaseStateService( DefaultDatabaseManager databaseManager )
+    public CommunityDatabaseStateService( DefaultDatabaseManager databaseManager )
     {
         this.databaseManager = databaseManager;
     }
 
     @Override
-    public OperatorState stateOfDatabase( NamedDatabaseId namedDatabaseId )
+    public Map<NamedDatabaseId,DatabaseState> stateOfAllDatabases()
+    {
+        return databaseManager.registeredDatabases().entrySet().stream()
+                .collect( Collectors.toUnmodifiableMap( Map.Entry::getKey, entry -> getState( entry.getValue() ) ) );
+    }
+
+    @Override
+    public DatabaseState stateOfDatabase( NamedDatabaseId namedDatabaseId )
     {
         return databaseManager.getDatabaseContext( namedDatabaseId )
-                .map( ctx ->
-                        new CommunityDatabaseState( ctx.database().getNamedDatabaseId(),
-                                ctx.database().isStarted(),
-                                ctx.isFailed(),
-                                ctx.failureCause() ).operatorState() )
-                .orElse( DefaultOperatorState.UNKNOWN );
+                .map( this::getState )
+                .orElse( CommunityDatabaseState.unknown( namedDatabaseId ) );
     }
 
     @Override
     public Optional<Throwable> causeOfFailure( NamedDatabaseId namedDatabaseId )
     {
         return databaseManager.getDatabaseContext( namedDatabaseId ).map( StandaloneDatabaseContext::failureCause );
+    }
+
+    private DatabaseState getState( StandaloneDatabaseContext ctx )
+    {
+        return new CommunityDatabaseState( ctx.database().getNamedDatabaseId(),
+                                           ctx.database().isStarted(),
+                                           ctx.isFailed(),
+                                           ctx.failureCause() );
     }
 }

@@ -19,6 +19,7 @@
  */
 package org.neo4j.dbms;
 
+import java.util.Map;
 import java.util.Optional;
 
 import org.neo4j.kernel.database.NamedDatabaseId;
@@ -31,6 +32,16 @@ import org.neo4j.kernel.database.NamedDatabaseId;
  */
 public interface DatabaseStateService
 {
+
+    /**
+     * Return a snapshot of states for all known databases.
+     *
+     * *NOTE* that if a database has been dropped it will be excluded from this table
+     *
+     * @return map of named database Ids to operator states
+     */
+    Map<NamedDatabaseId,DatabaseState> stateOfAllDatabases();
+
     /**
      * Note that if a database with the given name does not exist, the state
      * "UNKNOWN" will be returned.
@@ -38,7 +49,7 @@ public interface DatabaseStateService
      * @param namedDatabaseId the database whose state to return
      * @return state of database with name
      */
-    OperatorState stateOfDatabase( NamedDatabaseId namedDatabaseId );
+    DatabaseState stateOfDatabase( NamedDatabaseId namedDatabaseId );
 
     /**
      * Note that if a database with the given name does not exist, {@code Optional.empty()}
@@ -48,4 +59,5 @@ public interface DatabaseStateService
      * @return the cause of the database failure, if there is one.
      */
     Optional<Throwable> causeOfFailure( NamedDatabaseId namedDatabaseId );
+
 }
