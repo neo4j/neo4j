@@ -49,7 +49,6 @@ import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.PropertyKeyId
 import org.neo4j.cypher.internal.util.RelTypeId
 import org.neo4j.cypher.internal.util.Selectivity
-import org.scalatest.mockito.MockitoSugar
 
 import scala.collection.mutable
 
@@ -331,8 +330,7 @@ class StatisticsBackedLogicalPlanningConfiguration(
   planContext: PlanContext,
   options: StatisticsBackedLogicalPlanningConfigurationBuilder.Options,
 ) extends LogicalPlanConstructionTestSupport
-  with AstConstructionTestSupport
-  with MockitoSugar {
+  with AstConstructionTestSupport {
 
   def plan(queryString: String): LogicalPlan = {
     planState(queryString).logicalPlan

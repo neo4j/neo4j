@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfiguration
@@ -30,7 +31,10 @@ import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.scalatest.Assertion
 
-class LimitPropagationPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIntegrationTestSupport {
+class LimitPropagationPlanningIntegrationTest
+  extends CypherFunSuite
+  with LogicalPlanningIntegrationTestSupport
+  with AstConstructionTestSupport {
 
   private def statisticsForLimitPropagationTests(plannerBuilder: StatisticsBackedLogicalPlanningConfigurationBuilder) =
     plannerBuilder
@@ -70,7 +74,7 @@ class LimitPropagationPlanningIntegrationTest extends CypherFunSuite with Logica
       .nodeHashJoin("b")
       .|.expandAll("(c)-[cb:REL_CB]->(b)")
       .|.nodeIndexOperator("c:C(id STARTS WITH '')", indexOrder = IndexOrderAscending)
-      .filter("b:B")
+      .filterExpression(hasLabels("b", "B"))
       .expandAll("(a)-[ab:REL_AB]->(b)")
       .nodeIndexOperator("a:A(id = 123)", indexOrder = IndexOrderAscending)
       .build()
@@ -91,7 +95,7 @@ class LimitPropagationPlanningIntegrationTest extends CypherFunSuite with Logica
       .nodeHashJoin("b")
       .|.expandAll("(c)-[cb:REL_CB]->(b)")
       .|.nodeIndexOperator("c:C(id)", indexOrder = IndexOrderAscending)
-      .filter("b:B")
+      .filterExpression(hasLabels("b", "B"))
       .expandAll("(a)-[ab:REL_AB]->(b)")
       .nodeIndexOperator("a:A(id = 123)", indexOrder = IndexOrderAscending)
       .build()
@@ -111,9 +115,13 @@ class LimitPropagationPlanningIntegrationTest extends CypherFunSuite with Logica
       .produceResults("a", "c")
       .top(Seq(Ascending("c.id")), 10)
       .projection("cache[c.id] AS `c.id`")
-      .filter("c:C", "cache[c.id] STARTS WITH ''")
+      .filterExpression(
+        hasLabels("c", "C"),
+        startsWith(
+          cachedNodeProp("c", "id"),
+          literalString("")))
       .expandAll("(b)<-[cb:REL_CB]-(c)")
-      .filter("b:B")
+      .filterExpression(hasLabels("b", "B"))
       .expandAll("(a)-[ab:REL_AB]->(b)")
       .nodeIndexOperator("a:A(id = 123)", indexOrder = IndexOrderAscending)
       .build()
@@ -136,7 +144,57 @@ class LimitPropagationPlanningIntegrationTest extends CypherFunSuite with Logica
       .nodeHashJoin("b")
       .|.expandAll("(c)-[cb:REL_CB]->(b)")
       .|.nodeIndexOperator("c:C(id STARTS WITH '')", indexOrder = IndexOrderAscending)
-      .filter("b:B")
+      .filterExpression(hasLabels("b", "B"))
+      .expandAll("(a)-[ab:REL_AB]->(b)")
+      .nodeIndexOperator("a:A(id = 123)", indexOrder = IndexOrderAscending)
+      .build()
+    }
+  }
+
+  test("should plan lazy index seek instead of sort when under limit and small skip") {
+    val query =
+      s"""
+         |MATCH (a:A {id: 123})-[ab:REL_AB]->(b:B)
+         |MATCH (c:C)-[cb:REL_CB]->(b) WHERE c.id STARTS WITH ''
+         |RETURN a, c ORDER BY c.id
+         |SKIP 7 LIMIT 10
+         |""".stripMargin
+
+    assertExpectedPlanForQueryGivenStatistics(query, statisticsForLimitPropagationTests) { planBuilder => planBuilder
+      .produceResults("a", "c")
+      .skip(7)
+      .limit(add(literalInt(10), literalInt(7)))
+      .nodeHashJoin("b")
+      .|.expandAll("(c)-[cb:REL_CB]->(b)")
+      .|.nodeIndexOperator("c:C(id STARTS WITH '')", indexOrder = IndexOrderAscending)
+      .filterExpression(hasLabels("b", "B"))
+      .expandAll("(a)-[ab:REL_AB]->(b)")
+      .nodeIndexOperator("a:A(id = 123)", indexOrder = IndexOrderAscending)
+      .build()
+    }
+  }
+
+  test("should not plan lazy index seek instead of sort when under limit and large skip") {
+    val query =
+      s"""
+         |MATCH (a:A {id: 123})-[ab:REL_AB]->(b:B)
+         |MATCH (c:C)-[cb:REL_CB]->(b) WHERE c.id STARTS WITH ''
+         |RETURN a, c ORDER BY c.id
+         |SKIP 100000 LIMIT 10
+         |""".stripMargin
+
+    assertExpectedPlanForQueryGivenStatistics(query, statisticsForLimitPropagationTests) { planBuilder => planBuilder
+      .produceResults("a", "c")
+      .skip(100000)
+      .top(Seq(Ascending("c.id")), add(literalInt(10), literalInt(100000)))
+      .projection("cache[c.id] AS `c.id`")
+      .filterExpression(
+        hasLabels("c", "C"),
+        startsWith(
+          cachedNodeProp("c", "id"),
+          literalString("")))
+      .expandAll("(b)<-[cb:REL_CB]-(c)")
+      .filterExpression(hasLabels("b", "B"))
       .expandAll("(a)-[ab:REL_AB]->(b)")
       .nodeIndexOperator("a:A(id = 123)", indexOrder = IndexOrderAscending)
       .build()

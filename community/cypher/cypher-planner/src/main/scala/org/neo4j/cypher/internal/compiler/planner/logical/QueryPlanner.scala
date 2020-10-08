@@ -35,7 +35,6 @@ import org.neo4j.cypher.internal.ir.DistinctQueryProjection
 import org.neo4j.cypher.internal.ir.PeriodicCommit
 import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.ir.PlannerQueryPart
-import org.neo4j.cypher.internal.ir.QueryPagination
 import org.neo4j.cypher.internal.ir.QueryProjection
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.UnionQuery
@@ -202,7 +201,7 @@ case object planPart extends PartPlanner {
         val cardinalityModel = context.metrics.cardinality(_, context.input, context.semanticTable)
         val cardinalityWithLimit = cardinalityModel(query)
         val cardinalityWithoutLimit = cardinalityModel(
-          query.updateQueryProjection(_ => proj.withPagination(QueryPagination.empty)))
+          query.updateQueryProjection(_ => proj.withPagination(proj.queryPagination.withLimit(None))))
 
         cardinalityWithLimit / cardinalityWithoutLimit
 

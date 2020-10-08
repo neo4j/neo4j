@@ -288,8 +288,11 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     self
   }
 
-  def limit(count: Long): IMPL = {
-    appendAtCurrentIndent(UnaryOperator(lp => Limit(lp, literalInt(count), DoNotIncludeTies)(_)))
+  def limit(count: Long): IMPL =
+    limit(literalInt(count))
+
+  def limit(countExpr: Expression): IMPL = {
+    appendAtCurrentIndent(UnaryOperator(lp => Limit(lp, countExpr, DoNotIncludeTies)(_)))
     self
   }
 
@@ -445,10 +448,14 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     self
   }
 
-  def top(sortItems: Seq[ColumnOrder], limit: Long): IMPL = {
-    appendAtCurrentIndent(UnaryOperator(lp => Top(lp, sortItems, literalInt(limit))(_)))
+  def top(sortItems: Seq[ColumnOrder], limit: Long): IMPL =
+    top(sortItems, literalInt(limit))
+
+  def top(sortItems: Seq[ColumnOrder], limitExpr: Expression): IMPL = {
+    appendAtCurrentIndent(UnaryOperator(lp => Top(lp, sortItems, limitExpr)(_)))
     self
   }
+
   def partialTop(alreadySortedPrefix: Seq[ColumnOrder], stillToSortSuffix: Seq[ColumnOrder], limit: Long): IMPL = {
     appendAtCurrentIndent(UnaryOperator(lp => PartialTop(lp, alreadySortedPrefix, stillToSortSuffix, literalInt(limit))(_)))
     self
