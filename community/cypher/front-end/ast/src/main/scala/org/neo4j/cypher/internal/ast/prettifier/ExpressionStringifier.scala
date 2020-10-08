@@ -42,6 +42,7 @@ import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.GreaterThan
 import org.neo4j.cypher.internal.expressions.GreaterThanOrEqual
 import org.neo4j.cypher.internal.expressions.HasLabels
+import org.neo4j.cypher.internal.expressions.HasLabelsOrTypes
 import org.neo4j.cypher.internal.expressions.HasTypes
 import org.neo4j.cypher.internal.expressions.In
 import org.neo4j.cypher.internal.expressions.InvalidNotEquals
@@ -203,6 +204,10 @@ case class ExpressionStringifier(
         val w = predicate.map(inner(ast)).map(" WHERE " + _).getOrElse("")
         val b = inner(ast)(proj)
         s"[$v$p$w | $b]"
+
+      case HasLabelsOrTypes(arg, labels) =>
+        val l = labels.map(apply).mkString(":", ":", "")
+        s"${inner(ast)(arg)}$l"
 
       case HasLabels(arg, labels) =>
         val l = labels.map(apply).mkString(":", ":", "")

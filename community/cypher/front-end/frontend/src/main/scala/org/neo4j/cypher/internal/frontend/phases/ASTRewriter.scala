@@ -67,9 +67,9 @@ class ASTRewriter(rewriterSequencer: String => RewriterStepSequencer,
               cypherExceptionFactory: CypherExceptionFactory): (Statement, Map[String, Any], Set[RewriterCondition]) = {
 
     val contract = rewriterSequencer("ASTRewriter")(
+      expandStar(semanticState),
       normalizeHasLabelsAndHasType(semanticState),
       enableCondition(noHasLabelsOrTypes),
-      expandStar(semanticState),
       desugarMapProjection(semanticState),
       moveWithPastMatch,
       normalizeComparisons,

@@ -44,6 +44,7 @@ import org.neo4j.cypher.internal.expressions.Expression.SemanticContext
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.FunctionName
 import org.neo4j.cypher.internal.expressions.HasLabels
+import org.neo4j.cypher.internal.expressions.HasLabelsOrTypes
 import org.neo4j.cypher.internal.expressions.In
 import org.neo4j.cypher.internal.expressions.InequalityExpression
 import org.neo4j.cypher.internal.expressions.IsNotNull
@@ -586,6 +587,8 @@ case class Match(
       case Some(innerWhere) => innerWhere.treeFold(labels) {
         case HasLabels(Variable(id), predicateLabels) if id == variable =>
           acc => SkipChildren(acc ++ predicateLabels.map(_.name))
+        case HasLabelsOrTypes(v@Variable(id), predicateLabels) if id == variable =>
+          acc => SkipChildren(acc ++ predicateLabels.map(_.name))
         case _: Where | _: And | _: Ands | _: Set[_] | _: Seq[_] =>
           acc => TraverseChildren(acc)
         case _ =>
@@ -641,7 +644,7 @@ case class Delete(expressions: Seq[Expression], forced: Boolean)(val position: I
       expectType(CTNode.covariant | CTRelationship.covariant | CTPath.covariant, expressions)
 
   private def warnAboutDeletingLabels =
-    expressions.filter(_.isInstanceOf[HasLabels]) map {
+    expressions.filter(e => e.isInstanceOf[HasLabels] || e.isInstanceOf[HasLabelsOrTypes]) map {
       e => SemanticError("DELETE doesn't support removing labels from a node. Try REMOVE.", e.position)
     }
 }

@@ -16,23 +16,47 @@
  */
 package org.neo4j.cypher.internal.rewriting
 
+import org.neo4j.cypher.internal.ast.Statement
+import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
+import org.neo4j.cypher.internal.ast.prettifier.Prettifier
+import org.neo4j.cypher.internal.ast.semantics.SemanticChecker
+import org.neo4j.cypher.internal.ast.semantics.SemanticState
+import org.neo4j.cypher.internal.parser.ParserFixture.parser
 import org.neo4j.cypher.internal.rewriting.rewriters.LabelPredicateNormalizer
 import org.neo4j.cypher.internal.rewriting.rewriters.MatchPredicateNormalization
 import org.neo4j.cypher.internal.rewriting.rewriters.PropertyPredicateNormalizer
+import org.neo4j.cypher.internal.rewriting.rewriters.normalizeHasLabelsAndHasType
+import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.inSequence
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class MatchPredicateNormalizerTest extends CypherFunSuite with RewriteTest {
+
+class MatchPredicateNormalizerTest extends CypherFunSuite {
+
+  private val prettifier = Prettifier(ExpressionStringifier(_.asCanonicalStringVal))
 
   object PropertyPredicateNormalization extends MatchPredicateNormalization(PropertyPredicateNormalizer)
 
   object LabelPredicateNormalization extends MatchPredicateNormalization(LabelPredicateNormalizer)
 
-  def rewriterUnderTest: Rewriter = inSequence(
+  def rewriter(semanticState: SemanticState): Rewriter = inSequence(
+    normalizeHasLabelsAndHasType(semanticState),
     PropertyPredicateNormalization,
     LabelPredicateNormalization
   )
+
+  def parseForRewriting(queryText: String): Statement = parser.parse(queryText.replace("\r\n", "\n"), OpenCypherExceptionFactory(None))
+
+  private def assertRewrite(originalQuery: String, expectedQuery: String) {
+    val original = parseForRewriting(originalQuery)
+    rewriter(SemanticChecker.check(original).state)
+    val result = original.endoRewrite(rewriter(SemanticChecker.check(original).state))
+    val expected = parseForRewriting(expectedQuery)
+    //For the test sake we need to rewrite away HasLabelsOrTypes to HasLabels alse on the expected
+    val expectedResult = expected.endoRewrite(normalizeHasLabelsAndHasType(SemanticChecker.check(expected).state))
+    assert(result === expectedResult, s"\n$originalQuery\nshould be rewritten to:\n$expectedQuery\nbut was rewritten to:${prettifier.asString(result.asInstanceOf[Statement])}")
+  }
 
   test("move single predicate from node to WHERE") {
     assertRewrite(

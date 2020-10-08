@@ -33,10 +33,12 @@ import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.rewriting.rewriters.flattenBooleanOperators
+import org.neo4j.cypher.internal.rewriting.rewriters.normalizeHasLabelsAndHasType
 import org.neo4j.cypher.internal.util.DummyPosition
 import org.neo4j.cypher.internal.util.Rewritable.RewritableAny
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.helpers.fixedPoint
+import org.neo4j.cypher.internal.util.inSequence
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.TestName
 
@@ -374,7 +376,8 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
   private def assert_that(originalQuery: String): RewriteTester = RewriteTester(originalQuery)
 
   private def getTheWholePlannerQueryFrom(query: String): PlannerQuery = {
-    val ast = parseForRewriting(query).endoRewrite(flattenBooleanOperators)
+    val astOriginal = parseForRewriting(query)
+    val ast = astOriginal.endoRewrite(inSequence(normalizeHasLabelsAndHasType(SemanticChecker.check(astOriginal).state), flattenBooleanOperators))
     val exceptionFactory = Neo4jCypherExceptionFactory(query, Some(DummyPosition(0)))
     val onError = SyntaxExceptionCreator.throwOnError(exceptionFactory)
     val result = SemanticChecker.check(ast)

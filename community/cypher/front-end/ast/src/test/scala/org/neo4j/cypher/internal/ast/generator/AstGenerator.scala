@@ -254,7 +254,7 @@ import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.FunctionName
 import org.neo4j.cypher.internal.expressions.GreaterThan
 import org.neo4j.cypher.internal.expressions.GreaterThanOrEqual
-import org.neo4j.cypher.internal.expressions.HasLabels
+import org.neo4j.cypher.internal.expressions.HasLabelsOrTypes
 import org.neo4j.cypher.internal.expressions.In
 import org.neo4j.cypher.internal.expressions.InvalidNotEquals
 import org.neo4j.cypher.internal.expressions.IsNotNull
@@ -554,10 +554,10 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     )
   } yield res
 
-  def _hasLabels: Gen[HasLabels] = for {
+  def _hasLabelsOrTypes: Gen[HasLabelsOrTypes] = for {
     expression <- _expression
     labels <- oneOrMore(_labelName)
-  } yield HasLabels(expression, labels)(pos)
+  } yield HasLabelsOrTypes(expression, labels)(pos)
 
   // Collections
   // ----------------------------------
@@ -753,7 +753,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
         lzy(_predicateBinary),
         lzy(_predicateComparisonChain),
         lzy(_iterablePredicate),
-        lzy(_hasLabels),
+        lzy(_hasLabelsOrTypes),
         lzy(_arithmeticUnary),
         lzy(_arithmeticBinary),
         lzy(_case),

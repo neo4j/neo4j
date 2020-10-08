@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.EveryPath
-import org.neo4j.cypher.internal.expressions.HasLabels
+import org.neo4j.cypher.internal.expressions.HasLabelsOrTypes
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.Pattern
 import org.neo4j.cypher.internal.expressions.Property
@@ -109,7 +109,7 @@ class ResolveTokensTest extends CypherFunSuite {
           false,
           Pattern(Seq(EveryPath(NodePattern(Some(Variable("n")), Seq(), None, _)))),
           Seq(),
-          Some(Where(HasLabels(Variable("n"), Seq(labelToken))))
+          Some(Where(HasLabelsOrTypes(Variable("n"), Seq(labelToken))))
         ),
         Return(false, ReturnItems(true, Seq()), None, None, None, _)
       ))) =>
@@ -132,7 +132,7 @@ class ResolveTokensTest extends CypherFunSuite {
           false,
           Pattern(Seq(EveryPath(NodePattern(Some(Variable("n")), Seq(), None, _)))),
           Seq(),
-          Some(Where(HasLabels(Variable("n"), Seq(labelToken))))
+          Some(Where(HasLabelsOrTypes(Variable("n"), Seq(labelToken))))
         ),
         Return(false, ReturnItems(true, Seq()), None, None, None, _)
       ))) =>
