@@ -37,7 +37,14 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 class EphemeralDynamicByteBuffer
 {
     private static final int SECTOR_SIZE = (int) ByteUnit.kibiBytes( 1 );
-    private static final ByteBuffer ZERO_BUFFER = ByteBuffer.allocate( SECTOR_SIZE );
+    private static final byte[] ZERO_BUFFER_ARRAY = new byte[SECTOR_SIZE];
+
+    // A reusable zero buffer. It can be reused only in this object in synchronised blocks!
+    // Do resist temptation to make it static and share it among all instances of this class!
+    // The reason is that when reading from a ByteBuffer its internal state is modified (position
+    // is adjusted based on the amount of data read). This generally makes non-empty
+    // ByteBuffers unsuitable for sharing for concurrent use even if they contain static data.
+    private final ByteBuffer zeroBuffer = ByteBuffer.wrap( ZERO_BUFFER_ARRAY );
     private SortedMap<Long,ByteBuffer> sectors;
     private Exception freeCall;
     private long size;
@@ -109,7 +116,7 @@ class EphemeralDynamicByteBuffer
 
         while ( true )
         {
-            ByteBuffer buf = sectors.getOrDefault( sector, ZERO_BUFFER );
+            ByteBuffer buf = sectors.getOrDefault( sector, zeroBuffer );
             buf.position( offset );
             int toGet = Math.min( buf.remaining(), length );
             buf.get( bytes, off, toGet );
