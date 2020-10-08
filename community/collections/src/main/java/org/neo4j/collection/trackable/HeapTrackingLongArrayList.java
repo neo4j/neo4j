@@ -79,9 +79,9 @@ public class HeapTrackingLongArrayList implements LongArrayList, Resource
     public void add( int index, long element )
     {
         rangeCheckForAdd( index );
-        final int s;
-        long[] elementData;
-        if ( (s = size) == (elementData = this.elementData).length )
+        final int s = size;
+        long[] elementData = this.elementData;
+        if ( s == elementData.length )
         {
             elementData = grow( size + 1 );
         }
@@ -157,8 +157,8 @@ public class HeapTrackingLongArrayList implements LongArrayList, Resource
     public long removeLast()
     {
         long previous = elementData[size - 1];
-        --this.size;
-        this.elementData[this.size] = 0L;
+        --size;
+        elementData[size] = 0L;
         return previous;
     }
 
@@ -170,9 +170,9 @@ public class HeapTrackingLongArrayList implements LongArrayList, Resource
         {
             return false;
         }
-        long[] elementData;
-        final int s;
-        if ( numNew > (elementData = this.elementData).length - (s = size) )
+        final int s = size;
+        long[] elementData = this.elementData;
+        if ( numNew > elementData.length - s )
         {
             elementData = grow( s + numNew );
         }

@@ -72,11 +72,6 @@ public final class HeapTrackingCollections
         return HeapTrackingArrayList.newArrayList( memoryTracker );
     }
 
-    public static HeapTrackingLongArrayList newLongArrayList( MemoryTracker memoryTracker )
-    {
-        return HeapTrackingLongArrayList.newLongArrayList( memoryTracker );
-    }
-
     public static HeapTrackingLongStack newLongStack( MemoryTracker memoryTracker )
     {
         return new HeapTrackingLongStack( HeapTrackingLongArrayList.newLongArrayList( memoryTracker ) );

@@ -187,12 +187,14 @@ public class HeapTrackingArrayList<E> implements List<E>, AutoCloseable
         return batchRemove( c, true, 0, size );
     }
 
+    @Override
     public E get( int index )
     {
         Objects.checkIndex( index, size );
         return elementData( index );
     }
 
+    @Override
     public E set( int index, E element )
     {
         Objects.checkIndex( index, size );
