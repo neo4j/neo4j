@@ -721,6 +721,7 @@ public class Config implements Configuration
 
     private static String executeCommand( String command, int timeout )
     {
+        Process process = null;
         try
         {
             String[] commands = CommandLine.parse( command ).toStrings();
@@ -733,14 +734,13 @@ public class Config implements Configuration
                     commands[i] = arg.substring( 1, arg.length() - 1 );
                 }
             }
-            Process process = new ProcessBuilder( commands ).start();
+            process = new ProcessBuilder( commands ).start();
             BufferedReader out = new BufferedReader( new InputStreamReader( process.getInputStream() ) );
             BufferedReader err = new BufferedReader( new InputStreamReader( process.getErrorStream() ) );
             if ( !process.waitFor( timeout, TimeUnit.SECONDS ) )
             {
                 throw new IllegalArgumentException( format( "Timed out executing command `%s`", command ) );
             }
-
             String output = out.lines().collect( Collectors.joining( lineSeparator() ) );
 
             int exitCode = process.exitValue();
@@ -759,6 +759,13 @@ public class Config implements Configuration
         catch ( IOException e )
         {
             throw new IllegalArgumentException( e );
+        }
+        finally
+        {
+            if ( process != null && process.isAlive() )
+            {
+                process.destroyForcibly();
+            }
         }
     }
 
