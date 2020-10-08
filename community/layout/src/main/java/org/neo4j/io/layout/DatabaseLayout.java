@@ -84,6 +84,11 @@ public class DatabaseLayout
         return neo4jLayout.transactionLogsRootDirectory().resolve( getDatabaseName() );
     }
 
+    public Path getScriptDirectory()
+    {
+        return neo4jLayout.scriptRootDirectory().resolve( getDatabaseName() );
+    }
+
     public Path databaseLockFile()
     {
         return databaseDirectory().resolve( DATABASE_LOCK_FILENAME );

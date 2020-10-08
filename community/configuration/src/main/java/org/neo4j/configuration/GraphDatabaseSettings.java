@@ -89,6 +89,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     public static final String DEFAULT_DATA_DIR_NAME = "data";
     public static final String DEFAULT_DATABASES_ROOT_DIR_NAME = "databases";
     public static final String DEFAULT_TX_LOGS_ROOT_DIR_NAME = "transactions";
+    public static final String DEFAULT_SCRIPT_FOLDER = "scripts";
     public static final String DEFAULT_DUMPS_DIR_NAME = "dumps";
 
     public static final int DEFAULT_ROUTING_CONNECTOR_PORT = 7688;
@@ -114,6 +115,11 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     @Description( "Root location where Neo4j will store transaction logs for configured databases." )
     public static final Setting<Path> transaction_logs_root_path =
             newBuilder( "dbms.directories.transaction.logs.root", PATH, Path.of( DEFAULT_TX_LOGS_ROOT_DIR_NAME ) )
+                    .setDependency( data_directory ).immutable().build();
+
+    @Description( "Root location where Neo4j will store scripts for configured databases." )
+    public static final Setting<Path> script_root_path =
+            newBuilder( "dbms.directories.script.root", PATH, Path.of( DEFAULT_SCRIPT_FOLDER ) )
                     .setDependency( data_directory ).immutable().build();
 
     @Description( "Root location where Neo4j will store database dumps optionally produced when dropping said databases." )

@@ -63,6 +63,7 @@ org.neo4j.configuration.GraphDatabaseSettings::DEFAULT_DATA_DIR_NAME java.lang.S
 org.neo4j.configuration.GraphDatabaseSettings::DEFAULT_DUMPS_DIR_NAME java.lang.String public static final = dumps
 org.neo4j.configuration.GraphDatabaseSettings::DEFAULT_LABEL_BLOCK_SIZE int public static final = 64
 org.neo4j.configuration.GraphDatabaseSettings::DEFAULT_ROUTING_CONNECTOR_PORT int public static final = 7688
+org.neo4j.configuration.GraphDatabaseSettings::DEFAULT_SCRIPT_FOLDER java.lang.String public static final = scripts
 org.neo4j.configuration.GraphDatabaseSettings::DEFAULT_TX_LOGS_ROOT_DIR_NAME java.lang.String public static final = transactions
 org.neo4j.configuration.GraphDatabaseSettings::GraphDatabaseSettings() void public
 org.neo4j.configuration.GraphDatabaseSettings::MINIMAL_BLOCK_SIZE int public static final = 16
@@ -165,6 +166,7 @@ org.neo4j.configuration.GraphDatabaseSettings::routing_driver_max_connection_poo
 org.neo4j.configuration.GraphDatabaseSettings::routing_enabled org.neo4j.graphdb.config.Setting<java.lang.Boolean> public static final
 org.neo4j.configuration.GraphDatabaseSettings::routing_listen_address org.neo4j.graphdb.config.Setting<org.neo4j.configuration.helpers.SocketAddress> public static final
 org.neo4j.configuration.GraphDatabaseSettings::routing_ttl org.neo4j.graphdb.config.Setting<java.time.Duration> public static final
+org.neo4j.configuration.GraphDatabaseSettings::script_root_path org.neo4j.graphdb.config.Setting<java.nio.file.Path> public static final
 org.neo4j.configuration.GraphDatabaseSettings::shutdown_transaction_end_timeout org.neo4j.graphdb.config.Setting<java.time.Duration> public static final
 org.neo4j.configuration.GraphDatabaseSettings::store_internal_log_level org.neo4j.graphdb.config.Setting<org.neo4j.logging.Level> public static final
 org.neo4j.configuration.GraphDatabaseSettings::store_internal_log_max_archives org.neo4j.graphdb.config.Setting<java.lang.Integer> public static final

@@ -65,6 +65,11 @@ import static java.util.stream.Collectors.toList;
  *  | | | | \ particular database transactions files
  *  | | | \ database transactions directory (other represented by separate database layout)
  *  | | | | \ particular database transactions files
+ *  | | \ script directory
+ *  | | | \ database script directory (neo4j, represented by separate database layout)
+ *  | | | | \ particular database script files
+ *  | | | \ database script directory (other represented by separate database layout)
+ *  | | | | \ particular database script files
  * </pre>
  * The current implementation does not keep references to all requested and provided files and requested layouts but can be easily enhanced to do so.
  * <br/>
@@ -81,6 +86,7 @@ public final class Neo4jLayout
     private final Path dataDirectory;
     private final Path databasesRootDirectory;
     private final Path txLogsRootDirectory;
+    private final Path scriptRootDirectory;
 
     public static Neo4jLayout of( Path homeDirectory )
     {
@@ -93,7 +99,8 @@ public final class Neo4jLayout
         var dataDirectory = config.get( GraphDatabaseSettings.data_directory );
         var databasesRootDirectory = config.get( GraphDatabaseInternalSettings.databases_root_path );
         var txLogsRootDirectory = config.get( GraphDatabaseSettings.transaction_logs_root_path );
-        return new Neo4jLayout( homeDirectory, dataDirectory, databasesRootDirectory, txLogsRootDirectory );
+        var scriptRootDirectory = config.get( GraphDatabaseSettings.script_root_path );
+        return new Neo4jLayout( homeDirectory, dataDirectory, databasesRootDirectory, txLogsRootDirectory, scriptRootDirectory );
     }
 
     public static Neo4jLayout ofFlat( Path homeDirectory )
@@ -108,12 +115,13 @@ public final class Neo4jLayout
         return of( config );
     }
 
-    private Neo4jLayout( Path homeDirectory, Path dataDirectory, Path databasesRootDirectory, Path txLogsRootDirectory )
+    private Neo4jLayout( Path homeDirectory, Path dataDirectory, Path databasesRootDirectory, Path txLogsRootDirectory, Path scriptRootDirectory )
     {
         this.homeDirectory = FileUtils.getCanonicalFile( homeDirectory );
         this.dataDirectory = FileUtils.getCanonicalFile( dataDirectory );
         this.databasesRootDirectory = FileUtils.getCanonicalFile( databasesRootDirectory );
         this.txLogsRootDirectory = FileUtils.getCanonicalFile( txLogsRootDirectory );
+        this.scriptRootDirectory = FileUtils.getCanonicalFile( scriptRootDirectory );
     }
 
     /**
@@ -171,6 +179,11 @@ public final class Neo4jLayout
     public Path transactionLogsRootDirectory()
     {
         return txLogsRootDirectory;
+    }
+
+    public Path scriptRootDirectory()
+    {
+        return scriptRootDirectory;
     }
 
     public Path dataDirectory()
