@@ -19,6 +19,9 @@
  */
 package org.neo4j.codegen.api
 
+import java.nio.file.Path
+import java.nio.file.Paths
+
 import org.neo4j.codegen
 import org.neo4j.codegen.ClassHandle
 import org.neo4j.codegen.CodeGenerationNotSupportedException
@@ -43,6 +46,7 @@ import org.neo4j.codegen.bytecode.ByteCode.PRINT_BYTECODE
 import org.neo4j.codegen.source.SourceCode.PRINT_SOURCE
 import org.neo4j.codegen.source.SourceCode.SOURCECODE
 import org.neo4j.codegen.source.SourceVisitor
+import org.neo4j.codegen.source.SourceCode.sourceLocation
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -64,7 +68,8 @@ object CodeGeneration {
   object CodeGenerationMode {
     def fromDebugOptions(debugOptions: Set[String]): CodeGenerationMode = {
       if(debugOptions.contains("generate_java_source")) {
-        val saver = new CodeSaver(debugOptions.contains("show_java_source"), debugOptions.contains("show_bytecode"))
+        val saveSourceToFileLocation = Option(System.getProperty("org.neo4j.cypher.DEBUG.generated_source_location")).map(Paths.get(_))
+        val saver = new CodeSaver(debugOptions.contains("show_java_source"), debugOptions.contains("show_bytecode"), saveSourceToFileLocation)
         SourceCodeGeneration(saver)
       } else {
         val saver = new CodeSaver(false, debugOptions.contains("show_bytecode"))
@@ -73,7 +78,7 @@ object CodeGeneration {
     }
   }
 
-  class CodeSaver(saveSource: Boolean, saveByteCode: Boolean) {
+  class CodeSaver(saveSource: Boolean, saveByteCode: Boolean, saveSourceToFileLocation: Option[Path] = None) {
     private val _source: ArrayBuffer[(String, String)] = new ArrayBuffer()
     private val _bytecode: ArrayBuffer[(String, String)] = new ArrayBuffer()
 
@@ -86,7 +91,8 @@ object CodeGeneration {
     def options: List[CodeGeneratorOption] = {
       var l: List[CodeGeneratorOption] = Nil
       if (saveSource) l ::= sourceVisitor
-      if (saveByteCode) l::= byteCodeVisitor
+      if (saveByteCode) l ::= byteCodeVisitor
+      saveSourceToFileLocation.foreach(path => l ::= sourceLocation(path))
       l
     }
 

@@ -99,6 +99,7 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
   private var kernel: Kernel = _
   val ANY_VALUE_ORDERING: Ordering[AnyValue] = Ordering.comparatorToOrdering(AnyValues.COMPARATOR)
   val logProvider: AssertableLogProvider = new AssertableLogProvider()
+  val debugOptions: Set[String] = Set.empty[String]
 
   override protected def beforeEach(): Unit = {
     DebugLog.beginTime()
@@ -123,7 +124,7 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
                                          edition: Edition[CONTEXT],
                                          workloadMode: Boolean,
                                          logProvider: LogProvider): RuntimeTestSupport[CONTEXT] = {
-    new RuntimeTestSupport[CONTEXT](graphDb, edition, workloadMode, logProvider)
+    new RuntimeTestSupport[CONTEXT](graphDb, edition, workloadMode, logProvider, debugOptions)
   }
 
   protected def shutdownDatabase(): Unit = {

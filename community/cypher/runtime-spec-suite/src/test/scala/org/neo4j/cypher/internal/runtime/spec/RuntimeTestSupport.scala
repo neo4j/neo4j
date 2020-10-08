@@ -72,7 +72,8 @@ import org.neo4j.values.virtual.VirtualValues
 class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseService,
                                                     val edition: Edition[CONTEXT],
                                                     val workloadMode: Boolean,
-                                                    val logProvider: LogProvider
+                                                    val logProvider: LogProvider,
+                                                    val debugOptions: Set[String] = Set.empty,
                                                    ) extends RuntimeExecutionSupport[CONTEXT] {
 
   private val cypherGraphDb = new GraphDatabaseCypherService(graphDb)
@@ -289,7 +290,7 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
     runtimeContextManager.create(queryContext,
                                  queryContext.transactionalContext.transaction.schemaRead(),
                                  MasterCompiler.CLOCK,
-                                 Set.empty,
+                                 debugOptions,
                                  compileExpressions = queryOptions.useCompiledExpressions,
                                  materializedEntitiesMode = queryOptions.materializedEntitiesMode,
                                  operatorEngine = queryOptions.operatorEngine,

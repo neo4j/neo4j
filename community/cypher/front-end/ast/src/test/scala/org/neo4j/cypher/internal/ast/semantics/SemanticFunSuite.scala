@@ -32,7 +32,7 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class SemanticFunSuite extends CypherFunSuite with SemanticAnalysisTooling with AstConstructionTestSupport {
 
-  override def initTest(): Unit = {
+  override protected def initTest(): Unit = {
     SemanticExpressionCheck.semanticCheckFallback =
       (ctx, e) =>
         e match {
