@@ -20,11 +20,11 @@
 package org.neo4j.collection.trackable;
 
 import java.util.Arrays;
-import java.util.EmptyStackException;
 import java.util.Objects;
 
 import org.neo4j.collection.PrimitiveLongResourceCollections;
 import org.neo4j.collection.PrimitiveLongResourceIterator;
+import org.neo4j.graphdb.Resource;
 import org.neo4j.memory.MemoryTracker;
 
 import static org.neo4j.collection.trackable.HeapTrackingArrayList.newCapacity;
@@ -32,7 +32,7 @@ import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 import static org.neo4j.memory.HeapEstimator.sizeOfLongArray;
 import static org.neo4j.util.Preconditions.requireNonNegative;
 
-public class HeapTrackingLongArrayList implements LongArrayList, HeapTrackingLongStack
+public class HeapTrackingLongArrayList implements LongArrayList, Resource
 {
     private static final long SHALLOW_SIZE = shallowSizeOfInstance( HeapTrackingLongArrayList.class );
 
@@ -61,25 +61,9 @@ public class HeapTrackingLongArrayList implements LongArrayList, HeapTrackingLon
         return new HeapTrackingLongArrayList( initialSize, memoryTracker, trackedSize );
     }
 
-    /**
-     * @return a new heap tracking long stack with initial size 1
-     */
-    public static HeapTrackingLongStack newLongStack( MemoryTracker memoryTracker )
-    {
-        return newLongArrayList( 1, memoryTracker );
-    }
-
-    /**
-     * @return a new heap tracking long stack with the specified initial size
-     */
-    public static HeapTrackingLongStack newLongStack( int initialSize, MemoryTracker memoryTracker )
-    {
-        return newLongArrayList( initialSize, memoryTracker );
-    }
-
     private HeapTrackingLongArrayList( int initialSize, MemoryTracker memoryTracker, long trackedSize )
     {
-        this.trackedSize = sizeOfLongArray( initialSize );
+        this.trackedSize = trackedSize;
         this.elementData = new long[initialSize];
         this.memoryTracker = memoryTracker;
     }
@@ -155,7 +139,7 @@ public class HeapTrackingLongArrayList implements LongArrayList, HeapTrackingLon
         }
     }
 
-    public PrimitiveLongResourceIterator autoClosingIterator()
+    public PrimitiveLongResourceIterator iterator()
     {
         return new PrimitiveLongResourceCollections.AbstractPrimitiveLongBaseResourceIterator( this )
         {
@@ -170,24 +154,7 @@ public class HeapTrackingLongArrayList implements LongArrayList, HeapTrackingLon
         };
     }
 
-    @Override
-    public long peek()
-    {
-        if ( size == 0 )
-        {
-            throw new EmptyStackException();
-        }
-        return elementData[size - 1];
-    }
-
-    @Override
-    public void push( long item )
-    {
-        add( item );
-    }
-
-    @Override
-    public long pop()
+    public long removeLast()
     {
         long previous = elementData[size - 1];
         --this.size;

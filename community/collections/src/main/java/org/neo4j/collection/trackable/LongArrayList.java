@@ -34,4 +34,14 @@ public interface LongArrayList
     boolean addAll( long... longs );
 
     void clear();
+
+    default boolean isEmpty()
+    {
+        return this.size() == 0;
+    }
+
+    default boolean notEmpty()
+    {
+        return this.size() != 0;
+    }
 }

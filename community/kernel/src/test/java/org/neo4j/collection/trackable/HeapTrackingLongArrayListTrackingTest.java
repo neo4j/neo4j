@@ -66,7 +66,7 @@ class HeapTrackingLongArrayListTrackingTest
         assertEquals( actualSize, memoryTracker.estimatedHeapMemory() );
 
         // Validate items
-        PrimitiveLongResourceIterator iterator = list.autoClosingIterator();
+        PrimitiveLongResourceIterator iterator = list.iterator();
         for ( int i = 0; i < iterations; i++ )
         {
             assertTrue( iterator.hasNext() );

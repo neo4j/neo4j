@@ -79,11 +79,11 @@ public final class HeapTrackingCollections
 
     public static HeapTrackingLongStack newLongStack( MemoryTracker memoryTracker )
     {
-        return HeapTrackingLongArrayList.newLongArrayList( memoryTracker );
+        return new HeapTrackingLongStack( HeapTrackingLongArrayList.newLongArrayList( memoryTracker ) );
     }
 
     public static <T> HeapTrackingStack<T> newStack( MemoryTracker memoryTracker )
     {
-        return HeapTrackingArrayList.newArrayList( memoryTracker );
+        return new HeapTrackingStack<>( HeapTrackingArrayList.newArrayList( memoryTracker ) );
     }
 }

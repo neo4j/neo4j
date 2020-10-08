@@ -308,7 +308,7 @@ class HeapTrackingArrayListTest
     @Test
     void size()
     {
-        assertEquals( 100, aList.size(), "Returned incorrect size for exiting list" );
+        assertEquals( 100, aList.size(), "Returned incorrect size for existing list" );
         try ( HeapTrackingArrayList<Object> list = HeapTrackingArrayList.newArrayList( memoryTracker ) )
         {
             assertEquals( 0, list.size(), "Returned incorrect size for new list" );
@@ -566,34 +566,5 @@ class HeapTrackingArrayListTest
                 }
             } ) );
         }
-    }
-
-    @Test
-    void pop()
-    {
-        assertEquals( 100, aList.size(), "Returned incorrect size for exiting list" );
-        int i = 99;
-        while ( aList.notEmpty() )
-        {
-            assertEquals( i--, aList.pop() );
-        }
-        assertEquals( -1, i );
-        assertEquals( 0, aList.size(), "Returned incorrect size for exiting list" );
-    }
-
-    @Test
-    void peek()
-    {
-        assertEquals( 100, aList.size(), "Returned incorrect size for exiting list" );
-        assertEquals( 99, aList.peek() );
-        assertEquals( 100, aList.size(), "Returned incorrect size for exiting list" );
-    }
-
-    @Test
-    void push()
-    {
-        assertEquals( 100, aList.size(), "Returned incorrect size for exiting list" );
-        aList.push( 42 );
-        assertEquals( 101, aList.size(), "Returned incorrect size for exiting list" );
     }
 }
