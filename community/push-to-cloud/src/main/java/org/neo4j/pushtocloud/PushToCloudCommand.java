@@ -218,7 +218,7 @@ public class PushToCloudCommand extends AbstractCommand
         return new FullUploader( new Source( dumpPath, Size.ofFull( fullSize( ctx, database ) ) ) );
     }
 
-    static abstract class Uploader
+    abstract static class Uploader
     {
         protected final Source source;
 
