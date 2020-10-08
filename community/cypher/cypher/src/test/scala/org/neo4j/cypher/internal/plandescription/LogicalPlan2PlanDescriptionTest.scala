@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.ast.ElementsAllQualifier
 import org.neo4j.cypher.internal.ast.ExecuteAdminProcedureAction
 import org.neo4j.cypher.internal.ast.ExecuteBoostedProcedureAction
 import org.neo4j.cypher.internal.ast.ExecuteProcedureAction
+import org.neo4j.cypher.internal.ast.IndefiniteWait
 import org.neo4j.cypher.internal.ast.LabelQualifier
 import org.neo4j.cypher.internal.ast.NoResource
 import org.neo4j.cypher.internal.ast.ProcedureAllQualifier
@@ -39,6 +40,7 @@ import org.neo4j.cypher.internal.ast.ProcedureResultItem
 import org.neo4j.cypher.internal.ast.ReadAction
 import org.neo4j.cypher.internal.ast.ShowUserAction
 import org.neo4j.cypher.internal.ast.ShowUsersPrivileges
+import org.neo4j.cypher.internal.ast.StartDatabaseAction
 import org.neo4j.cypher.internal.ast.StopDatabaseAction
 import org.neo4j.cypher.internal.ast.TraverseAction
 import org.neo4j.cypher.internal.ast.UserAllQualifier
@@ -250,6 +252,7 @@ import org.neo4j.cypher.internal.logical.plans.UserFunctionSignature
 import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
 import org.neo4j.cypher.internal.logical.plans.VarExpand
 import org.neo4j.cypher.internal.logical.plans.VariablePredicate
+import org.neo4j.cypher.internal.logical.plans.WaitForCompletion
 import org.neo4j.cypher.internal.plandescription.Arguments.Details
 import org.neo4j.cypher.internal.plandescription.Arguments.EstimatedRows
 import org.neo4j.cypher.internal.plandescription.Arguments.Order
@@ -260,6 +263,7 @@ import org.neo4j.cypher.internal.plandescription.Arguments.RuntimeVersion
 import org.neo4j.cypher.internal.plandescription.Arguments.Version
 import org.neo4j.cypher.internal.plandescription.LogicalPlan2PlanDescriptionTest.anonVar
 import org.neo4j.cypher.internal.plandescription.LogicalPlan2PlanDescriptionTest.details
+import org.neo4j.cypher.internal.plandescription.LogicalPlan2PlanDescriptionTest.planDescription
 import org.neo4j.cypher.internal.plandescription.LogicalPlan2PlanDescriptionTest.planDescription
 import org.neo4j.cypher.internal.plandescription.asPrettyString.PrettyStringInterpolator
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
@@ -1209,6 +1213,10 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     assertGood(attach(AssertDatabaseAdmin(StopDatabaseAction, util.Left("db1")), 1.0), adminPlanDescription)
 
     assertGood(attach(AssertNotBlocked(privLhsLP, CreateDatabaseAction), 1.0), adminPlanDescription)
+
+    assertGood(attach(WaitForCompletion(
+      StartDatabase(
+        plans.AssertDatabaseAdmin(StartDatabaseAction, Left("db1")), Left("db1")), util.Left("db1"), IndefiniteWait), 1.0), adminPlanDescription)
   }
 
   test("AntiConditionalApply") {

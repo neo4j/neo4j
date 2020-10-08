@@ -646,6 +646,15 @@ class PrettifierIT extends CypherFunSuite {
       "catalog create database graph.db" ->
         "CREATE DATABASE `graph.db`",
 
+      "catalog create database graph.db wait" ->
+        "CREATE DATABASE `graph.db` WAIT",
+
+      "catalog create database graph.db nowait" ->
+        "CREATE DATABASE `graph.db`",
+
+      "catalog create database graph.db if not exists wait" ->
+        "CREATE DATABASE `graph.db` IF NOT EXISTS WAIT",
+
       "catalog DROP database foO_Bar_42" ->
         "DROP DATABASE foO_Bar_42 DESTROY DATA",
 
@@ -654,6 +663,9 @@ class PrettifierIT extends CypherFunSuite {
 
       "catalog DROP database foO_Bar_42 if EXISTS" ->
         "DROP DATABASE foO_Bar_42 IF EXISTS DESTROY DATA",
+
+      "catalog DROP database blah if EXISTS WAIT" ->
+        "DROP DATABASE blah IF EXISTS DESTROY DATA WAIT",
 
       "DROP database foO_Bar_42 dump Data" ->
         "DROP DATABASE foO_Bar_42 DUMP DATA",

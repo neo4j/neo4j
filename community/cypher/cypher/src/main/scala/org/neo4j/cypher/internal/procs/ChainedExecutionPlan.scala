@@ -71,13 +71,19 @@ abstract class ChainedExecutionPlan[T <: QueryContext with CountingQueryContext]
     val sourceResult = source.map(_.run(ctx, executionMode, params, prePopulateResults, ignore, querySubscriber(ctx, subscriber)))
     sourceResult match {
       case Some(IgnoredRuntimeResult) =>
-        // When an operation in the chain switches the entire chain to ignore mode we still need to notify the outer most subscriber
-        // This is a no-op for all elements of the chain except the last (outermost) which will be the BoltAdapterSubscriber
-        subscriber.onResultCompleted(ctx.getStatistics())
-        IgnoredRuntimeResult
-      case _ =>
+        onSkip(ctx, subscriber)
+      case Some(UpdatingSystemCommandRuntimeResult(newCtx: T)) =>
+        runSpecific(newCtx, executionMode, params, prePopulateResults, ignore, subscriber)
+      case _  =>
         runSpecific(ctx, executionMode, params, prePopulateResults, ignore, subscriber)
     }
+  }
+
+  def onSkip(ctx: T, subscriber: QuerySubscriber): RuntimeResult = {
+    // When an operation in the chain switches the entire chain to ignore mode we still need to notify the outer most subscriber
+    // This is a no-op for all elements of the chain except the last (outermost) which will be the BoltAdapterSubscriber
+    subscriber.onResultCompleted(ctx.getStatistics())
+    IgnoredRuntimeResult
   }
 
   override def metadata: Seq[Argument] = Nil

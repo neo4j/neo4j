@@ -94,7 +94,7 @@ public class TestFabricTransactionalContext implements TransactionalContext
     }
 
     @Override
-    public void commitAndRestartTx()
+    public long commitAndRestartTx()
     {
         throw failure();
     }

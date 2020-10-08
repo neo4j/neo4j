@@ -64,8 +64,6 @@ case class SystemCommandRuntimeResult(ctx: SystemUpdateCountingQueryContext,
       execution.inner.request(numberOfRecords)
       // The lower level (execution) is capturing exceptions using the subscriber, but this level is expecting to do the same higher up, so re-throw to trigger that code path
       subscriber.assertNotFailed(e => execution.inner.close(Error(e)))
-      // This code path is only designed for read only queries
-      ctx.getOptStatistics.filter(_.containsSystemUpdates).foreach(_ => throw new IllegalStateException("Read only administration command contained updates."))
     } finally {
       if (revertSecurityContextChange != null) revertSecurityContextChange
     }

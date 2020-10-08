@@ -93,7 +93,7 @@ public class TestDatabaseIdRepository extends MapCachingDatabaseIdRepository
     public Optional<NamedDatabaseId> getById( DatabaseId databaseId )
     {
         var id = super.getById( databaseId );
-        var uuidIsFiltered = id.map( filterSet::contains ).orElse( false );
+        var uuidIsFiltered = id.map( i -> filterSet.contains( i.name() ) ).orElse( false );
         return uuidIsFiltered ? Optional.empty() : id;
     }
 

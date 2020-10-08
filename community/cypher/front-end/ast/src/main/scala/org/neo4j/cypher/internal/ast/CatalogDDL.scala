@@ -726,14 +726,23 @@ object ShowDatabase{
     val columns = List(
       ShowColumn("name")(position), ShowColumn("address")(position), ShowColumn("role")(position), ShowColumn("requestedStatus")(position),
       ShowColumn("currentStatus")(position), ShowColumn("error")(position)) ++ (scope match {
-          case _: DefaultDatabaseScope => List.empty
-          case _ => List(ShowColumn(Variable("default")(position), CTBoolean, "default"))})
+      case _: DefaultDatabaseScope => List.empty
+      case _ => List(ShowColumn(Variable("default")(position), CTBoolean, "default"))})
     ShowDatabase(scope, yieldOrWhere, columns)(position)
   }
 }
 
+sealed trait WaitableAdministrationCommand extends WriteAdministrationCommand {
+  val waitUntilComplete: WaitUntilComplete
 
-final case class CreateDatabase(dbName: Either[String, Parameter], ifExistsDo: IfExistsDo)(val position: InputPosition) extends WriteAdministrationCommand {
+  override def returnColumns: List[LogicalVariable] = waitUntilComplete match {
+    case NoWait => List.empty
+    case _ => List("address","state", "message", "success").map(Variable(_)(position))
+  }
+}
+
+final case class CreateDatabase(dbName: Either[String, Parameter], ifExistsDo: IfExistsDo, waitUntilComplete: WaitUntilComplete)(val position: InputPosition)
+  extends WaitableAdministrationCommand {
 
   override def name: String = ifExistsDo match {
     case IfExistsReplace | IfExistsInvalidSyntax => "CREATE OR REPLACE DATABASE"
@@ -758,8 +767,9 @@ case object DestroyData extends DropDatabaseAdditionalAction("DESTROY DATA")
 
 final case class DropDatabase(dbName: Either[String, Parameter],
                               ifExists: Boolean,
-                              additionalAction: DropDatabaseAdditionalAction)
-                             (val position: InputPosition) extends WriteAdministrationCommand {
+                              additionalAction: DropDatabaseAdditionalAction,
+                              waitUntilComplete: WaitUntilComplete)
+                             (val position: InputPosition) extends WaitableAdministrationCommand {
 
   override def name = "DROP DATABASE"
 
@@ -768,7 +778,7 @@ final case class DropDatabase(dbName: Either[String, Parameter],
       SemanticState.recordCurrentScope(this)
 }
 
-final case class StartDatabase(dbName: Either[String, Parameter])(val position: InputPosition) extends WriteAdministrationCommand {
+final case class StartDatabase(dbName: Either[String, Parameter], waitUntilComplete: WaitUntilComplete)(val position: InputPosition) extends WaitableAdministrationCommand {
 
   override def name = "START DATABASE"
 
@@ -777,7 +787,7 @@ final case class StartDatabase(dbName: Either[String, Parameter])(val position: 
       SemanticState.recordCurrentScope(this)
 }
 
-final case class StopDatabase(dbName: Either[String, Parameter])(val position: InputPosition) extends WriteAdministrationCommand {
+final case class StopDatabase(dbName: Either[String, Parameter], waitUntilComplete: WaitUntilComplete)(val position: InputPosition) extends WaitableAdministrationCommand {
 
   override def name = "STOP DATABASE"
 
@@ -845,4 +855,21 @@ final case class DropView(graphName: CatalogName)(val position: InputPosition) e
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
       SemanticState.recordCurrentScope(this)
+}
+
+sealed trait WaitUntilComplete {
+  val DEFAULT_TIMEOUT = 300L
+  val name: String
+  def timeout: Long = DEFAULT_TIMEOUT
+}
+
+case object NoWait extends WaitUntilComplete {
+  override val name: String = ""
+}
+case object IndefiniteWait extends WaitUntilComplete {
+  override val name: String = " WAIT"
+}
+case class TimeoutAfter(timoutSeconds: Long) extends WaitUntilComplete {
+  override val name: String = s" WAIT $timoutSeconds SECONDS"
+  override def timeout: Long = timoutSeconds
 }

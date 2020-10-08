@@ -17,6 +17,10 @@
 package org.neo4j.cypher.internal.parser
 
 import org.neo4j.cypher.internal.ast
+import org.neo4j.cypher.internal.ast.IndefiniteWait
+import org.neo4j.cypher.internal.ast.NoWait
+import org.neo4j.cypher.internal.ast.TimeoutAfter
+import org.neo4j.cypher.internal.ast.WaitUntilComplete
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.util.InputPosition
 import org.parboiled.scala.Parser
@@ -461,17 +465,17 @@ trait Statement extends Parser
   }
 
   def CreateDatabase: Rule1[ast.CreateDatabase] = rule("CREATE DATABASE") {
-    group(keyword("CREATE OR REPLACE DATABASE") ~~ SymbolicDatabaseNameOrStringParameter ~~ keyword("IF NOT EXISTS")) ~~>> (ast.CreateDatabase(_, ast.IfExistsInvalidSyntax)) |
-    group(keyword("CREATE OR REPLACE DATABASE") ~~ SymbolicDatabaseNameOrStringParameter) ~~>> (ast.CreateDatabase(_, ast.IfExistsReplace)) |
-    group(keyword("CREATE DATABASE") ~~ SymbolicDatabaseNameOrStringParameter ~~ keyword("IF NOT EXISTS")) ~~>> (ast.CreateDatabase(_, ast.IfExistsDoNothing)) |
-    group(keyword("CREATE DATABASE") ~~ SymbolicDatabaseNameOrStringParameter) ~~>> (ast.CreateDatabase(_, ast.IfExistsThrowError))
+    group(keyword("CREATE OR REPLACE DATABASE") ~~ SymbolicDatabaseNameOrStringParameter ~~ keyword("IF NOT EXISTS") ~~ WaitUntilComplete) ~~>> (ast.CreateDatabase(_, ast.IfExistsInvalidSyntax, _)) |
+    group(keyword("CREATE OR REPLACE DATABASE") ~~ SymbolicDatabaseNameOrStringParameter ~~ WaitUntilComplete) ~~>> (ast.CreateDatabase(_, ast.IfExistsReplace, _)) |
+    group(keyword("CREATE DATABASE") ~~ SymbolicDatabaseNameOrStringParameter ~~ keyword("IF NOT EXISTS") ~~ WaitUntilComplete) ~~>> (ast.CreateDatabase(_, ast.IfExistsDoNothing, _)) |
+    group(keyword("CREATE DATABASE") ~~ SymbolicDatabaseNameOrStringParameter ~~ WaitUntilComplete) ~~>> (ast.CreateDatabase(_, ast.IfExistsThrowError, _))
   }
 
   def DropDatabase: Rule1[ast.DropDatabase] = rule("DROP DATABASE") {
-    group(keyword("DROP DATABASE") ~~ SymbolicDatabaseNameOrStringParameter ~~ keyword("IF EXISTS") ~~ DataAction) ~~>>
-      ((dbName, dataAction) => ast.DropDatabase(dbName, ifExists = true, dataAction)) |
-    group(keyword("DROP DATABASE") ~~ SymbolicDatabaseNameOrStringParameter ~~ DataAction) ~~>>
-      ((dbName, dataAction) => ast.DropDatabase(dbName, ifExists = false, dataAction))
+    group(keyword("DROP DATABASE") ~~ SymbolicDatabaseNameOrStringParameter ~~ keyword("IF EXISTS") ~~ DataAction ~~ WaitUntilComplete) ~~>>
+      ((dbName, dataAction, wait) => ast.DropDatabase(dbName, ifExists = true, dataAction, wait)) |
+    group(keyword("DROP DATABASE") ~~ SymbolicDatabaseNameOrStringParameter ~~ DataAction ~~ WaitUntilComplete) ~~>>
+      ((dbName, dataAction, wait) => ast.DropDatabase(dbName, ifExists = false, dataAction, wait))
   }
 
   private def DataAction: Rule1[ast.DropDatabaseAdditionalAction] = rule("data action on drop database") {
@@ -480,11 +484,11 @@ trait Statement extends Parser
   }
 
   def StartDatabase: Rule1[ast.StartDatabase] = rule("START DATABASE") {
-    group(keyword("START DATABASE") ~~ SymbolicDatabaseNameOrStringParameter) ~~>> (ast.StartDatabase(_))
+    group(keyword("START DATABASE") ~~ SymbolicDatabaseNameOrStringParameter ~~ WaitUntilComplete) ~~>> (ast.StartDatabase(_, _))
   }
 
   def StopDatabase: Rule1[ast.StopDatabase] = rule("STOP DATABASE") {
-    group(keyword("STOP DATABASE") ~~ SymbolicDatabaseNameOrStringParameter) ~~>> (ast.StopDatabase(_))
+    group(keyword("STOP DATABASE") ~~ SymbolicDatabaseNameOrStringParameter ~~ WaitUntilComplete) ~~>> (ast.StopDatabase(_, _))
   }
 
   // Graph/View commands
@@ -533,6 +537,13 @@ trait Statement extends Parser
   def SymbolicDatabaseNameOrStringParameterList: Rule1[List[Either[String, Parameter]]] = rule("a list of symbolic database names or string parameters") {
     //noinspection LanguageFeature
     (oneOrMore(WS ~~ SymbolicDatabaseNameOrStringParameter ~~ WS, separator = ",") memoMismatches).suppressSubnodes
+  }
+
+  private def WaitUntilComplete: Rule1[WaitUntilComplete] = rule("WAIT [n [SEC[OND[S]]]] | NOWAIT") {
+    group(keyword("WAIT") ~~ UnsignedIntegerLiteral ~~ optional(keyword("SEC") | keyword("SECOND") | keyword("SECONDS")) ~~>
+      (timeout => TimeoutAfter(timeout.value))) |
+      keyword("WAIT") ~> (_ => IndefiniteWait) |
+      optional(keyword("NOWAIT")) ~> (_ => NoWait)
   }
 
   // Keyword methods

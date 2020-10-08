@@ -109,6 +109,7 @@ import org.neo4j.cypher.internal.ast.IfExistsDoNothing
 import org.neo4j.cypher.internal.ast.IfExistsInvalidSyntax
 import org.neo4j.cypher.internal.ast.IfExistsReplace
 import org.neo4j.cypher.internal.ast.IfExistsThrowError
+import org.neo4j.cypher.internal.ast.IndefiniteWait
 import org.neo4j.cypher.internal.ast.LabelAllQualifier
 import org.neo4j.cypher.internal.ast.LabelQualifier
 import org.neo4j.cypher.internal.ast.LabelsResource
@@ -121,6 +122,7 @@ import org.neo4j.cypher.internal.ast.MergeAction
 import org.neo4j.cypher.internal.ast.MergeAdminAction
 import org.neo4j.cypher.internal.ast.NamedDatabaseScope
 import org.neo4j.cypher.internal.ast.NamedGraphScope
+import org.neo4j.cypher.internal.ast.NoWait
 import org.neo4j.cypher.internal.ast.NodeByIds
 import org.neo4j.cypher.internal.ast.NodeByParameter
 import org.neo4j.cypher.internal.ast.OnCreate
@@ -193,6 +195,7 @@ import org.neo4j.cypher.internal.ast.StopDatabase
 import org.neo4j.cypher.internal.ast.StopDatabaseAction
 import org.neo4j.cypher.internal.ast.SubQuery
 import org.neo4j.cypher.internal.ast.TerminateTransactionAction
+import org.neo4j.cypher.internal.ast.TimeoutAfter
 import org.neo4j.cypher.internal.ast.TransactionManagementAction
 import org.neo4j.cypher.internal.ast.TraverseAction
 import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
@@ -208,6 +211,7 @@ import org.neo4j.cypher.internal.ast.UsingHint
 import org.neo4j.cypher.internal.ast.UsingIndexHint
 import org.neo4j.cypher.internal.ast.UsingJoinHint
 import org.neo4j.cypher.internal.ast.UsingScanHint
+import org.neo4j.cypher.internal.ast.WaitUntilComplete
 import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.ast.With
 import org.neo4j.cypher.internal.ast.WriteAction
@@ -1455,21 +1459,25 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
   def _createDatabase: Gen[CreateDatabase] = for {
     dbName <- _nameAsEither
     ifExistsDo <- _ifExistsDo
-  } yield CreateDatabase(dbName, ifExistsDo)(pos)
+    wait <- _waitUntilComplete
+  } yield CreateDatabase(dbName, ifExistsDo, wait)(pos)
 
   def _dropDatabase: Gen[DropDatabase] = for {
     dbName <- _nameAsEither
     ifExists <- boolean
     additionalAction <- Gen.oneOf( DumpData, DestroyData )
-  } yield DropDatabase(dbName, ifExists, additionalAction)(pos)
+    wait <- _waitUntilComplete
+  } yield DropDatabase(dbName, ifExists, additionalAction, wait)(pos)
 
   def _startDatabase: Gen[StartDatabase] = for {
     dbName <- _nameAsEither
-  } yield StartDatabase(dbName)(pos)
+    wait <- _waitUntilComplete
+  } yield StartDatabase(dbName, wait)(pos)
 
   def _stopDatabase: Gen[StopDatabase] = for {
     dbName <- _nameAsEither
-  } yield StopDatabase(dbName)(pos)
+    wait <- _waitUntilComplete
+  } yield StopDatabase(dbName, wait)(pos)
 
   def _multiDatabaseCommand: Gen[AdministrationCommand] = oneOf(
     _showDatabase,
@@ -1478,6 +1486,11 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     _startDatabase,
     _stopDatabase
   )
+
+  def _waitUntilComplete: Gen[WaitUntilComplete] = for {
+    timeout <- posNum[Long]
+    wait <- oneOf(NoWait, IndefiniteWait, TimeoutAfter(timeout))
+  } yield wait
 
   // Top level administration command
 

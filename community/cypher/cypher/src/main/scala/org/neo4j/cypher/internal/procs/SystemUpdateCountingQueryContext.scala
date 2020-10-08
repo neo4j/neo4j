@@ -22,14 +22,17 @@ package org.neo4j.cypher.internal.procs
 import java.util.concurrent.atomic.AtomicInteger
 
 import org.neo4j.cypher.internal.planning.ExceptionTranslatingQueryContext
+import org.neo4j.cypher.internal.procs.SystemUpdateCountingQueryContext.Counter
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.QueryStatistics
 import org.neo4j.cypher.internal.runtime.interpreted.CountingQueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.DelegatingQueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext
 import org.neo4j.kernel.impl.query.TransactionalContext
+import org.neo4j.values.virtual.MapValue
 
-class SystemUpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryContext(inner) with CountingQueryContext {
+class SystemUpdateCountingQueryContext(override val inner: QueryContext, val contextVars: MapValue, val systemUpdates: Counter)
+  extends DelegatingQueryContext(inner) with CountingQueryContext {
 
   val kernelTransactionalContext: TransactionalContext = inner match {
     case ctx: ExceptionTranslatingQueryContext => ctx.inner match {
@@ -39,11 +42,21 @@ class SystemUpdateCountingQueryContext(inner: QueryContext) extends DelegatingQu
     case _ => throw new IllegalStateException("System updating query context can only contain an exception translating query context")
   }
 
-  val systemUpdates = new Counter
-
   def getStatistics = QueryStatistics(systemUpdates = systemUpdates.count)
 
   override def getOptStatistics = Some(getStatistics)
+
+  def withContextVars(newVars: MapValue): SystemUpdateCountingQueryContext = {
+    if(newVars.size() > 0) new SystemUpdateCountingQueryContext(inner, contextVars.updatedWith(newVars), systemUpdates)
+    else this
+  }
+}
+
+object SystemUpdateCountingQueryContext {
+  def from(ctx: QueryContext): SystemUpdateCountingQueryContext = ctx match {
+    case c: SystemUpdateCountingQueryContext => c
+    case c => new SystemUpdateCountingQueryContext(c, MapValue.EMPTY, new Counter())
+  }
 
   class Counter {
     val counter: AtomicInteger = new AtomicInteger()
@@ -53,13 +66,5 @@ class SystemUpdateCountingQueryContext(inner: QueryContext) extends DelegatingQu
     def increase(amount: Int = 1) {
       counter.addAndGet(amount)
     }
-  }
-
-}
-
-object SystemUpdateCountingQueryContext {
-  def from(ctx: QueryContext): SystemUpdateCountingQueryContext = ctx match {
-    case c: SystemUpdateCountingQueryContext => c
-    case c => new SystemUpdateCountingQueryContext(c)
   }
 }

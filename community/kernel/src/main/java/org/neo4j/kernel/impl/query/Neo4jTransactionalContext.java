@@ -145,7 +145,7 @@ public class Neo4jTransactionalContext implements TransactionalContext
     }
 
     @Override
-    public void commitAndRestartTx()
+    public long commitAndRestartTx()
     {
        /*
         * This method is use by the Cypher runtime to cater for PERIODIC COMMIT, which allows a single query to
@@ -178,7 +178,7 @@ public class Neo4jTransactionalContext implements TransactionalContext
         try
         {
             oldStatement.close();
-            oldKernelTx.commit();
+            return oldKernelTx.commit();
         }
         catch ( Throwable t )
         {

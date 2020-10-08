@@ -59,7 +59,7 @@ public interface TransactionalContext
      */
     void terminate();
 
-    void commitAndRestartTx();
+    long commitAndRestartTx();
 
     TransactionalContext getOrBeginNewIfClosed();
 

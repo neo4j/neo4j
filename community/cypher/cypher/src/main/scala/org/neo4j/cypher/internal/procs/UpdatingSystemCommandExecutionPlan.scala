@@ -49,11 +49,12 @@ case class UpdatingSystemCommandExecutionPlan(name: String,
                                               queryHandler: QueryHandler,
                                               source: Option[ExecutionPlan] = None,
                                               checkCredentialsExpired: Boolean = true,
-                                              initFunction: (MapValue, KernelTransaction) => Boolean = (_, _) => true,
+                                              initFunction: MapValue => Boolean =  _ => true,
                                               finallyFunction: MapValue => Unit = _ => {},
                                               parameterGenerator: (Transaction, SecurityContext) => MapValue = (_, _) => MapValue.EMPTY,
                                               parameterConverter: (Transaction, MapValue) => MapValue = (_, p) => p,
-                                              assertPrivilegeAction: Transaction => Unit = _ => {})
+                                              assertPrivilegeAction: Transaction => Unit = _ => {},
+                                              contextUpdates: MapValue => MapValue = _ => MapValue.EMPTY)
   extends AdministrationChainedExecutionPlan(source) {
 
   override def runSpecific(ctx: SystemUpdateCountingQueryContext,
@@ -76,6 +77,7 @@ case class UpdatingSystemCommandExecutionPlan(name: String,
 
       val updatedParams = parameterConverter(tx, safeMergeParameters(systemParams, params, parameterGenerator.apply(tx, securityContext)))
       val systemSubscriber = new SystemCommandQuerySubscriber(ctx, new RowDroppingQuerySubscriber(subscriber), queryHandler, updatedParams)
+      val newContext = ctx.withContextVars(contextUpdates(updatedParams))
       try {
         tc.kernelTransaction().dataWrite() // assert that we are allowed to write
       } catch {
@@ -84,7 +86,7 @@ case class UpdatingSystemCommandExecutionPlan(name: String,
       }
       systemSubscriber.assertNotFailed()
       try {
-        if (initFunction(updatedParams, tc.kernelTransaction())) {
+        if (initFunction(updatedParams)) {
           val execution = normalExecutionEngine.executeSubQuery(query, updatedParams, tc, isOutermostQuery = false, executionMode == ProfileMode, prePopulateResults, systemSubscriber).asInstanceOf[InternalExecutionResult]
           try {
             execution.consumeAll()
@@ -97,10 +99,10 @@ case class UpdatingSystemCommandExecutionPlan(name: String,
           if (systemSubscriber.shouldIgnoreResult()) {
             IgnoredRuntimeResult
           } else {
-            UpdatingSystemCommandRuntimeResult(ctx)
+            UpdatingSystemCommandRuntimeResult(newContext)
           }
         } else {
-          UpdatingSystemCommandRuntimeResult(ctx)
+          UpdatingSystemCommandRuntimeResult(newContext)
         }
       } finally {
         finallyFunction(updatedParams)

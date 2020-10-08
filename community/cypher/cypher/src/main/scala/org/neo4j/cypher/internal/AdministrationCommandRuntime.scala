@@ -208,7 +208,7 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
         }),
       sourcePlan,
       finallyFunction = p => p.get(credentials.bytesKey).asInstanceOf[ByteArray].zero(),
-      initFunction = (params, _) => NameValidator.assertValidUsername(runtimeValue(userName, params), restrictedUsernames),
+      initFunction = params => NameValidator.assertValidUsername(runtimeValue(userName, params), restrictedUsernames),
       parameterConverter = mapValueConverter
     )
   }

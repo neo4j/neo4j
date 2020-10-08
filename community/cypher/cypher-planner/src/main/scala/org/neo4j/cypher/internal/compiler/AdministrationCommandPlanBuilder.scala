@@ -48,6 +48,7 @@ import org.neo4j.cypher.internal.ast.IfExistsDo
 import org.neo4j.cypher.internal.ast.IfExistsDoNothing
 import org.neo4j.cypher.internal.ast.IfExistsReplace
 import org.neo4j.cypher.internal.ast.NoResource
+import org.neo4j.cypher.internal.ast.NoWait
 import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.RemovePrivilegeAction
 import org.neo4j.cypher.internal.ast.RemoveRoleAction
@@ -75,6 +76,7 @@ import org.neo4j.cypher.internal.ast.StartDatabase
 import org.neo4j.cypher.internal.ast.StartDatabaseAction
 import org.neo4j.cypher.internal.ast.StopDatabase
 import org.neo4j.cypher.internal.ast.StopDatabaseAction
+import org.neo4j.cypher.internal.ast.WaitUntilComplete
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.ast.prettifier.Prettifier
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckResult
@@ -88,6 +90,7 @@ import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.Compilat
 import org.neo4j.cypher.internal.frontend.phases.Condition
 import org.neo4j.cypher.internal.frontend.phases.Phase
 import org.neo4j.cypher.internal.logical.plans
+import org.neo4j.cypher.internal.logical.plans.DatabaseAdministrationLogicalPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.PrivilegePlan
 import org.neo4j.cypher.internal.logical.plans.QualifiedName
@@ -126,6 +129,12 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
       case IfExistsReplace => plans.DropRole(plans.AssertDbmsAdmin(Seq(DropRoleAction, CreateRoleAction)), roleName)
       case IfExistsDoNothing => plans.DoNothingIfExists(plans.AssertDbmsAdmin(CreateRoleAction), "Role", roleName)
       case _ => plans.AssertDbmsAdmin(CreateRoleAction)
+    }
+
+    def wrapInWait(logicalPlan: DatabaseAdministrationLogicalPlan, databaseName: Either[String,Parameter],
+                   waitUntilComplete: WaitUntilComplete): DatabaseAdministrationLogicalPlan = waitUntilComplete match {
+      case NoWait => logicalPlan
+      case _ =>  plans.WaitForCompletion(logicalPlan, databaseName, waitUntilComplete)
     }
 
     val maybeLogicalPlan: Option[LogicalPlan] = from.statement() match {
@@ -333,7 +342,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         Some(plans.ShowDatabase(scope, sd.defaultColumnNames, sd.yields, sd.returns))
 
       // CREATE [OR REPLACE] DATABASE foo [IF NOT EXISTS]
-      case CreateDatabase(dbName, ifExistsDo) =>
+      case CreateDatabase(dbName, ifExistsDo, waitUntilComplete) =>
         val source = ifExistsDo match {
           case IfExistsReplace =>
             plans.DropDatabase(plans.AssertNotBlocked(plans.AssertDbmsAdmin(Seq(DropDatabaseAction, CreateDatabaseAction)), CreateDatabaseAction), dbName, DestroyData)
@@ -344,23 +353,24 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
 
           case _ => plans.AssertNotBlocked(plans.AssertDbmsAdmin(CreateDatabaseAction), CreateDatabaseAction)
         }
-        Some(plans.EnsureValidNumberOfDatabases(plans.CreateDatabase(source, dbName)))
+        Some(wrapInWait(plans.EnsureValidNumberOfDatabases(plans.CreateDatabase(source, dbName)), dbName, waitUntilComplete))
 
       // DROP DATABASE foo [IF EXISTS] [DESTROY | DUMP DATA]
-      case DropDatabase(dbName, ifExists, additionalAction) =>
+      case DropDatabase(dbName, ifExists, additionalAction, waitUntilComplete) =>
         val checkAllowed = plans.AssertNotBlocked(plans.AssertDbmsAdmin(DropDatabaseAction), DropDatabaseAction)
         val source = if (ifExists) plans.DoNothingIfNotExists(checkAllowed, "Database", dbName, s => new NormalizedDatabaseName(s).name()) else checkAllowed
-        Some(plans.DropDatabase(plans.EnsureValidNonSystemDatabase(source, dbName, "delete"), dbName, additionalAction))
+        Some(wrapInWait(plans.DropDatabase(plans.EnsureValidNonSystemDatabase(source, dbName, "delete"), dbName, additionalAction), dbName, waitUntilComplete))
 
       // START DATABASE foo
-      case StartDatabase(dbName) =>
+      case StartDatabase(dbName, waitUntilComplete) =>
         val checkAllowed = plans.AssertNotBlocked(plans.AssertDatabaseAdmin(StartDatabaseAction, dbName), StartDatabaseAction)
-        Some(plans.StartDatabase(checkAllowed, dbName))
+        Some(wrapInWait(plans.StartDatabase(checkAllowed, dbName), dbName, waitUntilComplete))
 
       // STOP DATABASE foo
-      case StopDatabase(dbName) =>
+      case StopDatabase(dbName, waitUntilComplete) =>
         val checkAllowed = plans.AssertNotBlocked(plans.AssertDatabaseAdmin(StopDatabaseAction, dbName), StopDatabaseAction)
-        Some(plans.StopDatabase(plans.EnsureValidNonSystemDatabase(checkAllowed, dbName, "stop"), dbName))
+        Some(wrapInWait(plans.StopDatabase(
+          plans.EnsureValidNonSystemDatabase(checkAllowed, dbName, "stop"), dbName), dbName, waitUntilComplete))
 
       // Global call: CALL foo.bar.baz("arg1", 2) // only if system procedure is allowed!
       case Query(None, SingleQuery(Seq(resolved@ResolvedCall(signature, _, _, _, _),Return(_,_,_,_,_,_)))) if signature.systemProcedure =>

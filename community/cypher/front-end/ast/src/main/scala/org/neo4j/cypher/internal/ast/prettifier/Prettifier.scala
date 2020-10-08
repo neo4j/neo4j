@@ -428,25 +428,25 @@ case class Prettifier(
         }
         s"${x.name}$optionalName$y$r"
 
-      case x @ CreateDatabase(dbName, ifExistsDo) =>
+      case x @ CreateDatabase(dbName, ifExistsDo, waitUntilComplete) =>
         ifExistsDo match {
-          case IfExistsDoNothing | IfExistsInvalidSyntax => s"${x.name} ${Prettifier.escapeName(dbName)} IF NOT EXISTS"
-          case _                                               => s"${x.name} ${Prettifier.escapeName(dbName)}"
+          case IfExistsDoNothing | IfExistsInvalidSyntax => s"${x.name} ${Prettifier.escapeName(dbName)} IF NOT EXISTS${waitUntilComplete.name}"
+          case _                                               => s"${x.name} ${Prettifier.escapeName(dbName)}${waitUntilComplete.name}"
         }
 
-      case x @ DropDatabase(dbName, ifExists, additionalAction) =>
+      case x @ DropDatabase(dbName, ifExists, additionalAction, waitUntilComplete) =>
         (ifExists, additionalAction) match {
-          case (false, DestroyData) => s"${x.name} ${Prettifier.escapeName(dbName)} DESTROY DATA"
-          case (true, DestroyData) => s"${x.name} ${Prettifier.escapeName(dbName)} IF EXISTS DESTROY DATA"
-          case (false, DumpData) => s"${x.name} ${Prettifier.escapeName(dbName)} DUMP DATA"
-          case (true, DumpData) => s"${x.name} ${Prettifier.escapeName(dbName)} IF EXISTS DUMP DATA"
+          case (false, DestroyData) => s"${x.name} ${Prettifier.escapeName(dbName)} DESTROY DATA${waitUntilComplete.name}"
+          case (true, DestroyData) => s"${x.name} ${Prettifier.escapeName(dbName)} IF EXISTS DESTROY DATA${waitUntilComplete.name}"
+          case (false, DumpData) => s"${x.name} ${Prettifier.escapeName(dbName)} DUMP DATA${waitUntilComplete.name}"
+          case (true, DumpData) => s"${x.name} ${Prettifier.escapeName(dbName)} IF EXISTS DUMP DATA${waitUntilComplete.name}"
         }
 
-      case x @ StartDatabase(dbName) =>
-        s"${x.name} ${Prettifier.escapeName(dbName)}"
+      case x @ StartDatabase(dbName, waitUntilComplete) =>
+        s"${x.name} ${Prettifier.escapeName(dbName)}${waitUntilComplete.name}"
 
-      case x @ StopDatabase(dbName) =>
-        s"${x.name} ${Prettifier.escapeName(dbName)}"
+      case x @ StopDatabase(dbName, waitUntilComplete) =>
+        s"${x.name} ${Prettifier.escapeName(dbName)}${waitUntilComplete.name}"
     }
     useString + commandString
   }

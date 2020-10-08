@@ -250,33 +250,34 @@ public interface ProcedureITBase
                                 " overhead to a system, and will slow it down.", stringArray( "admin" ), "DBMS" ),
                 proc( "db.createNodeKey",
                         "(constraintName :: STRING?, labels :: LIST? OF STRING?, properties :: LIST? OF STRING?, providerName :: STRING?, " +
-                                "config = {} :: MAP?) " +
-                                ":: (name :: STRING?, labels :: LIST? OF STRING?, properties :: LIST? OF STRING?, providerName :: STRING?, status :: STRING?)",
+                        "config = {} :: MAP?) " +
+                        ":: (name :: STRING?, labels :: LIST? OF STRING?, properties :: LIST? OF STRING?, providerName :: STRING?, status :: STRING?)",
                         "Create a named node key constraint. Backing index will use specified index provider and configuration (optional). " +
-                                "Yield: name, labels, properties, providerName, status",
+                        "Yield: name, labels, properties, providerName, status",
                         stringArray( "architect", "admin" ), "SCHEMA", false ),
                 proc( "dbms.listActiveLocks", "(queryId :: STRING?) :: (mode :: STRING?, resourceType :: STRING?, resourceId :: INTEGER?)",
                         "List the active lock requests granted for the transaction executing the query with the given query id.",
                         stringArray( "reader", "editor", "publisher", "architect", "admin" ), "DBMS" ),
                 proc( "dbms.setConfigValue", "(setting :: STRING?, value :: STRING?) :: VOID",
                         "Updates a given setting value. Passing an empty value will result in removing the configured value and falling back to the " +
-                                "default value. Changes will not persist and will be lost if the server is restarted.", stringArray( "admin" ), "DBMS" ),
+                        "default value. Changes will not persist and will be lost if the server is restarted.", stringArray( "admin" ), "DBMS" ),
                 proc( "db.checkpoint", "() :: (success :: BOOLEAN?, message :: STRING?)",
                         "Initiate and wait for a new check point, or wait any already on-going check point to complete. " +
-                                "Note that this temporarily disables the `dbms.checkpoint.iops.limit` setting in order to make the check point " +
-                                "complete faster." + " This might cause transaction throughput to degrade slightly, due to increased IO load.",
+                        "Note that this temporarily disables the `dbms.checkpoint.iops.limit` setting in order to make the check point " +
+                        "complete faster." + " This might cause transaction throughput to degrade slightly, due to increased IO load.",
                         stringArray( "reader", "editor", "publisher", "architect", "admin" ), "DBMS" ),
                 proc( "dbms.scheduler.groups", "() :: (group :: STRING?, threads :: INTEGER?)",
                         "List the job groups that are active in the database internal job scheduler.", stringArray( "admin" ), "DBMS" ),
-                proc( "dbms.scheduler.failedJobs", "() :: (jobId :: STRING?, group :: STRING?, database :: STRING?, submitter :: STRING?, " +
-                                "description :: STRING?, type :: STRING?, submitted :: STRING?, executionStart :: STRING?, failureTime :: STRING?, " +
-                                "failureDescription :: STRING?)",
+                proc( "dbms.scheduler.failedJobs", "() :: " +
+                                                   "(jobId :: STRING?, group :: STRING?, database :: STRING?, submitter :: STRING?, " +
+                                                   "description :: STRING?, type :: STRING?, submitted :: STRING?, executionStart :: STRING?, failureTime :: " +
+                                                   "STRING?, failureDescription :: STRING?)",
                         "List failed job runs. There is a limit for amount of historical data.", stringArray( "admin" ), "DBMS" ),
                 proc( "dbms.scheduler.jobs", "() :: (jobId :: STRING?, group :: STRING?, submitted :: STRING?, database :: STRING?, " +
-                                "submitter :: STRING?, description :: STRING?, type :: STRING?, scheduledAt :: STRING?, period :: STRING?, state :: STRING?, " +
-                                "currentStateDescription :: STRING?)",
+                                             "submitter :: STRING?, description :: STRING?, type :: STRING?, scheduledAt :: STRING?, period :: STRING?, " +
+                                             "state :: STRING?, currentStateDescription :: STRING?)",
                         "List all jobs that are active in the database internal job scheduler.", stringArray( "admin" ), "DBMS" )
-        ));
+        ) );
         return result;
     }
 

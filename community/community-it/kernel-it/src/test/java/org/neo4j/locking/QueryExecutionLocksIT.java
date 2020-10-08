@@ -271,9 +271,9 @@ class QueryExecutionLocksIT
         }
 
         @Override
-        public void commitAndRestartTx()
+        public long commitAndRestartTx()
         {
-            delegate.commitAndRestartTx();
+            return delegate.commitAndRestartTx();
         }
 
         @Override
