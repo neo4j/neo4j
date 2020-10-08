@@ -30,7 +30,9 @@ import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.NodeUniqueIndexSeek
+import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.CartesianOrdering
+import org.neo4j.cypher.internal.util.Cost
 
 trait JoinDisconnectedQueryGraphComponents {
   def apply(componentPlans: Set[PlannedComponent],
@@ -146,19 +148,27 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
                                                considerSelections: Boolean): PlannedComponent = {
     val maybeSortedComponent = theSortedComponent(plans)
 
-    val bestPlans: Seq[Component] = plans.toList.map {
-      case PlannedComponent(queryGraph, BestResults(bestResult, _)) => Component(queryGraph, bestResult)
-    }.sortBy { c =>
+    def sortCriteria(c: Component): (Cost, Cardinality) = {
       val cardinality = context.planningAttributes.cardinalities(c.plan.id)
       val cost = context.cost.apply(c.plan, context.input, context.planningAttributes.cardinalities)
       (cost, cardinality)
-    }(CartesianOrdering)
+    }
+
+    val components = plans.toList.map {
+      case PlannedComponent(queryGraph, BestResults(bestResult, _)) => Component(queryGraph, bestResult)
+    }
+
+    val bestComponents: Seq[Component] = if(components.size < 2) {
+      components
+    } else {
+      components.map { c => (c, sortCriteria(c)) }.sortBy(_._2)(CartesianOrdering).map(_._1)
+    }
 
     val bestSortedPlans = maybeSortedComponent.map {
       // If we have a sorted component, that should go to the very left of the cartesian products to keep the sort order
       sortedComponent =>
         val c = Component(sortedComponent.queryGraph, sortedComponent.plan.bestResultFulfillingReq.get)
-        c +: bestPlans.filterNot(comp => c.queryGraph == comp.queryGraph)
+        c +: bestComponents.filterNot(comp => c.queryGraph == comp.queryGraph)
     }
 
     def cross(allPlans: Seq[Component]): Component = allPlans.tail.foldLeft(allPlans.head) {
@@ -168,7 +178,7 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
         Component(l.queryGraph ++ r.queryGraph, cpWithSelection)
     }
 
-    val bestPlan = cross(bestPlans)
+    val bestPlan = cross(bestComponents)
     val bestSortedPlan = bestSortedPlans.map(cross).map(_.plan)
     PlannedComponent(bestPlan.queryGraph, BestResults(bestPlan.plan, bestSortedPlan))
   }

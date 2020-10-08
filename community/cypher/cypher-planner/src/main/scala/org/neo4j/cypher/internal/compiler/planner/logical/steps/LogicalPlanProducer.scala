@@ -177,6 +177,7 @@ import org.neo4j.cypher.internal.macros.AssertMacros.checkOnlyWhenAssertionsAreE
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
+import org.neo4j.cypher.internal.util.CostPerRow
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.PredicateOrdering
@@ -1371,23 +1372,29 @@ object LogicalPlanProducer {
                                   solveds: Solveds,
                                   cardinalities: Cardinalities,
                                   cardinalityModel: CardinalityModel): Seq[Expression] = {
-    val incomingCardinality = cardinalities.get(source.id)
-    val solvedBeforePredicate = solveds.get(source.id) match {
-      case query: SinglePlannerQuery => query
-      case _:UnionQuery =>
-        // In case we re-order predicates after the plan has already been rewritten,
-        // there is a chance that the source plan solves a UNION query.
-        // In that case we just pretend it solves an Argument with the same available symbols.
-        RegularSinglePlannerQuery(QueryGraph(argumentIds = source.availableSymbols))
-    }
+    if (predicates.size < 2) {
+      predicates
+    } else {
+      val incomingCardinality = cardinalities.get(source.id)
+      val solvedBeforePredicate = solveds.get(source.id) match {
+        case query: SinglePlannerQuery => query
+        case _: UnionQuery =>
+          // In case we re-order predicates after the plan has already been rewritten,
+          // there is a chance that the source plan solves a UNION query.
+          // In that case we just pretend it solves an Argument with the same available symbols.
+          RegularSinglePlannerQuery(QueryGraph(argumentIds = source.availableSymbols))
+      }
 
-    predicates.sortBy { predicate =>
-      val costPerRow = CardinalityCostModel.apply(predicate)
-      val solved = solvedBeforePredicate.updateTailOrSelf(_.amendQueryGraph(_.addPredicates(predicate)))
-      val cardinality = cardinalityModel(solved, queryGraphSolverInput, semanticTable)
-      val selectivity = (cardinality / incomingCardinality).getOrElse(Selectivity.ONE)
-      (costPerRow, selectivity)
-    }(PredicateOrdering)
+      def sortCriteria(predicate: Expression): (CostPerRow, Selectivity) = {
+        val costPerRow = CardinalityCostModel.apply(predicate)
+        val solved = solvedBeforePredicate.updateTailOrSelf(_.amendQueryGraph(_.addPredicates(predicate)))
+        val cardinality = cardinalityModel(solved, queryGraphSolverInput, semanticTable)
+        val selectivity = (cardinality / incomingCardinality).getOrElse(Selectivity.ONE)
+        (costPerRow, selectivity)
+      }
+
+      predicates.map(p => (p, sortCriteria(p))).sortBy(_._2)(PredicateOrdering).map(_._1)
+    }
   }
 
 
