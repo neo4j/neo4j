@@ -437,9 +437,9 @@ sealed trait AdminAction {
 
 abstract class DatabaseAction(override val name: String) extends AdminAction
 
-case object StartDatabaseAction extends DatabaseAction("START")
+case object StartDatabaseAction extends DatabaseAction("START DATABASE")
 
-case object StopDatabaseAction extends DatabaseAction("STOP")
+case object StopDatabaseAction extends DatabaseAction("STOP DATABASE")
 
 case object AllDatabaseAction extends DatabaseAction("ALL DATABASE PRIVILEGES")
 

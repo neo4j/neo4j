@@ -105,19 +105,22 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
   // When the community commands are run within enterprise, this allows the enterprise commands to be chained
   private def fullLogicalToExecutable = extraLogicalToExecutable orElse logicalToExecutable
 
+  val checkShowUserPrivilegesText = "Try executing SHOW USER PRIVILEGES to determine the missing or denied privileges. " +
+    "In case of missing privileges, they need to be granted (See GRANT). In case of denied privileges, they need to be revoked (See REVOKE) and granted."
+
   def logicalToExecutable: PartialFunction[LogicalPlan, (RuntimeContext, ParameterMapping) => ExecutionPlan] = {
 
     // Check Admin Rights for DBMS commands
     case AssertDbmsAdmin(actions) => (_, _) =>
       AuthorizationPredicateExecutionPlan((_, securityContext) => actions.forall { action =>
         securityContext.allowsAdminAction(new AdminActionOnResource(ActionMapper.asKernelAction(action), DatabaseScope.ALL, Segment.ALL))
-      }, violationMessage = "Permission denied for " + actions.map(a => a.name).sorted.mkString(" and/or ") + ".")  //sorting is important to keep error messages stable
+      }, violationMessage = "Permission denied for " + actions.map(a => a.name).sorted.mkString(" and/or ") + ". " + checkShowUserPrivilegesText)  //sorting is important to keep error messages stable
 
     // Check Admin Rights for DBMS commands or self
     case AssertDbmsAdminOrSelf(user, actions) => (_, _) =>
       AuthorizationPredicateExecutionPlan((params, securityContext) => securityContext.subject().hasUsername(runtimeValue(user, params)) || actions.forall { action =>
         securityContext.allowsAdminAction(new AdminActionOnResource(ActionMapper.asKernelAction(action), DatabaseScope.ALL, Segment.ALL))
-      }, violationMessage = "Permission denied for " + actions.map(a => a.name).sorted.mkString(" and/or ") + ".")  //sorting is important to keep error messages stable
+      }, violationMessage = "Permission denied for " + actions.map(a => a.name).sorted.mkString(" and/or ") + ". " + checkShowUserPrivilegesText)  //sorting is important to keep error messages stable
 
     // Check that the specified user is not the logged in user (eg. for some CREATE/DROP/ALTER USER commands)
     case AssertNotCurrentUser(source, userName, verb, violationMessage) => (context, parameterMapping) =>
@@ -130,7 +133,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
     case AssertDatabaseAdmin(action, database) => (_, _) =>
       AuthorizationPredicateExecutionPlan((params, securityContext) =>
         securityContext.allowsAdminAction(new AdminActionOnResource(ActionMapper.asKernelAction(action), new DatabaseScope(runtimeValue(database, params)), Segment.ALL)),
-        violationMessage = "Permission denied for " + action.name + "."
+        violationMessage = "Permission denied for " + action.name + ". " + checkShowUserPrivilegesText
       )
 
     // SHOW USERS
