@@ -29,15 +29,12 @@ import org.neo4j.cypher.internal.expressions.ExistsSubClause
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.ListSlice
-import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.Ors
 import org.neo4j.cypher.internal.expressions.PathExpression
 import org.neo4j.cypher.internal.expressions.PathStep
 import org.neo4j.cypher.internal.expressions.PatternComprehension
-import org.neo4j.cypher.internal.expressions.PatternElement
 import org.neo4j.cypher.internal.expressions.PatternExpression
-import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.ScopeExpression
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.functions.Coalesce
@@ -50,9 +47,8 @@ import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.macros.AssertMacros
-import org.neo4j.cypher.internal.rewriting.rewriters.PatternExpressionPatternElementNamer
 import org.neo4j.cypher.internal.rewriting.rewriters.projectNamedPaths
-import org.neo4j.cypher.internal.util.AllNameGenerators
+import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.util.FreshIdNameGenerator
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.topDown
@@ -118,7 +114,6 @@ object PatternExpressionSolver {
                         context: LogicalPlanningContext): SolverForLeafPlan = new SolverForLeafPlan(argumentIds, context)
 
   abstract class Solver(initialPlan: LogicalPlan,
-
                         context: LogicalPlanningContext) {
     private val patternExpressionSolver = solvePatternExpressions(initialPlan.availableSymbols, context)
     private val patternComprehensionSolver = solvePatternComprehensions(initialPlan.availableSymbols, context)
@@ -310,30 +305,47 @@ object PatternExpressionSolver {
     }
   }
 
+  private def qualifiesForRewriting(exp: AnyRef): Boolean = exp.treeExists {
+    case _: PatternExpression => true
+    case _: PatternComprehension => true
+  }
+
   case class ForMappable[T]() {
     def solve(inner: LogicalPlan, mappable: HasMappableExpressions[T],  context: LogicalPlanningContext): (T, LogicalPlan) = {
-      val solver = PatternExpressionSolver.solverFor(inner, context)
-      val rewrittenExpression = mappable.mapExpressions(solver.solve(_))
-      val rewrittenInner = solver.rewrittenPlan()
-      (rewrittenExpression, rewrittenInner)
+      if (qualifiesForRewriting(mappable)) {
+        val solver = PatternExpressionSolver.solverFor(inner, context)
+        val rewrittenExpression = mappable.mapExpressions(solver.solve(_))
+        val rewrittenInner = solver.rewrittenPlan()
+        (rewrittenExpression, rewrittenInner)
+      } else {
+        (mappable.identity, inner)
+      }
     }
   }
 
   object ForMulti {
     def solve(inner: LogicalPlan, expressions: Seq[Expression],  context: LogicalPlanningContext): (Seq[Expression], LogicalPlan) = {
-      val solver = PatternExpressionSolver.solverFor(inner, context)
-      val rewrittenExpressions: Seq[Expression] = expressions.map(solver.solve(_))
-      val rewrittenInner = solver.rewrittenPlan()
-      (rewrittenExpressions, rewrittenInner)
+      if (qualifiesForRewriting(expressions)) {
+        val solver = PatternExpressionSolver.solverFor(inner, context)
+        val rewrittenExpressions: Seq[Expression] = expressions.map(solver.solve(_))
+        val rewrittenInner = solver.rewrittenPlan()
+        (rewrittenExpressions, rewrittenInner)
+      } else {
+        (expressions, inner)
+      }
     }
   }
 
   object ForSingle  {
     def solve(inner: LogicalPlan, expression: Expression,  context: LogicalPlanningContext): (Expression, LogicalPlan) = {
-      val solver = PatternExpressionSolver.solverFor(inner, context)
-      val rewrittenExpression = solver.solve(expression)
-      val rewrittenInner = solver.rewrittenPlan()
-      (rewrittenExpression, rewrittenInner)
+      if (qualifiesForRewriting(expression)) {
+        val solver = PatternExpressionSolver.solverFor(inner, context)
+        val rewrittenExpression = solver.solve(expression)
+        val rewrittenInner = solver.rewrittenPlan()
+        (rewrittenExpression, rewrittenInner)
+      } else {
+        (expression, inner)
+      }
     }
   }
 
