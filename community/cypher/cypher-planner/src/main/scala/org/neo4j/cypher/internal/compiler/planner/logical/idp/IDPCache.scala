@@ -42,6 +42,9 @@ trait IDPCache[Result] {
 
 object IDPCache {
   case class Results[Result](result: Option[Result], sortedResult: Option[Result]) {
-    def iterator: Iterator[Result] = result.iterator ++ sortedResult.iterator
+    /**
+     * Returns iterator over all unique results
+     */
+    def iterator: Iterator[Result] = (result.toSet ++ sortedResult).iterator
   }
 }
