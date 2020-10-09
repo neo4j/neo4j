@@ -27,53 +27,32 @@ import scala.collection.mutable
 // can be stored efficiently using immutable BitSets
 //
 trait IdRegistry[I] {
-  /**
-   * @return `true` if this Registry contains compacted bits.
-   */
   def compacted(): Boolean
 
-  /**
-   * Register elem
-   * @return it's assigned id
-   */
+  // register elem and returns it's assigned id
   def register(elem: I): Int
 
-  /**
-   * reverse lookup for registered elements only
-   * (i.e. ignores compaction)
-   */
+  // reverse lookup for registered elements only
+  // (i.e. ignores compaction)
   def lookup(id: Int): Option[I]
 
-
-  /**
-   * register all elements and
-   * return a bit set with all bits set that
-   * correspond to the assigned ids for the elements
-   * @return all assigned ids in a bitset
-   */
+  // register all elements and
+  // return a bit set with all bits set that
+  // correspond to the assigned ids for the elements
   def registerAll(elements: Iterable[I]): BitSet
 
-
-  /**
-   * register a fresh id for a compacted bit set of previously returned ids
-   * @return the new id
-   */
+  // register a fresh id for a compacted bit set of
+  // previously returned ids
   def compact(existing: BitSet): Int
 
-  /**
-   * reverse lookup for a whole bit set.
-   * explode takes into account lookup as well as
-   * compaction information, i.e. if the bit set
-   * contains bits corresponding to ids returned by
-   * compact, these are translated to regular elements
-   * using previously recorded compaction information
-   */
+  // reverse lookup for a whole bit set
+  //
+  // explode takes into account lookup as well as
+  // compaction information, i.e. if the bit set
+  // contains bits corresponding to ids returned by
+  // compact, these are translated to regular elements
+  // using previously recorded compaction information
   def explode(ids: BitSet): Set[I]
-
-  /**
-   * Equivalent to `explode(ids).size` but more efficient.
-   */
-  def explodedSize(ids: BitSet): Int
 }
 
 object IdRegistry {
@@ -121,15 +100,6 @@ class DefaultIdRegistry[I] extends IdRegistry[I] {
     val builder = Set.newBuilder[I]
     ids.foreach(id => translate(id, builder))
     builder.result()
-  }
-
-  override def explodedSize(ids: BitSet): Int = {
-    ids.toSeq.map { id =>
-      reverseMap.get(id) match {
-        case Some(_) => 1
-        case None => explodedSize(compactionMap(id))
-      }
-    }.sum
   }
 
   override def lookup(id: Int): Option[I] =

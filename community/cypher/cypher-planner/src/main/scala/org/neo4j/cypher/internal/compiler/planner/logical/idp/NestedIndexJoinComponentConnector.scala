@@ -47,8 +47,6 @@ case class NestedIndexJoinComponentConnector(singleComponentPlanner: SingleCompo
           // We cannot plan NIJ if the RHS is more than one component or optional matches because that would require us to recurse into
           // JoinDisconnectedQueryGraphComponents instead of SingleComponentPlannerTrait.
           rightGoal <- goal.subGoals(1)
-          // Getting subGoals if size 1 can still give us compacted goals, so we need to post-filter the actual size
-          if registry.explodedSize(rightGoal.bitSet) == 1
           rightPlan <- table(rightGoal).iterator
 
           containsOptionals = context.planningAttributes.solveds.get(rightPlan.id).asSinglePlannerQuery.lastQueryGraph.optionalMatches.nonEmpty
