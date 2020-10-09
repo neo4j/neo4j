@@ -48,7 +48,6 @@ import org.neo4j.cypher.internal.compiler.planner.logical.idp.IDPQueryGraphSolve
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.IDPQueryGraphSolverMonitor
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.SingleComponentIDPSolverConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.SingleComponentPlanner
-import org.neo4j.cypher.internal.compiler.planner.logical.idp.cartesianProductsOrValueJoins
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.devNullListener
 import org.neo4j.cypher.internal.compiler.test_helpers.ContextHelper
@@ -123,13 +122,6 @@ object LogicalPlanningTestSupport2 extends MockitoSugar {
   )
 
   def createQueryGraphSolver(solverConfig: SingleComponentIDPSolverConfig = DefaultIDPSolverConfig): QueryGraphSolver = {
-    val solverMonitor = mock[IDPQueryGraphSolverMonitor]
-    val singleComponentPlanner = SingleComponentPlanner(solverMonitor, solverConfig)
-    val connectorPlanner = cartesianProductsOrValueJoins
-    new IDPQueryGraphSolver(singleComponentPlanner, connectorPlanner, solverMonitor)
-  }
-
-  def createQueryGraphSolverWithComponentConnectorPlanner(solverConfig: SingleComponentIDPSolverConfig = DefaultIDPSolverConfig): QueryGraphSolver = {
     val solverMonitor = mock[IDPQueryGraphSolverMonitor]
     val singleComponentPlanner = SingleComponentPlanner(solverMonitor, solverConfig)
     val connectorPlanner = ComponentConnectorPlanner(singleComponentPlanner, solverConfig, solverMonitor)

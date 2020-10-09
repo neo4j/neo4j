@@ -28,5 +28,5 @@ case object CypherConnectComponentsPlannerOption extends CypherOptionCompanion[C
   case object greedy extends CypherConnectComponentsPlannerOption("greedy")
 
   val all: Set[CypherConnectComponentsPlannerOption] = Set(idp, greedy)
-  val default: CypherConnectComponentsPlannerOption = greedy
+  val default: CypherConnectComponentsPlannerOption = idp
 }
