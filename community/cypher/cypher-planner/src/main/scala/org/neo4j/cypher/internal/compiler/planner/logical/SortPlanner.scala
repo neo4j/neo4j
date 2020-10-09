@@ -92,13 +92,19 @@ object SortPlanner {
 
   case class SatisfiedForPlan(plan: LogicalPlan) {
     def unapply(arg: Satisfaction): Boolean = {
-      arg.satisfiedPrefix.nonEmpty && {
-        val dependencies: Set[String] = for {
+      arg.satisfiedPrefix.nonEmpty && (arg.missingSuffix.isEmpty || {
+        val dependenciesOfMissingSuffix: Set[String] = for {
           columnOrder <- arg.missingSuffix.toSet[InterestingOrder.ColumnOrder]
           dependency <- columnOrder.dependencies
         } yield dependency.name
-        !plan.availableSymbols.exists(dependencies.contains)
-      }
+
+        // If all dependencies of the not sorted suffix are available,
+        // we could be sorted by all columns (instead of just by the satisfied prefix)
+        // If only some of those dependencies are available, we could theoretically be sorted
+        // by a larger prefix, but we don't currently inject PartialSort plans in the middle
+        // of IDP so that will never happen.
+        !dependenciesOfMissingSuffix.subsetOf(plan.availableSymbols)
+      })
     }
   }
 

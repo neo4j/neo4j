@@ -41,18 +41,19 @@ object InterestingOrder {
     // Projections needed to apply the sort of the expression
     def projections: Map[String, Expression]
 
-    // Returns all dependencies from the expression, and previous expressions that we're projected to form this expression.
+    /**
+     * @return all dependencies from the  expression.
+     *         The expression is first converted to the first expressions that was projected to form this expression.
+     *         That way we get all the dependencies with "original" names.
+     */
     def dependencies: Set[LogicalVariable] = {
-      var dep = expression.dependencies
       var currExpr = expression
       var prevExpr = projectExpression(expression, projections)
       while(currExpr != prevExpr) {
         currExpr = prevExpr
-        dep = dep ++ currExpr.dependencies
         prevExpr = projectExpression(currExpr, projections)
       }
-
-      dep
+      currExpr.dependencies
     }
 
   }

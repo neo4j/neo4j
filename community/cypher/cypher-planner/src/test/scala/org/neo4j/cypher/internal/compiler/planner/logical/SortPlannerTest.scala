@@ -157,7 +157,7 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
     asSortedAsPossible shouldBe true
   }
 
-  test("SatisfiedForPlan should return false when both prefix and suffix are non empty and suffix depends on available symbol") {
+  test("SatisfiedForPlan should return false when both prefix and suffix are non empty and all suffix symbols are available") {
     val plan = fakeLogicalPlanFor("x", "y")
     val interestingOrderOnX = Seq(InterestingOrder.Asc(varFor("x")))
     val interestingOrderOnY = Seq(InterestingOrder.Asc(varFor("y")))
@@ -166,7 +166,16 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
     asSortedAsPossible shouldBe false
   }
 
-  test("SatisfiedForPlan should return true when both prefix and suffix are non empty and suffix doesn't depend on available symbol") {
+  test("SatisfiedForPlan should return true when both prefix and suffix are non empty and only some suffix symbols are available") {
+    val plan = fakeLogicalPlanFor("x", "y")
+    val interestingOrderOnX = Seq(InterestingOrder.Asc(varFor("x")))
+    val interestingOrderOnYZ = Seq(InterestingOrder.Asc(varFor("y")), InterestingOrder.Asc(varFor("z")))
+    val asSortedAsPossible = SatisfiedForPlan(plan).unapply(Satisfaction(interestingOrderOnX, interestingOrderOnYZ))
+
+    asSortedAsPossible shouldBe true
+  }
+
+  test("SatisfiedForPlan should return true when both prefix and suffix are non empty and no suffix symbols are available") {
     val plan = fakeLogicalPlanFor("x")
     val interestingOrderOnX = Seq(InterestingOrder.Asc(varFor("x")))
     val interestingOrderOnY = Seq(InterestingOrder.Asc(varFor("y")))

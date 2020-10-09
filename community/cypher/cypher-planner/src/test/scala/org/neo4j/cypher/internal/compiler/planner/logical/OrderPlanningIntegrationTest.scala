@@ -840,6 +840,38 @@ class OrderPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
     }
   }
 
+  test("Should choose larger index on the same variable, if sorting can be avoided, when sorting on 3 variables.") {
+    val query =
+      """MATCH (a:A)-->(b)-->(c)
+        |WHERE exists(a.prop) AND exists(a.foo)
+        |RETURN a, b, c
+        |ORDER BY a.prop, b.prop, c.prop""".stripMargin
+
+    val selectivities = Map[Expression, Double](
+      hasLabels("a", "A") -> 1.0,
+      Exists(prop("a", "prop"))(pos) -> 0.5,
+      Exists(prop("a", "foo"))(pos) -> 0.1 // Make it cheapest to start on a.foo.
+    ).withDefaultValue(1.0)
+
+    val plan = new given {
+      cardinality = selectivitiesCardinality(selectivities, qg => Math.pow(100.0, qg.patternNodes.size))
+      indexOn("A", "prop").providesOrder(IndexOrderCapability.BOTH)
+      indexOn("A", "foo")
+    }.getLogicalPlanFor(query)._2
+
+    // Different join and expand variants are OK, but it should maintain the
+    // order from a and only need to partially sort b, c.
+    // If this were to disregard sorting, the index on a.foo would be more selective and thus a better choice than a.prop.
+    withClue(plan) {
+      plan.treeCount {
+        case _: Sort => true
+      } shouldBe 0
+      plan should beLike {
+        case PartialSort(_, Seq(Ascending("a.prop")), Seq(Ascending("b.prop"), Ascending("c.prop"))) => ()
+      }
+    }
+  }
+
   test("Should choose larger index on the same variable, if sorting can be avoided, when sorting on 2 variables, with projection.") {
     val query =
       """MATCH (a:A)-->(b)-->(c)
@@ -884,7 +916,6 @@ class OrderPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
     ).withDefaultValue(1.0)
 
     val plan = new given {
-      // Make it cheapest to start on a.foo.
       cardinality = selectivitiesCardinality(selectivities, qg => Math.pow(100.0, qg.patternNodes.size))
       indexOn("A", "prop").providesOrder(IndexOrderCapability.BOTH)
     }.getLogicalPlanFor(query)._2
@@ -899,6 +930,37 @@ class OrderPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
     } shouldBe 1
     // The PartialSort should be between the expands, not at the end.
     plan should not be a[PartialSort]
+  }
+
+  test("Should plan Partial Sort in between Expands, when sorting on 3 variables with projection.") {
+    val query =
+      """MATCH (a:A)-->(b)-->(c)-->(d)
+        |WHERE exists(a.prop)
+        |RETURN a.prop AS first, b.prop AS second, c.prop AS third
+        |ORDER BY first, second, third""".stripMargin
+
+    val selectivities = Map[Expression, Double](
+      hasLabels("a", "A") -> 1.0,
+      Exists(prop("a", "prop"))(pos) -> 0.5
+    ).withDefaultValue(1.0)
+
+    val plan = new given {
+      cardinality = selectivitiesCardinality(selectivities, qg => Math.pow(100.0, qg.patternNodes.size))
+      indexOn("A", "prop").providesOrder(IndexOrderCapability.BOTH)
+    }.getLogicalPlanFor(query)._2
+
+    withClue(plan) {
+      // Different join and expand variants are OK, but it should maintain the
+      // order from a and only need to partially sort b, c.
+      plan.treeCount {
+        case _: Sort => true
+      } shouldBe 0
+      plan.treeCount {
+        case PartialSort(_, Seq(Ascending("first")), Seq(Ascending("second"), Ascending("third"))) => true
+      } shouldBe 1
+      // The PartialSort should be between the expands, not at the end.
+      plan should not be a[PartialSort]
+    }
   }
 
   test("Should plan sort last when sorting on a property in last node in the expand") {

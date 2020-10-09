@@ -50,7 +50,7 @@ class InterestingOrderTest extends CypherFunSuite {
     )
     val columnOrder = InterestingOrder.Asc(varFor("a3"), projections)
 
-    columnOrder.dependencies shouldBe Set(varFor("a1"), varFor("a2"), varFor("a3"))
+    columnOrder.dependencies shouldBe Set(varFor("a1"))
   }
 
   test("Column Order on property, with non empty projection list, should return correct dependencies") {
@@ -61,7 +61,7 @@ class InterestingOrderTest extends CypherFunSuite {
     )
     val columnOrder = InterestingOrder.Asc(prop("a3", "prop1"), projections)
 
-    columnOrder.dependencies shouldBe Set(varFor("a1"), varFor("a2"), varFor("a3"))
+    columnOrder.dependencies shouldBe Set(varFor("a1"))
   }
 
   test("should reverse project property to variable") {
