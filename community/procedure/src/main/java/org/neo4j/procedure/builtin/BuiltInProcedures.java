@@ -480,9 +480,10 @@ public class BuiltInProcedures
         return indexProcedures.createIndex( indexName, labels, properties, indexProviderDescriptor, config );
     }
 
+    @Deprecated
     @Description( "Create a named unique property constraint. Backing index will use specified index provider and configuration (optional). " +
             "Yield: name, labels, properties, providerName, status" )
-    @Procedure( name = "db.createUniquePropertyConstraint", mode = SCHEMA )
+    @Procedure( name = "db.createUniquePropertyConstraint", mode = SCHEMA, deprecatedBy = "CREATE CONSTRAINT ... IS UNIQUE command" )
     public Stream<SchemaIndexInfo> createUniquePropertyConstraint(
             @Name( "constraintName" ) String constraintName,
             @Name( "labels" ) List<String> labels,
