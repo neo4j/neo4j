@@ -27,10 +27,10 @@ import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
+import org.neo4j.cypher.internal.ir.ordering.InterestingOrder.FullSatisfaction
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.NodeUniqueIndexSeek
-import org.neo4j.cypher.internal.util.CartesianOrdering
 
 trait JoinDisconnectedQueryGraphComponents {
   def apply(componentPlans: Set[PlannedComponent],
@@ -135,21 +135,17 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
   }
 
   /**
-   * Plans a large amount of query parts together. Produces a left deep tree sorted by the cost/cardinality of the query parts.
+   * Plans a large amount of query parts together. Produces a left deep tree sorted by the cost of the query parts.
    */
   private[idp] def planLotsOfCartesianProducts(plans: Set[PlannedComponent],
-                                               qg: QueryGraph,
-                                               context: LogicalPlanningContext,
-                                               kit: QueryPlannerKit): PlannedComponent = {
+                                          qg: QueryGraph,
+                                          context: LogicalPlanningContext,
+                                          kit: QueryPlannerKit): PlannedComponent = {
     val maybeSortedComponent = theSortedComponent(plans)
 
     val bestPlans: Seq[Component] = plans.toList.map {
       case PlannedComponent(queryGraph, BestResults(bestResult, _)) => Component(queryGraph, bestResult)
-    }.sortBy { c =>
-      val cardinality = context.planningAttributes.cardinalities(c.plan.id)
-      val cost = context.cost.apply(c.plan, context.input, context.planningAttributes.cardinalities)
-      (cost, cardinality)
-    }(CartesianOrdering)
+    }.sortBy(c => context.cost.apply(c.plan, context.input, context.planningAttributes.cardinalities))
 
     val bestSortedPlans = maybeSortedComponent.map {
       // If we have a sorted component, that should go to the very left of the cartesian products to keep the sort order
