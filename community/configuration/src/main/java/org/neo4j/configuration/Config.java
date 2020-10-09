@@ -29,12 +29,15 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.lang.reflect.Constructor;
+import java.nio.file.FileVisitResult;
+import java.nio.file.FileVisitor;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.AclEntry;
 import java.nio.file.attribute.AclEntryPermission;
 import java.nio.file.attribute.AclEntryType;
 import java.nio.file.attribute.AclFileAttributeView;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.PosixFileAttributeView;
 import java.nio.file.attribute.PosixFileAttributes;
 import java.nio.file.attribute.PosixFilePermission;
@@ -228,19 +231,26 @@ public class Config implements Configuration
 
             try
             {
-                try ( InputStream stream = Files.newInputStream( file ) )
+                if ( Files.isDirectory( file ) )
                 {
-                    new Properties()
-                    {
-                        @Override
-                        public synchronized Object put( Object key, Object value )
-                        {
-                            setRaw( key.toString(), value.toString() );
-                            return null;
-                        }
-                    }.load( stream );
+                    Files.walkFileTree( file, new ConfigDirectoryFileVisitor( file ) );
                 }
-                configFiles.add( file );
+                else
+                {
+                    try ( InputStream stream = Files.newInputStream( file ) )
+                    {
+                        new Properties()
+                        {
+                            @Override
+                            public synchronized Object put( Object key, Object value )
+                            {
+                                setRaw( key.toString(), value.toString() );
+                                return null;
+                            }
+                        }.load( stream );
+                    }
+                    configFiles.add( file );
+                }
             }
             catch ( IOException e )
             {
@@ -388,6 +398,78 @@ public class Config implements Configuration
             else
             {
                 throw new IllegalStateException( "Configuration command expansion not supported for " + SystemUtils.OS_NAME );
+            }
+        }
+
+        private class ConfigDirectoryFileVisitor implements FileVisitor<Path>
+        {
+            private final Path root;
+
+            ConfigDirectoryFileVisitor( Path root )
+            {
+                this.root = root;
+            }
+
+            private boolean isRoot( Path dir )
+            {
+                return root.equals( dir );
+            }
+
+            private boolean isNotHidden( Path file )
+            {
+                return !file.getFileName().toString().startsWith( "." );
+            }
+
+            private boolean isFile( Path file, BasicFileAttributes attrs )
+            {
+                return attrs.isRegularFile() || Files.isRegularFile( file );
+            }
+
+            @Override
+            public FileVisitResult preVisitDirectory( Path dir, BasicFileAttributes attrs )
+            {
+                if ( isRoot( dir ) )
+                {
+                    return FileVisitResult.CONTINUE;
+                }
+                else
+                {
+                    // We don't go into subdirectories, it's too risky
+                    if ( isNotHidden( dir ) )
+                    {
+                        log.warn( "Ignoring subdirectory in config directory [" + dir + "]." );
+                    }
+                    return FileVisitResult.SKIP_SUBTREE;
+                }
+            }
+
+            @Override
+            public FileVisitResult visitFile( Path file, BasicFileAttributes attrs ) throws IOException
+            {
+                if ( isNotHidden( file ) && isFile( file, attrs ) )
+                {
+                    String key = file.getFileName().toString();
+                    String value = Files.readString( file );
+                    setRaw( key, value );
+                    configFiles.add( file );
+                }
+                return FileVisitResult.CONTINUE;
+            }
+
+            @Override
+            public FileVisitResult visitFileFailed( Path file, IOException exc ) throws IOException
+            {
+                throw exc != null ? exc : new IOException( "Unknown failure loading config file [" + file.toAbsolutePath() + "]" );
+            }
+
+            @Override
+            public FileVisitResult postVisitDirectory( Path dir, IOException exc ) throws IOException
+            {
+                if ( exc != null )
+                {
+                    throw exc;
+                }
+                return FileVisitResult.CONTINUE;
             }
         }
     }
@@ -673,7 +755,6 @@ public class Config implements Configuration
             if ( settingValueObjects.containsKey( key ) )
             {
                 value = settingValueObjects.get( key );
-
             }
             else if ( settingValueStrings.containsKey( key ) ) // Map value
             {
@@ -933,6 +1014,7 @@ public class Config implements Configuration
         }
         return (Setting<Object>) settings.get( name ).setting;
     }
+
     @SuppressWarnings( "unchecked" )
     public Map<String,Setting<Object>> getDeclaredSettings()
     {
@@ -1023,6 +1105,7 @@ public class Config implements Configuration
     private class DepEntry<T> extends Entry<T>
     {
         private volatile T solved;
+
         private DepEntry( SettingImpl<T> setting, T value, T defaultValue, T solved )
         {
             super( setting, value, defaultValue, false );

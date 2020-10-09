@@ -23,6 +23,7 @@ import org.apache.commons.lang3.SystemUtils;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 
 import java.io.IOException;
@@ -32,12 +33,15 @@ import java.nio.file.attribute.AclEntry;
 import java.nio.file.attribute.AclEntryPermission;
 import java.nio.file.attribute.AclEntryType;
 import java.nio.file.attribute.AclFileAttributeView;
+import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.HttpConnector;
@@ -52,8 +56,14 @@ import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.util.FeatureToggles;
 
+import static java.nio.file.attribute.PosixFilePermission.GROUP_READ;
+import static java.nio.file.attribute.PosixFilePermission.GROUP_WRITE;
+import static java.nio.file.attribute.PosixFilePermission.OTHERS_READ;
+import static java.nio.file.attribute.PosixFilePermission.OTHERS_WRITE;
+import static java.nio.file.attribute.PosixFilePermission.OWNER_EXECUTE;
 import static java.nio.file.attribute.PosixFilePermission.OWNER_READ;
 import static java.nio.file.attribute.PosixFilePermission.OWNER_WRITE;
+import static org.apache.commons.lang3.SystemUtils.IS_OS_MAC;
 import static org.apache.commons.lang3.SystemUtils.IS_OS_WINDOWS;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -421,10 +431,12 @@ class ConfigTest
     private static final class SingleSettingGroup extends GroupSetting
     {
         final Setting<String> singleSetting = getBuilder( STRING, null ).build();
+
         static SingleSettingGroup group( String name )
         {
             return new SingleSettingGroup( name );
         }
+
         private SingleSettingGroup( String name )
         {
             super( name );
@@ -490,9 +502,132 @@ class ConfigTest
         Path confFile = testDirectory.file( "test.conf" );
         Files.write( confFile, Collections.singletonList( GraphDatabaseSettings.default_database.name() + "=foo" ) );
 
-        assertEquals( "foo", Config.newBuilder().fromFile( confFile ).build().get( GraphDatabaseSettings.default_database ) );
-        assertEquals( "foo", Config.newBuilder().fromFileNoThrow( confFile ).build().get( GraphDatabaseSettings.default_database ) );
-        assertEquals( "foo", Config.newBuilder().fromFileNoThrow( confFile ).build().get( GraphDatabaseSettings.default_database ) );
+        Config config1 = buildWithoutErrorsOrWarnings( Config.newBuilder().fromFile( confFile )::build );
+        Config config2 = buildWithoutErrorsOrWarnings( Config.newBuilder().fromFileNoThrow( confFile )::build );
+        Stream.of( config1, config2 ).forEach(
+                c -> assertEquals( "foo", c.get( GraphDatabaseSettings.default_database ) )
+        );
+    }
+
+    @Test
+    void canReadConfigDir() throws IOException
+    {
+        Path confDir = testDirectory.directory( "test.conf" );
+        Path defaultDatabase = confDir.resolve( GraphDatabaseSettings.default_database.name() );
+        Files.write( defaultDatabase, "foo".getBytes() );
+
+        Config config1 = buildWithoutErrorsOrWarnings( Config.newBuilder().fromFile( confDir )::build );
+        Config config2 = buildWithoutErrorsOrWarnings( Config.newBuilder().fromFileNoThrow( confDir )::build );
+        Stream.of( config1, config2 ).forEach(
+                c -> assertEquals( "foo", c.get( GraphDatabaseSettings.default_database ) )
+        );
+    }
+
+    @Test
+    void ignoreSubdirsInConfigDir() throws IOException
+    {
+        Path confDir = testDirectory.directory( "test.conf" );
+        Path subDir = Files.createDirectory( confDir.resolve( "more" ) );
+
+        Path defaultDatabase = subDir.resolve( GraphDatabaseSettings.default_database.name() );
+        Files.write( defaultDatabase, "foo".getBytes() );
+
+        Config config1 = Config.newBuilder().fromFile( confDir ).build();
+        Config config2 = Config.newBuilder().fromFileNoThrow( confDir ).build();
+
+        Stream.of( config1, config2 )
+              .forEach( c ->
+                        {
+                            AssertableLogProvider logProvider = new AssertableLogProvider();
+                            c.setLogger( logProvider.getLog( Config.class ) );
+                            assertThat( logProvider ).forLevel( AssertableLogProvider.Level.WARN )
+                                                     .containsMessages( "Ignoring subdirectory in config directory [" + subDir + "]." );
+                            assertThat( logProvider ).forLevel( AssertableLogProvider.Level.ERROR ).doesNotHaveAnyLogs();
+
+                            assertThat( c.get( GraphDatabaseSettings.default_database ) ).isNotEqualTo( "foo" );
+                        }
+              );
+    }
+
+    @Test
+    void canReadK8sStyleConfigDir() throws IOException
+    {
+        Path confDir = createK8sStyleConfigDir();
+
+        Config config = buildWithoutErrorsOrWarnings( Config.newBuilder().fromFile( confDir )::build );
+        Config config2 = buildWithoutErrorsOrWarnings( Config.newBuilder().fromFileNoThrow( confDir )::build );
+
+        Stream.of( config, config2 ).forEach( c ->
+                                              {
+                                                  assertEquals( "foo", c.get( GraphDatabaseSettings.default_database ) );
+                                                  assertEquals( true, c.get( GraphDatabaseSettings.auth_enabled ) );
+                                                  assertEquals( 4, c.get( GraphDatabaseSettings.auth_max_failed_attempts ) );
+                                              } );
+    }
+
+    /**
+     * This tests some of the unusual arrangements with links and metadata files/directories that can exist in Kubernetes mounted volumes
+     *
+     * @param fileAttributes
+     * @throws IOException
+     */
+    private Path createK8sStyleConfigDir( FileAttribute<?>... fileAttributes ) throws IOException
+    {
+        // Create and populate a directory for files and directories that we will target using links
+        Path targetDir = testDirectory.directory( "links" );
+
+        Path dotFile = Files.createFile( targetDir.resolve( "..data" ) );
+        Path dotDir = Files.createDirectory( targetDir.resolve( "..metadata" ) );
+
+        Path defaultDatabase = targetDir.resolve( GraphDatabaseSettings.default_database.name() );
+        Files.createFile( defaultDatabase, fileAttributes );
+        Files.write( defaultDatabase, "foo".getBytes() );
+
+        Path authEnabled = targetDir.resolve( GraphDatabaseSettings.auth_enabled.name() );
+        Files.createFile( authEnabled, fileAttributes );
+        Files.write( authEnabled, "true".getBytes() );
+
+        // Create and populate the actual conf dir
+        Path confDir = testDirectory.directory( "neo4j.conf" );
+
+        // -- Set up all the links --
+        // Setting file permissions on a symlink is only supported on Mac
+        FileAttribute<?>[] symlinkAttributes = IS_OS_MAC ? new FileAttribute[]{
+                PosixFilePermissions.asFileAttribute( Set.of( OWNER_EXECUTE, OWNER_READ, OWNER_WRITE, GROUP_READ, GROUP_WRITE, OTHERS_READ, OTHERS_WRITE ) )}
+                                                         : new FileAttribute[0];
+        // Symbolic link to a dot file
+        Files.createSymbolicLink( confDir.resolve( dotFile.getFileName() ), dotFile, symlinkAttributes );
+        // Symbolic link to a dot directory
+        Files.createSymbolicLink( confDir.resolve( dotDir.getFileName() ), dotDir, symlinkAttributes );
+        // Symbolic link to an actual setting file we want read
+        Files.createSymbolicLink( confDir.resolve( defaultDatabase.getFileName() ), defaultDatabase, symlinkAttributes );
+        // Hard link to an actual setting file we want read
+        Files.createLink( confDir.resolve( authEnabled.getFileName() ), authEnabled );
+
+        // -- Set up regular files/dirs in the conf dir --
+        // A dot file (this one doesn't show up on K8s, but better safe than sorry)
+        Files.createFile( confDir.resolve( ".DS_STORE" ) );
+        // A dot dir (this one doesn't show up on K8s, but better safe than sorry)
+        Files.createDirectory( confDir.resolve( "..version" ) );
+        // An actual settings file we want to read
+        Path authMaxFailedAttempts = confDir.resolve( GraphDatabaseSettings.auth_max_failed_attempts.name() );
+        Files.createFile( authMaxFailedAttempts, fileAttributes );
+        Files.write( authMaxFailedAttempts, "4".getBytes() );
+        return confDir;
+    }
+
+    private Config buildWithoutErrorsOrWarnings( Supplier<Config> buildConfig )
+    {
+        AssertableLogProvider lp = new AssertableLogProvider();
+
+        Config config = buildConfig.get();
+
+        // The config uses a buffering log, when you supply it with a log (i.e. our mock) it replays the buffered log into it
+        config.setLogger( lp.getLog( Config.class ) );
+        assertThat( lp ).forLevel( AssertableLogProvider.Level.WARN ).doesNotHaveAnyLogs();
+        assertThat( lp ).forLevel( AssertableLogProvider.Level.ERROR ).doesNotHaveAnyLogs();
+
+        return config;
     }
 
     @Test
@@ -795,6 +930,39 @@ class ConfigTest
     }
 
     @Test
+    @EnabledOnOs( {OS.LINUX, OS.MAC} )
+    void shouldNotEvaluateK8sConfDirWithIncorrectFilePermission() throws IOException
+    {
+        //Given
+        Path confDir = createK8sStyleConfigDir( PosixFilePermissions.asFileAttribute( PosixFilePermissions.fromString( "rwx------" ) ) );
+        Config.Builder builder = Config.newBuilder().allowCommandExpansion().addSettingsClass( TestSettings.class ).fromFile( confDir );
+
+        //Then
+        String msg = assertThrows( IllegalArgumentException.class, builder::build ).getMessage();
+        String expectedErrorMessage = "does not have the correct file permissions";
+        assertThat( msg ).contains( expectedErrorMessage );
+    }
+
+    @Test
+    @EnabledOnOs( {OS.LINUX, OS.MAC} )
+    void shouldEvaluateK8sConfDirWithCorrectFilePermission() throws IOException
+    {
+        var acceptablePermissions = PosixFilePermissions.asFileAttribute( Set.of( OWNER_READ, OWNER_WRITE ) );
+
+        // Given
+        Path confDir = createK8sStyleConfigDir( acceptablePermissions );
+
+        var testSetting = Files.createFile( confDir.resolve( TestSettings.intSetting.name() ), acceptablePermissions );
+        Files.write( testSetting, "$(expr 3 + 3)".getBytes() );
+
+        Config.Builder configBuilder = Config.newBuilder().allowCommandExpansion().addSettingsClass( TestSettings.class ).fromFile( confDir );
+
+        //Then
+        Config config = buildWithoutErrorsOrWarnings( configBuilder::build );
+        assertEquals( 6, config.get( TestSettings.intSetting ) );
+    }
+
+    @Test
     void shouldTimeoutOnSlowCommands()
     {
         assumeUnixOrWindows();
@@ -897,6 +1065,7 @@ class ConfigTest
         {
             return new TestConnectionGroupSetting( name );
         }
+
         @Override
         public String getPrefix()
         {
