@@ -23,7 +23,7 @@ import java.util.EmptyStackException;
 
 import org.neo4j.graphdb.Resource;
 
-public class HeapTrackingLongStack implements LongStack, Resource
+public class HeapTrackingLongStack implements Resource
 {
     private final HeapTrackingLongArrayList delegate;
 
@@ -32,7 +32,6 @@ public class HeapTrackingLongStack implements LongStack, Resource
         this.delegate = delegate;
     }
 
-    @Override
     public long peek()
     {
         int size = delegate.size();
@@ -43,22 +42,29 @@ public class HeapTrackingLongStack implements LongStack, Resource
         return delegate.get( size - 1 );
     }
 
-    @Override
     public void push( long item )
     {
         delegate.add( item );
     }
 
-    @Override
     public long pop()
     {
         return delegate.removeLast();
     }
 
-    @Override
     public int size()
     {
         return delegate.size();
+    }
+
+    public boolean isEmpty()
+    {
+        return size() == 0;
+    }
+
+    public boolean notEmpty()
+    {
+        return size() != 0;
     }
 
     @Override

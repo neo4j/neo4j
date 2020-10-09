@@ -32,7 +32,7 @@ import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 import static org.neo4j.memory.HeapEstimator.sizeOfLongArray;
 import static org.neo4j.util.Preconditions.requireNonNegative;
 
-public class HeapTrackingLongArrayList implements LongArrayList, Resource
+public class HeapTrackingLongArrayList implements Resource
 {
     private static final long SHALLOW_SIZE = shallowSizeOfInstance( HeapTrackingLongArrayList.class );
 
@@ -68,14 +68,12 @@ public class HeapTrackingLongArrayList implements LongArrayList, Resource
         this.memoryTracker = memoryTracker;
     }
 
-    @Override
     public boolean add( long item )
     {
         add( item, elementData, size );
         return true;
     }
 
-    @Override
     public void add( int index, long element )
     {
         rangeCheckForAdd( index );
@@ -90,14 +88,12 @@ public class HeapTrackingLongArrayList implements LongArrayList, Resource
         size = s + 1;
     }
 
-    @Override
     public long get( int index )
     {
         Objects.checkIndex( index, size );
         return elementData[index];
     }
 
-    @Override
     public long set( int index, long element )
     {
         Objects.checkIndex( index, size );
@@ -116,13 +112,21 @@ public class HeapTrackingLongArrayList implements LongArrayList, Resource
         size = s + 1;
     }
 
-    @Override
     public int size()
     {
         return size;
     }
 
-    @Override
+    public boolean isEmpty()
+    {
+        return size == 0;
+    }
+
+    public boolean notEmpty()
+    {
+        return size != 0;
+    }
+
     public void clear()
     {
         Arrays.fill( this.elementData, 0, size, 0L);
@@ -162,7 +166,6 @@ public class HeapTrackingLongArrayList implements LongArrayList, Resource
         return previous;
     }
 
-    @Override
     public boolean addAll( long... longs )
     {
         int numNew = longs.length;
