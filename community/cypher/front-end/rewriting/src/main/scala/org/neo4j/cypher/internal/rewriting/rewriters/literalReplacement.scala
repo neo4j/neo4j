@@ -122,7 +122,7 @@ object literalReplacement {
     (ExtractParameterRewriter(replaceableLiterals), extractedParams)
   }
 
-  def apply(term: ASTNode, paramExtraction: LiteralExtraction): (Rewriter, Map[String, Any]) = paramExtraction match {
+  def apply(term: ASTNode, paramExtraction: LiteralExtractionStrategy): (Rewriter, Map[String, Any]) = paramExtraction match {
     case Never =>
       Rewriter.noop -> Map.empty
     case Forced =>
@@ -137,7 +137,7 @@ object literalReplacement {
   }
 }
 
-sealed trait LiteralExtraction
-case object Forced extends LiteralExtraction
-case object IfNoParameter extends LiteralExtraction
-case object Never extends LiteralExtraction
+sealed trait LiteralExtractionStrategy
+case object Forced extends LiteralExtractionStrategy
+case object IfNoParameter extends LiteralExtractionStrategy
+case object Never extends LiteralExtractionStrategy

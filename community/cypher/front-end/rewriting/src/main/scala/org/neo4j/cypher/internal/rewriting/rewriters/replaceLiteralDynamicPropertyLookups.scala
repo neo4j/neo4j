@@ -20,15 +20,25 @@ import org.neo4j.cypher.internal.expressions.ContainerIndex
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.StringLiteral
+import org.neo4j.cypher.internal.rewriting.RewritingStep
 import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.bottomUp
 
-case object replaceLiteralDynamicPropertyLookups extends Rewriter {
+case object NoLiteralDynamicPropertyLookups extends StepSequencer.Condition
+
+case object replaceLiteralDynamicPropertyLookups extends RewritingStep {
+
+  override def preConditions: Set[StepSequencer.Condition] = Set.empty
+
+  override def postConditions: Set[StepSequencer.Condition] = Set(NoLiteralDynamicPropertyLookups)
+
+  override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
 
   private val instance = bottomUp(Rewriter.lift {
     case index @ ContainerIndex(expr, lit: StringLiteral) =>
       Property(expr, PropertyKeyName(lit.value)(lit.position))(index.position)
   })
 
-  override def apply(v: AnyRef): AnyRef = instance(v)
+  override def rewrite(v: AnyRef): AnyRef = instance(v)
 }

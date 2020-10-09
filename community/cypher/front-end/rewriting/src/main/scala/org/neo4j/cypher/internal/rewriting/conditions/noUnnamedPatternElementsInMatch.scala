@@ -19,9 +19,9 @@ package org.neo4j.cypher.internal.rewriting.conditions
 import org.neo4j.cypher.internal.ast.Match
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
-import org.neo4j.cypher.internal.rewriting.Condition
+import org.neo4j.cypher.internal.rewriting.ValidatingCondition
 
-case object noUnnamedPatternElementsInMatch extends Condition {
+case object noUnnamedPatternElementsInMatch extends ValidatingCondition {
   def apply(that: Any): Seq[String] = {
     val into = collectNodesOfType[Match].apply(that).map(_.pattern)
     into.flatMap(unnamedNodePatterns) ++ into.flatMap(unnamedRelationshipPatterns)

@@ -26,12 +26,25 @@ import org.neo4j.cypher.internal.expressions.InvalidNotEquals
 import org.neo4j.cypher.internal.expressions.LessThan
 import org.neo4j.cypher.internal.expressions.LessThanOrEqual
 import org.neo4j.cypher.internal.expressions.NotEquals
+import org.neo4j.cypher.internal.rewriting.RewritingStep
+import org.neo4j.cypher.internal.rewriting.conditions.noReferenceEqualityAmongVariables
 import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.topDown
 
-case object normalizeComparisons extends Rewriter {
+case object OnlySingleHasLabels extends StepSequencer.Condition
 
-  override def apply(that: AnyRef): AnyRef = instance(that)
+case object normalizeComparisons extends RewritingStep {
+
+  override def rewrite(that: AnyRef): AnyRef = instance(that)
+
+  override def preConditions: Set[StepSequencer.Condition] = Set(
+    HasLabelsOrTypesReplacedIfPossible // These have to have been rewritten to HasLabels / HasTypes at this point
+  )
+
+  override def postConditions: Set[StepSequencer.Condition] = Set(OnlySingleHasLabels, noReferenceEqualityAmongVariables)
+
+  override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
 
   private val instance: Rewriter = topDown(Rewriter.lift {
     case c@NotEquals(lhs, rhs) =>

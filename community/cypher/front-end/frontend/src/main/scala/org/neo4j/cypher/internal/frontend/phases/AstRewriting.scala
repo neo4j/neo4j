@@ -18,7 +18,6 @@ package org.neo4j.cypher.internal.frontend.phases
 
 import org.neo4j.cypher.internal.expressions.NotEquals
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
-import org.neo4j.cypher.internal.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.rewriting.conditions.containsNoNodesOfType
 import org.neo4j.cypher.internal.rewriting.conditions.containsNoReturnAll
 import org.neo4j.cypher.internal.rewriting.conditions.noDuplicatesInReturnItems
@@ -27,22 +26,17 @@ import org.neo4j.cypher.internal.rewriting.conditions.noUnnamedPatternElementsIn
 import org.neo4j.cypher.internal.rewriting.conditions.noUnnamedPatternElementsInPatternComprehension
 import org.neo4j.cypher.internal.rewriting.conditions.normalizedEqualsArguments
 import org.neo4j.cypher.internal.rewriting.rewriters.InnerVariableNamer
-import org.neo4j.cypher.internal.rewriting.rewriters.LiteralExtraction
 import org.neo4j.cypher.internal.util.symbols.CypherType
 
-case class AstRewriting(sequencer: String => RewriterStepSequencer,
-                        literalExtraction: LiteralExtraction,
-                        innerVariableNamer: InnerVariableNamer,
+case class AstRewriting(innerVariableNamer: InnerVariableNamer,
                         parameterTypeMapping : Map[String, CypherType] = Map.empty
 ) extends Phase[BaseContext, BaseState, BaseState] {
 
-  private val astRewriter = new ASTRewriter(sequencer, literalExtraction, innerVariableNamer)
+  private val astRewriter = new ASTRewriter(innerVariableNamer)
 
   override def process(in: BaseState, context: BaseContext): BaseState = {
-
-    val (rewrittenStatement, extractedParams, _) = astRewriter.rewrite(in.statement(), in.semantics(), parameterTypeMapping, context.cypherExceptionFactory)
-
-    in.withStatement(rewrittenStatement).withParams(extractedParams)
+    val rewrittenStatement = astRewriter.rewrite(in.statement(), in.semantics(), parameterTypeMapping, context.cypherExceptionFactory)
+    in.withStatement(rewrittenStatement)
   }
 
   override def phase = AST_REWRITE

@@ -17,9 +17,9 @@
 package org.neo4j.cypher.internal.rewriting.conditions
 
 import org.neo4j.cypher.internal.ast.ReturnItems
-import org.neo4j.cypher.internal.rewriting.Condition
+import org.neo4j.cypher.internal.rewriting.ValidatingCondition
 
-case object noDuplicatesInReturnItems extends Condition {
+case object noDuplicatesInReturnItems extends ValidatingCondition {
   def apply(that: Any): Seq[String] = {
     val returnItems = collectNodesOfType[ReturnItems].apply(that)
     returnItems.collect {

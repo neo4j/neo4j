@@ -21,7 +21,6 @@ import org.neo4j.cypher.internal.util.StepSequencer.MutableDirectedGraph
 import org.neo4j.cypher.internal.util.StepSequencer.Step
 import org.neo4j.cypher.internal.util.StepSequencer.StepAccumulator
 
-import scala.collection.immutable.Set
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Random

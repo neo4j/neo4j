@@ -18,26 +18,28 @@ package org.neo4j.cypher.internal.rewriting.rewriters
 
 import org.neo4j.cypher.internal.ast.Match
 import org.neo4j.cypher.internal.ast.Where
-import org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.expressions.And
 import org.neo4j.cypher.internal.expressions.Expression
-import org.neo4j.cypher.internal.expressions.GreaterThan
-import org.neo4j.cypher.internal.expressions.NodePattern
-import org.neo4j.cypher.internal.expressions.Not
-import org.neo4j.cypher.internal.expressions.Or
-import org.neo4j.cypher.internal.expressions.PatternExpression
-import org.neo4j.cypher.internal.expressions.RelationshipChain
-import org.neo4j.cypher.internal.expressions.RelationshipPattern
-import org.neo4j.cypher.internal.expressions.RelationshipsPattern
-import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
-import org.neo4j.cypher.internal.expressions.functions.Exists
+import org.neo4j.cypher.internal.rewriting.RewritingStep
+import org.neo4j.cypher.internal.rewriting.conditions.noUnnamedPatternElementsInMatch
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.topDown
 
-abstract class MatchPredicateNormalization(normalizer: MatchPredicateNormalizer) extends Rewriter {
+case object NoPredicatesInNamedPartsOfMatchPattern extends StepSequencer.Condition
 
-  def apply(that: AnyRef): AnyRef = instance(that)
+abstract class MatchPredicateNormalization(normalizer: MatchPredicateNormalizer) extends RewritingStep {
+
+  override def preConditions: Set[StepSequencer.Condition] = Set(
+    noUnnamedPatternElementsInMatch // unnamed pattern cannot be rewritten, so they need to handled first
+  )
+
+  override def postConditions: Set[StepSequencer.Condition] = Set(NoPredicatesInNamedPartsOfMatchPattern)
+
+  override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
+
+  override def rewrite(that: AnyRef): AnyRef = instance(that)
 
   private val rewriter = Rewriter.lift {
     case m@Match(_, pattern, _, where) =>

@@ -36,12 +36,23 @@ import org.neo4j.cypher.internal.expressions.Subtract
 import org.neo4j.cypher.internal.expressions.True
 import org.neo4j.cypher.internal.expressions.UnaryAdd
 import org.neo4j.cypher.internal.expressions.UnarySubtract
+import org.neo4j.cypher.internal.rewriting.RewritingStep
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.bottomUp
 
-case class foldConstants(cypherExceptionFactory: CypherExceptionFactory) extends Rewriter {
-  def apply(that: AnyRef): AnyRef =
+case object ConstantNumberLiteralsFolded extends StepSequencer.Condition
+
+case class foldConstants(cypherExceptionFactory: CypherExceptionFactory) extends RewritingStep {
+
+  override def preConditions: Set[StepSequencer.Condition] = Set()
+
+  override def postConditions: Set[StepSequencer.Condition] = Set(ConstantNumberLiteralsFolded)
+
+  override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
+
+  override def rewrite(that: AnyRef): AnyRef =
   try {
     instance.apply(that)
   } catch {

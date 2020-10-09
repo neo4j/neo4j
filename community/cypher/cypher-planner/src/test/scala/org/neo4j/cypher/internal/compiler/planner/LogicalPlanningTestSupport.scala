@@ -94,10 +94,7 @@ import org.neo4j.cypher.internal.planner.spi.InstrumentedGraphStatistics
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
 import org.neo4j.cypher.internal.rewriting.Deprecations
-import org.neo4j.cypher.internal.rewriting.RewriterStepSequencer
-import org.neo4j.cypher.internal.rewriting.RewriterStepSequencer.newPlain
 import org.neo4j.cypher.internal.rewriting.rewriters.GeneratingNamer
-import org.neo4j.cypher.internal.rewriting.rewriters.Never
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.InternalNotificationLogger
 import org.neo4j.cypher.internal.util.LabelId
@@ -116,9 +113,8 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
 
   val monitors = mock[Monitors]
   val parser = new CypherParser
-  val rewriterSequencer = RewriterStepSequencer.newValidating _
   val innerVariableNamer = new GeneratingNamer
-  val astRewriter = new ASTRewriter(rewriterSequencer, literalExtraction = Never, innerVariableNamer = innerVariableNamer)
+  val astRewriter = new ASTRewriter(innerVariableNamer = innerVariableNamer)
   val mockRel = newPatternRelationship("a", "b", "r")
 
   def newPatternRelationship(start: String, end: String, rel: String, dir: SemanticDirection = SemanticDirection.OUTGOING, types: Seq[RelTypeName] = Seq.empty, length: PatternLength = SimplePatternLength) = {
@@ -328,7 +324,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     Parsing andThen
       PreparatoryRewriting(Deprecations.V1) andThen
       SemanticAnalysis(warn = true, SemanticFeature.CorrelatedSubQueries) andThen
-      AstRewriting(newPlain, literalExtraction = Never, innerVariableNamer = new GeneratingNamer) andThen
+      AstRewriting(innerVariableNamer = new GeneratingNamer) andThen
       RewriteProcedureCalls andThen
       Namespacer andThen
       rewriteEqualityToInPredicate andThen

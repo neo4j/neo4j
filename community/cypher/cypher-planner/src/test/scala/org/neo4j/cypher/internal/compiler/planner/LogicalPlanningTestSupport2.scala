@@ -78,9 +78,7 @@ import org.neo4j.cypher.internal.planner.spi.InstrumentedGraphStatistics
 import org.neo4j.cypher.internal.planner.spi.MutableGraphStatisticsSnapshot
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
-import org.neo4j.cypher.internal.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.rewriting.RewriterStepSequencer.newPlain
-import org.neo4j.cypher.internal.rewriting.ValidatingRewriterStepSequencer
 import org.neo4j.cypher.internal.rewriting.rewriters.GeneratingNamer
 import org.neo4j.cypher.internal.rewriting.rewriters.InnerVariableNamer
 import org.neo4j.cypher.internal.rewriting.rewriters.Never
@@ -150,7 +148,7 @@ object LogicalPlanningTestSupport2 extends MockitoSugar {
                innerVariableNamer: InnerVariableNamer = innerVariableNamer,
   ): Transformer[PlannerContext, BaseState, LogicalPlanState] = {
     // if you ever want to have parameters in here, fix the map
-    parsing(ParsingConfig(newPlain, innerVariableNamer, literalExtraction = Never, parameterTypeMapping = Map.empty, useJavaCCParser = cypherCompilerConfig.useJavaCCParser)) andThen
+    parsing(ParsingConfig(innerVariableNamer, literalExtractionStrategy = Never, parameterTypeMapping = Map.empty, useJavaCCParser = cypherCompilerConfig.useJavaCCParser)) andThen
       prepareForCaching andThen
       planPipeLine(newPlain, pushdownPropertyReads = pushdownPropertyReads)
   }
@@ -162,8 +160,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
   val parser = new CypherParser
   val pushdownPropertyReads: Boolean = LogicalPlanningTestSupport2.pushdownPropertyReads
   val innerVariableNamer: InnerVariableNamer = LogicalPlanningTestSupport2.innerVariableNamer
-  val rewriterSequencer: String => ValidatingRewriterStepSequencer = RewriterStepSequencer.newValidating
-  var astRewriter = new ASTRewriter(rewriterSequencer, literalExtraction = Never, innerVariableNamer = innerVariableNamer)
+  var astRewriter = new ASTRewriter(innerVariableNamer = innerVariableNamer)
   final var planner = QueryPlanner
   var queryGraphSolver: QueryGraphSolver = QueryGraphSolverWithGreedyConnectComponents.queryGraphSolver()
 

@@ -19,12 +19,21 @@ package org.neo4j.cypher.internal.rewriting.rewriters
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.NotEquals
+import org.neo4j.cypher.internal.rewriting.RewritingStep
+import org.neo4j.cypher.internal.rewriting.conditions.containsNoNodesOfType
 import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.topDown
 
-case object normalizeNotEquals extends Rewriter {
+case object normalizeNotEquals extends RewritingStep {
 
-  override def apply(that: AnyRef): AnyRef = instance(that)
+  override def preConditions: Set[StepSequencer.Condition] = Set.empty
+
+  override def postConditions: Set[StepSequencer.Condition] = Set(containsNoNodesOfType[NotEquals])
+
+  override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
+
+  override def rewrite(that: AnyRef): AnyRef = instance(that)
 
   private val instance: Rewriter = topDown(Rewriter.lift {
     case p @ NotEquals(lhs, rhs) =>

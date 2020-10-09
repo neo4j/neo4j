@@ -35,16 +35,31 @@ import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.ScopeExpression
 import org.neo4j.cypher.internal.expressions.ShortestPaths
 import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.rewriting.RewritingStep
+import org.neo4j.cypher.internal.rewriting.conditions.noUnnamedPatternElementsInMatch
+import org.neo4j.cypher.internal.rewriting.conditions.noUnnamedPatternElementsInPatternComprehension
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.bottomUp
 
-case class AddUniquenessPredicates(innerVariableNamer: InnerVariableNamer = SameNameNamer) extends Rewriter {
+case object RelationshipUniquenessPredicatesInMatchAndMerge extends StepSequencer.Condition
 
-  def apply(that: AnyRef): AnyRef = instance(that)
+case class AddUniquenessPredicates(innerVariableNamer: InnerVariableNamer = SameNameNamer) extends RewritingStep {
+
+  override def preConditions: Set[StepSequencer.Condition] = Set(
+    noUnnamedPatternElementsInMatch,
+    noUnnamedPatternElementsInPatternComprehension
+  )
+
+  override def postConditions: Set[StepSequencer.Condition] = Set(RelationshipUniquenessPredicatesInMatchAndMerge)
+
+  override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
+
+  override def rewrite(that: AnyRef): AnyRef = instance(that)
 
   private val rewriter = Rewriter.lift {
     case m@Match(_, pattern: Pattern, _, where: Option[Where]) =>

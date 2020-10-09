@@ -19,11 +19,11 @@ package org.neo4j.cypher.internal.rewriting.conditions
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.IsAggregate
 import org.neo4j.cypher.internal.expressions.containsAggregate
-import org.neo4j.cypher.internal.rewriting.Condition
+import org.neo4j.cypher.internal.rewriting.ValidatingCondition
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 
-case object aggregationsAreIsolated extends Condition {
+case object aggregationsAreIsolated extends ValidatingCondition {
 
   def apply(that: Any): Seq[String] = that.treeFold(Seq.empty[String]) {
     case expr: Expression if hasAggregateButIsNotAggregate(expr) =>

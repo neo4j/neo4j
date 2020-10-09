@@ -22,7 +22,6 @@ package org.neo4j.fabric.pipeline
 
 import org.neo4j.cypher.CypherExecutionMode
 import org.neo4j.cypher.CypherVersion
-import org.neo4j.cypher.internal.Assertion
 import org.neo4j.cypher.internal.CypherConfiguration
 import org.neo4j.cypher.internal.NotificationWrapping
 import org.neo4j.cypher.internal.PreParsedQuery
@@ -49,7 +48,6 @@ import org.neo4j.cypher.internal.frontend.phases.Transformer
 import org.neo4j.cypher.internal.planner.spi.PlannerNameFor
 import org.neo4j.cypher.internal.planner.spi.ProcedureSignatureResolver
 import org.neo4j.cypher.internal.planning.WrappedMonitors
-import org.neo4j.cypher.internal.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.rewriting.rewriters.GeneratingNamer
 import org.neo4j.cypher.internal.tracing.CompilationTracer
 import org.neo4j.cypher.internal.tracing.TimingCompilationTracer
@@ -137,7 +135,6 @@ case class FabricFrontEnd(
       )
 
     private val parsingConfig = CompilationPhases.ParsingConfig(
-      sequencer = if (Assertion.assertionsEnabled()) RewriterStepSequencer.newValidating else RewriterStepSequencer.newPlain,
       innerVariableNamer = new GeneratingNamer,
       compatibilityMode = compatibilityMode,
       parameterTypeMapping = ParameterValueTypeHelper.asCypherTypeMap(params),

@@ -21,7 +21,7 @@ import org.neo4j.cypher.internal.expressions.ExplicitParameter
 import org.neo4j.cypher.internal.parser.ParserFixture.parser
 import org.neo4j.cypher.internal.rewriting.rewriters.Forced
 import org.neo4j.cypher.internal.rewriting.rewriters.IfNoParameter
-import org.neo4j.cypher.internal.rewriting.rewriters.LiteralExtraction
+import org.neo4j.cypher.internal.rewriting.rewriters.LiteralExtractionStrategy
 import org.neo4j.cypher.internal.rewriting.rewriters.literalReplacement
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
 import org.neo4j.cypher.internal.util.Rewriter
@@ -134,7 +134,7 @@ class LiteralReplacementTest extends CypherFunSuite  {
     assertRewrite(query, query, Map.empty)
   }
 
-  private def assertRewrite(originalQuery: String, expectedQuery: String, replacements: Map[String, Any], extractLiterals: LiteralExtraction = IfNoParameter) {
+  private def assertRewrite(originalQuery: String, expectedQuery: String, replacements: Map[String, Any], extractLiterals: LiteralExtractionStrategy = IfNoParameter) {
     val exceptionFactory = OpenCypherExceptionFactory(None)
     val original = parser.parse(originalQuery, exceptionFactory)
     val expected = parser.parse(expectedQuery, exceptionFactory)

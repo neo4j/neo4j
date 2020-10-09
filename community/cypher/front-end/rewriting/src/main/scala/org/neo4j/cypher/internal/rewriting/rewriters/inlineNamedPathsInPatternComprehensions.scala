@@ -21,10 +21,21 @@ import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.PathExpression
 import org.neo4j.cypher.internal.expressions.PatternComprehension
 import org.neo4j.cypher.internal.expressions.PatternElement
+import org.neo4j.cypher.internal.rewriting.RewritingStep
+import org.neo4j.cypher.internal.rewriting.conditions.noUnnamedPatternElementsInPatternComprehension
 import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.bottomUp
 
-case object inlineNamedPathsInPatternComprehensions extends Rewriter {
+case object NoNamedPathsInPatternComprehensions extends StepSequencer.Condition
+
+case object inlineNamedPathsInPatternComprehensions extends RewritingStep {
+
+  override def preConditions: Set[StepSequencer.Condition] = Set(noUnnamedPatternElementsInPatternComprehension)
+
+  override def postConditions: Set[StepSequencer.Condition] = Set(NoNamedPathsInPatternComprehensions)
+
+  override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
 
   private val instance = bottomUp(Rewriter.lift {
     case expr @ PatternComprehension(Some(path), pattern, predicate, projection) =>
@@ -43,5 +54,5 @@ case object inlineNamedPathsInPatternComprehensions extends Rewriter {
       }
   }
 
-  override def apply(v: AnyRef): AnyRef = instance(v)
+  override def rewrite(v: AnyRef): AnyRef = instance(v)
 }

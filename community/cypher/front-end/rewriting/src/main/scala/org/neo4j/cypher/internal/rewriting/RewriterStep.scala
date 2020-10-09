@@ -16,13 +16,56 @@
  */
 package org.neo4j.cypher.internal.rewriting
 
+import org.neo4j.cypher.internal.util.AssertionRunner
 import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.StepSequencer
+import org.neo4j.cypher.internal.util.StepSequencer.Step
+
+object RewritingStepSequencer extends StepSequencer(new StepSequencer.StepAccumulator[RewritingStep, Seq[RewritingStep]] {
+  override def empty: Seq[RewritingStep] = Seq.empty
+  override def addNext(acc: Seq[RewritingStep], step: RewritingStep): Seq[RewritingStep] = acc :+ step
+})
+
+trait RewritingStep extends Rewriter with Step {
+  override def toString(): String = this.getClass.getSimpleName
+
+  final override def apply(that: AnyRef): AnyRef = {
+    val result = rewrite(that)
+    if (AssertionRunner.isAssertionsEnabled) {
+      validate(result)
+    }
+    result
+  }
+
+  private def validate(input: AnyRef): Unit = {
+    val failures = postConditions.collect {
+      case f:ValidatingCondition => f.name -> f(input)
+    }
+    if (failures.exists(_._2.nonEmpty)) {
+      throw new IllegalStateException(buildErrorMessage(failures))
+    }
+  }
+
+  private def buildErrorMessage(failures: Set[(String, Seq[String])]) = {
+    val builder = new StringBuilder
+    builder ++= s"Error during rewriting after ${toString()}. The following conditions where violated: \n"
+    for {
+      (condition, failure) <- failures
+      problem <- failure
+    } {
+      builder ++= s"Condition '${condition}' violated. $problem\n"
+    }
+    builder.toString()
+  }
+
+  def rewrite(that:AnyRef): AnyRef
+}
 
 object RewriterStep {
    implicit def namedProductRewriter(p: Product with Rewriter): ApplyRewriter = ApplyRewriter(p.productPrefix, p)
 
-   def enableCondition(p: Condition) = EnableRewriterCondition(RewriterCondition(p.name, p))
-   def disableCondition(p: Condition) = DisableRewriterCondition(RewriterCondition(p.name, p))
+   def enableCondition(p: ValidatingCondition) = EnableRewriterCondition(RewriterCondition(p.name, p))
+   def disableCondition(p: ValidatingCondition) = DisableRewriterCondition(RewriterCondition(p.name, p))
  }
 
 sealed trait RewriterStep
@@ -30,6 +73,6 @@ final case class ApplyRewriter(name: String, rewriter: Rewriter) extends Rewrite
 final case class EnableRewriterCondition(cond: RewriterCondition) extends RewriterStep
 final case class DisableRewriterCondition(cond: RewriterCondition) extends RewriterStep
 
-trait Condition extends (Any => Seq[String]) {
+trait ValidatingCondition extends (Any => Seq[String]) with StepSequencer.Condition {
    def name: String
 }

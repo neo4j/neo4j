@@ -17,41 +17,34 @@
 package org.neo4j.cypher.internal.rewriting.rewriters
 
 import org.neo4j.cypher.internal.expressions.ExplicitParameter
-import org.neo4j.cypher.internal.expressions.Expression
-import org.neo4j.cypher.internal.expressions.Parameter
-import org.neo4j.cypher.internal.util.ASTNode
-import org.neo4j.cypher.internal.util.Foldable.SkipChildren
-import org.neo4j.cypher.internal.util.IdentityMap
+import org.neo4j.cypher.internal.rewriting.RewritingStep
+import org.neo4j.cypher.internal.rewriting.conditions.containsNoReturnAll
 import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.bottomUp
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CypherType
 
-object parameterValueTypeReplacement {
+case object ExplicitParametersKnowTheirTypes extends StepSequencer.Condition
 
-  case class ParameterValueTypeReplacement(parameter: Parameter, value: AnyRef)
-  type ParameterValueTypeReplacements = IdentityMap[Expression, ParameterValueTypeReplacement]
+case class parameterValueTypeReplacement(parameterTypeMapping: Map[String, CypherType]) extends RewritingStep {
 
-  case class ExtractParameterRewriter(replaceableParameters: ParameterValueTypeReplacements) extends Rewriter {
-    def apply(that: AnyRef): AnyRef = rewriter.apply(that)
+  private val rewriter: Rewriter = bottomUp(Rewriter.lift {
+    case p@ExplicitParameter(name, CTAny) =>
+      val cypherType = parameterTypeMapping.getOrElse(name, CTAny)
+      ExplicitParameter(name, cypherType)(p.position)
+  })
 
-    private val rewriter: Rewriter = bottomUp(Rewriter.lift {
-      case p: Parameter if replaceableParameters.isDefinedAt(p) => replaceableParameters(p).parameter
-    })
-  }
 
-  private def rewriteParameterValueTypes(term: ASTNode, paramTypes: Map[String, CypherType]) = {
-    val replaceableParameters = term.treeFold(IdentityMap.empty: ParameterValueTypeReplacements){
-      case p@ExplicitParameter(_, CTAny) =>
-        acc =>
-          if (acc.contains(p)) SkipChildren(acc) else {
-            val cypherType = paramTypes.getOrElse(p.name, CTAny)
-            SkipChildren(acc + (p -> ParameterValueTypeReplacement(ExplicitParameter(p.name, cypherType)(p.position), p.name)))
-          }
-    }
-    ExtractParameterRewriter(replaceableParameters)
-  }
+  override def rewrite(that: AnyRef): AnyRef = rewriter(that)
 
-  def apply(term: ASTNode, parameterTypeMapping: Map[String, CypherType]): Rewriter =
-    rewriteParameterValueTypes(term, parameterTypeMapping)
+  // TODO depends on SyntaxDeprecationWarnings(Deprecations.V2) being run which replaces ParameterWithOldSyntax with ExplicitParameter
+  // TODO this should be captured differently. This has an invalidated condition `ProjectionClausesHaveSemanticInfo`,
+  // which is a pre-condition of expandStar. It can invalidate this condition by rewriting things inside WITH/RETURN.
+  // But to do that we need a step that introduces that condition which would be SemanticAnalysis.
+  override def preConditions: Set[StepSequencer.Condition] = Set(containsNoReturnAll)
+
+  override def postConditions: Set[StepSequencer.Condition] = Set(ExplicitParametersKnowTheirTypes)
+
+  override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
 }

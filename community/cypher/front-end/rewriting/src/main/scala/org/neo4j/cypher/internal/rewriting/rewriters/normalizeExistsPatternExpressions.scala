@@ -24,12 +24,14 @@ import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.functions.Exists
-import org.neo4j.cypher.internal.expressions.functions.Length
 import org.neo4j.cypher.internal.expressions.functions.Size
-import org.neo4j.cypher.internal.rewriting.rewriters.simplifyPredicates
+import org.neo4j.cypher.internal.rewriting.RewritingStep
 import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.bottomUp
 import org.neo4j.cypher.internal.util.symbols
+
+case object PatternExpressionAreWrappedInExists extends StepSequencer.Condition
 
 /**
   * Adds an exist around any pattern expression that is expected to produce a boolean e.g.
@@ -47,7 +49,14 @@ import org.neo4j.cypher.internal.util.symbols
  *
  * This rewriter needs to run before [[namePatternElements]], which rewrites pattern expressions. Otherwise we don't find them in the semantic table.
   */
-case class normalizeExistsPatternExpressions(semanticState: SemanticState) extends Rewriter {
+case class normalizeExistsPatternExpressions(semanticState: SemanticState) extends RewritingStep {
+
+  override def preConditions: Set[StepSequencer.Condition] = Set.empty
+
+  override def postConditions: Set[StepSequencer.Condition] = Set(PatternExpressionAreWrappedInExists)
+
+  // TODO capture the dependency with simplifyPredicates
+  override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
 
   private val instance = bottomUp(Rewriter.lift {
     case p: PatternExpression if semanticState.expressionType(p).expected.contains(symbols.CTBoolean.invariant) =>
@@ -62,5 +71,5 @@ case class normalizeExistsPatternExpressions(semanticState: SemanticState) exten
       Not(Exists(p)(p.position))(p.position)
   })
 
-  override def apply(v: AnyRef): AnyRef = instance(v)
+  override def rewrite(v: AnyRef): AnyRef = instance(v)
 }

@@ -26,9 +26,11 @@ import org.neo4j.cypher.internal.expressions.Ors
 import org.neo4j.cypher.internal.expressions.True
 import org.neo4j.cypher.internal.expressions.Xor
 import org.neo4j.cypher.internal.rewriting.AstRewritingMonitor
+import org.neo4j.cypher.internal.rewriting.RewritingStep
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.bottomUp
 import org.neo4j.cypher.internal.util.helpers.fixedPoint
 import org.neo4j.cypher.internal.util.inSequence
@@ -124,9 +126,17 @@ object simplifyPredicates extends Rewriter {
   private val instance = fixedPoint(bottomUp(step))
 }
 
-case object normalizeSargablePredicates extends Rewriter {
+case object NoInequalityInsideNot extends StepSequencer.Condition
 
-  override def apply(that: AnyRef): AnyRef = instance(that)
+case object normalizeSargablePredicates extends RewritingStep {
+
+  override def preConditions: Set[StepSequencer.Condition] = Set.empty
+
+  override def postConditions: Set[StepSequencer.Condition] = Set(NoInequalityInsideNot)
+
+  override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
+
+  override def rewrite(that: AnyRef): AnyRef = instance(that)
 
   private val instance: Rewriter = topDown(Rewriter.lift {
 

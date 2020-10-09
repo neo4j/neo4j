@@ -41,6 +41,7 @@ import org.neo4j.cypher.internal.frontend.phases.CNFNormalizer
 import org.neo4j.cypher.internal.frontend.phases.ExpandStarRewriter
 import org.neo4j.cypher.internal.frontend.phases.If
 import org.neo4j.cypher.internal.frontend.phases.LateAstRewriting
+import org.neo4j.cypher.internal.frontend.phases.LiteralExtraction
 import org.neo4j.cypher.internal.frontend.phases.Namespacer
 import org.neo4j.cypher.internal.frontend.phases.ObfuscationMetadataCollection
 import org.neo4j.cypher.internal.frontend.phases.Parsing
@@ -60,7 +61,7 @@ import org.neo4j.cypher.internal.rewriting.Deprecations
 import org.neo4j.cypher.internal.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.rewriting.rewriters.IfNoParameter
 import org.neo4j.cypher.internal.rewriting.rewriters.InnerVariableNamer
-import org.neo4j.cypher.internal.rewriting.rewriters.LiteralExtraction
+import org.neo4j.cypher.internal.rewriting.rewriters.LiteralExtractionStrategy
 import org.neo4j.cypher.internal.util.symbols.CypherType
 
 object CompilationPhases {
@@ -71,13 +72,12 @@ object CompilationPhases {
   )
 
   case class ParsingConfig(
-    sequencer: String => RewriterStepSequencer,
-    innerVariableNamer: InnerVariableNamer,
-    compatibilityMode: CypherCompatibilityVersion = Compatibility4_2,
-    literalExtraction: LiteralExtraction = IfNoParameter,
-    parameterTypeMapping: Map[String, CypherType] = Map.empty,
-    semanticFeatures: Seq[SemanticFeature] = defaultSemanticFeatures,
-    useJavaCCParser: Boolean = false
+                            innerVariableNamer: InnerVariableNamer,
+                            compatibilityMode: CypherCompatibilityVersion = Compatibility4_2,
+                            literalExtractionStrategy: LiteralExtractionStrategy = IfNoParameter,
+                            parameterTypeMapping: Map[String, CypherType] = Map.empty,
+                            semanticFeatures: Seq[SemanticFeature] = defaultSemanticFeatures,
+                            useJavaCCParser: Boolean = false
   )
 
   private def parsingBase(config: ParsingConfig): Transformer[BaseContext, BaseState, BaseState] = {
@@ -110,7 +110,8 @@ object CompilationPhases {
   // Phase 1
   def parsing(config: ParsingConfig): Transformer[BaseContext, BaseState, BaseState] = {
     parsingBase(config) andThen
-      AstRewriting(config.sequencer, config.literalExtraction, innerVariableNamer = config.innerVariableNamer, parameterTypeMapping = config.parameterTypeMapping)
+      AstRewriting(innerVariableNamer = config.innerVariableNamer, parameterTypeMapping = config.parameterTypeMapping) andThen
+      LiteralExtraction(config.literalExtractionStrategy)
   }
 
   // Phase 1 (Fabric)
@@ -125,7 +126,8 @@ object CompilationPhases {
   // Phase 1.1 (Fabric)
   def fabricFinalize(config: ParsingConfig): Transformer[BaseContext, BaseState, BaseState] = {
     SemanticAnalysis(warn = true, config.semanticFeatures: _*).adds(BaseContains[SemanticState]) andThen
-      AstRewriting(config.sequencer, config.literalExtraction, innerVariableNamer = config.innerVariableNamer, parameterTypeMapping = config.parameterTypeMapping) andThen
+      AstRewriting(innerVariableNamer = config.innerVariableNamer, parameterTypeMapping = config.parameterTypeMapping) andThen
+      LiteralExtraction(config.literalExtractionStrategy) andThen
       SemanticAnalysis(warn = true, config.semanticFeatures: _*).adds(BaseContains[SemanticState])
   }
 

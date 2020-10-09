@@ -356,7 +356,7 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
     val query = """MATCH (a:A)
                   |WITH a
                   |LIMIT 994
-                  |MATCH (:D) <- [:R1] - (a)
+                  |MATCH (:D)<-[:R1]-(a)
                   |OPTIONAL MATCH (a)-[:R1]->(:D)-[:R2]->(:B)-[:R3 {bool: false}]->(:C {some: 'prop'})
                   |RETURN count(a)""".stripMargin
 

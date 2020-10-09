@@ -26,9 +26,14 @@ import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.PropertySelector
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.VariableSelector
+import org.neo4j.cypher.internal.rewriting.RewritingStep
+import org.neo4j.cypher.internal.rewriting.conditions.containsNoReturnAll
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.topDown
+
+case object OnlyDesugaredMapProjections extends StepSequencer.Condition
 
 /*
 Handles rewriting map projection elements to literal entries when possible. If the user
@@ -39,8 +44,17 @@ so the runtime only has two cases to handle - literal entries and the special al
 We can't rewrite all the way to literal maps, since map projections yield a null map when the map_variable is null,
 and the same behaviour can't be mimicked with literal maps.
  */
-case class desugarMapProjection(state: SemanticState) extends Rewriter {
-  def apply(that: AnyRef): AnyRef = topDown(instance).apply(that)
+case class desugarMapProjection(state: SemanticState) extends RewritingStep {
+  override def rewrite(that: AnyRef): AnyRef = topDown(instance).apply(that)
+
+  // TODO this should be captured differently. This has an invalidated condition `ProjectionClausesHaveSemanticInfo`,
+  // which is a pre-condition of expandStar. It can invalidate this condition by rewriting things inside WITH/RETURN.
+  // But to do that we need a step that introduces that condition which would be SemanticAnalysis.
+  override def preConditions: Set[StepSequencer.Condition] = Set(containsNoReturnAll)
+
+  override def postConditions: Set[StepSequencer.Condition] = Set(OnlyDesugaredMapProjections)
+
+  override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
 
   private val instance: Rewriter = Rewriter.lift {
     case e@MapProjection(id, items) =>

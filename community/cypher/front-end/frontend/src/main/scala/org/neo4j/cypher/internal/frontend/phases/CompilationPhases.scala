@@ -19,22 +19,21 @@ package org.neo4j.cypher.internal.frontend.phases
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.rewriting.Deprecations
-import org.neo4j.cypher.internal.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.rewriting.rewriters.IfNoParameter
-import org.neo4j.cypher.internal.rewriting.rewriters.LiteralExtraction
+import org.neo4j.cypher.internal.rewriting.rewriters.LiteralExtractionStrategy
 import org.neo4j.cypher.internal.rewriting.rewriters.SameNameNamer
 
 object CompilationPhases {
 
-  def parsing(sequencer: String => RewriterStepSequencer,
-              literalExtraction: LiteralExtraction = IfNoParameter,
+  def parsing(literalExtractionStrategy: LiteralExtractionStrategy = IfNoParameter,
               deprecations: Deprecations = Deprecations.V1
              ): Transformer[BaseContext, BaseState, BaseState] =
     Parsing.adds(BaseContains[Statement]) andThen
       SyntaxDeprecationWarnings(deprecations) andThen
       PreparatoryRewriting(deprecations) andThen
       SemanticAnalysis(warn = true).adds(BaseContains[SemanticState]) andThen
-      AstRewriting(sequencer, literalExtraction, innerVariableNamer = SameNameNamer)
+      AstRewriting(innerVariableNamer = SameNameNamer) andThen
+      LiteralExtraction(literalExtractionStrategy)
 
   def lateAstRewriting: Transformer[BaseContext, BaseState, BaseState] =
     isolateAggregation andThen

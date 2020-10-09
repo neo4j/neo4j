@@ -21,9 +21,9 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.functions
-import org.neo4j.cypher.internal.rewriting.Condition
+import org.neo4j.cypher.internal.rewriting.ValidatingCondition
 
-case object normalizedEqualsArguments extends Condition {
+case object normalizedEqualsArguments extends ValidatingCondition {
   def apply(that: Any): Seq[String] = {
     val equals = collectNodesOfType[Equals].apply(that)
     equals.collect {

@@ -20,14 +20,30 @@ import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.ShortestPathExpression
 import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.rewriting.RewritingStep
+import org.neo4j.cypher.internal.rewriting.conditions.noUnnamedPatternElementsInMatch
+import org.neo4j.cypher.internal.rewriting.conditions.noUnnamedPatternElementsInPatternComprehension
 import org.neo4j.cypher.internal.util.NodeNameGenerator
 import org.neo4j.cypher.internal.util.RelNameGenerator
 import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.bottomUp
 
-case object nameAllPatternElements extends Rewriter {
+case object nameAllPatternElements extends RewritingStep {
 
-  override def apply(in: AnyRef): AnyRef = namingRewriter.apply(in)
+  // TODO this should be captured differently. This has an invalidated condition `PatternExpressionsHaveSemanticInfo`,
+  // which is a pre-condition of normalizeExistsPatternExpressions.
+  // But to do that we need a step that introduced that condition which would be SemanticAnalysis.
+  override def preConditions: Set[StepSequencer.Condition] = Set(PatternExpressionAreWrappedInExists)
+
+  override def postConditions: Set[StepSequencer.Condition] = Set(
+    noUnnamedPatternElementsInMatch,
+    noUnnamedPatternElementsInPatternComprehension
+  )
+
+  override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
+
+  override def rewrite(that: AnyRef): AnyRef = namingRewriter.apply(that)
 
   private val namingRewriter: Rewriter = bottomUp(Rewriter.lift {
     case pattern: NodePattern if pattern.variable.isEmpty =>

@@ -21,10 +21,10 @@ package org.neo4j.cypher.internal.compiler.ast.conditions
 
 import org.neo4j.cypher.internal.expressions.NamedPatternPart
 import org.neo4j.cypher.internal.expressions.ShortestPaths
-import org.neo4j.cypher.internal.rewriting.Condition
+import org.neo4j.cypher.internal.rewriting.ValidatingCondition
 import org.neo4j.cypher.internal.rewriting.conditions.containsNoMatchingNodes
 
-case object containsNamedPathOnlyForShortestPath extends Condition {
+case object containsNamedPathOnlyForShortestPath extends ValidatingCondition {
   private val matcher = containsNoMatchingNodes({
     case namedPart@NamedPatternPart(_, part) if !part.isInstanceOf[ShortestPaths] =>
       namedPart.toString

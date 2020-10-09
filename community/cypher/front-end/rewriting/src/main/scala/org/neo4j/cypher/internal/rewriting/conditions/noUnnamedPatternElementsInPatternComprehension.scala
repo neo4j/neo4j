@@ -19,11 +19,11 @@ package org.neo4j.cypher.internal.rewriting.conditions
 import org.neo4j.cypher.internal.expressions.PatternComprehension
 import org.neo4j.cypher.internal.expressions.PatternElement
 import org.neo4j.cypher.internal.expressions.RelationshipsPattern
-import org.neo4j.cypher.internal.rewriting.Condition
+import org.neo4j.cypher.internal.rewriting.ValidatingCondition
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 
-case object noUnnamedPatternElementsInPatternComprehension extends Condition {
+case object noUnnamedPatternElementsInPatternComprehension extends ValidatingCondition {
 
   override def name: String = productPrefix
 

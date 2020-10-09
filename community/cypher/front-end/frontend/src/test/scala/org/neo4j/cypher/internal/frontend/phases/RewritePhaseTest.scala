@@ -26,8 +26,6 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.frontend.PlannerName
 import org.neo4j.cypher.internal.frontend.helpers.TestContext
 import org.neo4j.cypher.internal.parser.ParserFixture.parser
-import org.neo4j.cypher.internal.rewriting.RewriterStepSequencer
-import org.neo4j.cypher.internal.rewriting.rewriters.Never
 import org.neo4j.cypher.internal.rewriting.rewriters.SameNameNamer
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizeWithAndReturnClauses
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
@@ -56,7 +54,7 @@ trait RewritePhaseTest {
     override def version: String = "fake"
   }
 
-  val astRewriter = new ASTRewriter(RewriterStepSequencer.newValidating, Never, innerVariableNamer = SameNameNamer)
+  val astRewriter = new ASTRewriter(innerVariableNamer = SameNameNamer)
 
   def assertNotRewritten(from: String): Unit = assertRewritten(from, from)
 
@@ -86,8 +84,7 @@ trait RewritePhaseTest {
     val exceptionFactory = OpenCypherExceptionFactory(None)
     val parsedAst = parser.parse(queryText, exceptionFactory)
     val cleanedAst = parsedAst.endoRewrite(inSequence(normalizeWithAndReturnClauses(exceptionFactory, devNullLogger)))
-    val (rewrittenAst, _, _) = astRewriter.rewrite(cleanedAst, cleanedAst.semanticState(features: _*), Map.empty, exceptionFactory)
-    rewrittenAst
+    astRewriter.rewrite(cleanedAst, cleanedAst.semanticState(features: _*), Map.empty, exceptionFactory)
   }
 
  def prepareFrom(from: String, features: SemanticFeature*): BaseState = {

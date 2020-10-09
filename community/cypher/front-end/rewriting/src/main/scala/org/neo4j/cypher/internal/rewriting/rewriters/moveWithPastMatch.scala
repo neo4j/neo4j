@@ -23,10 +23,15 @@ import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.SubQuery
 import org.neo4j.cypher.internal.ast.With
 import org.neo4j.cypher.internal.expressions.LogicalVariable
+import org.neo4j.cypher.internal.rewriting.RewritingStep
+import org.neo4j.cypher.internal.rewriting.conditions.containsNoReturnAll
 import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.helpers.fixedPoint
 import org.neo4j.cypher.internal.util.inSequence
 import org.neo4j.cypher.internal.util.topDown
+
+case object IndependentWithsMovedAfterMatch extends StepSequencer.Condition
 
 /**
  * Rewrites `WITH 1 AS foo MATCH (x)` => `MATCH (x) WITH 1 AS foo, x`.
@@ -36,9 +41,17 @@ import org.neo4j.cypher.internal.util.topDown
  * This could potentially move projections to a point of higher cardinality, but the cached properties mechanism
  * should take care that expensive projections are pushed down again.
  */
-case object moveWithPastMatch extends Rewriter {
+case object moveWithPastMatch extends RewritingStep {
 
-  override def apply(that: AnyRef): AnyRef = instance(that)
+  override def rewrite(that: AnyRef): AnyRef = instance(that)
+
+  override def preConditions: Set[StepSequencer.Condition] = Set(
+    containsNoReturnAll // It's better to know the variables in WITH already
+  )
+
+  override def postConditions: Set[StepSequencer.Condition] = Set(IndependentWithsMovedAfterMatch)
+
+  override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
 
   private val subqueryRewriter: Rewriter = topDown(Rewriter.lift {
     case s: SubQuery =>

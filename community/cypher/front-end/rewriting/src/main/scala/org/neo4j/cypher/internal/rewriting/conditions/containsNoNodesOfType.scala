@@ -16,12 +16,12 @@
  */
 package org.neo4j.cypher.internal.rewriting.conditions
 
+import org.neo4j.cypher.internal.rewriting.ValidatingCondition
 import org.neo4j.cypher.internal.util.ASTNode
-import org.neo4j.cypher.internal.rewriting.Condition
 
 import scala.reflect.ClassTag
 
-case class containsNoNodesOfType[T <: ASTNode](implicit tag: ClassTag[T]) extends Condition {
+case class containsNoNodesOfType[T <: ASTNode](implicit tag: ClassTag[T]) extends ValidatingCondition {
   def apply(that: Any): Seq[String] = collectNodesOfType[T].apply(that).map {
     node => s"Expected none but found ${node.getClass.getSimpleName} at position ${node.position}"
   }
