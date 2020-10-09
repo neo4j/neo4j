@@ -55,7 +55,15 @@ package org.neo4j.cypher.internal.util
  */
 object PredicateOrdering extends Ordering[(CostPerRow, Selectivity)]{
   override def compare(predicate0: (CostPerRow, Selectivity), predicate1: (CostPerRow, Selectivity)): Int = {
-    costFor(predicate0, predicate1).compare(costFor(predicate1, predicate0))
+    val p0ThenP1 = costFor(predicate0, predicate1)
+    val p1ThenP0 = costFor(predicate1, predicate0)
+    if (p0ThenP1.cost > p1ThenP0.cost) {
+      1
+    } else if (p0ThenP1.cost < p1ThenP0.cost) {
+      -1
+    } else {
+      0
+    }
   }
 
   /**

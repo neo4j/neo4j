@@ -88,7 +88,6 @@ object CostPerRow {
 case class CostPerRow(cost: Double) {
   def +(other: CostPerRow): CostPerRow = cost + other.cost
   def *(other: Multiplier): CostPerRow = cost * other.coefficient
-  def compare(that: CostPerRow): Int = cost.compare(that.cost)
 }
 
 case class Multiplier(coefficient: Double) {
