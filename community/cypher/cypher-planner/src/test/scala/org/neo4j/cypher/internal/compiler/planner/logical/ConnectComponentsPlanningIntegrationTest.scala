@@ -23,13 +23,14 @@ import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher.beLike
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.cartesianProductsOrValueJoins.COMPONENT_THRESHOLD_FOR_CARTESIAN_PRODUCT
 import org.neo4j.cypher.internal.expressions.Ands
+import org.neo4j.cypher.internal.expressions.CachedProperty
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.logical.plans.AllNodesScan
 import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.CacheProperties
 import org.neo4j.cypher.internal.logical.plans.CartesianProduct
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
-import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexScan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
@@ -40,8 +41,6 @@ import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
 import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-import scala.util.Random
-
 class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
   test("should build cartesian product with sorted plan left for many disconnected components") {
@@ -49,10 +48,7 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
     val orderedNode = s"n${COMPONENT_THRESHOLD_FOR_CARTESIAN_PRODUCT}"
 
     val plan = new given {
-      cardinality = selectivitiesCardinality(Map[Expression, Double](
-        hasLabels(orderedNode, "Many") -> 0.5,
-      ).withDefaultValue(0.0005), qg => Math.pow(100.0, qg.connectedComponents.size))
-
+      labelCardinality = Map("Few" -> 1.0, "Many" -> 1000.0)
       indexOn("Many", "prop").providesOrder(IndexOrderCapability.BOTH)
     }.getLogicalPlanFor(s"MATCH $nodes, ($orderedNode:Many) WHERE exists($orderedNode.prop) RETURN * ORDER BY $orderedNode.prop")._2
 
@@ -61,24 +57,6 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
     // Sorted index should be placed on the left of the cartesian products
     plan.leftmostLeaf should beLike {
       case NodeIndexScan(`orderedNode`, _, _, _, _) => ()
-    }
-  }
-
-  test("should build left deep tree of lots of disconnected components if no joins are possible ") {
-    val c = 100
-    val labels = (0 until c).map(i => (s"Label$i", i))
-    val nodes = Random.shuffle(labels.map{ case (l, i) => s"(n$i:$l)" }).mkString(",")
-
-    val plan = new given {
-      cardinality = selectivitiesCardinality(labels.map {
-        case (l, i) => hasLabels(s"n$i", l) ->  i.toDouble / c // Lower i -> more selective
-      }.toMap, qg => Math.pow(100.0, qg.connectedComponents.size))
-    }.getLogicalPlanFor(s"MATCH $nodes RETURN *")._2
-
-    plan shouldBe labels.map {
-      case (l, i) => NodeByLabelScan(s"n$i", labelName(l), Set.empty, IndexOrderNone)
-    }.reduceLeft[LogicalPlan] {
-      case (left, right) => CartesianProduct(left, right)
     }
   }
 
@@ -91,23 +69,31 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
     )
   }
 
+  test("should plan cartesian product so the cheaper plan is on the left") {
+    (new given {
+      cost = {
+        case (_: Selection, _, _) => 1000.0
+        case (_: NodeByLabelScan, _, _) => 20.0
+      }
+      cardinality = mapCardinality {
+        case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.selections.predicates.size == 1 => 10
+      }
+    } getLogicalPlanFor  "MATCH (n), (m) WHERE n.prop = 12 AND m:Label RETURN n, m")._2 should beLike {
+      case CartesianProduct(_: Selection, _: NodeByLabelScan) => ()
+    }
+  }
+
   test("should plan cartesian product of three plans so the cost is minimized") {
-    val plan = new given {
-      cardinality = selectivitiesCardinality(Map(
-        hasLabels("a", "A") -> 0.3,
-        hasLabels("b", "B") -> 0.2,
-        hasLabels("c", "C") -> 0.1,
-      ), qg => Math.pow(100.0, qg.connectedComponents.size))
+    implicit val plan = new given {
+      labelCardinality = Map(
+        "A" -> 30.0,
+        "B" -> 20.0,
+        "C" -> 10.0
+      )
     } getLogicalPlanFor "MATCH (a), (b), (c) WHERE a:A AND b:B AND c:C RETURN a, b, c"
 
-
     // C is cheapest so it should be furthest to the left, followed by B and A
-    // Both these variants have the same cost (cardinalities denoted with '):
-    // C x (B x A) = c + c'(b + b'a)
-    //             = c + c'b + c'b'a
-    // (C x B) x A = (c + c'b) + (c'b')a
-    //             = c + c'b + c'b'a
-    plan._2 should (equal(
+    plan._2 should equal(
       CartesianProduct(
         NodeByLabelScan("c", labelName("C"), Set.empty, IndexOrderNone),
         CartesianProduct(
@@ -115,23 +101,15 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
           NodeByLabelScan("a", labelName("A"), Set.empty, IndexOrderNone)
         )
       )
-    ) or equal(
-      CartesianProduct(
-        CartesianProduct(
-          NodeByLabelScan("c", labelName("C"), Set.empty, IndexOrderNone),
-          NodeByLabelScan("b", labelName("B"), Set.empty, IndexOrderNone)
-        ),
-        NodeByLabelScan("a", labelName("A"), Set.empty, IndexOrderNone)
-      )
-    ))
+    )
   }
 
   test("should plan cartesian product of two plans so the cost is minimized") {
-    val plan = new given {
-      cardinality = selectivitiesCardinality(Map(
-        hasLabels("a", "A") -> 0.3,
-        hasLabels("b", "B") -> 0.2,
-      ), qg => Math.pow(100.0, qg.connectedComponents.size))
+    implicit val plan = new given {
+      labelCardinality = Map(
+        "A" -> 30.0,
+        "B" -> 20.0
+      )
     } getLogicalPlanFor "MATCH (a), (b) WHERE a:A AND b:B RETURN a, b"
 
     // A x B = 30 * 2 + 30 * (20 * 2) => 1260
@@ -219,6 +197,7 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
       cardinality = selectivitiesCardinality(selectivities, qg => Math.pow(100.0, qg.connectedComponents.size))
     }.getLogicalPlanFor("MATCH (n:N), (m:M) WHERE n.prop1 = m.prop1 AND n.prop2 = m.prop2 RETURN n")._2
 
+    // TODO Continue here Tobias
     plan should beLike {
       case Selection(Ands(Seq(`equals1cached`)),
       ValueHashJoin(
