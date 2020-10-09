@@ -94,7 +94,7 @@ class GrowingArray[T <: AnyRef](memoryTracker: MemoryTracker) extends AutoClosea
 
   override def close(): Unit = {
     if (array != null) {
-      memoryTracker.releaseHeap(trackedMemory)
+      memoryTracker.releaseHeap(trackedMemory + SHALLOW_SIZE)
       array = null
     }
   }
@@ -107,7 +107,6 @@ class GrowingArray[T <: AnyRef](memoryTracker: MemoryTracker) extends AutoClosea
     if (array.length < size) {
       val temp = array
       val oldHeapUsage = trackedMemory
-      val oldLenght = temp.length
       val newLength = math.max(array.length * 2, size)
       trackedMemory = shallowSizeOfObjectArray(newLength)
       memoryTracker.allocateHeap(trackedMemory)

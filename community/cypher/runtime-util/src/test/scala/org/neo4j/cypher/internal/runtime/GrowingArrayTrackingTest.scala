@@ -24,27 +24,28 @@ import java.util.concurrent.ThreadLocalRandom
 import org.github.jamm.MemoryMeter
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.memory.LocalMemoryTracker
-
+//NOTE: this test must be run with a javaagent, the easiest way to accomplish that
+// is by running as a junit test rather than a scalatest.
 class GrowingArrayTrackingTest extends CypherFunSuite {
-
-  private val meter = new MemoryMeter()
-  private val tracker = new LocalMemoryTracker()
-  private val array = new GrowingArray[java.lang.Long](tracker)
   private val random = ThreadLocalRandom.current()
 
-  override protected def afterEach(): Unit = {
-    array.close()
-    tracker.estimatedHeapMemory() should equal(0)
-  }
-
-  test("add") {
+  test("add and measure") {
+    //give
+    val tracker = new LocalMemoryTracker()
+    val array = new GrowingArray[java.lang.Long](tracker)
+    val meter = new MemoryMeter()
     val iterations = random.nextInt(10, 1000)
     (0 until iterations).foreach(i => array.set(i, i))
 
+    //when
     val itemSize = meter.measure(1L) * iterations
     val actualSize = meter.measureDeep(array) - meter.measureDeep(tracker) - itemSize
 
+    //then
     actualSize should equal(tracker.estimatedHeapMemory())
+    array.close()
+    //check so that we are not leaking memory
+    tracker.estimatedHeapMemory() should equal(0)
   }
 
 }
