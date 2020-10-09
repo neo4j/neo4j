@@ -33,7 +33,6 @@ class CacheKeyTest extends CypherFunSuite {
                             "WARP_SPEED",
                             "LUDICROUS_SPEED",
                             "NO_CHANCE",
-                            "CONNECT_ME",
                             "DEBUGGING_IS_WEAK")
 
     //then

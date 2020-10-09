@@ -44,15 +44,7 @@ case object CypherPreParser extends org.parboiled.scala.Parser with Base {
   def Cypher: Rule1[ConfigurationOptions] = rule("CYPHER options") {
     keyword("CYPHER") ~~
       optional(VersionNumber) ~~
-      zeroOrMore(PlannerOption
-        | RuntimeOption
-        | ExpressionEngineOption
-        | OperatorEngineOption
-        | InterpretedPipesFallbackOption
-        | ReplanOption
-        | StrategyOption
-        | ConnectComponentsPlannerOption
-        | DebugFlag, WS) ~~> ConfigurationOptions
+      zeroOrMore(PlannerOption | RuntimeOption | ExpressionEngineOption | OperatorEngineOption | InterpretedPipesFallbackOption | ReplanOption | StrategyOption | DebugFlag, WS) ~~> ConfigurationOptions
   }
 
   def PlannerOption: Rule1[PreParserOption] = rule("planner option") (
@@ -101,11 +93,6 @@ case object CypherPreParser extends org.parboiled.scala.Parser with Base {
     option("replan", "force") ~ push(ReplanForceOption)
       | option("replan", "skip") ~ push(ReplanSkipOption)
       | option("replan", "default") ~ push(ReplanDefaultOption)
-  )
-
-  def ConnectComponentsPlannerOption: Rule1[ConnectComponentsPlannerPreParserOption] = rule("connect components planner options") (
-    option("connectComponentsPlanner", "idp") ~ push(IDPConnectComponentsPlannerOption)
-      | option("connectComponentsPlanner", "greedy") ~ push(GreedyConnectComponentsPlannerOption)
   )
 
   def Digits: Rule0 = oneOrMore("0" - "9")

@@ -87,11 +87,6 @@ class PreParserTest extends CypherFunSuite {
     intercept[InvalidArgumentException](preParser.preParseQuery("CYPHER runtime=slotted interpretedPipesFallback=all RETURN 42"))
   }
 
-  test("should not allow multiple conflicting connect component planners") {
-    intercept[InvalidArgumentException](preParser.preParseQuery("CYPHER connectComponentsPlanner=idp connectComponentsPlanner=greedy RETURN 42"))
-    intercept[InvalidArgumentException](preParser.preParseQuery("CYPHER connectComponentsPlanner=greedy connectComponentsPlanner=idp RETURN 42"))
-  }
-
   test("should parse all variants of periodic commit") {
     val variants =
       List(
