@@ -109,7 +109,7 @@ class LoadCommandTest
         var command = new LoadCommand( new ExecutionContext( Path.of( "." ), Path.of( "." ) ), loader );
         try ( var out = new PrintStream( baos ) )
         {
-            CommandLine.usage( command, new PrintStream( out ) );
+            CommandLine.usage( command, new PrintStream( out ), CommandLine.Help.Ansi.OFF );
         }
         assertThat( baos.toString().trim() ).isEqualTo( String.format(
                 "Load a database from an archive created with the dump command.%n" +

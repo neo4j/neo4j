@@ -62,7 +62,7 @@ class ImportCommandTest
         final var command = new ImportCommand( new ExecutionContext( Path.of( "." ), Path.of( "." ) ) );
         try ( var out = new PrintStream( baos ) )
         {
-            CommandLine.usage( command, new PrintStream( out ) );
+            CommandLine.usage( command, new PrintStream( out ), CommandLine.Help.Ansi.OFF );
         }
         assertEquals( baos.toString().trim(),
                 "USAGE" + lineSeparator() +
