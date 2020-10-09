@@ -65,7 +65,7 @@ class getDegreeRewriterTest extends CypherFunSuite with AstConstructionTestSuppo
   test("Rewrite exists( (a)-[:FOO|:BAR]->() ) to HasDegreeGreaterThan( (a)-[:FOO]->(), 0) OR HasDegreeGreaterThan( (a)-[:BAR]->(), 0)") {
     val incoming = Exists.asInvocation(pattern(from = Some("a"), relationships = Seq("FOO", "BAR")))(pos)
     val expected =
-      or(
+      ors(
         HasDegreeGreaterThan(varFor("a"), Some(RelTypeName("FOO")(pos)), OUTGOING, literalInt(0))(pos),
         HasDegreeGreaterThan(varFor("a"), Some(RelTypeName("BAR")(pos)), OUTGOING, literalInt(0))(pos)
       )

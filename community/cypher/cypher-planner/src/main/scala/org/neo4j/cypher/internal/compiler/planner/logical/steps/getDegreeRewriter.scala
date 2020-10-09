@@ -35,7 +35,7 @@ import org.neo4j.cypher.internal.expressions.LessThan
 import org.neo4j.cypher.internal.expressions.LessThanOrEqual
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.NodePattern
-import org.neo4j.cypher.internal.expressions.Or
+import org.neo4j.cypher.internal.expressions.Ors
 import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.RelationshipChain
@@ -45,6 +45,7 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.functions
 import org.neo4j.cypher.internal.logical.plans.NestedPlanExpression
+import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.bottomUp
 
@@ -90,49 +91,51 @@ case object getDegreeRewriter extends Rewriter {
       HasDegree(node, typ, dir, value)(e.position)
 
     // LENGTH( (a)-[]->() )
-    case FunctionOfPattern(func, pe, node, rel, types, dir, otherNode) if func.function == functions.Length || func.function == functions.Size =>
-      val peDeps = pe.dependencies
-      if (peDeps.contains(node) && !peDeps.contains(rel) && !peDeps.contains(otherNode)) {
-        calculateUsingGetDegree(func, node, types, dir)
-      } else if (!peDeps.contains(node) && !peDeps.contains(rel) && peDeps.contains(otherNode)) {
-        calculateUsingGetDegree(func, otherNode, types, dir.reversed)
-      } else {
-        func
-      }
+    case LengthFunctionOfPattern(node, types, dir) =>
+      calculateUsingGetDegree(node, types, dir)
 
     // EXISTS( (a)-[]->() ) rewritten to GetDegree( (a)-[]->() ) > 0
-    case FunctionOfPattern(func, pe, node, rel, types, dir, otherNode) if func.function == functions.Exists =>
-      val peDeps = pe.dependencies
-      if (peDeps.contains(node) && !peDeps.contains(rel) && !peDeps.contains(otherNode)) {
-        calculateUsingHasDegreeGreaterThan(func, node, types, dir)
-      } else if (!peDeps.contains(node) && !peDeps.contains(rel) && peDeps.contains(otherNode)) {
-        calculateUsingHasDegreeGreaterThan(func, otherNode, types, dir.reversed)
-      } else {
-        func
-      }
+    case FunctionOfPattern(func, node, types, dir) if func.function == functions.Exists =>
+      existsToUsingHasDegreeGreaterThan(func, node, types, dir)
   }
 
-  private def calculateUsingGetDegree(expr: Expression, node: LogicalVariable, types: Seq[RelTypeName], dir: SemanticDirection): Expression = {
+  private def calculateUsingGetDegree(node: LogicalVariable, types: Seq[RelTypeName], dir: SemanticDirection): Expression = {
     types
       .map(typ => GetDegree(node.copyId, Some(typ), dir)(typ.position))
-      .reduceOption[Expression](Add(_, _)(expr.position))
-      .getOrElse(GetDegree(node, None, dir)(expr.position))
+      .reduceOption[Expression](Add(_, _)(InputPosition.NONE))
+      .getOrElse(GetDegree(node.copyId, None, dir)(InputPosition.NONE))
   }
 
-  private def calculateUsingHasDegreeGreaterThan(expr: Expression, node: LogicalVariable, types: Seq[RelTypeName], dir: SemanticDirection): Expression = {
-    types
-      .map(typ => HasDegreeGreaterThan(node.copyId, Some(typ), dir, SignedDecimalIntegerLiteral("0")(expr.position))(typ.position))
-      .reduceOption[Expression](Or(_, _)(expr.position))
-      .getOrElse(HasDegreeGreaterThan(node, None, dir, SignedDecimalIntegerLiteral("0")(expr.position))(expr.position))
+  private def existsToUsingHasDegreeGreaterThan(expr: Expression, node: LogicalVariable, types: Seq[RelTypeName], dir: SemanticDirection): Expression = {
+    val all = types.map(typ => HasDegreeGreaterThan(node.copyId, Some(typ), dir, SignedDecimalIntegerLiteral("0")(expr.position))(typ.position))
+    if (all.isEmpty) HasDegreeGreaterThan(node.copyId, None, dir, SignedDecimalIntegerLiteral("0")(expr.position))(expr.position)
+    else if (all.size == 1) all.head
+    else Ors(all)(expr.position)
   }
 }
 
 object FunctionOfPattern {
-  def unapply(arg: Any): Option[(FunctionInvocation, PatternExpression, LogicalVariable, LogicalVariable, Seq[RelTypeName], SemanticDirection, LogicalVariable)] = arg match {
+  def unapply(arg: Any): Option[(FunctionInvocation, LogicalVariable, Seq[RelTypeName], SemanticDirection)] = arg match {
     //(a)-[]->()
     case func@FunctionInvocation(_, _, _, IndexedSeq(pe@PatternExpression(RelationshipsPattern(RelationshipChain(NodePattern(Some(node), List(), None, _), RelationshipPattern(Some(rel), types, None, None, dir, _, _), NodePattern(Some(otherNode), List(), None, _))))))
-    => Some((func, pe, node, rel, types, dir, otherNode))
+    =>
+      val peDeps = pe.dependencies
+      if (peDeps.contains(node) && !peDeps.contains(rel) && !peDeps.contains(otherNode)) {
+        Some((func, node, types, dir))
+      } else if (!peDeps.contains(node) && !peDeps.contains(rel) && peDeps.contains(otherNode)) {
+        Some((func, otherNode, types, dir.reversed))
+      } else {
+        None
+      }
 
+    case _ => None
+  }
+}
+
+object LengthFunctionOfPattern {
+  def unapply(arg: Any): Option[(LogicalVariable, Seq[RelTypeName], SemanticDirection)] = arg match {
+    case FunctionOfPattern(func, node, types, dir) if func.function == functions.Length || func.function == functions.Size =>
+      Some((node, types, dir))
     case _ => None
   }
 }
