@@ -30,31 +30,26 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 trait IDPSolverConfig {
   def maxTableSize: Int = 128
   def iterationDurationLimit: Long = 1000
-
+  def solvers(queryGraph: QueryGraph): Seq[QueryGraph => IDPSolverStep[PatternRelationship, LogicalPlan, LogicalPlanningContext]]
 }
 
-trait SingleComponentIDPSolverConfig extends IDPSolverConfig {
-  def solvers(queryGraph: QueryGraph): Seq[QueryGraph => IDPSolverStep[PatternRelationship, LogicalPlan, LogicalPlanningContext]]
+/* The Dynamic Programming (DP) approach is IDP with no optimizations */
+case object DPSolverConfig extends IDPSolverConfig {
+  override def maxTableSize = Integer.MAX_VALUE
+  override def iterationDurationLimit = Long.MaxValue
+  override def solvers(queryGraph: QueryGraph) = Seq(joinSolverStep(_), expandSolverStep(_))
 }
 
 /* The default settings for IDP uses a maxTableSize and a inner loop duration threshold
    to improve planning performance with minimal impact of plan quality */
-case object DefaultIDPSolverConfig extends SingleComponentIDPSolverConfig {
+case object DefaultIDPSolverConfig extends IDPSolverConfig {
   override def solvers(queryGraph: QueryGraph) = Seq(joinSolverStep(_), expandSolverStep(_))
 }
-
-/* The Dynamic Programming (DP) approach is IDP with no optimizations */
-case object DPSolverConfig extends SingleComponentIDPSolverConfig {
-  override def maxTableSize: Int = Integer.MAX_VALUE
-  override def iterationDurationLimit: Long = Long.MaxValue
-  override def solvers(queryGraph: QueryGraph) = Seq(joinSolverStep(_), expandSolverStep(_))
-}
-
 
 /* The default settings for IDP uses a maxTableSize and a inner loop duration threshold
    to improve planning performance with minimal impact of plan quality */
 class ConfigurableIDPSolverConfig(override val maxTableSize: Int,
-                                  override val iterationDurationLimit: Long) extends SingleComponentIDPSolverConfig {
+                                  override val iterationDurationLimit: Long) extends IDPSolverConfig {
   override def solvers(queryGraph: QueryGraph) = Seq(joinSolverStep(_), expandSolverStep(_))
 }
 
@@ -74,7 +69,7 @@ case object JoinOnlyIDPSolverConfig extends ConfigurableIDPSolverConfig(256, Lon
    where best to draw the line, and it is probable that the joins might be planned in
    sub-optimal positions. We should consider this for a future default once we have the
    time to develop more confidence in the approach. */
-case class AdaptiveChainPatternConfig(patternLengthThreshold: Int) extends SingleComponentIDPSolverConfig {
+case class AdaptiveChainPatternConfig(patternLengthThreshold: Int) extends IDPSolverConfig {
   override def solvers(queryGraph: QueryGraph) =
     Seq(AdaptiveSolverStep(_, (qg, goal) => goal.size >= patternLengthThreshold))
 }

@@ -27,8 +27,6 @@ import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
 // TODO: Return Iterator
-// TODO pass in unsolvedPredicates(in, qg, context.planningAttributes.solveds) to generator
-// TODO instead of calling select for each candidate, lets only call it for the winner.
 trait CandidateGenerator[T] extends {
   def apply(in: T, queryGraph: QueryGraph, interestingOrder: InterestingOrder, context: LogicalPlanningContext): Seq[T]
 }

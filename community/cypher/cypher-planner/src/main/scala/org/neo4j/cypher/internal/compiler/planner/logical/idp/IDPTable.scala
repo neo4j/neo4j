@@ -100,13 +100,4 @@ case class Goal(bitSet: BitSet) {
   def subGoals: Iterator[Goal] = bitSet.subsets().map(Goal)
   def subGoals(size: Int): Iterator[Goal] = bitSet.subsets(size).map(Goal)
   def exists(p: Int => Boolean): Boolean = bitSet.exists(p)
-  def diff(that: Goal): Goal = Goal(bitSet &~ that.bitSet)
-
-  /**
-   * @return all pairs of non-empty, non-overlapping goals that together cover this goal.
-   */
-  def coveringSplits: Iterator[(Goal, Goal)] = for {
-    leftGoal <- subGoals if leftGoal.bitSet.nonEmpty && leftGoal != this
-    rightGoal = diff(leftGoal)
-  } yield (leftGoal, rightGoal)
 }

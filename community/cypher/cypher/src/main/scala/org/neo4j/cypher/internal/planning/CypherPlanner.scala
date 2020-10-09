@@ -56,7 +56,6 @@ import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.compiler.phases.PlannerContextCreator
 import org.neo4j.cypher.internal.compiler.planner.logical.CachedMetricsFactory
 import org.neo4j.cypher.internal.compiler.planner.logical.SimpleMetricsFactory
-import org.neo4j.cypher.internal.compiler.planner.logical.idp.ComponentConnectorPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.ConfigurableIDPSolverConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.DPSolverConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.IDPQueryGraphSolver
@@ -400,12 +399,12 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
           iterationDurationLimit = config.idpIterationDuration
         )
         val singleComponentPlanner = SingleComponentPlanner(monitor, solverConfig)
-        IDPQueryGraphSolver(singleComponentPlanner, /*cartesianProductsOrValueJoins*/ComponentConnectorPlanner(singleComponentPlanner, solverConfig, monitor), monitor)
+        IDPQueryGraphSolver(singleComponentPlanner, cartesianProductsOrValueJoins, monitor)
 
       case DPPlannerName =>
         val monitor = monitors.newMonitor[IDPQueryGraphSolverMonitor]()
         val singleComponentPlanner = SingleComponentPlanner(monitor, DPSolverConfig)
-        IDPQueryGraphSolver(singleComponentPlanner, ComponentConnectorPlanner(singleComponentPlanner, DPSolverConfig, monitor), monitor)
+        IDPQueryGraphSolver(singleComponentPlanner, cartesianProductsOrValueJoins, monitor)
     }
 
   private def parameterNamesAndValues(statement: Statement): (ArrayBuffer[String], MapValue) = {

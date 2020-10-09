@@ -642,57 +642,6 @@ class OrderPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
     } shouldBe 0
   }
 
-  test("Should not plan cartesian product with lowest cardinality point leftmost, if sorting can be avoided, when sorting on 1 variables.") {
-    val query =
-      """MATCH (a:A), (b:B), (c:C)
-        |WHERE exists(a.prop) AND exists(b.prop) AND exists(c.prop)
-        |RETURN a, b, c
-        |ORDER BY a.prop""".stripMargin
-    val plan = new given {
-      // Make it cheapest to start on b
-      labelCardinality = Map("A" -> 200.0, "B" -> 100.0, "C" -> 200.0)
-      indexOn("A", "prop").providesOrder(IndexOrderCapability.BOTH)
-      indexOn("B", "prop").providesOrder(IndexOrderCapability.BOTH)
-      indexOn("C", "prop").providesOrder(IndexOrderCapability.BOTH)
-    }.getLogicalPlanFor(query)._2
-
-    // Different cartesian product variants are OK, but it should maintain the
-    // order from a
-    plan.treeCount {
-      case _: Sort => true
-      case _: PartialSort => true
-    } shouldBe 0
-  }
-
-  test("Should not plan value hash join with lowest cardinality point leftmost, if sorting can be avoided, when sorting on 1 variables.") {
-    val query =
-      """MATCH (a:A), (b:B)
-        |WHERE exists(a.prop) AND exists(b.prop) AND a.foo = b.foo
-        |RETURN a, b
-        |ORDER BY a.prop""".stripMargin
-
-    val selectivities = Map[Expression, Double](
-      hasLabels("a", "A") -> 0.5,
-      hasLabels("b", "B") -> 0.9,
-      equals(prop("a", "foo"), prop("b", "foo")) -> 0.4,
-      exists(prop("a", "prop"))-> 0.4,
-      exists(prop("b", "prop"))-> 0.4,
-    )
-
-    val plan = new given {
-      cardinality = selectivitiesCardinality(selectivities, qg => Math.pow(100.0, qg.connectedComponents.size))
-      indexOn("A", "prop").providesOrder(IndexOrderCapability.BOTH)
-      indexOn("B", "prop").providesOrder(IndexOrderCapability.BOTH)
-    }.getLogicalPlanFor(query)._2
-
-    // It should maintain the
-    // order from a
-    plan.treeCount {
-      case _: Sort => true
-      case _: PartialSort => true
-    } shouldBe 0
-  }
-
   test("Should not expand from lowest cardinality point, if sorting can be avoided, when sorting on 2 variables.") {
     val query =
       """MATCH (a:A)-->(b:B)-->(c:C)
@@ -717,61 +666,6 @@ class OrderPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
     } shouldBe 1
   }
 
-  test("Should not plan cartesian product with lowest cardinality point leftmost, if sorting can be avoided, when sorting on 2 variables.") {
-    val query =
-      """MATCH (a:A), (b:B), (c:C)
-        |WHERE exists(a.prop) AND exists(b.prop) AND exists(c.prop)
-        |RETURN a, b, c
-        |ORDER BY a.prop, c.prop""".stripMargin
-    val plan = new given {
-      // Make it cheapest to start on b
-      labelCardinality = Map("A" -> 200.0, "B" -> 100.0, "C" -> 200.0)
-      indexOn("A", "prop").providesOrder(IndexOrderCapability.BOTH)
-      indexOn("B", "prop").providesOrder(IndexOrderCapability.BOTH)
-      indexOn("C", "prop").providesOrder(IndexOrderCapability.BOTH)
-    }.getLogicalPlanFor(query)._2
-
-    // Different cartesian product variants are OK, but it should maintain the
-    // order from a and only need to partially sort c
-    plan.treeCount {
-      case _: Sort => true
-    } shouldBe 0
-    plan.treeCount {
-      case PartialSort(_, Seq(Ascending("a.prop")), Seq(Ascending("c.prop"))) => true
-    } shouldBe 1
-  }
-
-  test("Should not plan value hash join with lowest cardinality point leftmost, if sorting can be avoided, when sorting on 2 variables.") {
-    val query =
-      """MATCH (a:A), (b:B)
-        |WHERE exists(a.prop) AND exists(b.prop) AND a.foo = b.foo
-        |RETURN a, b
-        |ORDER BY a.prop, b.prop""".stripMargin
-
-    val selectivities = Map[Expression, Double](
-      hasLabels("a", "A") -> 0.5,
-      hasLabels("b", "B") -> 0.9,
-      equals(prop("a", "foo"), prop("b", "foo")) -> 0.4,
-      exists(prop("a", "prop"))-> 0.4,
-      exists(prop("b", "prop"))-> 0.4,
-    )
-
-    val plan = new given {
-      cardinality = selectivitiesCardinality(selectivities, qg => Math.pow(100.0, qg.connectedComponents.size))
-      indexOn("A", "prop").providesOrder(IndexOrderCapability.BOTH)
-      indexOn("B", "prop").providesOrder(IndexOrderCapability.BOTH)
-    }.getLogicalPlanFor(query)._2
-
-    // It should maintain the
-    // order from a and only need to partially sort b
-    plan.treeCount {
-      case _: Sort => true
-    } shouldBe 0
-    plan.treeCount {
-      case PartialSort(_, Seq(Ascending("a.prop")), Seq(Ascending("b.prop"))) => true
-    } shouldBe 1
-  }
-
   test("Should not expand (longer pattern) from lowest cardinality point, if sorting can be avoided, when sorting on 2 variables.") {
     val query =
       """MATCH (a:A)-->(b:B)-->(c:C)--(d:D)--(e:E)
@@ -789,8 +683,12 @@ class OrderPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
     ).withDefaultValue(1.0)
 
     val plan = new given {
-      // The more nodes, the less row
-      cardinality = selectivitiesCardinality(selectivities, qg => 1000000 * Math.pow(0.7, qg.patternNodes.size))
+      cardinality = mapCardinality {
+        case RegularSinglePlannerQuery(queryGraph, _, _, _, _) =>
+          // The more nodes, the less row
+          val preSelectionCardinality = 1000000 * Math.pow(0.7, queryGraph.patternNodes.size)
+          queryGraph.selections.predicates.foldLeft(preSelectionCardinality){ case (rows, predicate) => rows * selectivities(predicate.expr)}
+      }
       indexOn("A", "prop").providesOrder(IndexOrderCapability.BOTH)
       indexOn("B", "prop").providesOrder(IndexOrderCapability.BOTH)
       indexOn("C", "prop").providesOrder(IndexOrderCapability.BOTH)
@@ -818,11 +716,17 @@ class OrderPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
     val selectivities = Map[Expression, Double](
       hasLabels("a", "A") -> 1.0,
       Exists(prop("a", "prop"))(pos) -> 0.5,
-      Exists(prop("a", "foo"))(pos) -> 0.1 // Make it cheapest to start on a.foo.
+      Exists(prop("a", "foo"))(pos) -> 0.1
     ).withDefaultValue(1.0)
 
     val plan = new given {
-      cardinality = selectivitiesCardinality(selectivities, qg => Math.pow(100.0, qg.patternNodes.size))
+      // Make it cheapest to start on a.foo.
+      cardinality = mapCardinality {
+        case RegularSinglePlannerQuery(queryGraph, _, _, _, _) =>
+          // The more nodes, the more row
+          val preSelectionCardinality = Math.pow(100.0, queryGraph.patternNodes.size)
+          queryGraph.selections.predicates.foldLeft(preSelectionCardinality){ case (rows, predicate) => rows * selectivities(predicate.expr)}
+      }
       indexOn("A", "prop").providesOrder(IndexOrderCapability.BOTH)
       indexOn("A", "foo")
     }.getLogicalPlanFor(query)._2
@@ -853,7 +757,12 @@ class OrderPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
 
     val plan = new given {
       // Make it cheapest to start on a.foo.
-      cardinality = selectivitiesCardinality(selectivities, qg => Math.pow(100.0, qg.patternNodes.size))
+      cardinality = mapCardinality {
+        case RegularSinglePlannerQuery(queryGraph, _, _, _, _) =>
+          // The more nodes, the more row
+          val preSelectionCardinality = Math.pow(100.0, queryGraph.patternNodes.size)
+          queryGraph.selections.predicates.foldLeft(preSelectionCardinality){ case (rows, predicate) => rows * selectivities(predicate.expr)}
+      }
       indexOn("A", "prop").providesOrder(IndexOrderCapability.BOTH)
       indexOn("A", "foo")
     }.getLogicalPlanFor(query)._2
@@ -883,7 +792,12 @@ class OrderPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
 
     val plan = new given {
       // Make it cheapest to start on a.foo.
-      cardinality = selectivitiesCardinality(selectivities, qg => Math.pow(100.0, qg.patternNodes.size))
+      cardinality = mapCardinality {
+        case RegularSinglePlannerQuery(queryGraph, _, _, _, _) =>
+          // The more nodes, the more row
+          val preSelectionCardinality = Math.pow(100.0, queryGraph.patternNodes.size)
+          queryGraph.selections.predicates.foldLeft(preSelectionCardinality){ case (rows, predicate) => rows * selectivities(predicate.expr)}
+      }
       indexOn("A", "prop").providesOrder(IndexOrderCapability.BOTH)
     }.getLogicalPlanFor(query)._2
 

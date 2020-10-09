@@ -51,7 +51,6 @@ object ExtraRequirement {
 case class BestResults[+Result](bestResult: Result,
                                 bestResultFulfillingReq: Option[Result]) {
   def map[B](f: Result => B): BestResults[B] = BestResults(f(bestResult), bestResultFulfillingReq.map(f))
-  def allResults: Iterator[Result] = Iterator(bestResult) ++ bestResultFulfillingReq
 }
 
 /**
