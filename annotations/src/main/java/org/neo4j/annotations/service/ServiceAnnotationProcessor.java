@@ -55,6 +55,7 @@ import static javax.tools.StandardLocation.CLASS_OUTPUT;
 import static org.apache.commons.lang3.StringUtils.substringBefore;
 import static org.apache.commons.lang3.exception.ExceptionUtils.getStackTrace;
 import static org.eclipse.collections.impl.set.mutable.UnifiedSet.newSetWith;
+import static org.neo4j.annotations.AnnotationConstants.DEFAULT_NEW_LINE;
 
 /**
  * Handles {@link Service} and {@link ServiceProvider} annotations. For each service type it collects associated service providers and creates
@@ -64,8 +65,19 @@ public class ServiceAnnotationProcessor extends AbstractProcessor
 {
     private static final boolean enableDebug = Boolean.getBoolean( "enableAnnotationLogging" );
     private final MutableMultimap<TypeElement, TypeElement> serviceProviders = Multimaps.mutable.list.empty();
+    private final String newLine;
     private Types typeUtils;
     private Elements elementUtils;
+
+    public ServiceAnnotationProcessor()
+    {
+        this( DEFAULT_NEW_LINE );
+    }
+
+    public ServiceAnnotationProcessor( String newLine )
+    {
+        this.newLine = newLine;
+    }
 
     @Override
     public synchronized void init( ProcessingEnvironment processingEnv )
@@ -189,7 +201,7 @@ public class ServiceAnnotationProcessor extends AbstractProcessor
                 for ( final String provider : newProviders )
                 {
                     writer.write( provider );
-                    writer.write( "\n" );
+                    writer.write( newLine );
                 }
             }
         }

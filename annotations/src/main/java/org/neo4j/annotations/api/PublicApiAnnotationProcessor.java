@@ -63,6 +63,8 @@ import static javax.tools.Diagnostic.Kind.NOTE;
 import static javax.tools.Diagnostic.Kind.WARNING;
 import static javax.tools.StandardLocation.CLASS_OUTPUT;
 import static org.apache.commons.lang3.exception.ExceptionUtils.getStackTrace;
+import static org.neo4j.annotations.AnnotationConstants.DEFAULT_NEW_LINE;
+import static org.neo4j.annotations.AnnotationConstants.WINDOWS_NEW_LINE;
 
 /**
  * Generates public API signatures from all the classes marked with {@link PublicApi}. It performs some sanity checking so that all exposed types are visible.
@@ -84,13 +86,14 @@ public class PublicApiAnnotationProcessor extends AbstractProcessor
     static final String GENERATED_SIGNATURE_DESTINATION = "META-INF/PublicApi.txt";
 
     private final boolean testExecution;
+    private final String newLine;
     private boolean inDeprecatedScope;
     private Types typeUtils;
 
     @SuppressWarnings( "unused" )
     public PublicApiAnnotationProcessor()
     {
-        testExecution = false;
+        this( false );
     }
 
     /**
@@ -99,7 +102,17 @@ public class PublicApiAnnotationProcessor extends AbstractProcessor
      */
     PublicApiAnnotationProcessor( boolean forTest )
     {
-        testExecution = forTest;
+        this( forTest, DEFAULT_NEW_LINE );
+    }
+
+    /**
+     * Used from tests since the in-memory filesystem there does not support all of the needed operations.
+     * Welcome to the world of impossible-to-test annotation processors!
+     */
+    PublicApiAnnotationProcessor( boolean forTest, String newLine )
+    {
+        this.testExecution = forTest;
+        this.newLine = newLine;
     }
 
     @Override
@@ -158,7 +171,7 @@ public class PublicApiAnnotationProcessor extends AbstractProcessor
             StringBuilder sb = new StringBuilder();
             for ( final String element : publicElements )
             {
-                sb.append( element ).append( '\n' );
+                sb.append( element ).append( newLine );
             }
             String newSignature = sb.toString();
 
@@ -194,8 +207,8 @@ public class PublicApiAnnotationProcessor extends AbstractProcessor
                 String oldSignature = Files.readString( oldSignaturePath, UTF_8 );
                 if ( !oldSignature.equals( newSignature ) )
                 {
-                    oldSignature = oldSignature.replace( "\r\n", "\n" );
-                    newSignature = newSignature.replace( "\r\n", "\n" );
+                    oldSignature = oldSignature.replace( WINDOWS_NEW_LINE, DEFAULT_NEW_LINE );
+                    newSignature = newSignature.replace( WINDOWS_NEW_LINE, DEFAULT_NEW_LINE );
                     if ( !oldSignature.equals( newSignature ) )
                     {
                         StringBuilder diff = diff( oldSignaturePath );

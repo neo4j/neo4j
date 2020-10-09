@@ -21,21 +21,25 @@ package org.neo4j.annotations.service;
 
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
+
 import static com.google.testing.compile.JavaFileObjects.forResource;
 import static com.google.testing.compile.JavaSourcesSubject.assertThat;
 import static javax.tools.StandardLocation.CLASS_OUTPUT;
+import static org.neo4j.annotations.AnnotationTestHelper.detectNewLineSignature;
 
 class ServiceAnnotationProcessorTest
 {
     @Test
-    void providersWithDistinctServiceKeys()
+    void providersWithDistinctServiceKeys() throws IOException
     {
         assertThat(
                 forResource( "org/neo4j/annotations/service/FooService.java" ),
                 forResource( "org/neo4j/annotations/service/AbstractFooService.java" ),
                 forResource( "org/neo4j/annotations/service/FooServiceImplA.java" ),
                 forResource( "org/neo4j/annotations/service/FooServiceImplB.java" ) )
-                .processedWith( new ServiceAnnotationProcessor() )
+                .processedWith( new ServiceAnnotationProcessor(
+                        detectNewLineSignature( "META-INF/services/org.neo4j.annotations.service.FooService" ) ) )
                 .compilesWithoutError()
                 .and()
                 .generatesFileNamed( CLASS_OUTPUT, "", "META-INF/services/org.neo4j.annotations.service.FooService" )
@@ -46,11 +50,12 @@ class ServiceAnnotationProcessorTest
     }
 
     @Test
-    void classIsBothServiceAndProvider()
+    void classIsBothServiceAndProvider() throws IOException
     {
         assertThat(
                 forResource( "org/neo4j/annotations/service/ClassIsServiceAndProvider.java" ) )
-                .processedWith( new ServiceAnnotationProcessor() )
+                .processedWith( new ServiceAnnotationProcessor(
+                        detectNewLineSignature( "META-INF/services/org.neo4j.annotations.service.ClassIsServiceAndProvider" ) ) )
                 .compilesWithoutError()
                 .and()
                 .generatesFileNamed( CLASS_OUTPUT, "", "META-INF/services/org.neo4j.annotations.service.ClassIsServiceAndProvider" )
@@ -61,18 +66,17 @@ class ServiceAnnotationProcessorTest
     }
 
     @Test
-    void nestedTypes()
+    void nestedTypes() throws IOException
     {
         assertThat(
                 forResource( "org/neo4j/annotations/service/Nested.java" ) )
-                .processedWith( new ServiceAnnotationProcessor() )
+                .processedWith( new ServiceAnnotationProcessor(
+                        detectNewLineSignature( "META-INF/services/org.neo4j.annotations.service.Nested$NestedService" ) ) )
                 .compilesWithoutError()
                 .and()
                 .generatesFileNamed( CLASS_OUTPUT, "", "META-INF/services/org.neo4j.annotations.service.Nested$NestedService" )
                 .and()
-                .generatesFiles(
-                        forResource( "META-INF/services/org.neo4j.annotations.service.Nested$NestedService" )
-                );
+                .generatesFiles( forResource( "META-INF/services/org.neo4j.annotations.service.Nested$NestedService" ) );
     }
 
     @Test

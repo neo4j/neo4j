@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Test;
 import static com.google.testing.compile.JavaFileObjects.forResource;
 import static com.google.testing.compile.JavaSourcesSubject.assertThat;
 import static javax.tools.StandardLocation.CLASS_OUTPUT;
+import static org.neo4j.annotations.AnnotationTestHelper.detectNewLineSignature;
 import static org.neo4j.annotations.api.PublicApiAnnotationProcessor.GENERATED_SIGNATURE_DESTINATION;
 import static org.neo4j.annotations.api.PublicApiAnnotationProcessor.VERIFY_TOGGLE;
 
@@ -37,33 +38,29 @@ class PublicApiAnnotationProcessorTest
     }
 
     @Test
-    void printPublicSignature()
+    void printPublicSignature() throws Exception
     {
         assertThat(
                 forResource( "org/neo4j/annotations/api/PublicClass.java" ) )
-                .processedWith( new PublicApiAnnotationProcessor( true ) )
+                .processedWith( new PublicApiAnnotationProcessor( true, detectNewLineSignature( "signatures/PublicClass.txt" ) ) )
                 .compilesWithoutError()
                 .and()
                 .generatesFileNamed( CLASS_OUTPUT, "", GENERATED_SIGNATURE_DESTINATION )
                 .and()
-                .generatesFiles(
-                        forResource( "signatures/PublicClass.txt" )
-                );
+                .generatesFiles( forResource( "signatures/PublicClass.txt" ) );
     }
 
     @Test
-    void printAnnotationSignature()
+    void printAnnotationSignature() throws Exception
     {
         assertThat(
                 forResource( "org/neo4j/annotations/api/PublicAnnotation.java" ) )
-                .processedWith( new PublicApiAnnotationProcessor( true ) )
+                .processedWith( new PublicApiAnnotationProcessor( true, detectNewLineSignature( "signatures/PublicAnnotation.txt" ) ) )
                 .compilesWithoutError()
                 .and()
                 .generatesFileNamed( CLASS_OUTPUT, "", GENERATED_SIGNATURE_DESTINATION )
                 .and()
-                .generatesFiles(
-                        forResource( "signatures/PublicAnnotation.txt" )
-                );
+                .generatesFiles( forResource( "signatures/PublicAnnotation.txt" ) );
     }
 
     @Test
@@ -103,19 +100,17 @@ class PublicApiAnnotationProcessorTest
     }
 
     @Test
-    void successDeprecatedClassIsNotMarkedPublic()
+    void successDeprecatedClassIsNotMarkedPublic() throws Exception
     {
         assertThat(
                 forResource( "org/neo4j/annotations/api/ExposingDeprecatedPublicInterface.java" ),
                 forResource( "org/neo4j/annotations/api/NotMarkedClass.java" ) )
-                .processedWith( new PublicApiAnnotationProcessor( true ) )
+                .processedWith( new PublicApiAnnotationProcessor( true, detectNewLineSignature( "signatures/ExposingDeprecatedPublicInterface.txt" ) ) )
                 .compilesWithoutError()
                 .and()
                 .generatesFileNamed( CLASS_OUTPUT, "", GENERATED_SIGNATURE_DESTINATION )
                 .and()
-                .generatesFiles(
-                        forResource( "signatures/ExposingDeprecatedPublicInterface.txt" )
-                )
+                .generatesFiles( forResource( "signatures/ExposingDeprecatedPublicInterface.txt" ) )
                 .withWarningContaining(
                         "Non-public element, org.neo4j.annotations.api.NotMarkedNestedClass, is exposed through the API via a deprecated method" );
     }
