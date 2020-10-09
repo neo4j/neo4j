@@ -205,9 +205,12 @@ class RotatingLogFileWriterTest
 
         assertThat( fs.fileExists( targetFile ) ).isEqualTo( true );
 
-        writer.printf( "%s,%d,%f", "string", 1, 1.234567f );
+        String formatString = "%s,%d,%f";
+        Object[] formatArguments = new Object[]{"string", 1, 1.234567f};
+
+        writer.printf( formatString, formatArguments );
         writer.printf( "test2" );
 
-        assertThat( Files.readAllLines( targetFile ) ).containsExactly( "string,1,1.234567", "test2" );
+        assertThat( Files.readAllLines( targetFile ) ).containsExactly( String.format( formatString, formatArguments ), "test2" );
     }
 }
