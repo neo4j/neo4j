@@ -51,6 +51,10 @@ abstract class CypherFunSuite
   def argCaptor[T <: AnyRef](implicit manifest: Manifest[T]): ArgumentCaptor[T] = {
     ArgumentCaptor.forClass(manifest.runtimeClass.asInstanceOf[Class[T]])
   }
+
+  protected def normalizeNewLines(string: String) = {
+    string.replaceAllLiterally("\r\n", "\n")
+  }
 }
 
 trait TestName extends Suite {

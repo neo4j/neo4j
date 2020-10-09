@@ -246,11 +246,11 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   }
 
   test("WHERE clause on WITH DISTINCT uses argument from previous WITH"){
-    val result = planFor( """
+    val result = planFor( normalizeNewLines("""
                       WITH 0.1 AS p
                       MATCH (n1)
                       WITH DISTINCT n1, p LIMIT 10 WHERE rand() < p
-                      RETURN n1""")._2
+                      RETURN n1"""))._2
 
     result should beLike {
       case
@@ -267,11 +267,11 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   }
 
   test("WHERE clause on WITH AGGREGATION uses argument from previous WITH"){
-    val result = planFor( """
+    val result = planFor( normalizeNewLines("""
                       WITH 0.1 AS p
                       MATCH (n1)
                       WITH count(n1) AS n, p WHERE rand() < p
-                      RETURN n""")._2
+                      RETURN n"""))._2
 
     result should beLike {
       case

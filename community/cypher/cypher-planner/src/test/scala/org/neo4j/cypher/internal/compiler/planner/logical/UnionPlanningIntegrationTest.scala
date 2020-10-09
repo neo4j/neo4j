@@ -31,11 +31,11 @@ class UnionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
 
     val (_, logicalPlan, _, _) = new given {
       knownLabels = Set("A", "B")
-    }.getLogicalPlanFor(
+    }.getLogicalPlanFor(normalizeNewLines(
       """
         |MATCH (a:A) RETURN a AS a, 1 AS b
         |UNION ALL
-        |MATCH (a:B) RETURN 1 AS b, a AS a""".stripMargin, stripProduceResults = false)
+        |MATCH (a:B) RETURN 1 AS b, a AS a""".stripMargin), stripProduceResults = false)
 
     val Seq(a1, a2, a3) = namespaced("a", 8, 35, 52)
     val Seq(b1, b2, b3) = namespaced("b", 33, 35, 69)
@@ -58,11 +58,11 @@ class UnionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
 
     val (_, logicalPlan, _, _) = new given {
       knownLabels = Set("A", "B")
-    }.getLogicalPlanFor(
+    }.getLogicalPlanFor(normalizeNewLines(
       """
         |MATCH (a:A) RETURN a AS a, 1 AS b
         |UNION
-        |MATCH (a:B) RETURN 1 AS b, a AS a""".stripMargin, stripProduceResults = false)
+        |MATCH (a:B) RETURN 1 AS b, a AS a""".stripMargin), stripProduceResults = false)
 
     val Seq(a1, a2, a3) = namespaced("a", 8, 35, 48)
     val Seq(b1, b2, b3) = namespaced("b", 33, 35, 65)
@@ -85,13 +85,13 @@ class UnionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
 
     val (_, logicalPlan, _, _) = new given {
       knownLabels = Set("A", "B", "C")
-    }.getLogicalPlanFor(
+    }.getLogicalPlanFor(normalizeNewLines(
       """MATCH (a:A) RETURN a AS a, 1 AS b
         |UNION ALL
         |MATCH (a:B) RETURN 1 AS b, a AS a
         |UNION ALL
         |MATCH (a:C) RETURN a AS a, 1 AS b
-        |""".stripMargin, stripProduceResults = false)
+        |""".stripMargin), stripProduceResults = false)
 
     val Seq(a1, a2, a3, a4, a5) = namespaced("a", 7, 34, 51, 78, 95)
     val Seq(b1, b2, b3, b4, b5) = namespaced("b", 32, 34, 68, 78, 120)
@@ -119,13 +119,13 @@ class UnionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
 
     val (_, logicalPlan, _, _) = new given {
       knownLabels = Set("A", "B", "C")
-    }.getLogicalPlanFor(
+    }.getLogicalPlanFor(normalizeNewLines(
       """MATCH (a:A) RETURN a AS a, 1 AS b
         |UNION
         |MATCH (a:B) RETURN 1 AS b, a AS a
         |UNION
         |MATCH (a:C) RETURN a AS a, 1 AS b
-        |""".stripMargin, stripProduceResults = false)
+        |""".stripMargin), stripProduceResults = false)
 
     val Seq(a1, a2, a3, a4, a5) = namespaced("a", 7, 34, 47, 74, 87)
     val Seq(b1, b2, b3, b4, b5) = namespaced("b", 32, 34, 64, 74, 112)

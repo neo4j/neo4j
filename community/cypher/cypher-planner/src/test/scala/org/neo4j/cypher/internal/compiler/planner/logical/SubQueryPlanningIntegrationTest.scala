@@ -217,14 +217,14 @@ class SubQueryPlanningIntegrationTest extends CypherFunSuite with LogicalPlannin
   }
 
   test("Complex query") {
-    val query =
+    val query = normalizeNewLines(
       """MATCH (x:X)-[r]->(n) WHERE x.prop = 5
         |CALL {
         |  MATCH (y:Y) RETURN sum(y.number) AS sum
         |   UNION
         |  UNWIND range(0, 10) AS i MATCH (x:X) WHERE x.prop = i RETURN sum(x.number) AS sum
         |}
-        |RETURN count(n) AS c, sum""".stripMargin
+        |RETURN count(n) AS c, sum""".stripMargin)
 
     val Seq(x1, x2) = namespaced("x", 7, 130)
     val Seq(sum1, sum2, sum3) = namespaced("sum", 83, 176, 90)
@@ -319,13 +319,13 @@ class SubQueryPlanningIntegrationTest extends CypherFunSuite with LogicalPlannin
   }
 
   test("CALL around correlated union query") {
-    val query =
+    val query = normalizeNewLines(
       """
         |WITH 1 AS x, 2 AS y CALL {
         |  WITH x RETURN x AS z
         |  UNION
         |  WITH y RETURN y AS z
-        |} RETURN z""".stripMargin
+        |} RETURN z""".stripMargin)
 
     val Seq(z49, z53, z80) = namespaced("z", 49, 53, 80)
 
@@ -434,7 +434,7 @@ class SubQueryPlanningIntegrationTest extends CypherFunSuite with LogicalPlannin
   }
 
   test("excessive aliasing should not confuse namespacer") {
-    val query =
+    val query = normalizeNewLines(
       """WITH 1 AS q
         |CALL {
         |  MATCH (a:A)
@@ -445,7 +445,7 @@ class SubQueryPlanningIntegrationTest extends CypherFunSuite with LogicalPlannin
         |  RETURN q AS b, a AS a
         |}
         |RETURN a AS q, b AS a, q AS b
-        |""".stripMargin
+        |""".stripMargin)
 
     val Seq(a28, a59, a83, a134) = namespaced("a", 28, 59, 83, 134)
     val Seq(b55, b59, b102, b142) = namespaced("b", 55, 59, 102, 142)
