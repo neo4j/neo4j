@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
+import org.neo4j.cypher.internal.compiler.planner.logical.CandidateGenerator
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.Expression
@@ -34,31 +35,30 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.functions.Exists
 import org.neo4j.cypher.internal.ir.QueryGraph
-import org.neo4j.cypher.internal.ir.Selections.containsPatternPredicates
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.Selection
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
 import org.neo4j.cypher.internal.util.attribution.SameId
 
-object triadicSelectionFinder extends SelectionCandidateGenerator {
+object triadicSelectionFinder extends CandidateGenerator[LogicalPlan] {
 
-  override def apply(input: LogicalPlan,
-                     unsolvedPredicates: Set[Expression],
-                     queryGraph: QueryGraph,
-                     interestingOrder: InterestingOrder,
-                     context: LogicalPlanningContext): Iterator[SelectionCandidate] = {
-    unsolvedPredicates.iterator.filter(containsPatternPredicates).collect {
+  override def apply(in: LogicalPlan, qg: QueryGraph, interestingOrder: InterestingOrder, context: LogicalPlanningContext): Seq[LogicalPlan] =
+    unsolvedPredicates(in, qg, context.planningAttributes.solveds).collect {
       // WHERE NOT (a)-[:X]->(c)
-      case predicate@Not(Exists(patternExpr: PatternExpression)) =>
-        findMatchingRelationshipPattern(positivePredicate = false, predicate, patternExpr, input, queryGraph, interestingOrder, context)
-          .map(SelectionCandidate(_, Set(predicate)))
+      case predicate@Not(Exists(patternExpr: PatternExpression)) => findMatchingRelationshipPattern(positivePredicate = false, predicate, patternExpr, in, qg, interestingOrder, context)
       // WHERE (a)-[:X]->(c)
-      case predicate@Exists(patternExpr: PatternExpression) =>
-        findMatchingRelationshipPattern(positivePredicate = true, predicate, patternExpr, input, queryGraph, interestingOrder, context)
-          .map(SelectionCandidate(_, Set(predicate)))
+      case predicate@Exists(patternExpr: PatternExpression) => findMatchingRelationshipPattern(positivePredicate = true, predicate, patternExpr, in, qg, interestingOrder, context)
     }.flatten
+
+  def unsolvedPredicates(in: LogicalPlan, qg: QueryGraph, solveds: Solveds) = {
+    val patternPredicates: Seq[Expression] = qg.selections.patternPredicatesGiven(in.availableSymbols)
+    val solvedPredicates: Seq[Expression] = solveds.get(in.id).asSinglePlannerQuery.lastQueryGraph.selections.flatPredicates
+    patternPredicates.filter { patternPredicate =>
+      !(solvedPredicates contains patternPredicate)
+    }
   }
 
   private def findMatchingRelationshipPattern(positivePredicate: Boolean,
@@ -87,10 +87,10 @@ object triadicSelectionFinder extends SelectionCandidateGenerator {
                                       interestingOrder: InterestingOrder,
                                       context: LogicalPlanningContext): Seq[LogicalPlan] = expand match {
     case exp2@Expand(exp1: Expand, _, _, _, _, _, ExpandAll, _) =>
-      findMatchingInnerExpand(positivePredicate, triadicPredicate, patternExpression, incomingPredicates, Seq.empty, exp1, exp2, qg, context)
+      findMatchingInnerExpand(positivePredicate, triadicPredicate, patternExpression, incomingPredicates, Seq.empty, exp1, exp2, qg, interestingOrder, context)
 
     case exp2@Expand(Selection(Ands(innerPredicates), exp1: Expand), _, _, _, _, _, ExpandAll, _) =>
-      findMatchingInnerExpand(positivePredicate, triadicPredicate, patternExpression, incomingPredicates, innerPredicates, exp1, exp2, qg, context)
+      findMatchingInnerExpand(positivePredicate, triadicPredicate, patternExpression, incomingPredicates, innerPredicates.toSeq, exp1, exp2, qg, interestingOrder, context)
 
     case _ => Seq.empty
   }
@@ -103,6 +103,7 @@ object triadicSelectionFinder extends SelectionCandidateGenerator {
                                       exp1: Expand,
                                       exp2: Expand,
                                       qg: QueryGraph,
+                                      interestingOrder: InterestingOrder,
                                       context: LogicalPlanningContext): Seq[LogicalPlan] =
     if (exp1.mode == ExpandAll && exp1.to == exp2.from &&
       matchingLabels(positivePredicate, exp1.to, exp2.to, qg) &&

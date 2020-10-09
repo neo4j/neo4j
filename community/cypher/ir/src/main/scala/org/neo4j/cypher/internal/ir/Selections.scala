@@ -30,7 +30,6 @@ import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.functions.Exists
-import org.neo4j.cypher.internal.ir.Selections.containsPatternPredicates
 import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters.PredicateConverter
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
@@ -54,6 +53,15 @@ case class Selections(predicates: Set[Predicate] = Set.empty) {
   def scalarPredicatesGiven(ids: Set[String]): Seq[Expression] = predicatesGiven(ids).filterNot(containsPatternPredicates)
 
   def patternPredicatesGiven(ids: Set[String]): Seq[Expression] = predicatesGiven(ids).filter(containsPatternPredicates)
+
+  private def containsPatternPredicates(e: Expression): Boolean = e match {
+    case _: ExistsSubClause                => true
+    case Not(_: ExistsSubClause)           => true
+    case Exists(_: PatternExpression)      => true
+    case Not(Exists(_: PatternExpression)) => true
+    case Ors(exprs)                        => exprs.exists(containsPatternPredicates)
+    case _                                 => false
+  }
 
   def flatPredicates: Seq[Expression] =
     predicates.map(_.expr).toIndexedSeq
@@ -119,13 +127,4 @@ case class Selections(predicates: Set[Predicate] = Set.empty) {
 object Selections {
   def from(expressions: Traversable[Expression]): Selections = new Selections(expressions.flatMap(_.asPredicates).toSet)
   def from(expressions: Expression): Selections = new Selections(expressions.asPredicates)
-
-  def containsPatternPredicates(e: Expression): Boolean = e match {
-    case _: ExistsSubClause                => true
-    case Not(_: ExistsSubClause)           => true
-    case Exists(_: PatternExpression)      => true
-    case Not(Exists(_: PatternExpression)) => true
-    case Ors(exprs)                        => exprs.exists(containsPatternPredicates)
-    case _                                 => false
-  }
 }

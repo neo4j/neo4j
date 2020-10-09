@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.patternExpressionRewriter
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.selectPatternPredicates.onePredicate
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.selectPatternPredicates.planPredicates
 import org.neo4j.cypher.internal.expressions.CaseExpression
 import org.neo4j.cypher.internal.expressions.ContainerIndex
@@ -359,11 +360,7 @@ object PatternExpressionSolver {
             // Only plan if the OR contains an EXISTS.
             if (patternExpressions.nonEmpty) {
               val (newPlan, solvedPredicates) = planPredicates(plan, patternExpressions.toSet, expressions.toSet, None, interestingOrder, context)
-              AssertMacros.checkOnlyWhenAssertionsAreEnabled(
-                exprs.forall(solvedPredicates.contains),
-                "planPredicates is supposed to solve all predicates in an OR clause."
-              )
-              val orsPlan = context.logicalPlanProducer.solvePredicateInHorizon(newPlan, ors)
+              val orsPlan = context.logicalPlanProducer.solvePredicateInHorizon(newPlan, onePredicate(solvedPredicates), context)
               (solvedExprs :+ ors, orsPlan)
             } else (solvedExprs, plan)
           case (acc, _) => acc

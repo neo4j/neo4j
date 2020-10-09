@@ -86,10 +86,10 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val inner = Expand(Argument(Set("a")), "a", dir, types, nodeName, patternRel.name, ExpandAll)
 
     // When
-    val result = selectPatternPredicates(aPlan, Set(patternExp), qg, InterestingOrder.empty, context).toSeq
+    val result = selectPatternPredicates(aPlan, qg, InterestingOrder.empty, context)
 
     // Then
-    result should equal(Seq(SelectionCandidate(SemiApply(aPlan, inner), Set(patternExp))))
+    result should equal(Seq(SemiApply(aPlan, inner)))
   }
 
   test("should introduce anti semi apply for unsolved exclusive negated pattern predicate") {
@@ -109,10 +109,10 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val inner = Expand(Argument(Set("a")), "a", dir, types, nodeName, patternRel.name, ExpandAll)
 
     // When
-    val result = selectPatternPredicates(aPlan, Set(notExpr), qg, InterestingOrder.empty, context).toSeq
+    val result = selectPatternPredicates(aPlan, qg, InterestingOrder.empty, context)
 
     // Then
-    result should equal(Seq(SelectionCandidate(AntiSemiApply(aPlan, inner), Set(notExpr))))
+    result should equal(Seq(AntiSemiApply(aPlan, inner)))
   }
 
   test("should introduce semi apply for pattern predicate in EXISTS") {
@@ -132,10 +132,10 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val inner = Expand(Argument(Set("a")), "a", dir, types, nodeName, patternRel.name, ExpandAll)
 
     // When
-    val result = selectPatternPredicates(aPlan, Set(exists), qg, InterestingOrder.empty, context).toSeq
+    val result = selectPatternPredicates(aPlan, qg, InterestingOrder.empty, context)
 
     // Then
-    result should equal(Seq(SelectionCandidate(SemiApply(aPlan, inner), Set(exists))))
+    result should equal(Seq(SemiApply(aPlan, inner)))
   }
 
   test("should introduce semi apply for pattern predicate in EXISTS where node variable comes from outer scope") {
@@ -155,10 +155,10 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val inner = Expand(Argument(Set("a")), "a", dir, types, nodeName, patternRel.name, ExpandAll)
 
     // When
-    val result = selectPatternPredicates(aPlan, Set(exists), qg, InterestingOrder.empty, context).toSeq
+    val result = selectPatternPredicates(aPlan, qg, InterestingOrder.empty, context)
 
     // Then
-    result should equal(Seq(SelectionCandidate(SemiApply(aPlan, inner), Set(exists))))
+    result should equal(Seq(SemiApply(aPlan, inner)))
   }
 
   test("should introduce anti semi apply for negated pattern predicate in EXISTS") {
@@ -178,12 +178,31 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val inner = Expand(Argument(Set("a")), "a", dir, types, nodeName, patternRel.name, ExpandAll)
 
     // When
-    val result = selectPatternPredicates(aPlan, Set(notExists), qg, InterestingOrder.empty, context).toSeq
+    val result = selectPatternPredicates(aPlan, qg, InterestingOrder.empty, context)
 
     // Then
-    result should equal(Seq(SelectionCandidate(AntiSemiApply(aPlan, inner), Set(notExists))))
+    result should equal(Seq(AntiSemiApply(aPlan, inner)))
   }
 
+  test("should not introduce semi apply for unsolved exclusive pattern predicate when nodes not applicable") {
+    // Given
+    val predicate = Predicate(Set("a"), patternExp)
+    val selections = Selections(Set(predicate))
+
+    val qg = QueryGraph(
+      patternNodes = Set("b"),
+      selections = selections
+    )
+
+    val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext())
+
+    val bPlan = newMockedLogicalPlan(context.planningAttributes, "b")
+    // When
+    val result = selectPatternPredicates(bPlan, qg, InterestingOrder.empty, context)
+
+    // Then
+    result should equal(Seq.empty)
+  }
 
   test("should introduce select or semi apply for unsolved pattern predicates in disjunction with expressions") {
     // Given
@@ -204,10 +223,10 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val inner = Expand(argument, "a", dir, types, nodeName, patternRel.name, ExpandAll)
 
     // When
-    val result = selectPatternPredicates(aPlan, Set(orsExp), qg, InterestingOrder.empty, context).toSeq
+    val result = selectPatternPredicates(aPlan, qg, InterestingOrder.empty, context)
 
     // Then
-    result should equal(Seq(SelectionCandidate(SelectOrSemiApply(aPlan, inner, equalsExp), Set(orsExp))))
+    result should equal(Seq(SelectOrSemiApply(aPlan, inner, equalsExp)))
   }
 
     test("should introduce select or semi apply for unsolved exists predicates in disjunction with expressions") {
@@ -230,10 +249,10 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val inner = Expand(argument, "a", dir, types, nodeName, patternRel.name, ExpandAll)
 
     // When
-    val result = selectPatternPredicates(aPlan, Set(orsExp), qg, InterestingOrder.empty, context).toSeq
+    val result = selectPatternPredicates(aPlan, qg, InterestingOrder.empty, context)
 
     // Then
-    result should equal(Seq(SelectionCandidate(SelectOrSemiApply(aPlan, inner, equalsExp), Set(orsExp))))
+    result should equal(Seq(SelectOrSemiApply(aPlan, inner, equalsExp)))
   }
 
   test("should introduce select or anti semi apply for unsolved negated pattern predicates in disjunction with an expression") {
@@ -254,10 +273,10 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val inner = Expand(Argument(Set("a")), "a", dir, types, nodeName, patternRel.name, ExpandAll)
 
     // When
-    val result = selectPatternPredicates(aPlan, Set(orsExp), qg, InterestingOrder.empty, context).toSeq
+    val result = selectPatternPredicates(aPlan, qg, InterestingOrder.empty, context)
 
     // Then
-    result should equal(Seq(SelectionCandidate(SelectOrAntiSemiApply(aPlan, inner, equalsExp), Set(orsExp))))
+    result should equal(Seq(SelectOrAntiSemiApply(aPlan, inner, equalsExp)))
   }
 
   test("should introduce select or anti semi apply for unsolved negated exists predicates in disjunction with an expression") {
@@ -279,10 +298,10 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val inner = Expand(Argument(Set("a")), "a", dir, types, nodeName, patternRel.name, ExpandAll)
 
     // When
-    val result = selectPatternPredicates(aPlan, Set(orsExp), qg, InterestingOrder.empty, context).toSeq
+    val result = selectPatternPredicates(aPlan, qg, InterestingOrder.empty, context)
 
     // Then
-    result should equal(Seq(SelectionCandidate(SelectOrAntiSemiApply(aPlan, inner, equalsExp), Set(orsExp))))
+    result should equal(Seq(SelectOrAntiSemiApply(aPlan, inner, equalsExp)))
   }
 
   test("should introduce let semi apply and select or semi apply for multiple pattern predicates in or") {
@@ -311,11 +330,11 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val inner2 = Expand(Argument(Set("a")), "a", dir, types, "  UNNAMED4", patternRel2.name, ExpandAll)
 
     // When
-    val result = selectPatternPredicates(aPlan, Set(orsExp), qg, InterestingOrder.empty, context).toSeq
+    val result = selectPatternPredicates(aPlan, qg, InterestingOrder.empty, context)
 
     // Then
     result should equal(
-      Seq(SelectionCandidate(SelectOrSemiApply(LetSemiApply(aPlan, inner, "  FRESHID0"), inner2, varFor("  FRESHID0")), Set(orsExp)))
+      Seq(SelectOrSemiApply(LetSemiApply(aPlan, inner, "  FRESHID0"), inner2, varFor("  FRESHID0")))
     )
   }
 
@@ -344,11 +363,11 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val inner2 = Expand(Argument(Set("a")), "a", dir, types, "  UNNAMED4", patternRel2.name, ExpandAll)
 
     // When
-    val result = selectPatternPredicates(aPlan, Set(orsExp), qg, InterestingOrder.empty, context).toSeq
+    val result = selectPatternPredicates(aPlan, qg, InterestingOrder.empty, context)
 
     // Then
     result should equal(
-      Seq(SelectionCandidate(SelectOrAntiSemiApply(LetSemiApply(aPlan, inner, "  FRESHID0"), inner2, varFor("  FRESHID0")), Set(orsExp)))
+      Seq(SelectOrAntiSemiApply(LetSemiApply(aPlan, inner, "  FRESHID0"), inner2, varFor("  FRESHID0")))
     )
   }
 
@@ -377,11 +396,11 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val inner2 = Expand(Argument(Set("a")), "a", dir, types, "  UNNAMED4", patternRel2.name, ExpandAll)
 
     // When
-    val result = selectPatternPredicates(aPlan, Set(orsExp), qg, InterestingOrder.empty, context).toSeq
+    val result = selectPatternPredicates(aPlan, qg, InterestingOrder.empty, context)
 
     // Then
     result should equal(
-      Seq(SelectionCandidate(SelectOrSemiApply(LetAntiSemiApply(aPlan, inner, "  FRESHID0"), inner2, varFor("  FRESHID0")), Set(orsExp)))
+      Seq(SelectOrSemiApply(LetAntiSemiApply(aPlan, inner, "  FRESHID0"), inner2, varFor("  FRESHID0")))
     )
   }
 
@@ -412,13 +431,13 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val inner2 = Expand(Argument(Set("a")), "a", dir, types, "  UNNAMED4", patternRel2.name, ExpandAll)
 
     // When
-    val result = selectPatternPredicates(aPlan, Set(orsExp), qg, InterestingOrder.empty, context).toSeq
+    val result = selectPatternPredicates(aPlan, qg, InterestingOrder.empty, context)
 
     // Then
     result should equal(
-      Seq(SelectionCandidate(SelectOrAntiSemiApply(
+      Seq(SelectOrAntiSemiApply(
         LetSelectOrSemiApply(aPlan, inner, "  FRESHID0", equalsExp), inner2, varFor("  FRESHID0")
-      ), Set(orsExp)))
+      ))
     )
   }
 
@@ -449,13 +468,13 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val inner2 = Expand(Argument(Set("a")), "a", dir, types, "  UNNAMED4", patternRel2.name, ExpandAll)
 
     // When
-    val result = selectPatternPredicates(aPlan, Set(orsExp), qg, InterestingOrder.empty, context).toSeq
+    val result = selectPatternPredicates(aPlan, qg, InterestingOrder.empty, context)
 
     // Then
     result should equal(
-      Seq(SelectionCandidate(SelectOrSemiApply(
+      Seq(SelectOrSemiApply(
         LetSelectOrAntiSemiApply(aPlan, inner, "  FRESHID0", equalsExp), inner2, varFor("  FRESHID0")
-      ), Set(orsExp)))
+      ))
     )
   }
 
@@ -477,11 +496,11 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val inner = Expand(Argument(Set("a")), "a", dir, types, nodeName, patternRel.name, ExpandAll)
 
     // When
-    val result = selectPatternPredicates(aPlan, Set(orsExp), qg, InterestingOrder.empty, context).toSeq
+    val result = selectPatternPredicates(aPlan, qg, InterestingOrder.empty, context)
 
     // Then
     result should equal(
-      Seq(SelectionCandidate(SelectOrSemiApply(LetSemiApply(aPlan, inner, "  FRESHID0"), inner, varFor("  FRESHID0")), Set(orsExp)))
+      Seq(SelectOrSemiApply(LetSemiApply(aPlan, inner, "  FRESHID0"), inner, varFor("  FRESHID0")))
     )
   }
 
@@ -503,13 +522,13 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val inner = Expand(Argument(Set("a")), "a", dir, types, nodeName, patternRel.name, ExpandAll)
 
     // When
-    val result = selectPatternPredicates(aPlan, Set(orsExp), qg, InterestingOrder.empty, context).toSeq
+    val result = selectPatternPredicates(aPlan, qg, InterestingOrder.empty, context)
 
     // Then
     result should equal(
-      Seq(SelectionCandidate(SelectOrSemiApply(
+      Seq(SelectOrSemiApply(
         LetAntiSemiApply(aPlan, inner, "  FRESHID0"), inner, varFor("  FRESHID0")
-      ), Set(orsExp)))
+      ))
     )
   }
 }
