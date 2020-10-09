@@ -22,8 +22,11 @@ package org.neo4j.cypher.internal
 import org.neo4j.common.DependencyResolver
 import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.configuration.helpers.NormalizedDatabaseName
+import org.neo4j.cypher.internal.ast.AdminAction
 import org.neo4j.cypher.internal.ast.DefaultDatabaseScope
 import org.neo4j.cypher.internal.ast.NamedDatabaseScope
+import org.neo4j.cypher.internal.ast.StartDatabaseAction
+import org.neo4j.cypher.internal.ast.StopDatabaseAction
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.logical.plans.AlterUser
 import org.neo4j.cypher.internal.logical.plans.AssertDatabaseAdmin
@@ -59,7 +62,6 @@ import org.neo4j.graphdb.Label
 import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.RelationshipType.withName
 import org.neo4j.graphdb.Transaction
-import org.neo4j.graphdb.security.AuthorizationViolationException.PERMISSION_DENIED
 import org.neo4j.internal.kernel.api.security.AccessMode
 import org.neo4j.internal.kernel.api.security.AdminActionOnResource
 import org.neo4j.internal.kernel.api.security.AdminActionOnResource.DatabaseScope
@@ -108,19 +110,26 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
   val checkShowUserPrivilegesText = "Try executing SHOW USER PRIVILEGES to determine the missing or denied privileges. " +
     "In case of missing privileges, they need to be granted (See GRANT). In case of denied privileges, they need to be revoked (See REVOKE) and granted."
 
-  def logicalToExecutable: PartialFunction[LogicalPlan, (RuntimeContext, ParameterMapping) => ExecutionPlan] = {
+  def prettifyActionName (actions: AdminAction*) : String = {
+    actions.map{
+      case StartDatabaseAction => "START DATABASE"
+      case StopDatabaseAction => "STOP DATABASE"
+      case a => a.name
+    }.sorted.mkString(" and/or ")
+  }
 
+  def logicalToExecutable: PartialFunction[LogicalPlan, (RuntimeContext, ParameterMapping) => ExecutionPlan] = {
     // Check Admin Rights for DBMS commands
     case AssertDbmsAdmin(actions) => (_, _) =>
       AuthorizationPredicateExecutionPlan((_, securityContext) => actions.forall { action =>
         securityContext.allowsAdminAction(new AdminActionOnResource(ActionMapper.asKernelAction(action), DatabaseScope.ALL, Segment.ALL))
-      }, violationMessage = "Permission denied for " + actions.map(a => a.name).sorted.mkString(" and/or ") + ". " + checkShowUserPrivilegesText)  //sorting is important to keep error messages stable
+      }, violationMessage = "Permission denied for " + prettifyActionName(actions:_*) + ". " + checkShowUserPrivilegesText)  //sorting is important to keep error messages stable
 
     // Check Admin Rights for DBMS commands or self
     case AssertDbmsAdminOrSelf(user, actions) => (_, _) =>
       AuthorizationPredicateExecutionPlan((params, securityContext) => securityContext.subject().hasUsername(runtimeValue(user, params)) || actions.forall { action =>
         securityContext.allowsAdminAction(new AdminActionOnResource(ActionMapper.asKernelAction(action), DatabaseScope.ALL, Segment.ALL))
-      }, violationMessage = "Permission denied for " + actions.map(a => a.name).sorted.mkString(" and/or ") + ". " + checkShowUserPrivilegesText)  //sorting is important to keep error messages stable
+      }, violationMessage = "Permission denied for " + prettifyActionName(actions:_*) + ". " + checkShowUserPrivilegesText)  //sorting is important to keep error messages stable
 
     // Check that the specified user is not the logged in user (eg. for some CREATE/DROP/ALTER USER commands)
     case AssertNotCurrentUser(source, userName, verb, violationMessage) => (context, parameterMapping) =>
@@ -133,7 +142,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
     case AssertDatabaseAdmin(action, database) => (_, _) =>
       AuthorizationPredicateExecutionPlan((params, securityContext) =>
         securityContext.allowsAdminAction(new AdminActionOnResource(ActionMapper.asKernelAction(action), new DatabaseScope(runtimeValue(database, params)), Segment.ALL)),
-        violationMessage = "Permission denied for " + action.name + ". " + checkShowUserPrivilegesText
+        violationMessage = "Permission denied for " + prettifyActionName(action) + ". " + checkShowUserPrivilegesText
       )
 
     // SHOW USERS
