@@ -755,11 +755,7 @@ final case class ShowPrivilegeCommands(scope: ShowPrivilegeScope,
 
 object ShowPrivilegeCommands{
   def apply(scope: ShowPrivilegeScope, asRevoke: Boolean, yieldOrWhere: YieldOrWhere)(position:InputPosition): ShowPrivilegeCommands = {
-    val columns = List(ShowColumn("access")(position), ShowColumn("action")(position), ShowColumn("resource")(position),
-      ShowColumn("graph")(position), ShowColumn("segment")(position), ShowColumn("role")(position)) ++ (scope match {
-      case _: ShowUserPrivileges | _: ShowUsersPrivileges => List(ShowColumn("user")(position))
-      case _ => List.empty
-    })
+    val columns = List(ShowColumn("command")(position))
     ShowPrivilegeCommands(scope, asRevoke, yieldOrWhere, columns)(position)
   }
 }
