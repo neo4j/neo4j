@@ -22,6 +22,7 @@ package org.neo4j.io.layout;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -37,6 +38,7 @@ import static java.util.stream.Collectors.toSet;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 @Neo4jLayoutExtension
 class DatabaseLayoutTest
@@ -62,7 +64,18 @@ class DatabaseLayoutTest
         Path basePath = testDirectory.homePath();
         Path databaseDir = databaseLayout.databaseDirectory();
         Path linkPath = basePath.resolve( "link" );
-        Path symbolicLink = Files.createSymbolicLink( linkPath, databaseDir );
+        Path symbolicLink = null;
+        try
+        {
+            symbolicLink = Files.createSymbolicLink( linkPath, databaseDir );
+        }
+        catch ( FileSystemException e )
+        {
+            if ( e.getMessage().contains( "privilege" ) )
+            {
+                assumeTrue( false, "Permission issues creating symbolic links in this environment: " + e );
+            }
+        }
         DatabaseLayout databaseLayout = DatabaseLayout.ofFlat( symbolicLink );
         assertEquals( databaseLayout.databaseDirectory(), databaseDir );
     }

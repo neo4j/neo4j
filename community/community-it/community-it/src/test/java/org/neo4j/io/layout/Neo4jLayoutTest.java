@@ -22,6 +22,7 @@ package org.neo4j.io.layout;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
@@ -34,6 +35,7 @@ import org.neo4j.test.rule.TestDirectory;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.databases_root_path;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASES_ROOT_DIR_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATA_DIR_NAME;
@@ -59,7 +61,18 @@ class Neo4jLayoutTest
         Path basePath = testDirectory.homePath();
         Path storeDir = testDirectory.homePath("notAbsolute");
         Path linkPath = basePath.resolve( "link" );
-        Path symbolicLink = Files.createSymbolicLink( linkPath, storeDir );
+        Path symbolicLink = null;
+        try
+        {
+            symbolicLink = Files.createSymbolicLink( linkPath, storeDir );
+        }
+        catch ( FileSystemException e )
+        {
+            if ( e.getMessage().contains( "privilege" ) )
+            {
+                assumeTrue( false, "Permission issues creating symbolic links in this environment: " + e );
+            }
+        }
         Neo4jLayout storeLayout = Neo4jLayout.of( Config.defaults( databases_root_path, symbolicLink ) );
         assertEquals( storeDir, storeLayout.databasesDirectory() );
     }
