@@ -154,7 +154,7 @@ class CartesianProductsOrValueJoinsTest extends CypherFunSuite with LogicalPlann
         .map(plan => PlannedComponent(QueryGraph(patternNodes = plan.availableSymbols), BestResults(plan, None)))
       val plans: Set[PlannedComponent] = bestPlanComponents + bestSortedPlanComponent
 
-      val result = cartesianProductsOrValueJoins.planLotsOfCartesianProducts(plans, cfg.qg, context, kit, considerSelections = false)
+      val result = cartesianProductsOrValueJoins.planLotsOfCartesianProducts(plans, cfg.qg, context, kit)
 
       // The cost of label scans is n2 < n1 < n0 < n3. Thus, this is the order we expect in the CartesianProducts.
       result.plan.bestResult should beLike {
