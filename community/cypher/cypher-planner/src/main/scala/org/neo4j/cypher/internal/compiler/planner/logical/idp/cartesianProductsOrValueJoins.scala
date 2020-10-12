@@ -264,7 +264,7 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
       planNIJ(lhsPlan, rhsInputPlan, lhsQG, rhsQG, interestingOrder, predicate, context, kit, singleComponentPlanner).map {
         result =>
           val resultWithSelection = kit.select(result, fullQG)
-          PlannedComponent(context.planningAttributes.solveds.get(resultWithSelection.id).asSinglePlannerQuery.lastQueryGraph, BestResults(result, None))
+          PlannedComponent(context.planningAttributes.solveds.get(resultWithSelection.id).asSinglePlannerQuery.lastQueryGraph, BestResults(resultWithSelection, None))
       }
     }
   }
