@@ -109,6 +109,7 @@ import org.neo4j.token.TokenHolders;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
+import static java.lang.System.currentTimeMillis;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.experimental_consistency_checker;
@@ -118,6 +119,8 @@ import static org.neo4j.internal.index.label.RelationshipTypeScanStoreSettings.e
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.store.record.Record.NO_LABELS_FIELD;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+import static org.neo4j.values.storable.Values.intValue;
 
 @ExtendWith( {TestDirectorySupportExtension.class, RandomExtension.class} )
 public class DetectRandomSabotageIT
@@ -854,6 +857,48 @@ public class DetectRandomSabotageIT
                         }
                         String description = String.format( "%s relationshipTypeId:%d relationship:%s", operation, typeId, relationshipRecord );
                         return new Sabotage( description, relationshipRecord.toString() );
+                    }
+                },
+        GRAPH_ENTITY_USES_INTERNAL_TOKEN
+                {
+                    @Override
+                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies ) throws Exception
+                    {
+                        TokenHolders tokenHolders = otherDependencies.resolveDependency( TokenHolders.class );
+                        String tokenName = "Token-" + currentTimeMillis();
+                        int[] tokenId = new int[1];
+                        switch ( random.nextInt( 3 ) )
+                        {
+                        case 0: // node label
+                        {
+                            tokenHolders.labelTokens().getOrCreateInternalIds( new String[]{tokenName}, tokenId );
+                            NodeRecord node = randomRecord( random, stores.getNodeStore(), usedRecord() );
+                            NodeLabelsField.parseLabelsField( node ).add( tokenId[0], stores.getNodeStore(), stores.getNodeStore().getDynamicLabelStore(),
+                                    NULL, INSTANCE );
+                            stores.getNodeStore().updateRecord( node, NULL );
+                            return new Sabotage( "Node has label token which is internal", node.toString() );
+                        }
+                        case 1: // property
+                        {
+                            tokenHolders.propertyKeyTokens().getOrCreateInternalIds( new String[]{tokenName}, tokenId );
+                            PropertyRecord property = randomRecord( random, stores.getPropertyStore(), usedRecord() );
+                            PropertyBlock block = property.iterator().next();
+                            property.removePropertyBlock( block.getKeyIndexId() );
+                            PropertyBlock newBlock = new PropertyBlock();
+                            stores.getPropertyStore().encodeValue( newBlock, tokenId[0], intValue( 11 ), NULL, INSTANCE );
+                            property.addPropertyBlock( newBlock );
+                            stores.getPropertyStore().updateRecord( property, NULL );
+                            return new Sabotage( "Property has key which is internal", property.toString() );
+                        }
+                        default: // relationship type
+                        {
+                            tokenHolders.relationshipTypeTokens().getOrCreateInternalIds( new String[]{tokenName}, tokenId );
+                            RelationshipRecord relationship = randomRecord( random, stores.getRelationshipStore(), usedRecord() );
+                            relationship.setType( tokenId[0] );
+                            stores.getRelationshipStore().updateRecord( relationship, NULL );
+                            return new Sabotage( "Relationship has type which is internal", relationship.toString() );
+                        }
+                        }
                     }
                 };
 
