@@ -21,6 +21,26 @@ package org.neo4j.cypher.internal.runtime.debug
 
 object DebugSupport {
 
+  /** DEBUG CONFIGURATION **/
+
+  final val PHYSICAL_PLANNING = new DebugLog(false, "")
+
+  final val TIMELINE = new DebugTimeline(false)
+
+  final val WORKERS = new DebugLog(false, "")
+  final val QUERIES = new DebugLog(false, "")
+  final val TRACKER = new DebugLog(false, Yellow)
+  final val LOCKS = new DebugLog(false, Blue)
+  final val ERROR_HANDLING = new DebugLog(false, Red)
+  final val CURSORS = new DebugLog(false, "")
+  final val BUFFERS = new DebugLog(false, Magenta)
+  final val SCHEDULING = new DebugLog(false, Cyan)
+  final val ASM = new DebugLog(false, "")
+
+  final val DEBUG_PIPELINES = false
+
+  final val DEBUG_GENERATED_SOURCE_CODE: Boolean = false
+
   /** COLORS AND FORMATTING **/
 
   final val Black   = "\u001b[30m"
@@ -37,23 +57,6 @@ object DebugSupport {
   final val Reversed  = "\u001b[7m"
 
   final val Reset   = "\u001b[0m"
-
-  /** DEBUG CONFIGURATION **/
-  final val PHYSICAL_PLANNING = new DebugLog(false, "")
-
-  final val TIMELINE = new DebugTimeline(false)
-
-  final val WORKERS = new DebugLog(false, "")
-  final val QUERIES = new DebugLog(false, "")
-  final val TRACKER = new DebugLog(false, Yellow)
-  final val LOCKS = new DebugLog(false, Blue)
-  final val ERROR_HANDLING = new DebugLog(false, Red)
-  final val CURSORS = new DebugLog(false, "")
-  final val BUFFERS = new DebugLog(false, Magenta)
-  final val SCHEDULING = new DebugLog(false, Cyan)
-  final val ASM = new DebugLog(false, "")
-
-  final val DEBUG_PIPELINES = false
 
   /** TOOLING **/
 

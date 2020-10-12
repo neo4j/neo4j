@@ -24,14 +24,22 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 class DebugSupportTest extends CypherFunSuite {
 
   test("I think you forgot to disable DebugSupport after debugging...") {
+    DebugSupport.PHYSICAL_PLANNING.enabled shouldBe false
+
+    DebugSupport.TIMELINE.enabled shouldBe false
+
     DebugSupport.WORKERS.enabled shouldBe false
+    DebugSupport.QUERIES.enabled shouldBe false
     DebugSupport.TRACKER.enabled shouldBe false
     DebugSupport.LOCKS.enabled shouldBe false
     DebugSupport.ERROR_HANDLING.enabled shouldBe false
     DebugSupport.CURSORS.enabled shouldBe false
-    DebugSupport.DEBUG_PIPELINES shouldBe false
     DebugSupport.BUFFERS.enabled shouldBe false
     DebugSupport.SCHEDULING.enabled shouldBe false
     DebugSupport.ASM.enabled shouldBe false
+
+    DebugSupport.DEBUG_PIPELINES shouldBe false
+
+    DebugSupport.DEBUG_GENERATED_SOURCE_CODE shouldBe false
   }
 }

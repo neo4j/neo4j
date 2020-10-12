@@ -59,6 +59,9 @@ object CodeGeneration {
   private val DEBUG_PRINT_SOURCE = false
   private val DEBUG_PRINT_BYTECODE = false
 
+  final val GENERATE_JAVA_SOURCE_DEBUG_OPTION = "generate_java_source"
+  final val GENERATED_SOURCE_LOCATION_PROPERTY = "org.neo4j.cypher.DEBUG.generated_source_location"
+
   sealed trait CodeGenerationMode {
     def saver: CodeSaver
   }
@@ -67,8 +70,8 @@ object CodeGeneration {
 
   object CodeGenerationMode {
     def fromDebugOptions(debugOptions: Set[String]): CodeGenerationMode = {
-      if(debugOptions.contains("generate_java_source")) {
-        val saveSourceToFileLocation = Option(System.getProperty("org.neo4j.cypher.DEBUG.generated_source_location")).map(Paths.get(_))
+      if(debugOptions.contains(GENERATE_JAVA_SOURCE_DEBUG_OPTION)) {
+        val saveSourceToFileLocation = Option(System.getProperty(GENERATED_SOURCE_LOCATION_PROPERTY)).map(Paths.get(_))
         val saver = new CodeSaver(debugOptions.contains("show_java_source"), debugOptions.contains("show_bytecode"), saveSourceToFileLocation)
         SourceCodeGeneration(saver)
       } else {

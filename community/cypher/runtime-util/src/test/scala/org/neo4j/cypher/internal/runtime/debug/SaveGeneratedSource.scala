@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.runtime.spec
+package org.neo4j.cypher.internal.runtime.debug
 
 import java.nio.file.FileVisitResult
 import java.nio.file.FileVisitResult.CONTINUE
@@ -27,7 +27,7 @@ import java.nio.file.Paths
 import java.nio.file.SimpleFileVisitor
 import java.nio.file.attribute.BasicFileAttributes
 
-import org.neo4j.cypher.internal.runtime.spec.SaveGeneratedSource.GENERATED_SOURCE_LOCATION
+import org.neo4j.codegen.api.CodeGeneration.GENERATED_SOURCE_LOCATION_PROPERTY
 import org.neo4j.cypher.internal.util.test_helpers.CypherTestSupport
 
 /**
@@ -65,7 +65,7 @@ trait SaveGeneratedSource extends CypherTestSupport {
         && Files.isDirectory(cwd.resolve("target"))) {
         setLocation(cwd.resolve("target").resolve("generated-test-sources").resolve("cypher"))
       } else {
-        System.err.println(
+        throw new IllegalArgumentException(
           s"""Could not resolve directory for saving generated source code relative to current working directory '$cwd'.
              |Make sure the working directory in your debug configuration is set to the directory of the Maven module containing the test.""".stripMargin)
       }
@@ -75,12 +75,12 @@ trait SaveGeneratedSource extends CypherTestSupport {
   private def setLocation(location: Path) = {
     System.err.println(s"Will save generated sources to $location")
     generatedSources = Some(location)
-    System.setProperty(GENERATED_SOURCE_LOCATION, location.toString)
+    System.setProperty(GENERATED_SOURCE_LOCATION_PROPERTY, location.toString)
   }
 
   override protected def stopTest(): Unit = {
     if (saveGeneratedSourceEnabled) {
-      System.clearProperty(GENERATED_SOURCE_LOCATION)
+      System.clearProperty(GENERATED_SOURCE_LOCATION_PROPERTY)
       if (!keepSourceFilesAfterTestFinishes) {
         generatedSources.foreach { location =>
           Files.walkFileTree(location, new SimpleFileVisitor[Path] {
@@ -94,9 +94,5 @@ trait SaveGeneratedSource extends CypherTestSupport {
     }
     super.stopTest()
   }
-}
-
-private object SaveGeneratedSource {
-  private val GENERATED_SOURCE_LOCATION = "org.neo4j.cypher.DEBUG.generated_source_location"
 }
 
