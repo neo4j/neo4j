@@ -179,7 +179,7 @@ public final class CursorUtils
      * @param read The current Read instance
      * @param relationshipCursor The relationship cursor to use
      * @param relationship The id of the relationship
-     * @param type The id of the tyoe
+     * @param type The id of the type
      * @return {@code true} if the relationship has the type, otherwise {@code false}
      */
     public static boolean relationshipHasType( Read read, RelationshipScanCursor relationshipCursor, long relationship, int type )
@@ -365,4 +365,3 @@ public final class CursorUtils
         }
     }
 }
-

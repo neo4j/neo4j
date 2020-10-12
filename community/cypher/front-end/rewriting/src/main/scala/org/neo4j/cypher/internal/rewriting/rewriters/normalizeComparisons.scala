@@ -52,7 +52,7 @@ case object normalizeComparisons extends Rewriter {
       val hasLabels = labels.map(l => HasLabels(expr.endoRewrite(copyVariables), Seq(l))(c.position))
       Ands(hasLabels)(c.position)
     case c@HasTypes(expr, types) if types.size > 1 =>
-      val hasLabels = types.map(l => HasTypes(expr.endoRewrite(copyVariables), Seq(l))(c.position))
-      Ands(hasLabels)(c.position)
+      val hasTypes = types.map(t => HasTypes(expr.endoRewrite(copyVariables), Seq(t))(c.position))
+      Ands(hasTypes)(c.position)
   })
 }
