@@ -31,7 +31,7 @@ class PatternParser
 {
   private val ID = "([a-zA-Z0-9` @]*)"
   private val REL_TYPES = "([a-zA-Z_|]*)"
-  private val regex = s"\\($ID\\)(<?)-\\[?$ID:?$REL_TYPES(\\*?)([0-9]*)\\.?\\.?([0-9]*)\\]?-(>?)\\($ID\\)".r
+  private val regex = s"\\($ID\\)(<?)-\\[?$ID:?$REL_TYPES(\\*?)([0-9]*)(\\.?\\.?)([0-9]*)\\]?-(>?)\\($ID\\)".r
   private var unnamedCount = 0
 
   private def nextUnnamed(): String = {
@@ -41,7 +41,7 @@ class PatternParser
 
   def parse(pattern: String): Pattern = {
     pattern match {
-      case regex(from, incoming, relName, relTypesStr, star, min, max, outgoing, to) =>
+      case regex(from, incoming, relName, relTypesStr, star, min, dots, max, outgoing, to) =>
         val dir = (incoming, outgoing) match {
           case ("<", "") => SemanticDirection.INCOMING
           case ("", ">") => SemanticDirection.OUTGOING
@@ -52,12 +52,13 @@ class PatternParser
           if (relTypesStr.isEmpty) Seq.empty
           else relTypesStr.split("\\|").toSeq.map(x => RelTypeName(x)(NONE))
         val length =
-          (star, min, max) match {
-            case ("", "", "")  => SimplePatternLength
-            case ("*", "", "") => VarPatternLength(0, None)
-            case ("*", x, "")  => VarPatternLength(x.toInt, Some(x.toInt))
-            case ("*", "", _)  => VarPatternLength(0, Some(max.toInt))
-            case ("*", _, _)   => VarPatternLength(min.toInt, Some(max.toInt))
+          (star, min, dots, max) match {
+            case ("", "", "", "")  => SimplePatternLength
+            case ("*", "", "", "") => VarPatternLength(0, None)
+            case ("*", x, "..", "")  => VarPatternLength(x.toInt, None)
+            case ("*", x, "", "")  => VarPatternLength(x.toInt, Some(x.toInt))
+            case ("*", "", "..", _)  => VarPatternLength(0, Some(max.toInt))
+            case ("*", _, "..", _)   => VarPatternLength(min.toInt, Some(max.toInt))
             case _ => throw new UnsupportedOperationException(s"$star, $min, $max is not a supported variable length identifier")
           }
         val relNameOrUnnamed =

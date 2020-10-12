@@ -84,4 +84,8 @@ class PatternParserTest extends CypherFunSuite with TestName {
   test("(a)-[:R*..2]-(b)") {
     patternParser.parse(testName) should be(Pattern("a", BOTH, Seq(RelTypeName("R")(NONE)), "UNNAMED9", "b", VarPatternLength(0, Some(2))))
   }
+
+  test("(a)-[:R*2..]-(b)") {
+    patternParser.parse(testName) should be(Pattern("a", BOTH, Seq(RelTypeName("R")(NONE)), "UNNAMED10", "b", VarPatternLength(2, None)))
+  }
 }
