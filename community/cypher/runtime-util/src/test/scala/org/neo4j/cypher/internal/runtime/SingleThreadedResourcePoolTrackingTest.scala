@@ -34,33 +34,36 @@ import org.neo4j.memory.LocalMemoryTracker
  */
 class SingleThreadedResourcePoolTrackingTest extends CypherFunSuite {
 
-  private val meter = new MemoryMeter()
-  private val memoryTracker = new LocalMemoryTracker()
-  private val pool = new SingleThreadedResourcePool(16, ResourceMonitor.NOOP, memoryTracker)
   private val random = ThreadLocalRandom.current()
 
-  override protected def afterEach(): Unit = {
-    pool.closeAll()
-    memoryTracker.estimatedHeapMemory() shouldBe 0L
-  }
-
   test("add and measure") {
+    //given
+    val meter = new MemoryMeter()
+    val memoryTracker = new LocalMemoryTracker()
+    val pool = new SingleThreadedResourcePool(16, ResourceMonitor.NOOP, memoryTracker)
     val iterations = random.nextInt(10, 1000)
+
+    //when
     (0 until iterations).foreach(_ => pool.add(new TestResource))
 
+    //then
     val itemSize = meter.measure(new TestResource) * iterations
     val actualSize = meter.measureDeep(pool) - meter.measureDeep(memoryTracker) - meter.measureDeep(ResourceMonitor.NOOP) - itemSize
 
     actualSize should equal(memoryTracker.estimatedHeapMemory())
+
+    //make sure we are not leaking memory
+    pool.closeAll()
+    memoryTracker.estimatedHeapMemory() shouldBe 0L
   }
 }
 
 object SingleThreadedResourcePoolTrackingTest {
   class TestResource extends AutoCloseablePlus {
-    override def close(): Unit = ???
-    override def closeInternal(): Unit = ???
-    override def isClosed: Boolean = ???
-    override def setCloseListener(closeListener: CloseListener): Unit = ???
+    override def close(): Unit = {}
+    override def closeInternal(): Unit = {}
+    override def isClosed: Boolean = false
+    override def setCloseListener(closeListener: CloseListener): Unit = {}
     override def setToken(token: Int): Unit = {}
     override def getToken: Int = ???
   }
