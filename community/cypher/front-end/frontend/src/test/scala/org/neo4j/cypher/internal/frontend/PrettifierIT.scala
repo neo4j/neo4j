@@ -338,6 +338,32 @@ class PrettifierIT extends CypherFunSuite {
           |UNION ALL
           |RETURN $node AS n""".stripMargin,
 
+      "Show Users" ->
+        "SHOW USERS",
+
+      "Show Users where user = 'neo4j'" ->
+        """SHOW USERS
+          |  WHERE user = "neo4j"""".stripMargin,
+
+      "Show Users YIELD * where user = 'neo4j' Return *" ->
+        """SHOW USERS
+          |  YIELD *
+          |    WHERE user = "neo4j"
+          |  RETURN *""".stripMargin,
+
+      "Show Users YIELD * Return DISTINCT roles, user" ->
+        """SHOW USERS
+          |  YIELD *
+          |  RETURN DISTINCT roles, user""".stripMargin,
+
+      "show users yield user order by user skip 1 limit 1 where user='neo4j'" ->
+        """SHOW USERS
+          |  YIELD user
+          |    ORDER BY user ASCENDING
+          |    SKIP 1
+          |    LIMIT 1
+          |    WHERE user = "neo4j"""".stripMargin,
+
       "create user abc set password 'foo'" ->
         "CREATE USER abc SET PASSWORD '******' CHANGE REQUIRED",
 
@@ -464,6 +490,110 @@ class PrettifierIT extends CypherFunSuite {
       "alter current user set password from $currentPassword to $newPassword" ->
         "ALTER CURRENT USER SET PASSWORD FROM $currentPassword TO $newPassword",
 
+      "Show Roles" ->
+        "SHOW ALL ROLES",
+
+      "Show roles where role = 'admin'" ->
+        """SHOW ALL ROLES
+          |  WHERE role = "admin"""".stripMargin,
+
+      "Show Roles YIELD * where role = 'admin' Return *" ->
+        """SHOW ALL ROLES
+          |  YIELD *
+          |    WHERE role = "admin"
+          |  RETURN *""".stripMargin,
+
+      "Show Roles YIELD * Return DISTINCT role" ->
+        """SHOW ALL ROLES
+          |  YIELD *
+          |  RETURN DISTINCT role""".stripMargin,
+
+      "show roles yield role order by role skip 1 limit 1 where role='admin'" ->
+        """SHOW ALL ROLES
+          |  YIELD role
+          |    ORDER BY role ASCENDING
+          |    SKIP 1
+          |    LIMIT 1
+          |    WHERE role = "admin"""".stripMargin,
+
+      "Show Roles with users" ->
+        "SHOW ALL ROLES WITH USERS",
+
+      "Show roles with users where role = 'admin'" ->
+        """SHOW ALL ROLES WITH USERS
+          |  WHERE role = "admin"""".stripMargin,
+
+      "Show roles with users YIELD * where member = 'neo4j' Return *" ->
+        """SHOW ALL ROLES WITH USERS
+          |  YIELD *
+          |    WHERE member = "neo4j"
+          |  RETURN *""".stripMargin,
+
+      "Show roles with users YIELD * Return DISTINCT member, role" ->
+        """SHOW ALL ROLES WITH USERS
+          |  YIELD *
+          |  RETURN DISTINCT member, role""".stripMargin,
+
+      "show roles with users yield member order by member skip 1 limit 1 where member='neo4j'" ->
+        """SHOW ALL ROLES WITH USERS
+          |  YIELD member
+          |    ORDER BY member ASCENDING
+          |    SKIP 1
+          |    LIMIT 1
+          |    WHERE member = "neo4j"""".stripMargin,
+
+      "Show Populated Roles" ->
+        "SHOW POPULATED ROLES",
+
+      "Show Populated roles where role = 'admin'" ->
+        """SHOW POPULATED ROLES
+          |  WHERE role = "admin"""".stripMargin,
+
+      "Show populated Roles YIELD * where role = 'admin' Return *" ->
+        """SHOW POPULATED ROLES
+          |  YIELD *
+          |    WHERE role = "admin"
+          |  RETURN *""".stripMargin,
+
+      "Show populated Roles YIELD * Return DISTINCT role" ->
+        """SHOW POPULATED ROLES
+          |  YIELD *
+          |  RETURN DISTINCT role""".stripMargin,
+
+      "show Populated roles yield role order by role skip 1 limit 1 where role='admin'" ->
+        """SHOW POPULATED ROLES
+          |  YIELD role
+          |    ORDER BY role ASCENDING
+          |    SKIP 1
+          |    LIMIT 1
+          |    WHERE role = "admin"""".stripMargin,
+
+      "Show Populated Roles with users" ->
+        "SHOW POPULATED ROLES WITH USERS",
+
+      "Show Populated roles with users where member = 'neo4j'" ->
+        """SHOW POPULATED ROLES WITH USERS
+          |  WHERE member = "neo4j"""".stripMargin,
+
+      "Show populated roles with users YIELD * where role = 'admin' Return *" ->
+        """SHOW POPULATED ROLES WITH USERS
+          |  YIELD *
+          |    WHERE role = "admin"
+          |  RETURN *""".stripMargin,
+
+      "Show populated roles with users YIELD * Return DISTINCT member, role" ->
+        """SHOW POPULATED ROLES WITH USERS
+          |  YIELD *
+          |  RETURN DISTINCT member, role""".stripMargin,
+
+      "show Populated roles with users yield member order by member skip 1 limit 1 where member='neo4j'" ->
+        """SHOW POPULATED ROLES WITH USERS
+          |  YIELD member
+          |    ORDER BY member ASCENDING
+          |    SKIP 1
+          |    LIMIT 1
+          |    WHERE member = "neo4j"""".stripMargin,
+
       "create role abc" ->
         "CREATE ROLE abc",
 
@@ -555,8 +685,19 @@ class PrettifierIT extends CypherFunSuite {
         """SHOW ALL PRIVILEGES
           |  WHERE action = "match"""".stripMargin,
 
-      "show users yield user order by user skip 1 limit 1 where user='neo4j'" ->
-        """SHOW USERS
+      "Show privileges YIELD * where action = 'match' Return *" ->
+        """SHOW ALL PRIVILEGES
+          |  YIELD *
+          |    WHERE action = "match"
+          |  RETURN *""".stripMargin,
+
+      "Show privileges YIELD * Return DISTINCT action, role" ->
+        """SHOW ALL PRIVILEGES
+          |  YIELD *
+          |  RETURN DISTINCT action, role""".stripMargin,
+
+      "show user privileges yield user order by user skip 1 limit 1 where user='neo4j'" ->
+        """SHOW USER PRIVILEGES
           |  YIELD user
           |    ORDER BY user ASCENDING
           |    SKIP 1
@@ -607,6 +748,17 @@ class PrettifierIT extends CypherFunSuite {
 
       "catalog show databases" ->
         "SHOW DATABASES",
+
+      "Show Databases YIELD * where name = 'neo4j' Return *" ->
+        """SHOW DATABASES
+          |  YIELD *
+          |    WHERE name = "neo4j"
+          |  RETURN *""".stripMargin,
+
+      "Show Databases YIELD * Return DISTINCT default, name" ->
+        """SHOW DATABASES
+          |  YIELD *
+          |  RETURN DISTINCT default, name""".stripMargin,
 
       "catalog show default database" ->
         "SHOW DEFAULT DATABASE",
