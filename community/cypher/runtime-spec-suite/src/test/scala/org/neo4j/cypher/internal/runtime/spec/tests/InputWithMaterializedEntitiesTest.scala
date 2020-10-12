@@ -125,7 +125,7 @@ abstract class InputWithMaterializedEntitiesTest[CONTEXT <: RuntimeContext](edit
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("name")
       .projection("n.name AS name")
-      .filterExpression(hasLabels("n", "Person"))
+      .filter("n:Person")
       .input(variables = Seq("n"))
       .build()
 
