@@ -78,6 +78,11 @@ public class ConsistencyFlags
         return checkPropertyOwners;
     }
 
+    public ConsistencyFlags withCheckRelationshipTypeScanStore( boolean check )
+    {
+        return new ConsistencyFlags( checkGraph, checkIndexes, checkIndexStructure, checkLabelScanStore, check, checkPropertyOwners );
+    }
+
     @Override
     public boolean equals( Object o )
     {

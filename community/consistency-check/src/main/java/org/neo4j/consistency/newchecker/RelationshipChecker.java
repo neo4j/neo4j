@@ -205,7 +205,7 @@ class RelationshipChecker implements Checker
                 }
                 observedCounts.incrementRelationshipNodeCounts( counter, relationshipCursor, startNodeIsWithinRange, endNodeIsWithinRange );
             }
-            if ( !context.isCancelled() )
+            if ( !context.isCancelled() && context.consistencyFlags.isCheckRelationshipTypeScanStore() )
             {
                 reportRemainingRelationshipTypeIndexEntries( relationshipTypeRangeIterator, typeIndexState, last ? Long.MAX_VALUE : toRelationshipId,
                         cursorTracer );

@@ -49,6 +49,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.neo4j.consistency.checking.full.ConsistencyFlags.DEFAULT;
 
 @ExtendWith( RandomExtension.class )
 class RelationshipCheckerWithRelationshipTypeScanStoreTest extends CheckerTestBase
@@ -354,7 +355,7 @@ class RelationshipCheckerWithRelationshipTypeScanStoreTest extends CheckerTestBa
 
     private void check() throws Exception
     {
-        check( context() );
+        check( context( DEFAULT.withCheckRelationshipTypeScanStore( true ) ) );
     }
 
     private void check( CheckerContext context ) throws Exception

@@ -49,7 +49,6 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
-import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
 import org.neo4j.graphdb.ConstraintViolationException;
@@ -115,6 +114,7 @@ import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.experimental_consistency_checker;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
+import static org.neo4j.consistency.checking.full.ConsistencyFlags.DEFAULT;
 import static org.neo4j.internal.index.label.RelationshipTypeScanStoreSettings.enable_relationship_type_scan_store;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.store.record.Record.NO_LABELS_FIELD;
@@ -382,7 +382,7 @@ public class DetectRandomSabotageIT
         Config.Builder builder = Config.newBuilder().set( neo4j_home, directory.homePath() );
         Config config = addConfig( builder ).build();
         return new ConsistencyCheckService().runFullConsistencyCheck( DatabaseLayout.of( config ), config, ProgressMonitorFactory.NONE,
-                NullLogProvider.getInstance(), false, ConsistencyFlags.DEFAULT );
+                NullLogProvider.getInstance(), false, DEFAULT.withCheckRelationshipTypeScanStore( true ) );
     }
 
     protected  <T> T addConfig( T t, SetConfigAction<T> action )
