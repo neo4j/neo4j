@@ -63,6 +63,7 @@ import org.neo4j.util.concurrent.ArrayQueueOutOfOrderSequence;
 import org.neo4j.util.concurrent.OutOfOrderSequence;
 
 import static java.lang.String.format;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -423,7 +424,7 @@ class GBPTreeCountsStoreTest
         CountsAccessor.Updater updater1 = countsStore.apply( BASE_TX_ID + 1, NULL );
         CountsAccessor.Updater updater2 = countsStore.apply( BASE_TX_ID + 2, NULL );
 
-        try ( OtherThreadExecutor checkpointer = new OtherThreadExecutor( "Checkpointer" ) )
+        try ( OtherThreadExecutor checkpointer = new OtherThreadExecutor( "Checkpointer", 1, MINUTES ) )
         {
             // when
             Future<Object> checkpoint = checkpointer.executeDontWait( command( () -> countsStore.checkpoint( UNLIMITED, NULL ) ) );
@@ -447,8 +448,8 @@ class GBPTreeCountsStoreTest
         CountsAccessor.Updater updaterBeforeCheckpoint = countsStore.apply( BASE_TX_ID + 1, NULL );
 
         final AtomicReference<CountsAccessor.Updater> updater = new AtomicReference<>();
-        try ( OtherThreadExecutor checkpointer = new OtherThreadExecutor( "Checkpointer" );
-              OtherThreadExecutor applier = new OtherThreadExecutor( "Applier" ) )
+        try ( OtherThreadExecutor checkpointer = new OtherThreadExecutor( "Checkpointer", 1, MINUTES );
+              OtherThreadExecutor applier = new OtherThreadExecutor( "Applier", 1, MINUTES ) )
         {
             // when
             Future<Object> checkpoint = checkpointer.executeDontWait( command( () -> countsStore.checkpoint( UNLIMITED, NULL ) ) );
