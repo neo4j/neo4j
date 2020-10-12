@@ -53,6 +53,7 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherTestSupport
 trait SaveGeneratedSource extends CypherTestSupport {
   val saveGeneratedSourceEnabled: Boolean
   val keepSourceFilesAfterTestFinishes: Boolean = false
+  val logSaveLocation: Boolean = true
 
   private var generatedSources: Option[Path] = None
 
@@ -73,7 +74,7 @@ trait SaveGeneratedSource extends CypherTestSupport {
   }
 
   private def setLocation(location: Path) = {
-    System.err.println(s"Will save generated sources to $location")
+    if (logSaveLocation) System.err.println(s"Will save generated sources to $location")
     generatedSources = Some(location)
     System.setProperty(GENERATED_SOURCE_LOCATION_PROPERTY, location.toString)
   }
