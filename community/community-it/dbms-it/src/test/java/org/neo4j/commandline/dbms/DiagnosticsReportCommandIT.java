@@ -35,6 +35,7 @@ import java.util.Collections;
 
 import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.ExecutionContext;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.test.extension.DbmsExtension;
@@ -43,7 +44,9 @@ import org.neo4j.test.extension.SuppressOutputExtension;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
+import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @TestDirectoryExtension
 @ExtendWith( SuppressOutputExtension.class )
@@ -101,6 +104,39 @@ class DiagnosticsReportCommandIT
         {
             String threadDump = Files.readString( fs.getPath( "threaddump.txt" ) );
             assertThat( threadDump ).contains( DiagnosticsReportCommandIT.class.getCanonicalName() );
+        }
+    }
+
+    @Test
+    void shouldHandleRotatedLogFiles() throws IOException
+    {
+        // Write config file and specify a custom name for the neo4j.log file.
+        Path confFile = testDirectory.createFile( "neo4j.conf" );
+        Files.write( confFile, singletonList( GraphDatabaseSettings.store_user_log_path.name() + "=custom.neo4j.log.name" ) );
+
+        // Create some log files that should be found. debug.log has already been created during setup.
+        Files.createFile( testDirectory.homePath().resolve( "logs/debug.log.1.zip" ) );
+        Files.createFile( testDirectory.homePath().resolve( "logs/custom.neo4j.log.name" ) );
+        Files.createFile( testDirectory.homePath().resolve( "logs/custom.neo4j.log.name.1" ) );
+
+        String[] args = {"logs", "--to=" + testDirectory.absolutePath() + "/reports"};
+        Path homeDir = testDirectory.homePath();
+        var ctx = new ExecutionContext( homeDir, homeDir, System.out, System.err, testDirectory.getFileSystem() );
+        DiagnosticsReportCommand diagnosticsReportCommand = new DiagnosticsReportCommand( ctx );
+        CommandLine.populateCommand( diagnosticsReportCommand, args );
+        diagnosticsReportCommand.execute();
+
+        Path reports = testDirectory.directory( "reports" );
+        Path[] files = FileUtils.listPaths( reports );
+        assertThat( files.length ).isEqualTo( 1 );
+
+        try ( FileSystem fileSystem = FileSystems.newFileSystem( files[0], null ) )
+        {
+            Path logsDir = fileSystem.getPath( "logs" );
+            assertTrue( Files.exists( logsDir.resolve( "debug.log" ) ) );
+            assertTrue( Files.exists( logsDir.resolve( "debug.log.1.zip" ) ) );
+            assertTrue( Files.exists( logsDir.resolve( "custom.neo4j.log.name" ) ) );
+            assertTrue( Files.exists( logsDir.resolve( "custom.neo4j.log.name.1" ) ) );
         }
     }
 

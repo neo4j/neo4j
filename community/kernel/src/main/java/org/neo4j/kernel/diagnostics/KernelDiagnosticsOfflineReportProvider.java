@@ -157,34 +157,22 @@ public class KernelDiagnosticsOfflineReportProvider extends DiagnosticsOfflineRe
         Path debugLogFile = config.get( GraphDatabaseSettings.store_internal_log_path );
         if ( fs.fileExists( debugLogFile ) )
         {
-            sources.addAll( DiagnosticsReportSources.newDiagnosticsRotatingFile( "logs/debug.log", fs, debugLogFile ) );
+            sources.addAll( DiagnosticsReportSources.newDiagnosticsRotatingFile( "logs/", fs, debugLogFile ) );
         }
 
         // neo4j.log
-        Path logDirectory = config.get( GraphDatabaseSettings.logs_directory );
-        Path neo4jLog = logDirectory.resolve( "neo4j.log" );
+        Path neo4jLog = config.get( GraphDatabaseSettings.store_user_log_path );
         if ( fs.fileExists( neo4jLog ) )
         {
-            sources.add( DiagnosticsReportSources.newDiagnosticsFile( "logs/neo4j.log", fs, neo4jLog ) );
+            sources.addAll( DiagnosticsReportSources.newDiagnosticsRotatingFile( "logs/", fs, neo4jLog ) );
         }
 
         // gc.log
+        Path logDirectory = config.get( GraphDatabaseSettings.logs_directory );
         Path gcLog = logDirectory.resolve( "gc.log" );
         if ( fs.fileExists( gcLog ) )
         {
-            sources.add( DiagnosticsReportSources.newDiagnosticsFile( "logs/gc.log", fs, gcLog ) );
-        }
-        // we might have rotation activated, check
-        int i = 0;
-        while ( true )
-        {
-            Path gcRotationLog = logDirectory.resolve( "gc.log." + i );
-            if ( !fs.fileExists( gcRotationLog ) )
-            {
-                break;
-            }
-            sources.add( DiagnosticsReportSources.newDiagnosticsFile( "logs/gc.log." + i, fs, gcRotationLog ) );
-            i++;
+            sources.addAll( DiagnosticsReportSources.newDiagnosticsRotatingFile( "logs/", fs, gcLog ) );
         }
         // there are other rotation schemas but nothing we can predict...
     }

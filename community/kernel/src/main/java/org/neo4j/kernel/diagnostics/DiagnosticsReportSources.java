@@ -54,24 +54,24 @@ public final class DiagnosticsReportSources
     }
 
     /**
-     * @param destination final destination in archive.
+     * @param destinationFolder destination folder (including trailing '/') in archive.
      * @param fs filesystem abstraction to use.
      * @param file input log file, should be without rotation numbers.
      * @return a list diagnostics sources consisting of the log file including all rotated away files.
      */
-    public static List<DiagnosticsReportSource> newDiagnosticsRotatingFile( String destination,
+    public static List<DiagnosticsReportSource> newDiagnosticsRotatingFile( String destinationFolder,
             FileSystemAbstraction fs, Path file )
     {
         List<DiagnosticsReportSource> files = new ArrayList<>();
 
-        files.add( newDiagnosticsFile( destination, fs, file ) );
+        Path[] paths = fs.listFiles( file.getParent(), path -> path.getFileName().toString().startsWith( file.getFileName().toString() ) );
 
-        List<Path> allArchives = getAllArchives( fs, file );
-        for ( Path archive : allArchives )
+        if ( paths != null )
         {
-            String name = archive.getFileName().toString();
-            String n = name.substring( name.lastIndexOf( '.' ) );
-            files.add( newDiagnosticsFile( destination + "." + n, fs, archive ) );
+            for ( Path path : paths )
+            {
+                files.add( newDiagnosticsFile( destinationFolder + path.getFileName().toString(), fs, path ) );
+            }
         }
         return files;
     }
@@ -88,23 +88,6 @@ public final class DiagnosticsReportSources
     public static DiagnosticsReportSource newDiagnosticsString( String destination, Supplier<String> messageSupplier )
     {
         return new DiagnosticsStringReportSource( destination, messageSupplier );
-    }
-
-    private static List<Path> getAllArchives( FileSystemAbstraction fileSystem, Path outputFile )
-    {
-        ArrayList<Path> ret = new ArrayList<>();
-        int i = 1;
-        while ( true )
-        {
-            Path file = outputFile.resolveSibling( outputFile.getFileName() + "." + i );
-            if ( !fileSystem.fileExists( file ) )
-            {
-                break;
-            }
-            ret.add( file );
-            i++;
-        }
-        return ret;
     }
 
     private static class DiagnosticsFileReportSource implements DiagnosticsReportSource
