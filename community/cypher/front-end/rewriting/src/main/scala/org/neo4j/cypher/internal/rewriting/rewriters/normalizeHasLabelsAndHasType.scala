@@ -20,6 +20,7 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.HasLabelsOrTypes
 import org.neo4j.cypher.internal.expressions.HasTypes
+import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.symbols.CTRelationship
@@ -33,6 +34,6 @@ case class normalizeHasLabelsAndHasType(semanticState: SemanticState) extends Re
     case p@HasLabelsOrTypes(e, labels) =>
       if (semanticState.expressionType(e).actual == CTRelationship.invariant) HasTypes(e, labels.map(l => RelTypeName(l.name)(l.position)))(p.position)
       //we don't need to check if it is a node here, if not it will fail in semantic checking
-      else HasLabels(e, labels)(p.position)
+      else HasLabels(e, labels.map(l => LabelName(l.name)(l.position)))(p.position)
   })
 }
