@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.expressions.FilterScope
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.FunctionName
 import org.neo4j.cypher.internal.expressions.HasLabelsOrTypes
-import org.neo4j.cypher.internal.expressions.LabelName
+import org.neo4j.cypher.internal.expressions.LabelOrRelTypeName
 import org.neo4j.cypher.internal.expressions.NODE_TYPE
 import org.neo4j.cypher.internal.expressions.Namespace
 import org.neo4j.cypher.internal.expressions.NotEquals
@@ -65,7 +65,7 @@ class ParserTest extends CypherFunSuite with TestName {
   }
 
   test("n:Label") {
-    Parser.parseExpression(testName) should be(HasLabelsOrTypes(Variable("n")(pos), Seq(LabelName("Label")(pos)))(pos))
+    Parser.parseExpression(testName) should be(HasLabelsOrTypes(Variable("n")(pos), Seq(LabelOrRelTypeName("Label")(pos)))(pos))
   }
 
   test("`  n@31`") {

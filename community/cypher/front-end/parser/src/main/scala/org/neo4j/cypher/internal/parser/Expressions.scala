@@ -154,7 +154,7 @@ trait Expressions extends Parser
   private def Expression2: Rule1[expressions.Expression] = rule("an expression") {
     Expression1 ~ zeroOrMore(WS ~ (
         PropertyLookup
-      | NodeLabels ~~>> (expressions.HasLabelsOrTypes(_: expressions.Expression, _))
+      | NodeLabelsOrRelTypes ~~>> (expressions.HasLabelsOrTypes(_: expressions.Expression, _))
       |  "[" ~~ Expression ~~ "]" ~~>> (expressions.ContainerIndex(_: expressions.Expression, _))
       | "[" ~~ optional(Expression) ~~ ".." ~~ optional(Expression) ~~ "]" ~~>> (expressions.ListSlice(_: expressions.Expression, _, _))
     ))

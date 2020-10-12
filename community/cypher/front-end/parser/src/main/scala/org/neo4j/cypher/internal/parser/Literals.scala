@@ -89,6 +89,9 @@ trait Literals extends Parser
   def RelTypeName: Rule1[expressions.RelTypeName] =
     rule("a rel type name") { SymbolicNameString ~~>> (expressions.RelTypeName(_) ) }.memoMismatches
 
+  def LabelOrRelTypeName: Rule1[expressions.LabelOrRelTypeName] =
+    rule("a label or a rel type name") { SymbolicNameString ~~>> (expressions.LabelOrRelTypeName(_) ) }.memoMismatches
+
   def Operator: Rule1[expressions.Variable] = rule {
     OpChar ~ zeroOrMore(OpCharTail) ~>>> (expressions.Variable(_: String)) ~ !OpCharTail
   }
@@ -172,6 +175,14 @@ trait Literals extends Parser
 
   def RelType: Rule1[expressions.RelTypeName] = rule {
     ((operator(":") ~~ RelTypeName) memoMismatches).suppressSubnodes
+  }
+
+  def NodeLabelsOrRelTypes: Rule1[Seq[expressions.LabelOrRelTypeName]] = rule("node labels or rel types") {
+    (oneOrMore(NodeLabelOrRelType, separator = WS) memoMismatches).suppressSubnodes
+  }
+
+  def NodeLabelOrRelType: Rule1[expressions.LabelOrRelTypeName] = rule {
+    ((operator(":") ~~ LabelOrRelTypeName) memoMismatches).suppressSubnodes
   }
 
   def StringLiteral: Rule1[expressions.StringLiteral] = rule("\"...string...\"") {

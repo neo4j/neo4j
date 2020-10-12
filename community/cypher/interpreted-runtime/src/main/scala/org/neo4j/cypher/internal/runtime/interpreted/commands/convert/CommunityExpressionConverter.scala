@@ -580,7 +580,7 @@ case class CommunityExpressionConverter(tokenContext: TokenContext) extends Expr
   }
 
   private def hasLabelsOrTypes(id: Id, e: internal.expressions.HasLabelsOrTypes, self: ExpressionConverters): Predicate = {
-    val preds = e.labels.map {
+    val preds = e.labelsOrTypes.map {
       l =>
         predicates.HasLabelOrType(self.toCommandExpression(id, e.expression), l.name): Predicate
     }

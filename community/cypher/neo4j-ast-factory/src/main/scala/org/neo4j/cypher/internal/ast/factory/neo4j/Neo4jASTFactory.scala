@@ -107,6 +107,7 @@ import org.neo4j.cypher.internal.expressions.InvalidNotEquals
 import org.neo4j.cypher.internal.expressions.IsNotNull
 import org.neo4j.cypher.internal.expressions.IsNull
 import org.neo4j.cypher.internal.expressions.LabelName
+import org.neo4j.cypher.internal.expressions.LabelOrRelTypeName
 import org.neo4j.cypher.internal.expressions.LessThan
 import org.neo4j.cypher.internal.expressions.LessThanOrEqual
 import org.neo4j.cypher.internal.expressions.ListComprehension
@@ -511,7 +512,7 @@ class Neo4jASTFactory(query: String)
   }
 
   override def hasLabelsOrTypes(subject: Expression, labels: util.List[StringPos[InputPosition]]): Expression =
-    HasLabelsOrTypes(subject, labels.asScala.toList.map(sp => LabelName(sp.string)(sp.pos)))(subject.position)
+    HasLabelsOrTypes(subject, labels.asScala.toList.map(sp => LabelOrRelTypeName(sp.string)(sp.pos)))(subject.position)
 
   override def property(subject: Expression, propertyKeyName: StringPos[InputPosition]): Property =
     Property(subject, PropertyKeyName(propertyKeyName.string)(propertyKeyName.pos))(subject.position)
