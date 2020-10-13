@@ -151,10 +151,11 @@ public interface StorageEngine extends Lifecycle
     void forceClose();
 
     /**
-     * @return a {@link Collection} of {@link StoreFileMetadata} containing metadata about all store files managed by
-     * this {@link StorageEngine}.
+     * Lists storage files into one of the two provided collections.
+     * @param atomic will contain files that must be copied under a lock where no checkpoint can happen concurrently.
+     * @param replayable will contain files not sensitive to the checkpoint constraint of those in the {@code atomic} collection.
      */
-    Collection<StoreFileMetadata> listStorageFiles();
+    void listStorageFiles( Collection<StoreFileMetadata> atomic, Collection<StoreFileMetadata> replayable );
 
     /**
      * @return the {@link StoreId} of the underlying store.

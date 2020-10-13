@@ -117,7 +117,8 @@ public class DatabaseFileListing
     public class StoreFileListingBuilder
     {
         private boolean excludeLogFiles;
-        private boolean excludeNeoStoreFiles;
+        private boolean excludeAtomicStorageFiles;
+        private boolean excludeReplayableStorageFiles;
         private boolean excludeLabelScanStoreFiles;
         private boolean excludeRelationshipTypeScanStoreFiles;
         private boolean excludeSchemaIndexStoreFiles;
@@ -131,7 +132,8 @@ public class DatabaseFileListing
         private void excludeAll( boolean initiateInclusive )
         {
             this.excludeLogFiles = initiateInclusive;
-            this.excludeNeoStoreFiles = initiateInclusive;
+            this.excludeAtomicStorageFiles = initiateInclusive;
+            this.excludeReplayableStorageFiles = initiateInclusive;
             this.excludeLabelScanStoreFiles = initiateInclusive;
             this.excludeRelationshipTypeScanStoreFiles = initiateInclusive;
             this.excludeSchemaIndexStoreFiles = initiateInclusive;
@@ -157,9 +159,15 @@ public class DatabaseFileListing
             return this;
         }
 
-        public StoreFileListingBuilder excludeNeoStoreFiles()
+        public StoreFileListingBuilder excludeAtomicStorageFiles()
         {
-            excludeNeoStoreFiles = true;
+            excludeAtomicStorageFiles = true;
+            return this;
+        }
+
+        public StoreFileListingBuilder excludeReplayableStorageFiles()
+        {
+            excludeReplayableStorageFiles = true;
             return this;
         }
 
@@ -199,9 +207,15 @@ public class DatabaseFileListing
             return this;
         }
 
-        public StoreFileListingBuilder includeNeoStoreFiles()
+        public StoreFileListingBuilder includeAtomicStorageFiles()
         {
-            excludeNeoStoreFiles = false;
+            excludeAtomicStorageFiles = false;
+            return this;
+        }
+
+        public StoreFileListingBuilder includeReplayableStorageFiles()
+        {
+            excludeReplayableStorageFiles = false;
             return this;
         }
 
@@ -245,9 +259,9 @@ public class DatabaseFileListing
                 {
                     gatherLogFiles( files );
                 }
-                if ( !excludeNeoStoreFiles )
+                if ( !excludeAtomicStorageFiles || !excludeReplayableStorageFiles )
                 {
-                    gatherNeoStoreFiles( files );
+                    gatherStorageFiles( files, !excludeAtomicStorageFiles, !excludeReplayableStorageFiles );
                 }
                 if ( !excludeIdFiles )
                 {
@@ -272,7 +286,6 @@ public class DatabaseFileListing
                         resources.add( additionalProvider.addFilesTo( files ) );
                     }
                 }
-
                 placeMetaDataStoreLast( files );
             }
             catch ( IOException e )
@@ -297,8 +310,18 @@ public class DatabaseFileListing
         targetFiles.addAll( idGeneratorFactory.listIdFiles().stream().map( file -> new StoreFileMetadata( file, 0 ) ).collect( Collectors.toList() ) );
     }
 
-    private void gatherNeoStoreFiles( final Collection<StoreFileMetadata> targetFiles )
+    private void gatherStorageFiles( final Collection<StoreFileMetadata> targetFiles, boolean gatherAtomic, boolean gatherReplayable )
     {
-        targetFiles.addAll( storageEngine.listStorageFiles() );
+        Collection<StoreFileMetadata> atomic = new ArrayList<>();
+        Collection<StoreFileMetadata> replayable = new ArrayList<>();
+        storageEngine.listStorageFiles( atomic, replayable );
+        if ( gatherAtomic )
+        {
+            targetFiles.addAll( atomic );
+        }
+        if ( gatherReplayable )
+        {
+            targetFiles.addAll( replayable );
+        }
     }
 }

@@ -539,19 +539,19 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     }
 
     @Override
-    public Collection<StoreFileMetadata> listStorageFiles()
+    public void listStorageFiles( Collection<StoreFileMetadata> atomic, Collection<StoreFileMetadata> replayable )
     {
-        List<StoreFileMetadata> files = new ArrayList<>();
-        files.add( new StoreFileMetadata( databaseLayout.countStore(), RecordFormat.NO_RECORD_SIZE ) );
-        files.add( new StoreFileMetadata( databaseLayout.relationshipGroupDegreesStore(), RecordFormat.NO_RECORD_SIZE ) );
+        atomic.add( new StoreFileMetadata( databaseLayout.countStore(), RecordFormat.NO_RECORD_SIZE ) );
+        if ( relaxedLockingForDenseNodes )
+        {
+            atomic.add( new StoreFileMetadata( databaseLayout.relationshipGroupDegreesStore(), RecordFormat.NO_RECORD_SIZE ) );
+        }
         for ( StoreType type : StoreType.values() )
         {
             final RecordStore<AbstractBaseRecord> recordStore = neoStores.getRecordStore( type );
-            StoreFileMetadata metadata =
-                    new StoreFileMetadata( recordStore.getStorageFile(), recordStore.getRecordSize() );
-            files.add( metadata );
+            StoreFileMetadata metadata = new StoreFileMetadata( recordStore.getStorageFile(), recordStore.getRecordSize() );
+            replayable.add( metadata );
         }
-        return files;
     }
 
     /**
