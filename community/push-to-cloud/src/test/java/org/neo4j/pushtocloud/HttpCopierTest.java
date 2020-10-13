@@ -384,22 +384,6 @@ class HttpCopierTest
     }
 
     @Test
-    void shouldHandleNotAcceptableResponseFromInitiateUploadTarget() throws IOException
-    {
-        // given
-        HttpCopier copier = new HttpCopier( ctx );
-        Path source = createDump();
-        String token = "abc";
-        wireMock.stubFor( authenticationRequest( false ).willReturn( successfulAuthorizationResponse( token ) ) );
-        wireMock.stubFor( initiateUploadTargetRequest( token )
-                                  .willReturn( aResponse().withStatus( HTTP_NOT_ACCEPTABLE ) ) );
-
-        // when/then
-        assertThrows( CommandFailedException.class, containsString( "increase the size of your database" ),
-                      () -> authenticateAndCopy( copier, source, true, "user", "pass".toCharArray() ) );
-    }
-
-    @Test
     void shouldHandleValidationFailureResponseFromInitiateUploadTarget() throws IOException
     {
         // given
