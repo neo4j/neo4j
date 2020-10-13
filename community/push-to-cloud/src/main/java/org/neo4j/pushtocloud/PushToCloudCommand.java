@@ -20,8 +20,11 @@ import org.apache.commons.io.FileUtils;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
+import java.io.BufferedInputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -30,6 +33,7 @@ import java.util.Optional;
 import java.util.function.LongConsumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.zip.CRC32;
 
 import org.neo4j.cli.AbstractCommand;
 import org.neo4j.cli.CommandFailedException;
@@ -402,6 +406,20 @@ public class PushToCloudCommand extends AbstractCommand
             this.size = newSize;
         }
 
+        long crc32Sum() throws IOException
+        {
+            CRC32 crc = new CRC32();
+            try ( InputStream inputStream = new BufferedInputStream( new FileInputStream( path.toFile() ) ) )
+            {
+                int cnt;
+                while ( (cnt = inputStream.read()) != -1 )
+                {
+                    crc.update( cnt );
+                }
+            }
+            return crc.getValue();
+        }
+
         @Override
         public int hashCode()
         {
@@ -425,7 +443,7 @@ public class PushToCloudCommand extends AbstractCommand
 
     public static class Size
     {
-        public static final long COMPRESSION = 4;
+        public static final long ESTIMATED_COMPRESSION = 4;
         private final Optional<Long> dumpSize;
         private final Optional<Long> fullSize;
 
@@ -480,7 +498,7 @@ public class PushToCloudCommand extends AbstractCommand
             }
             else if ( dumpSize.isPresent() )
             {
-                return format( "%.1f GB", bytesToGibibytes( COMPRESSION * dumpSize.get() ) );
+                return format( "%.1f GB", bytesToGibibytes( ESTIMATED_COMPRESSION * dumpSize.get() ) );
             }
             else
             {
@@ -546,11 +564,11 @@ public class PushToCloudCommand extends AbstractCommand
         /**
          * @param verbose     whether or not to print verbose debug messages/statuses
          * @param consoleURL  console URI to target.
-         * @param sizeInBytes database size in bytes
+         * @param sourceSize  database size (either or both of dump and full sizes in bytes)
          * @param bearerToken token from successful {@link #authenticate(boolean, String, String, char[], boolean)} call.
          * @throws CommandFailedException if the database won't fit on the aura instance
          */
-        void checkSize( boolean verbose, String consoleURL, Size sizeInBytes, String bearerToken ) throws CommandFailedException;
+        void checkSize( boolean verbose, String consoleURL, Size sourceSize, String bearerToken ) throws CommandFailedException;
     }
 
     public interface DumpCreator

@@ -35,7 +35,6 @@ import java.nio.file.Path;
 import java.util.Base64;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
-import java.util.zip.CRC32;
 
 import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.ExecutionContext;
@@ -50,7 +49,6 @@ import static java.net.HttpURLConnection.HTTP_CREATED;
 import static java.net.HttpURLConnection.HTTP_FORBIDDEN;
 import static java.net.HttpURLConnection.HTTP_INTERNAL_ERROR;
 import static java.net.HttpURLConnection.HTTP_MOVED_PERM;
-import static java.net.HttpURLConnection.HTTP_NOT_ACCEPTABLE;
 import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
 import static java.net.HttpURLConnection.HTTP_OK;
 import static java.net.HttpURLConnection.HTTP_UNAUTHORIZED;
@@ -112,22 +110,8 @@ public class HttpCopier implements PushToCloudCommand.Copier
 
     private static String base64Encode( String username, char[] password )
     {
-        String plainToken = new StringBuilder( username ).append( ":" ).append( password ).toString();
+        String plainToken = username + ':' + String.valueOf( password );
         return Base64.getEncoder().encodeToString( plainToken.getBytes() );
-    }
-
-    private static long calculateCrc32HashOfFile( Path source ) throws IOException
-    {
-        CRC32 crc = new CRC32();
-        try ( InputStream inputStream = new BufferedInputStream( new FileInputStream( source.toFile() ) ) )
-        {
-            int cnt;
-            while ( (cnt = inputStream.read()) != -1 )
-            {
-                crc.update( cnt );
-            }
-        }
-        return crc.getValue();
     }
 
     private static URL safeUrl( String urlString )
@@ -162,7 +146,7 @@ public class HttpCopier implements PushToCloudCommand.Copier
         try
         {
             String bearerTokenHeader = "Bearer " + bearerToken;
-            long crc32Sum = calculateCrc32HashOfFile( source.path() );
+            long crc32Sum = source.crc32Sum();
             URL signedURL = initiateCopy( verbose, safeUrl( consoleURL + "/import" ), crc32Sum, source.size(), bearerTokenHeader );
             URL uploadLocation = initiateResumableUpload( verbose, signedURL );
             long sourceLength = ctx.fs().getFileSize( source.path().toFile() );
@@ -199,11 +183,12 @@ public class HttpCopier implements PushToCloudCommand.Copier
 
             if ( deleteSourceAfterImport )
             {
+                //noinspection ResultOfMethodCallIgnored
                 source.path().toFile().delete();
             }
             else
             {
-                ctx.out().println( String.format( "It is safe to delete the dump file now: %s", source.path().toFile().getAbsolutePath() ) );
+                ctx.out().printf( "It is safe to delete the dump file now: %s%n", source.path().toFile().getAbsolutePath() );
             }
         }
         catch ( InterruptedException | IOException e )
@@ -213,7 +198,7 @@ public class HttpCopier implements PushToCloudCommand.Copier
     }
 
     @Override
-    public void checkSize( boolean verbose, String consoleURL, PushToCloudCommand.Size sizeInBytes, String bearerToken )
+    public void checkSize( boolean verbose, String consoleURL, PushToCloudCommand.Size sourceSize, String bearerToken )
     {
         try
         {
@@ -228,15 +213,13 @@ public class HttpCopier implements PushToCloudCommand.Copier
                 connection.setRequestProperty( "Content-Type", "application/json" );
                 try ( OutputStream postData = connection.getOutputStream() )
                 {
-                    postData.write( sizeInBytes.toJson().getBytes( UTF_8 ) );
+                    postData.write( sourceSize.toJson().getBytes( UTF_8 ) );
                 }
                 int responseCode = connection.getResponseCode();
                 switch ( responseCode )
                 {
                 case HTTP_UNPROCESSABLE_ENTITY:
-                    // TODO The real upload uses a different response code to differentiate space errors from others
-                    //throw insufficientSpaceErrorResponse( verbose, connection, sizeInBytes );
-                    throw validationFailureErrorResponse( verbose, connection, sizeInBytes );
+                    throw validationFailureErrorResponse( verbose, connection, sourceSize );
                 case HTTP_OK:
                     return;
                 default:
@@ -409,9 +392,6 @@ public class HttpCopier implements PushToCloudCommand.Copier
                 throw updatePluginErrorResponse( connection );
             case HTTP_UNAUTHORIZED:
                 throw errorResponse( verbose, connection, "The given authorization token is invalid or has expired" );
-                // Deprecated: the use of this status code for the purpose below should be replaced with HTTP_UNPROCESSABLE_ENTITY in a future release.
-            case HTTP_NOT_ACCEPTABLE:
-                throw insufficientSpaceErrorResponse( verbose, connection, size );
             case HTTP_UNPROCESSABLE_ENTITY:
                 throw validationFailureErrorResponse( verbose, connection, size );
             case HTTP_ACCEPTED:
@@ -564,6 +544,7 @@ public class HttpCopier implements PushToCloudCommand.Copier
                 try ( InputStream responseData = connection.getInputStream() )
                 {
                     String json = new String( toByteArray( responseData ), UTF_8 );
+                    debugResponse( verbose, json, connection, false );
                     return parseJsonUsingJacksonParser( json, StatusBody.class );
                 }
             default:
@@ -635,38 +616,32 @@ public class HttpCopier implements PushToCloudCommand.Copier
 
     private void debugErrorResponse( boolean verbose, HttpURLConnection connection ) throws IOException
     {
-        debugResponse( verbose, connection, false );
-    }
-
-    private void debugResponse( boolean verbose, HttpURLConnection connection, boolean successful ) throws IOException
-    {
         if ( verbose )
         {
-            String responseString = "not available";
-            try ( InputStream responseData = successful ? connection.getInputStream() : connection.getErrorStream() )
+            String responseString;
+            try ( InputStream responseData = connection.getErrorStream() )
             {
                 responseString = new String( toByteArray( responseData ), UTF_8 );
             }
-            debugResponse( true, responseString, connection );
+            debugResponse( true, responseString, connection, true );
         }
     }
 
-    private void debugResponse( boolean verbose, String responseBody, HttpURLConnection connection )
-            throws IOException
+    private void debugResponse( boolean verbose, String responseBody, HttpURLConnection connection, boolean error ) throws IOException
     {
         if ( verbose )
         {
-            debug( true, "=== Unexpected response ===" );
+            debug( true, error ? "=== Unexpected response ===" : "=== Response ===" );
             debug( true, "Response message: " + connection.getResponseMessage() );
             debug( true, "Response headers:" );
             connection.getHeaderFields().forEach( ( key, value1 ) ->
-                                                  {
-                                                      for ( String value : value1 )
-                                                      {
-                                                          debug( true, "  " + key + ": " + value );
-                                                      }
-                                                  } );
-            debug( true, "Error response data: " + responseBody );
+            {
+                for ( String value : value1 )
+                {
+                    debug( true, "  " + key + ": " + value );
+                }
+            } );
+            debug( true, "Response data: " + responseBody );
         }
     }
 
@@ -700,33 +675,20 @@ public class HttpCopier implements PushToCloudCommand.Copier
         try ( InputStream responseData = connection.getErrorStream() )
         {
             String responseString = new String( toByteArray( responseData ), UTF_8 );
-            debugResponse( verbose, responseString, connection );
+            debugResponse( verbose, responseString, connection, true );
             ErrorBody errorBody = parseJsonUsingJacksonParser( responseString, ErrorBody.class );
 
             String message = errorBody.getMessage();
 
-            switch ( errorBody.getReason() )
+            // No special treatment required
+            if ( ERROR_REASON_EXCEEDS_MAX_SIZE.equals( errorBody.getReason() ) )
             {
-            case ERROR_REASON_EXCEEDS_MAX_SIZE:
                 String trimmedMessage = StringUtils.removeEnd( message, "." );
                 message = format( "%s. Minimum storage space required: %s", trimmedMessage, fileSize.humanize() );
-                break;
-            default:
-                break; // No special treatment required
             }
 
             return formatCommandFailedExceptionError( message, errorBody.getUrl() );
         }
-    }
-
-    private CommandFailedException insufficientSpaceErrorResponse( boolean verbose, HttpURLConnection connection, PushToCloudCommand.Size fileSize )
-            throws IOException
-    {
-        debugErrorResponse( verbose, connection );
-        return new CommandFailedException(
-                format( "There is insufficient space in your Neo4j Aura instance to upload your data. "
-                        + "Please go to the Neo4j Aura Console to increase the size of your database "
-                        + "to at least %s of storage.", fileSize.humanize() ) );
     }
 
     private CommandFailedException unexpectedResponse( boolean verbose, HttpURLConnection connection, String requestDescription ) throws IOException
