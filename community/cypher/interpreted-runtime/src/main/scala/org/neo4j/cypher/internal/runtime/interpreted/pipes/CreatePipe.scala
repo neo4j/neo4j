@@ -117,7 +117,7 @@ abstract class EntityCreatePipe(src: Pipe) extends BaseCreatePipe(src) {
       if (start == null || end == null)
         Values.NO_VALUE // lenient create relationship NOOPs on missing node
       else {
-        val typeId = data.relType.typ(state.query)
+        val typeId = data.relType.getOrCreateType(state.query)
         val relationship = state.query.createRelationship(start.id(), end.id(), typeId)
         data.properties.foreach(setProperties(context, state, relationship.id(), _, state.query.relationshipOps))
         relationship

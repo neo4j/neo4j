@@ -21,22 +21,30 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.expressions.RelTypeName
+import org.neo4j.cypher.internal.planner.spi.TokenContext
 import org.neo4j.cypher.internal.runtime.QueryContext
 
 case class LazyType(name: String) {
 
   private var id = LazyType.UNKNOWN
 
-  def typ(context: QueryContext): Int = {
+  def getOrCreateType(context: QueryContext): Int = {
     if (id == LazyType.UNKNOWN) {
       id = context.getOrCreateRelTypeId(name)
+    }
+    id
+  }
+
+  def getId(context: TokenContext): Int = {
+    if (id == LazyLabel.UNKNOWN) {
+      id = context.getOptRelTypeId(name).getOrElse(LazyType.UNKNOWN)
     }
     id
   }
 }
 
 object LazyType {
-  val UNKNOWN = -1
+  val UNKNOWN: Int = -1
 
   def apply(relTypeName: RelTypeName)(implicit table: SemanticTable): LazyType = {
     val typ = LazyType(relTypeName.name)
