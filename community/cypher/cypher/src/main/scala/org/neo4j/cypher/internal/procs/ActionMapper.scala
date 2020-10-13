@@ -66,6 +66,8 @@ import org.neo4j.cypher.internal.ast.SetLabelAction
 import org.neo4j.cypher.internal.ast.SetPasswordsAction
 import org.neo4j.cypher.internal.ast.SetPropertyAction
 import org.neo4j.cypher.internal.ast.SetUserStatusAction
+import org.neo4j.cypher.internal.ast.ShowConstraintAction
+import org.neo4j.cypher.internal.ast.ShowIndexAction
 import org.neo4j.cypher.internal.ast.ShowPrivilegeAction
 import org.neo4j.cypher.internal.ast.ShowRoleAction
 import org.neo4j.cypher.internal.ast.ShowTransactionAction
@@ -84,9 +86,11 @@ object ActionMapper {
     case AllIndexActions => security.PrivilegeAction.INDEX
     case CreateIndexAction => security.PrivilegeAction.CREATE_INDEX
     case DropIndexAction => security.PrivilegeAction.DROP_INDEX
+    case ShowIndexAction => security.PrivilegeAction.SHOW_INDEX
     case AllConstraintActions => security.PrivilegeAction.CONSTRAINT
     case CreateConstraintAction => security.PrivilegeAction.CREATE_CONSTRAINT
     case DropConstraintAction => security.PrivilegeAction.DROP_CONSTRAINT
+    case ShowConstraintAction => security.PrivilegeAction.SHOW_CONSTRAINT
 
     case AllTokenActions => security.PrivilegeAction.TOKEN
     case CreateNodeLabelAction => security.PrivilegeAction.CREATE_LABEL

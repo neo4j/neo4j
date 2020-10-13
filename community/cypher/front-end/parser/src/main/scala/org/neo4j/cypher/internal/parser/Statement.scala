@@ -391,9 +391,11 @@ trait Statement extends Parser
     keyword("STOP") ~~~> (_ => ast.StopDatabaseAction) |
     group(keyword("CREATE") ~~ IndexKeyword) ~~~> (_ => ast.CreateIndexAction) |
     group(keyword("DROP") ~~ IndexKeyword) ~~~> (_ => ast.DropIndexAction) |
+    group(keyword("SHOW") ~~ IndexKeyword) ~~~> (_ => ast.ShowIndexAction) |
     group(IndexKeyword ~~ optional(keyword("MANAGEMENT"))) ~~~> (_ => ast.AllIndexActions) |
     group(keyword("CREATE") ~~ ConstraintKeyword) ~~~> (_ => ast.CreateConstraintAction) |
     group(keyword("DROP") ~~ ConstraintKeyword) ~~~> (_ => ast.DropConstraintAction) |
+    group(keyword("SHOW") ~~ ConstraintKeyword) ~~~> (_ => ast.ShowConstraintAction) |
     group(ConstraintKeyword ~~ optional(keyword("MANAGEMENT"))) ~~~> (_ => ast.AllConstraintActions) |
     group(keyword("CREATE NEW") ~~ optional(keyword("NODE")) ~~ LabelKeyword) ~~~> (_ => ast.CreateNodeLabelAction) |
     group(keyword("CREATE NEW") ~~ optional(keyword("RELATIONSHIP")) ~~ TypeKeyword) ~~~> (_ => ast.CreateRelationshipTypeAction) |

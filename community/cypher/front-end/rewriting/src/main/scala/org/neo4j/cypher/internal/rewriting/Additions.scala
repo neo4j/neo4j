@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.ast.CreateNodePropertyExistenceConstraint
 import org.neo4j.cypher.internal.ast.CreateRelationshipPropertyExistenceConstraint
 import org.neo4j.cypher.internal.ast.CreateUniquePropertyConstraint
 import org.neo4j.cypher.internal.ast.CreateUser
+import org.neo4j.cypher.internal.ast.DatabasePrivilege
 import org.neo4j.cypher.internal.ast.DbmsPrivilege
 import org.neo4j.cypher.internal.ast.DefaultGraphScope
 import org.neo4j.cypher.internal.ast.DenyPrivilege
@@ -36,8 +37,10 @@ import org.neo4j.cypher.internal.ast.ExecuteProcedureAction
 import org.neo4j.cypher.internal.ast.GrantPrivilege
 import org.neo4j.cypher.internal.ast.IfExistsDoNothing
 import org.neo4j.cypher.internal.ast.RevokePrivilege
+import org.neo4j.cypher.internal.ast.ShowConstraintAction
 import org.neo4j.cypher.internal.ast.ShowConstraints
 import org.neo4j.cypher.internal.ast.ShowCurrentUser
+import org.neo4j.cypher.internal.ast.ShowIndexAction
 import org.neo4j.cypher.internal.ast.ShowIndexes
 import org.neo4j.cypher.internal.ast.ShowPrivilegeCommands
 import org.neo4j.cypher.internal.ast.ShowPrivileges
@@ -197,6 +200,22 @@ object Additions {
 
       // SHOW CURRENT USER
       case s: ShowCurrentUser => throw cypherExceptionFactory.syntaxException("SHOW CURRENT USER is not supported in this Cypher version.", s.position)
+
+      // GRANT/DENY/REVOKE SHOW INDEX ...
+      case p@GrantPrivilege(DatabasePrivilege(ShowIndexAction), _, _, _, _)    =>
+        throw cypherExceptionFactory.syntaxException("SHOW INDEX privilege is not supported in this Cypher version.", p.position)
+      case p@DenyPrivilege(DatabasePrivilege(ShowIndexAction), _, _, _, _) =>
+        throw cypherExceptionFactory.syntaxException("SHOW INDEX privilege is not supported in this Cypher version.", p.position)
+      case p@RevokePrivilege(DatabasePrivilege(ShowIndexAction), _, _, _, _, _) =>
+        throw cypherExceptionFactory.syntaxException("SHOW INDEX privilege is not supported in this Cypher version.", p.position)
+
+      // GRANT/DENY/REVOKE SHOW CONSTRAINT ...
+      case p@GrantPrivilege(DatabasePrivilege(ShowConstraintAction), _, _, _, _)    =>
+        throw cypherExceptionFactory.syntaxException("SHOW CONSTRAINT privilege is not supported in this Cypher version.", p.position)
+      case p@DenyPrivilege(DatabasePrivilege(ShowConstraintAction), _, _, _, _) =>
+        throw cypherExceptionFactory.syntaxException("SHOW CONSTRAINT privilege is not supported in this Cypher version.", p.position)
+      case p@RevokePrivilege(DatabasePrivilege(ShowConstraintAction), _, _, _, _, _) =>
+        throw cypherExceptionFactory.syntaxException("SHOW CONSTRAINT privilege is not supported in this Cypher version.", p.position)
     }
   }
 }

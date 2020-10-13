@@ -181,10 +181,12 @@ import org.neo4j.cypher.internal.ast.SetPropertyAction
 import org.neo4j.cypher.internal.ast.SetPropertyItem
 import org.neo4j.cypher.internal.ast.SetUserStatusAction
 import org.neo4j.cypher.internal.ast.ShowAllPrivileges
+import org.neo4j.cypher.internal.ast.ShowConstraintAction
 import org.neo4j.cypher.internal.ast.ShowConstraintType
 import org.neo4j.cypher.internal.ast.ShowConstraints
 import org.neo4j.cypher.internal.ast.ShowCurrentUser
 import org.neo4j.cypher.internal.ast.ShowDatabase
+import org.neo4j.cypher.internal.ast.ShowIndexAction
 import org.neo4j.cypher.internal.ast.ShowIndexes
 import org.neo4j.cypher.internal.ast.ShowPrivilegeAction
 import org.neo4j.cypher.internal.ast.ShowPrivilegeCommands
@@ -1372,8 +1374,8 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
   def _databaseAction: Gen[DatabaseAction] = oneOf(
     StartDatabaseAction, StopDatabaseAction,
     AllDatabaseAction, AccessDatabaseAction,
-    AllIndexActions, CreateIndexAction, DropIndexAction,
-    AllConstraintActions, CreateConstraintAction, DropConstraintAction,
+    AllIndexActions, CreateIndexAction, DropIndexAction, ShowIndexAction,
+    AllConstraintActions, CreateConstraintAction, DropConstraintAction, ShowConstraintAction,
     AllTokenActions, CreateNodeLabelAction, CreateRelationshipTypeAction, CreatePropertyKeyAction,
     AllTransactionActions, ShowTransactionAction, TerminateTransactionAction
   )

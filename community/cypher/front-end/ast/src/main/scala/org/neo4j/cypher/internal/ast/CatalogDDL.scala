@@ -16,7 +16,6 @@
  */
 package org.neo4j.cypher.internal.ast
 
-import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.prettifier.Prettifier
 import org.neo4j.cypher.internal.ast.semantics.SemanticAnalysisTooling
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheck
@@ -482,6 +481,8 @@ case object CreateIndexAction extends IndexManagementAction("CREATE INDEX")
 
 case object DropIndexAction extends IndexManagementAction("DROP INDEX")
 
+case object ShowIndexAction extends IndexManagementAction("SHOW INDEX")
+
 abstract class ConstraintManagementAction(override val name: String) extends DatabaseAction(name)
 
 case object AllConstraintActions extends ConstraintManagementAction("CONSTRAINT MANAGEMENT")
@@ -489,6 +490,8 @@ case object AllConstraintActions extends ConstraintManagementAction("CONSTRAINT 
 case object CreateConstraintAction extends ConstraintManagementAction("CREATE CONSTRAINT")
 
 case object DropConstraintAction extends ConstraintManagementAction("DROP CONSTRAINT")
+
+case object ShowConstraintAction extends ConstraintManagementAction("SHOW CONSTRAINT")
 
 abstract class NameManagementAction(override val name: String) extends DatabaseAction(name)
 

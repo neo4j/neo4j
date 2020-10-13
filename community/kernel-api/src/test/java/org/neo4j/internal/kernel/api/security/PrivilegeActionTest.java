@@ -31,7 +31,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.ACCESS;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.ADMIN;
-import static org.neo4j.internal.kernel.api.security.PrivilegeAction.EXECUTE_ADMIN;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.ALTER_USER;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.ASSIGN_PRIVILEGE;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.ASSIGN_ROLE;
@@ -54,6 +53,7 @@ import static org.neo4j.internal.kernel.api.security.PrivilegeAction.DROP_DATABA
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.DROP_INDEX;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.DROP_ROLE;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.DROP_USER;
+import static org.neo4j.internal.kernel.api.security.PrivilegeAction.EXECUTE_ADMIN;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.GRAPH_ACTIONS;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.INDEX;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.MATCH;
@@ -69,6 +69,8 @@ import static org.neo4j.internal.kernel.api.security.PrivilegeAction.SET_PASSWOR
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.SET_PROPERTY;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.SET_USER_STATUS;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.SHOW_CONNECTION;
+import static org.neo4j.internal.kernel.api.security.PrivilegeAction.SHOW_CONSTRAINT;
+import static org.neo4j.internal.kernel.api.security.PrivilegeAction.SHOW_INDEX;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.SHOW_PRIVILEGE;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.SHOW_ROLE;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.SHOW_TRANSACTION;
@@ -100,8 +102,8 @@ class PrivilegeActionTest
         expected.put( GRAPH_ACTIONS, Set.of( TRAVERSE, READ, WRITE, MATCH ) );
         expected.put( MERGE, Set.of( MATCH, TRAVERSE, READ, CREATE_ELEMENT, SET_PROPERTY  ) );
         expected.put( MATCH, Set.of( TRAVERSE, READ ) );
-        expected.put( INDEX, Set.of( CREATE_INDEX, DROP_INDEX ) );
-        expected.put( CONSTRAINT, Set.of( CREATE_CONSTRAINT, DROP_CONSTRAINT ) );
+        expected.put( INDEX, Set.of( CREATE_INDEX, DROP_INDEX, SHOW_INDEX ) );
+        expected.put( CONSTRAINT, Set.of( CREATE_CONSTRAINT, DROP_CONSTRAINT, SHOW_CONSTRAINT ) );
         expected.put( TOKEN, Set.of( CREATE_LABEL, CREATE_RELTYPE, CREATE_PROPERTYKEY ) );
         expected.put( DATABASE_ACTIONS, Set.of( INDEX, CONSTRAINT, TOKEN, ACCESS ) );
         expected.put( DBMS_ACTIONS, Set.of( ROLE_MANAGEMENT, USER_MANAGEMENT, DATABASE_MANAGEMENT, PRIVILEGE_MANAGEMENT, EXECUTE_ADMIN ) );

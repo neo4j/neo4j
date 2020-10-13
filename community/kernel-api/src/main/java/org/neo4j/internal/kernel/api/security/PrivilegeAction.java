@@ -55,8 +55,10 @@ public enum PrivilegeAction
 
     CREATE_INDEX,
     DROP_INDEX,
+    SHOW_INDEX,
     CREATE_CONSTRAINT,
     DROP_CONSTRAINT,
+    SHOW_CONSTRAINT,
 
     START_DATABASE,
     STOP_DATABASE,
@@ -127,6 +129,7 @@ public enum PrivilegeAction
                     {
                     case CREATE_CONSTRAINT:
                     case DROP_CONSTRAINT:
+                    case SHOW_CONSTRAINT:
                         return true;
                     default:
                         return this == action;
@@ -143,6 +146,7 @@ public enum PrivilegeAction
                     {
                     case CREATE_INDEX:
                     case DROP_INDEX:
+                    case SHOW_INDEX:
                         return true;
                     default:
                         return this == action;
