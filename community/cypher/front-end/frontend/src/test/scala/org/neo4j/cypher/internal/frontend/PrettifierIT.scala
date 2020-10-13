@@ -210,6 +210,18 @@ class PrettifierIT extends CypherFunSuite {
       "drop INDEX foo if EXISTS" ->
         "DROP INDEX foo IF EXISTS",
 
+      "show index" ->
+        "SHOW ALL INDEXES BRIEF",
+
+      "show indexes brief" ->
+        "SHOW ALL INDEXES BRIEF",
+
+      "show all inDEXES" ->
+        "SHOW ALL INDEXES BRIEF",
+
+      "show BTREE index VERBOSE output" ->
+        "SHOW BTREE INDEXES VERBOSE",
+
       "create CONSTRAINT ON (n:A) ASSERT (n.p) IS NODE KEY" ->
         "CREATE CONSTRAINT ON (n:A) ASSERT (n.p) IS NODE KEY",
 

@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.Variable
 import org.parboiled.scala.Parser
+import org.parboiled.scala.Rule0
 import org.parboiled.scala.Rule1
 import org.parboiled.scala.Rule3
 import org.parboiled.scala.Rule4
@@ -54,7 +55,8 @@ trait SchemaCommand extends Parser
       | DropRelationshipPropertyExistenceConstraint
       | DropConstraintOnName
       | DropIndex
-      | DropIndexOnName) ~~> ((use, command) => command.withGraph(use))
+      | DropIndexOnName
+      | ShowIndexes) ~~> ((use, command) => command.withGraph(use))
   )
 
   def VariablePropertyExpression: Rule1[Property] = rule("single property expression from variable") {
@@ -107,6 +109,23 @@ trait SchemaCommand extends Parser
     group(keyword("DROP INDEX") ~~ SymbolicNameString ~~ keyword("IF EXISTS")) ~~>> (ast.DropIndexOnName(_, ifExists = true)) |
     group(keyword("DROP INDEX") ~~ SymbolicNameString) ~~>> (ast.DropIndexOnName(_, ifExists = false))
   }
+
+  def ShowIndexes: Rule1[ast.ShowIndexes] = rule("SHOW INDEXES") {
+    keyword("SHOW") ~~ IndexType ~~ IndexKeyword ~~ IndexOutput ~~>>
+      ((all, verbose) => ast.ShowIndexes(all, verbose))
+  }
+
+  private def IndexType: Rule1[Boolean] = rule("type of indexes") {
+    keyword("BTREE") ~~~> (_ => false) |
+      optional(keyword("ALL")) ~~~> (_ => true)
+  }
+
+  private def IndexOutput: Rule1[Boolean] = rule("type of index output") {
+    keyword("VERBOSE") ~~ optional(keyword("OUTPUT")) ~~~> (_ => true) |
+      optional(keyword("BRIEF") ~~ optional(keyword("OUTPUT"))) ~~~> (_ => false)
+  }
+
+  def IndexKeyword: Rule0 = keyword("INDEXES") | keyword("INDEX")
 
   def CreateUniqueConstraint: Rule1[ast.CreateUniquePropertyConstraint] = rule {
     // without name

@@ -591,8 +591,6 @@ trait Statement extends Parser
 
   private def DatabaseKeyword: Rule0 = keyword("DATABASES") | keyword("DATABASE")
 
-  private def IndexKeyword: Rule0 = keyword("INDEXES") | keyword("INDEX")
-
   private def ConstraintKeyword: Rule0 = keyword("CONSTRAINTS") | keyword("CONSTRAINT")
 
   private def LabelKeyword: Rule0 = keyword("LABELS") | keyword("LABEL")

@@ -76,6 +76,11 @@ case class DropIndexOnName(name: String, ifExists: Boolean, useGraph: Option[Gra
   def semanticCheck = Seq()
 }
 
+case class ShowIndexes(all: Boolean, verbose: Boolean, useGraph: Option[GraphSelection] = None)(val position: InputPosition) extends SchemaCommand {
+  override def withGraph(useGraph: Option[GraphSelection]): SchemaCommand = copy(useGraph = useGraph)(position)
+  def semanticCheck = Seq()
+}
+
 trait PropertyConstraintCommand extends SchemaCommand with SemanticAnalysisTooling {
   def variable: Variable
 
