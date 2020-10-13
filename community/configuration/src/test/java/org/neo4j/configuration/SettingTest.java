@@ -269,7 +269,8 @@ class SettingTest
                 .build()
                 .description();
 
-        String expected = "setting, a byte size (valid multipliers are `k`, `m`, `g`, `K`, `M`, `G`) which is in the range `100.0MiB` to `10.00GiB`";
+        String expected = "setting, a byte size (valid multipliers are `B`, `KiB`, `KB`, `K`, `kB`, `kb`, `k`, `MiB`, `MB`, `M`, `mB`, " +
+                          "`mb`, `m`, `GiB`, `GB`, `G`, `gB`, `gb`, `g`, `TiB`, `TB`, `PiB`, `PB`, `EiB`, `EB`) which is in the range `100MiB` to `10GiB`";
         assertEquals( expected, descriptionWithConstraint );
     }
 

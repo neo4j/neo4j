@@ -228,6 +228,21 @@ class ByteUnitTest
     }
 
     @Test
+    void bytesToStringWithoutDecimals()
+    {
+        assertEquals( "1B", ByteUnit.bytesToStringWithoutDecimals( 1 ) );
+        assertEquals( "10B", ByteUnit.bytesToStringWithoutDecimals( 10 ) );
+        assertEquals( "1000B", ByteUnit.bytesToStringWithoutDecimals( 1000 ) );
+        assertEquals( "1025B", ByteUnit.bytesToStringWithoutDecimals( 1025 ) );
+        assertEquals( "10250B", ByteUnit.bytesToStringWithoutDecimals( 10250 ) );
+        assertEquals( "102500B", ByteUnit.bytesToStringWithoutDecimals( 102500 ) );
+        assertEquals( "1001KiB", ByteUnit.bytesToStringWithoutDecimals( 1025024 ) );
+        assertEquals( "10MiB", ByteUnit.bytesToStringWithoutDecimals( 10485760 ) );
+        assertEquals( "10000MiB", ByteUnit.bytesToStringWithoutDecimals( 10485760000L ) );
+        assertEquals( "1GiB", ByteUnit.bytesToStringWithoutDecimals( 1073741824L ) );
+    }
+
+    @Test
     void mustThrowWhenParsingInvalidUnit()
     {
         assertThrows( IllegalArgumentException.class, () -> ByteUnit.parse( "1 XB" ) );
