@@ -50,6 +50,7 @@ case class CreateIndex(variable: Variable, label: LabelName, properties: List[Pr
   override def semanticCheck: SemanticCheck = ifExistsDo match {
     case IfExistsInvalidSyntax | IfExistsReplace => SemanticError(s"Failed to create index: `OR REPLACE` cannot be used together with this command.", position)
     case _ =>
+      // The validation of the values (provider, config keys and config values) are done at runtime.
       if (options.filterKeys(k => !k.equalsIgnoreCase("indexProvider") && !k.equalsIgnoreCase("indexConfig")).nonEmpty)
         SemanticError(s"Failed to create index: Invalid option provided, valid options are `indexProvider` and `indexConfig`.", position)
       else
@@ -151,6 +152,7 @@ case class CreateNodeKeyConstraint(variable: Variable, label: LabelName, propert
   override def semanticCheck: SemanticCheck =  ifExistsDo match {
     case IfExistsInvalidSyntax | IfExistsReplace => SemanticError(s"Failed to create node key constraint: `OR REPLACE` cannot be used together with this command.", position)
     case _ =>
+      // The validation of the values (provider, config keys and config values) are done at runtime.
       if (options.filterKeys(k => !k.equalsIgnoreCase("indexProvider") && !k.equalsIgnoreCase("indexConfig")).nonEmpty)
         SemanticError(s"Failed to create node key constraint: Invalid option provided, valid options are `indexProvider` and `indexConfig`.", position)
       else
@@ -168,6 +170,7 @@ case class CreateUniquePropertyConstraint(variable: Variable, label: LabelName, 
   override def semanticCheck: SemanticCheck =  ifExistsDo match {
     case IfExistsInvalidSyntax | IfExistsReplace => SemanticError(s"Failed to create uniqueness constraint: `OR REPLACE` cannot be used together with this command.", position)
     case _ =>
+      // The validation of the values (provider, config keys and config values) are done at runtime.
       if (options.filterKeys(k => !k.equalsIgnoreCase("indexProvider") && !k.equalsIgnoreCase("indexConfig")).nonEmpty)
         SemanticError(s"Failed to create uniqueness constraint: Invalid option provided, valid options are `indexProvider` and `indexConfig`.", position)
       else
