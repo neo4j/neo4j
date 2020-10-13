@@ -523,18 +523,17 @@ public class GraphDatabaseSettings implements SettingsDeclaration
             newBuilder( "dbms.index.default_schema_provider", STRING, SchemaIndex.NATIVE_BTREE10.toString() ).build();
 
     // Store settings
-    @Description( "Make Neo4j keep the logical transaction logs for being able to backup the database. " +
-            "Can be used for specifying the threshold to prune logical logs after. For example \"10 days\" will " +
-            "prune logical logs that only contains transactions older than 10 days from the current time, " +
-            "or \"100k txs\" will keep the 100k latest transactions and prune any older transactions." )
+    @Description( "Tell Neo4j how long logical transaction logs should be kept to backup the database." +
+            "For example, \"10 days\" will prune logical logs that only contain transactions older than 10 days." +
+            "Alternatively, \"100k txs\" will keep the 100k latest transactions from each database and prune any older transactions." )
     public static final Setting<String> keep_logical_logs = newBuilder( "dbms.tx_log.rotation.retention_policy", STRING, "7 days" )
                     .dynamic()
                     .addConstraint( SettingConstraints.matches( "^(true|keep_all|false|keep_none|(\\d+[KkMmGg]?( (files|size|txs|entries|hours|days))))$",
-                            "must be `true`, `false` or of format `<number><optional unit> <type>`. " +
-                                    "Valid units are `k`, `M` and `G`. " +
+                            "Must be `true` or `keep_all`, `false` or `keep_none`, or of format `<number><optional unit> <type>`. " +
+                                    "Valid units are `K`, `M` and `G`. " +
                                     "Valid types are `files`, `size`, `txs`, `entries`, `hours` and `days`. " +
-                                    "For example, `100M size` will limiting logical log space on disk to 100Mb," +
-                                    " or `200k txs` will limiting the number of transactions to keep to 200 000" ) )
+                                    "For example, `100M size` will limit logical log space on disk to 100MB per database," +
+                                    "and `200K txs` will limit the number of transactions kept to 200 000 per database." ) )
                     .build();
 
     @Description( "Specifies at which file size the logical log will auto-rotate. Minimum accepted value is 128 KiB. " )
