@@ -242,6 +242,11 @@ public abstract class GraphStoreFixture implements AutoCloseable
         return statistics;
     }
 
+    public IndexingService indexingService()
+    {
+        return indexingService;
+    }
+
     public EntityUpdates nodeAsUpdates( long nodeId )
     {
         try ( StorageReader storeReader = storageEngine.newReader();

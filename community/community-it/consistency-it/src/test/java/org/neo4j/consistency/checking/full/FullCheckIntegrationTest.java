@@ -964,6 +964,8 @@ public class FullCheckIntegrationTest
     void shouldReportDuplicateConstraintReferences() throws Exception
     {
         // given
+        AtomicReference<IndexDescriptor> descriptor1 = new AtomicReference<>();
+        AtomicReference<IndexDescriptor> descriptor2 = new AtomicReference<>();
         fixture.apply( new GraphStoreFixture.Transaction()
         {
             @Override
@@ -993,8 +995,13 @@ public class FullCheckIntegrationTest
 
                 tx.createSchema( before1, after1, rule1 );
                 tx.createSchema( before2, after2, rule2 );
+
+                descriptor1.set( rule1 );
+                descriptor2.set( rule2 );
             }
         } );
+        fixture.indexingService().activateIndex( descriptor1.get() );
+        fixture.indexingService().activateIndex( descriptor2.get() );
 
         // when
         ConsistencySummaryStatistics stats = check();
