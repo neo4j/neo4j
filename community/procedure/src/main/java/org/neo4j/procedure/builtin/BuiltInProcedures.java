@@ -597,7 +597,7 @@ public class BuiltInProcedures
         public final String state;               //"ONLINE", "FAILED", "POPULATING"
         public final double populationPercent;    // 0.0, 100.0, 75.1
         public final String uniqueness;          //"UNIQUE", "NONUNIQUE"
-        public final String type;                //"FULLTEXT", "FUSION", "BTREE"
+        public final String type;                //"FULLTEXT", "BTREE"
         public final String entityType;          //"NODE", "RELATIONSHIP"
         public final List<String> labelsOrTypes; //["Label1", "Label2"], ["RelType1", "RelType2"]
         public final List<String> properties;    //["propKey", "propKey2"]
@@ -627,7 +627,7 @@ public class BuiltInProcedures
         public final String state;               //"ONLINE", "FAILED", "POPULATING"
         public final double populationPercent;    // 0.0, 100.0, 75.1
         public final String uniqueness;          //"UNIQUE", "NONUNIQUE"
-        public final String type;                //"FULLTEXT", "FUSION", "BTREE"
+        public final String type;                //"FULLTEXT", "BTREE"
         public final String entityType;          //"NODE", "RELATIONSHIP"
         public final List<String> labelsOrTypes; //["Label1", "Label2"], ["RelType1", "RelType2"]
         public final List<String> properties;    //["propKey", "propKey2"]

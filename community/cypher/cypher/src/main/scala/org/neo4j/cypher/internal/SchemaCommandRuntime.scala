@@ -18,6 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package org.neo4j.cypher.internal
+
 import java.util.Collections
 import java.util.StringJoiner
 
@@ -238,12 +239,19 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
             val indexStatus = indexInfo.indexStatus
             val uniqueness = if (indexDescriptor.isUnique) unique.NAME else nonunique.NAME
             val indexType = indexDescriptor.getIndexType
+
+            /*
+             * For btree the create command is the Cypher CREATE INDEX which needs the name to be escaped,
+             * in case it contains special characters.
+             * For fulltext the create command is a procedure which doesn't require escaping.
+            */
             val name = indexDescriptor.getName
             val escapedName = escapeBackticks(name)
             val createName = if(indexType.equals(IndexType.BTREE)) s"`$escapedName`" else name
+
             val entityType = indexDescriptor.schema.entityType
-            val sortedLabelsOrTypes = indexInfo.labelsOrTypes.sorted
-            val sortedProperties = indexInfo.properties.sorted
+            val labels = indexInfo.labelsOrTypes
+            val properties = indexInfo.properties
             val providerName = indexDescriptor.getIndexProvider.name
 
             val briefResult = Map(
@@ -257,15 +265,15 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
               "populationPercent" -> Values.doubleValue(indexStatus.populationProgress),
                //"UNIQUE", "NONUNIQUE"
               "uniqueness" -> Values.stringValue(uniqueness),
-              //"FULLTEXT", "FUSION", "BTREE"
+              //"FULLTEXT", "BTREE"
               "type" -> Values.stringValue(indexType.name),
                //"NODE", "RELATIONSHIP"
               "entityType" -> Values.stringValue(entityType.name),
                //["Label1", "Label2"], ["RelType1", "RelType2"]
-              "labelsOrTypes" -> VirtualValues.fromList(sortedLabelsOrTypes.map(elem => Values.of(elem).asInstanceOf[AnyValue]).asJava),
+              "labelsOrTypes" -> VirtualValues.fromList(labels.map(elem => Values.of(elem).asInstanceOf[AnyValue]).asJava),
               //["propKey", "propKey2"]
-              "properties" -> VirtualValues.fromList(sortedProperties.map(prop => Values.of(prop).asInstanceOf[AnyValue]).asJava),
-              //"native-btree-1.0", "lucene+native-3.0"
+              "properties" -> VirtualValues.fromList(properties.map(prop => Values.of(prop).asInstanceOf[AnyValue]).asJava),
+              //"native-btree-1.0", "lucene+native-3.0", "fulltext-1.0"
               "indexProvider" -> Values.stringValue(providerName)
             )
             if (verbose) {
@@ -278,7 +286,7 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
                 "options" -> VirtualValues.map(optionKeys, optionValues),
                 "failureMessage" -> Values.stringValue(indexInfo.indexStatus.failureMessage),
                 "createStatement" -> Values.stringValue(
-                  createStatement(createName, indexType, entityType, sortedLabelsOrTypes, sortedProperties, providerName, indexConfig, indexStatus.maybeConstraint))
+                  createStatement(createName, indexType, entityType, labels, properties, providerName, indexConfig, indexStatus.maybeConstraint))
               )
             } else {
               briefResult
@@ -407,32 +415,32 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
   private def createStatement(escapedName: String,
                               indexType: IndexType,
                               entityType: EntityType,
-                              sortedLabelsOrTypes: List[String],
-                              sortedProperties: List[String],
+                              labelsOrTypes: List[String],
+                              properties: List[String],
                               providerName: String,
                               indexConfig: IndexConfig,
                               maybeConstraint: Option[ConstraintDescriptor]): String = {
 
     indexType match {
       case IndexType.BTREE =>
-        val labelsOrTypesWithColons = asEscapedString(sortedLabelsOrTypes, colonStringJoiner)
-        val properties = asEscapedString(sortedProperties, propStringJoiner)
+        val labelsOrTypesWithColons = asEscapedString(labelsOrTypes, colonStringJoiner)
+        val escapedProperties = asEscapedString(properties, propStringJoiner)
         val btreeConfig = configAsString(indexConfig, value => btreeConfigValueAsString(value))
         val optionsString = optionsAsString(providerName, btreeConfig)
 
         maybeConstraint match {
           case Some(constraint) if constraint.isUniquenessConstraint =>
-            s"CREATE CONSTRAINT $escapedName ON (n$labelsOrTypesWithColons) ASSERT ($properties) IS UNIQUE OPTIONS $optionsString"
+            s"CREATE CONSTRAINT $escapedName ON (n$labelsOrTypesWithColons) ASSERT ($escapedProperties) IS UNIQUE OPTIONS $optionsString"
           case Some(constraint) if constraint.isNodeKeyConstraint =>
-            s"CREATE CONSTRAINT $escapedName ON (n$labelsOrTypesWithColons) ASSERT ($properties) IS NODE KEY OPTIONS $optionsString"
+            s"CREATE CONSTRAINT $escapedName ON (n$labelsOrTypesWithColons) ASSERT ($escapedProperties) IS NODE KEY OPTIONS $optionsString"
           case Some(_) =>
             throw new IllegalArgumentException("Expected an index or index backed constraint, found another constraint.")
           case None =>
-            s"CREATE INDEX $escapedName FOR (n$labelsOrTypesWithColons) ON ($properties) OPTIONS $optionsString"
+            s"CREATE INDEX $escapedName FOR (n$labelsOrTypesWithColons) ON ($escapedProperties) OPTIONS $optionsString"
         }
       case IndexType.FULLTEXT =>
-        val labelsOrTypesArray = asString(sortedLabelsOrTypes, arrayStringJoiner)
-        val propertiesArray = asString(sortedProperties, arrayStringJoiner)
+        val labelsOrTypesArray = asString(labelsOrTypes, arrayStringJoiner)
+        val propertiesArray = asString(properties, arrayStringJoiner)
         val fulltextConfig = configAsString(indexConfig, value => fullTextConfigValueAsString(value))
 
         entityType match {
