@@ -240,7 +240,7 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
             val indexType = indexDescriptor.getIndexType
             val name = indexDescriptor.getName
             val escapedName = escapeBackticks(name)
-            val createName = if(indexType.equals(IndexType.BTREE)) escapedName else name
+            val createName = if(indexType.equals(IndexType.BTREE)) s"`$escapedName`" else name
             val entityType = indexDescriptor.schema.entityType
             val sortedLabelsOrTypes = indexInfo.labelsOrTypes.sorted
             val sortedProperties = indexInfo.properties.sorted
@@ -448,7 +448,7 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
 
   private def asEscapedString(list: List[String], stringJoiner: StringJoiner): String = {
     for (elem <- list) {
-      stringJoiner.add(escapeBackticks(elem))
+      stringJoiner.add(s"`${escapeBackticks(elem)}`")
     }
     stringJoiner.toString
   }
@@ -508,9 +508,5 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
     final val NAME: String = "NONUNIQUE"
   }
 
-  private def escapeBackticks(str: String): String = {
-
-    val doubleBackticksString = str.replaceAll("`", "``")
-    s"`$doubleBackticksString`"
-  }
+  private def escapeBackticks(str: String): String = str.replaceAll("`", "``")
 }
