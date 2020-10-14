@@ -44,5 +44,11 @@ public class FunctionSegment implements Segment
         return false;
     }
 
+    @Override
+    public String toString()
+    {
+        return function == null ? "*" : function;
+    }
+
     public static final FunctionSegment ALL = new FunctionSegment( null );
 }
