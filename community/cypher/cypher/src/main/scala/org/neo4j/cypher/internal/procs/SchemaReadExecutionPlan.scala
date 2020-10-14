@@ -30,13 +30,13 @@ import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.MapValue
 
 /**
- * Execution plan for performing schema writes, i.e. creating or dropping indexes and constraints.
+ * Execution plan for performing schema reads, i.e. showing indexes and constraints.
  *
- * @param name       A name of the schema write
- * @param schemaRead The actual schema write to perform
+ * @param name       A name of the schema read
+ * @param schemaRead The actual schema read to perform
  */
-case class SchemaReadExecutionPlan(name: String, schemaRead: QueryContext => SchemaReadExecutionResult, source: Option[ExecutionPlan] = None)
-  extends SchemaCommandChainedExecutionPlan(source) {
+case class SchemaReadExecutionPlan(name: String, schemaRead: QueryContext => SchemaReadExecutionResult)
+  extends SchemaCommandChainedExecutionPlan(None) {
 
   override def runSpecific(ctx: UpdateCountingQueryContext,
                            executionMode: ExecutionMode,

@@ -222,7 +222,7 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
         SuccessResult
       })
 
-    // SHOW INDEXES
+    // SHOW [ALL|BTREE] INDEX[ES] [BRIEF|VERBOSE[OUTPUT]]
     case ShowIndexes(all, verbose) => (_, _) =>
       SchemaReadExecutionPlan("ShowIndexes", ctx => {
         val indexes: Map[IndexDescriptor, IndexInfo] = ctx.getAllIndexes()

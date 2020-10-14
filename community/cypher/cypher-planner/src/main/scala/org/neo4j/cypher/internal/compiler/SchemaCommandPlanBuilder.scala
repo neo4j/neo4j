@@ -135,7 +135,7 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
       case DropIndexOnName(name, ifExists, _) =>
         Some(plans.DropIndexOnName(name, ifExists))
 
-        // SHOW [ALL|BTREE] INDEXES [BRIEF|VERBOSE[OUTPUT]]
+      // SHOW [ALL|BTREE] INDEX[ES] [BRIEF|VERBOSE[OUTPUT]]
       case ShowIndexes(all, verbose, _) =>
         Some(plans.ShowIndexes(all, verbose))
 
