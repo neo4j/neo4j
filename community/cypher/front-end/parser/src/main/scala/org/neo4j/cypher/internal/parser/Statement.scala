@@ -54,7 +54,7 @@ trait Statement extends Parser
   }
 
   def UserAndRoleAdministrationCommand: Rule1[ast.AdministrationCommand] = rule("Security role and user administration statement") {
-    optional(keyword("CATALOG")) ~~ (ShowRoles | CreateRole | DropRole | ShowUsers | CreateUser | DropUser | AlterUser | SetOwnPassword)
+    optional(keyword("CATALOG")) ~~ (ShowRoles | CreateRole | DropRole | ShowUsers | ShowCurrentUser | CreateUser | DropUser | AlterUser | SetOwnPassword)
   }
 
   def PrivilegeAdministrationCommand: Rule1[ast.AdministrationCommand] = rule("Security privilege administration statement") {
@@ -77,6 +77,10 @@ trait Statement extends Parser
 
   def ShowUsers: Rule1[ast.ShowUsers] = rule("SHOW USERS") {
     keyword("SHOW USERS") ~~ optional(ShowCommandClauses) ~~>> (ast.ShowUsers(_))
+  }
+
+  def ShowCurrentUser: Rule1[ast.ShowCurrentUser] = rule("SHOW CURRENT USER") {
+    keyword("SHOW CURRENT USER") ~~ optional(ShowCommandClauses) ~~>> (ast.ShowCurrentUser(_))
   }
 
   def CreateUser: Rule1[ast.CreateUser] = rule("CREATE USER") {

@@ -104,6 +104,22 @@ class UserAdministrationCommandParserTest extends AdministrationCommandParserTes
     failsToParse
   }
 
+  // Showing current user
+
+  test("CATALOG SHOW CURRENT USER") {
+    yields(ast.ShowCurrentUser(None))
+  }
+
+  test("SHOW CURRENT USER") {
+    yields(ast.ShowCurrentUser(None))
+  }
+
+  test("SHOW CURRENT USER YIELD * WHERE suspended = false RETURN roles") {
+    val suspendedVar = varFor("suspended")
+    yields(ast.ShowCurrentUser(Some(Left(yieldClause(returnAllItems, where = Some(where(equals(suspendedVar, falseLiteral)))),
+      Some(returnClause(returnItems(variableReturnItem("roles"))))))))
+  }
+
   //  Creating user
 
   test("CATALOG CREATE USER foo SET PASSWORD 'password'") {

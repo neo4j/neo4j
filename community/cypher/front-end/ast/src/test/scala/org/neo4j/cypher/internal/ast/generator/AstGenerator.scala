@@ -176,6 +176,7 @@ import org.neo4j.cypher.internal.ast.SetPropertyAction
 import org.neo4j.cypher.internal.ast.SetPropertyItem
 import org.neo4j.cypher.internal.ast.SetUserStatusAction
 import org.neo4j.cypher.internal.ast.ShowAllPrivileges
+import org.neo4j.cypher.internal.ast.ShowCurrentUser
 import org.neo4j.cypher.internal.ast.ShowDatabase
 import org.neo4j.cypher.internal.ast.ShowPrivilegeAction
 import org.neo4j.cypher.internal.ast.ShowPrivileges
@@ -220,7 +221,6 @@ import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.ast.With
 import org.neo4j.cypher.internal.ast.WriteAction
 import org.neo4j.cypher.internal.ast.Yield
-import org.neo4j.cypher.internal.ast.YieldOrWhere
 import org.neo4j.cypher.internal.ast.generator.AstGenerator.boolean
 import org.neo4j.cypher.internal.ast.generator.AstGenerator.char
 import org.neo4j.cypher.internal.ast.generator.AstGenerator.oneOrMore
@@ -1242,6 +1242,10 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     yields <- option(_eitherYieldOrWhere)
   } yield ShowUsers(yields)(pos)
 
+  def _showCurrentUser: Gen[ShowCurrentUser] = for {
+    yields <- option(_eitherYieldOrWhere)
+  } yield ShowCurrentUser(yields)(pos)
+
   def _eitherYieldOrWhere: Gen[Either[(ast.Yield, Option[ast.Return]), ast.Where]] = for {
     yields <- _yield
     where <- _where
@@ -1278,6 +1282,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
 
   def _userCommand: Gen[AdministrationCommand] = oneOf(
     _showUsers,
+    _showCurrentUser,
     _createUser,
     _dropUser,
     _alterUser,

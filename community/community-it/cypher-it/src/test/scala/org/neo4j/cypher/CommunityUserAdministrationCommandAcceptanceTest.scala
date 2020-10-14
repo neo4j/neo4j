@@ -314,6 +314,65 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     assertFailWhenNotOnSystem("SHOW USERS", "SHOW USERS")
   }
 
+  // Tests for showing current user
+
+  test("should show current user") {
+    // GIVEN
+    execute(s"CREATE USER $username SET PASSWORD '$password' CHANGE NOT REQUIRED")
+
+    // WHEN
+    executeOnSystem(username, password, "SHOW CURRENT USER", resultHandler = (row, _) => {
+      // THEN
+      row.get("user") should be(username)
+      row.get("roles") should be(null)
+      row.get("passwordChangeRequired") shouldBe false
+      row.get("suspended") shouldBe null
+    }) should be(1)
+  }
+
+  test("should show current user with yield, where and return") {
+    // GIVEN
+    execute(s"CREATE USER $username SET PASSWORD '$password' CHANGE NOT REQUIRED")
+
+    // WHEN
+    executeOnSystem(username, password, "SHOW CURRENT USER YIELD * WHERE user = $name RETURN user, passwordChangeRequired", Collections.singletonMap("name", username),
+      resultHandler = (row, _) => {
+        // THEN
+        row.get("user") should be(username)
+        row.get("passwordChangeRequired") shouldBe false
+      }) should be(1)
+  }
+
+  test("should only show current user") {
+    // GIVEN
+    execute(s"CREATE USER $username SET PASSWORD '$password' CHANGE NOT REQUIRED")
+    execute(s"CREATE USER bar SET PASSWORD '$password' CHANGE NOT REQUIRED")
+
+    // WHEN
+    executeOnSystem( username, password, "SHOW CURRENT USER",
+      resultHandler = (row, _) => {
+        // THEN
+        row.get("user") should be(username)
+        row.get("roles") should be(null)
+        row.get("passwordChangeRequired") shouldBe false
+        row.get("suspended") shouldBe null
+      }) should be(1)
+  }
+
+  test("should not return a user that is not the current user") {
+    // GIVEN
+    execute(s"CREATE USER $username SET PASSWORD '$password' CHANGE NOT REQUIRED")
+    execute(s"CREATE USER bar SET PASSWORD '$password' CHANGE NOT REQUIRED")
+
+    // WHEN
+    executeOnSystem(username, password, "SHOW CURRENT USER WHERE user='bar'") should be(0)
+  }
+
+  test("should not return a user when not logged in") {
+    // THEN
+    execute("SHOW CURRENT USER").toList should have size(0)
+  }
+
   // Tests for creating users
 
   test("should create user with password as string") {

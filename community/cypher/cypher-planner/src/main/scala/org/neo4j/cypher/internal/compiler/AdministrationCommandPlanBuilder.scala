@@ -62,6 +62,7 @@ import org.neo4j.cypher.internal.ast.RevokeType
 import org.neo4j.cypher.internal.ast.SetOwnPassword
 import org.neo4j.cypher.internal.ast.SetPasswordsAction
 import org.neo4j.cypher.internal.ast.SetUserStatusAction
+import org.neo4j.cypher.internal.ast.ShowCurrentUser
 import org.neo4j.cypher.internal.ast.ShowDatabase
 import org.neo4j.cypher.internal.ast.ShowPrivilegeAction
 import org.neo4j.cypher.internal.ast.ShowPrivileges
@@ -139,7 +140,10 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
 
     val maybeLogicalPlan: Option[LogicalPlan] = from.statement() match {
       // SHOW USERS
-      case su @ ShowUsers(_,_) => Some(plans.ShowUsers(plans.AssertDbmsAdmin(ShowUserAction), su.defaultColumnNames, su.yields, su.returns))
+      case su: ShowUsers => Some(plans.ShowUsers(plans.AssertDbmsAdmin(ShowUserAction), su.defaultColumnNames, su.yields, su.returns))
+
+      // SHOW CURRENT USER
+      case su: ShowCurrentUser => Some(plans.ShowCurrentUser(su.defaultColumnNames, su.yields, su.returns))
 
       // CREATE [OR REPLACE] USER foo [IF NOT EXISTS] WITH [PLAINTEXT | ENCRYPTED] PASSWORD password
       case c@CreateUser(userName, isEncryptedPassword, initialPassword, requirePasswordChange, suspended, ifExistsDo) =>

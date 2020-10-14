@@ -67,6 +67,9 @@ abstract class SecurityAdministrationLogicalPlan(source: Option[AdministrationCo
 case class ShowUsers(source: PrivilegePlan, override val returnColumns: List[String], yields: Option[Yield], returns: Option[Return])
                     (implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
 
+case class ShowCurrentUser(override val returnColumns: List[String], yields: Option[Yield], returns: Option[Return])
+                    (implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(None)
+
 case class CreateUser(source: SecurityAdministrationLogicalPlan, userName: Either[String, Parameter], isEncryptedPassword: Boolean, initialPassword: Expression,
                       requirePasswordChange: Boolean, suspended: Option[Boolean])(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
 case class DropUser(source: SecurityAdministrationLogicalPlan, userName: Either[String, Parameter])(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))

@@ -36,6 +36,7 @@ import org.neo4j.cypher.internal.ast.ExecuteProcedureAction
 import org.neo4j.cypher.internal.ast.GrantPrivilege
 import org.neo4j.cypher.internal.ast.IfExistsDoNothing
 import org.neo4j.cypher.internal.ast.RevokePrivilege
+import org.neo4j.cypher.internal.ast.ShowCurrentUser
 import org.neo4j.cypher.internal.ast.ShowPrivileges
 import org.neo4j.cypher.internal.ast.ShowRolesPrivileges
 import org.neo4j.cypher.internal.ast.ShowUsersPrivileges
@@ -179,6 +180,9 @@ object Additions {
       // CREATE CONSTRAINT ... IS UNIQUE OPTIONS {...}
       case c@CreateUniquePropertyConstraint(_, _, _, _, _, options, _) if options.nonEmpty =>
         throw cypherExceptionFactory.syntaxException("Creating uniqueness constraint with options is not supported in this Cypher version.", c.position)
+
+      // SHOW CURRENT USER
+      case s: ShowCurrentUser => throw cypherExceptionFactory.syntaxException("SHOW CURRENT USER is not supported in this Cypher version.", s.position)
     }
   }
 }

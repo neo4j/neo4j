@@ -231,6 +231,7 @@ import org.neo4j.cypher.internal.logical.plans.SetPropertiesFromMap
 import org.neo4j.cypher.internal.logical.plans.SetProperty
 import org.neo4j.cypher.internal.logical.plans.SetRelationshipPropertiesFromMap
 import org.neo4j.cypher.internal.logical.plans.SetRelationshipProperty
+import org.neo4j.cypher.internal.logical.plans.ShowCurrentUser
 import org.neo4j.cypher.internal.logical.plans.ShowDatabase
 import org.neo4j.cypher.internal.logical.plans.ShowPrivileges
 import org.neo4j.cypher.internal.logical.plans.ShowRoles
@@ -1132,6 +1133,8 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     val adminPlanDescription: PlanDescriptionImpl = planDescription(id, "AdministrationCommand", NoChildren, Seq.empty, Set.empty)
 
     assertGood(attach(ShowUsers(privLhsLP, List(), None, None), 1.0), adminPlanDescription)
+
+    assertGood(attach(ShowCurrentUser(List(), None, None), 1.0), adminPlanDescription)
 
     assertGood(attach(
       CreateUser(privLhsLP, util.Left("name"), isEncryptedPassword = false, varFor("password"), requirePasswordChange = false, suspended = None),1.0), adminPlanDescription)

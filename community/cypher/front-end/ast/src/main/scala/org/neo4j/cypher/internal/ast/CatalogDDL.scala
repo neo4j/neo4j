@@ -155,6 +155,19 @@ object ShowUsers {
       ShowColumn(Variable("passwordChangeRequired")(position), CTBoolean, "passwordChangeRequired"), ShowColumn(Variable("suspended")(position), CTBoolean,"suspended")))(position)
 }
 
+final case class ShowCurrentUser(override val yieldOrWhere: YieldOrWhere, override val defaultColumnSet: List[ShowColumn])(val position: InputPosition) extends ReadAdministrationCommand {
+
+  override def name: String = "SHOW CURRENT USER"
+
+  override def semanticCheck: SemanticCheck =
+    super.semanticCheck
+}
+
+object ShowCurrentUser {
+  def apply(yieldOrWhere: YieldOrWhere)(position: InputPosition): ShowCurrentUser =
+    ShowCurrentUser(yieldOrWhere, List(ShowColumn(Variable("user")(position), CTString, "user"), ShowColumn(Variable("roles")(position), CTList(CTString), "roles"),
+      ShowColumn(Variable("passwordChangeRequired")(position), CTBoolean, "passwordChangeRequired"), ShowColumn(Variable("suspended")(position), CTBoolean,"suspended")))(position)
+}
 
 trait EitherAsString {
   def eitherAsString(either: Either[String, Parameter]): String = either match {

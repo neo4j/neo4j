@@ -41,6 +41,7 @@ import org.neo4j.cypher.internal.logical.plans.EnsureNodeExists
 import org.neo4j.cypher.internal.logical.plans.LogSystemCommand
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.SetOwnPassword
+import org.neo4j.cypher.internal.logical.plans.ShowCurrentUser
 import org.neo4j.cypher.internal.logical.plans.ShowDatabase
 import org.neo4j.cypher.internal.logical.plans.ShowUsers
 import org.neo4j.cypher.internal.logical.plans.SystemProcedureCall
@@ -154,6 +155,21 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
           |""".stripMargin,
         VirtualValues.EMPTY_MAP,
         source = Some(fullLogicalToExecutable.applyOrElse(source, throwCantCompile).apply(context, parameterMapping))
+      )
+
+    // SHOW CURRENT USER
+    case ShowCurrentUser(symbols, yields, returns) => (_, _) =>
+      val currentUserKey = internalKey("currentUser")
+      SystemCommandExecutionPlan("ShowCurrentUser", normalExecutionEngine,
+        s"""MATCH (u:User)
+           |WITH u.name as user, null as roles, u.passwordChangeRequired AS passwordChangeRequired, null as suspended
+           |WHERE user = $$`$currentUserKey`
+           |${AdministrationShowCommandUtils.generateReturnClause(symbols, yields, returns, Seq("user"))}
+           |""".stripMargin,
+        VirtualValues.EMPTY_MAP,
+        parameterGenerator = (_, securityContext) => VirtualValues.map(
+          Array(currentUserKey),
+          Array(Values.utf8Value(securityContext.subject().username()))),
       )
 
     // CREATE [OR REPLACE] USER foo [IF NOT EXISTS] SET [PLAINTEXT | ENCRYPTED] PASSWORD 'password'

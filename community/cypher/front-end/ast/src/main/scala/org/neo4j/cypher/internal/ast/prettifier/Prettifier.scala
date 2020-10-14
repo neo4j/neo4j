@@ -129,6 +129,7 @@ import org.neo4j.cypher.internal.ast.SetLabelItem
 import org.neo4j.cypher.internal.ast.SetOwnPassword
 import org.neo4j.cypher.internal.ast.SetPropertyItem
 import org.neo4j.cypher.internal.ast.ShowAllPrivileges
+import org.neo4j.cypher.internal.ast.ShowCurrentUser
 import org.neo4j.cypher.internal.ast.ShowDatabase
 import org.neo4j.cypher.internal.ast.ShowPrivilegeScope
 import org.neo4j.cypher.internal.ast.ShowPrivileges
@@ -277,6 +278,10 @@ case class Prettifier(
     val commandString = adminCommand match {
 
       case x @ ShowUsers(yields,_) =>
+        val (y: String, r: String) = showClausesAsString(yields)
+        s"${x.name}$y$r"
+
+      case x @ ShowCurrentUser(yields,_) =>
         val (y: String, r: String) = showClausesAsString(yields)
         s"${x.name}$y$r"
 

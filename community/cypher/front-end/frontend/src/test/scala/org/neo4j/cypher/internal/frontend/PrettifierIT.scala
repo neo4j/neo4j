@@ -409,6 +409,32 @@ class PrettifierIT extends CypherFunSuite {
           |    LIMIT 1
           |    WHERE user = "neo4j"""".stripMargin,
 
+      "Show Current User" ->
+        "SHOW CURRENT USER",
+
+      "Show Current User where user = 'neo4j'" ->
+        """SHOW CURRENT USER
+          |  WHERE user = "neo4j"""".stripMargin,
+
+      "Show Current User YIELD * where user = 'neo4j' Return *" ->
+        """SHOW CURRENT USER
+          |  YIELD *
+          |    WHERE user = "neo4j"
+          |  RETURN *""".stripMargin,
+
+      "Show Current User YIELD * Return DISTINCT roles, user" ->
+        """SHOW CURRENT USER
+          |  YIELD *
+          |  RETURN DISTINCT roles, user""".stripMargin,
+
+      "show current user yield user order by user skip 1 limit 1 where user='neo4j'" ->
+        """SHOW CURRENT USER
+          |  YIELD user
+          |    ORDER BY user ASCENDING
+          |    SKIP 1
+          |    LIMIT 1
+          |    WHERE user = "neo4j"""".stripMargin,
+
       "create user abc set password 'foo'" ->
         "CREATE USER abc SET PASSWORD '******' CHANGE REQUIRED",
 
