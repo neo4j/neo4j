@@ -818,20 +818,45 @@ class PrettifierIT extends CypherFunSuite {
         "SHOW ROLES $role1, abc, $role2, $role3 PRIVILEGES",
 
       "show privileges as command" ->
-        "SHOW ALL PRIVILEGES AS COMMAND",
+        "SHOW ALL PRIVILEGES AS COMMANDS",
+
+      "show privileges as commands" ->
+        "SHOW ALL PRIVILEGES AS COMMANDS",
 
       "show privileges as revoke command" ->
-        "SHOW ALL PRIVILEGES AS REVOKE COMMAND",
+        "SHOW ALL PRIVILEGES AS REVOKE COMMANDS",
+
+      "show user privileges as revoke command" ->
+        "SHOW USER PRIVILEGES AS REVOKE COMMANDS",
+
+      "show user user privileges as command" ->
+        "SHOW USER user PRIVILEGES AS COMMANDS",
+
+      "show user foo, $bar privileges as command" ->
+        "SHOW USERS foo, $bar PRIVILEGES AS COMMANDS",
+
+      "show role role privileges as revoke command" ->
+        "SHOW ROLE role PRIVILEGES AS REVOKE COMMANDS",
+
+      "show role foo, $bar privileges as command" ->
+        "SHOW ROLES foo, $bar PRIVILEGES AS COMMANDS",
 
       "show privileges as revoke command yield command order by command" ->
-        """SHOW ALL PRIVILEGES AS REVOKE COMMAND
+        """SHOW ALL PRIVILEGES AS REVOKE COMMANDS
           |  YIELD command
           |    ORDER BY command ASCENDING""".stripMargin,
 
-      "show user privileges as command where access = 'GRANTED' and action = 'match'" ->
-        """SHOW USER PRIVILEGES AS COMMAND
-          |  WHERE access = "GRANTED" AND action = "match"""".stripMargin,
+      "show user privileges as commands where command CONTAINS 'MATCH' and command CONTAINS 'NODE'" ->
+        """SHOW USER PRIVILEGES AS COMMANDS
+          |  WHERE command CONTAINS "MATCH" AND command CONTAINS "NODE"""".stripMargin,
 
+      "show users yield user order by user skip 1 limit 1 where user='neo4j'" ->
+        """SHOW USERS
+          |  YIELD user
+          |    ORDER BY user ASCENDING
+          |    SKIP 1
+          |    LIMIT 1
+          |    WHERE user = "neo4j"""".stripMargin,
 
       "catalog show databases" ->
         "SHOW DATABASES",

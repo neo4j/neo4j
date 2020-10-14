@@ -434,7 +434,7 @@ case class Prettifier(
 
       case ShowPrivilegeCommands(scope, asRevoke, yields, _) =>
         val (y: String, r: String) = showClausesAsString(yields)
-        val asCommand = if (asRevoke) " AS REVOKE COMMAND" else " AS COMMAND"
+        val asCommand = if (asRevoke) " AS REVOKE COMMANDS" else " AS COMMANDS"
         s"SHOW ${Prettifier.extractScope(scope)} PRIVILEGES$asCommand$y$r"
 
       case x @ ShowDatabase(scope, yields,_) =>

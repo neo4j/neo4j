@@ -236,8 +236,8 @@ trait Statement extends Parser
   }
 
   private def asCommand: Rule1[Boolean] = rule("AS COMMAND") {
-    keyword("AS COMMAND") ~> (_ => false) |
-    keyword("AS REVOKE COMMAND") ~> (_ => true)
+    group(keyword("AS") ~~ CommandKeyword) ~> (_ => false) |
+    group(keyword("AS REVOKE") ~~ CommandKeyword) ~> (_ => true)
   }
 
   //` ... ON DBMS TO role`
@@ -582,6 +582,8 @@ trait Statement extends Parser
   private def FunctionKeyword: Rule0 = keyword("FUNCTIONS") | keyword("FUNCTION")
 
   private def AdminKeyword: Rule0 = keyword("ADMINISTRATOR") | keyword("ADMIN")
+
+  private def CommandKeyword: Rule0 = keyword("COMMANDS") | keyword("COMMAND")
 
   // Database specific
 
