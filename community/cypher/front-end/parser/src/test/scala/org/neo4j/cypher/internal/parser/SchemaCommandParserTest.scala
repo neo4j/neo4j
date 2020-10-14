@@ -116,6 +116,17 @@ class SchemaCommandParserTest
     ))
   }
 
+  test("CREATE BTREE INDEX FOR (n:Person) ON (n.name) OPTIONS {indexConfig : {`spatial.cartesian.max`: [100.0,100.0], `spatial.cartesian.min`: [-100.0,-100.0] }, indexProvider : 'lucene+native-3.0'}") {
+    yields(ast.CreateIndex(varFor("n"), labelName("Person"), List(prop("n", "name")), None, IfExistsThrowError,
+      Map("indexProvider" -> literalString("lucene+native-3.0"),
+        "indexConfig"   -> mapOf(
+          "spatial.cartesian.max" -> listOf(literalFloat(100.0), literalFloat(100.0)),
+          "spatial.cartesian.min" -> listOf(literalFloat(-100.0), literalFloat(-100.0))
+        )
+      )
+    ))
+  }
+
   test("CREATE BTREE INDEX FOR (n:Person) ON (n.name) OPTIONS {indexConfig : {`spatial.wgs-84.max`: [60.0,60.0], `spatial.wgs-84.min`: [-40.0,-40.0] }}") {
     yields(ast.CreateIndex(varFor("n"), labelName("Person"), List(prop("n", "name")), None, IfExistsThrowError,
       Map("indexConfig" -> mapOf(
@@ -268,7 +279,7 @@ class SchemaCommandParserTest
       Seq(prop("node", "prop1"), prop("node", "prop2")), None, IfExistsInvalidSyntax, Map.empty))
   }
 
-  test("CREATE CONSTRAINT ON (node:Label) ASSERT (node.prop) IS UNIQUE OPTIONS {indexProvider : 'native-btree-1.0', indexConfig : {`spatial.wgs-84.max`: [60.0,60.0], `spatial.wgs-84.min`: [-40.0,-40.0]}}") {
+  test("CREATE CONSTRAINT ON (node:Label) ASSERT (node.prop) IS UNIQUE OPTIONS {indexConfig : {`spatial.wgs-84.max`: [60.0,60.0], `spatial.wgs-84.min`: [-40.0,-40.0]}, indexProvider : 'native-btree-1.0'}") {
     yields(ast.CreateUniquePropertyConstraint(varFor("node"), labelName("Label"), Seq(prop("node", "prop")), None, IfExistsThrowError,
       Map("indexProvider" -> literalString("native-btree-1.0"),
           "indexConfig"   -> mapOf(
