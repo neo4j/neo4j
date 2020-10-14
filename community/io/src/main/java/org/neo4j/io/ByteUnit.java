@@ -19,9 +19,11 @@
  */
 package org.neo4j.io;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static java.lang.String.format;
 
@@ -54,6 +56,8 @@ public enum ByteUnit
     public static final long ONE_KIBI_BYTE = ByteUnit.KibiByte.toBytes( 1 );
     public static final long ONE_MEBI_BYTE = ByteUnit.MebiByte.toBytes( 1 );
     public static final long ONE_GIBI_BYTE = ByteUnit.GibiByte.toBytes( 1 );
+    public static final String VALID_MULTIPLIERS = Arrays.stream( ByteUnit.values() ).flatMap( unit -> Arrays.stream( unit.names ) )
+            .collect( Collectors.joining("`, `", "`", "`" ));
 
     private static final long EIC_MULTIPLIER = 1024;
 
@@ -181,15 +185,15 @@ public enum ByteUnit
 
     public static String bytesToString( long bytes )
     {
-        if ( bytes > ONE_GIBI_BYTE )
+        if ( bytes >= ONE_GIBI_BYTE )
         {
             return format( Locale.ROOT, "%.4g%s", bytes / (double) ONE_GIBI_BYTE, GibiByte.shortName );
         }
-        else if ( bytes > ONE_MEBI_BYTE )
+        else if ( bytes >= ONE_MEBI_BYTE )
         {
             return format( Locale.ROOT, "%.4g%s", bytes / (double) ONE_MEBI_BYTE, MebiByte.shortName );
         }
-        else if ( bytes > ONE_KIBI_BYTE )
+        else if ( bytes >= ONE_KIBI_BYTE )
         {
             return format( Locale.ROOT, "%.4g%s", bytes / (double) ONE_KIBI_BYTE, KibiByte.shortName );
         }
@@ -197,6 +201,43 @@ public enum ByteUnit
         {
             return bytes + Byte.shortName;
         }
+    }
+
+    /**
+     * The parse method doesn't support values with decimal points. This bytes to string method builds a String
+     * representation that doesn't contain any decimal point, but instead uses the highest unit that no decimal
+     * point is needed for. This should be used when the String representation might get parsed
+     * e.g values used in documentation.
+     */
+    public static String bytesToStringWithoutDecimals( long bytes )
+    {
+        if ( bytes >= ONE_GIBI_BYTE )
+        {
+            long gibi = bytes / ONE_GIBI_BYTE;
+            if ( bytes - ( gibi * ONE_GIBI_BYTE ) == 0 )
+            {
+                return format( Locale.ROOT, "%d%s", gibi, GibiByte.shortName );
+            }
+        }
+
+        if ( bytes >= ONE_MEBI_BYTE )
+        {
+            long mebi = bytes / ONE_MEBI_BYTE;
+            if ( bytes - ( mebi * ONE_MEBI_BYTE ) == 0 )
+            {
+                return format( Locale.ROOT, "%d%s", mebi, MebiByte.shortName );
+            }
+        }
+
+        if ( bytes >= ONE_KIBI_BYTE )
+        {
+            long kibi = bytes / ONE_KIBI_BYTE;
+            if ( bytes - ( kibi * ONE_KIBI_BYTE ) == 0 )
+            {
+                return format( Locale.ROOT, "%d%s", kibi, KibiByte.shortName );
+            }
+        }
+        return bytes + Byte.shortName;
     }
 
     public static long parse( String text )
