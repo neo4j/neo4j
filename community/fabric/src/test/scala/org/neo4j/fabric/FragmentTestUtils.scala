@@ -61,8 +61,8 @@ trait FragmentTestUtils {
     Init(use, argumentColumns, importColumns)
 
   implicit class FragBuilder(input: Chain) {
-    def apply(fragmentInheritUse: Use => Fragment): Apply = Apply(input, fragmentInheritUse(input.use))
-    def leaf(clauses: Seq[ast.Clause], outputColumns: Seq[String]): Leaf = Leaf(input, clauses, outputColumns)
+    def apply(fragmentInheritUse: Use => Fragment, pos: InputPosition = InputPosition.NONE): Apply = Apply(input, fragmentInheritUse(input.use))(pos)
+    def leaf(clauses: Seq[ast.Clause], outputColumns: Seq[String], pos: InputPosition = InputPosition.NONE): Leaf = Leaf(input, clauses, outputColumns)(pos)
     def exec(query: Query, outputColumns: Seq[String]): Exec = Exec(input, query, dummyLocalQuery, dummyRemoteQuery, false, outputColumns)
   }
 
@@ -94,8 +94,8 @@ trait FragmentTestUtils {
   }
 
   implicit class FragBuilderInit(input: Fragment.Init) {
-    def union(lhs: Fragment, rhs: Chain): Union = Union(input, true, lhs, rhs)
-    def unionAll(lhs: Fragment, rhs: Chain): Union = Union(input, false, lhs, rhs)
+    def union(lhs: Fragment, rhs: Chain, pos: InputPosition = InputPosition.NONE): Union = Union(input, true, lhs, rhs)(pos)
+    def unionAll(lhs: Fragment, rhs: Chain, pos: InputPosition = InputPosition.NONE): Union = Union(input, false, lhs, rhs)(pos)
   }
 
   object ct {

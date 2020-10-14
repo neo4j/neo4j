@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.ast.With
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.logical.plans.ResolvedCall
 import org.neo4j.cypher.internal.logical.plans.ResolvedFunctionInvocation
+import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.exceptions.SyntaxException
 import org.neo4j.fabric.FabricTest
 import org.neo4j.fabric.FragmentTestUtils
@@ -454,6 +455,47 @@ class FabricFragmenterTest
         init(defaultUse)
           .leaf(Seq(return_(function(Seq("my"), "unknown").as("x"))), Seq("x"))
       )
+    }
+  }
+
+  "Input position" - {
+    "Single query" in {
+      val frag = fragment(
+        """RETURN 1 AS x
+          |""".stripMargin
+      )
+
+      frag.as[Fragment.Leaf].pos.shouldEqual(InputPosition(0, 1, 1))
+    }
+
+    "Union query" in {
+      val frag = fragment(
+        """RETURN 1 AS x
+          |UNION
+          |RETURN 2 AS x
+          |""".stripMargin
+      )
+
+     frag.as[Fragment.Union].pos.shouldEqual(InputPosition(14, 2, 1))
+     frag.as[Fragment.Union].lhs.as[Fragment.Leaf].pos.shouldEqual(InputPosition(0, 1, 1))
+     frag.as[Fragment.Union].rhs.as[Fragment.Leaf].pos.shouldEqual(InputPosition(20, 3, 1))
+    }
+
+    "Subquery" in {
+      val frag = fragment(
+        """WITH 1 AS x
+          |CALL {
+          |  WITH 2 AS y
+          |  RETURN y
+          |}
+          |RETURN x, y
+          |""".stripMargin
+      )
+
+      frag.as[Fragment.Leaf].pos.shouldEqual(InputPosition(46, 6, 1))
+      frag.as[Fragment.Leaf].input.as[Fragment.Apply].pos.shouldEqual(InputPosition(12, 2, 1))
+      frag.as[Fragment.Leaf].input.as[Fragment.Apply].inner.pos.shouldEqual(InputPosition(21, 3, 3))
+      frag.as[Fragment.Leaf].input.as[Fragment.Apply].input.pos.shouldEqual(InputPosition(0, 1, 1))
     }
   }
 

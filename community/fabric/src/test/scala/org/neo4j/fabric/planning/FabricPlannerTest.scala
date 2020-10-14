@@ -330,6 +330,24 @@ class FabricPlannerTest
 
     }
 
+    "union query with overloaded var names and aggregation should not fail" in {
+      // This query crashed in Namespacer due to lost input positions
+      val inst = instance(
+        """
+          |RETURN 'a' AS val, [] AS thisBreaks
+          |UNION
+          |CALL {
+          |    WITH 'b' AS val RETURN val
+          |    UNION
+          |    WITH 'c' AS val RETURN val
+          |}
+          |WITH val, [v IN collect(val) WHERE v = 'd' | v] AS thisBreaks
+          |RETURN val, thisBreaks
+      """.stripMargin)
+
+      val dummy = inst.plan
+    }
+
   }
 
   "Read/Write: " - {

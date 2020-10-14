@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.GraphSelection
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.frontend.phases.BaseState
+import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.rendering.QueryRenderer
 import org.neo4j.fabric.util.Folded
 import org.neo4j.fabric.util.Folded.FoldableOps
@@ -44,6 +45,8 @@ sealed trait Fragment {
   def outputColumns: Seq[String]
   /** ExecutionPlanDescription */
   def description: Fragment.Description
+  /* Original input position */
+  def pos: InputPosition
 }
 
 object Fragment {
@@ -78,11 +81,14 @@ object Fragment {
   ) extends Fragment.Chain {
     val outputColumns: Seq[String] = Seq.empty
     val description: Fragment.Description = Description.InitDesc(this)
+    val pos: InputPosition = InputPosition.NONE
   }
 
   final case class Apply(
     input: Fragment.Chain,
     inner: Fragment,
+  )(
+    val pos: InputPosition
   ) extends Fragment.Segment {
     val outputColumns: Seq[String] = Columns.combine(input.outputColumns, inner.outputColumns)
     val description: Fragment.Description = Description.ApplyDesc(this)
@@ -93,6 +99,8 @@ object Fragment {
     distinct: Boolean,
     lhs: Fragment,
     rhs: Fragment.Chain,
+  )(
+    val pos: InputPosition
   ) extends Fragment {
     val outputColumns: Seq[String] = rhs.outputColumns
     val argumentColumns: Seq[String] = input.argumentColumns
@@ -104,6 +112,8 @@ object Fragment {
     input: Fragment.Chain,
     clauses: Seq[ast.Clause],
     outputColumns: Seq[String],
+  )(
+    val pos: InputPosition
   ) extends Fragment.Segment {
     val parameters: Map[String, String] = Columns.asParamMappings(importColumns)
     val description: Fragment.Description = Description.LeafDesc(this)
@@ -124,6 +134,7 @@ object Fragment {
     val description: Fragment.Description = Description.ExecDesc(this)
     val queryType: QueryType = QueryType.of(query)
     val statementType: StatementType = StatementType.of(query)
+    def pos: InputPosition = query.position
   }
 
   final case class RemoteQuery(
@@ -137,6 +148,7 @@ object Fragment {
   ) extends Command {
     val description: Description = Description.CommandDesc(this, "Command")
     val queryType: QueryType = QueryType.of(command)
+    def pos: InputPosition = command.position
   }
 
   final case class AdminCommand(
@@ -145,6 +157,7 @@ object Fragment {
   ) extends Command {
     val description: Description = Description.CommandDesc(this, "AdminCommand")
     val queryType: QueryType = QueryType.of(command)
+    def pos: InputPosition = command.position
   }
 
   private def hasExecutableClauses(clauses: Seq[ast.Clause]) =
