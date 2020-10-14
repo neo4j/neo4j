@@ -29,13 +29,13 @@ final class FullAccessNodeValueIndexCursor extends DefaultNodeValueIndexCursor
     }
 
     @Override
-    final boolean allowed( long reference )
+    boolean allowed( long reference )
     {
         return true;
     }
 
     @Override
-    final boolean allowsAll()
+    boolean allowsAll()
     {
         return true;
     }

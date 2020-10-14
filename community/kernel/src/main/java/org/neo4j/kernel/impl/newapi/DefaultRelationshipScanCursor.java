@@ -38,7 +38,9 @@ class DefaultRelationshipScanCursor extends DefaultRelationshipCursor<StorageRel
     private CursorPool<DefaultRelationshipScanCursor> pool;
     private final DefaultNodeCursor securityNodeCursor;
 
-    DefaultRelationshipScanCursor( CursorPool<DefaultRelationshipScanCursor> pool, StorageRelationshipScanCursor storeCursor, DefaultNodeCursor securityNodeCursor )
+    DefaultRelationshipScanCursor( CursorPool<DefaultRelationshipScanCursor> pool,
+                                   StorageRelationshipScanCursor storeCursor,
+                                   DefaultNodeCursor securityNodeCursor )
     {
         super( storeCursor );
         this.pool = pool;
