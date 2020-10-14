@@ -45,7 +45,7 @@ class ShowSchemaCommandParserTest
       yields(ast.ShowIndexes(all = true, verbose = false))
     }
 
-    test(s"SHOW  $indexKeyword BRIEF OUTPUT") {
+    test(s"SHOW $indexKeyword BRIEF OUTPUT") {
       yields(ast.ShowIndexes(all = true, verbose = false))
     }
 
@@ -63,7 +63,15 @@ class ShowSchemaCommandParserTest
       yields(ast.ShowIndexes(all = false, verbose = false))
     }
 
+    test(s"SHOW BTREE $indexKeyword BRIEF") {
+      yields(ast.ShowIndexes(all = false, verbose = false))
+    }
+
     test(s"SHOW $indexKeyword VERBOSE") {
+      yields(ast.ShowIndexes(all = true, verbose = true))
+    }
+
+    test(s"SHOW ALL $indexKeyword VERBOSE") {
       yields(ast.ShowIndexes(all = true, verbose = true))
     }
 
