@@ -82,7 +82,7 @@ case class FabricStitcher(
     stitched(union)
       .getOrElse(union.copy(
         lhs = convert(union.lhs),
-        rhs = convertChain(union.rhs)))
+        rhs = convertChain(union.rhs))(union.pos))
 
   def convertChain(chain: Fragment.Chain): Fragment.Chain =
     stitched(chain)
@@ -95,12 +95,12 @@ case class FabricStitcher(
     case leaf: Fragment.Leaf =>
       val input = convertSeparate(leaf.input, lastInChain = false)
       if (leaf.executable)
-        single(leaf.copy(input = input), lastInChain)
+        single(leaf.copy(input = input)(leaf.pos), lastInChain)
       else
         input
 
     case apply: Fragment.Apply =>
-      apply.copy(input = convertSeparate(apply.input, lastInChain = false), inner = convert(apply.inner))
+      apply.copy(input = convertSeparate(apply.input, lastInChain = false), inner = convert(apply.inner))(apply.pos)
   }
 
   /**
@@ -246,29 +246,27 @@ case class FabricStitcher(
   ): StitchResult = {
 
     def stitch(fragment: Fragment, outermost: Boolean, outerUse: Option[Use]): StitchResult = {
-      val pos = InputPosition.NONE
 
       fragment match {
         case chain: Fragment.Chain =>
           val stitched = stitchChain(chain, outermost, outerUse)
-          StitchResult(SingleQuery(stitched.clauses)(pos), stitched.lastUse, stitched.useAppearances)
+          StitchResult(SingleQuery(stitched.clauses)(chain.pos), stitched.lastUse, stitched.useAppearances)
 
         case union: Fragment.Union =>
           val lhs = stitch(union.lhs, outermost, outerUse)
           val rhs = stitchChain(union.rhs, outermost, outerUse)
           val uses = lhs.useAppearances ++ rhs.useAppearances :+ UnionUse(lhs.lastUse, rhs.lastUse)
-          val query = SingleQuery(rhs.clauses)(pos)
+          val query = SingleQuery(rhs.clauses)(union.rhs.pos)
           val result = if (union.distinct) {
-            UnionDistinct(lhs.queryPart, query)(pos)
+            UnionDistinct(lhs.queryPart, query)(union.pos)
           } else {
-            UnionAll(lhs.queryPart, query)(pos)
+            UnionAll(lhs.queryPart, query)(union.pos)
           }
           StitchResult(result, rhs.lastUse, uses)
       }
     }
 
     def stitchChain(chain: Fragment.Chain, outermost: Boolean, outerUse: Option[Use]): StitchChainResult = {
-      val pos = InputPosition.NONE
 
       def wrapped: NestedFragment = if (outermost) Outer(chain) else Inner(chain)
 
@@ -287,7 +285,7 @@ case class FabricStitcher(
           val before = stitchChain(apply.input, outermost, outerUse)
           val inner = stitch(apply.inner, outermost = false, Some(before.lastUse))
           before.copy(
-            clauses = before.clauses :+ SubQuery(inner.queryPart)(pos),
+            clauses = before.clauses :+ SubQuery(inner.queryPart)(apply.pos),
             useAppearances = before.useAppearances ++ inner.useAppearances)
 
       }

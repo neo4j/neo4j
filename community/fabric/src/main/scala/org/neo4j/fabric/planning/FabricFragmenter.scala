@@ -61,7 +61,7 @@ class FabricFragmenter(
     part: ast.QueryPart,
   ): Fragment = part match {
     case sq: ast.SingleQuery => fragmentSingle(input, sq)
-    case uq: ast.Union       => Union(input, isDistinct(uq), fragmentPart(input, uq.part), fragmentSingle(input, uq.query))
+    case uq: ast.Union       => Union(input, isDistinct(uq), fragmentPart(input, uq.part), fragmentSingle(input, uq.query))(uq.position)
   }
 
   private def fragmentSingle(
@@ -84,12 +84,12 @@ class FabricFragmenter(
       part match {
         case Right(clauses) =>
           // Section of normal clauses
-          Leaf(input, clauses, produced(clauses))
+          Leaf(input, clauses, produced(clauses))(clauses.headOption.map(_.position).getOrElse(sq.position))
 
         case Left(subquery) =>
           // Subquery: Recurse and start the child chain with Init
           val use = Use.Inherited(input.use)(subquery.part.position)
-          Apply(input, fragmentPart(Init(use, input.outputColumns, Seq.empty), subquery.part))
+          Apply(input, fragmentPart(Init(use, input.outputColumns, Seq.empty), subquery.part))(subquery.position)
       }
     }
   }
