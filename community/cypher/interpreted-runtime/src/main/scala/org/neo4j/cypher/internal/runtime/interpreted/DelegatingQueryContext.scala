@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.profiling.KernelStatisticProvider
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.ClosingLongIterator
 import org.neo4j.cypher.internal.runtime.Expander
+import org.neo4j.cypher.internal.runtime.IndexInfo
 import org.neo4j.cypher.internal.runtime.KernelPredicate
 import org.neo4j.cypher.internal.runtime.NodeOperations
 import org.neo4j.cypher.internal.runtime.Operations
@@ -161,6 +162,8 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
   override def dropIndexRule(labelId: Int, propertyKeyIds: Seq[Int]): Unit = singleDbHit(inner.dropIndexRule(labelId, propertyKeyIds))
 
   override def dropIndexRule(name: String): Unit = singleDbHit(inner.dropIndexRule(name))
+
+  override def getAllIndexes(): Map[IndexDescriptor, IndexInfo] = singleDbHit(inner.getAllIndexes())
 
   override def indexExists(name: String): Boolean = singleDbHit(inner.indexExists(name))
 

@@ -27,9 +27,12 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
+import org.neo4j.cypher.internal.runtime
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.ClosingLongIterator
 import org.neo4j.cypher.internal.runtime.Expander
+import org.neo4j.cypher.internal.runtime.IndexInfo
+import org.neo4j.cypher.internal.runtime.IndexStatus
 import org.neo4j.cypher.internal.runtime.IsNoValue
 import org.neo4j.cypher.internal.runtime.KernelAPISupport.RANGE_SEEKABLE_VALUE_GROUPS
 import org.neo4j.cypher.internal.runtime.KernelAPISupport.asKernelIndexOrder
@@ -72,7 +75,9 @@ import org.neo4j.internal.kernel.api.PropertyCursor
 import org.neo4j.internal.kernel.api.Read
 import org.neo4j.internal.kernel.api.RelationshipScanCursor
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor
+import org.neo4j.internal.kernel.api.SchemaReadCore
 import org.neo4j.internal.kernel.api.TokenRead
+import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException
 import org.neo4j.internal.kernel.api.helpers.Nodes
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelections.allCursor
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelections.incomingCursor
@@ -810,6 +815,36 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
 
   override def dropIndexRule(name: String): Unit =
     transactionalContext.kernelTransaction.schemaWrite().indexDrop(name)
+
+  override def getAllIndexes(): Map[IndexDescriptor, IndexInfo] = {
+    val schemaRead: SchemaReadCore = transactionalContext.kernelTransaction.schemaRead().snapshot()
+    val indexes = schemaRead.indexesGetAll().asScala.toList
+
+    indexes.foldLeft(Map[IndexDescriptor, IndexInfo]()) {
+      (map, index) =>
+        val indexStatus = getIndexStatus( schemaRead, index )
+        val schema = index.schema
+        val labelsOrTypes = tokenRead.entityTokensGetNames( schema.entityType(), schema.getEntityTokenIds).toList
+        val properties = schema.getPropertyIds.map( id => tokenRead.propertyKeyGetName(id)).toList
+        map + (index -> runtime.IndexInfo(indexStatus, labelsOrTypes, properties))
+    }
+  }
+
+  private def getIndexStatus(schemaRead: SchemaReadCore, index: IndexDescriptor): IndexStatus = {
+    val (state: String, failureMessage: String, populationProgress: Double, maybeConstraint: Option[ConstraintDescriptor]) =
+    try {
+      val internalIndexState: InternalIndexState = schemaRead.indexGetState(index)
+      val progress = schemaRead.indexGetPopulationProgress(index).toIndexPopulationProgress.getCompletedPercentage.toDouble
+      val message: String = if (internalIndexState == InternalIndexState.FAILED) schemaRead.indexGetFailure(index) else ""
+      val constraint: ConstraintDescriptor = schemaRead.constraintGetForName(index.getName)
+      (internalIndexState.toString, message,  progress, Option(constraint))
+    } catch {
+      case _: IndexNotFoundKernelException =>
+        val errorMessage = "Index not found. It might have been concurrently dropped."
+        ("NOT FOUND", errorMessage, 0.0, None)
+    }
+    IndexStatus(state, failureMessage, populationProgress, maybeConstraint)
+  }
 
   override def indexExists(name: String): Boolean =
     transactionalContext.kernelTransaction.schemaRead().indexGetForName(name) != IndexDescriptor.NO_INDEX

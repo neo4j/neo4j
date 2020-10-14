@@ -23,6 +23,7 @@ package org.neo4j.cypher.internal.runtime.interpreted
 import java.util.concurrent.atomic.AtomicInteger
 
 import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.runtime.IndexInfo
 import org.neo4j.cypher.internal.runtime.NodeOperations
 import org.neo4j.cypher.internal.runtime.Operations
 import org.neo4j.cypher.internal.runtime.QueryContext
@@ -125,6 +126,10 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
   override def dropIndexRule(name: String): Unit = {
     inner.dropIndexRule(name)
     indexesRemoved.increase()
+  }
+
+  override def getAllIndexes(): Map[IndexDescriptor, IndexInfo] = {
+    inner.getAllIndexes()
   }
 
   override def indexExists(name: String): Boolean = {

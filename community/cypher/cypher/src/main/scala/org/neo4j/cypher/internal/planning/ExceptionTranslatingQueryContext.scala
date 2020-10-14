@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.macros.TranslateExceptionMacros.translateIterat
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.ClosingLongIterator
 import org.neo4j.cypher.internal.runtime.Expander
+import org.neo4j.cypher.internal.runtime.IndexInfo
 import org.neo4j.cypher.internal.runtime.KernelPredicate
 import org.neo4j.cypher.internal.runtime.NodeOperations
 import org.neo4j.cypher.internal.runtime.Operations
@@ -131,6 +132,9 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
 
   override def dropIndexRule(name: String): Unit =
     translateException(tokenNameLookup, inner.dropIndexRule(name))
+
+  override def getAllIndexes(): Map[IndexDescriptor, IndexInfo] =
+    translateException(tokenNameLookup, inner.getAllIndexes())
 
   override def indexExists(name: String): Boolean =
     translateException(tokenNameLookup, inner.indexExists(name))

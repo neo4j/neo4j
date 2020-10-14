@@ -122,6 +122,8 @@ trait QueryContext extends TokenContext with DbAccess {
 
   def dropIndexRule(name: String): Unit
 
+  def getAllIndexes(): Map[IndexDescriptor, IndexInfo]
+
   def indexReference(label: Int, properties: Int*): IndexDescriptor
 
   def indexExists(name: String): Boolean

@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.ClosingLongIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.Expander
+import org.neo4j.cypher.internal.runtime.IndexInfo
 import org.neo4j.cypher.internal.runtime.KernelPredicate
 import org.neo4j.cypher.internal.runtime.NodeOperations
 import org.neo4j.cypher.internal.runtime.QueryContext
@@ -194,6 +195,8 @@ object StaticEvaluation {
     override def dropIndexRule(labelId: Int, propertyKeyIds: Seq[Int]): Unit = notAvailable()
 
     override def dropIndexRule(name: String): Unit = notAvailable()
+
+    override def getAllIndexes(): Map[IndexDescriptor, IndexInfo] = notAvailable()
 
     override def indexExists(name: String): Boolean = notAvailable()
 

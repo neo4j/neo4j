@@ -18,9 +18,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package org.neo4j.cypher.internal
-
 import java.util.Collections
+import java.util.StringJoiner
 
+import org.neo4j.common.EntityType
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.expressions.DoubleLiteral
 import org.neo4j.cypher.internal.expressions.Expression
@@ -49,10 +50,14 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NodeKey
 import org.neo4j.cypher.internal.logical.plans.NodePropertyExistence
 import org.neo4j.cypher.internal.logical.plans.RelationshipPropertyExistence
+import org.neo4j.cypher.internal.logical.plans.ShowIndexes
 import org.neo4j.cypher.internal.logical.plans.Uniqueness
 import org.neo4j.cypher.internal.procs.IgnoredResult
+import org.neo4j.cypher.internal.procs.SchemaReadExecutionPlan
+import org.neo4j.cypher.internal.procs.SchemaReadExecutionResult
 import org.neo4j.cypher.internal.procs.SchemaWriteExecutionPlan
 import org.neo4j.cypher.internal.procs.SuccessResult
+import org.neo4j.cypher.internal.runtime.IndexInfo
 import org.neo4j.cypher.internal.runtime.InternalQueryType
 import org.neo4j.cypher.internal.runtime.ParameterMapping
 import org.neo4j.cypher.internal.runtime.QueryContext
@@ -66,12 +71,25 @@ import org.neo4j.graphdb.schema.IndexSettingImpl.FULLTEXT_EVENTUALLY_CONSISTENT
 import org.neo4j.graphdb.schema.IndexSettingUtil
 import org.neo4j.internal.schema.ConstraintDescriptor
 import org.neo4j.internal.schema.IndexConfig
+import org.neo4j.internal.schema.IndexDescriptor
+import org.neo4j.internal.schema.IndexType
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException
 import org.neo4j.kernel.impl.index.schema.FulltextIndexProviderFactory
 import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider
 import org.neo4j.kernel.impl.index.schema.fusion.NativeLuceneFusionIndexProviderFactory30
+import org.neo4j.values.AnyValue
+import org.neo4j.values.storable.BooleanValue
+import org.neo4j.values.storable.DoubleArray
+import org.neo4j.values.storable.IntValue
+import org.neo4j.values.storable.StringValue
+import org.neo4j.values.storable.Value
+import org.neo4j.values.storable.Values
+import org.neo4j.values.virtual.VirtualValues
 
 import scala.collection.JavaConverters.mapAsJavaMapConverter
+import scala.collection.JavaConverters.mapAsScalaMapConverter
+import scala.collection.JavaConverters.seqAsJavaListConverter
+import scala.collection.immutable.ListMap
 import scala.util.Try
 
 /**
@@ -204,6 +222,71 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
         SuccessResult
       })
 
+    // SHOW INDEXES
+    case ShowIndexes(all, verbose) => (_, _) =>
+      SchemaReadExecutionPlan("ShowIndexes", ctx => {
+        val indexes: Map[IndexDescriptor, IndexInfo] = ctx.getAllIndexes()
+        val relevantIndexes = if (all) indexes else indexes.filter {
+          case (indexDescriptor, _) => indexDescriptor.getIndexType.equals(IndexType.BTREE)
+        }
+        val sortedRelevantIndexes: ListMap[IndexDescriptor, IndexInfo] = ListMap(relevantIndexes.toSeq.sortBy(_._1.getName):_*)
+        val briefColumnNames: Array[String] =
+          Array("id", "name", "state", "populationPercent", "uniqueness", "type", "entityType", "labelsOrTypes", "properties", "indexProvider")
+        val columnNames: Array[String] = if (verbose) briefColumnNames ++ Array("options", "failureMessage", "createStatement") else briefColumnNames
+        val result: List[Map[String, AnyValue]] = sortedRelevantIndexes.map {
+          case (indexDescriptor: IndexDescriptor, indexInfo: IndexInfo) =>
+            val indexStatus = indexInfo.indexStatus
+            val uniqueness = if (indexDescriptor.isUnique) unique.NAME else nonunique.NAME
+            val indexType = indexDescriptor.getIndexType
+            val name = indexDescriptor.getName
+            val escapedName = escapeBackticks(name)
+            val createName = if(indexType.equals(IndexType.BTREE)) escapedName else name
+            val entityType = indexDescriptor.schema.entityType
+            val sortedLabelsOrTypes = indexInfo.labelsOrTypes.sorted
+            val sortedProperties = indexInfo.properties.sorted
+            val providerName = indexDescriptor.getIndexProvider.name
+
+            val briefResult = Map(
+              // 1
+              "id" -> Values.longValue(indexDescriptor.getId),
+               // "myIndex"
+              "name" -> Values.stringValue(escapedName),
+               // "ONLINE", "FAILED", "POPULATING"
+              "state" -> Values.stringValue(indexStatus.state),
+               // 0.0, 100.0, 75.1
+              "populationPercent" -> Values.doubleValue(indexStatus.populationProgress),
+               //"UNIQUE", "NONUNIQUE"
+              "uniqueness" -> Values.stringValue(uniqueness),
+              //"FULLTEXT", "FUSION", "BTREE"
+              "type" -> Values.stringValue(indexType.name),
+               //"NODE", "RELATIONSHIP"
+              "entityType" -> Values.stringValue(entityType.name),
+               //["Label1", "Label2"], ["RelType1", "RelType2"]
+              "labelsOrTypes" -> VirtualValues.fromList(sortedLabelsOrTypes.map(elem => Values.of(elem).asInstanceOf[AnyValue]).asJava),
+              //["propKey", "propKey2"]
+              "properties" -> VirtualValues.fromList(sortedProperties.map(prop => Values.of(prop).asInstanceOf[AnyValue]).asJava),
+              //"native-btree-1.0", "lucene+native-3.0"
+              "indexProvider" -> Values.stringValue(providerName)
+            )
+            if (verbose) {
+              val indexConfig = indexDescriptor.getIndexConfig
+              val (configKeys, configValues) = indexConfig.asMap().asScala.toSeq.unzip
+              val optionKeys = Array("indexConfig", "indexProvider")
+              val optionValues = Array(VirtualValues.map(configKeys.toArray, configValues.toArray), Values.stringValue(providerName))
+
+              briefResult ++ Map(
+                "options" -> VirtualValues.map(optionKeys, optionValues),
+                "failureMessage" -> Values.stringValue(indexInfo.indexStatus.failureMessage),
+                "createStatement" -> Values.stringValue(
+                  createStatement(createName, indexType, entityType, sortedLabelsOrTypes, sortedProperties, providerName, indexConfig, indexStatus.maybeConstraint))
+              )
+            } else {
+              briefResult
+            }
+        }.toList
+        SchemaReadExecutionResult(columnNames, result)
+      })
+
     case DoNothingIfExistsForIndex(label, propertyKeyNames, name) => (_, _) =>
       SchemaWriteExecutionPlan("DoNothingIfNotExist", ctx => {
         val labelId = ctx.getOrCreateLabelId(label.name)
@@ -319,5 +402,115 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
       case _ =>
         throw exceptionWrongType
     }
+  }
+
+  private def createStatement(escapedName: String,
+                              indexType: IndexType,
+                              entityType: EntityType,
+                              sortedLabelsOrTypes: List[String],
+                              sortedProperties: List[String],
+                              providerName: String,
+                              indexConfig: IndexConfig,
+                              maybeConstraint: Option[ConstraintDescriptor]): String = {
+
+    indexType match {
+      case IndexType.BTREE =>
+        val labelsOrTypesWithColons = asEscapedString(sortedLabelsOrTypes, colonStringJoiner)
+        val properties = asEscapedString(sortedProperties, propStringJoiner)
+        val btreeConfig = configAsString(indexConfig, value => btreeConfigValueAsString(value))
+        val optionsString = optionsAsString(providerName, btreeConfig)
+
+        maybeConstraint match {
+          case Some(constraint) if constraint.isUniquenessConstraint =>
+            s"CREATE CONSTRAINT $escapedName ON (n$labelsOrTypesWithColons) ASSERT ($properties) IS UNIQUE OPTIONS $optionsString"
+          case Some(constraint) if constraint.isNodeKeyConstraint =>
+            s"CREATE CONSTRAINT $escapedName ON (n$labelsOrTypesWithColons) ASSERT ($properties) IS NODE KEY OPTIONS $optionsString"
+          case Some(_) =>
+            throw new IllegalArgumentException("Expected an index or index backed constraint, found another constraint.")
+          case None =>
+            s"CREATE INDEX $escapedName FOR (n$labelsOrTypesWithColons) ON ($properties) OPTIONS $optionsString"
+        }
+      case IndexType.FULLTEXT =>
+        val labelsOrTypesArray = asString(sortedLabelsOrTypes, arrayStringJoiner)
+        val propertiesArray = asString(sortedProperties, arrayStringJoiner)
+        val fulltextConfig = configAsString(indexConfig, value => fullTextConfigValueAsString(value))
+
+        entityType match {
+          case EntityType.NODE =>
+            s"CALL db.index.fulltext.createNodeIndex('$escapedName', $labelsOrTypesArray, $propertiesArray, $fulltextConfig)"
+          case EntityType.RELATIONSHIP =>
+            s"CALL db.index.fulltext.createRelationshipIndex('$escapedName', $labelsOrTypesArray, $propertiesArray, $fulltextConfig)"
+          case _ => throw new IllegalArgumentException(s"Did not recognize entity type $entityType")
+        }
+      case _ => throw new IllegalArgumentException(s"Did not recognize index type $indexType")
+    }
+  }
+
+  private def asEscapedString(list: List[String], stringJoiner: StringJoiner): String = {
+    for (elem <- list) {
+      stringJoiner.add(escapeBackticks(elem))
+    }
+    stringJoiner.toString
+  }
+
+  private def asString(list: List[String], stringJoiner: StringJoiner): String = {
+    for (elem <- list) {
+      stringJoiner.add(s"'$elem'")
+    }
+    stringJoiner.toString
+  }
+
+  private def optionsAsString(providerString: String, configString: String): String = {
+    s"{indexConfig: $configString, indexProvider: '$providerString'}"
+  }
+
+  private def configAsString(indexConfig: IndexConfig, configValueAsString: Value => String): String = {
+    val configString: StringJoiner = configStringJoiner
+    val sortedIndexConfig = ListMap(indexConfig.asMap().asScala.toSeq.sortBy(_._1): _*)
+
+    sortedIndexConfig.foldLeft(configString) { (acc, entry) =>
+      val singleConfig: String = s"`${entry._1}`: ${configValueAsString(entry._2)}"
+      acc.add(singleConfig)
+    }
+    configString.toString
+  }
+
+  private def btreeConfigValueAsString(configValue: Value): String = {
+    configValue match {
+      case doubleArray: DoubleArray => java.util.Arrays.toString(doubleArray.asObjectCopy);
+      case intValue: IntValue => "" + intValue.value()
+      case booleanValue: BooleanValue => "" + booleanValue.booleanValue()
+      case stringValue: StringValue => "'" + stringValue.stringValue() + "'"
+      case _ => throw new IllegalArgumentException(s"Could not convert config value '$configValue' to config string.")
+    }
+  }
+
+  private def fullTextConfigValueAsString(configValue: Value): String = {
+    configValue match {
+      case booleanValue: BooleanValue => "'" + booleanValue.booleanValue() + "'"
+      case stringValue: StringValue =>"'" + stringValue.stringValue() + "'"
+      case _ => throw new IllegalArgumentException(s"Could not convert config value '$configValue' to config string.")
+    }
+  }
+
+  private def colonStringJoiner = new StringJoiner(":",":", "")
+  private def propStringJoiner = new StringJoiner(", n.","n.", "")
+  private def arrayStringJoiner = new StringJoiner(", ", "[", "]")
+  private def configStringJoiner = new StringJoiner(",", "{", "}")
+
+  sealed trait uniqueness
+
+  case object unique extends uniqueness {
+    final val NAME: String = "UNIQUE"
+  }
+
+  case object nonunique extends uniqueness {
+    final val NAME: String = "NONUNIQUE"
+  }
+
+  private def escapeBackticks(str: String): String = {
+
+    val doubleBackticksString = str.replaceAll("`", "``")
+    s"`$doubleBackticksString`"
   }
 }

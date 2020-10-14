@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.ast.DropNodePropertyExistenceConstraint
 import org.neo4j.cypher.internal.ast.DropRelationshipPropertyExistenceConstraint
 import org.neo4j.cypher.internal.ast.DropUniquePropertyConstraint
 import org.neo4j.cypher.internal.ast.IfExistsDoNothing
+import org.neo4j.cypher.internal.ast.ShowIndexes
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.frontend.phases.BaseState
@@ -133,6 +134,10 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
       // DROP INDEX name [IF EXISTS]
       case DropIndexOnName(name, ifExists, _) =>
         Some(plans.DropIndexOnName(name, ifExists))
+
+        // SHOW [ALL|BTREE] INDEXES [BRIEF|VERBOSE[OUTPUT]]
+      case ShowIndexes(all, verbose, _) =>
+        Some(plans.ShowIndexes(all, verbose))
 
       case _ => None
     }
