@@ -850,14 +850,6 @@ class PrettifierIT extends CypherFunSuite {
         """SHOW USER PRIVILEGES AS COMMANDS
           |  WHERE command CONTAINS "MATCH" AND command CONTAINS "NODE"""".stripMargin,
 
-      "show users yield user order by user skip 1 limit 1 where user='neo4j'" ->
-        """SHOW USERS
-          |  YIELD user
-          |    ORDER BY user ASCENDING
-          |    SKIP 1
-          |    LIMIT 1
-          |    WHERE user = "neo4j"""".stripMargin,
-
       "catalog show databases" ->
         "SHOW DATABASES",
 

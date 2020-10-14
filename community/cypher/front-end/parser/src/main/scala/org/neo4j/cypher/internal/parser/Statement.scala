@@ -235,7 +235,7 @@ trait Statement extends Parser
     optional(keyword("ALL")) ~~ keyword("PRIVILEGES") ~~~> ast.ShowAllPrivileges()
   }
 
-  private def asCommand: Rule1[Boolean] = rule("AS COMMAND") {
+  private def asCommand: Rule1[Boolean] = rule("AS COMMANDS") {
     group(keyword("AS") ~~ CommandKeyword) ~> (_ => false) |
     group(keyword("AS REVOKE") ~~ CommandKeyword) ~> (_ => true)
   }

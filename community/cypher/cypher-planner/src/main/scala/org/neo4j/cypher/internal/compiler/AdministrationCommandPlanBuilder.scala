@@ -324,13 +324,13 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // SHOW USER user PRIVILEGES
-      case sp @ ShowPrivileges(scope: ShowUserPrivileges, _,_) =>
+      case sp @ ShowPrivileges(scope: ShowUserPrivileges, _, _) =>
         val user = scope.user
         val source = if (user.isDefined) Some(plans.AssertDbmsAdminOrSelf(user.get, Seq(ShowPrivilegeAction, ShowUserAction))) else None
         Some(plans.ShowPrivileges(source, scope, sp.defaultColumnNames, sp.yields, sp.returns))
 
       // SHOW USERS user1, user2 PRIVILEGES
-      case sp @ ShowPrivileges(scope: ShowUsersPrivileges, _,_) =>
+      case sp @ ShowPrivileges(scope: ShowUsersPrivileges, _, _) =>
         val (newScope, source) = {
           val users = scope.users
           if (users.size > 1) (scope, Some(plans.AssertDbmsAdmin(Seq(ShowPrivilegeAction, ShowUserAction))))
