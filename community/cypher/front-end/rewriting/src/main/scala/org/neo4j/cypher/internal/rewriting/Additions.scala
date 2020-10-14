@@ -37,6 +37,7 @@ import org.neo4j.cypher.internal.ast.GrantPrivilege
 import org.neo4j.cypher.internal.ast.IfExistsDoNothing
 import org.neo4j.cypher.internal.ast.RevokePrivilege
 import org.neo4j.cypher.internal.ast.ShowCurrentUser
+import org.neo4j.cypher.internal.ast.ShowPrivilegeCommands
 import org.neo4j.cypher.internal.ast.ShowPrivileges
 import org.neo4j.cypher.internal.ast.ShowRolesPrivileges
 import org.neo4j.cypher.internal.ast.ShowUsersPrivileges
@@ -111,6 +112,9 @@ object Additions {
 
     override def check(statement: Statement, cypherExceptionFactory: CypherExceptionFactory): Unit = statement.treeExists {
 
+      case s@ShowPrivilegeCommands(_, _, _, _) =>
+        throw cypherExceptionFactory.syntaxException("SHOW PRIVILEGES AS COMMANDS command is not supported in this Cypher version.", s.position)
+
       case c@CreateUser(_, true, _, _, _, _) =>
         throw cypherExceptionFactory.syntaxException("Creating a user with an encrypted password is not supported in this Cypher version.", c.position)
 
@@ -118,11 +122,11 @@ object Additions {
         throw cypherExceptionFactory.syntaxException("Updating a user with an encrypted password is not supported in this Cypher version.", c.position)
 
       // SHOW ROLE role1, role2 PRIVILEGES
-      case s@ShowPrivileges(ShowRolesPrivileges(r), _, _,_) if r.size > 1 =>
+      case s@ShowPrivileges(ShowRolesPrivileges(r), _, _) if r.size > 1 =>
         throw cypherExceptionFactory.syntaxException("Multiple roles in SHOW ROLE PRIVILEGE command is not supported in this Cypher version.", s.position)
 
       // SHOW USER user1, user2 PRIVILEGES
-      case s@ShowPrivileges(ShowUsersPrivileges(u), _, _,_) if u.size > 1 =>
+      case s@ShowPrivileges(ShowUsersPrivileges(u), _, _) if u.size > 1 =>
         throw cypherExceptionFactory.syntaxException("Multiple users in SHOW USER PRIVILEGE command is not supported in this Cypher version.", s.position)
 
       case d: DefaultGraphScope => throw cypherExceptionFactory.syntaxException("Default graph is not supported in this Cypher version.", d.position)
