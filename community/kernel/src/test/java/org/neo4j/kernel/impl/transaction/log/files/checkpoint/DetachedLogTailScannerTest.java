@@ -22,12 +22,33 @@ package org.neo4j.kernel.impl.transaction.log.files.checkpoint;
 import java.io.IOException;
 import java.time.Instant;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
+import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
+import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
+import org.neo4j.storageengine.api.StoreId;
+
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.fail_on_corrupted_log_files;
+import static org.neo4j.kernel.impl.transaction.log.TestLogEntryReader.logEntryReader;
 
 class DetachedLogTailScannerTest extends AbstractLogTailScannerTest
 {
+    @Override
+    protected LogFiles createLogFiles() throws IOException
+    {
+        return LogFilesBuilder
+                .activeFilesBuilder( databaseLayout, fs, pageCache )
+                .withLogVersionRepository( logVersionRepository )
+                .withTransactionIdStore( transactionIdStore )
+                .withLogEntryReader( logEntryReader() )
+                .withStoreId( StoreId.UNKNOWN )
+                .withLogProvider( logProvider )
+                .withConfig( Config.defaults( fail_on_corrupted_log_files, false ) )
+                .build();
+    }
+
     @Override
     protected void writeCheckpoint( LogEntryWriter transactionLogWriter, CheckpointFile separateCheckpointFile, LogPosition logPosition ) throws IOException
     {

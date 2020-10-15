@@ -133,6 +133,7 @@ class VersionAwareLogEntryReaderIT
                 .withLogVersionRepository( new SimpleLogVersionRepository() )
                 .withTransactionIdStore( new SimpleTransactionIdStore() )
                 .withStoreId( StoreId.UNKNOWN )
+                .withTransactionLogVersionProvider( () -> LogEntryParserSetVersion.LogEntryV4_0 )
                 .build();
         try ( Lifespan lifespan = new Lifespan( logFiles ) )
         {

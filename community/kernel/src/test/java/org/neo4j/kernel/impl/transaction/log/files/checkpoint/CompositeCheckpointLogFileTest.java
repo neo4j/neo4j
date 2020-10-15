@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.time.Instant;
 import java.util.List;
 
+import org.neo4j.dbms.database.TransactionLogVersionProvider;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -34,6 +35,8 @@ import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.TransactionLogWriter;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryParserSetVersion;
+import org.neo4j.kernel.impl.transaction.log.entry.TransactionLogVersionSelector;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
@@ -72,6 +75,7 @@ class CompositeCheckpointLogFileTest
     private CheckpointFile checkpointFile;
     private TransactionLogWriter transactionLogWriter;
     private LogFiles logFiles;
+    private final FakeTransactionLogVersionProvider versionProvider = new FakeTransactionLogVersionProvider();
 
     @BeforeEach
     void setUp() throws IOException
@@ -87,7 +91,7 @@ class CompositeCheckpointLogFileTest
     void findLogTailShouldWorkForLegacyCheckpoints() throws IOException
     {
         LogPosition logPosition = new LogPosition( 0, 1 );
-        transactionLogWriter.legacyCheckPoint( logPosition );
+        writeLegacyCheckpoint( logPosition );
         logFiles.getLogFile().forceAfterAppend( LogAppendEvent.NULL );
 
         CheckpointInfo lastCheckPoint = checkpointFile.getTailInformation().lastCheckPoint;
@@ -107,7 +111,7 @@ class CompositeCheckpointLogFileTest
     void findLogTailShouldWorkForBothLegacyAndDetachedCheckpoints() throws IOException
     {
         LogPosition logPosition = new LogPosition( 0, 1 );
-        transactionLogWriter.legacyCheckPoint( logPosition );
+        writeLegacyCheckpoint( logPosition );
         logFiles.getLogFile().forceAfterAppend( LogAppendEvent.NULL );
         LogPosition logPosition2 = new LogPosition( logVersionRepository.getCurrentLogVersion(), CURRENT_FORMAT_LOG_HEADER_SIZE );
         checkpointFile.getCheckpointAppender().checkPoint( NULL, logPosition2, Instant.now(), "detached" );
@@ -121,7 +125,7 @@ class CompositeCheckpointLogFileTest
     void findLatestCheckpointShouldWorkForBothLegacyAndDetachedCheckpoints() throws IOException
     {
         LogPosition logPosition = new LogPosition( 0, 1 );
-        transactionLogWriter.legacyCheckPoint( logPosition );
+        writeLegacyCheckpoint( logPosition );
         logFiles.getLogFile().forceAfterAppend( LogAppendEvent.NULL );
         assertThat( checkpointFile.findLatestCheckpoint().orElseThrow().getTransactionLogPosition() ).isEqualTo( logPosition );
 
@@ -140,8 +144,8 @@ class CompositeCheckpointLogFileTest
         // Add legacy checkpoints
         LogPosition logPosition = new LogPosition( 0, 1 );
         LogPosition logPosition2 = new LogPosition( 0, 2 );
-        transactionLogWriter.legacyCheckPoint( logPosition );
-        transactionLogWriter.legacyCheckPoint( logPosition2 );
+        writeLegacyCheckpoint( logPosition );
+        writeLegacyCheckpoint( logPosition2 );
         logFiles.getLogFile().forceAfterAppend( LogAppendEvent.NULL );
 
         // Add detached checkpoints
@@ -171,6 +175,28 @@ class CompositeCheckpointLogFileTest
                 .withLogVersionRepository( logVersionRepository )
                 .withLogEntryReader( logEntryReader() )
                 .withStoreId( StoreId.UNKNOWN )
+                .withTransactionLogVersionProvider( versionProvider )
                 .build();
+    }
+
+    /**
+     * The legacy checkpoints must be written with a version they were supported in to be able to parse them later.
+     */
+    private void writeLegacyCheckpoint( LogPosition logPosition ) throws IOException
+    {
+        versionProvider.version = LogEntryParserSetVersion.LogEntryV4_0;
+        transactionLogWriter.legacyCheckPoint( logPosition );
+        versionProvider.version = TransactionLogVersionSelector.LATEST.version();
+    }
+
+    private class FakeTransactionLogVersionProvider implements TransactionLogVersionProvider
+    {
+        volatile LogEntryParserSetVersion version = TransactionLogVersionSelector.LATEST.version();
+
+        @Override
+        public LogEntryParserSetVersion getVersion()
+        {
+            return version;
+        }
     }
 }

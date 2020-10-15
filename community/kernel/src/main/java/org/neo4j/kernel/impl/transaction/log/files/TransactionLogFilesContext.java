@@ -66,7 +66,7 @@ public class TransactionLogFilesContext
             Supplier<LogVersionRepository> logVersionRepositorySupplier,FileSystemAbstraction fileSystem, LogProvider logProvider,
             DatabaseTracers databaseTracers, Supplier<StoreId> storeId, NativeAccess nativeAccess,
             MemoryTracker memoryTracker, Monitors monitors, boolean failOnCorruptedLogFiles, DatabaseHealth databaseHealth,
-            TransactionLogVersionProvider TransactionLogVersionProvider, Clock clock, Config config )
+            TransactionLogVersionProvider transactionLogVersionProvider, Clock clock, Config config )
     {
         this.rotationThreshold = rotationThreshold;
         this.tryPreallocateTransactionLogs = tryPreallocateTransactionLogs;
@@ -84,7 +84,7 @@ public class TransactionLogFilesContext
         this.monitors = monitors;
         this.failOnCorruptedLogFiles = failOnCorruptedLogFiles;
         this.databaseHealth = databaseHealth;
-        this.transactionLogVersionProvider = TransactionLogVersionProvider;
+        this.transactionLogVersionProvider = transactionLogVersionProvider;
         this.clock = clock;
         this.config = config;
     }

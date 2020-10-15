@@ -58,6 +58,8 @@ import org.neo4j.kernel.impl.transaction.log.PositionAwarePhysicalFlushableCheck
 import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryParserSet;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryParserSetV4_0;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
@@ -286,7 +288,7 @@ class TransactionLogsRecoveryTest
         Path file = logFiles.getLogFile().getLogFileForVersion( logVersion );
 
         LogPositionMarker marker = new LogPositionMarker();
-        writeSomeData( file, pair ->
+        writeSomeDataWithVersion( file, pair ->
         {
             LogEntryWriter writer = pair.first();
             Consumer<LogPositionMarker> consumer = pair.other();
@@ -309,7 +311,7 @@ class TransactionLogsRecoveryTest
                 writer.writeLegacyCheckPointEntry( marker.newPosition() );
             }
             return true;
-        } );
+        }, useSeparateLogFiles ? TransactionLogVersionSelector.LATEST : LogEntryParserSetV4_0.V4_0 );
 
         LifeSupport life = new LifeSupport();
         RecoveryMonitor monitor = mock( RecoveryMonitor.class );
@@ -591,6 +593,12 @@ class TransactionLogsRecoveryTest
 
     private void writeSomeData( Path file, Visitor<Pair<LogEntryWriter,Consumer<LogPositionMarker>>,IOException> visitor ) throws IOException
     {
+        writeSomeDataWithVersion( file, visitor, TransactionLogVersionSelector.LATEST );
+    }
+
+    private void writeSomeDataWithVersion( Path file, Visitor<Pair<LogEntryWriter,Consumer<LogPositionMarker>>,IOException> visitor,
+            LogEntryParserSet parserSet ) throws IOException
+    {
         try ( LogVersionedStoreChannel versionedStoreChannel = new PhysicalLogVersionedStoreChannel( fileSystem.write( file ), logVersion,
                 CURRENT_LOG_FORMAT_VERSION, file, EMPTY_ACCESSOR );
               PositionAwarePhysicalFlushableChecksumChannel writableLogChannel =
@@ -609,7 +617,7 @@ class TransactionLogsRecoveryTest
                     throw new RuntimeException( e );
                 }
             };
-            LogEntryWriter first = new LogEntryWriter( writableLogChannel, TransactionLogVersionSelector.LATEST );
+            LogEntryWriter first = new LogEntryWriter( writableLogChannel, parserSet );
             visitor.visit( Pair.of( first, consumer ) );
         }
     }

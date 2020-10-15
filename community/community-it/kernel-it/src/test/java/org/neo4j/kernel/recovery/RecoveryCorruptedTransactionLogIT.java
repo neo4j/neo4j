@@ -1117,9 +1117,9 @@ class RecoveryCorruptedTransactionLogIT
         }
 
         @Override
-        public void writeLegacyCheckPointEntry( LogPosition logPosition ) throws IOException
+        public void writeLegacyCheckPointEntry( LogPosition logPosition )
         {
-            delegate.writeLegacyCheckPointEntry( logPosition );
+            throw new UnsupportedOperationException( "This LogEntryWriter doesn't support writing legacy checkpoints" );
         }
 
         @Override
