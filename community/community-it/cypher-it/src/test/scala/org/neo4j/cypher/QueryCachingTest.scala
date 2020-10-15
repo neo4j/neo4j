@@ -21,8 +21,10 @@ package org.neo4j.cypher
 
 import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.configuration.GraphDatabaseInternalSettings.CypherExpressionEngine.ONLY_WHEN_HOT
+import org.neo4j.cypher.internal.CacheTracer
 import org.neo4j.cypher.internal.ExecutionEngineQueryCacheMonitor
 import org.neo4j.cypher.internal.QueryCache.ParameterTypeMap
+import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Label
 import org.neo4j.graphdb.QueryExecutionException
@@ -41,11 +43,11 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
 
   private val empty_parameters = "Map()"
 
-  test("re-uses cached plan across different execution modes") {
+  test("re-uses cached plan in AstLogicalPlanCache across different execution modes") {
     // ensure label exists
     graph.withTx( tx => tx.createNode(Label.label("Person")) )
 
-    val cacheListener = new LoggingExecutionEngineQueryCacheListener
+    val cacheListener = new LogginAstLogicalPlanCacheTracer
     kernelMonitors.addMonitorListener(cacheListener)
 
     val query = "MATCH (n:Person) RETURN n"
@@ -82,6 +84,49 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
         val actual = cacheListener.trace.map(str => str.replaceAll("\\s+", " "))
         val expected = List(
           s"cacheFlushDetected",
+          s"cacheMiss",
+          s"cacheCompile",
+          s"cacheHit"
+        )
+
+        actual should equal(expected)
+    }
+  }
+
+  test("re-uses cached plan with and without explain") {
+    // ensure label exists
+    graph.withTx( tx => tx.createNode(Label.label("Person")) )
+
+    val cacheListener = new LoggingExecutionEngineQueryCacheListener
+    kernelMonitors.addMonitorListener(cacheListener)
+
+    val query = "MATCH (n:Person) RETURN n"
+    val explainQuery = s"EXPLAIN $query"
+
+    val modeCombinations = Table(
+      ("firstQuery", "secondQuery"),
+      (query, query),
+      (query, explainQuery),
+
+      (explainQuery, query),
+      (explainQuery, explainQuery)
+    )
+
+    forAll(modeCombinations) {
+      case (firstQuery, secondQuery) =>
+        // Flush cache
+        cacheListener.clear()
+
+        graph.withTx( tx => {
+          tx.kernelTransaction().schemaRead().schemaStateFlush()
+        } )
+
+        graph.withTx( tx => tx.execute(firstQuery).resultAsString() )
+        graph.withTx( tx => tx.execute(secondQuery).resultAsString() )
+
+        val actual = cacheListener.trace.map(str => str.replaceAll("\\s+", " "))
+        val expected = List(
+          s"cacheFlushDetected",
           s"cacheMiss: (CYPHER 4.2 $query, $empty_parameters)",
           s"cacheCompile: (CYPHER 4.2 $query, $empty_parameters)",
           s"cacheHit: (CYPHER 4.2 $query, $empty_parameters)",
@@ -90,6 +135,94 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
 
         actual should equal(expected)
     }
+  }
+
+  test("normal execution followed by profile triggers physical planning but not logical planning") {
+    // ensure label exists
+    graph.withTx( tx => tx.createNode(Label.label("Person")) )
+
+    val logicalPlanTracer = new LogginAstLogicalPlanCacheTracer
+    val physicalPlanTracer = new LoggingExecutionEngineQueryCacheListener
+    kernelMonitors.addMonitorListener(logicalPlanTracer)
+    kernelMonitors.addMonitorListener(physicalPlanTracer)
+
+    val query = "MATCH (n:Person) RETURN n"
+    val profileQuery = s"PROFILE $query"
+
+    // Flush cache
+    logicalPlanTracer.clear()
+
+    graph.withTx(tx => {
+      tx.kernelTransaction().schemaRead().schemaStateFlush()
+    })
+
+    graph.withTx(tx => tx.execute(query).resultAsString())
+    graph.withTx(tx => tx.execute(profileQuery).resultAsString())
+
+    val actualLogicalPlanTrace = logicalPlanTracer.trace.map(str => str.replaceAll("\\s+", " "))
+    val expectedLogicalPlanTrace = List(
+      s"cacheFlushDetected",
+      s"cacheMiss",
+      s"cacheCompile",
+      s"cacheHit"
+    )
+
+    actualLogicalPlanTrace should equal(expectedLogicalPlanTrace)
+
+    val actualPhysicalPlanTrace = physicalPlanTracer.trace.map(str => str.replaceAll("\\s+", " "))
+    val expectedPhysicalPlanTrace = List(
+      s"cacheFlushDetected",
+      s"cacheMiss: (CYPHER 4.2 $query, $empty_parameters)",
+      s"cacheCompile: (CYPHER 4.2 $query, $empty_parameters)",
+      s"cacheMiss: (CYPHER 4.2 PROFILE $query, $empty_parameters)",
+      s"cacheCompile: (CYPHER 4.2 PROFILE $query, $empty_parameters)",
+    )
+
+    actualPhysicalPlanTrace should equal(expectedPhysicalPlanTrace)
+  }
+
+  test("profile followed by normal execution triggers physical planning but not logical planning") {
+    // ensure label exists
+    graph.withTx( tx => tx.createNode(Label.label("Person")) )
+
+    val logicalPlanTracer = new LogginAstLogicalPlanCacheTracer
+    val physicalPlanTracer = new LoggingExecutionEngineQueryCacheListener
+    kernelMonitors.addMonitorListener(logicalPlanTracer)
+    kernelMonitors.addMonitorListener(physicalPlanTracer)
+
+    val query = "MATCH (n:Person) RETURN n"
+    val profileQuery = s"PROFILE $query"
+
+    // Flush cache
+    logicalPlanTracer.clear()
+
+    graph.withTx(tx => {
+      tx.kernelTransaction().schemaRead().schemaStateFlush()
+    })
+
+    graph.withTx(tx => tx.execute(profileQuery).resultAsString())
+    graph.withTx(tx => tx.execute(query).resultAsString())
+
+    val actualLogicalPlanTrace = logicalPlanTracer.trace.map(str => str.replaceAll("\\s+", " "))
+    val expectedLogicalPlanTrace = List(
+      s"cacheFlushDetected",
+      s"cacheMiss",
+      s"cacheCompile",
+      s"cacheHit"
+    )
+
+    actualLogicalPlanTrace should equal(expectedLogicalPlanTrace)
+
+    val actualPhysicalPlanTrace = physicalPlanTracer.trace.map(str => str.replaceAll("\\s+", " "))
+    val expectedPhysicalPlanTrace = List(
+      s"cacheFlushDetected",
+      s"cacheMiss: (CYPHER 4.2 PROFILE $query, $empty_parameters)",
+      s"cacheCompile: (CYPHER 4.2 PROFILE $query, $empty_parameters)",
+      s"cacheMiss: (CYPHER 4.2 $query, $empty_parameters)",
+      s"cacheCompile: (CYPHER 4.2 $query, $empty_parameters)",
+    )
+
+    actualPhysicalPlanTrace should equal(expectedPhysicalPlanTrace)
   }
 
   test("repeating query with same parameters should hit the cache") {
@@ -388,6 +521,44 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
 
     actual should equal(expected)
   }
+
+  private class LogginAstLogicalPlanCacheTracer extends CacheTracer[Pair[Statement, ParameterTypeMap]] {
+    private val log: mutable.Builder[String, List[String]] = List.newBuilder
+
+    def trace: Seq[String] = log.result()
+
+    def clear(): Unit = {
+      log.clear()
+    }
+
+    override def queryCacheHit(queryKey: Pair[Statement, ParameterTypeMap],
+                               metaData: String): Unit = {
+      log += s"cacheHit"
+    }
+
+    override def queryCacheMiss(queryKey: Pair[Statement, ParameterTypeMap], metaData: String): Unit = {
+      log += s"cacheMiss"
+    }
+
+    override def queryCompile(queryKey: Pair[Statement, ParameterTypeMap], metaData: String): Unit = {
+      log += s"cacheCompile"
+    }
+
+    override def queryCompileWithExpressionCodeGen(queryKey: Pair[Statement, ParameterTypeMap], metaData: String): Unit = {
+      log += s"cacheCompileWithExpressionCodeGen"
+    }
+
+    override def queryCacheStale(queryKey:  Pair[Statement, ParameterTypeMap],
+                                 secondsSincePlan: Int,
+                                 metaData:  String,
+                                 maybeReason:  Option[String]): Unit = {
+      log += s"cacheStale"
+    }
+
+    override def queryCacheFlush(sizeOfCacheBeforeFlush: Long): Unit = {
+      log += s"cacheFlushDetected"
+    }
+}
 
   private class LoggingExecutionEngineQueryCacheListener extends ExecutionEngineQueryCacheMonitor {
     private val log: mutable.Builder[String, List[String]] = List.newBuilder

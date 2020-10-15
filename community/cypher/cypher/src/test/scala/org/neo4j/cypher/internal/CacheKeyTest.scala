@@ -27,6 +27,7 @@ class CacheKeyTest extends CypherFunSuite {
   test("All members should be part of render") {
     //given
     val cacheKey = CacheKey("100",
+                            "PROFILE",
                             "INFO",
                             "SUPER_FAST",
                             "AGGRESSIVE",

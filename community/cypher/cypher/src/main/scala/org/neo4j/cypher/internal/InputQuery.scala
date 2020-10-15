@@ -103,6 +103,10 @@ case class QueryOptions(offset: InputPosition,
 
   def cacheKey: QueryOptions.CacheKey = QueryOptions.CacheKey(
     version = version.name,
+    executionMode match {
+      case CypherExecutionMode.profile => "PROFILE"
+      case _ => ""
+    },
     plannerInfo = planner match {
       case CypherPlannerOption.default => ""
       case _ => s"planner=${planner.name}"
@@ -165,6 +169,7 @@ case class QueryOptions(offset: InputPosition,
 
 object QueryOptions {
   case class CacheKey(version: String,
+                      profile: String,
                       plannerInfo: String,
                       runtimeInfo: String,
                       updateStrategyInfo: String,
@@ -174,7 +179,7 @@ object QueryOptions {
                       connectComponentsPlanner: String,
                       debugFlags: String) {
     def render: String =
-      s"CYPHER $version $plannerInfo $runtimeInfo $updateStrategyInfo $expressionEngineInfo $operatorEngineInfo $interpretedPipesFallbackInfo $connectComponentsPlanner $debugFlags"
+      s"CYPHER $version $profile $plannerInfo $runtimeInfo $updateStrategyInfo $expressionEngineInfo $operatorEngineInfo $interpretedPipesFallbackInfo $connectComponentsPlanner $debugFlags"
   }
 
   val default: QueryOptions = QueryOptions(InputPosition.NONE,
