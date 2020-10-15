@@ -19,6 +19,8 @@
  */
 package org.neo4j.test.mockito.mock;
 
+import org.bouncycastle.cms.DefaultCMSSignatureAlgorithmNameGenerator;
+import org.mockito.MockSettings;
 import org.mockito.stubbing.Answer;
 
 import java.util.ArrayList;
@@ -38,6 +40,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.withSettings;
 import static org.neo4j.internal.helpers.collection.Iterables.reverse;
 
 public final class GraphMock
@@ -128,7 +131,11 @@ public final class GraphMock
     private static Relationship mockRelationship( long id, Node start, String type, Node end, Properties properties )
     {
         Relationship relationship = mockEntity( Relationship.class, properties );
+        var startNodeId = start.getId();
+        var endNodeId = end.getId();
         when( relationship.getId() ).thenReturn( id );
+        when( relationship.getStartNodeId() ).thenReturn( startNodeId );
+        when( relationship.getEndNodeId() ).thenReturn( endNodeId );
         when( relationship.getStartNode() ).thenReturn( start );
         when( relationship.getEndNode() ).thenReturn( end );
         when( relationship.getType() ).thenReturn( RelationshipType.withName( type ) );

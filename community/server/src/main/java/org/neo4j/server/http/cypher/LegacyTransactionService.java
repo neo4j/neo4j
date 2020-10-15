@@ -41,11 +41,9 @@ public class LegacyTransactionService extends AbstractCypherResource
             @Context Config config,
             @Context HttpTransactionManager httpTransactionManager,
             @Context UriInfo uriInfo,
-            @Context Log log,
-            @Context HttpHeaders headers,
-            @Context HttpServletRequest request )
+            @Context Log log )
     {
-        super( httpTransactionManager, uriInfo, log, headers, request, config.get( GraphDatabaseSettings.default_database ) );
+        super( httpTransactionManager, uriInfo, log, config.get( GraphDatabaseSettings.default_database ) );
     }
 
     @Override

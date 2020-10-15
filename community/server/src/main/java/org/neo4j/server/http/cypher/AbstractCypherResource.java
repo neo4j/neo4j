@@ -53,19 +53,14 @@ public abstract class AbstractCypherResource
     private final HttpTransactionManager httpTransactionManager;
     private final TransactionUriScheme uriScheme;
     private final Log log;
-    private final HttpHeaders headers;
-    private final HttpServletRequest request;
     private final String databaseName;
 
-    AbstractCypherResource( HttpTransactionManager httpTransactionManager, UriInfo uriInfo, Log log, HttpHeaders headers, HttpServletRequest request,
-            String databaseName )
+    AbstractCypherResource( HttpTransactionManager httpTransactionManager, UriInfo uriInfo, Log log, String databaseName )
     {
         this.httpTransactionManager = httpTransactionManager;
         this.databaseName = databaseName;
         this.uriScheme = new TransactionUriBuilder( dbUri( uriInfo, databaseName ), cypherUri( uriInfo, databaseName ) );
         this.log = log;
-        this.headers = headers;
-        this.request = request;
     }
 
     protected abstract URI dbUri( UriInfo uriInfo, String databaseName );
@@ -73,7 +68,7 @@ public abstract class AbstractCypherResource
     protected abstract URI cypherUri( UriInfo uriInfo, String databaseName );
 
     @POST
-    public Response executeStatementsInNewTransaction( InputEventStream inputEventStream )
+    public Response executeStatementsInNewTransaction( InputEventStream inputEventStream, @Context HttpServletRequest request, @Context HttpHeaders headers )
     {
         InputEventStream inputStream = ensureNotNull( inputEventStream );
 
@@ -84,19 +79,18 @@ public abstract class AbstractCypherResource
                 return createNonAvailableDatabaseResponse( inputStream.getParameters() );
             }
             final TransactionFacade transactionFacade = httpTransactionManager.createTransactionFacade( databaseAPI );
-            TransactionHandle transactionHandle = createNewTransactionHandle( transactionFacade, headers, request, false );
+            TransactionHandle transactionHandle = createNewTransactionHandle( transactionFacade, request, headers, false );
 
             Invocation invocation = new Invocation( log, transactionHandle, uriScheme.txCommitUri( transactionHandle.getId() ), inputStream, false );
-            OutputEventStreamImpl outputStream =
-                    new OutputEventStreamImpl( inputStream.getParameters(), transactionHandle, uriScheme, invocation::execute );
+            OutputEventStreamImpl outputStream = new OutputEventStreamImpl( inputStream.getParameters(), transactionHandle, uriScheme, invocation::execute );
             return Response.created( transactionHandle.uri() ).entity( outputStream ).build();
 
         } ).orElse( createNonExistentDatabaseResponse( inputStream.getParameters() ) );
     }
+
     @POST
     @Path( "/{id}" )
-    public Response executeStatements( @PathParam( "id" ) long id, InputEventStream inputEventStream, @Context UriInfo uriInfo,
-            @Context HttpServletRequest request )
+    public Response executeStatements( @PathParam( "id" ) long id, InputEventStream inputEventStream )
     {
         return executeInExistingTransaction( id, inputEventStream, false );
     }
@@ -104,14 +98,13 @@ public abstract class AbstractCypherResource
     @POST
     @Path( "/{id}/commit" )
     public Response commitTransaction( @PathParam( "id" ) long id, InputEventStream inputEventStream )
-
     {
         return executeInExistingTransaction( id, inputEventStream, true );
     }
 
     @POST
     @Path( "/commit" )
-    public Response commitNewTransaction( @Context HttpHeaders headers, InputEventStream inputEventStream, @Context HttpServletRequest request )
+    public Response commitNewTransaction( InputEventStream inputEventStream, @Context HttpServletRequest request, @Context HttpHeaders headers )
     {
         InputEventStream inputStream = ensureNotNull( inputEventStream );
 
@@ -123,7 +116,7 @@ public abstract class AbstractCypherResource
                 return createNonAvailableDatabaseResponse( inputStream.getParameters() );
             }
             final TransactionFacade transactionFacade = httpTransactionManager.createTransactionFacade( databaseAPI );
-            TransactionHandle transactionHandle = createNewTransactionHandle( transactionFacade, headers, request, true );
+            TransactionHandle transactionHandle = createNewTransactionHandle( transactionFacade, request, headers, true );
 
             Invocation invocation = new Invocation( log, transactionHandle, null, inputStream, true );
             OutputEventStreamImpl outputStream =
@@ -131,6 +124,7 @@ public abstract class AbstractCypherResource
             return Response.ok( outputStream ).build();
         } ).orElse( createNonExistentDatabaseResponse( inputStream.getParameters() ) );
     }
+
     @DELETE
     @Path( "/{id}" )
     public Response rollbackTransaction( @PathParam( "id" ) final long id )
@@ -150,12 +144,11 @@ public abstract class AbstractCypherResource
             }
             catch ( TransactionLifecycleException e )
             {
-                return invalidTransaction( transactionFacade, e, emptyMap() );
+                return invalidTransaction( e, emptyMap() );
             }
 
             RollbackInvocation invocation = new RollbackInvocation( log, transactionHandle );
-            OutputEventStreamImpl outputEventStream =
-                    new OutputEventStreamImpl( emptyMap(), null, uriScheme, invocation::execute );
+            OutputEventStreamImpl outputEventStream = new OutputEventStreamImpl( emptyMap(), null, uriScheme, invocation::execute );
             return Response.ok().entity( outputEventStream ).build();
 
         } ).orElse( createNonExistentDatabaseResponse( emptyMap() ) );
@@ -166,7 +159,7 @@ public abstract class AbstractCypherResource
         return !databaseAPI.isAvailable( 0 );
     }
 
-    private TransactionHandle createNewTransactionHandle( TransactionFacade transactionFacade, HttpHeaders headers, HttpServletRequest request,
+    private TransactionHandle createNewTransactionHandle( TransactionFacade transactionFacade, HttpServletRequest request, HttpHeaders headers,
             boolean implicitTransaction )
     {
         LoginContext loginContext = AuthorizedRequestWrapper.getLoginContextFromHttpServletRequest( request );
@@ -194,17 +187,16 @@ public abstract class AbstractCypherResource
             }
             catch ( TransactionLifecycleException e )
             {
-                return invalidTransaction( transactionFacade, e, inputStream.getParameters() );
+                return invalidTransaction( e, inputStream.getParameters() );
             }
-            Invocation invocation =
-                    new Invocation( log, transactionHandle, uriScheme.txCommitUri( transactionHandle.getId() ), inputStream, finishWithCommit );
+            Invocation invocation = new Invocation( log, transactionHandle, uriScheme.txCommitUri( transactionHandle.getId() ), inputStream, finishWithCommit );
             OutputEventStreamImpl outputEventStream =
                     new OutputEventStreamImpl( inputStream.getParameters(), transactionHandle, uriScheme, invocation::execute );
             return Response.ok( outputEventStream ).build();
         } ).orElse( createNonExistentDatabaseResponse( inputStream.getParameters() ) );
     }
 
-    private Response invalidTransaction( TransactionFacade transactionFacade, TransactionLifecycleException e, Map<String,Object> parameters )
+    private Response invalidTransaction( TransactionLifecycleException e, Map<String,Object> parameters )
     {
         ErrorInvocation errorInvocation = new ErrorInvocation( e.toNeo4jError() );
         return Response.status( Response.Status.NOT_FOUND ).entity(

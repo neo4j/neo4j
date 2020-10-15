@@ -47,7 +47,7 @@ public class CypherResource extends AbstractCypherResource
             @Context HttpServletRequest request,
             @PathParam( DB_PATH_PARAM_NAME ) String databaseName )
     {
-        super( httpTransactionManager, uriInfo, log, headers, request, databaseName );
+        super( httpTransactionManager, uriInfo, log, databaseName );
     }
 
     @Override
