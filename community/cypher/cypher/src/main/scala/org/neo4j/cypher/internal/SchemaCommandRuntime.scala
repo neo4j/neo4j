@@ -60,6 +60,8 @@ import org.neo4j.cypher.internal.logical.plans.RelationshipPropertyExistence
 import org.neo4j.cypher.internal.logical.plans.ShowConstraints
 import org.neo4j.cypher.internal.logical.plans.ShowIndexes
 import org.neo4j.cypher.internal.logical.plans.Uniqueness
+import org.neo4j.cypher.internal.procs.AssertConstraint
+import org.neo4j.cypher.internal.procs.AssertIndex
 import org.neo4j.cypher.internal.procs.IgnoredResult
 import org.neo4j.cypher.internal.procs.SchemaReadExecutionPlan
 import org.neo4j.cypher.internal.procs.SchemaReadExecutionResult
@@ -206,7 +208,7 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
 
     // SHOW [ALL|UNIQUE|NODE EXIST[S]|RELATIONSHIP EXIST[S]|EXIST[S]|NODE KEY] CONSTRAINT[S] [BRIEF|VERBOSE[OUTPUT]]
     case ShowConstraints(constraintType, verbose) => (_, _) =>
-      SchemaReadExecutionPlan("ShowConstraints", ctx => {
+      SchemaReadExecutionPlan("ShowConstraints", AssertConstraint, ctx => {
         val constraints = ctx.getAllConstraints()
 
         val predicate: ConstraintDescriptor => Boolean = constraintType match {
@@ -308,7 +310,7 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
 
     // SHOW [ALL|BTREE] INDEX[ES] [BRIEF|VERBOSE[OUTPUT]]
     case ShowIndexes(all, verbose) => (_, _) =>
-      SchemaReadExecutionPlan("ShowIndexes", ctx => {
+      SchemaReadExecutionPlan("ShowIndexes", AssertIndex, ctx => {
         val indexes: Map[IndexDescriptor, IndexInfo] = ctx.getAllIndexes()
         val relevantIndexes = if (all) indexes else indexes.filter {
           case (indexDescriptor, _) => indexDescriptor.getIndexType.equals(IndexType.BTREE)

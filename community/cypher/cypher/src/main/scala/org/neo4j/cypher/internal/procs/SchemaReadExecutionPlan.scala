@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.procs
 
-import org.neo4j.cypher.internal.ExecutionPlan
 import org.neo4j.cypher.internal.runtime.ExecutionMode
 import org.neo4j.cypher.internal.runtime.InputDataStream
 import org.neo4j.cypher.internal.runtime.QueryContext
@@ -35,7 +34,7 @@ import org.neo4j.values.virtual.MapValue
  * @param name       A name of the schema read
  * @param schemaRead The actual schema read to perform
  */
-case class SchemaReadExecutionPlan(name: String, schemaRead: QueryContext => SchemaReadExecutionResult)
+case class SchemaReadExecutionPlan(name: String, assertType: AssertType, schemaRead: QueryContext => SchemaReadExecutionResult)
   extends SchemaCommandChainedExecutionPlan(None) {
 
   override def runSpecific(ctx: UpdateCountingQueryContext,
@@ -45,8 +44,10 @@ case class SchemaReadExecutionPlan(name: String, schemaRead: QueryContext => Sch
                            ignore: InputDataStream,
                            subscriber: QuerySubscriber): RuntimeResult = {
 
-    // TODO: right now there is no security here. Need to add a new SHOW INDEX privilege and check it here
-    //ctx.assertSchemaWritesAllowed()
+    assertType match {
+      case AssertIndex      => ctx.assertShowIndexAllowed()
+      case AssertConstraint => ctx.assertShowConstraintAllowed()
+    }
     ctx.transactionalContext.close()
     val schemaReadResult = schemaRead(ctx)
     val runtimeResult = SchemaReadRuntimeResult(ctx, subscriber, schemaReadResult.columnNames, schemaReadResult.result)
@@ -55,3 +56,7 @@ case class SchemaReadExecutionPlan(name: String, schemaRead: QueryContext => Sch
 }
 
 case class SchemaReadExecutionResult(columnNames: Array[String], result: List[Map[String, AnyValue]])
+
+sealed trait AssertType
+case object AssertIndex extends AssertType
+case object AssertConstraint extends AssertType

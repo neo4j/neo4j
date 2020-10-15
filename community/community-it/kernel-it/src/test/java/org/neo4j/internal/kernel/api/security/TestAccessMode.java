@@ -65,6 +65,18 @@ public class TestAccessMode implements AccessMode
     }
 
     @Override
+    public boolean allowsShowIndex()
+    {
+        return allowSchema;
+    }
+
+    @Override
+    public boolean allowsShowConstraint()
+    {
+        return allowSchema;
+    }
+
+    @Override
     public boolean allowsTraverseAllLabels()
     {
         return allowReadAll;

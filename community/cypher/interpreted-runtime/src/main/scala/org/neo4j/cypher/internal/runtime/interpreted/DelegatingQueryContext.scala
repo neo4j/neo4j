@@ -333,6 +333,10 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
 
   override def assertSchemaWritesAllowed(): Unit = inner.assertSchemaWritesAllowed()
 
+  override def assertShowIndexAllowed(): Unit = inner.assertShowIndexAllowed()
+
+  override def assertShowConstraintAllowed(): Unit = inner.assertShowConstraintAllowed()
+
   override def asObject(value: AnyValue): AnyRef = inner.asObject(value)
 
   override def getTxStateNodePropertyOrNull(nodeId: Long,

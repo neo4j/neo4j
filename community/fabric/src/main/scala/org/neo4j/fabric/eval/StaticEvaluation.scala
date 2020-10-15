@@ -273,6 +273,10 @@ object StaticEvaluation {
 
     override def assertSchemaWritesAllowed(): Unit = notAvailable()
 
+    override def assertShowIndexAllowed(): Unit = notAvailable()
+
+    override def assertShowConstraintAllowed(): Unit = notAvailable()
+
     override def getLabelName(id: Int): String = notAvailable()
 
     override def getOptLabelId(labelName: String): Option[Int] = None

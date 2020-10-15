@@ -62,6 +62,18 @@ public class RestrictedAccessMode extends WrappedAccessMode
     }
 
     @Override
+    public boolean allowsShowIndex()
+    {
+        return original.allowsShowIndex() && wrapping.allowsShowIndex();
+    }
+
+    @Override
+    public boolean allowsShowConstraint()
+    {
+        return original.allowsShowConstraint() && wrapping.allowsShowConstraint();
+    }
+
+    @Override
     public boolean allowsTraverseAllLabels()
     {
         return original.allowsTraverseAllLabels() && wrapping.allowsTraverseAllLabels();

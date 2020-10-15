@@ -236,6 +236,10 @@ trait QueryContext extends TokenContext with DbAccess {
 
   def assertSchemaWritesAllowed(): Unit
 
+  def assertShowIndexAllowed(): Unit
+
+  def assertShowConstraintAllowed(): Unit
+
   override def nodeById(id: Long): NodeValue = nodeOps.getById(id)
 
   override def relationshipById(id: Long): RelationshipValue = relationshipOps.getById(id)

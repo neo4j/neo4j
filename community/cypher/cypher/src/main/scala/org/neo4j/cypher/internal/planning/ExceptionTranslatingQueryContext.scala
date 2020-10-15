@@ -353,6 +353,10 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
 
   override def assertSchemaWritesAllowed(): Unit = translateException(tokenNameLookup, inner.assertSchemaWritesAllowed())
 
+  override def assertShowIndexAllowed(): Unit = translateException(tokenNameLookup, inner.assertShowIndexAllowed())
+
+  override def assertShowConstraintAllowed(): Unit = translateException(tokenNameLookup, inner.assertShowConstraintAllowed())
+
   class ExceptionTranslatingOperations[T, CURSOR](inner: Operations[T, CURSOR])
     extends Operations[T, CURSOR] {
     override def delete(id: Long): Unit =
