@@ -76,6 +76,7 @@ trait CypherRuntime[-CONTEXT <: RuntimeContext] {
  * @param leveragedOrders leveragedOrder of all operators in the logical plan tree
  * @param hasLoadCSV a flag showing if the query contains a load csv, used for tracking line numbers
  * @param periodicCommitInfo periodic commit info if relevant
+ * @param doProfile `true` if a profiling query otherwise `false`
  */
 case class LogicalQuery(logicalPlan: LogicalPlan,
                         queryText: String,
@@ -87,7 +88,8 @@ case class LogicalQuery(logicalPlan: LogicalPlan,
                         leveragedOrders: LeveragedOrders,
                         hasLoadCSV: Boolean,
                         periodicCommitInfo: Option[PeriodicCommitInfo],
-                        idGen: IdGen)
+                        idGen: IdGen,
+                        doProfile: Boolean)
 
 /**
  * Context in which the Runtime performs physical planning

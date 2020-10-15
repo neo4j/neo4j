@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.CypherExecutionMode
+import org.neo4j.cypher.CypherExecutionMode.profile
 import org.neo4j.cypher.CypherVersion
 import org.neo4j.cypher.internal.NotificationWrapping.asKernelNotification
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
@@ -146,7 +147,8 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
       planningAttributesCopy.leveragedOrders,
       planState.hasLoadCSV,
       planState.maybePeriodicCommit.flatMap(_.map(x => PeriodicCommitInfo(x.batchSize))),
-      new SequentialIdGen(planningAttributesCopy.cardinalities.size))
+      new SequentialIdGen(planningAttributesCopy.cardinalities.size),
+      query.options.executionMode == profile)
 
 
     val executionPlan: ExecutionPlan = try {
