@@ -89,6 +89,7 @@ class LogicalQueryBuilder(tokenResolver: Resolver)
                  leveragedOrders,
                  hasLoadCSV = false,
                  None,
-                 idGen)
+                 idGen,
+                 doProfile = false)
   }
 }

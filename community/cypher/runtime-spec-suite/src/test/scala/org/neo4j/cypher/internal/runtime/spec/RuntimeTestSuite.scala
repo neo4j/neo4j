@@ -200,12 +200,12 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
 
   override def profile(logicalQuery: LogicalQuery,
                        runtime: CypherRuntime[CONTEXT],
-                       inputDataStream: InputDataStream = NoInput): RecordingRuntimeResult = runtimeTestSupport.profile(logicalQuery, runtime, inputDataStream)
+                       inputDataStream: InputDataStream = NoInput): RecordingRuntimeResult = runtimeTestSupport.profile(logicalQuery.copy(doProfile = true), runtime, inputDataStream)
 
   override def profileNonRecording(logicalQuery: LogicalQuery,
                                    runtime: CypherRuntime[CONTEXT],
                                    inputDataStream: InputDataStream = NoInput): NonRecordingRuntimeResult =
-    runtimeTestSupport.profileNonRecording(logicalQuery, runtime, inputDataStream)
+    runtimeTestSupport.profileNonRecording(logicalQuery.copy(doProfile = true), runtime, inputDataStream)
 
   override def profileWithSubscriber(logicalQuery: LogicalQuery,
                                      runtime: CypherRuntime[CONTEXT],

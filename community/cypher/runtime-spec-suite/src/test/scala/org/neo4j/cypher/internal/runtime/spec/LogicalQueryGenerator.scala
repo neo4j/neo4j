@@ -63,6 +63,7 @@ object LogicalQueryGenerator {
       leveragedOrders,
       hasLoadCSV = false,
       None,
-      state.idGen), state)
+      state.idGen,
+      doProfile = false), state)
   }
 }
