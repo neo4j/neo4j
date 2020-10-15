@@ -83,8 +83,8 @@ import static org.neo4j.configuration.SettingValueParsers.TIMEZONE;
 import static org.neo4j.configuration.SettingValueParsers.TRUE;
 import static org.neo4j.configuration.SettingValueParsers.listOf;
 import static org.neo4j.configuration.SettingValueParsers.ofEnum;
-import static org.neo4j.configuration.SettingValueParsers.setOfEnums;
 import static org.neo4j.configuration.SettingValueParsers.ofPartialEnum;
+import static org.neo4j.configuration.SettingValueParsers.setOfEnums;
 import static org.neo4j.graphdb.config.Configuration.EMPTY;
 
 class SettingTest
@@ -326,7 +326,8 @@ class SettingTest
                 .build()
                 .description();
 
-        String expected = "setting, a byte size (valid multipliers are `k`, `m`, `g`, `K`, `M`, `G`) which is in the range `100.0MiB` to `10.00GiB`";
+        String expected = "setting, a byte size (valid multipliers are `B`, `KiB`, `KB`, `K`, `kB`, `kb`, `k`, `MiB`, `MB`, `M`, `mB`, `mb`, `m`, " +
+                          "`GiB`, `GB`, `G`, `gB`, `gb`, `g`, `TiB`, `TB`, `PiB`, `PB`, `EiB`, `EB`) which is in the range `100.00MiB` to `10.00GiB`";
         assertEquals( expected, descriptionWithConstraint );
     }
 

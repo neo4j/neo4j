@@ -19,9 +19,13 @@
  */
 package org.neo4j.io;
 
+import java.text.NumberFormat;
+import java.text.ParsePosition;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static java.lang.String.format;
 
@@ -54,6 +58,9 @@ public enum ByteUnit
     public static final long ONE_KIBI_BYTE = ByteUnit.KibiByte.toBytes( 1 );
     public static final long ONE_MEBI_BYTE = ByteUnit.MebiByte.toBytes( 1 );
     public static final long ONE_GIBI_BYTE = ByteUnit.GibiByte.toBytes( 1 );
+    public static final long ONE_TEBI_BYTE = ByteUnit.TebiByte.toBytes( 1 );
+    public static final String VALID_MULTIPLIERS = Arrays.stream( ByteUnit.values() ).flatMap( unit -> Arrays.stream( unit.names ) )
+            .collect( Collectors.joining("`, `", "`", "`" ));
 
     private static final long EIC_MULTIPLIER = 1024;
 
@@ -71,7 +78,7 @@ public enum ByteUnit
     /**
      * Compute the increment factor from the given power.
      * <p>
-     * Giving zero always produces 1. Giving 1 will produce 1000 or 1024, for SI and EIC respectively, and so on.
+     * Giving zero always produces 1. Giving 1 will produce 1024, and so on.
      */
     private static long factorFromPower( long power )
     {
@@ -110,6 +117,11 @@ public enum ByteUnit
     }
 
     public long toBytes( long value )
+    {
+        return factor * value;
+    }
+
+    private double toBytesFromDecimal( double value )
     {
         return factor * value;
     }
@@ -179,19 +191,24 @@ public enum ByteUnit
         return ExbiByte.toBytes( exbibytes );
     }
 
-    public static String bytesToString( long bytes )
+    private static String bytesToString( long bytes, Locale locale, boolean allowScientificNotation )
     {
-        if ( bytes > ONE_GIBI_BYTE )
+        String format = allowScientificNotation ? "%.4g%s" : "%.2f%s";
+        if ( bytes >= ONE_TEBI_BYTE )
         {
-            return format( Locale.ROOT, "%.4g%s", bytes / (double) ONE_GIBI_BYTE, GibiByte.shortName );
+            return format( locale, format, bytes / (double) ONE_TEBI_BYTE, TebiByte.shortName );
         }
-        else if ( bytes > ONE_MEBI_BYTE )
+        else if ( bytes >= ONE_GIBI_BYTE )
         {
-            return format( Locale.ROOT, "%.4g%s", bytes / (double) ONE_MEBI_BYTE, MebiByte.shortName );
+            return format( locale, format, bytes / (double) ONE_GIBI_BYTE, GibiByte.shortName );
         }
-        else if ( bytes > ONE_KIBI_BYTE )
+        else if ( bytes >= ONE_MEBI_BYTE )
         {
-            return format( Locale.ROOT, "%.4g%s", bytes / (double) ONE_KIBI_BYTE, KibiByte.shortName );
+            return format( locale, format, bytes / (double) ONE_MEBI_BYTE, MebiByte.shortName );
+        }
+        else if ( bytes >= ONE_KIBI_BYTE )
+        {
+            return format( locale, format, bytes / (double) ONE_KIBI_BYTE, KibiByte.shortName );
         }
         else
         {
@@ -199,91 +216,87 @@ public enum ByteUnit
         }
     }
 
+    public static String bytesToString( long bytes )
+    {
+        return bytesToString( bytes, Locale.ROOT, true );
+    }
+
+    /**
+     * The parse method doesn't support values with scientific notation. This bytes to string method builds a String
+     * representation that always uses decimal floating-point.
+     * This should be used when the String representation might get parsed e.g values used in documentation.
+     */
+    public static String bytesToStringWithoutScientificNotation( long bytes )
+    {
+        return bytesToString( bytes, Locale.ENGLISH, false );
+    }
+
     public static long parse( String text )
     {
-        long result = 0;
-        int len = text.length();
+        String trimmedText = text.trim();
+        int len = trimmedText.length();
         int unitStart;
         int unitCharacters = 0;
-        int digitCharacters = 0;
-        Map<String,ByteUnit> units = listUnits();
-
         int i = 0;
 
-        // Skip initial whitespace.
-        while ( i < len )
-        {
-            char ch = text.charAt( i );
-            if ( !Character.isWhitespace( ch ) )
-            {
-                break;
-            }
-            i++;
-        }
-
         // Parse digits.
-        while ( i < len )
+        NumberFormat numberInstance = NumberFormat.getNumberInstance( Locale.ENGLISH );
+        ParsePosition pos = new ParsePosition( i );
+        Number number = numberInstance.parse( trimmedText, pos );
+
+        // The index will be unchanged if an error occurred or there were no digits.
+        int indexAfterDigits = pos.getIndex();
+        if ( indexAfterDigits == i )
         {
-            char ch = text.charAt( i );
-            int digit = Character.digit( ch, 10 );
-            if ( digit == -1 )
-            {
-                break;
-            }
-            result *= 10;
-            result += digit;
-            i++;
-            digitCharacters++;
+            throw invalidFormat( text );
         }
+        i = indexAfterDigits;
+
+        checkValueInRange( number.doubleValue(), text );
 
         // Skip whitespace between digits and unit.
-        while ( i < len )
+        while ( i < len && Character.isWhitespace( trimmedText.charAt( i ) ) )
         {
-            char ch = text.charAt( i );
-            if ( !Character.isWhitespace( ch ) )
-            {
-                break;
-            }
             i++;
         }
 
         // Parse the unit.
         unitStart = i;
-        while ( i < len )
+        while ( i < len && !Character.isWhitespace( trimmedText.charAt( i ) ) )
         {
-            char ch = text.charAt( i );
-            if ( Character.isWhitespace( ch ) )
-            {
-                break;
-            }
             i++;
             unitCharacters++;
         }
 
-        // Validate parsed data and return result.
-        if ( digitCharacters == 0 )
-        {
-            throw invalidFormat( text );
-        }
-
         if ( unitCharacters == 0 )
         {
-            return result;
+            return number.longValue();
         }
 
-        ByteUnit unit = units.get( text.substring( unitStart, unitStart + unitCharacters ) );
+        ByteUnit unit = listUnits().get( trimmedText.substring( unitStart, unitStart + unitCharacters ) );
         if ( unit == null )
         {
             throw invalidFormat( text );
         }
 
-        result = unit.toBytes( result );
-        return result;
+        double inBytes = unit.toBytesFromDecimal( number.doubleValue() );
+        checkValueInRange( inBytes, text );
+        return (long)inBytes;
     }
 
     private static IllegalArgumentException invalidFormat( String text )
     {
-        return new IllegalArgumentException( "Invalid number format: '" + text + "'" );
+        return new IllegalArgumentException(
+                format( "'%s' is not a valid size, must be e.g. 10, 5K, 1M, 11G (valid multipliers are %s)", text, VALID_MULTIPLIERS ) );
+    }
+
+    private static void checkValueInRange( double value, String originalValue )
+    {
+        if ( value < 0 || value > Long.MAX_VALUE )
+        {
+            throw new IllegalArgumentException( "'" + originalValue + "' is not a valid size. Value should be between 0 and " +
+                                                bytesToStringWithoutScientificNotation( Long.MAX_VALUE ) );
+        }
     }
 
     private static Map<String,ByteUnit> listUnits()

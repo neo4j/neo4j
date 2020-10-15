@@ -211,6 +211,32 @@ class ByteUnitTest
     }
 
     @Test
+    void decimalUnitsToBytes()
+    {
+        assertThat( ByteUnit.parse( "0.5KiB" ) ).isEqualTo( 512L );
+        assertThat( ByteUnit.parse( "1.5KiB" ) ).isEqualTo( 1536L );
+        assertThat( ByteUnit.parse( "  1.5    KiB" ) ).isEqualTo( 1536L );
+        assertThat( ByteUnit.parse( "1.57KiB" ) ).isEqualTo( 1607L );
+        assertThat( ByteUnit.parse( "1.578945TiB" ) ).isEqualTo( 1736068387118L );
+        assertThat( ByteUnit.parse( "1.0MiB" ) ).isEqualTo( 1048576L );
+        assertThat( ByteUnit.parse( "1.000MiB" ) ).isEqualTo( 1048576L );
+    }
+
+    @Test
+    void parseShouldThrowOnOverflow()
+    {
+        assertThrows( IllegalArgumentException.class, () -> ByteUnit.parse( "100000000.00TiB" ) );
+        assertThrows( IllegalArgumentException.class, () -> ByteUnit.parse( Long.MAX_VALUE + "1" ) );
+    }
+
+    @Test
+    void parseShouldThrowOnNegativeValues()
+    {
+        assertThrows( IllegalArgumentException.class, () -> ByteUnit.parse( "-100000000.00TiB" ) );
+        assertThrows( IllegalArgumentException.class, () -> ByteUnit.parse( "-1" ) );
+    }
+
+    @Test
     void bytesToString()
     {
         assertEquals( "1B", ByteUnit.bytesToString( 1 ) );
@@ -224,6 +250,25 @@ class ByteUnitTest
         assertEquals( "97.75MiB", ByteUnit.bytesToString( 102500000 ) );
         assertEquals( "977.5MiB", ByteUnit.bytesToString( 1025000000 ) );
         assertEquals( "9.546GiB", ByteUnit.bytesToString( 10250000000L ) );
+        assertEquals( "8.389e+06TiB", ByteUnit.bytesToString( Long.MAX_VALUE ) );
+    }
+
+    @Test
+    void bytesToStringWithoutScientificNotation()
+    {
+        assertEquals( "1B", ByteUnit.bytesToStringWithoutScientificNotation( 1 ) );
+        assertEquals( "10B", ByteUnit.bytesToStringWithoutScientificNotation( 10 ) );
+        assertEquals( "1000B", ByteUnit.bytesToStringWithoutScientificNotation( 1000 ) );
+        assertEquals( "1.00KiB", ByteUnit.bytesToStringWithoutScientificNotation( 1025 ) );
+        assertEquals( "10.01KiB", ByteUnit.bytesToStringWithoutScientificNotation( 10250 ) );
+        assertEquals( "100.10KiB", ByteUnit.bytesToStringWithoutScientificNotation( 102500 ) );
+        assertEquals( "1000.98KiB", ByteUnit.bytesToStringWithoutScientificNotation( 1025000 ) );
+        assertEquals( "9.78MiB", ByteUnit.bytesToStringWithoutScientificNotation( 10250000 ) );
+        assertEquals( "97.75MiB", ByteUnit.bytesToStringWithoutScientificNotation( 102500000 ) );
+        assertEquals( "977.52MiB", ByteUnit.bytesToStringWithoutScientificNotation( 1025000000 ) );
+        assertEquals( "9.55GiB", ByteUnit.bytesToStringWithoutScientificNotation( 10250000000L ) );
+        assertEquals( "93.22TiB", ByteUnit.bytesToStringWithoutScientificNotation( 102500000000000L ) );
+        assertEquals( "8388608.00TiB", ByteUnit.bytesToStringWithoutScientificNotation( Long.MAX_VALUE ) );
     }
 
     @Test

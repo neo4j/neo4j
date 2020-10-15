@@ -514,19 +514,10 @@ public final class SettingValueParsers
 
     public static final SettingValueParser<Long> BYTES = new SettingValueParser<>()
     {
-        private static final String VALID_MULTIPLIERS = "`k`, `m`, `g`, `K`, `M`, `G`";
         @Override
         public Long parse( String value )
         {
-            long bytes;
-            try
-            {
-                bytes = ByteUnit.parse( value );
-            }
-            catch ( IllegalArgumentException e )
-            {
-                throw new IllegalArgumentException( format( "'%s' is not a valid size, must be e.g. 10, 5K, 1M, 11G", value ) );
-            }
+            long bytes = ByteUnit.parse( value );
             validate(bytes);
             return bytes;
         }
@@ -543,7 +534,7 @@ public final class SettingValueParsers
         @Override
         public String getDescription()
         {
-            return format("a byte size (valid multipliers are %s)", VALID_MULTIPLIERS );
+            return format("a byte size (valid multipliers are %s)", ByteUnit.VALID_MULTIPLIERS );
         }
 
         @Override
@@ -555,7 +546,7 @@ public final class SettingValueParsers
         @Override
         public String valueToString( Long value )
         {
-            return ByteUnit.bytesToString( value );
+            return ByteUnit.bytesToStringWithoutScientificNotation( value );
         }
     };
 
