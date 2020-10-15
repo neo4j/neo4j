@@ -344,6 +344,7 @@ class FabricPlannerTest
           |RETURN val, thisBreaks
       """.stripMargin)
 
+      // Assert that getting the plan does not fail
       val dummy = inst.plan
     }
 
