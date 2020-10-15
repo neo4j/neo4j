@@ -29,7 +29,10 @@ import java.util.function.Supplier;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
+import org.neo4j.dbms.database.DbmsRuntimeRepository;
 import org.neo4j.dbms.database.TransactionLogVersionProvider;
+import org.neo4j.dbms.database.TransactionLogVersionProviderImpl;
+import org.neo4j.exceptions.UnsatisfiedDependencyException;
 import org.neo4j.internal.nativeimpl.NativeAccess;
 import org.neo4j.internal.nativeimpl.NativeAccessProvider;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -100,7 +103,7 @@ public class LogFilesBuilder
     private Monitors monitors;
     private StoreId storeId;
     private NativeAccess nativeAccess;
-    private TransactionLogVersionProvider transactionLogVersionProvider = TransactionLogVersionSelector.LATEST::version;
+    private TransactionLogVersionProvider transactionLogVersionProvider;
 
     private LogFilesBuilder()
     {
@@ -306,6 +309,25 @@ public class LogFilesBuilder
         var monitors = getMonitors();
         var health = getDatabaseHealth();
         var clock = getClock();
+
+        // If no transaction log version provider has been supplied explicitly, we try to use the version from the system database.
+        // Or the latest version if we can't find the system db version.
+        if ( transactionLogVersionProvider == null )
+        {
+            transactionLogVersionProvider = TransactionLogVersionSelector.LATEST::version;
+            if ( dependencies != null )
+            {
+                try
+                {
+                    DbmsRuntimeRepository dbmsRuntimeRepository = dependencies.resolveDependency( DbmsRuntimeRepository.class );
+                    transactionLogVersionProvider = new TransactionLogVersionProviderImpl( dbmsRuntimeRepository );
+                }
+                catch ( UnsatisfiedDependencyException e )
+                {
+                    // Use latest version if can't find version in system db.
+                }
+            }
+        }
 
         return new TransactionLogFilesContext( rotationThreshold, tryPreallocateTransactionLogs, logEntryReader, lastCommittedIdSupplier,
                 committingTransactionIdSupplier, lastClosedTransactionPositionSupplier, logVersionRepositorySupplier,

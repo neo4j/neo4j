@@ -33,7 +33,6 @@ import org.neo4j.storageengine.api.CommandReaderFactory;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryParserSetV4_0.V4_0;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryParserSetV4_2.V4_2;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.LEGACY_CHECK_POINT;
 import static org.neo4j.kernel.impl.transaction.log.entry.TransactionLogVersionSelector.LATEST;
 
@@ -111,7 +110,7 @@ class LogEntryParserDispatcherV6Test
     void parseLegacyCheckPointEntry() throws IOException
     {
         // given
-        final LogEntryInlinedCheckPoint checkPoint = new LogEntryInlinedCheckPoint( version, new LogPosition( 43, 44 ) );
+        final LogEntryInlinedCheckPoint checkPoint = new LogEntryInlinedCheckPoint( V4_0.versionByte(), new LogPosition( 43, 44 ) );
         final InMemoryClosableChannel channel = new InMemoryClosableChannel();
 
         channel.putLong( checkPoint.getLogPosition().getLogVersion() );
@@ -122,7 +121,7 @@ class LogEntryParserDispatcherV6Test
 
         // when
         final LogEntryParser parser = V4_0.select( LEGACY_CHECK_POINT );
-        final LogEntry logEntry = parser.parse( version, channel, marker, commandReader );
+        final LogEntry logEntry = parser.parse( V4_0.versionByte(), channel, marker, commandReader );
 
         // then
         assertEquals( checkPoint, logEntry );
@@ -139,9 +138,7 @@ class LogEntryParserDispatcherV6Test
         channel.putChecksum();
 
         channel.getCurrentPosition( marker );
-        // todo Re-insert line when enabling 4.2 log version again
-//        assertThrows( Exception.class, () -> LATEST.select( LEGACY_CHECK_POINT ) );
-        assertThrows( Exception.class, () -> V4_2.select( LEGACY_CHECK_POINT ) );
+        assertThrows( Exception.class, () -> LATEST.select( LEGACY_CHECK_POINT ) );
     }
 
     @Test

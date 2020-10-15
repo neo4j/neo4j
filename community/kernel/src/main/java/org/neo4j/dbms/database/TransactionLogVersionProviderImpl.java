@@ -24,12 +24,10 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryParserSetVersion;
 public class TransactionLogVersionProviderImpl implements TransactionLogVersionProvider
 {
     private final DbmsRuntimeRepository dbmsRuntimeRepository;
-    private final boolean useSeparateCheckpointFiles;
 
-    public TransactionLogVersionProviderImpl( DbmsRuntimeRepository dbmsRuntimeRepository, boolean useSeparateCheckpointFiles )
+    public TransactionLogVersionProviderImpl( DbmsRuntimeRepository dbmsRuntimeRepository )
     {
         this.dbmsRuntimeRepository = dbmsRuntimeRepository;
-        this.useSeparateCheckpointFiles = useSeparateCheckpointFiles;
     }
 
     @Override
@@ -37,7 +35,7 @@ public class TransactionLogVersionProviderImpl implements TransactionLogVersionP
     {
         DbmsRuntimeVersion dbmsRuntimeVersion = dbmsRuntimeRepository.getVersion();
 
-        if ( dbmsRuntimeVersion == DbmsRuntimeVersion.V4_2 && useSeparateCheckpointFiles )
+        if ( dbmsRuntimeVersion == DbmsRuntimeVersion.V4_2 )
         {
             return LogEntryParserSetVersion.LogEntryV4_2;
         }
