@@ -591,16 +591,12 @@ class ConfigTest
         Path confDir = testDirectory.directory( "neo4j.conf" );
 
         // -- Set up all the links --
-        // Setting file permissions on a symlink is only supported on Mac
-        FileAttribute<?>[] symlinkAttributes = IS_OS_MAC ? new FileAttribute[]{
-                PosixFilePermissions.asFileAttribute( Set.of( OWNER_EXECUTE, OWNER_READ, OWNER_WRITE, GROUP_READ, GROUP_WRITE, OTHERS_READ, OTHERS_WRITE ) )}
-                                                         : new FileAttribute[0];
         // Symbolic link to a dot file
-        Files.createSymbolicLink( confDir.resolve( dotFile.getFileName() ), dotFile, symlinkAttributes );
+        Files.createSymbolicLink( confDir.resolve( dotFile.getFileName() ), dotFile );
         // Symbolic link to a dot directory
-        Files.createSymbolicLink( confDir.resolve( dotDir.getFileName() ), dotDir, symlinkAttributes );
+        Files.createSymbolicLink( confDir.resolve( dotDir.getFileName() ), dotDir );
         // Symbolic link to an actual setting file we want read
-        Files.createSymbolicLink( confDir.resolve( defaultDatabase.getFileName() ), defaultDatabase, symlinkAttributes );
+        Files.createSymbolicLink( confDir.resolve( defaultDatabase.getFileName() ), defaultDatabase );
         // Hard link to an actual setting file we want read
         Files.createLink( confDir.resolve( authEnabled.getFileName() ), authEnabled );
 
