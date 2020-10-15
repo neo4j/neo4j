@@ -51,23 +51,25 @@ object TransactionBoundGraphStatistics {
 
     override def uniqueValueSelectivity(index: IndexDescriptor): Option[Selectivity] =
       try {
-        val indexDescriptor = Iterators.single(schemaRead.index(SchemaDescriptor.forLabel(index.label, index.properties.map(_.id): _*)),
-          org.neo4j.internal.schema.IndexDescriptor.NO_INDEX)
-        val indexSize = schemaRead.indexSize(indexDescriptor)
-        if (indexSize == 0)
-          Some(Selectivity.ZERO)
-        else {
-          // Probability of any node in the index, to have a property with a given value
-          val indexEntrySelectivity = schemaRead.indexUniqueValuesSelectivity(indexDescriptor)
-          if (indexEntrySelectivity == 0.0) {
+        val maybeIndexDescriptor = Option(Iterators.singleOrNull(schemaRead.index(SchemaDescriptor.forLabel(index.label, index.properties.map(_.id): _*))))
+        maybeIndexDescriptor.flatMap { indexDescriptor =>
+          val indexSize = schemaRead.indexSize(indexDescriptor)
+          if (indexSize == 0)
             Some(Selectivity.ZERO)
-          } else {
-            val frequencyOfNodesWithSameValue = 1.0 / indexEntrySelectivity
 
-            // This is = 1 / number of unique values
-            val indexSelectivity = frequencyOfNodesWithSameValue / indexSize
+          else {
+            // Probability of any node in the index, to have a property with a given value
+            val indexEntrySelectivity = schemaRead.indexUniqueValuesSelectivity(indexDescriptor)
+            if (indexEntrySelectivity == 0.0) {
+              Some(Selectivity.ZERO)
+            } else {
+              val frequencyOfNodesWithSameValue = 1.0 / indexEntrySelectivity
 
-            Selectivity.of(min(indexSelectivity, 1.0))
+              // This is = 1 / number of unique values
+              val indexSelectivity = frequencyOfNodesWithSameValue / indexSize
+
+              Selectivity.of(min(indexSelectivity, 1.0))
+            }
           }
         }
       }
