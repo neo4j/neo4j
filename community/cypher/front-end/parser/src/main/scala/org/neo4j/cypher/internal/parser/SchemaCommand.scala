@@ -17,10 +17,17 @@
 package org.neo4j.cypher.internal.parser
 
 import org.neo4j.cypher.internal.ast
+import org.neo4j.cypher.internal.ast.AllConstraints
+import org.neo4j.cypher.internal.ast.ExistsConstraints
 import org.neo4j.cypher.internal.ast.IfExistsDoNothing
 import org.neo4j.cypher.internal.ast.IfExistsInvalidSyntax
 import org.neo4j.cypher.internal.ast.IfExistsReplace
 import org.neo4j.cypher.internal.ast.IfExistsThrowError
+import org.neo4j.cypher.internal.ast.NodeExistsConstraints
+import org.neo4j.cypher.internal.ast.NodeKeyConstraints
+import org.neo4j.cypher.internal.ast.RelExistsConstraints
+import org.neo4j.cypher.internal.ast.ShowConstraintType
+import org.neo4j.cypher.internal.ast.UniqueConstraints
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.Property
@@ -56,7 +63,8 @@ trait SchemaCommand extends Parser
       | DropConstraintOnName
       | DropIndex
       | DropIndexOnName
-      | ShowIndexes) ~~> ((use, command) => command.withGraph(use))
+      | ShowIndexes
+      | ShowConstraints) ~~> ((use, command) => command.withGraph(use))
   )
 
   def VariablePropertyExpression: Rule1[Property] = rule("single property expression from variable") {
@@ -69,6 +77,11 @@ trait SchemaCommand extends Parser
 
   def options: Rule1[Map[String, Expression]] = rule {
     keyword("OPTIONS") ~~ group(ch('{') ~~ zeroOrMore(SymbolicNameString ~~ ch(':') ~~ Expression, separator = CommaSep) ~~ ch('}')) ~~>> (l => _ => l.toMap)
+  }
+
+  private def SchemaOutput: Rule1[Boolean] = rule("type of show output") {
+    keyword("VERBOSE") ~~ optional(keyword("OUTPUT")) ~~~> (_ => true) |
+      optional(keyword("BRIEF") ~~ optional(keyword("OUTPUT"))) ~~~> (_ => false)
   }
 
   def CreateIndexOldSyntax: Rule1[ast.CreateIndexOldSyntax] = rule {
@@ -111,18 +124,13 @@ trait SchemaCommand extends Parser
   }
 
   def ShowIndexes: Rule1[ast.ShowIndexes] = rule("SHOW INDEXES") {
-    keyword("SHOW") ~~ IndexType ~~ IndexKeyword ~~ IndexOutput ~~>>
+    keyword("SHOW") ~~ IndexType ~~ IndexKeyword ~~ SchemaOutput ~~>>
       ((all, verbose) => ast.ShowIndexes(all, verbose))
   }
 
   private def IndexType: Rule1[Boolean] = rule("type of indexes") {
     keyword("BTREE") ~~~> (_ => false) |
       optional(keyword("ALL")) ~~~> (_ => true)
-  }
-
-  private def IndexOutput: Rule1[Boolean] = rule("type of index output") {
-    keyword("VERBOSE") ~~ optional(keyword("OUTPUT")) ~~~> (_ => true) |
-      optional(keyword("BRIEF") ~~ optional(keyword("OUTPUT"))) ~~~> (_ => false)
   }
 
   def IndexKeyword: Rule0 = keyword("INDEXES") | keyword("INDEX")
@@ -241,6 +249,24 @@ trait SchemaCommand extends Parser
     group(keyword("DROP CONSTRAINT") ~~ SymbolicNameString ~~ keyword("IF EXISTS")) ~~>> (ast.DropConstraintOnName(_, ifExists = true)) |
     group(keyword("DROP CONSTRAINT") ~~ SymbolicNameString) ~~>> (ast.DropConstraintOnName(_, ifExists = false))
   }
+
+  def ShowConstraints: Rule1[ast.ShowConstraints] = rule("SHOW CONSTRAINTS") {
+    keyword("SHOW") ~~ ConstraintType ~~ ConstraintKeyword ~~ SchemaOutput ~~>>
+      ((constraintType, verbose) => ast.ShowConstraints(constraintType, verbose))
+  }
+
+  private def ConstraintType: Rule1[ShowConstraintType] = rule("type of constraints") {
+    keyword("UNIQUE") ~~~> (_ => UniqueConstraints) |
+    keyword("NODE KEY") ~~~> (_ => NodeKeyConstraints) |
+    keyword("NODE") ~~ ExistsKeyword ~~~> (_ => NodeExistsConstraints) |
+    keyword("RELATIONSHIP") ~~ ExistsKeyword ~~~> (_ => RelExistsConstraints) |
+    ExistsKeyword ~~~> (_ => ExistsConstraints) |
+    optional(keyword("ALL")) ~~~> (_ => AllConstraints)
+  }
+
+  def ConstraintKeyword: Rule0 = keyword("CONSTRAINTS") | keyword("CONSTRAINT")
+
+  private def ExistsKeyword: Rule0 = keyword("EXISTS") | keyword("EXIST")
 
   private def NodeKeyConstraintSyntax: Rule3[Variable, LabelName, Seq[Property]] = keyword("ON") ~~ "(" ~~ Variable ~~ NodeLabel ~~ ")" ~~
     keyword("ASSERT") ~~ "(" ~~ VariablePropertyExpressions ~~ ")" ~~ keyword("IS NODE KEY")

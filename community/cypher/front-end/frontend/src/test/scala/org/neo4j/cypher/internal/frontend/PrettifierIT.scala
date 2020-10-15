@@ -378,6 +378,24 @@ class PrettifierIT extends CypherFunSuite {
       "drop CONSTRAINT foo IF exists" ->
         "DROP CONSTRAINT foo IF EXISTS",
 
+      "show constraints" ->
+        "SHOW ALL CONSTRAINTS BRIEF",
+
+      "show exist constraint brief" ->
+        "SHOW EXISTS CONSTRAINTS BRIEF",
+
+      "SHOW NODE EXISTS constraint BRIEF output" ->
+        "SHOW NODE EXISTS CONSTRAINTS BRIEF",
+
+      "show relationship EXISTS cOnStRaInTs VERBOSE" ->
+        "SHOW RELATIONSHIP EXISTS CONSTRAINTS VERBOSE",
+
+      "show unique constraint VERBOSE output" ->
+        "SHOW UNIQUE CONSTRAINTS VERBOSE",
+
+      "show node key CONSTRAINTS" ->
+        "SHOW NODE KEY CONSTRAINTS BRIEF",
+
       "match (n) UNION match (n)" ->
         """MATCH (n)
           |UNION

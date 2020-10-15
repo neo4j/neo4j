@@ -129,6 +129,7 @@ import org.neo4j.cypher.internal.ast.SetLabelItem
 import org.neo4j.cypher.internal.ast.SetOwnPassword
 import org.neo4j.cypher.internal.ast.SetPropertyItem
 import org.neo4j.cypher.internal.ast.ShowAllPrivileges
+import org.neo4j.cypher.internal.ast.ShowConstraints
 import org.neo4j.cypher.internal.ast.ShowCurrentUser
 import org.neo4j.cypher.internal.ast.ShowDatabase
 import org.neo4j.cypher.internal.ast.ShowIndexes
@@ -265,6 +266,10 @@ case class Prettifier(
       case DropConstraintOnName(name, ifExists, _) =>
         val ifExistsString = if (ifExists) " IF EXISTS" else ""
         s"DROP CONSTRAINT ${backtick(name)}$ifExistsString"
+
+      case ShowConstraints(constraintType, verbose, _) =>
+        val output = if (verbose) "VERBOSE" else "BRIEF"
+        s"SHOW ${constraintType.name} CONSTRAINTS $output"
 
       case _ => throw new IllegalStateException(s"Unknown command: $command")
     }

@@ -217,3 +217,36 @@ case class DropConstraintOnName(name: String, ifExists: Boolean, useGraph: Optio
   override def withGraph(useGraph: Option[GraphSelection]): SchemaCommand = copy(useGraph = useGraph)(position)
   def semanticCheck = Seq()
 }
+
+case class ShowConstraints(constraintType: ShowConstraintType, verbose: Boolean, useGraph: Option[GraphSelection] = None)(val position: InputPosition) extends SchemaCommand {
+  override def withGraph(useGraph: Option[GraphSelection]): SchemaCommand = copy(useGraph = useGraph)(position)
+  def semanticCheck = Seq()
+}
+
+sealed trait ShowConstraintType {
+  val name: String
+}
+
+case object AllConstraints extends ShowConstraintType {
+  override val name: String = "ALL"
+}
+
+case object UniqueConstraints extends ShowConstraintType {
+  override val name: String = "UNIQUE"
+}
+
+case object ExistsConstraints extends ShowConstraintType {
+  override val name: String = "EXISTS"
+}
+
+case object NodeExistsConstraints extends ShowConstraintType {
+  override val name: String = "NODE EXISTS"
+}
+
+case object RelExistsConstraints extends ShowConstraintType {
+  override val name: String = "RELATIONSHIP EXISTS"
+}
+
+case object NodeKeyConstraints extends ShowConstraintType {
+  override val name: String = "NODE KEY"
+}
