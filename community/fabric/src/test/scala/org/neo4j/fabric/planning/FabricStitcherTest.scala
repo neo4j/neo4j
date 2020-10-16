@@ -206,6 +206,18 @@ class FabricStitcherTest
       FabricStitcher(dummyQuery, allowMultiGraph = true, Some(defaultGraphName), None, dummyPipeline)
         .convert(fragment).withoutLocalAndRemote
 
+    "rewrite" in {
+      import org.neo4j.fabric.util.Rewritten.RewritingOps
+
+      val tree =
+        init(defaultUse)
+          .apply(_ => init(defaultUse))
+
+      val x = tree.rewritten.topDown {
+        case i: Fragment.Init => i.copy(argumentColumns = Seq("a"))
+      }
+    }
+
     "nested fragment, different USE" in {
       stitching(
         init(defaultUse)
