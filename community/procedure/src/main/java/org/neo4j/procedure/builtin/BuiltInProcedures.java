@@ -175,9 +175,10 @@ public class BuiltInProcedures
         return relTypesInUse.stream();
     }
 
+    @Deprecated
     @SystemProcedure
     @Description( "List all indexes in the database." )
-    @Procedure( name = "db.indexes", mode = READ )
+    @Procedure( name = "db.indexes", mode = READ, deprecatedBy = "SHOW INDEXES command" )
     public Stream<IndexResult> listIndexes()
     {
         if ( callContext.isSystemDatabase() )
@@ -202,9 +203,10 @@ public class BuiltInProcedures
         return result.stream();
     }
 
+    @Deprecated
     @SystemProcedure
     @Description( "Detailed description of specific index." )
-    @Procedure( name = "db.indexDetails", mode = READ )
+    @Procedure( name = "db.indexDetails", mode = READ, deprecatedBy = "SHOW INDEXES VERBOSE OUTPUT command" )
     public Stream<IndexDetailResult> indexDetails( @Name( "indexName" ) String indexName ) throws ProcedureException
     {
         if ( callContext.isSystemDatabase() )
