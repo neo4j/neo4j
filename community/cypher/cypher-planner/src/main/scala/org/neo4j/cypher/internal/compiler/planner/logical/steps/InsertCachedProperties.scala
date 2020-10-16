@@ -33,14 +33,11 @@ import org.neo4j.cypher.internal.expressions.RELATIONSHIP_TYPE
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.frontend.phases.Transformer
 import org.neo4j.cypher.internal.logical.plans.CanGetValue
-import org.neo4j.cypher.internal.logical.plans.CursorProperty
 import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
-import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.logical.plans.IndexLeafPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.MultiNodeIndexSeek
-import org.neo4j.cypher.internal.logical.plans.OptionalExpand
 import org.neo4j.cypher.internal.logical.plans.ProjectingPlan
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
@@ -58,7 +55,7 @@ import scala.collection.mutable
  *
  * It traverses the plan and swaps property lookups for cached properties where possible.
  */
-case class InsertCachedProperties(pushdownPropertyReads: Boolean, readPropertiesFromCursor: Boolean = false) extends Transformer[PlannerContext, LogicalPlanState, LogicalPlanState] {
+case class InsertCachedProperties(pushdownPropertyReads: Boolean) extends Transformer[PlannerContext, LogicalPlanState, LogicalPlanState] {
 
   override def transform(from: LogicalPlanState, context: PlannerContext): LogicalPlanState = {
 
@@ -73,16 +70,14 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean, readProperties
     def isNode(variable: Variable) = from.semanticTable().types.get(variable).exists(t => t.actual == CTNode.invariant)
     def isRel(variable: Variable) = from.semanticTable().types.get(variable).exists(t => t.actual == CTRelationship.invariant)
 
-    case class PropertyUsages(canGetFromIndex: Boolean, canReadFromCursor: Boolean, usages: Int, entityType: EntityType) {
+    case class PropertyUsages(canGetFromIndex: Boolean, usages: Int, entityType: EntityType) {
       //always prefer reading from index
-      def registerIndexUsage: PropertyUsages = copy(canGetFromIndex = true, canReadFromCursor = false)
-      //always prefer reading from index
-      def registerCanReadFromCursor: PropertyUsages = if (canReadFromCursor) this else copy(canReadFromCursor = true)
+      def registerIndexUsage: PropertyUsages = copy(canGetFromIndex = true)
       def addUsage: PropertyUsages = copy(usages = usages + 1)
     }
 
-    val NODE_NO_PROP_USAGE = PropertyUsages(canGetFromIndex = false, canReadFromCursor = false, 0, NODE_TYPE)
-    val REL_NO_PROP_USAGE = PropertyUsages(canGetFromIndex = false, canReadFromCursor = false, 0, RELATIONSHIP_TYPE)
+    val NODE_NO_PROP_USAGE = PropertyUsages(canGetFromIndex = false, 0, NODE_TYPE)
+    val REL_NO_PROP_USAGE = PropertyUsages(canGetFromIndex = false, 0, RELATIONSHIP_TYPE)
 
     case class Acc(properties: Map[Property, PropertyUsages] = Map.empty,
                    previousNames: Map[String, String] = Map.empty) {
@@ -104,24 +99,6 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean, readProperties
         val originalProp = originalProperty(prop)
         val previousUsages = properties.getOrElse(originalProp, REL_NO_PROP_USAGE)
         val newProperties = properties.updated(originalProp, previousUsages.addUsage)
-        copy(properties = newProperties)
-      }
-
-      def readsNode(name: String): Acc = {
-        val newProperties = properties.map {
-          case (p@Property(Variable(n), _), v@PropertyUsages(_, _, _, NODE_TYPE)) if n == name =>
-            p -> v.registerCanReadFromCursor
-          case p => p
-        }
-        copy(properties = newProperties)
-      }
-
-      def readsRelationship(name: String): Acc = {
-        val newProperties = properties.map {
-          case (p@Property(Variable(r), _), v@PropertyUsages(_, _, _, RELATIONSHIP_TYPE)) if r == name =>
-            p -> v.registerCanReadFromCursor
-          case p => p
-        }
         copy(properties = newProperties)
       }
 
@@ -187,27 +164,18 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean, readProperties
           acc.addIndexNodeProperty(property(indexPlan.idName, indexedProp.propertyKeyToken.name))
         }
         TraverseChildren(newAcc)
-
-      case expand: Expand if readPropertiesFromCursor => acc =>
-          val newAcc = acc.readsNode(expand.from).readsRelationship(expand.relName)
-          TraverseChildren(newAcc)
-
-      case expand: OptionalExpand if readPropertiesFromCursor => acc =>
-        val newAcc = acc.readsNode(expand.from).readsRelationship(expand.relName)
-        TraverseChildren(newAcc)
     }
 
     var currentTypes = from.semanticTable().types
 
-    // In the second step we rewrite both properties as well as plans that will cache properties, i.e. index plans and expands
-    val alreadyCachedFromCursor = mutable.Set.empty[CursorProperty]
+    // In the second step we rewrite both properties and index plans
     val propertyRewriter = bottomUp(Rewriter.lift {
       // Rewrite properties to be cached if they are used more than once, or can be fetched from an index
       case prop@Property(v: Variable, propertyKeyName) =>
         val originalVar = acc.variableWithOriginalName(v)
         val originalProp = acc.originalProperty(prop)
         acc.properties.get(originalProp) match {
-          case Some(PropertyUsages(canGetFromIndex, canReadFromCursor, usages, entityType)) if usages > 1 || (canGetFromIndex || canReadFromCursor) =>
+          case Some(PropertyUsages(canGetFromIndex, usages, entityType)) if usages > 1 || canGetFromIndex =>
             // Use the original variable name for the cached property
             val newProperty = CachedProperty(originalVar.name, v, propertyKeyName, entityType)(prop.position)
             // Register the new variables in the semantic table
@@ -227,7 +195,7 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean, readProperties
         indexPlan.withMappedProperties { indexedProp =>
           acc.properties.get(property(indexPlan.idName, indexedProp.propertyKeyToken.name)) match {
             // Get the value since we use it later
-            case Some(PropertyUsages(true, _, usages, _)) if usages >= 1 =>
+            case Some(PropertyUsages(true, usages, _)) if usages >= 1 =>
               indexedProp.copy(getValueFromIndex = GetValue)
             // We could get the value but we don't need it later
             case _ =>
@@ -241,32 +209,6 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean, readProperties
         // We re-order the predicates to find the new best order.
         val newPredicates = resortSelectionPredicates(from, context, s)
         s.copy(predicate = Ands(newPredicates)(s.predicate.position))(SameId(s.id))
-
-      case e:Expand if readPropertiesFromCursor =>
-        val nodePropsToCache = acc.properties.collect {
-          case (Property(Variable(n), prop), PropertyUsages(_, true, usages, NODE_TYPE)) if n == e.from & usages >= 1 =>
-            CursorProperty(n, NODE_TYPE, prop)
-        }
-        val relPropsToCache = acc.properties.collect {
-          case (Property(Variable(r), prop), PropertyUsages(_, true, usages, RELATIONSHIP_TYPE)) if r == e.relName & usages >= 1 =>
-            CursorProperty(r, RELATIONSHIP_TYPE, prop)
-        }
-
-        e.withNodeProperties(nodePropsToCache.filter(alreadyCachedFromCursor.add).toList:_*)
-          .withRelationshipProperties(relPropsToCache.filter(alreadyCachedFromCursor.add).toList:_*)
-
-      case e:OptionalExpand if readPropertiesFromCursor =>
-        val nodePropsToCache = acc.properties.collect {
-          case (Property(Variable(n), prop), PropertyUsages(_, true, usages, NODE_TYPE)) if n == e.from & usages >= 1 =>
-            CursorProperty(n, NODE_TYPE, prop)
-        }
-        val relPropsToCache = acc.properties.collect {
-          case (Property(Variable(r), prop), PropertyUsages(_, true, usages, RELATIONSHIP_TYPE)) if r == e.relName & usages >= 1 =>
-            CursorProperty(r, RELATIONSHIP_TYPE, prop)
-        }
-
-        e.withNodeProperties(nodePropsToCache.filter(alreadyCachedFromCursor.add).toList:_*)
-          .withRelationshipProperties(relPropsToCache.filter(alreadyCachedFromCursor.add).toList:_*)
     })
 
     val plan = propertyRewriter(logicalPlan).asInstanceOf[LogicalPlan]
@@ -292,6 +234,4 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean, readProperties
 
   def property(entity: String, propName: String): Property =
     Property(Variable(entity)(InputPosition.NONE), PropertyKeyName(propName)(InputPosition.NONE))(InputPosition.NONE)
-
-
 }

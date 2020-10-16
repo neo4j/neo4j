@@ -167,7 +167,6 @@ case class CypherConfiguration(version: CypherVersion,
       csvBufferSize = csvBufferSize,
       nonIndexedLabelWarningThreshold = config.get(GraphDatabaseInternalSettings.query_non_indexed_label_warning_threshold).longValue(),
       planSystemCommands = planSystemCommands,
-      readPropertiesFromCursor = config.get(GraphDatabaseInternalSettings.cypher_read_properties_from_cursor),
       useJavaCCParser = useJavaCCParser
     )
 }

@@ -107,7 +107,7 @@ object CardinalityCalculator {
 
   implicit val expandCardinality: CardinalityCalculator[Expand] = {
     (plan, state, stats, _) =>
-      val Expand(source, from, dir, relTypes, to, relName, _, _) = plan
+      val Expand(source, from, dir, relTypes, to, relName, _) = plan
       val qg = QueryGraph(
         patternNodes = Set(from, to),
         patternRelationships = Set(PatternRelationship(relName, (from, to), dir, relTypes, SimplePatternLength)),

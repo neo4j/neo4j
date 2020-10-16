@@ -57,9 +57,9 @@ case class CypherPlanner[Context <: PlannerContext](monitors: Monitors,
     val pipeLine = if(config.planSystemCommands)
       systemPipeLine
     else if (context.debugOptions.contains("tostring"))
-      planPipeLine(sequencer, readPropertiesFromCursor = context.config.readPropertiesFromCursor) andThen DebugPrinter
+      planPipeLine(sequencer) andThen DebugPrinter
     else
-      planPipeLine(sequencer, readPropertiesFromCursor = context.config.readPropertiesFromCursor)
+      planPipeLine(sequencer)
 
     pipeLine.transform(state, context)
   }
@@ -116,5 +116,4 @@ case class CypherPlannerConfiguration(queryCacheSize: Int,
                                       csvBufferSize: Int,
                                       nonIndexedLabelWarningThreshold: Long,
                                       planSystemCommands: Boolean,
-                                      readPropertiesFromCursor: Boolean,
                                       useJavaCCParser: Boolean)

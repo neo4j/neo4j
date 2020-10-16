@@ -29,11 +29,9 @@ import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.LabelToken
 import org.neo4j.cypher.internal.expressions.ListLiteral
 import org.neo4j.cypher.internal.expressions.LogicalProperty
-import org.neo4j.cypher.internal.expressions.NODE_TYPE
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.PropertyKeyToken
-import org.neo4j.cypher.internal.expressions.RELATIONSHIP_TYPE
 import org.neo4j.cypher.internal.expressions.Range
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.RelationshipChain
@@ -64,7 +62,6 @@ import org.neo4j.cypher.internal.logical.plans.CartesianProduct
 import org.neo4j.cypher.internal.logical.plans.ColumnOrder
 import org.neo4j.cypher.internal.logical.plans.ConditionalApply
 import org.neo4j.cypher.internal.logical.plans.Create
-import org.neo4j.cypher.internal.logical.plans.CursorProperty
 import org.neo4j.cypher.internal.logical.plans.DeleteRelationship
 import org.neo4j.cypher.internal.logical.plans.DetachDeleteNode
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
@@ -77,7 +74,6 @@ import org.neo4j.cypher.internal.logical.plans.EmptyResult
 import org.neo4j.cypher.internal.logical.plans.ErrorPlan
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.ExpandAll
-import org.neo4j.cypher.internal.logical.plans.ExpandCursorProperties
 import org.neo4j.cypher.internal.logical.plans.ExpandInto
 import org.neo4j.cypher.internal.logical.plans.ExpansionMode
 import org.neo4j.cypher.internal.logical.plans.FindShortestPaths
@@ -301,19 +297,16 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
              expandMode: ExpansionMode = ExpandAll,
              projectedDir: SemanticDirection = OUTGOING,
              nodePredicate: Predicate = AbstractLogicalPlanBuilder.NO_PREDICATE,
-             relationshipPredicate: Predicate = AbstractLogicalPlanBuilder.NO_PREDICATE,
-             cacheNodeProperties: Seq[String] = Seq.empty,
-             cacheRelProperties: Seq[String] = Seq.empty): IMPL = {
+             relationshipPredicate: Predicate = AbstractLogicalPlanBuilder.NO_PREDICATE): IMPL = {
     val p = patternParser.parse(pattern)
     newRelationship(varFor(p.relName))
     if (expandMode == ExpandAll) {
       newNode(varFor(p.to))
     }
 
-    val expandProperties = getExpandProperties(p.from, p.relName, cacheNodeProperties, cacheRelProperties)
     p.length match {
       case SimplePatternLength =>
-        appendAtCurrentIndent(UnaryOperator(lp => Expand(lp, p.from, p.dir, p.relTypes, p.to, p.relName, expandMode, expandProperties)(_)))
+        appendAtCurrentIndent(UnaryOperator(lp => Expand(lp, p.from, p.dir, p.relTypes, p.to, p.relName, expandMode)(_)))
       case varPatternLength: VarPatternLength =>
         appendAtCurrentIndent(UnaryOperator(lp => VarExpand(lp,
                                                             p.from,
@@ -388,15 +381,13 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   def expandInto(pattern: String): IMPL = expand(pattern, ExpandInto)
 
   def optionalExpandAll(pattern: String,
-                        predicate: Option[String] = None,
-                        cacheNodeProperties: Seq[String] = Seq.empty,
-                        cacheRelProperties: Seq[String] = Seq.empty): IMPL = {
+                        predicate: Option[String] = None): IMPL = {
     val p = patternParser.parse(pattern)
     p.length match {
       case SimplePatternLength =>
         val pred = predicate.map(Parser.parseExpression).map(p => Ands(Seq(p))(p.position))
         appendAtCurrentIndent(UnaryOperator(lp =>
-          OptionalExpand(lp, p.from, p.dir, p.relTypes, p.to, p.relName, ExpandAll, pred, getExpandProperties(p.from, p.relName, cacheNodeProperties, cacheRelProperties)
+          OptionalExpand(lp, p.from, p.dir, p.relTypes, p.to, p.relName, ExpandAll, pred
     )(_)))
       case _ =>
         throw new IllegalArgumentException("Cannot have optional expand with variable length pattern")
@@ -904,21 +895,6 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   def literalString(str: String): StringLiteral = StringLiteral(str)(pos)
   def function(name: String, args: Expression*): FunctionInvocation =
     FunctionInvocation(FunctionName(name)(pos), distinct = false, args.toIndexedSeq)(pos)
-
-  private def getExpandProperties(from: String,
-                                  rel: String,
-                                  cacheNodeProperties: Seq[String],
-                                  cacheRelProperties: Seq[String]): Option[ExpandCursorProperties] = {
-    if (cacheNodeProperties.isEmpty && cacheRelProperties.isEmpty) {
-      None
-    } else {
-      Some(
-        ExpandCursorProperties(
-          nodeProperties = cacheNodeProperties.map(prop => CursorProperty(from, NODE_TYPE, PropertyKeyName(prop)(NONE))),
-          relProperties = cacheRelProperties.map(prop => CursorProperty(rel, RELATIONSHIP_TYPE, PropertyKeyName(prop)(NONE)))
-        ))
-    }
-  }
 }
 
 object AbstractLogicalPlanBuilder {

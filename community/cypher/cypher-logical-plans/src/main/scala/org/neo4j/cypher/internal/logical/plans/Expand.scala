@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.ir.VarPatternLength
 import org.neo4j.cypher.internal.util.attribution.IdGen
-import org.neo4j.cypher.internal.util.attribution.SameId
 
 /**
  * For every source row, traverse all the relationships of 'from' which fulfill the
@@ -38,25 +37,13 @@ case class Expand(source: LogicalPlan,
                   types: Seq[RelTypeName],
                   to: String,
                   relName: String,
-                  mode: ExpansionMode = ExpandAll,
-                  expandProperties: Option[ExpandCursorProperties] = None)
+                  mode: ExpansionMode = ExpandAll)
                  (implicit idGen: IdGen)
   extends LogicalPlan(idGen) with LazyLogicalPlan {
 
   override val lhs: Option[LogicalPlan] = Some(source)
   override def rhs: Option[LogicalPlan] = None
   override val availableSymbols: Set[String] = source.availableSymbols + relName + to
-
-  def withNodeProperties(props: CursorProperty*): Expand =
-    copy(expandProperties =
-      expandProperties
-        .map(_.withNodeProperties(props:_*))
-        .orElse(if (props.nonEmpty) Some(ExpandCursorProperties(nodeProperties = props)) else None))(SameId(this.id))
-  def withRelationshipProperties(props: CursorProperty*): Expand =
-    copy(expandProperties =
-      expandProperties
-        .map(_.withRelationshipProperties(props:_*))
-        .orElse(if (props.nonEmpty) Some(ExpandCursorProperties(relProperties = props)) else None))(SameId(this.id))
 }
 
 /**
@@ -71,25 +58,13 @@ case class OptionalExpand(source: LogicalPlan,
                           to: String,
                           relName: String,
                           mode: ExpansionMode = ExpandAll,
-                          predicate: Option[Expression] = None,
-                          expandProperties: Option[ExpandCursorProperties] = None)
+                          predicate: Option[Expression] = None)
                          (implicit idGen: IdGen)
   extends LogicalPlan(idGen) with LazyLogicalPlan {
 
   override val lhs: Option[LogicalPlan] = Some(source)
   override def rhs: Option[LogicalPlan] = None
   override val availableSymbols: Set[String] = source.availableSymbols + relName + to
-
-  def withNodeProperties(props: CursorProperty*): OptionalExpand =
-    copy(expandProperties =
-      expandProperties
-        .map(_.withNodeProperties(props:_*))
-        .orElse(Some(ExpandCursorProperties(nodeProperties = props))))(SameId(this.id))
-  def withRelationshipProperties(props: CursorProperty*): OptionalExpand =
-    copy(expandProperties =
-      expandProperties
-        .map(_.withRelationshipProperties(props:_*))
-        .orElse(Some(ExpandCursorProperties(relProperties = props))))(SameId(this.id))
 }
 
 /**
@@ -156,8 +131,3 @@ case object ExpandAll extends ExpansionMode
 case object ExpandInto extends ExpansionMode
 
 case class VariablePredicate(variable: LogicalVariable, predicate: Expression)
-
-case class ExpandCursorProperties(nodeProperties: Seq[CursorProperty] = Seq.empty, relProperties: Seq[CursorProperty] = Seq.empty) {
-  def withNodeProperties(props: CursorProperty*): ExpandCursorProperties = copy(nodeProperties = nodeProperties ++ props)
-  def withRelationshipProperties(props: CursorProperty*): ExpandCursorProperties = copy(relProperties = relProperties ++ props)
-}

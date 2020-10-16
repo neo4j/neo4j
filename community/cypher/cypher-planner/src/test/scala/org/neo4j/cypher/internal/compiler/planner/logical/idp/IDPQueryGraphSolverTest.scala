@@ -424,8 +424,8 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
 
     new given {
       cost = {
-        case (ProjectEndpoints(Expand(_, _, _, _, _, _, _, _),_, _, _, _, _, _, _,_), _, _) => 10.0
-        case (Expand(ProjectEndpoints(_,_, _, _, _, _, _, _, _), _, _, _, _, _, _, _), _, _) => 1.0
+        case (ProjectEndpoints(Expand(_, _, _, _, _, _, _),_, _, _, _, _, _, _,_), _, _) => 10.0
+        case (Expand(ProjectEndpoints(_,_, _, _, _, _, _, _, _), _, _, _, _, _, _), _, _) => 1.0
       }
 
       queryGraphSolver = createQueryGraphSolver(monitor = monitor, solverConfig = ExpandOnlyIDPSolverConfig)
@@ -549,7 +549,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
       case None => counts
       case Some(NodeHashJoin(_, left, right)) =>
         incrCount(addCounts(expandsAndJoinsCount(Some(left), counts), expandsAndJoinsCount(Some(right), counts)), "joins")
-      case Some(Expand(source, _, _, _, _, _, _, _)) =>
+      case Some(Expand(source, _, _, _, _, _, _)) =>
         incrCount(expandsAndJoinsCount(Some(source), counts), "expands")
       case Some(p: LogicalPlan) =>
         addCounts(expandsAndJoinsCount(p.lhs, counts), expandsAndJoinsCount(p.rhs, counts))

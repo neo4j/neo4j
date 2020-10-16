@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher.beLike
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.createQueryGraphSolverWithComponentConnectorPlanner
-import org.neo4j.cypher.internal.compiler.planner.logical.idp.ComponentConnectorPlanner
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.functions.Exists
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
@@ -490,9 +489,9 @@ class OrderPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
           Expand(
             Selection(_,
               Expand(
-                Sort(_,Seq(Ascending("u.name"))), _, _, _, _, _, _, _
+                Sort(_,Seq(Ascending("u.name"))), _, _, _, _, _, _
               )
-            ), _, _, _, _, _, _, _
+            ), _, _, _, _, _, _
           )
         ), _
       ) => ()
@@ -515,9 +514,9 @@ class OrderPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
           Expand(
             Selection(_,
               Expand(
-                Sort(_,Seq(Ascending("u"))), _, _, _, _, _, _, _
+                Sort(_,Seq(Ascending("u"))), _, _, _, _, _, _
               )
-            ), _, _, _, _, _, _, _
+            ), _, _, _, _, _, _
           )
         ), _
       ) => ()
@@ -538,9 +537,9 @@ class OrderPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
           Expand(
             Selection(_,
               Expand(
-                Sort(_,Seq(Ascending("name"))), _, _, _, _, _, _, _
+                Sort(_,Seq(Ascending("name"))), _, _, _, _, _, _
               )
-            ), _, _, _, _, _, _, _
+            ), _, _, _, _, _, _
           )
         ), _
       ) => ()
@@ -561,9 +560,9 @@ class OrderPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
           Expand(
             Selection(_,
               Expand(
-                Sort(_,Seq(Ascending("name"))), _, _, _, _, _, _, _
+                Sort(_,Seq(Ascending("name"))), _, _, _, _, _, _
               )
-            ), _, _, _, _, _, _, _
+            ), _, _, _, _, _, _
           )
         ), _
       ) => ()
@@ -584,9 +583,9 @@ class OrderPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
           Expand(
             Selection(_,
               Expand(
-                Sort(_,Seq(Ascending("v.name"))), _, _, _, _, _, _, _
+                Sort(_,Seq(Ascending("v.name"))), _, _, _, _, _, _
               )
-            ), _, _, _, _, _, _, _
+            ), _, _, _, _, _, _
           )
         ), _
       ) => ()
@@ -615,7 +614,7 @@ class OrderPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
       case Projection(
         Selection(_,
           Expand(
-            Sort(_,Seq(Ascending("u.name"))), _, _, _, _, _, _, _
+            Sort(_,Seq(Ascending("u.name"))), _, _, _, _, _, _
           )
         ), _
       ) => ()
@@ -1005,7 +1004,7 @@ class OrderPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
       case Projection(
         Selection(_,
           Expand(
-            Sort(_,Seq(Ascending("add"))), _, _, _, _, _, _, _
+            Sort(_,Seq(Ascending("add"))), _, _, _, _, _, _
           )
         ), _
       ) => ()
@@ -1024,7 +1023,7 @@ class OrderPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
       case Projection(
         Selection(_,
           Expand(
-            Sort(_,Seq(Ascending("u.name + p.name"))), _, _, _, _, _, _, _
+            Sort(_,Seq(Ascending("u.name + p.name"))), _, _, _, _, _, _
           )
         ), _
       ) => ()
@@ -1043,7 +1042,7 @@ class OrderPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
       case Projection(
         Selection(_,
           Expand(
-            Sort(_,Seq(Ascending("uname + pname"))), _, _, _, _, _, _, _
+            Sort(_,Seq(Ascending("uname + pname"))), _, _, _, _, _, _
           )
         ), _
       ) => ()

@@ -442,7 +442,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
       case _: ErrorPlan =>
         PlanDescriptionImpl(id, "Error", children, Seq.empty, variables)
 
-      case Expand(_, fromName, dir, typeNames, toName, relName, mode, _) =>
+      case Expand(_, fromName, dir, typeNames, toName, relName, mode) =>
         val expression = Details(expandExpressionDescription(fromName, Some(relName), typeNames.map(_.name), toName, dir, 1, Some(1)))
         val modeText = mode match {
           case ExpandAll => "Expand(All)"
@@ -459,7 +459,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
       case LockNodes(_, nodesToLock) =>
         PlanDescriptionImpl(id, name = "LockNodes", children, Seq(Details(keyNamesInfo(nodesToLock.toSeq))), variables)
 
-      case OptionalExpand(_, fromName, dir, typeNames, toName, relName, mode, predicates, _) =>
+      case OptionalExpand(_, fromName, dir, typeNames, toName, relName, mode, predicates) =>
         val predicate = predicates.map(p => pretty" WHERE ${asPrettyString(p)}").getOrElse(pretty"")
         val expandExpressionDesc = expandExpressionDescription(fromName, Some(relName), typeNames.map(_.name), toName, dir, 1, Some(1))
         val details = Details(pretty"$expandExpressionDesc$predicate")

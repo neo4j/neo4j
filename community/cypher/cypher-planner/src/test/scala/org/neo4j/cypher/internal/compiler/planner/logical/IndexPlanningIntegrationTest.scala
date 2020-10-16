@@ -37,9 +37,9 @@ import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.SemiApply
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-import scala.concurrent.duration.DurationInt
 import scala.concurrent.Await
 import scala.concurrent.Future
+import scala.concurrent.duration.DurationInt
 
 class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
@@ -57,7 +57,7 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
         case Selection(_,
               Expand(
                 _:NodeIndexScan | _:NodeByLabelScan,
-                _, _, _, _, _, _, _
+                _, _, _, _, _, _
               )
              ) => ()
       }
@@ -77,7 +77,7 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
               Apply(
                 Projection(_: Argument, _),
                 _:NodeIndexSeek | _:NodeIndexContainsScan | _:NodeIndexEndsWithScan
-              ), _, _, _, _, _, _, _) => ()
+              ), _, _, _, _, _, _) => ()
       }
     }
   }
@@ -95,7 +95,7 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
               Apply(
                 Projection(_: Argument, _),
                 _:NodeIndexSeek | _:NodeIndexContainsScan | _:NodeIndexEndsWithScan
-              ), _, _, _, _, _, _, _) => ()
+              ), _, _, _, _, _, _) => ()
       }
     }
   }
@@ -115,7 +115,7 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
       case Projection(
             Selection(_,
               Expand(
-                _:NodeByLabelScan, _, _, _, _, _, _, _
+                _:NodeByLabelScan, _, _, _, _, _, _
               )
             ), _) => ()
     }
@@ -276,7 +276,7 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
       case SemiApply(
              CartesianProduct(_: NodeIndexSeek, _: AllNodesScan),
              Expand(
-               Selection(_, _: Argument), _, _, _, _, _, _, _)) => ()
+               Selection(_, _: Argument), _, _, _, _, _, _)) => ()
     }
   }
 

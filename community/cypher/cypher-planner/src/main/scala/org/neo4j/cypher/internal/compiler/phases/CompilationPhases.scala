@@ -141,7 +141,6 @@ object CompilationPhases {
     sequencer: String => RewriterStepSequencer,
     pushdownPropertyReads: Boolean = true,
     semanticFeatures: Seq[SemanticFeature] = defaultSemanticFeatures,
-    readPropertiesFromCursor: Boolean = false,
   ): Transformer[PlannerContext, BaseState, LogicalPlanState] =
     SchemaCommandPlanBuilder andThen
       If((s: LogicalPlanState) => s.maybeLogicalPlan.isEmpty)(
@@ -160,7 +159,7 @@ object CompilationPhases {
           OptionalMatchRemover andThen
           QueryPlanner.adds(CompilationContains[LogicalPlan]) andThen
           PlanRewriter(sequencer) andThen
-          InsertCachedProperties(pushdownPropertyReads, readPropertiesFromCursor) andThen
+          InsertCachedProperties(pushdownPropertyReads) andThen
           If((s: LogicalPlanState) => s.query.readOnly)(
             CheckForUnresolvedTokens
           )

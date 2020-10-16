@@ -32,25 +32,20 @@ import org.neo4j.cypher.internal.expressions.NODE_TYPE
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RELATIONSHIP_TYPE
-import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.frontend.phases.InitialState
 import org.neo4j.cypher.internal.logical.plans.Aggregation
 import org.neo4j.cypher.internal.logical.plans.AllNodesScan
 import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.CanGetValue
-import org.neo4j.cypher.internal.logical.plans.CursorProperty
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
-import org.neo4j.cypher.internal.logical.plans.Expand
-import org.neo4j.cypher.internal.logical.plans.ExpandCursorProperties
 import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.logical.plans.GetValueFromIndexBehavior
 import org.neo4j.cypher.internal.logical.plans.IndexLeafPlan
 import org.neo4j.cypher.internal.logical.plans.IndexSeek
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NodeHashJoin
-import org.neo4j.cypher.internal.logical.plans.OptionalExpand
 import org.neo4j.cypher.internal.logical.plans.Projection
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.SingleSeekableArg
@@ -479,150 +474,12 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
     newTable.types(cachedNProp1) should be(initialType)
   }
 
-  test("should not cache relationship property from expand if not configured") {
-    val initialTable = semanticTable(nProp1 -> CTInteger, m -> CTNode, x -> CTNode, n -> CTRelationship)
-    val plan =
-      Selection(Seq(equals(nProp1, literalInt(1))),
-        Expand(Argument(),
-          "m", OUTGOING, Seq.empty, "x", "n")
-      )
-    val (newPlan, newTable) = replace(plan, initialTable, readFromCursor = false)
-
-    newPlan should equal(plan)
-    newTable should be(initialTable)
-  }
-
-  test("should cache properties from expand if configured") {
-    val initialTable = semanticTable(nProp1 -> CTInteger, mProp -> CTInteger,
-      xProp -> CTInteger, m -> CTNode, x -> CTNode, n -> CTRelationship)
-    val plan =
-      Selection(Seq(equals(nProp1, literalInt(1)), equals(xProp, literalInt(2)), equals(mProp, literalInt(3))),
-        Expand(Argument(),
-        "x", OUTGOING, Seq.empty, "m", "n")
-    )
-    val (newPlan, newTable) = replace(plan, initialTable, readFromCursor = true)
-
-    newPlan should equal(
-      Selection(
-        Seq(equals(cachedNRelProp1, literalInt(1)), equals(cachedXProp, literalInt(2)), equals(mProp, literalInt(3))),
-        Expand(Argument(),
-          "x", OUTGOING, Seq.empty, "m", "n", expandProperties = Some(ExpandCursorProperties(relProperties = Seq(CursorProperty("n", RELATIONSHIP_TYPE, prop)),
-            nodeProperties = Seq(CursorProperty("x", NODE_TYPE, prop)))))
-      )
-    )
-    newTable.types(cachedNRelProp1) should be(initialTable.types(nProp1))
-    newTable.types(cachedXProp) should be(initialTable.types(xProp))
-  }
-
-  test("should not cache node property in expand if already cached by index") {
-    val initialTable = semanticTable(nProp1 -> CTInteger, mProp -> CTInteger,
-      xProp -> CTInteger, m -> CTNode, x -> CTNode, n -> CTRelationship)
-    val plan =
-      Selection(Seq(equals(nProp1, literalInt(1)), equals(xProp, literalInt(2)), equals(mProp, literalInt(3))),
-        Expand(indexSeek("x", "L", "prop", CanGetValue),
-          "x", OUTGOING, Seq.empty, "m", "n")
-      )
-    val (newPlan, newTable) = replace(plan, initialTable, readFromCursor = true)
-
-    newPlan should equal(
-      Selection(
-        Seq(equals(cachedNRelProp1, literalInt(1)), equals(cachedXProp, literalInt(2)), equals(mProp, literalInt(3))),
-        Expand(indexSeek("x", "L", "prop", GetValue),
-          "x", OUTGOING, Seq.empty, "m", "n", expandProperties = Some(ExpandCursorProperties(relProperties = Seq(CursorProperty("n", RELATIONSHIP_TYPE, prop)))))
-      )
-    )
-    newTable.types(cachedNRelProp1) should be(initialTable.types(nProp1))
-    newTable.types(cachedXProp) should be(initialTable.types(xProp))
-  }
-
-  test("should not cache relationship property from optionalExpand if not configured") {
-    val initialTable = semanticTable(nProp1 -> CTInteger, m -> CTNode, x -> CTNode, n -> CTRelationship)
-    val plan =
-      Selection(Seq(equals(nProp1, literalInt(1))),
-        OptionalExpand(Argument(),
-          "m", OUTGOING, Seq.empty, "x", "n")
-      )
-    val (newPlan, newTable) = replace(plan, initialTable, readFromCursor = false)
-
-    newPlan should equal(plan)
-    newTable should be(initialTable)
-  }
-
-  test("should cache properties from optionalExpand if configured") {
-    val initialTable = semanticTable(nProp1 -> CTInteger, mProp -> CTInteger,
-      xProp -> CTInteger, m -> CTNode, x -> CTNode, n -> CTRelationship)
-    val plan =
-      Selection(Seq(equals(nProp1, literalInt(1)), equals(xProp, literalInt(2)), equals(mProp, literalInt(3))),
-        OptionalExpand(Argument(),
-          "x", OUTGOING, Seq.empty, "m", "n")
-      )
-    val (newPlan, newTable) = replace(plan, initialTable, readFromCursor = true)
-
-    newPlan should equal(
-      Selection(
-        Seq(equals(cachedNRelProp1, literalInt(1)), equals(cachedXProp, literalInt(2)), equals(mProp, literalInt(3))),
-        OptionalExpand(Argument(),
-          "x", OUTGOING, Seq.empty, "m", "n", expandProperties = Some(ExpandCursorProperties(relProperties = Seq(CursorProperty("n", RELATIONSHIP_TYPE, prop)),
-            nodeProperties = Seq(CursorProperty("x", NODE_TYPE, prop)))))
-      )
-    )
-    newTable.types(cachedNRelProp1) should be(initialTable.types(nProp1))
-    newTable.types(cachedXProp) should be(initialTable.types(xProp))
-  }
-
-  test("should not cache node property in optionalExpand if already cached by index") {
-    val initialTable = semanticTable(nProp1 -> CTInteger, mProp -> CTInteger,
-      xProp -> CTInteger, m -> CTNode, x -> CTNode, n -> CTRelationship)
-    val plan =
-      Selection(Seq(equals(nProp1, literalInt(1)), equals(xProp, literalInt(2)), equals(mProp, literalInt(3))),
-        OptionalExpand(indexSeek("x", "L", "prop", CanGetValue),
-          "x", OUTGOING, Seq.empty, "m", "n")
-      )
-    val (newPlan, newTable) = replace(plan, initialTable, readFromCursor = true)
-
-    newPlan should equal(
-      Selection(
-        Seq(equals(cachedNRelProp1, literalInt(1)), equals(cachedXProp, literalInt(2)), equals(mProp, literalInt(3))),
-        OptionalExpand(indexSeek("x", "L", "prop", GetValue),
-          "x", OUTGOING, Seq.empty, "m", "n", expandProperties = Some(ExpandCursorProperties(relProperties = Seq(CursorProperty("n", RELATIONSHIP_TYPE, prop)))))
-      )
-    )
-    newTable.types(cachedNRelProp1) should be(initialTable.types(nProp1))
-    newTable.types(cachedXProp) should be(initialTable.types(xProp))
-  }
-
-  test("should not cache properties a second time for multiple expands") {
-    val initialTable = semanticTable(nProp1 -> CTInteger, mProp -> CTInteger,
-      xProp -> CTInteger, m -> CTNode, x -> CTNode, n -> CTRelationship)
-    val plan =
-      Selection(Seq(equals(nProp1, literalInt(1)), equals(xProp, literalInt(2)), equals(mProp, literalInt(3))),
-        Expand(
-          Expand(Argument(), "x", OUTGOING, Seq.empty, "m", "n"),
-          "x", OUTGOING, Seq.empty, "m", "n")
-      )
-    val (newPlan, newTable) = replace(plan, initialTable, readFromCursor = true)
-
-    newPlan should equal(
-      Selection(
-        Seq(equals(cachedNRelProp1, literalInt(1)), equals(cachedXProp, literalInt(2)), equals(mProp, literalInt(3))),
-        Expand(
-          Expand(
-            Argument(),
-            "x", OUTGOING, Seq.empty, "m", "n", expandProperties = Some(ExpandCursorProperties(relProperties = Seq(CursorProperty("n", RELATIONSHIP_TYPE, prop)),
-              nodeProperties = Seq(CursorProperty("x", NODE_TYPE, prop))))),
-          "x", OUTGOING, Seq.empty, "m", "n", expandProperties = None)
-      )
-    )
-    newTable.types(cachedNRelProp1) should be(initialTable.types(nProp1))
-    newTable.types(cachedXProp) should be(initialTable.types(xProp))
-  }
-
-  private def replace(plan: LogicalPlan, initialTable: SemanticTable, readFromCursor: Boolean = false): (LogicalPlan, SemanticTable) = {
+  private def replace(plan: LogicalPlan, initialTable: SemanticTable): (LogicalPlan, SemanticTable) = {
     val state = LogicalPlanState(InitialState("", None, IDPPlannerName))
       .withSemanticTable(initialTable)
       .withMaybeLogicalPlan(Some(plan))
 
-    val icp = new InsertCachedProperties(pushdownPropertyReads = false, readFromCursor) {
+    val icp = new InsertCachedProperties(pushdownPropertyReads = false) {
       // Override so that we do not have to provide so many mocks.
       override protected[steps] def resortSelectionPredicates(from: LogicalPlanState,
                                                               context: PlannerContext,

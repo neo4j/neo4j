@@ -909,7 +909,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
       Optional(
                Selection(_,
                        RollUpApply(
-                          Expand(AllNodesScan(_, SetExtractor()), _, _, _, _, _, _, _), _/* <- This is the subQuery */, _, _) // Match part
+                          Expand(AllNodesScan(_, SetExtractor()), _, _, _, _, _, _), _/* <- This is the subQuery */, _, _) // Match part
                ), _
               ),
       MergeCreateRelationship(
@@ -1002,7 +1002,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
 
     planFor(q)._2 should beLike {
       case SetRelationshipProperty(
-      RollUpApply(Expand(AllNodesScan(_, SetExtractor()), _, _, _, _, _, _, _), _/* <- This is the subQuery */, _, _),
+      RollUpApply(Expand(AllNodesScan(_, SetExtractor()), _, _, _, _, _, _), _/* <- This is the subQuery */, _, _),
       _, _, _
       ) => ()
     }
@@ -1016,7 +1016,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
 
     planFor(q)._2 should beLike {
       case SetRelationshipPropertiesFromMap(
-      RollUpApply(Expand(AllNodesScan(_, SetExtractor()), _, _, _, _, _, _, _), _/* <- This is the subQuery */, _, _),
+      RollUpApply(Expand(AllNodesScan(_, SetExtractor()), _, _, _, _, _, _), _/* <- This is the subQuery */, _, _),
       _, _, _
       ) => ()
     }

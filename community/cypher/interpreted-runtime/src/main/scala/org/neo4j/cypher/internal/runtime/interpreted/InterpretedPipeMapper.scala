@@ -152,7 +152,6 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.EagerAggregationPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.EagerPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.EmptyResultPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.ErrorPipe
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.CypherRowFactory
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExpandAllPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExpandIntoPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.FilterPipe
@@ -347,19 +346,19 @@ case class InterpretedPipeMapper(readOnly: Boolean,
         val runtimeProperties = properties.toArray.map(buildExpression(_))
         CachePropertiesPipe(source, runtimeProperties)(id = id)
 
-      case Expand(_, fromName, dir, types: Seq[RelTypeName], toName, relName, ExpandAll, _) =>
+      case Expand(_, fromName, dir, types: Seq[RelTypeName], toName, relName, ExpandAll) =>
         ExpandAllPipe(source, fromName, relName, toName, dir, RelationshipTypes(types.toArray))(id = id)
 
-      case Expand(_, fromName, dir, types: Seq[RelTypeName], toName, relName, ExpandInto, _) =>
+      case Expand(_, fromName, dir, types: Seq[RelTypeName], toName, relName, ExpandInto) =>
         ExpandIntoPipe(source, fromName, relName, toName, dir, RelationshipTypes(types.toArray))(id = id)
 
       case LockNodes(_, nodesToLock) =>
         LockNodesPipe(source, nodesToLock)(id = id)
 
-      case OptionalExpand(_, fromName, dir, types, toName, relName, ExpandAll, predicate, _) =>
+      case OptionalExpand(_, fromName, dir, types, toName, relName, ExpandAll, predicate) =>
         OptionalExpandAllPipe(source, fromName, relName, toName, dir, RelationshipTypes(types.toArray), predicate.map(buildExpression))(id = id)
 
-      case OptionalExpand(_, fromName, dir, types, toName, relName, ExpandInto, predicate, _) =>
+      case OptionalExpand(_, fromName, dir, types, toName, relName, ExpandInto, predicate) =>
         OptionalExpandIntoPipe(source, fromName, relName, toName, dir, RelationshipTypes(types.toArray), predicate.map(buildExpression))(id = id)
 
       case VarExpand(_,

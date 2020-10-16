@@ -32,7 +32,6 @@ import org.neo4j.cypher.internal.compiler.phases.CompilationPhases.prepareForCac
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.cypherCompilerConfig
-import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.innerVariableNamer
 import org.neo4j.cypher.internal.compiler.planner.logical.ExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CardinalityModel
@@ -103,7 +102,6 @@ import scala.reflect.ClassTag
 object LogicalPlanningTestSupport2 extends MockitoSugar {
 
   val pushdownPropertyReads: Boolean = true
-  val readPropertiesFromCursor: Boolean = false
   val innerVariableNamer: InnerVariableNamer = new GeneratingNamer
 
   val cypherCompilerConfig: CypherPlannerConfiguration = CypherPlannerConfiguration(
@@ -118,7 +116,6 @@ object LogicalPlanningTestSupport2 extends MockitoSugar {
     csvBufferSize = 4 * 1024 * 1024,
     nonIndexedLabelWarningThreshold = 10000,
     planSystemCommands = false,
-    readPropertiesFromCursor = false,
     useJavaCCParser = true
   )
 
@@ -137,15 +134,13 @@ object LogicalPlanningTestSupport2 extends MockitoSugar {
   }
 
   def pipeLine(pushdownPropertyReads: Boolean = pushdownPropertyReads,
-               readPropertiesFromCursor: Boolean = readPropertiesFromCursor,
                innerVariableNamer: InnerVariableNamer = innerVariableNamer,
   ): Transformer[PlannerContext, BaseState, LogicalPlanState] = {
     // if you ever want to have parameters in here, fix the map
     parsing(ParsingConfig(newPlain, innerVariableNamer, literalExtraction = Never, parameterTypeMapping = Map.empty, useJavaCCParser = cypherCompilerConfig.useJavaCCParser)) andThen
       prepareForCaching andThen
-      planPipeLine(newPlain, pushdownPropertyReads = pushdownPropertyReads, readPropertiesFromCursor = readPropertiesFromCursor)
+      planPipeLine(newPlain, pushdownPropertyReads = pushdownPropertyReads)
   }
-
 }
 
 trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstructionTestSupport with LogicalPlanConstructionTestSupport {
@@ -153,7 +148,6 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
 
   val parser = new CypherParser
   val pushdownPropertyReads: Boolean = LogicalPlanningTestSupport2.pushdownPropertyReads
-  val readPropertiesFromCursor: Boolean = LogicalPlanningTestSupport2.readPropertiesFromCursor
   val innerVariableNamer: InnerVariableNamer = LogicalPlanningTestSupport2.innerVariableNamer
   val rewriterSequencer: String => ValidatingRewriterStepSequencer = RewriterStepSequencer.newValidating
   var astRewriter = new ASTRewriter(rewriterSequencer, literalExtraction = Never, innerVariableNamer = innerVariableNamer)
@@ -165,7 +159,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
   def createInitState(queryString: String): BaseState = InitialState(queryString, None, IDPPlannerName)
 
   def pipeLine(): Transformer[PlannerContext, BaseState, LogicalPlanState] = LogicalPlanningTestSupport2.pipeLine(
-    pushdownPropertyReads, readPropertiesFromCursor, innerVariableNamer
+    pushdownPropertyReads, innerVariableNamer
   )
 
   implicit class LogicalPlanningEnvironment[C <: LogicalPlanningConfiguration](config: C) {
