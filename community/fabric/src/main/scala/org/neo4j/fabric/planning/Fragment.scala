@@ -26,7 +26,10 @@ import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.GraphSelection
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.frontend.phases.BaseState
+import org.neo4j.cypher.internal.util.Foldable
 import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.Rewritable
+import org.neo4j.cypher.internal.util.Rewritable.IteratorEq
 import org.neo4j.cypher.rendering.QueryRenderer
 import org.neo4j.fabric.util.Folded
 import org.neo4j.fabric.util.Folded.FoldableOps
@@ -36,7 +39,7 @@ import org.neo4j.graphdb.ExecutionPlanDescription
 import scala.collection.JavaConverters.mapAsJavaMapConverter
 import scala.collection.JavaConverters.setAsJavaSet
 
-sealed trait Fragment {
+sealed trait Fragment extends Fragment.RewritingSupport {
   /** Columns available to this fragment from an applied argument */
   def argumentColumns: Seq[String]
   /** Columns imported from the argument */
@@ -158,6 +161,24 @@ object Fragment {
     val description: Description = Description.CommandDesc(this, "AdminCommand")
     val queryType: QueryType = QueryType.of(command)
     def pos: InputPosition = command.position
+  }
+
+  trait RewritingSupport extends Product with Foldable with Rewritable {
+    protected def pos: InputPosition
+
+    def dup(children: Seq[AnyRef]): this.type =
+      if (children.iterator eqElements this.children)
+        this
+      else {
+        val constructor = Rewritable.copyConstructor(this)
+        val params = constructor.getParameterTypes
+        val args = children.toVector
+        val hasExtraParam = params.length == args.length + 1
+        val lastParamIsPos = params.last.isAssignableFrom(classOf[InputPosition])
+        val ctorArgs = if (hasExtraParam && lastParamIsPos) args :+ this.pos else args
+        val duped = constructor.invoke(this, ctorArgs: _*)
+        duped.asInstanceOf[this.type]
+      }
   }
 
   private def hasExecutableClauses(clauses: Seq[ast.Clause]) =
