@@ -33,6 +33,7 @@ import org.neo4j.kernel.impl.store.format.standard.RelationshipGroupRecordFormat
 import org.neo4j.kernel.impl.store.format.standard.RelationshipRecordFormat;
 import org.neo4j.kernel.impl.store.format.standard.RelationshipTypeTokenRecordFormat;
 import org.neo4j.kernel.impl.store.format.standard.SchemaRecordFormat;
+import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -46,6 +47,16 @@ import org.neo4j.storageengine.api.IndexCapabilities;
 
 import static org.neo4j.kernel.impl.store.format.StoreVersion.ALIGNED_V4_1;
 
+/**
+ * Record format, very similar to {@link Standard}, only more machine friendly.
+ *
+ * Pages are padded at the end instead of letting record span 2 pages.
+ * As a result, we can ask the OS to fetch and write full 8K pages which
+ * it is more happier to work with than for instance 8K - 5 bytes.
+ *
+ * The only reason why it is just not an evolution of the standard format is
+ * that it requires costly migration.
+ */
 public class PageAlignedV4_1 extends BaseRecordFormats
 {
     public static final RecordFormats RECORD_FORMATS = new PageAlignedV4_1();
