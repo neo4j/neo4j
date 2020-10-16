@@ -832,11 +832,17 @@ class PrettifierIT extends CypherFunSuite {
       "show user user privileges as command" ->
         "SHOW USER user PRIVILEGES AS COMMANDS",
 
+"show user $bar privileges as command" ->
+        "SHOW USER $bar PRIVILEGES AS COMMANDS",
+        
       "show user foo, $bar privileges as command" ->
         "SHOW USERS foo, $bar PRIVILEGES AS COMMANDS",
 
       "show role role privileges as revoke command" ->
         "SHOW ROLE role PRIVILEGES AS REVOKE COMMANDS",
+
+"show role $bar privileges as command" ->
+        "SHOW ROLE $bar PRIVILEGES AS COMMANDS",
 
       "show role foo, $bar privileges as command" ->
         "SHOW ROLES foo, $bar PRIVILEGES AS COMMANDS",
