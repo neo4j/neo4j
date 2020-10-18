@@ -1252,7 +1252,7 @@ SET_CLAUSE SetClause() :
 SET_ITEM SetItem() :
 {EXPRESSION e; PROPERTY p; VARIABLE v; List<StringPos<POS>> labels; }
 {
-  LOOKAHEAD(2) e=Expression1() p=Property(e) <EQ> e=Expression() { return astFactory.setProperty(p, e); }
+  LOOKAHEAD(2) p=PropertyExpression() <EQ> e=Expression() { return astFactory.setProperty(p, e); }
 | LOOKAHEAD(2) v=Variable() <EQ> e=Expression() { return astFactory.setVariable(v, e); }
 | LOOKAHEAD(2) v=Variable() "+=" e=Expression() { return astFactory.addAndSetVariable(v, e); }
 | v=Variable() labels=NodeLabels() { return astFactory.setLabels(v, labels); }
@@ -1274,7 +1274,7 @@ CLAUSE RemoveClause() :
 REMOVE_ITEM RemoveItem() :
 {EXPRESSION e; PROPERTY p; VARIABLE v; List<StringPos<POS>> labels; }
 {
-  LOOKAHEAD(2) e=Expression1() p=Property(e) { return astFactory.removeProperty(p); }
+  LOOKAHEAD(2) p=PropertyExpression() { return astFactory.removeProperty(p); }
 | v=Variable() labels=NodeLabels() { return astFactory.removeLabels(v, labels); }
 }
 
@@ -1826,6 +1826,16 @@ PROPERTY Property(EXPRESSION subject) :
 }
 {
   <DOT> propKeyName=PropertyKeyName() { return astFactory.property(subject, propKeyName); }
+}
+
+PROPERTY PropertyExpression() :
+{
+  EXPRESSION subject;
+  PROPERTY p;
+}
+{
+  subject=Expression1() ( p=Property(subject) { subject = p; } )+
+  { return p; }
 }
 
 EXPRESSION Expression1() :

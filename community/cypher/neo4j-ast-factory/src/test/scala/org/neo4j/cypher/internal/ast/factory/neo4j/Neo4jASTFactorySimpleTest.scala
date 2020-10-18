@@ -119,6 +119,14 @@ class Neo4jASTFactorySimpleTest extends ParsingTestBase with FunSuiteLike with T
     assertSameAST("CREATE (n:`L`abel`)")
   }
 
+  test("MATCH (n) WITH {node:n} AS map SET map.node.property = 123") {
+    assertSameAST(testName)
+  }
+
+  test("MATCH (n) WITH {node:n} AS map REMOVE map.node.property") {
+    assertSameAST(testName)
+  }
+
   // extra spaces tests
 
   private def assertSameASTWithExtraSpaces(query: String) = {
