@@ -107,6 +107,7 @@ class SettingTest
     {
         var setting = (SettingImpl<Integer>) setting( "setting", INT );
         assertEquals( 5, setting.parse( "5" ) );
+        assertEquals( 5, setting.parse( " 5 " ) );
         assertEquals( -76, setting.parse( "-76" ) );
         assertThrows( IllegalArgumentException.class, () -> setting.parse( "foo" ) );
     }
@@ -116,6 +117,7 @@ class SettingTest
     {
         var setting = (SettingImpl<Long>) setting( "setting", LONG );
         assertEquals( 112233445566778899L, setting.parse( "112233445566778899" ) );
+        assertEquals( 112233445566778899L, setting.parse( " 112233445566778899 " ) );
         assertEquals( -112233445566778899L, setting.parse( "-112233445566778899" ) );
         assertThrows( IllegalArgumentException.class, () -> setting.parse( "foo" ) );
     }
@@ -145,6 +147,7 @@ class SettingTest
 
         var setting = (SettingImpl<Double>) setting( "setting", DOUBLE );
         assertEquals( 5.0, setting.parse( "5" ) );
+        assertEquals( 5.0, setting.parse( "  5 " ) );
         assertTrue( compareDoubles.apply( -.123, setting.parse( "-0.123" ) ) );
         assertTrue( compareDoubles.apply( 5.0, setting.parse( "5" ) ) );
         assertThrows( IllegalArgumentException.class, () -> setting.parse( "foo" ) );
@@ -171,6 +174,7 @@ class SettingTest
         assertEquals( Colors.BLUE, setting.parse( "BLUE" ) );
         assertEquals( Colors.GREEN, setting.parse( "gReEn" ) );
         assertEquals( Colors.RED, setting.parse( "red" ));
+        assertEquals( Colors.RED, setting.parse( " red " ));
         assertThrows( IllegalArgumentException.class, () -> setting.parse( "orange" ) );
     }
 
@@ -200,9 +204,10 @@ class SettingTest
         var setting = (SettingImpl<Boolean>) setting( "setting", BOOL );
         assertTrue( setting.parse( "True" ) );
         assertFalse( setting.parse( "false" ) );
-        assertFalse( setting.parse( "false" ) );
         assertFalse( setting.parse( FALSE ) );
         assertTrue( setting.parse( TRUE ) );
+        assertTrue( setting.parse( " true " ) );
+        assertFalse( setting.parse( "  false" ) );
         assertThrows( IllegalArgumentException.class, () -> setting.parse( "foo" ) );
     }
 
@@ -211,6 +216,7 @@ class SettingTest
     {
         var setting = (SettingImpl<Duration>) setting( "setting", DURATION );
         assertEquals( 60, setting.parse( "1m" ).toSeconds() );
+        assertEquals( 60, setting.parse( " 1m " ).toSeconds() );
         assertEquals( 1000, setting.parse( "1s" ).toMillis() );
         assertThrows( IllegalArgumentException.class, () -> setting.parse( "foo" ) );
 
@@ -243,6 +249,8 @@ class SettingTest
         var setting = (SettingImpl<DurationRange>) setting( "setting", DURATION_RANGE );
         assertEquals( 60, setting.parse( "1m-2m" ).getMin().toSeconds() );
         assertEquals( 120, setting.parse( "1m-2m" ).getMax().toSeconds() );
+        assertEquals( 60, setting.parse( " 1m-2m " ).getMin().toSeconds() );
+        assertEquals( 120, setting.parse( " 1m-2m " ).getMax().toSeconds() );
         assertEquals( 1000, setting.parse( "1s-2s" ).getMin().toMillis() );
         assertEquals( 2000, setting.parse( "1s-2s" ).getMax().toMillis() );
         assertThrows( IllegalArgumentException.class, () -> setting.parse( "1s" ) );
@@ -289,6 +297,7 @@ class SettingTest
     {
         var setting = (SettingImpl<ZoneId>) setting( "setting", TIMEZONE );
         assertEquals( ZoneId.from( ZoneOffset.UTC ), setting.parse( "+00:00" ) );
+        assertEquals( ZoneId.from( ZoneOffset.UTC ), setting.parse( " +00:00 " ) );
         assertThrows( IllegalArgumentException.class, () -> setting.parse( "foo" ) );
     }
 
@@ -297,6 +306,7 @@ class SettingTest
     {
         var setting = (SettingImpl<SocketAddress>) setting( "setting", SOCKET_ADDRESS );
         assertEquals( new SocketAddress( "127.0.0.1", 7474 ), setting.parse( "127.0.0.1:7474" ) );
+        assertEquals( new SocketAddress( "127.0.0.1", 7474 ), setting.parse( " 127.0.0.1:7474 " ) );
         assertEquals( new SocketAddress( "127.0.0.1", -1 ), setting.parse( "127.0.0.1" ) );
         assertEquals( new SocketAddress( null, 7474 ), setting.parse( ":7474" ) );
     }

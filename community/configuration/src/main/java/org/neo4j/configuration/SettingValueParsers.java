@@ -116,7 +116,7 @@ public final class SettingValueParsers
         {
             try
             {
-                return Integer.parseInt( value );
+                return Integer.parseInt( value.trim() );
             }
             catch ( NumberFormatException e )
             {
@@ -144,7 +144,7 @@ public final class SettingValueParsers
         {
             try
             {
-                return Long.parseLong( value );
+                return Long.parseLong( value.trim() );
             }
             catch ( NumberFormatException e )
             {
@@ -170,11 +170,12 @@ public final class SettingValueParsers
         @Override
         public Boolean parse( String value )
         {
-            if ( value.equalsIgnoreCase( "true" ) )
+            String trimmedValue = value.trim();
+            if ( trimmedValue.equalsIgnoreCase( "true" ) )
             {
                 return Boolean.TRUE;
             }
-            else if ( value.equalsIgnoreCase( "false" ) )
+            else if ( trimmedValue.equalsIgnoreCase( "false" ) )
             {
                 return Boolean.FALSE;
             }
@@ -312,9 +313,10 @@ public final class SettingValueParsers
             @Override
             public T parse( String value )
             {
+                String trimmedValue = value.trim();
                 for ( T t : values )
                 {
-                    if ( t.toString().equalsIgnoreCase( value ) )
+                    if ( t.toString().equalsIgnoreCase( trimmedValue ) )
                     {
                         return t;
                     }
@@ -372,7 +374,7 @@ public final class SettingValueParsers
         @Override
         public Duration parse( String value )
         {
-            return Duration.ofMillis( TimeUtil.parseTimeMillis.apply( value ) );
+            return Duration.ofMillis( TimeUtil.parseTimeMillis.apply( value.trim() ) );
         }
 
         @Override
@@ -429,7 +431,7 @@ public final class SettingValueParsers
         {
             try
             {
-                return DateTimeValue.parseZoneOffsetOrZoneName( value );
+                return DateTimeValue.parseZoneOffsetOrZoneName( value.trim() );
             }
             catch ( Exception e )
             {
