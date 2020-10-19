@@ -85,4 +85,16 @@ public class DatabaseNamePattern
         return Optional.of( Pattern.compile( pattern.toString() ) );
     }
 
+    @Override
+    public String toString()
+    {
+        if ( containsPattern() )
+        {
+            return "Database name pattern=" + databaseName;
+        }
+        else
+        {
+            return "Database name=" + databaseName;
+        }
+    }
 }
