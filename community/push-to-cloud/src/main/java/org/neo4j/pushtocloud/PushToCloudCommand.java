@@ -27,9 +27,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Optional;
 import java.util.function.LongConsumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -209,7 +207,7 @@ public class PushToCloudCommand extends AbstractCommand
         {
             throw new CommandFailedException( format( "The provided dump '%s' file doesn't exist", path ) );
         }
-        return new DumpUploader( new Source( dump.toPath(), Size.ofDump( dumpSize( dump ) ) ) );
+        return new DumpUploader( new Source( dump.toPath(), dumpSize( dump ) ) );
     }
 
     public FullUploader makeFullUploader( File to )
@@ -219,7 +217,7 @@ public class PushToCloudCommand extends AbstractCommand
         {
             throw new CommandFailedException( format( "The provided dump-to target '%s' file already exists", dumpPath ) );
         }
-        return new FullUploader( new Source( dumpPath, Size.ofFull( fullSize( ctx, database ) ) ) );
+        return new FullUploader( new Source( dumpPath, fullSize( ctx, database ) ) );
     }
 
     abstract static class Uploader
@@ -231,7 +229,7 @@ public class PushToCloudCommand extends AbstractCommand
             this.source = source;
         }
 
-        Size size()
+        long size()
         {
             return source.size();
         }
@@ -253,12 +251,12 @@ public class PushToCloudCommand extends AbstractCommand
 
         void process( String consoleURL, String bearerToken )
         {
-            // Check size of dump (estimating full database as 4X dumpfile)
-            verbose( "Checking database size %s fits at %s\n", size().humanize(), consoleURL );
+            // Check size of dump (reading actual database size from dump header)
+            verbose( "Checking database size %s fits at %s\n", sizeText( size() ), consoleURL );
             copier.checkSize( verbose, consoleURL, size(), bearerToken );
 
             // Upload dumpFile
-            verbose( "Uploading data of %s to %s\n", size().humanize(), consoleURL );
+            verbose( "Uploading data of %s to %s\n", sizeText( size() ), consoleURL );
             copier.copy( verbose, consoleURL, boltURI, source, false, bearerToken );
         }
     }
@@ -273,16 +271,22 @@ public class PushToCloudCommand extends AbstractCommand
         void process( String consoleURL, String bearerToken )
         {
             // Check size of full database
-            verbose( "Checking database size %s fits at %s\n", size().humanize(), consoleURL );
+            verbose( "Checking database size %s fits at %s\n", sizeText( size() ), consoleURL );
             copier.checkSize( verbose, consoleURL, size(), bearerToken );
 
             // Dump database to dumpFile
             File dumpFile = dumpCreator.dumpDatabase( database.name(), path() );
-            //noinspection OptionalGetWithoutIsPresent
-            source.setSize( Size.of( dumpSize( dumpFile ), size().fullSize.get() ) );
+            long sizeFromDump = dumpSize( dumpFile );
+            long sizeFromDatabase = size();
+            verbose( "Validating sizes: fromDump=%d, fromDatabase=%d", sizeFromDump, sizeFromDatabase );
+            if ( sizeFromDump != sizeFromDatabase )
+            {
+                throw new IllegalStateException( format( "Mismatching sizes: %d != %d", sizeFromDump, sizeFromDatabase ) );
+            }
+            source.setSize( sizeFromDump );
 
             // Upload dumpFile
-            verbose( "Uploading data of %s to %s\n", size().humanize(), consoleURL );
+            verbose( "Uploading data of %s to %s\n", sizeText( size() ), consoleURL );
             copier.copy( verbose, consoleURL, boltURI, source, true, bearerToken );
         }
     }
@@ -383,9 +387,9 @@ public class PushToCloudCommand extends AbstractCommand
     public static class Source
     {
         private final Path path;
-        private Size size;
+        private long size;
 
-        public Source( Path path, Size size )
+        public Source( Path path, long size )
         {
             this.path = path;
             this.size = size;
@@ -396,12 +400,12 @@ public class PushToCloudCommand extends AbstractCommand
             return path;
         }
 
-        public Size size()
+        public long size()
         {
             return size;
         }
 
-        protected void setSize( Size newSize )
+        protected void setSize( long newSize )
         {
             this.size = newSize;
         }
@@ -423,7 +427,7 @@ public class PushToCloudCommand extends AbstractCommand
         @Override
         public int hashCode()
         {
-            return path.hashCode() + 31 * size.hashCode();
+            return path.hashCode() + 31 * (int) size;
         }
 
         @Override
@@ -432,7 +436,7 @@ public class PushToCloudCommand extends AbstractCommand
             if ( obj instanceof Source )
             {
                 Source other = (Source) obj;
-                return path.equals( other.path ) && size.equals( other.size );
+                return path.equals( other.path ) && size == other.size;
             }
             else
             {
@@ -441,95 +445,14 @@ public class PushToCloudCommand extends AbstractCommand
         }
     }
 
-    public static class Size
+    public static String sizeText( long size )
     {
-        public static final long ESTIMATED_COMPRESSION = 4;
-        private final Optional<Long> dumpSize;
-        private final Optional<Long> fullSize;
+        return format( "%.1f GB", bytesToGibibytes( size ) );
+    }
 
-        private Size( Optional<Long> dumpSize, Optional<Long> fullSize )
-        {
-            this.dumpSize = dumpSize;
-            this.fullSize = fullSize;
-        }
-
-        public static Size of( long dumpSize, long fullSize )
-        {
-            return new Size( Optional.of( dumpSize ), Optional.of( fullSize ) );
-        }
-
-        public static Size ofDump( long dumpSize )
-        {
-            return new Size( Optional.of( dumpSize ), Optional.empty() );
-        }
-
-        public static Size ofFull( long fullSize )
-        {
-            return new Size( Optional.empty(), Optional.of( fullSize ) );
-        }
-
-        private void addPart( ArrayList<String> parts, Optional<Long> size, String field, String sep )
-        {
-            size.ifPresent( aLong -> parts.add( format( "%s%s%d", field, sep, aLong ) ) );
-        }
-
-        @Override
-        public String toString()
-        {
-            ArrayList<String> parts = new ArrayList<>();
-            addPart( parts, dumpSize, "DumpSize", "=" );
-            addPart( parts, fullSize, "FullSize", "=" );
-            return String.join( ", ", parts );
-        }
-
-        public String toJson( String... extra )
-        {
-            ArrayList<String> parts = new ArrayList<>( Arrays.asList( extra ) );
-            addPart( parts, dumpSize, "\"DumpSize\"", ":" );
-            addPart( parts, fullSize, "\"FullSize\"", ":" );
-            return "{" + String.join( ", ", parts ) + "}";
-        }
-
-        public Object humanize()
-        {
-            if ( fullSize.isPresent() )
-            {
-                return format( "%.1f GB", bytesToGibibytes( fullSize.get() ) );
-            }
-            else if ( dumpSize.isPresent() )
-            {
-                return format( "%.1f GB", bytesToGibibytes( ESTIMATED_COMPRESSION * dumpSize.get() ) );
-            }
-            else
-            {
-                return "<missing>";
-            }
-        }
-
-        @Override
-        public int hashCode()
-        {
-            return dumpSize.hashCode() + 31 * fullSize.hashCode();
-        }
-
-        @Override
-        public boolean equals( Object obj )
-        {
-            if ( obj instanceof Size )
-            {
-                Size other = (Size) obj;
-                return dumpSize.equals( other.dumpSize ) && fullSize.equals( other.fullSize );
-            }
-            else
-            {
-                return false;
-            }
-        }
-
-        public static double bytesToGibibytes( long sizeInBytes )
-        {
-            return sizeInBytes / (double) (1024 * 1024 * 1024);
-        }
+    public static double bytesToGibibytes( long sizeInBytes )
+    {
+        return sizeInBytes / (double) (1024 * 1024 * 1024);
     }
 
     public interface Copier
@@ -564,11 +487,11 @@ public class PushToCloudCommand extends AbstractCommand
         /**
          * @param verbose     whether or not to print verbose debug messages/statuses
          * @param consoleURL  console URI to target.
-         * @param sourceSize  database size (either or both of dump and full sizes in bytes)
+         * @param size        database size
          * @param bearerToken token from successful {@link #authenticate(boolean, String, String, char[], boolean)} call.
          * @throws CommandFailedException if the database won't fit on the aura instance
          */
-        void checkSize( boolean verbose, String consoleURL, Size sourceSize, String bearerToken ) throws CommandFailedException;
+        void checkSize( boolean verbose, String consoleURL, long size, String bearerToken ) throws CommandFailedException;
     }
 
     public interface DumpCreator
