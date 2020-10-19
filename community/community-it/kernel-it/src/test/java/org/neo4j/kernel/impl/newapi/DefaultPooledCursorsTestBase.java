@@ -45,7 +45,7 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.memory.EmptyMemoryTracker;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.internal.kernel.api.InternalIndexState.ONLINE;
@@ -87,7 +87,7 @@ public abstract class DefaultPooledCursorsTestBase<G extends KernelAPIReadTestSu
         c1.close();
 
         NodeCursor c2 = cursors.allocateNodeCursor( NULL );
-        assertEquals( c1, c2 );
+        assertThat( c1 ).isSameAs( c2 );
         c2.close();
     }
 
@@ -99,7 +99,7 @@ public abstract class DefaultPooledCursorsTestBase<G extends KernelAPIReadTestSu
         c1.close();
 
         NodeCursor c2 = cursors.allocateFullAccessNodeCursor( NULL );
-        assertEquals( c1, c2 );
+        assertThat( c1 ).isSameAs( c2 );
         c2.close();
     }
 
@@ -111,7 +111,7 @@ public abstract class DefaultPooledCursorsTestBase<G extends KernelAPIReadTestSu
         c1.close();
 
         RelationshipScanCursor c2 = cursors.allocateRelationshipScanCursor( NULL );
-        assertEquals( c1, c2 );
+        assertThat( c1 ).isSameAs( c2 );
         c2.close();
     }
 
@@ -123,7 +123,7 @@ public abstract class DefaultPooledCursorsTestBase<G extends KernelAPIReadTestSu
         c1.close();
 
         RelationshipScanCursor c2 = cursors.allocateFullAccessRelationshipScanCursor( NULL );
-        assertEquals( c1, c2 );
+        assertThat( c1 ).isSameAs( c2 );
         c2.close();
     }
 
@@ -141,7 +141,7 @@ public abstract class DefaultPooledCursorsTestBase<G extends KernelAPIReadTestSu
         c1.close();
 
         RelationshipTraversalCursor c2 = cursors.allocateRelationshipTraversalCursor( NULL );
-        assertEquals( c1, c2 );
+        assertThat( c1 ).isSameAs( c2 );
         c2.close();
     }
 
@@ -159,7 +159,7 @@ public abstract class DefaultPooledCursorsTestBase<G extends KernelAPIReadTestSu
         c1.close();
 
         RelationshipTraversalCursor c2 = cursors.allocateFullAccessRelationshipTraversalCursor( NULL );
-        assertEquals( c1, c2 );
+        assertThat( c1 ).isSameAs( c2 );
         c2.close();
     }
 
@@ -177,7 +177,7 @@ public abstract class DefaultPooledCursorsTestBase<G extends KernelAPIReadTestSu
         c1.close();
 
         PropertyCursor c2 = cursors.allocatePropertyCursor( NULL, INSTANCE );
-        assertEquals( c1, c2 );
+        assertThat( c1 ).isSameAs( c2 );
         c2.close();
     }
 
@@ -195,7 +195,7 @@ public abstract class DefaultPooledCursorsTestBase<G extends KernelAPIReadTestSu
         c1.close();
 
         PropertyCursor c2 = cursors.allocateFullAccessPropertyCursor( NULL, INSTANCE );
-        assertEquals( c1, c2 );
+        assertThat( c1 ).isSameAs( c2 );
         c2.close();
     }
 
@@ -212,7 +212,7 @@ public abstract class DefaultPooledCursorsTestBase<G extends KernelAPIReadTestSu
         c1.close();
 
         NodeValueIndexCursor c2 = cursors.allocateNodeValueIndexCursor( NULL, EmptyMemoryTracker.INSTANCE);
-        assertEquals( c1, c2 );
+        assertThat( c1 ).isSameAs( c2 );
         c2.close();
     }
 
@@ -229,7 +229,7 @@ public abstract class DefaultPooledCursorsTestBase<G extends KernelAPIReadTestSu
         c1.close();
 
         NodeValueIndexCursor c2 = cursors.allocateFullAccessNodeValueIndexCursor( NULL, EmptyMemoryTracker.INSTANCE);
-        assertEquals( c1, c2 );
+        assertThat( c1 ).isSameAs( c2 );
         c2.close();
     }
 
@@ -243,7 +243,7 @@ public abstract class DefaultPooledCursorsTestBase<G extends KernelAPIReadTestSu
             c1.close();
 
             NodeLabelIndexCursor c2 = tx.cursors().allocateNodeLabelIndexCursor( NULL );
-            assertEquals( c1, c2 );
+            assertThat( c1 ).isSameAs( c2 );
             c2.close();
         }
     }
@@ -258,7 +258,7 @@ public abstract class DefaultPooledCursorsTestBase<G extends KernelAPIReadTestSu
             c1.close();
 
             NodeLabelIndexCursor c2 = tx.cursors().allocateFullAccessNodeLabelIndexCursor( NULL );
-            assertEquals( c1, c2 );
+            assertThat( c1 ).isSameAs( c2 );
             c2.close();
         }
     }
@@ -294,7 +294,7 @@ public abstract class DefaultPooledCursorsTestBase<G extends KernelAPIReadTestSu
         c1.close();
 
         RelationshipIndexCursor c2 = cursors.allocateRelationshipIndexCursor( NULL );
-        assertEquals( c1, c2 );
+        assertThat( c1 ).isSameAs( c2 );
         c2.close();
     }
 
