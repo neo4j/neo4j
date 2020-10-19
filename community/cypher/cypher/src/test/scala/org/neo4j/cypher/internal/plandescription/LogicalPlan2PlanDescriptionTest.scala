@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.plandescription
 import org.neo4j.cypher.CypherVersion
 import org.neo4j.cypher.QueryPlanTestSupport.StubExecutionPlan
 import org.neo4j.cypher.internal.ast
+import org.neo4j.cypher.internal.ast.AllConstraints
 import org.neo4j.cypher.internal.ast.AllPropertyResource
 import org.neo4j.cypher.internal.ast.CreateDatabaseAction
 import org.neo4j.cypher.internal.ast.CreateNodeLabelAction
@@ -231,6 +232,7 @@ import org.neo4j.cypher.internal.logical.plans.SetPropertiesFromMap
 import org.neo4j.cypher.internal.logical.plans.SetProperty
 import org.neo4j.cypher.internal.logical.plans.SetRelationshipPropertiesFromMap
 import org.neo4j.cypher.internal.logical.plans.SetRelationshipProperty
+import org.neo4j.cypher.internal.logical.plans.ShowConstraints
 import org.neo4j.cypher.internal.logical.plans.ShowCurrentUser
 import org.neo4j.cypher.internal.logical.plans.ShowDatabase
 import org.neo4j.cypher.internal.logical.plans.ShowIndexes
@@ -709,6 +711,11 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(attach(DropConstraintOnName("name", ifExists = true), 63.2),
       planDescription(id, "DropConstraint", NoChildren, Seq(details("CONSTRAINT name")), Set.empty))
+  }
+
+  test("ShowConstraints") {
+    assertGood(attach(ShowConstraints(constraintType = AllConstraints, verbose = false), 1.0),
+      planDescription(id, "ShowConstraints", NoChildren, Seq(), Set.empty))
   }
 
   test("Aggregation") {

@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.logical.plans.IndexOrder
 import org.neo4j.cypher.internal.runtime
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.ClosingLongIterator
+import org.neo4j.cypher.internal.runtime.ConstraintInfo
 import org.neo4j.cypher.internal.runtime.Expander
 import org.neo4j.cypher.internal.runtime.IndexInfo
 import org.neo4j.cypher.internal.runtime.IndexStatus
@@ -905,6 +906,25 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
 
   override def dropNamedConstraint(name: String): Unit =
     transactionalContext.kernelTransaction.schemaWrite().constraintDrop(name)
+
+  override def getAllConstraints(): Map[ConstraintDescriptor, ConstraintInfo] = {
+    val schemaRead: SchemaReadCore = transactionalContext.kernelTransaction.schemaRead().snapshot()
+    val constraints = schemaRead.constraintsGetAll().asScala.toList
+
+    constraints.foldLeft(Map[ConstraintDescriptor, ConstraintInfo]()) {
+      (map, constraint) =>
+        val schema = constraint.schema
+        val labelsOrTypes = tokenRead.entityTokensGetNames(schema.entityType(), schema.getEntityTokenIds).toList
+        val properties = schema.getPropertyIds.map(id => tokenRead.propertyKeyGetName(id)).toList
+        val maybeIndex =
+          try {
+            Some(schemaRead.indexGetForName(constraint.getName))
+          } catch {
+            case _: IndexNotFoundKernelException => None
+          }
+        map + (constraint -> runtime.ConstraintInfo(labelsOrTypes, properties, maybeIndex))
+    }
+  }
 
   override def getImportURL(url: URL): Either[String, URL] = transactionalContext.graph match {
     case db: GraphDatabaseQueryService =>

@@ -23,6 +23,7 @@ package org.neo4j.cypher.internal.runtime.interpreted
 import java.util.concurrent.atomic.AtomicInteger
 
 import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.runtime.ConstraintInfo
 import org.neo4j.cypher.internal.runtime.IndexInfo
 import org.neo4j.cypher.internal.runtime.NodeOperations
 import org.neo4j.cypher.internal.runtime.Operations
@@ -188,6 +189,8 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
     inner.dropNamedConstraint(name)
     namedConstraintsRemoved.increase()
   }
+
+  override def getAllConstraints(): Map[ConstraintDescriptor, ConstraintInfo] = inner.getAllConstraints()
 
   override def nodeGetDegree(node: Long, dir: SemanticDirection, nodeCursor: NodeCursor): Int = super.nodeGetDegree(node, dir, nodeCursor)
 

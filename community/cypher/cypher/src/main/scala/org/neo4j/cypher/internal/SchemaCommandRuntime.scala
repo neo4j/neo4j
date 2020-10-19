@@ -23,6 +23,12 @@ import java.util.Collections
 import java.util.StringJoiner
 
 import org.neo4j.common.EntityType
+import org.neo4j.cypher.internal.ast.ExistsConstraints
+import org.neo4j.cypher.internal.ast.NodeExistsConstraints
+import org.neo4j.cypher.internal.ast.NodeKeyConstraints
+import org.neo4j.cypher.internal.ast.RelExistsConstraints
+import org.neo4j.cypher.internal.ast.ShowConstraintType
+import org.neo4j.cypher.internal.ast.UniqueConstraints
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.expressions.DoubleLiteral
 import org.neo4j.cypher.internal.expressions.Expression
@@ -51,6 +57,7 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NodeKey
 import org.neo4j.cypher.internal.logical.plans.NodePropertyExistence
 import org.neo4j.cypher.internal.logical.plans.RelationshipPropertyExistence
+import org.neo4j.cypher.internal.logical.plans.ShowConstraints
 import org.neo4j.cypher.internal.logical.plans.ShowIndexes
 import org.neo4j.cypher.internal.logical.plans.Uniqueness
 import org.neo4j.cypher.internal.procs.IgnoredResult
@@ -58,6 +65,7 @@ import org.neo4j.cypher.internal.procs.SchemaReadExecutionPlan
 import org.neo4j.cypher.internal.procs.SchemaReadExecutionResult
 import org.neo4j.cypher.internal.procs.SchemaWriteExecutionPlan
 import org.neo4j.cypher.internal.procs.SuccessResult
+import org.neo4j.cypher.internal.runtime.ConstraintInfo
 import org.neo4j.cypher.internal.runtime.IndexInfo
 import org.neo4j.cypher.internal.runtime.InternalQueryType
 import org.neo4j.cypher.internal.runtime.ParameterMapping
@@ -70,6 +78,7 @@ import org.neo4j.exceptions.CantCompileQueryException
 import org.neo4j.graphdb.schema.IndexSettingImpl.FULLTEXT_ANALYZER
 import org.neo4j.graphdb.schema.IndexSettingImpl.FULLTEXT_EVENTUALLY_CONSISTENT
 import org.neo4j.graphdb.schema.IndexSettingUtil
+import org.neo4j.internal.schema
 import org.neo4j.internal.schema.ConstraintDescriptor
 import org.neo4j.internal.schema.IndexConfig
 import org.neo4j.internal.schema.IndexDescriptor
@@ -85,6 +94,7 @@ import org.neo4j.values.storable.IntValue
 import org.neo4j.values.storable.StringValue
 import org.neo4j.values.storable.Value
 import org.neo4j.values.storable.Values
+import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.VirtualValues
 
 import scala.collection.JavaConverters.mapAsJavaMapConverter
@@ -194,6 +204,79 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
         SuccessResult
       })
 
+    // SHOW [ALL|UNIQUE|NODE EXIST[S]|RELATIONSHIP EXIST[S]|EXIST[S]|NODE KEY] CONSTRAINT[S] [BRIEF|VERBOSE[OUTPUT]]
+    case ShowConstraints(constraintType, verbose) => (_, _) =>
+      SchemaReadExecutionPlan("ShowConstraints", ctx => {
+        val constraints = ctx.getAllConstraints()
+
+        val predicate: ConstraintDescriptor => Boolean = constraintType match {
+          case UniqueConstraints => c => c.`type`().equals(schema.ConstraintType.UNIQUE)
+          case NodeKeyConstraints => c => c.`type`().equals(schema.ConstraintType.UNIQUE_EXISTS)
+          case ExistsConstraints => c => c.`type`().equals(schema.ConstraintType.EXISTS)
+          case NodeExistsConstraints => c => c.`type`().equals(schema.ConstraintType.EXISTS) && c.schema.entityType.equals(EntityType.NODE)
+          case RelExistsConstraints => c => c.`type`().equals(schema.ConstraintType.EXISTS) && c.schema.entityType.equals(EntityType.RELATIONSHIP)
+          case _ => _ => true
+        }
+
+        val relevantConstraints = constraints.filter {
+          case (constraintDescriptor, _) => predicate(constraintDescriptor)
+        }
+        val sortedRelevantConstraints: ListMap[ConstraintDescriptor, ConstraintInfo] = ListMap(relevantConstraints.toSeq.sortBy(_._1.getName):_*)
+
+        val briefColumnNames: Array[String] = Array("id", "name", "type", "entityType", "labelsOrTypes", "properties", "ownedIndexId")
+        val columnNames: Array[String] = if (verbose) briefColumnNames ++ Array("options", "createStatement") else briefColumnNames
+
+        val result: List[Map[String, AnyValue]] = sortedRelevantConstraints.map {
+          case (constraintDescriptor: ConstraintDescriptor, constraintInfo: ConstraintInfo) =>
+            val escapedName = escapeBackticks(constraintDescriptor.getName)
+            val labels = constraintInfo.labelsOrTypes
+            val properties = constraintInfo.properties
+            val isIndexBacked = constraintDescriptor.isIndexBackedConstraint
+            val entityType = constraintDescriptor.schema.entityType
+            val constraintType = getConstraintType(constraintDescriptor.`type`, entityType)
+
+            val briefResult = Map(
+              // 2
+              "id" -> Values.longValue(constraintDescriptor.getId),
+              // "myConstraint"
+              "name" -> Values.stringValue(escapedName),
+              //"UNIQUENESS", "NODE_KEY", "NODE_PROPERTY_EXISTENCE", "RELATIONSHIP_PROPERTY_EXISTENCE"
+              "type" -> Values.stringValue(constraintType.name),
+              //"NODE", "RELATIONSHIP"
+              "entityType" -> Values.stringValue(entityType.name),
+              //["Label1", "Label2"], ["RelType1", "RelType2"]
+              "labelsOrTypes" -> VirtualValues.fromList(labels.map(elem => Values.of(elem).asInstanceOf[AnyValue]).asJava),
+              //["propKey", "propKey2"]
+              "properties" -> VirtualValues.fromList(properties.map(prop => Values.of(prop).asInstanceOf[AnyValue]).asJava),
+              // 1
+              "ownedIndexId" -> {if (isIndexBacked) Values.longValue(constraintDescriptor.asIndexBackedConstraint().ownedIndexId()) else Values.NO_VALUE}
+            )
+            if (verbose) {
+              val (options, createString) = if (isIndexBacked) {
+                val index = constraintInfo.maybeIndex.getOrElse(
+                  throw new IllegalStateException(s"Expected to find an index for index backed constraint $escapedName")
+                )
+                val providerName = index.getIndexProvider.name
+                val indexConfig = index.getIndexConfig
+                val options: MapValue = extractOptionsMap(providerName, indexConfig)
+                val createWithOptions = createConstraintStatement(escapedName, constraintType, labels, properties, Some(providerName), Some(indexConfig))
+                (options, createWithOptions)
+              } else {
+                val createWithoutOptions = createConstraintStatement(escapedName, constraintType, labels, properties)
+                (Values.NO_VALUE, createWithoutOptions)
+              }
+
+              briefResult ++ Map(
+                "options" -> options,
+                "createStatement" -> Values.stringValue(createString)
+              )
+            } else {
+              briefResult
+            }
+        }.toList
+        SchemaReadExecutionResult(columnNames, result)
+      })
+
     // CREATE INDEX ON :LABEL(prop)
     // CREATE INDEX [name] [IF NOT EXISTS] FOR (n:LABEL) ON (n.prop) [OPTIONS {...}]
     case CreateIndex(source, label, props, name, options) => (context, parameterMapping) =>
@@ -237,7 +320,7 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
         val result: List[Map[String, AnyValue]] = sortedRelevantIndexes.map {
           case (indexDescriptor: IndexDescriptor, indexInfo: IndexInfo) =>
             val indexStatus = indexInfo.indexStatus
-            val uniqueness = if (indexDescriptor.isUnique) unique.NAME else nonunique.NAME
+            val uniqueness = if (indexDescriptor.isUnique) Unique.toString else Nonunique.toString
             val indexType = indexDescriptor.getIndexType
 
             /*
@@ -278,15 +361,11 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
             )
             if (verbose) {
               val indexConfig = indexDescriptor.getIndexConfig
-              val (configKeys, configValues) = indexConfig.asMap().asScala.toSeq.unzip
-              val optionKeys = Array("indexConfig", "indexProvider")
-              val optionValues = Array(VirtualValues.map(configKeys.toArray, configValues.toArray), Values.stringValue(providerName))
-
               briefResult ++ Map(
-                "options" -> VirtualValues.map(optionKeys, optionValues),
+                "options" -> extractOptionsMap(providerName, indexConfig),
                 "failureMessage" -> Values.stringValue(indexInfo.indexStatus.failureMessage),
                 "createStatement" -> Values.stringValue(
-                  createStatement(createName, indexType, entityType, labels, properties, providerName, indexConfig, indexStatus.maybeConstraint))
+                  createIndexStatement(createName, indexType, entityType, labels, properties, providerName, indexConfig, indexStatus.maybeConstraint))
               )
             } else {
               briefResult
@@ -412,7 +491,7 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
     }
   }
 
-  private def createStatement(escapedName: String,
+  private def createIndexStatement(escapedName: String,
                               indexType: IndexType,
                               entityType: EntityType,
                               labelsOrTypes: List[String],
@@ -452,6 +531,46 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
         }
       case _ => throw new IllegalArgumentException(s"Did not recognize index type $indexType")
     }
+  }
+
+  private def createConstraintStatement(name: String,
+                                        constraintType: ShowConstraintType,
+                                        labelsOrTypes: List[String],
+                                        properties: List[String],
+                                        providerName: Option[String] = None,
+                                        indexConfig: Option[IndexConfig] = None): String = {
+    val labelsOrTypesWithColons = asEscapedString(labelsOrTypes, colonStringJoiner)
+    constraintType match {
+      case UniqueConstraints =>
+        val escapedProperties = asEscapedString(properties, propStringJoiner)
+        val options = extractOptionsString(providerName, indexConfig)
+        s"CREATE CONSTRAINT `$name` ON (n$labelsOrTypesWithColons) ASSERT ($escapedProperties) IS UNIQUE OPTIONS $options"
+      case NodeKeyConstraints =>
+        val options = extractOptionsString(providerName, indexConfig)
+        val escapedProperties = asEscapedString(properties, propStringJoiner)
+        s"CREATE CONSTRAINT `$name` ON (n$labelsOrTypesWithColons) ASSERT ($escapedProperties) IS NODE KEY OPTIONS $options"
+      case NodeExistsConstraints =>
+        val escapedProperties = asEscapedString(properties, propStringJoiner)
+        s"CREATE CONSTRAINT `$name` ON (n$labelsOrTypesWithColons) ASSERT exists($escapedProperties)"
+      case RelExistsConstraints =>
+        val escapedProperties = asEscapedString(properties, relPropStringJoiner)
+        s"CREATE CONSTRAINT `$name` ON ()-[r$labelsOrTypesWithColons]-() ASSERT exists($escapedProperties)"
+      case _ => throw new IllegalArgumentException(s"Did not expect constraint type $constraintType for constraint create command.")
+    }
+  }
+
+  private def extractOptionsString(maybeProviderName: Option[String], maybeIndexConfig: Option[IndexConfig]): String = {
+    val providerName = maybeProviderName.getOrElse(throw new IllegalArgumentException("Expected a provider name for this type of constraint."))
+    val indexConfig = maybeIndexConfig.getOrElse(throw new IllegalArgumentException("Expected an index configuration for this type of constraint."))
+    val btreeConfig = configAsString(indexConfig, value => btreeConfigValueAsString(value))
+    optionsAsString(providerName, btreeConfig)
+  }
+
+  private def extractOptionsMap(providerName: String, indexConfig: IndexConfig): MapValue = {
+    val (configKeys, configValues) = indexConfig.asMap().asScala.toSeq.unzip
+    val optionKeys = Array("indexConfig", "indexProvider")
+    val optionValues = Array(VirtualValues.map(configKeys.toArray, configValues.toArray), Values.stringValue(providerName))
+    VirtualValues.map(optionKeys, optionValues)
   }
 
   private def asEscapedString(list: List[String], stringJoiner: StringJoiner): String = {
@@ -503,17 +622,28 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
 
   private def colonStringJoiner = new StringJoiner(":",":", "")
   private def propStringJoiner = new StringJoiner(", n.","n.", "")
+  private def relPropStringJoiner = new StringJoiner(", r.","r.", "")
   private def arrayStringJoiner = new StringJoiner(", ", "[", "]")
   private def configStringJoiner = new StringJoiner(",", "{", "}")
 
-  sealed trait uniqueness
+  sealed trait Uniqueness
 
-  case object unique extends uniqueness {
-    final val NAME: String = "UNIQUE"
+  case object Unique extends Uniqueness {
+    override final val toString: String = "UNIQUE"
   }
 
-  case object nonunique extends uniqueness {
-    final val NAME: String = "NONUNIQUE"
+  case object Nonunique extends Uniqueness {
+    override final val toString: String = "NONUNIQUE"
+  }
+
+  private def getConstraintType(internalConstraintType: schema.ConstraintType, entityType: EntityType): ShowConstraintType = {
+    (internalConstraintType, entityType) match {
+      case (schema.ConstraintType.UNIQUE, EntityType.NODE) => UniqueConstraints
+      case (schema.ConstraintType.UNIQUE_EXISTS, EntityType.NODE) => NodeKeyConstraints
+      case (schema.ConstraintType.EXISTS, EntityType.NODE) => NodeExistsConstraints
+      case (schema.ConstraintType.EXISTS, EntityType.RELATIONSHIP) => RelExistsConstraints
+      case _ => throw new IllegalStateException(s"Invalid constraint combination: ConstraintType $internalConstraintType and EntityType $entityType.")
+    }
   }
 
   private def escapeBackticks(str: String): String = str.replaceAll("`", "``")

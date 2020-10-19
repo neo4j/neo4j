@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.logical.plans.IndexOrder
 import org.neo4j.cypher.internal.profiling.KernelStatisticProvider
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.ClosingLongIterator
+import org.neo4j.cypher.internal.runtime.ConstraintInfo
 import org.neo4j.cypher.internal.runtime.Expander
 import org.neo4j.cypher.internal.runtime.IndexInfo
 import org.neo4j.cypher.internal.runtime.KernelPredicate
@@ -242,6 +243,8 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
 
   override def dropNamedConstraint(name: String): Unit =
     singleDbHit(inner.dropNamedConstraint(name))
+
+  override def getAllConstraints(): Map[ConstraintDescriptor, ConstraintInfo] = singleDbHit(inner.getAllConstraints())
 
   override def lockingUniqueIndexSeek[RESULT](index: IndexDescriptor,
                                               queries: Seq[IndexQuery.ExactPredicate]): NodeValueIndexCursor =

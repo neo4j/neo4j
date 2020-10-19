@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.ClosingLongIterator
+import org.neo4j.cypher.internal.runtime.ConstraintInfo
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.Expander
 import org.neo4j.cypher.internal.runtime.IndexInfo
@@ -237,6 +238,8 @@ object StaticEvaluation {
     override def dropRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int): Unit = notAvailable()
 
     override def dropNamedConstraint(name: String): Unit = notAvailable()
+
+    override def getAllConstraints(): Map[ConstraintDescriptor, ConstraintInfo] = notAvailable()
 
     override def getImportURL(url: URL): Either[String, URL] = notAvailable()
 

@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.macros.TranslateExceptionMacros.translateExcept
 import org.neo4j.cypher.internal.macros.TranslateExceptionMacros.translateIterator
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.ClosingLongIterator
+import org.neo4j.cypher.internal.runtime.ConstraintInfo
 import org.neo4j.cypher.internal.runtime.Expander
 import org.neo4j.cypher.internal.runtime.IndexInfo
 import org.neo4j.cypher.internal.runtime.KernelPredicate
@@ -231,6 +232,9 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
 
   override def dropNamedConstraint(name: String): Unit =
     translateException(tokenNameLookup, inner.dropNamedConstraint(name))
+
+  override def getAllConstraints(): Map[ConstraintDescriptor, ConstraintInfo] =
+    translateException(tokenNameLookup, inner.getAllConstraints())
 
   override def callReadOnlyProcedure(id: Int, args: Array[AnyValue], allowed: Array[String], context: ProcedureCallContext): Iterator[Array[AnyValue]] =
     translateIterator(tokenNameLookup, inner.callReadOnlyProcedure(id, args, allowed, context))

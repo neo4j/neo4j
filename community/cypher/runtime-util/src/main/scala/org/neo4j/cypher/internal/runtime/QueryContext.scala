@@ -179,6 +179,8 @@ trait QueryContext extends TokenContext with DbAccess {
 
   def dropNamedConstraint(name: String)
 
+  def getAllConstraints(): Map[ConstraintDescriptor, ConstraintInfo]
+
   def getOptStatistics: Option[QueryStatistics] = None
 
   def getImportURL(url: URL): Either[String,URL]

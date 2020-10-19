@@ -232,21 +232,21 @@ case object AllConstraints extends ShowConstraintType {
 }
 
 case object UniqueConstraints extends ShowConstraintType {
-  override val name: String = "UNIQUE"
+  override val name: String = "UNIQUENESS"
 }
 
 case object ExistsConstraints extends ShowConstraintType {
-  override val name: String = "EXISTS"
+  override val name: String = "PROPERT_EXISTENCE"
 }
 
 case object NodeExistsConstraints extends ShowConstraintType {
-  override val name: String = "NODE EXISTS"
+  override val name: String = "NODE_PROPERTY_EXISTENCE"
 }
 
 case object RelExistsConstraints extends ShowConstraintType {
-  override val name: String = "RELATIONSHIP EXISTS"
+  override val name: String = "RELATIONSHIP_PROPERTY_EXISTENCE"
 }
 
 case object NodeKeyConstraints extends ShowConstraintType {
-  override val name: String = "NODE KEY"
+  override val name: String = "NODE_KEY"
 }

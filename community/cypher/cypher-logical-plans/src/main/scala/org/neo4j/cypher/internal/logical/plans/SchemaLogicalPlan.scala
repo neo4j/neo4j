@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.logical.plans
 
+import org.neo4j.cypher.internal.ast.ShowConstraintType
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.Property
@@ -60,6 +61,8 @@ case class CreateRelationshipPropertyExistenceConstraint(source: Option[DoNothin
 case class DropRelationshipPropertyExistenceConstraint(typeName: RelTypeName, prop: Property)(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen)
 
 case class DropConstraintOnName(name: String, ifExists: Boolean)(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen)
+
+case class ShowConstraints(constraintType: ShowConstraintType, verbose: Boolean)(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen)
 
 case class CreateIndex(source: Option[DoNothingIfExistsForIndex], label: LabelName, propertyKeyNames: List[PropertyKeyName], name: Option[String], options: Map[String, Expression])(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen) {
   override def lhs: Option[LogicalPlan] = source
