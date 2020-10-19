@@ -269,7 +269,7 @@ case class Prettifier(
 
       case ShowConstraints(constraintType, verbose, _) =>
         val output = if (verbose) "VERBOSE" else "BRIEF"
-        s"SHOW ${constraintType.name} CONSTRAINTS $output"
+        s"SHOW ${constraintType.prettyPrint} CONSTRAINTS $output"
 
       case _ => throw new IllegalStateException(s"Unknown command: $command")
     }

@@ -224,29 +224,36 @@ case class ShowConstraints(constraintType: ShowConstraintType, verbose: Boolean,
 }
 
 sealed trait ShowConstraintType {
-  val name: String
+  val output: String
+  val prettyPrint: String
 }
 
 case object AllConstraints extends ShowConstraintType {
-  override val name: String = "ALL"
+  override val output: String = "ALL"
+  override val prettyPrint: String = "ALL"
 }
 
 case object UniqueConstraints extends ShowConstraintType {
-  override val name: String = "UNIQUENESS"
+  override val output: String = "UNIQUENESS"
+  override val prettyPrint: String = "UNIQUE"
 }
 
 case object ExistsConstraints extends ShowConstraintType {
-  override val name: String = "PROPERT_EXISTENCE"
+  override val output: String = "PROPERTY_EXISTENCE"
+  override val prettyPrint: String = "EXISTS"
 }
 
 case object NodeExistsConstraints extends ShowConstraintType {
-  override val name: String = "NODE_PROPERTY_EXISTENCE"
+  override val output: String = "NODE_PROPERTY_EXISTENCE"
+  override val prettyPrint: String = "NODE EXISTS"
 }
 
 case object RelExistsConstraints extends ShowConstraintType {
-  override val name: String = "RELATIONSHIP_PROPERTY_EXISTENCE"
+  override val output: String = "RELATIONSHIP_PROPERTY_EXISTENCE"
+  override val prettyPrint: String = "RELATIONSHIP EXISTS"
 }
 
 case object NodeKeyConstraints extends ShowConstraintType {
-  override val name: String = "NODE_KEY"
+  override val output: String = "NODE_KEY"
+  override val prettyPrint: String = "NODE KEY"
 }

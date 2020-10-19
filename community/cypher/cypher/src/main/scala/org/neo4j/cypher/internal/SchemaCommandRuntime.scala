@@ -241,7 +241,7 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
               // "myConstraint"
               "name" -> Values.stringValue(escapedName),
               //"UNIQUENESS", "NODE_KEY", "NODE_PROPERTY_EXISTENCE", "RELATIONSHIP_PROPERTY_EXISTENCE"
-              "type" -> Values.stringValue(constraintType.name),
+              "type" -> Values.stringValue(constraintType.output),
               //"NODE", "RELATIONSHIP"
               "entityType" -> Values.stringValue(entityType.name),
               //["Label1", "Label2"], ["RelType1", "RelType2"]
@@ -543,11 +543,11 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
     constraintType match {
       case UniqueConstraints =>
         val escapedProperties = asEscapedString(properties, propStringJoiner)
-        val options = extractOptionsString(providerName, indexConfig)
+        val options = extractOptionsString(providerName, indexConfig, UniqueConstraints.prettyPrint)
         s"CREATE CONSTRAINT `$name` ON (n$labelsOrTypesWithColons) ASSERT ($escapedProperties) IS UNIQUE OPTIONS $options"
       case NodeKeyConstraints =>
-        val options = extractOptionsString(providerName, indexConfig)
         val escapedProperties = asEscapedString(properties, propStringJoiner)
+        val options = extractOptionsString(providerName, indexConfig, NodeKeyConstraints.prettyPrint)
         s"CREATE CONSTRAINT `$name` ON (n$labelsOrTypesWithColons) ASSERT ($escapedProperties) IS NODE KEY OPTIONS $options"
       case NodeExistsConstraints =>
         val escapedProperties = asEscapedString(properties, propStringJoiner)
@@ -555,13 +555,13 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
       case RelExistsConstraints =>
         val escapedProperties = asEscapedString(properties, relPropStringJoiner)
         s"CREATE CONSTRAINT `$name` ON ()-[r$labelsOrTypesWithColons]-() ASSERT exists($escapedProperties)"
-      case _ => throw new IllegalArgumentException(s"Did not expect constraint type $constraintType for constraint create command.")
+      case _ => throw new IllegalArgumentException(s"Did not expect constraint type ${constraintType.prettyPrint} for constraint create command.")
     }
   }
 
-  private def extractOptionsString(maybeProviderName: Option[String], maybeIndexConfig: Option[IndexConfig]): String = {
-    val providerName = maybeProviderName.getOrElse(throw new IllegalArgumentException("Expected a provider name for this type of constraint."))
-    val indexConfig = maybeIndexConfig.getOrElse(throw new IllegalArgumentException("Expected an index configuration for this type of constraint."))
+  private def extractOptionsString(maybeProviderName: Option[String], maybeIndexConfig: Option[IndexConfig], constraintType: String): String = {
+    val providerName = maybeProviderName.getOrElse(throw new IllegalArgumentException(s"Expected a provider name for $constraintType constraint."))
+    val indexConfig = maybeIndexConfig.getOrElse(throw new IllegalArgumentException(s"Expected an index configuration for $constraintType constraint."))
     val btreeConfig = configAsString(indexConfig, value => btreeConfigValueAsString(value))
     optionsAsString(providerName, btreeConfig)
   }
