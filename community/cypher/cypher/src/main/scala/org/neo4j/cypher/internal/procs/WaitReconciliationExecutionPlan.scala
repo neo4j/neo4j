@@ -80,8 +80,8 @@ case class WaitReconciliationExecutionPlan(
     var revertAccessModeChange: KernelTransaction.Revertable = null
     try {
       val securityContext = tc.securityContext()
-      val fullReadAccess = securityContext.withMode(AccessMode.Static.READ)
-      revertAccessModeChange = tc.kernelTransaction().overrideWith(fullReadAccess)
+      val fullAccess = securityContext.withMode(AccessMode.Static.FULL)
+      revertAccessModeChange = tc.kernelTransaction().overrideWith(fullAccess)
 
       val updatedParams = parameterConverter(tc.transaction(), safeMergeParameters(systemParams, params, ctx.contextVars))
       // We can't wait for a transaction from the same transaction so commit the existing transaction
@@ -96,7 +96,7 @@ case class WaitReconciliationExecutionPlan(
       val execution = normalExecutionEngine.executeSubQuery(query, paramsWithTxId, tc, isOutermostQuery = false, executionMode == ProfileMode, prePopulateResults, systemSubscriber).asInstanceOf[InternalExecutionResult]
       systemSubscriber.assertNotFailed()
 
-      SystemCommandRuntimeResult(ctx, new SystemCommandExecutionResult(execution), systemSubscriber, fullReadAccess, tc.kernelTransaction())
+      SystemCommandRuntimeResult(ctx, new SystemCommandExecutionResult(execution), systemSubscriber, fullAccess, tc.kernelTransaction())
     } finally {
       if (revertAccessModeChange != null) revertAccessModeChange
     }
