@@ -51,6 +51,12 @@ public class BadGenericInputSproc
     }
 
     @Procedure
+    public void doSomething4( @Name( "test" ) String[] unsupportedType )
+    {
+
+    }
+
+    @Procedure
     public void works1( @Name( "test" ) List<String> supported )
     {
     }
