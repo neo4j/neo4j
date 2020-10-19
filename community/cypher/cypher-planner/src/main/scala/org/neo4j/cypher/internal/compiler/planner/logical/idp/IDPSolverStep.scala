@@ -57,4 +57,13 @@ trait IDPSolverStep[S, P, C] extends SolverStep[S, P, C] {
         alternative(registry, goal, cache, context)
       }
     }
+
+  def filter(test: (IdRegistry[S], Goal) => Boolean): IDPSolverStep[S, P, C] =
+    (registry: IdRegistry[S], goal: Goal, cache: IDPCache[P], context: C) => {
+      if (test(registry, goal)) {
+        self(registry, goal, cache, context)
+      } else {
+        Iterator.empty
+      }
+    }
 }

@@ -71,9 +71,12 @@ trait IdRegistry[I] {
   def explode(ids: BitSet): Set[I]
 
   /**
-   * Equivalent to `explode(ids).size` but more efficient.
+   * explode a bitset using compaction information, i.e. if the bit set
+   * contains bits corresponding to ids returned by
+   * compact, these are translated to previous bits
+   * using previously recorded compaction information
    */
-  def explodedSize(ids: BitSet): Int
+  def exlodedBitSet(ids: BitSet): BitSet
 }
 
 object IdRegistry {
@@ -111,7 +114,9 @@ class DefaultIdRegistry[I] extends IdRegistry[I] {
 
   override def compact(existing: BitSet): Int = {
     val newId = registerNew()
-    compactionMap.put(newId, existing)
+    compactionMap.put(newId, exlodedBitSet(existing))
+    // If parts of the existing bitsets were already compacted, we do not need this compaction information any longer
+    existing.foreach(compactionMap.remove)
     newId
   }
 
@@ -119,32 +124,25 @@ class DefaultIdRegistry[I] extends IdRegistry[I] {
 
   override def explode(ids: BitSet): Set[I] = {
     val builder = Set.newBuilder[I]
-    ids.foreach(id => translate(id, builder))
+    exlodedBitSet(ids).foreach(id => builder += reverseMap(id))
     builder.result()
   }
 
-  override def explodedSize(ids: BitSet): Int = {
-    ids.toSeq.map { id =>
-      reverseMap.get(id) match {
-        case Some(_) => 1
-        case None => explodedSize(compactionMap(id))
+  override def exlodedBitSet(ids: BitSet): BitSet = {
+    val builder = BitSet.newBuilder
+
+    def add(i: Int): Unit = {
+      compactionMap.get(i) match {
+        case Some(compacted) => compacted.foreach(builder += _)
+        case None => builder += i
       }
-    }.sum
+    }
+    ids.foreach(add)
+    builder.result()
   }
 
   override def lookup(id: Int): Option[I] =
     reverseMap.get(id)
-
-  private def translate(id: Int, target: mutable.Builder[I, Set[I]]): Set[I] = {
-    reverseMap.get(id) match {
-      case Some(elem) =>
-        target += elem
-
-      case None =>
-        compactionMap(id).foreach(id => translate(id, target))
-    }
-    target.result()
-  }
 
   override def compacted(): Boolean = compactionMap.nonEmpty
 }

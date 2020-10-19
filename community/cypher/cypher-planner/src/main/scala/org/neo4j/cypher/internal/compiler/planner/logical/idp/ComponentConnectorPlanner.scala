@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.idp
 
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.QueryPlannerKit
+import org.neo4j.cypher.internal.compiler.planner.logical.idp.GoalBitAllocation.startComponents
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.IDPQueryGraphSolver.extraRequirementForInterestingOrder
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.IDPTable.SORTED_BIT
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.cartesianProductsOrValueJoins.planLotsOfCartesianProducts
@@ -29,6 +30,8 @@ import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.time.Stopwatch
+
+import scala.collection.immutable.BitSet
 
 /**
  * This class is responsible for connecting all disconnected logical plans, which can be
@@ -79,10 +82,8 @@ case class ComponentConnectorPlanner(singleComponentPlanner: SingleComponentPlan
                              context: LogicalPlanningContext,
                              kit: QueryPlannerKit): BestPlans = {
     val orderRequirement = extraRequirementForInterestingOrder(context, interestingOrder)
-    val goalBitAllocation = GoalBitAllocation(
-      numComponents = components.size,
-      numOptionalMatches = queryGraph.optionalMatches.size
-    )
+    val (goalBitAllocation, initialTodo) = GoalBitAllocation.create(components.map(_.queryGraph), queryGraph)
+
     val joinSolverSteps = joinConnectors.map(_.solverStep(goalBitAllocation, queryGraph, interestingOrder, kit))
     val composedJoinSolverStep = IDPQueryGraphSolver.composeSolverSteps(queryGraph, interestingOrder, kit, context, joinSolverSteps)
     val cpSolverStep = cpConnector.solverStep(goalBitAllocation, queryGraph, interestingOrder, kit)
@@ -91,7 +92,9 @@ case class ComponentConnectorPlanner(singleComponentPlanner: SingleComponentPlan
     val composedOmSolverStep = IDPQueryGraphSolver.selectingAndSortingSolverStep(queryGraph, interestingOrder, kit, context, omSolverStep)
 
     // Only even generate CP plans if no joins are available, since joins will always be better.
-    val generator = (composedJoinSolverStep || composedCPSolverStep) ++ composedOmSolverStep
+    val generator = ((composedJoinSolverStep || composedCPSolverStep) ++ composedOmSolverStep)
+      // Filter out goals that are not solvable before even asking the connectors
+      .filter(goalBitAllocation.goalIsSolvable)
 
     val solver = new IDPSolver[QueryGraph, LogicalPlan, LogicalPlanningContext](
       generator = generator,
@@ -110,9 +113,6 @@ case class ComponentConnectorPlanner(singleComponentPlanner: SingleComponentPlan
         ((Set(queryGraph), true), bestSortedResult)
       }
     }
-    // This is ordered such that components come before optional matches, which is required for GoalBitAllocation to work.
-    val initialTodo = components.toSeq.map(_.queryGraph) ++ queryGraph.optionalMatches
-
     solver(seed, initialTodo, context)
   }
 }
@@ -121,15 +121,42 @@ trait ComponentConnector {
   def solverStep(goalBitAllocation: GoalBitAllocation, queryGraph: QueryGraph, interestingOrder: InterestingOrder, kit: QueryPlannerKit): ComponentConnectorSolverStep
 }
 
+object GoalBitAllocation {
+  private val numSorted = 1
+  private val startSorted = SORTED_BIT
+  private val startComponents = startSorted + numSorted
+
+  /**
+   * Given the components and the overall query graph, return a [[GoalBitAllocation]] and the initialTodo for the [[IDPSolver]].
+   * Capture all dependencies from optional matches.
+   */
+  def create(components: Set[QueryGraph],
+             queryGraph: QueryGraph): (GoalBitAllocation, Seq[QueryGraph]) = {
+    val initialTodo = components.toSeq ++ queryGraph.optionalMatches
+
+    // For each optional match, find dependencies to components and other optional matches
+    val optionalMatchDependencies = queryGraph.optionalMatches.map { om =>
+      om.argumentIds.map { arg =>
+        startComponents + initialTodo.indexWhere(_.patternNodes.contains(arg))
+      }(collection.breakOut): BitSet // directly create a BitSet using CanBuildFrom magic
+    }
+
+    val gba = GoalBitAllocation(
+      numComponents = components.size,
+      numOptionalMatches = queryGraph.optionalMatches.size,
+      optionalMatchDependencies
+    )
+
+    (gba, initialTodo)
+  }
+}
+
 /**
  * Helper class to keep track of which bit areas in a Goal refer to either components or optional matches.
  * @param numComponents the number of disconnected components to solve.
  * @param numOptionalMatches the number of optional matches to solve.
  */
-case class GoalBitAllocation(numComponents: Int, numOptionalMatches: Int) {
-  private val numSorted = 1
-  private val startSorted = SORTED_BIT
-  private val startComponents = startSorted + numSorted
+case class GoalBitAllocation(numComponents: Int, numOptionalMatches: Int, optionalMatchDependencies: Seq[BitSet]) {
   private val startOptionals = startComponents + numComponents
   private val startCompacted = startOptionals + numOptionalMatches
 
@@ -145,4 +172,17 @@ case class GoalBitAllocation(numComponents: Int, numOptionalMatches: Int) {
    */
   def optionalMatchesGoal(goal: Goal): Goal = Goal(goal.bitSet.range(startOptionals, startCompacted))
 
+  /**
+   * Test whether a goal can be solved by testing if all bits have their dependant bits set as well.
+   */
+  def goalIsSolvable(registry: IdRegistry[_], goal: Goal): Boolean = {
+    // The original bits of the goal.
+    val originalGoalBits = registry.exlodedBitSet(goal.bitSet)
+    // All not-yet compacted optional match bits.
+    optionalMatchesGoal(goal).bitSet
+      // All dependency bits
+      .flatMap(i => optionalMatchDependencies(i - startOptionals))
+      // Are all dependency bits included in the goal?
+      .subsetOf(originalGoalBits)
+  }
 }
