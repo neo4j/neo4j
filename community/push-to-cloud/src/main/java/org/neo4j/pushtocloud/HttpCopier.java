@@ -56,7 +56,7 @@ import static java.net.HttpURLConnection.HTTP_UNAVAILABLE;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.commons.compress.utils.IOUtils.toByteArray;
-import static org.neo4j.pushtocloud.PushToCloudCommand.Size.bytesToGibibytes;
+import static org.neo4j.pushtocloud.PushToCloudCommand.bytesToGibibytes;
 
 public class HttpCopier implements PushToCloudCommand.Copier
 {
@@ -198,7 +198,7 @@ public class HttpCopier implements PushToCloudCommand.Copier
     }
 
     @Override
-    public void checkSize( boolean verbose, String consoleURL, PushToCloudCommand.Size sourceSize, String bearerToken )
+    public void checkSize( boolean verbose, String consoleURL, long size, String bearerToken )
     {
         try
         {
@@ -213,13 +213,13 @@ public class HttpCopier implements PushToCloudCommand.Copier
                 connection.setRequestProperty( "Content-Type", "application/json" );
                 try ( OutputStream postData = connection.getOutputStream() )
                 {
-                    postData.write( sourceSize.toJson().getBytes( UTF_8 ) );
+                    postData.write( String.format( "{\"FullSize\":%d}", size ).getBytes( UTF_8 ) );
                 }
                 int responseCode = connection.getResponseCode();
                 switch ( responseCode )
                 {
                 case HTTP_UNPROCESSABLE_ENTITY:
-                    throw validationFailureErrorResponse( verbose, connection, sourceSize );
+                    throw validationFailureErrorResponse( verbose, connection, size );
                 case HTTP_OK:
                     return;
                 default:
@@ -365,7 +365,7 @@ public class HttpCopier implements PushToCloudCommand.Copier
     /**
      * Communication with Neo4j's cloud console, resulting in some signed URI to do the actual upload to.
      */
-    private URL initiateCopy( boolean verbose, URL importURL, long crc32Sum, PushToCloudCommand.Size size, String bearerToken )
+    private URL initiateCopy( boolean verbose, URL importURL, long crc32Sum, long size, String bearerToken )
             throws IOException, CommandFailedException
     {
         HttpURLConnection connection = (HttpURLConnection) importURL.openConnection();
@@ -379,7 +379,7 @@ public class HttpCopier implements PushToCloudCommand.Copier
             connection.setDoOutput( true );
             try ( OutputStream postData = connection.getOutputStream() )
             {
-                postData.write( size.toJson( String.format( "\"Crc32\":%d", crc32Sum ) ).getBytes( UTF_8 ) );
+                postData.write( String.format( "{\"Crc32\":%d, \"FullSize\":%d}", crc32Sum, size ).getBytes( UTF_8 ) );
             }
 
             // Read the response
@@ -669,7 +669,7 @@ public class HttpCopier implements PushToCloudCommand.Copier
                 "If this problem persists after upgrading, please contact support and attach the logs shown below to your ticket in the support portal." );
     }
 
-    private CommandFailedException validationFailureErrorResponse( boolean verbose, HttpURLConnection connection, PushToCloudCommand.Size fileSize )
+    private CommandFailedException validationFailureErrorResponse( boolean verbose, HttpURLConnection connection, long size )
             throws IOException
     {
         try ( InputStream responseData = connection.getErrorStream() )
@@ -684,7 +684,7 @@ public class HttpCopier implements PushToCloudCommand.Copier
             if ( ERROR_REASON_EXCEEDS_MAX_SIZE.equals( errorBody.getReason() ) )
             {
                 String trimmedMessage = StringUtils.removeEnd( message, "." );
-                message = format( "%s. Minimum storage space required: %s", trimmedMessage, fileSize.humanize() );
+                message = format( "%s. Minimum storage space required: %s", trimmedMessage, PushToCloudCommand.sizeText( size) );
             }
 
             return formatCommandFailedExceptionError( message, errorBody.getUrl() );
