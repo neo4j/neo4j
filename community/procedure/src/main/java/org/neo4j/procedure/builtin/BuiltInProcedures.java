@@ -237,9 +237,10 @@ public class BuiltInProcedures
         return Stream.of( indexDetailResult );
     }
 
+    @Deprecated
     @SystemProcedure
     @Description( "List all statements for creating and dropping existing indexes and constraints." )
-    @Procedure( name = "db.schemaStatements", mode = READ )
+    @Procedure( name = "db.schemaStatements", mode = READ, deprecatedBy = "SHOW INDEXES VERBOSE OUTPUT command and SHOW CONSTRAINTS VERBOSE OUTPUT command" )
     public Stream<SchemaStatementResult> schemaStatements() throws ProcedureException
     {
         if ( callContext.isSystemDatabase() )
@@ -441,9 +442,10 @@ public class BuiltInProcedures
         return Stream.of( new SchemaProcedure( (InternalTransaction) transaction ).buildSchemaGraph() );
     }
 
+    @Deprecated
     @SystemProcedure
     @Description( "List all constraints in the database." )
-    @Procedure( name = "db.constraints", mode = READ )
+    @Procedure( name = "db.constraints", mode = READ, deprecatedBy = "SHOW CONSTRAINTS command" )
     public Stream<ConstraintResult> listConstraints()
     {
         if ( callContext.isSystemDatabase() )
