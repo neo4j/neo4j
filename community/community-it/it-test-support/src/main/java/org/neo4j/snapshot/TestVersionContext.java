@@ -59,7 +59,7 @@ public class TestVersionContext extends TransactionVersionContext
     @Override
     public void markAsDirty()
     {
-        if ( !threadFilter.test( Thread.currentThread() ) )
+        if ( !onCorrectThread() )
         {
             // From some other background thread, ignore this
             return;
@@ -71,6 +71,11 @@ public class TestVersionContext extends TransactionVersionContext
             wrongLastClosedTxId = false;
         }
         lastMarkAsDirtyCall = new Exception( "markAsDirty" );
+    }
+
+    protected boolean onCorrectThread()
+    {
+        return threadFilter.test( Thread.currentThread() );
     }
 
     @Override

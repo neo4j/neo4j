@@ -320,7 +320,10 @@ class EagerResultIT
         public void markAsDirty()
         {
             super.markAsDirty();
-            useCorrectLastCommittedTxId = true;
+            if ( onCorrectThread() )
+            {
+                useCorrectLastCommittedTxId = true;
+            }
         }
     }
 }
