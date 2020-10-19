@@ -21,7 +21,13 @@ import org.neo4j.cypher.internal.parser.AdministrationCommandParserTestBase
 
 class ShowPrivilegesAdministrationCommandParserTest extends AdministrationCommandParserTestBase {
 
+  // Show privileges
+
   test("SHOW PRIVILEGES") {
+    yields(ast.ShowPrivileges(ast.ShowAllPrivileges()(pos), None))
+  }
+
+  test("SHOW PRIVILEGE") {
     yields(ast.ShowPrivileges(ast.ShowAllPrivileges()(pos), None))
   }
 
@@ -49,6 +55,10 @@ class ShowPrivilegesAdministrationCommandParserTest extends AdministrationComman
     yields(ast.ShowPrivileges(ast.ShowUsersPrivileges(List(literalUser, paramUser))(pos), None))
   }
 
+  test("SHOW USER user, $user PRIVILEGE") {
+    yields(ast.ShowPrivileges(ast.ShowUsersPrivileges(List(literalUser, paramUser))(pos), None))
+  }
+
   test("SHOW USERS user1, $user, user2 PRIVILEGES") {
     yields(ast.ShowPrivileges(ast.ShowUsersPrivileges(List(literalUser1, paramUser, literal("user2")))(pos), None))
   }
@@ -61,7 +71,15 @@ class ShowPrivilegesAdministrationCommandParserTest extends AdministrationComman
     yields(ast.ShowPrivileges(ast.ShowUserPrivileges(None)(pos), None))
   }
 
+  test("SHOW USER PRIVILEGE") {
+    yields(ast.ShowPrivileges(ast.ShowUserPrivileges(None)(pos), None))
+  }
+
   test("SHOW ROLE role PRIVILEGES") {
+    yields(ast.ShowPrivileges(ast.ShowRolesPrivileges(List(literalRole))(pos), None))
+  }
+
+  test("SHOW ROLE role PRIVILEGE") {
     yields(ast.ShowPrivileges(ast.ShowRolesPrivileges(List(literalRole))(pos), None))
   }
 
@@ -80,6 +98,8 @@ class ShowPrivilegesAdministrationCommandParserTest extends AdministrationComman
   test("SHOW ROLES role1, $roleParam1, role2, $roleParam2 PRIVILEGES") {
     yields(ast.ShowPrivileges(ast.ShowRolesPrivileges(List(literalRole1, param("roleParam1"), literalRole2, param("roleParam2")))(pos), None))
   }
+
+  // Show privileges as commands
 
   test("SHOW PRIVILEGES AS COMMAND") {
     yields(ast.ShowPrivilegeCommands(ast.ShowAllPrivileges()(pos), asRevoke = false, None))
@@ -101,6 +121,10 @@ class ShowPrivilegesAdministrationCommandParserTest extends AdministrationComman
     yields(ast.ShowPrivilegeCommands(ast.ShowAllPrivileges()(pos), asRevoke = false, None))
   }
 
+  test("SHOW ALL PRIVILEGE AS COMMAND") {
+    yields(ast.ShowPrivilegeCommands(ast.ShowAllPrivileges()(pos), asRevoke = false, None))
+  }
+
   test("SHOW ALL PRIVILEGES AS REVOKE COMMANDS") {
     yields(ast.ShowPrivilegeCommands(ast.ShowAllPrivileges()(pos), asRevoke = true, None))
   }
@@ -117,6 +141,10 @@ class ShowPrivilegesAdministrationCommandParserTest extends AdministrationComman
     yields(ast.ShowPrivilegeCommands(ast.ShowUsersPrivileges(List(literal("us%er")))(pos), asRevoke = false, None))
   }
 
+  test("SHOW USER `us%er` PRIVILEGE AS COMMANDS") {
+    yields(ast.ShowPrivilegeCommands(ast.ShowUsersPrivileges(List(literal("us%er")))(pos), asRevoke = false, None))
+  }
+
   test("SHOW USER user, $user PRIVILEGES AS REVOKE COMMANDS") {
     yields(ast.ShowPrivilegeCommands(ast.ShowUsersPrivileges(List(literalUser, paramUser))(pos), asRevoke = true, None))
   }
@@ -129,7 +157,15 @@ class ShowPrivilegesAdministrationCommandParserTest extends AdministrationComman
     yields(ast.ShowPrivilegeCommands(ast.ShowUserPrivileges(None)(pos), asRevoke = true, None))
   }
 
+  test("SHOW USERS PRIVILEGE AS REVOKE COMMANDS") {
+    yields(ast.ShowPrivilegeCommands(ast.ShowUserPrivileges(None)(pos), asRevoke = true, None))
+  }
+
   test("SHOW ROLE role PRIVILEGES AS COMMANDS") {
+    yields(ast.ShowPrivilegeCommands(ast.ShowRolesPrivileges(List(literalRole))(pos), asRevoke = false, None))
+  }
+
+  test("SHOW ROLE role PRIVILEGE AS COMMANDS") {
     yields(ast.ShowPrivilegeCommands(ast.ShowRolesPrivileges(List(literalRole))(pos), asRevoke = false, None))
   }
 
@@ -271,9 +307,7 @@ class ShowPrivilegesAdministrationCommandParserTest extends AdministrationComman
     }
   }
 
-  test("SHOW PRIVILEGE") {
-    failsToParse
-  }
+  // Fails to parse
 
   test("SHOW PRIVILAGES") {
     failsToParse
