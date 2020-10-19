@@ -45,8 +45,8 @@ import org.neo4j.codegen.bytecode.ByteCode.BYTECODE
 import org.neo4j.codegen.bytecode.ByteCode.PRINT_BYTECODE
 import org.neo4j.codegen.source.SourceCode.PRINT_SOURCE
 import org.neo4j.codegen.source.SourceCode.SOURCECODE
-import org.neo4j.codegen.source.SourceVisitor
 import org.neo4j.codegen.source.SourceCode.sourceLocation
+import org.neo4j.codegen.source.SourceVisitor
 
 import scala.collection.mutable.ArrayBuffer
 
