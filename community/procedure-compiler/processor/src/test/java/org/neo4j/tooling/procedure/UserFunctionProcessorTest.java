@@ -92,7 +92,7 @@ public class UserFunctionProcessorTest extends ExtensionTestBase
 
         UnsuccessfulCompilationClause compilation =
                 assert_().about( javaSource() ).that( function ).processedWith( processor() ).failsToCompile()
-                        .withErrorCount( 3 );
+                        .withErrorCount( 4 );
 
         compilation.withErrorContaining( "Unsupported parameter type " +
                 "<java.util.List<java.util.List<java.util.Map<java.lang.String,java.lang.Thread>>>>" +
@@ -105,6 +105,10 @@ public class UserFunctionProcessorTest extends ExtensionTestBase
         compilation.withErrorContaining(
                 "Unsupported parameter type <java.util.Map> of procedure|function BadGenericInputUserFunction#doSomething3" )
                 .in( function ).onLine( 48 );
+
+        compilation.withErrorContaining(
+                "Unsupported parameter type <java.lang.String[]> of procedure|function BadGenericInputUserFunction#doSomething4" )
+                   .in( function ).onLine( 54 );
     }
 
     @Test

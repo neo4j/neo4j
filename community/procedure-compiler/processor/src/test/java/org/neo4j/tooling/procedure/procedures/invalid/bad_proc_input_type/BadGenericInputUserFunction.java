@@ -51,6 +51,12 @@ public class BadGenericInputUserFunction
     }
 
     @UserFunction
+    public String doSomething4( @Name( "test" ) String[] unsupportedType )
+    {
+        return "42";
+    }
+
+    @UserFunction
     public String works1( @Name( "test" ) List<String> supported )
     {
         return "42";
