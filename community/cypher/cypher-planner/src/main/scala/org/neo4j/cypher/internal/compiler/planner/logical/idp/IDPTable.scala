@@ -106,7 +106,8 @@ case class Goal(bitSet: BitSet) {
    * @return all pairs of non-empty, non-overlapping goals that together cover this goal.
    */
   def coveringSplits: Iterator[(Goal, Goal)] = for {
-    leftGoal <- subGoals if leftGoal.bitSet.nonEmpty && leftGoal != this
+    leftSize <- (1 until size).iterator // leave out leftSize == 0 and leftSize == size
+    leftGoal <- subGoals(leftSize)
     rightGoal = diff(leftGoal)
   } yield (leftGoal, rightGoal)
 }
