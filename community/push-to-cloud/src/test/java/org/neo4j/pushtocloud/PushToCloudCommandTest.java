@@ -54,6 +54,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.inOrder;
@@ -146,7 +147,7 @@ class PushToCloudCommandTest
         new CommandLine( command ).execute( args );
 
         // then
-        verify( targetCommunicator ).checkSize( anyBoolean(), any(), any(), any() );
+        verify( targetCommunicator ).checkSize( anyBoolean(), any(), anyLong(), any() );
         verify( targetCommunicator ).copy( anyBoolean(), any(), any(), eq( uploader.source ), eq( false ), any() );
     }
 
@@ -172,7 +173,7 @@ class PushToCloudCommandTest
 
         // then
         verify( dumpCreator ).dumpDatabase( eq( databaseName ), any() );
-        verify( targetCommunicator ).checkSize( anyBoolean(), any(), any(), any() );
+        verify( targetCommunicator ).checkSize( anyBoolean(), any(), anyLong(), any() );
         verify( targetCommunicator ).copy( anyBoolean(), any(), any(), any(), eq( true ), any() );
     }
 
