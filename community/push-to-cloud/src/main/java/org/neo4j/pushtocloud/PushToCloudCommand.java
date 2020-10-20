@@ -91,6 +91,8 @@ public class PushToCloudCommand extends AbstractCommand
     @Option( names = "--overwrite", description = "Optional: Overwrite the data in the target database." )
     private boolean overwrite;
 
+    private static double ACCEPTABLE_DUMP_CHANGE = 0.1;    // Allow 10% deviation between measured database size, and actually stored dump
+
     public PushToCloudCommand( ExecutionContext ctx, Copier copier, DumpCreator dumpCreator, PushToCloudConsole cons )
     {
         super( ctx );
@@ -279,7 +281,7 @@ public class PushToCloudCommand extends AbstractCommand
             long sizeFromDump = dumpSize( dumpFile );
             long sizeFromDatabase = size();
             verbose( "Validating sizes: fromDump=%d, fromDatabase=%d", sizeFromDump, sizeFromDatabase );
-            if ( sizeFromDump != sizeFromDatabase )
+            if ( Math.abs(sizeFromDump - sizeFromDatabase) > ACCEPTABLE_DUMP_CHANGE * sizeFromDatabase )
             {
                 throw new IllegalStateException( format( "Mismatching sizes: %d != %d", sizeFromDump, sizeFromDatabase ) );
             }
