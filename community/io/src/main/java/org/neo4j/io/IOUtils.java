@@ -178,4 +178,48 @@ public final class IOUtils
     {
         close( constructor, Arrays.asList( closeables ) );
     }
+
+    /**
+     * Closes the first given number of {@link AutoCloseable closeables} in the given array
+     *
+     * If any {@link AutoCloseable#close()} call throws
+     * {@link IOException} than it will be rethrown to the caller after calling {@link AutoCloseable#close()}
+     * on other given resources. If more than one {@link AutoCloseable#close()} throw than resulting exception will
+     * have suppressed exceptions. See {@link Exception#addSuppressed(Throwable)}
+     *
+     * @param closeables the closeables to close.
+     * @param count the maximum number of closeables to close within the array, ranging from 0 until count.
+     * @param <T> the type of closeable
+     * @throws IOException if an exception was thrown by one of the close methods.
+     */
+    public static <T extends AutoCloseable> void closeFirst( T[] closeables, int count ) throws IOException
+    {
+        IOException closeThrowable = null;
+        for ( int i = 0; i < count; i++ )
+        {
+            try
+            {
+                T closeable = closeables[i];
+                if ( closeable != null )
+                {
+                    closeable.close();
+                }
+            }
+            catch ( Exception e )
+            {
+                if ( closeThrowable == null )
+                {
+                    closeThrowable = new IOException( "Exception closing multiple resources.", e );
+                }
+                else
+                {
+                    closeThrowable.addSuppressed( e );
+                }
+            }
+        }
+        if ( closeThrowable != null )
+        {
+            throw closeThrowable;
+        }
+    }
 }
