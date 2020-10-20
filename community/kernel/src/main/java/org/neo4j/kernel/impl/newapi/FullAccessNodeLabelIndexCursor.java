@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.newapi;
 
 import org.neo4j.internal.kernel.api.TokenSet;
 
-final class FullAccessNodeLabelIndexCursor extends DefaultNodeLabelIndexCursor
+class FullAccessNodeLabelIndexCursor extends DefaultNodeLabelIndexCursor
 {
     FullAccessNodeLabelIndexCursor( CursorPool<DefaultNodeLabelIndexCursor> pool )
     {
@@ -29,13 +29,13 @@ final class FullAccessNodeLabelIndexCursor extends DefaultNodeLabelIndexCursor
     }
 
     @Override
-    boolean allowed( long reference, TokenSet labels )
+    final boolean allowed( long reference, TokenSet labels )
     {
         return true;
     }
 
     @Override
-    boolean allowsTraverseAllNodesWithLabel( int label )
+    final boolean allowsTraverseAllNodesWithLabel( int label )
     {
         return true;
     }

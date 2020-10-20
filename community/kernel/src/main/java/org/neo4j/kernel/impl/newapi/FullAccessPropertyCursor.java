@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.newapi;
 import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.storageengine.api.StoragePropertyCursor;
 
-final class FullAccessPropertyCursor extends DefaultPropertyCursor
+class FullAccessPropertyCursor extends DefaultPropertyCursor
 {
     FullAccessPropertyCursor( CursorPool<DefaultPropertyCursor> pool, StoragePropertyCursor storeCursor )
     {
@@ -30,11 +30,14 @@ final class FullAccessPropertyCursor extends DefaultPropertyCursor
     }
 
     @Override
-    boolean allowed()
+    final boolean allowed()
     {
         return true;
     }
 
+    /**
+     * Only used for security checks
+     */
     @Override
     public TokenSet get()
     {

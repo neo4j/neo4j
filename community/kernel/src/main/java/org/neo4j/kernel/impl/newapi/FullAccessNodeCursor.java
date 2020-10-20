@@ -26,7 +26,7 @@ import org.neo4j.storageengine.api.StorageNodeCursor;
  * checks because they are used in cases where the security checks are handled above this cursor in the
  * form of specific filters.
  */
-final class FullAccessNodeCursor extends DefaultNodeCursor
+class FullAccessNodeCursor extends DefaultNodeCursor
 {
     FullAccessNodeCursor( CursorPool<DefaultNodeCursor> pool, StorageNodeCursor storeCursor )
     {
@@ -34,13 +34,13 @@ final class FullAccessNodeCursor extends DefaultNodeCursor
     }
 
     @Override
-    boolean allowsTraverse()
+    final boolean allowsTraverse()
     {
         return true;
     }
 
     @Override
-    boolean allowsTraverseAll()
+    final boolean allowsTraverseAll()
     {
         return true;
     }
