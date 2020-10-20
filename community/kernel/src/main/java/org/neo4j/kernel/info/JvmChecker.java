@@ -25,9 +25,9 @@ import org.neo4j.logging.Log;
 public class JvmChecker
 {
     public static final String INCOMPATIBLE_JVM_WARNING = "You are using an unsupported Java runtime. Please" +
-            " use Oracle(R) Java(TM) Runtime Environment 8, OpenJDK(TM) 8 or IBM J9.";
+            " use Oracle(R) Java(TM) Runtime Environment 8 or 11, OpenJDK(TM) 8 or 11 or IBM J9.";
     public static final String INCOMPATIBLE_JVM_VERSION_WARNING = "You are using an unsupported version of " +
-            "the Java runtime. Please use Oracle(R) Java(TM) Runtime Environment 8, OpenJDK(TM) 8 or IBM J9.";
+            "the Java runtime. Please use Oracle(R) Java(TM) Runtime Environment 8 or 11, OpenJDK(TM) 8 or 11 or IBM J9.";
     public static final String NO_SERIALIZATION_FILTER_WARNING = "The version of the Java runtime you are using " +
             " does not include some important security features. Please use a JRE of version 8u121 or higher.";
 
@@ -49,7 +49,7 @@ public class JvmChecker
         {
             log.warn( INCOMPATIBLE_JVM_WARNING );
         }
-        else if ( !javaVersion.matches( "^1\\.[8].*" ) )
+        else if ( !javaVersion.matches( "^(1\\.[8]|11).*" ) )
         {
             log.warn( INCOMPATIBLE_JVM_VERSION_WARNING );
         }

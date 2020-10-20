@@ -54,6 +54,63 @@ public class JVMCheckerTest
     }
 
     @Test
+    public void shouldNotIssueWarningWhenUsingOpenJdkVmVersion8()
+    {
+        BufferingLog bufferingLogger = new BufferingLog();
+
+        new JvmChecker( bufferingLogger, new CannedJvmMetadataRepository( "OpenJDK 64-Bit Server VM",
+                "1.8.0_45" ) ).checkJvmCompatibilityAndIssueWarning();
+
+        assertTrue( bufferingLogger.toString().isEmpty() );
+    }
+
+    @Test
+    public void shouldNotIssueWarningWhenUsingHotspotServerVmVersion11()
+    {
+        BufferingLog bufferingLogger = new BufferingLog();
+
+        new JvmChecker( bufferingLogger, new CannedJvmMetadataRepository( "Java HotSpot(TM) 64-Bit Server VM",
+                "11.0.7" ) ).checkJvmCompatibilityAndIssueWarning();
+
+        assertTrue( bufferingLogger.toString().isEmpty() );
+    }
+
+    @Test
+    public void shouldNotIssueWarningWhenUsingOpenJdkVmVersion11()
+    {
+        BufferingLog bufferingLogger = new BufferingLog();
+
+        new JvmChecker( bufferingLogger, new CannedJvmMetadataRepository( "OpenJDK 64-Bit Server VM",
+                "11.0.7" ) ).checkJvmCompatibilityAndIssueWarning();
+
+        assertTrue( bufferingLogger.toString().isEmpty() );
+    }
+
+    // a representation of a Java version between supported 8 and 11
+    @Test
+    public void shouldIssueWarningWhenUsingHotspotServerVmVersion9()
+    {
+        BufferingLog bufferingLogger = new BufferingLog();
+
+        new JvmChecker( bufferingLogger, new CannedJvmMetadataRepository( "Java HotSpot(TM) Server VM",
+                "9.0.1" ) ).checkJvmCompatibilityAndIssueWarning();
+
+        assertThat( bufferingLogger.toString().trim(), is( INCOMPATIBLE_JVM_VERSION_WARNING ) );
+    }
+
+    // a representation of a Java version higher than supported 11
+    @Test
+    public void shouldIssueWarningWhenUsingHotspotServerVmVersion12()
+    {
+        BufferingLog bufferingLogger = new BufferingLog();
+
+        new JvmChecker( bufferingLogger, new CannedJvmMetadataRepository( "Java HotSpot(TM) Server VM",
+                "12.0.1" ) ).checkJvmCompatibilityAndIssueWarning();
+
+        assertThat( bufferingLogger.toString().trim(), is( INCOMPATIBLE_JVM_VERSION_WARNING ) );
+    }
+
+    @Test
     public void shouldNotIssueWarningWhenUsingIbmJ9Vm()
     {
         BufferingLog bufferingLogger = new BufferingLog();
