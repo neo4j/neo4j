@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.config
 import org.neo4j.configuration.Config
 import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.configuration.SettingChangeListener
+import org.neo4j.cypher.internal.config.CUSTOM_MEMORY_TRACKING_CONTROLLER.MemoryTrackerDecorator
 import org.neo4j.memory.MemoryTracker
 
 /**
@@ -62,6 +63,10 @@ class ConfigMemoryTrackingController(config: Config) extends MemoryTrackingContr
     else NO_TRACKING
 }
 
-case class CUSTOM_MEMORY_TRACKING_CONTROLLER(decorator: MemoryTracker => MemoryTracker) extends MemoryTrackingController {
+object CUSTOM_MEMORY_TRACKING_CONTROLLER {
+  type MemoryTrackerDecorator = MemoryTracker => MemoryTracker
+}
+
+case class CUSTOM_MEMORY_TRACKING_CONTROLLER(decorator: MemoryTrackerDecorator) extends MemoryTrackingController {
   override def memoryTracking(doProfile: Boolean): MemoryTracking = CUSTOM_MEMORY_TRACKING(decorator)
 }
