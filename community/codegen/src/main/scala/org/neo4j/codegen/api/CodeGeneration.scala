@@ -48,6 +48,7 @@ import org.neo4j.codegen.source.SourceCode.SOURCECODE
 import org.neo4j.codegen.source.SourceVisitor
 import org.neo4j.cypher.internal.options.CypherDebugOptions
 import org.neo4j.codegen.source.SourceCode.sourceLocation
+import org.neo4j.cypher.internal.options.CypherDebugOption
 import org.neo4j.codegen.source.SourceVisitor
 
 import scala.collection.mutable.ArrayBuffer
@@ -61,7 +62,7 @@ object CodeGeneration {
   private val DEBUG_PRINT_SOURCE = false
   private val DEBUG_PRINT_BYTECODE = false
 
-  final val GENERATE_JAVA_SOURCE_DEBUG_OPTION = "generate_java_source"
+  final val GENERATE_JAVA_SOURCE_DEBUG_OPTION = CypherDebugOption.generateJavaSource.name
   final val GENERATED_SOURCE_LOCATION_PROPERTY = "org.neo4j.cypher.DEBUG.generated_source_location"
 
   sealed trait CodeGenerationMode {

@@ -348,6 +348,8 @@ object CypherDebugOptions {
 
 case class CypherDebugOptions(enabledOptions: Set[CypherDebugOption]) {
 
+  def withOptionEnabled(option: CypherDebugOption): CypherDebugOptions = copy(enabledOptions + option)
+
   def enabledOptionsSeq: Seq[CypherDebugOption] = enabledOptions.toSeq.sortBy(_.name)
 
   def isEmpty: Boolean = enabledOptions.isEmpty
