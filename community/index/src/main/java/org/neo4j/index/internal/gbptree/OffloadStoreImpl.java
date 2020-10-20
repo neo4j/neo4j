@@ -36,7 +36,8 @@ import static org.neo4j.index.internal.gbptree.PageCursorUtil.checkOutOfBounds;
  */
 public class OffloadStoreImpl<KEY,VALUE> implements OffloadStore<KEY,VALUE>
 {
-    private static final int SIZE_HEADER = Byte.BYTES + Long.BYTES;
+    @VisibleForTesting
+    static final int SIZE_HEADER = Byte.BYTES + Long.BYTES;
     private static final int SIZE_KEY_SIZE = Integer.BYTES;
     private static final int SIZE_VALUE_SIZE = Integer.BYTES;
     private final Layout<KEY,VALUE> layout;
@@ -109,7 +110,7 @@ public class OffloadStoreImpl<KEY,VALUE> implements OffloadStore<KEY,VALUE>
                 cursor.setOffset( SIZE_HEADER );
                 int keySize = cursor.getInt();
                 int valueSize = cursor.getInt();
-                if ( keyValueSizeTooLarge( keySize, valueSize ) || keySize < 0 )
+                if ( keyValueSizeTooLarge( keySize, valueSize ) || keySize < 0 || valueSize < 0 )
                 {
                     readUnreliableKeyValueSize( cursor, keySize, valueSize );
                     continue;
@@ -141,7 +142,7 @@ public class OffloadStoreImpl<KEY,VALUE> implements OffloadStore<KEY,VALUE>
                 cursor.setOffset( SIZE_HEADER );
                 int keySize = cursor.getInt();
                 int valueSize = cursor.getInt();
-                if ( keyValueSizeTooLarge( keySize, valueSize ) || keySize < 0 )
+                if ( keyValueSizeTooLarge( keySize, valueSize ) || keySize < 0 || valueSize < 0 )
                 {
                     readUnreliableKeyValueSize( cursor, keySize, valueSize );
                     continue;
@@ -220,7 +221,8 @@ public class OffloadStoreImpl<KEY,VALUE> implements OffloadStore<KEY,VALUE>
         return true;
     }
 
-    private static void putKeyValueSize( PageCursor cursor, int keySize, int valueSize )
+    @VisibleForTesting
+    static void putKeyValueSize( PageCursor cursor, int keySize, int valueSize )
     {
         cursor.putInt( keySize );
         cursor.putInt( valueSize );
