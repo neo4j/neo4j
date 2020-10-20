@@ -21,6 +21,7 @@ package org.neo4j.bolt;
 
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.handler.ssl.SslContext;
+import io.netty.handler.ssl.SslProvider;
 import io.netty.util.internal.PlatformDependent;
 import io.netty.util.internal.logging.InternalLoggerFactory;
 
@@ -51,6 +52,7 @@ import org.neo4j.bolt.transport.TransportThrottleGroup;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.SslSystemSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.BoltConnectorInternalSettings;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
@@ -134,6 +136,11 @@ public class BoltServer extends LifecycleAdapter
                                                                                      clock, config.get( BoltConnectorInternalSettings.connection_keep_alive ) );
         BoltProtocolFactory internalBoltProtocolFactory = createBoltProtocolFactory( boltConnectionFactory, internalBoltStateMachineFactory, throttleGroup,
                                                                                      clock, config.get( BoltConnectorInternalSettings.connection_keep_alive ) );
+
+        if ( config.get( BoltConnector.ocsp_enabled ) )
+        {
+            enableOcspStapling();
+        }
 
         if ( config.get( BoltConnector.enabled ) )
         {
@@ -289,6 +296,20 @@ public class BoltServer extends LifecycleAdapter
         {
             throw new RuntimeException( "Failed to initialize SSL encryption support, which is required to start this connector. " +
                     "Error was: " + e.getMessage(), e );
+        }
+    }
+
+    private void enableOcspStapling()
+    {
+        if ( SslProvider.JDK.equals( config.get( SslSystemSettings.netty_ssl_provider ) ) )
+        {
+            // currently the only way to enable OCSP server stapling for JDK is through this property
+            System.setProperty( "jdk.tls.server.enableStatusRequestExtension", "true" );
+        }
+        else
+        {
+            throw new IllegalArgumentException( "OCSP Server stapling can only be used with JDK ssl provider (see " +
+                                        SslSystemSettings.netty_ssl_provider.name() + ")" );
         }
     }
 

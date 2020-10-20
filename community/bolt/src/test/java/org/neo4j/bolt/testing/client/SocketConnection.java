@@ -52,6 +52,11 @@ public class SocketConnection implements TransportConnection
         this.socket = socket;
     }
 
+    protected Socket getSocket()
+    {
+        return socket;
+    }
+
     @Override
     public TransportConnection connect( HostnamePort address ) throws IOException
     {
