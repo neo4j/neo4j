@@ -318,7 +318,7 @@ abstract class KernelReadTracerTxStateTestBase<G extends KernelAPIWriteTestSuppo
 
         try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
         {
-            tx.schema().awaitIndexesOnline( 1, MINUTES );
+            tx.schema().awaitIndexesOnline( 2, MINUTES );
         }
 
         return indexName;

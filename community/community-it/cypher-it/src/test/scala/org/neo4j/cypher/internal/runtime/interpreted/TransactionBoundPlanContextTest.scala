@@ -130,7 +130,7 @@ class TransactionBoundPlanContextTest extends CypherFunSuite {
     })
 
     inTx( ( planContext, tx) => {
-      tx.schema().awaitIndexesOnline(10, SECONDS)
+      tx.schema().awaitIndexesOnline(30, SECONDS)
       val l1id = planContext.getLabelId("L1")
       val prop1id = planContext.getPropertyKeyId("prop")
       val index = IndexDescriptor(LabelId(l1id), Seq(PropertyKeyId(prop1id)))
@@ -148,7 +148,7 @@ class TransactionBoundPlanContextTest extends CypherFunSuite {
     })
 
     inTx((planContext, tx) => {
-      tx.schema().awaitIndexesOnline(10, SECONDS)
+      tx.schema().awaitIndexesOnline(30, SECONDS)
       val l1id = planContext.getLabelId("L1")
       val prop1id = planContext.getPropertyKeyId("prop")
       val index = IndexDescriptor(LabelId(l1id), Seq(PropertyKeyId(prop1id)))
@@ -166,7 +166,7 @@ class TransactionBoundPlanContextTest extends CypherFunSuite {
     })
 
     inTx((planContext, tx) => {
-      tx.schema().awaitIndexesOnline(10, SECONDS)
+      tx.schema().awaitIndexesOnline(30, SECONDS)
       val l1id = planContext.getLabelId("L1")
       val prop1id = planContext.getPropertyKeyId("prop")
       val prop2id = planContext.getPropertyKeyId("prop2")
@@ -186,7 +186,7 @@ class TransactionBoundPlanContextTest extends CypherFunSuite {
     })
 
     inTx((planContext, tx) => {
-      tx.schema().awaitIndexesOnline(10, SECONDS)
+      tx.schema().awaitIndexesOnline(30, SECONDS)
       val l1id = planContext.getLabelId("L1")
       val prop2id = planContext.getPropertyKeyId("prop2")
       planContext.uniqueIndexesGetForLabel(l1id).toSet should equal(Set(
@@ -206,7 +206,7 @@ class TransactionBoundPlanContextTest extends CypherFunSuite {
     })
 
     inTx((planContext, tx) => {
-      tx.schema().awaitIndexesOnline(10, SECONDS)
+      tx.schema().awaitIndexesOnline(30, SECONDS)
       val l1id = planContext.getLabelId("L1")
       val l2id = planContext.getLabelId("L2")
       val l3id = planContext.getLabelId("L3")
@@ -227,7 +227,7 @@ class TransactionBoundPlanContextTest extends CypherFunSuite {
     })
 
     inTx((planContext, tx) => {
-      tx.schema().awaitIndexesOnline(10, SECONDS)
+      tx.schema().awaitIndexesOnline(30, SECONDS)
       planContext.indexExistsForLabelAndProperties("L1", Seq("prop")) should be(true)
       planContext.indexExistsForLabelAndProperties("L1", Seq("prop2")) should be(false)
       planContext.indexExistsForLabelAndProperties("L2", Seq("prop")) should be(false)

@@ -544,7 +544,7 @@ class IndexIT extends KernelIntegrationTest
 
             try ( org.neo4j.graphdb.Transaction transaction = db.beginTx() )
             {
-                transaction.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+                transaction.schema().awaitIndexesOnline( 2, TimeUnit.MINUTES );
                 transaction.commit();
             }
         };

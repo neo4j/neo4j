@@ -55,7 +55,7 @@ import static org.neo4j.test.extension.ExecutionSharedContext.SHARED_RESOURCE;
 public abstract class PageCacheTestSupport<T extends PageCache>
 {
     protected static ExecutorService executor;
-    protected long SHORT_TIMEOUT_MILLIS = 10_000;
+    protected long SHORT_TIMEOUT_MILLIS = 30_000;
     protected long SEMI_LONG_TIMEOUT_MILLIS = 120_000;
     protected long LONG_TIMEOUT_MILLIS = 360_000;
 

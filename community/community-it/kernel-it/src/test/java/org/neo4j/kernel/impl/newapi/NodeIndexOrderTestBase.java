@@ -776,7 +776,7 @@ public abstract class NodeIndexOrderTestBase<G extends KernelAPIWriteTestSupport
 
         try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
         {
-            tx.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+            tx.schema().awaitIndexesOnline( 2, TimeUnit.MINUTES );
         }
     }
 
@@ -790,7 +790,7 @@ public abstract class NodeIndexOrderTestBase<G extends KernelAPIWriteTestSupport
 
         try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
         {
-            tx.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+            tx.schema().awaitIndexesOnline( 2, TimeUnit.MINUTES );
         }
     }
 

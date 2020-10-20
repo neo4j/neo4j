@@ -61,7 +61,7 @@ import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.EphemeralFileSystemExtension;
 import org.neo4j.values.storable.Values;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -280,7 +280,7 @@ class IndexCRUDIT
 
         try ( Transaction tx = db.beginTx() )
         {
-            tx.schema().awaitIndexesOnline( 30, SECONDS );
+            tx.schema().awaitIndexesOnline( 1, MINUTES );
         }
     }
 }

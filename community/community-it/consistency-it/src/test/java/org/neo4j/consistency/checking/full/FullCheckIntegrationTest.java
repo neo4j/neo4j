@@ -2169,7 +2169,7 @@ public class FullCheckIntegrationTest
                 }
                 try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
                 {
-                    tx.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+                    tx.schema().awaitIndexesOnline( 2, TimeUnit.MINUTES );
                 }
 
                 // Create initial data
@@ -2429,7 +2429,7 @@ public class FullCheckIntegrationTest
         {
             try
             {
-                tx.schema().awaitIndexOnline( indexName.get(), 30, TimeUnit.SECONDS );
+                tx.schema().awaitIndexOnline( indexName.get(), 1, TimeUnit.MINUTES );
             }
             catch ( RuntimeException e )
             {

@@ -38,7 +38,7 @@ import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.values.storable.Values;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.internal.helpers.collection.Iterators.single;
@@ -80,7 +80,7 @@ class IndexPopulationFlipRaceIT
     {
         try ( Transaction tx = db.beginTx() )
         {
-            tx.schema().awaitIndexesOnline( 30, SECONDS );
+            tx.schema().awaitIndexesOnline( 2, MINUTES );
             tx.commit();
         }
     }

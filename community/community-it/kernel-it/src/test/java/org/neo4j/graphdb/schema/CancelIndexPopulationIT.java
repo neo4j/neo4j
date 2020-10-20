@@ -93,7 +93,7 @@ class CancelIndexPopulationIT
         try ( Transaction tx = db.beginTx() )
         {
             IndexDefinition indexDefinition = first( tx.schema().getIndexes( LABEL ) );
-            tx.schema().awaitIndexOnline( indexDefinition, 1, TimeUnit.MINUTES );
+            tx.schema().awaitIndexOnline( indexDefinition, 2, TimeUnit.MINUTES );
             Schema.IndexState indexState = tx.schema().getIndexState( indexDefinition );
             tx.commit();
             return indexState;

@@ -390,7 +390,7 @@ class FulltextIndexProviderTest
 
         try ( Transaction tx = db.beginTx() )
         {
-            tx.schema().awaitIndexesOnline( 10, TimeUnit.SECONDS );
+            tx.schema().awaitIndexesOnline( 30, TimeUnit.SECONDS );
             tx.commit();
         }
 
@@ -409,7 +409,7 @@ class FulltextIndexProviderTest
 
         try ( Transaction tx = db.beginTx() )
         {
-            tx.schema().awaitIndexesOnline( 10, TimeUnit.SECONDS );
+            tx.schema().awaitIndexesOnline( 30, TimeUnit.SECONDS );
             tx.commit();
         }
 
@@ -630,7 +630,7 @@ class FulltextIndexProviderTest
         }
         try ( Transaction tx = db.beginTx() )
         {
-            tx.schema().awaitIndexOnline( NAME, 10, TimeUnit.SECONDS );
+            tx.schema().awaitIndexOnline( NAME, 1, TimeUnit.MINUTES );
             IndexDefinition index = tx.schema().getIndexByName( NAME );
             Schema.IndexState indexState = tx.schema().getIndexState( index );
             assertThat( indexState ).isEqualTo( Schema.IndexState.ONLINE );
@@ -672,7 +672,7 @@ class FulltextIndexProviderTest
         }
         try ( Transaction tx = db.beginTx() )
         {
-            var e = assertThrows( IllegalStateException.class, () -> tx.schema().awaitIndexOnline( NAME, 10, TimeUnit.SECONDS ) );
+            var e = assertThrows( IllegalStateException.class, () -> tx.schema().awaitIndexOnline( NAME, 1, TimeUnit.MINUTES ) );
             assertThat( e.getMessage() ).contains( "FAILED" );
             IndexDefinition index = tx.schema().getIndexByName( NAME );
             assertThat( tx.schema().getIndexState( index ) ).isEqualTo( Schema.IndexState.FAILED );
@@ -695,7 +695,7 @@ class FulltextIndexProviderTest
         }
         try ( Transaction tx = db.beginTx() )
         {
-            tx.schema().awaitIndexOnline( NAME, 10, TimeUnit.SECONDS );
+            tx.schema().awaitIndexOnline( NAME, 1, TimeUnit.MINUTES );
             IndexDefinition index = tx.schema().getIndexByName( NAME );
             Schema.IndexState indexState = tx.schema().getIndexState( index );
             assertThat( indexState ).isEqualTo( Schema.IndexState.ONLINE );
@@ -729,7 +729,7 @@ class FulltextIndexProviderTest
         }
         try ( Transaction tx = db.beginTx() )
         {
-            tx.schema().awaitIndexOnline( NAME, 10, TimeUnit.SECONDS );
+            tx.schema().awaitIndexOnline( NAME, 1, TimeUnit.MINUTES );
             IndexDefinition index = tx.schema().getIndexByName( NAME );
             Schema.IndexState indexState = tx.schema().getIndexState( index );
             assertThat( indexState ).isEqualTo( Schema.IndexState.ONLINE );
@@ -774,7 +774,7 @@ class FulltextIndexProviderTest
         }
         try ( Transaction tx = db.beginTx() )
         {
-            tx.schema().awaitIndexOnline( NAME, 10, TimeUnit.SECONDS );
+            tx.schema().awaitIndexOnline( NAME, 1, TimeUnit.MINUTES );
             IndexDefinition index = tx.schema().getIndexByName( NAME );
             Schema.IndexState indexState = tx.schema().getIndexState( index );
             assertThat( indexState ).isEqualTo( Schema.IndexState.ONLINE );
@@ -1347,7 +1347,7 @@ class FulltextIndexProviderTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            tx.schema().awaitIndexOnline( index.getName(), 30, TimeUnit.SECONDS );
+            tx.schema().awaitIndexOnline( index.getName(), 1, TimeUnit.MINUTES );
         }
     }
 }

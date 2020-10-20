@@ -212,7 +212,7 @@ public class IndexTxStateLookupTest
         }
         try ( Transaction tx = db.beginTx() )
         {
-            tx.schema().awaitIndexesOnline( 10, SECONDS );
+            tx.schema().awaitIndexesOnline( 30, SECONDS );
             tx.commit();
         }
     }

@@ -39,7 +39,7 @@ import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.TransactionIdStore;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
@@ -85,7 +85,7 @@ class KernelIT extends KernelIntegrationTest
 
         try ( Transaction tx = db.beginTx() )
         {
-            tx.schema().awaitIndexesOnline( 20, SECONDS );
+            tx.schema().awaitIndexesOnline( 1, MINUTES );
             tx.commit();
         }
         // THEN schema state is eventually updated (clearing the schema cache is not atomic with respect to flipping
@@ -103,7 +103,7 @@ class KernelIT extends KernelIntegrationTest
 
         try ( Transaction tx = db.beginTx() )
         {
-            tx.schema().awaitIndexesOnline( 20, SECONDS );
+            tx.schema().awaitIndexesOnline( 1, MINUTES );
             getOrCreateSchemaState( tx, "my key", "some state" );
             tx.commit();
         }

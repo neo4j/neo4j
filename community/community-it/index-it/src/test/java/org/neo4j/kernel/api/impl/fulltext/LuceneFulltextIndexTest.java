@@ -201,7 +201,7 @@ class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
         }
         try ( Transaction tx = db.beginTx() )
         {
-            tx.schema().awaitIndexOnline( NODE_INDEX_NAME, 30, TimeUnit.SECONDS );
+            tx.schema().awaitIndexOnline( NODE_INDEX_NAME, 1, TimeUnit.MINUTES );
         }
         long firstID;
         long secondID;
@@ -283,7 +283,7 @@ class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
         }
         try ( Transaction tx = db.beginTx() )
         {
-            tx.schema().awaitIndexOnline( NODE_INDEX_NAME, 30, TimeUnit.SECONDS );
+            tx.schema().awaitIndexOnline( NODE_INDEX_NAME, 1, TimeUnit.MINUTES );
         }
 
         long firstID;
@@ -319,7 +319,7 @@ class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
         }
         try ( Transaction tx = db.beginTx() )
         {
-            tx.schema().awaitIndexOnline( NODE_INDEX_NAME, 30, TimeUnit.SECONDS );
+            tx.schema().awaitIndexOnline( NODE_INDEX_NAME, 1, TimeUnit.MINUTES );
         }
         long firstID;
         long secondID;
@@ -361,8 +361,8 @@ class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
         }
         try ( Transaction tx = db.beginTx() )
         {
-            tx.schema().awaitIndexOnline( NODE_INDEX_NAME, 30, TimeUnit.SECONDS );
-            tx.schema().awaitIndexOnline( REL_INDEX_NAME, 30, TimeUnit.SECONDS );
+            tx.schema().awaitIndexOnline( NODE_INDEX_NAME, 1, TimeUnit.MINUTES );
+            tx.schema().awaitIndexOnline( REL_INDEX_NAME, 1, TimeUnit.MINUTES );
         }
         long firstNodeID;
         long secondNodeID;
@@ -404,8 +404,8 @@ class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
         }
         try ( Transaction tx = db.beginTx() )
         {
-            tx.schema().awaitIndexOnline( NODE_INDEX_NAME, 30, TimeUnit.SECONDS );
-            tx.schema().awaitIndexOnline( REL_INDEX_NAME, 30, TimeUnit.SECONDS );
+            tx.schema().awaitIndexOnline( NODE_INDEX_NAME, 1, TimeUnit.MINUTES );
+            tx.schema().awaitIndexOnline( REL_INDEX_NAME, 1, TimeUnit.MINUTES );
         }
         try ( Transaction tx = db.beginTx() )
         {
@@ -459,8 +459,8 @@ class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
         }
         try ( Transaction tx = db.beginTx() )
         {
-            tx.schema().awaitIndexOnline( NODE_INDEX_NAME, 30, TimeUnit.SECONDS );
-            tx.schema().awaitIndexOnline( REL_INDEX_NAME, 30, TimeUnit.SECONDS );
+            tx.schema().awaitIndexOnline( NODE_INDEX_NAME, 1, TimeUnit.MINUTES );
+            tx.schema().awaitIndexOnline( REL_INDEX_NAME, 1, TimeUnit.MINUTES );
         }
 
         try ( Transaction tx = db.beginTx() )
@@ -512,7 +512,7 @@ class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
         }
         try ( Transaction tx = db.beginTx() )
         {
-            tx.schema().awaitIndexOnline( NODE_INDEX_NAME, 30, TimeUnit.SECONDS );
+            tx.schema().awaitIndexOnline( NODE_INDEX_NAME, 1, TimeUnit.MINUTES );
         }
 
         try ( Transaction tx = db.beginTx() )
@@ -679,7 +679,7 @@ class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
         }
         try ( Transaction tx = db.beginTx() )
         {
-            tx.schema().awaitIndexOnline( NODE_INDEX_NAME, 30, TimeUnit.SECONDS );
+            tx.schema().awaitIndexOnline( NODE_INDEX_NAME, 1, TimeUnit.MINUTES );
         }
         long nodeId;
         try ( Transaction tx = db.beginTx() )
@@ -736,7 +736,7 @@ class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
         }
         try ( Transaction tx = db.beginTx() )
         {
-            tx.schema().awaitIndexOnline( NODE_INDEX_NAME, 30, TimeUnit.SECONDS );
+            tx.schema().awaitIndexOnline( NODE_INDEX_NAME, 1, TimeUnit.MINUTES );
         }
     }
 

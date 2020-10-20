@@ -1189,7 +1189,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
         long book2id;
         try ( Transaction tx = db.beginTx() )
         {
-            tx.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+            tx.schema().awaitIndexesOnline( 2, TimeUnit.MINUTES );
             Node book1 = tx.createNode( book );
             book1.setProperty( "author", "René Descartes" );
             book1.setProperty( "title", "Meditationes de prima philosophia" );
@@ -2325,7 +2325,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
         }
         try ( Transaction tx = db.beginTx() )
         {
-            tx.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+            tx.schema().awaitIndexesOnline( 2, TimeUnit.MINUTES );
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
@@ -2352,7 +2352,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
         }
         try ( Transaction tx = db.beginTx() )
         {
-            tx.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+            tx.schema().awaitIndexesOnline( 2, TimeUnit.MINUTES );
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
@@ -2744,7 +2744,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
         }
         try ( Transaction tx = db.beginTx() )
         {
-            tx.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+            tx.schema().awaitIndexesOnline( 2, TimeUnit.MINUTES );
             tx.commit();
         }
         long nodeId;
@@ -2808,7 +2808,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
         }
         try ( Transaction tx = db.beginTx() )
         {
-            tx.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+            tx.schema().awaitIndexesOnline( 2, TimeUnit.MINUTES );
             tx.commit();
         }
         long nodeId;
@@ -2850,7 +2850,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
         }
         try ( Transaction tx = db.beginTx() )
         {
-            tx.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+            tx.schema().awaitIndexesOnline( 2, TimeUnit.MINUTES );
             tx.commit();
         }
         long relId;
@@ -2889,7 +2889,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
         }
         try ( Transaction tx = db.beginTx() )
         {
-            tx.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+            tx.schema().awaitIndexesOnline( 2, TimeUnit.MINUTES );
             tx.commit();
         }
         long relId;

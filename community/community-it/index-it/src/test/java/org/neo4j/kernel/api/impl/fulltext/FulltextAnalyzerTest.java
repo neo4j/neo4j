@@ -49,7 +49,7 @@ class FulltextAnalyzerTest extends LuceneFulltextTestSupport
         }
         try ( Transaction tx = db.beginTx() )
         {
-            tx.schema().awaitIndexOnline( "nodes", 30, TimeUnit.SECONDS );
+            tx.schema().awaitIndexOnline( "nodes", 1, TimeUnit.MINUTES );
         }
 
         long id;
@@ -85,7 +85,7 @@ class FulltextAnalyzerTest extends LuceneFulltextTestSupport
         }
         try ( Transaction tx = db.beginTx() )
         {
-            tx.schema().awaitIndexOnline( "nodes", 30, TimeUnit.SECONDS );
+            tx.schema().awaitIndexOnline( "nodes", 1, TimeUnit.MINUTES );
         }
 
         long id;
@@ -121,7 +121,7 @@ class FulltextAnalyzerTest extends LuceneFulltextTestSupport
         }
         try ( Transaction tx = db.beginTx() )
         {
-            tx.schema().awaitIndexOnline( "nodes", 30, TimeUnit.SECONDS );
+            tx.schema().awaitIndexOnline( "nodes", 1, TimeUnit.MINUTES );
         }
 
         long id;
@@ -157,7 +157,7 @@ class FulltextAnalyzerTest extends LuceneFulltextTestSupport
         }
         try ( Transaction tx = db.beginTx() )
         {
-            tx.schema().awaitIndexOnline( "nodes", 30, TimeUnit.SECONDS );
+            tx.schema().awaitIndexOnline( "nodes", 1, TimeUnit.MINUTES );
         }
 
         try ( Transaction tx = db.beginTx() )

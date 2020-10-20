@@ -190,7 +190,7 @@ public abstract class StringLengthIndexValidationIT
         // Waiting for it to come online should succeed
         try ( Transaction tx = db.beginTx() )
         {
-            tx.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+            tx.schema().awaitIndexesOnline( 2, TimeUnit.MINUTES );
             tx.commit();
         }
 
@@ -228,7 +228,7 @@ public abstract class StringLengthIndexValidationIT
         // Waiting for it to come online should fail
         try ( Transaction tx = db.beginTx() )
         {
-            tx.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+            tx.schema().awaitIndexesOnline( 2, TimeUnit.MINUTES );
             tx.commit();
         }
         catch ( IllegalStateException e )
@@ -309,7 +309,7 @@ public abstract class StringLengthIndexValidationIT
         }
         try ( Transaction tx = db.beginTx() )
         {
-            tx.schema().awaitIndexesOnline( 1, MINUTES );
+            tx.schema().awaitIndexesOnline( 2, MINUTES );
             tx.commit();
         }
     }

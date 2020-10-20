@@ -157,7 +157,7 @@ class UniqueIndexSeekIT
         }
         try ( Transaction transaction = database.beginTx() )
         {
-            transaction.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+            transaction.schema().awaitIndexesOnline( 2, TimeUnit.MINUTES );
             transaction.commit();
         }
     }

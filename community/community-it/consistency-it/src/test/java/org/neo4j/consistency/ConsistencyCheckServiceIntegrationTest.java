@@ -317,7 +317,7 @@ public class ConsistencyCheckServiceIntegrationTest
     private void createIndex( Label label, String propKey )
     {
         fixture.apply( tx -> tx.schema().indexFor( label ).on( propKey ).create() );
-        fixture.apply( tx -> tx.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES ) );
+        fixture.apply( tx -> tx.schema().awaitIndexesOnline( 2, TimeUnit.MINUTES ) );
     }
 
     private static Path findFile( DatabaseLayout databaseLayout, String targetFile )

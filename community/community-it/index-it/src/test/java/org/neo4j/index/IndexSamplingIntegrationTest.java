@@ -82,7 +82,7 @@ class IndexSamplingIntegrationTest
 
             try ( Transaction tx = db.beginTx() )
             {
-                tx.schema().awaitIndexOnline( indexDefinition, 10, TimeUnit.SECONDS );
+                tx.schema().awaitIndexOnline( indexDefinition, 1, TimeUnit.MINUTES );
                 tx.commit();
             }
 

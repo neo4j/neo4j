@@ -114,7 +114,7 @@ public abstract class KernelReadTracerTestBase<G extends KernelAPIReadTestSuppor
 
         try ( Transaction tx = graphDb.beginTx() )
         {
-            tx.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+            tx.schema().awaitIndexesOnline( 2, TimeUnit.MINUTES );
             tx.commit();
         }
 

@@ -315,7 +315,7 @@ class IndexPopulationIT
     {
         try ( Transaction transaction = database.beginTx() )
         {
-            transaction.schema().awaitIndexesOnline( 1, MINUTES );
+            transaction.schema().awaitIndexesOnline( 2, MINUTES );
             transaction.commit();
         }
     }

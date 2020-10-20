@@ -75,7 +75,7 @@ import org.neo4j.values.storable.Values;
 
 import static java.util.Collections.singletonList;
 import static java.util.concurrent.Executors.newSingleThreadExecutor;
-import static java.util.concurrent.TimeUnit.SECONDS;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -409,7 +409,7 @@ class IndexRecoveryIT
         IndexDefinition index = createIndex( label );
         try ( Transaction tx = db.beginTx() )
         {
-            tx.schema().awaitIndexOnline( index, 10, SECONDS );
+            tx.schema().awaitIndexOnline( index, 1, MINUTES );
             tx.commit();
         }
     }

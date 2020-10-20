@@ -41,8 +41,8 @@ import org.neo4j.values.utils.TemporalUtil
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Gen
 import org.scalacheck.Shrink
-import org.scalatest.matchers.MatchResult
 import org.scalatest.matchers.Matcher
+import org.scalatest.matchers.MatchResult
 import org.scalatest.prop.PropertyChecks
 
 import scala.collection.JavaConverters.asScalaSetConverter
@@ -99,7 +99,7 @@ class SemanticIndexAcceptanceTest extends ExecutionEngineFunSuite with PropertyC
     super.initTest()
     graph.createIndex("Label", "indexed")
     graph.withTx( tx =>
-      tx.schema().awaitIndexesOnline(10, TimeUnit.SECONDS)
+      tx.schema().awaitIndexesOnline(30, TimeUnit.SECONDS)
      )
     for(_ <- 1 to 1000) createLabeledNode("Label")
   }

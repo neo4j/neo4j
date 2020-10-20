@@ -367,7 +367,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
         // PASS
         try ( Transaction tx = db.beginTx() )
         {
-            tx.schema().awaitIndexOnline( index, 1L, TimeUnit.MINUTES );
+            tx.schema().awaitIndexOnline( index, 2L, TimeUnit.MINUTES );
 
             // THEN
             assertEquals( Schema.IndexState.ONLINE, tx.schema().getIndexState( index ) );
@@ -382,7 +382,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
         // PASS
         try ( Transaction tx = db.beginTx() )
         {
-            tx.schema().awaitIndexOnline( "my_index", 1L, TimeUnit.MINUTES );
+            tx.schema().awaitIndexOnline( "my_index", 2L, TimeUnit.MINUTES );
 
             // THEN
             assertEquals( Schema.IndexState.ONLINE, tx.schema().getIndexState( index ) );
@@ -402,7 +402,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
         waitForIndex( db, index );
         try ( Transaction tx = db.beginTx() )
         {
-            tx.schema().awaitIndexesOnline( 1L, TimeUnit.MINUTES );
+            tx.schema().awaitIndexesOnline( 2L, TimeUnit.MINUTES );
 
             // THEN
             assertEquals( Schema.IndexState.ONLINE, tx.schema().getIndexState( index ) );
@@ -1482,7 +1482,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
             createUniquenessConstraint( schemaName, label, propertyKey );
             try ( Transaction tx = db.beginTx() )
             {
-                tx.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+                tx.schema().awaitIndexesOnline( 2, TimeUnit.MINUTES );
                 tx.commit();
             }
 

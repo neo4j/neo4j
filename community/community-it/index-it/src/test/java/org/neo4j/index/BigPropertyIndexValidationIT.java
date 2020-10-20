@@ -139,7 +139,7 @@ class BigPropertyIndexValidationIT
 
         try ( Transaction tx = gds.beginTx() )
         {
-            tx.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+            tx.schema().awaitIndexesOnline( 2, TimeUnit.MINUTES );
             tx.commit();
         }
     }

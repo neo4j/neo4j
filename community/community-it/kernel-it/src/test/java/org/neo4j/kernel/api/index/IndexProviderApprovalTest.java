@@ -46,7 +46,7 @@ import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Values;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.graphdb.Label.label;
@@ -235,7 +235,7 @@ public abstract class IndexProviderApprovalTest
 
         try ( Transaction tx = db.beginTx() )
         {
-            tx.schema().awaitIndexOnline( indexDef, 30, SECONDS );
+            tx.schema().awaitIndexOnline( indexDef, 1, MINUTES );
         }
     }
 }
