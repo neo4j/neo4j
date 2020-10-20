@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher.beLike
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
-import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.createQueryGraphSolver
+import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.QueryGraphSolverWithGreedyConnectComponents
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.cypherCompilerConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.ConfigurableIDPSolverConfig
 import org.neo4j.cypher.internal.expressions.Ands
@@ -331,7 +331,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
 
     val maxIterationTime = 1 // the goal here is to force compaction as fast as possible
     val configurationThatForcesCompacting = cypherCompilerConfig.copy(idpIterationDuration = maxIterationTime)
-    val queryGraphSolver = createQueryGraphSolver(new ConfigurableIDPSolverConfig(1, maxIterationTime))
+    val queryGraphSolver = QueryGraphSolverWithGreedyConnectComponents.queryGraphSolver(new ConfigurableIDPSolverConfig(1, maxIterationTime))
 
     planFor(
       """WITH 20000 AS param1, 5000 AS param2

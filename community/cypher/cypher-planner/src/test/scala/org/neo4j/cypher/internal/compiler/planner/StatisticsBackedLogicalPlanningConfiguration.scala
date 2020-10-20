@@ -337,8 +337,8 @@ class StatisticsBackedLogicalPlanningConfiguration(
       planContext = planContext,
       cypherExceptionFactory = exceptionFactory,
       queryGraphSolver =
-        if (options.connectComponentsPlanner) LogicalPlanningTestSupport2.createQueryGraphSolverWithComponentConnectorPlanner()
-        else LogicalPlanningTestSupport2.createQueryGraphSolver(),
+        if (options.connectComponentsPlanner) LogicalPlanningTestSupport2.QueryGraphSolverWithIDPConnectComponents.queryGraphSolver()
+        else LogicalPlanningTestSupport2.QueryGraphSolverWithGreedyConnectComponents.queryGraphSolver(),
       metrics = metrics,
       config = cypherCompilerConfig,
       logicalPlanIdGen = idGen,

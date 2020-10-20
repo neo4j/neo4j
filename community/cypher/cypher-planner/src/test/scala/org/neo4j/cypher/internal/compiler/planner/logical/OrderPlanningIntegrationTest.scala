@@ -22,7 +22,9 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher.beLike
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
-import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.createQueryGraphSolverWithComponentConnectorPlanner
+import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.QueryGraphSolverSetup
+import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.QueryGraphSolverWithGreedyConnectComponents
+import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.QueryGraphSolverWithIDPConnectComponents
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.functions.Exists
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
@@ -44,7 +46,12 @@ import org.neo4j.cypher.internal.logical.plans.Top
 import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class OrderPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
+class OrderIDPPlanningIntegrationTest extends OrderPlanningIntegrationTestBase(QueryGraphSolverWithIDPConnectComponents)
+class OrderGreedyPlanningIntegrationTest extends OrderPlanningIntegrationTestBase(QueryGraphSolverWithGreedyConnectComponents)
+
+class OrderPlanningIntegrationTestBase(queryGraphSolverSetup: QueryGraphSolverSetup) extends CypherFunSuite with LogicalPlanningTestSupport2 {
+  queryGraphSolver = queryGraphSolverSetup.queryGraphSolver()
+
   test("ORDER BY previously unprojected column in WITH") {
     val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH a ORDER BY a.age RETURN a.name")._2
 
@@ -644,6 +651,7 @@ class OrderPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
   }
 
   test("Should not plan cartesian product with lowest cardinality point leftmost, if sorting can be avoided, when sorting on 1 variables.") {
+    assume(queryGraphSolverSetup == QueryGraphSolverWithIDPConnectComponents, "This test requires the IDP connect components planner")
     val query =
       """MATCH (a:A), (b:B), (c:C)
         |WHERE exists(a.prop) AND exists(b.prop) AND exists(c.prop)
@@ -655,7 +663,7 @@ class OrderPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
       indexOn("A", "prop").providesOrder(IndexOrderCapability.BOTH)
       indexOn("B", "prop").providesOrder(IndexOrderCapability.BOTH)
       indexOn("C", "prop").providesOrder(IndexOrderCapability.BOTH)
-    }.getLogicalPlanFor(query, queryGraphSolver = createQueryGraphSolverWithComponentConnectorPlanner())._2
+    }.getLogicalPlanFor(query)._2
 
     // Different cartesian product variants are OK, but it should maintain the
     // order from a
@@ -719,6 +727,7 @@ class OrderPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
   }
 
   test("Should not plan cartesian product with lowest cardinality point leftmost, if sorting can be avoided, when sorting on 2 variables.") {
+    assume(queryGraphSolverSetup == QueryGraphSolverWithIDPConnectComponents, "This test requires the IDP connect components planner")
     val query =
       """MATCH (a:A), (b:B), (c:C)
         |WHERE exists(a.prop) AND exists(b.prop) AND exists(c.prop)
@@ -730,7 +739,7 @@ class OrderPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
       indexOn("A", "prop").providesOrder(IndexOrderCapability.BOTH)
       indexOn("B", "prop").providesOrder(IndexOrderCapability.BOTH)
       indexOn("C", "prop").providesOrder(IndexOrderCapability.BOTH)
-    }.getLogicalPlanFor(query, queryGraphSolver = createQueryGraphSolverWithComponentConnectorPlanner())._2
+    }.getLogicalPlanFor(query)._2
 
     // Different cartesian product variants are OK, but it should maintain the
     // order from a and only need to partially sort c
@@ -743,6 +752,7 @@ class OrderPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
   }
 
   test("Should not plan value hash join with lowest cardinality point leftmost, if sorting can be avoided, when sorting on 2 variables.") {
+    assume(queryGraphSolverSetup == QueryGraphSolverWithIDPConnectComponents, "This test requires the IDP connect components planner")
     val query =
       """MATCH (a:A), (b:B)
         |WHERE exists(a.prop) AND exists(b.prop) AND a.foo = b.foo
@@ -761,7 +771,7 @@ class OrderPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
       cardinality = selectivitiesCardinality(selectivities, qg => Math.pow(100.0, qg.connectedComponents.size))
       indexOn("A", "prop").providesOrder(IndexOrderCapability.BOTH)
       indexOn("B", "prop").providesOrder(IndexOrderCapability.BOTH)
-    }.getLogicalPlanFor(query, queryGraphSolver = createQueryGraphSolverWithComponentConnectorPlanner())._2
+    }.getLogicalPlanFor(query)._2
 
     // It should maintain the
     // order from a and only need to partially sort b

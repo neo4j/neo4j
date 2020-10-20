@@ -21,7 +21,9 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
-import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.createQueryGraphSolverWithComponentConnectorPlanner
+import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.QueryGraphSolverSetup
+import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.QueryGraphSolverWithGreedyConnectComponents
+import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.QueryGraphSolverWithIDPConnectComponents
 import org.neo4j.cypher.internal.expressions.AndedPropertyInequalities
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.Expression
@@ -34,7 +36,6 @@ import org.neo4j.cypher.internal.logical.plans.Aggregation
 import org.neo4j.cypher.internal.logical.plans.AllNodesScan
 import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.Ascending
-import org.neo4j.cypher.internal.logical.plans.CartesianProduct
 import org.neo4j.cypher.internal.logical.plans.ColumnOrder
 import org.neo4j.cypher.internal.logical.plans.Descending
 import org.neo4j.cypher.internal.logical.plans.DoNotIncludeTies
@@ -47,7 +48,6 @@ import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.IndexSeek
 import org.neo4j.cypher.internal.logical.plans.LeftOuterHashJoin
 import org.neo4j.cypher.internal.logical.plans.Limit
-import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexScan
 import org.neo4j.cypher.internal.logical.plans.Optional
 import org.neo4j.cypher.internal.logical.plans.OrderedAggregation
@@ -65,7 +65,12 @@ import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 with PlanMatchHelp {
+class IndexWithProvidedOrderIDPPlanningIntegrationTest extends IndexWithProvidedOrderPlanningIntegrationTestBase(QueryGraphSolverWithIDPConnectComponents)
+class IndexWithProvidedOrderGreedyPlanningIntegrationTest extends IndexWithProvidedOrderPlanningIntegrationTestBase(QueryGraphSolverWithGreedyConnectComponents)
+
+abstract class IndexWithProvidedOrderPlanningIntegrationTestBase(queryGraphSolverSetup: QueryGraphSolverSetup) extends CypherFunSuite with LogicalPlanningTestSupport2 with PlanMatchHelp {
+
+  queryGraphSolver = queryGraphSolverSetup.queryGraphSolver()
 
   case class TestOrder(indexOrder: IndexOrder, cypherToken: String, indexOrderCapability: IndexOrderCapability, sortOrder: String => ColumnOrder)
   private val ASCENDING = TestOrder(IndexOrderAscending, "ASC", ASC, Ascending)
@@ -303,11 +308,12 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
     }
 
     test(s"$cypherToken-$orderCapability: Cannot order by index when ordering is on same property name, but different node") {
+      assume(queryGraphSolverSetup == QueryGraphSolverWithIDPConnectComponents, "This test requires the IDP connect components planner")
+
       val plan = new given {
         indexOn("Awesome", "prop").providesOrder(orderCapability)
       } getLogicalPlanFor(s"MATCH (m:Awesome), (n:Awesome) WHERE n.prop > 'foo' RETURN m.prop ORDER BY m.prop $cypherToken",
-        stripProduceResults = false,
-        queryGraphSolver = createQueryGraphSolverWithComponentConnectorPlanner())
+        stripProduceResults = false)
 
       val expectedIndexOrder = if (orderCapability.asc) IndexOrderAscending else IndexOrderDescending
 
@@ -324,13 +330,14 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
     }
 
     test(s"$cypherToken-$orderCapability: Cannot order by index when ordering is on same property name, but different node with relationship") {
+      assume(queryGraphSolverSetup == QueryGraphSolverWithIDPConnectComponents, "This test requires the IDP connect components planner")
+
       // With two relationships we use IDP to get the best plan.
       // By keeping the best overall and the best sorted plan, we should only have one sort.
       val plan = new given {
         indexOn("Awesome", "prop").providesOrder(orderCapability)
       } getLogicalPlanFor(s"MATCH (m:Awesome)-[r]-(x)-[p]-(y), (n:Awesome) WHERE n.prop > 'foo' RETURN m.prop ORDER BY m.prop $cypherToken",
-        stripProduceResults = false,
-        queryGraphSolver = createQueryGraphSolverWithComponentConnectorPlanner())
+        stripProduceResults = false)
 
       val expectedIndexOrder = if (orderCapability.asc) IndexOrderAscending else IndexOrderDescending
 

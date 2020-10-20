@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.compiler.phases.CompilationPhases.planPipeLine
 import org.neo4j.cypher.internal.compiler.phases.CompilationPhases.prepareForCaching
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
+import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.QueryGraphSolverWithGreedyConnectComponents
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.cypherCompilerConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.ExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
@@ -119,18 +120,29 @@ object LogicalPlanningTestSupport2 extends MockitoSugar {
     useJavaCCParser = true
   )
 
-  def createQueryGraphSolver(solverConfig: SingleComponentIDPSolverConfig = DefaultIDPSolverConfig): QueryGraphSolver = {
-    val solverMonitor = mock[IDPQueryGraphSolverMonitor]
-    val singleComponentPlanner = SingleComponentPlanner(solverMonitor, solverConfig)
-    val connectorPlanner = cartesianProductsOrValueJoins
-    new IDPQueryGraphSolver(singleComponentPlanner, connectorPlanner, solverMonitor)
+  sealed trait QueryGraphSolverSetup {
+    def queryGraphSolver(): QueryGraphSolver
+    def queryGraphSolver(solverConfig: SingleComponentIDPSolverConfig): QueryGraphSolver
   }
+  case object QueryGraphSolverWithIDPConnectComponents extends QueryGraphSolverSetup {
+    def queryGraphSolver(): QueryGraphSolver = queryGraphSolver(DefaultIDPSolverConfig)
 
-  def createQueryGraphSolverWithComponentConnectorPlanner(solverConfig: SingleComponentIDPSolverConfig = DefaultIDPSolverConfig): QueryGraphSolver = {
-    val solverMonitor = mock[IDPQueryGraphSolverMonitor]
-    val singleComponentPlanner = SingleComponentPlanner(solverMonitor, solverConfig)
-    val connectorPlanner = ComponentConnectorPlanner(singleComponentPlanner, solverConfig, solverMonitor)
-    new IDPQueryGraphSolver(singleComponentPlanner, connectorPlanner, solverMonitor)
+    def queryGraphSolver(solverConfig: SingleComponentIDPSolverConfig): QueryGraphSolver = {
+      val solverMonitor = mock[IDPQueryGraphSolverMonitor]
+      val singleComponentPlanner = SingleComponentPlanner(solverMonitor, solverConfig)
+      val connectorPlanner = ComponentConnectorPlanner(singleComponentPlanner, solverConfig, solverMonitor)
+      new IDPQueryGraphSolver(singleComponentPlanner, connectorPlanner, solverMonitor)
+    }
+  }
+  case object QueryGraphSolverWithGreedyConnectComponents extends QueryGraphSolverSetup {
+    def queryGraphSolver(): QueryGraphSolver = queryGraphSolver(DefaultIDPSolverConfig)
+
+    def queryGraphSolver(solverConfig: SingleComponentIDPSolverConfig): QueryGraphSolver = {
+      val solverMonitor = mock[IDPQueryGraphSolverMonitor]
+      val singleComponentPlanner = SingleComponentPlanner(solverMonitor, solverConfig)
+      val connectorPlanner = cartesianProductsOrValueJoins
+      new IDPQueryGraphSolver(singleComponentPlanner, connectorPlanner, solverMonitor)
+    }
   }
 
   def pipeLine(pushdownPropertyReads: Boolean = pushdownPropertyReads,
@@ -152,7 +164,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
   val rewriterSequencer: String => ValidatingRewriterStepSequencer = RewriterStepSequencer.newValidating
   var astRewriter = new ASTRewriter(rewriterSequencer, literalExtraction = Never, innerVariableNamer = innerVariableNamer)
   final var planner = QueryPlanner
-  var queryGraphSolver: QueryGraphSolver = LogicalPlanningTestSupport2.createQueryGraphSolver()
+  var queryGraphSolver: QueryGraphSolver = QueryGraphSolverWithGreedyConnectComponents.queryGraphSolver()
 
   val realConfig = RealLogicalPlanningConfiguration(cypherCompilerConfig)
 
