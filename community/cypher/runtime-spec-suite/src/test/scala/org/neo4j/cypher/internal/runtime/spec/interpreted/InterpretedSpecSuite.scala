@@ -90,6 +90,7 @@ import org.neo4j.cypher.internal.runtime.spec.tests.ProfileMemoryTrackingDisable
 import org.neo4j.cypher.internal.runtime.spec.tests.ProfileRowsTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.ProjectEndpointsTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.ProjectionTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.NonParallelProvidedOrderTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.ProvidedOrderTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.PruningVarLengthExpandTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.ReactiveResultTestBase
@@ -173,6 +174,7 @@ class InterpretedMiscTest extends MiscTestBase(COMMUNITY.EDITION, InterpretedRun
 class InterpretedOptionalTest extends OptionalTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
                               with OptionalFailureTestBase[CommunityRuntimeContext]
 class InterpretedProvidedOrderTest extends ProvidedOrderTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
+                                   with NonParallelProvidedOrderTestBase[CommunityRuntimeContext]
                                    with CartesianProductProvidedOrderTestBase[CommunityRuntimeContext]
 class InterpretedProfileDbHitsTest extends LegacyDbHitsTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT, createsRelValueInExpand = true)
                                    with ProcedureCallDbHitsTestBase[CommunityRuntimeContext]

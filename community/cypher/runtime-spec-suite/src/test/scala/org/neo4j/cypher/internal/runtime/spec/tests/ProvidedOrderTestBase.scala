@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.logical.builder.Parser
 import org.neo4j.cypher.internal.logical.plans.Ascending
+import org.neo4j.cypher.internal.logical.plans.Descending
 import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
 import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
@@ -42,6 +43,10 @@ abstract class ProvidedOrderTestBase[CONTEXT <: RuntimeContext](
 
   trait SeqMutator { def apply[X](in: Seq[X]): Seq[X]}
   case class ProvidedOrderTest(orderString: String, indexOrder: IndexOrder, providedOrderFactory: String => ProvidedOrder, expectedMutation: SeqMutator)
+}
+
+trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
+  self: ProvidedOrderTestBase[CONTEXT] =>
 
   for (
     ProvidedOrderTest(orderString, indexOrder, providedOrderFactory, expectedMutation) <- Seq(
@@ -93,6 +98,47 @@ abstract class ProvidedOrderTestBase[CONTEXT <: RuntimeContext](
       // then
       val expected = expectedMutation(nodes.zipWithIndex.filter{ case (_, i) => i % 10 == 0 && i > n / 2}.flatMap(n => Seq.fill(6 * 6)(n)).map(_._2))
       runtimeResult should beColumns("prop").withRows(singleColumnInOrder(expected))
+    }
+
+    test(s"cartesian product keeps LHS and RHS provided $orderString order with apply") {
+      // given
+      val n = sizeHint / 10
+      val modulo = 100
+      val zGreaterThanFilter = 10
+
+      given {
+        index("Honey", "prop")
+        nodePropertyGraph(n, {
+          case i => Map("prop" -> i % modulo)
+        }, "Honey")
+      }
+
+      val xValues = 0L until 2L
+      val input = inputValues(xValues.map(Array[Any](_)): _*)
+
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("x", "yprop", "zprop").withLeveragedOrder()
+        .projection("y.prop AS yprop").withLeveragedOrder()
+        .apply().withLeveragedOrder()
+        .|.cartesianProduct().withLeveragedOrder()
+        .|.|.sort(Seq(Descending("zprop")))
+        .|.|.projection("z.prop AS zprop")
+        .|.|.allNodeScan("z")
+        .|.nodeIndexOperator(s"y:Honey(prop >= $zGreaterThanFilter)", indexOrder = indexOrder, getValue = DoNotGetValue).withProvidedOrder(providedOrderFactory("y.prop"))
+        .input(variables = Seq("x"))
+        .build()
+
+      val runtimeResult = execute(logicalQuery, runtime, input)
+
+      // then
+      val expected = for {
+        x <- xValues
+        y <- expectedMutation((0 until n).map(_ % modulo).filter(_ >= zGreaterThanFilter).sorted)
+        z <- (0 until n).map(_ % modulo).sorted.reverse
+      } yield Array(x, y, z)
+
+      runtimeResult should beColumns("x", "yprop", "zprop").withRows(inOrder(expected))
     }
 
     test(s"aggregation keeps index provided $orderString order") {
@@ -245,15 +291,15 @@ abstract class ProvidedOrderTestBase[CONTEXT <: RuntimeContext](
       val expected = for {
         x <- nodes.take(nInputNodes)
         zProp <-
-        if ((x.getId % modulo) % 2 == 0) {
-          expectedMutation((0 until n)
-            .map(i => (nodes(i), i % modulo))
-            .filter { case (_, i) => i >= zGTFilter }
-            .sortBy { case (_, i) => i }
-            .map { case (_, i) => i })
-        } else {
-          Seq(null)
-        }
+          if ((x.getId % modulo) % 2 == 0) {
+            expectedMutation((0 until n)
+              .map(i => (nodes(i), i % modulo))
+              .filter { case (_, i) => i >= zGTFilter }
+              .sortBy { case (_, i) => i }
+              .map { case (_, i) => i })
+          } else {
+            Seq(null)
+          }
       } yield Array(x, zProp)
 
       runtimeResult should beColumns("x", "zProp").withRows(inOrder(expected))
@@ -445,10 +491,50 @@ abstract class ProvidedOrderTestBase[CONTEXT <: RuntimeContext](
 
       runtimeResult should beColumns("num", "name").withRows(inOrder(expected))
     }
+
+    test(s"nested cartesian product keeps LHS and RHS provided $orderString order") {
+      // given
+      val n = sizeHint / 20
+      val modulo = 20
+      val zGreaterThanFilter = 10
+
+      given {
+        index("Honey", "prop")
+        nodePropertyGraph(n, {
+          case i => Map("prop" -> i % modulo)
+        }, "Honey")
+      }
+
+      val xValues = 0L until 7L
+      val input = inputValues(xValues.map(Array[Any](_)): _*)
+
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("x", "yprop", "zprop").withLeveragedOrder()
+        .projection("y.prop AS yprop").withLeveragedOrder()
+        .cartesianProduct().withLeveragedOrder()
+        .|.cartesianProduct().withLeveragedOrder()
+        .|.|.sort(Seq(Descending("zprop")))
+        .|.|.projection("z.prop AS zprop")
+        .|.|.allNodeScan("z")
+        .|.nodeIndexOperator(s"y:Honey(prop >= $zGreaterThanFilter)", indexOrder = indexOrder, getValue = DoNotGetValue).withProvidedOrder(providedOrderFactory("y.prop"))
+        .input(variables = Seq("x"))
+        .build()
+
+      val runtimeResult = execute(logicalQuery, runtime, input)
+
+      // then
+      val expected = for {
+        x <- xValues
+        y <- expectedMutation((0 until n).map(_ % modulo).filter(_ >= zGreaterThanFilter).sorted)
+        z <- (0 until n).map(_ % modulo).sorted.reverse
+      } yield Array(x, y, z)
+
+      runtimeResult should beColumns("x", "yprop", "zprop").withRows(inOrder(expected))
+    }
   }
 }
 
-// Supported by interpreted, slotted
 trait CartesianProductProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
   self: ProvidedOrderTestBase[CONTEXT] =>
 
@@ -480,8 +566,8 @@ trait CartesianProductProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("prop").withLeveragedOrder()
-        .projection("z.prop AS prop")
-        .cartesianProduct()
+        .projection("z.prop AS prop").withLeveragedOrder()
+        .cartesianProduct().withLeveragedOrder()
         .|.allNodeScan("y")
         .nodeIndexOperator(s"z:Honey(prop >= $zGreaterThanFilter)", indexOrder = indexOrder, getValue = DoNotGetValue).withProvidedOrder(providedOrderFactory("z.prop"))
         .build()
@@ -495,6 +581,41 @@ trait CartesianProductProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
       } yield z
 
       runtimeResult should beColumns("prop").withRows(singleColumnInOrder(expected))
+    }
+
+    test(s"cartesian product keeps LHS and RHS provided $orderString order") {
+      // given
+      val n = sizeHint / 10
+      val modulo = 100
+      val zGreaterThanFilter = 10
+
+      given {
+        index("Honey", "prop")
+        nodePropertyGraph(n, {
+          case i => Map("prop" -> i % modulo)
+        }, "Honey")
+      }
+
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("prop", "yprop").withLeveragedOrder()
+        .projection("z.prop AS prop").withLeveragedOrder()
+        .cartesianProduct().withLeveragedOrder()
+        .|.sort(Seq(Descending("yprop")))
+        .|.projection("y.prop AS yprop")
+        .|.allNodeScan("y")
+        .nodeIndexOperator(s"z:Honey(prop >= $zGreaterThanFilter)", indexOrder = indexOrder, getValue = DoNotGetValue).withProvidedOrder(providedOrderFactory("z.prop"))
+        .build()
+
+      val runtimeResult = execute(logicalQuery, runtime)
+
+      // then
+      val expected = for {
+        z <- expectedMutation((0 until n).map(_ % modulo).filter(_ >= zGreaterThanFilter).sorted)
+        y <- (0 until n).map(_ % modulo).sorted.reverse
+      } yield Array(z, y)
+
+      runtimeResult should beColumns("prop", "yprop").withRows(inOrder(expected))
     }
   }
 }

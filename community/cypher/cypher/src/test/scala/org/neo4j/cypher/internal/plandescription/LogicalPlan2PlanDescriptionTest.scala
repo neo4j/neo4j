@@ -1130,6 +1130,11 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       planDescription(id, "Unwind", SingleChild(lhsPD), Seq(details("list AS x")), Set("a", "x")))
   }
 
+  test("PreserveOrder") {
+    assertGood(attach(plans.PreserveOrder(lhsLP), 1.0),
+               planDescription(id, "PreserveOrder", SingleChild(lhsPD), Seq.empty,  Set("a")))
+  }
+
   test("Admin") {
     val adminPlanDescription: PlanDescriptionImpl = planDescription(id, "AdministrationCommand", NoChildren, Seq.empty, Set.empty)
 
