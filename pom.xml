@@ -322,6 +322,26 @@
                     <new>field org.neo4j.graphdb.factory.GraphDatabaseSettings.track_query_cpu_time</new>
                     <justification>Updating setting description for documentation</justification>
                   </item>
+                  <item>
+                    <code>java.annotation.attributeValueChanged</code>
+                    <new>field org.neo4j.graphdb.factory.GraphDatabaseSettings.store_user_log_max_archives</new>
+                    <justification>Updating setting description for documentation</justification>
+                  </item>
+                  <item>
+                    <code>java.annotation.attributeValueChanged</code>
+                    <new>field org.neo4j.graphdb.factory.GraphDatabaseSettings.store_user_log_path</new>
+                    <justification>Updating setting description for documentation</justification>
+                  </item>
+                  <item>
+                    <code>java.annotation.attributeValueChanged</code>
+                    <new>field org.neo4j.graphdb.factory.GraphDatabaseSettings.store_user_log_rotation_delay</new>
+                    <justification>Updating setting description for documentation</justification>
+                  </item>
+                  <item>
+                    <code>java.annotation.attributeValueChanged</code>
+                    <new>field org.neo4j.graphdb.factory.GraphDatabaseSettings.store_user_log_rotation_threshold</new>
+                    <justification>Updating setting description for documentation</justification>
+                  </item>
               </revapi.ignore>
               <revapi.semver.ignore>
                 <enabled>true</enabled>
