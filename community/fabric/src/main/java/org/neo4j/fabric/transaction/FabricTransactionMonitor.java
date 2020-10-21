@@ -25,6 +25,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.neo4j.fabric.config.FabricConfig;
+import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.api.transaction.monitor.TransactionMonitor;
 import org.neo4j.logging.internal.LogService;
@@ -107,6 +108,26 @@ public class FabricTransactionMonitor extends TransactionMonitor
         {
             fabricTransaction.markForTermination( reason );
             return true;
+        }
+
+        @Override
+        public String getIdentifyingDescription()
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.append( "QueryRouterTransaction[" );
+            sb.append( "id=" ).append( fabricTransaction.getId() ).append( "," );
+
+            var rawAddress = fabricTransaction.getTransactionInfo().getClientConnectionInfo().clientAddress();
+            var address = rawAddress == null ? "embedded" : rawAddress;
+            sb.append( "clientAddress=" ).append( address );
+            var authSubject = fabricTransaction.getTransactionInfo().getLoginContext().subject();
+            if ( authSubject != AuthSubject.ANONYMOUS && authSubject != AuthSubject.AUTH_DISABLED )
+            {
+                sb.append( "," ).append( "username=" ).append( authSubject.username() );
+            }
+
+            sb.append( "]" );
+            return sb.toString();
         }
     }
 }

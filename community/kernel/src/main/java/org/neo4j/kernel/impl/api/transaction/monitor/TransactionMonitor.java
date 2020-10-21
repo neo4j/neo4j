@@ -62,7 +62,7 @@ public abstract class TransactionMonitor implements Runnable
                 {
                     if ( activeTransaction.markForTermination( Status.Transaction.TransactionTimedOut ) )
                     {
-                        log.warn( "Transaction %s timeout.", activeTransaction );
+                        log.warn( "Transaction %s timeout.", activeTransaction.getIdentifyingDescription() );
                     }
                 }
             }
@@ -90,5 +90,14 @@ public abstract class TransactionMonitor implements Runnable
          * (when this handle represents an old transaction that has been closed).
          */
         boolean markForTermination( Status reason );
+
+        /**
+         * A meaningful description used in log messages related to this transaction.
+         * <p>
+         * In other words, this is meant to be a user-facing 'toString' containing
+         * information that can help the reader of the log to identify the transaction
+         * that timed out.
+         */
+        String getIdentifyingDescription();
     }
 }
