@@ -236,7 +236,7 @@ public class DataFactories
                     }
                 }
                 Entry[] entries = columns.toArray( new Entry[0] );
-                validateHeader( entries );
+                validateHeader( entries, dataSeeker );
                 return new Header( entries );
             }
             catch ( IOException e )
@@ -245,7 +245,7 @@ public class DataFactories
             }
         }
 
-        private void validateHeader( Entry[] entries )
+        private void validateHeader( Entry[] entries, CharSeeker dataSeeker )
         {
             Map<String,Entry> properties = new HashMap<>();
             EnumMap<Type,Entry> singletonEntries = new EnumMap<>( Type.class );
@@ -257,7 +257,7 @@ public class DataFactories
                     Entry existingPropertyEntry = properties.get( entry.name() );
                     if ( existingPropertyEntry != null )
                     {
-                        throw new DuplicateHeaderException( existingPropertyEntry, entry );
+                        throw new DuplicateHeaderException( existingPropertyEntry, entry, dataSeeker.sourceDescription() );
                     }
                     properties.put( entry.name(), entry );
                     break;
@@ -266,7 +266,7 @@ public class DataFactories
                     Entry existingSingletonEntry = singletonEntries.get( entry.type() );
                     if ( existingSingletonEntry != null )
                     {
-                        throw new DuplicateHeaderException( existingSingletonEntry, entry );
+                        throw new DuplicateHeaderException( existingSingletonEntry, entry, dataSeeker.sourceDescription() );
                     }
                     singletonEntries.put( entry.type(), entry );
                     break;
