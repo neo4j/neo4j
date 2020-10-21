@@ -69,6 +69,14 @@ object IDPTable {
 
   private case class SortedGoal(bitSet: BitSet) {
     def isSorted: Boolean = bitSet(SORTED_BIT)
+
+    override def equals(obj: Any): Boolean = {
+      obj match {
+        case that: SortedGoal => BitSetEquality.equalBitSets(this.bitSet, that.bitSet)
+        case _ => false
+      }
+    }
+    override def hashCode(): Int = BitSetEquality.hashCode(this.bitSet)
   }
 
   def apply[Solvable, Result](registry: IdRegistry[Solvable], seed: Seed[Solvable, Result]): IDPTable[Result] = {
@@ -110,4 +118,12 @@ case class Goal(bitSet: BitSet) {
     leftGoal <- subGoals(leftSize)
     rightGoal = diff(leftGoal)
   } yield (leftGoal, rightGoal)
+
+  override def equals(obj: Any): Boolean = {
+    obj match {
+      case that: Goal => BitSetEquality.equalBitSets(this.bitSet, that.bitSet)
+      case _ => false
+    }
+  }
+  override def hashCode(): Int = BitSetEquality.hashCode(this.bitSet)
 }

@@ -94,7 +94,7 @@ class IDPSolver[Solvable, Result, Context](generator: IDPSolverStep[Solvable, Re
         val goals = toDo.subGoals(blockSize)
         while (keepGoing && goals.hasNext) {
           val goal = goals.next()
-          if (table(goal).result.isEmpty) {
+          if (!table.contains(goal, sorted = false)) {
             val candidates = LazyIterable(generator(registry, goal, table, context))
             val (extraCandidates, baseCandidates) = candidates.partition(extraRequirement.fulfils)
             val bestExtraCandidate = projectingSelector(extraCandidates)
