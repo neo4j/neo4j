@@ -29,6 +29,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.internal.batchimport.Configuration;
+import org.neo4j.internal.batchimport.stats.Keys;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
@@ -36,10 +37,12 @@ import org.neo4j.test.rule.OtherThreadRule;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.neo4j.internal.batchimport.staging.Step.ORDER_SEND_DOWNSTREAM;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 
 class ProcessorStepTest
@@ -65,7 +68,7 @@ class ProcessorStepTest
         StageControl control = mock( StageControl.class );
         try ( MyProcessorStep step = new MyProcessorStep( control, 0 ) )
         {
-            step.start( Step.ORDER_SEND_DOWNSTREAM );
+            step.start( ORDER_SEND_DOWNSTREAM );
             step.processors( 4 ); // now at 5
 
             // WHEN
@@ -123,9 +126,9 @@ class ProcessorStepTest
             }
         };
         Future<Void> receiveFuture;
-        try ( ProcessorStep<Void> step = new BlockingProcessorStep( control, configuration, processors, latch ) )
+        try ( ProcessorStep<Void> step = new BlockingProcessorStep<>( control, configuration, processors, latch ) )
         {
-            step.start( Step.ORDER_SEND_DOWNSTREAM );
+            step.start( ORDER_SEND_DOWNSTREAM );
             step.processors( 1 ); // now at 2
             // adding up to max processors should be fine
             for ( int i = 0; i < processors + maxProcessors /* +1 since we allow queueing one more*/; i++ )
@@ -150,7 +153,7 @@ class ProcessorStepTest
         StageControl control = mock( StageControl.class );
         try ( MyProcessorStep step = new MyProcessorStep( control, 0 ) )
         {
-            step.start( Step.ORDER_SEND_DOWNSTREAM );
+            step.start( ORDER_SEND_DOWNSTREAM );
 
             // WHEN
             int batches = 10;
@@ -166,7 +169,105 @@ class ProcessorStepTest
         }
     }
 
-    private static class BlockingProcessorStep extends ProcessorStep<Void>
+    @Test
+    public void shouldBeAbleToPropagatePanicOnBlockedProcessorsWhenLast() throws InterruptedException
+    {
+        shouldBeAbleToPropagatePanicOnBlockedProcessors( 2, 1 );
+    }
+
+    @Test
+    public void shouldBeAbleToPropagatePanicOnBlockedProcessorsWhenNotLast() throws InterruptedException
+    {
+        shouldBeAbleToPropagatePanicOnBlockedProcessors( 3, 1 );
+    }
+
+    private void shouldBeAbleToPropagatePanicOnBlockedProcessors( int numProcessors, int failingProcessorIndex ) throws InterruptedException
+    {
+        // Given
+        String exceptionMessage = "Failing just for fun";
+        Configuration configuration = Configuration.DEFAULT;
+        CountDownLatch latch = new CountDownLatch( 1 );
+        Stage stage = new Stage( "Test", "Part", configuration, ORDER_SEND_DOWNSTREAM );
+        stage.add( intProducer( configuration, stage, configuration.maxNumberOfProcessors() * 2 ) );
+        ProcessorStep<Integer> failingProcessor = null;
+        for ( int i = 0; i < numProcessors; i++ )
+        {
+            if ( failingProcessorIndex == i )
+            {
+                failingProcessor = new BlockingProcessorStep<>( stage.control(), configuration, 1, latch )
+                {
+                    @Override
+                    protected void process( Integer batch, BatchSender sender, PageCursorTracer cursorTracer ) throws Throwable
+                    {
+                        // Block until the latch is released below
+                        super.process( batch, sender, cursorTracer );
+                        // Then immediately throw exception so that a panic will be issued
+                        throw new RuntimeException( exceptionMessage );
+                    }
+                };
+                stage.add( failingProcessor );
+            }
+            else
+            {
+                stage.add( intProcessor( configuration, stage ) );
+            }
+        }
+
+        try
+        {
+            // When
+            StageExecution execution = stage.execute();
+            while ( failingProcessor.stats().stat( Keys.received_batches ).asLong() < configuration.maxNumberOfProcessors() + 1 )
+            {
+                Thread.sleep( 10 );
+            }
+            latch.countDown();
+
+            // Then
+            execution.awaitCompletion();
+            RuntimeException exception = assertThrows( RuntimeException.class, execution::assertHealthy );
+            assertEquals( exceptionMessage, exception.getMessage() );
+        }
+        finally
+        {
+            stage.close();
+        }
+    }
+
+    private static ProducerStep intProducer( Configuration configuration, Stage stage, int batches )
+    {
+        return new ProducerStep( stage.control(), configuration )
+        {
+            @Override
+            protected void process()
+            {
+                for ( int i = 0; i < batches; i++ )
+                {
+                    sendDownstream( i );
+                }
+            }
+
+            @Override
+            protected long position()
+            {
+                return 0;
+            }
+        };
+    }
+
+    private static ProcessorStep<Integer> intProcessor( Configuration configuration, Stage stage )
+    {
+        return new ProcessorStep<>( stage.control(), "processor", configuration, 1, NULL )
+        {
+            @Override
+            protected void process( Integer batch, BatchSender sender, PageCursorTracer cursorTracer )
+            {
+                sender.send( batch );
+            }
+        };
+    }
+
+    private static class BlockingProcessorStep<T> extends ProcessorStep<T>
     {
         private final CountDownLatch latch;
 
@@ -178,7 +279,7 @@ class ProcessorStepTest
         }
 
         @Override
-        protected void process( Void batch, BatchSender sender, PageCursorTracer cursorTracer ) throws Throwable
+        protected void process( T batch, BatchSender sender, PageCursorTracer cursorTracer ) throws Throwable
         {
             latch.await();
         }
