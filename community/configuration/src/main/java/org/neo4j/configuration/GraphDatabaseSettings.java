@@ -339,7 +339,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration
             .build();
 
     @Description( "Threshold for rotation of the user log (_neo4j.log_). If set to 0, log rotation is " +
-            "disabled." )
+            "disabled. Note that if dbms.logs.user.stdout_enabled is enabled this setting will be ignored." )
     public static final Setting<Long> store_user_log_rotation_threshold =
             newBuilder( "dbms.logs.user.rotation.size", BYTES, 0L ).addConstraint( range( 0L, Long.MAX_VALUE ) ).build();
 
@@ -360,7 +360,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     public static final Setting<ZoneId> db_temporal_timezone = newBuilder( "db.temporal.timezone", TIMEZONE, ZoneOffset.UTC ).build();
 
     @Description( "Minimum time interval after last rotation of the user log (_neo4j.log_) before it " +
-            "may be rotated again." )
+            "may be rotated again. Note that if dbms.logs.user.stdout_enabled is enabled this setting will be ignored." )
     public static final Setting<Duration> store_user_log_rotation_delay =
             newBuilder( "dbms.logs.user.rotation.delay", DURATION, ofSeconds( 300 ) ).build();
 
@@ -368,7 +368,8 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     public static final Setting<Duration> store_internal_log_rotation_delay =
             newBuilder( "dbms.logs.debug.rotation.delay", DURATION, ofSeconds( 300 ) ).build();
 
-    @Description( "Maximum number of history files for the user log (_neo4j.log_)." )
+    @Description( "Maximum number of history files for the user log (_neo4j.log_). " +
+                  "Note that if dbms.logs.user.stdout_enabled is enabled this setting will be ignored." )
     public static final Setting<Integer> store_user_log_max_archives =
             newBuilder( "dbms.logs.user.rotation.keep_number", INT, 7 ).addConstraint( min( 1 ) ).build();
 
@@ -627,7 +628,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration
             .immutable()
             .build();
 
-    @Description( "Path to the user log file." )
+    @Description( "Path to the user log file. Note that if dbms.logs.user.stdout_enabled is enabled this setting will be ignored." )
     public static final Setting<Path> store_user_log_path = newBuilder( "dbms.logs.user.path", PATH, Path.of( "neo4j.log" ) )
             .setDependency( logs_directory )
             .immutable()
