@@ -530,6 +530,11 @@ public class FabricTransactionImpl implements FabricTransaction, CompositeTransa
                 id );
     }
 
+    public long getId()
+    {
+        return id;
+    }
+
     private static class ReadingTransaction
     {
         private final SingleDbTransaction singleDbTransaction;
