@@ -175,7 +175,7 @@ public class BuiltInProcedures
         return relTypesInUse.stream();
     }
 
-    @Deprecated
+    @Deprecated( since = "4.2.0", forRemoval = true )
     @SystemProcedure
     @Description( "List all indexes in the database." )
     @Procedure( name = "db.indexes", mode = READ, deprecatedBy = "SHOW INDEXES command" )
@@ -203,7 +203,7 @@ public class BuiltInProcedures
         return result.stream();
     }
 
-    @Deprecated
+    @Deprecated( since = "4.2.0", forRemoval = true )
     @SystemProcedure
     @Description( "Detailed description of specific index." )
     @Procedure( name = "db.indexDetails", mode = READ, deprecatedBy = "SHOW INDEXES VERBOSE OUTPUT command" )
@@ -237,7 +237,7 @@ public class BuiltInProcedures
         return Stream.of( indexDetailResult );
     }
 
-    @Deprecated
+    @Deprecated( since = "4.2.0", forRemoval = true )
     @SystemProcedure
     @Description( "List all statements for creating and dropping existing indexes and constraints." )
     @Procedure( name = "db.schemaStatements", mode = READ, deprecatedBy = "SHOW INDEXES VERBOSE OUTPUT command and SHOW CONSTRAINTS VERBOSE OUTPUT command" )
@@ -442,7 +442,7 @@ public class BuiltInProcedures
         return Stream.of( new SchemaProcedure( (InternalTransaction) transaction ).buildSchemaGraph() );
     }
 
-    @Deprecated
+    @Deprecated( since = "4.2.0", forRemoval = true )
     @SystemProcedure
     @Description( "List all constraints in the database." )
     @Procedure( name = "db.constraints", mode = READ, deprecatedBy = "SHOW CONSTRAINTS command" )
@@ -467,7 +467,7 @@ public class BuiltInProcedures
         return result.stream();
     }
 
-    @Deprecated
+    @Deprecated( since = "4.2.0", forRemoval = true )
     @Description( "Create a named schema index with specified index provider and configuration (optional). " +
             "Yield: name, labels, properties, providerName, status" )
     @Procedure( name = "db.createIndex", mode = SCHEMA, deprecatedBy = "CREATE INDEX command" )
@@ -484,7 +484,7 @@ public class BuiltInProcedures
         return indexProcedures.createIndex( indexName, labels, properties, indexProviderDescriptor, config );
     }
 
-    @Deprecated
+    @Deprecated( since = "4.2.0", forRemoval = true )
     @Description( "Create a named unique property constraint. Backing index will use specified index provider and configuration (optional). " +
             "Yield: name, labels, properties, providerName, status" )
     @Procedure( name = "db.createUniquePropertyConstraint", mode = SCHEMA, deprecatedBy = "CREATE CONSTRAINT ... IS UNIQUE command" )

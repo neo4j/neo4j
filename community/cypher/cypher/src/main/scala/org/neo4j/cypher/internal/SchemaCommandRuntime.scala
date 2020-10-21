@@ -23,6 +23,7 @@ import java.util.Collections
 import java.util.StringJoiner
 
 import org.neo4j.common.EntityType
+import org.neo4j.cypher.internal.ast.AllConstraints
 import org.neo4j.cypher.internal.ast.ExistsConstraints
 import org.neo4j.cypher.internal.ast.NodeExistsConstraints
 import org.neo4j.cypher.internal.ast.NodeKeyConstraints
@@ -217,7 +218,8 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
           case ExistsConstraints => c => c.`type`().equals(schema.ConstraintType.EXISTS)
           case NodeExistsConstraints => c => c.`type`().equals(schema.ConstraintType.EXISTS) && c.schema.entityType.equals(EntityType.NODE)
           case RelExistsConstraints => c => c.`type`().equals(schema.ConstraintType.EXISTS) && c.schema.entityType.equals(EntityType.RELATIONSHIP)
-          case _ => _ => true
+          case AllConstraints => _ => true // Should keep all and not filter away any constraints
+          case c => throw new IllegalStateException(s"Unknown constraint type: $c")
         }
 
         val relevantConstraints = constraints.filter {
@@ -235,19 +237,19 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
             val constraintType = getConstraintType(constraintDescriptor.`type`, entityType)
 
             val briefResult = Map(
-              // 2
+              // The id of the constraint
               "id" -> Values.longValue(constraintDescriptor.getId),
-              // "myConstraint"
+              // Name of the constraint, for example "myConstraint"
               "name" -> Values.stringValue(escapedName),
-              //"UNIQUENESS", "NODE_KEY", "NODE_PROPERTY_EXISTENCE", "RELATIONSHIP_PROPERTY_EXISTENCE"
+              // The ConstraintType of this constraint, one of "UNIQUENESS", "NODE_KEY", "NODE_PROPERTY_EXISTENCE", "RELATIONSHIP_PROPERTY_EXISTENCE"
               "type" -> Values.stringValue(constraintType.output),
-              //"NODE", "RELATIONSHIP"
+              // Type of entities this constraint represents, either "NODE" or "RELATIONSHIP"
               "entityType" -> Values.stringValue(entityType.name),
-              //["Label1", "Label2"], ["RelType1", "RelType2"]
+              // The labels or relationship types of this constraint, for example ["Label1", "Label2"] or ["RelType1", "RelType2"]
               "labelsOrTypes" -> VirtualValues.fromList(labels.map(elem => Values.of(elem).asInstanceOf[AnyValue]).asJava),
-              //["propKey", "propKey2"]
+              // The properties of this constraint, for example ["propKey", "propKey2"]
               "properties" -> VirtualValues.fromList(properties.map(prop => Values.of(prop).asInstanceOf[AnyValue]).asJava),
-              // 1
+              // The id of the index associated to the constraint
               "ownedIndexId" -> {if (isIndexBacked) Values.longValue(constraintDescriptor.asIndexBackedConstraint().ownedIndexId()) else Values.NO_VALUE}
             )
             if (verbose) {
@@ -334,25 +336,25 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
             val providerName = indexDescriptor.getIndexProvider.name
 
             val briefResult = Map(
-              // 1
+              // The id of the index
               "id" -> Values.longValue(indexDescriptor.getId),
-               // "myIndex"
+              // Name of the index, for example "myIndex"
               "name" -> Values.stringValue(escapedName),
-               // "ONLINE", "FAILED", "POPULATING"
+              // Current state of the index, one of "ONLINE", "FAILED", "POPULATING"
               "state" -> Values.stringValue(indexStatus.state),
-               // 0.0, 100.0, 75.1
+              // % of index population, for example 0.0, 100.0, or 75.1
               "populationPercent" -> Values.doubleValue(indexStatus.populationProgress),
-               //"UNIQUE", "NONUNIQUE"
+              // Tells if the index is only meant to allow one value per key, either "UNIQUE" or "NONUNIQUE"
               "uniqueness" -> Values.stringValue(uniqueness),
-              //"FULLTEXT", "BTREE"
+              // The IndexType of this index, either "FULLTEXT" or "BTREE"
               "type" -> Values.stringValue(indexType.name),
-               //"NODE", "RELATIONSHIP"
+              // Type of entities this index represents, either "NODE" or "RELATIONSHIP"
               "entityType" -> Values.stringValue(entityType.name),
-               //["Label1", "Label2"], ["RelType1", "RelType2"]
+              // The labels or relationship types of this constraint, for example ["Label1", "Label2"] or ["RelType1", "RelType2"]
               "labelsOrTypes" -> VirtualValues.fromList(labels.map(elem => Values.of(elem).asInstanceOf[AnyValue]).asJava),
-              //["propKey", "propKey2"]
+              // The properties of this constraint, for example ["propKey", "propKey2"]
               "properties" -> VirtualValues.fromList(properties.map(prop => Values.of(prop).asInstanceOf[AnyValue]).asJava),
-              //"native-btree-1.0", "lucene+native-3.0", "fulltext-1.0"
+              // The index provider for this index, one of "native-btree-1.0", "lucene+native-3.0", "fulltext-1.0"
               "indexProvider" -> Values.stringValue(providerName)
             )
             if (verbose) {
