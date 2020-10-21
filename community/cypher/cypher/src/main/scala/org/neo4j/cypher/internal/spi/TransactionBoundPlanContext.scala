@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.logical.plans.FieldSignature
 import org.neo4j.cypher.internal.logical.plans.ProcedureSignature
 import org.neo4j.cypher.internal.logical.plans.QualifiedName
 import org.neo4j.cypher.internal.logical.plans.UserFunctionSignature
+import org.neo4j.cypher.internal.planner.spi.EventuallyConsistent
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.OrderCapability
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.ValueCapability
@@ -167,7 +168,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
             case IndexValueCapability.NO => tps.map(_ => DoNotGetValue)
           }
         }
-        if (reference.getIndexType != IndexType.BTREE || reference.getCapability.behaviours().contains(IndexBehaviour.EVENTUALLY_CONSISTENT)) {
+        if (reference.getIndexType != IndexType.BTREE || behaviours.contains(EventuallyConsistent)) {
           // Ignore IndexKind.SPECIAL indexes, because we don't know how to correctly plan for and query them. Not yet, anyway.
           // Also, ignore eventually consistent indexes. Those are for explicit querying via procedures.
           None
