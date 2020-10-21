@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.idp
 
 import org.neo4j.cypher.internal.expressions.AllIterablePredicate
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.ExpressionWithOuterScope
 import org.neo4j.cypher.internal.expressions.FilterScope
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.FunctionName
@@ -118,6 +119,8 @@ object extractPredicates {
   private def replaceVariable(from: LogicalVariable, to: String): Rewriter =
     bottomUp(Rewriter.lift {
       case v: Variable if v == from => Variable(to)(v.position)
+      case p:ExpressionWithOuterScope =>
+        p.withOuterScope(p.outerScope.map(v => if (v ==from) Variable(to)(v.position) else v))
     })
 
   object AllRelationships {
