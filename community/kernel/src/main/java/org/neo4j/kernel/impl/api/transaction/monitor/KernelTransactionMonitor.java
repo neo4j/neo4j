@@ -81,5 +81,13 @@ public class KernelTransactionMonitor extends TransactionMonitor
         {
             return kernelTransaction.markForTermination( reason );
         }
+
+        @Override
+        public String getIdentifyingDescription()
+        {
+            // this is a legacy implementation, so let's use
+            // 'toString' on KernelTransactionHandle which was used for years for this purpose
+            return kernelTransaction.toString();
+        }
     }
 }
