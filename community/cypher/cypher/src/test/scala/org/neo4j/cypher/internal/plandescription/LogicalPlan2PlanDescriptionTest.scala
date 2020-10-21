@@ -616,7 +616,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   }
 
   test("ShowIndexes") {
-    assertGood(attach(ShowIndexes(all = true, verbose = false), 1.0),
+    assertGood(attach(ShowIndexes(all = true, verbose = false, List.empty), 1.0),
       planDescription(id, "ShowIndexes", NoChildren, Seq(), Set.empty))
   }
 
@@ -714,7 +714,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   }
 
   test("ShowConstraints") {
-    assertGood(attach(ShowConstraints(constraintType = AllConstraints, verbose = false), 1.0),
+    assertGood(attach(ShowConstraints(constraintType = AllConstraints, verbose = false, List.empty), 1.0),
       planDescription(id, "ShowConstraints", NoChildren, Seq(), Set.empty))
   }
 

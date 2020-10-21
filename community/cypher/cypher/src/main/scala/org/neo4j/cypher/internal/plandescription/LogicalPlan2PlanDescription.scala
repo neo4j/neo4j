@@ -306,7 +306,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
       case DropIndexOnName(name, _) =>
         PlanDescriptionImpl(id, "DropIndex", NoChildren, Seq(Details(pretty"INDEX ${asPrettyString(name)}")), variables)
 
-      case ShowIndexes(_, _) =>
+      case ShowIndexes(_, _, _) =>
         PlanDescriptionImpl(id, "ShowIndexes", NoChildren, Seq(), variables)
 
       case DoNothingIfExistsForConstraint(entity, entityType, props, assertion, name) =>
@@ -359,7 +359,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         val constraintName = Details(pretty"CONSTRAINT ${asPrettyString(name)}")
         PlanDescriptionImpl(id, "DropConstraint", NoChildren, Seq(constraintName), variables)
 
-      case ShowConstraints(_, _) =>
+      case ShowConstraints(_, _, _) =>
         PlanDescriptionImpl(id, "ShowConstraints", NoChildren, Seq(), variables)
 
       case SystemProcedureCall(procedureName, _, _, _) =>

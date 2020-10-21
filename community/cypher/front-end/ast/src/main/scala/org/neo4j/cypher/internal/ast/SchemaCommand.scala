@@ -79,6 +79,12 @@ case class DropIndexOnName(name: String, ifExists: Boolean, useGraph: Option[Gra
 case class ShowIndexes(all: Boolean, verbose: Boolean, useGraph: Option[GraphSelection] = None)(val position: InputPosition) extends SchemaCommand {
   override def withGraph(useGraph: Option[GraphSelection]): SchemaCommand = copy(useGraph = useGraph)(position)
   def semanticCheck = Seq()
+
+  private val briefColumnNames: List[String] =
+    List("id", "name", "state", "populationPercent", "uniqueness", "type", "entityType", "labelsOrTypes", "properties", "indexProvider")
+  val defaultColumnNames: List[String] = if (verbose) briefColumnNames ++ List("options", "failureMessage", "createStatement") else briefColumnNames
+
+  override def returnColumns: List[LogicalVariable] = defaultColumnNames.map(name => Variable(name)(position))
 }
 
 trait PropertyConstraintCommand extends SchemaCommand with SemanticAnalysisTooling {
@@ -221,6 +227,11 @@ case class DropConstraintOnName(name: String, ifExists: Boolean, useGraph: Optio
 case class ShowConstraints(constraintType: ShowConstraintType, verbose: Boolean, useGraph: Option[GraphSelection] = None)(val position: InputPosition) extends SchemaCommand {
   override def withGraph(useGraph: Option[GraphSelection]): SchemaCommand = copy(useGraph = useGraph)(position)
   def semanticCheck = Seq()
+
+  private val briefColumnNames: List[String] = List("id", "name", "type", "entityType", "labelsOrTypes", "properties", "ownedIndexId")
+  val defaultColumnNames: List[String] = if (verbose) briefColumnNames ++ List("options", "createStatement") else briefColumnNames
+
+  override def returnColumns: List[LogicalVariable] = defaultColumnNames.map(name => Variable(name)(position))
 }
 
 sealed trait ShowConstraintType {

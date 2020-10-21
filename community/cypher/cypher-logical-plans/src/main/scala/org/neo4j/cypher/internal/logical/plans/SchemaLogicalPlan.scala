@@ -62,7 +62,7 @@ case class DropRelationshipPropertyExistenceConstraint(typeName: RelTypeName, pr
 
 case class DropConstraintOnName(name: String, ifExists: Boolean)(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen)
 
-case class ShowConstraints(constraintType: ShowConstraintType, verbose: Boolean)(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen)
+case class ShowConstraints(constraintType: ShowConstraintType, verbose: Boolean, defaultColumnNames: List[String])(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen)
 
 case class CreateIndex(source: Option[DoNothingIfExistsForIndex], label: LabelName, propertyKeyNames: List[PropertyKeyName], name: Option[String], options: Map[String, Expression])(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen) {
   override def lhs: Option[LogicalPlan] = source
@@ -70,7 +70,7 @@ case class CreateIndex(source: Option[DoNothingIfExistsForIndex], label: LabelNa
 case class DropIndex(label: LabelName, propertyKeyNames: List[PropertyKeyName])(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen)
 case class DropIndexOnName(name: String, ifExists: Boolean)(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen)
 
-case class ShowIndexes(all: Boolean, verbose: Boolean)(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen)
+case class ShowIndexes(all: Boolean, verbose: Boolean, defaultColumnNames: List[String])(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen)
 
 case class DoNothingIfExistsForIndex(label: LabelName, propertyKeyNames: List[PropertyKeyName], name: Option[String])(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen)
 case class DoNothingIfExistsForConstraint(entity: String, entityType: Either[LabelName, RelTypeName], props: Seq[Property], assertion: ConstraintType, name: Option[String])(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen)

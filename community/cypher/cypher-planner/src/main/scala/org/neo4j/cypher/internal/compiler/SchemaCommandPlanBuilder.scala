@@ -116,8 +116,8 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
         Some(plans.DropConstraintOnName(name, ifExists))
 
       // SHOW [ALL|UNIQUE|NODE EXIST[S]|RELATIONSHIP EXIST[S]|EXIST[S]|NODE KEY] CONSTRAINT[S] [BRIEF|VERBOSE[OUTPUT]]
-      case ShowConstraints(constraintType, verbose, _) =>
-        Some(plans.ShowConstraints(constraintType, verbose))
+      case sc@ShowConstraints(constraintType, verbose, _) =>
+        Some(plans.ShowConstraints(constraintType, verbose, sc.defaultColumnNames))
         
       // CREATE INDEX ON :LABEL(prop)
       case CreateIndexOldSyntax(label, props, _) =>
@@ -141,8 +141,8 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
         Some(plans.DropIndexOnName(name, ifExists))
 
       // SHOW [ALL|BTREE] INDEX[ES] [BRIEF|VERBOSE[OUTPUT]]
-      case ShowIndexes(all, verbose, _) =>
-        Some(plans.ShowIndexes(all, verbose))
+      case si@ShowIndexes(all, verbose, _) =>
+        Some(plans.ShowIndexes(all, verbose, si.defaultColumnNames))
 
       case _ => None
     }

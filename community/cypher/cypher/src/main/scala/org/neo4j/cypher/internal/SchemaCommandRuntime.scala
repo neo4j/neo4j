@@ -207,7 +207,7 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
       })
 
     // SHOW [ALL|UNIQUE|NODE EXIST[S]|RELATIONSHIP EXIST[S]|EXIST[S]|NODE KEY] CONSTRAINT[S] [BRIEF|VERBOSE[OUTPUT]]
-    case ShowConstraints(constraintType, verbose) => (_, _) =>
+    case ShowConstraints(constraintType, verbose, defaultColumnNames) => (_, _) =>
       SchemaReadExecutionPlan("ShowConstraints", AssertConstraint, ctx => {
         val constraints = ctx.getAllConstraints()
 
@@ -224,9 +224,6 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
           case (constraintDescriptor, _) => predicate(constraintDescriptor)
         }
         val sortedRelevantConstraints: ListMap[ConstraintDescriptor, ConstraintInfo] = ListMap(relevantConstraints.toSeq.sortBy(_._1.getName):_*)
-
-        val briefColumnNames: Array[String] = Array("id", "name", "type", "entityType", "labelsOrTypes", "properties", "ownedIndexId")
-        val columnNames: Array[String] = if (verbose) briefColumnNames ++ Array("options", "createStatement") else briefColumnNames
 
         val result: List[Map[String, AnyValue]] = sortedRelevantConstraints.map {
           case (constraintDescriptor: ConstraintDescriptor, constraintInfo: ConstraintInfo) =>
@@ -276,7 +273,7 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
               briefResult
             }
         }.toList
-        SchemaReadExecutionResult(columnNames, result)
+        SchemaReadExecutionResult(defaultColumnNames.toArray, result)
       })
 
     // CREATE INDEX ON :LABEL(prop)
@@ -309,16 +306,13 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
       })
 
     // SHOW [ALL|BTREE] INDEX[ES] [BRIEF|VERBOSE[OUTPUT]]
-    case ShowIndexes(all, verbose) => (_, _) =>
+    case ShowIndexes(all, verbose, defaultColumnNames) => (_, _) =>
       SchemaReadExecutionPlan("ShowIndexes", AssertIndex, ctx => {
         val indexes: Map[IndexDescriptor, IndexInfo] = ctx.getAllIndexes()
         val relevantIndexes = if (all) indexes else indexes.filter {
           case (indexDescriptor, _) => indexDescriptor.getIndexType.equals(IndexType.BTREE)
         }
         val sortedRelevantIndexes: ListMap[IndexDescriptor, IndexInfo] = ListMap(relevantIndexes.toSeq.sortBy(_._1.getName):_*)
-        val briefColumnNames: Array[String] =
-          Array("id", "name", "state", "populationPercent", "uniqueness", "type", "entityType", "labelsOrTypes", "properties", "indexProvider")
-        val columnNames: Array[String] = if (verbose) briefColumnNames ++ Array("options", "failureMessage", "createStatement") else briefColumnNames
         val result: List[Map[String, AnyValue]] = sortedRelevantIndexes.map {
           case (indexDescriptor: IndexDescriptor, indexInfo: IndexInfo) =>
             val indexStatus = indexInfo.indexStatus
@@ -373,7 +367,7 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
               briefResult
             }
         }.toList
-        SchemaReadExecutionResult(columnNames, result)
+        SchemaReadExecutionResult(defaultColumnNames.toArray, result)
       })
 
     case DoNothingIfExistsForIndex(label, propertyKeyNames, name) => (_, _) =>
