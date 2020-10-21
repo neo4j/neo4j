@@ -48,6 +48,7 @@ import org.neo4j.io.fs.FileUtils;
 public class DatabaseLayout
 {
     private static final String DATABASE_LOCK_FILENAME = "database_lock";
+    private static final String BACKUP_TOOLS_FOLDER = "tools";
 
     private final Path databaseDirectory;
     private final Neo4jLayout neo4jLayout;
@@ -107,6 +108,11 @@ public class DatabaseLayout
     public Path databaseDirectory()
     {
         return databaseDirectory;
+    }
+
+    public Path backupToolsFolder()
+    {
+        return databaseDirectory().resolve( BACKUP_TOOLS_FOLDER );
     }
 
     public Path metadataStore()
