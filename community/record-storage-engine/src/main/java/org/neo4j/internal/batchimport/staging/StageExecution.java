@@ -72,6 +72,14 @@ public class StageExecution implements StageControl, AutoCloseable
         return false;
     }
 
+    public void awaitCompletion() throws InterruptedException
+    {
+        for ( Step<?> step : pipeline )
+        {
+            step.awaitCompleted();
+        }
+    }
+
     public void start()
     {
         for ( Step<?> step : pipeline )
