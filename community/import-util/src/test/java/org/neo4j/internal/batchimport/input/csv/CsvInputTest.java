@@ -97,6 +97,7 @@ import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -106,6 +107,8 @@ import static org.neo4j.internal.batchimport.input.Collector.EMPTY;
 import static org.neo4j.internal.batchimport.input.IdType.ACTUAL;
 import static org.neo4j.internal.batchimport.input.IdType.STRING;
 import static org.neo4j.internal.batchimport.input.InputEntityDecorators.NO_DECORATOR;
+import static org.neo4j.internal.batchimport.input.InputEntityDecorators.additiveLabels;
+import static org.neo4j.internal.batchimport.input.InputEntityDecorators.defaultRelationshipType;
 import static org.neo4j.internal.batchimport.input.csv.CsvInput.NO_MONITOR;
 import static org.neo4j.internal.batchimport.input.csv.Data.undecorated;
 import static org.neo4j.internal.batchimport.input.csv.DataFactories.datas;
@@ -1343,6 +1346,122 @@ public class CsvInputTest
         // of getting the uncompressed data size w/o decompressing it in its entirety, and this is why the estimator doesn't do this
         // but instead tries to estimate its compression rate after reading a chunk of it
         assertEstimatesEquals( uncompressedEstimates, compressedEstimates, 0.01 );
+    }
+
+    @Test
+    public void shouldReportNoNodeLabels()
+    {
+        // given
+        String sourceDescription = "source";
+        Supplier<CharReadable> headerSource = () -> wrap( dataWithSourceDescription( ":ID", sourceDescription ), 3 );
+        Iterable<DataFactory> data = datas( config -> new Data()
+        {
+            @Override
+            public RawIterator<CharReadable,IOException> stream()
+            {
+                return asRawIterator( iterator( headerSource.get() ) );
+            }
+
+            @Override
+            public Decorator decorator()
+            {
+                return NO_DECORATOR;
+            }
+        } );
+        CsvInput.Monitor monitor = mock( CsvInput.Monitor.class );
+
+        // when
+        new CsvInput( data, defaultFormatNodeFileHeader(), datas(), defaultFormatRelationshipFileHeader(), IdType.INTEGER, COMMAS, monitor, INSTANCE );
+
+        // then
+        verify( monitor ).noNodeLabelsSpecified( sourceDescription );
+    }
+
+    @Test
+    public void shouldNotReportNoNodeLabelsIfDecorated()
+    {
+        // given
+        String sourceDescription = "source";
+        Supplier<CharReadable> headerSource = () -> wrap( dataWithSourceDescription( ":ID", sourceDescription ), 3 );
+        Iterable<DataFactory> data = datas( config -> new Data()
+        {
+            @Override
+            public RawIterator<CharReadable,IOException> stream()
+            {
+                return asRawIterator( iterator( headerSource.get() ) );
+            }
+
+            @Override
+            public Decorator decorator()
+            {
+                return additiveLabels( new String[]{"MyLabel"} );
+            }
+        } );
+        CsvInput.Monitor monitor = mock( CsvInput.Monitor.class );
+
+        // when
+        new CsvInput( data, defaultFormatNodeFileHeader(), datas(), defaultFormatRelationshipFileHeader(), IdType.INTEGER, COMMAS, monitor, INSTANCE );
+
+        // then
+        verify( monitor, never() ).noRelationshipTypeSpecified( sourceDescription );
+    }
+
+    @Test
+    public void shouldReportNoRelationshipType()
+    {
+        // given
+        String sourceDescription = "source";
+        Supplier<CharReadable> headerSource = () -> wrap( dataWithSourceDescription( ":START_ID,:END_ID", sourceDescription ), 3 );
+        Iterable<DataFactory> data = datas( config -> new Data()
+        {
+            @Override
+            public RawIterator<CharReadable,IOException> stream()
+            {
+                return asRawIterator( iterator( headerSource.get() ) );
+            }
+
+            @Override
+            public Decorator decorator()
+            {
+                return NO_DECORATOR;
+            }
+        } );
+        CsvInput.Monitor monitor = mock( CsvInput.Monitor.class );
+
+        // when
+        new CsvInput( datas(), defaultFormatNodeFileHeader(), data, defaultFormatRelationshipFileHeader(), IdType.INTEGER, COMMAS, monitor, INSTANCE );
+
+        // then
+        verify( monitor ).noRelationshipTypeSpecified( sourceDescription );
+    }
+
+    @Test
+    public void shouldNotReportNoRelationshipTypeIfDecorated()
+    {
+        // given
+        String sourceDescription = "source";
+        Supplier<CharReadable> headerSource = () -> wrap( dataWithSourceDescription( ":START_ID,:END_ID", sourceDescription ), 3 );
+        Iterable<DataFactory> data = datas( config -> new Data()
+        {
+            @Override
+            public RawIterator<CharReadable,IOException> stream()
+            {
+                return asRawIterator( iterator( headerSource.get() ) );
+            }
+
+            @Override
+            public Decorator decorator()
+            {
+                return defaultRelationshipType( "MyType" );
+            }
+        } );
+        CsvInput.Monitor monitor = mock( CsvInput.Monitor.class );
+
+        // when
+        new CsvInput( datas(), defaultFormatNodeFileHeader(), data, defaultFormatRelationshipFileHeader(), IdType.INTEGER, COMMAS, monitor, INSTANCE );
+
+        // then
+        verify( monitor, never() ).noRelationshipTypeSpecified( sourceDescription );
     }
 
     private void assertEstimatesEquals( Input.Estimates a, Input.Estimates b, double errorMargin )
