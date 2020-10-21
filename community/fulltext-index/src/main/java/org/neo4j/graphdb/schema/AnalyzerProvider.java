@@ -54,8 +54,6 @@ import static java.util.Objects.requireNonNull;
  * }
  * </code></pre>
  * <p>
- * The {@code jar} that includes this implementation must also contain a {@code META-INF/services/org.neo4j.graphdb.index.fulltext.AnalyzerProvider} file,
- * that contains the fully-qualified class names of all of the {@code AnalyzerProvider} implementations it contains.
  */
 @Service
 @PublicApi
