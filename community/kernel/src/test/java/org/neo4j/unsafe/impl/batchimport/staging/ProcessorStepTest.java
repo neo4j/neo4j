@@ -29,8 +29,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.rule.concurrent.OtherThreadRule;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
+import org.neo4j.unsafe.impl.batchimport.stats.Keys;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -121,7 +123,112 @@ public class ProcessorStepTest
         step.close();
     }
 
-    private static class BlockingProcessorStep extends ProcessorStep<Void>
+    @Test
+    public void shouldBeAbleToPropagatePanicOnBlockedProcessorsWhenLast() throws InterruptedException
+    {
+        shouldBeAbleToPropagatePanicOnBlockedProcessors( 2, 1 );
+    }
+
+    @Test
+    public void shouldBeAbleToPropagatePanicOnBlockedProcessorsWhenNotLast() throws InterruptedException
+    {
+        shouldBeAbleToPropagatePanicOnBlockedProcessors( 3, 1 );
+    }
+
+    private void shouldBeAbleToPropagatePanicOnBlockedProcessors( int numProcessors, int failingProcessorIndex ) throws InterruptedException
+    {
+        // Given
+        String exceptionMessage = "Failing just for fun";
+        Configuration configuration = Configuration.DEFAULT;
+        CountDownLatch latch = new CountDownLatch( 1 );
+        Stage stage = new Stage( "Test", "Part", configuration, ORDER_SEND_DOWNSTREAM );
+        stage.add( intProducer( configuration, stage, configuration.maxNumberOfProcessors() * 2 ) );
+        ProcessorStep<Integer> failingProcessor = null;
+        for ( int i = 0; i < numProcessors; i++ )
+        {
+            if ( failingProcessorIndex == i )
+            {
+                failingProcessor = new BlockingProcessorStep<Integer>( stage.control(), configuration, 1, latch )
+                {
+                    @Override
+                    protected void process( Integer batch, BatchSender sender ) throws Throwable
+                    {
+                        // Block until the latch is released below
+                        super.process( batch, sender );
+                        // Then immediately throw exception so that a panic will be issued
+                        throw new RuntimeException( exceptionMessage );
+                    }
+                };
+                stage.add( failingProcessor );
+            }
+            else
+            {
+                stage.add( intProcessor( configuration, stage ) );
+            }
+        }
+
+        try
+        {
+            // When
+            StageExecution execution = stage.execute();
+            while ( failingProcessor.stats().stat( Keys.received_batches ).asLong() < configuration.maxNumberOfProcessors() + 1 )
+            {
+                Thread.sleep( 10 );
+            }
+            latch.countDown();
+
+            // Then
+            execution.awaitCompletion();
+            try
+            {
+                execution.assertHealthy();
+                fail( "Should have failed" );
+            }
+            catch ( RuntimeException e )
+            {
+                assertEquals( exceptionMessage, e.getMessage() );
+            }
+        }
+        finally
+        {
+            stage.close();
+        }
+    }
+
+    private static ProducerStep intProducer( Configuration configuration, Stage stage, int batches )
+    {
+        return new ProducerStep( stage.control(), configuration )
+        {
+            @Override
+            protected void process()
+            {
+                for ( int i = 0; i < batches; i++ )
+                {
+                    sendDownstream( i );
+                }
+            }
+
+            @Override
+            protected long position()
+            {
+                return 0;
+            }
+        };
+    }
+
+    private static ProcessorStep<Integer> intProcessor( Configuration configuration, Stage stage )
+    {
+        return new ProcessorStep<Integer>( stage.control(), "processor", configuration, 1 )
+        {
+            @Override
+            protected void process( Integer batch, BatchSender sender )
+            {
+                sender.send( batch );
+            }
+        };
+    }
+
+    private static class BlockingProcessorStep<T> extends ProcessorStep<T>
     {
         private final CountDownLatch latch;
 
@@ -133,7 +240,7 @@ public class ProcessorStepTest
         }
 
         @Override
-        protected void process( Void batch, BatchSender sender ) throws Throwable
+        protected void process( T batch, BatchSender sender ) throws Throwable
         {
             latch.await();
         }

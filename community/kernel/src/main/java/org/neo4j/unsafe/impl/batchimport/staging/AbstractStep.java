@@ -206,7 +206,12 @@ public abstract class AbstractStep<T> implements Step<T>
                 // stillWorking(), once false cannot again return true so no need to check
                 if ( !isCompleted() )
                 {
-                    done();
+                    // In the event of panic do not even try to do any sort of completion step, which btw may entail sending more batches downstream
+                    // or do heavy end-result calculations
+                    if ( !isPanic() )
+                    {
+                        done();
+                    }
                     if ( downstream != null )
                     {
                         downstream.endOfUpstream();
