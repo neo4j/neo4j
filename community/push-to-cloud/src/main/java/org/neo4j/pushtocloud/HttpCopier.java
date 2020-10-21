@@ -544,7 +544,7 @@ public class HttpCopier implements PushToCloudCommand.Copier
                 try ( InputStream responseData = connection.getInputStream() )
                 {
                     String json = new String( toByteArray( responseData ), UTF_8 );
-                    debugResponse( verbose, json, connection, false );
+                    //debugResponse( verbose, json, connection, false );
                     return parseJsonUsingJacksonParser( json, StatusBody.class );
                 }
             default:
