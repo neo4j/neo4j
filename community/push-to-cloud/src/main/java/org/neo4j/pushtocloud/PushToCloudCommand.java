@@ -280,9 +280,9 @@ public class PushToCloudCommand extends AbstractCommand
             long sizeFromDump = dumpSize( dumpFile );
             long sizeFromDatabase = size();
             verbose( "Validating sizes: fromDump=%d, fromDatabase=%d", sizeFromDump, sizeFromDatabase );
-            if ( Math.abs(sizeFromDump - sizeFromDatabase) > ACCEPTABLE_DUMP_CHANGE * sizeFromDatabase )
+            if ( Math.abs( sizeFromDump - sizeFromDatabase ) > ACCEPTABLE_DUMP_CHANGE * sizeFromDatabase )
             {
-                throw new IllegalStateException( format( "Mismatching sizes: %d != %d", sizeFromDump, sizeFromDatabase ) );
+                ctx.out().printf( "Warning: unexpectedly large difference between size in dump, and original size: %d != %d", sizeFromDump, sizeFromDatabase );
             }
             source.setSize( sizeFromDump );
 
