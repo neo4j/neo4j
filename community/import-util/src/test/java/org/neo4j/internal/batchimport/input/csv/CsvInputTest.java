@@ -61,6 +61,7 @@ import org.neo4j.csv.reader.Extractors;
 import org.neo4j.csv.reader.Readables;
 import org.neo4j.internal.batchimport.InputIterator;
 import org.neo4j.internal.batchimport.input.Collector;
+import org.neo4j.internal.batchimport.input.DuplicateHeaderException;
 import org.neo4j.internal.batchimport.input.Group;
 import org.neo4j.internal.batchimport.input.Groups;
 import org.neo4j.internal.batchimport.input.IdType;
@@ -87,6 +88,8 @@ import org.neo4j.values.storable.Values;
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -1343,6 +1346,54 @@ public class CsvInputTest
         // of getting the uncompressed data size w/o decompressing it in its entirety, and this is why the estimator doesn't do this
         // but instead tries to estimate its compression rate after reading a chunk of it
         assertEstimatesEquals( uncompressedEstimates, compressedEstimates, 0.01 );
+    }
+
+    @Test
+    public void shouldReportDuplicateNodeHeader() throws FileNotFoundException
+    {
+        // GIVEN
+        Path file = directory.file( "node-header" );
+        try ( PrintWriter writer = new PrintWriter( file.toFile() ) )
+        {
+            writer.println( ":ID,name:string,name" );
+        }
+
+        // WHEN
+        try
+        {
+            new CsvInput( datas( DataFactories.data( NO_DECORATOR, Charset.defaultCharset(), file ) ), defaultFormatNodeFileHeader(), datas(),
+                    defaultFormatRelationshipFileHeader(), STRING, COMMAS, NO_MONITOR, INSTANCE );
+            fail( "Should have failed" );
+        }
+        catch ( DuplicateHeaderException e )
+        {
+            // THEN
+            assertThat( e.getMessage(), containsString( file.getFileName().toString() ) );
+        }
+    }
+
+    @Test
+    public void shouldReportDuplicateRelationshipHeader() throws FileNotFoundException
+    {
+        // GIVEN
+        Path file = directory.file( "relationship-header" );
+        try ( PrintWriter writer = new PrintWriter( file.toFile() ) )
+        {
+            writer.println( ":START_ID,:TYPE,:END_ID,:TYPE,name:string" );
+        }
+
+        // WHEN
+        try
+        {
+            new CsvInput( datas(), defaultFormatNodeFileHeader(), datas( DataFactories.data( NO_DECORATOR, Charset.defaultCharset(), file ) ),
+                    defaultFormatRelationshipFileHeader(), STRING, COMMAS, NO_MONITOR, INSTANCE );
+            fail( "Should have failed" );
+        }
+        catch ( DuplicateHeaderException e )
+        {
+            // THEN
+            assertThat( e.getMessage(), containsString( file.getFileName().toString() ) );
+        }
     }
 
     private void assertEstimatesEquals( Input.Estimates a, Input.Estimates b, double errorMargin )
