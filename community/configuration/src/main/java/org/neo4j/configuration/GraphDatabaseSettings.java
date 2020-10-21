@@ -143,8 +143,9 @@ public class GraphDatabaseSettings implements SettingsDeclaration
             "value. For optimal performance this value shouldn't be greater than the number of available processors." )
     public static final Setting<Integer> upgrade_processors = newBuilder( "dbms.upgrade_max_processors", INT, 0 ).addConstraint( min( 0 ) ).dynamic().build();
 
-    @Description( "Database record format. Valid values: `standard`, `high_limit`. " +
-            "The `high_limit` format is available for Enterprise Edition only. " +
+    @Description( "Database record format. Valid values: `standard`, `aligned`, and `high_limit`. " +
+            "The `aligned` format is essentially the `standard` format with some minimal padding at the end of pages such that a single " +
+            "record will never cross a page boundary. The `high_limit` format is available for Enterprise Edition only. " +
             "It is required if you have a graph that is larger than 34 billion nodes, 34 billion relationships, or 68 billion properties. " +
             "A change of the record format is irreversible. " +
             "Certain operations may suffer from a performance penalty of up to 10%, which is why this format is not switched on by default. " +
