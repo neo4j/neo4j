@@ -22,6 +22,7 @@ package org.neo4j.internal.batchimport.input.csv;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.io.UncheckedIOException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -54,6 +55,7 @@ import org.neo4j.values.storable.Value;
 import static org.apache.commons.lang3.SystemUtils.IS_OS_LINUX;
 import static org.neo4j.csv.reader.CharSeekers.charSeeker;
 import static org.neo4j.internal.batchimport.input.Collector.EMPTY;
+import static org.neo4j.internal.batchimport.input.InputEntityDecorators.NO_DECORATOR;
 import static org.neo4j.internal.batchimport.input.csv.CsvInputIterator.extractHeader;
 import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
@@ -133,22 +135,32 @@ public class CsvInput implements Input
             // parse all node headers and remember all ID spaces
             for ( DataFactory dataFactory : nodeDataFactory )
             {
-                try ( CharSeeker dataStream = charSeeker( new MultiReadable( dataFactory.create( config ).stream() ), config, true ) )
+                Data data = dataFactory.create( config );
+                try ( CharSeeker dataStream = charSeeker( new MultiReadable( data.stream() ), config, true ) )
                 {
                     // Parsing and constructing this header will create this group,
                     // so no need to do something with the result of it right now
-                    nodeHeaderFactory.create( dataStream, config, idType, groups, NO_MONITOR );
+                    Header header = nodeHeaderFactory.create( dataStream, config, idType, groups, NO_MONITOR );
+                    if ( Arrays.stream( header.entries() ).noneMatch( entry -> entry.type() == Type.LABEL ) && data.decorator() == NO_DECORATOR )
+                    {
+                        monitor.noNodeLabelsSpecified( dataStream.sourceDescription() );
+                    }
                 }
             }
 
             // parse all relationship headers and verify all ID spaces
             for ( DataFactory dataFactory : relationshipDataFactory )
             {
-                try ( CharSeeker dataStream = charSeeker( new MultiReadable( dataFactory.create( config ).stream() ), config, true ) )
+                Data data = dataFactory.create( config );
+                try ( CharSeeker dataStream = charSeeker( new MultiReadable( data.stream() ), config, true ) )
                 {
                     // Merely parsing and constructing the header here will as a side-effect verify that the
                     // id groups already exists (relationship header isn't allowed to create groups)
-                    relationshipHeaderFactory.create( dataStream, config, idType, groups, NO_MONITOR );
+                    Header header = relationshipHeaderFactory.create( dataStream, config, idType, groups, NO_MONITOR );
+                    if ( Arrays.stream( header.entries() ).noneMatch( entry -> entry.type() == Type.TYPE ) && data.decorator() == NO_DECORATOR )
+                    {
+                        monitor.noRelationshipTypeSpecified( dataStream.sourceDescription() );
+                    }
                 }
             }
         }
@@ -356,12 +368,36 @@ public class CsvInput implements Input
          * @param sourceFile source file that is a duplicate.
          */
         void duplicateSourceFile( String sourceFile );
+
+        /**
+         * Reports that a given source file, in this case the first in its group, doesn't specify any node label header and
+         * the group wasn't assigned any label from the command line specification.
+         * @param sourceFile source file of the first file in the file group that is missing node labels.
+         */
+        void noNodeLabelsSpecified( String sourceFile );
+
+        /**
+         * Reports that a given source file, in this case the first in its group, doesn't specify any relationship type header and
+         * the group wasn't assigned a relationship type from the command line specification.
+         * @param sourceFile source file of the first file in the file group that is missing the relationship type..
+         */
+        void noRelationshipTypeSpecified( String sourceFile );
     }
 
     public static final Monitor NO_MONITOR = new Monitor()
     {
         @Override
         public void duplicateSourceFile( String sourceFile )
+        {   // no-op
+        }
+
+        @Override
+        public void noNodeLabelsSpecified( String sourceFile )
+        {   // no-op
+        }
+
+        @Override
+        public void noRelationshipTypeSpecified( String sourceFile )
         {   // no-op
         }
 
@@ -385,6 +421,18 @@ public class CsvInput implements Input
         public void duplicateSourceFile( String sourceFile )
         {
             out.println( String.format( "WARN: source file %s has been specified multiple times, this may result in unwanted duplicates", sourceFile ) );
+        }
+
+        @Override
+        public void noNodeLabelsSpecified( String sourceFile )
+        {
+            out.println( String.format( "WARN: file group with header file %s specifies no node labels, which could be a mistake", sourceFile ) );
+        }
+
+        @Override
+        public void noRelationshipTypeSpecified( String sourceFile )
+        {
+            out.println( String.format( "WARN: file group with header file %s specifies no relationship type, which could be a mistake", sourceFile ) );
         }
     }
 }
