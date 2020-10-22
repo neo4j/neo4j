@@ -23,13 +23,11 @@ import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 
-import static org.neo4j.kernel.database.DatabaseLogPrefix.prefix;
-
 public class DatabaseLogProvider extends PrefixedLogProvider
 {
     public DatabaseLogProvider( NamedDatabaseId namedDatabaseId, LogProvider delegate )
     {
-        this( prefix( namedDatabaseId ), delegate );
+        this( namedDatabaseId.logPrefix(), delegate );
     }
 
     private DatabaseLogProvider( String prefix, LogProvider delegate )

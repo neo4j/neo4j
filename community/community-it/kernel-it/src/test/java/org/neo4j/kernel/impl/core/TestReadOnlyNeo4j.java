@@ -40,7 +40,6 @@ import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
-import org.neo4j.kernel.database.DatabaseLogPrefix;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.LogProvider;
@@ -107,7 +106,7 @@ class TestReadOnlyNeo4j
         assertFalse( db.isAvailable( 1L ), "Did not expect db to start" );
         assertThat( logProvider )
                 .assertExceptionForLogMessage(
-                        "[" + DatabaseLogPrefix.prefix( namedDatabaseId ) +
+                        "[" + namedDatabaseId.logPrefix() +
                         "] Exception occurred while starting the database. Trying to stop already started components." )
                 .hasMessageContaining( "Some indexes need to be rebuilt. This is not allowed in read only mode. Please start db in " +
                                        "writable mode to rebuild indexes. Indexes needing rebuild: " );

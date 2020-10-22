@@ -26,7 +26,6 @@ import java.io.ByteArrayOutputStream;
 import java.util.UUID;
 
 import org.neo4j.kernel.database.DatabaseIdFactory;
-import org.neo4j.kernel.database.DatabaseLogPrefix;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.logging.Level;
 import org.neo4j.logging.LogProvider;
@@ -57,7 +56,7 @@ class DatabaseLogServiceTest
         var log = logProvider.getLog( "log_name" );
         log.info( "message" );
 
-        assertLogged( "[log_name] " + "[" + DatabaseLogPrefix.prefix( namedDatabaseId ) + "] message" );
+        assertLogged( "[log_name] " + "[" + namedDatabaseId.logPrefix() + "] message" );
     }
 
     @Test
@@ -67,7 +66,7 @@ class DatabaseLogServiceTest
         var log = logProvider.getLog( Object.class );
         log.info( "message" );
 
-        assertLogged( "[j.l.Object] " + "[" + DatabaseLogPrefix.prefix( namedDatabaseId ) + "] message" );
+        assertLogged( "[j.l.Object] " + "[" + namedDatabaseId.logPrefix() + "] message" );
     }
 
     @Test

@@ -63,6 +63,11 @@ public class NamedDatabaseId implements Comparable<NamedDatabaseId>
         return databaseId;
     }
 
+    public String logPrefix()
+    {
+        return name + "/" + databaseId.id();
+    }
+
     @Override
     public String toString()
     {
