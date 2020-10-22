@@ -151,7 +151,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
             case IndexValueCapability.NO => tps.map(_ => DoNotGetValue)
           }
         }
-        if (reference.getIndexType != IndexType.BTREE || reference.getCapability.limitations().contains(IndexLimitation.EVENTUALLY_CONSISTENT)) {
+        if (reference.getIndexType != IndexType.BTREE || limitations.contains(EventuallyConsistent)) {
           // Ignore IndexKind.SPECIAL indexes, because we don't know how to correctly plan for and query them. Not yet, anyway.
           // Also, ignore eventually consistent indexes. Those are for explicit querying via procedures.
           None

@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.v4_0.util.{LabelId, PropertyKeyId}
 
 sealed trait IndexLimitation
 case object SlowContains extends IndexLimitation
+case object EventuallyConsistent extends IndexLimitation
 
 sealed trait IndexOrderCapability {
   def asc: Boolean
