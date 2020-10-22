@@ -937,6 +937,7 @@ public class FullCheckIntegrationTest
     void shouldReportBrokenSchemaRecordChain() throws Exception
     {
         // given
+        AtomicReference<IndexDescriptor> descriptor = new AtomicReference<>();
         fixture.apply( new GraphStoreFixture.Transaction()
         {
             @Override
@@ -950,8 +951,10 @@ public class FullCheckIntegrationTest
                 IndexDescriptor rule = indexRule( after.getId(), label1, key1, DESCRIPTOR );
                 rule = tx.completeConfiguration( rule );
                 tx.createSchema( before, after, rule );
+                descriptor.set( rule );
             }
         } );
+        fixture.indexingService().activateIndex( descriptor.get() );
 
         // when
         ConsistencySummaryStatistics stats = check();
@@ -1014,6 +1017,7 @@ public class FullCheckIntegrationTest
     void shouldReportInvalidConstraintBackReferences() throws Exception
     {
         // given
+        AtomicReference<IndexDescriptor> descriptor = new AtomicReference<>();
         fixture.apply( new GraphStoreFixture.Transaction()
         {
             @Override
@@ -1042,8 +1046,11 @@ public class FullCheckIntegrationTest
 
                 tx.createSchema( before1, after1, rule1 );
                 tx.createSchema( before2, after2, rule2 );
+
+                descriptor.set( rule1 );
             }
         } );
+        fixture.indexingService().activateIndex( descriptor.get() );
 
         // when
         ConsistencySummaryStatistics stats = check();
