@@ -24,6 +24,7 @@ import java.util.function.Supplier;
 import org.neo4j.internal.kernel.api.RelTypeSupplier;
 import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.internal.kernel.api.security.AccessMode;
+import org.neo4j.internal.kernel.api.security.PermissionState;
 import org.neo4j.internal.kernel.api.security.PrivilegeAction;
 import org.neo4j.messages.MessageUtil;
 
@@ -45,7 +46,7 @@ public class OverriddenAccessMode extends WrappedAccessMode
     }
 
     @Override
-    public boolean allowsTokenCreates( PrivilegeAction action )
+    public PermissionState allowsTokenCreates( PrivilegeAction action )
     {
         return wrapping.allowsTokenCreates( action );
     }
@@ -57,7 +58,7 @@ public class OverriddenAccessMode extends WrappedAccessMode
     }
 
     @Override
-    public boolean allowsSchemaWrites( PrivilegeAction action )
+    public PermissionState allowsSchemaWrites( PrivilegeAction action )
     {
         return wrapping.allowsSchemaWrites( action );
     }

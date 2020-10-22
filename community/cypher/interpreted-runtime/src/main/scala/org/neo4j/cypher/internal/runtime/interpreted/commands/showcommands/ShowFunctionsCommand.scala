@@ -64,7 +64,10 @@ case class ShowFunctionsCommand(functionType: ShowFunctionType, executableBy: Op
       } else {
         (Set.empty[String], Set.empty[String], true)
       }
-    val allowShowRoles = if (!isCommunity && verbose) securityContext.allowsAdminAction(new AdminActionOnResource(SHOW_ROLE, DatabaseScope.ALL, Segment.ALL)) else false
+    val allowShowRoles: Boolean = if (!isCommunity && verbose)
+      securityContext.allowsAdminAction(new AdminActionOnResource(SHOW_ROLE, DatabaseScope.ALL, Segment.ALL)).allowsAccess()
+    else
+      false
 
     // gets you all functions provided by the query language
     val languageFunctions = functionType match {

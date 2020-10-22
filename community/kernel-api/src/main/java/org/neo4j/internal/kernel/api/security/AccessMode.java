@@ -71,9 +71,9 @@ public interface AccessMode
         }
 
         @Override
-        public boolean allowsTokenCreates( PrivilegeAction action )
+        public PermissionState allowsTokenCreates( PrivilegeAction action )
         {
-            return token;
+            return PermissionState.fromAllowList( token);
         }
 
         @Override
@@ -83,9 +83,9 @@ public interface AccessMode
         }
 
         @Override
-        public boolean allowsSchemaWrites( PrivilegeAction action )
+        public PermissionState allowsSchemaWrites( PrivilegeAction action )
         {
-            return schema;
+            return PermissionState.fromAllowList( schema );
         }
 
         @Override
@@ -185,39 +185,39 @@ public interface AccessMode
         }
 
         @Override
-        public boolean allowsExecuteProcedure( int procedureId )
+        public PermissionState allowsExecuteProcedure( int procedureId )
         {
-            return true;
+            return PermissionState.EXPLICIT_GRANT;
         }
 
         @Override
-        public boolean shouldBoostProcedure( int procedureId )
+        public PermissionState shouldBoostProcedure( int procedureId )
         {
-            return procedureBoost;
+            return PermissionState.fromAllowList( procedureBoost );
         }
 
         @Override
-        public boolean allowsExecuteFunction( int id )
+        public PermissionState allowsExecuteFunction( int id )
         {
-            return true;
+            return PermissionState.EXPLICIT_GRANT;
         }
 
         @Override
-        public boolean shouldBoostFunction( int id )
+        public PermissionState shouldBoostFunction( int id )
         {
-            return procedureBoost;
+            return PermissionState.fromAllowList( procedureBoost );
         }
 
         @Override
-        public boolean allowsExecuteAggregatingFunction( int id )
+        public PermissionState allowsExecuteAggregatingFunction( int id )
         {
-            return true;
+            return PermissionState.EXPLICIT_GRANT;
         }
 
         @Override
-        public boolean shouldBoostAggregatingFunction( int id )
+        public PermissionState shouldBoostAggregatingFunction( int id )
         {
-            return procedureBoost;
+            return PermissionState.fromAllowList( procedureBoost );
         }
 
         @Override
@@ -270,9 +270,9 @@ public interface AccessMode
     }
 
     boolean allowsWrites();
-    boolean allowsTokenCreates( PrivilegeAction action );
+    PermissionState allowsTokenCreates( PrivilegeAction action );
     boolean allowsSchemaWrites();
-    boolean allowsSchemaWrites( PrivilegeAction action );
+    PermissionState allowsSchemaWrites( PrivilegeAction action );
     boolean allowsShowIndex();
     boolean allowsShowConstraint();
 
@@ -334,7 +334,7 @@ public interface AccessMode
      * @param procedureId id of the procedure
      * @return true if the procedure with this id is allowed to be executed
      */
-    boolean allowsExecuteProcedure( int procedureId );
+    PermissionState allowsExecuteProcedure( int procedureId );
 
     /**
      * Check if execution of a procedure should be done with boosted privileges.
@@ -343,14 +343,14 @@ public interface AccessMode
      * @param procedureId id of the procedure
      * @return true if the procedure with this id should be executed with boosted privileges
      */
-    boolean shouldBoostProcedure( int procedureId );
+    PermissionState shouldBoostProcedure( int procedureId );
 
     /**
      * Check if execution of a user defined function is allowed
      * @param id id of the function
      * @return true if the function with this id is allowed to be executed
      */
-    boolean allowsExecuteFunction( int id );
+    PermissionState allowsExecuteFunction( int id );
 
     /**
      * Check if execution of a user defined function should be done with boosted privileges.
@@ -359,14 +359,14 @@ public interface AccessMode
      * @param id id of the function
      * @return true if the function with this id should be executed with boosted privileges
      */
-    boolean shouldBoostFunction( int id );
+    PermissionState shouldBoostFunction( int id );
 
     /**
      * Check if execution of a aggregating user defined function is allowed
      * @param id id of the function
      * @return true if the function with this id is allowed to be executed
      */
-    boolean allowsExecuteAggregatingFunction( int id );
+    PermissionState allowsExecuteAggregatingFunction( int id );
 
     /**
      * Check if execution of a aggregating user defined function should be done with boosted privileges.
@@ -375,7 +375,7 @@ public interface AccessMode
      * @param id id of the function
      * @return true if the function with this id should be executed with boosted privileges
      */
-    boolean shouldBoostAggregatingFunction( int id );
+    PermissionState shouldBoostAggregatingFunction( int id );
 
     boolean allowsSetLabel( long labelId );
 

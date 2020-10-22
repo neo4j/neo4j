@@ -56,7 +56,10 @@ case class ShowProceduresCommand(executableBy: Option[ExecutableBy], verbose: Bo
       } else {
         (Set.empty[String], true)
       }
-    val allowShowRoles = if (!isCommunity && verbose) securityContext.allowsAdminAction(new AdminActionOnResource(SHOW_ROLE, DatabaseScope.ALL, Segment.ALL)) else false
+    val allowShowRoles: Boolean = if (!isCommunity && verbose)
+      securityContext.allowsAdminAction(new AdminActionOnResource(SHOW_ROLE, DatabaseScope.ALL, Segment.ALL)).allowsAccess()
+    else
+      false
 
     val allProcedures = tx.procedures().proceduresGetAll().asScala.filter(proc => !proc.internal).toList
     val sortedProcedures = allProcedures.sortBy(a => a.name.toString)

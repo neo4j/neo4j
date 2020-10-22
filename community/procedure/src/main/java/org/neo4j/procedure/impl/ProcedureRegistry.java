@@ -37,6 +37,7 @@ import org.neo4j.internal.kernel.api.procs.UserAggregator;
 import org.neo4j.internal.kernel.api.procs.UserFunctionHandle;
 import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
 import org.neo4j.internal.kernel.api.security.AbstractSecurityLog;
+import org.neo4j.internal.kernel.api.security.PermissionState;
 import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.procedure.CallableProcedure;
@@ -225,10 +226,14 @@ public class ProcedureRegistry
         try
         {
             proc = procedures.get( id );
-            if ( proc.signature().admin() && !ctx.securityContext().allowExecuteAdminProcedure( id ) )
+            var permission = ctx.securityContext().allowExecuteAdminProcedure( id );
+            if ( proc.signature().admin() && !permission.allowsAccess() )
             {
-                String message = format( "Executing admin procedure '%s' is not allowed for %s.",
-                                         proc.signature().name(), ctx.securityContext().description() );
+                String errorDescriptor = ( permission == PermissionState.EXPLICIT_DENY ) ? "is not allowed" : "permission has not been granted";
+                String message = format( "Executing admin procedure '%s' %s for %s.",
+                                         proc.signature().name(),
+                                         errorDescriptor,
+                                         ctx.securityContext().description() );
                 ctx.dependencyResolver().resolveDependency( AbstractSecurityLog.class ).error( ctx.securityContext(), message);
                 throw new AuthorizationViolationException( message );
             }

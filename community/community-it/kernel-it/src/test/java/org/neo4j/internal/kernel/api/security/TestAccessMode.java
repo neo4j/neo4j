@@ -46,9 +46,9 @@ public class TestAccessMode implements AccessMode
     }
 
     @Override
-    public boolean allowsTokenCreates( PrivilegeAction action )
+    public PermissionState allowsTokenCreates( PrivilegeAction action )
     {
-        return allowWrite;
+        return PermissionState.fromAllowList( allowWrite );
     }
 
     @Override
@@ -58,9 +58,9 @@ public class TestAccessMode implements AccessMode
     }
 
     @Override
-    public boolean allowsSchemaWrites( PrivilegeAction action )
+    public PermissionState allowsSchemaWrites( PrivilegeAction action )
     {
-        return allowSchema;
+        return PermissionState.fromAllowList( allowSchema );
     }
 
     @Override
@@ -160,39 +160,39 @@ public class TestAccessMode implements AccessMode
     }
 
     @Override
-    public boolean allowsExecuteProcedure( int procedureId )
+    public PermissionState allowsExecuteProcedure( int procedureId )
     {
-        return true;
+        return PermissionState.EXPLICIT_GRANT;
     }
 
     @Override
-    public boolean shouldBoostProcedure( int procedureId )
+    public PermissionState shouldBoostProcedure( int procedureId )
     {
-        return false;
+        return PermissionState.EXPLICIT_GRANT;
     }
 
     @Override
-    public boolean allowsExecuteFunction( int id )
+    public PermissionState allowsExecuteFunction( int id )
     {
-        return true;
+        return PermissionState.EXPLICIT_GRANT;
     }
 
     @Override
-    public boolean shouldBoostFunction( int id )
+    public PermissionState shouldBoostFunction( int id )
     {
-        return false;
+        return PermissionState.EXPLICIT_GRANT;
     }
 
     @Override
-    public boolean allowsExecuteAggregatingFunction( int id )
+    public PermissionState allowsExecuteAggregatingFunction( int id )
     {
-        return true;
+        return PermissionState.EXPLICIT_GRANT;
     }
 
     @Override
-    public boolean shouldBoostAggregatingFunction( int id )
+    public PermissionState shouldBoostAggregatingFunction( int id )
     {
-        return false;
+        return PermissionState.EXPLICIT_GRANT;
     }
 
     @Override

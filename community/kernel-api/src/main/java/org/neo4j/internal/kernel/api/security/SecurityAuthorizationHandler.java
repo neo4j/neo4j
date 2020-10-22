@@ -145,10 +145,18 @@ public class SecurityAuthorizationHandler
     public void assertSchemaWrites( SecurityContext securityContext, PrivilegeAction action )
     {
         AccessMode accessMode = securityContext.mode();
-        if ( !accessMode.allowsSchemaWrites( action ) )
+        switch ( accessMode.allowsSchemaWrites( action ) )
         {
-            throw logAndGetAuthorizationException( securityContext, format( "Schema operation '%s' on database '%s' is not allowed for %s.",
-                                                                            action, securityContext.database(), securityContext.description() ) );
+        case NOT_GRANTED:
+            throw logAndGetAuthorizationException( securityContext,
+                                                   format( "Schema operation '%s' on database '%s' is not allowed for %s.", action, securityContext.database(),
+                                                           securityContext.description() ) );
+        case EXPLICIT_DENY:
+            throw logAndGetAuthorizationException( securityContext,
+                                                   format( "Schema operation '%s' on database '%s' is denied for %s.", action, securityContext.database(),
+                                                           securityContext.description() ) );
+        default:
+            // All is well
         }
     }
 
@@ -175,29 +183,34 @@ public class SecurityAuthorizationHandler
     public final void assertAllowsTokenCreates( SecurityContext securityContext, PrivilegeAction action )
     {
         AccessMode accessMode = securityContext.mode();
-        if ( !accessMode.allowsTokenCreates( action ) )
+        PermissionState permissionState = accessMode.allowsTokenCreates( action );
+        if ( !permissionState.allowsAccess() )
         {
+            String errorDescriptor = permissionState == PermissionState.NOT_GRANTED ? "not allowed" : "denied";
             switch ( action )
             {
             case CREATE_LABEL:
                 throw logAndGetAuthorizationException( securityContext,
-                                                       format( "Creating new node label on database '%s' is not allowed for %s. " +
+                                                       format( "Creating new node label on database '%s' is %s for %s. " +
                                                                "See GRANT CREATE NEW NODE LABEL ON DATABASE `%s`...",
-                                                               securityContext.database(), securityContext.description(), securityContext.database() ) );
+                                                               securityContext.database(), errorDescriptor,
+                                                               securityContext.description(), securityContext.database() ) );
             case CREATE_PROPERTYKEY:
                 throw logAndGetAuthorizationException( securityContext,
-                                                       format( "Creating new property name on database '%s' is not allowed for %s. " +
+                                                       format( "Creating new property name on database '%s' is %s for %s. " +
                                                                "See GRANT CREATE NEW PROPERTY NAME ON DATABASE `%s`...",
-                                                               securityContext.database(), securityContext.description(), securityContext.database() ) );
+                                                               securityContext.database(), errorDescriptor,
+                                                               securityContext.description(), securityContext.database() ) );
             case CREATE_RELTYPE:
                 throw logAndGetAuthorizationException( securityContext,
-                                                       format( "Creating new relationship type on database '%s' is not allowed for %s. " +
+                                                       format( "Creating new relationship type on database '%s' is %s for %s. " +
                                                                "See GRANT CREATE NEW RELATIONSHIP TYPE ON DATABASE `%s`...",
-                                                               securityContext.database(), securityContext.description(), securityContext.database() ) );
+                                                               securityContext.database(), errorDescriptor,
+                                                               securityContext.description(), securityContext.database() ) );
             default:
                 throw logAndGetAuthorizationException( securityContext,
-                                                       format( "'%s' operations on database '%s' are not allowed for %s.",
-                                                               action, securityContext.database(), securityContext.description() ) );
+                                                       format( "'%s' operations on database '%s' are %s for %s.",
+                                                               action, securityContext.database(), errorDescriptor, securityContext.description() ) );
             }
         }
     }

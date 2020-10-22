@@ -21,7 +21,7 @@ package org.neo4j.internal.kernel.api.security;
 
 public interface AdminAccessMode
 {
-    boolean allows( AdminActionOnResource action );
+    PermissionState allows( AdminActionOnResource action );
 
-    AdminAccessMode FULL = action -> true;
+    AdminAccessMode FULL = action -> PermissionState.EXPLICIT_GRANT;
 }

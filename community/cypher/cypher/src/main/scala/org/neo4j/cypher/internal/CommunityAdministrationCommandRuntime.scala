@@ -23,6 +23,7 @@ import org.neo4j.common.DependencyResolver
 import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.configuration.helpers.NormalizedDatabaseName
 import org.neo4j.cypher.internal.ast.AdministrationAction
+import org.neo4j.cypher.internal.ast.DbmsAction
 import org.neo4j.cypher.internal.ast.DefaultDatabaseScope
 import org.neo4j.cypher.internal.ast.HomeDatabaseScope
 import org.neo4j.cypher.internal.ast.NamedDatabaseScope
@@ -31,6 +32,7 @@ import org.neo4j.cypher.internal.ast.ReturnItems
 import org.neo4j.cypher.internal.ast.StartDatabaseAction
 import org.neo4j.cypher.internal.ast.StopDatabaseAction
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
+import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.ImplicitProcedureArgument
 import org.neo4j.cypher.internal.logical.plans.AllowedNonAdministrationCommands
 import org.neo4j.cypher.internal.logical.plans.AlterUser
@@ -74,6 +76,7 @@ import org.neo4j.internal.kernel.api.security.AbstractSecurityLog
 import org.neo4j.internal.kernel.api.security.AccessMode
 import org.neo4j.internal.kernel.api.security.AdminActionOnResource
 import org.neo4j.internal.kernel.api.security.AdminActionOnResource.DatabaseScope
+import org.neo4j.internal.kernel.api.security.PermissionState
 import org.neo4j.internal.kernel.api.security.PrivilegeAction
 import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler
 import org.neo4j.internal.kernel.api.security.SecurityContext
@@ -130,15 +133,31 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
     }.sorted.mkString(" and/or ")
   }
 
+  private def adminActionErrorMessage(permissionState: PermissionState, actions: Seq[AdministrationAction]) = permissionState match {
+    case PermissionState.EXPLICIT_DENY => "Permission denied for " + prettifyActionName(actions:_*) + ". " + checkShowUserPrivilegesText
+    case PermissionState.NOT_GRANTED => "Permission has not been granted for " + prettifyActionName(actions:_*) + ". " + checkShowUserPrivilegesText
+    case PermissionState.EXPLICIT_GRANT => ""
+  }
+
+  private def checkAdminRightsForDBMSOrSelf (user: Either[String, Parameter], actions: Seq[DbmsAction]): AdministrationCommandRuntimeContext => ExecutionPlan = _ =>  {
+    def checkActions(securityContext: SecurityContext): Seq[(DbmsAction, PermissionState)] = actions.map( action =>
+      (action, securityContext.allowsAdminAction(new AdminActionOnResource(ActionMapper.asKernelAction(action), DatabaseScope.ALL, Segment.ALL)))
+    )
+    AuthorizationPredicateExecutionPlan(securityAuthorizationHandler, (params, securityContext) => {
+      if (securityContext.subject().hasUsername(runtimeStringValue(user, params))) Seq((null, PermissionState.EXPLICIT_GRANT))
+      else checkActions(securityContext)
+    }, violationMessage = adminActionErrorMessage)
+  }
+
   def logicalToExecutable: PartialFunction[LogicalPlan, AdministrationCommandRuntimeContext => ExecutionPlan] = {
     // Check Admin Rights for DBMS commands
     case AssertAllowedDbmsActions(maybeSource, actions) => context =>
       AuthorizationPredicateExecutionPlan(
         securityAuthorizationHandler,
-        (_, securityContext) => actions.forall { action =>
-        securityContext.allowsAdminAction(new AdminActionOnResource(ActionMapper.asKernelAction(action), DatabaseScope.ALL, Segment.ALL))
-      },
-        violationMessage = "Permission denied for " + prettifyActionName(actions: _*) + ". " + checkShowUserPrivilegesText, //sorting is important to keep error messages stable
+        (_, securityContext) => actions.map { action =>
+          (action, securityContext.allowsAdminAction(new AdminActionOnResource(ActionMapper.asKernelAction(action), DatabaseScope.ALL, Segment.ALL)))
+        },
+        violationMessage = adminActionErrorMessage,
         source = maybeSource match {
           case Some(source) => Some(fullLogicalToExecutable.applyOrElse(source, throwCantCompile).apply(context))
           case _            => None
@@ -146,11 +165,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
       )
 
     // Check Admin Rights for DBMS commands or self
-    case AssertAllowedDbmsActionsOrSelf(user, actions) => _ =>
-      AuthorizationPredicateExecutionPlan(securityAuthorizationHandler,
-        (params, securityContext) => securityContext.subject().hasUsername(runtimeStringValue(user, params)) || actions.forall { action =>
-        securityContext.allowsAdminAction(new AdminActionOnResource(ActionMapper.asKernelAction(action), DatabaseScope.ALL, Segment.ALL))
-      }, violationMessage = "Permission denied for " + prettifyActionName(actions:_*) + ". " + checkShowUserPrivilegesText)  //sorting is important to keep error messages stable
+    case AssertAllowedDbmsActionsOrSelf(user, actions) => context => checkAdminRightsForDBMSOrSelf(user, actions)(context)
 
     // Check that the specified user is not the logged in user (eg. for some CREATE/DROP/ALTER USER commands)
     case AssertNotCurrentUser(source, userName, verb, violationMessage) => context =>
@@ -161,13 +176,13 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
 
     // Check Admin Rights for some Database commands
     case AssertAllowedDatabaseAction(action, database, maybeSource) => context =>
-      AuthorizationPredicateExecutionPlan(securityAuthorizationHandler,
-        (params, securityContext) => securityContext.allowsAdminAction(new AdminActionOnResource(ActionMapper.asKernelAction(action),
-          new DatabaseScope(runtimeStringValue(database, params)), Segment.ALL)),
-        violationMessage = "Permission denied for " + prettifyActionName(action) + ". " + checkShowUserPrivilegesText,
+      AuthorizationPredicateExecutionPlan(securityAuthorizationHandler, (params, securityContext) =>
+        Seq((action, securityContext.allowsAdminAction(
+          new AdminActionOnResource(ActionMapper.asKernelAction(action), new DatabaseScope(runtimeStringValue(database, params)), Segment.ALL)))),
+        violationMessage = adminActionErrorMessage,
         source = maybeSource match {
           case Some(source) => Some(fullLogicalToExecutable.applyOrElse(source, throwCantCompile).apply(context))
-          case _            => None
+          case _ => None
         }
       )
 
@@ -528,8 +543,8 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
     }
 
     val allowsDatabaseManagement: Boolean =
-      securityContext.allowsAdminAction(new AdminActionOnResource(PrivilegeAction.CREATE_DATABASE, DatabaseScope.ALL, Segment.ALL)) ||
-      securityContext.allowsAdminAction(new AdminActionOnResource(PrivilegeAction.DROP_DATABASE, DatabaseScope.ALL, Segment.ALL))
+      securityContext.allowsAdminAction(new AdminActionOnResource(PrivilegeAction.CREATE_DATABASE, DatabaseScope.ALL, Segment.ALL)).allowsAccess() ||
+      securityContext.allowsAdminAction(new AdminActionOnResource(PrivilegeAction.DROP_DATABASE, DatabaseScope.ALL, Segment.ALL)).allowsAccess()
     val roles = securityContext.mode().roles()
 
     val allDatabaseNode = transaction.findNode(Label.label("DatabaseAll"), "name", "*")

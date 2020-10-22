@@ -61,18 +61,20 @@ public class SecurityContext extends LoginContext
 
     /**
      * Check whether the user is allowed to execute procedure annotated with @Admin.
+     * @return
      */
-    public boolean allowExecuteAdminProcedure( int procedureId )
+    public PermissionState allowExecuteAdminProcedure( int procedureId )
     {
-        return true;
+        return PermissionState.EXPLICIT_GRANT;
     }
 
     /**
      * Check whether the user has a specific level of admin rights.
+     * @return
      */
-    public boolean allowsAdminAction( AdminActionOnResource action )
+    public PermissionState allowsAdminAction( AdminActionOnResource action )
     {
-        return true;
+        return PermissionState.EXPLICIT_GRANT;
     }
 
     public Set<String> roles()

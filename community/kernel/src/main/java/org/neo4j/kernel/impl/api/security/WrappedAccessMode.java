@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api.security;
 
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.internal.kernel.api.security.AccessMode;
+import org.neo4j.internal.kernel.api.security.PermissionState;
 
 /**
  * Access mode that wraps an access mode with a wrapping access mode. The resulting access mode allows things based
@@ -47,37 +48,37 @@ abstract class WrappedAccessMode implements AccessMode
     }
 
     @Override
-    public boolean allowsExecuteProcedure( int procedureId )
+    public PermissionState allowsExecuteProcedure( int procedureId )
     {
         return original.allowsExecuteProcedure( procedureId );
     }
 
     @Override
-    public boolean shouldBoostProcedure( int procedureId )
+    public PermissionState shouldBoostProcedure( int procedureId )
     {
         return original.shouldBoostProcedure( procedureId );
     }
 
     @Override
-    public boolean allowsExecuteFunction( int id )
+    public PermissionState allowsExecuteFunction( int id )
     {
         return original.allowsExecuteFunction( id );
     }
 
     @Override
-    public boolean shouldBoostFunction( int id )
+    public PermissionState shouldBoostFunction( int id )
     {
         return original.shouldBoostFunction( id );
     }
 
     @Override
-    public boolean allowsExecuteAggregatingFunction( int id )
+    public PermissionState allowsExecuteAggregatingFunction( int id )
     {
         return original.allowsExecuteAggregatingFunction( id );
     }
 
     @Override
-    public boolean shouldBoostAggregatingFunction( int id )
+    public PermissionState shouldBoostAggregatingFunction( int id )
     {
         return original.shouldBoostFunction( id );
     }

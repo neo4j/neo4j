@@ -30,6 +30,7 @@ import org.neo4j.internal.kernel.api.procs.FieldSignature
 import org.neo4j.internal.kernel.api.security.AdminActionOnResource
 import org.neo4j.internal.kernel.api.security.AdminActionOnResource.DatabaseScope
 import org.neo4j.internal.kernel.api.security.AuthSubject
+import org.neo4j.internal.kernel.api.security.PermissionState
 import org.neo4j.internal.kernel.api.security.PrivilegeAction.SHOW_USER
 import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler
 import org.neo4j.internal.kernel.api.security.SecurityContext
@@ -55,10 +56,16 @@ object ShowProcFuncCommandHelper {
     case Some(User(name)) if !securityContext.subject().hasUsername(name) =>
       // EXECUTABLE BY not_current_user
       val allowedShowUser = securityContext.allowsAdminAction(new AdminActionOnResource(SHOW_USER, DatabaseScope.ALL, Segment.ALL))
-      if (!allowedShowUser) {
-        val violationMessage: String = s"Permission denied for $command, requires SHOW USER privilege. " +
-          "Try executing SHOW USER PRIVILEGES to determine the missing or denied privileges. " +
-          "In case of missing privileges, they need to be granted (See GRANT). In case of denied privileges, they need to be revoked (See REVOKE) and granted."
+      if (!allowedShowUser.allowsAccess()) {
+        val violationMessage: String = if (allowedShowUser == PermissionState.EXPLICIT_DENY) {
+          s"Permission denied for $command, requires SHOW USER privilege. " +
+            "Try executing SHOW USER PRIVILEGES to determine the denied privileges. " +
+            "In case of denied privileges, they need to be revoked (See REVOKE) and granted."
+        } else {
+          s"Permission not granted for $command, requires SHOW USER privilege. " +
+            "Try executing SHOW USER PRIVILEGES to determine the missing privileges. " +
+            "In case of missing privileges, they need to be granted (See GRANT)."
+        }
         throw securityHandler.logAndGetAuthorizationException(securityContext, violationMessage)
       }
       val stx = systemGraph.get.beginTx() // Will be Some(_: GraphDatabaseService) since executableBy.isDefined

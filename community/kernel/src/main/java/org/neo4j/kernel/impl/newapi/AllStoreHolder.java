@@ -1023,13 +1023,13 @@ public class AllStoreHolder extends Read
         ktx.assertOpen();
 
         AccessMode mode = ktx.securityContext().mode();
-        if ( !mode.allowsExecuteProcedure( id ) )
+        if ( !mode.allowsExecuteProcedure( id ).allowsAccess() )
         {
             String message = format("Executing procedure is not allowed for %s.", ktx.securityContext().description() );
             throw ktx.securityAuthorizationHandler().logAndGetAuthorizationException( ktx.securityContext(), message );
         }
 
-        final SecurityContext procedureSecurityContext = mode.shouldBoostProcedure( id ) ?
+        final SecurityContext procedureSecurityContext = mode.shouldBoostProcedure( id ).allowsAccess() ?
                               ktx.securityContext().withMode( new OverriddenAccessMode( mode, procedureMode ) ).withMode( AdminAccessMode.FULL ) :
                               ktx.securityContext().withMode( new RestrictedAccessMode( mode, procedureMode ) );
 
@@ -1073,13 +1073,13 @@ public class AllStoreHolder extends Read
         ktx.assertOpen();
 
         AccessMode mode = ktx.securityContext().mode();
-        if ( !globalProcedures.isBuiltInFunction( id ) && !mode.allowsExecuteFunction( id ) )
+        if ( !globalProcedures.isBuiltInFunction( id ) && !mode.allowsExecuteFunction( id ).allowsAccess() )
         {
             String message = format( "Executing a user defined function is not allowed for %s.", ktx.securityContext().description() );
             throw ktx.securityAuthorizationHandler().logAndGetAuthorizationException( ktx.securityContext(), message );
         }
 
-        final SecurityContext securityContext = mode.shouldBoostFunction( id ) ?
+        final SecurityContext securityContext = mode.shouldBoostFunction( id ).allowsAccess() ?
                                                 ktx.securityContext().withMode( new OverriddenAccessMode( mode, AccessMode.Static.READ ) ) :
                                                 ktx.securityContext().withMode( new RestrictedAccessMode( mode, AccessMode.Static.READ ) );
 
@@ -1094,13 +1094,13 @@ public class AllStoreHolder extends Read
         ktx.assertOpen();
 
         AccessMode mode = ktx.securityContext().mode();
-        if ( !globalProcedures.isBuiltInAggregatingFunction( id ) && !mode.allowsExecuteAggregatingFunction( id ) )
+        if ( !globalProcedures.isBuiltInAggregatingFunction( id ) && !mode.allowsExecuteAggregatingFunction( id ).allowsAccess() )
         {
             String message = format( "Executing a user defined aggregating function is not allowed for %s.", ktx.securityContext().description() );
             throw ktx.securityAuthorizationHandler().logAndGetAuthorizationException( ktx.securityContext(), message );
         }
 
-        final SecurityContext securityContext = mode.shouldBoostAggregatingFunction( id ) ?
+        final SecurityContext securityContext = mode.shouldBoostAggregatingFunction( id ).allowsAccess() ?
                                                 ktx.securityContext().withMode( new OverriddenAccessMode( mode, AccessMode.Static.READ ) ) :
                                                 ktx.securityContext().withMode( new RestrictedAccessMode( mode, AccessMode.Static.READ ) );
 

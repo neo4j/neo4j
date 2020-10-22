@@ -719,12 +719,12 @@ public class BuiltInDbmsProcedures
 
     private boolean isSelfOrAllows( String username, AdminActionOnResource actionOnResource )
     {
-        return securityContext.subject().hasUsername( username ) || securityContext.allowsAdminAction( actionOnResource );
+        return securityContext.subject().hasUsername( username ) || securityContext.allowsAdminAction( actionOnResource ).allowsAccess();
     }
 
     private boolean isAdminOrSelf( String username )
     {
-        return securityContext.allowExecuteAdminProcedure( callContext.id() ) || securityContext.subject().hasUsername( username );
+        return securityContext.allowExecuteAdminProcedure( callContext.id() ).allowsAccess() || securityContext.subject().hasUsername( username );
     }
 
     private GraphDatabaseAPI getSystemDatabase()

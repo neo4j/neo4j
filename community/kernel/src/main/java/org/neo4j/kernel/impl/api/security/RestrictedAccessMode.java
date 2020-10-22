@@ -24,6 +24,7 @@ import java.util.function.Supplier;
 import org.neo4j.internal.kernel.api.RelTypeSupplier;
 import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.internal.kernel.api.security.AccessMode;
+import org.neo4j.internal.kernel.api.security.PermissionState;
 import org.neo4j.internal.kernel.api.security.PrivilegeAction;
 import org.neo4j.messages.MessageUtil;
 
@@ -45,9 +46,9 @@ public class RestrictedAccessMode extends WrappedAccessMode
     }
 
     @Override
-    public boolean allowsTokenCreates( PrivilegeAction action )
+    public PermissionState allowsTokenCreates( PrivilegeAction action )
     {
-        return original.allowsTokenCreates( action ) && wrapping.allowsTokenCreates( action );
+        return original.allowsTokenCreates( action ).restrict( wrapping.allowsTokenCreates( action ) );
     }
 
     @Override
@@ -57,9 +58,9 @@ public class RestrictedAccessMode extends WrappedAccessMode
     }
 
     @Override
-    public boolean allowsSchemaWrites( PrivilegeAction action )
+    public PermissionState allowsSchemaWrites( PrivilegeAction action )
     {
-        return original.allowsSchemaWrites( action ) && wrapping.allowsSchemaWrites( action );
+        return original.allowsSchemaWrites( action ).restrict( wrapping.allowsSchemaWrites( action ) );
     }
 
     @Override
