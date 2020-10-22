@@ -147,13 +147,24 @@ abstract class AbstractIndexSeekLeafPlanner(restrictions: LeafPlanRestrictions) 
                                               context: LogicalPlanningContext,
                                               interestingOrder: InterestingOrder): Set[LogicalPlan] = {
     implicit val semanticTable: SemanticTable = context.semanticTable
-    for (labelPredicate <- labelPredicates;
-         labelName <- labelPredicate.labels;
-         labelId: LabelId <- semanticTable.id(labelName).toSeq;
-         indexDescriptor: IndexDescriptor <- findIndexesForLabel(labelId, context);
-         predicatesForIndex <- predicatesForIndex(indexDescriptor, indexCompatiblePredicates, interestingOrder))
-      yield
-        createLogicalPlan(idName, hints, argumentIds, labelPredicate, labelName, labelId, predicatesForIndex, indexDescriptor.isUnique, context, semanticTable)
+    for {
+      labelPredicate <- labelPredicates
+      labelName <- labelPredicate.labels
+      labelId: LabelId <- semanticTable.id(labelName).toSeq
+      indexDescriptor: IndexDescriptor <- findIndexesForLabel(labelId, context)
+      predicatesForIndex <- predicatesForIndex(indexDescriptor, indexCompatiblePredicates, interestingOrder)
+      if predicatesForIndex.predicatesInOrder.exists(x => isValidPredicate(x.indexCompatiblePredicate.variable, x.indexCompatiblePredicate.dependencies))
+    } yield createLogicalPlan(idName, hints, argumentIds, labelPredicate, labelName, labelId, predicatesForIndex, indexDescriptor.isUnique, context, semanticTable)
+  }
+
+  // Test if a predicate is valid given the leaf plan restrictions
+  private val isValidPredicate: (LogicalVariable, Set[LogicalVariable]) => Boolean = restrictions match {
+    case LeafPlanRestrictions.NoRestrictions => (_, _) => true
+
+    case LeafPlanRestrictions.OnlyIndexPlansFor(variable, dependencyRestrictions) => (ident, dependencies) =>
+      val isRestrictedVariable = ident.name == variable
+      if (isRestrictedVariable) dependencies.map(_.name) == dependencyRestrictions
+      else true
   }
 
   private def createLogicalPlan(idName: String,
@@ -214,26 +225,15 @@ abstract class AbstractIndexSeekLeafPlanner(restrictions: LeafPlanRestrictions) 
                                           implicit labelPredicateMap: Map[String, Set[HasLabels]],
                                           semanticTable: SemanticTable):
   PartialFunction[Expression, IndexCompatiblePredicate] = {
-    val valid: (LogicalVariable, Set[LogicalVariable]) => Boolean = restrictions match {
-      case LeafPlanRestrictions.NoRestrictions => (ident, dependencies) =>
-        !arguments.contains(ident) && dependencies.subsetOf(arguments)
+    def valid(ident: LogicalVariable, dependencies: Set[LogicalVariable]): Boolean = !arguments.contains(ident) && dependencies.subsetOf(arguments)
 
-      case LeafPlanRestrictions.OnlyIndexPlansFor(variable, dependencyRestrictions) => (ident, dependencies) =>
-        val isRestrictedVariable = ident.name == variable
-        if (isRestrictedVariable) {
-          val dependsOnTheCorrectVariables = dependencies.map(_.name) == dependencyRestrictions
-          dependsOnTheCorrectVariables && !arguments.contains(ident) && dependencies.subsetOf(arguments)
-        } else {
-          !arguments.contains(ident) && dependencies.subsetOf(arguments)
-        }
-    }
     {
       // n.prop IN [ ... ]
       case predicate@AsPropertySeekable(seekable: PropertySeekable) if valid(seekable.ident, seekable.dependencies) =>
         val queryExpression = seekable.args.asQueryExpression
         val exactPredicate = if (queryExpression.isInstanceOf[SingleQueryExpression[_]]) SingleExactPredicate else MultipleExactPredicate
         IndexCompatiblePredicate(seekable.name, seekable.propertyKey, predicate, queryExpression, seekable.propertyValueType(semanticTable), exactPredicate = exactPredicate,
-          hints, argumentIds, solvesPredicate = true)
+          hints, argumentIds, solvesPredicate = true, variable = seekable.ident, dependencies = seekable.dependencies)
 
       // ... = n.prop
       // In some rare cases, we can't rewrite these predicates cleanly,
@@ -241,7 +241,7 @@ abstract class AbstractIndexSeekLeafPlanner(restrictions: LeafPlanRestrictions) 
       case predicate@Equals(a, prop@Property(seekable@LogicalVariable(_), propKeyName)) if valid(seekable, a.dependencies) =>
         val expr = SingleQueryExpression(a)
         IndexCompatiblePredicate(seekable.name, propKeyName, predicate, expr, Seekable.cypherTypeForTypeSpec(semanticTable.getActualTypeFor(prop)), exactPredicate = SingleExactPredicate,
-          hints, argumentIds, solvesPredicate = true)
+          hints, argumentIds, solvesPredicate = true, variable = seekable, dependencies = a.dependencies)
 
       // n.prop STARTS WITH "prefix%..."
       case predicate@AsStringRangeSeekable(seekable) if valid(seekable.ident, seekable.dependencies) =>
@@ -249,14 +249,14 @@ abstract class AbstractIndexSeekLeafPlanner(restrictions: LeafPlanRestrictions) 
         val queryExpression = seekable.asQueryExpression
         val propertyKey = seekable.propertyKey
         IndexCompatiblePredicate(seekable.name, propertyKey, partialPredicate, queryExpression, seekable.propertyValueType(semanticTable), exactPredicate = NotExactPredicate,
-          hints, argumentIds, solvesPredicate = true)
+          hints, argumentIds, solvesPredicate = true, variable = seekable.ident, dependencies = seekable.dependencies)
 
       // n.prop <|<=|>|>= value
       case predicate@AsValueRangeSeekable(seekable) if valid(seekable.ident, seekable.dependencies) =>
         val queryExpression = seekable.asQueryExpression
         val keyName = seekable.propertyKeyName
         IndexCompatiblePredicate(seekable.name, keyName, predicate, queryExpression, seekable.propertyValueType(semanticTable), exactPredicate = NotExactPredicate,
-          hints, argumentIds, solvesPredicate = true)
+          hints, argumentIds, solvesPredicate = true, variable = seekable.ident, dependencies = seekable.dependencies)
 
       // The planned index seek will almost satisfy the predicate, but with the possibility of some false positives.
       // Since it reduces the cardinality to almost the level of the predicate, we can use the predicate to calculate cardinality,
@@ -265,7 +265,7 @@ abstract class AbstractIndexSeekLeafPlanner(restrictions: LeafPlanRestrictions) 
         val queryExpression = seekable.asQueryExpression
         val keyName = seekable.propertyKeyName
         IndexCompatiblePredicate(seekable.name, keyName, predicate, queryExpression, seekable.propertyValueType(semanticTable), exactPredicate = NotExactPredicate,
-          hints, argumentIds, solvesPredicate = false)
+          hints, argumentIds, solvesPredicate = false, variable = seekable.ident, dependencies = seekable.dependencies)
 
       // MATCH (n:User) WHERE exists(n.prop) RETURN n
       // Should only be allowed as part of an composite index:
@@ -274,7 +274,7 @@ abstract class AbstractIndexSeekLeafPlanner(restrictions: LeafPlanRestrictions) 
         // scannable.expr is partialPredicate saying it solves exists() but not the predicate
         val solvedPredicate = if (scannable.solvesPredicate) predicate else scannable.expr
         IndexCompatiblePredicate(scannable.name, scannable.propertyKey, solvedPredicate, ExistenceQueryExpression(), CTAny,
-          exactPredicate = NotExactPredicate, hints, argumentIds, solvesPredicate = true)
+          exactPredicate = NotExactPredicate, hints, argumentIds, solvesPredicate = true, variable = scannable.ident, dependencies = Set.empty)
 
       // n.prop ENDS WITH 'substring'
       // It is always converted to exists and will need filtering
@@ -285,7 +285,7 @@ abstract class AbstractIndexSeekLeafPlanner(restrictions: LeafPlanRestrictions) 
           predicate
         )
         IndexCompatiblePredicate(name, keyName, solvedPredicate, ExistenceQueryExpression(), CTAny, exactPredicate = NotExactPredicate,
-          hints, argumentIds, solvesPredicate = true)
+          hints, argumentIds, solvesPredicate = true, variable = variable, dependencies = expr.dependencies)
 
       // n.prop CONTAINS 'substring'
       // It is always converted to exists and will need filtering
@@ -296,7 +296,7 @@ abstract class AbstractIndexSeekLeafPlanner(restrictions: LeafPlanRestrictions) 
           predicate
         )
         IndexCompatiblePredicate(name, keyName, solvedPredicate, ExistenceQueryExpression(), CTAny, exactPredicate = NotExactPredicate,
-          hints, argumentIds, solvesPredicate = true)
+          hints, argumentIds, solvesPredicate = true, variable = variable, dependencies = expr.dependencies)
     }
   }
 
@@ -369,7 +369,9 @@ abstract class AbstractIndexSeekLeafPlanner(restrictions: LeafPlanRestrictions) 
                                               exactPredicate: ExactPredicate,
                                               hints: Set[Hint],
                                               argumentIds: Set[String],
-                                              solvesPredicate: Boolean)
+                                              solvesPredicate: Boolean,
+                                              variable: LogicalVariable,
+                                              dependencies: Set[LogicalVariable])
                                              (implicit labelPredicateMap: Map[String, Set[HasLabels]]) {
 
     def convertToExists: IndexCompatiblePredicate = queryExpression match {

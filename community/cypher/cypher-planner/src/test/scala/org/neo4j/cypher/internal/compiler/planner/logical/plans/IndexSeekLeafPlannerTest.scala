@@ -54,6 +54,7 @@ import org.neo4j.cypher.internal.logical.plans.PointDistanceRange
 import org.neo4j.cypher.internal.logical.plans.PointDistanceSeekRangeWrapper
 import org.neo4j.cypher.internal.logical.plans.PrefixRange
 import org.neo4j.cypher.internal.logical.plans.PrefixSeekRangeWrapper
+import org.neo4j.cypher.internal.logical.plans.QueryExpression
 import org.neo4j.cypher.internal.logical.plans.RangeLessThan
 import org.neo4j.cypher.internal.logical.plans.RangeQueryExpression
 import org.neo4j.cypher.internal.logical.plans.SingleQueryExpression
@@ -442,14 +443,15 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
   }
 
   test("plans only index plans that match the dependencies of the restriction") {
-    val nProp: Property = prop("n", "prop")
-    val xProp: Property = prop("x", "prop")
+    val nProp = prop("n", "prop")
+    val xProp = prop("x", "prop")
     val nPropEqualsXProp = Equals(nProp, xProp)(pos)
     val xPropExpr = SingleQueryExpression(xProp)
     val nPropEquals = equals(lit42, nProp)
     new given {
       addTypeToSemanticTable(lit42, CTInteger.invariant)
       addTypeToSemanticTable(lit6, CTInteger.invariant)
+      addTypeToSemanticTable(nProp, CTInteger.invariant)
       val predicates: Set[Expression] = Set(
         hasLabels("n", "Awesome"),
         hasLabels("x", "Awesome"),
@@ -487,9 +489,66 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     }
   }
 
+  test("plans only index plans that match the dependencies of the restriction for composite index") {
+    val xProp = prop("x", "prop")
+    val xPropExpr: QueryExpression[Expression] = SingleQueryExpression(xProp)
+    val lit42Expr: QueryExpression[Expression] = SingleQueryExpression(lit42)
+
+    val nProp = prop("n", "prop")
+    val nPropEqualsXProp = Equals(nProp, xProp)(pos)
+    val nPropEquals = equals(lit42, nProp)
+
+    val nFoo = prop("n", "foo")
+    val nFooEqualsXProp = Equals(nFoo, xProp)(pos)
+    val nFooEquals = equals(lit42, nFoo)
+
+
+    new given {
+      addTypeToSemanticTable(lit42, CTInteger.invariant)
+      addTypeToSemanticTable(lit6, CTInteger.invariant)
+      addTypeToSemanticTable(nProp, CTInteger.invariant)
+      addTypeToSemanticTable(nFoo, CTInteger.invariant)
+      val predicates: Set[Expression] = Set(
+        hasLabels("n", "Awesome"),
+        hasLabels("x", "Awesome"),
+        nPropEquals,
+        nPropEqualsXProp,
+        nFooEquals,
+        nFooEqualsXProp,
+      )
+
+      qg = QueryGraph(
+        selections = Selections(predicates.flatMap(_.asPredicates)),
+        patternNodes = Set("n", "x"),
+        argumentIds = Set("x")
+      )
+
+      indexOn("Awesome", "prop", "foo")
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      // when
+      val restriction = LeafPlanRestrictions.OnlyIndexPlansFor("n", Set("x"))
+      val resultPlans = indexSeekLeafPlanner(restriction)(cfg.qg, InterestingOrder.empty, ctx).toSet
+
+      // then
+      val labelToken = LabelToken("Awesome", LabelId(0))
+      val nPropToken = PropertyKeyToken("prop", PropertyKeyId(0))
+      val nFooToken = PropertyKeyToken("foo", PropertyKeyId(1))
+      val indexedProperties = Seq(IndexedProperty(nPropToken, CanGetValue), IndexedProperty(nFooToken, CanGetValue))
+
+      // This contains all combinations except n.prop = 42 AND x.foo = 42, because it does not depend on x
+      val expected = Set(
+        NodeIndexSeek(idName, labelToken, indexedProperties, CompositeQueryExpression(Seq(xPropExpr, lit42Expr)), Set("x"), IndexOrderNone),
+        NodeIndexSeek(idName, labelToken, indexedProperties, CompositeQueryExpression(Seq(xPropExpr, xPropExpr)), Set("x"), IndexOrderNone),
+        NodeIndexSeek(idName, labelToken, indexedProperties, CompositeQueryExpression(Seq(lit42Expr, xPropExpr)), Set("x"), IndexOrderNone),
+      )
+
+      resultPlans shouldEqual expected
+    }
+  }
+
   test("plans index plans for unrestricted variables") {
-    val nProp: Property = prop("n", "prop")
-    val xProp: Property = prop("x", "prop")
+    val nProp = prop("n", "prop")
+    val xProp = prop("x", "prop")
     val nPropEqualsXProp = Equals(nProp, xProp)(pos)
     val xPropExpr = SingleQueryExpression(xProp)
     val nPropEquals = equals(lit42, nProp)
