@@ -26,8 +26,9 @@ import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CardinalityMod
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphCardinalityModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults.DEFAULT_DISTINCT_SELECTIVITY
-import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults.DEFAULT_LIMIT_CARDINALITY
+import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults.DEFAULT_LIMIT_ROW_COUNT
 import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults.DEFAULT_MULTIPLIER
+import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults.DEFAULT_SKIP_ROW_COUNT
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.IndependenceCombiner
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.SelectivityCombiner
 import org.neo4j.cypher.internal.expressions.Expression
@@ -84,7 +85,8 @@ class StatisticsBackedCardinalityModel(queryGraphCardinalityModel: QueryGraphCar
 
   private def calculateCardinalityForQueryHorizon(in: Cardinality, horizon: QueryHorizon, semanticTable: SemanticTable): Cardinality = horizon match {
     case projection: QueryProjection =>
-      val cardinalityBeforeLimit = queryProjectionCardinalityBeforeLimit(in, projection)
+      val cardinalityBeforeSkip = queryProjectionCardinalityBeforeLimit(in, projection)
+      val cardinalityBeforeLimit = queryProjectionCardinalityWithSkip(cardinalityBeforeSkip, projection.queryPagination)
       val cardinalityBeforeSelection = queryProjectionCardinalityWithLimit(cardinalityBeforeLimit, projection.queryPagination)
       queryProjectionCardinalityWithSelections(cardinalityBeforeSelection, projection.selections, semanticTable)
 
@@ -133,24 +135,45 @@ class StatisticsBackedCardinalityModel(queryGraphCardinalityModel: QueryGraphCar
   }
 
   private def queryProjectionCardinalityWithLimit(cardinalityBeforeLimit: Cardinality, queryPagination: QueryPagination): Cardinality = {
-    val limitCardinality = queryPagination.limit match {
+    queryPagination.limit match {
       case None => cardinalityBeforeLimit
-      case Some(literal: IntegerLiteral) => Cardinality(literal.value.toDouble)
-      case Some(limitExpr) =>
-        val cannotEvaluateStableValue =
-          simpleExpressionEvaluator.hasParameters(limitExpr) ||
-            !simpleExpressionEvaluator.isDeterministic(limitExpr)
+      case Some(limitExpression) =>
+        val limitRowCount: Long = evaluateLongIfStable(limitExpression).getOrElse(DEFAULT_LIMIT_ROW_COUNT)
 
-        if (cannotEvaluateStableValue) DEFAULT_LIMIT_CARDINALITY
-        else {
-          val evaluatedValue: Option[Any] = simpleExpressionEvaluator.evaluateExpression(limitExpr)
-          evaluatedValue match {
-            case Some(num: NumberValue) => Cardinality(num.doubleValue())
-            case _ => DEFAULT_LIMIT_CARDINALITY
-          }
-        }
+        if (limitRowCount >= cardinalityBeforeLimit.amount) cardinalityBeforeLimit
+        else Cardinality(limitRowCount)
     }
-    Cardinality.min(cardinalityBeforeLimit, limitCardinality)
+  }
+
+  private def queryProjectionCardinalityWithSkip(cardinalityBeforeSkip: Cardinality, queryPagination: QueryPagination): Cardinality = {
+    queryPagination.skip match {
+      case None => cardinalityBeforeSkip
+      case Some(skipExpression) =>
+        val skipRowCount: Long = evaluateLongIfStable(skipExpression).getOrElse(DEFAULT_SKIP_ROW_COUNT)
+
+        if (skipRowCount == 0) cardinalityBeforeSkip
+        else if (skipRowCount >= cardinalityBeforeSkip.amount) Cardinality.EMPTY
+        else cardinalityBeforeSkip.map(c => c - skipRowCount)
+
+    }
+  }
+
+  /*
+   * Returns the evaluated long value from the specified expression if the expression is stable and can be evaluated to a long.
+   */
+  private def evaluateLongIfStable(expression: Expression): Option[Long] = {
+    def isStable(expression: Expression): Boolean = {
+      !simpleExpressionEvaluator.hasParameters(expression) && simpleExpressionEvaluator.isDeterministic(expression)
+    }
+
+    expression match {
+      case literal: IntegerLiteral => Some(literal.value)
+      case nonLiteral if isStable(nonLiteral) =>
+        simpleExpressionEvaluator
+          .evaluateExpression(nonLiteral)
+          .collect { case number: NumberValue => number.longValue() }
+      case _ => None
+    }
   }
 
   private def queryProjectionCardinalityWithSelections(cardinalityBeforeSelection: Cardinality,

@@ -31,10 +31,12 @@ object PlannerDefaults {
   val DEFAULT_TYPE_SELECTIVITY           = Selectivity(0.9)
   val DEFAULT_NUMBER_OF_ID_LOOKUPS       = Cardinality(25)
   val DEFAULT_LIST_CARDINALITY           = Cardinality(25)
-  val DEFAULT_LIMIT_CARDINALITY          = Cardinality(75)
+  val DEFAULT_LIMIT_ROW_COUNT            = 75
+  val DEFAULT_LIMIT_CARDINALITY          = Cardinality(DEFAULT_LIMIT_ROW_COUNT)
   val DEFAULT_REL_UNIQUENESS_SELECTIVITY = Selectivity(0.99)
   val DEFAULT_RANGE_SEEK_FACTOR          = 0.03
   val DEFAULT_STRING_LENGTH              = 6
   val DEFAULT_DISTINCT_SELECTIVITY       = Selectivity(0.95)
   val DEFAULT_MULTIPLIER                 = Multiplier(10)
+  val DEFAULT_SKIP_ROW_COUNT             = 1
 }

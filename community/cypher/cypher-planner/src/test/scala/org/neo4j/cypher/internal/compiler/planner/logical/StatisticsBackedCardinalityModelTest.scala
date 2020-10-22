@@ -95,14 +95,33 @@ class StatisticsBackedCardinalityModelTest extends CypherFunSuite with LogicalPl
       )
   }
 
-  // We do not improve in this case
-  ignore("query containing both SKIP and LIMIT with large skip, so skip + limit exceeds total row count boundary") {
+  test("query containing LIMIT by expression") {
     val i = personCount
-    givenPattern( s"MATCH (n:Person) WITH n SKIP ${personCount - 5} LIMIT 10").
+    givenPattern( "MATCH (n:Person) WITH n LIMIT toInteger(1+1)").
+      withGraphNodes(allNodes).
+      withLabel('Person -> i).
+      shouldHavePlannerQueryCardinality(createCardinalityModelWithSimpleExpressionEvaluator)(
+        Math.min(i, 2.0)
+      )
+  }
+
+  test("query containing both SKIP and LIMIT with large skip, so skip + limit exceeds total row count boundary") {
+    val i = personCount
+    givenPattern( s"MATCH (n:Person) WITH n SKIP ${(personCount - 5).toInt} LIMIT 10").
       withGraphNodes(allNodes).
       withLabel('Person -> i).
       shouldHavePlannerQueryCardinality(createCardinalityModel)(
         Math.min(i, 5.0)
+      )
+  }
+
+  test("query containing SKIP by expression") {
+    val i = personCount
+    givenPattern( s"MATCH (n:Person) WITH n SKIP toInteger($personCount - 2)").
+      withGraphNodes(allNodes).
+      withLabel('Person -> i).
+      shouldHavePlannerQueryCardinality(createCardinalityModelWithSimpleExpressionEvaluator)(
+        Math.min(i, 2.0)
       )
   }
 
@@ -288,6 +307,9 @@ class StatisticsBackedCardinalityModelTest extends CypherFunSuite with LogicalPl
 
   def createCardinalityModel(in: QueryGraphCardinalityModel): Metrics.CardinalityModel =
     new StatisticsBackedCardinalityModel(in, newExpressionEvaluator)
+
+  def createCardinalityModelWithSimpleExpressionEvaluator(in: QueryGraphCardinalityModel): Metrics.CardinalityModel =
+    new StatisticsBackedCardinalityModel(in, simpleExpressionEvaluator)
 
   override def createQueryGraphCardinalityModel(stats: GraphStatistics): QueryGraphCardinalityModel =
     AssumeIndependenceQueryGraphCardinalityModel(stats, combiner)

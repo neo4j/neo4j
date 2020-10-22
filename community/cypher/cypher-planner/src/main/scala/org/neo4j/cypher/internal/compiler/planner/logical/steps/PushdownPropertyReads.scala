@@ -67,6 +67,9 @@ import scala.collection.mutable
 
 case object PushdownPropertyReads {
 
+  // Negligible quantity of cardinality when considering pushdown
+  private val CARDINALITY_EPSILON = 0.0000001
+
   def pushdown(logicalPlan: LogicalPlan,
                cardinalities: Cardinalities,
                attributes: Attributes[LogicalPlan],
@@ -153,7 +156,7 @@ case object PushdownPropertyReads {
         case _ =>
           val newLowestCardinalities =
             acc.variableOptima.mapValues(optimum =>
-              if (outgoingCardinality < optimum.cardinality) {
+              if (outgoingCardinality <= (optimum.cardinality + CARDINALITY_EPSILON)) {
                 CardinalityOptimum(outgoingCardinality, plan.id, optimum.variableName)
               } else {
                 optimum

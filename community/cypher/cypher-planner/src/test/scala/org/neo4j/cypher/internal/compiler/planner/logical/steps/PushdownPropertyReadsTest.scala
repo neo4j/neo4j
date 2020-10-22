@@ -834,4 +834,48 @@ class PushdownPropertyReadsTest extends CypherFunSuite with PlanMatchHelp with L
         .allNodeScan("n")
         .build()
   }
+
+  test("should pushdown to the highest step if equal cardinality") {
+    val plan = new LogicalPlanBuilder()
+      .produceResults("x")
+      .projection("n.prop as x").withCardinality(100)
+      .expand("(n)-->(q)").withCardinality(100)
+      .limit(100).withCardinality(1)
+      .skip(0).withCardinality(1)
+      .nodeByLabelScan("n", "JustOne").withCardinality(1)
+
+    val rewritten = PushdownPropertyReads.pushdown(plan.build(), plan.cardinalities, Attributes(plan.idGen, plan.cardinalities), plan.getSemanticTable)
+    rewritten shouldBe
+      new LogicalPlanBuilder()
+        .produceResults("x")
+        .projection("n.prop as x")
+        .expand("(n)-->(q)")
+        .cacheProperties("n.prop")
+        .limit(100)
+        .skip(0)
+        .nodeByLabelScan("n", "JustOne")
+        .build()
+  }
+
+  test("should pushdown ignoring negligible amount of cardinality differences") {
+    val plan = new LogicalPlanBuilder()
+      .produceResults("x")
+      .projection("a.prop as x").withCardinality(200)
+      .expand("(a)-->(c)").withCardinality(200)
+      .apply().withCardinality(1.00000001)
+      .|.nodeByLabelScan("b", "B").withCardinality(1)
+      .nodeByLabelScan("a", "A").withCardinality(1)
+
+    val rewritten = PushdownPropertyReads.pushdown(plan.build(), plan.cardinalities, Attributes(plan.idGen, plan.cardinalities), plan.getSemanticTable)
+    rewritten shouldBe
+      new LogicalPlanBuilder()
+        .produceResults("x")
+        .projection("a.prop as x")
+        .expand("(a)-->(c)")
+        .cacheProperties("a.prop")
+        .apply()
+        .|.nodeByLabelScan("b", "B")
+        .nodeByLabelScan("a", "A")
+        .build()
+  }
 }

@@ -62,7 +62,7 @@ class LogicalPlanBuilder(wholePlan: Boolean = true, resolver: Resolver = new Log
 
   def getSemanticTable: SemanticTable = semanticTable
 
-  def withCardinality(x: Int): LogicalPlanBuilder = {
+  def withCardinality(x: Double): LogicalPlanBuilder = {
     cardinalities.set(idOfLastPlan, Cardinality(x))
     this
   }
