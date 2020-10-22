@@ -64,7 +64,7 @@ class NettyServerTest
             var address = new SocketAddress( "localhost", port );
 
             // When
-            server = new NettyServer( newThreadFactory(), protocolOnAddress( address ), new ConnectorPortRegister(), NullLogService.getInstance(),
+            server = new NettyServer( newThreadFactory(), protocolOnAddress( address ), null, new ConnectorPortRegister(), NullLogService.getInstance(),
                     Config.defaults() );
 
             // Then
@@ -94,7 +94,7 @@ class NettyServerTest
         var portRegister = new ConnectorPortRegister();
 
         var address = new SocketAddress( "localhost", 0 );
-        server = new NettyServer( newThreadFactory(), protocolOnAddress( address ), portRegister, NullLogService.getInstance(), Config.defaults() );
+        server = new NettyServer( newThreadFactory(), protocolOnAddress( address ), null, portRegister, NullLogService.getInstance(), Config.defaults() );
 
         assertNull( portRegister.getLocalAddress( connector ) );
 

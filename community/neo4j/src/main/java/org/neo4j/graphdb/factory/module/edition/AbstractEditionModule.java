@@ -194,6 +194,11 @@ public abstract class AbstractEditionModule
         return securityProvider.inClusterAuthManager();
     }
 
+    public AuthManager getBoltLoopbackAuthManager()
+    {
+        return securityProvider.loopbackAuthManager();
+    }
+
     public abstract DatabaseStartupController getDatabaseStartupController();
 
     public abstract Lifecycle createWebServer( DatabaseManagementService managementService, Dependencies globalDependencies,

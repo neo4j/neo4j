@@ -88,16 +88,17 @@ case class CopyRolePrivileges(source: SecurityAdministrationLogicalPlan, to: Eit
 abstract class PrivilegePlan(source: Option[PrivilegePlan] = None)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(source)
 
 object AssertDbmsAdmin {
-  def apply(action: AdminAction)(implicit idGen: IdGen): AssertDbmsAdmin = AssertDbmsAdmin(Seq(action))(idGen)
+  def apply(maybeSource: PrivilegePlan, action: AdminAction)(implicit idGen: IdGen): AssertDbmsAdmin = AssertDbmsAdmin(Some(maybeSource), Seq(action))(idGen)
+  def apply(action: AdminAction)(implicit idGen: IdGen): AssertDbmsAdmin = AssertDbmsAdmin(None, Seq(action))(idGen)
 }
 object AssertDbmsAdminOrSelf {
   def apply(user: Either[String, Parameter], action: AdminAction)(implicit idGen: IdGen): AssertDbmsAdminOrSelf = AssertDbmsAdminOrSelf(user, Seq(action))(idGen)
 }
-case class AssertDbmsAdmin(actions: Seq[AdminAction])(implicit idGen: IdGen) extends PrivilegePlan
+case class AssertDbmsAdmin(maybeSource: Option[PrivilegePlan], actions: Seq[AdminAction])(implicit idGen: IdGen) extends PrivilegePlan(maybeSource)
 case class AssertDbmsAdminOrSelf(user: Either[String, Parameter], actions: Seq[AdminAction])(implicit idGen: IdGen) extends PrivilegePlan
-case class AssertDatabaseAdmin(action: AdminAction, database: Either[String, Parameter])(implicit idGen: IdGen) extends PrivilegePlan
+case class AssertDatabaseAdmin(action: AdminAction, database: Either[String, Parameter], maybeSource: Option[PrivilegePlan])(implicit idGen: IdGen) extends PrivilegePlan(maybeSource)
 case class AssertNotCurrentUser(source: PrivilegePlan, userName: Either[String, Parameter], verb: String, violationMessage: String)(implicit idGen: IdGen) extends PrivilegePlan(Some(source))
-case class AssertNotBlocked(source: PrivilegePlan, action: AdminAction)(implicit idGen: IdGen) extends PrivilegePlan(Some(source))
+case class AssertNotBlocked(action: AdminAction)(implicit idGen: IdGen) extends PrivilegePlan
 
 case class GrantDbmsAction(source: PrivilegePlan, action: AdminAction, qualifier: PrivilegeQualifier, roleName: Either[String, Parameter])(implicit idGen: IdGen) extends PrivilegePlan(Some(source))
 case class DenyDbmsAction(source: PrivilegePlan, action: AdminAction, qualifier: PrivilegeQualifier, roleName: Either[String, Parameter])(implicit idGen: IdGen) extends PrivilegePlan(Some(source))

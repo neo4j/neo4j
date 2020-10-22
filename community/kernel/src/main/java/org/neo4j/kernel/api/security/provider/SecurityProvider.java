@@ -26,4 +26,6 @@ public interface SecurityProvider
     AuthManager authManager();
 
     AuthManager inClusterAuthManager();
+
+    AuthManager loopbackAuthManager();
 }

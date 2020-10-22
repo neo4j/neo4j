@@ -1238,13 +1238,13 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(attach(AssertDbmsAdminOrSelf(util.Left("user1"), DropRoleAction), 1.0), adminPlanDescription)
 
-    assertGood(attach(AssertDatabaseAdmin(StopDatabaseAction, util.Left("db1")), 1.0), adminPlanDescription)
+    assertGood(attach(AssertDatabaseAdmin(StopDatabaseAction, util.Left("db1"), None), 1.0), adminPlanDescription)
 
-    assertGood(attach(AssertNotBlocked(privLhsLP, CreateDatabaseAction), 1.0), adminPlanDescription)
+    assertGood(attach(AssertNotBlocked(CreateDatabaseAction), 1.0), adminPlanDescription)
 
     assertGood(attach(WaitForCompletion(
       StartDatabase(
-        plans.AssertDatabaseAdmin(StartDatabaseAction, Left("db1")), Left("db1")), util.Left("db1"), IndefiniteWait), 1.0), adminPlanDescription)
+        plans.AssertDatabaseAdmin(StartDatabaseAction, Left("db1"), Some(privLhsLP)), Left("db1")), util.Left("db1"), IndefiniteWait), 1.0), adminPlanDescription)
   }
 
   test("AntiConditionalApply") {

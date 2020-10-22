@@ -109,7 +109,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
   // When the community commands are run within enterprise, this allows the enterprise commands to be chained
   private def fullLogicalToExecutable = extraLogicalToExecutable orElse logicalToExecutable
 
-  val checkShowUserPrivilegesText = "Try executing SHOW USER PRIVILEGES to determine the missing or denied privileges. " +
+  val checkShowUserPrivilegesText: String = "Try executing SHOW USER PRIVILEGES to determine the missing or denied privileges. " +
     "In case of missing privileges, they need to be granted (See GRANT). In case of denied privileges, they need to be revoked (See REVOKE) and granted."
 
   def prettifyActionName (actions: AdminAction*) : String = {
@@ -122,10 +122,15 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
 
   def logicalToExecutable: PartialFunction[LogicalPlan, AdministrationCommandRuntimeContext => ExecutionPlan] = {
     // Check Admin Rights for DBMS commands
-    case AssertDbmsAdmin(actions) => _ =>
+    case AssertDbmsAdmin(maybeSource, actions) => context =>
       AuthorizationPredicateExecutionPlan((_, securityContext) => actions.forall { action =>
         securityContext.allowsAdminAction(new AdminActionOnResource(ActionMapper.asKernelAction(action), DatabaseScope.ALL, Segment.ALL))
-      }, violationMessage = "Permission denied for " + prettifyActionName(actions:_*) + ". " + checkShowUserPrivilegesText)  //sorting is important to keep error messages stable
+      }, violationMessage = "Permission denied for " + prettifyActionName(actions: _*) + ". " + checkShowUserPrivilegesText, //sorting is important to keep error messages stable
+        source = maybeSource match {
+          case Some(source) => Some(fullLogicalToExecutable.applyOrElse(source, throwCantCompile).apply(context))
+          case _            => None
+        }
+      )
 
     // Check Admin Rights for DBMS commands or self
     case AssertDbmsAdminOrSelf(user, actions) => _ =>
@@ -141,10 +146,14 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
       )
 
     // Check Admin Rights for some Database commands
-    case AssertDatabaseAdmin(action, database) => _ =>
+    case AssertDatabaseAdmin(action, database, maybeSource) => context =>
       AuthorizationPredicateExecutionPlan((params, securityContext) =>
         securityContext.allowsAdminAction(new AdminActionOnResource(ActionMapper.asKernelAction(action), new DatabaseScope(runtimeValue(database, params)), Segment.ALL)),
-        violationMessage = "Permission denied for " + prettifyActionName(action) + ". " + checkShowUserPrivilegesText
+        violationMessage = "Permission denied for " + prettifyActionName(action) + ". " + checkShowUserPrivilegesText,
+        source = maybeSource match {
+          case Some(source) => Some(fullLogicalToExecutable.applyOrElse(source, throwCantCompile).apply(context))
+          case _            => None
+        }
       )
 
     // SHOW USERS

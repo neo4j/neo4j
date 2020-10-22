@@ -51,6 +51,8 @@ import static org.neo4j.io.ByteUnit.mebiBytes;
 @ServiceProvider
 public class GraphDatabaseInternalSettings implements SettingsDeclaration
 {
+    public static final int DEFAULT_LOOPBACK_CONNECTOR_PORT = 7689;
+
     @Internal
     public static final Setting<Path> databases_root_path =
             newBuilder( "unsupported.dbms.directories.databases.root", PATH, Path.of( GraphDatabaseSettings.DEFAULT_DATABASES_ROOT_DIR_NAME ) )
@@ -525,6 +527,12 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
                   "No administration commands will be executable on the role." )
     public static final Setting<Boolean> restrict_upgrade =
             newBuilder( "unsupported.dbms.upgrade_restriction_enabled", BOOL, false ).build();
+
+    @Internal
+    @Description( "The port the loopback connector should bind to. This will only be enabled when `" + "unsupported.dbms.upgrade_restriction_enabled" + "` " +
+                  "is set to true." )
+    public static final Setting<Integer> loopback_listen_port =
+            newBuilder( "unsupported.dbms.loopback_port", INT, DEFAULT_LOOPBACK_CONNECTOR_PORT ).build();
 
     @Description( "Specifies at which file size the checkpoint log will auto-rotate. Minimum accepted value is 1 KiB. " )
     public static final Setting<Long> checkpoint_logical_log_rotation_threshold =

@@ -36,7 +36,6 @@ import java.util.stream.Stream;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.database.DatabaseContext;
@@ -280,7 +279,6 @@ public class BuiltInDbmsProcedures
     @Procedure( name = "dbms.upgradeStatus", mode = READ )
     public Stream<SystemGraphComponentStatusResult> upgradeStatus() throws ProcedureException
     {
-        assertAllowedUpgradeProc();
         if ( !callContext.isSystemDatabase() )
         {
             throw new ProcedureException( ProcedureCallFailed,
@@ -295,7 +293,6 @@ public class BuiltInDbmsProcedures
     @Procedure( name = "dbms.upgrade", mode = WRITE )
     public Stream<SystemGraphComponentUpgradeResult> upgrade() throws ProcedureException
     {
-        assertAllowedUpgradeProc();
         if ( !callContext.isSystemDatabase() )
         {
             throw new ProcedureException( ProcedureCallFailed,
@@ -333,19 +330,6 @@ public class BuiltInDbmsProcedures
         else
         {
             return Stream.of( new SystemGraphComponentUpgradeResult( status.name(), status.resolution() ) );
-        }
-    }
-
-    private void assertAllowedUpgradeProc()
-    {
-        Config config = graph.getDependencyResolver().resolveDependency( Config.class );
-        if ( config.get( GraphDatabaseInternalSettings.restrict_upgrade ) )
-        {
-            if ( !securityContext.subject().hasUsername( config.get( GraphDatabaseInternalSettings.upgrade_username ) ) )
-            {
-                throw new AuthorizationViolationException(
-                        String.format( "%s Execution of this procedure has been restricted by the system.", PERMISSION_DENIED ) );
-            }
         }
     }
 

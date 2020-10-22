@@ -60,6 +60,7 @@ public class NettyServer extends LifecycleAdapter
     private final Config config;
     private final ProtocolInitializer internalInitializer;
     private final ThreadFactory tf;
+    private final ProtocolInitializer loopbackInitializer;
     private final ConnectorPortRegister portRegister;
     private final Log userLog;
     private final Log internalLog;
@@ -82,12 +83,13 @@ public class NettyServer extends LifecycleAdapter
      * @param externalInitializer function for bolt connector map to bootstrap configured protocol
      * @param connectorRegister register to keep local address information on all configured connectors
      */
-    public NettyServer( ThreadFactory tf, ProtocolInitializer externalInitializer,
+    public NettyServer( ThreadFactory tf, ProtocolInitializer externalInitializer, ProtocolInitializer loopbackInitializer,
             ConnectorPortRegister connectorRegister, LogService logService, Config config )
     {
         this.externalInitializer = externalInitializer;
         this.config = config;
         this.internalInitializer = null;
+        this.loopbackInitializer = loopbackInitializer;
         this.tf = tf;
         this.portRegister = connectorRegister;
         this.userLog = logService.getUserLog( BoltServer.class );
@@ -103,12 +105,13 @@ public class NettyServer extends LifecycleAdapter
      * @param connectorRegister register to keep local address information on all configured connectors
      */
     public NettyServer( ThreadFactory tf, ProtocolInitializer externalInitializer,
-                        ProtocolInitializer internalInitializer,
+                        ProtocolInitializer internalInitializer, ProtocolInitializer loopbackInitializer,
                         ConnectorPortRegister connectorRegister, LogService logService, Config config )
     {
         this.externalInitializer = externalInitializer;
         this.config = config;
         this.internalInitializer = internalInitializer;
+        this.loopbackInitializer = loopbackInitializer;
         this.tf = tf;
         this.portRegister = connectorRegister;
         this.userLog = logService.getUserLog( BoltServer.class );
@@ -146,6 +149,17 @@ public class NettyServer extends LifecycleAdapter
                 var port = internalLocalAddress.getPort();
 
                 userLog.info( "Bolt (Routing) enabled on %s.", SocketAddress.format( host, port ) );
+        }
+
+        if ( loopbackInitializer != null )
+        {
+            var loopbackLocalAddress = configureInitializer( loopbackInitializer );
+            portRegister.register( BoltConnector.INTERNAL_NAME, loopbackLocalAddress );
+
+            var host = loopbackInitializer.address().getHostname();
+            var port = loopbackLocalAddress.getPort();
+
+            userLog.info( "Bolt (loopback) enabled on %s.", SocketAddress.format( host, port ) );
         }
     }
 

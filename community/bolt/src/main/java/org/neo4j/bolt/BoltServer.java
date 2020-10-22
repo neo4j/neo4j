@@ -51,6 +51,7 @@ import org.neo4j.bolt.transport.SocketTransport;
 import org.neo4j.bolt.transport.TransportThrottleGroup;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.SslSystemSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
@@ -89,6 +90,7 @@ public class BoltServer extends LifecycleAdapter
     private final LogService logService;
     private final AuthManager externalAuthManager;
     private final AuthManager internalAuthManager;
+    private final AuthManager loopbackAuthManager;
     private final MemoryPools memoryPools;
     private final DefaultDatabaseResolver defaultDatabaseResolver;
 
@@ -101,7 +103,7 @@ public class BoltServer extends LifecycleAdapter
                        ConnectorPortRegister connectorPortRegister, NetworkConnectionTracker connectionTracker,
                        DatabaseIdRepository databaseIdRepository, Config config, SystemNanoClock clock,
                        Monitors monitors, LogService logService, DependencyResolver dependencyResolver,
-                       AuthManager externalAuthManager, AuthManager internalAuthManager, MemoryPools memoryPools,
+                       AuthManager externalAuthManager, AuthManager internalAuthManager, AuthManager loopbackAuthManager, MemoryPools memoryPools,
                        DefaultDatabaseResolver defaultDatabaseResolver )
     {
         this.boltGraphDatabaseManagementServiceSPI = boltGraphDatabaseManagementServiceSPI;
@@ -116,6 +118,7 @@ public class BoltServer extends LifecycleAdapter
         this.dependencyResolver = dependencyResolver;
         this.externalAuthManager = externalAuthManager;
         this.internalAuthManager = internalAuthManager;
+        this.loopbackAuthManager = loopbackAuthManager;
         this.memoryPools = memoryPools;
         this.defaultDatabaseResolver = defaultDatabaseResolver;
     }
@@ -135,10 +138,14 @@ public class BoltServer extends LifecycleAdapter
         BoltConnectionFactory boltConnectionFactory = createConnectionFactory( config, boltSchedulerProvider, logService, clock );
         BoltStateMachineFactory externalBoltStateMachineFactory = createBoltStateMachineFactory( createAuthentication( externalAuthManager ), clock );
         BoltStateMachineFactory internalBoltStateMachineFactory = createBoltStateMachineFactory( createAuthentication( internalAuthManager ), clock );
+        BoltStateMachineFactory loopbackBoltStateMachineFactory = createBoltStateMachineFactory( createAuthentication( loopbackAuthManager ), clock );
 
         BoltProtocolFactory externalBoltProtocolFactory = createBoltProtocolFactory( boltConnectionFactory, externalBoltStateMachineFactory, throttleGroup,
                                                                                      clock, config.get( BoltConnectorInternalSettings.connection_keep_alive ) );
         BoltProtocolFactory internalBoltProtocolFactory = createBoltProtocolFactory( boltConnectionFactory, internalBoltStateMachineFactory, throttleGroup,
+                                                                                     clock, config.get( BoltConnectorInternalSettings.connection_keep_alive ) );
+
+        BoltProtocolFactory loopbackBoltProtocolFactory = createBoltProtocolFactory( boltConnectionFactory, loopbackBoltStateMachineFactory, throttleGroup,
                                                                                      clock, config.get( BoltConnectorInternalSettings.connection_keep_alive ) );
 
         if ( config.get( BoltConnector.ocsp_enabled ) )
@@ -151,11 +158,13 @@ public class BoltServer extends LifecycleAdapter
             jobScheduler.setThreadFactory( Group.BOLT_NETWORK_IO, NettyThreadFactory::new );
             NettyServer nettyServer;
 
+            var loopbackProtocolInitializer = createLoopbackProtocolInitializer( loopbackBoltProtocolFactory, throttleGroup );
             if ( config.get( GraphDatabaseSettings.routing_enabled ) )
             {
                 nettyServer = new NettyServer( jobScheduler.threadFactory( Group.BOLT_NETWORK_IO ),
                                                createExternalProtocolInitializer( externalBoltProtocolFactory, throttleGroup, log ),
                                                createInternalProtocolInitializer( internalBoltProtocolFactory, throttleGroup ),
+                                               loopbackProtocolInitializer,
                                                connectorPortRegister,
                                                logService, config );
             }
@@ -163,6 +172,7 @@ public class BoltServer extends LifecycleAdapter
             {
                 nettyServer = new NettyServer( jobScheduler.threadFactory( Group.BOLT_NETWORK_IO ),
                                                createExternalProtocolInitializer( externalBoltProtocolFactory, throttleGroup, log ),
+                                               loopbackProtocolInitializer,
                                                connectorPortRegister,
                                                logService, config );
             }
@@ -240,6 +250,27 @@ public class BoltServer extends LifecycleAdapter
 
         return new SocketTransport( BoltConnector.NAME, internalListenAddress, sslCtx, requireEncryption, logService.getInternalLogProvider(),
                                     throttleGroup, boltProtocolFactory, connectionTracker, channelTimeout, maxMessageSize, BoltServer.NETTY_BUF_ALLOCATOR );
+    }
+
+    private ProtocolInitializer createLoopbackProtocolInitializer( BoltProtocolFactory boltProtocolFactory, TransportThrottleGroup throttleGroup )
+
+    {
+        if ( config.get( GraphDatabaseInternalSettings.restrict_upgrade ) )
+        {
+            // TODO maybe enable/enforce ssl?
+
+            SocketAddress loopbackListenAddress = new SocketAddress( config.get( GraphDatabaseInternalSettings.loopback_listen_port ) );
+
+            Duration channelTimeout = config.get( BoltConnectorInternalSettings.unsupported_bolt_unauth_connection_timeout );
+            long maxMessageSize = config.get( BoltConnectorInternalSettings.unsupported_bolt_unauth_connection_max_inbound_bytes );
+
+            return new SocketTransport( BoltConnector.NAME, loopbackListenAddress, null, false, logService.getInternalLogProvider(),
+                    throttleGroup, boltProtocolFactory, connectionTracker, channelTimeout, maxMessageSize, BoltServer.NETTY_BUF_ALLOCATOR );
+        }
+        else
+        {
+            return null;
+        }
     }
 
     private ProtocolInitializer createExternalProtocolInitializer( BoltProtocolFactory boltProtocolFactory,

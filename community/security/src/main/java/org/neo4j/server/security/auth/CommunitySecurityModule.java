@@ -92,6 +92,12 @@ public class CommunitySecurityModule extends SecurityModule
         return null;
     }
 
+    @Override
+    public AuthManager loopbackAuthManager()
+    {
+        return null;
+    }
+
     private static final String USER_STORE_FILENAME = "auth";
     private static final String INITIAL_USER_STORE_FILENAME = "auth.ini";
 
