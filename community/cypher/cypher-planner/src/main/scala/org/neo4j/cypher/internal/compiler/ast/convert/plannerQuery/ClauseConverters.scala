@@ -68,6 +68,7 @@ import org.neo4j.cypher.internal.expressions.PatternElement
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RelationshipChain
+import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.containsAggregate
 import org.neo4j.cypher.internal.ir.AggregatingQueryProjection
@@ -216,7 +217,7 @@ object ClauseConverters {
       case DistinctQueryProjection(groupingExpressions, _, _) =>
         val requiredColumns = extractColumnOrderFromOrderBy(sortItems, groupingExpressions)
         val interestingColumnOrders = if (requiredColumns.isEmpty) groupingExpressions.values.collect {
-          case e: Property => Asc(e)
+            case e: Property => Asc(e)
         } else Seq.empty
 
         (requiredColumns, interestingColumnOrders)
@@ -340,46 +341,35 @@ object ClauseConverters {
     result.toIndexedSeq
   }
 
-  case class CreateNodeCommand(create: CreateNode, variable: LogicalVariable)
-  case class CreateRelCommand(create: CreateRelationship, variable: LogicalVariable)
+  private case class CreateNodeCommand(create: CreateNode, variable: LogicalVariable)
+  private case class CreateRelCommand(create: CreateRelationship, variable: LogicalVariable)
+
+  private def createNodeCommand(pattern: NodePattern): CreateNodeCommand =  pattern match {
+    case NodePattern(Some(variable), labels, props, _) => CreateNodeCommand(CreateNode(variable.name, labels, props), variable)
+  }
 
   private def allCreatePatterns(element: PatternElement): (Vector[CreateNodeCommand], Vector[CreateRelCommand]) = element match {
     case NodePattern(None, _, _, _) => throw new InternalException("All nodes must be named at this instance")
     //CREATE ()
-    case NodePattern(Some(variable), labels, props, _) =>
-      (Vector(CreateNodeCommand(CreateNode(variable.name, labels, props), variable)), Vector.empty)
+    case np:NodePattern => (Vector(createNodeCommand(np)), Vector.empty)
 
     //CREATE ()-[:R]->()
-    case RelationshipChain(leftNode: NodePattern, rel, rightNode) =>
-      val leftVar = leftNode.variable.get
-      val leftIdName = leftVar.name
-      val rightVar = rightNode.variable.get
-      val rightIdName = rightVar.name
-
-      //Semantic checking enforces types.size == 1
-      val relType = rel.types.headOption.getOrElse(
-        throw new InternalException("Expected single relationship type"))
-
-      val relVar = rel.variable.get
+    //Semantic checking enforces types.size == 1
+    case RelationshipChain(leftNode@NodePattern(Some(leftVar), _, _, _), RelationshipPattern(Some(relVar), Seq(relType), _, properties, direction, _, _), rightNode@NodePattern(Some(rightVar), _, _, _)) =>
       (Vector(
-        CreateNodeCommand(CreateNode(leftIdName, leftNode.labels, leftNode.properties), leftVar),
-        CreateNodeCommand(CreateNode(rightIdName, rightNode.labels, rightNode.properties), rightVar)
+        createNodeCommand(leftNode),
+        createNodeCommand(rightNode)
       ), Vector(
-        CreateRelCommand(CreateRelationship(relVar.name, leftIdName, relType, rightIdName, rel.direction, rel.properties), relVar)
+        CreateRelCommand(CreateRelationship(relVar.name, leftVar.name, relType, rightVar.name, direction, properties), relVar)
       ))
 
     //CREATE ()->[:R]->()-[:R]->...->()
-    case RelationshipChain(left, rel, rightNode) =>
+    case RelationshipChain(left, RelationshipPattern(Some(relVar), Seq(relType), _, properties, direction, _, _), rightNode@NodePattern(Some(rightVar), _, _, _)) =>
       val (nodes, rels) = allCreatePatterns(left)
-      val rightVar = rightNode.variable.get
-      val rightIdName = rightVar.name
-
-      val relVar = rel.variable.get
       (nodes :+
-        CreateNodeCommand(CreateNode(rightIdName, rightNode.labels, rightNode.properties), rightVar)
+        createNodeCommand(rightNode)
         , rels :+
-        CreateRelCommand(CreateRelationship(relVar.name, nodes.last.create.idName, rel.types.head,
-          rightIdName, rel.direction, rel.properties), relVar))
+        CreateRelCommand(CreateRelationship(relVar.name, nodes.last.create.idName, relType, rightVar.name, direction, properties), relVar))
   }
 
   private def addDeleteToLogicalPlanInput(acc: PlannerQueryBuilder, clause: Delete): PlannerQueryBuilder = {
