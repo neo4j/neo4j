@@ -433,8 +433,8 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
 
     plan shouldEqual cfg.planBuilder()
                         .produceResults("n")
-                        .optionalExpandAllAst("(n)-[r1]->(x)", ands(hasLabels("x", "X")))
-                        .optionalExpandAllAst("(n)-[r2]->(y)", ands(hasLabels("y", "Y")))
+                        .optionalExpandAll("(n)-[r1]->(x)", Some("x:X"))
+                        .optionalExpandAll("(n)-[r2]->(y)", Some("y:Y"))
                         .nodeByLabelScan("n", "N")
                         .build()
   }

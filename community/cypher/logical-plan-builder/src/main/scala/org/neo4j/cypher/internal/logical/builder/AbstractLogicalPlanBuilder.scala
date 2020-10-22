@@ -25,6 +25,9 @@ import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.FunctionName
+import org.neo4j.cypher.internal.expressions.HasLabels
+import org.neo4j.cypher.internal.expressions.HasLabelsOrTypes
+import org.neo4j.cypher.internal.expressions.HasTypes
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.LabelToken
 import org.neo4j.cypher.internal.expressions.ListLiteral
@@ -151,10 +154,12 @@ import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.InputPosition.NONE
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.PropertyKeyId
+import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.util.attribution.SameId
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
+import org.neo4j.cypher.internal.util.topDown
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -380,18 +385,6 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
 
   def expandInto(pattern: String): IMPL = expand(pattern, ExpandInto)
 
-  def optionalExpandAllAst(pattern: String,
-                           predicate: Expression,
-                           cacheNodeProperties: Seq[String] = Seq.empty,
-                           cacheRelProperties: Seq[String] = Seq.empty): IMPL =
-    optionalExpandAll(
-      patternParser.parse(pattern),
-      Some(predicate),
-      cacheNodeProperties,
-      cacheRelProperties,
-    )
-
-
   def optionalExpandAll(pattern: String,
                         predicate: Option[String] = None): IMPL =
     optionalExpandAll(
@@ -401,10 +394,17 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
 
   private def optionalExpandAll(pattern: PatternParser.Pattern,
                                 predicate: Option[Expression]): IMPL = {
+    val nodes = Set(pattern.from, pattern.to)
+    val rewrittenPredicate = predicate.map(_.endoRewrite(topDown(Rewriter.lift {
+      case p @ HasLabelsOrTypes(v: Variable, labelsOrTypes) if nodes.contains(v.name) =>
+        HasLabels(v, labelsOrTypes.map(l => LabelName(l.name)(l.position)))(p.position)
+      case p @ HasLabelsOrTypes(v: Variable, labelsOrTypes) if pattern.relName == v.name =>
+        HasTypes(v, labelsOrTypes.map(l => RelTypeName(l.name)(l.position)))(p.position)
+    })))
     pattern.length match {
       case SimplePatternLength =>
         appendAtCurrentIndent(UnaryOperator(lp =>
-          OptionalExpand(lp, pattern.from, pattern.dir, pattern.relTypes, pattern.to, pattern.relName, ExpandAll, predicate)(_)))
+          OptionalExpand(lp, pattern.from, pattern.dir, pattern.relTypes, pattern.to, pattern.relName, ExpandAll, rewrittenPredicate)(_)))
       case _ =>
         throw new IllegalArgumentException("Cannot have optional expand with variable length pattern")
     }

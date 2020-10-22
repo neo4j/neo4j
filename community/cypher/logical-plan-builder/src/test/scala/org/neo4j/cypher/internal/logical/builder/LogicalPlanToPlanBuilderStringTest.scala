@@ -174,6 +174,9 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
       .optionalExpandAll("(x)-[r]->(y)")
       .optionalExpandAll("(x)-[r]->(y)")
       .optionalExpandAll("(x)-[r]->(y)", Some("y.num > 20"))
+      .optionalExpandAll("(x)-[r]->(y)", Some("x:X"))
+      .optionalExpandAll("(x)-[r]->(y)", Some("r:R"))
+      .optionalExpandAll("(x)-[r]->(y)", Some("a:A"))
       .argument()
       .build())
 
