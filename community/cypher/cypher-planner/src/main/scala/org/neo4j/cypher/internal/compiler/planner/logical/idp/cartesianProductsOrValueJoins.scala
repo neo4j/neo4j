@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.idp
 
+import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlanRestrictions
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.QueryPlannerConfiguration
 import org.neo4j.cypher.internal.compiler.planner.logical.QueryPlannerKit
@@ -35,7 +36,6 @@ import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.CartesianOrdering
 import org.neo4j.cypher.internal.util.Cost
 import org.neo4j.exceptions.InternalException
-import org.neo4j.cypher.internal.compiler.planner.logical.OnlyIndexPlansFor
 
 import scala.annotation.tailrec
 
@@ -361,7 +361,7 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
       case Seq(rightSymbol) =>
         val contextForRhs = context.withUpdatedCardinalityInformation(lhsPlan)
           .withConfig(context.config.withLeafPlanners(
-            QueryPlannerConfiguration.leafPlannersForNestedIndexJoins(OnlyIndexPlansFor(rightSymbol, leftSymbols))
+            QueryPlannerConfiguration.leafPlannersForNestedIndexJoins(LeafPlanRestrictions.OnlyIndexPlansFor(rightSymbol, leftSymbols))
           ))
 
         val rhsPlans = try {

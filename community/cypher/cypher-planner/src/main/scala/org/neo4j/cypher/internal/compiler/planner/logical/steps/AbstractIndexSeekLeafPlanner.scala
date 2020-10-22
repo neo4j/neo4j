@@ -29,8 +29,6 @@ import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlansForVariable
 import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlansForVariable.maybeLeafPlans
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
-import org.neo4j.cypher.internal.compiler.planner.logical.NoRestrictions
-import org.neo4j.cypher.internal.compiler.planner.logical.OnlyIndexPlansFor
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.ResultOrdering
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.ResultOrdering.PropertyAndPredicateType
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.AsDistanceSeekable
@@ -39,7 +37,6 @@ import org.neo4j.cypher.internal.compiler.planner.logical.plans.AsPropertySeekab
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.AsStringRangeSeekable
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.AsValueRangeSeekable
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.PropertySeekable
-import org.neo4j.cypher.internal.compiler.planner.logical.plans.Scannable
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.Seekable
 import org.neo4j.cypher.internal.expressions.Contains
 import org.neo4j.cypher.internal.expressions.EndsWith
@@ -218,10 +215,10 @@ abstract class AbstractIndexSeekLeafPlanner(restrictions: LeafPlanRestrictions) 
                                           semanticTable: SemanticTable):
   PartialFunction[Expression, IndexCompatiblePredicate] = {
     val valid: (LogicalVariable, Set[LogicalVariable]) => Boolean = restrictions match {
-      case NoRestrictions => (ident, dependencies) =>
+      case LeafPlanRestrictions.NoRestrictions => (ident, dependencies) =>
         !arguments.contains(ident) && dependencies.subsetOf(arguments)
 
-      case OnlyIndexPlansFor(variable, dependencyRestrictions) => (ident, dependencies) =>
+      case LeafPlanRestrictions.OnlyIndexPlansFor(variable, dependencyRestrictions) => (ident, dependencies) =>
         val isRestrictedVariable = ident.name == variable
         if (isRestrictedVariable) {
           val dependsOnTheCorrectVariables = dependencies.map(_.name) == dependencyRestrictions

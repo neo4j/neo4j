@@ -94,7 +94,7 @@ object QueryPlannerConfiguration {
         applyOptional,
         outerHashJoin,
       ),
-      leafPlanners = LeafPlannerList(allLeafPlanners(NoRestrictions)),
+      leafPlanners = LeafPlannerList(allLeafPlanners(LeafPlanRestrictions.NoRestrictions)),
       updateStrategy = defaultUpdateStrategy
     )
 
