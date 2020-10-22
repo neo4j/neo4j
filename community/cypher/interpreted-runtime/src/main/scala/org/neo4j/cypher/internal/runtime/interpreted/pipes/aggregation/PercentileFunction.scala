@@ -66,7 +66,7 @@ class PercentileContFunction(value: Expression, percentile: Expression, memoryTr
     temp.sort((o1: NumberValue, o2: NumberValue) => java.lang.Double.compare(o1.doubleValue(), o2.doubleValue()))
 
     val result = if (perc == 1.0 || count == 1) {
-      temp.get(0)
+      temp.get(count-1)
     } else if (count > 1) {
       val floatIdx = perc * (count - 1)
       val floor = floatIdx.toInt
@@ -93,7 +93,7 @@ class PercentileDiscFunction(value: Expression, percentile: Expression, memoryTr
     temp.sort((o1: NumberValue, o2: NumberValue) => java.lang.Double.compare(o1.doubleValue(), o2.doubleValue()))
 
     val result = if (perc == 1.0 || count == 1) {
-      temp.get(0);
+      temp.get(count-1)
     } else if (count > 1) {
       val floatIdx = perc * count
       var idx = floatIdx.toInt
