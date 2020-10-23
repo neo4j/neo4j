@@ -385,6 +385,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
             // TODO The clean pages in question must still be loaded, though. Otherwise we'll end up writing
             // TODO garbage to the file.
             int pagesGrabbed = 0;
+            long recommendedMaxIOBatchSize = limiter.recommendedMaxIOBatchSize();
             chunkLoop:
             for ( int i = 0; i < chunk.length; i++ )
             {
@@ -422,7 +423,14 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
                             }
                             bufferAddresses[pagesGrabbed] = getAddress( pageRef );
                             pagesGrabbed++;
-                            continue chunkLoop;
+                            if ( pagesGrabbed >= recommendedMaxIOBatchSize )
+                            {
+                                break; // continue to flush
+                            }
+                            else
+                            {
+                                continue chunkLoop; // go to next page
+                            }
                         }
                         else if ( forClosing )
                         {
