@@ -586,6 +586,10 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     items <- zeroOrMore(tuple(_identifier, _expression))
   } yield items.toMap
 
+  def _mapStringKeysNonEmpty: Gen[Map[String, Expression]] = for {
+    items <- oneOrMore(tuple(_identifier, _expression))
+  } yield items.toMap
+
   def _property: Gen[Property] = for {
     map <- _expression
     key <- _propertyKeyName
@@ -1208,12 +1212,13 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     name                <- option(_identifier)
     ifExistsDo          <- _ifExistsDo
     options             <- _mapStringKeys
+    existenceOption     <- frequency(8 -> const(None), 2 -> some(_mapStringKeysNonEmpty))
     use                 <- option(_use)
     nodeKey             = CreateNodeKeyConstraint(variable, labelName, props, name, ifExistsDo, options, use)(pos)
     uniqueness          = CreateUniquePropertyConstraint(variable, labelName, Seq(prop), name, ifExistsDo, options, use)(pos)
     compositeUniqueness = CreateUniquePropertyConstraint(variable, labelName, props, name, ifExistsDo, options, use)(pos)
-    nodeExistence       = CreateNodePropertyExistenceConstraint(variable, labelName, prop, name, ifExistsDo, use)(pos)
-    relExistence        = CreateRelationshipPropertyExistenceConstraint(variable, relTypeName, prop, name, ifExistsDo, use)(pos)
+    nodeExistence       = CreateNodePropertyExistenceConstraint(variable, labelName, prop, name, ifExistsDo, existenceOption, use)(pos)
+    relExistence        = CreateRelationshipPropertyExistenceConstraint(variable, relTypeName, prop, name, ifExistsDo, existenceOption, use)(pos)
     command             <- oneOf(nodeKey, uniqueness, compositeUniqueness, nodeExistence, relExistence)
   } yield command
 
