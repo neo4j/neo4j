@@ -28,7 +28,6 @@ import org.neo4j.cypher.internal.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.rewriting.conditions.containsNoNodesOfType
 import org.neo4j.cypher.internal.rewriting.conditions.containsNoReturnAll
 import org.neo4j.cypher.internal.rewriting.conditions.noDuplicatesInReturnItems
-import org.neo4j.cypher.internal.rewriting.conditions.noHasLabelsOrTypes
 import org.neo4j.cypher.internal.rewriting.conditions.noReferenceEqualityAmongVariables
 import org.neo4j.cypher.internal.rewriting.conditions.noUnnamedPatternElementsInMatch
 import org.neo4j.cypher.internal.rewriting.conditions.noUnnamedPatternElementsInPatternComprehension
@@ -69,7 +68,6 @@ class ASTRewriter(rewriterSequencer: String => RewriterStepSequencer,
     val contract = rewriterSequencer("ASTRewriter")(
       expandStar(semanticState),
       normalizeHasLabelsAndHasType(semanticState),
-      enableCondition(noHasLabelsOrTypes),
       desugarMapProjection(semanticState),
       moveWithPastMatch,
       normalizeComparisons,

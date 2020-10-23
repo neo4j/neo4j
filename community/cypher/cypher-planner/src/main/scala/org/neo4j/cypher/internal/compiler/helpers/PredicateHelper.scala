@@ -33,6 +33,8 @@ import org.neo4j.cypher.internal.expressions.HasDegreeGreaterThanOrEqual
 import org.neo4j.cypher.internal.expressions.HasDegreeLessThan
 import org.neo4j.cypher.internal.expressions.HasDegreeLessThanOrEqual
 import org.neo4j.cypher.internal.expressions.HasLabels
+import org.neo4j.cypher.internal.expressions.HasLabelsOrTypes
+import org.neo4j.cypher.internal.expressions.HasTypes
 import org.neo4j.cypher.internal.expressions.In
 import org.neo4j.cypher.internal.expressions.IterablePredicateExpression
 import org.neo4j.cypher.internal.expressions.ListComprehension
@@ -82,7 +84,7 @@ object PredicateHelper {
       case o: OperatorExpression => o.signatures.forall(_.outputType == symbols.CTBoolean)
       case f: FunctionInvocation => BOOLEAN_FUNCTIONS.contains(f.function)
       case f: ResolvedFunctionInvocation => f.fcnSignature.forall(_.outputType == symbols.CTBoolean)
-      case  _:Ands | _: Ors | _: In | _:BooleanLiteral | _:HasLabels | _:AndedPropertyInequalities |  _:IterablePredicateExpression => true
+      case _:Ands | _: Ors | _: In | _:BooleanLiteral | _:HasLabels | _:HasTypes | _:HasLabelsOrTypes | _:AndedPropertyInequalities | _:IterablePredicateExpression => true
       case _:ExistsSubClause => true
       case _:CoerceToPredicate => true
       case _: HasDegreeGreaterThan | _: HasDegreeGreaterThanOrEqual | _: HasDegree | _: HasDegreeLessThan | _: HasDegreeLessThanOrEqual => true

@@ -39,10 +39,12 @@ import org.neo4j.cypher.internal.expressions.GetDegree
 import org.neo4j.cypher.internal.expressions.GreaterThan
 import org.neo4j.cypher.internal.expressions.GreaterThanOrEqual
 import org.neo4j.cypher.internal.expressions.HasLabels
+import org.neo4j.cypher.internal.expressions.HasLabelsOrTypes
 import org.neo4j.cypher.internal.expressions.In
 import org.neo4j.cypher.internal.expressions.IsNotNull
 import org.neo4j.cypher.internal.expressions.IsNull
 import org.neo4j.cypher.internal.expressions.LabelName
+import org.neo4j.cypher.internal.expressions.LabelOrRelTypeName
 import org.neo4j.cypher.internal.expressions.LessThan
 import org.neo4j.cypher.internal.expressions.LessThanOrEqual
 import org.neo4j.cypher.internal.expressions.ListComprehension
@@ -118,6 +120,9 @@ trait AstConstructionTestSupport extends CypherTestSupport {
 
   def hasLabels(v: LogicalVariable, labels: String*): HasLabels =
     HasLabels(v, labels.map(labelName))(pos)
+
+  def hasLabelsOrTypes(v: String, labelsOrTypes: String*): HasLabelsOrTypes =
+    HasLabelsOrTypes(varFor(v), labelsOrTypes.map(n => LabelOrRelTypeName(n)(pos)))(pos)
 
   def exists(e: Expression): FunctionInvocation =
     FunctionInvocation(FunctionName(Exists.name)(e.position), e)(e.position)
