@@ -88,7 +88,7 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
         Some(plans.DropUniquePropertyConstraint(label, props))
 
       // CREATE CONSTRAINT [name] [IF NOT EXISTS] ON (node:Label) ASSERT EXISTS node.prop
-      case CreateNodePropertyExistenceConstraint(_, label, prop, name, ifExistsDo, _) =>
+      case CreateNodePropertyExistenceConstraint(_, label, prop, name, ifExistsDo, _, _) =>
         val source = ifExistsDo match {
           case IfExistsDoNothing => Some(plans.DoNothingIfExistsForConstraint(prop.map.asCanonicalStringVal, scala.util.Left(label), Seq(prop), plans.NodePropertyExistence, name))
           case _ => None
@@ -100,7 +100,7 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
         Some(plans.DropNodePropertyExistenceConstraint(label, prop))
 
       // CREATE CONSTRAINT [name] [IF NOT EXISTS] ON ()-[r:R]-() ASSERT EXISTS r.prop
-      case CreateRelationshipPropertyExistenceConstraint(_, relType, prop, name, ifExistsDo, _) =>
+      case CreateRelationshipPropertyExistenceConstraint(_, relType, prop, name, ifExistsDo, _, _) =>
         val source = ifExistsDo match {
           case IfExistsDoNothing => Some(plans.DoNothingIfExistsForConstraint(prop.map.asCanonicalStringVal, scala.util.Right(relType), Seq(prop), plans.RelationshipPropertyExistence, name))
           case _ => None
