@@ -23,7 +23,6 @@ import java.time.Duration;
 
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseServiceSPI;
-import org.neo4j.bolt.txtracking.ReconciledTransactionTracker;
 import org.neo4j.bolt.txtracking.TransactionIdTracker;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.api.DatabaseNotFoundException;
@@ -41,10 +40,10 @@ public class BoltKernelDatabaseManagementServiceProvider implements BoltGraphDat
     private final Duration bookmarkAwaitDuration;
 
     public BoltKernelDatabaseManagementServiceProvider( DatabaseManagementService managementService,
-            ReconciledTransactionTracker reconciledTxTracker, Monitors monitors, SystemNanoClock clock, Duration bookmarkAwaitDuration )
+            Monitors monitors, SystemNanoClock clock, Duration bookmarkAwaitDuration )
     {
         this.managementService = managementService;
-        this.transactionIdTracker = new TransactionIdTracker( managementService, reconciledTxTracker, monitors, clock );
+        this.transactionIdTracker = new TransactionIdTracker( managementService, monitors, clock );
         this.bookmarkAwaitDuration = bookmarkAwaitDuration;
     }
 

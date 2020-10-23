@@ -122,8 +122,7 @@ class BoltStateMachineFactoryImplTest
     private static BoltStateMachineFactoryImpl newBoltFactory( DatabaseManagementService managementService )
     {
         var config = Config.defaults( GraphDatabaseSettings.default_database, CUSTOM_DB_NAME );
-        var reconciledTxTracker = new DefaultReconciledTransactionTracker( NullLogService.getInstance() );
-        var dbProvider = new BoltKernelDatabaseManagementServiceProvider( managementService, reconciledTxTracker, new Monitors(), CLOCK, Duration.ZERO );
+        var dbProvider = new BoltKernelDatabaseManagementServiceProvider( managementService, new Monitors(), CLOCK, Duration.ZERO );
         return new BoltStateMachineFactoryImpl( dbProvider, mock( Authentication.class ), CLOCK, config, NullLogService.getInstance() );
     }
 

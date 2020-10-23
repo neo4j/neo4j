@@ -167,8 +167,7 @@ class DatabaseServiceBookmarkTest
         var managementService = mock( DatabaseManagementService.class );
         when( managementService.database( DATABASE_ID.name() ) ).thenReturn( facade );
 
-        var reconciledTxTracker = new DefaultReconciledTransactionTracker( NullLogService.getInstance() );
-        var transactionIdTracker = new TransactionIdTracker( managementService, reconciledTxTracker, new Monitors(), clock );
+        var transactionIdTracker = new TransactionIdTracker( managementService, new Monitors(), clock );
         return new BoltKernelGraphDatabaseServiceProvider( facade, transactionIdTracker, txAwaitDuration );
     }
 

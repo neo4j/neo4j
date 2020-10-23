@@ -86,11 +86,11 @@ class TransactionIdTrackerTest
         when( resolver.resolveDependency( TransactionIdStore.class ) ).thenReturn( transactionIdStore );
 
         when( databaseAvailabilityGuard.isAvailable() ).thenReturn( true );
-        transactionIdTracker = new TransactionIdTracker( managementService, reconciledTransactionTracker, new Monitors(), Clocks.fakeClock() );
+        transactionIdTracker = new TransactionIdTracker( managementService, new Monitors(), Clocks.fakeClock() );
     }
 
     @Test
-    void shouldReturnImmediatelyForBaseTxIdOrLess() throws Exception
+    void shouldReturnImmediatelyForBaseTxIdOrLess()
     {
         // when
         transactionIdTracker.awaitUpToDate( namedDatabaseId, BASE_TX_ID, ofSeconds( 5 ) );
@@ -101,7 +101,7 @@ class TransactionIdTrackerTest
     }
 
     @Test
-    void shouldReturnImmediatelyForBaseTxIdOrLessUsingSystemDb() throws Exception
+    void shouldReturnImmediatelyForBaseTxIdOrLessUsingSystemDb()
     {
         // given
         when( db.isSystem() ).thenReturn( true );
@@ -115,7 +115,7 @@ class TransactionIdTrackerTest
     }
 
     @Test
-    void shouldWaitForRequestedVersion() throws Exception
+    void shouldWaitForRequestedVersion()
     {
         // given
         var version = 5L;
@@ -130,7 +130,7 @@ class TransactionIdTrackerTest
     }
 
     @Test
-    void shouldWaitForRequestedVersionUsingSystemDb() throws Exception
+    void shouldWaitForRequestedVersionUsingSystemDb()
     {
         // given
         when( db.isSystem() ).thenReturn( true );
