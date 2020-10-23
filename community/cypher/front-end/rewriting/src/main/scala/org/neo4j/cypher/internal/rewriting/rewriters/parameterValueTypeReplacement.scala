@@ -18,7 +18,6 @@ package org.neo4j.cypher.internal.rewriting.rewriters
 
 import org.neo4j.cypher.internal.expressions.ExplicitParameter
 import org.neo4j.cypher.internal.rewriting.RewritingStep
-import org.neo4j.cypher.internal.rewriting.conditions.containsNoReturnAll
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.bottomUp
@@ -38,13 +37,12 @@ case class parameterValueTypeReplacement(parameterTypeMapping: Map[String, Cyphe
 
   override def rewrite(that: AnyRef): AnyRef = rewriter(that)
 
-  // TODO depends on SyntaxDeprecationWarnings(Deprecations.V2) being run which replaces ParameterWithOldSyntax with ExplicitParameter
-  // TODO this should be captured differently. This has an invalidated condition `ProjectionClausesHaveSemanticInfo`,
-  // which is a pre-condition of expandStar. It can invalidate this condition by rewriting things inside WITH/RETURN.
-  // But to do that we need a step that introduces that condition which would be SemanticAnalysis.
-  override def preConditions: Set[StepSequencer.Condition] = Set(containsNoReturnAll)
+  override def preConditions: Set[StepSequencer.Condition] = Set.empty
 
   override def postConditions: Set[StepSequencer.Condition] = Set(ExplicitParametersKnowTheirTypes)
 
-  override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
+  override def invalidatedConditions: Set[StepSequencer.Condition] = Set(
+    ProjectionClausesHaveSemanticInfo, // It can invalidate this condition by rewriting things inside WITH/RETURN.
+    PatternExpressionsHaveSemanticInfo, // It can invalidate this condition by rewriting things inside PatternExpressions.
+  )
 }

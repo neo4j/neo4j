@@ -50,7 +50,10 @@ case class foldConstants(cypherExceptionFactory: CypherExceptionFactory) extends
 
   override def postConditions: Set[StepSequencer.Condition] = Set(ConstantNumberLiteralsFolded)
 
-  override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
+  override def invalidatedConditions: Set[StepSequencer.Condition] = Set(
+    ProjectionClausesHaveSemanticInfo, // It can invalidate this condition by rewriting things inside WITH/RETURN.
+    PatternExpressionsHaveSemanticInfo, // It can invalidate this condition by rewriting things inside PatternExpressions.
+  )
 
   override def rewrite(that: AnyRef): AnyRef =
   try {

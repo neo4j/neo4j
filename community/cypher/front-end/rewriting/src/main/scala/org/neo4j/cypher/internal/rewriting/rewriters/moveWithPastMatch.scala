@@ -51,7 +51,9 @@ case object moveWithPastMatch extends RewritingStep {
 
   override def postConditions: Set[StepSequencer.Condition] = Set(IndependentWithsMovedAfterMatch)
 
-  override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
+  override def invalidatedConditions: Set[StepSequencer.Condition] = Set(
+    ProjectionClausesHaveSemanticInfo // It can invalidate this condition by copying WITH clauses
+  )
 
   private val subqueryRewriter: Rewriter = topDown(Rewriter.lift {
     case s: SubQuery =>

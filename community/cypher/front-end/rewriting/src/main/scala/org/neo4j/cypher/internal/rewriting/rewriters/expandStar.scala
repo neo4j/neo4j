@@ -30,13 +30,18 @@ import org.neo4j.cypher.internal.rewriting.RewritingStep
 import org.neo4j.cypher.internal.rewriting.conditions.containsNoReturnAll
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
+import org.neo4j.cypher.internal.util.StepSequencer.Condition
 import org.neo4j.cypher.internal.util.bottomUp
+
+case object ProjectionClausesHaveSemanticInfo extends Condition
 
 case class expandStar(state: SemanticState) extends RewritingStep {
 
   override def rewrite(that: AnyRef): AnyRef = instance(that)
 
-  override def preConditions: Set[StepSequencer.Condition] = Set.empty
+  override def preConditions: Set[StepSequencer.Condition] = Set(
+    ProjectionClausesHaveSemanticInfo // Looks up recorded scopes of projection clauses.
+  )
 
   override def postConditions: Set[StepSequencer.Condition] = Set(containsNoReturnAll)
 

@@ -42,7 +42,10 @@ case object normalizeArgumentOrder extends RewritingStep {
     normalizedEqualsArguments
   )
 
-  override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
+  override def invalidatedConditions: Set[StepSequencer.Condition] = Set(
+    ProjectionClausesHaveSemanticInfo, // It can invalidate this condition by rewriting things inside WITH/RETURN.
+    PatternExpressionsHaveSemanticInfo, // It can invalidate this condition by rewriting things inside PatternExpressions.
+  )
 
   override def rewrite(that: AnyRef): AnyRef = instance(that)
 

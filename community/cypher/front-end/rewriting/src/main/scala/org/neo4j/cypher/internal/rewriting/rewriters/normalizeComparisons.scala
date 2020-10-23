@@ -44,7 +44,10 @@ case object normalizeComparisons extends RewritingStep {
 
   override def postConditions: Set[StepSequencer.Condition] = Set(OnlySingleHasLabels, noReferenceEqualityAmongVariables)
 
-  override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
+  override def invalidatedConditions: Set[StepSequencer.Condition] = Set(
+    ProjectionClausesHaveSemanticInfo, // It can invalidate this condition by rewriting things inside WITH/RETURN.
+    PatternExpressionsHaveSemanticInfo, // It can invalidate this condition by rewriting things inside PatternExpressions.
+  )
 
   private val instance: Rewriter = topDown(Rewriter.lift {
     case c@NotEquals(lhs, rhs) =>

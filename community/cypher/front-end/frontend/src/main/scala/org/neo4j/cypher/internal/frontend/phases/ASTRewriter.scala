@@ -21,6 +21,8 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.rewriting.RewritingStepSequencer
 import org.neo4j.cypher.internal.rewriting.rewriters.AddUniquenessPredicates
 import org.neo4j.cypher.internal.rewriting.rewriters.InnerVariableNamer
+import org.neo4j.cypher.internal.rewriting.rewriters.PatternExpressionsHaveSemanticInfo
+import org.neo4j.cypher.internal.rewriting.rewriters.ProjectionClausesHaveSemanticInfo
 import org.neo4j.cypher.internal.rewriting.rewriters.desugarMapProjection
 import org.neo4j.cypher.internal.rewriting.rewriters.expandStar
 import org.neo4j.cypher.internal.rewriting.rewriters.foldConstants
@@ -65,7 +67,7 @@ class ASTRewriter(innerVariableNamer: InnerVariableNamer) {
       replaceLiteralDynamicPropertyLookups,
       inlineNamedPathsInPatternComprehensions,
       parameterValueTypeReplacement(parameterTypeMapping),
-    ))
+    ), initialConditions = Set(ProjectionClausesHaveSemanticInfo, PatternExpressionsHaveSemanticInfo))
     val combined = inSequence(orderedSteps: _*)
 
     statement.endoRewrite(combined)

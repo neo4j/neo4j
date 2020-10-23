@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal.expressions.HasTypes
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.rewriting.RewritingStep
-import org.neo4j.cypher.internal.rewriting.conditions.containsNoReturnAll
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.symbols.CTNode
@@ -34,14 +33,14 @@ case object HasLabelsOrTypesReplacedIfPossible extends StepSequencer.Condition
 
 case class normalizeHasLabelsAndHasType(semanticState: SemanticState) extends RewritingStep {
 
-  // TODO this should be captured differently. This has an invalidated condition `ProjectionClausesHaveSemanticInfo`,
-  // which is a pre-condition of expandStar. It can invalidate this condition by rewriting things inside WITH/RETURN.
-  // But to do that we need a step that introduces that condition which would be SemanticAnalysis.
-  override def preConditions: Set[StepSequencer.Condition] = Set(containsNoReturnAll)
+  override def preConditions: Set[StepSequencer.Condition] = Set.empty
 
   override def postConditions: Set[StepSequencer.Condition] = Set(HasLabelsOrTypesReplacedIfPossible)
 
-  override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
+  override def invalidatedConditions: Set[StepSequencer.Condition] = Set(
+    ProjectionClausesHaveSemanticInfo, // It can invalidate this condition by rewriting things inside WITH/RETURN.
+    PatternExpressionsHaveSemanticInfo, // It can invalidate this condition by rewriting things inside PatternExpressions.
+  )
 
   override def rewrite(that: AnyRef): AnyRef = instance(that)
 

@@ -31,17 +31,17 @@ import org.neo4j.cypher.internal.util.bottomUp
 
 case object nameAllPatternElements extends RewritingStep {
 
-  // TODO this should be captured differently. This has an invalidated condition `PatternExpressionsHaveSemanticInfo`,
-  // which is a pre-condition of normalizeExistsPatternExpressions.
-  // But to do that we need a step that introduced that condition which would be SemanticAnalysis.
-  override def preConditions: Set[StepSequencer.Condition] = Set(PatternExpressionAreWrappedInExists)
+  override def preConditions: Set[StepSequencer.Condition] = Set.empty
 
   override def postConditions: Set[StepSequencer.Condition] = Set(
     noUnnamedPatternElementsInMatch,
     noUnnamedPatternElementsInPatternComprehension
   )
 
-  override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
+  override def invalidatedConditions: Set[StepSequencer.Condition] = Set(
+    ProjectionClausesHaveSemanticInfo, // It can invalidate this condition by rewriting things inside WITH/RETURN.
+    PatternExpressionsHaveSemanticInfo, // It can invalidate this condition by rewriting things inside PatternExpressions.
+  )
 
   override def rewrite(that: AnyRef): AnyRef = namingRewriter.apply(that)
 
