@@ -66,7 +66,7 @@ class InputDataStreamPlanningTest extends CypherFunSuite with LogicalPlanningTes
     new given().getLogicalPlanFor("INPUT DATA STREAM a, b, c WITH * WHERE a:Employee RETURN a.name AS name ORDER BY name")._2 should equal(
       Sort(
         Projection(
-          Selection(ands(hasLabels("a", "Employee")), Input(Seq("a", "b", "c"))), Map("name" -> prop("a", "name"))
+          Selection(ands(hasLabelsOrTypes("a", "Employee")), Input(Seq("a", "b", "c"))), Map("name" -> prop("a", "name"))
         ),
         List(Ascending("name"))
       )
