@@ -118,9 +118,8 @@ public class SessionExtension implements BeforeEachCallback, AfterEachCallback
         Authentication authentication = authentication( resolver.resolveDependency( AuthManager.class ) );
         Config config = resolver.resolveDependency( Config.class );
         SystemNanoClock clock = Clocks.nanoClock();
-        var reconciledTxTracker = new DefaultReconciledTransactionTracker( NullLogService.getInstance() );
         BoltGraphDatabaseManagementServiceSPI databaseManagementService = new BoltKernelDatabaseManagementServiceProvider( managementService,
-                reconciledTxTracker, new Monitors(), clock, ofSeconds( 30 ) );
+                new Monitors(), clock, ofSeconds( 30 ) );
         boltFactory = new BoltStateMachineFactoryImpl(
                 databaseManagementService,
                 authentication,

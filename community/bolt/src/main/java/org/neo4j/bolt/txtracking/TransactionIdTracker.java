@@ -44,15 +44,12 @@ import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
 public class TransactionIdTracker
 {
     private final DatabaseManagementService managementService;
-    private final ReconciledTransactionTracker reconciledTxTracker;
     private final TransactionIdTrackerMonitor monitor;
     private final SystemNanoClock clock;
 
-    public TransactionIdTracker( DatabaseManagementService managementService, ReconciledTransactionTracker reconciledTxTracker,
-            Monitors monitors, SystemNanoClock clock )
+    public TransactionIdTracker( DatabaseManagementService managementService, Monitors monitors, SystemNanoClock clock )
     {
         this.managementService = managementService;
-        this.reconciledTxTracker = reconciledTxTracker;
         this.monitor = monitors.newMonitor( TransactionIdTrackerMonitor.class );
         this.clock = clock;
     }

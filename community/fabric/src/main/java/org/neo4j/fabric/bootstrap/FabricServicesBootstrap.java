@@ -165,9 +165,8 @@ public abstract class FabricServicesBootstrap
 
         var serverConfig = dependencies.resolveDependency( Config.class );
         var bookmarkTimeout = serverConfig.get( GraphDatabaseSettings.bookmark_ready_timeout );
-        var reconciledTxTracker = new SimpleReconciledTransactionTracker( managementService, logService );
 
-        var transactionIdTracker = new TransactionIdTracker( managementService, reconciledTxTracker, monitors, clock );
+        var transactionIdTracker = new TransactionIdTracker( managementService, monitors, clock );
 
         var databaseManager = (DatabaseManager<DatabaseContext>) dependencies.resolveDependency( DatabaseManager.class );
         var databaseIdRepository = databaseManager.databaseIdRepository();

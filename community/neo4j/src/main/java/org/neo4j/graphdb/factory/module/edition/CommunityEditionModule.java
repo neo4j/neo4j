@@ -319,8 +319,7 @@ public class CommunityEditionModule extends StandaloneEditionModule
     {
         var config = dependencies.resolveDependency( Config.class );
         var bookmarkAwaitDuration =  config.get( GraphDatabaseSettings.bookmark_ready_timeout );
-        var reconciledTxTracker = new SimpleReconciledTransactionTracker( managementService, logService );
-        return new BoltKernelDatabaseManagementServiceProvider( managementService, reconciledTxTracker, monitors, clock, bookmarkAwaitDuration );
+        return new BoltKernelDatabaseManagementServiceProvider( managementService, monitors, clock, bookmarkAwaitDuration );
     }
 
     @Override

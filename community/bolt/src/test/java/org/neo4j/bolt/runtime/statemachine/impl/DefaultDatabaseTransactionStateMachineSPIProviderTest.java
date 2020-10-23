@@ -89,8 +89,7 @@ class DefaultDatabaseTransactionStateMachineSPIProviderTest
     private TransactionStateMachineSPIProvider newSpiProvider( DatabaseManagementService managementService )
     {
         var clock = mock( SystemNanoClock.class );
-        var reconciledTxTracker = new SimpleReconciledTransactionTracker( managementService, NullLogService.getInstance() );
-        var dbProvider = new BoltKernelDatabaseManagementServiceProvider( managementService, reconciledTxTracker, new Monitors(), clock, Duration.ZERO );
+        var dbProvider = new BoltKernelDatabaseManagementServiceProvider( managementService, new Monitors(), clock, Duration.ZERO );
         return new AbstractTransactionStatementSPIProvider( dbProvider, "neo4j", mock( BoltChannel.class ), clock )
         {
             @Override
