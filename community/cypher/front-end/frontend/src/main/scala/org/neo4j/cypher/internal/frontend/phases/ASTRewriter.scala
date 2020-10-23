@@ -37,6 +37,7 @@ import org.neo4j.cypher.internal.rewriting.rewriters.normalizeSargablePredicates
 import org.neo4j.cypher.internal.rewriting.rewriters.parameterValueTypeReplacement
 import org.neo4j.cypher.internal.rewriting.rewriters.replaceLiteralDynamicPropertyLookups
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
+import org.neo4j.cypher.internal.util.StepSequencer.AccumulatedSteps
 import org.neo4j.cypher.internal.util.inSequence
 import org.neo4j.cypher.internal.util.symbols.CypherType
 
@@ -47,7 +48,7 @@ class ASTRewriter(innerVariableNamer: InnerVariableNamer) {
               parameterTypeMapping: Map[String, CypherType],
               cypherExceptionFactory: CypherExceptionFactory): Statement = {
 
-    val orderedSteps = RewritingStepSequencer.orderSteps(Set(
+    val AccumulatedSteps(orderedSteps, _) = RewritingStepSequencer.orderSteps(Set(
       expandStar(semanticState),
       normalizeHasLabelsAndHasType(semanticState),
       desugarMapProjection(semanticState),

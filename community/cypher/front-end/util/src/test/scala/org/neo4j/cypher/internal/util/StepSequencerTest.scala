@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.util
 
+import org.neo4j.cypher.internal.util.StepSequencer.AccumulatedSteps
 import org.neo4j.cypher.internal.util.StepSequencer.Condition
 import org.neo4j.cypher.internal.util.StepSequencer.Step
 import org.neo4j.cypher.internal.util.StepSequencer.StepAccumulator
@@ -96,13 +97,44 @@ class StepSequencerTest extends CypherFunSuite {
     an[IllegalArgumentException] should be thrownBy sequencer.orderSteps(steps.toSet)
   }
 
+  test("fails if there are circular dependencies given by invalidated initial conditions") {
+    val steps = Seq(
+      new TestStep("0", Set(), Set(condB), Set(condA)),
+      new TestStep("1", Set(condA, condB), Set(condC), Set()),
+    )
+    an[IllegalArgumentException] should be thrownBy sequencer.orderSteps(steps.toSet, Set(condA))
+  }
+
+  test("fails if there is no step that introduces a pre-condition") {
+    val steps = Seq(
+      new TestStep("0", Set(condA), Set(condB), Set()),
+    )
+    an[IllegalArgumentException] should be thrownBy sequencer.orderSteps(steps.toSet)
+  }
+
+  test("fails if an invalidated condition is neither introduced nor initial") {
+    val steps = Seq(
+      new TestStep("0", Set(), Set(condB), Set(condA)),
+    )
+    an[IllegalArgumentException] should be thrownBy sequencer.orderSteps(steps.toSet)
+  }
+
+  test("fails if there is a step that introduces an initial condition") {
+    val steps = Seq(
+      new TestStep("0", Set(), Set(condB), Set()),
+    )
+    an[IllegalArgumentException] should be thrownBy sequencer.orderSteps(steps.toSet, initialConditions = Set(condB))
+  }
+
   test("orders steps correctly if they have strong ordering requirements") {
     val steps = Seq(
       new TestStep("0", Set(), Set(condA), Set()),
       new TestStep("1", Set(condA), Set(condB), Set()),
       new TestStep("2", Set(condB), Set(condC), Set()),
     )
-    sequencer.orderSteps(steps.toSet) should equal(steps)
+    val AccumulatedSteps(orderedSteps, postConditions) = sequencer.orderSteps(steps.toSet)
+    orderedSteps should equal(steps)
+    postConditions should equal(steps.flatMap(_.postConditions).toSet)
   }
 
   test("if only some steps have dependencies, order those correctly") {
@@ -116,7 +148,7 @@ class StepSequencerTest extends CypherFunSuite {
       new TestStep("6", Set(condB, condA), Set(condG), Set()),
     )
 
-    val orderedSteps = sequencer.orderSteps(steps.toSet)
+    val AccumulatedSteps(orderedSteps, postConditions) = sequencer.orderSteps(steps.toSet)
     withClue(orderedSteps) {
       orderedSteps.indexOfOrFail(steps(3)) should be > orderedSteps.indexOfOrFail(steps(0))
       orderedSteps.indexOfOrFail(steps(4)) should be > orderedSteps.indexOfOrFail(steps(0))
@@ -124,6 +156,7 @@ class StepSequencerTest extends CypherFunSuite {
       orderedSteps.indexOfOrFail(steps(6)) should be > orderedSteps.indexOfOrFail(steps(0))
       orderedSteps.indexOfOrFail(steps(6)) should be > orderedSteps.indexOfOrFail(steps(1))
     }
+    postConditions should equal(steps.flatMap(_.postConditions).toSet)
   }
 
   test("duplicates single step if needed because conditions get invalidated") {
@@ -132,12 +165,14 @@ class StepSequencerTest extends CypherFunSuite {
       new TestStep("1", Set(condA), Set(condB), Set()),
       new TestStep("2", Set(condB), Set(condC), Set(condB)),
     )
-    sequencer.orderSteps(steps.toSet) should equal(Seq(
+    val AccumulatedSteps(orderedSteps, postConditions) = sequencer.orderSteps(steps.toSet)
+    orderedSteps should equal(Seq(
       steps(0),
       steps(1),
       steps(2),
       steps(1),
     ))
+    postConditions should equal(steps.flatMap(_.postConditions).toSet)
   }
 
   test("orders independent steps correctly if conditions get invalidated") {
@@ -146,7 +181,8 @@ class StepSequencerTest extends CypherFunSuite {
       new TestStep("1", Set(condA), Set(condB), Set(condA)),
       new TestStep("2", Set(condA), Set(condC), Set()),
     )
-    sequencer.orderSteps(steps.toSet) should (equal(Seq(
+    val AccumulatedSteps(orderedSteps, postConditions) = sequencer.orderSteps(steps.toSet)
+    orderedSteps should (equal(Seq(
       steps(0),
       steps(2),
       steps(1),
@@ -157,6 +193,7 @@ class StepSequencerTest extends CypherFunSuite {
       steps(0),
       steps(2),
     )))
+    postConditions should equal(steps.flatMap(_.postConditions).toSet)
   }
 
   test("duplicates multiple steps if needed because conditions get invalidated") {
@@ -165,13 +202,15 @@ class StepSequencerTest extends CypherFunSuite {
       new TestStep("1", Set(condA), Set(condB), Set()),
       new TestStep("2", Set(condB), Set(condC), Set(condA, condB)),
     )
-    sequencer.orderSteps(steps.toSet) should equal(Seq(
+    val AccumulatedSteps(orderedSteps, postConditions) = sequencer.orderSteps(steps.toSet)
+    orderedSteps should equal(Seq(
       steps(0),
       steps(1),
       steps(2),
       steps(0),
       steps(1),
     ))
+    postConditions should equal(steps.flatMap(_.postConditions).toSet)
   }
 
   test("duplicates steps multiple times if needed because conditions get invalidated") {
@@ -180,7 +219,8 @@ class StepSequencerTest extends CypherFunSuite {
       new TestStep("1", Set(condA), Set(condB), Set(condA)),
       new TestStep("2", Set(condA), Set(condC), Set(condA)),
     )
-    sequencer.orderSteps(steps.toSet) should (equal(Seq(
+    val AccumulatedSteps(orderedSteps, postConditions) = sequencer.orderSteps(steps.toSet)
+    orderedSteps should (equal(Seq(
       steps(0),
       steps(1),
       steps(0),
@@ -193,6 +233,7 @@ class StepSequencerTest extends CypherFunSuite {
       steps(1),
       steps(0),
     )))
+    postConditions should equal(steps.flatMap(_.postConditions).toSet)
   }
 
   test("very invalidating steps") {
@@ -201,7 +242,8 @@ class StepSequencerTest extends CypherFunSuite {
       new TestStep("1", Set(condA), Set(condB), Set(condA)),
       new TestStep("2", Set(condA, condB), Set(condC), Set(condA, condB)),
     )
-    sequencer.orderSteps(steps.toSet) should equal(Seq(
+    val AccumulatedSteps(orderedSteps, postConditions) = sequencer.orderSteps(steps.toSet)
+    orderedSteps should equal(Seq(
       steps(0),
       steps(1),
       steps(0),
@@ -210,6 +252,7 @@ class StepSequencerTest extends CypherFunSuite {
       steps(1),
       steps(0),
     ))
+    postConditions should equal(steps.flatMap(_.postConditions).toSet)
   }
 
   test("should order invalidating step first if it has no dependencies") {
@@ -222,12 +265,13 @@ class StepSequencerTest extends CypherFunSuite {
       new TestStep("5", Set(condA, condB, condC, condD), Set(condF), Set()),
     )
 
-    val orderedSteps = sequencer.orderSteps(steps.toSet)
+    val AccumulatedSteps(orderedSteps, postConditions) = sequencer.orderSteps(steps.toSet)
     withClue(orderedSteps) {
       orderedSteps.size should equal(steps.size)
       orderedSteps(0) should equal(steps(2))
       orderedSteps(5) should equal(steps(5))
     }
+    postConditions should equal(steps.flatMap(_.postConditions).toSet)
   }
 
   test("should order often invalidated step last if it has no dependencies") {
@@ -240,12 +284,13 @@ class StepSequencerTest extends CypherFunSuite {
       new TestStep("5", Set(condA, condB, condC, condD, condE), Set(condF, condG), Set()),
     )
 
-    val orderedSteps = sequencer.orderSteps(steps.toSet)
+    val AccumulatedSteps(orderedSteps, postConditions) = sequencer.orderSteps(steps.toSet)
     withClue(orderedSteps) {
       orderedSteps.size should equal(steps.size)
       orderedSteps(4) should equal(steps(2))
       orderedSteps(5) should equal(steps(5))
     }
+    postConditions should equal(steps.flatMap(_.postConditions).toSet)
   }
 
   test("should order often invalidated step last if it has no dependencies 2") {
@@ -256,11 +301,12 @@ class StepSequencerTest extends CypherFunSuite {
       new TestStep("3", Set(), Set(condF), Set(condA, condB)),
     )
 
-    val orderedSteps = sequencer.orderSteps(steps.toSet)
+    val AccumulatedSteps(orderedSteps, postConditions) = sequencer.orderSteps(steps.toSet)
     withClue(orderedSteps) {
       orderedSteps.size should equal(steps.size)
       orderedSteps(3) should equal(steps(0))
     }
+    postConditions should equal(steps.flatMap(_.postConditions).toSet)
   }
 
   test("should find order where step that introduces frequently invalidated condition is not repeated too often") {
@@ -271,7 +317,8 @@ class StepSequencerTest extends CypherFunSuite {
       new TestStep("3", Set(condA), Set(condD), Set(condB)),
       new TestStep("4", Set(condB, condC, condD), Set(condE), Set()),
     )
-    sequencer.orderSteps(steps.toSet) should (equal(Seq(
+    val AccumulatedSteps(orderedSteps, postConditions) = sequencer.orderSteps(steps.toSet)
+    orderedSteps should (equal(Seq(
       steps(0),
       steps(2),
       steps(3),
@@ -284,6 +331,46 @@ class StepSequencerTest extends CypherFunSuite {
       steps(1),
       steps(4),
     )))
+    postConditions should equal(steps.flatMap(_.postConditions).toSet)
+  }
+
+  test("should order steps with initial condition appearing as pre-condition") {
+    val steps = Seq(
+      new TestStep("0", Set(condA), Set(condB), Set()),
+      new TestStep("1", Set(condB), Set(condC), Set()),
+    )
+    val AccumulatedSteps(orderedSteps, postConditions) = sequencer.orderSteps(steps.toSet, initialConditions = Set(condA))
+    orderedSteps should equal(Seq(
+      steps(0),
+      steps(1),
+    ))
+    postConditions should equal(Set(condA, condB, condC))
+  }
+
+  test("should order steps with initial condition appearing as invalidated condition") {
+    val steps = Seq(
+      new TestStep("0", Set(), Set(condB), Set(condA)),
+      new TestStep("1", Set(condB), Set(condC), Set()),
+    )
+    val AccumulatedSteps(orderedSteps, postConditions) = sequencer.orderSteps(steps.toSet, initialConditions = Set(condA))
+    orderedSteps should equal(Seq(
+      steps(0),
+      steps(1),
+    ))
+    postConditions should equal(steps.flatMap(_.postConditions).toSet)
+  }
+
+  test("should order steps with initial condition appearing as pre-condition and invalidated condition") {
+    val steps = Seq(
+      new TestStep("0", Set(), Set(condB), Set(condA)),
+      new TestStep("1", Set(condA), Set(condC), Set()),
+    )
+    val AccumulatedSteps(orderedSteps, postConditions) = sequencer.orderSteps(steps.toSet, initialConditions = Set(condA))
+    orderedSteps should equal(Seq(
+      steps(1),
+      steps(0),
+    ))
+    postConditions should equal(steps.flatMap(_.postConditions).toSet)
   }
 
   implicit class Indexer[S](s: Seq[S]) {

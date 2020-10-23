@@ -16,6 +16,8 @@
  */
 package org.neo4j.cypher.internal.util
 
+import org.neo4j.cypher.internal.util.StepSequencer.AccumulatedSteps
+import org.neo4j.cypher.internal.util.StepSequencer.ByInitialCondition
 import org.neo4j.cypher.internal.util.StepSequencer.Condition
 import org.neo4j.cypher.internal.util.StepSequencer.MutableDirectedGraph
 import org.neo4j.cypher.internal.util.StepSequencer.Step
@@ -36,21 +38,39 @@ case class StepSequencer[S <: Step, ACC](stepAccumulator: StepAccumulator[S, ACC
    * The order guarantees that each step is run at least once,
    * and that all post-conditions of any steps are given at the end of the step sequence.
    * This means that some steps can appear more than once in the step sequence.
+   *
+   * @param steps the steps to order.
+   * @param initialConditions conditions that hold before any of the steps.
+   *                          These can be invalidated by steps and can appear as pre-conditions.
+   *                          They cannot appear as post-conditions (yet).
+   *                          If there are steps that invalidate initial conditions, they will not be part of the post-conditions
+   *                          of the returned sequence.
    */
-  def orderSteps(steps: Set[S]): ACC = {
+  def orderSteps(steps: Set[S], initialConditions: Set[Condition] = Set.empty): AccumulatedSteps[ACC] = {
     // For each post-condition, find the step that introduces it
-    val introducingSteps: Map[Condition, S] = {
+    val introducingSteps: Map[Condition, Either[ByInitialCondition.type, S]] = {
       val is = for {
         step <- steps.toSeq
         _ = { if (step.postConditions.isEmpty) throw new IllegalArgumentException(s"Step $step has no post-conditions. That is not allowed.") }
         postCondition <- step.postConditions
-      } yield postCondition -> step
+        _ = { if (initialConditions.contains(postCondition)) throw new IllegalArgumentException(s"Step $step introduces $postCondition, which is an initial condition. That is currently not allowed.") }
+      } yield postCondition -> Right(step)
 
       if (is.map(_._1).distinct != is.map(_._1)) {
         throw new IllegalArgumentException("It is not allowed for multiple steps to have the same post-conditions.")
       }
 
-      is.toMap
+      (is ++ initialConditions.map(_ -> Left(ByInitialCondition))).toMap
+    }
+    // For each condition, all steps that invalidate it
+    val invalidingSteps: Map[Condition, Set[S]] = {
+      val is = for {
+        step <- steps.toSeq
+        invalidatedCondition <- step.invalidatedConditions
+      } yield invalidatedCondition -> step
+      is.groupBy(_._1)
+        .mapValues(_.map(_._2).toSet)
+        .withDefaultValue(Set.empty)
     }
 
     // To implement a safety check for circular disabling steps, we create a graph
@@ -60,7 +80,10 @@ case class StepSequencer[S <: Step, ACC](stepAccumulator: StepAccumulator[S, ACC
     steps.foreach(graphWithDisabling.add)
     steps.foreach { step =>
       // (a)-->(b) means a invalidates b's work
-      step.invalidatedConditions.foreach { condition => graphWithDisabling.connect(step, introducingSteps(condition)) }
+      step.invalidatedConditions.foreach { condition =>
+        introducingSteps.getOrElse(condition, throw new IllegalArgumentException(s"There is no step introducing $condition. That is not allowed.")).
+          foreach(graphWithDisabling.connect(step, _))
+      }
     }
     StepSequencer.topologicalSort(graphWithDisabling, None, (_: S, _: mutable.Set[S]) => ())
 
@@ -70,18 +93,31 @@ case class StepSequencer[S <: Step, ACC](stepAccumulator: StepAccumulator[S, ACC
     steps.foreach(graph.add)
     steps.foreach { step =>
       // (a)-->(b) means a needs to happen before b
-      step.preConditions.foreach { condition => graph.connect(introducingSteps(condition), step) }
+      step.preConditions.foreach { condition =>
+        introducingSteps
+          .getOrElse(condition, throw new IllegalArgumentException(s"There is no step introducing $condition. That is not allowed.")) match {
+          case Left(ByInitialCondition) =>
+            // Initial conditions cannot be re-enabled by any step.
+            // Therefore, there is hard requirement that a step that has an initial condition as a pre-condition runs before any steps that invalidate it.
+            invalidingSteps(condition).foreach(graph.connect(step, _))
+          case Right(introducingStep) =>
+            // The introducing step needs to happen before the one that has it as a pre-condition.
+            graph.connect(introducingStep, step)
+        }
+      }
     }
 
     // Sort steps topologically
-    val sortedSteps = StepSequencer.sort(graph, introducingSteps, steps.toSeq)
+    val AccumulatedSteps(sortedSteps, postConditions) = StepSequencer.sort(graph, introducingSteps, steps.toSeq, initialConditions)
 
     // Put steps together
-    sortedSteps.foldLeft(stepAccumulator.empty)(stepAccumulator.addNext)
+    AccumulatedSteps(sortedSteps.foldLeft(stepAccumulator.empty)(stepAccumulator.addNext), postConditions)
   }
 }
 
 object StepSequencer {
+
+  private case object ByInitialCondition
 
   trait Condition
 
@@ -112,6 +148,8 @@ object StepSequencer {
     def empty: ACC
     def addNext(acc: ACC, step: S): ACC
   }
+
+  case class AccumulatedSteps[ACC](steps: ACC, postConditions: Set[Condition])
 
   private case class AdjacencyList[S](outgoing: mutable.Set[S], incoming: mutable.Set[S])
 
@@ -181,7 +219,7 @@ object StepSequencer {
    * steps that have their conditions invalidated often last.
    * These two criteria are weighted equally.
    */
-  private def heuristicStepOrdering[S <: Step](numberOfTimesEachStepIsinvalidated: Map[S, Int], allSteps: Seq[S]): Ordering[S] = {
+  private def heuristicStepOrdering[S <: Step](numberOfTimesEachStepIsInvalidated: Map[S, Int], allSteps: Seq[S]): Ordering[S] = {
     val fixedProductionSeed = 42L
     // In production, let's use the same seed to generate the same sequences reproducibly
     val random = new Random(fixedProductionSeed)
@@ -196,7 +234,7 @@ object StepSequencer {
     val allStepsInRandomOrder = random.shuffle(allSteps)
     (x, y) => {
       val diffInvalidating = y.invalidatedConditions.size - x.invalidatedConditions.size
-      val diffInvalidated = numberOfTimesEachStepIsinvalidated(x) - numberOfTimesEachStepIsinvalidated(y)
+      val diffInvalidated = numberOfTimesEachStepIsInvalidated(x) - numberOfTimesEachStepIsInvalidated(y)
 
       val diff = diffInvalidating + diffInvalidated
 
@@ -214,15 +252,19 @@ object StepSequencer {
    * In addition, whenever a step is added that undoes work of other steps,
    * these steps are re-inserted to be run again.
    *
-   * @param graph            the dependency graph.
-   * @param introducingSteps Map from condition to the step that introduces it.
-   * @param allSteps         all steps
+   * @param graph             the dependency graph.
+   * @param introducingSteps  Map from condition to the step that introduces it.
+   * @param allSteps          all steps
+   * @param initialConditions all initially holding conditions
    */
-  private def sort[S <: Step](graph: MutableDirectedGraph[S], introducingSteps: Map[Condition, S], allSteps: Seq[S]): Seq[S] = {
-    val allConditions = introducingSteps.keySet
+  private def sort[S <: Step](graph: MutableDirectedGraph[S],
+                              introducingSteps: Map[Condition, Either[ByInitialCondition.type, S]],
+                              allSteps: Seq[S],
+                              initialConditions: Set[Condition]): AccumulatedSteps[Seq[S]] = {
+    val allPostConditions: Set[Condition] = allSteps.flatMap(_.postConditions)(collection.breakOut)
 
     val numberOfTimesEachStepIsInvalidated = allSteps
-      .flatMap(_.invalidatedConditions.map(introducingSteps))
+      .flatMap(_.invalidatedConditions.collect { case s if introducingSteps(s).isRight => introducingSteps(s).right.get })
       .groupBy(identity)
       .mapValues(_.size)
       .withDefaultValue(0)
@@ -231,7 +273,7 @@ object StepSequencer {
     // We need to be able to look at the original state, so we make a copy in the beginning
     val workingGraph = MutableDirectedGraph.copyOf(graph)
     // During the algorithm keep track of all conditions currently enabled
-    val currentConditions = mutable.Set.empty[Condition]
+    val currentConditions = initialConditions.to[mutable.Set]
 
     def dealWithInvalidatedConditions(nextStep: S, startPoints: mutable.Set[S]): Unit = {
       currentConditions ++= nextStep.postConditions
@@ -239,7 +281,9 @@ object StepSequencer {
       if (nextStep.invalidatedConditions.nonEmpty) {
         // We need to reinsert parts of the graph for the work that n is undoing.
         val cannotStartFrom = mutable.Set.empty[S]
-        val stepsThatHaveTheirWorkUndone = nextStep.invalidatedConditions.map(introducingSteps)
+        val stepsThatHaveTheirWorkUndone = nextStep.invalidatedConditions.collect {
+          case s if introducingSteps(s).isRight => introducingSteps(s).right.get
+        }
         for (r <- stepsThatHaveTheirWorkUndone) {
           // Go through the original outgoing edges of r and restore them
           graph.outgoing(r)
@@ -262,13 +306,13 @@ object StepSequencer {
       if (allSteps.exists(!result.contains(_))) {
         throw new IllegalStateException(s"The step sequence $result did not include all steps from $allSteps.")
       }
-      if (!currentConditions.subsetOf(allConditions)) {
-        throw new IllegalStateException(s"The step sequence $result did not lead to a state where all conditions $allConditions are met. " +
+      if (!allPostConditions.subsetOf(currentConditions)) {
+        throw new IllegalStateException(s"The step sequence $result did not lead to a state where all conditions $allPostConditions are met. " +
           s"Only meeting $currentConditions.")
       }
     }
 
-    result
+    AccumulatedSteps(result, currentConditions.toSet)
   }
 
   /**
