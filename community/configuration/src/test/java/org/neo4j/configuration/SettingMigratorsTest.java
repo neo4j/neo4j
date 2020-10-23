@@ -52,6 +52,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_database_max_size;
 import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_max_size;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_warmup_prefetch_allowlist;
 import static org.neo4j.configuration.GraphDatabaseSettings.procedure_allowlist;
@@ -342,6 +343,23 @@ class SettingMigratorsTest
 
         assertEquals( "a", config.get( pagecache_warmup_prefetch_allowlist ) );
         assertEquals( List.of( "a", "b" ), config.get( procedure_allowlist ) );
+    }
+
+    @Test
+    void testDatababaseRename() throws IOException
+    {
+        Path confFile = testDirectory.createFile( "test.conf" );
+        Files.write( confFile, List.of( "dbms.memory.transaction.datababase_max_size=1g" ) );
+
+        Config config = Config.newBuilder().fromFile( confFile ).build();
+        var logProvider = new AssertableLogProvider();
+        config.setLogger( logProvider.getLog( Config.class ) );
+
+        assertThat( logProvider ).forClass( Config.class ).forLevel( WARN )
+                                 .containsMessageWithArguments( "Use of deprecated setting %s. It is replaced by %s",
+                                                                "dbms.memory.transaction.datababase_max_size", memory_transaction_database_max_size.name() );
+
+        assertEquals( 1073741824L, config.get( memory_transaction_database_max_size ) );
     }
 
     private static void testQueryLogMigration( Boolean oldValue, LogQueryLevel newValue )

@@ -817,10 +817,10 @@ public class GraphDatabaseSettings implements SettingsDeclaration
                     .addConstraint( any( min( mebiBytes( 10 ) ), is( 0L) ) )
                     .dynamic().build();
 
-    @Description( "Limit the amount of memory that all transaction in one database can consume, in bytes (or kilobytes with the 'k' " +
+    @Description( "Limit the amount of memory that all transactions in one database can consume, in bytes (or kilobytes with the 'k' " +
             "suffix, megabytes with 'm' and gigabytes with 'g'). Zero means 'unlimited'." )
     public static final Setting<Long> memory_transaction_database_max_size =
-            newBuilder( "dbms.memory.transaction.datababase_max_size", BYTES, 0L )
+            newBuilder( "dbms.memory.transaction.database_max_size", BYTES, 0L )
                     .addConstraint( any( min( mebiBytes( 10 ) ), is( 0L) ) )
                     .dynamic().build();
 

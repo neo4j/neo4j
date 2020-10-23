@@ -47,6 +47,7 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_advertised_address;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_listen_address;
+import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_database_max_size;
 import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_max_size;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_warmup_prefetch_allowlist;
 import static org.neo4j.configuration.GraphDatabaseSettings.procedure_allowlist;
@@ -401,6 +402,19 @@ public final class SettingMigrators
         {
             migrateSettingNameChange( values, log, "dbms.memory.pagecache.warmup.preload.whitelist", pagecache_warmup_prefetch_allowlist );
             migrateSettingNameChange( values, log, "dbms.security.procedures.whitelist", procedure_allowlist );
+        }
+    }
+
+    /**
+     * Fix typo in setting name: datababase -> database
+     */
+    @ServiceProvider
+    public static class DatababaseMigrator implements SettingMigrator
+    {
+        @Override
+        public void migrate( Map<String,String> values, Map<String,String> defaultValues, Log log )
+        {
+            migrateSettingNameChange( values, log, "dbms.memory.transaction.datababase_max_size", memory_transaction_database_max_size );
         }
     }
 
