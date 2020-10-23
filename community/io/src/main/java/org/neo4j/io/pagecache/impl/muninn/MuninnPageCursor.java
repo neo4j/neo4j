@@ -365,60 +365,68 @@ public abstract class MuninnPageCursor extends PageCursor
         // If we manage to get a free page to fault into, then we will also be taking a write lock on that page, to
         // protect it against concurrent eviction as we assigning a binding to the page. If anything goes wrong, then
         // we must make sure to release that write lock as well.
-        PageFaultEvent faultEvent = pinEvent.beginPageFault();
-        long pageRef;
         try
         {
-            // The grabFreePage method might throw.
-            pageRef = pagedFile.grabFreeAndExclusivelyLockedPage( faultEvent );
+            PageFaultEvent faultEvent = pinEvent.beginPageFault();
+            long pageRef;
+            try
+            {
+                // The grabFreePage method might throw.
+                pageRef = pagedFile.grabFreeAndExclusivelyLockedPage( faultEvent );
 
-            // We got a free page, and we know that we have race-free access to it. Well, it's not entirely race
-            // free, because other paged files might have it in their translation tables (or rather, their reads of
-            // their translation tables might race with eviction) and try to pin it.
-            // However, they will all fail because when they try to pin, because the page will be exclusively locked
-            // and possibly bound to our page.
+                // We got a free page, and we know that we have race-free access to it. Well, it's not entirely race
+                // free, because other paged files might have it in their translation tables (or rather, their reads of
+                // their translation tables might race with eviction) and try to pin it.
+                // However, they will all fail because when they try to pin, because the page will be exclusively locked
+                // and possibly bound to our page.
+            }
+            catch ( Throwable throwable )
+            {
+                abortPageFault( throwable, chunk, chunkOffset, faultEvent );
+                throw throwable;
+            }
+            try
+            {
+                // Check if we're racing with unmapping. We have the page lock
+                // here, so the unmapping would have already happened. We do this
+                // check before page.fault(), because that would otherwise reopen
+                // the file channel.
+                assertPagedFileStillMappedAndGetIdOfLastPage();
+                pagedFile.initBuffer( pageRef );
+                pagedFile.fault( pageRef, swapper, pagedFile.swapperId, filePageId, faultEvent );
+            }
+            catch ( Throwable throwable )
+            {
+                try
+                {
+                    // Make sure to unlock the page, so the eviction thread can pick up our trash.
+                    pagedFile.unlockExclusive( pageRef );
+                }
+                finally
+                {
+                    abortPageFault( throwable, chunk, chunkOffset, faultEvent );
+                }
+                throw throwable;
+            }
+            // Put the page in the translation table before we undo the exclusive lock, as we could otherwise race with
+            // eviction, and the onEvict callback expects to find a MuninnPage object in the table.
+            UnsafeUtil.putIntVolatile( chunk, chunkOffset, pagedFile.toId( pageRef ) );
+            // Once we page has been published to the translation table, we can convert our exclusive lock to whatever we
+            // need for the page cursor.
+            convertPageFaultLock( pageRef );
+            faultEvent.done();
+            return pageRef;
         }
-        catch ( Throwable throwable )
+        finally
         {
-            // Make sure to unstuck the page fault latch.
-            abortPageFault( throwable, chunk, chunkOffset, latch, faultEvent );
-            throw throwable;
+            latch.release();
         }
-        try
-        {
-            // Check if we're racing with unmapping. We have the page lock
-            // here, so the unmapping would have already happened. We do this
-            // check before page.fault(), because that would otherwise reopen
-            // the file channel.
-            assertPagedFileStillMappedAndGetIdOfLastPage();
-            pagedFile.initBuffer( pageRef );
-            pagedFile.fault( pageRef, swapper, pagedFile.swapperId, filePageId, faultEvent );
-        }
-        catch ( Throwable throwable )
-        {
-            // Make sure to unlock the page, so the eviction thread can pick up our trash.
-            pagedFile.unlockExclusive( pageRef );
-            // Make sure to unstuck the page fault latch.
-            abortPageFault( throwable, chunk, chunkOffset, latch, faultEvent );
-            throw throwable;
-        }
-        // Put the page in the translation table before we undo the exclusive lock, as we could otherwise race with
-        // eviction, and the onEvict callback expects to find a MuninnPage object in the table.
-        UnsafeUtil.putIntVolatile( chunk, chunkOffset, pagedFile.toId( pageRef ) );
-        // Once we page has been published to the translation table, we can convert our exclusive lock to whatever we
-        // need for the page cursor.
-        convertPageFaultLock( pageRef );
-        latch.release();
-        faultEvent.done();
-        return pageRef;
     }
 
     private void abortPageFault( Throwable throwable, int[] chunk, long chunkOffset,
-                                 LatchMap.Latch latch,
                                  PageFaultEvent faultEvent )
     {
         UnsafeUtil.putIntVolatile( chunk, chunkOffset, UNMAPPED_TTE );
-        latch.release();
         faultEvent.done( throwable );
         pinEvent.done();
     }
