@@ -29,6 +29,7 @@ import static org.neo4j.kernel.database.DatabaseIdRepository.NAMED_SYSTEM_DATABA
 public abstract class DbmsRuntimeRepository
 {
     public static final DbmsRuntimeVersion LATEST_VERSION = DbmsRuntimeVersion.V4_2;
+    public static final DbmsRuntimeVersion PREVIOUS_VERSION = DbmsRuntimeVersion.V4_1;
 
     public static final Label DBMS_RUNTIME_LABEL = Label.label( "DbmsRuntime" );
     public static final String VERSION_PROPERTY = "version";
@@ -56,12 +57,15 @@ public abstract class DbmsRuntimeRepository
             }
             else
             {
-                // there always must be something in the System DB in a properly initialised DBMS,
-                // but many test don't initialise System DB
-                currentVersion = LATEST_VERSION;
+                currentVersion = getFallbackVersion();
             }
         }
     }
+
+    /**
+     * A fallback DBMS runtime version used when there is nothing in System database.
+     */
+    protected abstract DbmsRuntimeVersion getFallbackVersion();
 
     protected GraphDatabaseService getSystemDb()
     {
