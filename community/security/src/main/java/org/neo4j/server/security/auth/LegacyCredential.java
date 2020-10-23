@@ -39,7 +39,7 @@ public class LegacyCredential implements Credential
 
     public static final LegacyCredential INACCESSIBLE = new LegacyCredential( new byte[]{}, new byte[]{} );
 
-    private static final Random random = new SecureRandom();
+    private static final SecureRandom random = new SecureRandom();
 
     private final byte[] salt;
     private final byte[] passwordHash;
