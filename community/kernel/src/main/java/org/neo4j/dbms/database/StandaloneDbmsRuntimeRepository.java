@@ -40,6 +40,14 @@ public class StandaloneDbmsRuntimeRepository extends DbmsRuntimeRepository imple
     }
 
     @Override
+    protected DbmsRuntimeVersion getFallbackVersion()
+    {
+        // there always must be something in the System DB in a properly initialised standalone DBMS,
+        // but many test don't initialise System DB
+        return LATEST_VERSION;
+    }
+
+    @Override
     public Object beforeCommit( TransactionData data, Transaction transaction, GraphDatabaseService databaseService ) throws Exception
     {
         // not interested in this event
