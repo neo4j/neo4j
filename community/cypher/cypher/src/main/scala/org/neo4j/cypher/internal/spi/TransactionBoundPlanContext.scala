@@ -151,37 +151,38 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
   private def getOnlineIndex(reference: schema.IndexDescriptor): Option[IndexDescriptor] =
     tc.schemaRead.indexGetState(reference) match {
       case InternalIndexState.ONLINE =>
-        val label = LabelId(reference.schema().getEntityTokenIds()(0))
-        val properties = reference.schema.getPropertyIds.map(PropertyKeyId)
-        val isUnique = reference.isUnique
-        val behaviours = reference.getCapability.behaviours().map(kernelToCypher).toSet
-        val orderCapability: OrderCapability = tps => {
-          // The Kernel index order gives additional information if all values are sorted, or if there can be geometry values which are not sorted.
-          // From Cyphers perspective, using the Kernel API, fully and partially sorted are the same, since geometry values which come out of order
-          // from the index are sorted in DefaultNodeValueIndexCursor.
-          reference.getCapability.orderCapability(tps.map(typeToValueCategory): _*) match {
-            case BOTH_FULLY_SORTED => IndexOrderCapability.BOTH
-            case BOTH_PARTIALLY_SORTED => IndexOrderCapability.BOTH
-            case ASC_FULLY_SORTED => IndexOrderCapability.ASC
-            case ASC_PARTIALLY_SORTED => IndexOrderCapability.ASC
-            case DESC_FULLY_SORTED => IndexOrderCapability.DESC
-            case DESC_PARTIALLY_SORTED => IndexOrderCapability.DESC
-            case NONE => IndexOrderCapability.NONE
-          }
-        }
-        val valueCapability: ValueCapability = tps => {
-          reference.getCapability.valueCapability(tps.map(typeToValueCategory): _*) match {
-            // As soon as the kernel provides an array of IndexValueCapability, this mapping can change
-            case IndexValueCapability.YES => tps.map(_ => CanGetValue)
-            case IndexValueCapability.PARTIAL => tps.map(_ => DoNotGetValue)
-            case IndexValueCapability.NO => tps.map(_ => DoNotGetValue)
-          }
-        }
         if (reference.getIndexType != IndexType.BTREE || reference.getCapability.behaviours().contains(IndexBehaviour.EVENTUALLY_CONSISTENT)) {
           // Ignore IndexKind.SPECIAL indexes, because we don't know how to correctly plan for and query them. Not yet, anyway.
           // Also, ignore eventually consistent indexes. Those are for explicit querying via procedures.
           None
         } else {
+          val label = LabelId(reference.schema().getEntityTokenIds()(0))
+          val properties = reference.schema.getPropertyIds.map(PropertyKeyId)
+          val isUnique = reference.isUnique
+          val behaviours = reference.getCapability.behaviours().map(kernelToCypher).toSet
+          val orderCapability: OrderCapability = tps => {
+            // The Kernel index order gives additional information if all values are sorted, or if there can be geometry values which are not sorted.
+            // From Cyphers perspective, using the Kernel API, fully and partially sorted are the same, since geometry values which come out of order
+            // from the index are sorted in DefaultNodeValueIndexCursor.
+            reference.getCapability.orderCapability(tps.map(typeToValueCategory): _*) match {
+              case BOTH_FULLY_SORTED => IndexOrderCapability.BOTH
+              case BOTH_PARTIALLY_SORTED => IndexOrderCapability.BOTH
+              case ASC_FULLY_SORTED => IndexOrderCapability.ASC
+              case ASC_PARTIALLY_SORTED => IndexOrderCapability.ASC
+              case DESC_FULLY_SORTED => IndexOrderCapability.DESC
+              case DESC_PARTIALLY_SORTED => IndexOrderCapability.DESC
+              case NONE => IndexOrderCapability.NONE
+            }
+          }
+          val valueCapability: ValueCapability = tps => {
+            reference.getCapability.valueCapability(tps.map(typeToValueCategory): _*) match {
+              // As soon as the kernel provides an array of IndexValueCapability, this mapping can change
+              case IndexValueCapability.YES => tps.map(_ => CanGetValue)
+              case IndexValueCapability.PARTIAL => tps.map(_ => DoNotGetValue)
+              case IndexValueCapability.NO => tps.map(_ => DoNotGetValue)
+            }
+          }
+
           Some(IndexDescriptor(label, properties, behaviours, orderCapability, valueCapability, isUnique))
         }
       case _ => None
