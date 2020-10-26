@@ -32,7 +32,6 @@ import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.time.Clocks;
@@ -44,7 +43,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -64,7 +62,6 @@ class TransactionIdTrackerTest
     private final NamedDatabaseId namedDatabaseId = databaseIdRepository.getRaw( "foo" );
     private final Database db = mock( Database.class );
     private final DatabaseManagementService managementService = mock( DatabaseManagementService.class );
-    private final ReconciledTransactionTracker reconciledTransactionTracker = spy( new DefaultReconciledTransactionTracker( NullLogService.getInstance() ) );
 
     private TransactionIdTracker transactionIdTracker;
 
@@ -97,7 +94,6 @@ class TransactionIdTrackerTest
 
         // then
         verify( transactionIdStore, never() ).getLastClosedTransactionId();
-        verify( reconciledTransactionTracker, never() ).getLastReconciledTransactionId();
     }
 
     @Test
@@ -110,7 +106,6 @@ class TransactionIdTrackerTest
         transactionIdTracker.awaitUpToDate( namedDatabaseId, BASE_TX_ID, ofSeconds( 5 ) );
 
         // then
-        verify( reconciledTransactionTracker, never() ).getLastReconciledTransactionId();
         verifyNoInteractions( transactionIdStore );
     }
 
@@ -135,15 +130,13 @@ class TransactionIdTrackerTest
         // given
         when( db.isSystem() ).thenReturn( true );
         var version = 42L;
-
-        when( reconciledTransactionTracker.getLastReconciledTransactionId() ).thenReturn( 1L ).thenReturn( 2L ).thenReturn( 41L ).thenReturn( 44L );
+        when( transactionIdStore.getLastClosedTransactionId() ).thenReturn( version );
 
         // when
         transactionIdTracker.awaitUpToDate( namedDatabaseId, version, DEFAULT_DURATION );
 
         // then
-        verify( reconciledTransactionTracker, times( 4 ) ).getLastReconciledTransactionId();
-        verifyNoInteractions( transactionIdStore );
+        verify( transactionIdStore, times( 1 ) ).getLastClosedTransactionId();
     }
 
     @Test
@@ -170,7 +163,7 @@ class TransactionIdTrackerTest
         when( db.isSystem() ).thenReturn( true );
         var version = 3L;
         var checkException = new RuntimeException();
-        doThrow( checkException ).when( reconciledTransactionTracker ).getLastReconciledTransactionId();
+        doThrow( checkException ).when( transactionIdStore ).getLastClosedTransactionId();
 
         // when
         var exception = assertThrows( TransactionIdTrackerException.class,
@@ -179,7 +172,6 @@ class TransactionIdTrackerTest
         // then
         assertEquals( BookmarkTimeout, exception.status() );
         assertEquals( checkException, exception.getCause() );
-        verifyNoInteractions( transactionIdStore );
     }
 
     @Test
@@ -207,7 +199,7 @@ class TransactionIdTrackerTest
         when( db.isSystem() ).thenReturn( true );
         var version = 42L;
         var checkException = new RuntimeException();
-        doThrow( checkException ).when( reconciledTransactionTracker ).getLastReconciledTransactionId();
+        doThrow( checkException ).when( transactionIdStore ).getLastClosedTransactionId();
         when( databaseAvailabilityGuard.isAvailable() ).thenReturn( true, true, false );
 
         // when
@@ -217,7 +209,6 @@ class TransactionIdTrackerTest
         // then
         assertEquals( DatabaseUnavailable, exception.status() );
         assertEquals( checkException, exception.getCause() );
-        verifyNoInteractions( transactionIdStore );
     }
 
     @Test
@@ -248,7 +239,6 @@ class TransactionIdTrackerTest
 
         // then
         assertEquals( DatabaseUnavailable, exception.status() );
-        verify( reconciledTransactionTracker, never() ).getLastReconciledTransactionId();
         verifyNoInteractions( transactionIdStore );
     }
 
@@ -269,11 +259,9 @@ class TransactionIdTrackerTest
         // given
         when( db.isSystem() ).thenReturn( true );
         when( transactionIdStore.getLastCommittedTransactionId() ).thenReturn( 42L );
-        when( reconciledTransactionTracker.getLastReconciledTransactionId() ).thenReturn( 4242L );
 
         // then
         assertEquals( 42L, transactionIdTracker.newestTransactionId( namedDatabaseId ) );
-        verifyNoInteractions( reconciledTransactionTracker );
     }
 
     @Test
