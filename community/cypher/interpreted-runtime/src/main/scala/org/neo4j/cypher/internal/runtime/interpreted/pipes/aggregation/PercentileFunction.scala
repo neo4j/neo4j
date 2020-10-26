@@ -79,8 +79,9 @@ class PercentileContFunction(value: Expression, percentile: Expression, memoryTr
       Values.NO_VALUE
     }
 
-    memoryTracker.releaseHeap(count*estimatedNumberValue)
     temp.close()
+    temp = null
+    memoryTracker.releaseHeap(count*estimatedNumberValue)
     result
   }
 }
@@ -109,8 +110,9 @@ class PercentileDiscFunction(value: Expression, percentile: Expression, memoryTr
       Values.NO_VALUE
     }
 
-    memoryTracker.releaseHeap(count*estimatedNumberValue)
     temp.close()
+    temp = null
+    memoryTracker.releaseHeap(count*estimatedNumberValue)
     result
   }
 }
