@@ -31,9 +31,8 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.idSeekLeafPlanne
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.indexScanLeafPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.indexSeekLeafPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.labelScanLeafPlanner
-import org.neo4j.cypher.internal.compiler.planner.logical.steps.leftOuterHashJoin
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.outerHashJoin
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.pickBestPlanUsingHintsAndCost
-import org.neo4j.cypher.internal.compiler.planner.logical.steps.rightOuterHashJoin
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.selectCovered
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.selectHasLabelWithJoin
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.selectPatternPredicates
@@ -83,8 +82,7 @@ object QueryPlannerConfiguration {
       applySelections = predicateSelector,
       optionalSolvers = Seq(
         applyOptional,
-        leftOuterHashJoin,
-        rightOuterHashJoin
+        outerHashJoin,
       ),
       leafPlanners = LeafPlannerList(allLeafPlanners),
       updateStrategy = defaultUpdateStrategy

@@ -719,22 +719,22 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
         verify(monitor).startIDPIterationFor(omQG)
         verify(monitor).endIDPIterationFor(omQG, expandAtoB)
 
-        verify(monitor, times(3)).foundPlanAfter(0) // 1 time here
+        verify(monitor, times(2)).foundPlanAfter(0) // 1 time here
 
         verify(monitor).startConnectingComponents(omQG)
         verify(monitor).endConnectingComponents(omQG, expandAtoB)
 
-        // outer hash joins (left and right)
+        // outer hash join
         val omQGWithoutArguments = omQG.withoutArguments()
 
-        verify(monitor, times(2)).initTableFor(omQGWithoutArguments)
-        verify(monitor, times(2)).startIDPIterationFor(omQGWithoutArguments)
-        verify(monitor, times(2)).endIDPIterationFor(omQGWithoutArguments, expandAtoB2)
+        verify(monitor).initTableFor(omQGWithoutArguments)
+        verify(monitor).startIDPIterationFor(omQGWithoutArguments)
+        verify(monitor).endIDPIterationFor(omQGWithoutArguments, expandAtoB2)
 
-        verify(monitor, times(3)).foundPlanAfter(0) // 1 time here
+        verify(monitor, times(2)).foundPlanAfter(0) // 1 time here
 
-        verify(monitor, times(2)).startConnectingComponents(omQGWithoutArguments)
-        verify(monitor, times(2)).endConnectingComponents(omQGWithoutArguments, expandAtoB2)
+        verify(monitor).startConnectingComponents(omQGWithoutArguments)
+        verify(monitor).endConnectingComponents(omQGWithoutArguments, expandAtoB2)
       }
 
       // final result
