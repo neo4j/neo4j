@@ -180,7 +180,8 @@ final case class CreateUser(userName: Either[String, Parameter],
                             initialPassword: Expression,
                             requirePasswordChange: Boolean,
                             suspended: Option[Boolean],
-                            ifExistsDo: IfExistsDo)(val position: InputPosition) extends WriteAdministrationCommand with EitherAsString {
+                            ifExistsDo: IfExistsDo,
+                            defaultDatabase: Option[String] = None)(val position: InputPosition) extends WriteAdministrationCommand with EitherAsString {
   override def name: String = ifExistsDo match {
     case IfExistsReplace | IfExistsInvalidSyntax => "CREATE OR REPLACE USER"
     case _ => "CREATE USER"

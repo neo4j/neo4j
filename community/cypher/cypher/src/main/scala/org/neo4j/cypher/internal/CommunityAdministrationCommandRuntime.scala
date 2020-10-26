@@ -176,7 +176,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
 
     // CREATE [OR REPLACE] USER foo [IF NOT EXISTS] SET [PLAINTEXT | ENCRYPTED] PASSWORD 'password'
     // CREATE [OR REPLACE] USER foo [IF NOT EXISTS] SET [PLAINTEXT | ENCRYPTED] PASSWORD $password
-    case CreateUser(source, userName, isEncryptedPassword, password, requirePasswordChange, suspendedOptional) => (context, parameterMapping) =>
+    case CreateUser(source, userName, isEncryptedPassword, password, requirePasswordChange, suspendedOptional, defaultDatabase) => (context, parameterMapping) =>
       val sourcePlan: Option[ExecutionPlan] = Some(fullLogicalToExecutable.applyOrElse(source, throwCantCompile).apply(context, parameterMapping))
       if (suspendedOptional.isDefined) { // Users are always active in community
         new PredicateExecutionPlan((_, _) => false, sourcePlan, (params, _) => {
@@ -185,7 +185,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
         })
       }
       else {
-        makeCreateUserExecutionPlan(userName, isEncryptedPassword, password, requirePasswordChange, suspended = false)(sourcePlan, normalExecutionEngine)
+        makeCreateUserExecutionPlan(userName, isEncryptedPassword, password, requirePasswordChange, suspended = false, defaultDatabase = defaultDatabase)(sourcePlan, normalExecutionEngine)
       }
 
     // ALTER USER foo [SET [PLAINTEXT | ENCRYPTED] PASSWORD pw] [CHANGE [NOT] REQUIRED]

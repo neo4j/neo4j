@@ -176,27 +176,33 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
                                             password: expressions.Expression,
                                             requirePasswordChange: Boolean,
                                             suspended: Boolean,
+                                            defaultDatabase: Option[String] = None,
                                             restrictedUsernames: Seq[String] = Seq.empty)
                                            (sourcePlan: Option[ExecutionPlan],
                                             normalExecutionEngine: ExecutionEngine): ExecutionPlan = {
     val passwordChangeRequiredKey = internalKey("passwordChangeRequired")
     val suspendedKey = internalKey("suspended")
+    val defaultDatabaseKey = internalKey("defaultDatabase")
     val userNameFields = getNameFields("username", userName)
     val credentials = getPasswordExpression(password, isEncryptedPassword)
+    val defaultDatabaseCypher = defaultDatabase.map(_ => s", defaultDatabase: $$`$defaultDatabaseKey`").getOrElse("")
     val mapValueConverter: (Transaction, MapValue) => MapValue = (tx, p) => credentials.mapValueConverter(tx, userNameFields.nameConverter(tx, p))
     UpdatingSystemCommandExecutionPlan("CreateUser", normalExecutionEngine,
       // NOTE: If username already exists we will violate a constraint
       s"""CREATE (u:User {name: $$`${userNameFields.nameKey}`, credentials: $$`${credentials.key}`,
-         |passwordChangeRequired: $$`$passwordChangeRequiredKey`, suspended: $$`$suspendedKey`})
+         |passwordChangeRequired: $$`$passwordChangeRequiredKey`, suspended: $$`$suspendedKey`
+         |$defaultDatabaseCypher })
          |RETURN u.name""".stripMargin,
       VirtualValues.map(
-        Array(userNameFields.nameKey, credentials.key, credentials.bytesKey, passwordChangeRequiredKey, suspendedKey),
+        Array(userNameFields.nameKey, credentials.key, credentials.bytesKey, passwordChangeRequiredKey, suspendedKey, defaultDatabaseKey),
         Array(
           userNameFields.nameValue,
           credentials.value,
           credentials.bytesValue,
           Values.booleanValue(requirePasswordChange),
-          Values.booleanValue(suspended))),
+          Values.booleanValue(suspended),
+          Values.stringValue(defaultDatabase.getOrElse("")))
+      ),
       QueryHandler
         .handleNoResult(params => Some(new IllegalStateException(s"Failed to create the specified user '${runtimeValue(userName, params)}'.")))
         .handleError((error, params) => (error, error.getCause) match {

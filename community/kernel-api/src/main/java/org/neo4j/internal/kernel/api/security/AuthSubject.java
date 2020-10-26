@@ -44,6 +44,11 @@ public interface AuthSubject
     String username();
 
     /**
+     * Get the user's default database
+     */
+    String defaultDatabase();
+
+    /**
      * Implementation to use when authentication has not yet been performed. Allows nothing.
      */
     AuthSubject ANONYMOUS = new AuthSubject()
@@ -70,6 +75,12 @@ public interface AuthSubject
         public String username()
         {
             return ""; // Should never clash with a valid username
+        }
+
+        @Override
+        public String defaultDatabase()
+        {
+            return null;
         }
 
     };
@@ -100,6 +111,12 @@ public interface AuthSubject
         public boolean hasUsername( String username )
         {
             return false;
+        }
+
+        @Override
+        public String defaultDatabase()
+        {
+            return null;
         }
     };
 }

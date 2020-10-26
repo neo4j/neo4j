@@ -30,6 +30,7 @@ import org.mockito.InOrder;
 import org.neo4j.bolt.transport.pipeline.ChannelProtector;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
+import org.neo4j.internal.kernel.api.security.AuthSubject;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -97,7 +98,7 @@ class BoltChannelTest
         BoltChannel boltChannel = new BoltChannel( "bolt-1", "my-bolt", channel, ChannelProtector.NULL );
 
         assertNull( boltChannel.username() );
-        boltChannel.updateUser( "hello", "my-bolt-driver/1.2.3" );
+        boltChannel.updateUser( authSubjectMock( "hello" ), "my-bolt-driver/1.2.3" );
         assertEquals( "hello", boltChannel.username() );
         assertEquals( "my-bolt-driver/1.2.3", boltChannel.userAgent() );
     }
@@ -113,7 +114,7 @@ class BoltChannelTest
         assertEquals( "bolt", info1.protocol() );
         assertEquals( SocketAddress.format( channel.remoteAddress() ), info1.clientAddress() );
 
-        boltChannel.updateUser( "Tom", "my-driver" );
+        boltChannel.updateUser( authSubjectMock( "Tom" ), "my-driver" );
 
         ClientConnectionInfo info2 = boltChannel.info();
         assertEquals( "bolt-42", info2.connectionId() );
@@ -158,7 +159,7 @@ class BoltChannelTest
         var protector = mock( ChannelProtector.class );
         BoltChannel boltChannel = new BoltChannel( "bolt-1", "bolt", channel, protector );
         // When
-        boltChannel.updateUser( "hello", "my-bolt-driver/1.2.3" );
+        boltChannel.updateUser( authSubjectMock("hello"), "my-bolt-driver/1.2.3" );
 
         // Then
         verify( protector ).disable();
@@ -171,5 +172,13 @@ class BoltChannelTest
         ChannelFuture channelFuture = mock( ChannelFuture.class );
         when( channel.close() ).thenReturn( channelFuture );
         return channel;
+    }
+
+    private static AuthSubject authSubjectMock( String username )
+    {
+        AuthSubject subject = mock( AuthSubject.class );
+        when( subject.username() ).thenReturn( username );
+        when( subject.hasUsername( username ) ).thenReturn( true );
+        return subject;
     }
 }

@@ -297,6 +297,9 @@ trait Base extends Parser {
 
   implicit class RichRule7[+A, +B, +C, +D, +E, +F, +G](r: Rule7[A, B, C, D, E, F, G]) {
     def ~~(other: Rule0): Rule7[A, B, C, D, E, F, G] = r ~ WS ~ other
+
+    def ~~>>[R](func: (A, B, C, D, E, F, G) => InputPosition => R): Rule1[R] =
+      r ~~> withContext((a: A, b: B, c: C, d: D, e: E, f: F, g:G, ctx) => func(a, b, c, d, e, f, g)(ContextPosition(ctx)))
   }
 
   implicit class RichReductionRule1[-A, +B](r: ReductionRule1[A, B]) {

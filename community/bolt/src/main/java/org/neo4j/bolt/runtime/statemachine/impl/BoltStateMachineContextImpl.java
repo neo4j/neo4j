@@ -34,6 +34,7 @@ import org.neo4j.bolt.runtime.statemachine.StatementProcessorReleaseManager;
 import org.neo4j.bolt.runtime.statemachine.TransactionStateMachineSPIProvider;
 import org.neo4j.bolt.security.auth.AuthenticationResult;
 import org.neo4j.bolt.v41.messaging.RoutingContext;
+import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.database.DefaultDatabaseResolver;
 
 import static java.lang.String.format;
@@ -61,9 +62,9 @@ public class BoltStateMachineContextImpl implements StateMachineContext, Stateme
     }
 
     @Override
-    public void authenticatedAsUser( String username, String userAgent )
+    public void authenticatedAsUser( AuthSubject authSubject, String userAgent )
     {
-        boltChannel.updateUser( username, userAgent );
+        boltChannel.updateUser( authSubject, userAgent );
     }
 
     @Override

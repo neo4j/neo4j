@@ -147,14 +147,14 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
       case su: ShowCurrentUser => Some(plans.ShowCurrentUser(su.defaultColumnNames, su.yields, su.returns))
 
       // CREATE [OR REPLACE] USER foo [IF NOT EXISTS] WITH [PLAINTEXT | ENCRYPTED] PASSWORD password
-      case c@CreateUser(userName, isEncryptedPassword, initialPassword, requirePasswordChange, suspended, ifExistsDo) =>
+      case c@CreateUser(userName, isEncryptedPassword, initialPassword, requirePasswordChange, suspended, ifExistsDo, defaultDatabase) =>
         val source = ifExistsDo match {
           case IfExistsReplace => plans.DropUser(plans.AssertNotCurrentUser(plans.AssertDbmsAdmin(Seq(DropUserAction, CreateUserAction)), userName, "replace", "Deleting yourself is not allowed"), userName)
           case IfExistsDoNothing => plans.DoNothingIfExists(plans.AssertDbmsAdmin(CreateUserAction), "User", userName)
           case _ => plans.AssertDbmsAdmin(CreateUserAction)
         }
         Some(plans.LogSystemCommand(
-          plans.CreateUser(source, userName, isEncryptedPassword, initialPassword, requirePasswordChange, suspended),
+          plans.CreateUser(source, userName, isEncryptedPassword, initialPassword, requirePasswordChange, suspended, defaultDatabase),
           prettifier.asString(c)))
 
       // DROP USER foo [IF EXISTS]

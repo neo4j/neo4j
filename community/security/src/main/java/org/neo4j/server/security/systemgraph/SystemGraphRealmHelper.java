@@ -49,6 +49,7 @@ public class SystemGraphRealmHelper
      * placed here because of user suspension not being a part of community edition
      */
     public static final String IS_SUSPENDED = "is_suspended";
+    public static final String DEFAULT_DATABASE = "default_database";
 
     public SystemGraphRealmHelper( Supplier<GraphDatabaseService> systemSupplier, SecureHasher secureHasher )
     {
@@ -70,10 +71,12 @@ public class SystemGraphRealmHelper
             Credential credential = SystemGraphCredential.deserialize( (String) userNode.getProperty( "credentials" ), secureHasher );
             boolean requirePasswordChange = (boolean) userNode.getProperty( "passwordChangeRequired" );
             boolean suspended = (boolean) userNode.getProperty( "suspended" );
+            String defaultDatabase = (String) userNode.getProperty( "defaultDatabase", null );
             tx.commit();
 
             User.Builder builder = new User.Builder( username, credential ).withRequiredPasswordChange( requirePasswordChange );
             builder = suspended ? builder.withFlag( IS_SUSPENDED ) : builder.withoutFlag( IS_SUSPENDED );
+            builder = builder.withDefaultDatabase( defaultDatabase );
             return builder.build();
         }
         catch ( NotFoundException n )

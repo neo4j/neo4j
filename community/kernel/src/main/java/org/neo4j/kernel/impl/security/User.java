@@ -32,22 +32,34 @@ public class User
       locks. Correctness depends on write-time assertions and this class remaining immutable. Please do not introduce
       mutable fields here.
      */
-    /** User name */
+    /**
+     * User name
+     */
     private final String name;
 
-    /** Authentication credentials used by the built in username/password authentication scheme */
+    /**
+     * Authentication credentials used by the built in username/password authentication scheme
+     */
     private final Credential credential;
 
-    /** Set of flags, eg. password_change_required */
+    /**
+     * Set of flags, eg. password_change_required
+     */
     private final SortedSet<String> flags;
+
+    /**
+     * The user's default database
+     */
+    private final String defaultDatabase;
 
     public static final String PASSWORD_CHANGE_REQUIRED = "password_change_required";
 
-    private User( String name, Credential credential, SortedSet<String> flags )
+    private User( String name, Credential credential, String defaultDatabase, SortedSet<String> flags )
     {
         this.name = name;
         this.credential = credential;
         this.flags = flags;
+        this.defaultDatabase = defaultDatabase;
     }
 
     public String name()
@@ -58,6 +70,11 @@ public class User
     public Credential credentials()
     {
         return credential;
+    }
+
+    public String defaultDatabase()
+    {
+        return defaultDatabase;
     }
 
     public boolean hasFlag( String flag )
@@ -75,7 +92,9 @@ public class User
         return flags.contains( PASSWORD_CHANGE_REQUIRED );
     }
 
-    /** Use this user as a base for a new user object */
+    /**
+     * Use this user as a base for a new user object
+     */
     public Builder augment()
     {
         return new Builder( this );
@@ -129,6 +148,7 @@ public class User
     {
         private String name;
         private Credential credential;
+        private String defaultDatabase;
         private SortedSet<String> flags = new TreeSet<>();
 
         public Builder( String name, Credential credential )
@@ -175,9 +195,15 @@ public class User
             return this;
         }
 
+        public Builder withDefaultDatabase( String defaultDatabase )
+        {
+            this.defaultDatabase = defaultDatabase;
+            return this;
+        }
+
         public User build()
         {
-            return new User( name, credential, flags );
+            return new User( name, credential, defaultDatabase, flags );
         }
     }
 }

@@ -26,6 +26,7 @@ import java.net.SocketAddress;
 
 import org.neo4j.bolt.transport.pipeline.ChannelProtector;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
+import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.net.TrackedNetworkConnection;
 import org.neo4j.kernel.impl.query.clientconnection.BoltConnectionInfo;
 
@@ -40,7 +41,7 @@ public class BoltChannel implements TrackedNetworkConnection
     private final Channel rawChannel;
     private final ChannelProtector protector;
 
-    private volatile String username;
+    private volatile AuthSubject authSubject;
     private volatile String userAgent;
     private volatile ClientConnectionInfo info;
     private volatile String defaultDatabase;
@@ -105,7 +106,7 @@ public class BoltChannel implements TrackedNetworkConnection
     @Override
     public String username()
     {
-        return username;
+        return authSubject == null ? null : authSubject.username();
     }
 
     @Override
@@ -114,10 +115,15 @@ public class BoltChannel implements TrackedNetworkConnection
         return userAgent;
     }
 
-    @Override
-    public void updateUser( String username, String userAgent )
+    public String defaultDatabase()
     {
-        this.username = username;
+        return authSubject == null ? null : authSubject.defaultDatabase();
+    }
+
+    @Override
+    public void updateUser( AuthSubject subject, String userAgent )
+    {
+        this.authSubject = subject;
         this.userAgent = userAgent;
         this.info = createConnectionInfo();
         this.protector.disable();
@@ -151,7 +157,7 @@ public class BoltChannel implements TrackedNetworkConnection
                ", connectTime=" + connectTime +
                ", connector='" + connector + '\'' +
                ", rawChannel=" + rawChannel +
-               ", username='" + username + '\'' +
+               ", username='" + authSubject.username() + '\'' +
                ", userAgent='" + userAgent + '\'' +
                '}';
     }

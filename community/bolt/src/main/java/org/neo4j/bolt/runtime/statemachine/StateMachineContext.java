@@ -26,10 +26,11 @@ import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.runtime.BoltProtocolBreachFatality;
 import org.neo4j.bolt.security.auth.AuthenticationResult;
 import org.neo4j.bolt.v41.messaging.RoutingContext;
+import org.neo4j.internal.kernel.api.security.AuthSubject;
 
 public interface StateMachineContext
 {
-    void authenticatedAsUser( String username, String userAgent );
+    void authenticatedAsUser( AuthSubject authSubject, String userAgent );
 
     void resolveDefaultDatabase();
 

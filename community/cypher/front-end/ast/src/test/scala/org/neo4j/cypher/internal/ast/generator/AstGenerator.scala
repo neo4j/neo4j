@@ -1293,7 +1293,8 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     requirePasswordChange <- boolean
     suspended             <- option(boolean)
     ifExistsDo            <- _ifExistsDo
-  } yield CreateUser(userName, isEncryptedPassword, password, requirePasswordChange, suspended, ifExistsDo)(pos)
+    defaultDatabase       <- option(_identifier)
+  } yield CreateUser(userName, isEncryptedPassword, password, requirePasswordChange, suspended, ifExistsDo, defaultDatabase)(pos)
 
   def _dropUser: Gen[DropUser] = for {
     userName <- _nameAsEither

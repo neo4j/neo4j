@@ -84,21 +84,14 @@ trait Statement extends Parser
   }
 
   def CreateUser: Rule1[ast.CreateUser] = rule("CREATE USER") {
-    // CREATE [OR REPLACE] USER username [IF NOT EXISTS] SET [PLAINTEXT | ENCRYPTED] PASSWORD stringLiteralPassword optionalStatus
-    group(CreateUserStart ~~ SetPassword ~~ SensitiveStringLiteral ~~ OptionalStatus) ~~>> ((userName, ifExistsDo, isEncryptedPassword, initialPassword, suspended) =>
-      ast.CreateUser(userName, isEncryptedPassword, initialPassword, requirePasswordChange = true, suspended, ifExistsDo)) |
     // CREATE [OR REPLACE] USER username [IF NOT EXISTS] SET [PLAINTEXT | ENCRYPTED] PASSWORD stringLiteralPassword optionalRequirePasswordChange optionalStatus
-    group(CreateUserStart ~~ SetPassword ~~ SensitiveStringLiteral ~~ OptionalRequirePasswordChange ~~ OptionalStatus) ~~>>
-      ((userName, ifExistsDo, isEncryptedPassword, initialPassword, requirePasswordChange, suspended) =>
-      ast.CreateUser(userName, isEncryptedPassword, initialPassword, requirePasswordChange.getOrElse(true), suspended, ifExistsDo)) |
-    //
-    // CREATE [OR REPLACE] USER username [IF NOT EXISTS] SET [PLAINTEXT | ENCRYPTED] PASSWORD parameterPassword optionalStatus
-    group(CreateUserStart ~~ SetPassword ~~ SensitiveStringParameter ~~ OptionalStatus) ~~>> ((userName, ifExistsDo, isEncryptedPassword, initialPassword, suspended) =>
-      ast.CreateUser(userName, isEncryptedPassword, initialPassword, requirePasswordChange = true, suspended, ifExistsDo)) |
+    group(CreateUserStart ~~ SetPassword ~~ SensitiveStringLiteral ~~ OptionalRequirePasswordChange ~~ OptionalStatus ~~ OptionalDefaultDatabase) ~~>>
+      ((userName, ifExistsDo, isEncryptedPassword, initialPassword, requirePasswordChange, suspended, defaultDatabase) =>
+      ast.CreateUser(userName, isEncryptedPassword, initialPassword, requirePasswordChange.getOrElse(true), suspended, ifExistsDo, defaultDatabase)) |
     // CREATE [OR REPLACE] USER username [IF NOT EXISTS] SET [PLAINTEXT | ENCRYPTED] PASSWORD parameterPassword optionalRequirePasswordChange optionalStatus
-    group(CreateUserStart ~~ SetPassword ~~ SensitiveStringParameter ~~ OptionalRequirePasswordChange ~~ OptionalStatus) ~~>>
-      ((userName, ifExistsDo, isEncryptedPassword, initialPassword, requirePasswordChange, suspended) =>
-      ast.CreateUser(userName, isEncryptedPassword, initialPassword, requirePasswordChange.getOrElse(true), suspended, ifExistsDo))
+    group(CreateUserStart ~~ SetPassword ~~ SensitiveStringParameter ~~ OptionalRequirePasswordChange ~~ OptionalStatus ~~ OptionalDefaultDatabase) ~~>>
+      ((userName, ifExistsDo, isEncryptedPassword, initialPassword, requirePasswordChange, suspended, defaultDatabase) =>
+      ast.CreateUser(userName, isEncryptedPassword, initialPassword, requirePasswordChange.getOrElse(true), suspended, ifExistsDo, defaultDatabase))
   }
 
   def CreateUserStart: Rule2[Either[String, Parameter], ast.IfExistsDo] = {
@@ -115,16 +108,10 @@ trait Statement extends Parser
   }
 
   def AlterUser: Rule1[ast.AlterUser] = rule("ALTER USER") {
-    // ALTER USER username SET [PLAINTEXT | ENCRYPTED] PASSWORD stringLiteralPassword optionalStatus
-    group(keyword("ALTER USER") ~~ SymbolicNameOrStringParameter ~~ SetPassword ~~ SensitiveStringLiteral ~~ OptionalStatus) ~~>>
-      ((userName, isEncryptedPassword, initialPassword, suspended) => ast.AlterUser(userName, Some(isEncryptedPassword), Some(initialPassword), None, suspended)) |
     // ALTER USER username SET [PLAINTEXT | ENCRYPTED] PASSWORD stringLiteralPassword optionalRequirePasswordChange optionalStatus
     group(keyword("ALTER USER") ~~ SymbolicNameOrStringParameter ~~ SetPassword ~~ SensitiveStringLiteral ~~ OptionalRequirePasswordChange ~~ OptionalStatus) ~~>>
       ((userName, isEncryptedPassword, initialPassword, requirePasswordChange, suspended) => ast.AlterUser(userName, Some(isEncryptedPassword), Some(initialPassword), requirePasswordChange, suspended)) |
     //
-    // ALTER USER username SET [PLAINTEXT | ENCRYPTED] PASSWORD parameterPassword optionalStatus
-    group(keyword("ALTER USER") ~~ SymbolicNameOrStringParameter ~~ SetPassword ~~ SensitiveStringParameter ~~ OptionalStatus) ~~>>
-      ((userName, isEncryptedPassword, initialPassword, suspended) => ast.AlterUser(userName, Some(isEncryptedPassword), Some(initialPassword), None, suspended)) |
     // ALTER USER username SET [PLAINTEXT | ENCRYPTED] PASSWORD parameterPassword optionalRequirePasswordChange optionalStatus
     group(keyword("ALTER USER") ~~ SymbolicNameOrStringParameter ~~ SetPassword ~~ SensitiveStringParameter ~~ OptionalRequirePasswordChange ~~ OptionalStatus) ~~>>
       ((userName, isEncryptedPassword, initialPassword, requirePasswordChange, suspended) => ast.AlterUser(userName, Some(isEncryptedPassword), Some(initialPassword), requirePasswordChange, suspended)) |
@@ -160,15 +147,18 @@ trait Statement extends Parser
   }
 
   def OptionalRequirePasswordChange: Rule1[Option[Boolean]] = {
-    group(optional(keyword("SET PASSWORD")) ~~ keyword("CHANGE NOT REQUIRED")) ~>>> (_ => _ => Some(false)) |
-    group(optional(keyword("SET PASSWORD")) ~~ keyword("CHANGE REQUIRED")) ~>>> (_ => _ => Some(true)) |
-    keyword("") ~>>> (_ => _ => None) // no password mode change
+    optional(
+      keyword("SET PASSWORD CHANGE NOT REQUIRED") ~>>> (_ => _ => false) |
+      keyword("CHANGE NOT REQUIRED") ~>>> (_ => _ => false) |
+      keyword("SET PASSWORD CHANGE REQUIRED") ~>>> (_ => _ => true) |
+      keyword("CHANGE REQUIRED") ~>>> (_ => _ => true)
+    )
   }
 
-  def OptionalStatus: Rule1[Option[Boolean]] = {
-    keyword("SET STATUS SUSPENDED") ~>>> (_ => _ => Some(true)) |
-    keyword("SET STATUS ACTIVE") ~>>> (_ => _ => Some(false)) |
-    keyword("") ~>>> (_ => _ => None) // no status change
+  def OptionalStatus: Rule1[Option[Boolean]] = optional(SetStatus)
+
+  def OptionalDefaultDatabase: Rule1[Option[String]] = {
+    optional(keyword("DEFAULT DATABASE") ~~ SymbolicDatabaseNameString)
   }
 
   //noinspection MutatorLikeMethodIsParameterless
