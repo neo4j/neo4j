@@ -98,7 +98,7 @@ public abstract class ListValueBuilder
         long estimatedHeapSize;
         private final List<AnyValue> values = new ArrayList<>();
 
-        public UnknownSizeListValueBuilder()
+        UnknownSizeListValueBuilder()
         {
             super();
             estimatedHeapSize += ARRAY_LIST_SHALLOW_SIZE;
