@@ -709,6 +709,43 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
     consume(result)
   }
 
+  test("should kill nested plan collect expression") {
+    // given
+    val n = (MemoryManagementTestBase.maxMemory / estimateSize(E_INT)) * 1.2 // Should fill the size of memory with n values alone + 20% extra margin
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x1")
+      .nestedPlanCollectExpressionProjection("x1", "i")
+      .|.unwind(s"range(1,$n) as i")
+      .|.argument()
+      .input(variables = Seq("x"))
+      .build()
+
+    // when
+    val input = finiteInput(1, Some((i: Long) => Array(i)))
+
+    // then
+    a[MemoryLimitExceededException] should be thrownBy {
+      consume(execute(logicalQuery, runtime, input))
+    }
+  }
+
+  test("should not kill nested plan exists expression") {
+    val n = (MemoryManagementTestBase.maxMemory / estimateSize(E_INT)) * 1.2 // Should fill the size of memory with n values alone + 20% extra margin
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x1")
+      .nestedPlanExistsExpressionProjection("x1")
+      .|.unwind(s"range(1,$n) as i")
+      .|.argument()
+      .input(variables = Seq("x"))
+      .build()
+
+    // when
+    val input = finiteInput(1, Some((i: Long) => Array(i)))
+
+    // then
+    consume(execute(logicalQuery, runtime, input))
+  }
+
   protected def assertTotalAllocatedMemory(logicalQuery: LogicalQuery, valueToEstimate: ValueToEstimate, sampleValue: Option[Any] = None): Long = {
     // TODO: Improve this to be a bit more reliable
     val expectedRowSize = estimateSize(valueToEstimate)

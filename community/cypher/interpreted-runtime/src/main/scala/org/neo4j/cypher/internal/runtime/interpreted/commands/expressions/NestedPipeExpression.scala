@@ -25,8 +25,9 @@ import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.util.attribution.Id
+import org.neo4j.memory.MemoryTracker
+import org.neo4j.values.virtual.HeapTrackingListValueBuilder
 import org.neo4j.values.virtual.ListValue
-import org.neo4j.values.virtual.ListValueBuilder
 
 /**
  * An expression which delegates evaluation to a pipe.
@@ -56,12 +57,13 @@ abstract class NestedPipeExpression(pipe: Pipe,
 
   protected def collectResults(state: QueryState,
                                results: ClosingIterator[CypherRow],
-                               projection: Expression): ListValue = {
-    val all = ListValueBuilder.newListBuilder()
+                               projection: Expression,
+                               memoryTracker: MemoryTracker): ListValue = {
+    val all = HeapTrackingListValueBuilder.newHeapTrackingListBuilder(memoryTracker)
     while (results.hasNext) {
       all.add(projection(results.next(), state))
     }
-    all.build()
+    all.buildAndClose()
   }
 
   override def toString: String = s"${getClass.getSimpleName}}()"
