@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.steps
 import org.neo4j.cypher.internal.ast.Hint
 import org.neo4j.cypher.internal.ast.UsingJoinHint
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
+import org.neo4j.cypher.internal.compiler.planner.logical.idp.BestResults
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.unnestOptional
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
@@ -47,50 +48,42 @@ case object applyOptional extends OptionalSolver {
   }
 }
 
-abstract class outerHashJoin extends OptionalSolver {
-  override def apply(optionalQg: QueryGraph, side1: LogicalPlan, interestingOrder: InterestingOrder, context: LogicalPlanningContext): Iterator[LogicalPlan] = {
+case object outerHashJoin extends OptionalSolver {
+  override def apply(optionalQg: QueryGraph, side1Plan: LogicalPlan, interestingOrder: InterestingOrder, context: LogicalPlanningContext): Iterator[LogicalPlan] = {
     val joinNodes = optionalQg.argumentIds
-    val solvedHints = optionalQg.joinHints.filter { hint =>
-      val hintVariables = hint.variables.map(_.name).toSet
-      hintVariables.subsetOf(joinNodes)
-    }
-
-    // If side1 is just an Argument, any Apply above this will get written out so the incoming cardinality should be 1
-    // This will be the case as [AssumeIndependenceQueryGraphCardinalityModel] will always use a cardinality of 1 if there are no
-    // arguments and we delete the arguments below.
-    // If not, then we're probably under an apply that will stay, so we need to force the cardinality to be multiplied by the incoming
-    // cardinality.
-    val side2Context =
-      if (!side1.isInstanceOf[Argument]) context.copy(input = context.input.copy(alwaysMultiply = true))
-      else context
-
-    val side2InterestingOrder = side2Order(interestingOrder)
-    val side2Plans = context.strategy.plan(optionalQg.withoutArguments().withoutHints(solvedHints.map(_.asInstanceOf[Hint])), side2InterestingOrder, side2Context)
 
     if (joinNodes.nonEmpty &&
-      joinNodes.forall(side1.availableSymbols) &&
+      joinNodes.forall(side1Plan.availableSymbols) &&
       joinNodes.forall(optionalQg.patternNodes)) {
-      side2Plans.allResults.map(side2 => produceJoin(context, joinNodes, side1, side2, solvedHints))
+
+      // If side1 is just an Argument, any Apply above this will get written out so the incoming cardinality should be 1
+      // This will be the case as [AssumeIndependenceQueryGraphCardinalityModel] will always use a cardinality of 1 if there are no
+      // arguments and we delete the arguments below.
+      // If not, then we're probably under an apply that will stay, so we need to force the cardinality to be multiplied by the incoming
+      // cardinality.
+      val side2Context = if (!side1Plan.isInstanceOf[Argument]) context.copy(input = context.input.copy(alwaysMultiply = true)) else context
+      val solvedHints = optionalQg.joinHints.filter { hint =>
+        val hintVariables = hint.variables.map(_.name).toSet
+        hintVariables.subsetOf(joinNodes)
+      }
+      val rhsQG = optionalQg.withoutArguments().withoutHints(solvedHints.map(_.asInstanceOf[Hint]))
+
+      val BestResults(side2Plan, side2SortedPlan) = context.strategy.plan(rhsQG, interestingOrder, side2Context)
+
+      Iterator(
+        leftOuterJoin(context, joinNodes, side1Plan, side2Plan, solvedHints),
+        rightOuterJoin(context, joinNodes, side1Plan, side2Plan, solvedHints)
+      ) ++ side2SortedPlan.map(leftOuterJoin(context, joinNodes, side1Plan, _, solvedHints))
+      // For the rightOuterJoin, we do not need to consider side2SortedPlan,
+      // since that ordering will get destroyed by the join anyway.
     } else {
       Iterator.empty
     }
   }
 
-  def produceJoin(context: LogicalPlanningContext, joinNodes: Set[String], side1: LogicalPlan, side2: LogicalPlan, solvedHints: Set[UsingJoinHint]): LogicalPlan
-  def side2Order(interestingOrder: InterestingOrder): InterestingOrder
-}
-
-case object leftOuterHashJoin extends outerHashJoin {
-  override def produceJoin(context: LogicalPlanningContext, joinNodes: Set[String], lhs: LogicalPlan, rhs: LogicalPlan, solvedHints: Set[UsingJoinHint]): LogicalPlan = {
+  private def leftOuterJoin(context: LogicalPlanningContext, joinNodes: Set[String], lhs: LogicalPlan, rhs: LogicalPlan, solvedHints: Set[UsingJoinHint]): LogicalPlan =
     context.logicalPlanProducer.planLeftOuterHashJoin(joinNodes, lhs, rhs, solvedHints, context)
-  }
-  override def side2Order(interestingOrder: InterestingOrder): InterestingOrder = interestingOrder
-}
 
-case object rightOuterHashJoin extends outerHashJoin {
-  override def produceJoin(context: LogicalPlanningContext, joinNodes: Set[String], rhs: LogicalPlan, lhs: LogicalPlan, solvedHints: Set[UsingJoinHint]): LogicalPlan = {
+  private def rightOuterJoin(context: LogicalPlanningContext, joinNodes: Set[String], rhs: LogicalPlan, lhs: LogicalPlan, solvedHints: Set[UsingJoinHint]): LogicalPlan =
     context.logicalPlanProducer.planRightOuterHashJoin(joinNodes, lhs, rhs, solvedHints, context)
-  }
-  // No need to solve ordering on the lhs since it will get destroyed by the join
-  override def side2Order(interestingOrder: InterestingOrder): InterestingOrder = InterestingOrder.empty
 }
