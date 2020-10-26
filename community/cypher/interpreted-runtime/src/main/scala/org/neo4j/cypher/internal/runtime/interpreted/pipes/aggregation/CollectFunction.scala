@@ -25,21 +25,22 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expres
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.memory.MemoryTracker
 import org.neo4j.values.AnyValue
-import org.neo4j.values.virtual.VirtualValues
-
-import scala.collection.mutable.ArrayBuffer
+import org.neo4j.values.virtual.ListValueBuilder
 
 class CollectFunction(value:Expression, memoryTracker: MemoryTracker) extends AggregationFunction {
-  private val collection = new ArrayBuffer[AnyValue]()
+  private[this] val collection = ListValueBuilder.newHeapTrackingListBuilder(memoryTracker)
 
   override def apply(data: ReadableRow, state:QueryState): Unit = {
     value(data, state) match {
       case IsNoValue() =>
-      case v    =>
-        collection += v
-        memoryTracker.allocateHeap(v.estimatedHeapUsage())
+      case v =>
+        collection.add(v)
     }
   }
 
-  override def result(state: QueryState): AnyValue = VirtualValues.list(collection.toArray:_*)
+  override def result(state: QueryState): AnyValue = {
+    val listValue = collection.build()
+    collection.close()
+    listValue
+  }
 }
