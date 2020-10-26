@@ -73,6 +73,8 @@ public final class HeapEstimator
     public static final long LOCAL_DATE_TIME_SIZE;
     public static final long ZONED_DATE_TIME_SIZE;
 
+    public static final long SCOPED_MEMORY_TRACKER_SHALLOW_SIZE;
+
     /**
      * Sizes of primitive classes.
      */
@@ -134,6 +136,8 @@ public final class HeapEstimator
         OFFSET_TIME_SIZE = shallowSizeOfInstance( OffsetTime.class ) + LOCAL_TIME_SIZE; // We ignore ZoneOffset since it's cached
         LOCAL_DATE_TIME_SIZE = shallowSizeOfInstance( LocalDateTime.class ) + LOCAL_DATE_SIZE + LOCAL_TIME_SIZE;
         ZONED_DATE_TIME_SIZE = shallowSizeOfInstance( ZonedDateTime.class ) + LOCAL_DATE_TIME_SIZE; // We ignore ZoneOffset since it's cached
+
+        SCOPED_MEMORY_TRACKER_SHALLOW_SIZE = shallowSizeOfInstance( ScopedMemoryTracker.class );
     }
 
     /**

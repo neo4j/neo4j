@@ -35,7 +35,7 @@ import org.neo4j.util.CalledFromGeneratedCode;
 import org.neo4j.util.VisibleForTesting;
 
 import static org.neo4j.collection.trackable.HeapTrackingCollections.newMap;
-import static org.neo4j.kernel.impl.util.collection.LongProbeTable.SCOPED_MEMORY_TRACKER_SHALLOW_SIZE;
+import static org.neo4j.memory.HeapEstimator.SCOPED_MEMORY_TRACKER_SHALLOW_SIZE;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfObjectArray;
 

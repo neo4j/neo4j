@@ -44,6 +44,7 @@ import org.neo4j.memory.ScopedMemoryTracker;
 
 import static org.neo4j.graphdb.Direction.BOTH;
 import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.relationshipsCursor;
+import static org.neo4j.memory.HeapEstimator.SCOPED_MEMORY_TRACKER_SHALLOW_SIZE;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 import static org.neo4j.storageengine.api.RelationshipSelection.selection;
 
@@ -57,11 +58,9 @@ import static org.neo4j.storageengine.api.RelationshipSelection.selection;
 @SuppressWarnings( {"unused", "UnnecessaryLocalVariable"} )
 public class CachingExpandInto extends DefaultCloseListenable
 {
-    static final long SCOPED_MEM_TRACKER_SHALLOW_SIZE = shallowSizeOfInstance( ScopedMemoryTracker.class );
-
     static final long CACHING_EXPAND_INTO_SHALLOW_SIZE =
             shallowSizeOfInstance( CachingExpandInto.class )
-            + SCOPED_MEM_TRACKER_SHALLOW_SIZE;
+            + SCOPED_MEMORY_TRACKER_SHALLOW_SIZE;
 
     static final long EXPAND_INTO_SELECTION_CURSOR_SHALLOW_SIZE = shallowSizeOfInstance( ExpandIntoSelectionCursor.class );
     static final long FROM_CACHE_SELECTION_CURSOR_SHALLOW_SIZE = shallowSizeOfInstance( FromCachedSelectionCursor.class );
@@ -421,8 +420,7 @@ public class CachingExpandInto extends DefaultCloseListenable
             this.secondNode = secondNode;
             this.innerMemoryTracker = new ScopedMemoryTracker( outerMemoryTracker );
             this.connections = HeapTrackingArrayList.newArrayList( innerMemoryTracker );
-            innerMemoryTracker.allocateHeap( EXPAND_INTO_SELECTION_CURSOR_SHALLOW_SIZE );
-            innerMemoryTracker.allocateHeap( SCOPED_MEM_TRACKER_SHALLOW_SIZE );
+            innerMemoryTracker.allocateHeap( EXPAND_INTO_SELECTION_CURSOR_SHALLOW_SIZE + SCOPED_MEMORY_TRACKER_SHALLOW_SIZE );
         }
 
         @Override

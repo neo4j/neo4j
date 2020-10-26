@@ -430,7 +430,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
       .input(variables = Seq("x"))
       .build()
 
-    val estimatedRowSize = estimateRowSize(logicalQuery)
+    val estimatedRowSize = estimateRowSize(logicalQuery, nRows = 100) // Need more sample rows to amortize initial overhead of collections
 
     // when
     val input = infiniteInput(estimatedRowSize)
@@ -718,8 +718,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
     expectedRowSize
   }
 
-  protected def estimateRowSize(logicalQuery: LogicalQuery, sampleValue: Option[Any] = None): Long = {
-    val nRows = 8
+  protected def estimateRowSize(logicalQuery: LogicalQuery, sampleValue: Option[Any] = None, nRows: Int = 8): Long = {
     val result = execute(logicalQuery, runtime, inputColumns(1, nRows, i => sampleValue.getOrElse(i.toLong)))
     consume(result)
     result.runtimeResult.totalAllocatedMemory() / nRows

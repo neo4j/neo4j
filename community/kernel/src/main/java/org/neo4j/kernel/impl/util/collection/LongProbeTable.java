@@ -32,12 +32,13 @@ import org.neo4j.memory.ScopedMemoryTracker;
 
 import static java.util.Collections.emptyIterator;
 import static org.neo4j.collection.trackable.HeapTrackingCollections.newLongObjectMap;
+import static org.neo4j.memory.HeapEstimator.SCOPED_MEMORY_TRACKER_SHALLOW_SIZE;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 
 public class LongProbeTable<V extends Measurable> extends DefaultCloseListenable
 {
     private static final long SHALLOW_SIZE = shallowSizeOfInstance( LongProbeTable.class );
-    static final long SCOPED_MEMORY_TRACKER_SHALLOW_SIZE = shallowSizeOfInstance( ScopedMemoryTracker.class );
+
     private final MemoryTracker scopedMemoryTracker;
     private MutableLongObjectMap<HeapTrackingArrayList<V>> map;
 

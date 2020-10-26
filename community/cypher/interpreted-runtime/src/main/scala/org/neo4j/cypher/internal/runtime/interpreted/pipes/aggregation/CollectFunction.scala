@@ -25,10 +25,10 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expres
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.memory.MemoryTracker
 import org.neo4j.values.AnyValue
-import org.neo4j.values.virtual.ListValueBuilder
+import org.neo4j.values.virtual.HeapTrackingListValueBuilder
 
 class CollectFunction(value:Expression, memoryTracker: MemoryTracker) extends AggregationFunction {
-  private[this] val collection = ListValueBuilder.newHeapTrackingListBuilder(memoryTracker)
+  private[this] val collection = HeapTrackingListValueBuilder.newHeapTrackingListBuilder(memoryTracker)
 
   override def apply(data: ReadableRow, state:QueryState): Unit = {
     value(data, state) match {
@@ -39,8 +39,6 @@ class CollectFunction(value:Expression, memoryTracker: MemoryTracker) extends Ag
   }
 
   override def result(state: QueryState): AnyValue = {
-    val listValue = collection.build()
-    collection.close()
-    listValue
+    collection.buildAndClose();
   }
 }

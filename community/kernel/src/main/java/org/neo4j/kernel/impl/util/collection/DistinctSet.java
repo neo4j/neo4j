@@ -27,7 +27,7 @@ import org.neo4j.memory.Measurable;
 import org.neo4j.memory.MemoryTracker;
 
 import static org.neo4j.collection.trackable.HeapTrackingCollections.newSet;
-import static org.neo4j.kernel.impl.util.collection.LongProbeTable.SCOPED_MEMORY_TRACKER_SHALLOW_SIZE;
+import static org.neo4j.memory.HeapEstimator.SCOPED_MEMORY_TRACKER_SHALLOW_SIZE;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 
 /**
