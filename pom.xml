@@ -200,7 +200,10 @@
             </execution>
           </executions>
           <configuration>
-            <additionalJOption>-J--add-exports=jdk.javadoc/jdk.javadoc.internal.tool=ALL-UNNAMED</additionalJOption>
+            <additionalJOptions>
+              <additionalJOption>-J--add-exports=jdk.javadoc/jdk.javadoc.internal.tool=ALL-UNNAMED</additionalJOption>
+              <additionalJOption>--allow-script-in-comments</additionalJOption>
+            </additionalJOptions>
             <doclet>org.neo4j.annotations.api.PublicApiDoclet</doclet>
             <docletArtifact>
               <groupId>org.neo4j</groupId>
@@ -259,6 +262,15 @@
             <excludePackageNames>
               *.impl.*:*.internal.*
             </excludePackageNames>
+            <bottom>
+              <![CDATA[
+                <script>
+                  if (typeof useModuleDirectories !== 'undefined') {
+                    useModuleDirectories = false;
+                  }
+                </script>
+              ]]>
+            </bottom>
           </configuration>
         </plugin>
 
