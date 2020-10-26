@@ -24,7 +24,6 @@ import org.junit.jupiter.api.Test;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.cypher.internal.CompilerFactory;
-import org.neo4j.cypher.internal.cache.TestExecutorCaffeineCacheFactory;
 import org.neo4j.cypher.internal.cache.TestExecutorCaffeineCacheFactory$;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.QueryStatistics;

@@ -19,9 +19,5 @@
  */
 package org.neo4j.cypher.internal.cache
 
-import java.util.concurrent.Executors
-
-import org.scalatest.run
-
 object TestExecutorCaffeineCacheFactory extends ExecutorBasedCaffeineCacheFactory((_:Runnable).run()) {
 }
