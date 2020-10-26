@@ -214,6 +214,44 @@ class PushdownPropertyReadsTest extends CypherFunSuite with PlanMatchHelp with L
     rewritten shouldBe plan
   }
 
+  test("should not pushdown through SemiApply") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("n")
+      .filter("n.prop > 10").withCardinality(10)
+      .semiApply().withCardinality(10)
+      .|.optionalExpandAll("(n)-->(m)").withCardinality(1)
+      .|.argument().withCardinality(10)
+      .allNodeScan("n").withCardinality(10)
+
+    val plan = planBuilder.build()
+    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.cardinalities, Attributes(planBuilder.idGen, planBuilder.cardinalities), planBuilder.getSemanticTable)
+    rewritten shouldBe plan
+  }
+
+  test("should pushdown lhs of SemiApply") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("n")
+      .filter("n.prop > 10").withCardinality(10)
+      .semiApply().withCardinality(10)
+      .|.optionalExpandAll("(n)-->(m)").withCardinality(1)
+      .|.argument().withCardinality(10)
+      .expandAll("(n)-->(x)").withCardinality(20)
+      .allNodeScan("n").withCardinality(10)
+
+    val plan = planBuilder.build()
+    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.cardinalities, Attributes(planBuilder.idGen, planBuilder.cardinalities), planBuilder.getSemanticTable)
+    rewritten shouldBe new LogicalPlanBuilder()
+      .produceResults("n")
+      .filter("n.prop > 10").withCardinality(10)
+      .semiApply().withCardinality(10)
+      .|.optionalExpandAll("(n)-->(m)").withCardinality(1)
+      .|.argument().withCardinality(10)
+      .expandAll("(n)-->(x)").withCardinality(20)
+      .cacheProperties("n.prop")
+      .allNodeScan("n").withCardinality(10)
+      .build()
+  }
+
   test("should not pushdown through AntiSemiApply") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("n")

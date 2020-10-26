@@ -44,6 +44,7 @@ import org.neo4j.cypher.internal.logical.plans.OrderedAggregation
 import org.neo4j.cypher.internal.logical.plans.ProjectingPlan
 import org.neo4j.cypher.internal.logical.plans.RollUpApply
 import org.neo4j.cypher.internal.logical.plans.SelectOrAntiSemiApply
+import org.neo4j.cypher.internal.logical.plans.SemiApply
 import org.neo4j.cypher.internal.logical.plans.SetNodePropertiesFromMap
 import org.neo4j.cypher.internal.logical.plans.SetNodeProperty
 import org.neo4j.cypher.internal.logical.plans.SetProperty
@@ -224,7 +225,8 @@ case object PushdownPropertyReads {
            | _: SelectOrAntiSemiApply
            | _: LetSelectOrAntiSemiApply
            | _: ForeachApply
-           | _: RollUpApply =>
+           | _: RollUpApply
+           | _: SemiApply =>
           lhsAcc
 
         case _: ApplyPlan =>
