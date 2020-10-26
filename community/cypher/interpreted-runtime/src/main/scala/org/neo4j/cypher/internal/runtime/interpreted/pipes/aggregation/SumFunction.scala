@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.exceptions.InternalException
+import org.neo4j.memory.HeapEstimator.shallowSizeOfInstance
 import org.neo4j.values.AnyValue
 import org.neo4j.values.utils.ValueMath.overflowSafeAdd
 
@@ -54,4 +55,8 @@ class SumFunction(val value: Expression)
       }
     )
   }
+}
+
+object SumFunction {
+  val SHALLOW_SIZE: Long = shallowSizeOfInstance(classOf[SumFunction])
 }

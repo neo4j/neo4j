@@ -27,7 +27,10 @@ import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.memory.MemoryTracker
 
 case class Sum(anInner: Expression) extends AggregationWithInnerExpression(anInner) {
-  override def createAggregationFunction(memoryTracker: MemoryTracker): AggregationFunction = new SumFunction(anInner)
+  override def createAggregationFunction(memoryTracker: MemoryTracker): AggregationFunction = {
+    memoryTracker.allocateHeap(SumFunction.SHALLOW_SIZE)
+    new SumFunction(anInner)
+  }
 
   override def expectedInnerType: CypherType = CTNumber
 

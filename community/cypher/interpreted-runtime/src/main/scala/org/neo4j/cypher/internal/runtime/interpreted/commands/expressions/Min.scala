@@ -27,7 +27,10 @@ import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.memory.MemoryTracker
 
 case class Min(anInner: Expression) extends AggregationWithInnerExpression(anInner) {
-  override def createAggregationFunction(memoryTracker: MemoryTracker): AggregationFunction = new MinFunction(anInner)
+  override def createAggregationFunction(memoryTracker: MemoryTracker): AggregationFunction = {
+    memoryTracker.allocateHeap(MinFunction.SHALLOW_SIZE)
+    new MinFunction(anInner)
+  }
 
   override val expectedInnerType: CypherType = CTNumber
 

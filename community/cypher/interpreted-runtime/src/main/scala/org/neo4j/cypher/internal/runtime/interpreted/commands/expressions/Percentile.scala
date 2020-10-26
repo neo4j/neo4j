@@ -28,7 +28,10 @@ import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.memory.MemoryTracker
 
 case class PercentileCont(anInner: Expression, percentile: Expression) extends AggregationWithInnerExpression(anInner) {
-  override def createAggregationFunction(memoryTracker: MemoryTracker): AggregationFunction = new PercentileContFunction(anInner, percentile, memoryTracker)
+  override def createAggregationFunction(memoryTracker: MemoryTracker): AggregationFunction = {
+    memoryTracker.allocateHeap(PercentileContFunction.SHALLOW_SIZE)
+    new PercentileContFunction(anInner, percentile, memoryTracker)
+  }
 
   def expectedInnerType: CypherType = CTNumber
 
@@ -38,7 +41,10 @@ case class PercentileCont(anInner: Expression, percentile: Expression) extends A
 }
 
 case class PercentileDisc(anInner: Expression, percentile: Expression) extends AggregationWithInnerExpression(anInner) {
-  override def createAggregationFunction(memoryTracker: MemoryTracker): AggregationFunction = new PercentileDiscFunction(anInner, percentile, memoryTracker)
+  override def createAggregationFunction(memoryTracker: MemoryTracker): AggregationFunction = {
+    memoryTracker.allocateHeap(PercentileDiscFunction.SHALLOW_SIZE)
+    new PercentileDiscFunction(anInner, percentile, memoryTracker)
+  }
 
   def expectedInnerType: CypherType  = CTNumber
 

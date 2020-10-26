@@ -29,8 +29,10 @@ import org.neo4j.memory.MemoryTracker
 case class Distinct(innerAggregator: AggregationExpression, expression: Expression) extends AggregationWithInnerExpression(expression) {
   override val expectedInnerType: CypherType = CTAny
 
-  override def createAggregationFunction(memoryTracker: MemoryTracker): AggregationFunction =
+  override def createAggregationFunction(memoryTracker: MemoryTracker): AggregationFunction = {
+    memoryTracker.allocateHeap(DistinctFunction.SHALLOW_SIZE)
     new DistinctFunction(expression, innerAggregator.createAggregationFunction(memoryTracker), memoryTracker)
+  }
 
   override def rewrite(f: Expression => Expression): Expression = innerAggregator.rewrite(f) match {
     case inner: AggregationExpression => f(Distinct(inner, expression.rewrite(f)))

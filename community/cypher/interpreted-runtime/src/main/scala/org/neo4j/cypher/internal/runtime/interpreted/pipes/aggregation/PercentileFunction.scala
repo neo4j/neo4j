@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expres
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.NumericHelper
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.exceptions.InvalidArgumentException
+import org.neo4j.memory.HeapEstimator.shallowSizeOfInstance
 import org.neo4j.memory.MemoryTracker
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.NumberValue
@@ -84,6 +85,10 @@ class PercentileContFunction(value: Expression, percentile: Expression, memoryTr
   }
 }
 
+object PercentileContFunction {
+  val SHALLOW_SIZE: Long = shallowSizeOfInstance(classOf[PercentileContFunction])
+}
+
 class PercentileDiscFunction(value: Expression, percentile: Expression, memoryTracker: MemoryTracker)
   extends PercentileFunction(value, percentile, memoryTracker) {
 
@@ -108,4 +113,8 @@ class PercentileDiscFunction(value: Expression, percentile: Expression, memoryTr
     temp.close()
     result
   }
+}
+
+object PercentileDiscFunction {
+  val SHALLOW_SIZE: Long = shallowSizeOfInstance(classOf[PercentileDiscFunction])
 }

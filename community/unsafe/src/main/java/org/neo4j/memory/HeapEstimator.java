@@ -484,6 +484,14 @@ public final class HeapEstimator
     }
 
     /**
+     * Return the shallow size of an imaginary object that would contain the given number of object references
+     */
+    public static long shallowSizeOfInstanceWithObjectReferences( int numberOfObjectReferences )
+    {
+        return alignObjectSize( OBJECT_HEADER_BYTES + numberOfObjectReferences * OBJECT_REFERENCE_BYTES );
+    }
+
+    /**
      * Return shallow size of any <code>array</code>.
      */
     private static long shallowSizeOfArray( Object array )

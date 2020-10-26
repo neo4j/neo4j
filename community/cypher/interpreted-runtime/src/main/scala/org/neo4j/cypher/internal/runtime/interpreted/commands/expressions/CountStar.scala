@@ -27,7 +27,10 @@ import org.neo4j.memory.MemoryTracker
 case class CountStar() extends AggregationExpression {
   override def rewrite(f: Expression => Expression): Expression = f(CountStar())
 
-  override def createAggregationFunction(memoryTracker: MemoryTracker): AggregationFunction = new CountStarFunction
+  override def createAggregationFunction(memoryTracker: MemoryTracker): AggregationFunction = {
+    memoryTracker.allocateHeap(CountStarFunction.SHALLOW_SIZE)
+    new CountStarFunction
+  }
 
   override def arguments: Seq[Expression] = Seq.empty
 

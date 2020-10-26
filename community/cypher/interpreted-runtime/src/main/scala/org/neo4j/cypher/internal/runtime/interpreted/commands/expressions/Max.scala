@@ -27,7 +27,10 @@ import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.memory.MemoryTracker
 
 case class Max(anInner: Expression) extends AggregationWithInnerExpression(anInner) {
-  override def createAggregationFunction(memoryTracker: MemoryTracker): AggregationFunction = new MaxFunction(anInner)
+  override def createAggregationFunction(memoryTracker: MemoryTracker): AggregationFunction = {
+    memoryTracker.allocateHeap(MaxFunction.SHALLOW_SIZE)
+    new MaxFunction(anInner)
+  }
 
   override val expectedInnerType: CypherType = CTNumber
 

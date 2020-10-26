@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.runtime.IsNoValue
 import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
+import org.neo4j.memory.HeapEstimator.shallowSizeOfInstance
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 
@@ -37,4 +38,8 @@ class CountFunction(value: Expression) extends AggregationFunction {
   }
 
   override def result(state: QueryState): AnyValue = Values.longValue(count)
+}
+
+object CountFunction {
+  final val SHALLOW_SIZE: Long = shallowSizeOfInstance(classOf[CountFunction])
 }

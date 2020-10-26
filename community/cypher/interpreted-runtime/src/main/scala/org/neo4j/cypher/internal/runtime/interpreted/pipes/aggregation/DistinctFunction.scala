@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.kernel.impl.util.collection.DistinctSet
+import org.neo4j.memory.HeapEstimator.shallowSizeOfInstance
 import org.neo4j.memory.MemoryTracker
 import org.neo4j.values.AnyValue
 
@@ -40,4 +41,8 @@ class DistinctFunction(value: Expression, inner: AggregationFunction, memoryTrac
   }
 
   override def result(state: QueryState): AnyValue = inner.result(state)
+}
+
+object DistinctFunction {
+  val SHALLOW_SIZE: Long = shallowSizeOfInstance(classOf[DistinctFunction])
 }

@@ -27,7 +27,10 @@ import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.memory.MemoryTracker
 
 case class Avg(anInner: Expression) extends AggregationWithInnerExpression(anInner) {
-  override def createAggregationFunction(memoryTracker: MemoryTracker): AggregationFunction = new AvgFunction(anInner)
+  override def createAggregationFunction(memoryTracker: MemoryTracker): AggregationFunction = {
+    memoryTracker.allocateHeap(AvgFunction.SHALLOW_SIZE)
+    new AvgFunction(anInner)
+  }
 
   override val expectedInnerType: CypherType = CTNumber
 

@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation
 
 import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
+import org.neo4j.memory.HeapEstimator.shallowSizeOfInstance
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 
@@ -34,3 +35,6 @@ class CountStarFunction extends AggregationFunction {
   override def result(state: QueryState): AnyValue = Values.longValue(count)
 }
 
+object CountStarFunction {
+  val SHALLOW_SIZE: Long = shallowSizeOfInstance(classOf[CountStarFunction])
+}
