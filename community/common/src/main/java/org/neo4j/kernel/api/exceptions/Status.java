@@ -119,7 +119,7 @@ public interface Status
         TransactionValidationFailed( ClientError,
                 "Transaction changes did not pass validation checks" ),
         TransactionHookFailed( ClientError,
-                "Transaction hook failure." ),
+                "User-provided transaction event listener failure at transaction commit." ),
         TransactionMarkedAsFailed( ClientError,
                 "Transaction was marked as both successful and failed. Failure takes precedence and so this " +
                 "transaction was rolled back although it may have looked like it was going to be committed" ),
