@@ -39,8 +39,9 @@ import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.UnwindProjection
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.scalatest.AppendedClues
 
-class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSupport {
+class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSupport with AppendedClues {
 
   test("setting a node property: MATCH (n) SET n.prop = 42 RETURN n") {
     val query = buildSinglePlannerQuery("MATCH (n) SET n.prop = 42 RETURN n")
@@ -157,7 +158,7 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
 
   test("correlated subquery with create node") {
     val query = buildSinglePlannerQuery("MATCH (n) CALL { WITH n CREATE (m) RETURN m } RETURN n, m")
-    query shouldNot be('readOnly)
+    query.readOnly shouldBe false withClue "(query should not be readonly)"
     query.horizon shouldEqual CallSubqueryHorizon(
       correlated = true,
       callSubquery = RegularSinglePlannerQuery(
