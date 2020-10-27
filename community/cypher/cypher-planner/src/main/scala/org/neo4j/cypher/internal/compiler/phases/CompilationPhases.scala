@@ -89,14 +89,14 @@ object CompilationPhases {
             SyntaxAdditionsErrors(Additions.addedFeaturesIn4_x) andThen
             SyntaxDeprecationWarnings(Deprecations.removedFeaturesIn4_x) andThen
             PreparatoryRewriting(Deprecations.removedFeaturesIn4_x) andThen
-            SyntaxAdditionsErrors(Additions.addedFeaturesIn4_2) andThen
-            SyntaxDeprecationWarnings(Deprecations.removedFeaturesIn4_2) andThen
-            PreparatoryRewriting(Deprecations.removedFeaturesIn4_2)
+            SyntaxAdditionsErrors(Additions.addedFeaturesIn4_3) andThen
+            SyntaxDeprecationWarnings(Deprecations.removedFeaturesIn4_3) andThen
+            PreparatoryRewriting(Deprecations.removedFeaturesIn4_3)
         case Compatibility4_2 =>
           parse andThen
-            SyntaxAdditionsErrors(Additions.addedFeaturesIn4_2) andThen
-            SyntaxDeprecationWarnings(Deprecations.removedFeaturesIn4_2) andThen
-            PreparatoryRewriting(Deprecations.removedFeaturesIn4_2)
+            SyntaxAdditionsErrors(Additions.addedFeaturesIn4_3) andThen
+            SyntaxDeprecationWarnings(Deprecations.removedFeaturesIn4_3) andThen
+            PreparatoryRewriting(Deprecations.removedFeaturesIn4_3)
         case Compatibility4_3 =>
           parse
       }

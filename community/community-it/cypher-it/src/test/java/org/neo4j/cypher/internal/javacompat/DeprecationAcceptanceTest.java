@@ -58,19 +58,19 @@ public class DeprecationAcceptanceTest extends NotificationTestSupport
                         containsItem( deprecatedProcedureReturnFieldWarning ) );
     }
 
+    // DEPRECATED SYNTAX in 4.X
+
     @Test
     void deprecatedOctalLiteralSyntax()
     {
-        assertNotifications( List.of( "Cypher 4.3 " ), "explain RETURN 0123 AS name", containsItem( deprecatedOctalLiteralSyntax ) );
+        assertNotifications( "explain RETURN 0123 AS name", containsItem( deprecatedOctalLiteralSyntax ) );
     }
 
     @Test
     void deprecatedHexLiteralSyntax()
     {
-        assertNotifications( List.of( "Cypher 4.3 " ), "explain RETURN 0X123 AS name", containsItem( deprecatedHexLiteralSyntax ) );
+        assertNotifications( "explain RETURN 0X123 AS name", containsItem( deprecatedHexLiteralSyntax ) );
     }
-
-    // DEPRECATED SYNTAX in 4.X
 
     @Test
     void deprecatedBindingVariableLengthRelationship()

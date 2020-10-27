@@ -33,11 +33,11 @@ class RemovedFeaturesTest extends CypherFunSuite with AstConstructionTestSupport
   private val rewriter4_x = replaceDeprecatedCypherSyntax(Deprecations.removedFeaturesIn4_x)
   private val deprecatedNameMap4_x = Deprecations.removedFeaturesIn4_x.removedFunctionsRenames
 
-  private val rewriter4_2 = replaceDeprecatedCypherSyntax(Deprecations.removedFeaturesIn4_2)
-  private val deprecatedNameMap4_2 = Deprecations.removedFeaturesIn4_2.removedFunctionsRenames
+  private val rewriter4_3 = replaceDeprecatedCypherSyntax(Deprecations.removedFeaturesIn4_3)
+  private val deprecatedNameMap4_3 = Deprecations.removedFeaturesIn4_3.removedFunctionsRenames
 
   test("should rewrite removed function names regardless of casing") {
-    for (deprecatedMap <- Seq(deprecatedNameMap4_x, deprecatedNameMap4_2)) {
+    for (deprecatedMap <- Seq(deprecatedNameMap4_x, deprecatedNameMap4_3)) {
       for ((oldName, newName) <- deprecatedMap) {
         rewriter4_x(function(oldName, varFor("arg"))) should equal(function(oldName, varFor("arg")).copy(functionName = FunctionName(newName)(pos))(pos))
         rewriter4_x(function(oldName.toLowerCase(), varFor("arg"))) should equal(function(newName, varFor("arg")))
@@ -47,7 +47,7 @@ class RemovedFeaturesTest extends CypherFunSuite with AstConstructionTestSupport
   }
 
   test("should not touch new function names of regardless of casing") {
-    for (deprecatedMap <- Seq(deprecatedNameMap4_x, deprecatedNameMap4_2)) {
+    for (deprecatedMap <- Seq(deprecatedNameMap4_x, deprecatedNameMap4_3)) {
       for (newName <- deprecatedMap.values) {
         rewriter4_x(function(newName, varFor("arg"))) should equal(function(newName, varFor("arg")))
         rewriter4_x(function(newName.toLowerCase(), varFor("arg"))) should equal(function(newName, varFor("arg")))
@@ -111,8 +111,8 @@ class RemovedFeaturesTest extends CypherFunSuite with AstConstructionTestSupport
     rewriter4_x(beforeProperties) should equal(afterProperties)
   }
 
-  test("4.2 rewriter should not rewrite things removed in 4.0 or 4.1") {
+  test("4.3 rewriter should not rewrite things removed in earlier in 4.x") {
     val oldParam = ParameterWithOldSyntax("param", symbols.CTString)(pos)
-    rewriter4_2(oldParam) should equal(oldParam)
+    rewriter4_3(oldParam) should equal(oldParam)
   }
 }
