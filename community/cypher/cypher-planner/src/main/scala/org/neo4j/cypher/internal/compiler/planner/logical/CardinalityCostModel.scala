@@ -69,14 +69,18 @@ import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.Cost
 import org.neo4j.cypher.internal.util.CostPerRow
+import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.Multiplier
 
 object CardinalityCostModel extends CostModel {
 
-  private val DEFAULT_COST_PER_ROW: CostPerRow = 0.1
-  private val PROBE_BUILD_COST: CostPerRow = 3.1
-  private val PROBE_SEARCH_COST: CostPerRow = 2.4
-  private val EAGERNESS_MULTIPLIER: Multiplier = 2.0
+  val DEFAULT_COST_PER_ROW: CostPerRow = 0.1
+  val PROBE_BUILD_COST: CostPerRow = 3.1
+  val PROBE_SEARCH_COST: CostPerRow = 2.4
+  val EAGERNESS_MULTIPLIER: Multiplier = 2.0
+  // A property has at least 2 db hits, even though it could even have many more.
+  val PROPERTY_ACCESS_DB_HITS = 2
+  val LABEL_CHECK_DB_HITS = 1
 
   private def costPerRow(plan: LogicalPlan, cardinality: Cardinality): CostPerRow = plan match {
     /*
@@ -152,9 +156,10 @@ object CardinalityCostModel extends CostModel {
   }
 
   def apply(expression: Expression): CostPerRow = {
-    val noOfStoreAccesses = expression.treeCount {
-      case _: Property | _: HasLabels => true
-      case _ => false
+    val noOfStoreAccesses = expression.treeFold(0) {
+      case _: Property => count => TraverseChildren(count + PROPERTY_ACCESS_DB_HITS)
+      case _: HasLabels => count => TraverseChildren(count + LABEL_CHECK_DB_HITS)
+      case _ => count => TraverseChildren(count)
     }
     if (noOfStoreAccesses > 0)
       CostPerRow(noOfStoreAccesses)

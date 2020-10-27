@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
+import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.PROPERTY_ACCESS_DB_HITS
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.ir.LazyMode
@@ -113,7 +114,7 @@ class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSu
         setC(Argument(Set("a")), cardinalities, cardinality)), cardinalities, cardinality)
 
     val numberOfPredicates = 3
-    val costForSelection = cardinality * numberOfPredicates
+    val costForSelection = cardinality * numberOfPredicates * PROPERTY_ACCESS_DB_HITS
     val costForArgument = cardinality * .1
     costFor(plan, QueryGraphSolverInput.empty, cardinalities) should equal(Cost(costForSelection + costForArgument))
   }
