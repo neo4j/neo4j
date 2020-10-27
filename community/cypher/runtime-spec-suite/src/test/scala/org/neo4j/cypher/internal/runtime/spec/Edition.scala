@@ -24,6 +24,7 @@ import java.lang.Boolean.TRUE
 import org.neo4j.common.DependencyResolver
 import org.neo4j.configuration.Config
 import org.neo4j.configuration.GraphDatabaseSettings
+import org.neo4j.cypher.CypherOperatorEngineOption
 import org.neo4j.cypher.internal.CommunityRuntimeContextManager
 import org.neo4j.cypher.internal.CypherConfiguration
 import org.neo4j.cypher.internal.CypherRuntimeConfiguration
@@ -41,6 +42,12 @@ class Edition[CONTEXT <: RuntimeContext](graphBuilderFactory: () => TestDatabase
                                          newRuntimeContextManager: (CypherRuntimeConfiguration, DependencyResolver, LifeSupport, LogProvider) => RuntimeContextManager[CONTEXT],
                                          configs: (Setting[_], Object)*) {
 
+  //----------------------------------------------
+  // Specific plan or expression support helpers
+  def supportsNestedPlanExpression: Boolean = {
+    cypherConfig().operatorEngine != CypherOperatorEngineOption.compiled
+  }
+  //----------------------------------------------
 
   def newGraphManagementService(additionalConfigs: (Setting[_], Object)*): DatabaseManagementService = {
     val graphBuilder = graphBuilderFactory().impermanent

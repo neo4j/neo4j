@@ -710,6 +710,8 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should kill nested plan collect expression") {
+    assume(edition.supportsNestedPlanExpression)
+
     // given
     val n = (MemoryManagementTestBase.maxMemory / estimateSize(E_INT)) * 1.2 // Should fill the size of memory with n values alone + 20% extra margin
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -730,6 +732,8 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should not kill nested plan exists expression") {
+    assume(edition.supportsNestedPlanExpression)
+
     val n = (MemoryManagementTestBase.maxMemory / estimateSize(E_INT)) * 1.2 // Should fill the size of memory with n values alone + 20% extra margin
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x1")

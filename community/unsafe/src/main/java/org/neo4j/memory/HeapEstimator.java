@@ -488,7 +488,7 @@ public final class HeapEstimator
      */
     public static long shallowSizeOfInstanceWithObjectReferences( int numberOfObjectReferences )
     {
-        return alignObjectSize( OBJECT_HEADER_BYTES + numberOfObjectReferences * OBJECT_REFERENCE_BYTES );
+        return alignObjectSize( (long) OBJECT_HEADER_BYTES + (long) numberOfObjectReferences * (long) OBJECT_REFERENCE_BYTES );
     }
 
     /**

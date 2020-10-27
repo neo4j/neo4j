@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.runtime
 
+import org.neo4j.cypher.internal.runtime.BoundedQueryMemoryTrackerTest.DEFAULT_SIZE_OF_GROWING_ARRAY
+import org.neo4j.cypher.internal.runtime.GrowingArray.DEFAULT_SIZE
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.memory.HeapEstimator.shallowSizeOfObjectArray
 import org.neo4j.memory.LocalMemoryTracker
@@ -26,6 +28,10 @@ import org.neo4j.memory.Measurable
 import org.neo4j.memory.MemoryLimitExceededException
 import org.neo4j.memory.MemoryPools
 import org.neo4j.values.storable.Values
+
+object BoundedQueryMemoryTrackerTest {
+  val DEFAULT_SIZE_OF_GROWING_ARRAY: Long = shallowSizeOfObjectArray(DEFAULT_SIZE) + GrowingArray.SHALLOW_SIZE
+}
 
 class BoundedQueryMemoryTrackerTest extends CypherFunSuite {
 
@@ -35,7 +41,7 @@ class BoundedQueryMemoryTrackerTest extends CypherFunSuite {
 
   case class TestMemoryTracker(maxBytes: Long = Long.MaxValue) extends LocalMemoryTracker(MemoryPools.NO_TRACKING, maxBytes, 0, null)
 
-  private val sizeOfGrowingArray: Long = shallowSizeOfObjectArray(GrowingArray.DEFAULT_SIZE) + GrowingArray.SHALLOW_SIZE
+  private val sizeOfGrowingArray: Long = DEFAULT_SIZE_OF_GROWING_ARRAY
 
   test("Tracks overall memory high water mark with bytes") {
     // Given

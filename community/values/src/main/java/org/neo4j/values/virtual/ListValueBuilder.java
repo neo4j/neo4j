@@ -92,7 +92,6 @@ public abstract class ListValueBuilder
     }
 
     private static final long ARRAY_LIST_SHALLOW_SIZE = shallowSizeOfInstance( ArrayList.class );
-    public static final long UNKNOWN_LIST_VALUE_BUILDER_SHALLOW_SIZE = shallowSizeOfInstance( UnknownSizeListValueBuilder.class ) + ARRAY_LIST_SHALLOW_SIZE;
     private static class UnknownSizeListValueBuilder extends ListValueBuilder
     {
         long estimatedHeapSize;
