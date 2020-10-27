@@ -51,7 +51,7 @@ import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.cache.TestExecutorCaffeineCacheFactory
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
 import org.neo4j.cypher.internal.compiler.StatsDivergenceCalculator
-import org.neo4j.cypher.internal.compiler.phases.Compatibility4_2
+import org.neo4j.cypher.internal.compiler.phases.Compatibility4_3
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.planner.spi.MinimumGraphStatistics.MIN_NODES_ALL
 import org.neo4j.cypher.internal.planner.spi.MinimumGraphStatistics.MIN_NODES_WITH_LABEL
@@ -102,7 +102,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
       cypher.CypherPlannerOption.default,
       CypherUpdateStrategy.default,
       () => 1,
-      compatibilityMode = Compatibility4_2)
+      compatibilityMode = Compatibility4_3)
     createCompiler(planner, log)
   }
 

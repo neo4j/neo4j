@@ -34,10 +34,10 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
       .shouldHavePlanner(CostBasedPlannerName.default)
   }
 
-  test("cost should be default planner in 4.2") {
+  test("cost should be default planner in 4.3") {
     given("match (n) return n")
-      .withCypherVersion(CypherVersion.v4_2)
-      .shouldHaveCypherVersion(CypherVersion.v4_2)
+      .withCypherVersion(CypherVersion.v4_3)
+      .shouldHaveCypherVersion(CypherVersion.v4_3)
       .shouldHavePlanner(CostBasedPlannerName.default)
   }
 
@@ -53,9 +53,9 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
       .shouldHaveRuntime(InterpretedRuntimeName)
   }
 
-  test("interpreted should be default runtime in 4.2") {
+  test("interpreted should be default runtime in 4.3") {
     given("match (n) return n")
-      .withCypherVersion(CypherVersion.v4_2)
+      .withCypherVersion(CypherVersion.v4_3)
       .shouldHaveRuntime(InterpretedRuntimeName)
   }
 

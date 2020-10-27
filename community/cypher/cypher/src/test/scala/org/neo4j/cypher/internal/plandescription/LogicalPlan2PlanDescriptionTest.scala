@@ -311,9 +311,9 @@ object LogicalPlan2PlanDescriptionTest {
 
 class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPropertyChecks {
 
-  private val CYPHER_VERSION = Version("CYPHER 4.2")
-  private val RUNTIME_VERSION = RuntimeVersion("4.2")
-  private val PLANNER_VERSION = PlannerVersion("4.2")
+  private val CYPHER_VERSION = Version("CYPHER 4.3")
+  private val RUNTIME_VERSION = RuntimeVersion("4.3")
+  private val PLANNER_VERSION = PlannerVersion("4.3")
 
   implicit val idGen: IdGen = new SequentialIdGen()
   private val readOnly = true

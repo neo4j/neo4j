@@ -38,7 +38,7 @@ import static org.hamcrest.Matchers.containsString;
 
 public class DeprecationAcceptanceTest extends NotificationTestSupport
 {
-    private final List<String> newerVersions = List.of("CYPHER 4.1 ", "CYPHER 4.2 ");
+    private final List<String> newerVersions = List.of("CYPHER 4.1 ", "CYPHER 4.3 ");
 
     // DEPRECATED PROCEDURE THINGS
 
@@ -61,13 +61,13 @@ public class DeprecationAcceptanceTest extends NotificationTestSupport
     @Test
     void deprecatedOctalLiteralSyntax()
     {
-        assertNotifications( List.of( "Cypher 4.2 " ), "explain RETURN 0123 AS name", containsItem( deprecatedOctalLiteralSyntax ) );
+        assertNotifications( List.of( "Cypher 4.3 " ), "explain RETURN 0123 AS name", containsItem( deprecatedOctalLiteralSyntax ) );
     }
 
     @Test
     void deprecatedHexLiteralSyntax()
     {
-        assertNotifications( List.of( "Cypher 4.2 " ), "explain RETURN 0X123 AS name", containsItem( deprecatedHexLiteralSyntax ) );
+        assertNotifications( List.of( "Cypher 4.3 " ), "explain RETURN 0X123 AS name", containsItem( deprecatedHexLiteralSyntax ) );
     }
 
     // DEPRECATED SYNTAX in 4.X
