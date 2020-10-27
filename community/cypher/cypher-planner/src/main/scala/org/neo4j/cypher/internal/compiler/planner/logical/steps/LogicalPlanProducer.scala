@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CardinalityModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
+import org.neo4j.cypher.internal.expressions.Add
 import org.neo4j.cypher.internal.expressions.CachedProperty
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.ExistsSubClause
@@ -889,6 +890,27 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
       markOrderAsLeveragedBackwardsUntilOrigin(plan)
     }
     plan
+  }
+
+  // In case we have SKIP n LIMIT m, we want to limit by (n + m), since we plan the Limit before the Skip.
+  def planSkipAndLimit(inner: LogicalPlan,
+                       skipExpr: Expression,
+                       limitExpr: Expression,
+                       interestingOrder: InterestingOrder,
+                       context: LogicalPlanningContext): LogicalPlan = {
+    val solvedSkip = solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.updateQueryProjection(_.updatePagination(_.withSkipExpression(skipExpr))))
+    val solvedSkipAndLimit = solvedSkip.updateTailOrSelf(_.updateQueryProjection(_.updatePagination(_.withLimitExpression(limitExpr))))
+
+    val skipCardinality = cardinalityModel(solvedSkip, context.input, context.semanticTable)
+    val limitCardinality = cardinalityModel(solvedSkipAndLimit, context.input, context.semanticTable)
+    val innerCardinality = cardinalities.get(inner.id)
+    val skippedRows = innerCardinality + (-1 * skipCardinality)
+
+    val effectiveLimitExpr = Add(limitExpr, skipExpr)(limitExpr.position)
+    val limitPlan = planLimit(inner, effectiveLimitExpr, limitExpr, interestingOrder, DoNotIncludeTies, context)
+    cardinalities.set(limitPlan.id, skippedRows + limitCardinality)
+
+    planSkip(limitPlan, skipExpr, interestingOrder, context)
   }
 
   def planLimitForAggregation(inner: LogicalPlan,

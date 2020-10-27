@@ -21,8 +21,6 @@ package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.PlanTransformer
-import org.neo4j.cypher.internal.expressions.Add
-import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.ir.QueryProjection
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
@@ -30,29 +28,24 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 object skipAndLimit extends PlanTransformer {
 
   def apply(plan: LogicalPlan, query: SinglePlannerQuery, context: LogicalPlanningContext): LogicalPlan = {
-    def addSkip(maybeSkip: Option[Expression], plan: LogicalPlan): LogicalPlan =
-      maybeSkip.fold(plan)(skipExpression => context.logicalPlanProducer.planSkip(plan, skipExpression, query.interestingOrder, context))
-
-    def addLimit(maybeLimit: Option[Expression],
-                 maybeSkip: Option[Expression],
-                 plan: LogicalPlan): LogicalPlan = {
-      maybeLimit.fold(plan) { limitExpression =>
-        // In case we have SKIP n LIMIT m, we want to limit by (n + m), since we plan the Limit before the Skip.
-        val effectiveLimit = maybeSkip.fold(limitExpression)(skip => Add(limitExpression, skip)(limitExpression.position))
-        context.logicalPlanProducer.planLimit(plan, effectiveLimit, limitExpression, query.interestingOrder, context = context)
-      }
-    }
-
     query.horizon match {
       case p: QueryProjection =>
         val queryPagination = p.queryPagination
         (queryPagination.skip, queryPagination.limit) match {
-          case (skip, limit) =>
-            addSkip(skip, addLimit(limit, skip, plan))
+          case (Some(skipExpr), Some(limitExpr)) =>
+            context.logicalPlanProducer.planSkipAndLimit(plan, skipExpr, limitExpr, query.interestingOrder, context)
+
+          case (Some(skipExpr), _) =>
+            context.logicalPlanProducer.planSkip(plan, skipExpr, query.interestingOrder, context)
+
+          case (_, Some(limitExpr)) =>
+            context.logicalPlanProducer.planLimit(plan, limitExpr, limitExpr, query.interestingOrder, context = context)
+
+          case _ =>
+            plan
         }
 
       case _ => plan
     }
   }
-
 }
