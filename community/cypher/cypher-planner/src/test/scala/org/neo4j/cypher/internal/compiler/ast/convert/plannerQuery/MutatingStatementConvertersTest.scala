@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
+import org.neo4j.cypher.internal.ir.CallSubqueryHorizon
 import org.neo4j.cypher.internal.ir.CreateNode
 import org.neo4j.cypher.internal.ir.CreatePattern
 import org.neo4j.cypher.internal.ir.CreateRelationship
@@ -152,6 +153,20 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
           InterestingOrder.empty,
           RegularQueryProjection(Map("i" -> varFor("i"))), None)))
     )
+  }
+
+  test("correlated subquery with create node") {
+    val query = buildSinglePlannerQuery("MATCH (n) CALL { WITH n CREATE (m) RETURN m } RETURN n, m")
+    query shouldNot be('readOnly)
+    query.horizon shouldEqual CallSubqueryHorizon(
+      correlated = true,
+      callSubquery = RegularSinglePlannerQuery(
+        queryGraph = QueryGraph(
+          argumentIds = Set("n"),
+          mutatingPatterns = IndexedSeq(
+            CreatePattern(nodes("m"), Seq.empty))),
+        horizon = RegularQueryProjection(
+          projections = Map("m" -> varFor("m")))))
   }
 
   private def nodes(names: String*) = {
