@@ -46,7 +46,7 @@ class PreParserTest extends CypherFunSuite {
   }
 
   test("should not allow multiple versions") {
-    intercept[InvalidArgumentException](preParser.preParseQuery("CYPHER 3.5 CYPHER 4.1 RETURN 42"))
+    intercept[InvalidArgumentException](preParser.preParseQuery("CYPHER 3.5 CYPHER 4.2 RETURN 42"))
   }
 
   test("should not allow both EXPLAIN and PROFILE") {
@@ -103,7 +103,7 @@ class PreParserTest extends CypherFunSuite {
            PERIODIC
            COMMIT""",
         "CYPHER 3.5 planner=cost debug=ofCourse USING PERIODIC COMMIT",
-        "CYPHER 4.1 planner=cost debug=ofCourse USING PERIODIC COMMIT",
+        "CYPHER 4.2 planner=cost debug=ofCourse USING PERIODIC COMMIT",
         "CYPHER 4.3 planner=cost debug=ofCourse USING PERIODIC COMMIT",
         "using periodic commit",
         "UsING pERIOdIC COMmIT"
@@ -123,7 +123,7 @@ class PreParserTest extends CypherFunSuite {
         "CREATE ({`USING PERIODIC COMMIT`: true})",
         "CREATE (:`USING PERIODIC COMMIT`)",
         "CYPHER 3.5 debug=usingPeriodicCommit PROFILE CREATE ({name: 'USING PERIODIC COMMIT'})",
-        "CYPHER 4.1 debug=usingPeriodicCommit PROFILE CREATE ({name: 'USING PERIODIC COMMIT'})",
+        "CYPHER 4.2 debug=usingPeriodicCommit PROFILE CREATE ({name: 'USING PERIODIC COMMIT'})",
         "CYPHER 4.3 debug=usingPeriodicCommit PROFILE CREATE ({name: 'USING PERIODIC COMMIT'})",
         """CREATE ({name: '
           |USING PERIODIC COMMIT')""".stripMargin

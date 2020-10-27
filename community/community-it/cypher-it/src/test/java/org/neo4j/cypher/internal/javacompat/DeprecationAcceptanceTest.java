@@ -38,7 +38,7 @@ import static org.hamcrest.Matchers.containsString;
 
 public class DeprecationAcceptanceTest extends NotificationTestSupport
 {
-    private final List<String> newerVersions = List.of("CYPHER 4.1 ", "CYPHER 4.3 ");
+    private final List<String> newerVersions = List.of("CYPHER 4.2 ", "CYPHER 4.3 ");
 
     // DEPRECATED PROCEDURE THINGS
 
