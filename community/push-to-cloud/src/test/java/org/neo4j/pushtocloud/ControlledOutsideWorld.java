@@ -82,4 +82,10 @@ class ControlledOutsideWorld extends NullOutsideWorld
     {
         return nullOutputStream;
     }
+
+    @Override
+    public PrintStream errorStream()
+    {
+        return nullOutputStream;
+    }
 }

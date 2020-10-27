@@ -16,6 +16,7 @@
  */
 package org.neo4j.pushtocloud;
 
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.contrib.java.lang.system.EnvironmentVariables;
@@ -32,10 +33,12 @@ import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.commandline.arguments.common.Database;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.pushtocloud.PushToCloudCommand.Copier;
 import org.neo4j.pushtocloud.PushToCloudCommand.DumpCreator;
+import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.String.format;
@@ -56,18 +59,40 @@ import static org.neo4j.pushtocloud.PushToCloudCommand.ARG_BOLT_URI;
 import static org.neo4j.pushtocloud.PushToCloudCommand.ARG_DATABASE;
 import static org.neo4j.pushtocloud.PushToCloudCommand.ARG_DUMP;
 import static org.neo4j.pushtocloud.PushToCloudCommand.ARG_DUMP_TO;
+import static org.neo4j.pushtocloud.PushToCloudCommand.ARG_OVERWRITE;
 import static org.neo4j.pushtocloud.PushToCloudCommand.ARG_PASSWORD;
 import static org.neo4j.pushtocloud.PushToCloudCommand.ARG_USERNAME;
-import static org.neo4j.pushtocloud.PushToCloudCommand.ARG_OVERWRITE;
 
 public class PushToCloudCommandTest
 {
     private static final String SOME_EXAMPLE_BOLT_URI = "bolt+routing://database_id.databases.neo4j.io";
+    private static final String TEST_DB = "test-db";
 
     @Rule
     public final TestDirectory directory = TestDirectory.testDirectory();
     @Rule
     public final EnvironmentVariables environmentVariables = new EnvironmentVariables();
+
+    private Path dump;
+
+    @Before
+    public void setUp() throws CommandFailed, IncorrectUsage
+    {
+        Path configDir = directory.directory( "conf" ).toPath();
+        TestGraphDatabaseFactory graphDatabaseFactory = new TestGraphDatabaseFactory()
+                .setFileSystem( directory.getFileSystem() );
+        // Make two databases so we can test the impact of the --database flag on non-default names
+        for ( String database : new String[]{TEST_DB, new Database().defaultValue()} )
+        {
+            File dbDir = directory.directory().toPath().resolve( "data" ).resolve( "databases" ).resolve( database ).toFile();
+            GraphDatabaseService db = graphDatabaseFactory.newImpermanentDatabaseBuilder( dbDir ).newGraphDatabase();
+            db.shutdown();
+        }
+
+        dump = directory.file( "some-archive.dump" ).toPath();
+        ControlledOutsideWorld outsideWorld = new ControlledOutsideWorld( directory.getFileSystem() );
+        new RealDumpCreator( directory.directory().toPath(), configDir, outsideWorld ).dumpDatabase( TEST_DB, dump );
+    }
 
     @Test
     public void shouldReadUsernameAndPasswordFromUserInput() throws Exception
@@ -86,7 +111,7 @@ public class PushToCloudCommandTest
 
         // when
         command.execute( array(
-                arg( ARG_DUMP, createSimpleDatabaseDump().toString() ),
+                arg( ARG_DUMP, dump.toString() ),
                 arg( ARG_BOLT_URI, SOME_EXAMPLE_BOLT_URI ) ) );
 
         // then
@@ -111,7 +136,7 @@ public class PushToCloudCommandTest
 
         // when
         command.execute( array(
-                arg( ARG_DUMP, createSimpleDatabaseDump().toString() ),
+                arg( ARG_DUMP, dump.toString() ),
                 arg( ARG_BOLT_URI, SOME_EXAMPLE_BOLT_URI ),
                 arg( ARG_OVERWRITE, "true" ) ) );
 
@@ -137,7 +162,7 @@ public class PushToCloudCommandTest
 
         // when
         command.execute( array(
-                arg( ARG_DUMP, createSimpleDatabaseDump().toString() ),
+                arg( ARG_DUMP, dump.toString() ),
                 arg( ARG_BOLT_URI, SOME_EXAMPLE_BOLT_URI ),
                 format( "--%s", ARG_OVERWRITE ) ) ); // add --overwrite
 
@@ -154,13 +179,13 @@ public class PushToCloudCommandTest
         PushToCloudCommand command = command().copier( targetCommunicator ).build();
 
         // when
-        Path dump = createSimpleDatabaseDump();
+        PushToCloudCommand.Uploader uploader = command.makeDumpUploader( dump.toFile() );
         command.execute( array(
                 arg( ARG_DUMP, dump.toString() ),
                 arg( ARG_BOLT_URI, SOME_EXAMPLE_BOLT_URI ) ) );
 
         // then
-        verify( targetCommunicator ).copy( anyBoolean(), any(), any(), eq( dump ), eq( false ), any() );
+        verify( targetCommunicator ).copy( anyBoolean(), any(), any(), eq( uploader.source ), eq( false ), any() );
     }
 
     @Test
@@ -168,14 +193,14 @@ public class PushToCloudCommandTest
     {
         // given
         Copier targetCommunicator = mockedTargetCommunicator();
-        DumpCreator dumpCreator = mock( DumpCreator.class );
+        DumpCreator dumpCreator = mockedDumpCreator();
         PushToCloudCommand command = command()
                 .copier( targetCommunicator )
                 .dumpCreator( dumpCreator )
                 .build();
 
         // when
-        String databaseName = "neo4j";
+        String databaseName = TEST_DB;
         command.execute( array(
                 arg( ARG_DATABASE, databaseName ),
                 arg( ARG_BOLT_URI, SOME_EXAMPLE_BOLT_URI ) ) );
@@ -190,14 +215,14 @@ public class PushToCloudCommandTest
     {
         // given
         Copier targetCommunicator = mockedTargetCommunicator();
-        DumpCreator dumpCreator = mock( DumpCreator.class );
+        DumpCreator dumpCreator = mockedDumpCreator();
         PushToCloudCommand command = command()
                 .copier( targetCommunicator )
                 .dumpCreator( dumpCreator )
                 .build();
 
         // when
-        String databaseName = "neo4j";
+        String databaseName = TEST_DB;
         Path dumpFile = directory.file( "some-dump-file" ).toPath();
         command.execute( array(
                 arg( ARG_DATABASE, databaseName ),
@@ -214,20 +239,19 @@ public class PushToCloudCommandTest
     {
         // given
         Copier targetCommunicator = mockedTargetCommunicator();
-        DumpCreator dumpCreator = mock( DumpCreator.class );
+        DumpCreator dumpCreator = mockedDumpCreator();
         PushToCloudCommand command = command()
                 .copier( targetCommunicator )
                 .dumpCreator( dumpCreator )
                 .build();
 
         // when
-        String databaseName = "neo4j";
         Path dumpFile = directory.file( "some-dump-file" ).toPath();
         Files.write( dumpFile, "some data".getBytes() );
         try
         {
             command.execute( array(
-                    arg( ARG_DATABASE, databaseName ),
+                    arg( ARG_DATABASE, TEST_DB ),
                     arg( ARG_DUMP_TO, dumpFile.toString() ),
                     arg( ARG_BOLT_URI, SOME_EXAMPLE_BOLT_URI ) ) );
             fail( "Should have failed" );
@@ -266,7 +290,6 @@ public class PushToCloudCommandTest
         // given
         Copier targetCommunicator = mockedTargetCommunicator();
         String username = "neo4j";
-        char[] password = {'a', 'b', 'c'};
         OutsideWorld outsideWorld = new ControlledOutsideWorld( new DefaultFileSystemAbstraction() )
                 .withPromptResponse( username );
         PushToCloudCommand command = command()
@@ -277,14 +300,14 @@ public class PushToCloudCommandTest
         // when
 
         command.execute( array(
-                arg( ARG_DUMP, createSimpleDatabaseDump().toString() ),
+                arg( ARG_DUMP, dump.toString() ),
                 arg( ARG_PASSWORD, "pass" ),
                 arg( ARG_BOLT_URI, SOME_EXAMPLE_BOLT_URI ) ) );
 
         environmentVariables.set("NEO4J_USERNAME", null);
         environmentVariables.set("NEO4J_PASSWORD", "pass");
         command.execute( array(
-                arg( ARG_DUMP, createSimpleDatabaseDump().toString() ),
+                arg( ARG_DUMP, dump.toString() ),
                 arg( ARG_BOLT_URI, SOME_EXAMPLE_BOLT_URI ) ) );
 
     }
@@ -294,7 +317,6 @@ public class PushToCloudCommandTest
     {
         // given
         Copier targetCommunicator = mockedTargetCommunicator();
-        String username = "neo4j";
         char[] password = {'a', 'b', 'c'};
         OutsideWorld outsideWorld = new ControlledOutsideWorld( new DefaultFileSystemAbstraction() )
                 .withPasswordResponse( password );
@@ -303,7 +325,6 @@ public class PushToCloudCommandTest
                 .outsideWorld( outsideWorld )
                 .build();
 
-        Path dump = createSimpleDatabaseDump();
         // when
         command.execute( array(
                 arg( ARG_DUMP, dump.toString() ),
@@ -341,7 +362,7 @@ public class PushToCloudCommandTest
         environmentVariables.set("NEO4J_USERNAME", "neo4jenv");
         environmentVariables.set("NEO4J_PASSWORD", "passenv");
         command.execute( array(
-                arg( ARG_DUMP, createSimpleDatabaseDump().toString() ),
+                arg( ARG_DUMP, dump.toString() ),
                 arg( ARG_USERNAME, "neo4jcli" ),
                 arg( ARG_PASSWORD, "passcli" ),
                 arg( ARG_BOLT_URI, SOME_EXAMPLE_BOLT_URI ) ) );
@@ -353,7 +374,7 @@ public class PushToCloudCommandTest
     public void shouldChooseToDumpDefaultDatabaseIfNeitherDumpNorDatabaseIsGiven() throws IOException, CommandFailed, IncorrectUsage
     {
         // given
-        DumpCreator dumpCreator = mock( DumpCreator.class );
+        DumpCreator dumpCreator = mockedDumpCreator();
         Copier copier = mock( Copier.class );
         PushToCloudCommand command = command().dumpCreator( dumpCreator ).copier( copier ).build();
 
@@ -399,7 +420,7 @@ public class PushToCloudCommandTest
 
         // when
         command.execute( array(
-                arg( ARG_DUMP, createSimpleDatabaseDump().toString() ),
+                arg( ARG_DUMP, dump.toString() ),
                 arg( ARG_BOLT_URI, "bolt+routing://mydbid-testenvironment.databases.neo4j.io" ) ) );
 
         // then
@@ -416,7 +437,7 @@ public class PushToCloudCommandTest
 
         // when
         command.execute( array(
-                arg( ARG_DUMP, createSimpleDatabaseDump().toString() ),
+                arg( ARG_DUMP, dump.toString() ),
                 arg( ARG_BOLT_URI, "bolt+routing://mydbid.databases.neo4j.io" ) ) );
 
         // then
@@ -433,7 +454,7 @@ public class PushToCloudCommandTest
 
         // when
         command.execute( array(
-                arg( ARG_DUMP, createSimpleDatabaseDump().toString() ),
+                arg( ARG_DUMP, dump.toString() ),
                 arg( ARG_BOLT_URI, "neo4j://mydbid.databases.neo4j.io" ) ) );
 
         // then
@@ -446,7 +467,7 @@ public class PushToCloudCommandTest
     {
         // given
         Copier copier = mockedTargetCommunicator();
-        DumpCreator dumper = mock( DumpCreator.class );
+        DumpCreator dumper = mockedDumpCreator();
         PushToCloudCommand command = command().copier( copier ).dumpCreator( dumper ).build();
 
         // when
@@ -460,18 +481,25 @@ public class PushToCloudCommandTest
                 eq( true ), anyString() );
     }
 
+    private DumpCreator mockedDumpCreator()
+    {
+        try
+        {
+            DumpCreator dumpCreator = mock( DumpCreator.class );
+            when( dumpCreator.dumpDatabase( anyString(), any() ) ).thenReturn( dump.toFile() );
+            return dumpCreator;
+        }
+        catch ( Exception e )
+        {
+            throw new RuntimeException( "Cannot mock the DumpCreator: " + e.getMessage(), e );
+        }
+    }
+
     private Copier mockedTargetCommunicator() throws CommandFailed
     {
         Copier copier = mock( Copier.class );
         when( copier.authenticate( anyBoolean(), any(), any(), any(), anyBoolean() ) ).thenReturn( "abc" );
         return copier;
-    }
-
-    private Path createSimpleDatabaseDump() throws IOException
-    {
-        Path dump = directory.file( "dump" ).toPath();
-        Files.write( dump, "some data".getBytes() );
-        return dump;
     }
 
     private String arg( String key, String value )
@@ -486,10 +514,10 @@ public class PushToCloudCommandTest
 
     private class Builder
     {
-        private Path homeDir = directory.directory().toPath();
-        private Path configDir = directory.directory( "conf" ).toPath();
+        private final Path homeDir = directory.directory().toPath();
+        private final Path configDir = directory.directory( "conf" ).toPath();
         private OutsideWorld outsideWorld = new ControlledOutsideWorld( new DefaultFileSystemAbstraction() );
-        private DumpCreator dumpCreator = mock( DumpCreator.class );
+        private DumpCreator dumpCreator = mockedDumpCreator();
         private Copier targetCommunicator;
         private final Map<Setting<?>,String> settings = new HashMap<>();
 
@@ -528,7 +556,7 @@ public class PushToCloudCommandTest
             settings.forEach( ( key, value ) -> configFileContents.append( format( "%s=%s%n", key.name(), value ) ) );
             Path configFile = configDir.resolve( "neo4j.conf" );
             Files.write( configFile, configFileContents.toString().getBytes() );
-            return configFile;
+            return configFile.getParent();
         }
     }
 }
