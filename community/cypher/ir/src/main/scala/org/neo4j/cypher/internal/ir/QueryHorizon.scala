@@ -72,6 +72,8 @@ case class CallSubqueryHorizon(callSubquery: PlannerQueryPart, correlated: Boole
   override def dependingExpressions: Seq[Expression] = Seq.empty
 
   override def preferredStrictness(sorted: Boolean): Option[StrictnessMode] = None
+
+  override def readOnly: Boolean = callSubquery.readOnly
 }
 
 sealed abstract class QueryProjection extends QueryHorizon {
