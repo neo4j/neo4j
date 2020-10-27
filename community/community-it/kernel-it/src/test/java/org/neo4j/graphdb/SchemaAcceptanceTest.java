@@ -1644,14 +1644,11 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
             {
                 fail( "Both transactions completed successfully, when one of them should have thrown." );
             }
-            if ( firstThrowable == null )
-            {
-                assertThat( secondThrowable ).isInstanceOf( ConstraintViolationException.class );
-            }
-            if ( secondThrowable == null )
-            {
-                assertThat( firstThrowable ).isInstanceOf( ConstraintViolationException.class );
-            }
+            Throwable error = firstThrowable != null ? firstThrowable : secondThrowable;
+            // The most common exception is to notice the duplicate rule/name at transaction creation time, however there's a miniscule chance that
+            // both transactions will progress a bit longer side by side and one of them instead tripping on a check that says that transactions
+            // cannot commit if there has been a constraint created while the transaction was running.
+            assertThat( error ).isInstanceOfAny( ConstraintViolationException.class, TransactionFailureException.class );
         }
 
         private Throwable getException( Future<Void> future ) throws InterruptedException
