@@ -28,7 +28,8 @@ import com.github.benmanes.caffeine.cache.Ticker
 
 trait CaffeineCacheFactory {
   def createCache[K <: AnyRef, V <: AnyRef](size: Int): Cache[K, V]
-  def createCache[K <: AnyRef, V <: AnyRef](ticker: Ticker, ttl: Long, size: Int): Cache[K, V]
+  def createCache[K <: AnyRef, V <: AnyRef](size: Int, ttlAfterAccess: Long): Cache[K, V]
+  def createCache[K <: AnyRef, V <: AnyRef](ticker: Ticker, ttlAfterWrite: Long, size: Int): Cache[K, V]
 }
 
 class ExecutorBasedCaffeineCacheFactory(executor: Executor) extends CaffeineCacheFactory {
@@ -40,16 +41,21 @@ class ExecutorBasedCaffeineCacheFactory(executor: Executor) extends CaffeineCach
       .build[K, V]()
   }
 
-  override def createCache[K <: AnyRef, V <: AnyRef](
-      ticker: Ticker,
-      ttl: Long,
-      size: Int
-  ): Cache[K, V] =
+  override def createCache[K <: AnyRef, V <: AnyRef](size: Int, ttlAfterAccess: Long): Cache[K, V] = {
+    Caffeine
+      .newBuilder()
+      .executor(executor)
+      .maximumSize(size)
+      .expireAfterAccess(ttlAfterAccess, TimeUnit.MILLISECONDS)
+      .build[K, V]()
+  }
+
+  override def createCache[K <: AnyRef, V <: AnyRef]( ticker: Ticker, ttlAfterWrite: Long, size: Int ): Cache[K, V] =
     Caffeine
       .newBuilder()
       .executor(executor)
       .maximumSize(size)
       .ticker(ticker)
-      .expireAfterWrite(ttl, TimeUnit.MILLISECONDS)
+      .expireAfterWrite(ttlAfterWrite, TimeUnit.MILLISECONDS)
       .build[K, V]()
 }
