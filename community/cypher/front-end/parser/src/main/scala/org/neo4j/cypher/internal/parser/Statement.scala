@@ -108,21 +108,27 @@ trait Statement extends Parser
   }
 
   def AlterUser: Rule1[ast.AlterUser] = rule("ALTER USER") {
-    // ALTER USER username SET [PLAINTEXT | ENCRYPTED] PASSWORD stringLiteralPassword optionalRequirePasswordChange optionalStatus
-    group(keyword("ALTER USER") ~~ SymbolicNameOrStringParameter ~~ SetPassword ~~ SensitiveStringLiteral ~~ OptionalRequirePasswordChange ~~ OptionalStatus) ~~>>
-      ((userName, isEncryptedPassword, initialPassword, requirePasswordChange, suspended) => ast.AlterUser(userName, Some(isEncryptedPassword), Some(initialPassword), requirePasswordChange, suspended)) |
+    // ALTER USER username SET [PLAINTEXT | ENCRYPTED] PASSWORD stringLiteralPassword optionalRequirePasswordChange optionalStatus optionalDefaultDatabase
+    group(keyword("ALTER USER") ~~ SymbolicNameOrStringParameter ~~ SetPassword ~~ SensitiveStringLiteral ~~ OptionalRequirePasswordChange ~~ OptionalStatus ~~ OptionalDefaultDatabase) ~~>>
+      ((userName, isEncryptedPassword, initialPassword, requirePasswordChange, suspended, defaultDatabase) =>
+        ast.AlterUser(userName, Some(isEncryptedPassword), Some(initialPassword), requirePasswordChange, suspended, defaultDatabase)) |
     //
-    // ALTER USER username SET [PLAINTEXT | ENCRYPTED] PASSWORD parameterPassword optionalRequirePasswordChange optionalStatus
-    group(keyword("ALTER USER") ~~ SymbolicNameOrStringParameter ~~ SetPassword ~~ SensitiveStringParameter ~~ OptionalRequirePasswordChange ~~ OptionalStatus) ~~>>
-      ((userName, isEncryptedPassword, initialPassword, requirePasswordChange, suspended) => ast.AlterUser(userName, Some(isEncryptedPassword), Some(initialPassword), requirePasswordChange, suspended)) |
+    // ALTER USER username SET [PLAINTEXT | ENCRYPTED] PASSWORD parameterPassword optionalRequirePasswordChange optionalStatus optionalDefaultDatabase
+    group(keyword("ALTER USER") ~~ SymbolicNameOrStringParameter ~~ SetPassword ~~ SensitiveStringParameter ~~ OptionalRequirePasswordChange ~~ OptionalStatus ~~ OptionalDefaultDatabase) ~~>>
+      ((userName, isEncryptedPassword, initialPassword, requirePasswordChange, suspended, defaultDatabase) =>
+        ast.AlterUser(userName, Some(isEncryptedPassword), Some(initialPassword), requirePasswordChange, suspended, defaultDatabase)) |
     //
-    // ALTER USER username setRequirePasswordChange optionalStatus
-    group(keyword("ALTER USER") ~~ SymbolicNameOrStringParameter ~~ SetRequirePasswordChange ~~ OptionalStatus) ~~>>
-      ((userName, requirePasswordChange, suspended) => ast.AlterUser(userName, None, None, Some(requirePasswordChange), suspended)) |
+    // ALTER USER username setRequirePasswordChange optionalStatus optionalDefaultDatabase
+    group(keyword("ALTER USER") ~~ SymbolicNameOrStringParameter ~~ SetRequirePasswordChange ~~ OptionalStatus ~~ OptionalDefaultDatabase) ~~>>
+      ((userName, requirePasswordChange, suspended, defaultDatabase) => ast.AlterUser(userName, None, None, Some(requirePasswordChange), suspended, defaultDatabase)) |
     //
-    // ALTER USER username setStatus
-    group(keyword("ALTER USER") ~~ SymbolicNameOrStringParameter ~~ SetStatus) ~~>>
-      ((userName, suspended) => ast.AlterUser(userName, None, None, None, Some(suspended)))
+    // ALTER USER username setStatus optionalDefaultDatabase
+    group(keyword("ALTER USER") ~~ SymbolicNameOrStringParameter ~~ SetStatus ~~ OptionalDefaultDatabase) ~~>>
+      ((userName, suspended, defaultDatabase) => ast.AlterUser(userName, None, None, None, Some(suspended), defaultDatabase)) |
+    //
+    // ALTER USER username DEFAULT DATABASE db
+    group(keyword("ALTER USER") ~~ SymbolicNameOrStringParameter ~~ DefaultDatabase) ~~>>
+      ((userName, defaultDatabase) => ast.AlterUser(userName, None, None, None, None, Some(defaultDatabase)))
   }
 
   def SetOwnPassword: Rule1[ast.SetOwnPassword] = rule("ALTER CURRENT USER SET PASSWORD") {
@@ -157,8 +163,10 @@ trait Statement extends Parser
 
   def OptionalStatus: Rule1[Option[Boolean]] = optional(SetStatus)
 
-  def OptionalDefaultDatabase: Rule1[Option[String]] = {
-    optional(keyword("DEFAULT DATABASE") ~~ SymbolicDatabaseNameString)
+  def OptionalDefaultDatabase: Rule1[Option[Either[String, Parameter]]] = optional(DefaultDatabase)
+
+  def DefaultDatabase: Rule1[Either[String, Parameter]] = rule("DEFAULT DATABASE db") {
+    keyword("DEFAULT DATABASE") ~~ SymbolicDatabaseNameOrStringParameter
   }
 
   //noinspection MutatorLikeMethodIsParameterless
@@ -329,6 +337,7 @@ trait Statement extends Parser
     keyword("DROP USER") ~~~> (_ => ast.DropUserAction) |
     keyword("SHOW USER") ~~~> (_ => ast.ShowUserAction) |
     keyword("SET USER STATUS") ~~~> (_ => ast.SetUserStatusAction) |
+    keyword("SET USER DEFAULT DATABASE") ~~~> (_ => ast.SetUserDefaultDatabaseAction) |
     keyword("SET") ~~ PasswordKeyword ~~~> (_ => ast.SetPasswordsAction) |
     keyword("ALTER USER") ~~~> (_ => ast.AlterUserAction) |
     keyword("USER MANAGEMENT") ~~~> (_ => ast.AllUserActions) |
@@ -474,7 +483,8 @@ trait Statement extends Parser
   private def ScopeForShowDatabase: Rule1[ast.DatabaseScope] = rule("show database scope") {
     group(keyword("DATABASE") ~~ SymbolicDatabaseNameOrStringParameter) ~~>> (ast.NamedDatabaseScope(_)) |
     keyword("DATABASES") ~~~> ast.AllDatabasesScope() |
-    keyword("DEFAULT DATABASE") ~~~> ast.DefaultDatabaseScope()
+    keyword("DEFAULT DATABASE") ~~~> ast.DefaultDatabaseScope() |
+    keyword("DEFAULT DBMS DATABASE") ~~~> ast.DefaultDBMSDatabaseScope()
   }
 
   def CreateDatabase: Rule1[ast.CreateDatabase] = rule("CREATE DATABASE") {

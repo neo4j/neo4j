@@ -176,17 +176,20 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
                                             password: expressions.Expression,
                                             requirePasswordChange: Boolean,
                                             suspended: Boolean,
-                                            defaultDatabase: Option[String] = None,
+                                            defaultDatabase: Option[Either[String, Parameter]] = None,
                                             restrictedUsernames: Seq[String] = Seq.empty)
                                            (sourcePlan: Option[ExecutionPlan],
                                             normalExecutionEngine: ExecutionEngine): ExecutionPlan = {
     val passwordChangeRequiredKey = internalKey("passwordChangeRequired")
     val suspendedKey = internalKey("suspended")
-    val defaultDatabaseKey = internalKey("defaultDatabase")
+    val defaultDatabaseFields= defaultDatabase.map(d => getNameFields("defaultDatabase", d))
     val userNameFields = getNameFields("username", userName)
     val credentials = getPasswordExpression(password, isEncryptedPassword)
-    val defaultDatabaseCypher = defaultDatabase.map(_ => s", defaultDatabase: $$`$defaultDatabaseKey`").getOrElse("")
-    val mapValueConverter: (Transaction, MapValue) => MapValue = (tx, p) => credentials.mapValueConverter(tx, userNameFields.nameConverter(tx, p))
+    val defaultDatabaseCypher = defaultDatabaseFields.map(ddf => s", defaultDatabase: $$`${ddf.nameKey}`").getOrElse("")
+    val mapValueConverter: (Transaction, MapValue) => MapValue = (tx, p) => {
+      val newParams = credentials.mapValueConverter(tx, userNameFields.nameConverter(tx, p))
+      defaultDatabaseFields.map(ddf => ddf.nameConverter(tx, newParams)).getOrElse(newParams)
+    }
     UpdatingSystemCommandExecutionPlan("CreateUser", normalExecutionEngine,
       // NOTE: If username already exists we will violate a constraint
       s"""CREATE (u:User {name: $$`${userNameFields.nameKey}`, credentials: $$`${credentials.key}`,
@@ -194,14 +197,14 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
          |$defaultDatabaseCypher })
          |RETURN u.name""".stripMargin,
       VirtualValues.map(
-        Array(userNameFields.nameKey, credentials.key, credentials.bytesKey, passwordChangeRequiredKey, suspendedKey, defaultDatabaseKey),
-        Array(
+        Array(userNameFields.nameKey, credentials.key, credentials.bytesKey, passwordChangeRequiredKey, suspendedKey) ++ defaultDatabaseFields.map(_.nameKey),
+        Array[AnyValue](
           userNameFields.nameValue,
           credentials.value,
           credentials.bytesValue,
           Values.booleanValue(requirePasswordChange),
           Values.booleanValue(suspended),
-          Values.stringValue(defaultDatabase.getOrElse("")))
+          ) ++ defaultDatabaseFields.map(_.nameValue)
       ),
       QueryHandler
         .handleNoResult(params => Some(new IllegalStateException(s"Failed to create the specified user '${runtimeValue(userName, params)}'.")))
@@ -223,53 +226,60 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
                                            isEncryptedPassword: Option[Boolean],
                                            password: Option[expressions.Expression],
                                            requirePasswordChange: Option[Boolean],
-                                           suspended: Option[Boolean])
+                                           suspended: Option[Boolean],
+                                           defaultDatabase: Option[Either[String, Parameter]] = None)
                                           (sourcePlan: Option[ExecutionPlan],
                                            normalExecutionEngine: ExecutionEngine): ExecutionPlan = {
     val userNameFields = getNameFields("username", userName)
-      val maybePw = password.map(p => getPasswordExpression(p, isEncryptedPassword.getOrElse(false)))
-      val params = Seq(
-        maybePw -> "credentials",
-        requirePasswordChange -> "passwordChangeRequired",
-        suspended -> "suspended"
-      ).flatMap { param =>
-        param._1 match {
-          case None => Seq.empty
-          case Some(boolExpr: Boolean) => Seq((param._2, internalKey(param._2), Values.booleanValue(boolExpr)))
-          case Some(passwordExpression: PasswordExpression) => Seq((param._2, passwordExpression.key, passwordExpression.value))
-          case Some(p) => throw new InvalidArgumentsException(s"Invalid option type for ALTER USER, expected PasswordExpression or Boolean but got: ${p.getClass.getSimpleName}")
+    val defaultDatabaseFields= defaultDatabase.map(d => getNameFields("defaultDatabase", d))
+    val maybePw = password.map(p => getPasswordExpression(p, isEncryptedPassword.getOrElse(false)))
+    val params = Seq(
+      maybePw -> "credentials",
+      requirePasswordChange -> "passwordChangeRequired",
+      suspended -> "suspended",
+      defaultDatabaseFields -> "defaultDatabase"
+    ).flatMap { param =>
+      param._1 match {
+        case None => Seq.empty
+        case Some(boolExpr: Boolean) => Seq((param._2, internalKey(param._2), Values.booleanValue(boolExpr)))
+        case Some(passwordExpression: PasswordExpression) => Seq((param._2, passwordExpression.key, passwordExpression.value))
+        case Some(nameFields: NameFields) => Seq((param._2, nameFields.nameKey, nameFields.nameValue))
+        case Some(p) => throw new InvalidArgumentsException(s"Invalid option type for ALTER USER, expected PasswordExpression or Boolean but got: ${p.getClass.getSimpleName}")
+      }
+    }
+    val (query, keys, values) = params.foldLeft((s"MATCH (user:User {name: $$`${userNameFields.nameKey}`}) WITH user, user.credentials AS oldCredentials", Seq.empty[String], Seq.empty[Value])) { (acc, param) =>
+      val propertyName: String = param._1
+      val key: String = param._2
+      val value: Value = param._3
+      (acc._1 + s" SET user.$propertyName = $$`$key`", acc._2 :+ key, acc._3 :+ value)
+    }
+    val parameterKeys: Seq[String] = (keys ++ maybePw.map(_.bytesKey).toSeq) :+ userNameFields.nameKey
+    val parameterValues: Seq[Value] = (values ++ maybePw.map(_.bytesValue).toSeq) :+ userNameFields.nameValue
+    val mapper: (Transaction, MapValue) => MapValue = (tx, p) => {
+      val newParams = maybePw.map(_.mapValueConverter).getOrElse(IdentityConverter)(tx, userNameFields.nameConverter(tx, p))
+      defaultDatabaseFields.map(ddf => ddf.nameConverter(tx, newParams)).getOrElse(newParams)
+    }
+    UpdatingSystemCommandExecutionPlan("AlterUser", normalExecutionEngine,
+      s"$query RETURN oldCredentials",
+      VirtualValues.map(parameterKeys.toArray, parameterValues.toArray),
+      QueryHandler
+        .handleNoResult(p => Some(new InvalidArgumentsException(s"Failed to alter the specified user '${runtimeValue(userName, p)}': User does not exist.")))
+        .handleError {
+          case (error: HasStatus, p) if error.status() == Status.Cluster.NotALeader =>
+            new DatabaseAdministrationOnFollowerException(s"Failed to alter the specified user '${runtimeValue(userName, p)}': $followerError", error)
+          case (error, p) => new IllegalStateException(s"Failed to alter the specified user '${runtimeValue(userName, p)}'.", error)
         }
-      }
-      val (query, keys, values) = params.foldLeft((s"MATCH (user:User {name: $$`${userNameFields.nameKey}`}) WITH user, user.credentials AS oldCredentials", Seq.empty[String], Seq.empty[Value])) { (acc, param) =>
-        val propertyName: String = param._1
-        val key: String = param._2
-        val value: Value = param._3
-        (acc._1 + s" SET user.$propertyName = $$`$key`", acc._2 :+ key, acc._3 :+ value)
-      }
-      val parameterKeys: Seq[String] = (keys ++ maybePw.map(_.bytesKey).toSeq) :+ userNameFields.nameKey
-      val parameterValues: Seq[Value] = (values ++ maybePw.map(_.bytesValue).toSeq) :+ userNameFields.nameValue
-      val mapper: (Transaction, MapValue) => MapValue = (tx, m) => maybePw.map(_.mapValueConverter).getOrElse(IdentityConverter)(tx, userNameFields.nameConverter(tx, m))
-      UpdatingSystemCommandExecutionPlan("AlterUser", normalExecutionEngine,
-        s"$query RETURN oldCredentials",
-        VirtualValues.map(parameterKeys.toArray, parameterValues.toArray),
-        QueryHandler
-          .handleNoResult(p => Some(new InvalidArgumentsException(s"Failed to alter the specified user '${runtimeValue(userName, p)}': User does not exist.")))
-          .handleError {
-            case (error: HasStatus, p) if error.status() == Status.Cluster.NotALeader =>
-              new DatabaseAdministrationOnFollowerException(s"Failed to alter the specified user '${runtimeValue(userName, p)}': $followerError", error)
-            case (error, p) => new IllegalStateException(s"Failed to alter the specified user '${runtimeValue(userName, p)}'.", error)
-          }
-          .handleResult((_, value, p) => maybePw.flatMap { newPw =>
-            val oldCredentials = SystemGraphCredential.deserialize(value.asInstanceOf[TextValue].stringValue(), secureHasher)
-            val newValue = p.get(newPw.bytesKey).asInstanceOf[ByteArray].asObject()
-            if (oldCredentials.matchesPassword(newValue))
-              Some(new InvalidArgumentsException(s"Failed to alter the specified user '${runtimeValue(userName, p)}': Old password and new password cannot be the same."))
-            else
-              None
-          }),
-        sourcePlan,
-        finallyFunction = p => maybePw.foreach(newPw => p.get(newPw.bytesKey).asInstanceOf[ByteArray].zero()),
-        parameterConverter = mapper
-      )
+        .handleResult((_, value, p) => maybePw.flatMap { newPw =>
+          val oldCredentials = SystemGraphCredential.deserialize(value.asInstanceOf[TextValue].stringValue(), secureHasher)
+          val newValue = p.get(newPw.bytesKey).asInstanceOf[ByteArray].asObject()
+          if (oldCredentials.matchesPassword(newValue))
+            Some(new InvalidArgumentsException(s"Failed to alter the specified user '${runtimeValue(userName, p)}': Old password and new password cannot be the same."))
+          else
+            None
+        }),
+      sourcePlan,
+      finallyFunction = p => maybePw.foreach(newPw => p.get(newPw.bytesKey).asInstanceOf[ByteArray].zero()),
+      parameterConverter = mapper
+    )
   }
 }

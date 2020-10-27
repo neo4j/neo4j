@@ -20,9 +20,11 @@
 package org.neo4j.cypher.internal
 
 import org.neo4j.common.DependencyResolver
+import org.neo4j.configuration.Config
 import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.configuration.helpers.NormalizedDatabaseName
 import org.neo4j.cypher.internal.ast.AdminAction
+import org.neo4j.cypher.internal.ast.DefaultDBMSDatabaseScope
 import org.neo4j.cypher.internal.ast.DefaultDatabaseScope
 import org.neo4j.cypher.internal.ast.NamedDatabaseScope
 import org.neo4j.cypher.internal.ast.Return
@@ -92,6 +94,8 @@ import scala.collection.JavaConverters.asScalaIteratorConverter
 case class CommunityAdministrationCommandRuntime(normalExecutionEngine: ExecutionEngine, resolver: DependencyResolver,
                                                  extraLogicalToExecutable: PartialFunction[LogicalPlan, (RuntimeContext, ParameterMapping) => ExecutionPlan] = CommunityAdministrationCommandRuntime.emptyLogicalToExecutable
                                                 ) extends AdministrationCommandRuntime {
+  private val config: Config = resolver.resolveDependency(classOf[Config])
+  private val default_database = config.get(GraphDatabaseSettings.default_database)
   override def name: String = "community administration-commands"
 
   def throwCantCompile(unknownPlan: LogicalPlan): Nothing = {
@@ -150,54 +154,72 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
 
     // SHOW USERS
     case ShowUsers(source, symbols, yields, returns) => (context, parameterMapping) =>
+      val defaultDatabaseKey = internalKey("defaultDatabase")
       SystemCommandExecutionPlan("ShowUsers", normalExecutionEngine,
         s"""MATCH (u:User)
-          |WITH u.name as user, null as roles, u.passwordChangeRequired AS passwordChangeRequired, null as suspended
+          |WITH u.name as user, null as roles, u.passwordChangeRequired AS passwordChangeRequired, null as suspended,
+          |u.defaultDatabase AS requestedDefaultDatabase, $$`$defaultDatabaseKey` AS currentDefaultDatabase
           |${AdministrationShowCommandUtils.generateReturnClause(symbols, yields, returns, Seq("user"))}
           |""".stripMargin,
-        VirtualValues.EMPTY_MAP,
+        VirtualValues.map(Array(defaultDatabaseKey), Array(Values.stringValue(default_database))),
         source = Some(fullLogicalToExecutable.applyOrElse(source, throwCantCompile).apply(context, parameterMapping))
       )
 
     // SHOW CURRENT USER
     case ShowCurrentUser(symbols, yields, returns) => (_, _) =>
       val currentUserKey = internalKey("currentUser")
+      val defaultDatabaseKey = internalKey("defaultDatabase")
       SystemCommandExecutionPlan("ShowCurrentUser", normalExecutionEngine,
         s"""MATCH (u:User)
-           |WITH u.name as user, null as roles, u.passwordChangeRequired AS passwordChangeRequired, null as suspended
+           |WITH u.name as user, null as roles, u.passwordChangeRequired AS passwordChangeRequired, null as suspended,
+           |u.defaultDatabase AS requestedDefaultDatabase, $$`$defaultDatabaseKey` AS currentDefaultDatabase
            |WHERE user = $$`$currentUserKey`
            |${AdministrationShowCommandUtils.generateReturnClause(symbols, yields, returns, Seq("user"))}
            |""".stripMargin,
         VirtualValues.EMPTY_MAP,
         parameterGenerator = (_, securityContext) => VirtualValues.map(
-          Array(currentUserKey),
-          Array(Values.utf8Value(securityContext.subject().username()))),
+          Array(currentUserKey, defaultDatabaseKey),
+          Array(Values.utf8Value(securityContext.subject().username()), Values.stringValue(default_database))),
       )
 
     // CREATE [OR REPLACE] USER foo [IF NOT EXISTS] SET [PLAINTEXT | ENCRYPTED] PASSWORD 'password'
     // CREATE [OR REPLACE] USER foo [IF NOT EXISTS] SET [PLAINTEXT | ENCRYPTED] PASSWORD $password
     case CreateUser(source, userName, isEncryptedPassword, password, requirePasswordChange, suspendedOptional, defaultDatabase) => (context, parameterMapping) =>
       val sourcePlan: Option[ExecutionPlan] = Some(fullLogicalToExecutable.applyOrElse(source, throwCantCompile).apply(context, parameterMapping))
-      if (suspendedOptional.isDefined) { // Users are always active in community
+
+      def failWithError(command: String) : PredicateExecutionPlan = {
         new PredicateExecutionPlan((_, _) => false, sourcePlan, (params, _) => {
           val user = runtimeValue(userName, params)
-          throw new CantCompileQueryException(s"Failed to create the specified user '$user': 'SET STATUS' is not available in community edition.")
+          throw new CantCompileQueryException(s"Failed to alter the specified user '$user': $command is not available in community edition.")
         })
+      }
+
+      if (suspendedOptional.isDefined) { // Users are always active in community
+        failWithError("SET STATUS")
+      } else if (defaultDatabase.isDefined) { // Users are always active in community
+        failWithError("DEFAULT DATABASE")
       }
       else {
         makeCreateUserExecutionPlan(userName, isEncryptedPassword, password, requirePasswordChange, suspended = false, defaultDatabase = defaultDatabase)(sourcePlan, normalExecutionEngine)
       }
 
     // ALTER USER foo [SET [PLAINTEXT | ENCRYPTED] PASSWORD pw] [CHANGE [NOT] REQUIRED]
-    case AlterUser(source, userName, isEncryptedPassword, password, requirePasswordChange, suspended) => (context, parameterMapping) =>
+    case AlterUser(source, userName, isEncryptedPassword, password, requirePasswordChange, suspended, defaultDatabase) => (context, parameterMapping) =>
       val sourcePlan: Option[ExecutionPlan] = Some(fullLogicalToExecutable.applyOrElse(source, throwCantCompile).apply(context, parameterMapping))
-      if (suspended.isDefined) { // Users are always active in community
+
+      def failWithError(command: String) : PredicateExecutionPlan = {
         new PredicateExecutionPlan((_, _) => false, sourcePlan, (params, _) => {
           val user = runtimeValue(userName, params)
-          throw new CantCompileQueryException(s"Failed to alter the specified user '$user': 'SET STATUS' is not available in community edition.")
+          throw new CantCompileQueryException(s"Failed to alter the specified user '$user': $command is not available in community edition.")
         })
+      }
+
+      if (suspended.isDefined) { // Users are always active in community
+        failWithError("SET STATUS")
+      } else if (defaultDatabase.isDefined ) {
+        failWithError("DEFAULT DATABASE")
       } else {
-        makeAlterUserExecutionPlan(userName, isEncryptedPassword, password, requirePasswordChange, suspended = None)(sourcePlan, normalExecutionEngine)
+        makeAlterUserExecutionPlan(userName, isEncryptedPassword, password, requirePasswordChange, suspended = None, defaultDatabase = defaultDatabase)(sourcePlan, normalExecutionEngine)
       }
 
     // DROP USER foo [IF EXISTS]
@@ -273,7 +295,9 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
       val paramGenerator: (Transaction, SecurityContext) => MapValue = (tx, securityContext) => generateShowAccessibleDatabasesParameter(tx, securityContext)
       val (extraFilter, params, paramConverter) = scope match {
         // show default database
-        case _: DefaultDatabaseScope => ("AND d.default = true", VirtualValues.EMPTY_MAP, IdentityConverter)
+        case _: DefaultDatabaseScope => (s"AND d.name = $$`$userDefaultDatabaseKey`", VirtualValues.EMPTY_MAP, IdentityConverter)
+        // show default DBMS database
+        case _: DefaultDBMSDatabaseScope => ("AND d.default = true", VirtualValues.EMPTY_MAP, IdentityConverter)
         // show database name
         case NamedDatabaseScope(p) =>
           val nameFields = getNameFields("databaseName", p, valueMapper = s => new NormalizedDatabaseName(s).name())
@@ -291,7 +315,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
       val query = s"""MATCH (d: Database)
                      |WHERE d.name IN $$`$accessibleDbsKey` $extraFilter
                      |CALL dbms.database.state(d.name) yield status, error, address, role
-                     |WITH d.name as name, address, role, d.status as requestedStatus, status as currentStatus, error, d.default as default
+                     |WITH d.name as name, address, role, d.status as requestedStatus, status as currentStatus, error, coalesce(d.name = $$`$userDefaultDatabaseKey`, d.default) as default, d.default as systemDefault
                      |$returnClause""".stripMargin
       SystemCommandExecutionPlan(scope.showCommandName, normalExecutionEngine, query, params, parameterGenerator = paramGenerator, parameterConverter = paramConverter)
 
@@ -378,6 +402,8 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
 
   private val accessibleDbsKey = internalKey("accessibleDbs")
 
+  private val userDefaultDatabaseKey = internalKey("userDefaultDatabase")
+
   private def generateShowAccessibleDatabasesParameter(transaction: Transaction, securityContext: SecurityContext): MapValue = {
     def accessForDatabase(database: Node, roles: java.util.Set[String]): Option[Boolean] = {
       //(:Role)-[p]->(:Privilege {action: 'access'})-[s:SCOPE]->()-[f:FOR]->(d:Database)
@@ -437,7 +463,9 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
       }
     }
 
-    VirtualValues.map(Array(accessibleDbsKey), Array(Values.stringArray(accessibleDatabases: _*)))
+    val userDefaultDatabase = securityContext.subject().defaultDatabase()
+
+    VirtualValues.map(Array(accessibleDbsKey, userDefaultDatabaseKey), Array(Values.stringArray(accessibleDatabases: _*), Values.stringOrNoValue(userDefaultDatabase)))
   }
 
   override def isApplicableAdministrationCommand(logicalPlanState: LogicalPlanState): Boolean = {

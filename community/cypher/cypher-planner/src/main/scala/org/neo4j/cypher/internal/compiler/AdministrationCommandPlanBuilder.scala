@@ -61,6 +61,7 @@ import org.neo4j.cypher.internal.ast.RevokeRolesFromUsers
 import org.neo4j.cypher.internal.ast.RevokeType
 import org.neo4j.cypher.internal.ast.SetOwnPassword
 import org.neo4j.cypher.internal.ast.SetPasswordsAction
+import org.neo4j.cypher.internal.ast.SetUserDefaultDatabaseAction
 import org.neo4j.cypher.internal.ast.SetUserStatusAction
 import org.neo4j.cypher.internal.ast.ShowCurrentUser
 import org.neo4j.cypher.internal.ast.ShowDatabase
@@ -164,19 +165,20 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         Some(plans.LogSystemCommand(plans.DropUser(source, userName), prettifier.asString(c)))
 
       // ALTER USER foo
-      case c@AlterUser(userName, isEncryptedPassword, initialPassword, requirePasswordChange, suspended) =>
-        val isSetPassword = initialPassword.isDefined || requirePasswordChange.isDefined
-        val admin = (isSetPassword, suspended) match {
-          case (true, Some(_)) => plans.AssertDbmsAdmin(Seq(SetPasswordsAction, SetUserStatusAction))
-          case (true, None) => plans.AssertDbmsAdmin(SetPasswordsAction)
-          case (false, Some(_)) => plans.AssertDbmsAdmin(SetUserStatusAction)
-          case (false, None) => throw new IllegalStateException("A password that is not set cannot also be not suspended")
-        }
+      case c@AlterUser(userName, isEncryptedPassword, initialPassword, requirePasswordChange, suspended, defaultDatabase) =>
+        val adminActions = Vector((initialPassword, SetPasswordsAction),
+                               (requirePasswordChange, SetPasswordsAction),
+                               (suspended, SetUserStatusAction),
+                               (defaultDatabase, SetUserDefaultDatabaseAction)).collect{case (Some(_), action) => action}.distinct
+        if (adminActions.isEmpty) throw new IllegalStateException("Alter user has nothing to do")
+
+       val admin = plans.AssertDbmsAdmin(adminActions)
+
         val assertionSubPlan =
           if(suspended.isDefined) plans.AssertNotCurrentUser(admin, userName, "alter", "Changing your own activation status is not allowed")
           else admin
         Some(plans.LogSystemCommand(
-          plans.AlterUser(assertionSubPlan, userName, isEncryptedPassword, initialPassword, requirePasswordChange, suspended),
+          plans.AlterUser(assertionSubPlan, userName, isEncryptedPassword, initialPassword, requirePasswordChange, suspended, defaultDatabase),
           prettifier.asString(c)))
 
       // ALTER CURRENT USER SET PASSWORD FROM currentPassword TO newPassword

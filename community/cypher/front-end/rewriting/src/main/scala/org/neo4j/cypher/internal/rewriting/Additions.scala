@@ -121,8 +121,15 @@ object Additions {
       // CREATE CONSTRAINT [name] [IF NOT EXISTS] ON ()-[r:R]-() ASSERT r.prop IS NOT NULL
       case c: CreateRelationshipPropertyExistenceConstraint if !c.oldSyntax =>
         throw cypherExceptionFactory.syntaxException("Creating relationship existence constraint using `IS NOT NULL` is not supported in this Cypher version.", c.position)
+
+      case c@CreateUser(_, _, _, _, _, _, Some(_)) =>
+        throw cypherExceptionFactory.syntaxException("Creating a user with a default database is not supported in this Cypher version.", c.position)
+
+      case c@AlterUser(_, _, _, _, _, Some(_)) =>
+        throw cypherExceptionFactory.syntaxException("Updating a user with a default database  is not supported in this Cypher version.", c.position)
     }
   }
+
 }
 
 trait Additions extends {

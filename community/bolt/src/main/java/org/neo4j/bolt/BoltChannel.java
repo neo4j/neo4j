@@ -159,6 +159,7 @@ public class BoltChannel implements TrackedNetworkConnection
                ", rawChannel=" + rawChannel +
                ", username='" + authSubject.username() + '\'' +
                ", userAgent='" + userAgent + '\'' +
+               ", defaultDatabase='" + authSubject.defaultDatabase() + '\'' +
                '}';
     }
 

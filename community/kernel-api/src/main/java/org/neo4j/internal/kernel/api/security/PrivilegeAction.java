@@ -76,6 +76,7 @@ public enum PrivilegeAction
     CREATE_USER,
     SET_USER_STATUS,
     SET_PASSWORDS,
+    SET_USER_DEFAULT_DATABASE,
     DROP_USER,
 
     SHOW_ROLE,
@@ -214,6 +215,7 @@ public enum PrivilegeAction
                     {
                     case SET_USER_STATUS:
                     case SET_PASSWORDS:
+                    case SET_USER_DEFAULT_DATABASE:
                         return true;
                     default:
                         return this == action;

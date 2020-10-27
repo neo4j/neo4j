@@ -494,6 +494,24 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     execute("SHOW USERS").toSet shouldBe Set(defaultUser)
   }
 
+  test("should not be able to create user with a default database in community") {
+    // WHEN
+    assertFailure("CREATE USER foo SET PASSWORD 'password' DEFAULT DATABASE foo",
+      "Failed to alter the specified user 'foo': DEFAULT DATABASE is not available in community edition.")
+
+    // THEN
+    execute("SHOW USERS").toSet shouldBe Set(defaultUser)
+  }
+
+  test("should not be able to alter a users default database in community") {
+    // WHEN
+    assertFailure("ALTER USER foo DEFAULT DATABASE foo",
+      "Failed to alter the specified user 'foo': DEFAULT DATABASE is not available in community edition.")
+
+    // THEN
+    execute("SHOW USERS").toSet shouldBe Set(defaultUser)
+  }
+
   test("should fail when creating already existing user") {
     the[InvalidArgumentsException] thrownBy {
       // WHEN
@@ -1344,8 +1362,10 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
 
   // Helper methods
 
-  private def user(username: String, passwordChangeRequired: Boolean = true): Map[String, Any] = {
-    Map("user" -> username, "roles" -> null, "passwordChangeRequired" -> passwordChangeRequired, "suspended" -> null)
+  private def user(username: String, passwordChangeRequired: Boolean = true, requestedDefaultDatabase: String = null,
+                   currentDefaultDatabase: String = DEFAULT_DATABASE_NAME): Map[String, Any] = {
+    Map("user" -> username, "roles" -> null, "passwordChangeRequired" -> passwordChangeRequired, "suspended" -> null,
+      "requestedDefaultDatabase" -> requestedDefaultDatabase,  "currentDefaultDatabase" -> currentDefaultDatabase )
   }
 
   private def testUserLogin(username: String, password: String, expected: AuthenticationResult): Unit = {

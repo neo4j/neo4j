@@ -915,6 +915,9 @@ class PrettifierIT extends CypherFunSuite {
       "catalog show default database" ->
         "SHOW DEFAULT DATABASE",
 
+      "catalog show default dbms database" ->
+        "SHOW DEFAULT DBMS DATABASE",
+
       "catalog show database foO_Bar_42" ->
         "SHOW DATABASE foO_Bar_42",
 
@@ -1471,6 +1474,9 @@ class PrettifierIT extends CypherFunSuite {
 
           s"$action set user status on dbms $preposition role" ->
             s"$action SET USER STATUS ON DBMS $preposition role",
+
+          s"$action set user default database on dbms $preposition role" ->
+            s"$action SET USER DEFAULT DATABASE ON DBMS $preposition role",
 
           s"$action alter user on dbms $preposition role" ->
             s"$action ALTER USER ON DBMS $preposition role",

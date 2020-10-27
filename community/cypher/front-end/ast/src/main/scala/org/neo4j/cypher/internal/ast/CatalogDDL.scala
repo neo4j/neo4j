@@ -150,8 +150,10 @@ final case class ShowUsers(override val yieldOrWhere: YieldOrWhere, override val
 
 object ShowUsers {
   def apply(yieldOrWhere: YieldOrWhere)(position: InputPosition): ShowUsers =
-    ShowUsers(yieldOrWhere, List(ShowColumn(Variable("user")(position), CTString, "user"), ShowColumn(Variable("roles")(position), CTList(CTString), "roles"),
-      ShowColumn(Variable("passwordChangeRequired")(position), CTBoolean, "passwordChangeRequired"), ShowColumn(Variable("suspended")(position), CTBoolean,"suspended")))(position)
+    ShowUsers(yieldOrWhere, List(ShowColumn("user")(position), ShowColumn(Variable("roles")(position), CTList(CTString), "roles"),
+      ShowColumn(Variable("passwordChangeRequired")(position), CTBoolean, "passwordChangeRequired"),
+      ShowColumn(Variable("suspended")(position), CTBoolean,"suspended"),
+      ShowColumn("requestedDefaultDatabase")(position), ShowColumn("currentDefaultDatabase")(position)))(position)
 }
 
 final case class ShowCurrentUser(override val yieldOrWhere: YieldOrWhere, override val defaultColumnSet: List[ShowColumn])(val position: InputPosition) extends ReadAdministrationCommand {
@@ -164,8 +166,10 @@ final case class ShowCurrentUser(override val yieldOrWhere: YieldOrWhere, overri
 
 object ShowCurrentUser {
   def apply(yieldOrWhere: YieldOrWhere)(position: InputPosition): ShowCurrentUser =
-    ShowCurrentUser(yieldOrWhere, List(ShowColumn(Variable("user")(position), CTString, "user"), ShowColumn(Variable("roles")(position), CTList(CTString), "roles"),
-      ShowColumn(Variable("passwordChangeRequired")(position), CTBoolean, "passwordChangeRequired"), ShowColumn(Variable("suspended")(position), CTBoolean,"suspended")))(position)
+    ShowCurrentUser(yieldOrWhere, List(ShowColumn("user")(position), ShowColumn(Variable("roles")(position), CTList(CTString), "roles"),
+      ShowColumn(Variable("passwordChangeRequired")(position), CTBoolean, "passwordChangeRequired"),
+      ShowColumn(Variable("suspended")(position), CTBoolean,"suspended"),
+      ShowColumn("requestedDefaultDatabase")(position), ShowColumn("currentDefaultDatabase")(position)))(position)
 }
 
 trait EitherAsString {
@@ -181,7 +185,7 @@ final case class CreateUser(userName: Either[String, Parameter],
                             requirePasswordChange: Boolean,
                             suspended: Option[Boolean],
                             ifExistsDo: IfExistsDo,
-                            defaultDatabase: Option[String] = None)(val position: InputPosition) extends WriteAdministrationCommand with EitherAsString {
+                            defaultDatabase: Option[Either[String, Parameter]])(val position: InputPosition) extends WriteAdministrationCommand with EitherAsString {
   override def name: String = ifExistsDo match {
     case IfExistsReplace | IfExistsInvalidSyntax => "CREATE OR REPLACE USER"
     case _ => "CREATE USER"
@@ -210,8 +214,9 @@ final case class AlterUser(userName: Either[String, Parameter],
                            isEncryptedPassword: Option[Boolean],
                            initialPassword: Option[Expression],
                            requirePasswordChange: Option[Boolean],
-                           suspended: Option[Boolean])(val position: InputPosition) extends WriteAdministrationCommand {
-  assert(initialPassword.isDefined || requirePasswordChange.isDefined || suspended.isDefined)
+                           suspended: Option[Boolean],
+                           defaultDatabase: Option[Either[String, Parameter]])(val position: InputPosition) extends WriteAdministrationCommand {
+  assert(initialPassword.isDefined || requirePasswordChange.isDefined || suspended.isDefined || defaultDatabase.isDefined)
 
   override def name = "ALTER USER"
 
@@ -439,6 +444,10 @@ final case class DefaultDatabaseScope()(val position: InputPosition) extends Dat
   override val showCommandName: String = "ShowDefaultDatabase"
 }
 
+final case class DefaultDBMSDatabaseScope()(val position: InputPosition) extends DatabaseScope {
+  override val showCommandName: String = "ShowDBMSDefaultDatabase"
+}
+
 sealed trait ShowPrivilegeScope extends Rewritable {
   override def dup(children: Seq[AnyRef]): ShowPrivilegeScope.this.type = this
 }
@@ -537,6 +546,8 @@ case object CreateUserAction extends UserManagementAction("CREATE USER")
 case object SetUserStatusAction extends UserManagementAction("SET USER STATUS")
 
 case object SetPasswordsAction extends UserManagementAction("SET PASSWORDS")
+
+case object SetUserDefaultDatabaseAction extends UserManagementAction("SET USER DEFAULT DATABASE")
 
 case object AlterUserAction extends UserManagementAction("ALTER USER")
 
@@ -768,6 +779,7 @@ final case class ShowDatabase(scope: DatabaseScope, override val yieldOrWhere: Y
     case _: NamedDatabaseScope => "SHOW DATABASE"
     case _: AllDatabasesScope => "SHOW DATABASES"
     case _: DefaultDatabaseScope => "SHOW DEFAULT DATABASE"
+    case _: DefaultDBMSDatabaseScope => "SHOW DEFAULT DBMS DATABASE"
   }
 
   override def semanticCheck: SemanticCheck =
@@ -781,7 +793,8 @@ object ShowDatabase{
       ShowColumn("name")(position), ShowColumn("address")(position), ShowColumn("role")(position), ShowColumn("requestedStatus")(position),
       ShowColumn("currentStatus")(position), ShowColumn("error")(position)) ++ (scope match {
       case _: DefaultDatabaseScope => List.empty
-      case _ => List(ShowColumn(Variable("default")(position), CTBoolean, "default"))})
+      case _: DefaultDBMSDatabaseScope => List.empty
+      case _ => List(ShowColumn(Variable("default")(position), CTBoolean, "default"), ShowColumn(Variable("systemDefault")(position), CTBoolean, "systemDefault"))})
     ShowDatabase(scope, yieldOrWhere, columns)(position)
   }
 }
