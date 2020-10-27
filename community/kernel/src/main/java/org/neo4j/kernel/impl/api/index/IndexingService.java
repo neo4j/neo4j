@@ -80,6 +80,7 @@ import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
+import org.neo4j.util.Preconditions;
 import org.neo4j.values.storable.Value;
 
 import static java.lang.String.format;
@@ -130,7 +131,6 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
     private final Monitor monitor;
     private final SchemaState schemaState;
     private final IndexPopulationJobController populationJobController;
-    private final Map<Long,IndexProxy> indexesToDropAfterCompletedRecovery = new HashMap<>();
     private static final String INIT_TAG = "Initialize IndexingService";
 
     enum State
@@ -315,10 +315,6 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
     {
         state = State.STARTING;
 
-        // During recovery there could have been dropped indexes. Dropping an index means also updating the counts store,
-        // which is problematic during recovery. So instead drop those indexes here, after recovery completed.
-        performRecoveredIndexDropActions();
-
         // Recovery will not do refresh (update read views) while applying recovered transactions and instead
         // do it at one point after recovery... i.e. here
         indexMapRef.indexMapSnapshot().forEachIndexProxy( indexProxyOperation( "refresh", IndexProxy::refresh ) );
@@ -436,31 +432,6 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
         }
     }
 
-    private void performRecoveredIndexDropActions()
-    {
-        indexesToDropAfterCompletedRecovery.values().forEach( index ->
-        {
-            try
-            {
-                index.drop();
-            }
-            catch ( Exception e )
-            {
-                // This is OK to get during recovery because the underlying index can be in any unknown state
-                // while we're recovering. Let's just move on to closing it instead.
-                try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( INDEX_SERVICE_INDEX_CLOSING_TAG ) )
-                {
-                    index.close( cursorTracer );
-                }
-                catch ( IOException closeException )
-                {
-                    // This is OK for the same reason as above
-                }
-            }
-        } );
-        indexesToDropAfterCompletedRecovery.clear();
-    }
-
     private void populate( MutableLongObjectMap<IndexDescriptor> rebuildingDescriptors, IndexMap indexMap, IndexPopulationJob populationJob )
     {
         rebuildingDescriptors.forEachKeyValue( ( indexId, descriptor ) ->
@@ -477,7 +448,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
      * Polls the {@link IndexProxy#getState() state of the index} and waits for it to be either {@link InternalIndexState#ONLINE},
      * in which case the wait is over, or {@link InternalIndexState#FAILED}, in which an exception is logged.
      *
-     * THis method is only called during startup, and might be called as part of recovery. If we threw an exception here, it could
+     * This method is only called during startup, and might be called as part of recovery. If we threw an exception here, it could
      * render the database unrecoverable. That's why we only log a message about failed indexes.
      */
     private void awaitOnlineAfterRecovery( IndexProxy proxy )
@@ -659,6 +630,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
     @Override
     public void dropIndex( IndexDescriptor rule )
     {
+        Preconditions.checkState( state == State.RUNNING || state == State.NOT_STARTED, "Dropping index in unexpected state %s", state.name() );
         indexMapRef.modify( indexMap ->
         {
             long indexId = rule.getId();
@@ -666,14 +638,28 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
 
             if ( state == State.RUNNING )
             {
-                assert index != null : "Index " + rule + " doesn't exists";
+                Preconditions.checkState( index != null, "Index %s doesn't exists", rule );
                 index.drop();
             }
             else if ( index != null )
             {
-                // Dropping an index means also updating the counts store, which is problematic during recovery.
-                // So instead make a note of it and actually perform the index drops after recovery.
-                indexesToDropAfterCompletedRecovery.put( indexId, index );
+                try
+                {
+                    index.drop();
+                }
+                catch ( Exception e )
+                {
+                    // This is OK to get during recovery because the underlying index can be in any unknown state
+                    // while we're recovering. Let's just move on to closing it instead.
+                    try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( INDEX_SERVICE_INDEX_CLOSING_TAG ) )
+                    {
+                        index.close( cursorTracer );
+                    }
+                    catch ( IOException closeException )
+                    {
+                        // This is OK for the same reason as above
+                    }
+                }
             }
             return indexMap;
         } );
@@ -918,12 +904,6 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
         {
             for ( IndexDescriptor descriptor : descriptors )
             {
-                if ( state == State.NOT_STARTED )
-                {
-                    // In case of recovery remove any previously recorded INDEX DROP for this particular index rule id,
-                    // in some scenario where rule ids may be reused.
-                    indexesToDropAfterCompletedRecovery.remove( descriptor.getId() );
-                }
                 IndexProxy index = indexMap.getIndexProxy( descriptor );
                 if ( index != null && state == State.NOT_STARTED )
                 {
