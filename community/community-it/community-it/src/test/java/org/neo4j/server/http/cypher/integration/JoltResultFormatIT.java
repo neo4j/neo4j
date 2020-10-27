@@ -70,13 +70,13 @@ class JoltResultFormatIT extends AbstractRestFunctionalTestBase
         // See https://github.com/eclipse/jetty.project/issues/5446
         var cacheBuster = ";cacheBuster=" + ThreadLocalRandom.current().nextLong();
         // execute and commit
-        Response commit =
+        var response =
                 http.withHeaders( HttpHeaders.ACCEPT, EventSourceMessageBodyWriter.JSON_JOLT_MIME_TYPE_VALUE + ";strict=" + booleanString + cacheBuster )
                     .POST( commitResource, queryAsJsonRow( "RETURN 1, 5.5, true" ) );
 
-        assertThat( commit.status() ).isEqualTo( 200 );
-        assertThat( commit.header( HttpHeaders.LOCATION ) );
-        assertThat( commit.rawContent() ).isEqualTo( "{\"header\":{\"fields\":[\"1\",\"5.5\",\"true\"]}}\n" +
+        assertThat( response.status() ).isEqualTo( 200 );
+        assertThat( response.header( HttpHeaders.LOCATION ) );
+        assertThat( response.rawContent() ).isEqualTo( "{\"header\":{\"fields\":[\"1\",\"5.5\",\"true\"]}}\n" +
                                                      "{\"data\":[{\"Z\":\"1\"},{\"R\":\"5.5\"},{\"?\":\"true\"}]}\n" +
                                                      "{\"summary\":{}}\n" +
                                                      "{\"info\":{\"commit\":\"" + commitResource + "\"}}\n" );
@@ -86,11 +86,11 @@ class JoltResultFormatIT extends AbstractRestFunctionalTestBase
     void shouldReturnJoltInSparseFormat()
     {
         // execute and commit
-        Response commit = http.withHeaders( HttpHeaders.ACCEPT, EventSourceMessageBodyWriter.JSON_JOLT_MIME_TYPE_VALUE )
+        var response = http.withHeaders( HttpHeaders.ACCEPT, EventSourceMessageBodyWriter.JSON_JOLT_MIME_TYPE_VALUE )
                               .POST( commitResource, queryAsJsonRow( "RETURN 1, 5.5, true" ) );
 
-        assertThat( commit.status() ).isEqualTo( 200 );
-        assertThat( commit.rawContent() ).isEqualTo( "{\"header\":{\"fields\":[\"1\",\"5.5\",\"true\"]}}\n" +
+        assertThat( response.status() ).isEqualTo( 200 );
+        assertThat( response.rawContent() ).isEqualTo( "{\"header\":{\"fields\":[\"1\",\"5.5\",\"true\"]}}\n" +
                                                      "{\"data\":[1,{\"R\":\"5.5\"},true]}\n" +
                                                      "{\"summary\":{}}\n" +
                                                      "{\"info\":{\"commit\":\"" + commitResource + "\"}}\n" );

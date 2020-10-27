@@ -39,7 +39,7 @@ import org.neo4j.server.http.cypher.format.jolt.JoltCodec;
 @Produces( EventSourceMessageBodyWriter.JSON_JOLT_MIME_TYPE_VALUE )
 public class EventSourceMessageBodyWriter implements MessageBodyWriter<OutputEventSource>
 {
-    public static final String JSON_JOLT_MIME_TYPE_VALUE = "application/vnd.neo4j.jolt+json";
+    public static final String JSON_JOLT_MIME_TYPE_VALUE = "application/vnd.neo4j.jolt+json-seq";
     public static final MediaType JSON_JOLT_MIME_TYPE = MediaType.valueOf( JSON_JOLT_MIME_TYPE_VALUE );
 
     @Override
