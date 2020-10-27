@@ -26,9 +26,12 @@ import org.neo4j.cypher.internal.expressions.MapExpression
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.logical.plans.AbstractLetSelectOrSemiApply
+import org.neo4j.cypher.internal.logical.plans.AbstractLetSemiApply
+import org.neo4j.cypher.internal.logical.plans.AbstractSelectOrSemiApply
+import org.neo4j.cypher.internal.logical.plans.AbstractSemiApply
 import org.neo4j.cypher.internal.logical.plans.Aggregation
 import org.neo4j.cypher.internal.logical.plans.Anti
-import org.neo4j.cypher.internal.logical.plans.AntiSemiApply
 import org.neo4j.cypher.internal.logical.plans.ApplyPlan
 import org.neo4j.cypher.internal.logical.plans.CacheProperties
 import org.neo4j.cypher.internal.logical.plans.CanGetValue
@@ -36,18 +39,11 @@ import org.neo4j.cypher.internal.logical.plans.Eager
 import org.neo4j.cypher.internal.logical.plans.ForeachApply
 import org.neo4j.cypher.internal.logical.plans.IndexLeafPlan
 import org.neo4j.cypher.internal.logical.plans.IndexedProperty
-import org.neo4j.cypher.internal.logical.plans.LetAntiSemiApply
-import org.neo4j.cypher.internal.logical.plans.LetSelectOrAntiSemiApply
-import org.neo4j.cypher.internal.logical.plans.LetSelectOrSemiApply
-import org.neo4j.cypher.internal.logical.plans.LetSemiApply
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlans
 import org.neo4j.cypher.internal.logical.plans.OrderedAggregation
 import org.neo4j.cypher.internal.logical.plans.ProjectingPlan
 import org.neo4j.cypher.internal.logical.plans.RollUpApply
-import org.neo4j.cypher.internal.logical.plans.SelectOrAntiSemiApply
-import org.neo4j.cypher.internal.logical.plans.SelectOrSemiApply
-import org.neo4j.cypher.internal.logical.plans.SemiApply
 import org.neo4j.cypher.internal.logical.plans.SetNodePropertiesFromMap
 import org.neo4j.cypher.internal.logical.plans.SetNodeProperty
 import org.neo4j.cypher.internal.logical.plans.SetProperty
@@ -223,16 +219,12 @@ case object PushdownPropertyReads {
           val outgoingVariableOptima = newVariables.map(v => (v, CardinalityOptimum(outgoingCardinality, plan.id, v))).toMap
           Acc(outgoingVariableOptima, lhsAcc.propertyReadOptima ++ rhsAcc.propertyReadOptima, Set.empty, Set.empty, outgoingCardinality)
 
-        case _: AntiSemiApply
-           | _: LetSemiApply
-           | _: LetAntiSemiApply
-           | _: SelectOrSemiApply
-           | _: SelectOrAntiSemiApply
-           | _: LetSelectOrSemiApply
-           | _: LetSelectOrAntiSemiApply
+        case _: AbstractSemiApply
+           | _: AbstractLetSemiApply
+           | _: AbstractSelectOrSemiApply
+           | _: AbstractLetSelectOrSemiApply
            | _: ForeachApply
-           | _: RollUpApply
-           | _: SemiApply =>
+           | _: RollUpApply =>
           lhsAcc
 
         case _: ApplyPlan =>
