@@ -104,7 +104,6 @@ import static java.lang.System.currentTimeMillis;
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -1278,24 +1277,6 @@ class IndexingServiceTest
     }
 
     @Test
-    void shouldForgetDeferredIndexDropDuringRecoveryIfCreatedIndexWithSameRuleId() throws Exception
-    {
-        // given
-        IndexingService indexing = newIndexingServiceWithMockedDependencies( populator, accessor, withData(), index );
-        life.init();
-
-        // when
-        indexing.dropIndex( index );
-        indexing.createIndexes( index );
-        life.start();
-
-        // then
-        IndexProxy proxy = indexing.getIndexProxy( index );
-        assertNotNull( proxy );
-        verify( accessor, never() ).drop();
-    }
-
-    @Test
     void shouldNotHaveToWaitForOrphanedUniquenessIndexInRecovery() throws Exception
     {
         // given that we have a uniqueness index that needs to be recovered and that doesn't have a constraint attached to it
@@ -1354,6 +1335,24 @@ class IndexingServiceTest
 
         // then
         verify( indexStatisticsStore ).incrementIndexUpdates( indexId, 1L );
+    }
+
+    @Test
+    public void shouldDropAndCreateIndexWithSameIdDuringRecovery() throws IOException
+    {
+        // given
+        long indexId = 10;
+        IndexDescriptor indexDescriptor = uniqueIndex.materialise( indexId );
+        IndexingService indexingService = newIndexingServiceWithMockedDependencies( populator, accessor, withData(), indexDescriptor );
+        life.init();
+
+        // when
+        indexingService.dropIndex( indexDescriptor );
+        indexingService.createIndexes( indexDescriptor );
+        life.start();
+
+        // then
+        verify( accessor ).drop();
     }
 
     private AtomicReference<BinaryLatch> latchedIndexPopulation()
@@ -1573,7 +1572,6 @@ class IndexingServiceTest
         @Override
         public void drop()
         {
-            throw new UnsupportedOperationException( "Not required" );
         }
 
         @Override

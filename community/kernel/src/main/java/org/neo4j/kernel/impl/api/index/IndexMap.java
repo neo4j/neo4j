@@ -25,6 +25,7 @@ import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
 import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
 
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.util.Preconditions;
 
 /**
  * Bundles various mappings to IndexProxy. Used by IndexingService via IndexMapReference.
@@ -64,6 +65,7 @@ public final class IndexMap
     public void putIndexProxy( IndexProxy indexProxy )
     {
         IndexDescriptor index = indexProxy.getDescriptor();
+        Preconditions.checkState( !indexesById.contains( index.getId() ), "Trying to overwrite index %d in IndexMap", index.getId() );
         indexesById.put( index.getId(), indexProxy );
     }
 
