@@ -40,7 +40,7 @@ object CreatePlannerQuery extends Phase[BaseContext, BaseState, LogicalPlanState
 
   override def process(from: BaseState, context: BaseContext): LogicalPlanState = from.statement() match {
     case query: Query =>
-      val plannerQuery: PlannerQuery= toPlannerQuery(query, from.semanticTable())
+      val plannerQuery: PlannerQuery = toPlannerQuery(query, from.semanticTable())
       LogicalPlanState(from).copy(maybeQuery = Some(plannerQuery))
 
     case command: AdministrationCommand => throw new DatabaseAdministrationException(

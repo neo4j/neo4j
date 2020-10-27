@@ -37,8 +37,6 @@ import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.util.NonEmptyList.IterableConverter
 import org.neo4j.cypher.internal.util.UnNamedNameGenerator
 
-import scala.collection.mutable
-
 case class PlannerQueryBuilder(private val q: SinglePlannerQuery, semanticTable: SemanticTable)
   extends ListSupport {
 
@@ -81,19 +79,8 @@ case class PlannerQueryBuilder(private val q: SinglePlannerQuery, semanticTable:
   def currentQueryGraph: QueryGraph = q.lastQueryGraph
 
   def allSeenPatternNodes: collection.Set[String] = {
-    val nodes = mutable.Set[String]()
-
-    val allPlannerQueries = q.allPlannerQueries
-    if (allPlannerQueries.length > 1) {
-      val current = allPlannerQueries(allPlannerQueries.length - 2)
-      val projectedNodes = current.horizon.exposedSymbols(current.queryGraph.allCoveredIds).collect {
-        case id@n if semanticTable.containsNode(n) => id
-      }
-      projectedNodes.foreach(nodes.add)
-      current.queryGraph.collectAllPatternNodes(nodes.add)
-    }
-    q.lastQueryGraph.collectAllPatternNodes(nodes.add)
-    nodes
+    val qg = q.lastQueryGraph
+    qg.allPatternNodes ++ qg.argumentIds.filter(semanticTable.containsNode)
   }
 
   def readOnly: Boolean = q.queryGraph.readOnly
