@@ -46,7 +46,7 @@ import org.neo4j.logging.Log;
  * subjected to an unbounded quantity of log messages, since the buffer keeps
  * all messages until it gets a chance to replay them.
  */
-class BufferingLog extends AbstractLog
+public class BufferingLog extends AbstractLog
 {
     @FunctionalInterface
     private interface LogMessage
@@ -76,7 +76,7 @@ class BufferingLog extends AbstractLog
     {
         synchronized ( buffer )
         {
-            buffer.add( other -> other.debug( message , throwable ) );
+            buffer.add( other -> other.debug( message, throwable ) );
         }
     }
 
@@ -184,7 +184,7 @@ class BufferingLog extends AbstractLog
      *
      * @param other the log to reply into
      */
-    void replayInto( Log other )
+    public void replayInto( Log other )
     {
         synchronized ( buffer )
         {

@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.neo4j.configuration.BufferingLog;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.ExternalSettings;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
@@ -66,7 +67,8 @@ public abstract class NeoBootstrapper implements Bootstrapper
     private volatile Closeable userLogFileStream;
     private Thread shutdownHook;
     private GraphDatabaseDependencies dependencies = GraphDatabaseDependencies.newDependencies();
-    private Log log;
+    private final BufferingLog startupLog = new BufferingLog();
+    private volatile Log log = startupLog;
     private String serverAddress = "unknown address";
     private MachineMemory machineMemory = MachineMemory.DEFAULT;
 
@@ -107,10 +109,14 @@ public abstract class NeoBootstrapper implements Bootstrapper
                 .set( GraphDatabaseSettings.neo4j_home, homeDir.toAbsolutePath() )
                 .build();
         Log4jLogProvider userLogProvider = setupLogging( config );
-        this.userLogFileStream = userLogProvider;
+        userLogFileStream = userLogProvider;
 
         dependencies = dependencies.userLogProvider( userLogProvider );
+
         log = userLogProvider.getLog( getClass() );
+        // Log any messages written before logging was configured.
+        startupLog.replayInto( log );
+
         config.setLogger( log );
 
         if ( requestedMemoryExceedsAvailable( config ) )
@@ -170,12 +176,15 @@ public abstract class NeoBootstrapper implements Bootstrapper
 
             removeShutdownHook();
 
+            closeUserLogFileStream();
             return 0;
         }
         catch ( Exception e )
         {
+            switchToErrorLoggingIfLoggingNotConfigured();
             log.error( "Failed to cleanly shutdown Neo Server on port [%s], database [%s]. Reason [%s] ",
                     serverAddress, location, e.getMessage(), e );
+            closeUserLogFileStream();
             return 1;
         }
     }
@@ -251,21 +260,21 @@ public abstract class NeoBootstrapper implements Bootstrapper
 
     private void doShutdown()
     {
+        switchToErrorLoggingIfLoggingNotConfigured();
         if ( databaseManagementService != null )
         {
             log.info( "Stopping..." );
             databaseManagementService.shutdown();
-            log.info( "Stopped." );
         }
-        if ( userLogFileStream != null )
-        {
-            closeUserLogFileStream();
-        }
+        log.info( "Stopped." );
     }
 
     private void closeUserLogFileStream()
     {
-        IOUtils.closeAllUnchecked( userLogFileStream );
+        if ( userLogFileStream != null )
+        {
+            IOUtils.closeAllUnchecked( userLogFileStream );
+        }
     }
 
     private void addShutdownHook()
@@ -273,6 +282,7 @@ public abstract class NeoBootstrapper implements Bootstrapper
         shutdownHook = new Thread( () -> {
             log.info( "Neo4j Server shutdown initiated by request" );
             doShutdown();
+            closeUserLogFileStream();
         } );
         Runtime.getRuntime().addShutdownHook( shutdownHook );
     }
@@ -285,6 +295,21 @@ public abstract class NeoBootstrapper implements Bootstrapper
             {
                 log.warn( "Unable to remove shutdown hook" );
             }
+        }
+    }
+
+    /**
+     * If we ran into an error before logging was properly setup we log what we have buffered and any following messages directly to System.out.
+     */
+    private void switchToErrorLoggingIfLoggingNotConfigured()
+    {
+        // Logging isn't configured yet
+        if ( userLogFileStream == null )
+        {
+            Log4jLogProvider outProvider = new Log4jLogProvider( System.out );
+            userLogFileStream = outProvider;
+            log = outProvider.getLog( getClass() );
+            startupLog.replayInto( log );
         }
     }
 
