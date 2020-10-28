@@ -48,7 +48,9 @@ import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.IndexSeek
 import org.neo4j.cypher.internal.logical.plans.LeftOuterHashJoin
 import org.neo4j.cypher.internal.logical.plans.Limit
+import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexScan
+import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.Optional
 import org.neo4j.cypher.internal.logical.plans.OrderedAggregation
 import org.neo4j.cypher.internal.logical.plans.OrderedDistinct
@@ -129,10 +131,15 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTestBase(queryGraphSolve
         )
         cost = {
           // Selection is usually cheap. Let's avoid it by making it expensive to plan, so that our options are index seeks and label scans.
-          case (_:Selection, _, _) => 5000.0
+          case (Selection(_, _: NodeIndexSeek), _, _) => 50000.0
+          case (Selection(_, _: NodeIndexScan), _, _) => 50000.0
+          case (Selection(_, _: NodeByLabelScan), _, _) => 50000.0
         }
       }.getLogicalPlanFor(s"MATCH (n:Foo:Bar) WHERE n.prop > 0 RETURN n ORDER BY n $cypherToken", stripProduceResults = false)
 
+
+      // This test does not show we pick this plan under normal conditions. We don't.
+      // Instead, it shows, that the correct index order can get injected into a LabelScan produced by [[selectHasLabelWithJoin]].
       plan._2 should equal(
         new LogicalPlanBuilder()
           .produceResults("n")

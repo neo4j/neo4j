@@ -974,11 +974,14 @@ class OrderPlanningIntegrationTestBase(queryGraphSolverSetup: QueryGraphSolverSe
 
   test("Should plan sort last when sorting on a property in last node in the expand") {
     val query =
-      """MATCH (u:Person)-[f:FRIEND]->(p:Person)-[r:READ]->(b:Book)
+      """MATCH (u:Person)-[f:FRIEND]->(p)-[r:READ]->(b:Book)
         |WHERE u.name STARTS WITH 'Joe'
         |RETURN u.name, b.title
         |ORDER BY b.title""".stripMargin
-    val plan = new given().getLogicalPlanFor(query)._2
+    val plan = new given {
+      indexOn("Person", "name")
+      labelCardinality = Map("Person" -> 10, "Book" -> 1000)
+    }.getLogicalPlanFor(query)._2
 
     plan should beLike {
       case Projection(
@@ -989,11 +992,14 @@ class OrderPlanningIntegrationTestBase(queryGraphSolverSetup: QueryGraphSolverSe
 
   test("Should plan sort last when sorting on the last node in the expand") {
     val query =
-      """MATCH (u:Person)-[f:FRIEND]->(p:Person)-[r:READ]->(b:Book)
+      """MATCH (u:Person)-[f:FRIEND]->(p)-[r:READ]->(b:Book)
         |WHERE u.name STARTS WITH 'Joe'
         |RETURN u.name, b.title
         |ORDER BY b""".stripMargin
-    val plan = new given().getLogicalPlanFor(query)._2
+    val plan = new given{
+      indexOn("Person", "name")
+      labelCardinality = Map("Person" -> 10, "Book" -> 1000)
+    }.getLogicalPlanFor(query)._2
 
     plan should beLike {
       case Projection(
