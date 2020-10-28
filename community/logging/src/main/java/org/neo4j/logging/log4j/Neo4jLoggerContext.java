@@ -28,7 +28,8 @@ import java.io.Closeable;
 import org.neo4j.io.IOUtils;
 
 /**
- * Facade for Log4j LoggerContext.
+ * Facade for LoggerContext since LoggerContext is shaded in the logging module,
+ * and we can't depend directly on LoggerContext outside of the module.
  */
 public class Neo4jLoggerContext implements Closeable
 {

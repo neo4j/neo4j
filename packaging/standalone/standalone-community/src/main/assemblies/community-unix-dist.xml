@@ -112,6 +112,7 @@
       <useStrictFiltering>true</useStrictFiltering>
       <excludes>
         <exclude>org.ow2.asm:*</exclude>
+        <exclude>org.apache.logging.log4j:*</exclude>
       </excludes>
     </dependencySet>
  </dependencySets>
