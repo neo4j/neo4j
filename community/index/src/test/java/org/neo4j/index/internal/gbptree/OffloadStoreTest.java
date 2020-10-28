@@ -19,6 +19,7 @@
  */
 package org.neo4j.index.internal.gbptree;
 
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -26,7 +27,7 @@ import java.io.IOException;
 
 import org.neo4j.io.pagecache.CursorException;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -93,7 +94,7 @@ class OffloadStoreTest
         RawBytes value = layout.newValue();
         key.bytes = new byte[200];
         value.bytes = new byte[offloadStore.maxEntrySize() - layout.keySize( key )];
-        long offloadId = offloadStore.writeKeyValue( key, value, STABLE_GENERATION, UNSTABLE_GENERATION, NULL );
+        long offloadId = offloadStore.writeKeyValue( key, value, STABLE_GENERATION, UNSTABLE_GENERATION );
         cursor.next( offloadId );
         cursor.setOffset( OffloadStoreImpl.SIZE_HEADER );
         OffloadStoreImpl.putKeyValueSize( cursor, -1, layout.valueSize( value ) );
@@ -102,22 +103,22 @@ class OffloadStoreTest
         {
             RawBytes intoKey = layout.newKey();
             RawBytes intoValue = layout.newValue();
-            CursorException e = assertThrows( CursorException.class, () -> offloadStore.readKeyValue( offloadId, intoKey, intoValue, NULL ) );
-            assertThat( e ).hasMessageContaining( "Read unreliable key" );
+            CursorException e = assertThrows( CursorException.class, () -> offloadStore.readKeyValue( offloadId, intoKey, intoValue ) );
+            assertThat( e.getMessage(), Matchers.containsString( "Read unreliable key" ) );
         }
 
         // readKey
         {
             RawBytes into = layout.newKey();
-            CursorException e = assertThrows( CursorException.class, () -> offloadStore.readKey( offloadId, into, NULL ) );
-            assertThat( e ).hasMessageContaining( "Read unreliable key" );
+            CursorException e = assertThrows( CursorException.class, () -> offloadStore.readKey( offloadId, into ) );
+            assertThat( e.getMessage(), Matchers.containsString( "Read unreliable key" ) );
         }
 
         // readValue
         {
             RawBytes into = layout.newKey();
-            CursorException e = assertThrows( CursorException.class, () -> offloadStore.readValue( offloadId, into, NULL ) );
-            assertThat( e ).hasMessageContaining( "Read unreliable key" );
+            CursorException e = assertThrows( CursorException.class, () -> offloadStore.readValue( offloadId, into ) );
+            assertThat( e.getMessage(), Matchers.containsString( "Read unreliable key" ) );
         }
     }
 
@@ -130,7 +131,7 @@ class OffloadStoreTest
         RawBytes value = layout.newValue();
         key.bytes = new byte[200];
         value.bytes = new byte[offloadStore.maxEntrySize() - layout.keySize( key )];
-        long offloadId = offloadStore.writeKeyValue( key, value, STABLE_GENERATION, UNSTABLE_GENERATION, NULL );
+        long offloadId = offloadStore.writeKeyValue( key, value, STABLE_GENERATION, UNSTABLE_GENERATION );
         cursor.next( offloadId );
         cursor.setOffset( OffloadStoreImpl.SIZE_HEADER );
         OffloadStoreImpl.putKeyValueSize( cursor, layout.keySize( key ), -1 );
@@ -139,22 +140,22 @@ class OffloadStoreTest
         {
             RawBytes intoKey = layout.newKey();
             RawBytes intoValue = layout.newValue();
-            CursorException e = assertThrows( CursorException.class, () -> offloadStore.readKeyValue( offloadId, intoKey, intoValue, NULL ) );
-            assertThat( e ).hasMessageContaining( "Read unreliable key" );
+            CursorException e = assertThrows( CursorException.class, () -> offloadStore.readKeyValue( offloadId, intoKey, intoValue ) );
+            assertThat( e.getMessage(), Matchers.containsString( "Read unreliable key" ) );
         }
 
         // readKey
         {
             RawBytes into = layout.newKey();
-            CursorException e = assertThrows( CursorException.class, () -> offloadStore.readKey( offloadId, into, NULL ) );
-            assertThat( e ).hasMessageContaining( "Read unreliable key" );
+            CursorException e = assertThrows( CursorException.class, () -> offloadStore.readKey( offloadId, into ) );
+            assertThat( e.getMessage(), Matchers.containsString( "Read unreliable key" ) );
         }
 
         // readValue
         {
             RawBytes into = layout.newKey();
-            CursorException e = assertThrows( CursorException.class, () -> offloadStore.readValue( offloadId, into, NULL ) );
-            assertThat( e ).hasMessageContaining( "Read unreliable key" );
+            CursorException e = assertThrows( CursorException.class, () -> offloadStore.readValue( offloadId, into ) );
+            assertThat( e.getMessage(), Matchers.containsString( "Read unreliable key" ) );
         }
     }
 
