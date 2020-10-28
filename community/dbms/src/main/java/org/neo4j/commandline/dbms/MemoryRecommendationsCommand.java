@@ -48,9 +48,9 @@ import org.neo4j.storageengine.api.StorageEngineFactory;
 
 import static java.lang.String.format;
 import static java.util.Locale.ROOT;
-import static org.neo4j.configuration.ExternalSettings.additional_jvm;
-import static org.neo4j.configuration.ExternalSettings.initial_heap_size;
-import static org.neo4j.configuration.ExternalSettings.max_heap_size;
+import static org.neo4j.configuration.BootloaderSettings.additional_jvm;
+import static org.neo4j.configuration.BootloaderSettings.initial_heap_size;
+import static org.neo4j.configuration.BootloaderSettings.max_heap_size;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.databases_root_path;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_max_off_heap_memory;

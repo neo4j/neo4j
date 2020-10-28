@@ -71,12 +71,14 @@ import static java.lang.String.format;
 import static java.lang.System.lineSeparator;
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.config_command_evaluation_timeout;
+import static org.neo4j.configuration.BootloaderSettings.additional_jvm;
 import static org.neo4j.configuration.GraphDatabaseSettings.strict_config_validation;
 
 @IgnoreApiCheck
 public class Config implements Configuration
 {
     public static final String DEFAULT_CONFIG_FILE_NAME = "neo4j.conf";
+    public static final String DEFAULT_CONFIG_DIR_NAME = "conf";
 
     public static final class Builder
     {
@@ -91,36 +93,51 @@ public class Config implements Configuration
         private final Log log = new BufferingLog();
         private boolean expandCommands;
 
-        private static boolean allowedToLogOverriddenValues( String setting )
+        private <T> boolean allowedToOverrideValues( String setting, T value, Map<String,T> settingValues )
         {
-            return !Objects.equals( setting, ExternalSettings.additional_jvm.name() );
+            if ( Objects.equals( setting, additional_jvm.name() ) )
+            {
+                T oldValue = settingValues.get( setting );
+                if ( oldValue != null )
+                {
+                    if ( value instanceof String && oldValue instanceof String )
+                    {
+                        String newValue = oldValue + System.lineSeparator() + value;
+                        settingValues.put( setting, (T) newValue ); //need to keep all jvm additionals
+                    }
+                    else
+                    {
+                        throw new IllegalArgumentException( additional_jvm.name() + " can only be provided as raw Strings if provided multiple times" );
+                    }
+                }
+                return false;
+            }
+            return true;
         }
 
-        private void overrideSettingValue( String setting, Object value )
+        private <T> void overrideSettingValue( String setting, T value, Map<String,T> settingValues )
         {
-            String msg = "The '%s' setting is overridden. Setting value changed from '%s' to '%s'.";
-            if ( settingValueStrings.containsKey( setting ) && allowedToLogOverriddenValues( setting ) )
+            if ( !settingValueStrings.containsKey( setting ) && !settingValueObjects.containsKey( setting ) )
             {
-                log.warn( msg, setting, settingValueStrings.remove( setting ), value );
+                settingValues.put( setting, value );
             }
-
-            if ( settingValueObjects.containsKey( setting ) )
+            else if ( allowedToOverrideValues( setting, value, settingValues ) )
             {
-                log.warn( msg, setting, settingValueObjects.remove( setting ), value );
+                log.warn( "The '%s' setting is overridden. Setting value changed from '%s' to '%s'.", setting,
+                        settingValueStrings.containsKey( setting ) ? settingValueStrings.remove( setting ) : settingValueObjects.remove( setting ), value );
+                settingValues.put( setting, value );
             }
         }
 
         private Builder setRaw( String setting, String value )
         {
-            overrideSettingValue( setting, value );
-            settingValueStrings.put( setting, value );
+            overrideSettingValue( setting, value, settingValueStrings );
             return this;
         }
 
         private Builder set( String setting, Object value )
         {
-            overrideSettingValue( setting, value );
-            settingValueObjects.put( setting, value );
+            overrideSettingValue( setting, value, settingValueObjects );
             return this;
         }
 
@@ -143,12 +160,16 @@ public class Config implements Configuration
 
         private Builder setDefault( String setting, Object value )
         {
-            if ( overriddenDefaults.containsKey( setting ) && allowedToLogOverriddenValues( setting ) )
+            if ( !overriddenDefaults.containsKey( setting ) )
+            {
+                overriddenDefaults.put( setting, value );
+            }
+            else if ( allowedToOverrideValues( setting, value, overriddenDefaults ) )
             {
                 log.warn( "The overridden default value of '%s' setting is overridden. Setting value changed from '%s' to '%s'.", setting,
                         overriddenDefaults.get( setting ), value );
+                overriddenDefaults.put( setting, value );
             }
-            overriddenDefaults.put( setting, value );
             return this;
         }
 

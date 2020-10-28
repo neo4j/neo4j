@@ -49,6 +49,7 @@ import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.configuration.connectors.HttpsConnector;
 import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.io.ByteUnit;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.Log;
 import org.neo4j.test.extension.DisabledForRoot;
@@ -57,6 +58,7 @@ import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.util.FeatureToggles;
 
+import static java.lang.String.format;
 import static java.nio.file.attribute.PosixFilePermission.OWNER_READ;
 import static java.nio.file.attribute.PosixFilePermission.OWNER_WRITE;
 import static org.apache.commons.lang3.SystemUtils.IS_OS_WINDOWS;
@@ -648,27 +650,27 @@ class ConfigTest
         Log log = mock( Log.class );
         Path confFile = testDirectory.createFile( "test.conf" );
         Files.write( confFile, Arrays.asList(
-                ExternalSettings.initial_heap_size.name() + "=5g",
-                ExternalSettings.initial_heap_size.name() + "=4g",
-                ExternalSettings.initial_heap_size.name() + "=3g",
-                ExternalSettings.max_heap_size.name() + "=10g",
-                ExternalSettings.max_heap_size.name() + "=11g" ) );
+                BootloaderSettings.initial_heap_size.name() + "=5g",
+                BootloaderSettings.initial_heap_size.name() + "=4g",
+                BootloaderSettings.initial_heap_size.name() + "=3g",
+                BootloaderSettings.max_heap_size.name() + "=10g",
+                BootloaderSettings.max_heap_size.name() + "=11g" ) );
 
         Config config = Config.newBuilder()
                 .fromFile( confFile )
-                .setDefault( ExternalSettings.initial_heap_size, "1g" )
-                .setDefault( ExternalSettings.initial_heap_size, "2g" )
+                .setDefault( BootloaderSettings.initial_heap_size, ByteUnit.gibiBytes( 1 ) )
+                .setDefault( BootloaderSettings.initial_heap_size, ByteUnit.gibiBytes( 2 ) )
                 .build();
 
         config.setLogger( log );
 
         // We should only log the warning once for each.
         verify( log ).warn( "The '%s' setting is overridden. Setting value changed from '%s' to '%s'.",
-                ExternalSettings.initial_heap_size.name(), "5g", "4g" );
+                BootloaderSettings.initial_heap_size.name(), "5g", "4g" );
         verify( log ).warn( "The '%s' setting is overridden. Setting value changed from '%s' to '%s'.",
-                ExternalSettings.initial_heap_size.name(), "4g", "3g" );
+                BootloaderSettings.initial_heap_size.name(), "4g", "3g" );
         verify( log ).warn( "The '%s' setting is overridden. Setting value changed from '%s' to '%s'.",
-                ExternalSettings.max_heap_size.name(), "10g", "11g" );
+                BootloaderSettings.max_heap_size.name(), "10g", "11g" );
     }
 
     @Test
@@ -845,7 +847,7 @@ class ConfigTest
         Config config = Config.newBuilder()
                 .allowCommandExpansion()
                 .addSettingsClass( TestSettings.class )
-                .setRaw( Map.of( TestSettings.intSetting.name(), String.format( "$(%s 10 - 2)", command ) ) )
+                .setRaw( Map.of( TestSettings.intSetting.name(), format( "$(%s 10 - 2)", command ) ) )
                 .build();
         config.setLogger( logProvider.getLog( Config.class ) );
 
@@ -879,7 +881,7 @@ class ConfigTest
         {
             Files.createFile( confFile, PosixFilePermissions.asFileAttribute( Set.of( OWNER_READ, OWNER_WRITE ) ) );
         }
-        Files.write( confFile, List.of( String.format("%s=$(%s 3 + 3)", TestSettings.intSetting.name(), command ) ) );
+        Files.write( confFile, List.of( format("%s=$(%s 3 + 3)", TestSettings.intSetting.name(), command ) ) );
 
         //Given
         Config config = Config.newBuilder().allowCommandExpansion().addSettingsClass( TestSettings.class ).fromFile( confFile ).build();
@@ -965,7 +967,7 @@ class ConfigTest
                 .set( GraphDatabaseInternalSettings.config_command_evaluation_timeout, Duration.ofSeconds( 1 ) )
                 .allowCommandExpansion()
                 .addSettingsClass( TestSettings.class )
-                .setRaw( Map.of( TestSettings.intSetting.name(), String.format( "$(%s)", command ) ) );
+                .setRaw( Map.of( TestSettings.intSetting.name(), format( "$(%s)", command ) ) );
         //Then
         String msg = assertThrows( IllegalArgumentException.class, builder::build ).getMessage();
         assertThat( msg ).contains( "Timed out executing command" );
@@ -975,8 +977,8 @@ class ConfigTest
     void shouldNotEvaluateCommandsOnDynamicChanges()
     {
         assumeUnixOrWindows();
-        String command1 = String.format( "$(%s 2 + 2)", IS_OS_WINDOWS ? "cmd.exe /c set /a" : "expr" );
-        String command2 = String.format( "$(%s 10 - 3)", IS_OS_WINDOWS ? "cmd.exe /c set /a" : "expr" );
+        String command1 = format( "$(%s 2 + 2)", IS_OS_WINDOWS ? "cmd.exe /c set /a" : "expr" );
+        String command2 = format( "$(%s 10 - 3)", IS_OS_WINDOWS ? "cmd.exe /c set /a" : "expr" );
         //Given
         Config config = Config.emptyBuilder()
                 .allowCommandExpansion()
@@ -990,6 +992,20 @@ class ConfigTest
         //Then
         assertThat( config.get( TestSettings.dynamicStringSetting ) ).isNotEqualTo( "7" ); //not evaluated
         assertThat( config.get( TestSettings.dynamicStringSetting ) ).isEqualTo( command2 );
+    }
+
+    @Test
+    void shouldConcatenateMultipleJvmAdditionals()
+    {
+        //Given
+        Config config = Config.newBuilder()
+                .setRaw( Map.of( BootloaderSettings.additional_jvm.name(), "-Dfoo" ) )
+                .setRaw( Map.of( BootloaderSettings.additional_jvm.name(), "-Dbar" ) )
+                .setRaw( Map.of( BootloaderSettings.additional_jvm.name(), "-Dbaz" ) )
+                .build();
+
+        //Then
+        assertThat( config.get( BootloaderSettings.additional_jvm ) ).isEqualTo( String.format( "%s%n%s%n%s", "-Dfoo", "-Dbar", "-Dbaz" ) );
     }
 
     private static final class TestSettings implements SettingsDeclaration

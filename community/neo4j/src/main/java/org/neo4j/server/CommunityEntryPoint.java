@@ -19,15 +19,15 @@
  */
 package org.neo4j.server;
 
+import org.neo4j.annotations.service.ServiceProvider;
+import org.neo4j.server.startup.EntryPoint;
+
 import static org.neo4j.internal.unsafe.UnsafeUtil.disableIllegalAccessLogger;
 
-public class CommunityEntryPoint
+@ServiceProvider
+public class CommunityEntryPoint implements EntryPoint
 {
     private static Bootstrapper bootstrapper;
-
-    private CommunityEntryPoint()
-    {
-    }
 
     public static void main( String[] args )
     {
@@ -59,5 +59,11 @@ public class CommunityEntryPoint
         {
             bootstrapper.stop();
         }
+    }
+
+    @Override
+    public Priority getPriority()
+    {
+        return Priority.LOW;
     }
 }

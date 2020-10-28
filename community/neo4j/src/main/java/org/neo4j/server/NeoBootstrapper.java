@@ -29,8 +29,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.neo4j.configuration.BufferingLog;
+import org.neo4j.configuration.BootloaderSettings;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.ExternalSettings;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.HttpConnector;
@@ -122,7 +122,7 @@ public abstract class NeoBootstrapper implements Bootstrapper
         if ( requestedMemoryExceedsAvailable( config ) )
         {
             log.error( format( "Invalid memory configuration - exceeds physical memory. Check the configured values for %s and %s",
-                    GraphDatabaseSettings.pagecache_memory.name(), ExternalSettings.max_heap_size.name() ) );
+                    GraphDatabaseSettings.pagecache_memory.name(), BootloaderSettings.max_heap_size.name() ) );
             return INVALID_CONFIGURATION_ERROR_CODE;
         }
 

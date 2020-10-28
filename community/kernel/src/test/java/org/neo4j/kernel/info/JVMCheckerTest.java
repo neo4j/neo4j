@@ -21,7 +21,7 @@ package org.neo4j.kernel.info;
 
 import org.junit.jupiter.api.Test;
 
-import org.neo4j.configuration.ExternalSettings;
+import org.neo4j.configuration.BootloaderSettings;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.Log;
 
@@ -69,7 +69,7 @@ class JVMCheckerTest
         new JvmChecker( log, new CannedJvmMetadataRepository( "Java HotSpot(TM) 64-Bit Server VM",
                 "11.0.2+9", singletonList( "-XMx" ), 12, 23 ) ).checkJvmCompatibilityAndIssueWarning();
 
-        assertThat( logProvider ).containsMessages( memorySettingWarning( ExternalSettings.initial_heap_size, 12 ) );
+        assertThat( logProvider ).containsMessages( memorySettingWarning( BootloaderSettings.initial_heap_size, 12 ) );
     }
 
     @Test
@@ -78,7 +78,7 @@ class JVMCheckerTest
         new JvmChecker( log, new CannedJvmMetadataRepository( "Java HotSpot(TM) 64-Bit Server VM",
                 "11", singletonList( "-XMs" ), 12, 23 ) ).checkJvmCompatibilityAndIssueWarning();
 
-        assertThat( logProvider ).containsMessages( memorySettingWarning( ExternalSettings.max_heap_size, 23 ) );
+        assertThat( logProvider ).containsMessages( memorySettingWarning( BootloaderSettings.max_heap_size, 23 ) );
     }
 
     @Test
@@ -87,8 +87,8 @@ class JVMCheckerTest
         new JvmChecker( log, new CannedJvmMetadataRepository( "Java HotSpot(TM) 64-Bit Server VM",
                 "11.0.1" ) ).checkJvmCompatibilityAndIssueWarning();
 
-        assertThat( logProvider ).containsMessages( memorySettingWarning( ExternalSettings.initial_heap_size, 1 ) );
-        assertThat( logProvider ).containsMessages( memorySettingWarning( ExternalSettings.max_heap_size, 2 ) );
+        assertThat( logProvider ).containsMessages( memorySettingWarning( BootloaderSettings.initial_heap_size, 1 ) );
+        assertThat( logProvider ).containsMessages( memorySettingWarning( BootloaderSettings.max_heap_size, 2 ) );
     }
 
     @Test
@@ -97,7 +97,7 @@ class JVMCheckerTest
         new JvmChecker( log, new CannedJvmMetadataRepository( "Java HotSpot(TM) 64-Bit Server VM", "11.0.2",
                 asList( "-xMx", "-xmS" ), 1, 2 ) ).checkJvmCompatibilityAndIssueWarning();
 
-        assertThat( logProvider ).doesNotContainMessage( memorySettingWarning( ExternalSettings.initial_heap_size, 1 ) );
-        assertThat( logProvider ).doesNotContainMessage( memorySettingWarning( ExternalSettings.max_heap_size, 2 ) );
+        assertThat( logProvider ).doesNotContainMessage( memorySettingWarning( BootloaderSettings.initial_heap_size, 1 ) );
+        assertThat( logProvider ).doesNotContainMessage( memorySettingWarning( BootloaderSettings.max_heap_size, 2 ) );
     }
 }

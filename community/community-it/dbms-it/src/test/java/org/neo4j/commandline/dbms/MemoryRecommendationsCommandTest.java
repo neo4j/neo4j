@@ -62,10 +62,10 @@ import static org.neo4j.commandline.dbms.MemoryRecommendationsCommand.recommendH
 import static org.neo4j.commandline.dbms.MemoryRecommendationsCommand.recommendOsMemory;
 import static org.neo4j.commandline.dbms.MemoryRecommendationsCommand.recommendPageCacheMemory;
 import static org.neo4j.commandline.dbms.MemoryRecommendationsCommand.recommendTxStateMemory;
+import static org.neo4j.configuration.BootloaderSettings.additional_jvm;
+import static org.neo4j.configuration.BootloaderSettings.initial_heap_size;
+import static org.neo4j.configuration.BootloaderSettings.max_heap_size;
 import static org.neo4j.configuration.Config.DEFAULT_CONFIG_FILE_NAME;
-import static org.neo4j.configuration.ExternalSettings.additional_jvm;
-import static org.neo4j.configuration.ExternalSettings.initial_heap_size;
-import static org.neo4j.configuration.ExternalSettings.max_heap_size;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex;

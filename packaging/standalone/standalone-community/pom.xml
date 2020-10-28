@@ -53,6 +53,43 @@
     <build>
         <plugins>
             <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>appassembler-maven-plugin</artifactId>
+                <version>1.10</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>assemble</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <licenseHeaderFile>${project.basedir}/license-header.txt</licenseHeaderFile>
+                    <assembleDirectory>${project.build.directory}/generated</assembleDirectory>
+                    <generateRepository>false</generateRepository>
+                    <endorsedDir>lib</endorsedDir>
+                    <repositoryLayout>flat</repositoryLayout>
+                    <useAllProjectDependencies>true</useAllProjectDependencies>
+                    <useWildcardClassPath>true</useWildcardClassPath>
+                    <extraJvmArguments>-Xmx128m</extraJvmArguments>
+                    <platforms>
+                        <platform>unix</platform>
+                        <platform>windows</platform>
+                    </platforms>
+                    <programs>
+                        <program>
+                            <mainClass>org.neo4j.server.startup.Neo4jCommand</mainClass>
+                            <id>neo4j</id>
+                        </program>
+                        <program>
+                            <mainClass>org.neo4j.server.startup.Neo4jAdminCommand</mainClass>
+                            <id>neo4j-admin</id>
+                        </program>
+                    </programs>
+                </configuration>
+            </plugin>
+            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-assembly-plugin</artifactId>
                 <configuration>
@@ -94,7 +131,6 @@
                     </execution>
                 </executions>
             </plugin>
-
             <plugin>
                 <groupId>org.neo4j.build.plugins</groupId>
                 <artifactId>licensing-maven-plugin</artifactId>
@@ -114,7 +150,6 @@
                     </execution>
                 </executions>
             </plugin>
-
         </plugins>
     </build>
 

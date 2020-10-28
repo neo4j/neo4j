@@ -29,8 +29,8 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.logging.Log;
 
 import static java.util.regex.Pattern.compile;
-import static org.neo4j.configuration.ExternalSettings.initial_heap_size;
-import static org.neo4j.configuration.ExternalSettings.max_heap_size;
+import static org.neo4j.configuration.BootloaderSettings.initial_heap_size;
+import static org.neo4j.configuration.BootloaderSettings.max_heap_size;
 
 public class JvmChecker
 {

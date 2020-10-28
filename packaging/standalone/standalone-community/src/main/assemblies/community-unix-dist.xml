@@ -48,18 +48,12 @@
     <!-- filter and chmod 755 shell scripts -->
     <!-- filter m4 scripts-->
     <fileSet>
-      <directory>${project.parent.basedir}/src/main/distribution/shell-scripts</directory>
+      <directory>${project.build.directory}/generated</directory>
       <outputDirectory/>
       <lineEnding>unix</lineEnding>
       <fileMode>0755</fileMode>
       <excludes>
         <exclude>**/*.bat</exclude>
-        <exclude>**/*.m4</exclude>
-        <exclude>**/*.psd1</exclude>
-        <exclude>**/*.psm1</exclude>
-        <exclude>**/*.ps1</exclude>
-        <exclude>**/Neo4j-Management</exclude>
-        <exclude>**/*.exe</exclude>
       </excludes>
       <filtered>true</filtered>
     </fileSet>

@@ -30,7 +30,7 @@ import java.lang.management.MemoryUsage;
 import java.nio.file.Path;
 import java.util.Map;
 
-import org.neo4j.configuration.ExternalSettings;
+import org.neo4j.configuration.BootloaderSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.internal.helpers.collection.MapUtil;
 import org.neo4j.memory.MachineMemory;
@@ -119,7 +119,7 @@ class NeoBootstrapperTest
         // given
         neoBootstrapper = new CommunityBootstrapper();
         Map<String,String> config = MapUtil.stringMap();
-        config.put( ExternalSettings.max_heap_size.name(), "10B" );
+        config.put( BootloaderSettings.max_heap_size.name(), "10B" );
         config.put( GraphDatabaseSettings.pagecache_memory.name(), "1B" );
 
         // Mock heap usage and free memory.
@@ -140,7 +140,7 @@ class NeoBootstrapperTest
         // given
         neoBootstrapper = new CommunityBootstrapper();
         Map<String,String> config = MapUtil.stringMap();
-        config.put( ExternalSettings.max_heap_size.name(), "10B" );
+        config.put( BootloaderSettings.max_heap_size.name(), "10B" );
         config.put( GraphDatabaseSettings.pagecache_memory.name(), "10B" );
 
         // Mock heap usage and free memory.
@@ -161,7 +161,7 @@ class NeoBootstrapperTest
         // given
         neoBootstrapper = new CommunityBootstrapper();
         Map<String,String> config = MapUtil.stringMap();
-        config.put( ExternalSettings.max_heap_size.name(), "10B" );
+        config.put( BootloaderSettings.max_heap_size.name(), "10B" );
 
         // Mock heap usage and free memory.
         MachineMemory mockedMemory = mock( MachineMemory.class );
