@@ -203,13 +203,13 @@ trait SinglePlannerQuery extends PlannerQueryPart {
 
   //Returns list of planner query and all of its tails
   def allPlannerQueries: Seq[SinglePlannerQuery] = {
-    @tailrec
-    def loop(acc: Seq[SinglePlannerQuery], remaining: Option[SinglePlannerQuery]): Seq[SinglePlannerQuery] = remaining match {
-      case None => acc
-      case Some(inner) => loop(acc :+ inner, inner.tail)
+    val buffer = scala.collection.mutable.ArrayBuffer[SinglePlannerQuery]()
+    var current = this
+    while (current != null) {
+      buffer += current
+      current = current.tail.orNull
     }
-
-    loop(Seq.empty, Some(this))
+    buffer
   }
 
   def labelInfo: Map[String, Set[LabelName]] = {
