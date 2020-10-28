@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
+import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.PatternExpression
@@ -34,6 +35,10 @@ import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
+import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
+import org.neo4j.cypher.internal.logical.plans.NodeHashJoin
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -95,6 +100,46 @@ class SelectorTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
     // Then
     result should equal(Selection(Seq(predicate1, predicate2), inner))
+  }
+
+  test("when two predicates not already solved are solvable, should not greedily pick the first but cost compare the alternative orders") {
+    // Given
+    val context = newMockedLogicalPlanningContext(planContext)
+
+    val eqs = equals(prop("x", "prop"), literalInt(10))
+    val hl = hasLabels("x", "X")
+
+    val selections = Selections.from(Seq(eqs, hl))
+    val inner = newMockedLogicalPlanWithProjections(context.planningAttributes, "x")
+
+    val qg = QueryGraph(patternNodes = Set("x"), selections = selections)
+    val selector = Selector(pickBestPlanUsingHintsAndCost, selectCovered, selectHasLabelWithJoin)
+
+    val expectedPlan = Selection(Seq(eqs, hl), inner)
+
+    var didVerify = false
+    val verifyingContext = context.copy(
+      costComparisonListener = new CostComparisonListener {
+        override def report[X](projector: X => LogicalPlan,
+                               input: Iterable[X],
+                               inputOrdering: Ordering[X],
+                               context: LogicalPlanningContext): Unit = {
+          val plans = input.map(projector).toSet
+          plans should equal(Set(
+            expectedPlan,
+            Selection(Seq(eqs), NodeHashJoin(Set("x"), inner, NodeByLabelScan("x", labelName("X"), Set.empty, IndexOrderNone)))
+          ))
+          didVerify = true
+        }
+      }
+    )
+
+    // When
+    val result = selector(inner, qg, InterestingOrder.empty, verifyingContext)
+
+    // Then
+    result should equal(expectedPlan)
+    didVerify should be(true)
   }
 
   test("when a predicate is already solved, it should not be applied again") {

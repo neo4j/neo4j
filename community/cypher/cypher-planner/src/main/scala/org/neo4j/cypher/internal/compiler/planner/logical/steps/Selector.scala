@@ -28,8 +28,6 @@ import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
 
-import scala.annotation.tailrec
-
 case class Selector(pickBestFactory: CandidateSelectorFactory,
                     candidateGenerators: SelectionCandidateGenerator*) extends PlanSelector {
 
@@ -41,13 +39,24 @@ case class Selector(pickBestFactory: CandidateSelectorFactory,
 
     val unsolvedPredicates = unsolvedPreds(context.planningAttributes.solveds, queryGraph.selections, input)
 
-    @tailrec
     def selectIt(plan: LogicalPlan, stillUnsolvedPredicates: Set[Expression]): LogicalPlan = {
       val candidates = candidateGenerators.flatMap(generator => generator(plan, stillUnsolvedPredicates, queryGraph, interestingOrder, context))
 
-      pickBest[SelectionCandidate](_.plan, candidates) match {
-        case Some(SelectionCandidate(plan, solvedPredicates)) => selectIt(plan, stillUnsolvedPredicates -- solvedPredicates)
-        case None => plan
+      candidates match {
+        case Seq() => plan
+        case Seq(candidate) => candidate.plan
+        case Seq(_, _) =>
+          // If we have only 2 candidates we can cost compare all alternative orders of applying the selections.
+          val candidatesWithAllSelectionsApplied = candidates.map {
+            case SelectionCandidate(plan, solvedPredicates) => selectIt(plan, stillUnsolvedPredicates -- solvedPredicates)
+          }
+          pickBest(candidatesWithAllSelectionsApplied).get
+        case _ =>
+          // If we have more than 2 candidates we pick the cheapest first greedily and then recurse.
+          pickBest[SelectionCandidate](_.plan, candidates) match {
+            case Some(SelectionCandidate(plan, solvedPredicates)) => selectIt(plan, stillUnsolvedPredicates -- solvedPredicates)
+            case None => plan
+          }
       }
     }
 
@@ -64,8 +73,6 @@ case class Selector(pickBestFactory: CandidateSelectorFactory,
 
 }
 
-// TODO instead of calling select for each candidate, lets only call it for the winner.
-//  --> This is difficult in combination with the sorting generators since we want to plan Sort after Filter.
 trait SelectionCandidateGenerator extends {
   /**
    * Generate candidates which solve a predicate.
