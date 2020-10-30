@@ -63,7 +63,7 @@ class ValidatorsTest
 
     private void validate( String fileByName )
     {
-        Validators.REGEX_FILE_EXISTS.validate( directory.file( fileByName ) );
+        Validators.REGEX_FILE_EXISTS.validate( directory.file( fileByName ).getAbsolutePath() );
     }
 
     private void existenceOfFile( String name ) throws IOException

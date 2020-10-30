@@ -353,7 +353,7 @@ public class ImportCommand extends AbstractCommand
         final var converter = Converters.regexFiles( true );
         return Converters.toFiles( MULTI_FILE_DELIMITER, s ->
         {
-            Validators.REGEX_FILE_EXISTS.validate( new File( s ) );
+            Validators.REGEX_FILE_EXISTS.validate( s );
             return converter.apply( s );
         } ).apply( str );
     }

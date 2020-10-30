@@ -28,6 +28,8 @@ import java.util.function.Function;
 
 import org.neo4j.internal.helpers.collection.NumberAwareStringComparator;
 
+import static org.neo4j.util.Preconditions.checkState;
+
 public class Converters
 {
     private Converters()
@@ -49,7 +51,7 @@ public class Converters
         return name ->
         {
             Comparator<File> sorting = cleverNumberRegexSort ? BY_FILE_NAME_WITH_CLEVER_NUMBERS : BY_FILE_NAME;
-            List<File> files = Validators.matchingFiles( new File( name.trim() ) );
+            List<File> files = Validators.matchingFiles( name.trim() );
             files.sort( sorting );
             return files.toArray( new File[0] );
         };
@@ -64,7 +66,7 @@ public class Converters
                 return new File[0];
             }
 
-            String[] names = from.split( delimiter );
+            String[] names = quotationAwareSplit( from, delimiter );
             List<File> files = new ArrayList<>();
             for ( String name : names )
             {
@@ -72,5 +74,45 @@ public class Converters
             }
             return files.toArray( new File[0] );
         };
+    }
+
+    /**
+     * Splits a string by the delimiter, but will not split by delimiters inside ' quatation characters. Example:
+     *
+     * <pre>
+     * The first part,'the second, but longer part',the third part
+     * </pre>
+     *
+     * Will be split into:
+     * <ol>
+     *     <li>The first part</li>
+     *     <li>the second, but longer part</li>
+     *     <li>the third part</li>
+     * </ol>
+     *
+     * @param from string to be split into smaller parts.
+     * @param delimiter the delimiter to split on.
+     * @return an array of parts split from the provided string, where delimiters inside quoted strings will not be split.
+     */
+    private static String[] quotationAwareSplit( String from, String delimiter )
+    {
+        String[] parts = from.split( delimiter );
+        List<String> mendedParts = new ArrayList<>();
+        for ( int i = 0; i < parts.length; i++ )
+        {
+            String part = parts[i];
+            if ( part.startsWith( "'" ) )
+            {
+                // put back together the parts which were split by a comma, but where inside quotation
+                while ( !part.endsWith( "'" ) )
+                {
+                    checkState( i + 1 < parts.length, "When splitting \"%s\" the inner start quote in part \"%s\" had no matching end quote", from, part );
+                    part += delimiter + parts[++i];
+                }
+                part = part.substring( 1, part.length() - 1 ); // remove the quotation
+            }
+            mendedParts.add( part );
+        }
+        return mendedParts.toArray( new String[0] );
     }
 }

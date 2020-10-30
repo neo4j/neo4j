@@ -23,14 +23,23 @@ import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
+import java.util.function.Function;
 
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
+import static org.apache.commons.lang3.SystemUtils.IS_OS_WINDOWS;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import static org.neo4j.kernel.impl.util.Converters.regexFiles;
+import static org.neo4j.kernel.impl.util.Converters.toFiles;
 
 @TestDirectoryExtension
 class ConvertersTest
@@ -53,6 +62,87 @@ class ConvertersTest
 
         // THEN
         assertArrayEquals( new File[]{file1, file2, file12, file32, file123}, files );
+    }
+
+    @Test
+    void shouldParseFile() throws IOException
+    {
+        // given
+        File file = existenceOfFile( "file" );
+
+        // when
+        File[] files = regexFiles( true ).apply( file.getPath() );
+
+        // then
+        assertEquals( List.of( file ), List.of( files ) );
+    }
+
+    @Test
+    void shouldParseRegexFileWithDashes() throws IOException
+    {
+        assumeFalse( IS_OS_WINDOWS );
+        // given
+        File file1 = existenceOfFile( "file_1" );
+        File file3 = existenceOfFile( "file_3" );
+        File file12 = existenceOfFile( "file_12" );
+
+        // when
+        File[] files = regexFiles( true ).apply( file1.getParent() + File.separator + "file_\\d+" );
+        File[] files2 = regexFiles( true ).apply( file1.getParent() + File.separator + "file_\\d{1,5}" );
+
+        // then
+        assertEquals( List.of( file1, file3, file12 ), List.of( files ) );
+        assertEquals( List.of( file1, file3, file12 ), List.of( files2 ) );
+    }
+
+    @Test
+    void shouldParseRegexFileWithDoubleDashes() throws IOException
+    {
+        // given
+        File file1 = existenceOfFile( "file_1" );
+        File file3 = existenceOfFile( "file_3" );
+        File file12 = existenceOfFile( "file_12" );
+
+        // when
+        File[] files = regexFiles( true ).apply( file1.getParent() + File.separator + "file_\\\\d+" );
+        File[] files2 = regexFiles( true ).apply( file1.getParent() + File.separator + "file_\\\\d{1,5}" );
+
+        // then
+        assertEquals( List.of( file1, file3, file12 ), List.of( files ) );
+        assertEquals( List.of( file1, file3, file12 ), List.of( files2 ) );
+    }
+
+    @Test
+    void shouldConsiderInnerQuotationWhenSplittingMultipleFiles() throws IOException
+    {
+        // given
+        File header = existenceOfFile( "header.csv" );
+        File file1 = existenceOfFile( "file_1.csv" );
+        File file3 = existenceOfFile( "file_3.csv" );
+        File file12 = existenceOfFile( "file_12.csv" );
+
+        // when
+        Function<String,File[]> regexMatcher = regexFiles( true );
+        Function<String,File[]> converter = toFiles( ",", regexMatcher );
+        File[] files = converter.apply( header.getPath() + ",'" + header.getParent() + File.separator + "file_\\\\d{1,5}.csv'" );
+
+        // then
+        assertEquals( List.of( header, file1, file3, file12 ), List.of( files ) );
+    }
+
+    @Test
+    void shouldFailWithProperErrorMessageOnMissingEndQuote()
+    {
+        // given
+        Function<String,File[]> regexMatcher = s ->
+        {
+            throw new UnsupportedOperationException( "Should not required" );
+        };
+        Function<String,File[]> converter = toFiles( ",", regexMatcher );
+
+        // when/then
+        IllegalStateException exception = assertThrows( IllegalStateException.class, () -> converter.apply( "thing1,'thing2,test,thing3" ) );
+        assertThat( exception.getMessage(), containsString( "no matching end quote" ) );
     }
 
     private File existenceOfFile( String name ) throws IOException
