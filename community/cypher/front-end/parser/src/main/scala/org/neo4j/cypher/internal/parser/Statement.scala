@@ -154,10 +154,8 @@ trait Statement extends Parser
 
   def OptionalRequirePasswordChange: Rule1[Option[Boolean]] = {
     optional(
-      keyword("SET PASSWORD CHANGE NOT REQUIRED") ~>>> (_ => _ => false) |
-      keyword("CHANGE NOT REQUIRED") ~>>> (_ => _ => false) |
-      keyword("SET PASSWORD CHANGE REQUIRED") ~>>> (_ => _ => true) |
-      keyword("CHANGE REQUIRED") ~>>> (_ => _ => true)
+      group(optional(keyword("SET PASSWORD")) ~~ keyword("CHANGE NOT REQUIRED")) ~>>> (_ => _ => false) |
+      group(optional(keyword("SET PASSWORD")) ~~ keyword("CHANGE REQUIRED")) ~>>> (_ => _ => true)
     )
   }
 
@@ -166,7 +164,7 @@ trait Statement extends Parser
   def OptionalDefaultDatabase: Rule1[Option[Either[String, Parameter]]] = optional(DefaultDatabase)
 
   def DefaultDatabase: Rule1[Either[String, Parameter]] = rule("DEFAULT DATABASE db") {
-    keyword("DEFAULT DATABASE") ~~ SymbolicDatabaseNameOrStringParameter
+    keyword("SET DEFAULT DATABASE") ~~ SymbolicDatabaseNameOrStringParameter
   }
 
   //noinspection MutatorLikeMethodIsParameterless

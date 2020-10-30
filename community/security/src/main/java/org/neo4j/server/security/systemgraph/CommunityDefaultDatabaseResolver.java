@@ -48,7 +48,7 @@ public class CommunityDefaultDatabaseResolver extends TransactionEventListenerAd
     }
 
     @Override
-    public String defaultDatabase()
+    public String defaultDatabase( String username )
     {
         String cachedResult = cachedDefaultDatabase.get();
         if ( cachedResult != null )

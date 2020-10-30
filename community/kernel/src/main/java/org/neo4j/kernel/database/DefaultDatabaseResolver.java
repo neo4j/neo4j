@@ -21,7 +21,7 @@ package org.neo4j.kernel.database;
 
 public interface DefaultDatabaseResolver
 {
-    String defaultDatabase();
+    String defaultDatabase( String username );
 
     void clearCache();
 }

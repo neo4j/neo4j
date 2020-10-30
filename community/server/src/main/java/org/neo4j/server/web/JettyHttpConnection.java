@@ -27,7 +27,6 @@ import org.eclipse.jetty.server.HttpConnection;
 
 import java.net.SocketAddress;
 
-import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.net.TrackedNetworkConnection;
 
 /**
@@ -95,18 +94,18 @@ public class JettyHttpConnection extends HttpConnection implements TrackedNetwor
     }
 
     @Override
-    public void updateUser( AuthSubject authSubject, String userAgent )
+    public void updateUser( String username, String userAgent )
     {
         this.username = username;
         this.userAgent = userAgent;
     }
 
-    public static void updateUserForCurrentConnection( AuthSubject authSubject, String userAgent )
+    public static void updateUserForCurrentConnection( String username, String userAgent )
     {
         JettyHttpConnection connection = getCurrentJettyHttpConnection();
         if ( connection != null )
         {
-            connection.updateUser( authSubject, userAgent );
+            connection.updateUser( username, userAgent );
         }
     }
 

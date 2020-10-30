@@ -244,7 +244,8 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
         case Some(boolExpr: Boolean) => Seq((param._2, internalKey(param._2), Values.booleanValue(boolExpr)))
         case Some(passwordExpression: PasswordExpression) => Seq((param._2, passwordExpression.key, passwordExpression.value))
         case Some(nameFields: NameFields) => Seq((param._2, nameFields.nameKey, nameFields.nameValue))
-        case Some(p) => throw new InvalidArgumentsException(s"Invalid option type for ALTER USER, expected PasswordExpression or Boolean but got: ${p.getClass.getSimpleName}")
+        case Some(p) => throw new InvalidArgumentsException(
+          s"Invalid option type for ALTER USER, expected PasswordExpression, Boolean, String or Parameter but got: ${p.getClass.getSimpleName}")
       }
     }
     val (query, keys, values) = params.foldLeft((s"MATCH (user:User {name: $$`${userNameFields.nameKey}`}) WITH user, user.credentials AS oldCredentials", Seq.empty[String], Seq.empty[Value])) { (acc, param) =>

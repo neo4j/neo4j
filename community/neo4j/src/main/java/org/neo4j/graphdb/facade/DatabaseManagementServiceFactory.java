@@ -138,13 +138,13 @@ public class DatabaseManagementServiceFactory
 
         setupProcedures( globalModule, edition, databaseManager );
 
-        edition.createDefaultDatabaseResolver( globalModule );
-        globalDependencies.satisfyDependency( edition.getDefaultDatabaseResolver() );
-
         globalLife.add( edition.createSystemGraphInitializer( globalModule, databaseManager ) );
 
         var dbmsRuntimeSystemGraphComponent = new DbmsRuntimeSystemGraphComponent( globalModule.getGlobalConfig() );
-         globalModule.getSystemGraphComponents().register( dbmsRuntimeSystemGraphComponent );
+        globalModule.getSystemGraphComponents().register( dbmsRuntimeSystemGraphComponent );
+
+        edition.createDefaultDatabaseResolver( globalModule );
+        globalDependencies.satisfyDependency( edition.getDefaultDatabaseResolver() );
 
         edition.createSecurityModule( globalModule );
         SecurityProvider securityProvider = edition.getSecurityProvider();

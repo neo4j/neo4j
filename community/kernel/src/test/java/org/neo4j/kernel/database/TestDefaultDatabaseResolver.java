@@ -29,7 +29,7 @@ public class TestDefaultDatabaseResolver implements DefaultDatabaseResolver
     }
 
     @Override
-    public String defaultDatabase()
+    public String defaultDatabase( String username )
     {
         return defaultDatabaseName;
     }

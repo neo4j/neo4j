@@ -107,7 +107,7 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
     val result = execute(s"SHOW DATABASE $DEFAULT_DATABASE_NAME")
 
     // THEN
-    result.toList should be(List(db(DEFAULT_DATABASE_NAME, default = true)))
+    result.toList should be(List(db(DEFAULT_DATABASE_NAME, default = true, systemDefault = true)))
   }
 
   test(s"should show database $DEFAULT_DATABASE_NAME with params") {
@@ -118,7 +118,7 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
     val result = execute("SHOW DATABASE $db", dbDefaultMap)
 
     // THEN
-    result.toList should be(List(db(DEFAULT_DATABASE_NAME, default = true)))
+    result.toList should be(List(db(DEFAULT_DATABASE_NAME, default = true, systemDefault = true)))
   }
 
   test("should give nothing when showing a non-existing database") {
@@ -155,7 +155,7 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
     val result = execute("SHOW DATABASES")
 
     // THEN
-    result.toSet should be(Set(db(DEFAULT_DATABASE_NAME, default = true), db(SYSTEM_DATABASE_NAME)))
+    result.toSet should be(Set(db(DEFAULT_DATABASE_NAME, default = true, systemDefault = true), db(SYSTEM_DATABASE_NAME)))
   }
 
   test("should fail when showing databases when not on system database") {
@@ -561,16 +561,18 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
 
   // Helper methods
 
-  private def db(name: String, default: Boolean = false) =
+  private def db(name: String, default: Boolean = false, systemDefault: Boolean = false): Map[String, Any] =
     Map("name" -> name,
       "address" -> localHostString,
       "role" -> "standalone",
       "requestedStatus" -> onlineStatus,
       "currentStatus" -> onlineStatus,
       "error" -> "",
-      "default" -> default)
+      "default" -> default,
+      "systemDefault" -> systemDefault
+    )
 
-  private def defaultDb(name: String) =
+  private def defaultDb(name: String): Map[String, String] =
     Map("name" -> name,
       "address" -> localHostString,
       "role" -> "standalone",

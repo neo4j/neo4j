@@ -108,7 +108,7 @@ public class AuthorizationEnabledFilter extends AuthorizationFilter
         {
             LoginContext securityContext = authenticate( username, password );
             // username is now known, make connection aware of both username and user-agent
-            JettyHttpConnection.updateUserForCurrentConnection( securityContext.subject(), userAgent );
+            JettyHttpConnection.updateUserForCurrentConnection( username, userAgent );
 
             switch ( securityContext.subject().getAuthenticationResult() )
             {

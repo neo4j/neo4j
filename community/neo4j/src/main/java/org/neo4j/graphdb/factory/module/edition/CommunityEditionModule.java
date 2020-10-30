@@ -283,15 +283,6 @@ public class CommunityEditionModule extends StandaloneEditionModule
         setSecurityProvider( makeSecurityModule( globalModule ) );
     }
 
-    @Override
-    public void createDefaultDatabaseResolver( GlobalModule globalModule )
-    {
-        Supplier<GraphDatabaseService> systemDbSupplier = systemSupplier( globalModule.getGlobalDependencies() );
-        CommunityDefaultDatabaseResolver defaultDatabaseResolver = new CommunityDefaultDatabaseResolver( globalModule.getGlobalConfig(), systemDbSupplier );
-        globalModule.getTransactionEventListeners().registerTransactionEventListener( SYSTEM_DATABASE_NAME, defaultDatabaseResolver );
-        setDefaultDatabaseResolver( defaultDatabaseResolver );
-    }
-
     private SecurityProvider makeSecurityModule( GlobalModule globalModule )
     {
         setupSecurityGraphInitializer( globalModule );
@@ -303,6 +294,15 @@ public class CommunityEditionModule extends StandaloneEditionModule
             return securityModule;
         }
         return NoAuthSecurityProvider.INSTANCE;
+    }
+
+    @Override
+    public void createDefaultDatabaseResolver( GlobalModule globalModule )
+    {
+        Supplier<GraphDatabaseService> systemDbSupplier = systemSupplier( globalModule.getGlobalDependencies() );
+        CommunityDefaultDatabaseResolver defaultDatabaseResolver = new CommunityDefaultDatabaseResolver( globalModule.getGlobalConfig(), systemDbSupplier );
+        globalModule.getTransactionEventListeners().registerTransactionEventListener( SYSTEM_DATABASE_NAME, defaultDatabaseResolver );
+        setDefaultDatabaseResolver( defaultDatabaseResolver );
     }
 
     public static <T> T tryResolveOrCreate( Class<T> clazz, DependencyResolver dependencies, Supplier<T> newInstanceMethod )

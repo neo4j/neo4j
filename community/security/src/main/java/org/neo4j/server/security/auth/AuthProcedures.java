@@ -91,7 +91,7 @@ public class AuthProcedures
     }
 
     @SystemProcedure
-    @Description( "Show the current user. Alternatively, you can use the Cypher SHOW CURRENT USER command." )
+    @Description( "Show the current user." )
     @Procedure( name = "dbms.showCurrentUser", mode = DBMS )
     public Stream<UserResult> showCurrentUser()
     {

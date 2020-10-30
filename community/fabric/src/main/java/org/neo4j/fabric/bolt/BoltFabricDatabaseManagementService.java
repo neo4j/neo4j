@@ -47,8 +47,8 @@ public class BoltFabricDatabaseManagementService implements BoltGraphDatabaseMan
     private final TransactionBookmarkManagerFactory transactionBookmarkManagerFactory;
 
     public BoltFabricDatabaseManagementService( FabricExecutor fabricExecutor, FabricConfig config, TransactionManager transactionManager,
-            FabricDatabaseManager fabricDatabaseManager, LocalGraphTransactionIdTracker transactionIdTracker,
-            TransactionBookmarkManagerFactory transactionBookmarkManagerFactory )
+                                                FabricDatabaseManager fabricDatabaseManager, LocalGraphTransactionIdTracker transactionIdTracker,
+                                                TransactionBookmarkManagerFactory transactionBookmarkManagerFactory )
     {
         this.fabricExecutor = fabricExecutor;
         this.config = config;

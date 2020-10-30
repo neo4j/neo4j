@@ -48,7 +48,8 @@ public class User
     private final SortedSet<String> flags;
 
     /**
-     * The user's default database
+     * The user's default database, if the user does not have a default database set, this will
+     * be null
      */
     private final String defaultDatabase;
 

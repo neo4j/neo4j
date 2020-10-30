@@ -496,8 +496,8 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
 
   test("should not be able to create user with a default database in community") {
     // WHEN
-    assertFailure("CREATE USER foo SET PASSWORD 'password' DEFAULT DATABASE foo",
-      "Failed to alter the specified user 'foo': DEFAULT DATABASE is not available in community edition.")
+    assertFailure("CREATE USER foo SET PASSWORD 'password' SET DEFAULT DATABASE foo",
+      "Failed to create the specified user 'foo': 'DEFAULT DATABASE' is not available in community edition.")
 
     // THEN
     execute("SHOW USERS").toSet shouldBe Set(defaultUser)
@@ -505,8 +505,8 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
 
   test("should not be able to alter a users default database in community") {
     // WHEN
-    assertFailure("ALTER USER foo DEFAULT DATABASE foo",
-      "Failed to alter the specified user 'foo': DEFAULT DATABASE is not available in community edition.")
+    assertFailure("ALTER USER foo SET DEFAULT DATABASE foo",
+      "Failed to alter the specified user 'foo': 'DEFAULT DATABASE' is not available in community edition.")
 
     // THEN
     execute("SHOW USERS").toSet shouldBe Set(defaultUser)
@@ -1362,10 +1362,10 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
 
   // Helper methods
 
-  private def user(username: String, passwordChangeRequired: Boolean = true, requestedDefaultDatabase: String = null,
-                   currentDefaultDatabase: String = DEFAULT_DATABASE_NAME): Map[String, Any] = {
+  private def user(username: String, passwordChangeRequired: Boolean = true,
+                   defaultDatabase: String = DEFAULT_DATABASE_NAME): Map[String, Any] = {
     Map("user" -> username, "roles" -> null, "passwordChangeRequired" -> passwordChangeRequired, "suspended" -> null,
-      "requestedDefaultDatabase" -> requestedDefaultDatabase,  "currentDefaultDatabase" -> currentDefaultDatabase )
+      "defaultDatabase" -> defaultDatabase)
   }
 
   private def testUserLogin(username: String, password: String, expected: AuthenticationResult): Unit = {

@@ -227,7 +227,7 @@ public abstract class FabricServicesBootstrap
         @Override
         protected CatalogManager createCatalogManger()
         {
-            var databaseManagementService = resolve( DatabaseManagementService.class);
+            var databaseManagementService = resolve( DatabaseManagementService.class );
             return new CommunityCatalogManager( createDatabaseLookup(), databaseManagementService );
         }
 

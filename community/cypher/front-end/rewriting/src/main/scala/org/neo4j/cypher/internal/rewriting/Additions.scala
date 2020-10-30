@@ -16,11 +16,13 @@
  */
 package org.neo4j.cypher.internal.rewriting
 
+import org.neo4j.cypher.internal.ast.AlterUser
 import org.neo4j.cypher.internal.ast.CreateIndex
 import org.neo4j.cypher.internal.ast.CreateNodeKeyConstraint
 import org.neo4j.cypher.internal.ast.CreateNodePropertyExistenceConstraint
 import org.neo4j.cypher.internal.ast.CreateRelationshipPropertyExistenceConstraint
 import org.neo4j.cypher.internal.ast.CreateUniquePropertyConstraint
+import org.neo4j.cypher.internal.ast.CreateUser
 import org.neo4j.cypher.internal.ast.DropConstraintOnName
 import org.neo4j.cypher.internal.ast.DropIndexOnName
 import org.neo4j.cypher.internal.ast.IfExistsDoNothing
@@ -126,7 +128,7 @@ object Additions {
         throw cypherExceptionFactory.syntaxException("Creating a user with a default database is not supported in this Cypher version.", c.position)
 
       case c@AlterUser(_, _, _, _, _, Some(_)) =>
-        throw cypherExceptionFactory.syntaxException("Updating a user with a default database  is not supported in this Cypher version.", c.position)
+        throw cypherExceptionFactory.syntaxException("Updating a user with a default database is not supported in this Cypher version.", c.position)
     }
   }
 

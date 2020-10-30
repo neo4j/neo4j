@@ -83,12 +83,6 @@ public enum ComponentVersion
      *
      * Version 7 (Neo4j 4.2.0-Drop07):
      *   - Added support for show index and show constraint privileges
-     *
-     * Version 8 (Neo4j 4.2.1):
-     *   - Fix bug with missing PUBLIC role
-     *
-     * Version 9 (Neo4j 4.3.0-Drop01):
-     *   - Restructure privileges for admin role
      */
     ENTERPRISE_SECURITY_35( 0, SECURITY_PRIVILEGE_COMPONENT, Neo4jVersions.VERSION_35 ),
     ENTERPRISE_SECURITY_36( 1, SECURITY_PRIVILEGE_COMPONENT, Neo4jVersions.VERSION_36 ),

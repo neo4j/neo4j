@@ -26,9 +26,6 @@ import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Server;
 import org.junit.jupiter.api.Test;
 
-import org.neo4j.internal.kernel.api.security.AuthSubject;
-import org.neo4j.internal.kernel.api.security.AuthenticationResult;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -68,7 +65,7 @@ class JettyHttpConnectionTest
         JettyHttpConnection connection = newConnection( connectorMock( "http+routing" ) );
 
         assertNull( connection.username() );
-        connection.updateUser( new TestAuthSubject(), "my-http-driver/1.2.3" );
+        connection.updateUser( "hello", "my-http-driver/1.2.3" );
         assertEquals( "hello", connection.username() );
         assertEquals( "my-http-driver/1.2.3", connection.userAgent() );
     }
@@ -86,45 +83,5 @@ class JettyHttpConnectionTest
         when( connector.getExecutor() ).thenReturn( Runnable::run );
         when( connector.getServer() ).thenReturn( new Server() );
         return connector;
-    }
-
-    private static class TestAuthSubject implements AuthSubject
-    {
-
-        @Override
-        public void logout()
-        {
-
-        }
-
-        @Override
-        public AuthenticationResult getAuthenticationResult()
-        {
-            return null;
-        }
-
-        @Override
-        public void setPasswordChangeNoLongerRequired()
-        {
-
-        }
-
-        @Override
-        public boolean hasUsername( String username )
-        {
-            return false;
-        }
-
-        @Override
-        public String username()
-        {
-            return "hello";
-        }
-
-        @Override
-        public String defaultDatabase()
-        {
-            return null;
-        }
     }
 }

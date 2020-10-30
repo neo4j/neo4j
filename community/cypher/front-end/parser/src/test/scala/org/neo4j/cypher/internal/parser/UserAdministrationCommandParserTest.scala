@@ -271,24 +271,28 @@ class UserAdministrationCommandParserTest extends AdministrationCommandParserTes
     yields(ast.CreateUser(literalFoo, isEncryptedPassword = true, pw("sha256,x1024,0x2460294fe,b3ddb287a"), requirePasswordChange = true, suspended = None, ast.IfExistsReplace, None))
   }
 
-  test("CREATE USER foo SET password 'password' DEFAULT DATABASE db1") {
+  test("CREATE USER foo SET password 'password' SET DEFAULT DATABASE db1") {
     yields(ast.CreateUser(literalFoo, isEncryptedPassword = false, password, requirePasswordChange = true, suspended = None, ast.IfExistsThrowError, Some(Left("db1"))))
   }
 
-  test("CREATE USER foo SET password 'password' DEFAULT DATABASE $db") {
+  test("CREATE USER foo SET password 'password' SET DEFAULT DATABASE $db") {
     yields(ast.CreateUser(literalFoo, isEncryptedPassword = false, password, requirePasswordChange = true, suspended = None, ast.IfExistsThrowError, Some(paramDb)))
   }
 
-  test("CREATE OR REPLACE USER foo SET password 'password' DEFAULT DATABASE db1") {
+  test("CREATE OR REPLACE USER foo SET password 'password' SET DEFAULT DATABASE db1") {
     yields(ast.CreateUser(literalFoo, isEncryptedPassword = false, password, requirePasswordChange = true, suspended = None, ast.IfExistsReplace, Some(Left("db1"))))
   }
 
-  test("CREATE USER foo IF NOT EXISTS SET password 'password' DEFAULT DATABASE db1") {
+  test("CREATE USER foo IF NOT EXISTS SET password 'password' SET DEFAULT DATABASE db1") {
     yields(ast.CreateUser(literalFoo, isEncryptedPassword = false, password, requirePasswordChange = true, suspended = None, ast.IfExistsDoNothing, Some(Left("db1"))))
   }
 
-  test("CREATE USER foo SET password 'password' SET PASSWORD CHANGE NOT REQUIRED DEFAULT database $db") {
+  test("CREATE USER foo SET password 'password' SET PASSWORD CHANGE NOT REQUIRED SET DEFAULT DAtabase $db") {
     yields(ast.CreateUser(literalFoo, isEncryptedPassword = false, password, requirePasswordChange = false, suspended = None, ast.IfExistsThrowError, Some(paramDb)))
+  }
+
+  test("CREATE USER foo SET password 'password' SET DEFAULT DATABASE `#dfkfop!`") {
+    yields(ast.CreateUser(literalFoo, isEncryptedPassword = false, password, requirePasswordChange = true, suspended = None, ast.IfExistsThrowError, Some(Left("#dfkfop!"))))
   }
 
   test("CREATE command finds password literal at correct offset") {
@@ -434,6 +438,14 @@ class UserAdministrationCommandParserTest extends AdministrationCommandParserTes
     failsToParse
   }
 
+  test("CREATE USER foo SET PASSWORD 'bar' SET DEFAULT DATABASE 123456") {
+    failsToParse
+  }
+
+  test("CREATE USER foo SET PASSWORD 'bar' SET DEFAULT DATABASE #dfkfop!") {
+    failsToParse
+  }
+
   //  Dropping user
 
   test("DROP USER foo") {
@@ -566,24 +578,28 @@ class UserAdministrationCommandParserTest extends AdministrationCommandParserTes
     yields(ast.AlterUser(literalFoo, isEncryptedPassword = Some(false), Some(paramPassword), requirePasswordChange = Some(false), suspended = Some(true), None))
   }
 
-  test("ALTER USER foo DEFAULT DATABASE db1") {
+  test("ALTER USER foo SET DEFAULT DATABASE db1") {
     yields(ast.AlterUser(literalFoo, None, None, None, suspended = None, Some(Left("db1"))))
   }
 
-  test("ALTER USER foo DEFAULT DATABASE $db") {
+  test("ALTER USER foo SET DEFAULT DATABASE $db") {
     yields(ast.AlterUser(literalFoo, None, None, None, suspended = None, Some(paramDb)))
   }
 
-  test("ALTER USER foo SET PASSWORD CHANGE REQUIRED DEFAULT DATABASE db1") {
+  test("ALTER USER foo SET PASSWORD CHANGE REQUIRED SET DEFAULT DATABASE db1") {
     yields(ast.AlterUser(literalFoo, None, None, requirePasswordChange = Some(true), suspended = None, Some(Left("db1"))))
   }
 
-  test("ALTER USER foo SET password 'password' DEFAULT DATABASE db1") {
+  test("ALTER USER foo SET password 'password' SET DEFAULT DATABASE db1") {
     yields(ast.AlterUser(literalFoo, Some(false), Some(password), None, suspended = None, Some(Left("db1"))))
   }
 
-  test("ALTER USER foo SET password 'password' SET PASSWORD CHANGE NOT REQUIRED DEFAULT database $db") {
+  test("ALTER USER foo SET password 'password' SET PASSWORD CHANGE NOT REQUIRED SET DEFAULT DAtabase $db") {
     yields(ast.AlterUser(literalFoo, Some(false), Some(password), requirePasswordChange = Some(false), suspended = None, Some(paramDb)))
+  }
+
+  test("ALTER USER foo SET DEFAULT DATABASE `#dfkfop!`") {
+    yields(ast.AlterUser(literalFoo, None, None, None, suspended = None, Some(Left("#dfkfop!"))))
   }
 
   test("ALTER user command finds password literal at correct offset") {
@@ -650,6 +666,14 @@ class UserAdministrationCommandParserTest extends AdministrationCommandParserTes
   }
 
   test("ALTER USER foo SET PASSWORD STATUS ACTIVE") {
+    failsToParse
+  }
+
+  test("ALTER USER foo SET DEFAULT DATABASE 123456") {
+    failsToParse
+  }
+
+  test("ALTER USER foo SET DEFAULT DATABASE #dfkfop!") {
     failsToParse
   }
 

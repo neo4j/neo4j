@@ -21,8 +21,6 @@ package org.neo4j.kernel.api.net;
 
 import java.net.SocketAddress;
 
-import org.neo4j.internal.kernel.api.security.AuthSubject;
-
 public interface TrackedNetworkConnection extends AutoCloseable
 {
     String id();
@@ -39,7 +37,7 @@ public interface TrackedNetworkConnection extends AutoCloseable
 
     String userAgent();
 
-    void updateUser( AuthSubject authSubject, String userAgent );
+    void updateUser( String username, String userAgent );
 
     @Override
     void close();

@@ -170,13 +170,15 @@ public class AuthProceduresIT
             expectedNeo4j.put( "roles", null );
             expectedNeo4j.put( "passwordChangeRequired", false );
             expectedNeo4j.put( "suspended", null );
+            expectedNeo4j.put( "defaultDatabase", "neo4j" );
             Map<String,Object> expectedAndres = new HashMap<>();
             expectedAndres.put( "user", "andres" );
             expectedAndres.put( "roles", null );
             expectedAndres.put( "passwordChangeRequired", true );
             expectedAndres.put( "suspended", null );
+            expectedAndres.put( "defaultDatabase", "neo4j" );
             Set<Map<String,Object>> users = r.stream().collect( Collectors.toSet() );
-            assertTrue( users.containsAll( Set.of( expectedNeo4j, expectedAndres ) ) );
+            assertThat( users ).containsAll( Set.of( expectedNeo4j, expectedAndres ) );
         } );
     }
 
@@ -190,13 +192,15 @@ public class AuthProceduresIT
             expectedNeo4j.put( "roles", null );
             expectedNeo4j.put( "passwordChangeRequired", false );
             expectedNeo4j.put( "suspended", null );
+            expectedNeo4j.put( "defaultDatabase", "neo4j" );
             Map<String,Object> expectedAndres = new HashMap<>();
             expectedAndres.put( "user", "andres" );
             expectedAndres.put( "roles", null );
             expectedAndres.put( "passwordChangeRequired", false );
             expectedAndres.put( "suspended", null );
+            expectedAndres.put( "defaultDatabase", "neo4j" );
             Set<Map<String,Object>> users = r.stream().collect( Collectors.toSet() );
-            assertTrue( users.containsAll( Set.of( expectedNeo4j, expectedAndres ) ) );
+            assertThat( users ).containsAll( Set.of( expectedNeo4j, expectedAndres ) );
         } );
     }
 
@@ -210,13 +214,15 @@ public class AuthProceduresIT
             expectedNeo4j.put( "roles", null );
             expectedNeo4j.put( "passwordChangeRequired", false );
             expectedNeo4j.put( "suspended", null );
+            expectedNeo4j.put( "defaultDatabase", "neo4j" );
             Map<String,Object> expectedAndres = new HashMap<>();
             expectedAndres.put( "user", "andres" );
             expectedAndres.put( "roles", null );
             expectedAndres.put( "passwordChangeRequired", true );
             expectedAndres.put( "suspended", null );
+            expectedAndres.put( "defaultDatabase", "neo4j" );
             Set<Map<String,Object>> users = r.stream().collect( Collectors.toSet() );
-            assertTrue( users.containsAll( Set.of( expectedNeo4j, expectedAndres ) ) );
+            assertThat( users ).containsAll( Set.of( expectedNeo4j, expectedAndres ) );
         } );
     }
 
@@ -267,8 +273,9 @@ public class AuthProceduresIT
             expectedNeo4j.put( "roles", null );
             expectedNeo4j.put( "passwordChangeRequired", false );
             expectedNeo4j.put( "suspended", null );
+            expectedNeo4j.put( "defaultDatabase", "neo4j" );
             Set<Map<String,Object>> users = r.stream().collect( Collectors.toSet() );
-            assertTrue( users.contains( expectedNeo4j ) );
+            assertThat( users ).contains( expectedNeo4j );
         } );
     }
 

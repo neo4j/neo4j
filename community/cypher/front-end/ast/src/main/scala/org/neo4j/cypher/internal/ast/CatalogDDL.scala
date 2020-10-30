@@ -153,7 +153,7 @@ object ShowUsers {
     ShowUsers(yieldOrWhere, List(ShowColumn("user")(position), ShowColumn(Variable("roles")(position), CTList(CTString), "roles"),
       ShowColumn(Variable("passwordChangeRequired")(position), CTBoolean, "passwordChangeRequired"),
       ShowColumn(Variable("suspended")(position), CTBoolean,"suspended"),
-      ShowColumn("requestedDefaultDatabase")(position), ShowColumn("currentDefaultDatabase")(position)))(position)
+      ShowColumn("defaultDatabase")(position)))(position)
 }
 
 final case class ShowCurrentUser(override val yieldOrWhere: YieldOrWhere, override val defaultColumnSet: List[ShowColumn])(val position: InputPosition) extends ReadAdministrationCommand {
@@ -169,7 +169,7 @@ object ShowCurrentUser {
     ShowCurrentUser(yieldOrWhere, List(ShowColumn("user")(position), ShowColumn(Variable("roles")(position), CTList(CTString), "roles"),
       ShowColumn(Variable("passwordChangeRequired")(position), CTBoolean, "passwordChangeRequired"),
       ShowColumn(Variable("suspended")(position), CTBoolean,"suspended"),
-      ShowColumn("requestedDefaultDatabase")(position), ShowColumn("currentDefaultDatabase")(position)))(position)
+      ShowColumn("defaultDatabase")(position)))(position)
 }
 
 trait EitherAsString {

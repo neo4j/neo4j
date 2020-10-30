@@ -110,7 +110,7 @@ public class BoltStateMachineFactoryImpl implements BoltStateMachineFactory
         var transactionSpiProvider = new TransactionStateMachineSPIProviderV4( boltGraphDatabaseManagementServiceSPI,
                                                                                boltChannel, clock );
         var boltSPI = new BoltStateMachineSPIImpl( logging, authentication, transactionSpiProvider );
-        return new BoltStateMachineV41( boltSPI, boltChannel, clock, defaultDatabaseResolver  );
+        return new BoltStateMachineV41( boltSPI, boltChannel, clock, defaultDatabaseResolver );
     }
 
     private BoltStateMachine newStateMachineV42( BoltChannel boltChannel )

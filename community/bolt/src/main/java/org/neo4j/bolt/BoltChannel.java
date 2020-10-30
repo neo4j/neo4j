@@ -23,10 +23,10 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler;
 
 import java.net.SocketAddress;
+import java.util.function.Supplier;
 
 import org.neo4j.bolt.transport.pipeline.ChannelProtector;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
-import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.net.TrackedNetworkConnection;
 import org.neo4j.kernel.impl.query.clientconnection.BoltConnectionInfo;
 
@@ -41,7 +41,7 @@ public class BoltChannel implements TrackedNetworkConnection
     private final Channel rawChannel;
     private final ChannelProtector protector;
 
-    private volatile AuthSubject authSubject;
+    private volatile String username;
     private volatile String userAgent;
     private volatile ClientConnectionInfo info;
     private volatile String defaultDatabase;
@@ -106,7 +106,7 @@ public class BoltChannel implements TrackedNetworkConnection
     @Override
     public String username()
     {
-        return authSubject == null ? null : authSubject.username();
+        return username;
     }
 
     @Override
@@ -115,15 +115,10 @@ public class BoltChannel implements TrackedNetworkConnection
         return userAgent;
     }
 
-    public String defaultDatabase()
-    {
-        return authSubject == null ? null : authSubject.defaultDatabase();
-    }
-
     @Override
-    public void updateUser( AuthSubject subject, String userAgent )
+    public void updateUser( String username, String userAgent )
     {
-        this.authSubject = subject;
+        this.username = username;
         this.userAgent = userAgent;
         this.info = createConnectionInfo();
         this.protector.disable();
@@ -157,9 +152,8 @@ public class BoltChannel implements TrackedNetworkConnection
                ", connectTime=" + connectTime +
                ", connector='" + connector + '\'' +
                ", rawChannel=" + rawChannel +
-               ", username='" + authSubject.username() + '\'' +
+               ", username='" + username + '\'' +
                ", userAgent='" + userAgent + '\'' +
-               ", defaultDatabase='" + authSubject.defaultDatabase() + '\'' +
                '}';
     }
 

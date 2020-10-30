@@ -94,12 +94,6 @@ public class BasicLoginContext implements LoginContext
         {
             return username().equals( username );
         }
-
-        @Override
-        public String defaultDatabase()
-        {
-            return user.defaultDatabase();
-        }
     }
 
     @Override
