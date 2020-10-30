@@ -33,6 +33,10 @@ object CardinalitySupport {
       case _ => false
     }
 
-    private def tolerance(a: Cardinality) = Math.max(5e-3, a.amount * 5e-3) // .5% off is acceptable
+    /**
+     * .00000001% off is acceptable
+     * We have to be that strict because otherwise some of the var-expand tests would succeed without considering all path lengths.
+     */
+    private def tolerance(a: Cardinality) = Math.max(1e-10, a.amount * 1e-10)
   }
 }

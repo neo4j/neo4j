@@ -24,22 +24,25 @@ import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphCard
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.ExpressionSelectivityCalculator
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.SelectivityCombiner
+import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence.AssumeIndependenceQueryGraphCardinalityModel.MAX_OPTIONAL_MATCH
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence.AssumeIndependenceQueryGraphCardinalityModel.MIN_INBOUND_CARDINALITY
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.Selections
-import org.neo4j.cypher.internal.ir.SimplePatternLength
-import org.neo4j.cypher.internal.ir.VarPatternLength
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.util.Cardinality
+import org.neo4j.cypher.internal.util.Cardinality.NumericCardinality
+import org.neo4j.cypher.internal.util.Multiplier
+import org.neo4j.cypher.internal.util.Multiplier.NumericMultiplier
 import org.neo4j.cypher.internal.util.Selectivity
 
-case class AssumeIndependenceQueryGraphCardinalityModel(stats: GraphStatistics, combiner: SelectivityCombiner)
-  extends QueryGraphCardinalityModel {
-  import AssumeIndependenceQueryGraphCardinalityModel.MAX_OPTIONAL_MATCH
+case class AssumeIndependenceQueryGraphCardinalityModel(stats: GraphStatistics, combiner: SelectivityCombiner) extends QueryGraphCardinalityModel {
 
-  override val expressionSelectivityCalculator = ExpressionSelectivityCalculator(stats, combiner)
-  private val patternSelectivityCalculator = PatternSelectivityCalculator(stats, combiner)
+  private implicit val numericCardinality: NumericCardinality.type = NumericCardinality
+  private implicit val numericMultiplier: NumericMultiplier.type = NumericMultiplier
+
+  override val expressionSelectivityCalculator: ExpressionSelectivityCalculator = ExpressionSelectivityCalculator(stats, combiner)
+  private val relMultiplierCalculator = PatternRelationshipMultiplierCalculator(stats, combiner)
 
   /**
    * When there are optional matches, the cardinality is always the maximum of any matches that exist,
@@ -69,54 +72,31 @@ case class AssumeIndependenceQueryGraphCardinalityModel(stats: GraphStatistics, 
         .map(queryGraph.withOptionalMatches(Vector.empty) ++ _)
     }
 
-  private def calculateNumberOfPatternNodes(qg: QueryGraph) = {
-    val intermediateNodes = qg.patternRelationships.map(_.length match {
-      case SimplePatternLength            => 0
-      case VarPatternLength(_, optMax)    => Math.max(Math.min(optMax.getOrElse(PatternSelectivityCalculator.MAX_VAR_LENGTH), PatternSelectivityCalculator.MAX_VAR_LENGTH) - 1, 0)
-    }).sum
-
-    qg.patternNodes.count(!qg.argumentIds.contains(_)) + intermediateNodes
-  }
-
   private def cardinalityForQueryGraph(qg: QueryGraph, input: QueryGraphSolverInput)
                                       (implicit semanticTable: SemanticTable): Cardinality = {
-    val (selectivity, numberOfZeroZeroRels) = calculateSelectivity(qg, input.labelInfo)
-    val numberOfPatternNodes = calculateNumberOfPatternNodes(qg) - numberOfZeroZeroRels
+    val patternMultiplier = calculateMultiplier(qg, input.labelInfo)
+    val numberOfPatternNodes = qg.patternNodes.count(!qg.argumentIds.contains(_))
     val numberOfGraphNodes = stats.nodesAllCardinality()
 
     // We can't always rely on arguments being present to indicate we need to multiply the cardinality
     // For example, when planning to solve an OPTIONAL MATCH with a join, we remove all the arguments. We
     // could still be beneath an Apply a this point though.
-    val multiplier = if (input.alwaysMultiply || qg.argumentIds.nonEmpty) {
+    val inputMultiplier = if (input.alwaysMultiply || qg.argumentIds.nonEmpty) {
       Cardinality.max(input.inboundCardinality, MIN_INBOUND_CARDINALITY)
     } else {
       MIN_INBOUND_CARDINALITY
     }
 
-    multiplier * (numberOfGraphNodes ^ numberOfPatternNodes) * selectivity
+    inputMultiplier * (numberOfGraphNodes ^ numberOfPatternNodes) * patternMultiplier
   }
 
-  private def calculateSelectivity(qg: QueryGraph, labels: Map[String, Set[LabelName]])
-                                  (implicit semanticTable: SemanticTable): (Selectivity, Int) = {
+  private def calculateMultiplier(qg: QueryGraph, labels: Map[String, Set[LabelName]])
+                                 (implicit semanticTable: SemanticTable): Multiplier = {
     implicit val selections: Selections = qg.selections
 
-    val expressionSelectivities = selections.flatPredicates.map(expressionSelectivityCalculator(_))
-
-    val patternSelectivities = qg.patternRelationships.toIndexedSeq.map {
-      /* This is here to handle the *0..0 case.
-         Our solution to the problem is to keep count of how many of these we see, and decrease the number of pattern
-         nodes accordingly. The nice solution would have been to rewrite these relationships away at an earlier phase.
-         This workaround should work, but might not give the best numbers.
-       */
-      case r if r.length == VarPatternLength(0, Some(0)) => None
-      case r => Some(patternSelectivityCalculator(r, labels))
-    }
-
-    val numberOfZeroZeroRels = patternSelectivities.count(_.isEmpty)
-
-    val selectivity = combiner.andTogetherSelectivities(expressionSelectivities ++ patternSelectivities.flatten)
-
-    (selectivity.getOrElse(Selectivity.ONE), numberOfZeroZeroRels)
+    val expressionSelectivity = combiner.andTogetherSelectivities(selections.flatPredicates.map(expressionSelectivityCalculator(_))).getOrElse(Selectivity.ONE)
+    val patternMultipliers = qg.patternRelationships.toIndexedSeq.map(relMultiplierCalculator.relationshipMultiplier(_, labels))
+    patternMultipliers.product * expressionSelectivity
   }
 }
 
@@ -125,5 +105,5 @@ object AssumeIndependenceQueryGraphCardinalityModel {
   //more combination diminishes with the number of combinations, we cap it at this threshold.
   //The value chosen is mostly arbitrary but having it at 8 means 256 combinations which is still reasonably fast.
   private val MAX_OPTIONAL_MATCH = 8
-  val MIN_INBOUND_CARDINALITY = Cardinality(1.0)
+  val MIN_INBOUND_CARDINALITY: Cardinality = Cardinality(1.0)
 }

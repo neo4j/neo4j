@@ -61,7 +61,7 @@ trait ABCDECardinalityData extends CardinalityModelIntegrationTest {
   val A_T1_C_sel = 0.05
   val A_T1_D_sel = 0.005
   val A_T2_A_sel = 0
-  val A_T2_B_sel = 5 // TODO use this!
+  val A_T2_B_sel = 5 // On avg more than 1 T2 rel per (A,B) tuple.
 
   val B_T1_B_sel = 10.0 / B
   val B_T1_C_sel = 0.1

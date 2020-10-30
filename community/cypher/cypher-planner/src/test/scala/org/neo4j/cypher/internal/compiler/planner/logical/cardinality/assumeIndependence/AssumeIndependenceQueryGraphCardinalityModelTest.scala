@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence
 
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.ABCDECardinalityData
+import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence.PatternRelationshipMultiplierCalculator.uniquenessSelectivityForNRels
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.scalatest.prop.TableDrivenPropertyChecks.Table
 import org.scalatest.prop.TableDrivenPropertyChecks.forAll
@@ -89,11 +90,14 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends CypherFunSuite wi
       "MATCH (a:A)-[r:T1]->(b:B)"
         -> A_T1_B,
 
+      "MATCH (a:A)-[r:T2]->(b:B)" // This pattern has on avg more than one rel per pair of nodes
+        -> A_T2_B,
+
       "MATCH (b:B)<-[r:T1]-(a:A)"
         -> A_T1_B,
 
       "MATCH (a:A)-[r:T1]-(b:B)"
-        -> A * B * or(A_T1_B_sel, B_T1_A_sel),
+        -> A * B * (A_T1_B_sel + B_T1_A_sel),
 
       "MATCH (a:A)-[r:T1]->(b)"
         -> A_T1_ANY,
@@ -109,57 +113,76 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends CypherFunSuite wi
 
       "MATCH (a:A:B)-->()"
         -> {
-        val maxRelCount = N * N * Asel * Bsel
-        val A_relSelectivity = math.min(A_ANY_ANY / maxRelCount, 1.0)
-        val B_relSelectivity = math.min(B_ANY_ANY / maxRelCount, 1.0)
-        val relSelectivity = A_relSelectivity * B_relSelectivity
-        A * B * relSelectivity
+        val maxRelCount = N * Asel * Bsel * N
+        val A_relMult = A_ANY_ANY / maxRelCount * Bsel
+        val B_relMult = B_ANY_ANY / maxRelCount * Asel
+        val relMult = Math.min(A_relMult, B_relMult)
+        maxRelCount * relMult
+      },
+
+      "MATCH (a:A:B)-[:T1]->(:C)"
+        -> {
+        val maxRelCount = N * Asel * Bsel * N * Csel
+        val A_relMult = A_T1_C / maxRelCount * Bsel
+        val B_relMult = B_T1_C / maxRelCount * Asel
+        val relMult = Math.min(A_relMult, B_relMult)
+        maxRelCount * relMult
       },
 
       "MATCH (a:A)-[:T1|T2]->(:B)"
         -> {
-        val patternNodeCrossProduct = N * N
-        val labelSelectivity = Asel * Bsel
-        val maxRelCount = patternNodeCrossProduct * labelSelectivity
-        val relSelectivity = or(A_T1_B / maxRelCount, A_T2_B / maxRelCount)
-        patternNodeCrossProduct * labelSelectivity * relSelectivity
+        val maxRelCount = N  * Asel * N * Bsel
+        val relMult = A_T1_B / maxRelCount + A_T2_B / maxRelCount
+        maxRelCount * relMult
       },
 
       "MATCH (a:A:E)-[:T1|T2]->()"
         -> {
-        val patternNodeCrossProduct = N * N
-        val labelSelectivity = Asel * Esel
-        val maxRelCount = patternNodeCrossProduct * labelSelectivity
-        val relSelectivityT1 = and(A_T1_ANY / maxRelCount, E_T1_ANY / maxRelCount)
-        val relSelectivityT2 = and(A_T2_ANY / maxRelCount, E_T2_ANY / maxRelCount)
-        val relSelectivity = or(relSelectivityT1, relSelectivityT2)
-        patternNodeCrossProduct * labelSelectivity * relSelectivity
+        val maxRelCount = N * Asel * Esel * N
+        val relMultT1 = Math.min(A_T1_ANY / maxRelCount * Esel, E_T1_ANY / maxRelCount * Asel)
+        val relMultT2 = Math.min(A_T2_ANY / maxRelCount * Esel, E_T2_ANY / maxRelCount * Asel)
+        val relMult = relMultT1 + relMultT2
+        maxRelCount * relMult
       },
 
       "MATCH (a:A:D)-[:T1|T2]->()"
         -> {
-        val patternNodeCrossProduct = N * N
-        val labelSelectivity = Asel * Dsel
-        val maxRelCount = patternNodeCrossProduct * labelSelectivity
-        val relSelectivityT1 = and(A_T1_ANY / maxRelCount) * (D_T1_ANY / maxRelCount)
-        val relSelectivityT2 = and(A_T2_ANY / maxRelCount) * (D_T2_ANY / maxRelCount)
-        val relSelectivity = or(relSelectivityT1, relSelectivityT2)
-        patternNodeCrossProduct * labelSelectivity * relSelectivity
+        val maxRelCount = N * Asel * Dsel * N
+        val relMultT1 = Math.min(A_T1_ANY / maxRelCount * Dsel, D_T1_ANY / maxRelCount * Asel)
+        val relMultT2 = Math.min(A_T2_ANY / maxRelCount * Dsel, D_T2_ANY / maxRelCount * Asel)
+        val relMult = relMultT1 + relMultT2
+        maxRelCount * relMult
+      },
+
+      "MATCH (a:A:B)-[:T1]->(c:C:D)"
+        -> {
+        val maxRelCount = N * Asel * Bsel * N * Csel * Dsel
+        val relMult = Seq(
+          A_T1_C / maxRelCount * Bsel * Dsel,
+          A_T1_D / maxRelCount * Bsel * Csel,
+          B_T1_C / maxRelCount * Asel * Dsel,
+          B_T1_D / maxRelCount * Asel * Csel,
+        ).min
+        maxRelCount * relMult
       },
 
       "MATCH (a:A:B)-[:T1|T2]->(c:C:D)"
         -> {
-        val A_T2_C = 0
-        val A_T2_D = 0
-        val B_T2_C = 0
-        val B_T2_D = 0
-        val patternNodeCrossProduct = N * N
-        val labelSelectivity = Asel * Bsel * Csel * Dsel
-        val maxRelCount = patternNodeCrossProduct * labelSelectivity
-        val relSelT1 = and(A_T1_C / maxRelCount, A_T1_D / maxRelCount, B_T1_C / maxRelCount, B_T1_D / maxRelCount)
-        val relSelT2 = and(A_T2_C / maxRelCount, A_T2_D / maxRelCount, B_T2_C / maxRelCount, B_T2_D / maxRelCount)
-        val relSelectivity = or(relSelT1, relSelT2)
-        patternNodeCrossProduct * labelSelectivity * relSelectivity
+        val maxRelCount = N * Asel * Bsel * N * Csel * Dsel
+        val relMultT1 = Seq(
+          A_T1_C / maxRelCount * Bsel * Dsel,
+          A_T1_D / maxRelCount * Bsel * Csel,
+          B_T1_C / maxRelCount * Asel * Dsel,
+          B_T1_D / maxRelCount * Asel * Csel,
+        ).min
+        val relMultT2 = Seq(
+          A_T2_C / maxRelCount * Bsel * Dsel,
+          A_T2_D / maxRelCount * Bsel * Csel,
+          B_T2_C / maxRelCount * Asel * Dsel,
+          B_T2_D / maxRelCount * Asel * Csel,
+        ).min
+        val relMult = relMultT1 + relMultT2
+        maxRelCount * relMult
       },
 
       "MATCH (a) OPTIONAL MATCH (a)-[:T1]->(:B)"
@@ -184,18 +207,18 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends CypherFunSuite wi
         -> N * N * N * Asel * A_T1_B_sel * Bsel * B_T2_C_sel * Csel,
 
       "MATCH (a:A)-[r1:T1]->(b:B)-[r2:T1]->(c:C)"
-        -> N * N * N * Asel * A_T1_B_sel * Bsel * B_T1_C_sel * Csel * uniquenessSelectivityForNRels(2),
+        -> N * N * N * Asel * A_T1_B_sel * Bsel * B_T1_C_sel * Csel * uniquenessSelectivityForNRels(2).factor,
 
       "MATCH (a:A)-[r1:T1]->(b:B)-[r2:T1]->(a)"
-        -> N * N * Asel * A_T1_B_sel * Bsel * B_T1_A_sel * uniquenessSelectivityForNRels(2),
+        -> N * N * Asel * A_T1_B_sel * Bsel * B_T1_A_sel * uniquenessSelectivityForNRels(2).factor,
 
       "MATCH (:A)-[r1:T1]->(:A)-[r2:T1]->(:B)-[r3:T1]->(:B)"
         -> A * A * B * B * A_T1_A_sel * A_T1_B_sel * B_T1_B_sel *
-        uniquenessSelectivityForNRels(3),
+        uniquenessSelectivityForNRels(3).factor,
 
       "MATCH (:A)-[r1:T1]->(:A)-[r2:T1]->(:B)-[r3:T1]->(:B)-[r4:T2]->(c:C)"
         -> A * A * B * B * C * A_T1_A_sel * A_T1_B_sel * B_T1_B_sel * B_T2_C_sel *
-        uniquenessSelectivityForNRels(3) // r4 has a different relType, so it does not need to be checked for rel-uniqueness against the other rels
+        uniquenessSelectivityForNRels(3).factor // r4 has a different relType, so it does not need to be checked for rel-uniqueness against the other rels
     )
 
     forAll(queries) { (q: String, expected: Double) =>
@@ -203,23 +226,44 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends CypherFunSuite wi
     }
   }
 
-  def uniquenessSelectivityForNRels(n: Int): Double = {
-    val numberOfPairs = n * (n - 1) / 2
-    Math.pow(DEFAULT_REL_UNIQUENESS_SELECTIVITY, numberOfPairs)
+  private val varLength0_0 = N * Asel * Bsel
+  test("varlength 0..0 should be equal to non-varlength") {
+    queryShouldHaveCardinality("MATCH (:A:B)", varLength0_0)
+    queryShouldHaveCardinality("MATCH (a:A)-[r:T1*0..0]->(b:B)", varLength0_0)
   }
 
-  test("varlength two steps out") {
+  private val varLength1_1 = A_T1_B
+  test("varlength 1..1 should be equal to non-varlength") {
+    queryShouldHaveCardinality("MATCH (:A)-[r1:T1]->(:B)", varLength1_1)
+    queryShouldHaveCardinality("MATCH (a:A)-[r:T1*1..1]->(b:B)", varLength1_1)
+  }
 
-    // The result includes all (:A)-[:T1]->(:B)
-    // and all (:A)-[:T1]->()-[:T1]->(:B)
+  test("varlength 0..1 should equal sum of 0..0 and 1..1") {
+    queryShouldHaveCardinality("MATCH (a:A)-[r:T1*0..1]->(b:B)", varLength0_0 + varLength1_1)
+  }
 
-    val maxRelCount = A * N * B
-    val l1Selectivity = A_T1_B / maxRelCount
-    val l2Selectivities = Seq(A_T1_ANY / maxRelCount, ANY_T1_B / maxRelCount)
-    val l2Selectivity = l2Selectivities.product
-    val totalSelectivity = or(l1Selectivity, l2Selectivity)
+  private val varLength2_2 = A * N * B * A_T1_ANY_sel * ANY_T1_B_sel * uniquenessSelectivityForNRels(2).factor
+  test("varlength 2..2 should be equal to non-varlength") {
+    queryShouldHaveCardinality("MATCH (:A)-[r1:T1]->()-[r2:T1]->(:B)", varLength2_2)
+    queryShouldHaveCardinality("MATCH (a:A)-[r:T1*2..2]->(b:B)", varLength2_2)
+  }
 
-    queryShouldHaveCardinality("MATCH (a:A)-[r:T1*1..2]->(b:B)",
-      maxRelCount * totalSelectivity)
+  test("varlength 1..2 should equal sum of 1..1 and 2..2") {
+    queryShouldHaveCardinality("MATCH (a:A)-[r:T1*1..2]->(b:B)", varLength1_1 + varLength2_2)
+  }
+
+  test("varlength 0..2 should equal sum of 0..0 and 1..1 and 2..2") {
+    queryShouldHaveCardinality("MATCH (a:A)-[r:T1*0..2]->(b:B)", varLength0_0 + varLength1_1 + varLength2_2)
+  }
+
+  private val varLength3_3 = A * N * N * B * A_T1_ANY_sel * ANY_T1_ANY_sel * ANY_T1_B_sel * uniquenessSelectivityForNRels(3).factor
+  test("varlength 3..3 should be equal to non-varlength") {
+    // The result includes all (:A)-[:T1]->()-[:T1]->()-[:T1]->(:B)
+    queryShouldHaveCardinality("MATCH (:A)-[r1:T1]->()-[r2:T1]->()-[r3:T1]->(:B)", varLength3_3)
+    queryShouldHaveCardinality("MATCH (a:A)-[r:T1*3..3]->(b:B)", varLength3_3)
+  }
+
+  test("varlength 1..3 should equal sum of 1..1 and 2..2 and 3..3") {
+    queryShouldHaveCardinality("MATCH (a:A)-[r:T1*1..3]->(b:B)", varLength1_1 + varLength2_2 + varLength3_3)
   }
 }

@@ -90,10 +90,13 @@ case class CostPerRow(cost: Double) {
   def compare(that: CostPerRow): Int = cost.compare(that.cost)
 }
 
-case class Multiplier(coefficient: Double) {
+case class Multiplier(coefficient: Double) extends Ordered[Multiplier] {
   def +(other: Multiplier): Multiplier = other.coefficient + coefficient
   def -(other: Multiplier): Multiplier = other.coefficient - coefficient
   def *(other: Multiplier): Multiplier = other.coefficient * coefficient
+  def *(selectivity: Selectivity): Multiplier = coefficient * selectivity.factor
+
+  override def compare(that: Multiplier): Int = coefficient.compareTo(that.coefficient)
 }
 
 object Multiplier {
@@ -108,4 +111,20 @@ object Multiplier {
 
   def max(l: Multiplier, r: Multiplier): Multiplier =
     Multiplier(Math.max(l.coefficient, r.coefficient))
+
+  def ofDivision(dividend: Cardinality, divisor: Cardinality): Multiplier = Multiplier(dividend.amount / divisor.amount)
+
+  object NumericMultiplier extends Numeric[Multiplier] {
+    def toDouble(x: Multiplier): Double = x.coefficient
+    def toFloat(x: Multiplier): Float = x.coefficient.toFloat
+    def toInt(x: Multiplier): Int = x.coefficient.toInt
+    def toLong(x: Multiplier): Long = x.coefficient.toLong
+    def fromInt(x: Int): Multiplier = Multiplier(x)
+
+    def negate(x: Multiplier): Multiplier = -x.coefficient
+    def plus(x: Multiplier, y: Multiplier): Multiplier = x.coefficient + y.coefficient
+    def times(x: Multiplier, y: Multiplier): Multiplier = x.coefficient * y.coefficient
+    def minus(x: Multiplier, y: Multiplier): Multiplier = x.coefficient - y.coefficient
+    def compare(x: Multiplier, y: Multiplier): Int = x.compare(y)
+  }
 }
