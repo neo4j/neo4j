@@ -35,8 +35,6 @@ case class Cardinality(amount: Double) extends Ordered[Cardinality] {
 
   def inverse: Multiplier = Multiplier(1.0d / amount)
 
-//  def atMost(other: Cardinality): Cardinality = if (amount < other.amount) self else other
-//  def atLeast(other: Cardinality): Cardinality = if (amount > other.amount) self else other
 }
 
 object Cardinality {

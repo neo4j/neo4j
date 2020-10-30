@@ -19,15 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence
 
-import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphCardinalityModel
-import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.ABCDCardinalityData
-import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.RandomizedCardinalityModelTestSuite
-import org.neo4j.cypher.internal.planner.spi.GraphStatistics
+import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.ABCDECardinalityData
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.scalatest.prop.TableDrivenPropertyChecks.Table
 import org.scalatest.prop.TableDrivenPropertyChecks.forAll
 
-class AssumeIndependenceQueryGraphCardinalityModelTest extends RandomizedCardinalityModelTestSuite with ABCDCardinalityData {
-
+class AssumeIndependenceQueryGraphCardinalityModelTest extends CypherFunSuite with ABCDECardinalityData {
 
   test("all queries") {
     val queries = Table.apply[String, Double](
@@ -55,15 +52,6 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends RandomizedCardina
 
       "MATCH (a:B:A)"
         -> N * Asel * Bsel,
-
-      "MATCH (a:Z)"
-        -> 10.0,
-
-      "MATCH (a:A:Z)"
-        -> 2.0,
-
-      "MATCH (a:Z:B)"
-        -> 1.0,
 
       "MATCH (a:A) WHERE a.prop = 42"
         -> A * Aprop,
@@ -111,9 +99,7 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends RandomizedCardina
         -> A_T1_ANY,
 
       "MATCH (a:A)-[r:T1]-(b)"
-        -> {
-        A_T1_ANY + ANY_T1_A
-      },
+        -> (A_T1_ANY + ANY_T1_A),
 
       "MATCH (a:A)-[*0..0]-(b:A)"
         -> N * Asel * Asel // This is a simplification, because *0..0 relationships mean something weird and icky
@@ -182,7 +168,7 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends RandomizedCardina
       "MATCH (a:A) OPTIONAL MATCH (a)-[:T1]->(:B)"
         -> A_T1_B,
 
-      "MATCH (a:A) OPTIONAL MATCH (a)-[:MISSING]->()"
+      "MATCH (a:A) OPTIONAL MATCH (a)-[:T2]->(:C)" // Does not exist
         -> A,
 
       "MATCH (a) OPTIONAL MATCH (b)"
@@ -213,64 +199,13 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends RandomizedCardina
     )
 
     forAll(queries) { (q: String, expected: Double) =>
-      forQuery(q).
-        shouldHaveQueryGraphCardinality(expected)
+      queryShouldHaveCardinality(q, expected)
     }
   }
 
   def uniquenessSelectivityForNRels(n: Int): Double = {
     val numberOfPairs = n * (n - 1) / 2
     Math.pow(DEFAULT_REL_UNIQUENESS_SELECTIVITY, numberOfPairs)
-  }
-
-  test("empty graph") {
-    givenPattern("MATCH (a) WHERE a.prop = 10").
-      withGraphNodes(0).
-      withKnownProperty('prop).
-      shouldHaveQueryGraphCardinality(0)
-  }
-
-  test("honours bound arguments") {
-    givenPattern("MATCH (a:FOO)-[:TYPE]->(b:BAR)").
-    withQueryGraphArgumentIds("a").
-    withInboundCardinality(13.0).
-    withGraphNodes(500).
-    withLabel('FOO -> 100).
-    withLabel('BAR -> 400).
-    withRelationshipCardinality('FOO -> 'TYPE -> 'BAR -> 1000).
-    shouldHaveQueryGraphCardinality(1000.0 / 500.0 * 13.0)
-  }
-
-  // Tests for the cardinality factor c
-
-  test("input cardinality <1.0 with no arguments => 1.0 * scan cardinality") {
-    givenPattern("MATCH (a)").
-      withInboundCardinality(0.5).
-      withGraphNodes(500).
-      shouldHaveQueryGraphCardinality(500)
-  }
-
-  test("input cardinality >1.0 with no arguments => 1.0 * scan cardinality") {
-    givenPattern("MATCH (a)").
-      withInboundCardinality(1.5).
-      withGraphNodes(500).
-      shouldHaveQueryGraphCardinality(500)
-  }
-
-  test("input cardinality <1.0 with argument => 1.0 * scan cardinality") {
-    givenPattern("MATCH (a),(b)").
-    withInboundCardinality(0.5).
-    withQueryGraphArgumentIds("b").
-    withGraphNodes(500).
-    shouldHaveQueryGraphCardinality(500)
-  }
-
-  test("input cardinality >1.0 with argument => input cardinality * scan cardinality") {
-    givenPattern("MATCH (a),(b)").
-    withInboundCardinality(1.5).
-    withQueryGraphArgumentIds("b").
-    withGraphNodes(500).
-    shouldHaveQueryGraphCardinality(750)
   }
 
   test("varlength two steps out") {
@@ -284,10 +219,7 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends RandomizedCardina
     val l2Selectivity = l2Selectivities.product
     val totalSelectivity = or(l1Selectivity, l2Selectivity)
 
-    forQuery("MATCH (a:A)-[r:T1*1..2]->(b:B)").
-    shouldHaveQueryGraphCardinality(maxRelCount * totalSelectivity)
+    queryShouldHaveCardinality("MATCH (a:A)-[r:T1*1..2]->(b:B)",
+      maxRelCount * totalSelectivity)
   }
-
-  def createQueryGraphCardinalityModel(stats: GraphStatistics): QueryGraphCardinalityModel =
-    AssumeIndependenceQueryGraphCardinalityModel(stats, combiner)
 }

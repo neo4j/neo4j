@@ -24,9 +24,10 @@ import org.neo4j.cypher.internal.compiler.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.compiler.NotImplementedPlanContext
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanResolver
+import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.cypherCompilerConfig
-import org.neo4j.cypher.internal.compiler.planner.logical.ExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.planner.logical.SimpleMetricsFactory
+import org.neo4j.cypher.internal.compiler.planner.logical.simpleExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.test_helpers.ContextHelper
 import org.neo4j.cypher.internal.frontend.phases.InitialState
 import org.neo4j.cypher.internal.logical.plans.CanGetValue
@@ -43,7 +44,6 @@ import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
 import org.neo4j.cypher.internal.planner.spi.InstrumentedGraphStatistics
 import org.neo4j.cypher.internal.planner.spi.MutableGraphStatisticsSnapshot
 import org.neo4j.cypher.internal.planner.spi.PlanContext
-import org.neo4j.cypher.internal.planner.spi.TokenContext
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.PropertyKeyId
@@ -145,6 +145,11 @@ class StatisticsBackedLogicalPlanningConfigurationBuilder() {
     val indexDef = indexes.indexOn(label, properties, isUnique, withValues, providesOrder)
     selectivities.propExists(indexDef) = existsSelectivity
     selectivities.uniqueValue(indexDef) = uniqueSelectivity
+    this
+  }
+
+  def addProcedure(signature: ProcedureSignature): this.type = {
+    indexes.procedure(signature)
     this
   }
 
@@ -330,8 +335,12 @@ class StatisticsBackedLogicalPlanningConfiguration(
   with MockitoSugar {
 
   def plan(queryString: String): LogicalPlan = {
+    planState(queryString).logicalPlan
+  }
+
+  def planState(queryString: String): LogicalPlanState = {
     val exceptionFactory = Neo4jCypherExceptionFactory(queryString, Some(pos))
-    val metrics = SimpleMetricsFactory.newMetrics(planContext.statistics, mock[ExpressionEvaluator], cypherCompilerConfig)
+    val metrics = SimpleMetricsFactory.newMetrics(planContext.statistics, simpleExpressionEvaluator, cypherCompilerConfig)
 
     val context = ContextHelper.create(
       planContext = planContext,
@@ -345,7 +354,7 @@ class StatisticsBackedLogicalPlanningConfiguration(
       debugOptions = options.debug,
     )
     val state = InitialState(queryString, None, IDPPlannerName)
-    LogicalPlanningTestSupport2.pipeLine().transform(state, context).logicalPlan
+    LogicalPlanningTestSupport2.pipeLine().transform(state, context)
   }
 
   def planBuilder(): LogicalPlanBuilder = new LogicalPlanBuilder(wholePlan = true, resolver)
