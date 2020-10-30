@@ -24,6 +24,7 @@ import picocli.CommandLine.Command;
 import picocli.CommandLine.ExitCode;
 import picocli.CommandLine.HelpCommand;
 
+import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
@@ -42,7 +43,13 @@ import static picocli.CommandLine.IVersionProvider;
         name = "neo4j-admin",
         description = "Neo4j database administration tool.",
         mixinStandardHelpOptions = true,
-        versionProvider = VersionProvider.class
+        versionProvider = VersionProvider.class,
+        footerHeading = "\nEnvironment variables:\n",
+        footer = {
+                "  NEO4J_CONF    Path to directory which contains neo4j.conf.",
+                "  NEO4J_DEBUG   Set to anything to enable debug output.",
+                "  NEO4J_HOME    Neo4j home directory.",
+                "  HEAP_SIZE     Set JVM maximum heap size during command execution. Takes a number and a unit, for example 512m." }
 )
 public final class AdminTool
 {
@@ -65,14 +72,17 @@ public final class AdminTool
     @VisibleForTesting
     public static int execute( ExecutionContext ctx, String... args )
     {
+        PrintWriter out = new PrintWriter( ctx.out(), true );
         final var cmd = new CommandLine( new AdminTool() )
-                .setUsageHelpWidth( 120 )
+                .setOut( out )
+            .setErr( new PrintWriter( ctx.err(), true ) )
+            .setUsageHelpWidth( 120 )
                 .setCaseInsensitiveEnumValuesAllowed( true );
         registerCommands( cmd, ctx, Services.loadAll( CommandProvider.class ) );
 
         if ( args.length == 0 )
         {
-            cmd.usage( System.out );
+            cmd.usage( out );
             return ExitCode.USAGE;
         }
 
