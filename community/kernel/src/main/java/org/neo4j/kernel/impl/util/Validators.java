@@ -30,10 +30,11 @@ import org.neo4j.common.Validator;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.util.Preconditions;
 
 public class Validators
 {
-    public static final Validator<File> REGEX_FILE_EXISTS = file ->
+    public static final Validator<String> REGEX_FILE_EXISTS = file ->
     {
         if ( matchingFiles( file ).isEmpty() )
         {
@@ -45,14 +46,21 @@ public class Validators
     {
     }
 
-    static List<File> matchingFiles( File fileWithRegexInName )
+    static List<File> matchingFiles( String fileWithRegexInName )
     {
-        File parent = fileWithRegexInName.getAbsoluteFile().getParentFile();
-        if ( parent == null || !parent.exists() )
-        {
-            throw new IllegalArgumentException( "Directory of " + fileWithRegexInName + " doesn't exist" );
-        }
-        final Pattern pattern = Pattern.compile( fileWithRegexInName.getName() );
+        // Special handling of regex patterns for Windows since Windows paths naturally contains \ characters and also regex can contain those
+        // so in order to support this on Windows then \\ will be required in regex patterns and will not be treated as directory delimiter.
+        // Get those double backslashes out of the way so that we can trust the File operations to return correct parent etc.
+        String parentSafeFileName = fileWithRegexInName.replace( "\\\\", "__" );
+        File absoluteParentSafeFile = new File( parentSafeFileName ).getAbsoluteFile();
+        File parent = absoluteParentSafeFile.getParentFile();
+        Preconditions.checkState( parent != null && parent.exists(), "Directory %s of %s doesn't exist", parent, fileWithRegexInName );
+
+        // Then since we can't trust the file operations to do the right thing on Windows if there are regex backslashes we instead
+        // get the pattern by cutting off the parent directory from the name manually.
+        int fileNameLength = absoluteParentSafeFile.getAbsolutePath().length() - parent.getAbsolutePath().length() - 1;
+        String patternString = fileWithRegexInName.substring( fileWithRegexInName.length() - fileNameLength ).replace( "\\\\", "\\" );
+        final Pattern pattern = Pattern.compile( patternString );
         List<File> files = new ArrayList<>();
         for ( File file : parent.listFiles() )
         {
