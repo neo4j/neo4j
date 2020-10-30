@@ -110,6 +110,12 @@ public class OverriddenAccessMode extends WrappedAccessMode
     }
 
     @Override
+    public boolean disallowsTraverseRelType( int relType )
+    {
+        return wrapping.disallowsTraverseRelType( relType );
+    }
+
+    @Override
     public boolean allowsReadPropertyAllLabels( int propertyKey )
     {
         return wrapping.allowsReadPropertyAllLabels( propertyKey );

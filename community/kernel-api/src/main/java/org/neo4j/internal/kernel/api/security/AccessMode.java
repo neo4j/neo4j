@@ -158,6 +158,12 @@ public interface AccessMode
         }
 
         @Override
+        public boolean disallowsTraverseRelType( int relType )
+        {
+            return false;
+        }
+
+        @Override
         public boolean allowsReadPropertyAllLabels( int propertyKey )
         {
             return read;
@@ -321,6 +327,12 @@ public interface AccessMode
      *               the same as {@link #allowsTraverseAllRelTypes}
      */
     boolean allowsTraverseRelType( int relType );
+
+    /**
+     * true if the relType is blacklisted for traversal.
+     * @param relType the relationship type to check access for.
+     */
+    boolean disallowsTraverseRelType( int relType );
 
     boolean allowsReadPropertyAllLabels( int propertyKey );
     boolean disallowsReadPropertyForSomeLabel( int propertyKey );

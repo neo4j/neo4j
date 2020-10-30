@@ -268,6 +268,14 @@ public class AllStoreHolder extends Read
         {
             return storageReader.countsForRelationship( startLabelId, typeId, endLabelId, cursorTracer );
         }
+        else if ( mode.disallowsTraverseRelType( typeId ) ||
+                  mode.disallowsTraverseLabel( startLabelId ) ||
+                  mode.disallowsTraverseLabel( endLabelId ) )
+        {
+            // Not allowed to traverse any relationship with the specified relationship type, start node label and end node label,
+            // so the count will be 0.
+            return 0;
+        }
         else if ( relationshipTypeScanStoreEnabled() )
         {
             long count = 0;

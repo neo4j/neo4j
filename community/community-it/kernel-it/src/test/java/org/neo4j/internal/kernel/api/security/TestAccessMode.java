@@ -113,6 +113,12 @@ public class TestAccessMode implements AccessMode
     }
 
     @Override
+    public boolean disallowsTraverseRelType( int relType )
+    {
+        return !allowRead;
+    }
+
+    @Override
     public boolean allowsReadPropertyAllLabels( int propertyKey )
     {
         return allowReadAll;
