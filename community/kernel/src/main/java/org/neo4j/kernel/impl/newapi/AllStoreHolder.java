@@ -194,16 +194,22 @@ public class AllStoreHolder extends Read
     public long countsForNodeWithoutTxState( int labelId )
     {
         AccessMode mode = ktx.securityContext().mode();
-        if ( mode.allowsTraverseAllLabels() )
+        if ( mode.allowsTraverseAllNodesWithLabel( labelId ) )
         {
+            // All nodes with the specified label can be traversed, so the count store can be used.
             return storageReader.countsForNode( labelId, cursorTracer );
+        }
+        else if ( mode.disallowsTraverseLabel( labelId ) )
+        {
+            // No nodes with the specified label can be traversed, so the count will be 0.
+            return 0;
         }
         else
         {
-            long result;
-            // We have a restriction on what part of the graph can be traversed. This disables the count store entirely.
-            // We need to calculate the counts through expensive operations. We cannot use a NodeLabelScan because the
-            // label requested might not be allowed for that node, and yet the node might be visible due to Traverse rules.
+            // We have a restriction on what part of the graph can be traversed, that can affect nodes with the specified label.
+            // This disables the count store entirely.
+            // We need to calculate the counts through expensive operations.
+            // We cannot use a NodeLabelScan without an expensive post-filtering, since it is not guaranteed that all nodes with the label can be traversed.
             long count = 0;
             try ( DefaultNodeCursor nodes = cursors.allocateNodeCursor( cursorTracer ) ) // DefaultNodeCursor already contains traversal checks within next()
             {
@@ -215,9 +221,8 @@ public class AllStoreHolder extends Read
                         count++;
                     }
                 }
-                result = count;
             }
-            return result - countsForNodeInTxState( labelId );
+            return count - countsForNodeInTxState( labelId );
         }
     }
 
