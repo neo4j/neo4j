@@ -20,13 +20,13 @@
 package org.neo4j.server;
 
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.api.parallel.Resources;
 
 import java.lang.management.MemoryUsage;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 
@@ -41,6 +41,7 @@ import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -54,6 +55,7 @@ class NeoBootstrapperTest
     @Inject
     private SuppressOutput suppress;
     private NeoBootstrapper neoBootstrapper;
+    private Path dir;
 
     @AfterEach
     void tearDown()
@@ -61,7 +63,16 @@ class NeoBootstrapperTest
         if ( neoBootstrapper != null )
         {
             neoBootstrapper.stop();
+            // Even if we didn't start a database management system because of a configuration error we should log a stopped message to allow users to
+            // distinguish between a neo4j process that completed shutdown and one that was terminated without performing shutdown
+            assertThat( suppress.getOutputVoice().lines() ).last().asString().endsWith( "Stopped." );
         }
+    }
+
+    @BeforeEach
+    void setUp()
+    {
+        dir = homeDir.directory( "test-server-bootstrapper" );
     }
 
     @Test
@@ -70,13 +81,16 @@ class NeoBootstrapperTest
         // given
         neoBootstrapper = new CommunityBootstrapper();
 
-        Path dir = Files.createTempDirectory( "test-server-bootstrapper" );
-
         // when
-        neoBootstrapper.start( dir, MapUtil.stringMap() );
+        assertThatThrownBy( () -> neoBootstrapper.start( dir, Map.of( "dbms.default_database", "$%^&*#)@!" ) ) )
+                .isInstanceOf( IllegalArgumentException.class )
+                .hasNoSuppressedExceptions()
+                .getRootCause().isInstanceOf( IllegalArgumentException.class );
 
-        // then no exceptions are thrown and
-        assertThat( suppress.getOutputVoice().lines() ).isNotEmpty();
+        // then no exceptions are thrown on stop and logs are written
+        neoBootstrapper.stop();
+        assertThat( suppress.getOutputVoice().lines() ).last().asString().endsWith( "Stopped." );
+        neoBootstrapper = null;
     }
 
     @Test
@@ -84,7 +98,6 @@ class NeoBootstrapperTest
     {
         // given
         neoBootstrapper = new CommunityBootstrapper();
-        Path dir = Files.createTempDirectory( "test-server-bootstrapper" );
         Map<String,String> config = MapUtil.stringMap();
         config.put( GraphDatabaseSettings.pagecache_memory.name(), "10B" );
 
@@ -105,7 +118,6 @@ class NeoBootstrapperTest
     {
         // given
         neoBootstrapper = new CommunityBootstrapper();
-        Path dir = Files.createTempDirectory( "test-server-bootstrapper" );
         Map<String,String> config = MapUtil.stringMap();
         config.put( ExternalSettings.max_heap_size.name(), "10B" );
         config.put( GraphDatabaseSettings.pagecache_memory.name(), "1B" );
@@ -127,7 +139,6 @@ class NeoBootstrapperTest
     {
         // given
         neoBootstrapper = new CommunityBootstrapper();
-        Path dir = Files.createTempDirectory( "test-server-bootstrapper" );
         Map<String,String> config = MapUtil.stringMap();
         config.put( ExternalSettings.max_heap_size.name(), "10B" );
         config.put( GraphDatabaseSettings.pagecache_memory.name(), "10B" );
@@ -149,7 +160,6 @@ class NeoBootstrapperTest
     {
         // given
         neoBootstrapper = new CommunityBootstrapper();
-        Path dir = Files.createTempDirectory( "test-server-bootstrapper" );
         Map<String,String> config = MapUtil.stringMap();
         config.put( ExternalSettings.max_heap_size.name(), "10B" );
 
