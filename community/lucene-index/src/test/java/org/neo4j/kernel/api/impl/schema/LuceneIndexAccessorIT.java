@@ -48,6 +48,7 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.values.storable.TextValue;
+import org.neo4j.values.storable.Value;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -68,7 +69,6 @@ public class LuceneIndexAccessorIT
     private TestDirectory directory;
 
     private final LifeSupport life = new LifeSupport();
-    private final IndexDescriptor indexDescriptor = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 1, 2 ) ).withName( "TestIndex" ).materialise( 99 );
     private LuceneIndexProvider indexProvider;
     private IndexSamplingConfig samplingConfig;
 
@@ -95,11 +95,12 @@ public class LuceneIndexAccessorIT
         // given
         int nodes = 100;
         MutableLongSet expectedNodes = LongSets.mutable.withInitialCapacity( nodes );
-        populateWithInitialNodes( nodes, expectedNodes );
+        IndexDescriptor indexDescriptor = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 1, 2 ) ).withName( "TestIndex" ).materialise( 99 );
+        populateWithInitialNodes( indexDescriptor, nodes, expectedNodes );
         try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( indexDescriptor, samplingConfig, mock( TokenNameLookup.class ) ) )
         {
             // when
-            removeSomeNodes( nodes / 2, accessor, expectedNodes );
+            removeSomeNodes( indexDescriptor, nodes / 2, accessor, expectedNodes );
 
             // then
             try ( BoundedIterable<Long> reader = accessor.newAllEntriesReader( NULL ) )
@@ -111,33 +112,78 @@ public class LuceneIndexAccessorIT
         }
     }
 
-    private void removeSomeNodes( int nodes, IndexAccessor accessor, MutableLongSet expectedNodes ) throws IndexEntryConflictException
+    @Test
+    void shouldIterateAllDocumentsEvenWhenContainingDeletionsInOnlySomeLeaves() throws Exception
+    {
+        // given
+        int nodes = 300_000;
+        MutableLongSet expectedNodes = LongSets.mutable.empty();
+        IndexDescriptor indexDescriptor = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 1, 2, 3, 4, 5 ) ).withName( "TestIndex" ).materialise( 99 );
+        populateWithInitialNodes( indexDescriptor, nodes, expectedNodes );
+        try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( indexDescriptor, samplingConfig, mock( TokenNameLookup.class ) ) )
+        {
+            // when
+            removeSomeNodes( indexDescriptor, 2, accessor, expectedNodes );
+
+            // then
+            try ( BoundedIterable<Long> reader = accessor.newAllEntriesReader( NULL ) )
+            {
+                MutableLongSet readIds = LongSets.mutable.empty();
+                reader.forEach( readIds::add );
+                assertThat( readIds ).isEqualTo( expectedNodes );
+            }
+        }
+    }
+
+    private void removeSomeNodes( IndexDescriptor indexDescriptor, int nodes, IndexAccessor accessor, MutableLongSet expectedNodes )
+            throws IndexEntryConflictException
     {
         try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
         {
             for ( long id = 0; id < nodes; id++ )
             {
-                updater.process( IndexEntryUpdate.remove( id, indexDescriptor, value( id ) ) );
+                updater.process( IndexEntryUpdate.remove( id, indexDescriptor, values( indexDescriptor, id ) ) );
                 expectedNodes.remove( id );
             }
         }
     }
 
-    private void populateWithInitialNodes( int nodes, MutableLongSet expectedNodes ) throws IndexEntryConflictException
+    private void populateWithInitialNodes( IndexDescriptor indexDescriptor, int nodes, MutableLongSet expectedNodes )
+            throws IndexEntryConflictException
     {
         IndexPopulator populator =
                 indexProvider.getPopulator( indexDescriptor, samplingConfig, ByteBufferFactory.heapBufferFactory( (int) kibiBytes( 100 ) ), INSTANCE,
                         mock( TokenNameLookup.class ) );
         Collection<IndexEntryUpdate<IndexDescriptor>> initialData = new ArrayList<>();
+        populator.create();
         for ( long id = 0; id < nodes; id++ )
         {
-            initialData.add( add( id, indexDescriptor, value( id ) ) );
+            Value[] values = values( indexDescriptor, id );
+            initialData.add( add( id, indexDescriptor, values ) );
             expectedNodes.add( id );
+            if ( initialData.size() >= 100 )
+            {
+                populator.add( initialData, NULL );
+                initialData.clear();
+            }
         }
-        populator.create();
-        populator.add( initialData, NULL );
+        if ( !initialData.isEmpty() )
+        {
+            populator.add( initialData, NULL );
+        }
         populator.scanCompleted( nullInstance, mock( IndexPopulator.PopulationWorkScheduler.class ), NULL );
         populator.close( true, NULL );
+    }
+
+    private Value[] values( IndexDescriptor properties, long id )
+    {
+        int numProperties = properties.schema().getPropertyIds().length;
+        Value[] values = new Value[numProperties];
+        for ( int i = 0; i < numProperties; i++ )
+        {
+            values[i] = value( id * numProperties + i );
+        }
+        return values;
     }
 
     private TextValue value( long id )

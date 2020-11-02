@@ -118,14 +118,15 @@ public class LucenePartitionAllDocumentsReader implements BoundedIterable<Docume
             @Override
             protected boolean match( int doc )
             {
-                if ( doc > currentMaxDoc && leaves.hasNext() )
+                if ( doc >= currentMaxDoc && leaves.hasNext() )
                 {
                     LeafReaderContext leaf = leaves.next();
                     LeafReader reader = leaf.reader();
                     currentLiveDocs = reader.getLiveDocs();
                     currentMaxDoc = reader.maxDoc();
                 }
-                return currentLiveDocs.get( doc );
+                // currentLiveDocs is allowed to be null, which means that this leaf has no deletions i.e. all docs are live
+                return currentLiveDocs == null || currentLiveDocs.get( doc );
             }
         };
     }
