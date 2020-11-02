@@ -58,10 +58,10 @@ case object PlanUpdates extends UpdatesPlanner {
     while(iterator.hasNext) {
       updatePlan = planUpdate(updatePlan, iterator.next(), firstPlannerQuery, query.interestingOrder, context)
     }
-    (updatePlan, context)
+    updatePlan
   }
 
-  override def apply(query: SinglePlannerQuery, in: LogicalPlan, firstPlannerQuery: Boolean, context: LogicalPlanningContext): (LogicalPlan, LogicalPlanningContext) = {
+  override def apply(query: SinglePlannerQuery, in: LogicalPlan, firstPlannerQuery: Boolean, context: LogicalPlanningContext): LogicalPlan = {
     // Eagerness pass 1 -- does previously planned reads conflict with future writes?
     val plan = if (firstPlannerQuery)
       Eagerness.headReadWriteEagerize(in, query, context)
@@ -69,23 +69,22 @@ case object PlanUpdates extends UpdatesPlanner {
     //// NOTE: tailReadWriteEagerizeRecursive is done after updates, below
       Eagerness.tailReadWriteEagerizeNonRecursive(in, query, context)
 
-    val (updatePlan, finalContext) = computePlan(plan, query, firstPlannerQuery, context)
+    val updatePlan = computePlan(plan, query, firstPlannerQuery, context)
 
-    val lp = if (firstPlannerQuery)
+    if (firstPlannerQuery)
       Eagerness.headWriteReadEagerize(updatePlan, query, context)
     else {
       Eagerness.tailWriteReadEagerize(Eagerness.tailReadWriteEagerizeRecursive(updatePlan, query, context), query, context)
     }
-    (lp, context)
   }
 
   private def planUpdate(source: LogicalPlan, pattern: MutatingPattern, first: Boolean, interestingOrder: InterestingOrder, context: LogicalPlanningContext) = {
 
     def planAllUpdatesRecursively(query: SinglePlannerQuery, plan: LogicalPlan): LogicalPlan = {
-      query.allPlannerQueries.foldLeft((plan, true, context)) {
-        case ((accPlan, innerFirst, accCtx), plannerQuery) =>
-          val (newPlan,newCtx) = this.apply(plannerQuery, accPlan, innerFirst, context)
-          (newPlan, false, newCtx)
+      query.allPlannerQueries.foldLeft((plan, true)) {
+        case ((accPlan, innerFirst), plannerQuery) =>
+          val newPlan = this.apply(plannerQuery, accPlan, innerFirst, context)
+          (newPlan, false)
       }._1
     }
 

@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher.beLike
+import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.QueryGraphSolverSetup
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.QueryGraphSolverWithGreedyConnectComponents
@@ -30,6 +31,7 @@ import org.neo4j.cypher.internal.expressions.functions.Exists
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.logical.plans.Aggregation
 import org.neo4j.cypher.internal.logical.plans.Ascending
+import org.neo4j.cypher.internal.logical.plans.CacheProperties
 import org.neo4j.cypher.internal.logical.plans.Distinct
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
@@ -49,7 +51,10 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 class OrderIDPPlanningIntegrationTest extends OrderPlanningIntegrationTestBase(QueryGraphSolverWithIDPConnectComponents)
 class OrderGreedyPlanningIntegrationTest extends OrderPlanningIntegrationTestBase(QueryGraphSolverWithGreedyConnectComponents)
 
-class OrderPlanningIntegrationTestBase(queryGraphSolverSetup: QueryGraphSolverSetup) extends CypherFunSuite with LogicalPlanningTestSupport2 {
+class OrderPlanningIntegrationTestBase(queryGraphSolverSetup: QueryGraphSolverSetup)
+  extends CypherFunSuite
+  with LogicalPlanningTestSupport2
+  with LogicalPlanningIntegrationTestSupport {
   queryGraphSolver = queryGraphSolverSetup.queryGraphSolver()
 
   test("ORDER BY previously unprojected column in WITH") {
@@ -1093,4 +1098,77 @@ class OrderPlanningIntegrationTestBase(queryGraphSolverSetup: QueryGraphSolverSe
     val (_, plan, _, _) = new given().getLogicalPlanFor(query)
     plan shouldBe a[Sort]
   }
+
+  test("Should choose larger index on the same variable, if sorting can be avoided, when sorting on 1 variable with DISTINCT.") {
+    val query =
+      """MATCH (a:A)-->(b)-->(c)
+        |WHERE exists(a.prop) AND exists(a.foo)
+        |RETURN DISTINCT a.prop
+        |ORDER BY a.prop""".stripMargin
+
+    val nodeCount = 10000
+    val plan = plannerBuilder()
+      .setAllNodesCardinality(nodeCount)
+      .setLabelCardinality("A", nodeCount)
+      .setRelationshipCardinality("(:A)-[]->()", nodeCount * nodeCount)
+      .setRelationshipCardinality("()-[]->()", nodeCount * nodeCount)
+      .addIndex("A", Seq("prop"), 0.9, uniqueSelectivity = 0.9, providesOrder = IndexOrderCapability.BOTH)
+      .addIndex("A", Seq("foo"), 0.8, uniqueSelectivity = 0.8) // Make it cheapest to start on a.foo.
+      .build()
+      .plan(query)
+      .stripProduceResults
+
+    withClue(plan) {
+      plan.treeCount {
+        case _: Sort => true
+        case _: PartialSort => true
+      } shouldBe 0
+    }
+
+    plan should beLike {
+      case _: OrderedDistinct => ()
+    }
+  }
+
+  test("should sort before widening expand and distinct") {
+    val query =
+      """MATCH (a)-->(b)
+        |RETURN DISTINCT a.prop
+        |ORDER BY a.prop""".stripMargin
+
+    val nodeCount = 10000
+    val plan = plannerBuilder()
+      .setAllNodesCardinality(nodeCount)
+      .setLabelCardinality("A", nodeCount)
+      .setRelationshipCardinality("()-[]->()", nodeCount * nodeCount)
+      .build()
+      .plan(query)
+      .stripProduceResults
+
+    // TODO should be `OrderedDistinct`
+    plan should beLike {
+      case Distinct(Expand(CacheProperties(_: Sort, _), _, _, _, _, _, _), _) => ()
+    }
+  }
+
+  test("should sort after narrowing expand and distinct") {
+    val query =
+      """MATCH (a)-->(b)
+        |RETURN DISTINCT a.prop
+        |ORDER BY a.prop""".stripMargin
+
+    val nodeCount = 10000
+    val plan = plannerBuilder()
+      .setAllNodesCardinality(nodeCount)
+      .setLabelCardinality("A", nodeCount)
+      .setRelationshipCardinality("()-[]->()", nodeCount / 10)
+      .build()
+      .plan(query)
+      .stripProduceResults
+
+    plan should beLike {
+      case Sort(_: Distinct, _) => ()
+    }
+  }
+
 }

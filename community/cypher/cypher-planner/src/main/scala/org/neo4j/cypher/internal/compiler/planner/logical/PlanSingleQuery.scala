@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.compiler.helpers.AggregationHelper
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.BestPlans
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.countStorePlanner
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.ir.AggregatingQueryProjection
@@ -48,24 +49,38 @@ case class PlanSingleQuery(planPart: PartPlanner = planPart,
         case Some(plan) =>
           (plan, updatedContext.withUpdatedCardinalityInformation(plan))
         case None =>
-          val partPlan = planPart(in, updatedContext)
-          val (planWithUpdates, contextAfterUpdates) = planUpdates(in, partPlan, firstPlannerQuery = true, updatedContext)
+          val matchPlans = planPart(in, updatedContext)
 
-          val planWithInput = in.queryInput match {
-            case Some(variables) =>
-              val inputPlan = contextAfterUpdates.logicalPlanProducer.planInput(variables, contextAfterUpdates)
-              contextAfterUpdates.logicalPlanProducer.planInputApply(inputPlan, planWithUpdates, variables, contextAfterUpdates)
-            case None => planWithUpdates
-          }
+          // We take all plans solving the MATCH part. This could be two, if we have a required order.
+          val finalizedPlans = matchPlans.allResults.map(planUpdatesInputAndHorizon(_, in, updatedContext))
 
-          val projectedPlan = planEventHorizon(in, planWithInput, None, contextAfterUpdates)
-          val projectedContext = contextAfterUpdates.withUpdatedCardinalityInformation(projectedPlan)
+          // We cost compare and pick the best.
+          val projectedPlan = updatedContext.config.toKit(in.interestingOrder, updatedContext).pickBest(finalizedPlans.toIterable).get
+          val projectedContext = updatedContext.withUpdatedCardinalityInformation(projectedPlan)
           (projectedPlan, projectedContext)
       }
 
     planWithTail(completePlan, in, ctx)
   }
 
+  /**
+   * Plan updates, query input, and horizon for all of them.
+   * Horizon planning will ensure that any ORDER BY clause is solved, so in the end we have up to two plans that are comparable.
+   */
+  private def planUpdatesInputAndHorizon(matchPlan: LogicalPlan, in: SinglePlannerQuery, context: LogicalPlanningContext): LogicalPlan = {
+    val planWithUpdates = planUpdates(in, matchPlan, firstPlannerQuery = true, context)
+
+    val planWithInput = in.queryInput match {
+      case Some(variables) =>
+        val inputPlan = context.logicalPlanProducer.planInput(variables, context)
+        context.logicalPlanProducer.planInputApply(inputPlan, planWithUpdates, variables, context)
+      case None => planWithUpdates
+    }
+
+    planEventHorizon(in, planWithInput, None, context)
+  }
+
+  // TODO this is wrong. We should pass along an immutable Map
   val renamings: mutable.Map[String, Expression] = mutable.Map.empty
 
   /*
@@ -103,7 +118,7 @@ case class PlanSingleQuery(planPart: PartPlanner = planPart,
 }
 
 trait PartPlanner {
-  def apply(query: SinglePlannerQuery, context: LogicalPlanningContext, rhsPart: Boolean = false): LogicalPlan
+  def apply(query: SinglePlannerQuery, context: LogicalPlanningContext, rhsPart: Boolean = false): BestPlans
 }
 
 trait EventHorizonPlanner {
@@ -115,5 +130,5 @@ trait TailPlanner {
 }
 
 trait UpdatesPlanner {
-  def apply(query: SinglePlannerQuery, in: LogicalPlan, firstPlannerQuery: Boolean, context: LogicalPlanningContext): (LogicalPlan, LogicalPlanningContext)
+  def apply(query: SinglePlannerQuery, in: LogicalPlan, firstPlannerQuery: Boolean, context: LogicalPlanningContext): LogicalPlan
 }

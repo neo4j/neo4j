@@ -36,13 +36,13 @@ case class PlanWithTail(planEventHorizon: EventHorizonPlanner = PlanEventHorizon
     in.tail match {
       case Some(plannerQuery) =>
         val lhsContext = context.withUpdatedCardinalityInformation(lhs)
+        val partPlan = planPart(plannerQuery, lhsContext, rhsPart = true).result // always expecting a single plan currently
 
-        val partPlan = planPart(plannerQuery, lhsContext, rhsPart = true)
-        val (planWithUpdates, newContext) = planUpdates(plannerQuery, partPlan, firstPlannerQuery = false, lhsContext)
+        val planWithUpdates = planUpdates(plannerQuery, partPlan, firstPlannerQuery = false, lhsContext)
 
-        val applyPlan = newContext.logicalPlanProducer.planTailApply(lhs, planWithUpdates, context)
+        val applyPlan = lhsContext.logicalPlanProducer.planTailApply(lhs, planWithUpdates, context)
 
-        val applyContext = newContext.withUpdatedCardinalityInformation(applyPlan)
+        val applyContext = lhsContext.withUpdatedCardinalityInformation(applyPlan)
         val projectedPlan = planEventHorizon(plannerQuery, applyPlan, Some(in.interestingOrder), applyContext)
         val projectedContext = applyContext.withUpdatedCardinalityInformation(projectedPlan)
 

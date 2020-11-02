@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.compiler.phases.CompilationContains
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.BestPlans
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.SystemOutCostLogger
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.devNullListener
@@ -156,7 +157,7 @@ case object plannerQueryPartPlanner {
 
 case object planPart extends PartPlanner {
 
-  def apply(query: SinglePlannerQuery, context: LogicalPlanningContext, rhsPart: Boolean = false): LogicalPlan = {
+  def apply(query: SinglePlannerQuery, context: LogicalPlanningContext, rhsPart: Boolean = false): BestPlans = {
     val ctx = query.preferredStrictness match {
       case Some(mode) if !context.input.strictness.contains(mode) => context.withStrictness(mode)
       case _ => context
@@ -164,12 +165,10 @@ case object planPart extends PartPlanner {
 
     val maybeLimitSelectivity = limitSelectivityForPart(query.withoutTail, context)
 
-    val plans = ctx.strategy.plan(
+    ctx.strategy.plan(
       query.queryGraph,
       interestingOrderForPart(query, rhsPart),
       maybeLimitSelectivity.fold(ctx)(ctx.withLimitSelectivity))
-
-    plans.result
   }
 
   // Extract the interesting InterestingOrder for this part of the query
@@ -181,7 +180,7 @@ case object planPart extends PartPlanner {
       interestingOrder.asInteresting
     else
       query.horizon match {
-        case _: AggregatingQueryProjection | _: DistinctQueryProjection =>
+        case _: AggregatingQueryProjection =>
           interestingOrder.asInteresting
 
         case _ =>
