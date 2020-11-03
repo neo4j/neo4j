@@ -26,7 +26,6 @@ import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.planner.ProcedureCallProjection
 import org.neo4j.cypher.internal.expressions.CountStar
 import org.neo4j.cypher.internal.expressions.Expression
-import org.neo4j.cypher.internal.expressions.GetDegree
 import org.neo4j.cypher.internal.expressions.NilPathStep
 import org.neo4j.cypher.internal.expressions.NodePathStep
 import org.neo4j.cypher.internal.expressions.NodePattern
@@ -1084,6 +1083,17 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     tail.queryGraph.patternNodes should equal(Set("x", "d"))
 
     tail.queryGraph.optionalMatches should be (empty)
+  }
+
+  test("OPTIONAL MATCH with dependency on shortest path") {
+    val query = buildSinglePlannerQuery("MATCH p=shortestPath( (a)-[r*]-(a0) ) OPTIONAL MATCH (a)--(b) WHERE b <> head(nodes(p)) RETURN p")
+
+    query.queryGraph.patternNodes should equal(Set("a", "a0"))
+    query.queryGraph.patternRelationships should equal(Set.empty)
+
+    val optionalMatch = query.queryGraph.optionalMatches(0)
+
+    optionalMatch.argumentIds should equal(Set("a", "p"))
   }
 
   def relType(name: String): RelTypeName = RelTypeName(name)_
