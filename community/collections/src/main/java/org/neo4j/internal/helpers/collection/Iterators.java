@@ -46,6 +46,7 @@ import org.neo4j.collection.RawIterator;
 import org.neo4j.function.Predicates;
 import org.neo4j.function.ThrowingFunction;
 import org.neo4j.graphdb.Resource;
+import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 
 import static java.util.Collections.emptyIterator;
@@ -678,6 +679,15 @@ public final class Iterators
     public static <T> ResourceIterator<T> emptyResourceIterator()
     {
         return (ResourceIterator<T>) EmptyResourceIterator.EMPTY_RESOURCE_ITERATOR;
+    }
+
+    public static <T> ResourceIterator<T> asResourceIterator( final Iterable<T> iterable )
+    {
+        if ( iterable instanceof ResourceIterable )
+        {
+            return ((ResourceIterable<T>) iterable).iterator();
+        }
+        return asResourceIterator( iterable.iterator() );
     }
 
     public static <T> ResourceIterator<T> asResourceIterator( final Iterator<T> iterator )

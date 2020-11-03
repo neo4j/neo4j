@@ -72,7 +72,7 @@ public class KernelImpl extends LifecycleAdapter implements Kernel
         this.transactionMonitor = transactionMonitor;
         this.globalProcedures = globalProcedures;
         this.config = config;
-        this.cursors = new DefaultThreadSafeCursors( storageEngine.newReader() );
+        this.cursors = new DefaultThreadSafeCursors( storageEngine.newReader(), config );
     }
 
     @Override

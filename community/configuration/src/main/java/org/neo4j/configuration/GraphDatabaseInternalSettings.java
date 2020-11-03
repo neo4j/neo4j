@@ -523,4 +523,17 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
     @Description( "Whether or not to dump system and database diagnostics. This takes a non-negligible amount of time to do and therefore " +
             "test databases can disable this to reduce startup times" )
     public static final Setting<Boolean> dump_diagnostics = newBuilder( "unsupported.dbms.dump_diagnostics", BOOL, Boolean.TRUE ).build();
+
+    // === NEW SETTINGS FROM FEATURE TOGGLES ===
+    @Internal
+    public static final Setting<Boolean> track_tx_statement_close = newBuilder( "unsupported.dbms.debug.track_tx_statement_close", BOOL, false ).build();
+
+    @Internal
+    public static final Setting<Boolean> trace_tx_statements = newBuilder( "unsupported.dbms.debug.trace_tx_statement", BOOL, false ).build();
+
+    @Internal
+    public static final Setting<Boolean> track_cursor_close = newBuilder( "unsupported.dbms.debug.track_cursor_close", BOOL, false ).build();
+
+    @Internal
+    public static final Setting<Boolean> trace_cursors = newBuilder( "unsupported.dbms.debug.trace_cursors", BOOL, false ).build();
 }

@@ -20,12 +20,6 @@
         <license-text.header>headers/GPL-3-header.txt</license-text.header>
         <licensing.prepend.text>licensing/notice-gpl-prefix.txt</licensing.prepend.text>
         <moduleName>org.neo4j.community.algo.it</moduleName>
-
-        <test.runner.jvm.settings.additional>
-            <!-- shortest path and possibly others are leaking cursors,
-            leave this disabled until fixed-->
-            -Dorg.neo4j.kernel.impl.newapi.DefaultCursors.trackCursors=false
-        </test.runner.jvm.settings.additional>
     </properties>
 
     <scm>

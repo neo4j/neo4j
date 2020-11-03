@@ -34,6 +34,7 @@ import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.internal.kernel.api.security.AccessMode;
+import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.storageengine.api.AllNodeScan;
 import org.neo4j.storageengine.api.Degrees;
@@ -47,7 +48,7 @@ import org.neo4j.storageengine.util.SingleDegree;
 
 import static org.neo4j.kernel.impl.newapi.Read.NO_ID;
 
-class DefaultNodeCursor extends TraceableCursor implements NodeCursor
+class DefaultNodeCursor extends TraceableCursor<DefaultNodeCursor> implements NodeCursor
 {
     Read read;
     boolean checkHasChanges;
@@ -59,11 +60,9 @@ class DefaultNodeCursor extends TraceableCursor implements NodeCursor
     private long single;
     private AccessMode accessMode;
 
-    private final CursorPool<DefaultNodeCursor> pool;
-
     DefaultNodeCursor( CursorPool<DefaultNodeCursor> pool, StorageNodeCursor storeCursor, StorageNodeCursor securityStoreCursor )
     {
-        this.pool = pool;
+        super( pool );
         this.storeCursor = storeCursor;
         this.securityStoreCursor = securityStoreCursor;
     }
@@ -361,9 +360,8 @@ class DefaultNodeCursor extends TraceableCursor implements NodeCursor
                 securityStoreCursor.reset();
             }
             accessMode = null;
-
-            pool.accept( this );
         }
+        super.closeInternal();
     }
 
     @Override
@@ -417,11 +415,7 @@ class DefaultNodeCursor extends TraceableCursor implements NodeCursor
 
     void release()
     {
-        storeCursor.close();
-        if ( securityStoreCursor != null )
-        {
-            securityStoreCursor.close();
-        }
+        IOUtils.closeAllUnchecked( storeCursor, securityStoreCursor );
     }
 
     private class SecureRelationshipSelection extends RelationshipSelection

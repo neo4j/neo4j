@@ -33,10 +33,9 @@ import org.neo4j.storageengine.api.txstate.NodeState;
 import static java.lang.String.format;
 import static org.neo4j.kernel.impl.newapi.Read.NO_ID;
 
-class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<StorageRelationshipTraversalCursor>
+class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<StorageRelationshipTraversalCursor,DefaultRelationshipTraversalCursor>
         implements RelationshipTraversalCursor
 {
-    private final CursorPool<DefaultRelationshipTraversalCursor> pool;
     private final DefaultNodeCursor nodeCursor;
     private LongIterator addedRelationships;
     private long originNodeReference;
@@ -46,8 +45,7 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Stora
     DefaultRelationshipTraversalCursor( CursorPool<DefaultRelationshipTraversalCursor> pool, StorageRelationshipTraversalCursor storeCursor,
             DefaultNodeCursor nodeCursor )
     {
-        super( storeCursor );
-        this.pool = pool;
+        super( storeCursor, pool );
         this.nodeCursor = nodeCursor;
     }
 
@@ -195,9 +193,8 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Stora
             selection = null;
             mode = null;
             storeCursor.close();
-
-            pool.accept( this );
         }
+        super.closeInternal();
     }
 
     @Override
@@ -215,7 +212,10 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Stora
 
     public void release()
     {
-        storeCursor.close();
+        if ( storeCursor != null )
+        {
+            storeCursor.close();
+        }
         if ( nodeCursor != null )
         {
             nodeCursor.close();

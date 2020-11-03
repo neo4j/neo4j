@@ -11,9 +11,6 @@
     <properties>
         <license-text.header>headers/GPL-3-header.txt</license-text.header>
         <licensing.prepend.text>licensing/notice-gpl-prefix.txt</licensing.prepend.text>
-        <test.runner.jvm.settings.additional>
-            -Dorg.neo4j.kernel.impl.api.KernelStatement.trackStatements=false
-        </test.runner.jvm.settings.additional>
         <moduleName>org.neo4j.graphalgo</moduleName>
         <default.jupiter.test.mode>concurrent</default.jupiter.test.mode>
     </properties>

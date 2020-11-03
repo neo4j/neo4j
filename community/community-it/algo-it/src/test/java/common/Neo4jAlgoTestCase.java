@@ -30,6 +30,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -63,7 +64,12 @@ public abstract class Neo4jAlgoTestCase
     @BeforeAll
     public static void setUpGraphDb()
     {
-        managementService = new TestDatabaseManagementServiceBuilder().impermanent().build();
+        managementService = new TestDatabaseManagementServiceBuilder()
+                // There's a general issue with the traversal framework not closing traversal branches on not exhausting the traversal
+                // and it's made harder because it's public API and adding a close method is a breaking change. At some point it should
+                // be done, but perhaps in a major version.
+                .setConfig( GraphDatabaseInternalSettings.track_cursor_close, false )
+                .impermanent().build();
         graphDb = managementService.database( DEFAULT_DATABASE_NAME );
         graph = new SimpleGraphBuilder( graphDb, MyRelTypes.R1 );
     }

@@ -491,7 +491,7 @@ public abstract class StandardExpander implements PathExpander
             if ( directions.length == 1 )
             {
                 DirectionAndTypes direction = directions[0];
-                return asResourceIterator( node.getRelationships( direction.direction, direction.types ).iterator() );
+                return asResourceIterator( node.getRelationships( direction.direction, direction.types ) );
             }
             else
             {
@@ -500,7 +500,7 @@ public abstract class StandardExpander implements PathExpander
                     @Override
                     protected ResourceIterator<Relationship> createNestedIterator( DirectionAndTypes item )
                     {
-                        return asResourceIterator( node.getRelationships( item.direction, item.types ).iterator() );
+                        return asResourceIterator( node.getRelationships( item.direction, item.types ) );
                     }
                 };
             }

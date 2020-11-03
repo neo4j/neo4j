@@ -33,9 +33,8 @@ import org.neo4j.memory.MemoryTracker;
 
 import static org.neo4j.collection.PrimitiveLongCollections.mergeToSet;
 
-class DefaultRelationshipValueIndexCursor extends DefaultEntityValueIndexCursor implements RelationshipValueIndexCursor
+class DefaultRelationshipValueIndexCursor extends DefaultEntityValueIndexCursor<DefaultRelationshipValueIndexCursor> implements RelationshipValueIndexCursor
 {
-    private final CursorPool<DefaultRelationshipValueIndexCursor> pool;
     private final DefaultRelationshipScanCursor securityRelationshipCursor;
     private int[] propertyIds;
 
@@ -43,8 +42,7 @@ class DefaultRelationshipValueIndexCursor extends DefaultEntityValueIndexCursor 
             DefaultRelationshipScanCursor securityRelationshipCursor,
             MemoryTracker memoryTracker )
     {
-        super( memoryTracker );
-        this.pool = pool;
+        super( pool, memoryTracker );
         this.securityRelationshipCursor = securityRelationshipCursor;
     }
 
@@ -160,12 +158,6 @@ class DefaultRelationshipValueIndexCursor extends DefaultEntityValueIndexCursor 
     void traceOnEntity( KernelReadTracer tracer, long entity )
     {
         tracer.onRelationship( entity );
-    }
-
-    @Override
-    void returnToPool()
-    {
-        pool.accept( this );
     }
 
     @Override

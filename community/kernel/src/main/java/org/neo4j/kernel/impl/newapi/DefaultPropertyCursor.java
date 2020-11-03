@@ -37,7 +37,7 @@ import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_ENTITY;
 import static org.neo4j.kernel.impl.newapi.Read.NO_ID;
 import static org.neo4j.token.api.TokenConstants.NO_TOKEN;
 
-public class DefaultPropertyCursor extends TraceableCursor implements PropertyCursor, Supplier<TokenSet>, IntSupplier
+public class DefaultPropertyCursor extends TraceableCursor<DefaultPropertyCursor> implements PropertyCursor, Supplier<TokenSet>, IntSupplier
 {
     private static final int NODE = -2;
     private Read read;
@@ -48,7 +48,6 @@ public class DefaultPropertyCursor extends TraceableCursor implements PropertyCu
     private Iterator<StorageProperty> txStateChangedProperties;
     private StorageProperty txStateValue;
     private AssertOpen assertOpen;
-    private final CursorPool<DefaultPropertyCursor> pool;
     private AccessMode accessMode;
     private long entityReference = NO_ID;
     private TokenSet labels;
@@ -58,7 +57,7 @@ public class DefaultPropertyCursor extends TraceableCursor implements PropertyCu
     DefaultPropertyCursor( CursorPool<DefaultPropertyCursor> pool, StoragePropertyCursor storeCursor,
                            FullAccessNodeCursor securityNodeCursor, FullAccessRelationshipScanCursor securityRelCursor )
     {
-        this.pool = pool;
+        super( pool );
         this.storeCursor = storeCursor;
         this.securityNodeCursor = securityNodeCursor;
         this.securityRelCursor = securityRelCursor;
@@ -186,9 +185,8 @@ public class DefaultPropertyCursor extends TraceableCursor implements PropertyCu
             read = null;
             storeCursor.reset();
             accessMode = null;
-
-            pool.accept( this );
         }
+        super.closeInternal();
     }
 
     @Override
@@ -309,7 +307,10 @@ public class DefaultPropertyCursor extends TraceableCursor implements PropertyCu
 
     public void release()
     {
-        storeCursor.close();
+        if ( storeCursor != null )
+        {
+            storeCursor.close();
+        }
         if ( securityNodeCursor != null )
         {
             securityNodeCursor.close();

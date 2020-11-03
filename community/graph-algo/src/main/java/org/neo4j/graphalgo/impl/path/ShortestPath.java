@@ -66,6 +66,7 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.memory.ScopedMemoryTracker;
 import org.neo4j.monitoring.Monitors;
 
+import static org.neo4j.internal.helpers.collection.Iterators.asResourceIterator;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 
 /**
@@ -433,7 +434,7 @@ public class ShortestPath implements PathFinder<Path>
                 protected ResourceIterator<Relationship> createNestedIterator( Node node )
                 {
                     lastPath.setEndNode( node );
-                    return Iterators.asResourceIterator( expander.expand( lastPath, BranchState.NO_STATE ).iterator() );
+                    return asResourceIterator( expander.expand( lastPath, BranchState.NO_STATE ) );
                 }
             };
             this.currentDepth++;

@@ -21,12 +21,13 @@ package org.neo4j.kernel.impl.newapi;
 
 import java.util.ArrayList;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
+import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.memory.MemoryTracker;
-import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
 import org.neo4j.storageengine.api.StorageReader;
 
 /**
@@ -50,9 +51,9 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
     private DefaultRelationshipValueIndexCursor relationshipValueIndexCursor;
     private DefaultRelationshipTypeIndexCursor relationshipTypeIndexCursor;
 
-    public DefaultPooledCursors( StorageReader storageReader )
+    public DefaultPooledCursors( StorageReader storageReader, Config config )
     {
-        super( new ArrayList<>() );
+        super( new ArrayList<>(), config );
         this.storageReader = storageReader;
     }
 
@@ -67,7 +68,7 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
 
         try
         {
-            return nodeCursor;
+            return acquire( nodeCursor );
         }
         finally
         {
@@ -95,7 +96,7 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
 
         try
         {
-            return fullAccessNodeCursor;
+            return acquire( fullAccessNodeCursor );
         }
         finally
         {
@@ -125,7 +126,7 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
 
         try
         {
-            return relationshipScanCursor;
+            return acquire( relationshipScanCursor );
         }
         finally
         {
@@ -153,12 +154,18 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
 
         try
         {
-            return fullAccessRelationshipScanCursor;
+            return acquire( fullAccessRelationshipScanCursor );
         }
         finally
         {
             fullAccessRelationshipScanCursor = null;
         }
+    }
+
+    private <C extends TraceableCursor<?>> C acquire( C cursor )
+    {
+        cursor.acquire();
+        return cursor;
     }
 
     private void acceptFullAccess( DefaultRelationshipScanCursor cursor )
@@ -183,7 +190,7 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
 
         try
         {
-            return relationshipTraversalCursor;
+            return acquire( relationshipTraversalCursor );
         }
         finally
         {
@@ -212,7 +219,7 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
 
         try
         {
-            return fullAccessRelationshipTraversalCursor;
+            return acquire( fullAccessRelationshipTraversalCursor );
         }
         finally
         {
@@ -244,7 +251,7 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
 
         try
         {
-            return propertyCursor;
+            return acquire( propertyCursor );
         }
         finally
         {
@@ -272,7 +279,7 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
 
         try
         {
-            return fullAccessPropertyCursor;
+            return acquire( fullAccessPropertyCursor );
         }
         finally
         {
@@ -302,7 +309,7 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
 
         try
         {
-            return nodeValueIndexCursor;
+            return acquire( nodeValueIndexCursor );
         }
         finally
         {
@@ -330,7 +337,7 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
 
         try
         {
-            return fullAccessNodeValueIndexCursor;
+            return acquire( fullAccessNodeValueIndexCursor );
         }
         finally
         {
@@ -359,7 +366,7 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
 
         try
         {
-            return nodeLabelIndexCursor;
+            return acquire( nodeLabelIndexCursor );
         }
         finally
         {
@@ -387,7 +394,7 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
 
         try
         {
-            return fullAccessNodeLabelIndexCursor;
+            return acquire( fullAccessNodeLabelIndexCursor );
         }
         finally
         {
@@ -418,7 +425,7 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
 
         try
         {
-            return relationshipValueIndexCursor;
+            return acquire( relationshipValueIndexCursor );
         }
         finally
         {
@@ -446,7 +453,7 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
 
         try
         {
-            return relationshipTypeIndexCursor;
+            return acquire( relationshipTypeIndexCursor );
         }
         finally
         {

@@ -21,9 +21,6 @@
         <licensing.prepend.text>licensing/notice-gpl-prefix.txt</licensing.prepend.text>
         <moduleName>org.neo4j.community.community.it</moduleName>
         <default.jupiter.test.mode>concurrent</default.jupiter.test.mode>
-        <test.runner.jvm.settings.additional>
-            -Dorg.neo4j.kernel.impl.api.KernelStatement.trackStatements=false
-        </test.runner.jvm.settings.additional>
     </properties>
 
     <scm>

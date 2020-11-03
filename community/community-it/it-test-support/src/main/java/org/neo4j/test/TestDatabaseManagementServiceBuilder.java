@@ -148,6 +148,9 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
                      .setDefault( GraphDatabaseSettings.logical_log_rotation_threshold, ByteUnit.kibiBytes( 128 ) )
                      .setDefault( BoltConnector.enabled, FALSE )
                      .setDefault( GraphDatabaseInternalSettings.dump_diagnostics, false )
+                     .setDefault( GraphDatabaseInternalSettings.track_tx_statement_close, true )
+                     .setDefault( GraphDatabaseInternalSettings.trace_tx_statements, true )
+                     .setDefault( GraphDatabaseInternalSettings.track_cursor_close, true )
                 .build();
     }
 

@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.newapi;
 
 import java.util.concurrent.ConcurrentLinkedQueue;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
@@ -38,9 +39,9 @@ public class DefaultThreadSafeCursors extends DefaultCursors implements CursorFa
 {
     private final StorageReader storageReader;
 
-    public DefaultThreadSafeCursors( StorageReader storageReader )
+    public DefaultThreadSafeCursors( StorageReader storageReader, Config config )
     {
-        super( new ConcurrentLinkedQueue<>() );
+        super( new ConcurrentLinkedQueue<>(), config );
         this.storageReader = storageReader;
     }
 

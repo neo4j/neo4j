@@ -82,12 +82,6 @@ class DefaultNodeLabelIndexCursor extends DefaultEntityTokenIndexCursor<DefaultN
     }
 
     @Override
-    void returnToPool( CursorPool<DefaultNodeLabelIndexCursor> pool )
-    {
-        pool.accept( this );
-    }
-
-    @Override
     public void node( NodeCursor cursor )
     {
         readEntity( read -> read.singleNode( entityReference(), cursor ) );

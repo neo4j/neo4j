@@ -40,7 +40,7 @@ import static org.neo4j.kernel.impl.newapi.Read.NO_ID;
 /**
  * Base for index cursors that can handle scans with IndexOrder.
  */
-abstract class DefaultEntityTokenIndexCursor<SELF extends DefaultEntityTokenIndexCursor> extends IndexCursor<IndexProgressor>
+abstract class DefaultEntityTokenIndexCursor<SELF extends DefaultEntityTokenIndexCursor<SELF>> extends IndexCursor<IndexProgressor,SELF>
 {
     private Read read;
     private long entity;
@@ -50,13 +50,12 @@ abstract class DefaultEntityTokenIndexCursor<SELF extends DefaultEntityTokenInde
     private boolean useMergeSort;
     private final PrimitiveSortedMergeJoin sortedMergeJoin = new PrimitiveSortedMergeJoin();
 
-    private final CursorPool<SELF> pool;
     private AccessMode accessMode;
     private boolean shortcutSecurity;
 
     DefaultEntityTokenIndexCursor( CursorPool<SELF> pool )
     {
-        this.pool = pool;
+        super( pool );
         this.entity = NO_ID;
     }
 
@@ -70,7 +69,6 @@ abstract class DefaultEntityTokenIndexCursor<SELF extends DefaultEntityTokenInde
     abstract void traceNext( KernelReadTracer tracer, long entity );
     abstract boolean allowedToSeeAllEntitiesWithToken( AccessMode accessMode, int token );
     abstract boolean allowedToSeeEntity( AccessMode accessMode, long entityReference, TokenSet tokens );
-    abstract void returnToPool( CursorPool<SELF> pool );
 
     public void scan( IndexProgressor progressor, int token, IndexOrder order )
     {
@@ -246,9 +244,8 @@ abstract class DefaultEntityTokenIndexCursor<SELF extends DefaultEntityTokenInde
             added = null;
             removed = null;
             accessMode = null;
-
-            returnToPool( pool );
         }
+        super.closeInternal();
     }
 
     @Override

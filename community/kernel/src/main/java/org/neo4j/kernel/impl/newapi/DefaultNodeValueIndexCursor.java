@@ -34,16 +34,14 @@ import org.neo4j.memory.MemoryTracker;
 
 import static org.neo4j.collection.PrimitiveLongCollections.mergeToSet;
 
-class DefaultNodeValueIndexCursor extends DefaultEntityValueIndexCursor implements NodeValueIndexCursor
+class DefaultNodeValueIndexCursor extends DefaultEntityValueIndexCursor<DefaultNodeValueIndexCursor> implements NodeValueIndexCursor
 {
-    private final CursorPool<DefaultNodeValueIndexCursor> pool;
     private final DefaultNodeCursor securityNodeCursor;
     private int[] propertyIds;
 
     DefaultNodeValueIndexCursor( CursorPool<DefaultNodeValueIndexCursor> pool, DefaultNodeCursor securityNodeCursor, MemoryTracker memoryTracker )
     {
-        super( memoryTracker );
-        this.pool = pool;
+        super( pool, memoryTracker );
         this.securityNodeCursor = securityNodeCursor;
     }
 
@@ -103,12 +101,6 @@ class DefaultNodeValueIndexCursor extends DefaultEntityValueIndexCursor implemen
     void traceOnEntity( KernelReadTracer tracer, long entity )
     {
         tracer.onNode( entity );
-    }
-
-    @Override
-    void returnToPool()
-    {
-        pool.accept( this );
     }
 
     @Override

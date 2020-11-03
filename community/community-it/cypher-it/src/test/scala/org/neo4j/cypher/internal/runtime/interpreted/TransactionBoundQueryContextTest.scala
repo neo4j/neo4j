@@ -114,7 +114,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     when(outerTx.clientInfo()).thenReturn(ClientConnectionInfo.EMBEDDED_CONNECTION)
 
     val transaction = mock[KernelTransaction]
-    when(transaction.cursors()).thenReturn(new DefaultPooledCursors(null))
+    when(transaction.cursors()).thenReturn(new DefaultPooledCursors(null, Config.defaults()))
     val tc = new Neo4jTransactionalContext(graph, outerTx, statement, mock[ExecutingQuery], transactionFactory)
     val transactionalContext = TransactionalContextWrapper(tc)
     val context = new TransactionBoundQueryContext(transactionalContext, new ResourceManager)(indexSearchMonitor)
@@ -137,7 +137,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     when(outerTx.clientInfo()).thenReturn(ClientConnectionInfo.EMBEDDED_CONNECTION)
     val transaction = mock[KernelTransaction]
     when(transaction.acquireStatement()).thenReturn(statement)
-    when(transaction.cursors()).thenReturn(new DefaultPooledCursors(null))
+    when(transaction.cursors()).thenReturn(new DefaultPooledCursors(null, Config.defaults()))
     val tc = new Neo4jTransactionalContext(graph, outerTx, statement, mock[ExecutingQuery], transactionFactory)
     val transactionalContext = TransactionalContextWrapper(tc)
     val context = new TransactionBoundQueryContext(transactionalContext, new ResourceManager)(indexSearchMonitor)
@@ -379,7 +379,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     // GIVEN
     val transaction = mock[KernelTransaction]
     when(transaction.acquireStatement()).thenReturn(statement)
-    when(transaction.cursors()).thenReturn(new DefaultPooledCursors(null))
+    when(transaction.cursors()).thenReturn(new DefaultPooledCursors(null, Config.defaults()))
     val tc = new Neo4jTransactionalContext(graph, outerTx, statement, mock[ExecutingQuery], transactionFactory)
     val transactionalContext = TransactionalContextWrapper(tc)
     val context = new TransactionBoundQueryContext(transactionalContext, new ResourceManager)(indexSearchMonitor)

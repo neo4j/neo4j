@@ -25,29 +25,31 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collection;
 
+import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.internal.kernel.api.AutoCloseablePlus;
 
 import static java.lang.String.format;
-import static org.neo4j.util.FeatureToggles.flag;
-import static org.neo4j.util.FeatureToggles.toggle;
 
 abstract class DefaultCursors
 {
-    private static final boolean DEBUG_CLOSING = flag( DefaultCursors.class, "trackCursors", false );
-    private static final boolean RECORD_CURSORS_TRACES = flag( DefaultCursors.class, "recordCursorsTraces", true );
     private final Collection<CloseableStacktrace> closeables;
+    private final boolean trackCursorClose;
+    private final boolean traceCursorClose;
 
-    DefaultCursors( Collection<CloseableStacktrace> closeables )
+    DefaultCursors( Collection<CloseableStacktrace> closeables, Config config )
     {
         this.closeables = closeables;
+        this.trackCursorClose = config.get( GraphDatabaseInternalSettings.track_cursor_close );
+        this.traceCursorClose = config.get( GraphDatabaseInternalSettings.trace_cursors );
     }
 
     protected <T extends AutoCloseablePlus> T trace( T closeable )
     {
-        if ( DEBUG_CLOSING )
+        if ( trackCursorClose )
         {
             StackTraceElement[] stackTrace = null;
-            if ( RECORD_CURSORS_TRACES )
+            if ( traceCursorClose )
             {
                 stackTrace = Thread.currentThread().getStackTrace();
                 stackTrace = Arrays.copyOfRange( stackTrace, 2, stackTrace.length );
@@ -60,7 +62,7 @@ abstract class DefaultCursors
 
     void assertClosed()
     {
-        if ( DEBUG_CLOSING )
+        if ( trackCursorClose )
         {
             for ( CloseableStacktrace c : closeables )
             {
@@ -88,7 +90,7 @@ abstract class DefaultCursors
                 ByteArrayOutputStream out = new ByteArrayOutputStream();
                 PrintStream printStream = new PrintStream( out, false, StandardCharsets.UTF_8 );
 
-                if ( RECORD_CURSORS_TRACES )
+                if ( stackTrace != null )
                 {
                     printStream.println();
                     for ( StackTraceElement traceElement : stackTrace )
@@ -98,14 +100,12 @@ abstract class DefaultCursors
                 }
                 else
                 {
-                    String msg = format( " To see stack traces please pass '%s' to your JVM or enable corresponding feature toggle.",
-                                         toggle( DefaultCursors.class, "recordCursorsTraces", Boolean.TRUE ) );
+                    String msg = format( " To see stack traces please set '%s' setting to true", GraphDatabaseInternalSettings.trace_cursors.name() );
                     printStream.print( msg );
                 }
                 printStream.println();
-                throw new IllegalStateException( format( "Closeable %s was not closed!%s", c, out.toString( StandardCharsets.UTF_8) ) );
+                throw new IllegalStateException( format( "Closeable %s was not closed!%s", c, out.toString( StandardCharsets.UTF_8 ) ) );
             }
         }
     }
-
 }

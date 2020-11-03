@@ -46,8 +46,13 @@ class IndexCursorTest
         assertFalse( otherProgressor.isClosed, "new still open" );
     }
 
-    private static class StubIndexCursor extends IndexCursor<StubProgressor>
+    private static class StubIndexCursor extends IndexCursor<StubProgressor,StubIndexCursor>
     {
+        StubIndexCursor()
+        {
+            super( c -> {} );
+        }
+
         @Override
         public boolean next()
         {

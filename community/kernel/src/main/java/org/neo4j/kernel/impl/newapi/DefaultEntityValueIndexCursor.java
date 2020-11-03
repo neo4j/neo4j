@@ -70,7 +70,7 @@ import static org.neo4j.kernel.impl.newapi.TxStateIndexChanges.indexUpdatesWithV
 import static org.neo4j.kernel.impl.newapi.TxStateIndexChanges.indexUpdatesWithValuesForScan;
 import static org.neo4j.kernel.impl.newapi.TxStateIndexChanges.indexUpdatesWithValuesForSuffixOrContains;
 
-abstract class DefaultEntityValueIndexCursor extends IndexCursor<IndexProgressor> implements
+abstract class DefaultEntityValueIndexCursor<CURSOR> extends IndexCursor<IndexProgressor,CURSOR> implements
         ValueIndexCursor, IndexResultScore, EntityIndexSeekClient, SortedMergeJoin.Sink
 {
     private static final Comparator<LongObjectPair<Value[]>> ASCENDING_COMPARATOR = computeComparator( Values.COMPARATOR );
@@ -93,8 +93,9 @@ abstract class DefaultEntityValueIndexCursor extends IndexCursor<IndexProgressor
     private AccessMode accessMode;
     private boolean shortcutSecurity;
 
-    DefaultEntityValueIndexCursor( MemoryTracker memoryTracker )
+    DefaultEntityValueIndexCursor( CursorPool<CURSOR> pool, MemoryTracker memoryTracker )
     {
+        super( pool );
         this.memoryTracker = memoryTracker;
         entity = NO_ID;
         score = Float.NaN;
@@ -492,8 +493,8 @@ abstract class DefaultEntityValueIndexCursor extends IndexCursor<IndexProgressor
             {
                 eagerPointIterator.close();
             }
-            returnToPool();
         }
+        super.closeInternal();
     }
 
     @Override
@@ -657,11 +658,6 @@ abstract class DefaultEntityValueIndexCursor extends IndexCursor<IndexProgressor
      * An abstraction over {@link KernelReadTracer#onNode(long)} and {@link KernelReadTracer#onRelationship(long)}.
      */
     abstract void traceOnEntity( KernelReadTracer tracer, long entity );
-
-    /**
-     * A callback instructing the implementation cursor to return itself into a pool.
-     */
-    abstract void returnToPool();
 
     /**
      * Name of the concrete implementation used in {@link #toString()}.

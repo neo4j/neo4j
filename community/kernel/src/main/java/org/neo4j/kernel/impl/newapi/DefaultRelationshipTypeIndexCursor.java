@@ -73,12 +73,6 @@ public class DefaultRelationshipTypeIndexCursor extends DefaultEntityTokenIndexC
     }
 
     @Override
-    void returnToPool( CursorPool<DefaultRelationshipTypeIndexCursor> pool )
-    {
-        pool.accept( this );
-    }
-
-    @Override
     public void relationship( RelationshipScanCursor cursor )
     {
         readEntity( read -> read.singleRelationship( entityReference(), cursor ) );

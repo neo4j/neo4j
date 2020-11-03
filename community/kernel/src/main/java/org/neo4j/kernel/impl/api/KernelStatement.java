@@ -31,6 +31,7 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
@@ -48,8 +49,7 @@ import org.neo4j.resources.CpuClock;
 
 import static java.lang.Math.subtractExact;
 import static java.lang.String.format;
-import static org.neo4j.util.FeatureToggles.flag;
-import static org.neo4j.util.FeatureToggles.toggle;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.trace_tx_statements;
 
 /**
  * A resource efficient implementation of {@link Statement}. Designed to be reused within a
@@ -73,14 +73,14 @@ import static org.neo4j.util.FeatureToggles.toggle;
 public class KernelStatement extends CloseableResourceManager implements Statement, AssertOpen
 {
     private static final int EMPTY_COUNTER = 0;
-    private static final boolean TRACK_STATEMENTS = flag( KernelStatement.class, "trackStatements", false );
-    private static final boolean RECORD_STATEMENTS_TRACES = flag( KernelStatement.class, "recordStatementsTraces", false );
     private static final int STATEMENT_TRACK_HISTORY_MAX_SIZE = 100;
     private static final Deque<StackTraceElement[]> EMPTY_STATEMENT_HISTORY = new ArrayDeque<>( 0 );
 
     private final QueryRegistry queryRegistry;
     private final KernelTransactionImplementation transaction;
     private final NamedDatabaseId namedDatabaseId;
+    private final boolean traceStatements;
+    private final boolean trackStatementClose;
     private StatementLocks statementLocks;
     private PageCursorTracer pageCursorTracer = PageCursorTracer.NULL;
     private int referenceCount;
@@ -99,7 +99,9 @@ public class KernelStatement extends CloseableResourceManager implements Stateme
         this.transaction = transaction;
         this.queryRegistry = new StatementQueryRegistry( this, clockContext.systemClock(), cpuClockRef, config );
         this.systemLockTracer = systemLockTracer;
-        this.statementOpenCloseCalls = RECORD_STATEMENTS_TRACES ? new ArrayDeque<>() : EMPTY_STATEMENT_HISTORY;
+        this.traceStatements = config.get( trace_tx_statements );
+        this.trackStatementClose = config.get( GraphDatabaseInternalSettings.track_tx_statement_close );
+        this.statementOpenCloseCalls = traceStatements ? new ArrayDeque<>() : EMPTY_STATEMENT_HISTORY;
         this.clockContext = clockContext;
         this.versionContextSupplier = versionContextSupplier;
         this.namedDatabaseId = namedDatabaseId;
@@ -193,7 +195,7 @@ public class KernelStatement extends CloseableResourceManager implements Stateme
             int leakedStatements = referenceCount;
             referenceCount = 0;
             cleanupResources();
-            if ( TRACK_STATEMENTS && transaction.isSuccess() )
+            if ( trackStatementClose && transaction.isSuccess() )
             {
                 String message = getStatementNotClosedMessage( leakedStatements );
                 throw new StatementNotClosedException( message, statementOpenCloseCalls );
@@ -201,14 +203,11 @@ public class KernelStatement extends CloseableResourceManager implements Stateme
         }
     }
 
-    private static String getStatementNotClosedMessage( int leakedStatements )
+    private String getStatementNotClosedMessage( int leakedStatements )
     {
-        String additionalInstruction = RECORD_STATEMENTS_TRACES ? StringUtils.EMPTY :
-                                       format(" To see statement open/close stack traces please pass '%s' to your JVM" +
-                                                       " or enable corresponding feature toggle.",
-                                       toggle( KernelStatement.class, "recordStatementsTraces", Boolean.TRUE ) );
-        return format( "Statements were not correctly closed. Number of leaked statements: %d.%s", leakedStatements,
-                additionalInstruction );
+        String additionalInstruction = traceStatements ? StringUtils.EMPTY :
+                                       format( " To see statement open/close stack traces please set '%s' setting to true", trace_tx_statements.name() );
+        return format( "Statements were not correctly closed. Number of leaked statements: %d.%s", leakedStatements, additionalInstruction );
     }
 
     final String username()
@@ -255,7 +254,7 @@ public class KernelStatement extends CloseableResourceManager implements Stateme
 
     private void recordOpenCloseMethods()
     {
-        if ( RECORD_STATEMENTS_TRACES )
+        if ( traceStatements )
         {
             if ( statementOpenCloseCalls.size() > STATEMENT_TRACK_HISTORY_MAX_SIZE )
             {

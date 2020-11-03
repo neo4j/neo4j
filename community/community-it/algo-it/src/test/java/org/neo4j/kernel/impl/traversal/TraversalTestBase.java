@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
 
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -43,7 +44,9 @@ import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.GraphDefinition;
 import org.neo4j.test.GraphDescription;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.DbmsExtension;
+import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.Inject;
 
 import static org.junit.Assert.assertEquals;
@@ -52,7 +55,7 @@ import static org.junit.Assert.fail;
 import static org.neo4j.test.extension.ExecutionSharedContext.SHARED_RESOURCE;
 
 @ResourceLock( SHARED_RESOURCE )
-@DbmsExtension
+@DbmsExtension( configurationCallback = "configure" )
 abstract class TraversalTestBase
 {
     @Inject
@@ -73,6 +76,12 @@ abstract class TraversalTestBase
     protected Transaction beginTx()
     {
         return getGraphDb().beginTx();
+    }
+
+    @ExtensionCallback
+    void configure( TestDatabaseManagementServiceBuilder builder )
+    {
+        builder.setConfig( GraphDatabaseInternalSettings.track_cursor_close, false );
     }
 
     protected void createGraph( String... description )

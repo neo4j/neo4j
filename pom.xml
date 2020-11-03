@@ -87,8 +87,6 @@
       -Dorg.neo4j.test.extension.ThreadLeakageGuardExtension.MAXIMUM_WAIT_TIME_MILLIS=${ThreadLeakageGuardExtension.MAXIMUM_WAIT_TIME_MILLIS}
       -Dorg.neo4j.internal.unsafe.UnsafeUtil.CHECK_NATIVE_ACCESS=true
       -Dorg.neo4j.io.pagecache.impl.muninn.usePreciseCursorErrorStackTraces=true
-      -Dorg.neo4j.kernel.impl.api.KernelStatement.trackStatements=true
-      -Dorg.neo4j.kernel.impl.newapi.DefaultCursors.trackCursors=true
       -Dorg.neo4j.codegen.bytecode.ByteCodeExpressionVisitor.checkByteCode=false
       -Dorg.neo4j.bolt.transport.NettyServer.shutdownQuietPeriod=0
       -Dorg.neo4j.bolt.transport.NettyServer.shutdownTimeout=3

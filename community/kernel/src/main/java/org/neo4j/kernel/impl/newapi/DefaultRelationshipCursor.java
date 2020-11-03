@@ -27,7 +27,8 @@ import org.neo4j.storageengine.api.StorageRelationshipCursor;
 
 import static org.neo4j.kernel.impl.newapi.Read.NO_ID;
 
-abstract class DefaultRelationshipCursor<STORECURSOR extends StorageRelationshipCursor> extends TraceableCursor implements RelationshipDataAccessor
+abstract class DefaultRelationshipCursor<STORECURSOR extends StorageRelationshipCursor,CURSOR> extends TraceableCursor<CURSOR>
+        implements RelationshipDataAccessor
 {
     protected boolean hasChanges;
     boolean checkHasChanges;
@@ -41,8 +42,9 @@ abstract class DefaultRelationshipCursor<STORECURSOR extends StorageRelationship
     long txStateSourceNodeReference;
     long txStateTargetNodeReference;
 
-    DefaultRelationshipCursor( STORECURSOR storeCursor )
+    DefaultRelationshipCursor( STORECURSOR storeCursor, CursorPool<CURSOR> pool )
     {
+        super( pool );
         this.storeCursor = storeCursor;
     }
 

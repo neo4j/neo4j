@@ -21,9 +21,14 @@ package org.neo4j.kernel.impl.newapi;
 
 import org.neo4j.kernel.api.index.IndexProgressor;
 
-abstract class IndexCursor<T extends IndexProgressor> extends TraceableCursor
+abstract class IndexCursor<T extends IndexProgressor,CURSOR> extends TraceableCursor<CURSOR>
 {
     private T progressor;
+
+    protected IndexCursor( CursorPool<CURSOR> pool )
+    {
+        super( pool );
+    }
 
     final void initialize( T progressor )
     {

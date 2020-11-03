@@ -26,6 +26,7 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
@@ -157,7 +158,8 @@ class KernelStatementTest
     private KernelStatement createStatement( KernelTransactionImplementation transaction )
     {
         return new KernelStatement( transaction, LockTracer.NONE, new ClockContext(), EmptyVersionContextSupplier.EMPTY,
-                                    cpuClockRef, new TestDatabaseIdRepository().defaultDatabase(), Config.defaults() );
+                cpuClockRef, new TestDatabaseIdRepository().defaultDatabase(),
+                Config.defaults( GraphDatabaseInternalSettings.track_tx_statement_close, true ) );
     }
 
     private static ExecutingQuery getQueryWithWaitingTime()
