@@ -211,7 +211,7 @@ case class QueryGraph(// !!! If you change anything here, make sure to update th
     * matches and updates have been applied
     */
   def idsWithoutOptionalMatchesOrUpdates: Set[String] =
-    QueryGraph.coveredIdsForPatterns(patternNodes, patternRelationships) ++ argumentIds
+    QueryGraph.coveredIdsForPatterns(patternNodes, patternRelationships) ++ argumentIds ++ shortestPathPatterns.flatMap(_.name)
 
   /**
     * All variables that are bound after this QG has been matched

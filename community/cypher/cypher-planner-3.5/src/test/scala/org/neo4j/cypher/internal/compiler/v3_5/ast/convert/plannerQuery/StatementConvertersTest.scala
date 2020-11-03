@@ -19,12 +19,19 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.ast.convert.plannerQuery
 
-import org.neo4j.cypher.internal.compiler.v3_5.planner.{LogicalPlanningTestSupport, _}
+import org.neo4j.cypher.internal.compiler.v3_5.planner.LogicalPlanningTestSupport
+import org.neo4j.cypher.internal.compiler.v3_5.planner._
 import org.neo4j.cypher.internal.ir.v3_5._
-import org.neo4j.cypher.internal.v3_5.ast.{Hint, UsingIndexHint}
-import org.neo4j.cypher.internal.v3_5.expressions.SemanticDirection.{BOTH, INCOMING, OUTGOING}
+import org.neo4j.cypher.internal.v3_5.ast.Hint
+import org.neo4j.cypher.internal.v3_5.ast.UsingIndexHint
+import org.neo4j.cypher.internal.v3_5.expressions.SemanticDirection.BOTH
+import org.neo4j.cypher.internal.v3_5.expressions.SemanticDirection.INCOMING
+import org.neo4j.cypher.internal.v3_5.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.v3_5.expressions._
-import org.neo4j.cypher.internal.v3_5.logical.plans.{FieldSignature, ProcedureReadOnlyAccess, ProcedureSignature, QualifiedName}
+import org.neo4j.cypher.internal.v3_5.logical.plans.FieldSignature
+import org.neo4j.cypher.internal.v3_5.logical.plans.ProcedureReadOnlyAccess
+import org.neo4j.cypher.internal.v3_5.logical.plans.ProcedureSignature
+import org.neo4j.cypher.internal.v3_5.logical.plans.QualifiedName
 import org.neo4j.cypher.internal.v3_5.util.helpers.StringHelper._
 import org.neo4j.cypher.internal.v3_5.util.symbols._
 import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
@@ -1032,6 +1039,17 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     tail.queryGraph.patternNodes should equal(Set("x", "d"))
 
     tail.queryGraph.optionalMatches should be (empty)
+  }
+
+  test("OPTIONAL MATCH with dependency on shortest path") {
+    val query = buildPlannerQuery("MATCH p=shortestPath( (a)-[r*]-(a0) ) OPTIONAL MATCH (a)--(b) WHERE b <> head(nodes(p)) RETURN p")
+
+    query.queryGraph.patternNodes should equal(Set("a", "a0"))
+    query.queryGraph.patternRelationships should equal(Set.empty)
+
+    val optionalMatch = query.queryGraph.optionalMatches(0)
+
+    optionalMatch.argumentIds should equal(Set("a", "p"))
   }
 
   def relType(name: String): RelTypeName = RelTypeName(name)_
