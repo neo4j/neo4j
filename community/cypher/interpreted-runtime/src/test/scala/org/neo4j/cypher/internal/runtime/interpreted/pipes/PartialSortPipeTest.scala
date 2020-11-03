@@ -45,7 +45,8 @@ class PartialSortPipeTest extends CypherFunSuite with MockitoSugar {
 
     val sortPipe = PartialSortPipe(source,
       InterpretedExecutionContextOrdering.asComparator(List(Ascending("x"))),
-      InterpretedExecutionContextOrdering.asComparator(List(Ascending("y"))))()
+      InterpretedExecutionContextOrdering.asComparator(List(Ascending("y"))),
+      None)()
 
     val iterator = sortPipe.createResults(QueryStateHelper.emptyWithValueSerialization)
 

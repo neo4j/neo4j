@@ -59,6 +59,7 @@ case object PlanRewriter extends LogicalPlanRewriter {
     removeIdenticalPlans(otherAttributes.withAlso(cardinalities, solveds, providedOrders)),
     pruningVarExpander,
     useTop,
+    skipInPartialSort,
     simplifySelections,
     limitNestedPlanExpressions(context.logicalPlanIdGen)
   ).rewriter)

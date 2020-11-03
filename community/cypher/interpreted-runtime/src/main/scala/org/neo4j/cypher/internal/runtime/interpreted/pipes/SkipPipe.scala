@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.NumericHelper
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.SkipPipe.evaluateStaticSkipOrLimitNumberOrThrow
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.exceptions.InvalidArgumentException
 import org.neo4j.values.storable.FloatingPointValue
@@ -32,32 +33,33 @@ case class SkipPipe(source: Pipe, exp: Expression)
   extends PipeWithSource(source) {
 
   protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
-    val skipNumber = NumericHelper.evaluateStaticallyKnownNumber(exp, state)
-    if (skipNumber.isInstanceOf[FloatingPointValue]) {
-      val skip = skipNumber.doubleValue()
-      throw new InvalidArgumentException(s"SKIP: Invalid input. '$skip' is not a valid value. Must be a non-negative integer.")
-    }
-    val skip = skipNumber.longValue()
-
-    if (skip < 0) {
-      throw new InvalidArgumentException(s"SKIP: Invalid input. '$skip' is not a valid value. Must be a non-negative integer.")
-    }
-
-    if(input.isEmpty)
-      return ClosingIterator.empty
-
-    SkipPipe.drop(skip, input)
+    val skip = evaluateStaticSkipOrLimitNumberOrThrow(exp, state, "SKIP")
+    SkipPipe.drop[CypherRow, ClosingIterator[CypherRow]](skip, input)
   }
 
 }
 
 object SkipPipe {
-  def drop[T](n: Long, iterator: ClosingIterator[T]): ClosingIterator[T] = {
+  def drop[T, ITER <: Iterator[T]](n: Long, iterator: ITER): ITER = {
     var j = 0L
     while (j < n && iterator.hasNext) {
       iterator.next()
       j += 1
     }
     iterator
+  }
+
+  def evaluateStaticSkipOrLimitNumberOrThrow(skipExp: Expression, state: QueryState, prefix: String): Long = {
+    val number = NumericHelper.evaluateStaticallyKnownNumber(skipExp, state)
+    if (number.isInstanceOf[FloatingPointValue]) {
+      val n = number.doubleValue()
+      throw new InvalidArgumentException(s"$prefix: Invalid input. '$n' is not a valid value. Must be a non-negative integer.")
+    }
+    val n = number.longValue()
+
+    if (n < 0) {
+      throw new InvalidArgumentException(s"$prefix: Invalid input. '$n' is not a valid value. Must be a non-negative integer.")
+    }
+    n
   }
 }

@@ -588,14 +588,14 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
       case Sort(_, orderBy) =>
         PlanDescriptionImpl(id, "Sort", children, Seq(Details(orderInfo(orderBy))), variables)
 
-      case PartialSort(_, alreadySortedPrefix, stillToSortSuffix) =>
+      case PartialSort(_, alreadySortedPrefix, stillToSortSuffix, _) =>
         PlanDescriptionImpl(id, "PartialSort", children, Seq(Details(orderInfo(alreadySortedPrefix ++ stillToSortSuffix))), variables)
 
       case Top(_, orderBy, limit) =>
         val details = pretty"${orderInfo(orderBy)} LIMIT ${asPrettyString(limit)}"
         PlanDescriptionImpl(id, "Top", children, Seq(Details(details)), variables)
 
-      case PartialTop(_, alreadySortedPrefix, stillToSortSuffix, limit) =>
+      case PartialTop(_, alreadySortedPrefix, stillToSortSuffix, limit, _) =>
         val details = pretty"${orderInfo(alreadySortedPrefix ++ stillToSortSuffix)} LIMIT ${asPrettyString(limit)}"
         PlanDescriptionImpl(id, "PartialTop", children, Seq(Details(details)), variables)
 

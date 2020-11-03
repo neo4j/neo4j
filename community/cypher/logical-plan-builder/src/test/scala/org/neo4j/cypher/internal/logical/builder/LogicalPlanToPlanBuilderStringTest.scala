@@ -445,6 +445,7 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
       .produceResults("x", "y")
       .partialSort(Seq(Ascending("x"), Ascending("y")), Seq(Ascending("xxx"), Descending("y")))
       .partialSort(Seq(Descending("x")), Seq(Ascending("x"), Ascending("y")))
+      .partialSort(Seq(Descending("x")), Seq(Ascending("x")), 10)
       .argument()
       .build())
 
@@ -461,6 +462,7 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
       .produceResults("x", "y")
       .partialTop(Seq(Ascending("x"), Ascending("y")), Seq(Ascending("xxx"), Descending("y")), 100)
       .partialTop(Seq(Descending("x")), Seq(Ascending("x"), Ascending("y")), 42)
+      .partialTop(Seq(Descending("x")), Seq(Ascending("x"), Ascending("y")), 42, 17)
       .argument()
       .build())
 

@@ -27,23 +27,28 @@ import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.util.attribution.Id
-import org.neo4j.values.storable.NumberValue
 
 import scala.collection.JavaConverters.asScalaIteratorConverter
 import scala.collection.mutable
 
 case class PartialTopNPipe(source: Pipe,
                            countExpression: Expression,
+                           skipExpression: Option[Expression],
                            prefixComparator: Comparator[ReadableRow],
                            suffixComparator: Comparator[ReadableRow])
                           (val id: Id = Id.INVALID_ID)
   extends PipeWithSource(source: Pipe) with OrderedInputPipe {
 
-  override def getReceiver(state: QueryState): OrderedChunkReceiver = throw new IllegalStateException()
+  override def getReceiver(state: QueryState): OrderedChunkReceiver = new PartialTopNReceiver(state)
 
-  class PartialTopNReceiver(var remainingLimit: Long, state: QueryState) extends OrderedChunkReceiver {
+  class PartialTopNReceiver(state: QueryState) extends OrderedChunkReceiver {
     private val memoryTracker = state.memoryTracker.memoryTrackerForOperator(id.x)
     private val rowsMemoryTracker = memoryTracker.getScopedMemoryTracker
+    private val limit = SkipPipe.evaluateStaticSkipOrLimitNumberOrThrow(countExpression, state, "LIMIT")
+    private val skip = skipExpression.map(SkipPipe.evaluateStaticSkipOrLimitNumberOrThrow(_, state, "SKIP"))
+
+    private var remainingSkipRows: Long = skip.getOrElse(-1L)
+    private var remainingLimit = limit
     private val topTable = new DefaultComparatorTopTable[CypherRow](suffixComparator, remainingLimit, memoryTracker)
 
     override def clear(): Unit = {
@@ -67,35 +72,21 @@ case class PartialTopNPipe(source: Pipe,
       }
 
       remainingLimit = math.max(0, remainingLimit - 1)
+      remainingSkipRows = math.max(-1L, remainingSkipRows - 1L)
     }
 
     override def result(): Iterator[CypherRow] = {
-      topTable.sort()
-      topTable.iterator().asScala
+      if (remainingSkipRows == -1) {
+        topTable.sort()
+        topTable.iterator().asScala
+      } else {
+        topTable.unorderedIterator().asScala
+      }
     }
 
     override def processNextChunk: Boolean = remainingLimit > 0
   }
 
-  protected override def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
-    if (input.isEmpty) {
-      ClosingIterator.empty
-    } else {
-      val first = input.next()
-      val longCount = countExpression(first, state).asInstanceOf[NumberValue].longValue()
-      if (longCount <= 0) {
-        ClosingIterator.empty
-      } else {
-        // We don't need a special case for LIMIT > Int.Max (Like the TopPipe)
-        // We use something similar to PartialSort in any way, and that will only fail at runtime if one chunk is too big.
-
-        // We have to re-attach the already read first row to the iterator
-        val restoredInput = ClosingIterator.single(first) ++ input
-        val receiver = new PartialTopNReceiver(longCount, state)
-        internalCreateResultsWithReceiver(restoredInput, receiver)
-      }
-    }
-  }
 }
 
 /*

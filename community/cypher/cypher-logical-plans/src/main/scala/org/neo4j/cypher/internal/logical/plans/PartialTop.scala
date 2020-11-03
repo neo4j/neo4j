@@ -27,7 +27,11 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
  * Only retain the first 'limit' rows, which are produced once the TopTable is full and the current
  * chunk is read completely.
  */
-case class PartialTop(source: LogicalPlan, alreadySortedPrefix: Seq[ColumnOrder], stillToSortSuffix: Seq[ColumnOrder], limit: Expression)(implicit idGen: IdGen) extends LogicalPlan(idGen) with EagerLogicalPlan {
+case class PartialTop(source: LogicalPlan,
+                      alreadySortedPrefix: Seq[ColumnOrder],
+                      stillToSortSuffix: Seq[ColumnOrder],
+                      limit: Expression,
+                      skipSortingPrefixLength: Option[Expression] = None)(implicit idGen: IdGen) extends LogicalPlan(idGen) with EagerLogicalPlan {
   override def lhs: Option[LogicalPlan] = Some(source)
 
   override def rhs: Option[LogicalPlan] = None

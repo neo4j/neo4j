@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.InterpretedExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.literal
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.values.storable.IntValue
 
 class PartialTopNPipeTest extends CypherFunSuite {
 
@@ -50,7 +51,7 @@ class PartialTopNPipeTest extends CypherFunSuite {
     )
 
     val source = new FakePipe(input)
-    val sortPipe = PartialTopNPipe(source, literal(5), compareX, compareY)()
+    val sortPipe = PartialTopNPipe(source, literal(5), None, compareX, compareY)()
 
     val iterator = sortPipe.createResults(QueryStateHelper.emptyWithValueSerialization)
 
@@ -66,6 +67,26 @@ class PartialTopNPipeTest extends CypherFunSuite {
     source.numberOfPulledRows should be(8)
 
     iterator.hasNext should be(false)
+  }
+
+  test("partial top if LIMIT aligns with chunk boundary") {
+    val input = List(
+      Map("x" -> 1, "y" -> 5),
+      Map("x" -> 1, "y" -> 2),
+      Map("x" -> 2, "y" -> 3),
+      Map("x" -> 2, "y" -> 5),
+      Map("x" -> 3, "y" -> 1),
+      Map("x" -> 3, "y" -> 0),
+      Map("x" -> 3, "y" -> 5),
+    )
+
+    val source = new FakePipe(input)
+    val sortPipe = PartialTopNPipe(source, literal(4), None, compareX, compareY)()
+
+    val iterator = sortPipe.createResults(QueryStateHelper.emptyWithValueSerialization)
+
+    iterator.toList.map(r => Map("x" -> r.getByName("x").asInstanceOf[IntValue].longValue(), "y" -> r.getByName("y").asInstanceOf[IntValue].longValue())) shouldBe
+      input.sortBy(m => (m("x"), m("y"))).take(4)
   }
 
   test("partial top -1 should be very lazy") {
@@ -85,7 +106,7 @@ class PartialTopNPipeTest extends CypherFunSuite {
     )
 
     val source = new FakePipe(input)
-    val sortPipe = PartialTopNPipe(source, literal(-1), compareX, compareY)()
+    val sortPipe = PartialTopNPipe(source, literal(-1), None, compareX, compareY)()
 
     val iterator = sortPipe.createResults(QueryStateHelper.emptyWithValueSerialization)
 

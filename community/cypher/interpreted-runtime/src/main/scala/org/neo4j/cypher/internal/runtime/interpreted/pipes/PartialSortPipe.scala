@@ -24,13 +24,15 @@ import java.util.Comparator
 import org.neo4j.collection.trackable.HeapTrackingArrayList
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.ReadableRow
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.util.attribution.Id
 
 import scala.collection.JavaConverters.asScalaIteratorConverter
 
 case class PartialSortPipe(source: Pipe,
                            prefixComparator: Comparator[ReadableRow],
-                           suffixComparator: Comparator[ReadableRow])
+                           suffixComparator: Comparator[ReadableRow],
+                           skipSortingPrefixLengthExp: Option[Expression])
                           (val id: Id = Id.INVALID_ID)
   extends PipeWithSource(source) with OrderedInputPipe {
 
@@ -38,6 +40,10 @@ case class PartialSortPipe(source: Pipe,
     private val memoryTracker = state.memoryTracker.memoryTrackerForOperator(id.x)
     private val rowsMemoryTracker = memoryTracker.getScopedMemoryTracker
     private val buffer = HeapTrackingArrayList.newArrayList[CypherRow](16, memoryTracker)
+    private val skipSortingPrefixLength = skipSortingPrefixLengthExp.map(SkipPipe.evaluateStaticSkipOrLimitNumberOrThrow(_, state, "SKIP"))
+
+    // How many rows remain until we need to start sorting?
+    private var remainingSkipSorting: Long = skipSortingPrefixLength.getOrElse(-1)
 
     override def clear(): Unit = {
       rowsMemoryTracker.reset()
@@ -54,10 +60,11 @@ case class PartialSortPipe(source: Pipe,
     override def processRow(row: CypherRow): Unit = {
       rowsMemoryTracker.allocateHeap(row.estimatedHeapUsage)
       buffer.add(row)
+      remainingSkipSorting = math.max(-1L, remainingSkipSorting - 1L)
     }
 
     override def result(): Iterator[CypherRow] = {
-      if (buffer.size() > 1) {
+      if (buffer.size() > 1 && remainingSkipSorting == -1) {
         // Sort this chunk
         buffer.sort(suffixComparator)
       }

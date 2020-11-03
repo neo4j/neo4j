@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.runtime.TestSubscriber
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
+import org.neo4j.cypher.internal.runtime.spec.tests.PartialSortTestBase.firstTwoColumns
 
 import scala.util.Random
 
@@ -36,6 +37,16 @@ abstract class PartialTopNTestBase[CONTEXT <: RuntimeContext](
                                                                runtime: CypherRuntime[CONTEXT],
                                                                sizeHint: Int
                                                              ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+
+  private def unsortedPrefixThenTop(input: IndexedSeq[Array[Any]], chunkSize: Int, skip: Int, topLimit: Int): IndexedSeq[Array[Any]] = {
+    val skipPrefixLength = skip - skip % chunkSize
+    val allSorted = input.sortBy(firstTwoColumns)
+    val skipPrefixThenSortedTop =
+      input.take(skipPrefixLength) ++
+        allSorted.slice(skipPrefixLength, topLimit)
+    allSorted should not equal skipPrefixThenSortedTop // Let's make sure the test can show the difference in not sorting the first rows.
+    skipPrefixThenSortedTop
+  }
 
   test("empty input gives empty output") {
     // when
@@ -53,10 +64,26 @@ abstract class PartialTopNTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x", "y").withNoRows()
   }
 
+  test("empty input gives empty output with skip") {
+    // when
+    val input = inputValues()
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .partialTop(Seq(Ascending("x")), Seq(Ascending("y")), 5, 17)
+      .input(variables = Seq("x", "y"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, input)
+
+    // then
+    runtimeResult should beColumns("x", "y").withNoRows()
+  }
+
   test("simple top n if sorted column only has one value") {
     // when
     val topLimit = sizeHint / 10
-    val sortedInput = for (x <- 1 to sizeHint) yield Array[Any]("A", x)
+    val sortedInput = for (x <- 0 until sizeHint) yield Array[Any]("A", x)
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
@@ -70,10 +97,28 @@ abstract class PartialTopNTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x", "y").withRows(inOrder(sortedInput.take(topLimit)))
   }
 
+  test("simple top n if sorted column only has one value with skip") {
+    // when
+    val topLimit = sizeHint / 10
+    val skip = 7
+    val sortedInput = for (x <- 0 until sizeHint) yield Array[Any]("A", x)
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .partialTop(Seq(Ascending("x")), Seq(Ascending("y")), topLimit, skip)
+      .input(variables = Seq("x", "y"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(Random.shuffle(sortedInput):_*))
+
+    // then
+    runtimeResult should beColumns("x", "y").withRows(inOrder(sortedInput.take(topLimit)))
+  }
+
   test("simple top n for chunk size 1") {
     // when
     val topLimit = sizeHint / 10
-    val input = for (i <- 1 to sizeHint) yield Array[Any](i, i)
+    val input = for (i <- 0 until sizeHint) yield Array[Any](i, i)
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
@@ -87,12 +132,30 @@ abstract class PartialTopNTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x", "y").withRows(inOrder(input.take(topLimit)))
   }
 
+  test("simple top n for chunk size 1 with skip") {
+    // when
+    val topLimit = sizeHint / 10
+    val skip = 17
+    val input = for (i <- 0 until sizeHint) yield Array[Any](i, i)
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .partialTop(Seq(Ascending("x")), Seq(Ascending("y")), topLimit, skip)
+      .input(variables = Seq("x", "y"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(input:_*))
+
+    // then
+    runtimeResult should beColumns("x", "y").withRows(inOrder(input.take(topLimit)))
+  }
+
   test("simple top n if sorted column has more values - return subset of first block") {
     // when
     val chunkSize = sizeHint / 10
     val topLimit = chunkSize / 2
-    val input = for (i <- 1 to sizeHint) yield Array[Any](i / chunkSize, sizeHint - i)
-    val sortedInput = input.sortBy(row => (row(0).asInstanceOf[Int], row(1).asInstanceOf[Int]))
+    val input = for (i <- 0 until sizeHint) yield Array[Any](i / chunkSize, sizeHint - i)
+    val sortedInput = input.sortBy(firstTwoColumns)
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
@@ -110,8 +173,8 @@ abstract class PartialTopNTestBase[CONTEXT <: RuntimeContext](
     // when
     val chunkSize = sizeHint / 10
     val topLimit = chunkSize
-    val input = for (i <- 1 to sizeHint) yield Array[Any](i / chunkSize, sizeHint - i)
-    val sortedInput = input.sortBy(row => (row(0).asInstanceOf[Int], row(1).asInstanceOf[Int]))
+    val input = for (i <- 0 until sizeHint) yield Array[Any](i / chunkSize, sizeHint - i)
+    val sortedInput = input.sortBy(firstTwoColumns)
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
@@ -125,12 +188,92 @@ abstract class PartialTopNTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x", "y").withRows(inOrder(sortedInput.take(topLimit)))
   }
 
+  test("simple top n if sorted column has multiple values, skip = chunk size") {
+    // when
+    val chunkSize = sizeHint / 10
+    val skip = chunkSize
+    val topLimit = chunkSize + skip
+    val input = for (i <- 0 until sizeHint) yield Array[Any](i / chunkSize, sizeHint - i)
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .partialTop(Seq(Ascending("x")), Seq(Ascending("y")), topLimit, skip)
+      .input(variables = Seq("x", "y"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(input:_*))
+
+    // then
+    val expectedResult = unsortedPrefixThenTop(input, chunkSize, skip, topLimit)
+    runtimeResult should beColumns("x", "y").withRows(inOrder(expectedResult))
+  }
+
+  test("simple top n if sorted column has multiple values, skip greater than chunk size") {
+    // when
+    val chunkSize = sizeHint / 10
+    val skip = chunkSize + 1
+    val topLimit = chunkSize + skip
+    val input = for (i <- 0 until sizeHint) yield Array[Any](i / chunkSize, sizeHint - i)
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .partialTop(Seq(Ascending("x")), Seq(Ascending("y")), topLimit, skip)
+      .input(variables = Seq("x", "y"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(input:_*))
+
+    // then
+    val expectedResult = unsortedPrefixThenTop(input, chunkSize, skip, topLimit)
+    runtimeResult should beColumns("x", "y").withRows(inOrder(expectedResult))
+  }
+
+  test("simple top n if sorted column has multiple values, skip all but one") {
+    // when
+    val chunkSize = sizeHint / 10
+    val skip = sizeHint - 1
+    val topLimit = chunkSize + skip
+    val input = for (i <- 0 until sizeHint) yield Array[Any](i / chunkSize, sizeHint - i)
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .partialTop(Seq(Ascending("x")), Seq(Ascending("y")), topLimit, skip)
+      .input(variables = Seq("x", "y"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(input:_*))
+
+    // then
+    val expectedResult = unsortedPrefixThenTop(input, chunkSize, skip, topLimit)
+    runtimeResult should beColumns("x", "y").withRows(inOrder(expectedResult))
+  }
+
+  test("simple top n if sorted column has multiple values, skip all rows") {
+    // when
+    val chunkSize = sizeHint / 10
+    val skip = sizeHint
+    val topLimit = chunkSize + skip
+    val input = for (i <- 0 until sizeHint) yield Array[Any](i / chunkSize, sizeHint - i)
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .partialTop(Seq(Ascending("x")), Seq(Ascending("y")), topLimit, skip)
+      .input(variables = Seq("x", "y"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(input:_*))
+
+    // then
+    val expectedResult = unsortedPrefixThenTop(input, chunkSize, skip, topLimit)
+    runtimeResult should beColumns("x", "y").withRows(inOrder(expectedResult))
+  }
+
   test("simple top n if results from two blocks must be returned - one from second block") {
     // when
     val chunkSize = sizeHint / 10
     val topLimit = chunkSize + 1
-    val input = for (i <- 1 to sizeHint) yield Array[Any](i / chunkSize, sizeHint - i)
-    val sortedInput = input.sortBy(row => (row(0).asInstanceOf[Int], row(1).asInstanceOf[Int]))
+    val input = for (i <- 0 until sizeHint) yield Array[Any](i / chunkSize, sizeHint - i)
+    val sortedInput = input.sortBy(firstTwoColumns)
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
@@ -148,8 +291,8 @@ abstract class PartialTopNTestBase[CONTEXT <: RuntimeContext](
     // when
     val chunkSize = sizeHint / 10
     val topLimit = chunkSize + 2
-    val input = for (i <- 1 to sizeHint) yield Array[Any](i / chunkSize, sizeHint - i)
-    val sortedInput = input.sortBy(row => (row(0).asInstanceOf[Int], row(1).asInstanceOf[Int]))
+    val input = for (i <- 0 until sizeHint) yield Array[Any](i / chunkSize, sizeHint - i)
+    val sortedInput = input.sortBy(firstTwoColumns)
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
@@ -166,8 +309,8 @@ abstract class PartialTopNTestBase[CONTEXT <: RuntimeContext](
   test("Top n with limit > Integer.Max works") {
     // when
     val chunkSize = sizeHint / 10
-    val input = for (i <- 1 to sizeHint) yield Array[Any](i / chunkSize, sizeHint - i)
-    val sortedInput = input.sortBy(row => (row(0).asInstanceOf[Int], row(1).asInstanceOf[Int]))
+    val input = for (i <- 0 until sizeHint) yield Array[Any](i / chunkSize, sizeHint - i)
+    val sortedInput = input.sortBy(firstTwoColumns)
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
@@ -201,46 +344,78 @@ abstract class PartialTopNTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should work on RHS of apply") {
-    val propValue = 10
-    val topLimit = 42
-    index("B", "prop")
-    val (aNodes, bNodes) = given {
+    val chunkSize = 17
+    val topLimit = chunkSize + 1
+    index("B", "x")
+    val aNodes = given {
       val aNodes = nodeGraph(2, "A")
-      val bNodes = nodePropertyGraph(4, {
-        case i: Int => Map("prop" -> (if (i % 2 == 0) propValue else 0))
+      val bNodes = nodePropertyGraph(sizeHint, {
+        case i: Int => Map("x" -> i / chunkSize, "y" -> -i)
       }, "B")
-      (aNodes, bNodes)
+      aNodes
     }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("a", "b", "c")
+      .produceResults("a", "x", "y")
       .apply()
-      .|.partialTop(Seq(Ascending("b")), Seq(Ascending("c")), topLimit)
-      .|.unwind("range(b.prop, 1, -1) AS c")
-      .|.nodeIndexOperator("b:B(prop > 0)", indexOrder = IndexOrderAscending, argumentIds = Set("a"))
+      .|.partialTop(Seq(Ascending("x")), Seq(Ascending("y")), topLimit)
+      .|.projection("b.x AS x", "b.y AS y")
+      .|.nodeIndexOperator("b:B(x)", indexOrder = IndexOrderAscending, argumentIds = Set("a"))
       .nodeByLabelScan("a", "A", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
 
-    val rhs = for {
-      b <- bNodes if b.getProperty("prop").asInstanceOf[Int] > 0
-      c <- Range.inclusive(1, propValue)
-    } yield (b, c)
+    val rhs = for (i <- 0 until sizeHint) yield Array[Any](i / chunkSize, - i)
 
     val expected = for {
       a <- aNodes
-      (b, c) <- rhs.take(topLimit)
-    } yield Array[Any](a, b, c)
+      row <- rhs.sortBy(firstTwoColumns).take(topLimit)
+    } yield Array[Any](a, row(0), row(1))
 
-    runtimeResult should beColumns("a", "b", "c").withRows(inOrder(expected))
+    runtimeResult should beColumns("a", "x", "y").withRows(inOrder(expected))
+  }
+
+  test("should work on RHS of apply with skip") {
+    val chunkSize = 17
+    val skip = chunkSize + 1
+    val topLimit = chunkSize + skip
+    index("B", "x")
+    val aNodes = given {
+      val aNodes = nodeGraph(2, "A")
+      val bNodes = nodePropertyGraph(sizeHint, {
+        case i: Int => Map("x" -> i / chunkSize, "y" -> -i)
+      }, "B")
+      aNodes
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a", "x", "y")
+      .apply()
+      .|.partialTop(Seq(Ascending("x")), Seq(Ascending("y")), topLimit, skip)
+      .|.projection("b.x AS x", "b.y AS y")
+      .|.nodeIndexOperator("b:B(x)", indexOrder = IndexOrderAscending, argumentIds = Set("a"))
+      .nodeByLabelScan("a", "A", IndexOrderNone)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    val rhs = unsortedPrefixThenTop(for (i <- 0 until sizeHint) yield Array[Any](i / chunkSize, - i), chunkSize, skip, topLimit)
+
+    val expected = for {
+      a <- aNodes
+      row <- rhs
+    } yield Array[Any](a, row(0), row(1))
+
+    runtimeResult should beColumns("a", "x", "y").withRows(inOrder(expected))
   }
 
   test("should work on RHS of apply with variable number of rows per argument") {
     val inputSize = 100
     val topLimit = 17
-    val input = for (a <- 1 to inputSize) yield Array[Any](a)
+    val input = for (a <- 0 until inputSize) yield Array[Any](a)
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -257,7 +432,7 @@ abstract class PartialTopNTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val expected = for {
-      a <- 1 to inputSize
+      a <- 0 until inputSize
       rhs = for {
         b <- 1 to a
         c <- b to a

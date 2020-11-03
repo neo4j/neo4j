@@ -19,15 +19,20 @@
  */
 package org.neo4j.cypher.internal.logical.plans
 
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.util.attribution.IdGen
 
 /**
  * Given an input that is sorted on a prefix of columns, e.g. [a],
  * produce an output that is sorted on more columns, e.g. [a, b, c].
+ *
+ * @param skipSortingPrefixLength skip sorting so many rows at the beginning.
+ *                                This is an improvement if we know that these rows are skipped afterwards anyway.
  */
 case class PartialSort(source: LogicalPlan,
                        alreadySortedPrefix: Seq[ColumnOrder],
-                       stillToSortSuffix: Seq[ColumnOrder])
+                       stillToSortSuffix: Seq[ColumnOrder],
+                       skipSortingPrefixLength: Option[Expression] = None)
                       (implicit idGen: IdGen) extends LogicalPlan(idGen) with EagerLogicalPlan {
 
   val lhs = Some(source)

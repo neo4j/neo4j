@@ -834,7 +834,7 @@ class OrderPlanningIntegrationTestBase(queryGraphSolverSetup: QueryGraphSolverSe
       case _: Sort => true
     } shouldBe 0
     plan.treeCount {
-      case PartialSort(_, Seq(Ascending("a.prop")), Seq(Ascending("c.prop"))) => true
+      case PartialSort(_, Seq(Ascending("a.prop")), Seq(Ascending("c.prop")), None) => true
     } shouldBe 1
   }
 
@@ -859,7 +859,7 @@ class OrderPlanningIntegrationTestBase(queryGraphSolverSetup: QueryGraphSolverSe
       case _: Sort => true
     } shouldBe 0
     plan.treeCount {
-      case PartialSort(_, Seq(Ascending("a.prop")), Seq(Ascending("c.prop"))) => true
+      case PartialSort(_, Seq(Ascending("a.prop")), Seq(Ascending("c.prop")), None) => true
     } shouldBe 1
   }
 
@@ -891,7 +891,7 @@ class OrderPlanningIntegrationTestBase(queryGraphSolverSetup: QueryGraphSolverSe
       case _: Sort => true
     } shouldBe 0
     plan.treeCount {
-      case PartialSort(_, Seq(Ascending("a.prop")), Seq(Ascending("b.prop"))) => true
+      case PartialSort(_, Seq(Ascending("a.prop")), Seq(Ascending("b.prop")), None) => true
     } shouldBe 1
   }
 
@@ -927,7 +927,7 @@ class OrderPlanningIntegrationTestBase(queryGraphSolverSetup: QueryGraphSolverSe
       case _: Sort => true
     } shouldBe 0
     plan should beLike {
-      case PartialSort(_, Seq(Ascending("a.prop")), Seq(Ascending("e.prop"))) => ()
+      case PartialSort(_, Seq(Ascending("a.prop")), Seq(Ascending("e.prop")), None) => ()
     }
   }
 
@@ -957,7 +957,7 @@ class OrderPlanningIntegrationTestBase(queryGraphSolverSetup: QueryGraphSolverSe
       case _: Sort => true
     } shouldBe 0
     plan should beLike {
-      case PartialSort(_, Seq(Ascending("a.prop")), Seq(Ascending("c.prop"))) => ()
+      case PartialSort(_, Seq(Ascending("a.prop")), Seq(Ascending("c.prop")), None) => ()
     }
   }
 
@@ -988,7 +988,7 @@ class OrderPlanningIntegrationTestBase(queryGraphSolverSetup: QueryGraphSolverSe
         case _: Sort => true
       } shouldBe 0
       plan should beLike {
-        case PartialSort(_, Seq(Ascending("a.prop")), Seq(Ascending("b.prop"), Ascending("c.prop"))) => ()
+        case PartialSort(_, Seq(Ascending("a.prop")), Seq(Ascending("b.prop"), Ascending("c.prop")), None) => ()
       }
     }
   }
@@ -1020,7 +1020,7 @@ class OrderPlanningIntegrationTestBase(queryGraphSolverSetup: QueryGraphSolverSe
       case _: Sort => true
     } shouldBe 0
     plan should beLike {
-      case PartialSort(_, Seq(Ascending("first")), Seq(Ascending("second"))) => ()
+      case PartialSort(_, Seq(Ascending("first")), Seq(Ascending("second")), None) => ()
     }
   }
 
@@ -1047,7 +1047,7 @@ class OrderPlanningIntegrationTestBase(queryGraphSolverSetup: QueryGraphSolverSe
       case _: Sort => true
     } shouldBe 0
     plan.treeCount {
-      case PartialSort(_, Seq(Ascending("first")), Seq(Ascending("second"))) => true
+      case PartialSort(_, Seq(Ascending("first")), Seq(Ascending("second")), None) => true
     } shouldBe 1
     // The PartialSort should be between the expands, not at the end.
     plan should not be a[PartialSort]
@@ -1077,7 +1077,7 @@ class OrderPlanningIntegrationTestBase(queryGraphSolverSetup: QueryGraphSolverSe
         case _: Sort => true
       } shouldBe 0
       plan.treeCount {
-        case PartialSort(_, Seq(Ascending("first")), Seq(Ascending("second"), Ascending("third"))) => true
+        case PartialSort(_, Seq(Ascending("first")), Seq(Ascending("second"), Ascending("third")), None) => true
       } shouldBe 1
       // The PartialSort should be between the expands, not at the end.
       plan should not be a[PartialSort]

@@ -949,7 +949,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
                       interestingOrder: InterestingOrder,
                       context: LogicalPlanningContext): LogicalPlan = {
     val solved = solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.withInterestingOrder(interestingOrder))
-    val plan = annotate(PartialSort(inner, alreadySortedPrefix, stillToSortSuffix), solved, ProvidedOrder(orderColumns, ProvidedOrder.Left), context)
+    val plan = annotate(PartialSort(inner, alreadySortedPrefix, stillToSortSuffix, None), solved, ProvidedOrder(orderColumns, ProvidedOrder.Left), context)
     markOrderAsLeveragedBackwardsUntilOrigin(plan)
     plan
   }

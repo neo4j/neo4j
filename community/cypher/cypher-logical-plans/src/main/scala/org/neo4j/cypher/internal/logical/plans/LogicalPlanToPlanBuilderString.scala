@@ -159,7 +159,7 @@ object LogicalPlanToPlanBuilderString {
         shortestPath match {
           case ShortestPathPattern(maybePathName, PatternRelationship(relName, (from, to), dir, types, length), single) =>
             val lenStr = length match {
-              case VarPatternLength(min, max) => s"${min}..${max.getOrElse("")}"
+              case VarPatternLength(min, max) => s"$min..${max.getOrElse("")}"
               case _ => throw new IllegalStateException("Shortest path should have a variable length pattern")
             }
             val (dirStrA, dirStrB) = arrows(dir)
@@ -199,7 +199,7 @@ object LogicalPlanToPlanBuilderString {
         val typeStr = relTypeStr(types.getOrElse(Seq.empty))
         val lenStr = length match {
           case SimplePatternLength => ""
-          case VarPatternLength(min, max) => s"*${min}..${max.getOrElse("")}"
+          case VarPatternLength(min, max) => s"*$min..${max.getOrElse("")}"
         }
         s""" "($start)$dirStrA[$relName$typeStr$lenStr]$dirStrB($end)", $startInScope, $endInScope """.trim
       case ValueHashJoin(_, _, join) =>
@@ -216,15 +216,23 @@ object LogicalPlanToPlanBuilderString {
         val siStr = sortItemsStr(sortItems)
         val lStr = integerString(limit)
         s""" $siStr, $lStr """.trim
-      case PartialSort(_, alreadySortedPrefix, stillToSortSuffix) =>
+      case PartialSort(_, alreadySortedPrefix, stillToSortSuffix, skipSortingPrefixLength) =>
         val asStr = sortItemsStr(alreadySortedPrefix)
         val stsStr = sortItemsStr(stillToSortSuffix)
-        s""" $asStr, $stsStr """.trim
-      case PartialTop(_, alreadySortedPrefix, stillToSortSuffix, limit) =>
+        val ssplStr = skipSortingPrefixLength.map(integerString) match {
+          case Some(value) => s", $value"
+          case None => ""
+        }
+        s""" $asStr, $stsStr$ssplStr """.trim
+      case PartialTop(_, alreadySortedPrefix, stillToSortSuffix, limit, skipSortingPrefixLength) =>
         val asStr = sortItemsStr(alreadySortedPrefix)
         val stsStr = sortItemsStr(stillToSortSuffix)
         val lStr = integerString(limit)
-        s""" $asStr, $stsStr, $lStr """.trim
+        val ssplStr = skipSortingPrefixLength.map(integerString) match {
+          case Some(value) => s", $value"
+          case None => ""
+        }
+        s""" $asStr, $stsStr, $lStr$ssplStr """.trim
       case ErrorPlan(_, exception) =>
         // This is by no means complete, but the best we can do.
         s"new ${exception.getClass.getSimpleName}()"
