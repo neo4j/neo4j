@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.monitoring.tracing;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
 import org.neo4j.lock.LockTracer;
@@ -116,11 +117,11 @@ public class Tracers
      * @param jobScheduler a scheduler for async jobs
      */
     public Tracers( String desiredImplementationName, Log msgLog, Monitors monitors, JobScheduler jobScheduler,
-            SystemNanoClock clock )
+            SystemNanoClock clock, Config config )
     {
         this.clock = clock;
         this.tracersFactory = createTracersFactory( desiredImplementationName, msgLog );
-        this.pageCacheTracer = tracersFactory.createPageCacheTracer( monitors, jobScheduler, clock, msgLog );
+        this.pageCacheTracer = tracersFactory.createPageCacheTracer( monitors, jobScheduler, clock, msgLog, config );
     }
 
     public PageCacheTracer getPageCacheTracer()

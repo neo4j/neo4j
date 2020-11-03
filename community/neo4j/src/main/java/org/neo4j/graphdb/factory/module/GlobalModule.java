@@ -210,7 +210,7 @@ public class GlobalModule
 
         String desiredImplementationName = globalConfig.get( GraphDatabaseInternalSettings.tracer );
         tracers = globalDependencies.satisfyDependency( new Tracers( desiredImplementationName,
-                logService.getInternalLog( Tracers.class ), globalMonitors, jobScheduler, globalClock ) );
+                logService.getInternalLog( Tracers.class ), globalMonitors, jobScheduler, globalClock, globalConfig ) );
         globalDependencies.satisfyDependency( tracers.getPageCacheTracer() );
 
         collectionsFactorySupplier = createCollectionsFactorySupplier( globalConfig, globalLife );

@@ -536,4 +536,8 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
 
     @Internal
     public static final Setting<Boolean> trace_cursors = newBuilder( "unsupported.dbms.debug.trace_cursors", BOOL, false ).build();
+
+    @Internal
+    public static final Setting<Duration> page_cache_tracer_speed_reporting_threshold =
+            newBuilder( "unsupported.dbms.debug.page_cache_tracer_speed_reporting_threshold", DURATION, ofSeconds( 10 ) ).build();
 }

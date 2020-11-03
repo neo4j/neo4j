@@ -22,6 +22,7 @@ package org.neo4j.kernel.monitoring.tracing;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.api.tracer.DefaultTracer;
@@ -87,7 +88,7 @@ class TracersTest
 
     private Tracers createTracers( String s )
     {
-        return new Tracers( s, log, monitors, jobScheduler, clock );
+        return new Tracers( s, log, monitors, jobScheduler, clock, Config.defaults() );
     }
 
     private void assertDefaultImplementation( Tracers tracers )

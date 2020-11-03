@@ -659,7 +659,7 @@ class KernelTransactionsTest
         TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
         when( transactionIdStore.getLastCommittedTransaction() ).thenReturn( new TransactionId( 0, 0, 0 ) );
 
-        Tracers tracers = new Tracers( "null", NullLog.getInstance(), new Monitors(), mock( JobScheduler.class ), clock );
+        Tracers tracers = new Tracers( "null", NullLog.getInstance(), new Monitors(), mock( JobScheduler.class ), clock, config );
         final DatabaseTracers databaseTracers = new DatabaseTracers( tracers );
         StatementLocksFactory statementLocksFactory = new SimpleStatementLocksFactory( locks );
 

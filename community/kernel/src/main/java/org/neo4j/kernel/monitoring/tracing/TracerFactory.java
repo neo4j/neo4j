@@ -22,6 +22,7 @@ package org.neo4j.kernel.monitoring.tracing;
 import java.time.Clock;
 
 import org.neo4j.annotations.service.Service;
+import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
@@ -47,9 +48,10 @@ public interface TracerFactory extends NamedService
      * @param jobScheduler a scheduler for async jobs
      * @param clock system nano clock
      * @param log log
+     * @param config configuration
      * @return The created instance.
      */
-    PageCacheTracer createPageCacheTracer( Monitors monitors, JobScheduler jobScheduler, SystemNanoClock clock, Log log );
+    PageCacheTracer createPageCacheTracer( Monitors monitors, JobScheduler jobScheduler, SystemNanoClock clock, Log log, Config config );
 
     /**
      * Create a new DatabaseTracer instance.
