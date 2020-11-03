@@ -1309,7 +1309,7 @@ class IndexingServiceTest
         IndexingService indexingService =
                 new IndexingService( indexProxyCreator, indexProviderMap, indexMapReference, mock( IndexStoreView.class ), schemaRules, samplingController,
                         nameLookup, scheduler, null, logProvider, logProvider, monitor, mock( IndexStatisticsStore.class ),
-                        PageCacheTracer.NULL, INSTANCE, "", false );
+                        PageCacheTracer.NULL, INSTANCE, "", false, Config.defaults() );
         // and where index population starts
         indexingService.init();
 
@@ -1632,7 +1632,7 @@ class IndexingServiceTest
                 mock( IndexSamplingController.class ), nameLookup,
                 mock( JobScheduler.class ), mock( SchemaState.class ),
                 internalLogProvider, userLogProvider, IndexingService.NO_MONITOR, mock( IndexStatisticsStore.class ), PageCacheTracer.NULL, INSTANCE, "",
-                false );
+                false, Config.defaults() );
     }
 
     private static DependencyResolver buildIndexDependencies( IndexProvider... providers )

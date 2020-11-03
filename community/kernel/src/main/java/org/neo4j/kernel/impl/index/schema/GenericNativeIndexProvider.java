@@ -118,6 +118,7 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<GenericKey,N
      */
     private final SpaceFillingCurveConfiguration configuration;
     private final boolean archiveFailedIndex;
+    private final Config config;
 
     public GenericNativeIndexProvider( DatabaseIndexContext databaseIndexContext, IndexDirectoryStructure.Factory directoryStructureFactory,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, Config config )
@@ -127,6 +128,7 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<GenericKey,N
         this.configuredSettings = new ConfiguredSpaceFillingCurveSettingsCache( config );
         this.configuration = getConfiguredSpaceFillingCurveConfiguration( config );
         this.archiveFailedIndex = config.get( GraphDatabaseInternalSettings.archive_failed_index );
+        this.config = config;
     }
 
     @Override
@@ -166,7 +168,7 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<GenericKey,N
             MemoryTracker memoryTracker, TokenNameLookup tokenNameLookup )
     {
         return new GenericBlockBasedIndexPopulator( databaseIndexContext, indexFiles, layout, descriptor, layout.getSpaceFillingCurveSettings(),
-                configuration, archiveFailedIndex, bufferFactory, memoryTracker, tokenNameLookup );
+                configuration, archiveFailedIndex, bufferFactory, config, memoryTracker, tokenNameLookup );
     }
 
     @Override

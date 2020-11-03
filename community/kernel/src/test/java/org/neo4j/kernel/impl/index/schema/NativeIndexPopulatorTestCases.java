@@ -32,15 +32,15 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 class NativeIndexPopulatorTestCases
 {
-    static final IndexSpecificSpaceFillingCurveSettings spaceFillingCurveSettings =
-            IndexSpecificSpaceFillingCurveSettings.fromConfig( Config.defaults() );
+    private static final Config config = Config.defaults();
+    static final IndexSpecificSpaceFillingCurveSettings spaceFillingCurveSettings = IndexSpecificSpaceFillingCurveSettings.fromConfig( config );
     private static final StandardConfiguration configuration = new StandardConfiguration();
 
     static PopulatorFactory<GenericKey,NativeIndexValue> genericBlockBasedPopulatorFactory()
     {
         return ( nativeIndexContext, storeFile, layout, descriptor, tokenNameLookup ) ->
                 new GenericBlockBasedIndexPopulator( nativeIndexContext, storeFile, layout, descriptor, spaceFillingCurveSettings, configuration, false,
-                        heapBufferFactory( 10 * 1024 ), INSTANCE, tokenNameLookup );
+                        heapBufferFactory( 10 * 1024 ), config, INSTANCE, tokenNameLookup );
     }
 
     @FunctionalInterface

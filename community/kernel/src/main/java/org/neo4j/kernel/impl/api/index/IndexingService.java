@@ -47,6 +47,7 @@ import java.util.stream.Collectors;
 import org.neo4j.common.EntityType;
 import org.neo4j.common.Subject;
 import org.neo4j.common.TokenNameLookup;
+import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.exceptions.UnderlyingStorageException;
@@ -125,6 +126,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
     private final MemoryTracker memoryTracker;
     private final String databaseName;
     private final boolean readOnly;
+    private final Config config;
     private final TokenNameLookup tokenNameLookup;
     private final JobScheduler jobScheduler;
     private final LogProvider internalLogProvider;
@@ -223,7 +225,8 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
             PageCacheTracer pageCacheTracer,
             MemoryTracker memoryTracker,
             String databaseName,
-            boolean readOnly )
+            boolean readOnly,
+            Config config )
     {
         this.indexProxyCreator = indexProxyCreator;
         this.providerMap = providerMap;
@@ -244,6 +247,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
         this.memoryTracker = memoryTracker;
         this.databaseName = databaseName;
         this.readOnly = readOnly;
+        this.config = config;
     }
 
     /**
@@ -808,7 +812,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
     {
         MultipleIndexPopulator multiPopulator = new MultipleIndexPopulator( storeView, internalLogProvider, type, schemaState, indexStatisticsStore,
                 jobScheduler, tokenNameLookup, pageCacheTracer, memoryTracker, databaseName, subject );
-        return new IndexPopulationJob( multiPopulator, monitor, verifyBeforeFlipping, pageCacheTracer, memoryTracker, databaseName, subject, NODE );
+        return new IndexPopulationJob( multiPopulator, monitor, verifyBeforeFlipping, pageCacheTracer, memoryTracker, databaseName, subject, NODE, config );
     }
 
     private void startIndexPopulation( IndexPopulationJob job )

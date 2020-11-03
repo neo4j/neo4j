@@ -25,6 +25,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.common.EntityType;
+import org.neo4j.common.Subject;
+import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -39,10 +41,9 @@ import org.neo4j.memory.ThreadSafePeakMemoryTracker;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobMonitoringParams;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
-import org.neo4j.common.Subject;
 import org.neo4j.util.concurrent.Runnables;
 
-import static org.neo4j.kernel.impl.index.schema.BlockBasedIndexPopulator.parseBlockSize;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.index_populator_block_size;
 
 /**
  * A background job for initially populating one or more index over existing data in the database.
@@ -79,7 +80,8 @@ public class IndexPopulationJob implements Runnable
     private volatile JobHandle<?> jobHandle;
 
     public IndexPopulationJob( MultipleIndexPopulator multiPopulator, IndexingService.Monitor monitor, boolean verifyBeforeFlipping,
-            PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker, String databaseName, Subject subject, EntityType populatedEntityType )
+            PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker, String databaseName, Subject subject, EntityType populatedEntityType,
+            Config config )
     {
         this.multiPopulator = multiPopulator;
         this.monitor = monitor;
@@ -87,7 +89,7 @@ public class IndexPopulationJob implements Runnable
         this.pageCacheTracer = pageCacheTracer;
         this.memoryTracker = memoryTracker;
         this.memoryAllocationTracker = new ThreadSafePeakMemoryTracker();
-        this.bufferFactory = new ByteBufferFactory( UnsafeDirectByteBufferAllocator::new, parseBlockSize() );
+        this.bufferFactory = new ByteBufferFactory( UnsafeDirectByteBufferAllocator::new, config.get( index_populator_block_size ).intValue() );
         this.databaseName = databaseName;
         this.subject = subject;
         this.populatedEntityType = populatedEntityType;

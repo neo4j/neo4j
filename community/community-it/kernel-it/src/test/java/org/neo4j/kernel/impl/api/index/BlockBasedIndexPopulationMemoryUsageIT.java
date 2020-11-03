@@ -19,32 +19,30 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.impl.index.schema.BlockBasedIndexPopulator;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.monitoring.Monitors;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.DbmsExtension;
+import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.util.FeatureToggles;
 
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.io.ByteUnit.kibiBytes;
-import static org.neo4j.kernel.impl.index.schema.BlockBasedIndexPopulator.BLOCK_SIZE_NAME;
 
-@DbmsExtension
+@DbmsExtension( configurationCallback = "configure" )
 class BlockBasedIndexPopulationMemoryUsageIT
 {
     private static final long TEST_BLOCK_SIZE = kibiBytes( 64 );
@@ -56,18 +54,10 @@ class BlockBasedIndexPopulationMemoryUsageIT
     @Inject
     private Monitors monitors;
 
-    @BeforeAll
-    static void setUpFeatureToggles()
+    @ExtensionCallback
+    void configure( TestDatabaseManagementServiceBuilder builder )
     {
-        // Configure populator so that it will use block-based population and reduce batch size and increase number of workers
-        // so that population will very likely create more batches in more threads (affecting number of buffers used)
-        FeatureToggles.set( BlockBasedIndexPopulator.class, BLOCK_SIZE_NAME, TEST_BLOCK_SIZE );
-    }
-
-    @AfterAll
-    static void restoreFeatureToggles()
-    {
-        FeatureToggles.clear( BlockBasedIndexPopulator.class, BLOCK_SIZE_NAME );
+        builder.setConfig( GraphDatabaseInternalSettings.index_populator_block_size, TEST_BLOCK_SIZE );
     }
 
     @Test

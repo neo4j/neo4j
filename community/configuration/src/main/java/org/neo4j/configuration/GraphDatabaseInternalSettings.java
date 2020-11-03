@@ -31,6 +31,7 @@ import static java.time.Duration.ofMinutes;
 import static java.time.Duration.ofSeconds;
 import static org.neo4j.configuration.SettingConstraints.any;
 import static org.neo4j.configuration.SettingConstraints.is;
+import static org.neo4j.configuration.SettingConstraints.max;
 import static org.neo4j.configuration.SettingConstraints.min;
 import static org.neo4j.configuration.SettingConstraints.range;
 import static org.neo4j.configuration.SettingImpl.newBuilder;
@@ -561,6 +562,10 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
     public static Setting<Boolean> enable_transaction_heap_allocation_tracking =
             newBuilder( "unsupported.dbms.enable_transaction_heap_allocation_tracking", BOOL, false ).build();
 
+    @Internal
+    public static Setting<Long> initial_transaction_heap_grab_size =
+            newBuilder( "unsupported.dbms.initial_transaction_heap_grab_size", BYTES, mebiBytes( 2 ) ).build();
+
     /**
      * Default value whether or not to strictly prioritize ids from freelist, as opposed to allocating from high id.
      * Given a scenario where there are multiple concurrent calls to allocating IDs
@@ -575,6 +580,11 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
     public static Setting<Boolean> strictly_prioritize_id_freelist = newBuilder( "unsupported.dbms.strictly_prioritize_id_freelist", BOOL, false ).build();
 
     @Internal
-    public static Setting<Long> initial_transaction_heap_grab_size =
-            newBuilder( "unsupported.dbms.initial_transaction_heap_grab_size", BYTES, mebiBytes( 2 ) ).build();
+    public static Setting<Long> index_populator_block_size = newBuilder( "unsupported.dbms.index.populator_block_size", BYTES, mebiBytes( 1 ) )
+            .addConstraint( min( 20L ) )
+            .addConstraint( max( (long) Integer.MAX_VALUE ) )
+            .build();
+
+    @Internal
+    public static Setting<Integer> index_populator_merge_factor = newBuilder( "unsupported.dbms.index.populator_merge_factor", INT, 8 ).build();
 }

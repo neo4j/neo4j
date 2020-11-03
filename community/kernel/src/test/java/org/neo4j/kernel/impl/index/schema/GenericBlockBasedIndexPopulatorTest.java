@@ -353,7 +353,7 @@ class GenericBlockBasedIndexPopulatorTest
         SpaceFillingCurveConfiguration configuration = SpaceFillingCurveSettingsFactory.getConfiguredSpaceFillingCurveConfiguration( config );
         GenericBlockBasedIndexPopulator populator =
                 new GenericBlockBasedIndexPopulator( databaseIndexContext, indexFiles, layout, indexDescriptor, spatialSettings, configuration, false,
-                heapBufferFactory( (int) kibiBytes( 40 ) ), INSTANCE, tokenNameLookup );
+                heapBufferFactory( (int) kibiBytes( 40 ) ), config, INSTANCE, tokenNameLookup );
         populator.create();
         return populator;
     }

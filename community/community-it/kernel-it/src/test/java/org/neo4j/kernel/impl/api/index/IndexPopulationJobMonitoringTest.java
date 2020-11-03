@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.api.index;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.common.Subject;
+import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptor;
@@ -56,7 +57,7 @@ class IndexPopulationJobMonitoringTest
                 PopulationProgress.DONE
         );
         var job = new IndexPopulationJob( populator, NO_MONITOR, false, NULL, memoryTracker, "Test DB",
-                new Subject( "Test User" ), NODE );
+                new Subject( "Test User" ), NODE, Config.defaults() );
 
         addIndex( job, "the ONE" );
 
@@ -90,7 +91,7 @@ class IndexPopulationJobMonitoringTest
                 PopulationProgress.DONE
         );
         var job = new IndexPopulationJob( populator, NO_MONITOR, false, NULL, memoryTracker, "Another Test DB",
-                new Subject( "Another Test User" ), NODE );
+                new Subject( "Another Test User" ), NODE, Config.defaults() );
 
         addIndex( job, "index 1" );
         addIndex( job, "index 2" );

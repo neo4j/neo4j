@@ -32,6 +32,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Seeker;
@@ -39,7 +40,6 @@ import org.neo4j.index.internal.gbptree.Writer;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.io.ByteUnit;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.memory.ByteBufferFactory;
 import org.neo4j.io.memory.ByteBufferFactory.Allocator;
@@ -56,7 +56,6 @@ import org.neo4j.scheduler.JobHandle;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.UpdateMode;
 import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
-import org.neo4j.util.FeatureToggles;
 import org.neo4j.util.Preconditions;
 import org.neo4j.values.storable.Value;
 
@@ -79,13 +78,22 @@ import static org.neo4j.util.concurrent.Runnables.runAll;
  * {@code 10 * numberOfPopulationWorkers} where numberOfPopulationWorkers is currently capped to 8. So given a buffer size of 1 MiB then maximum memory
  * usage for one population job (which can populate multiple index) is ~80 MiB.
  *
+ * Regarding block size: as entries gets written to a BlockStorage, they are buffered up to this size, then sorted and written out.
+ * As blocks gets merged into bigger blocks, this is still the size of the read buffer for each block no matter its size.
+ * Each thread has its own buffer when writing and each thread has {@link #mergeFactor} buffers when merging.
+ * The memory usage will be at its biggest during merge and a total memory usage sum can be calculated like so:
+ *
+ * <pre>
+ * blockSize * numberOfPopulationWorkers * {@link #mergeFactor}
+ * </pre>
+ *
+ * where {@link GraphDatabaseInternalSettings#index_population_workers} controls the number of population workers.
+ *
  * @param <KEY>
  * @param <VALUE>
  */
 public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,VALUE extends NativeIndexValue> extends NativeIndexPopulator<KEY,VALUE>
 {
-    public static final String BLOCK_SIZE_NAME = "blockSize";
-
     private final boolean archiveFailedIndex;
     private final MemoryTracker memoryTracker;
     /**
@@ -114,21 +122,19 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
     private final AtomicLong numberOfAppliedExternalUpdates = new AtomicLong();
 
     BlockBasedIndexPopulator( DatabaseIndexContext databaseIndexContext, IndexFiles indexFiles, IndexLayout<KEY,VALUE> layout,
-            IndexDescriptor descriptor, boolean archiveFailedIndex, ByteBufferFactory bufferFactory, MemoryTracker memoryTracker )
+            IndexDescriptor descriptor, boolean archiveFailedIndex, ByteBufferFactory bufferFactory, Config config, MemoryTracker memoryTracker )
     {
-        this( databaseIndexContext, indexFiles, layout, descriptor, archiveFailedIndex, bufferFactory, memoryTracker,
-                FeatureToggles.getInteger( BlockBasedIndexPopulator.class, "mergeFactor", 8 ), NO_MONITOR, GBPTree.NO_MONITOR );
+        this( databaseIndexContext, indexFiles, layout, descriptor, archiveFailedIndex, bufferFactory, config, memoryTracker, NO_MONITOR, GBPTree.NO_MONITOR );
     }
 
-    BlockBasedIndexPopulator( DatabaseIndexContext databaseIndexContext, IndexFiles indexFiles, IndexLayout<KEY,VALUE> layout, IndexDescriptor descriptor,
-            boolean archiveFailedIndex, ByteBufferFactory bufferFactory, MemoryTracker memoryTracker, int mergeFactor,
-            BlockStorage.Monitor blockStorageMonitor,
-            GBPTree.Monitor treeMonitor )
+    BlockBasedIndexPopulator( DatabaseIndexContext databaseIndexContext, IndexFiles indexFiles, IndexLayout<KEY,VALUE> layout,
+            IndexDescriptor descriptor, boolean archiveFailedIndex, ByteBufferFactory bufferFactory, Config config, MemoryTracker memoryTracker,
+            BlockStorage.Monitor blockStorageMonitor, GBPTree.Monitor treeMonitor )
     {
         super( databaseIndexContext, indexFiles, layout, descriptor, treeMonitor );
         this.archiveFailedIndex = archiveFailedIndex;
         this.memoryTracker = memoryTracker;
-        this.mergeFactor = mergeFactor;
+        this.mergeFactor = config.get( GraphDatabaseInternalSettings.index_populator_merge_factor );
         this.blockStorageMonitor = blockStorageMonitor;
         this.scanUpdates = ThreadLocal.withInitial( this::newThreadLocalBlockStorage );
         this.bufferFactory = bufferFactory;
@@ -149,23 +155,6 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
         {
             throw new UncheckedIOException( e );
         }
-    }
-
-    /**
-     * Base size of blocks of entries. As entries gets written to a BlockStorage, they are buffered up to this size, then sorted and written out.
-     * As blocks gets merged into bigger blocks, this is still the size of the read buffer for each block no matter its size.
-     * Each thread has its own buffer when writing and each thread has {@link #mergeFactor} buffers when merging.
-     * The memory usage will be at its biggest during merge and a total memory usage sum can be calculated like so:
-     *
-     * blockSize * numberOfPopulationWorkers * {@link #mergeFactor}
-     *
-     * where {@link GraphDatabaseInternalSettings#index_population_workers} controls the number of population workers.
-     */
-    public static int parseBlockSize()
-    {
-        long blockSize = ByteUnit.parse( FeatureToggles.getString( BlockBasedIndexPopulator.class, BLOCK_SIZE_NAME, "1M" ) );
-        Preconditions.checkArgument( blockSize >= 20 && blockSize < Integer.MAX_VALUE, "Block size need to fit in int. Was " + blockSize );
-        return (int) blockSize;
     }
 
     @Override
