@@ -904,7 +904,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     val skipCardinality = cardinalityModel(solvedSkip, context.input, context.semanticTable)
     val limitCardinality = cardinalityModel(solvedSkipAndLimit, context.input, context.semanticTable)
     val innerCardinality = cardinalities.get(inner.id)
-    val skippedRows = innerCardinality + (-1 * skipCardinality)
+    val skippedRows = innerCardinality - skipCardinality
 
     val effectiveLimitExpr = Add(limitExpr, skipExpr)(limitExpr.position)
     val limitPlan = planLimit(inner, effectiveLimitExpr, limitExpr, interestingOrder, DoNotIncludeTies, context)

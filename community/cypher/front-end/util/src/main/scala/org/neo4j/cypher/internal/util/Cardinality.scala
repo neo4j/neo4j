@@ -24,6 +24,7 @@ case class Cardinality(amount: Double) extends Ordered[Cardinality] {
   def *(that: Multiplier): Cardinality = amount * that.coefficient
   def *(that: Selectivity): Cardinality = if ( that.factor == 0 ) Cardinality.EMPTY else amount * that.factor
   def +(that: Cardinality): Cardinality = amount + that.amount
+  def -(that: Cardinality): Cardinality = amount - that.amount
   def *(that: Cardinality): Cardinality = if( amount == 0 || that.amount == 0 ) Cardinality.EMPTY
     else Cardinality.noInf(amount * that.amount)
   def /(that: Cardinality): Option[Selectivity] = if (that.amount == 0) None else Selectivity.of(amount / that.amount)
