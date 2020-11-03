@@ -568,7 +568,7 @@ public class Database extends LifecycleAdapter
     {
         try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( STORE_ID_VALIDATOR_TAG ) )
         {
-            validateStoreId( logFiles, storageEngineFactory.storeId( databaseLayout, databasePageCache, cursorTracer ) );
+            validateStoreId( logFiles, storageEngineFactory.storeId( databaseLayout, databasePageCache, cursorTracer ), databaseConfig );
         }
     }
 

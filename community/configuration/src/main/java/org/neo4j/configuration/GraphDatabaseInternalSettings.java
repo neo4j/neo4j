@@ -552,4 +552,8 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
             newBuilder( "unsupported.dbms.index.sampling.async_recovery_wait", BOOL, null )
                     .setDependency( async_recover_index_samples )
                     .build();
+
+    @Internal
+    public static Setting<Boolean> recovery_ignore_store_id_validation =
+            newBuilder( "unsupported.dbms.recovery.ignore_store_id_validation", BOOL, false ).build();
 }

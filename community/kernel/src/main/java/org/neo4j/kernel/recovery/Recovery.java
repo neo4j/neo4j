@@ -122,7 +122,6 @@ import static org.neo4j.time.Clocks.systemClock;
 import static org.neo4j.token.api.TokenHolder.TYPE_LABEL;
 import static org.neo4j.token.api.TokenHolder.TYPE_PROPERTY_KEY;
 import static org.neo4j.token.api.TokenHolder.TYPE_RELATIONSHIP_TYPE;
-import static org.neo4j.util.FeatureToggles.flag;
 
 /**
  * Utility class to perform store recovery or check is recovery is required.
@@ -132,8 +131,6 @@ import static org.neo4j.util.FeatureToggles.flag;
  */
 public final class Recovery
 {
-    private static final boolean IGNORE_STORE_ID = flag( Recovery.class, "ignoreStoreId", false );
-
     private Recovery()
     {
     }
@@ -347,7 +344,7 @@ public final class Recovery
                 .build();
 
         boolean failOnCorruptedLogFiles = config.get( GraphDatabaseInternalSettings.fail_on_corrupted_log_files );
-        validateStoreId( logFiles, storageEngine.getStoreId() );
+        validateStoreId( logFiles, storageEngine.getStoreId(), config );
 
         TransactionMetadataCache metadataCache = new TransactionMetadataCache();
         PhysicalLogicalTransactionStore transactionStore = new PhysicalLogicalTransactionStore( logFiles, metadataCache, logEntryReader, monitors,
@@ -396,9 +393,9 @@ public final class Recovery
         }
     }
 
-    public static void validateStoreId( LogFiles logFiles, StoreId storeId )
+    public static void validateStoreId( LogFiles logFiles, StoreId storeId, Config config )
     {
-        if ( !IGNORE_STORE_ID )
+        if ( !config.get( GraphDatabaseInternalSettings.recovery_ignore_store_id_validation ) )
         {
             StoreId txStoreId = logFiles.getTailInformation().lastStoreId;
             if ( !StoreId.UNKNOWN.equals( txStoreId ) )
