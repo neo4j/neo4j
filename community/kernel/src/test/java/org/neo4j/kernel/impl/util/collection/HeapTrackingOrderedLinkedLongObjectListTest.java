@@ -30,6 +30,7 @@ import org.neo4j.memory.MemoryTracker;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class HeapTrackingOrderedLinkedLongObjectListTest
 {
@@ -106,33 +107,36 @@ class HeapTrackingOrderedLinkedLongObjectListTest
         // add 0, .., 4999
         for ( int i = 0; i < size / 2; i++ )
         {
-            table.add( Long.valueOf( i + 1 ) );
+            table.add( (long) i );
         }
 
         // remove 0, .., 2499
         for ( int i = 0; i < size / 4; i++ )
         {
-            table.remove( Long.valueOf( i ) );
+            table.remove( i );
         }
 
         // add 5000, .., 9999
         for ( int i = size / 2; i < size; i++ )
         {
-            table.add( Long.valueOf( i + 1 ) );
+            table.add( (long) i );
         }
 
         // remove 9901
         table.remove( 9901 );
 
         Iterator<Long> it = table.iterator();
-        for ( int i = size / 4; i < size; i++ )
+        for ( int i = size / 4; i < size - 1; i++ )
         {
-            if ( i != 9901 ) // 9901 has been removed
+            assertTrue( it.hasNext() );
+            Long entry = it.next();
+            if ( i < 9901 ) // 9901 has been removed
             {
-                assert (it.hasNext());
-                Long entry = it.next();
-                Long key = Long.valueOf( i );
-                assertEquals( key + 1, entry );
+                assertEquals( i, entry );
+            }
+            else
+            {
+                assertEquals( i + 1, entry );
             }
         }
         assertFalse( it.hasNext() );
@@ -150,10 +154,10 @@ class HeapTrackingOrderedLinkedLongObjectListTest
     {
         var value1 = 11L;
         // Allocate outside of table
-        long externalAllocation = meter.measure(value1);
+        long externalAllocation = meter.measure( value1 );
         memoryTracker.allocateHeap( externalAllocation );
 
-        table.add(value1);
+        table.add( value1 );
 
         // Validate size
         long actualSize = meter.measureDeep( table ) - meter.measureDeep( memoryTracker );

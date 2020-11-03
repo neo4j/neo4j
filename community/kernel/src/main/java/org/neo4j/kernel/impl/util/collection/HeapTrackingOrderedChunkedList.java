@@ -41,8 +41,9 @@ import static org.neo4j.memory.HeapEstimator.shallowSizeOfObjectArray;
 public class HeapTrackingOrderedChunkedList<V> extends DefaultCloseListenable
 {
     private static final long SHALLOW_SIZE = shallowSizeOfInstance( HeapTrackingOrderedChunkedList.class );
-    private static final int CHUNK_SIZE = 4096; // Must be even, preferably a power of 2
+    private static final int DEFAULT_CHUNK_SIZE = 4096; // Must be a power of 2
 
+    private final int chunkSize;
     private final MemoryTracker scopedMemoryTracker;
 
     // Linked chunk list used to store key-value pairs in order
@@ -54,17 +55,24 @@ public class HeapTrackingOrderedChunkedList<V> extends DefaultCloseListenable
 
     public static <V> HeapTrackingOrderedChunkedList<V> createOrderedMap( MemoryTracker memoryTracker )
     {
-        MemoryTracker scopedMemoryTracker = memoryTracker.getScopedMemoryTracker();
-        scopedMemoryTracker.allocateHeap( SHALLOW_SIZE + SCOPED_MEMORY_TRACKER_SHALLOW_SIZE );
-        return new HeapTrackingOrderedChunkedList<>( scopedMemoryTracker );
+        return createOrderedMap( memoryTracker, DEFAULT_CHUNK_SIZE );
     }
 
-    private HeapTrackingOrderedChunkedList( MemoryTracker scopedMemoryTracker )
+    public static <V> HeapTrackingOrderedChunkedList<V> createOrderedMap( MemoryTracker memoryTracker, int chunkSize )
     {
+        assert chunkSize > 0 && ((chunkSize & (chunkSize - 1)) == 0); // Must be a power of 2
+        MemoryTracker scopedMemoryTracker = memoryTracker.getScopedMemoryTracker();
+        scopedMemoryTracker.allocateHeap( SHALLOW_SIZE + SCOPED_MEMORY_TRACKER_SHALLOW_SIZE );
+        return new HeapTrackingOrderedChunkedList<>( scopedMemoryTracker, chunkSize );
+    }
+
+    private HeapTrackingOrderedChunkedList( MemoryTracker scopedMemoryTracker, int chunkSize )
+    {
+        this.chunkSize = chunkSize;
         this.firstKey = 0;
         this.indexInCurrentChunk = 0;
         this.scopedMemoryTracker = scopedMemoryTracker;
-        first = new Chunk<>( scopedMemoryTracker );
+        first = new Chunk<>( scopedMemoryTracker, chunkSize );
         nbrChunksInMemory = 1;
         current = first;
     }
@@ -73,10 +81,11 @@ public class HeapTrackingOrderedChunkedList<V> extends DefaultCloseListenable
      * @param key
      * @return the value at `key` index
      */
+    @SuppressWarnings( "unchecked" )
     public V get( long key )
     {
         long index = key - firstKey;
-        int removedInFirstChunk = (int) (firstKey % CHUNK_SIZE);
+        int removedInFirstChunk = (int) (firstKey % chunkSize);
 
         if ( index < 0 || index >= size() )
         {
@@ -85,18 +94,19 @@ public class HeapTrackingOrderedChunkedList<V> extends DefaultCloseListenable
 
         Chunk<V> chunk = first;
         index = index + removedInFirstChunk;
-        while ( index >= CHUNK_SIZE ) // find chunk in which the value should be removed
+        while ( index >= chunkSize ) // find chunk in which the value should be removed
         {
             chunk = chunk.next;
-            index -= CHUNK_SIZE;
+            index -= chunkSize;
         }
 
         return (V) chunk.values[(int) index];
     }
 
+    @SuppressWarnings( "unchecked" )
     public V getFirst()
     {
-        return (V) first.values[(int) (firstKey % CHUNK_SIZE)];
+        return (V) first.values[(int) (firstKey % chunkSize)];
     }
 
     /**
@@ -105,15 +115,15 @@ public class HeapTrackingOrderedChunkedList<V> extends DefaultCloseListenable
      */
     public void add( V value )
     {
-        if ( !current.add( indexInCurrentChunk, value ) )
+        if ( indexInCurrentChunk >= chunkSize )
         {
-            Chunk<V> newChunk = new Chunk<>( scopedMemoryTracker );
+            Chunk<V> newChunk = new Chunk<>( scopedMemoryTracker, chunkSize );
             current.next = newChunk;
             current = newChunk;
             nbrChunksInMemory++;
             indexInCurrentChunk = 0;
-            current.add( indexInCurrentChunk, value );
         }
+        current.add( indexInCurrentChunk, value );
         indexInCurrentChunk++;
     }
 
@@ -122,6 +132,7 @@ public class HeapTrackingOrderedChunkedList<V> extends DefaultCloseListenable
      * @param key
      * @return the value that was removed.
      */
+    @SuppressWarnings( "unchecked" )
     public V remove( long key )
     {
         long index = key - firstKey;
@@ -132,15 +143,14 @@ public class HeapTrackingOrderedChunkedList<V> extends DefaultCloseListenable
             return null;
         }
 
-        index = index + (firstKey % CHUNK_SIZE);
-        while ( index >= CHUNK_SIZE ) // find chunk in which the value should be removed
+        index = index + (firstKey % chunkSize);
+        while ( index >= chunkSize ) // find chunk in which the value should be removed
         {
             chunk = chunk.next;
-            index -= CHUNK_SIZE;
+            index -= chunkSize;
         }
 
-        V removedValue = (V) chunk.values[(int) index];
-        chunk.remove( (int) index );
+        V removedValue = (V) chunk.remove( (int) index );
         updateFirstKey();
 
         return removedValue;
@@ -156,12 +166,12 @@ public class HeapTrackingOrderedChunkedList<V> extends DefaultCloseListenable
      */
     private void updateFirstKey()
     {
-        int removedInFirstChunk = (int) (firstKey % CHUNK_SIZE);
+        int removedInFirstChunk = (int) (firstKey % chunkSize);
         while ( firstKey < size() && first.values[removedInFirstChunk] == null )
         {
             firstKey++;
             removedInFirstChunk++;
-            if ( removedInFirstChunk >= CHUNK_SIZE )
+            if ( removedInFirstChunk >= chunkSize )
             {
                 nbrChunksInMemory--;
                 removedInFirstChunk = 0;
@@ -185,7 +195,7 @@ public class HeapTrackingOrderedChunkedList<V> extends DefaultCloseListenable
      */
     private long size()
     {
-        return (CHUNK_SIZE - firstKey % CHUNK_SIZE) + (nbrChunksInMemory - 2) * CHUNK_SIZE + indexInCurrentChunk;
+        return (chunkSize - firstKey % chunkSize) + (nbrChunksInMemory - 2) * chunkSize + indexInCurrentChunk;
     }
 
     /**
@@ -210,9 +220,9 @@ public class HeapTrackingOrderedChunkedList<V> extends DefaultCloseListenable
         long chunkIndex = firstKey;
         while ( null != currentChunk )
         {
-            currentChunk.foreach( chunkIndex, (int) (chunkIndex % CHUNK_SIZE), fun );
+            currentChunk.foreach( chunkIndex, (int) (chunkIndex % chunkSize), fun );
             currentChunk = currentChunk.next;
-            chunkIndex += CHUNK_SIZE;
+            chunkIndex += chunkSize;
         }
     }
 
@@ -251,16 +261,17 @@ public class HeapTrackingOrderedChunkedList<V> extends DefaultCloseListenable
 
         {
             chunk = first;
-            index = (int) (firstKey % CHUNK_SIZE);
+            index = (int) (firstKey % chunkSize);
         }
 
         @Override
         public boolean hasNext()
         {
-            return chunk != null;
+            return chunk != null && chunk.values[index] != null;
         }
 
         @Override
+        @SuppressWarnings( "unchecked" )
         public V next()
         {
             if ( !this.hasNext() )
@@ -281,7 +292,7 @@ public class HeapTrackingOrderedChunkedList<V> extends DefaultCloseListenable
             do
             {
                 index++;
-                if ( index >= CHUNK_SIZE )
+                if ( index >= chunkSize )
                 {
                     index = 0;
                     chunk = chunk.next;
@@ -297,10 +308,10 @@ public class HeapTrackingOrderedChunkedList<V> extends DefaultCloseListenable
         private final Object[] values;
         private Chunk<V> next;
 
-        Chunk( MemoryTracker memoryTracker )
+        Chunk( MemoryTracker memoryTracker, int chunkSize )
         {
-            memoryTracker.allocateHeap( SHALLOW_SIZE + shallowSizeOfObjectArray( CHUNK_SIZE ) );
-            values = new Object[CHUNK_SIZE];
+            memoryTracker.allocateHeap( SHALLOW_SIZE + shallowSizeOfObjectArray( chunkSize ) );
+            values = new Object[chunkSize];
         }
 
 //        public void forEachValue( Procedure<V> p )
@@ -315,6 +326,8 @@ public class HeapTrackingOrderedChunkedList<V> extends DefaultCloseListenable
 //            }
 //        }
 
+
+        @SuppressWarnings( "unchecked" )
         public void foreach( long trueIndexStart, int indexStart, BiConsumer<Long,V> f )
         {
             for ( int i = indexStart; i < values.length; i++ )
@@ -327,14 +340,9 @@ public class HeapTrackingOrderedChunkedList<V> extends DefaultCloseListenable
             }
         }
 
-        boolean add( int key, V value )
+        void add( int key, V value )
         {
-            if ( key < CHUNK_SIZE )
-            {
-                values[key] = value;
-                return true;
-            }
-            return false;
+            values[key] = value;
         }
 
         Object remove( int key )
@@ -347,7 +355,7 @@ public class HeapTrackingOrderedChunkedList<V> extends DefaultCloseListenable
 
         void close( MemoryTracker memoryTracker )
         {
-            memoryTracker.releaseHeap( SHALLOW_SIZE + shallowSizeOfObjectArray( CHUNK_SIZE ) );
+            memoryTracker.releaseHeap( SHALLOW_SIZE + shallowSizeOfObjectArray( values.length ) );
         }
     }
 }
