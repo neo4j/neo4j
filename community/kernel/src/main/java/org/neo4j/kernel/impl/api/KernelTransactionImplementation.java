@@ -33,6 +33,7 @@ import org.neo4j.collection.pool.Pool;
 import org.neo4j.collection.trackable.HeapTrackingArrayList;
 import org.neo4j.collection.trackable.HeapTrackingCollections;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.TransactionTerminatedException;
@@ -64,7 +65,6 @@ import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaState;
-import org.neo4j.io.ByteUnit;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -117,7 +117,6 @@ import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 import org.neo4j.time.SystemNanoClock;
 import org.neo4j.token.TokenHolders;
-import org.neo4j.util.FeatureToggles;
 
 import static java.lang.String.format;
 import static java.lang.Thread.currentThread;
@@ -131,7 +130,6 @@ import static org.neo4j.configuration.GraphDatabaseSettings.transaction_tracing_
 import static org.neo4j.kernel.impl.api.transaction.trace.TraceProviderFactory.getTraceProvider;
 import static org.neo4j.kernel.impl.api.transaction.trace.TransactionInitializationTrace.NONE;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.INTERNAL;
-import static org.neo4j.util.FeatureToggles.flag;
 
 public class KernelTransactionImplementation implements KernelTransaction, TxStateHolder, ExecutionStatistics
 {
@@ -146,9 +144,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private static final long NOT_COMMITTED_TRANSACTION_ID = -1;
     private static final long NOT_COMMITTED_TRANSACTION_COMMIT_TIME = -1;
     private static final String TRANSACTION_TAG = "transaction";
-    private static final String INITIAL_RESERVED_BYTES_TOGGLE =
-            FeatureToggles.getString( KernelTransactionImplementation.class, "heapGrabSize", "2m" );
-    private static final long INITIAL_RESERVED_BYTES = ByteUnit.parse( INITIAL_RESERVED_BYTES_TOGGLE );
 
     private final CollectionsFactory collectionsFactory;
 
@@ -229,8 +224,9 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             NamedDatabaseId namedDatabaseId, LeaseService leaseService, ScopedMemoryPool transactionMemoryPool )
     {
         this.pageCursorTracer = tracers.getPageCacheTracer().createPageCursorTracer( TRANSACTION_TAG );
+        long heapGrabSize = config.get( GraphDatabaseInternalSettings.initial_transaction_heap_grab_size );
         this.memoryTracker = config.get( memory_tracking ) ?
-                             new LocalMemoryTracker( transactionMemoryPool, transactionHeapBytesLimit, INITIAL_RESERVED_BYTES,
+                             new LocalMemoryTracker( transactionMemoryPool, transactionHeapBytesLimit, heapGrabSize,
                                      memory_transaction_max_size.name() ) : EmptyMemoryTracker.INSTANCE;
         this.eventListeners = eventListeners;
         this.constraintIndexCreator = constraintIndexCreator;
@@ -247,7 +243,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.leaseService = leaseService;
         this.currentStatement = new KernelStatement( this, tracers.getLockTracer(), this.clocks, versionContextSupplier, cpuClockRef, namedDatabaseId, config );
         this.accessCapability = accessCapability;
-        this.statistics = new Statistics( this, cpuClockRef );
+        this.statistics = new Statistics( this, cpuClockRef, config.get( GraphDatabaseInternalSettings.enable_transaction_heap_allocation_tracking ) );
         this.userMetaData = emptyMap();
         this.constraintSemantics = constraintSemantics;
         DefaultPooledCursors cursors = new DefaultPooledCursors( storageReader, config );
@@ -1178,8 +1174,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     public static class Statistics
     {
-        private static final boolean ENABLE_HEAP_ALLOCATION_TRACKING = flag( Statistics.class, "enableHeapAllocationTracking", false );
-
         private volatile long cpuTimeNanosWhenQueryStarted;
         private volatile long heapAllocatedBytesWhenQueryStarted;
         private volatile long waitingTimeNanos;
@@ -1188,12 +1182,13 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         private final KernelTransactionImplementation transaction;
         private final AtomicReference<CpuClock> cpuClockRef;
         private CpuClock cpuClock;
-        private final HeapAllocation heapAllocation = ENABLE_HEAP_ALLOCATION_TRACKING ? HeapAllocation.HEAP_ALLOCATION : HeapAllocation.NOT_AVAILABLE;
+        private final HeapAllocation heapAllocation;
 
-        public Statistics( KernelTransactionImplementation transaction, AtomicReference<CpuClock> cpuClockRef )
+        public Statistics( KernelTransactionImplementation transaction, AtomicReference<CpuClock> cpuClockRef, boolean heapAllocationTracking )
         {
             this.transaction = transaction;
             this.cpuClockRef = cpuClockRef;
+            this.heapAllocation = heapAllocationTracking ? HeapAllocation.HEAP_ALLOCATION : HeapAllocation.NOT_AVAILABLE;
         }
 
         protected void init( long threadId, PageCursorTracer pageCursorTracer )

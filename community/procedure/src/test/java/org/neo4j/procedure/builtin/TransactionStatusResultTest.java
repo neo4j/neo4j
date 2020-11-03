@@ -324,7 +324,7 @@ class TransactionStatusResultTest
 
         TestStatistics( KernelTransactionImplementation transaction, AtomicReference<CpuClock> cpuClockRef )
         {
-            super( transaction, cpuClockRef );
+            super( transaction, cpuClockRef, false );
         }
     }
 

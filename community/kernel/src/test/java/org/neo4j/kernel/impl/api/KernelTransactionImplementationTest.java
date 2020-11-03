@@ -697,7 +697,7 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase
         transaction.memoryTracker().allocateHeap( 13 );
         transaction.memoryTracker().allocateNative( 14 );
         KernelTransactionImplementation.Statistics statistics =
-            new KernelTransactionImplementation.Statistics( transaction, new AtomicReference<>( new ThreadBasedCpuClock() ) );
+            new KernelTransactionImplementation.Statistics( transaction, new AtomicReference<>( new ThreadBasedCpuClock() ), false );
         PredictablePageCursorTracer tracer = new PredictablePageCursorTracer();
         statistics.init( 2, tracer );
 

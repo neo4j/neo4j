@@ -556,4 +556,12 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
     @Internal
     public static Setting<Boolean> recovery_ignore_store_id_validation =
             newBuilder( "unsupported.dbms.recovery.ignore_store_id_validation", BOOL, false ).build();
+
+    @Internal
+    public static Setting<Boolean> enable_transaction_heap_allocation_tracking =
+            newBuilder( "unsupported.dbms.enable_transaction_heap_allocation_tracking", BOOL, false ).build();
+
+    @Internal
+    public static Setting<Long> initial_transaction_heap_grab_size =
+            newBuilder( "unsupported.dbms.initial_transaction_heap_grab_size", BYTES, mebiBytes( 2 ) ).build();
 }
