@@ -33,6 +33,7 @@ import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.internal.id.IdController.ConditionSnapshot;
 import org.neo4j.internal.id.IdGenerator.Marker;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
@@ -71,7 +72,7 @@ class BufferingIdGeneratorFactoryTest
         bufferingIdGeneratorFactory = new BufferingIdGeneratorFactory( actual );
         bufferingIdGeneratorFactory.initialize( boundaries );
         idGenerator = bufferingIdGeneratorFactory.open( pageCache, Path.of( "doesnt-matter" ), IdType.STRING_BLOCK, () -> 0L, Integer.MAX_VALUE, false,
-                NULL, immutable.empty() );
+                Config.defaults(), NULL, immutable.empty() );
     }
 
     @Test
@@ -144,7 +145,7 @@ class BufferingIdGeneratorFactoryTest
         private final Marker[] markers = new Marker[IdType.values().length];
 
         @Override
-        public IdGenerator open( PageCache pageCache, Path filename, IdType idType, LongSupplier highIdScanner, long maxId, boolean readOnly,
+        public IdGenerator open( PageCache pageCache, Path filename, IdType idType, LongSupplier highIdScanner, long maxId, boolean readOnly, Config config,
                 PageCursorTracer pageCursorTracer, ImmutableSet<OpenOption> openOptions )
         {
             IdGenerator idGenerator = mock( IdGenerator.class );
@@ -157,10 +158,10 @@ class BufferingIdGeneratorFactoryTest
         }
 
         @Override
-        public IdGenerator create( PageCache pageCache, Path filename, IdType idType, long highId, boolean throwIfFileExists, long maxId,
-                boolean readOnly, PageCursorTracer cursorTracer, ImmutableSet<OpenOption> openOptions )
+        public IdGenerator create( PageCache pageCache, Path filename, IdType idType, long highId, boolean throwIfFileExists, long maxId, boolean readOnly,
+                Config config, PageCursorTracer cursorTracer, ImmutableSet<OpenOption> openOptions )
         {
-            return open( pageCache, filename, idType, () -> highId, maxId, readOnly, cursorTracer, openOptions );
+            return open( pageCache, filename, idType, () -> highId, maxId, readOnly,config , cursorTracer, openOptions );
         }
 
         @Override

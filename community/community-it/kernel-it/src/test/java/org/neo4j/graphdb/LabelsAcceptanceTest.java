@@ -830,16 +830,16 @@ class LabelsAcceptanceTest
                 {
                     @Override
                     public IdGenerator open( PageCache pageCache, Path fileName, IdType idType, LongSupplier highId, long maxId, boolean readOnly,
-                            PageCursorTracer cursorTracer, ImmutableSet<OpenOption> openOptions )
+                            Config config, PageCursorTracer cursorTracer, ImmutableSet<OpenOption> openOptions )
                     {
-                        return super.open( pageCache, fileName, idType, highId, maxId( idType, maxId, highId ), readOnly, cursorTracer, openOptions );
+                        return super.open( pageCache, fileName, idType, highId, maxId( idType, maxId, highId ), readOnly, config, cursorTracer, openOptions );
                     }
 
                     @Override
                     public IdGenerator create( PageCache pageCache, Path fileName, IdType idType, long highId, boolean throwIfFileExists, long maxId,
-                            boolean readOnly, PageCursorTracer cursorTracer, ImmutableSet<OpenOption> openOptions )
+                            boolean readOnly, Config config, PageCursorTracer cursorTracer, ImmutableSet<OpenOption> openOptions )
                     {
-                        return super.create( pageCache, fileName, idType, highId, throwIfFileExists, maxId( idType, maxId, () -> highId ), readOnly,
+                        return super.create( pageCache, fileName, idType, highId, throwIfFileExists, maxId( idType, maxId, () -> highId ), readOnly, config,
                                 cursorTracer, openOptions );
                     }
 

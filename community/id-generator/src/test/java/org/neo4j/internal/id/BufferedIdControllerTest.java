@@ -22,6 +22,7 @@ package org.neo4j.internal.id;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
@@ -69,7 +70,7 @@ class BufferedIdControllerTest
         var pageCacheTracer = new DefaultPageCacheTracer();
 
         try ( var idGenerator = idGeneratorFactory.create( pageCache, testDirectory.file( "foo" ), IdType.NODE, 100L, true, 1000L, false,
-                NULL, immutable.empty() ) )
+                Config.defaults() , NULL, immutable.empty() ) )
         {
             idGenerator.marker( NULL ).markDeleted( 1L );
             idGenerator.clearCache( NULL );

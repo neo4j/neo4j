@@ -52,6 +52,7 @@ import java.util.function.Function;
 import java.util.function.LongSupplier;
 import java.util.stream.Stream;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.index.internal.gbptree.TreeFileNotFoundException;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.id.FreeIds;
@@ -112,7 +113,7 @@ class IndexedIdGeneratorTest
     void open()
     {
         file = directory.file( "file" );
-        idGenerator = new IndexedIdGenerator( pageCache, file, immediate(), IdType.LABEL_TOKEN, false, () -> 0, MAX_ID, false, NULL );
+        idGenerator = new IndexedIdGenerator( pageCache, file, immediate(), IdType.LABEL_TOKEN, false, () -> 0, MAX_ID, false, Config.defaults(), NULL );
     }
 
     @AfterEach
@@ -450,7 +451,7 @@ class IndexedIdGeneratorTest
         long highId = 101L;
         LongSupplier highIdSupplier = mock( LongSupplier.class );
         when( highIdSupplier.getAsLong() ).thenReturn( highId );
-        idGenerator = new IndexedIdGenerator( pageCache, file, immediate(), IdType.LABEL_TOKEN, false, highIdSupplier, MAX_ID, false, NULL );
+        idGenerator = new IndexedIdGenerator( pageCache, file, immediate(), IdType.LABEL_TOKEN, false, highIdSupplier, MAX_ID, false, Config.defaults(), NULL );
 
         // then
         verify( highIdSupplier ).getAsLong();
@@ -469,7 +470,7 @@ class IndexedIdGeneratorTest
         // when
         LongSupplier highIdSupplier = mock( LongSupplier.class );
         when( highIdSupplier.getAsLong() ).thenReturn( 101L );
-        idGenerator = new IndexedIdGenerator( pageCache, file, immediate(), IdType.LABEL_TOKEN, false, highIdSupplier, MAX_ID, false, NULL );
+        idGenerator = new IndexedIdGenerator( pageCache, file, immediate(), IdType.LABEL_TOKEN, false, highIdSupplier, MAX_ID, false, Config.defaults(), NULL );
 
         // then
         verifyNoMoreInteractions( highIdSupplier );
@@ -481,7 +482,7 @@ class IndexedIdGeneratorTest
     {
         Path file = directory.file( "non-existing" );
         final IllegalStateException e = assertThrows( IllegalStateException.class,
-                () -> new IndexedIdGenerator( pageCache, file, immediate(), IdType.LABEL_TOKEN, false, () -> 0, MAX_ID, true, NULL ) );
+                () -> new IndexedIdGenerator( pageCache, file, immediate(), IdType.LABEL_TOKEN, false, () -> 0, MAX_ID, true, Config.defaults(), NULL ) );
         assertTrue( Exceptions.contains( e, t -> t instanceof NoSuchFileException ) );
         assertTrue( Exceptions.contains( e, t -> t instanceof TreeFileNotFoundException ) );
         assertTrue( Exceptions.contains( e, t -> t instanceof IllegalStateException ) );
@@ -491,12 +492,12 @@ class IndexedIdGeneratorTest
     void shouldNotRebuildIfReadOnly()
     {
         Path file = directory.file( "existing" );
-        new IndexedIdGenerator( pageCache, file, immediate(), IdType.LABEL_TOKEN, false, () -> 0, MAX_ID, false, NULL ).close();
+        new IndexedIdGenerator( pageCache, file, immediate(), IdType.LABEL_TOKEN, false, () -> 0, MAX_ID, false, Config.defaults(), NULL ).close();
         // Never start id generator means it will need rebuild on next start
 
         // Start in readOnly mode
         try ( IndexedIdGenerator readOnlyGenerator = new IndexedIdGenerator( pageCache, file, immediate(), IdType.LABEL_TOKEN, false, () -> 0, MAX_ID, true,
-                NULL ) )
+                Config.defaults(), NULL ) )
         {
             final UnsupportedOperationException e = assertThrows( UnsupportedOperationException.class, () -> readOnlyGenerator.start( NO_FREE_IDS, NULL ) );
             assertEquals( "Can not write to id generator while in read only mode.", e.getMessage() );
@@ -507,13 +508,15 @@ class IndexedIdGeneratorTest
     void shouldStartInReadOnlyModeIfEmpty() throws IOException
     {
         Path file = directory.file( "existing" );
-        var indexedIdGenerator = new IndexedIdGenerator( pageCache, file, immediate(), IdType.LABEL_TOKEN, false, () -> 0, MAX_ID, false, NULL );
+        var indexedIdGenerator =
+                new IndexedIdGenerator( pageCache, file, immediate(), IdType.LABEL_TOKEN, false, () -> 0, MAX_ID, false, Config.defaults(), NULL );
         indexedIdGenerator.start( NO_FREE_IDS, NULL );
         indexedIdGenerator.close();
         // Never start id generator means it will need rebuild on next start
 
         // Start in readOnly mode should not throw
-        try ( var readOnlyGenerator = new IndexedIdGenerator( pageCache, file, immediate(), IdType.LABEL_TOKEN, false, () -> 0, MAX_ID, true, NULL ) )
+        try ( var readOnlyGenerator = new IndexedIdGenerator( pageCache, file, immediate(), IdType.LABEL_TOKEN, false, () -> 0, MAX_ID, true, Config.defaults(),
+                NULL ) )
         {
             readOnlyGenerator.start( NO_FREE_IDS, NULL );
         }
@@ -548,7 +551,7 @@ class IndexedIdGeneratorTest
     {
         stop();
         IndexedIdGenerator.Monitor monitor = mock( IndexedIdGenerator.Monitor.class );
-        idGenerator = new IndexedIdGenerator( pageCache, file, immediate(), IdType.LABEL_TOKEN, false, () -> 0, MAX_ID, false, NULL, monitor,
+        idGenerator = new IndexedIdGenerator( pageCache, file, immediate(), IdType.LABEL_TOKEN, false, () -> 0, MAX_ID, false, Config.defaults(), NULL, monitor,
                 immutable.empty() );
         verify( monitor ).opened( -1, 0 );
         idGenerator.start( NO_FREE_IDS, NULL );
@@ -586,7 +589,7 @@ class IndexedIdGeneratorTest
         verify( monitor ).close();
 
         // Also test normalization (which requires a restart)
-        idGenerator = new IndexedIdGenerator( pageCache, file, immediate(), IdType.LABEL_TOKEN, false, () -> 0, MAX_ID, false, NULL, monitor,
+        idGenerator = new IndexedIdGenerator( pageCache, file, immediate(), IdType.LABEL_TOKEN, false, () -> 0, MAX_ID, false, Config.defaults(), NULL, monitor,
                 immutable.empty() );
         idGenerator.start( NO_FREE_IDS, NULL );
         try ( Marker marker = idGenerator.marker( NULL ) )
@@ -754,11 +757,13 @@ class IndexedIdGeneratorTest
     @Test
     void tracePageCacheOnIdGeneratorStartWithoutRebuild() throws IOException
     {
-        try ( var prepareIndexWithoutRebuild = new IndexedIdGenerator( pageCache, file, immediate(), IdType.LABEL_TOKEN, false, () -> 0, MAX_ID, false, NULL ) )
+        try ( var prepareIndexWithoutRebuild = new IndexedIdGenerator( pageCache, file, immediate(), IdType.LABEL_TOKEN, false, () -> 0, MAX_ID, false,
+                Config.defaults(), NULL ) )
         {
             prepareIndexWithoutRebuild.checkpoint( UNLIMITED, NULL );
         }
-        try ( var idGenerator = new IndexedIdGenerator( pageCache, file, immediate(), IdType.LABEL_TOKEN, false, () -> 0, MAX_ID, false, NULL ) )
+        try ( var idGenerator = new IndexedIdGenerator( pageCache, file, immediate(), IdType.LABEL_TOKEN, false, () -> 0, MAX_ID, false, Config.defaults(),
+                NULL ) )
         {
             var pageCacheTracer = new DefaultPageCacheTracer();
             try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( "tracePageCacheOnIdGeneratorStartWithoutRebuild" ) )
@@ -848,7 +853,7 @@ class IndexedIdGeneratorTest
                 super.cached( cachedId );
             }
         };
-        idGenerator = new IndexedIdGenerator( pageCache, file, immediate(), IdType.LABEL_TOKEN, false, () -> 0, MAX_ID, false, NULL, monitor,
+        idGenerator = new IndexedIdGenerator( pageCache, file, immediate(), IdType.LABEL_TOKEN, false, () -> 0, MAX_ID, false, Config.defaults(), NULL, monitor,
                 Sets.immutable.empty() );
         idGenerator.start( NO_FREE_IDS, NULL );
         try ( Marker marker = idGenerator.marker( NULL ) )
@@ -894,12 +899,14 @@ class IndexedIdGeneratorTest
     private void assertOperationThrowInReadOnlyMode( Function<IndexedIdGenerator,Executable> operation ) throws IOException
     {
         Path file = directory.file( "existing" );
-        var indexedIdGenerator = new IndexedIdGenerator( pageCache, file, immediate(), IdType.LABEL_TOKEN, false, () -> 0, MAX_ID, false, NULL );
+        var indexedIdGenerator =
+                new IndexedIdGenerator( pageCache, file, immediate(), IdType.LABEL_TOKEN, false, () -> 0, MAX_ID, false, Config.defaults(), NULL );
         indexedIdGenerator.start( NO_FREE_IDS, NULL );
         indexedIdGenerator.close();
 
         // Start in readOnly mode
-        try ( var readOnlyGenerator = new IndexedIdGenerator( pageCache, file, immediate(), IdType.LABEL_TOKEN, false, () -> 0, MAX_ID, true, NULL ) )
+        try ( var readOnlyGenerator = new IndexedIdGenerator( pageCache, file, immediate(), IdType.LABEL_TOKEN, false, () -> 0, MAX_ID, true, Config.defaults(),
+                NULL ) )
         {
             readOnlyGenerator.start( NO_FREE_IDS, NULL );
             final UnsupportedOperationException e = assertThrows( UnsupportedOperationException.class, operation.apply( readOnlyGenerator ) );

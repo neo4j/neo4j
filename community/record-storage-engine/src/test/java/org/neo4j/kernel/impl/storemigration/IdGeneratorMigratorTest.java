@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 
 import org.neo4j.common.ProgressReporter;
+import org.neo4j.configuration.Config;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdType;
@@ -109,7 +110,7 @@ class IdGeneratorMigratorTest
     private void assertIdGeneratorContainsIds( Path idFilePath, IdType idType, int rounds, int numDeleted, int numCreated, long startingId ) throws IOException
     {
         try ( IdGenerator idGenerator = new IndexedIdGenerator( pageCache, idFilePath, immediate(), idType, false, () -> -1, Long.MAX_VALUE, false,
-                PageCursorTracer.NULL ) )
+                Config.defaults(), PageCursorTracer.NULL ) )
         {
             idGenerator.start( ignored ->
             {

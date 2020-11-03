@@ -831,13 +831,14 @@ public class NeoStoresTest
 
         @Override
         protected IndexedIdGenerator instantiate( FileSystemAbstraction fs, PageCache pageCache, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-                Path fileName, LongSupplier highIdSupplier, long maxValue, IdType idType, boolean readOnly, PageCursorTracer cursorTracer,
+                Path fileName, LongSupplier highIdSupplier, long maxValue, IdType idType, boolean readOnly, Config config, PageCursorTracer cursorTracer,
                 ImmutableSet<OpenOption> openOptions )
         {
             if ( idType == IdType.NODE )
             {
                 // Return a special id generator which will throw exception on close
-                return new IndexedIdGenerator( pageCache, fileName, immediate(), idType, allowLargeIdCaches, () -> 6 * 7, maxValue, readOnly, cursorTracer )
+                return new IndexedIdGenerator( pageCache, fileName, immediate(), idType, allowLargeIdCaches, () -> 6 * 7, maxValue, readOnly, config,
+                        cursorTracer )
                 {
                     @Override
                     public synchronized void close()
@@ -847,7 +848,7 @@ public class NeoStoresTest
                     }
                 };
             }
-            return super.instantiate( fs, pageCache, recoveryCleanupWorkCollector, fileName, highIdSupplier, maxValue, idType, readOnly, cursorTracer,
+            return super.instantiate( fs, pageCache, recoveryCleanupWorkCollector, fileName, highIdSupplier, maxValue, idType, readOnly, config, cursorTracer,
                     openOptions );
         }
     }

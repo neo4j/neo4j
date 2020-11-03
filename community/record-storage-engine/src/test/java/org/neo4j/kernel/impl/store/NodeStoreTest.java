@@ -386,7 +386,7 @@ class NodeStoreTest
     }
 
     @Test
-    public void shouldIncludeNodeRecordInExceptionLoadingDynamicLabelRecords() throws IOException
+    public void shouldIncludeNodeRecordInExceptionLoadingDynamicLabelRecords()
     {
         // given a node with reference to a dynamic label record
         nodeStore = newNodeStore( fs );
@@ -421,11 +421,11 @@ class NodeStoreTest
         {
             @Override
             protected IndexedIdGenerator instantiate( FileSystemAbstraction fs, PageCache pageCache, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-                    Path fileName, LongSupplier highIdSupplier, long maxValue, IdType idType, boolean readOnly, PageCursorTracer cursorTracer,
+                    Path fileName, LongSupplier highIdSupplier, long maxValue, IdType idType, boolean readOnly, Config config, PageCursorTracer cursorTracer,
                     ImmutableSet<OpenOption> openOptions )
             {
-                return spy( super.instantiate( fs, pageCache, recoveryCleanupWorkCollector, fileName, highIdSupplier, maxValue, idType, readOnly, cursorTracer,
-                        openOptions ) );
+                return spy( super.instantiate( fs, pageCache, recoveryCleanupWorkCollector, fileName, highIdSupplier, maxValue, idType, readOnly, config,
+                        cursorTracer, openOptions ) );
             }
         } );
         StoreFactory factory =

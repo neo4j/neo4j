@@ -561,6 +561,19 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
     public static Setting<Boolean> enable_transaction_heap_allocation_tracking =
             newBuilder( "unsupported.dbms.enable_transaction_heap_allocation_tracking", BOOL, false ).build();
 
+    /**
+     * Default value whether or not to strictly prioritize ids from freelist, as opposed to allocating from high id.
+     * Given a scenario where there are multiple concurrent calls to allocating IDs
+     * and there are free ids on the freelist, some perhaps cached, some not. Thread noticing that there are no free ids cached will try to acquire
+     * scanner lock and if it succeeds it will perform a scan and place found free ids in the cache and return. Otherwise:
+     * <ul>
+     *     <li>If {@code false}: thread will allocate from high id and return, to not block id allocation request.</li>
+     *     <li>If {@code true}: thread will await lock released and check cache afterwards. If no id is cached even then it will allocate from high id.</li>
+     * </ul>
+     */
+    @Internal
+    public static Setting<Boolean> strictly_prioritize_id_freelist = newBuilder( "unsupported.dbms.strictly_prioritize_id_freelist", BOOL, false ).build();
+
     @Internal
     public static Setting<Long> initial_transaction_heap_grab_size =
             newBuilder( "unsupported.dbms.initial_transaction_heap_grab_size", BYTES, mebiBytes( 2 ) ).build();

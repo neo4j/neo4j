@@ -119,15 +119,15 @@ public class IdGeneratorMigrator extends AbstractStoreMigrationParticipant
         {
             @Override
             public IdGenerator open( PageCache pageCache, Path filename, IdType idType, LongSupplier highIdScanner, long maxId, boolean readOnly,
-                    PageCursorTracer cursorTracer, ImmutableSet<OpenOption> openOptions )
+                    Config config, PageCursorTracer cursorTracer, ImmutableSet<OpenOption> openOptions )
             {
                 Path redirectedFilename = migrationLayout.databaseDirectory().resolve( filename.getFileName().toString() );
-                return super.open( pageCache, redirectedFilename, idType, highIdScanner, maxId, readOnly, cursorTracer, openOptions );
+                return super.open( pageCache, redirectedFilename, idType, highIdScanner, maxId, readOnly, config, cursorTracer, openOptions );
             }
 
             @Override
             public IdGenerator create( PageCache pageCache, Path fileName, IdType idType, long highId, boolean throwIfFileExists, long maxId, boolean readOnly,
-                    PageCursorTracer cursorTracer, ImmutableSet<OpenOption> openOptions )
+                    Config config, PageCursorTracer cursorTracer, ImmutableSet<OpenOption> openOptions )
             {
                 throw new IllegalStateException( "The store file should exist and therefore all calls should be to open, not create" );
             }

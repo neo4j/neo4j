@@ -29,6 +29,7 @@ import java.util.function.Consumer;
 import java.util.function.LongSupplier;
 import java.util.stream.Collectors;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.id.indexed.IndexedIdGenerator;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -71,22 +72,22 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory
     }
 
     @Override
-    public IdGenerator open( PageCache pageCache, Path filename, IdType idType, LongSupplier highIdScanner, long maxId, boolean readOnly,
+    public IdGenerator open( PageCache pageCache, Path filename, IdType idType, LongSupplier highIdScanner, long maxId, boolean readOnly, Config config,
             PageCursorTracer cursorTracer, ImmutableSet<OpenOption> openOptions )
     {
         IndexedIdGenerator generator =
-                instantiate( fs, pageCache, recoveryCleanupWorkCollector, filename, highIdScanner, maxId, idType, readOnly, cursorTracer, openOptions );
+                instantiate( fs, pageCache, recoveryCleanupWorkCollector, filename, highIdScanner, maxId, idType, readOnly, config, cursorTracer, openOptions );
         generators.put( idType, generator );
         return generator;
     }
 
     protected IndexedIdGenerator instantiate( FileSystemAbstraction fs, PageCache pageCache, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-            Path fileName, LongSupplier highIdSupplier, long maxValue, IdType idType, boolean readOnly, PageCursorTracer cursorTracer,
+            Path fileName, LongSupplier highIdSupplier, long maxValue, IdType idType, boolean readOnly, Config config, PageCursorTracer cursorTracer,
             ImmutableSet<OpenOption> openOptions )
     {
         // highId not used when opening an IndexedIdGenerator
         return new IndexedIdGenerator( pageCache, fileName, recoveryCleanupWorkCollector, idType, allowLargeIdCaches, highIdSupplier, maxValue, readOnly,
-                cursorTracer, defaultIdMonitor( fs, fileName ), openOptions );
+                config, cursorTracer, defaultIdMonitor( fs, fileName ), openOptions );
     }
 
     @Override
@@ -96,8 +97,8 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory
     }
 
     @Override
-    public IdGenerator create( PageCache pageCache, Path fileName, IdType idType, long highId, boolean throwIfFileExists, long maxId,
-            boolean readOnly, PageCursorTracer cursorTracer, ImmutableSet<OpenOption> openOptions )
+    public IdGenerator create( PageCache pageCache, Path fileName, IdType idType, long highId, boolean throwIfFileExists, long maxId, boolean readOnly,
+            Config config, PageCursorTracer cursorTracer, ImmutableSet<OpenOption> openOptions )
     {
         // For the potential scenario where there's no store (of course this is where this method will be called),
         // but there's a naked id generator, then delete the id generator so that it too starts from a clean state.
@@ -105,7 +106,7 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory
 
         IndexedIdGenerator generator =
                 new IndexedIdGenerator( pageCache, fileName, recoveryCleanupWorkCollector, idType, allowLargeIdCaches, () -> highId, maxId, readOnly,
-                        cursorTracer, defaultIdMonitor( fs, fileName ), openOptions );
+                        config, cursorTracer, defaultIdMonitor( fs, fileName ), openOptions );
         generator.checkpoint( UNLIMITED, cursorTracer );
         generators.put( idType, generator );
         return generator;

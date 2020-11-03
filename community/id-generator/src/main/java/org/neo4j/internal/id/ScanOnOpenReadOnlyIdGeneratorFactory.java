@@ -29,12 +29,13 @@ import java.util.EnumMap;
 import java.util.function.Consumer;
 import java.util.function.LongSupplier;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
 /**
  * {@link IdGeneratorFactory} that ignores the underlying id file and only uses the provided highIdScanner in
- * {@link IdGeneratorFactory#open(PageCache, Path, IdType, LongSupplier, long, boolean, PageCursorTracer, ImmutableSet)},
+ * {@link IdGeneratorFactory#open(PageCache, Path, IdType, LongSupplier, long, boolean, Config, PageCursorTracer, ImmutableSet)},
  * instantiating {@link IdGenerator} that will return that highId and do nothing else.
  * This is of great convenience when migrating between id file formats.
  */
@@ -43,7 +44,7 @@ public class ScanOnOpenReadOnlyIdGeneratorFactory implements IdGeneratorFactory
     private final EnumMap<IdType,ReadOnlyHighIdGenerator> idGenerators = new EnumMap<>( IdType.class );
 
     @Override
-    public IdGenerator open( PageCache pageCache, Path filename, IdType idType, LongSupplier highIdScanner, long maxId, boolean readOnly,
+    public IdGenerator open( PageCache pageCache, Path filename, IdType idType, LongSupplier highIdScanner, long maxId, boolean readOnly, Config config,
             PageCursorTracer cursorTracer, ImmutableSet<OpenOption> openOptions )
     {
         long highId = highIdScanner.getAsLong();
@@ -53,10 +54,10 @@ public class ScanOnOpenReadOnlyIdGeneratorFactory implements IdGeneratorFactory
     }
 
     @Override
-    public IdGenerator create( PageCache pageCache, Path filename, IdType idType, long highId, boolean throwIfFileExists, long maxId,
-            boolean readOnly, PageCursorTracer cursorTracer, ImmutableSet<OpenOption> openOptions )
+    public IdGenerator create( PageCache pageCache, Path filename, IdType idType, long highId, boolean throwIfFileExists, long maxId, boolean readOnly,
+            Config config, PageCursorTracer cursorTracer, ImmutableSet<OpenOption> openOptions )
     {
-        return open( pageCache, filename, idType, () -> highId, maxId, readOnly, cursorTracer, openOptions );
+        return open( pageCache, filename, idType, () -> highId, maxId, readOnly, config, cursorTracer, openOptions );
     }
 
     @Override

@@ -26,6 +26,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdGenerator.Marker;
 import org.neo4j.internal.id.IdType;
@@ -247,7 +248,8 @@ class IndexedIdGeneratorRecoverabilityTest
 
     private IndexedIdGenerator instantiateFreelist()
     {
-        return new IndexedIdGenerator( pageCache, testDirectory.file( ID_FILE_NAME ), immediate(), ID_TYPE, true, () -> 0, Long.MAX_VALUE, false, NULL );
+        return new IndexedIdGenerator( pageCache, testDirectory.file( ID_FILE_NAME ), immediate(), ID_TYPE, true, () -> 0, Long.MAX_VALUE, false,
+                Config.defaults(), NULL );
     }
 
     private static PageCache getPageCache( FileSystemAbstraction fs )

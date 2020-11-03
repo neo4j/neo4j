@@ -25,6 +25,7 @@ import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.function.LongSupplier;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
@@ -47,10 +48,10 @@ public class ScanOnOpenOverwritingIdGeneratorFactory extends DefaultIdGeneratorF
     }
 
     @Override
-    public IdGenerator open( PageCache pageCache, Path filename, IdType idType, LongSupplier highIdScanner, long maxId, boolean readOnly,
+    public IdGenerator open( PageCache pageCache, Path filename, IdType idType, LongSupplier highIdScanner, long maxId, boolean readOnly, Config config,
             PageCursorTracer cursorTracer, ImmutableSet<OpenOption> openOptions )
     {
         long highId = highIdScanner.getAsLong();
-        return create( pageCache, filename, idType, highId, true, maxId, readOnly, cursorTracer, openOptions );
+        return create( pageCache, filename, idType, highId, true, maxId, readOnly, config, cursorTracer, openOptions );
     }
 }

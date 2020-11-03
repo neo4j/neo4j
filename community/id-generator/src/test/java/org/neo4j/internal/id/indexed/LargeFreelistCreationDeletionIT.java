@@ -27,6 +27,7 @@ import org.junit.jupiter.api.Test;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.internal.id.IdGenerator.Marker;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.io.pagecache.IOLimiter;
@@ -75,7 +76,7 @@ class LargeFreelistCreationDeletionIT
         {
             // Create
             try ( var freelist = new IndexedIdGenerator( pageCache, directory.file( "file.id" ), immediate(), IdType.NODE, false, () -> 0, Long.MAX_VALUE,
-                    false, NULL ) )
+                    false, Config.defaults(), NULL ) )
             {
                 // Make sure ID cache is filled so that initial allocations won't slide highId unnecessarily.
                 freelist.maintenance( true, NULL );

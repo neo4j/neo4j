@@ -230,7 +230,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
                     // Create the id generator, and also open it because some stores may need the id generator when initializing their store
                     boolean readOnly = configuration.get( GraphDatabaseSettings.read_only );
                     idGenerator = idGeneratorFactory.create( pageCache, idFile, idType, getNumberOfReservedLowIds(), false, recordFormat.getMaxId(),
-                            readOnly, cursorTracer, openOptions );
+                            readOnly, configuration, cursorTracer, openOptions );
 
                     // Map the file (w/ the CREATE flag) and initialize the header
                     pagedFile = pageCache.map( storageFile, filePageSize, openOptions.newWith( CREATE ) );
@@ -619,8 +619,9 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     private void openIdGenerator( PageCursorTracer cursorTracer )
     {
         boolean readOnly = configuration.get( GraphDatabaseSettings.read_only );
-        idGenerator = idGeneratorFactory.open( pageCache, idFile, getIdType(), () -> scanForHighId( cursorTracer ), recordFormat.getMaxId(), readOnly,
-                cursorTracer, openOptions );
+        idGenerator =
+                idGeneratorFactory.open( pageCache, idFile, getIdType(), () -> scanForHighId( cursorTracer ), recordFormat.getMaxId(), readOnly, configuration,
+                        cursorTracer, openOptions );
     }
 
     /**

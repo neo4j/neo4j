@@ -36,6 +36,8 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.LongSupplier;
 
 import org.neo4j.annotations.documented.ReporterFactory;
+import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.GBPTreeConsistencyCheckVisitor;
 import org.neo4j.index.internal.gbptree.GBPTreeVisitor;
@@ -59,7 +61,6 @@ import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
-import static org.neo4j.util.FeatureToggles.flag;
 
 /**
  * At the heart of this free-list sits a {@link GBPTree}, containing all deleted and freed ids. The tree is used as a bit-set and since it's
@@ -197,19 +198,6 @@ public class IndexedIdGenerator implements IdGenerator
     public static final Monitor NO_MONITOR = new Monitor.Adapter();
 
     /**
-     * Default value whether or not to strictly prioritize ids from freelist, as opposed to allocating from high id.
-     * Given a scenario where there are multiple concurrent calls to {@link #nextId(PageCursorTracer)} or {@link #nextIdBatch(int, boolean, PageCursorTracer)}
-     * and there are free ids on the freelist, some perhaps cached, some not. Thread noticing that there are no free ids cached will try to acquire
-     * scanner lock and if it succeeds it will perform a scan and place found free ids in the cache and return. Otherwise:
-     * <ul>
-     *     <li>If {@code false}: thread will allocate from high id and return, to not block id allocation request.</li>
-     *     <li>If {@code true}: thread will await lock released and check cache afterwards. If no id is cached even then it will allocate from high id.</li>
-     * </ul>
-     */
-    private static final boolean STRICTLY_PRIORITIZE_FREELIST_DEFAULT = false;
-    public static final String STRICTLY_PRIORITIZE_FREELIST_NAME = "strictlyPrioritizeFreelist";
-
-    /**
      * Represents the absence of an id in the id cache.
      */
     static final long NO_ID = -1;
@@ -329,21 +317,22 @@ public class IndexedIdGenerator implements IdGenerator
     private final Monitor monitor;
 
     public IndexedIdGenerator( PageCache pageCache, Path path, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IdType idType,
-            boolean allowLargeIdCaches, LongSupplier initialHighId, long maxId, boolean readOnly, PageCursorTracer cursorTracer )
+            boolean allowLargeIdCaches, LongSupplier initialHighId, long maxId, boolean readOnly, Config config, PageCursorTracer cursorTracer )
     {
-        this( pageCache, path, recoveryCleanupWorkCollector, idType, allowLargeIdCaches, initialHighId, maxId, readOnly, cursorTracer, immutable.empty() );
+        this( pageCache, path, recoveryCleanupWorkCollector, idType, allowLargeIdCaches, initialHighId, maxId, readOnly, config, cursorTracer,
+                immutable.empty() );
     }
 
     public IndexedIdGenerator( PageCache pageCache, Path path, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IdType idType,
-            boolean allowLargeIdCaches, LongSupplier initialHighId, long maxId, boolean readOnly, PageCursorTracer cursorTracer,
+            boolean allowLargeIdCaches, LongSupplier initialHighId, long maxId, boolean readOnly, Config config, PageCursorTracer cursorTracer,
             ImmutableSet<OpenOption> openOptions )
     {
-        this( pageCache, path, recoveryCleanupWorkCollector, idType, allowLargeIdCaches, initialHighId, maxId, readOnly, cursorTracer, NO_MONITOR,
+        this( pageCache, path, recoveryCleanupWorkCollector, idType, allowLargeIdCaches, initialHighId, maxId, readOnly, config, cursorTracer, NO_MONITOR,
                 openOptions );
     }
 
     public IndexedIdGenerator( PageCache pageCache, Path path, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IdType idType,
-            boolean allowLargeIdCaches, LongSupplier initialHighId, long maxId, boolean readOnly, PageCursorTracer cursorTracer, Monitor monitor,
+            boolean allowLargeIdCaches, LongSupplier initialHighId, long maxId, boolean readOnly, Config config, PageCursorTracer cursorTracer, Monitor monitor,
             ImmutableSet<OpenOption> openOptions )
     {
         this.path = path;
@@ -387,7 +376,7 @@ public class IndexedIdGenerator implements IdGenerator
         this.layout = new IdRangeLayout( idsPerEntry );
         this.tree = instantiateTree( pageCache, path, recoveryCleanupWorkCollector, readOnly, openOptions );
 
-        boolean strictlyPrioritizeFreelist = flag( IndexedIdGenerator.class, STRICTLY_PRIORITIZE_FREELIST_NAME, STRICTLY_PRIORITIZE_FREELIST_DEFAULT );
+        boolean strictlyPrioritizeFreelist = config.get( GraphDatabaseInternalSettings.strictly_prioritize_id_freelist );
         this.scanner = readOnly ? null : new FreeIdScanner( idsPerEntry, tree, cache, atLeastOneIdOnFreelist,
                 tracer -> lockAndInstantiateMarker( true, tracer ), generation, strictlyPrioritizeFreelist, monitor );
     }
