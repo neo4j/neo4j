@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.api.index.sampling;
 import java.util.function.LongPredicate;
 
 import org.neo4j.common.TokenNameLookup;
+import org.neo4j.configuration.Config;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.index.IndexSample;
@@ -34,24 +35,26 @@ import org.neo4j.scheduler.JobScheduler;
 
 public class IndexSamplingControllerFactory
 {
-    private final IndexSamplingConfig config;
+    private final IndexSamplingConfig samplingConfig;
     private final IndexStatisticsStore indexStatisticsStore;
     private final JobScheduler scheduler;
     private final TokenNameLookup tokenNameLookup;
     private final LogProvider logProvider;
     private final PageCacheTracer cacheTracer;
+    private final Config config;
     private final String databaseName;
 
-    public IndexSamplingControllerFactory( IndexSamplingConfig config, IndexStatisticsStore indexStatisticsStore,
+    public IndexSamplingControllerFactory( IndexSamplingConfig samplingConfig, IndexStatisticsStore indexStatisticsStore,
                                            JobScheduler scheduler, TokenNameLookup tokenNameLookup,
-                                           LogProvider logProvider, PageCacheTracer cacheTracer, String databaseName )
+                                           LogProvider logProvider, PageCacheTracer cacheTracer, Config config, String databaseName )
     {
-        this.config = config;
+        this.samplingConfig = samplingConfig;
         this.indexStatisticsStore = indexStatisticsStore;
         this.scheduler = scheduler;
         this.tokenNameLookup = tokenNameLookup;
         this.logProvider = logProvider;
         this.cacheTracer = cacheTracer;
+        this.config = config;
         this.databaseName = databaseName;
     }
 
@@ -61,9 +64,8 @@ public class IndexSamplingControllerFactory
         LongPredicate samplingUpdatePredicate = createSamplingPredicate();
         IndexSamplingJobTracker jobTracker = new IndexSamplingJobTracker( scheduler, databaseName );
         RecoveryCondition indexRecoveryCondition = createIndexRecoveryCondition( logProvider, tokenNameLookup );
-        return new IndexSamplingController(
-                config, jobFactory, samplingUpdatePredicate, jobTracker, snapshotProvider, scheduler, indexRecoveryCondition,
-                logProvider, databaseName );
+        return new IndexSamplingController( samplingConfig, jobFactory, samplingUpdatePredicate, jobTracker, snapshotProvider, scheduler,
+                indexRecoveryCondition, logProvider, config, databaseName );
     }
 
     private LongPredicate createSamplingPredicate()
@@ -72,7 +74,7 @@ public class IndexSamplingControllerFactory
             var indexInfo = indexStatisticsStore.indexSample( indexId );
             long updates = indexInfo.updates();
             long size = indexInfo.indexSize();
-            long threshold = Math.round( config.updateRatio() * size );
+            long threshold = Math.round( samplingConfig.updateRatio() * size );
             return updates > threshold;
         };
     }

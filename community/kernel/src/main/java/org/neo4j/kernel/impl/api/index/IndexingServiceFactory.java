@@ -59,7 +59,7 @@ public final class IndexingServiceFactory
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( config );
         IndexMapReference indexMapRef = new IndexMapReference();
         IndexSamplingControllerFactory factory = new IndexSamplingControllerFactory( samplingConfig, indexStatisticsStore, scheduler,
-                tokenNameLookup, internalLogProvider, pageCacheTracer, databaseName );
+                tokenNameLookup, internalLogProvider, pageCacheTracer, config, databaseName );
         IndexSamplingController indexSamplingController = factory.create( indexMapRef );
         IndexProxyCreator proxySetup =
                 new IndexProxyCreator( samplingConfig, indexStatisticsStore, providerMap, tokenNameLookup, internalLogProvider );

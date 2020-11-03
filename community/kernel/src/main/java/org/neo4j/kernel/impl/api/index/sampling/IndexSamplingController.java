@@ -36,6 +36,8 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.LongPredicate;
 
+import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexMap;
@@ -53,7 +55,6 @@ import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode.backgroundRebuildUpdated;
-import static org.neo4j.util.FeatureToggles.flag;
 
 public class IndexSamplingController
 {
@@ -66,9 +67,6 @@ public class IndexSamplingController
     private final boolean backgroundSampling;
     private final Lock samplingLock = new ReentrantLock();
     private final Log log;
-    static final String LOG_RECOVER_INDEX_SAMPLES_NAME = "log_recover_index_samples";
-    static final String ASYNC_RECOVER_INDEX_SAMPLES_NAME = "async_recover_index_samples";
-    static final String ASYNC_RECOVER_INDEX_SAMPLES_WAIT_NAME = "async_recover_index_samples_wait";
     private final boolean logRecoverIndexSamples;
     private final boolean asyncRecoverIndexSamples;
     private final boolean asyncRecoverIndexSamplesWait;
@@ -77,7 +75,7 @@ public class IndexSamplingController
     private JobHandle backgroundSamplingHandle;
 
     // use IndexSamplingControllerFactory.create do not instantiate directly
-    IndexSamplingController( IndexSamplingConfig config,
+    IndexSamplingController( IndexSamplingConfig samplingConfig,
                              IndexSamplingJobFactory jobFactory,
                              LongPredicate samplingUpdatePredicate,
                              IndexSamplingJobTracker jobTracker,
@@ -85,9 +83,10 @@ public class IndexSamplingController
                              JobScheduler scheduler,
                              RecoveryCondition indexRecoveryCondition,
                              LogProvider logProvider,
+                             Config config,
                              String databaseName )
     {
-        this.backgroundSampling = config.backgroundSampling();
+        this.backgroundSampling = samplingConfig.backgroundSampling();
         this.jobFactory = jobFactory;
         this.indexMapSnapshotProvider = indexMapSnapshotProvider;
         this.samplingUpdatePredicate = samplingUpdatePredicate;
@@ -95,10 +94,9 @@ public class IndexSamplingController
         this.scheduler = scheduler;
         this.indexRecoveryCondition = indexRecoveryCondition;
         this.log = logProvider.getLog( getClass() );
-        this.logRecoverIndexSamples = flag( IndexSamplingController.class, LOG_RECOVER_INDEX_SAMPLES_NAME, false );
-        this.asyncRecoverIndexSamples = flag( IndexSamplingController.class, ASYNC_RECOVER_INDEX_SAMPLES_NAME, true );
-        this.asyncRecoverIndexSamplesWait =
-                flag( IndexSamplingController.class, ASYNC_RECOVER_INDEX_SAMPLES_WAIT_NAME, asyncRecoverIndexSamples );
+        this.logRecoverIndexSamples = config.get( GraphDatabaseInternalSettings.log_recover_index_samples );
+        this.asyncRecoverIndexSamples = config.get( GraphDatabaseInternalSettings.async_recover_index_samples );
+        this.asyncRecoverIndexSamplesWait = config.get( GraphDatabaseInternalSettings.async_recover_index_samples_wait );
         this.databaseName = databaseName;
     }
 

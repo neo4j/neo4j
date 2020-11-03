@@ -540,4 +540,16 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
     @Internal
     public static final Setting<Duration> page_cache_tracer_speed_reporting_threshold =
             newBuilder( "unsupported.dbms.debug.page_cache_tracer_speed_reporting_threshold", DURATION, ofSeconds( 10 ) ).build();
+
+    @Internal
+    public static final Setting<Boolean> log_recover_index_samples = newBuilder( "unsupported.dbms.index.sampling.log_recovered_samples", BOOL, false ).build();
+
+    @Internal
+    public static final Setting<Boolean> async_recover_index_samples = newBuilder( "unsupported.dbms.index.sampling.async_recovery", BOOL, true ).build();
+
+    @Internal
+    public static final Setting<Boolean> async_recover_index_samples_wait =
+            newBuilder( "unsupported.dbms.index.sampling.async_recovery_wait", BOOL, null )
+                    .setDependency( async_recover_index_samples )
+                    .build();
 }

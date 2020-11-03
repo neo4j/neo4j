@@ -27,6 +27,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.LongPredicate;
 
+import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexMap;
 import org.neo4j.kernel.impl.api.index.IndexMapSnapshotProvider;
@@ -53,13 +55,9 @@ import static org.neo4j.internal.kernel.api.InternalIndexState.POPULATING;
 import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
-import static org.neo4j.kernel.impl.api.index.sampling.IndexSamplingController.ASYNC_RECOVER_INDEX_SAMPLES_NAME;
-import static org.neo4j.kernel.impl.api.index.sampling.IndexSamplingController.ASYNC_RECOVER_INDEX_SAMPLES_WAIT_NAME;
 import static org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode.backgroundRebuildUpdated;
 import static org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode.foregroundRebuildUpdated;
 import static org.neo4j.logging.LogAssertions.assertThat;
-import static org.neo4j.util.FeatureToggles.clear;
-import static org.neo4j.util.FeatureToggles.set;
 
 class IndexSamplingControllerTest
 {
@@ -100,7 +98,7 @@ class IndexSamplingControllerTest
     void shouldStartASamplingJobForEachIndexInTheDB()
     {
         // given
-        IndexSamplingController controller = newSamplingController( always( false ), logProvider);
+        IndexSamplingController controller = newSamplingController( always( false ), logProvider );
         when( indexProxy.getState() ).thenReturn( ONLINE );
 
         // when
@@ -116,7 +114,7 @@ class IndexSamplingControllerTest
     void shouldNotStartAJobIfTheIndexIsNotOnline()
     {
         // given
-        IndexSamplingController controller = newSamplingController( always( false ), logProvider);
+        IndexSamplingController controller = newSamplingController( always( false ), logProvider );
         when( indexProxy.getState() ).thenReturn( POPULATING );
 
         // when
@@ -130,7 +128,7 @@ class IndexSamplingControllerTest
     void shouldSampleAllTheIndexes()
     {
         // given
-        IndexSamplingController controller = newSamplingController( always( false ), logProvider);
+        IndexSamplingController controller = newSamplingController( always( false ), logProvider );
         when( indexProxy.getState() ).thenReturn( ONLINE );
         when( anotherIndexProxy.getState() ).thenReturn( ONLINE );
         indexMap.putIndexProxy( anotherIndexProxy );
@@ -151,7 +149,7 @@ class IndexSamplingControllerTest
     void shouldSampleAllTheOnlineIndexes()
     {
         // given
-        IndexSamplingController controller = newSamplingController( always( false ), logProvider);
+        IndexSamplingController controller = newSamplingController( always( false ), logProvider );
         when( indexProxy.getState() ).thenReturn( ONLINE );
         when( anotherIndexProxy.getState() ).thenReturn( POPULATING );
         indexMap.putIndexProxy( anotherIndexProxy );
@@ -170,7 +168,7 @@ class IndexSamplingControllerTest
     void shouldForegroundSampleAllTheIndexes() throws InterruptedException, ExecutionException, TimeoutException
     {
         // given
-        IndexSamplingController controller = newSamplingController( always( false ), logProvider);
+        IndexSamplingController controller = newSamplingController( always( false ), logProvider );
         when( indexProxy.getState() ).thenReturn( ONLINE );
         when( anotherIndexProxy.getState() ).thenReturn( ONLINE );
         indexMap.putIndexProxy( anotherIndexProxy );
@@ -197,7 +195,7 @@ class IndexSamplingControllerTest
     void shouldThrowIfJobTimesOut()
     {
         // given
-        IndexSamplingController controller = newSamplingController( always( false ), logProvider);
+        IndexSamplingController controller = newSamplingController( always( false ), logProvider );
         when( indexProxy.getState() ).thenReturn( ONLINE );
         when( anotherIndexProxy.getState() ).thenReturn( ONLINE );
         indexMap.putIndexProxy( anotherIndexProxy );
@@ -238,7 +236,7 @@ class IndexSamplingControllerTest
     void shouldRecoverOnlineIndex()
     {
         // given
-        IndexSamplingController controller = newSamplingController( always( true ), logProvider);
+        IndexSamplingController controller = newSamplingController( always( true ), logProvider );
         when( indexProxy.getState() ).thenReturn( ONLINE );
 
         // when
@@ -254,7 +252,7 @@ class IndexSamplingControllerTest
     void shouldNotRecoverOfflineIndex()
     {
         // given
-        IndexSamplingController controller = newSamplingController( always( true ), logProvider);
+        IndexSamplingController controller = newSamplingController( always( true ), logProvider );
         when( indexProxy.getState() ).thenReturn( FAILED );
 
         // when
@@ -268,7 +266,7 @@ class IndexSamplingControllerTest
     void shouldNotRecoverOnlineIndexIfNotNeeded()
     {
         // given
-        IndexSamplingController controller = newSamplingController( always( false ), logProvider);
+        IndexSamplingController controller = newSamplingController( always( false ), logProvider );
         when( indexProxy.getState() ).thenReturn( ONLINE );
 
         // when
@@ -282,7 +280,7 @@ class IndexSamplingControllerTest
     void shouldSampleIndex()
     {
         // given
-        IndexSamplingController controller = newSamplingController( always( false ), logProvider);
+        IndexSamplingController controller = newSamplingController( always( false ), logProvider );
         when( indexProxy.getState() ).thenReturn( ONLINE );
         when( anotherIndexProxy.getState() ).thenReturn( ONLINE );
         indexMap.putIndexProxy( anotherIndexProxy );
@@ -302,27 +300,20 @@ class IndexSamplingControllerTest
     @Test
     void shouldLogRecoveryIndexSamples()
     {
-        set( IndexSamplingController.class, IndexSamplingController.LOG_RECOVER_INDEX_SAMPLES_NAME, true );
-        try
-        {
-            final RecoveryCondition predicate = descriptor -> descriptor.equals( indexProxy.getDescriptor() );
-            final IndexSamplingController controller = newSamplingController( predicate, logProvider );
+        final RecoveryCondition predicate = descriptor -> descriptor.equals( indexProxy.getDescriptor() );
+        final IndexSamplingController controller = newSamplingController( predicate, logProvider,
+                Config.defaults( GraphDatabaseInternalSettings.log_recover_index_samples, true ) );
 
-            when( indexProxy.getState() ).thenReturn( ONLINE );
-            when( anotherIndexProxy.getState() ).thenReturn( ONLINE );
-            indexMap.putIndexProxy( anotherIndexProxy );
+        when( indexProxy.getState() ).thenReturn( ONLINE );
+        when( anotherIndexProxy.getState() ).thenReturn( ONLINE );
+        indexMap.putIndexProxy( anotherIndexProxy );
 
-            // when
-            controller.recoverIndexSamples();
+        // when
+        controller.recoverIndexSamples();
 
-            // then
-            assertThat( logProvider ).containsMessages( "Index requires sampling, id=2, name=index_2.",
-                                                        "Index does not require sampling, id=3, name=index_3." );
-        }
-        finally
-        {
-            clear( IndexSamplingController.class, IndexSamplingController.LOG_RECOVER_INDEX_SAMPLES_NAME );
-        }
+        // then
+        assertThat( logProvider ).containsMessages( "Index requires sampling, id=2, name=index_2.",
+                                                    "Index does not require sampling, id=3, name=index_3." );
     }
 
     @Test
@@ -341,20 +332,13 @@ class IndexSamplingControllerTest
     @Test
     void shouldNotTriggerAsyncSamplesIfNotToggled()
     {
-        set( IndexSamplingController.class, ASYNC_RECOVER_INDEX_SAMPLES_NAME, false );
-        try
-        {
-            final IndexSamplingController controller = newSamplingController( always( true ), logProvider );
-            when( indexProxy.getState() ).thenReturn( ONLINE );
+        final IndexSamplingController controller = newSamplingController( always( true ), logProvider,
+                Config.defaults( GraphDatabaseInternalSettings.async_recover_index_samples, false ) );
+        when( indexProxy.getState() ).thenReturn( ONLINE );
 
-            controller.recoverIndexSamples();
+        controller.recoverIndexSamples();
 
-            verifyNoMoreInteractions( tracker );
-        }
-        finally
-        {
-            clear( IndexSamplingController.class, ASYNC_RECOVER_INDEX_SAMPLES_NAME );
-        }
+        verifyNoMoreInteractions( tracker );
     }
 
     @Test
@@ -375,24 +359,17 @@ class IndexSamplingControllerTest
     @Test
     void shouldNotWaitForAsyncIndexSamplesIfConfigured()
     {
-        set( IndexSamplingController.class, ASYNC_RECOVER_INDEX_SAMPLES_WAIT_NAME, false );
-        try
-        {
-            final IndexSamplingController controller = newSamplingController( always( true ), logProvider );
-            when( indexProxy.getState() ).thenReturn( ONLINE );
-            when( jobFactory.create( indexId, indexProxy ) ).thenReturn( job );
-            final JobHandle jobHandle = mock( JobHandle.class );
-            when( tracker.scheduleSamplingJob( any( IndexSamplingJob.class ) ) ).thenReturn( jobHandle );
+        final IndexSamplingController controller = newSamplingController( always( true ), logProvider,
+                Config.defaults( GraphDatabaseInternalSettings.async_recover_index_samples_wait, false ) );
+        when( indexProxy.getState() ).thenReturn( ONLINE );
+        when( jobFactory.create( indexId, indexProxy ) ).thenReturn( job );
+        final JobHandle jobHandle = mock( JobHandle.class );
+        when( tracker.scheduleSamplingJob( any( IndexSamplingJob.class ) ) ).thenReturn( jobHandle );
 
-            controller.recoverIndexSamples();
+        controller.recoverIndexSamples();
 
-            verify( tracker ).scheduleSamplingJob( job );
-            verifyNoMoreInteractions( jobHandle );
-        }
-        finally
-        {
-            clear( IndexSamplingController.class, ASYNC_RECOVER_INDEX_SAMPLES_WAIT_NAME );
-        }
+        verify( tracker ).scheduleSamplingJob( job );
+        verifyNoMoreInteractions( jobHandle );
     }
 
     private RecoveryCondition always( boolean ans )
@@ -402,8 +379,13 @@ class IndexSamplingControllerTest
 
     private IndexSamplingController newSamplingController( RecoveryCondition recoveryPredicate, LogProvider logProvider )
     {
+        return newSamplingController( recoveryPredicate, logProvider, Config.defaults() );
+    }
+
+    private IndexSamplingController newSamplingController( RecoveryCondition recoveryPredicate, LogProvider logProvider, Config config )
+    {
         return new IndexSamplingController( samplingConfig, jobFactory, samplingUpdatePredicate, tracker, snapshotProvider, scheduler, recoveryPredicate,
-                logProvider, "Test DB" );
+                logProvider, config, "Test DB" );
     }
 
     private static class Always implements RecoveryCondition
