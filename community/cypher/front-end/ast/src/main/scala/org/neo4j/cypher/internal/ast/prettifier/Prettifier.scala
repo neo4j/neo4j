@@ -201,6 +201,8 @@ case class Prettifier(
     def backtick(s: String) = ExpressionStringifier.backtick(s)
     def propertiesToString(properties: Seq[Property]): String = properties.map(propertyToString).mkString("(", ", ", ")")
     def propertyToString(property: Property): String = s"${expr(property.map)}.${ExpressionStringifier.backtick(property.propertyKey.name)}"
+    def propertyToStringExistenceConstraint(property: Property, oldSyntax: Boolean): String =
+      if (oldSyntax) s"exists(${propertyToString(property)})" else s"(${propertyToString(property)}) IS NOT NULL"
     def getStartOfCommand(name: Option[String], ifExistsDo: IfExistsDo, schemaType: String): String = {
       val nameString = name.map(n => s"${backtick(n)} ").getOrElse("")
       ifExistsDo match {
@@ -249,18 +251,20 @@ case class Prettifier(
       case DropUniquePropertyConstraint(Variable(variable), LabelName(label), properties, _) =>
         s"DROP CONSTRAINT ON (${backtick(variable)}:${backtick(label)}) ASSERT ${propertiesToString(properties)} IS UNIQUE"
 
-      case CreateNodePropertyExistenceConstraint(Variable(variable), LabelName(label), property, name, ifExistsDo, options, _) =>
+      case CreateNodePropertyExistenceConstraint(Variable(variable), LabelName(label), property, name, ifExistsDo, oldSyntax, options, _) =>
         val startOfCommand = getStartOfCommand(name, ifExistsDo, "CONSTRAINT")
+        val propertyString = propertyToStringExistenceConstraint(property, oldSyntax)
         val optionsString = options.map(o => if (o.nonEmpty) optionsToString(o) else " OPTIONS {}").getOrElse("")
-        s"${startOfCommand}ON (${backtick(variable)}:${backtick(label)}) ASSERT exists(${propertyToString(property)})$optionsString"
+        s"${startOfCommand}ON (${backtick(variable)}:${backtick(label)}) ASSERT $propertyString$optionsString"
 
       case DropNodePropertyExistenceConstraint(Variable(variable), LabelName(label), property, _) =>
         s"DROP CONSTRAINT ON (${backtick(variable)}:${backtick(label)}) ASSERT exists(${propertyToString(property)})"
 
-      case CreateRelationshipPropertyExistenceConstraint(Variable(variable), RelTypeName(relType), property, name, ifExistsDo, options, _) =>
+      case CreateRelationshipPropertyExistenceConstraint(Variable(variable), RelTypeName(relType), property, name, ifExistsDo, oldSyntax, options, _) =>
         val startOfCommand = getStartOfCommand(name, ifExistsDo, "CONSTRAINT")
+        val propertyString = propertyToStringExistenceConstraint(property, oldSyntax)
         val optionsString = options.map(o => if (o.nonEmpty) optionsToString(o) else " OPTIONS {}").getOrElse("")
-        s"${startOfCommand}ON ()-[${backtick(variable)}:${backtick(relType)}]-() ASSERT exists(${propertyToString(property)})$optionsString"
+        s"${startOfCommand}ON ()-[${backtick(variable)}:${backtick(relType)}]-() ASSERT $propertyString$optionsString"
 
       case DropRelationshipPropertyExistenceConstraint(Variable(variable), RelTypeName(relType), property, _) =>
         s"DROP CONSTRAINT ON ()-[${backtick(variable)}:${backtick(relType)}]-() ASSERT exists(${propertyToString(property)})"

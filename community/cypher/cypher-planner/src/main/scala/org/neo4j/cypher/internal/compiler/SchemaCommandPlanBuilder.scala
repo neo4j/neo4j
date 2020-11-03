@@ -87,27 +87,29 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
       case DropUniquePropertyConstraint(_, label, props, _) =>
         Some(plans.DropUniquePropertyConstraint(label, props))
 
-      // CREATE CONSTRAINT [name] [IF NOT EXISTS] ON (node:Label) ASSERT EXISTS node.prop
-      case CreateNodePropertyExistenceConstraint(_, label, prop, name, ifExistsDo, _, _) =>
+      // CREATE CONSTRAINT [name] [IF NOT EXISTS] ON (node:Label) ASSERT EXISTS (node.prop)
+      // CREATE CONSTRAINT [name] [IF NOT EXISTS] ON (node:Label) ASSERT node.prop IS NOT NULL
+      case CreateNodePropertyExistenceConstraint(_, label, prop, name, ifExistsDo, _, _, _) =>
         val source = ifExistsDo match {
           case IfExistsDoNothing => Some(plans.DoNothingIfExistsForConstraint(prop.map.asCanonicalStringVal, scala.util.Left(label), Seq(prop), plans.NodePropertyExistence, name))
           case _ => None
         }
         Some(plans.CreateNodePropertyExistenceConstraint(source, label, prop, name))
 
-      // DROP CONSTRAINT ON (node:Label) ASSERT EXISTS node.prop
+      // DROP CONSTRAINT ON (node:Label) ASSERT EXISTS (node.prop)
       case DropNodePropertyExistenceConstraint(_, label, prop, _) =>
         Some(plans.DropNodePropertyExistenceConstraint(label, prop))
 
-      // CREATE CONSTRAINT [name] [IF NOT EXISTS] ON ()-[r:R]-() ASSERT EXISTS r.prop
-      case CreateRelationshipPropertyExistenceConstraint(_, relType, prop, name, ifExistsDo, _, _) =>
+      // CREATE CONSTRAINT [name] [IF NOT EXISTS] ON ()-[r:R]-() ASSERT EXISTS (r.prop)
+      // CREATE CONSTRAINT [name] [IF NOT EXISTS] ON ()-[r:R]-() ASSERT r.prop IS NOT NULL
+      case CreateRelationshipPropertyExistenceConstraint(_, relType, prop, name, ifExistsDo, _, _, _) =>
         val source = ifExistsDo match {
           case IfExistsDoNothing => Some(plans.DoNothingIfExistsForConstraint(prop.map.asCanonicalStringVal, scala.util.Right(relType), Seq(prop), plans.RelationshipPropertyExistence, name))
           case _ => None
         }
         Some(plans.CreateRelationshipPropertyExistenceConstraint(source, relType, prop, name))
 
-      // DROP CONSTRAINT ON ()-[r:R]-() ASSERT EXISTS r.prop
+      // DROP CONSTRAINT ON ()-[r:R]-() ASSERT EXISTS (r.prop)
       case DropRelationshipPropertyExistenceConstraint(_, relType, prop, _) =>
         Some(plans.DropRelationshipPropertyExistenceConstraint(relType, prop))
 

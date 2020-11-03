@@ -38,6 +38,7 @@ import org.parboiled.scala.Rule0
 import org.parboiled.scala.Rule1
 import org.parboiled.scala.Rule3
 import org.parboiled.scala.Rule4
+import org.parboiled.scala.Rule5
 import org.parboiled.scala.group
 
 trait SchemaCommand extends Parser
@@ -106,7 +107,7 @@ trait SchemaCommand extends Parser
       ((name, variable, label, properties, options) => ast.CreateIndex(variable, label, properties.toList, Some(name), IfExistsReplace, options)) |
     group((keyword("CREATE BTREE INDEX") | keyword("CREATE INDEX")) ~~ SymbolicNameString ~~ keyword("IF NOT EXISTS FOR") ~~ IndexPatternSyntax) ~~>>
       ((name, variable, label, properties, options) => ast.CreateIndex(variable, label, properties.toList, Some(name), IfExistsDoNothing, options)) |
-    group((keyword("CREATE BTREE INDEX") | keyword("CREATE INDEX"))~~ SymbolicNameString ~~ keyword("FOR") ~~ IndexPatternSyntax) ~~>>
+    group((keyword("CREATE BTREE INDEX") | keyword("CREATE INDEX")) ~~ SymbolicNameString ~~ keyword("FOR") ~~ IndexPatternSyntax) ~~>>
       ((name, variable, label, properties, options) => ast.CreateIndex(variable, label, properties.toList, Some(name), IfExistsThrowError, options))
   }
 
@@ -193,36 +194,44 @@ trait SchemaCommand extends Parser
 
   def CreateNodePropertyExistenceConstraint: Rule1[ast.CreateNodePropertyExistenceConstraint] = rule {
     // without name
-    group(keyword("CREATE OR REPLACE CONSTRAINT IF NOT EXISTS") ~~ NodePropertyExistenceConstraintWithOptionsSyntax) ~~>> (ast.CreateNodePropertyExistenceConstraint(_, _, _, None, IfExistsInvalidSyntax, _)) |
-    group(keyword("CREATE OR REPLACE CONSTRAINT") ~~ NodePropertyExistenceConstraintWithOptionsSyntax) ~~>> (ast.CreateNodePropertyExistenceConstraint(_, _, _, None, IfExistsReplace, _)) |
-    group(keyword("CREATE CONSTRAINT IF NOT EXISTS") ~~ NodePropertyExistenceConstraintWithOptionsSyntax) ~~>> (ast.CreateNodePropertyExistenceConstraint(_, _, _, None, IfExistsDoNothing, _)) |
-    group(keyword("CREATE CONSTRAINT") ~~ NodePropertyExistenceConstraintWithOptionsSyntax) ~~>> (ast.CreateNodePropertyExistenceConstraint(_, _, _, None, IfExistsThrowError, _)) |
+    group(keyword("CREATE OR REPLACE CONSTRAINT IF NOT EXISTS") ~~ NodePropertyExistenceConstraintWithOptionsSyntax) ~~>>
+      ((variable, labelName, property, options, oldSyntax) => ast.CreateNodePropertyExistenceConstraint(variable, labelName, property, None, IfExistsInvalidSyntax, oldSyntax, options)) |
+    group(keyword("CREATE OR REPLACE CONSTRAINT") ~~ NodePropertyExistenceConstraintWithOptionsSyntax) ~~>>
+      ((variable, labelName, property, options, oldSyntax) => ast.CreateNodePropertyExistenceConstraint(variable, labelName, property, None, IfExistsReplace, oldSyntax, options)) |
+    group(keyword("CREATE CONSTRAINT IF NOT EXISTS") ~~ NodePropertyExistenceConstraintWithOptionsSyntax) ~~>>
+      ((variable, labelName, property, options, oldSyntax) => ast.CreateNodePropertyExistenceConstraint(variable, labelName, property, None, IfExistsDoNothing, oldSyntax, options)) |
+    group(keyword("CREATE CONSTRAINT") ~~ NodePropertyExistenceConstraintWithOptionsSyntax) ~~>>
+      ((variable, labelName, property, options, oldSyntax) => ast.CreateNodePropertyExistenceConstraint(variable, labelName, property, None, IfExistsThrowError, oldSyntax, options)) |
     // with name
     group(keyword("CREATE OR REPLACE CONSTRAINT") ~~ SymbolicNameString ~~ keyword("IF NOT EXISTS") ~~ NodePropertyExistenceConstraintWithOptionsSyntax) ~~>>
-      ((name, variable, labelName, property, options) => ast.CreateNodePropertyExistenceConstraint(variable, labelName, property, Some(name), IfExistsInvalidSyntax, options)) |
+      ((name, variable, labelName, property, options, oldSyntax) => ast.CreateNodePropertyExistenceConstraint(variable, labelName, property, Some(name), IfExistsInvalidSyntax, oldSyntax, options)) |
     group(keyword("CREATE OR REPLACE CONSTRAINT") ~~ SymbolicNameString ~~ NodePropertyExistenceConstraintWithOptionsSyntax) ~~>>
-      ((name, variable, labelName, property, options) => ast.CreateNodePropertyExistenceConstraint(variable, labelName, property, Some(name), IfExistsReplace, options)) |
+      ((name, variable, labelName, property, options, oldSyntax) => ast.CreateNodePropertyExistenceConstraint(variable, labelName, property, Some(name), IfExistsReplace, oldSyntax, options)) |
     group(keyword("CREATE CONSTRAINT") ~~ SymbolicNameString ~~ keyword("IF NOT EXISTS") ~~ NodePropertyExistenceConstraintWithOptionsSyntax) ~~>>
-      ((name, variable, labelName, property, options) => ast.CreateNodePropertyExistenceConstraint(variable, labelName, property, Some(name), IfExistsDoNothing, options)) |
+      ((name, variable, labelName, property, options, oldSyntax) => ast.CreateNodePropertyExistenceConstraint(variable, labelName, property, Some(name), IfExistsDoNothing, oldSyntax, options)) |
     group(keyword("CREATE CONSTRAINT") ~~ SymbolicNameString ~~ NodePropertyExistenceConstraintWithOptionsSyntax) ~~>>
-      ((name, variable, labelName, property, options) => ast.CreateNodePropertyExistenceConstraint(variable, labelName, property, Some(name), IfExistsThrowError, options))
+      ((name, variable, labelName, property, options, oldSyntax) => ast.CreateNodePropertyExistenceConstraint(variable, labelName, property, Some(name), IfExistsThrowError, oldSyntax, options))
   }
 
   def CreateRelationshipPropertyExistenceConstraint: Rule1[ast.CreateRelationshipPropertyExistenceConstraint] = rule {
     // without name
-    group(keyword("CREATE OR REPLACE CONSTRAINT IF NOT EXISTS") ~~ RelationshipPropertyExistenceConstraintWithOptionsSyntax) ~~>> (ast.CreateRelationshipPropertyExistenceConstraint(_, _, _, None, IfExistsInvalidSyntax, _)) |
-    group(keyword("CREATE OR REPLACE CONSTRAINT") ~~ RelationshipPropertyExistenceConstraintWithOptionsSyntax) ~~>> (ast.CreateRelationshipPropertyExistenceConstraint(_, _, _, None, IfExistsReplace, _)) |
-    group(keyword("CREATE CONSTRAINT IF NOT EXISTS") ~~ RelationshipPropertyExistenceConstraintWithOptionsSyntax) ~~>> (ast.CreateRelationshipPropertyExistenceConstraint(_, _, _, None, IfExistsDoNothing, _)) |
-    group(keyword("CREATE CONSTRAINT") ~~ RelationshipPropertyExistenceConstraintWithOptionsSyntax) ~~>> (ast.CreateRelationshipPropertyExistenceConstraint(_, _, _, None, IfExistsThrowError, _)) |
+    group(keyword("CREATE OR REPLACE CONSTRAINT IF NOT EXISTS") ~~ RelationshipPropertyExistenceConstraintWithOptionsSyntax) ~~>>
+      ((variable, relTypeName, property, options, oldSyntax) => ast.CreateRelationshipPropertyExistenceConstraint(variable, relTypeName, property, None, IfExistsInvalidSyntax, oldSyntax, options)) |
+    group(keyword("CREATE OR REPLACE CONSTRAINT") ~~ RelationshipPropertyExistenceConstraintWithOptionsSyntax) ~~>>
+      ((variable, relTypeName, property, options, oldSyntax) => ast.CreateRelationshipPropertyExistenceConstraint(variable, relTypeName, property, None, IfExistsReplace, oldSyntax, options)) |
+    group(keyword("CREATE CONSTRAINT IF NOT EXISTS") ~~ RelationshipPropertyExistenceConstraintWithOptionsSyntax) ~~>>
+      ((variable, relTypeName, property, options, oldSyntax) => ast.CreateRelationshipPropertyExistenceConstraint(variable, relTypeName, property, None, IfExistsDoNothing, oldSyntax, options)) |
+    group(keyword("CREATE CONSTRAINT") ~~ RelationshipPropertyExistenceConstraintWithOptionsSyntax) ~~>>
+      ((variable, relTypeName, property, options, oldSyntax) => ast.CreateRelationshipPropertyExistenceConstraint(variable, relTypeName, property, None, IfExistsThrowError, oldSyntax, options)) |
     // with name
     group(keyword("CREATE OR REPLACE CONSTRAINT") ~~ SymbolicNameString ~~ keyword("IF NOT EXISTS") ~~ RelationshipPropertyExistenceConstraintWithOptionsSyntax) ~~>>
-      ((name, variable, relTypeName, property, options) => ast.CreateRelationshipPropertyExistenceConstraint(variable, relTypeName, property, Some(name), IfExistsInvalidSyntax, options)) |
+      ((name, variable, relTypeName, property, options, oldSyntax) => ast.CreateRelationshipPropertyExistenceConstraint(variable, relTypeName, property, Some(name), IfExistsInvalidSyntax, oldSyntax, options)) |
     group(keyword("CREATE OR REPLACE CONSTRAINT") ~~ SymbolicNameString ~~ RelationshipPropertyExistenceConstraintWithOptionsSyntax) ~~>>
-      ((name, variable, relTypeName, property, options) => ast.CreateRelationshipPropertyExistenceConstraint(variable, relTypeName, property, Some(name), IfExistsReplace, options)) |
+      ((name, variable, relTypeName, property, options, oldSyntax) => ast.CreateRelationshipPropertyExistenceConstraint(variable, relTypeName, property, Some(name), IfExistsReplace, oldSyntax, options)) |
     group(keyword("CREATE CONSTRAINT") ~~ SymbolicNameString ~~ keyword("IF NOT EXISTS") ~~ RelationshipPropertyExistenceConstraintWithOptionsSyntax) ~~>>
-      ((name, variable, relTypeName, property, options) => ast.CreateRelationshipPropertyExistenceConstraint(variable, relTypeName, property, Some(name), IfExistsDoNothing, options)) |
+      ((name, variable, relTypeName, property, options, oldSyntax) => ast.CreateRelationshipPropertyExistenceConstraint(variable, relTypeName, property, Some(name), IfExistsDoNothing, oldSyntax, options)) |
     group(keyword("CREATE CONSTRAINT") ~~ SymbolicNameString ~~ RelationshipPropertyExistenceConstraintWithOptionsSyntax) ~~>>
-      ((name, variable, relTypeName, property, options) => ast.CreateRelationshipPropertyExistenceConstraint(variable, relTypeName, property, Some(name), IfExistsThrowError, options))
+      ((name, variable, relTypeName, property, options, oldSyntax) => ast.CreateRelationshipPropertyExistenceConstraint(variable, relTypeName, property, Some(name), IfExistsThrowError, oldSyntax, options))
   }
 
   def DropUniqueConstraint: Rule1[ast.DropUniquePropertyConstraint] = rule {
@@ -239,11 +248,11 @@ trait SchemaCommand extends Parser
   }
 
   def DropNodePropertyExistenceConstraint: Rule1[ast.DropNodePropertyExistenceConstraint] = rule {
-    group(keyword("DROP CONSTRAINT") ~~ NodePropertyExistenceConstraintSyntax) ~~>> (ast.DropNodePropertyExistenceConstraint(_, _, _))
+    group(keyword("DROP CONSTRAINT") ~~ OldNodePropertyExistenceConstraintSyntax) ~~>> (ast.DropNodePropertyExistenceConstraint(_, _, _))
   }
 
   def DropRelationshipPropertyExistenceConstraint: Rule1[ast.DropRelationshipPropertyExistenceConstraint] = rule {
-    group(keyword("DROP CONSTRAINT") ~~ RelationshipPropertyExistenceConstraintSyntax) ~~>> (ast.DropRelationshipPropertyExistenceConstraint(_, _, _))
+    group(keyword("DROP CONSTRAINT") ~~ OldRelationshipPropertyExistenceConstraintSyntax) ~~>> (ast.DropRelationshipPropertyExistenceConstraint(_, _, _))
   }
 
   def DropConstraintOnName: Rule1[ast.DropConstraintOnName] = rule {
@@ -293,20 +302,30 @@ trait SchemaCommand extends Parser
     UniqueCompositeConstraintSyntax ~> (_ => Map.empty)
   }
 
-  private def NodePropertyExistenceConstraintSyntax: Rule3[Variable, LabelName, Property] = keyword("ON") ~~ "(" ~~ Variable ~~ NodeLabel ~~ ")" ~~
+  private def OldNodePropertyExistenceConstraintSyntax: Rule3[Variable, LabelName, Property] = keyword("ON") ~~ "(" ~~ Variable ~~ NodeLabel ~~ ")" ~~
     keyword("ASSERT EXISTS") ~~ "(" ~~ VariablePropertyExpression ~~ ")"
 
-  private def NodePropertyExistenceConstraintWithOptionsSyntax: Rule4[Variable, LabelName, Property, Option[Map[String, Expression]]] = rule {
-    NodePropertyExistenceConstraintSyntax ~~ options ~~> (o => Some(o)) |
-    NodePropertyExistenceConstraintSyntax ~> (_ => None)
+  private def NodePropertyExistenceConstraintSyntax: Rule3[Variable, LabelName, Property] = keyword("ON") ~~ "(" ~~ Variable ~~ NodeLabel ~~ ")" ~~
+    keyword("ASSERT") ~~ group(group("(" ~~ VariablePropertyExpression ~~ ")") | VariablePropertyExpression) ~~ keyword("IS NOT NULL")
+
+  private def NodePropertyExistenceConstraintWithOptionsSyntax: Rule5[Variable, LabelName, Property, Option[Map[String, Expression]], Boolean] = rule {
+    OldNodePropertyExistenceConstraintSyntax ~~ options ~~> (o => Some(o)) ~> (_ => true) |
+    OldNodePropertyExistenceConstraintSyntax ~> (_ => None) ~> (_ => true) |
+    NodePropertyExistenceConstraintSyntax ~~ options ~~> (o => Some(o)) ~> (_ => false) |
+    NodePropertyExistenceConstraintSyntax ~> (_ => None) ~> (_ => false)
   }
 
-  private def RelationshipPropertyExistenceConstraintSyntax: Rule3[Variable, RelTypeName, Property] = keyword("ON") ~~ RelationshipPatternSyntax ~~
+  private def OldRelationshipPropertyExistenceConstraintSyntax: Rule3[Variable, RelTypeName, Property] = keyword("ON") ~~ RelationshipPatternSyntax ~~
     keyword("ASSERT EXISTS") ~~ "(" ~~ VariablePropertyExpression ~~ ")"
 
-  private def RelationshipPropertyExistenceConstraintWithOptionsSyntax: Rule4[Variable, RelTypeName, Property, Option[Map[String, Expression]]] = rule {
-    RelationshipPropertyExistenceConstraintSyntax ~~ options ~~> (o => Some(o)) |
-    RelationshipPropertyExistenceConstraintSyntax ~> (_ => None)
+  private def RelationshipPropertyExistenceConstraintSyntax: Rule3[Variable, RelTypeName, Property] = keyword("ON") ~~ RelationshipPatternSyntax ~~
+    keyword("ASSERT") ~~ group(group("(" ~~ VariablePropertyExpression ~~ ")") | VariablePropertyExpression) ~~ keyword("IS NOT NULL")
+
+  private def RelationshipPropertyExistenceConstraintWithOptionsSyntax: Rule5[Variable, RelTypeName, Property, Option[Map[String, Expression]], Boolean] = rule {
+    OldRelationshipPropertyExistenceConstraintSyntax ~~ options ~~> (o => Some(o)) ~> (_ => true) |
+    OldRelationshipPropertyExistenceConstraintSyntax ~> (_ => None) ~> (_ => true) |
+    RelationshipPropertyExistenceConstraintSyntax ~~ options ~~> (o => Some(o)) ~> (_ => false) |
+    RelationshipPropertyExistenceConstraintSyntax ~> (_ => None) ~> (_ => false)
   }
 
   private def RelationshipPatternSyntax = rule(

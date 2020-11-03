@@ -324,50 +324,56 @@ class PrettifierIT extends CypherFunSuite {
       "drop CONSTRAINT ON (n:A) ASSERT (n.p1, n.p2) IS UNIQUE" ->
         "DROP CONSTRAINT ON (n:A) ASSERT (n.p1, n.p2) IS UNIQUE",
 
-      "create CONSTRAINT ON (a:A) ASSERT exists(a.p)" ->
+      "create CONSTRAINT ON (a:A) ASSERT EXISTS (a.p)" ->
         "CREATE CONSTRAINT ON (a:A) ASSERT exists(a.p)",
 
-      "create CONSTRAINT foo ON (a:A) ASSERT exists(a.p)" ->
-        "CREATE CONSTRAINT foo ON (a:A) ASSERT exists(a.p)",
+      "create CONSTRAINT ON (a:A) ASSERT (a.p) is not null" ->
+        "CREATE CONSTRAINT ON (a:A) ASSERT (a.p) IS NOT NULL",
 
-      "create CONSTRAINT `foo` ON (a:A) ASSERT exists (a.p) OPTIONS {}" ->
-        "CREATE CONSTRAINT foo ON (a:A) ASSERT exists(a.p) OPTIONS {}",
+      "create CONSTRAINT foo ON (a:A) ASSERT (a.p) IS NoT NulL" ->
+        "CREATE CONSTRAINT foo ON (a:A) ASSERT (a.p) IS NOT NULL",
 
-      "create CONSTRAINT `foo` ON (a:A) ASSERT exists (a.p) OPtiONS {notAllowedOptions: 'butParseThem', `backticks.stays.when.needed`: 'toThrowNiceError'}" ->
-        """CREATE CONSTRAINT foo ON (a:A) ASSERT exists(a.p) OPTIONS {notAllowedOptions: "butParseThem", `backticks.stays.when.needed`: "toThrowNiceError"}""",
+      "create CONSTRAINT `foo` ON (a:A) ASSERT (a.p) IS NOT NULL OPTIONS {}" ->
+        "CREATE CONSTRAINT foo ON (a:A) ASSERT (a.p) IS NOT NULL OPTIONS {}",
 
-      "create CONSTRAINT `$foo` ON (a:A) ASSERT exists(a.p)" ->
-        "CREATE CONSTRAINT `$foo` ON (a:A) ASSERT exists(a.p)",
+      "create CONSTRAINT `foo` ON (a:A) ASSERT a.p IS NOT NULL OPtiONS {notAllowedOptions: 'butParseThem', `backticks.stays.when.needed`: 'toThrowNiceError'}" ->
+        """CREATE CONSTRAINT foo ON (a:A) ASSERT (a.p) IS NOT NULL OPTIONS {notAllowedOptions: "butParseThem", `backticks.stays.when.needed`: "toThrowNiceError"}""",
 
-      "create OR replace CONSTRAINT ON (a:A) ASSERT exists(a.p)" ->
-        "CREATE OR REPLACE CONSTRAINT ON (a:A) ASSERT exists(a.p)",
+      "create CONSTRAINT `$foo` ON (a:A) ASSERT a.p IS NOT NULL" ->
+        "CREATE CONSTRAINT `$foo` ON (a:A) ASSERT (a.p) IS NOT NULL",
 
-      "create CONSTRAINT foo if not EXISTS ON (a:A) ASSERT exists(a.p)" ->
-        "CREATE CONSTRAINT foo IF NOT EXISTS ON (a:A) ASSERT exists(a.p)",
+      "create OR replace CONSTRAINT ON (a:A) ASSERT a.p IS NOT NULL" ->
+        "CREATE OR REPLACE CONSTRAINT ON (a:A) ASSERT (a.p) IS NOT NULL",
+
+      "create CONSTRAINT foo if not EXISTS ON (a:A) ASSERT a.p IS NOT NULL" ->
+        "CREATE CONSTRAINT foo IF NOT EXISTS ON (a:A) ASSERT (a.p) IS NOT NULL",
 
       "drop CONSTRAINT ON (a:A) ASSERT exists(a.p)" ->
         "DROP CONSTRAINT ON (a:A) ASSERT exists(a.p)",
 
-      "create CONSTRAINT ON ()-[r:R]-() ASSERT exists(r.p)" ->
+      "create CONSTRAINT ON ()-[r:R]-() ASSERT EXISTS (r.p)" ->
         "CREATE CONSTRAINT ON ()-[r:R]-() ASSERT exists(r.p)",
 
-      "create CONSTRAINT foo ON ()-[r:R]-() ASSERT exists(r.p)" ->
-        "CREATE CONSTRAINT foo ON ()-[r:R]-() ASSERT exists(r.p)",
+      "create CONSTRAINT ON ()-[r:R]-() ASSERT r.p is not nULl" ->
+        "CREATE CONSTRAINT ON ()-[r:R]-() ASSERT (r.p) IS NOT NULL",
 
-      "create CONSTRAINT `foo` ON ()-[r:R]-() ASSERT exists(r.p)" ->
-        "CREATE CONSTRAINT foo ON ()-[r:R]-() ASSERT exists(r.p)",
+      "create CONSTRAINT foo ON ()-[r:R]->() ASSERT (r.p) IS NOT NULL" ->
+        "CREATE CONSTRAINT foo ON ()-[r:R]-() ASSERT (r.p) IS NOT NULL",
 
-      "create CONSTRAINT `$foo` ON ()-[r:R]-() ASSERT exists(r.p) OPTIONS {}" ->
-        "CREATE CONSTRAINT `$foo` ON ()-[r:R]-() ASSERT exists(r.p) OPTIONS {}",
+      "create CONSTRAINT `foo` ON ()<-[r:R]-() ASSERT r.p is NOT null" ->
+        "CREATE CONSTRAINT foo ON ()-[r:R]-() ASSERT (r.p) IS NOT NULL",
 
-      "create CONSTRAINT `$foo` ON ()-[r:R]-() ASSERT exists (r.p) OPtiONS {notAllowedOptions: 'butParseThem', `backticks.stays.when.needed`: 'toThrowNiceError'}" ->
-        """CREATE CONSTRAINT `$foo` ON ()-[r:R]-() ASSERT exists(r.p) OPTIONS {notAllowedOptions: "butParseThem", `backticks.stays.when.needed`: "toThrowNiceError"}""",
+      "create CONSTRAINT `$foo` ON ()-[r:R]-() ASSERT r.p IS NOT NULL OPTIONS {}" ->
+        "CREATE CONSTRAINT `$foo` ON ()-[r:R]-() ASSERT (r.p) IS NOT NULL OPTIONS {}",
 
-      "create CONSTRAINT IF not exists ON ()-[r:R]-() ASSERT exists(r.p)" ->
-        "CREATE CONSTRAINT IF NOT EXISTS ON ()-[r:R]-() ASSERT exists(r.p)",
+      "create CONSTRAINT `$foo` ON ()-[r:R]-() ASSERT r.p IS NOT NULL OPtiONS {notAllowedOptions: 'butParseThem', `backticks.stays.when.needed`: 'toThrowNiceError'}" ->
+        """CREATE CONSTRAINT `$foo` ON ()-[r:R]-() ASSERT (r.p) IS NOT NULL OPTIONS {notAllowedOptions: "butParseThem", `backticks.stays.when.needed`: "toThrowNiceError"}""",
 
-      "create or Replace CONSTRAINT foo ON ()-[r:R]-() ASSERT exists(r.p)" ->
-        "CREATE OR REPLACE CONSTRAINT foo ON ()-[r:R]-() ASSERT exists(r.p)",
+      "create CONSTRAINT IF not exists ON ()-[r:R]-() ASSERT r.p IS NOT NULL" ->
+        "CREATE CONSTRAINT IF NOT EXISTS ON ()-[r:R]-() ASSERT (r.p) IS NOT NULL",
+
+      "create or Replace CONSTRAINT foo ON ()-[r:R]-() ASSERT r.p IS NOT NULL" ->
+        "CREATE OR REPLACE CONSTRAINT foo ON ()-[r:R]-() ASSERT (r.p) IS NOT NULL",
 
       "drop CONSTRAINT ON ()-[r:R]-() ASSERT exists(r.p)" ->
         "DROP CONSTRAINT ON ()-[r:R]-() ASSERT exists(r.p)",

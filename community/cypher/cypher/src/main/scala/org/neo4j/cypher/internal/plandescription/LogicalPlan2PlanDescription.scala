@@ -313,7 +313,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         val a = assertion match {
           case NodeKey    => scala.util.Right("IS NODE KEY")
           case Uniqueness => scala.util.Right("IS UNIQUE")
-          case _          => scala.util.Left("exists")
+          case _          => scala.util.Right("IS NOT NULL")
         }
         PlanDescriptionImpl(id, s"DoNothingIfExists(CONSTRAINT)", NoChildren, Seq(Details(constraintInfo(name, entity, entityType, props, a))), variables)
 
@@ -327,12 +327,12 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
 
       case CreateNodePropertyExistenceConstraint(_, label, prop, nameOption) => // Can be both a leaf plan and a middle plan so need to be in both places
         val node = prop.map.asCanonicalStringVal
-        val details = Details(constraintInfo(nameOption, node, scala.util.Left(label), Seq(prop), scala.util.Left("exists")))
+        val details = Details(constraintInfo(nameOption, node, scala.util.Left(label), Seq(prop), scala.util.Right("IS NOT NULL")))
         PlanDescriptionImpl(id, "CreateConstraint", NoChildren, Seq(details), variables)
 
       case CreateRelationshipPropertyExistenceConstraint(_, relTypeName, prop, nameOption) => // Can be both a leaf plan and a middle plan so need to be in both places
         val relationship = prop.map.asCanonicalStringVal
-        val details = Details(constraintInfo(nameOption, relationship, scala.util.Right(relTypeName), Seq(prop), scala.util.Left("exists")))
+        val details = Details(constraintInfo(nameOption, relationship, scala.util.Right(relTypeName), Seq(prop), scala.util.Right("IS NOT NULL")))
         PlanDescriptionImpl(id, "CreateConstraint", NoChildren, Seq(details), variables)
 
       case DropUniquePropertyConstraint(label, props) =>
@@ -623,12 +623,12 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
 
       case CreateNodePropertyExistenceConstraint(_, label, prop, nameOption) => // Can be both a leaf plan and a middle plan so need to be in both places
         val node = prop.map.asCanonicalStringVal
-        val details = Details(constraintInfo(nameOption, node, scala.util.Left(label), Seq(prop), scala.util.Left("exists")))
+        val details = Details(constraintInfo(nameOption, node, scala.util.Left(label), Seq(prop), scala.util.Right("IS NOT NULL")))
         PlanDescriptionImpl(id, "CreateConstraint", children, Seq(details), variables)
 
       case CreateRelationshipPropertyExistenceConstraint(_, relTypeName, prop, nameOption) => // Can be both a leaf plan and a middle plan so need to be in both places
         val relationship = prop.map.asCanonicalStringVal
-        val details = Details(constraintInfo(nameOption, relationship, scala.util.Right(relTypeName), Seq(prop), scala.util.Left("exists")))
+        val details = Details(constraintInfo(nameOption, relationship, scala.util.Right(relTypeName), Seq(prop), scala.util.Right("IS NOT NULL")))
         PlanDescriptionImpl(id, "CreateConstraint", children, Seq(details), variables)
 
       case TriadicBuild(_, sourceId, seenId, _) =>

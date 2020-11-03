@@ -659,30 +659,30 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
   test("CreateNodePropertyExistenceConstraint") {
     assertGood(attach(CreateNodePropertyExistenceConstraint(None, label("Label"), prop(" x", "prop"), None), 63.2),
-      planDescription(id, "CreateConstraint", NoChildren, Seq(details("CONSTRAINT ON (` x`:Label) ASSERT exists(` x`.prop)")), Set.empty))
+      planDescription(id, "CreateConstraint", NoChildren, Seq(details("CONSTRAINT ON (` x`:Label) ASSERT (` x`.prop) IS NOT NULL")), Set.empty))
 
     assertGood(attach(CreateNodePropertyExistenceConstraint(None, label("Label"), prop("x","prop"), Some("constraintName")), 63.2),
-      planDescription(id, "CreateConstraint", NoChildren, Seq(details("CONSTRAINT constraintName ON (x:Label) ASSERT exists(x.prop)")), Set.empty))
+      planDescription(id, "CreateConstraint", NoChildren, Seq(details("CONSTRAINT constraintName ON (x:Label) ASSERT (x.prop) IS NOT NULL")), Set.empty))
 
     assertGood(attach(CreateNodePropertyExistenceConstraint(Some(DoNothingIfExistsForConstraint(" x", scala.util.Left(label("Label")), Seq(prop(" x", "prop")), NodePropertyExistence, None)),
       label("Label"), prop(" x", "prop"), None), 63.2),
       planDescription(id, "CreateConstraint", SingleChild(
-        planDescription(id, "DoNothingIfExists(CONSTRAINT)", NoChildren, Seq(details("CONSTRAINT ON (` x`:Label) ASSERT exists(` x`.prop)")), Set.empty)
-      ), Seq(details("CONSTRAINT ON (` x`:Label) ASSERT exists(` x`.prop)")), Set.empty))
+        planDescription(id, "DoNothingIfExists(CONSTRAINT)", NoChildren, Seq(details("CONSTRAINT ON (` x`:Label) ASSERT (` x`.prop) IS NOT NULL")), Set.empty)
+      ), Seq(details("CONSTRAINT ON (` x`:Label) ASSERT (` x`.prop) IS NOT NULL")), Set.empty))
   }
 
   test("CreateRelationshipPropertyExistenceConstraint") {
     assertGood(attach(CreateRelationshipPropertyExistenceConstraint(None, relType("R"), prop(" x", "prop"), None), 63.2),
-      planDescription(id, "CreateConstraint", NoChildren, Seq(details("CONSTRAINT ON ()-[` x`:R]-() ASSERT exists(` x`.prop)")), Set.empty))
+      planDescription(id, "CreateConstraint", NoChildren, Seq(details("CONSTRAINT ON ()-[` x`:R]-() ASSERT (` x`.prop) IS NOT NULL")), Set.empty))
 
     assertGood(attach(CreateRelationshipPropertyExistenceConstraint(None, relType("R"), prop(" x", "prop"), Some("constraintName")), 63.2),
-      planDescription(id, "CreateConstraint", NoChildren, Seq(details("CONSTRAINT constraintName ON ()-[` x`:R]-() ASSERT exists(` x`.prop)")), Set.empty))
+      planDescription(id, "CreateConstraint", NoChildren, Seq(details("CONSTRAINT constraintName ON ()-[` x`:R]-() ASSERT (` x`.prop) IS NOT NULL")), Set.empty))
 
     assertGood(attach(CreateRelationshipPropertyExistenceConstraint(Some(DoNothingIfExistsForConstraint(" x", scala.util.Right(relType("R")), Seq(prop(" x", "prop")), RelationshipPropertyExistence, None)),
       relType("R"), prop(" x", "prop"), None), 63.2),
       planDescription(id, "CreateConstraint", SingleChild(
-        planDescription(id, "DoNothingIfExists(CONSTRAINT)", NoChildren, Seq(details("CONSTRAINT ON ()-[` x`:R]-() ASSERT exists(` x`.prop)")), Set.empty)
-      ), Seq(details("CONSTRAINT ON ()-[` x`:R]-() ASSERT exists(` x`.prop)")), Set.empty))
+        planDescription(id, "DoNothingIfExists(CONSTRAINT)", NoChildren, Seq(details("CONSTRAINT ON ()-[` x`:R]-() ASSERT (` x`.prop) IS NOT NULL")), Set.empty)
+      ), Seq(details("CONSTRAINT ON ()-[` x`:R]-() ASSERT (` x`.prop) IS NOT NULL")), Set.empty))
   }
 
   test("DropUniquePropertyConstraint") {

@@ -66,19 +66,19 @@ object Additions {
         throw cypherExceptionFactory.syntaxException("Creating uniqueness constraint using `IF NOT EXISTS` is not supported in this Cypher version.", c.position)
 
       // CREATE CONSTRAINT name ON () ... EXISTS
-      case c@CreateNodePropertyExistenceConstraint(_, _, _, Some(_), _, _, _) =>
+      case c@CreateNodePropertyExistenceConstraint(_, _, _, Some(_), _, _, _, _) =>
         throw cypherExceptionFactory.syntaxException("Creating named node existence constraint is not supported in this Cypher version.", c.position)
 
       // CREATE CONSTRAINT [name] IF NOT EXISTS ON () ... EXISTS
-      case c@CreateNodePropertyExistenceConstraint(_, _, _, _, IfExistsDoNothing, _, _) =>
+      case c@CreateNodePropertyExistenceConstraint(_, _, _, _, IfExistsDoNothing, _, _, _) =>
         throw cypherExceptionFactory.syntaxException("Creating node existence constraint using `IF NOT EXISTS` is not supported in this Cypher version.", c.position)
 
       // CREATE CONSTRAINT name ON ()-[]-() ... EXISTS
-      case c@CreateRelationshipPropertyExistenceConstraint(_, _, _, Some(_), _, _, _) =>
+      case c@CreateRelationshipPropertyExistenceConstraint(_, _, _, Some(_), _, _, _, _) =>
         throw cypherExceptionFactory.syntaxException("Creating named relationship existence constraint is not supported in this Cypher version.", c.position)
 
       // CREATE CONSTRAINT [name] IF NOT EXISTS ON ()-[]-() ... EXISTS
-      case c@CreateRelationshipPropertyExistenceConstraint(_, _, _, _, IfExistsDoNothing, _, _) =>
+      case c@CreateRelationshipPropertyExistenceConstraint(_, _, _, _, IfExistsDoNothing, _, _, _) =>
         throw cypherExceptionFactory.syntaxException("Creating relationship existence constraint using `IF NOT EXISTS` is not supported in this Cypher version.", c.position)
 
       // DROP CONSTRAINT name
@@ -116,7 +116,16 @@ object Additions {
   // This is functionality that has been added in 4.3 and should not work when using CYPHER 3.5 and CYPHER 4.2
   case object addedFeaturesIn4_3 extends Additions {
 
-    override def check(statement: Statement, cypherExceptionFactory: CypherExceptionFactory): Unit = {}
+    override def check(statement: Statement, cypherExceptionFactory: CypherExceptionFactory): Unit = statement.treeExists {
+
+      // CREATE CONSTRAINT [name] [IF NOT EXISTS] ON (node:Label) ASSERT node.prop IS NOT NULL
+      case c: CreateNodePropertyExistenceConstraint if !c.oldSyntax =>
+        throw cypherExceptionFactory.syntaxException("Creating node existence constraint using `IS NOT NULL` is not supported in this Cypher version.", c.position)
+
+      // CREATE CONSTRAINT [name] [IF NOT EXISTS] ON ()-[r:R]-() ASSERT r.prop IS NOT NULL
+      case c: CreateRelationshipPropertyExistenceConstraint if !c.oldSyntax =>
+        throw cypherExceptionFactory.syntaxException("Creating relationship existence constraint using `IS NOT NULL` is not supported in this Cypher version.", c.position)
+    }
   }
 }
 

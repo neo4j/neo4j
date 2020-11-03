@@ -170,28 +170,28 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
         SuccessResult
       })
 
-    // CREATE CONSTRAINT [name] [IF NOT EXISTS] ON (node:Label) ASSERT EXISTS node.prop
+    // CREATE CONSTRAINT [name] [IF NOT EXISTS] ON (node:Label) ASSERT node.prop IS NOT NULL
     case CreateNodePropertyExistenceConstraint(source, label, prop, name) => (context, parameterMapping) =>
       SchemaWriteExecutionPlan("CreateNodePropertyExistenceConstraint", ctx => {
         (ctx.createNodePropertyExistenceConstraint _).tupled(labelPropWithName(ctx)(label, prop.propertyKey, name))
         SuccessResult
       }, source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context, parameterMapping)))
 
-    // DROP CONSTRAINT ON (node:Label) ASSERT EXISTS node.prop
+    // DROP CONSTRAINT ON (node:Label) ASSERT EXISTS (node.prop)
     case DropNodePropertyExistenceConstraint(label, prop) => (_, _) =>
       SchemaWriteExecutionPlan("DropNodePropertyExistenceConstraint", ctx => {
         (ctx.dropNodePropertyExistenceConstraint _).tupled(labelProp(ctx)(label, prop.propertyKey))
         SuccessResult
       })
 
-    // CREATE CONSTRAINT [name] [IF NOT EXISTS] ON ()-[r:R]-() ASSERT EXISTS r.prop
+    // CREATE CONSTRAINT [name] [IF NOT EXISTS] ON ()-[r:R]-() ASSERT r.prop IS NOT NULL
     case CreateRelationshipPropertyExistenceConstraint(source, relType, prop, name) => (context, parameterMapping) =>
       SchemaWriteExecutionPlan("CreateRelationshipPropertyExistenceConstraint", ctx => {
         (ctx.createRelationshipPropertyExistenceConstraint _).tupled(typePropWithName(ctx)(relType, prop.propertyKey, name))
         SuccessResult
       }, source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context, parameterMapping)))
 
-    // DROP CONSTRAINT ON ()-[r:R]-() ASSERT EXISTS r.prop
+    // DROP CONSTRAINT ON ()-[r:R]-() ASSERT EXISTS (r.prop)
     case DropRelationshipPropertyExistenceConstraint(relType, prop) => (_, _) =>
       SchemaWriteExecutionPlan("DropRelationshipPropertyExistenceConstraint", ctx => {
         (ctx.dropRelationshipPropertyExistenceConstraint _).tupled(typeProp(ctx)(relType, prop.propertyKey))
@@ -549,10 +549,10 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
         s"CREATE CONSTRAINT `$name` ON (n$labelsOrTypesWithColons) ASSERT ($escapedProperties) IS NODE KEY OPTIONS $options"
       case NodeExistsConstraints =>
         val escapedProperties = asEscapedString(properties, propStringJoiner)
-        s"CREATE CONSTRAINT `$name` ON (n$labelsOrTypesWithColons) ASSERT exists($escapedProperties)"
+        s"CREATE CONSTRAINT `$name` ON (n$labelsOrTypesWithColons) ASSERT ($escapedProperties) IS NOT NULL"
       case RelExistsConstraints =>
         val escapedProperties = asEscapedString(properties, relPropStringJoiner)
-        s"CREATE CONSTRAINT `$name` ON ()-[r$labelsOrTypesWithColons]-() ASSERT exists($escapedProperties)"
+        s"CREATE CONSTRAINT `$name` ON ()-[r$labelsOrTypesWithColons]-() ASSERT ($escapedProperties) IS NOT NULL"
       case _ => throw new IllegalArgumentException(s"Did not expect constraint type ${constraintType.prettyPrint} for constraint create command.")
     }
   }

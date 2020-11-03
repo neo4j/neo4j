@@ -1207,14 +1207,15 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     prop                <- _variableProperty
     name                <- option(_identifier)
     ifExistsDo          <- _ifExistsDo
+    oldExistenceSyntax  <- boolean
     options             <- _mapStringKeys
     existenceOption     <- frequency(8 -> const(None), 2 -> some(options))
     use                 <- option(_use)
     nodeKey             = CreateNodeKeyConstraint(variable, labelName, props, name, ifExistsDo, options, use)(pos)
     uniqueness          = CreateUniquePropertyConstraint(variable, labelName, Seq(prop), name, ifExistsDo, options, use)(pos)
     compositeUniqueness = CreateUniquePropertyConstraint(variable, labelName, props, name, ifExistsDo, options, use)(pos)
-    nodeExistence       = CreateNodePropertyExistenceConstraint(variable, labelName, prop, name, ifExistsDo, existenceOption, use)(pos)
-    relExistence        = CreateRelationshipPropertyExistenceConstraint(variable, relTypeName, prop, name, ifExistsDo, existenceOption, use)(pos)
+    nodeExistence       = CreateNodePropertyExistenceConstraint(variable, labelName, prop, name, ifExistsDo, oldExistenceSyntax, existenceOption, use)(pos)
+    relExistence        = CreateRelationshipPropertyExistenceConstraint(variable, relTypeName, prop, name, ifExistsDo, oldExistenceSyntax, existenceOption, use)(pos)
     command             <- oneOf(nodeKey, uniqueness, compositeUniqueness, nodeExistence, relExistence)
   } yield command
 
