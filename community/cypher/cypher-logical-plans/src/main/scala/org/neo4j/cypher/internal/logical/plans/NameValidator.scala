@@ -33,15 +33,13 @@ object NameValidator {
   // Do not allow create/drop/revoke on PUBLIC role
   private val reservedRoleName = "PUBLIC"
 
-  def assertValidUsername(name: String, restrictedUsernames : Seq[String] = Seq.empty): Boolean = {
+  def assertValidUsername(name: String): Boolean = {
     if (name == null || name.isEmpty)
       throw new InvalidArgumentException("The provided username is empty.")
     if (!usernamePattern.matcher(name).matches)
       throw new InvalidArgumentException(
         s"""Username '$name' contains illegal characters.
            |Use ascii characters that are not ',', ':' or whitespaces.""".stripMargin)
-    if (restrictedUsernames.contains(name))
-      throw new InvalidArgumentException(s"Username '$name' is reserved by the system.")
     true
   }
 

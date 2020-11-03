@@ -53,10 +53,6 @@ public abstract class AbstractSystemGraphComponent implements SystemGraphCompone
     {
     }
 
-    protected void assertSystemGraphIntegrity( GraphDatabaseService system )
-    {
-    }
-
     private void initializeSystemGraphConstraints( GraphDatabaseService system )
     {
         try ( Transaction tx = system.beginTx() )
@@ -107,7 +103,6 @@ public abstract class AbstractSystemGraphComponent implements SystemGraphCompone
         {
             throw new IllegalStateException( String.format( "Unsupported component state for '%s': %s", componentName(), status.description() ) );
         }
-        assertSystemGraphIntegrity( system );
     }
 
     private Status detect( GraphDatabaseService system )

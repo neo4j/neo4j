@@ -521,10 +521,7 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
 
     @Internal
     @Description( "Setting this to true will limit who execute the `dbms.upgrade` procedure. " +
-                  "A user and role with the name specified by unsupported.dbms.upgrade_procedure_username will be created on startup/upgrade. " +
-                  "This user will only be able to execute the `dbms.upgrade` procedure and nothing else. " +
-                  "The only administration command that will be executable on this user is `ALTER CURRENT USER SET PASSWORD FROM old_password TO password`." +
-                  "No administration commands will be executable on the role." )
+                  "Only someone logging in over the loopback port will be able to execute the `dbms.upgrade*` procedures." )
     public static final Setting<Boolean> restrict_upgrade =
             newBuilder( "unsupported.dbms.upgrade_restriction_enabled", BOOL, false ).build();
 
@@ -541,11 +538,6 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
     @Description( "Number of checkpoint logs files to keep." )
     public static final Setting<Integer> checkpoint_logical_log_keep_threshold =
             newBuilder( "unsupported.dbms.checkpoint_log.rotation.keep.files", INT, 3 ).addConstraint( range( 2, 100 ) ).build();
-
-    @Internal
-    @Description( "The name of the user that should be allowed to call dbms.upgrade when `unsupported.dbms.upgrade_restriction_enabled` is enabled" )
-    public static final Setting<String> upgrade_username =
-            newBuilder( "unsupported.dbms.upgrade_procedure_username", STRING, "upgrade_user" ).build();
 
     @Internal
     @Description( "Whether or not to dump system and database diagnostics. This takes a non-negligible amount of time to do and therefore " +
