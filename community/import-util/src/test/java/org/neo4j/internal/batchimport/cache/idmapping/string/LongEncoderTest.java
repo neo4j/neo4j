@@ -22,6 +22,7 @@ package org.neo4j.internal.batchimport.cache.idmapping.string;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class LongEncoderTest
 {
@@ -37,5 +38,31 @@ class LongEncoderTest
 
         // THEN
         assertNotEquals( a, b );
+    }
+
+    @Test
+    void shouldThrowOnEncodingTooLargeID()
+    {
+        // GIVEN
+        Encoder encoder = new LongEncoder();
+
+        // WHEN
+        long invalidValue = 0x01ABC123_4567890FL;
+
+        // THEN
+        assertThrows( IllegalArgumentException.class, () -> encoder.encode( invalidValue ) );
+    }
+
+    @Test
+    void shouldThrowOnEncodingNegativeID()
+    {
+        // GIVEN
+        Encoder encoder = new LongEncoder();
+
+        // WHEN
+        long invalidValue = -1;
+
+        // THEN
+        assertThrows( IllegalArgumentException.class, () -> encoder.encode( invalidValue ) );
     }
 }
