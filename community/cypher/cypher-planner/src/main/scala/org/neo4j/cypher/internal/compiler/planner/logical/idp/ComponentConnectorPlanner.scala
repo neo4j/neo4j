@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.BestPlans
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.macros.AssertMacros
 import org.neo4j.time.Stopwatch
 
 import scala.collection.immutable.BitSet
@@ -137,7 +138,9 @@ object GoalBitAllocation {
     // For each optional match, find dependencies to components and other optional matches
     val optionalMatchDependencies = queryGraph.optionalMatches.map { om =>
       om.argumentIds.map { arg =>
-        startComponents + initialTodo.indexWhere(_.patternNodes.contains(arg))
+        val index = initialTodo.indexWhere(x => x.idsWithoutOptionalMatchesOrUpdates.contains(arg))
+        AssertMacros.checkOnlyWhenAssertionsAreEnabled(index >= 0, "Did not find which QG introduces dependency of optional match.")
+        startComponents + index
       }(collection.breakOut): BitSet // directly create a BitSet using CanBuildFrom magic
     }
 

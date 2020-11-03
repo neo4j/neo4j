@@ -19,13 +19,20 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.idp
 
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
+import org.neo4j.cypher.internal.expressions.functions.Length
+import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.QueryGraph
+import org.neo4j.cypher.internal.ir.Selections
+import org.neo4j.cypher.internal.ir.ShortestPathPattern
+import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 import scala.collection.immutable.BitSet
 import scala.collection.immutable.ListSet
 
-class GoalBitAllocationTest extends CypherFunSuite {
+class GoalBitAllocationTest extends CypherFunSuite with AstConstructionTestSupport {
 
   test("calculates correct sub-goals for full goal") {
     val gba = GoalBitAllocation(3, 5, (0 until 4).map(_ => BitSet.empty))
@@ -167,9 +174,9 @@ class GoalBitAllocationTest extends CypherFunSuite {
     // GIVEN
     // 0: Sorted
     val components = ListSet(
-      QueryGraph(patternNodes = Set("a", "b")), // 1
+      QueryGraph(patternNodes = Set("a", "b"), patternRelationships = Set(PatternRelationship("r", ("a", "b"), OUTGOING, Seq(relTypeName("R")), SimplePatternLength))), // 1
       QueryGraph(patternNodes = Set("c", "d")), // 2
-      QueryGraph(patternNodes = Set("e", "f", "g")), // 3
+      QueryGraph(patternNodes = Set("e", "f", "g"), shortestPathPatterns = Set(ShortestPathPattern(Some("p"), PatternRelationship("p_r", ("e", "f"), OUTGOING, Seq(relTypeName("R")), SimplePatternLength), single = true)(null))), // 3
     )
     val optionalMatches = IndexedSeq(
       QueryGraph(patternNodes = Set("a", "a0"), argumentIds = Set("a")), // 4
@@ -178,6 +185,8 @@ class GoalBitAllocationTest extends CypherFunSuite {
       QueryGraph(patternNodes = Set("a", "g", "a2", "g1"), argumentIds = Set("a", "g")), // 7
       QueryGraph(patternNodes = Set("a0", "a3"), argumentIds = Set("a0")), // 8
       QueryGraph(patternNodes = Set("d", "g1", "boo"), argumentIds = Set("d", "g1")), // 9
+      QueryGraph(patternNodes = Set("c"), selections = Selections.from(notEquals(prop("c", "prop"), prop("r", "prop"))), argumentIds = Set("c", "r")), // 10
+      QueryGraph(patternNodes = Set("c"), selections = Selections.from(notEquals(prop("c", "prop"), Length(varFor("p"))(pos))), argumentIds = Set("c", "p")), // 10
     )
 
     // WHEN
@@ -197,6 +206,8 @@ class GoalBitAllocationTest extends CypherFunSuite {
         BitSet(1, 3),
         BitSet(4),
         BitSet(2, 7),
+        BitSet(1, 2),
+        BitSet(2, 3),
       )
     ))
     initalTodo.take(components.size).toSet should equal(components)

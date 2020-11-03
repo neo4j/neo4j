@@ -76,6 +76,7 @@ import org.neo4j.cypher.internal.expressions.RELATIONSHIP_TYPE
 import org.neo4j.cypher.internal.expressions.ReduceExpression
 import org.neo4j.cypher.internal.expressions.ReduceScope
 import org.neo4j.cypher.internal.expressions.RegexMatch
+import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.RelationshipsPattern
@@ -114,6 +115,8 @@ trait AstConstructionTestSupport extends CypherTestSupport {
   def varFor(name: String): Variable = Variable(name)(pos)
 
   def labelName(s: String): LabelName = LabelName(s)(pos)
+
+  def relTypeName(s: String): RelTypeName = RelTypeName(s)(pos)
 
   def hasLabels(v: String, label: String): HasLabels =
     hasLabels(varFor(v), label)
