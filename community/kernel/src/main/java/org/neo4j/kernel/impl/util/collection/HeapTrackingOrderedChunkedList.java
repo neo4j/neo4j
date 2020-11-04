@@ -177,12 +177,21 @@ public class HeapTrackingOrderedChunkedList<V> extends DefaultCloseListenable
         boolean isEmpty = isEmpty();
         if ( indexInCurrentChunk >= chunkSize )
         {
-            // If the list is empty we can reuse the current chunk
+            // If the list is empty we can reuse the current chunk (which is expected to be the common case under ideal usage conditions)
             if ( !isEmpty )
             {
                 Chunk<V> newChunk = new Chunk<>( scopedMemoryTracker, chunkSize );
                 current.next = newChunk;
                 current = newChunk;
+                //-----------------------------------------------------------------
+                // TODO: Remove statistics gathering
+                if ( DEBUG )
+                {
+                    newChunkCounter++;
+                    var total = totalNewChunkCounter.addAndGet( 1 );
+                    System.out.println( String.format( "### New chunk count: %s total: %s", newChunkCounter, total ) );
+                }
+                //-----------------------------------------------------------------
             }
             //-----------------------------------------------------------------
             // TODO: Remove statistics gathering
@@ -194,16 +203,6 @@ public class HeapTrackingOrderedChunkedList<V> extends DefaultCloseListenable
             }
             //-----------------------------------------------------------------
             indexInCurrentChunk = 0;
-
-            //-----------------------------------------------------------------
-            // TODO: Remove statistics gathering
-            if ( DEBUG )
-            {
-                newChunkCounter++;
-                var total = totalNewChunkCounter.addAndGet( 1 );
-                System.out.println( String.format( "### New chunk count: %s total: %s", newChunkCounter, total ) );
-            }
-            //-----------------------------------------------------------------
         }
         if ( isEmpty )
         {
