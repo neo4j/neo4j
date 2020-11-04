@@ -178,7 +178,7 @@ object CastSupport {
       transform(new ArrayConverterWriter(classOf[OffsetTime], a => Values.timeArray(a.asInstanceOf[Array[OffsetTime]]))))
     case _: LocalDateTimeValue => Converter(
       transform(new ArrayConverterWriter(classOf[LocalDateTime], a => Values.localDateTimeArray(a.asInstanceOf[Array[LocalDateTime]]))))
-    case _ => throw new CypherTypeException("Property values can only be of primitive types or arrays thereof")
+    case _ => throw new CypherTypeException(s"Property values can only be of primitive types or arrays thereof. Encountered: $x.")
   }
 
   private def transform(writer: ArrayConverterWriter)(value: ListValue): ArrayValue = {

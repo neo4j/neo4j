@@ -215,7 +215,7 @@ object Neo4jExceptionToExecutionFailed {
       DIFFERENT_COLUMNS_IN_UNION
     else if (msg.matches(semanticError("DELETE doesn't support removing labels from a node. Try REMOVE.")))
       INVALID_DELETE
-    else if (msg.matches("Property values can only be of primitive types or arrays thereof"))
+    else if (msg.startsWith("Property values can only be of primitive types or arrays thereof"))
       INVALID_PROPERTY_TYPE
     else if (msg.matches(semanticError("Multiple result columns with the same name are not supported")))
       COLUMN_NAME_CONFLICT
