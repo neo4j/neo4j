@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.util.collection;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 
 import org.neo4j.internal.kernel.api.DefaultCloseListenable;
@@ -33,15 +34,26 @@ import static org.neo4j.memory.HeapEstimator.shallowSizeOfObjectArray;
 /**
  * A heap tracking, ordered list. It only tracks the internal structure, not the elements within.
  * <p>
- * Elements are also inserted in a single-linked chunked list to allow traversal from first to last in the order of insertion. No replacement of existing elements is
+ * Elements are also inserted in a single-linked chunked list to allow traversal from first to last in the order of insertion. No replacement of existing
+ * elements is
  * possible.
  *
  * @param <V> value type
  */
 public class HeapTrackingOrderedChunkedList<V> extends DefaultCloseListenable
 {
+    //-----------------------------------------------------------------------------------------------------------------
+    // TODO: Remove statistics
+    private static final boolean DEBUG = true;
+    public static AtomicLong totalChunkHopCounter = new AtomicLong( 0 );
+    public static AtomicLong totalNewChunkCounter = new AtomicLong( 0 );
+    private int chunkHopCounter;
+    private int newChunkCounter;
+    //-----------------------------------------------------------------------------------------------------------------
+
     private static final long SHALLOW_SIZE = shallowSizeOfInstance( HeapTrackingOrderedChunkedList.class );
-    private static final int DEFAULT_CHUNK_SIZE = 4096; // Must be a power of 2
+    //static final int DEFAULT_CHUNK_SIZE = 4096; // Must be a power of 2
+    static final int DEFAULT_CHUNK_SIZE = 64; // Must be a power of 2 // TODO: Remove statistics gathering
 
     private final int chunkSize;
     private final MemoryTracker scopedMemoryTracker;
@@ -51,7 +63,7 @@ public class HeapTrackingOrderedChunkedList<V> extends DefaultCloseListenable
     private Chunk<V> current;
     private int indexInCurrentChunk;
     private long firstKey;
-    private long nbrChunksInMemory;
+    private long lastKey;
 
     public static <V> HeapTrackingOrderedChunkedList<V> createOrderedMap( MemoryTracker memoryTracker )
     {
@@ -69,11 +81,11 @@ public class HeapTrackingOrderedChunkedList<V> extends DefaultCloseListenable
     private HeapTrackingOrderedChunkedList( MemoryTracker scopedMemoryTracker, int chunkSize )
     {
         this.chunkSize = chunkSize;
-        this.firstKey = 0;
+        this.firstKey = -1;
+        this.lastKey = -1;
         this.indexInCurrentChunk = 0;
         this.scopedMemoryTracker = scopedMemoryTracker;
         first = new Chunk<>( scopedMemoryTracker, chunkSize );
-        nbrChunksInMemory = 1;
         current = first;
     }
 
@@ -94,91 +106,177 @@ public class HeapTrackingOrderedChunkedList<V> extends DefaultCloseListenable
 
         Chunk<V> chunk = first;
         index = index + removedInFirstChunk;
-        while ( index >= chunkSize ) // find chunk in which the value should be removed
+        //-----------------------------------------------------------------
+        // TODO: Remove statistics gathering
+        if ( DEBUG )
         {
-            chunk = chunk.next;
-            index -= chunkSize;
+            System.out.println( "get(" + key + ")" );
+            if ( index >= chunkSize )
+            {
+                int chunkHops = 0;
+                while ( index >= chunkSize ) // find chunk in which the value should be removed
+                {
+                    chunk = chunk.next;
+                    index -= chunkSize;
+                    chunkHops++;
+                }
+                chunkHopCounter += chunkHops;
+                var total = totalChunkHopCounter.addAndGet( chunkHops );
+                System.out.println( String.format( ">>> Chunk hops (get) +%s this count: %s total: %s", chunkHops, chunkHopCounter, total ) );
+            }
         }
-
+        else
+        //-----------------------------------------------------------------
+        {
+            while ( index >= chunkSize ) // find chunk in which the value should be removed
+            {
+                chunk = chunk.next;
+                index -= chunkSize;
+            }
+        }
         return (V) chunk.values[(int) index];
     }
 
     @SuppressWarnings( "unchecked" )
     public V getFirst()
     {
-        return (V) first.values[(int) (firstKey % chunkSize)];
+        if ( firstKey >= 0 && first != null )
+        {
+            return (V) first.values[(int) (firstKey % chunkSize)];
+        }
+        else
+        {
+            return null;
+        }
     }
 
     /**
      * Adds the value to the current chunk if possible, otherwise creates a new chunk and inserts the value in the new chunk.
+     *
      * @param value the value to be inserted
      */
     public void add( V value )
     {
+        if ( DEBUG )
+        {
+            System.out.println( "add(" + (lastKey + 1) + ")" );
+        }
+        assert value != null;
         if ( indexInCurrentChunk >= chunkSize )
         {
             Chunk<V> newChunk = new Chunk<>( scopedMemoryTracker, chunkSize );
             current.next = newChunk;
             current = newChunk;
-            nbrChunksInMemory++;
             indexInCurrentChunk = 0;
+
+            //-----------------------------------------------------------------
+            // TODO: Remove statistics gathering
+            if ( DEBUG )
+            {
+                newChunkCounter++;
+                var total = totalNewChunkCounter.addAndGet( 1 );
+                System.out.println( String.format( "### New chunk count: %s total: %s", newChunkCounter, total ) );
+            }
+            //-----------------------------------------------------------------
         }
-        current.add( indexInCurrentChunk, value );
+        if ( isEmpty() )
+        {
+            // If the list is empty we need to update first
+            firstKey++;
+            first = current;
+        }
+
+        // Set the value
+        current.values[indexInCurrentChunk] = value;
+
+        lastKey++;
         indexInCurrentChunk++;
     }
 
     /**
      * Remove the value at `key` index.
+     *
      * @param key
      * @return the value that was removed.
      */
     @SuppressWarnings( "unchecked" )
     public V remove( long key )
     {
-        long index = key - firstKey;
-        Chunk<V> chunk = first;
+        //-----------------------------------------------------------------
+        // TODO: Remove statistics gathering
+        if ( DEBUG )
+        {
+            System.out.println( "remove(" + key + ")" );
+        }
+        int chunkHops = 0;
+        //-----------------------------------------------------------------
 
-        if ( index < 0 || index >= size() )
+        if ( key < firstKey || key > lastKey )
         {
             return null;
         }
+        Chunk<V> chunk = first;
 
-        index = index + (firstKey % chunkSize);
-        while ( index >= chunkSize ) // find chunk in which the value should be removed
+        // Find chunk and index where the value should be removed
+        long i = (key - firstKey) + (firstKey % chunkSize);
+        while ( i >= chunkSize )
         {
             chunk = chunk.next;
-            index -= chunkSize;
+            i -= chunkSize;
+            chunkHops++; // TODO: Remove statistics gathering
         }
+        int indexInChunk = (int) i; // Now indexInChunk is [0..chunkSize[ so can safely be cast to int
+        V removedValue = (V) chunk.values[indexInChunk];
+        chunk.values[indexInChunk] = null;
 
-        V removedValue = (V) chunk.remove( (int) index );
+        //-----------------------------------------------------------------
+        // TODO: Remove statistics gathering
+        if ( DEBUG && chunkHops > 0 )
+        {
+            chunkHopCounter += chunkHops;
+            var total = totalChunkHopCounter.addAndGet( chunkHops );
+            System.out.println( String.format( ">>> Chunk hops (remove) +%s this count: %s total: %s", chunkHops, chunkHopCounter, total ) );
+        }
+        //-----------------------------------------------------------------
+
         updateFirstKey();
 
         return removedValue;
     }
 
     /*
-    * Updates `firstKey` to be the index of the first value which has not been removed.
-    *
-    * E.g.
-    * if we have [null, null, 12, null, 3] -> then firstKey = 2
-    *
-    * if we remove index 2 we get [null, null, null, null, 3] -> then firstKey = 4
+     * Updates `firstKey` to be the index of the first value which has not been removed.
+     *
+     * E.g.
+     * if we have [null, null, 12, null, 3] -> then firstKey = 2
+     *
+     * if we remove index 2 we get [null, null, null, null, 3] -> then firstKey = 4
      */
     private void updateFirstKey()
     {
+        int chunkHops = 0; // TODO: Remove statistics gathering
         int removedInFirstChunk = (int) (firstKey % chunkSize);
-        while ( firstKey < size() && first.values[removedInFirstChunk] == null )
+        while ( firstKey < lastKey && first.values[removedInFirstChunk] == null )
         {
             firstKey++;
             removedInFirstChunk++;
             if ( removedInFirstChunk >= chunkSize )
             {
-                nbrChunksInMemory--;
                 removedInFirstChunk = 0;
                 first.close( scopedMemoryTracker );
                 first = first.next;
+                chunkHops++; // TODO: Remove statistics gathering
             }
         }
+        //-----------------------------------------------------------------
+        // TODO: Remove statistics gathering
+        if ( DEBUG && chunkHops > 0 )
+        {
+            chunkHopCounter += chunkHops;
+            var total = totalChunkHopCounter.addAndGet( chunkHops );
+            System.out.println( String.format( ">>> Chunk hops (update first) +%s this count: %s total: %s", chunkHops, chunkHopCounter, total ) );
+        }
+        //-----------------------------------------------------------------
     }
 
     /*
@@ -195,39 +293,68 @@ public class HeapTrackingOrderedChunkedList<V> extends DefaultCloseListenable
      */
     private long size()
     {
-        return (chunkSize - firstKey % chunkSize) + (nbrChunksInMemory - 2) * chunkSize + indexInCurrentChunk;
+        return isEmpty() ? 0 : lastKey - firstKey + 1;
     }
 
-    /**
-     * Apply the procedure for each value in the list.
-     */
-//    @SuppressWarnings( "unchecked" )
-//    public void forEachValue( Procedure<? super V> p )
-//    {
-//        Chunk chunk = first;
-//        while ( chunk != null )
-//        {
-//            chunk.forEachValue( p );
-//        }
-//    }
+    private boolean isEmpty()
+    {
+        // TODO: Optimize?
+        return getFirst() == null;
+    }
 
     /**
      * Apply the function for each index-value pair in the list.
      */
+    @SuppressWarnings( "unchecked" )
     public void foreach( BiConsumer<Long,V> fun )
     {
-        Chunk<V> currentChunk = first;
-        long chunkIndex = firstKey;
-        while ( null != currentChunk )
+        //-----------------------------------------------------------------
+        // TODO: Remove statistics gathering
+        if ( DEBUG )
         {
-            currentChunk.foreach( chunkIndex, (int) (chunkIndex % chunkSize), fun );
-            currentChunk = currentChunk.next;
-            chunkIndex += chunkSize;
+            System.out.println( "foreach" );
         }
+        int chunkHops = 0;
+        //-----------------------------------------------------------------
+
+        Chunk<V> chunk = first;
+        long key = firstKey;
+        int index = (int) (key % chunkSize);
+        while ( key <= lastKey )
+        {
+            if ( index >= chunkSize )
+            {
+                chunk = chunk.next;
+                assert chunk != null; // TODO: Remove?
+                index = 0;
+                chunkHops++; // TODO: Remove statistics gathering
+            }
+            V value = (V) chunk.values[index];
+            if ( value != null )
+            {
+                fun.accept( key, value );
+            }
+            index += 1;
+            key += 1;
+        }
+
+        //-----------------------------------------------------------------
+        // TODO: Remove statistics gathering
+        if ( DEBUG && chunkHops > 0 )
+        {
+            chunkHopCounter += chunkHops;
+            var total = totalChunkHopCounter.addAndGet( chunkHops );
+            System.out.println( String.format( ">>> Chunk hops (foreach) +%s this count: %s total: %s", chunkHops, chunkHopCounter, total ) );
+        }
+        //-----------------------------------------------------------------
     }
 
-    public long lastKey() {
-        return firstKey + size() - 1;
+    /**
+     * @return The last added key or -1 if no key exists
+     */
+    public long lastKey()
+    {
+        return lastKey;
     }
 
     public MemoryTracker scopedMemoryTracker()
@@ -251,7 +378,14 @@ public class HeapTrackingOrderedChunkedList<V> extends DefaultCloseListenable
 
     public Iterator<V> iterator()
     {
-        return new ValuesIterator();
+        if ( isEmpty() )
+        {
+            return java.util.Collections.emptyIterator();
+        }
+        else
+        {
+            return new ValuesIterator();
+        }
     }
 
     private class ValuesIterator implements Iterator<V>
@@ -289,6 +423,7 @@ public class HeapTrackingOrderedChunkedList<V> extends DefaultCloseListenable
 
         private void findNext()
         {
+            int chunkHops = 0; // TODO: Remove statistics gathering
             do
             {
                 index++;
@@ -296,9 +431,19 @@ public class HeapTrackingOrderedChunkedList<V> extends DefaultCloseListenable
                 {
                     index = 0;
                     chunk = chunk.next;
+                    chunkHops++; // TODO: Remove statistics gathering
                 }
             }
             while ( chunk != null && chunk.values[index] == null );
+            //-----------------------------------------------------------------
+            // TODO: Remove statistics gathering
+            if ( DEBUG && chunkHops > 0 )
+            {
+                chunkHopCounter += chunkHops;
+                var total = totalChunkHopCounter.addAndGet( chunkHops );
+                System.out.println( String.format( ">>> Chunk hops (iterator) +%s this count: %s total: %s", chunkHops, chunkHopCounter, total ) );
+            }
+            //-----------------------------------------------------------------
         }
     }
 
@@ -312,45 +457,6 @@ public class HeapTrackingOrderedChunkedList<V> extends DefaultCloseListenable
         {
             memoryTracker.allocateHeap( SHALLOW_SIZE + shallowSizeOfObjectArray( chunkSize ) );
             values = new Object[chunkSize];
-        }
-
-//        public void forEachValue( Procedure<V> p )
-//        {
-//            for ( Object value : values )
-//            {
-//                V currentValue = (V) value;
-//                if ( currentValue != null )
-//                {
-//                    p.accept( currentValue );
-//                }
-//            }
-//        }
-
-
-        @SuppressWarnings( "unchecked" )
-        public void foreach( long trueIndexStart, int indexStart, BiConsumer<Long,V> f )
-        {
-            for ( int i = indexStart; i < values.length; i++ )
-            {
-                V currentValue = (V) values[i];
-                if ( currentValue != null )
-                {
-                    f.accept( trueIndexStart + i, currentValue );
-                }
-            }
-        }
-
-        void add( int key, V value )
-        {
-            values[key] = value;
-        }
-
-        Object remove( int key )
-        {
-            Object v = values[key];
-            values[key] = null;
-
-            return v;
         }
 
         void close( MemoryTracker memoryTracker )
