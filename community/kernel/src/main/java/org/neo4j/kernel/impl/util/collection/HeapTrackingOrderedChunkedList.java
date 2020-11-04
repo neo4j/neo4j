@@ -47,8 +47,10 @@ public class HeapTrackingOrderedChunkedList<V> extends DefaultCloseListenable
     private static final boolean DEBUG = true;
     public static AtomicLong totalChunkHopCounter = new AtomicLong( 0 );
     public static AtomicLong totalNewChunkCounter = new AtomicLong( 0 );
+    public static AtomicLong totalReuseChunkCounter = new AtomicLong( 0 );
     private int chunkHopCounter;
     private int newChunkCounter;
+    private int reuseChunkCounter;
     //-----------------------------------------------------------------------------------------------------------------
 
     private static final long SHALLOW_SIZE = shallowSizeOfInstance( HeapTrackingOrderedChunkedList.class );
@@ -172,11 +174,25 @@ public class HeapTrackingOrderedChunkedList<V> extends DefaultCloseListenable
             System.out.println( "add(" + (lastKey + 1) + ")" );
         }
         assert value != null;
+        boolean isEmpty = isEmpty();
         if ( indexInCurrentChunk >= chunkSize )
         {
-            Chunk<V> newChunk = new Chunk<>( scopedMemoryTracker, chunkSize );
-            current.next = newChunk;
-            current = newChunk;
+            // If the list is empty we can reuse the current chunk
+            if ( !isEmpty )
+            {
+                Chunk<V> newChunk = new Chunk<>( scopedMemoryTracker, chunkSize );
+                current.next = newChunk;
+                current = newChunk;
+            }
+            //-----------------------------------------------------------------
+            // TODO: Remove statistics gathering
+            else if ( DEBUG )
+            {
+                reuseChunkCounter++;
+                var total = totalReuseChunkCounter.addAndGet( 1 );
+                System.out.println( String.format( "$$$ Reuse chunk count: %s total: %s", reuseChunkCounter, total ) );
+            }
+            //-----------------------------------------------------------------
             indexInCurrentChunk = 0;
 
             //-----------------------------------------------------------------
@@ -189,7 +205,7 @@ public class HeapTrackingOrderedChunkedList<V> extends DefaultCloseListenable
             }
             //-----------------------------------------------------------------
         }
-        if ( isEmpty() )
+        if ( isEmpty )
         {
             // If the list is empty we need to update first
             firstKey++;
