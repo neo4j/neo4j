@@ -25,7 +25,10 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -100,15 +103,19 @@ class SuppliersTest
     @Test
     void correctlyReportNotInitialisedSuppliers()
     {
-        Suppliers.Lazy<Object> lazySingleton = Suppliers.lazySingleton( Object::new );
+        Suppliers.Lazy<Object> lazySingleton = Suppliers.lazySingleton( () -> "a" );
         assertFalse( lazySingleton.isInitialised() );
+        assertNull( lazySingleton.getIfPresent() );
+        assertEquals( "null", lazySingleton.toString() );
     }
 
     @Test
     void correctlyReportInitialisedSuppliers()
     {
-        Suppliers.Lazy<Object> lazySingleton = Suppliers.lazySingleton( Object::new );
+        Suppliers.Lazy<Object> lazySingleton = Suppliers.lazySingleton( () -> "a" );
         lazySingleton.get();
         assertTrue( lazySingleton.isInitialised() );
+        assertNotNull( lazySingleton.getIfPresent() );
+        assertEquals( "a", lazySingleton.toString() );
     }
 }
