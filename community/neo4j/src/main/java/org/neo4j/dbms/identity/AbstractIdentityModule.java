@@ -30,11 +30,12 @@ import org.neo4j.internal.diagnostics.DiagnosticsProvider;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.state.SimpleFileStorage;
 import org.neo4j.io.state.SimpleStorage;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.util.Id;
 
-public abstract class AbstractIdentityModule implements DiagnosticsProvider, ServerIdentity
+public abstract class AbstractIdentityModule extends LifecycleAdapter implements DiagnosticsProvider, ServerIdentity
 {
     protected static <T extends Id> T readOrGenerate( SimpleStorage<T> storage, Log log, Class<T> type, Function<UUID,? extends T> creator,
             Supplier<UUID> uuid )
