@@ -104,8 +104,18 @@ public class HeapTrackingOrderedChunkedList<V> extends DefaultCloseListenable
             return null;
         }
 
-        Chunk<V> chunk = first;
-        index = index + removedInFirstChunk;
+        Chunk<V> chunk;
+        // Check if the key is in the last chunk
+        if ( key / chunkSize == lastKey / chunkSize )
+        {
+            chunk = current;
+            index = key % chunkSize;
+        }
+        else // Start looking from the first chunk
+        {
+            chunk = first;
+            index += removedInFirstChunk;
+        }
         //-----------------------------------------------------------------
         // TODO: Remove statistics gathering
         if ( DEBUG )
