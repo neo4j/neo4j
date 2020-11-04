@@ -330,8 +330,11 @@ class PrettifierIT extends CypherFunSuite {
       "create CONSTRAINT foo ON (a:A) ASSERT exists(a.p)" ->
         "CREATE CONSTRAINT foo ON (a:A) ASSERT exists(a.p)",
 
-      "create CONSTRAINT `foo` ON (a:A) ASSERT exists(a.p)" ->
-        "CREATE CONSTRAINT foo ON (a:A) ASSERT exists(a.p)",
+      "create CONSTRAINT `foo` ON (a:A) ASSERT exists (a.p) OPTIONS {}" ->
+        "CREATE CONSTRAINT foo ON (a:A) ASSERT exists(a.p) OPTIONS {}",
+
+      "create CONSTRAINT `foo` ON (a:A) ASSERT exists (a.p) OPtiONS {notAllowedOptions: 'butParseThem', `backticks.stays.when.needed`: 'toThrowNiceError'}" ->
+        """CREATE CONSTRAINT foo ON (a:A) ASSERT exists(a.p) OPTIONS {notAllowedOptions: "butParseThem", `backticks.stays.when.needed`: "toThrowNiceError"}""",
 
       "create CONSTRAINT `$foo` ON (a:A) ASSERT exists(a.p)" ->
         "CREATE CONSTRAINT `$foo` ON (a:A) ASSERT exists(a.p)",
@@ -354,8 +357,11 @@ class PrettifierIT extends CypherFunSuite {
       "create CONSTRAINT `foo` ON ()-[r:R]-() ASSERT exists(r.p)" ->
         "CREATE CONSTRAINT foo ON ()-[r:R]-() ASSERT exists(r.p)",
 
-      "create CONSTRAINT `$foo` ON ()-[r:R]-() ASSERT exists(r.p)" ->
-        "CREATE CONSTRAINT `$foo` ON ()-[r:R]-() ASSERT exists(r.p)",
+      "create CONSTRAINT `$foo` ON ()-[r:R]-() ASSERT exists(r.p) OPTIONS {}" ->
+        "CREATE CONSTRAINT `$foo` ON ()-[r:R]-() ASSERT exists(r.p) OPTIONS {}",
+
+      "create CONSTRAINT `$foo` ON ()-[r:R]-() ASSERT exists (r.p) OPtiONS {notAllowedOptions: 'butParseThem', `backticks.stays.when.needed`: 'toThrowNiceError'}" ->
+        """CREATE CONSTRAINT `$foo` ON ()-[r:R]-() ASSERT exists(r.p) OPTIONS {notAllowedOptions: "butParseThem", `backticks.stays.when.needed`: "toThrowNiceError"}""",
 
       "create CONSTRAINT IF not exists ON ()-[r:R]-() ASSERT exists(r.p)" ->
         "CREATE CONSTRAINT IF NOT EXISTS ON ()-[r:R]-() ASSERT exists(r.p)",

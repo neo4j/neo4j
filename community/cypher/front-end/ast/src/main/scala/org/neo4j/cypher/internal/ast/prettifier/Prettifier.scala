@@ -251,7 +251,7 @@ case class Prettifier(
 
       case CreateNodePropertyExistenceConstraint(Variable(variable), LabelName(label), property, name, ifExistsDo, options, _) =>
         val startOfCommand = getStartOfCommand(name, ifExistsDo, "CONSTRAINT")
-        val optionsString = options.map(o => optionsToString(o)).getOrElse("")
+        val optionsString = options.map(o => if (o.nonEmpty) optionsToString(o) else " OPTIONS {}").getOrElse("")
         s"${startOfCommand}ON (${backtick(variable)}:${backtick(label)}) ASSERT exists(${propertyToString(property)})$optionsString"
 
       case DropNodePropertyExistenceConstraint(Variable(variable), LabelName(label), property, _) =>
@@ -259,7 +259,7 @@ case class Prettifier(
 
       case CreateRelationshipPropertyExistenceConstraint(Variable(variable), RelTypeName(relType), property, name, ifExistsDo, options, _) =>
         val startOfCommand = getStartOfCommand(name, ifExistsDo, "CONSTRAINT")
-        val optionsString = options.map(o => optionsToString(o)).getOrElse("")
+        val optionsString = options.map(o => if (o.nonEmpty) optionsToString(o) else " OPTIONS {}").getOrElse("")
         s"${startOfCommand}ON ()-[${backtick(variable)}:${backtick(relType)}]-() ASSERT exists(${propertyToString(property)})$optionsString"
 
       case DropRelationshipPropertyExistenceConstraint(Variable(variable), RelTypeName(relType), property, _) =>
