@@ -22,6 +22,7 @@ package org.neo4j.procedure.builtin;
 import java.security.NoSuchAlgorithmException;
 import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -32,6 +33,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
@@ -358,23 +360,26 @@ public class BuiltInDbmsProcedures
         List<TransactionStatusResult> result = new ArrayList<>();
         for ( DatabaseContext databaseContext : getDatabaseManager().registeredDatabases().values() )
         {
-            DatabaseScope dbScope = new DatabaseScope( databaseContext.database().getNamedDatabaseId().name() );
-            Map<KernelTransactionHandle,Optional<QuerySnapshot>> handleQuerySnapshotsMap = new HashMap<>();
-            for ( KernelTransactionHandle tx : getExecutingTransactions( databaseContext ) )
+            if ( databaseContext.database().isStarted() )
             {
-                String username = tx.subject().username();
-                var action = new AdminActionOnResource( SHOW_TRANSACTION, dbScope, new UserSegment( username ) );
-                if ( isSelfOrAllows( username, action ) )
+                DatabaseScope dbScope = new DatabaseScope( databaseContext.database().getNamedDatabaseId().name() );
+                Map<KernelTransactionHandle,Optional<QuerySnapshot>> handleQuerySnapshotsMap = new HashMap<>();
+                for ( KernelTransactionHandle tx : getExecutingTransactions( databaseContext ) )
                 {
-                    handleQuerySnapshotsMap.put( tx, tx.executingQuery().map( ExecutingQuery::snapshot ) );
+                    String username = tx.subject().username();
+                    var action = new AdminActionOnResource( SHOW_TRANSACTION, dbScope, new UserSegment( username ) );
+                    if ( isSelfOrAllows( username, action ) )
+                    {
+                        handleQuerySnapshotsMap.put( tx, tx.executingQuery().map( ExecutingQuery::snapshot ) );
+                    }
                 }
-            }
-            TransactionDependenciesResolver transactionBlockerResolvers = new TransactionDependenciesResolver( handleQuerySnapshotsMap );
+                TransactionDependenciesResolver transactionBlockerResolvers = new TransactionDependenciesResolver( handleQuerySnapshotsMap );
 
-            for ( KernelTransactionHandle tx : handleQuerySnapshotsMap.keySet() )
-            {
-                result.add( new TransactionStatusResult( databaseContext.databaseFacade().databaseName(), tx, transactionBlockerResolvers,
-                        handleQuerySnapshotsMap, zoneId ) );
+                for ( KernelTransactionHandle tx : handleQuerySnapshotsMap.keySet() )
+                {
+                    result.add( new TransactionStatusResult( databaseContext.databaseFacade().databaseName(), tx, transactionBlockerResolvers,
+                                                             handleQuerySnapshotsMap, zoneId ) );
+                }
             }
         }
 
@@ -465,18 +470,22 @@ public class BuiltInDbmsProcedures
 
         for ( DatabaseContext databaseContext : getDatabaseManager().registeredDatabases().values() )
         {
-            DatabaseScope dbScope = new DatabaseScope( databaseContext.database().getNamedDatabaseId().name() );
-            for ( KernelTransactionHandle tx : getExecutingTransactions( databaseContext ) )
+            if ( databaseContext.database().isStarted() )
             {
-                if ( tx.executingQuery().isPresent() )
+                DatabaseScope dbScope = new DatabaseScope( databaseContext.database().getNamedDatabaseId().name() );
+                for ( KernelTransactionHandle tx : getExecutingTransactions( databaseContext ) )
                 {
-                    ExecutingQuery query = tx.executingQuery().get();
-                    String username = query.username();
-                    var action = new AdminActionOnResource( SHOW_TRANSACTION, dbScope, new UserSegment( username ) );
-                    if ( isSelfOrAllows( username, action ) )
+                    if ( tx.executingQuery().isPresent() )
                     {
-                        result.add(
-                                new QueryStatusResult( query, (InternalTransaction) transaction, zoneId, databaseContext.databaseFacade().databaseName() ) );
+                        ExecutingQuery query = tx.executingQuery().get();
+                        String username = query.username();
+                        var action = new AdminActionOnResource( SHOW_TRANSACTION, dbScope, new UserSegment( username ) );
+                        if ( isSelfOrAllows( username, action ) )
+                        {
+                            result.add(
+                                    new QueryStatusResult( query, (InternalTransaction) transaction, zoneId,
+                                                           databaseContext.databaseFacade().databaseName() ) );
+                        }
                     }
                 }
             }
@@ -527,14 +536,17 @@ public class BuiltInDbmsProcedures
         {
             NamedDatabaseId databaseId = databaseEntry.getKey();
             DatabaseContext databaseContext = databaseEntry.getValue();
-            for ( KernelTransactionHandle tx : getExecutingTransactions( databaseContext ) )
+            if ( databaseContext.database().isStarted() )
             {
-                if ( tx.executingQuery().isPresent() )
+                for ( KernelTransactionHandle tx : getExecutingTransactions( databaseContext ) )
                 {
-                    QueryId givenQueryId = queryIds.remove( tx.executingQuery().get().internalQueryId() );
-                    if ( givenQueryId != null )
+                    if ( tx.executingQuery().isPresent() )
                     {
-                        result.add( killQueryTransaction( givenQueryId, tx, databaseId ) );
+                        QueryId givenQueryId = queryIds.remove( tx.executingQuery().get().internalQueryId() );
+                        if ( givenQueryId != null )
+                        {
+                            result.add( killQueryTransaction( givenQueryId, tx, databaseId ) );
+                        }
                     }
                 }
             }
@@ -678,7 +690,15 @@ public class BuiltInDbmsProcedures
 
     private static Set<KernelTransactionHandle> getExecutingTransactions( DatabaseContext databaseContext )
     {
-        return databaseContext.dependencies().resolveDependency( KernelTransactions.class ).executingTransactions();
+        Dependencies dependencies = databaseContext.dependencies();
+        if ( dependencies != null )
+        {
+            return dependencies.resolveDependency( KernelTransactions.class ).executingTransactions();
+        }
+        else
+        {
+            return Collections.emptySet();
+        }
     }
 
     private boolean isSelfOrAllows( String username, AdminActionOnResource actionOnResource )
