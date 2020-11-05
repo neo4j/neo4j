@@ -531,5 +531,10 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
             relationshipValueIndexCursor.release();
             relationshipValueIndexCursor = null;
         }
+        if ( relationshipTypeIndexCursor != null )
+        {
+            relationshipTypeIndexCursor.release();
+            relationshipTypeIndexCursor = null;
+        }
     }
 }
