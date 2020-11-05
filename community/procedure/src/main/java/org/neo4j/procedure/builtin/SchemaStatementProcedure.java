@@ -57,8 +57,8 @@ public final class SchemaStatementProcedure
 
     private static final String CREATE_UNIQUE_PROPERTY_CONSTRAINT = "CALL db.createUniquePropertyConstraint( '%s', %s, %s, '%s', %s )";
     private static final String CREATE_NODE_KEY_CONSTRAINT = "CALL db.createNodeKey( '%s', %s, %s, '%s', %s )";
-    private static final String CREATE_NODE_EXISTENCE_CONSTRAINT = "CREATE CONSTRAINT `%s` ON (a:`%s`) ASSERT exists(a.`%s`)";
-    private static final String CREATE_RELATIONSHIP_EXISTENCE_CONSTRAINT = "CREATE CONSTRAINT `%s` ON ()-[a:`%s`]-() ASSERT exists(a.`%s`)";
+    private static final String CREATE_NODE_EXISTENCE_CONSTRAINT = "CREATE CONSTRAINT `%s` ON (a:`%s`) ASSERT (a.`%s`) IS NOT NULL";
+    private static final String CREATE_RELATIONSHIP_EXISTENCE_CONSTRAINT = "CREATE CONSTRAINT `%s` ON ()-[a:`%s`]-() ASSERT (a.`%s`) IS NOT NULL";
     private static final String CREATE_BTREE_INDEX = "CALL db.createIndex('%s', %s, %s, '%s', %s)";
     private static final String CREATE_NODE_FULLTEXT_INDEX = "CALL db.index.fulltext.createNodeIndex('%s', %s, %s, %s)";
     private static final String CREATE_RELATIONSHIP_FULLTEXT_INDEX = "CALL db.index.fulltext.createRelationshipIndex('%s', %s, %s, %s)";
@@ -181,7 +181,7 @@ public final class SchemaStatementProcedure
             }
             if ( constraint.isNodePropertyExistenceConstraint() )
             {
-                // "create CONSTRAINT ON (a:A) ASSERT exists(a.p)"
+                // "create CONSTRAINT ON (a:A) ASSERT (a.p) IS NOT NULL"
                 int labelId = constraint.schema().getLabelId();
                 String label = tokenRead.nodeLabelName( labelId );
                 int propertyId = constraint.schema().getPropertyId();
@@ -191,7 +191,7 @@ public final class SchemaStatementProcedure
             }
             if ( constraint.isRelationshipPropertyExistenceConstraint() )
             {
-                // "create CONSTRAINT ON ()-[r:R]-() ASSERT exists(r.p)"
+                // "create CONSTRAINT ON ()-[r:R]-() ASSERT (r.p) IS NOT NULL"
                 int relationshipTypeId = constraint.schema().getRelTypeId();
                 String relationshipType = tokenRead.relationshipTypeName( relationshipTypeId );
                 int propertyId = constraint.schema().getPropertyId();

@@ -44,7 +44,7 @@ public class NodePropertyExistenceConstraintDefinition extends NodeConstraintDef
     {
         if ( propertyKeys.length == 1 )
         {
-            return format( "ON (%1$s:%2$s) ASSERT exists(%3$s)",
+            return format( "ON (%1$s:%2$s) ASSERT (%3$s) IS NOT NULL",
                     label.name().toLowerCase(), label.name(), propertyText() );
         }
         else

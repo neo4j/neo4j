@@ -63,27 +63,27 @@ trait GraphIcing {
 
     private val graph: GraphDatabaseFacade = graphService.asInstanceOf[GraphDatabaseCypherService].getGraphDatabaseService
 
-    def createUniqueConstraint(label: String, property: String) = {
+    def createUniqueConstraint(label: String, property: String): ConstraintDefinition = {
       withTx( tx =>  {
         tx.schema().constraintFor(Label.label(label)).assertPropertyIsUnique(property).create()
       } )
     }
 
-    def createUniqueConstraintWithName(name: String, label: String, property: String) = {
+    def createUniqueConstraintWithName(name: String, label: String, property: String): ConstraintDefinition = {
       withTx( tx =>  {
         tx.schema().constraintFor(Label.label(label)).assertPropertyIsUnique(property).withName(name).create()
       } )
     }
 
-    def createNodeExistenceConstraint(label: String, property: String) = {
+    def createNodeExistenceConstraint(label: String, property: String): Result = {
       withTx( tx => {
-        tx.execute(s"CREATE CONSTRAINT ON (n:$label) ASSERT exists(n.$property)")
+        tx.execute(s"CREATE CONSTRAINT ON (n:$label) ASSERT (n.$property) IS NOT NULL")
       })
     }
 
-    def createNodeExistenceConstraintWithName(name: String, label: String, property: String) = {
+    def createNodeExistenceConstraintWithName(name: String, label: String, property: String): Result = {
       withTx( tx => {
-        tx.execute(s"CREATE CONSTRAINT `$name` ON (n:$label) ASSERT exists(n.$property)")
+        tx.execute(s"CREATE CONSTRAINT `$name` ON (n:$label) ASSERT (n.$property) IS NOT NULL")
       })
     }
 
@@ -94,7 +94,7 @@ trait GraphIcing {
         case _ => s"()-[r:$relType]-()"
       }
       withTx( tx => {
-        tx.execute(s"CREATE CONSTRAINT ON $relSyntax ASSERT exists(r.$property)")
+        tx.execute(s"CREATE CONSTRAINT ON $relSyntax ASSERT (r.$property) IS NOT NULL")
       })
     }
 
@@ -105,7 +105,7 @@ trait GraphIcing {
         case _ => s"()-[r:$relType]-()"
       }
       withTx( tx => {
-        tx.execute(s"CREATE CONSTRAINT `$name` ON $relSyntax ASSERT exists(r.$property)")
+        tx.execute(s"CREATE CONSTRAINT `$name` ON $relSyntax ASSERT (r.$property) IS NOT NULL")
       })
     }
 

@@ -318,7 +318,7 @@ class BuiltInProceduresTest
         // When/Then
         assertThat( call( "db.constraints" ) ).contains(
                 record( "MyExistenceConstraint",
-                        "CONSTRAINT ON ( user:User ) ASSERT exists(user.name)",
+                        "CONSTRAINT ON ( user:User ) ASSERT (user.name) IS NOT NULL",
                         "Constraint( name='MyExistenceConstraint', type='NODE PROPERTY EXISTENCE', schema=(:User {name}) )" ),
                 record( "MyNodeKeyConstraint",
                         "CONSTRAINT ON ( user:User ) ASSERT (user.name) IS NODE KEY",
@@ -340,7 +340,7 @@ class BuiltInProceduresTest
         List<Object[]> call = call( "db.constraints" );
         assertThat( call ).contains(
                 record( "MyExistenceConstraint",
-                        "CONSTRAINT ON ( `foo:bar`:`FOO:BAR` ) ASSERT exists(`foo:bar`.x.y)",
+                        "CONSTRAINT ON ( `foo:bar`:`FOO:BAR` ) ASSERT (`foo:bar`.x.y) IS NOT NULL",
                         "Constraint( name='MyExistenceConstraint', type='NODE PROPERTY EXISTENCE', schema=(:`FOO:BAR` {x.y}) )" ),
                 record( "constraint_1000",
                         "CONSTRAINT ON ( `foo:bar`:`FOO:BAR` ) ASSERT (`foo:bar`.x.y) IS UNIQUE",

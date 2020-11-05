@@ -176,7 +176,7 @@ class SchemaStatementProcedureTest
         assertTrue( iter.hasNext() );
         BuiltInProcedures.SchemaStatementResult next = iter.next();
         assertEquals( NAME_WITH_BACKTICKS, next.name );
-        assertEquals( format( "CREATE CONSTRAINT %s ON (a:%s) ASSERT exists(a.%s)",
+        assertEquals( format( "CREATE CONSTRAINT %s ON (a:%s) ASSERT (a.%s) IS NOT NULL",
                 ESCAPED_NAME_WITH_BACKTICKS, ESCAPED_LABEL_WITH_BACKTICKS, ESCAPED_PROPERTY_KEY_WITH_BACKTICKS), next.createStatement );
         assertEquals( format( "DROP CONSTRAINT %s", ESCAPED_NAME_WITH_BACKTICKS ), next.dropStatement );
         assertEquals( NAME_WITH_BACKTICKS, next.name );

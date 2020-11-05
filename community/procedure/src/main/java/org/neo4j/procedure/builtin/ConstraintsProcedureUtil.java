@@ -50,9 +50,9 @@ public class ConstraintsProcedureUtil
             switch ( schema.entityType() )
             {
             case NODE:
-                return "CONSTRAINT ON ( " + entityName + ":" + entityTypeName + " ) ASSERT exists" + properties;
+                return "CONSTRAINT ON ( " + entityName + ":" + entityTypeName + " ) ASSERT " + properties + " IS NOT NULL";
             case RELATIONSHIP:
-                return "CONSTRAINT ON ()-[ " + entityName + ":" + entityTypeName + " ]-() ASSERT exists" + properties;
+                return "CONSTRAINT ON ()-[ " + entityName + ":" + entityTypeName + " ]-() ASSERT " + properties + " IS NOT NULL";
             default:
                 throw new IllegalStateException( "Unknown schema entity type: " + schema.entityType() + "." );
             }
