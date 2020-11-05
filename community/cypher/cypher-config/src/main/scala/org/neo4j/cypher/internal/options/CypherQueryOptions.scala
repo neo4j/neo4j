@@ -136,7 +136,7 @@ case object CypherExecutionMode extends CypherOptionCompanion[CypherExecutionMod
   case object profile extends CypherExecutionMode("profile")
   case object explain extends CypherExecutionMode("explain")
 
-  val values: Set[CypherExecutionMode] = Set(profile, explain)
+  def values: Set[CypherExecutionMode] = Set(profile, explain)
 }
 
 sealed abstract class CypherVersion(versionName: String) extends CypherOption(versionName) {
@@ -154,7 +154,7 @@ case object CypherVersion extends CypherOptionCompanion[CypherVersion](
   case object v4_3 extends CypherVersion("4.3")
 
   val default: CypherVersion = v4_3
-  val values: Set[CypherVersion] = Set(v3_5, v4_2, v4_3)
+  def values: Set[CypherVersion] = Set(v3_5, v4_2, v4_3)
 }
 
 sealed abstract class CypherPlannerOption(plannerName: String) extends CypherKeyValueOption(plannerName) {
@@ -172,7 +172,7 @@ case object CypherPlannerOption extends CypherKeyValueOptionCompanion[CypherPlan
   case object idp extends CypherPlannerOption("idp")
   case object dp extends CypherPlannerOption("dp")
 
-  val values: Set[CypherPlannerOption] = Set(cost, idp, dp)
+  def values: Set[CypherPlannerOption] = Set(cost, idp, dp)
 }
 
 sealed abstract class CypherRuntimeOption(runtimeName: String) extends CypherKeyValueOption(runtimeName) {
@@ -191,7 +191,7 @@ case object CypherRuntimeOption extends CypherKeyValueOptionCompanion[CypherRunt
   case object pipelined extends CypherRuntimeOption("pipelined")
   case object parallel extends CypherRuntimeOption("parallel")
 
-  val values: Set[CypherRuntimeOption] = Set(interpreted, slotted, pipelined, parallel)
+  def values: Set[CypherRuntimeOption] = Set(interpreted, slotted, pipelined, parallel)
 }
 
 sealed abstract class CypherUpdateStrategy(strategy: String) extends CypherKeyValueOption(strategy) {
@@ -207,7 +207,7 @@ case object CypherUpdateStrategy extends CypherKeyValueOptionCompanion[CypherUpd
   case object default extends CypherUpdateStrategy(CypherOption.DEFAULT)
   case object eager extends CypherUpdateStrategy("eager")
 
-  val values: Set[CypherUpdateStrategy] = Set(default, eager)
+  def values: Set[CypherUpdateStrategy] = Set(default, eager)
 }
 
 sealed abstract class CypherExpressionEngineOption(engineName: String) extends CypherKeyValueOption(engineName) {
@@ -225,7 +225,7 @@ case object CypherExpressionEngineOption extends CypherKeyValueOptionCompanion[C
   case object compiled extends CypherExpressionEngineOption("compiled")
   case object onlyWhenHot extends CypherExpressionEngineOption("only_when_hot")
 
-  val values: Set[CypherExpressionEngineOption] = Set(interpreted, compiled, onlyWhenHot)
+  def values: Set[CypherExpressionEngineOption] = Set(interpreted, compiled, onlyWhenHot)
 }
 
 sealed abstract class CypherOperatorEngineOption(mode: String) extends CypherKeyValueOption(mode) {
@@ -241,7 +241,7 @@ case object CypherOperatorEngineOption extends CypherKeyValueOptionCompanion[Cyp
   case object compiled extends CypherOperatorEngineOption("compiled")
   case object interpreted extends CypherOperatorEngineOption("interpreted")
 
-  val values: Set[CypherOperatorEngineOption] = Set(compiled, interpreted)
+  def values: Set[CypherOperatorEngineOption] = Set(compiled, interpreted)
 }
 
 sealed abstract class CypherInterpretedPipesFallbackOption(mode: String) extends CypherKeyValueOption(mode) {
@@ -259,7 +259,7 @@ case object CypherInterpretedPipesFallbackOption extends CypherKeyValueOptionCom
   case object whitelistedPlansOnly extends CypherInterpretedPipesFallbackOption("whitelisted_plans_only")
   case object allPossiblePlans extends CypherInterpretedPipesFallbackOption("all")
 
-  val values: Set[CypherInterpretedPipesFallbackOption] = Set(disabled, whitelistedPlansOnly, allPossiblePlans)
+  def values: Set[CypherInterpretedPipesFallbackOption] = Set(disabled, whitelistedPlansOnly, allPossiblePlans)
 }
 
 sealed abstract class CypherReplanOption(strategy: String) extends CypherKeyValueOption(strategy) {
@@ -276,7 +276,7 @@ case object CypherReplanOption extends CypherKeyValueOptionCompanion[CypherRepla
   case object force extends CypherReplanOption("force")
   case object skip extends CypherReplanOption("skip")
 
-  val values: Set[CypherReplanOption] = Set(force, skip)
+  def values: Set[CypherReplanOption] = Set(force, skip)
 }
 
 sealed abstract class CypherConnectComponentsPlannerOption(planner: String) extends CypherKeyValueOption(planner) {
@@ -293,7 +293,7 @@ case object CypherConnectComponentsPlannerOption extends CypherKeyValueOptionCom
   case object greedy extends CypherConnectComponentsPlannerOption("greedy")
   case object idp extends CypherConnectComponentsPlannerOption("idp")
 
-  val values: Set[CypherConnectComponentsPlannerOption] = Set(greedy, idp)
+  def values: Set[CypherConnectComponentsPlannerOption] = Set(greedy, idp)
 }
 
 sealed abstract class CypherDebugOption(flag: String) extends CypherKeyValueOption(flag) {
@@ -322,7 +322,7 @@ case object CypherDebugOption extends CypherKeyValueOptionCompanion[CypherDebugO
   case object fabricLogPlan extends CypherDebugOption("fabriclogplan")
   case object fabricLogRecords extends CypherDebugOption("fabriclogrecords")
 
-  override def values: Set[CypherDebugOption] = Set(
+  def values: Set[CypherDebugOption] = Set(
     tostring,
     reportCostComparisonsAsRows,
     printCostComparisons,

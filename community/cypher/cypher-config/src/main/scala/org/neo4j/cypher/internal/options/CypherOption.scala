@@ -52,6 +52,10 @@ abstract class CypherOptionCompanion[Opt <: CypherOption](
   self: Product =>
 
   def default: Opt
+  /**
+   * When overriding this, make sure it is not defined as val, to avoid hitting this:
+   * https://stackoverflow.com/questions/28151338/case-object-gets-initialized-to-null-how-is-that-even-possible
+   */
   def values: Set[Opt]
 
   def fromConfig(configuration: Config): Opt = {
