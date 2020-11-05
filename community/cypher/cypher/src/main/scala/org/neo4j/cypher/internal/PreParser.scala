@@ -22,22 +22,9 @@ package org.neo4j.cypher.internal
 import org.neo4j.cypher.internal.cache.CaffeineCacheFactory
 import org.neo4j.cypher.internal.cache.LFUCache
 import org.neo4j.cypher.internal.config.CypherConfiguration
-import org.neo4j.cypher.internal.options.CypherQueryOptions
-import org.neo4j.cypher.internal.options.CypherDebugOption
-import org.neo4j.cypher.internal.options.CypherDebugOptions
 import org.neo4j.cypher.internal.options.CypherExecutionMode
-import org.neo4j.cypher.internal.options.CypherExpressionEngineOption
-import org.neo4j.cypher.internal.options.CypherInterpretedPipesFallbackOption
-import org.neo4j.cypher.internal.options.CypherOperatorEngineOption
-import org.neo4j.cypher.internal.options.CypherOption
-import org.neo4j.cypher.internal.options.CypherPlannerOption
-import org.neo4j.cypher.internal.options.CypherReplanOption
-import org.neo4j.cypher.internal.options.CypherRuntimeOption
-import org.neo4j.cypher.internal.options.CypherUpdateStrategy
-import org.neo4j.cypher.internal.options.CypherVersion
-import org.neo4j.cypher.internal.options.InvalidCypherOption
+import org.neo4j.cypher.internal.options.CypherQueryOptions
 import org.neo4j.cypher.internal.util.InputPosition
-import org.neo4j.exceptions.InvalidArgumentException
 import org.neo4j.exceptions.SyntaxException
 
 import scala.util.matching.Regex

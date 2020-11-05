@@ -38,8 +38,9 @@ import scala.collection.mutable
 
 class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with TableDrivenPropertyChecks {
 
-  override def databaseConfig(): Map[Setting[_], Object] = super.databaseConfig() ++ Map(GraphDatabaseInternalSettings.cypher_expression_engine -> ONLY_WHEN_HOT,
-                                                               GraphDatabaseInternalSettings.cypher_expression_recompilation_limit -> Integer.valueOf(1))
+  override def databaseConfig(): Map[Setting[_], Object] = super.databaseConfig() ++ Map(
+    GraphDatabaseInternalSettings.cypher_expression_recompilation_limit -> Integer.valueOf(1)
+  )
 
   private val empty_parameters = "Map()"
 
@@ -420,6 +421,7 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
     graph.withTx { tx =>
       tx.execute("CYPHER operatorEngine=interpreted RETURN 42 AS a").resultAsString()
       tx.execute("CYPHER operatorEngine=compiled RETURN 42 AS a").resultAsString()
+      tx.execute("CYPHER RETURN 42 AS a").resultAsString()
     }
 
     val actual = cacheListener.trace.map(str => str.replaceAll("\\s+", " "))
@@ -427,6 +429,8 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
       s"cacheFlushDetected",
       "cacheMiss: (CYPHER 4.3 operatorEngine=interpreted RETURN 42 AS a, Map())",
       "cacheCompile: (CYPHER 4.3 operatorEngine=interpreted RETURN 42 AS a, Map())",
+      "cacheMiss: (CYPHER 4.3 operatorEngine=compiled RETURN 42 AS a, Map())",
+      "cacheCompile: (CYPHER 4.3 operatorEngine=compiled RETURN 42 AS a, Map())",
       "cacheMiss: (CYPHER 4.3 RETURN 42 AS a, Map())",
       "cacheCompile: (CYPHER 4.3 RETURN 42 AS a, Map())",
     )

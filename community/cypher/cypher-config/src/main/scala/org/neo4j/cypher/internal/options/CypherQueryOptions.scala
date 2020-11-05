@@ -141,6 +141,7 @@ case object CypherExecutionMode extends CypherOptionCompanion[CypherExecutionMod
 
 sealed abstract class CypherVersion(versionName: String) extends CypherOption(versionName) {
   override def companion: CypherVersion.type = CypherVersion
+  override def render: String = name
 }
 
 case object CypherVersion extends CypherOptionCompanion[CypherVersion](

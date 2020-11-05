@@ -150,8 +150,19 @@ object QueryOptions {
                       interpretedPipesFallbackInfo: String,
                       connectComponentsPlannerInfo: String,
                       debugFlags: String) {
-    def render: String =
-      s"CYPHER $version $profile $plannerInfo $runtimeInfo $updateStrategyInfo $expressionEngineInfo $operatorEngineInfo $interpretedPipesFallbackInfo $connectComponentsPlannerInfo $debugFlags"
+    def render: String = Seq(
+        version,
+        profile,
+        plannerInfo,
+        runtimeInfo,
+        updateStrategyInfo,
+        expressionEngineInfo,
+        operatorEngineInfo,
+        interpretedPipesFallbackInfo,
+        connectComponentsPlannerInfo,
+        debugFlags,
+    ).filterNot(_.isEmpty)
+     .mkString("CYPHER ", " ", "")
   }
 
   val default: QueryOptions = QueryOptions(
