@@ -66,9 +66,39 @@ class HeapTrackingOrderedChunkedListTest
     }
 
     @Test
-    void addNullShouldThrow()
+    void shouldThrowIfNotPowerOfTwo()
     {
-        assertThrows( IllegalArgumentException.class, () -> table.add( null ) );
+        assertThrows( IllegalArgumentException.class, () -> HeapTrackingOrderedChunkedList.createOrderedMap( memoryTracker, 3 ) );
+    }
+
+    @Test
+    void addNullShouldBeTheSameAsAddingAndRemoving()
+    {
+        table.add( null );
+        table.add( null );
+        table.add( null );
+
+        assertNull( table.get( 0 ) );
+        assertNull( table.get( 1 ) );
+        assertNull( table.get( 2 ) );
+        assertNull( table.getFirst() );
+
+        table.add( 42L );
+
+        assertNull( table.get( 0 ) );
+        assertNull( table.get( 1 ) );
+        assertNull( table.get( 2 ) );
+        assertEquals( 42L, table.get( 3 ) );
+        assertEquals( 42L, table.getFirst() );
+
+        table.add( null );
+        table.add( null );
+        table.add( null );
+
+        assertNull( table.get( 4 ) );
+        assertNull( table.get( 5 ) );
+        assertNull( table.get( 6 ) );
+        assertEquals( 42L, table.getFirst() );
     }
 
     @Test
@@ -137,7 +167,8 @@ class HeapTrackingOrderedChunkedListTest
         table.remove( 9901 );
 
         final AtomicInteger i = new AtomicInteger( 2500 );
-        table.foreach( (k, v) -> {
+        table.foreach( ( k, v ) ->
+        {
             var expected = i.get();
             if ( expected >= 9901 ) // Has been removed
             {
@@ -193,7 +224,8 @@ class HeapTrackingOrderedChunkedListTest
 
         // Test foreach
         final AtomicInteger i = new AtomicInteger( 0 );
-        table.foreach( (k, v) -> {
+        table.foreach( ( k, v ) ->
+        {
             assertEquals( k, v );
             assertNotEquals( 0, k );
             assertNotEquals( size - 1, k );
@@ -201,7 +233,7 @@ class HeapTrackingOrderedChunkedListTest
             assertFalse( (k >= size && k < size * 2) || k > size * 3 + 1 );
             i.getAndIncrement();
         } );
-        assertEquals( i.get(), size * 2 - 2  );
+        assertEquals( i.get(), size * 2 - 2 );
 
         // Test iterator
         Iterator<Long> it = table.iterator();

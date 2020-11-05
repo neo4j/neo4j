@@ -26,17 +26,38 @@ import java.util.function.BiConsumer;
 
 import org.neo4j.internal.kernel.api.DefaultCloseListenable;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.util.Preconditions;
 
 import static org.neo4j.memory.HeapEstimator.SCOPED_MEMORY_TRACKER_SHALLOW_SIZE;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfObjectArray;
 
 /**
- * A heap tracking, ordered list. It only tracks the internal structure, not the elements within.
+ * A heap-tracking list that also provides a limited ordered map-interface where the keys are
+ * strictly increasing primitive longs, starting from 0.
  * <p>
- * Elements are also inserted in a single-linked chunked list to allow traversal from first to last in the order of insertion. No replacement of existing
- * elements is
- * possible.
+ * Heap-tracking is only for the internal structure, not the elements within.
+ *
+ * <p>
+ * Elements are inserted in a single-linked chunk array list to allow traversal from first to last in the order of insertion.
+ * Elements can only be appended at the last index and no replacement of existing elements is possible,
+ * but removing elements is possible at any index.
+ * If a range of first elements are removed so that a chunk becomes empty, its heap memory will be reclaimed.
+ * <p>
+ * The ideal use case is to remove elements at the beginning and adding new elements at the end,
+ * like a sliding window.
+ * Optimal memory usage is achieved if this sliding window size is below the configured chunk size,
+ * since we reuse the same chunk in this case and no additional chunks needs to be allocated.
+ * E.g. a pattern: add(0..c-1), get(0..c-1), remove(0..c-1), add(c..2c-1), get(c..2c-1), remove(c..2c-1), ...
+ * <p>
+ * Indexed access with {@link #get(long)} is fast when the index is in the range of the first or the last chunk.
+ * Indexed access in between the first and the last chunk is also possible, but has access complexity linear to
+ * the number of chunks traversed.
+ * <p>
+ * Fast access to the last chunk avoids linear traverse in cases where the elements accessed by index are
+ * in the range of a sliding window at the end of the list, even if no elements are removed.
+ * E.g. the pattern: add(0..c-1), get(0..c-1), add(c..2c-1), get(c..2c-1), ...
+ * (This should be fast, but memory usage will build up)
  *
  * @param <V> value type
  */
@@ -58,6 +79,7 @@ public class HeapTrackingOrderedChunkedList<V> extends DefaultCloseListenable
     static final int DEFAULT_CHUNK_SIZE = 64; // Must be a power of 2 // TODO: Remove statistics gathering
 
     private final int chunkSize;
+    private final int chunkShiftAmount;
     private final MemoryTracker scopedMemoryTracker;
 
     // Linked chunk list used to store key-value pairs in order
@@ -74,7 +96,7 @@ public class HeapTrackingOrderedChunkedList<V> extends DefaultCloseListenable
 
     public static <V> HeapTrackingOrderedChunkedList<V> createOrderedMap( MemoryTracker memoryTracker, int chunkSize )
     {
-        assert chunkSize > 0 && ((chunkSize & (chunkSize - 1)) == 0); // Must be a power of 2
+        Preconditions.requirePowerOfTwo( chunkSize );
         MemoryTracker scopedMemoryTracker = memoryTracker.getScopedMemoryTracker();
         scopedMemoryTracker.allocateHeap( SHALLOW_SIZE + SCOPED_MEMORY_TRACKER_SHALLOW_SIZE );
         return new HeapTrackingOrderedChunkedList<>( scopedMemoryTracker, chunkSize );
@@ -83,6 +105,7 @@ public class HeapTrackingOrderedChunkedList<V> extends DefaultCloseListenable
     private HeapTrackingOrderedChunkedList( MemoryTracker scopedMemoryTracker, int chunkSize )
     {
         this.chunkSize = chunkSize;
+        this.chunkShiftAmount = Integer.numberOfTrailingZeros( chunkSize );
         this.firstKey = -1;
         this.lastKey = -1;
         this.indexInCurrentChunk = 0;
@@ -99,7 +122,8 @@ public class HeapTrackingOrderedChunkedList<V> extends DefaultCloseListenable
     public V get( long key )
     {
         long index = key - firstKey;
-        int removedInFirstChunk = (int) (firstKey % chunkSize);
+        int chunkMask = chunkSize - 1;
+        int removedInFirstChunk = (int) (firstKey & chunkMask);
 
         if ( index < 0 || index >= size() )
         {
@@ -108,10 +132,10 @@ public class HeapTrackingOrderedChunkedList<V> extends DefaultCloseListenable
 
         Chunk<V> chunk;
         // Check if the key is in the last chunk
-        if ( key / chunkSize == lastKey / chunkSize )
+        if ( key >>> chunkShiftAmount == lastKey >>> chunkShiftAmount )
         {
             chunk = current;
-            index = key % chunkSize;
+            index = key & chunkMask;
         }
         else // Start looking from the first chunk
         {
@@ -154,7 +178,7 @@ public class HeapTrackingOrderedChunkedList<V> extends DefaultCloseListenable
     {
         if ( firstKey >= 0 && first != null )
         {
-            return (V) first.values[(int) (firstKey % chunkSize)];
+            return (V) first.values[(int) (firstKey & (chunkSize - 1))];
         }
         else
         {
@@ -173,7 +197,6 @@ public class HeapTrackingOrderedChunkedList<V> extends DefaultCloseListenable
         {
             System.out.println( "add(" + (lastKey + 1) + ")" );
         }
-        assert value != null;
         boolean isEmpty = isEmpty();
         if ( indexInCurrentChunk >= chunkSize )
         {
@@ -243,7 +266,7 @@ public class HeapTrackingOrderedChunkedList<V> extends DefaultCloseListenable
         Chunk<V> chunk = first;
 
         // Find chunk and index where the value should be removed
-        long i = (key - firstKey) + (firstKey % chunkSize);
+        long i = (key - firstKey) + (firstKey & (chunkSize - 1));
         while ( i >= chunkSize )
         {
             chunk = chunk.next;
@@ -280,7 +303,7 @@ public class HeapTrackingOrderedChunkedList<V> extends DefaultCloseListenable
     private void updateFirstKey()
     {
         int chunkHops = 0; // TODO: Remove statistics gathering
-        int removedInFirstChunk = (int) (firstKey % chunkSize);
+        int removedInFirstChunk = (int) (firstKey & (chunkSize - 1));
         while ( firstKey < lastKey && first.values[removedInFirstChunk] == null )
         {
             firstKey++;
@@ -344,7 +367,7 @@ public class HeapTrackingOrderedChunkedList<V> extends DefaultCloseListenable
 
         Chunk<V> chunk = first;
         long key = firstKey;
-        int index = (int) (key % chunkSize);
+        int index = (int) (key & (chunkSize - 1));
         while ( key <= lastKey )
         {
             if ( index >= chunkSize )
@@ -420,7 +443,7 @@ public class HeapTrackingOrderedChunkedList<V> extends DefaultCloseListenable
 
         {
             chunk = first;
-            index = (int) (firstKey % chunkSize);
+            index = (int) (firstKey & (chunkSize - 1));
         }
 
         @Override
