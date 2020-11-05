@@ -87,7 +87,7 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory
     {
         // highId not used when opening an IndexedIdGenerator
         return new IndexedIdGenerator( pageCache, fileName, recoveryCleanupWorkCollector, idType, allowLargeIdCaches, highIdSupplier, maxValue, readOnly,
-                config, cursorTracer, defaultIdMonitor( fs, fileName ), openOptions );
+                config, cursorTracer, defaultIdMonitor( fs, fileName, config ), openOptions );
     }
 
     @Override
@@ -106,7 +106,7 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory
 
         IndexedIdGenerator generator =
                 new IndexedIdGenerator( pageCache, fileName, recoveryCleanupWorkCollector, idType, allowLargeIdCaches, () -> highId, maxId, readOnly,
-                        config, cursorTracer, defaultIdMonitor( fs, fileName ), openOptions );
+                        config, cursorTracer, defaultIdMonitor( fs, fileName, config ), openOptions );
         generator.checkpoint( UNLIMITED, cursorTracer );
         generators.put( idType, generator );
         return generator;

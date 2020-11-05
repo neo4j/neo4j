@@ -31,6 +31,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.LongPredicate;
 
+import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.internal.helpers.Args;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.IOUtils;
@@ -43,13 +45,10 @@ import org.neo4j.io.fs.ReadPastEndException;
 import org.neo4j.io.memory.NativeScopedBuffer;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.SystemNanoClock;
-import org.neo4j.util.FeatureToggles;
 
 import static java.util.Comparator.comparing;
-import static java.util.concurrent.TimeUnit.DAYS;
 import static org.neo4j.internal.helpers.Format.date;
 import static org.neo4j.internal.id.indexed.IndexedIdGenerator.NO_MONITOR;
-import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.io.fs.ReadAheadChannel.DEFAULT_READ_AHEAD_SIZE;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
@@ -58,11 +57,6 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
  */
 public class LoggingIndexedIdGeneratorMonitor implements IndexedIdGenerator.Monitor, Closeable
 {
-    private static final boolean LOG_ENABLED = FeatureToggles.flag( LoggingIndexedIdGeneratorMonitor.class, "enabled", false );
-    private static final long LOG_ROTATION_SIZE_THRESHOLD =
-            FeatureToggles.getLong( LoggingIndexedIdGeneratorMonitor.class, "rotationThreshold", mebiBytes( 200 ) );
-    private static final long LOG_PRUNE_THRESHOLD = FeatureToggles.getLong( LoggingIndexedIdGeneratorMonitor.class, "pruneThreshold", DAYS.toMillis( 2 ) );
-
     private static final String ARG_TOFILE = "tofile";
     private static final String ARG_FILTER = "filter";
 
@@ -81,12 +75,13 @@ public class LoggingIndexedIdGeneratorMonitor implements IndexedIdGenerator.Moni
     /**
      * Looks at feature toggle and instantiates a LoggingMonitor if enabled, otherwise a no-op monitor.
      */
-    public static IndexedIdGenerator.Monitor defaultIdMonitor( FileSystemAbstraction fs, Path idFile )
+    public static IndexedIdGenerator.Monitor defaultIdMonitor( FileSystemAbstraction fs, Path idFile, Config config )
     {
-        if ( LOG_ENABLED )
+        if ( config.get( GraphDatabaseInternalSettings.id_generator_log_enabled ) )
         {
             return new LoggingIndexedIdGeneratorMonitor( fs, idFile.resolveSibling( idFile.getFileName() + ".log" ), Clocks.nanoClock(),
-                    LOG_ROTATION_SIZE_THRESHOLD, ByteUnit.Byte, LOG_PRUNE_THRESHOLD, TimeUnit.MILLISECONDS );
+                    config.get( GraphDatabaseInternalSettings.id_generator_log_rotation_threshold ), ByteUnit.Byte,
+                    config.get( GraphDatabaseInternalSettings.id_generator_log_prune_threshold ).toMillis(), TimeUnit.MILLISECONDS );
         }
         return NO_MONITOR;
     }

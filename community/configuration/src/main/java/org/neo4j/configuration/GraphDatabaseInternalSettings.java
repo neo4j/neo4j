@@ -26,6 +26,7 @@ import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.logging.FormattedLogFormat;
 
+import static java.time.Duration.ofDays;
 import static java.time.Duration.ofMillis;
 import static java.time.Duration.ofMinutes;
 import static java.time.Duration.ofSeconds;
@@ -525,7 +526,8 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
             "test databases can disable this to reduce startup times" )
     public static final Setting<Boolean> dump_diagnostics = newBuilder( "unsupported.dbms.dump_diagnostics", BOOL, Boolean.TRUE ).build();
 
-    // === NEW SETTINGS FROM FEATURE TOGGLES ===
+    // === SETTINGS FROM FEATURE TOGGLES ===
+
     @Internal
     public static final Setting<Boolean> track_tx_statement_close = newBuilder( "unsupported.dbms.debug.track_tx_statement_close", BOOL, false ).build();
 
@@ -612,4 +614,15 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
     @Internal
     public static Setting<Double> lucene_population_ram_buffer_size =
             newBuilder( "unsupported.dbms.index.lucene.population_ram_buffer_size", DOUBLE, 50D ).build();
+
+    @Internal
+    public static Setting<Boolean> id_generator_log_enabled = newBuilder( "unsupported.dbms.idgenerator.log.enabled", BOOL, false ).build();
+
+    @Internal
+    public static Setting<Long> id_generator_log_rotation_threshold =
+            newBuilder( "unsupported.dbms.idgenerator.log.rotation_threshold", BYTES, mebiBytes( 200 ) ).build();
+
+    @Internal
+    public static Setting<Duration> id_generator_log_prune_threshold =
+            newBuilder( "unsupported.dbms.idgenerator.log.prune_threshold", DURATION, ofDays( 2 ) ).build();
 }
