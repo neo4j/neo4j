@@ -26,6 +26,7 @@ import org.junit.jupiter.api.Test;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.neo4j.memory.HeapEstimator;
 import org.neo4j.memory.LocalMemoryTracker;
 import org.neo4j.memory.MemoryTracker;
 
@@ -42,8 +43,9 @@ class HeapTrackingOrderedChunkedListTest
 {
     private final MemoryMeter meter = new MemoryMeter();
     private final MemoryTracker memoryTracker = new LocalMemoryTracker();
+    private final long measuredMemoryTracker = meter.measureDeep( memoryTracker );
 
-    private final HeapTrackingOrderedChunkedList<Long> table = HeapTrackingOrderedChunkedList.createOrderedMap( memoryTracker );
+    private final HeapTrackingOrderedChunkedList<Long> table = HeapTrackingOrderedChunkedList.create( memoryTracker );
 
     @AfterEach
     void tearDown()
@@ -53,41 +55,50 @@ class HeapTrackingOrderedChunkedListTest
     }
 
     @Test
-    void add()
+    void shouldThrowIfChunkSizeNotPowerOfTwo()
     {
-        for ( int i = 0; i < 10000; i++ )
-        {
-            table.add( Long.valueOf( i + 1 ) );
-        }
-
-        for ( int i = 10000 - 1; i >= 0; i-- )
-        {
-            assertEquals( Long.valueOf( i + 1 ), table.get( i ) );
-        }
+        assertThrows( IllegalArgumentException.class, () -> HeapTrackingOrderedChunkedList.create( memoryTracker, 3 ) );
     }
 
     @Test
-    void shouldThrowIfNotPowerOfTwo()
+    void add()
     {
-        assertThrows( IllegalArgumentException.class, () -> HeapTrackingOrderedChunkedList.createOrderedMap( memoryTracker, 3 ) );
+        // When
+        for ( long i = 0; i < 10000; i++ )
+        {
+            table.add( i + 1 );
+        }
+
+        // Then
+        for ( long i = 10000 - 1; i >= 0; i-- )
+        {
+            assertEquals( i + 1, table.get( i ) );
+        }
+
+        assertHeapUsageWithNumberOfLongs( 10000 );
     }
 
     @Test
     void addNullShouldBeTheSameAsAddingAndRemoving()
     {
+        // When
         table.add( null );
         table.add( null );
         table.add( null );
 
+        // Then
         assertNull( table.get( 0 ) );
         assertNull( table.get( 1 ) );
         assertNull( table.get( 2 ) );
         assertNull( table.getFirst() );
         table.foreach( ( k, v ) -> fail() );
         assertFalse( table.iterator().hasNext() );
+        assertHeapUsageWithNumberOfLongs( 0 );
 
+        // When
         table.add( 42L );
 
+        // Then
         assertNull( table.get( 0 ) );
         assertNull( table.get( 1 ) );
         assertNull( table.get( 2 ) );
@@ -98,11 +109,14 @@ class HeapTrackingOrderedChunkedListTest
         assertTrue( it.hasNext() );
         assertEquals( 42L, it.next() );
         assertFalse( it.hasNext() );
+        assertHeapUsageWithNumberOfLongs( 1 );
 
+        // When
         table.add( null );
         table.add( null );
         table.add( null );
 
+        // Then
         assertNull( table.get( 4 ) );
         assertNull( table.get( 5 ) );
         assertNull( table.get( 6 ) );
@@ -112,14 +126,19 @@ class HeapTrackingOrderedChunkedListTest
         assertTrue( it2.hasNext() );
         assertEquals( 42L, it2.next() );
         assertFalse( it2.hasNext() );
+        assertHeapUsageWithNumberOfLongs( 1 );
 
+        // When
         table.remove( 3 );
+
+        // Then
         assertNull( table.get( 0 ) );
         assertNull( table.get( 1 ) );
         assertNull( table.get( 2 ) );
         assertNull( table.getFirst() );
         table.foreach( ( k, v ) -> fail() );
         assertFalse( table.iterator().hasNext() );
+        assertHeapUsageWithNumberOfLongs( 0 );
     }
 
     @Test
@@ -132,18 +151,21 @@ class HeapTrackingOrderedChunkedListTest
         {
             table.add( i + 1 );
         }
+        assertHeapUsageWithNumberOfLongs( 5000 );
 
         // remove 0, .., 2499
         for ( long i = 0; i < size / 4; i++ )
         {
             table.remove( i );
         }
+        assertHeapUsageWithNumberOfLongs( 2500 );
 
         // add 5000, .., 9999
         for ( long i = size / 2; i < size; i++ )
         {
             table.add( i + 1 );
         }
+        assertHeapUsageWithNumberOfLongs( 7500 );
 
         // remove 9901
         table.remove( 9901 );
@@ -159,53 +181,13 @@ class HeapTrackingOrderedChunkedListTest
                 assertEquals( i + 1, table.get( i ) );
             }
         }
-    }
-
-    @Test
-    void foreach()
-    {
-        long size = 10000;
-
-        // add 0, .., 4999
-        for ( long i = 0; i < 5000; i++ )
-        {
-            table.add( i );
-        }
-
-        // remove 0, .., 2499
-        for ( long i = 0; i < 2500; i++ )
-        {
-            table.remove( i );
-        }
-
-        // add 5000, .., 9999
-        for ( long i = 5000; i < size; i++ )
-        {
-            table.add( i );
-        }
-
-        // remove 9901
-        table.remove( 9901 );
-
-        final AtomicInteger i = new AtomicInteger( 2500 );
-        table.foreach( ( k, v ) ->
-        {
-            var expected = i.get();
-            if ( expected >= 9901 ) // Has been removed
-            {
-                expected += 1;
-            }
-            assertEquals( expected, k );
-            assertEquals( expected, v );
-            i.getAndIncrement();
-        } );
-        assertEquals( i.get(), 9999 ); // One removed
+        assertHeapUsageWithNumberOfLongs( 7499 );
     }
 
     @Test
     void removeAtChunkBoundaries()
     {
-        int size = Math.max( DEFAULT_CHUNK_SIZE, 4 );
+        int size = Math.max( DEFAULT_CHUNK_SIZE, 4 ); // This test will not work for chunk sizes 1 and 2
 
         for ( int i = 0; i < size * 3 + 1; i++ )
         {
@@ -269,6 +251,50 @@ class HeapTrackingOrderedChunkedListTest
             assertEquals( expected, value );
             expected++;
         }
+
+        // Test heap usage estimation
+        assertHeapUsageWithNumberOfLongs( size * 2 - 2 );
+    }
+
+    @Test
+    void foreach()
+    {
+        long size = 10000;
+
+        // add 0, .., 4999
+        for ( long i = 0; i < 5000; i++ )
+        {
+            table.add( i );
+        }
+
+        // remove 0, .., 2499
+        for ( long i = 0; i < 2500; i++ )
+        {
+            table.remove( i );
+        }
+
+        // add 5000, .., 9999
+        for ( long i = 5000; i < size; i++ )
+        {
+            table.add( i );
+        }
+
+        // remove 9901
+        table.remove( 9901 );
+
+        final AtomicInteger i = new AtomicInteger( 2500 );
+        table.foreach( ( k, v ) ->
+        {
+            var expected = i.get();
+            if ( expected >= 9901 ) // Has been removed
+            {
+                expected += 1;
+            }
+            assertEquals( expected, k );
+            assertEquals( expected, v );
+            i.getAndIncrement();
+        } );
+        assertEquals( i.get(), 9999 ); // One removed
     }
 
     @Test
@@ -281,10 +307,16 @@ class HeapTrackingOrderedChunkedListTest
         {
             table.add( key++ );
         }
+        long measuredAfterAdd1 = meter.measureDeep( table ) - measuredMemoryTracker;
+        long estimatedAfterAdd1 = memoryTracker.estimatedHeapMemory() + 5000 * HeapEstimator.LONG_SIZE;
+
         for ( int i = 0; i < 5000; i++ )
         {
             table.remove( i );
         }
+        long measuredAfterRemove1 = meter.measureDeep( table ) - measuredMemoryTracker;
+        long estimatedAfterRemove1 = memoryTracker.estimatedHeapMemory();
+
         assertNull( table.getFirst() );
         table.add( key );
         assertEquals( key, table.getFirst() );
@@ -293,13 +325,31 @@ class HeapTrackingOrderedChunkedListTest
         {
             table.add( key++ );
         }
+        long measuredAfterAdd2 = meter.measureDeep( table ) - measuredMemoryTracker;
+        long estimatedAfterAdd2 = memoryTracker.estimatedHeapMemory() + 5000 * HeapEstimator.LONG_SIZE;
+
         for ( int i = 0; i < 5000; i++ )
         {
             table.remove( i + 5000 );
         }
+        long measuredAfterRemove2 = meter.measureDeep( table ) - measuredMemoryTracker;
+        long estimatedAfterRemove2 = memoryTracker.estimatedHeapMemory();
+
         assertNull( table.getFirst() );
         table.add( key );
         assertEquals( key, table.getFirst() );
+        long measured = meter.measureDeep( table ) - measuredMemoryTracker;
+
+        // Memory estimation should be accurate
+        assertEquals( measuredAfterAdd1, estimatedAfterAdd1 );
+        assertEquals( measuredAfterAdd2, estimatedAfterAdd2 );
+        assertEquals( measured, memoryTracker.estimatedHeapMemory() + HeapEstimator.LONG_SIZE );
+
+        // Memory usage should not increase
+        assertEquals( measuredAfterAdd1, measuredAfterAdd2 );
+        assertEquals( measuredAfterRemove1, measuredAfterRemove2 );
+        assertEquals( estimatedAfterAdd1, estimatedAfterAdd2 );
+        assertEquals( estimatedAfterRemove1, estimatedAfterRemove2 );
     }
 
     @Test
@@ -308,15 +358,24 @@ class HeapTrackingOrderedChunkedListTest
         int size = DEFAULT_CHUNK_SIZE;
         long key = 0;
 
+        long measuredEmpty = meter.measureDeep( table ) - measuredMemoryTracker;
+        long estimatedEmpty = memoryTracker.estimatedHeapMemory();
+
         assertNull( table.getFirst() );
         for ( int i = 0; i < size; i++ )
         {
             table.add( key++ );
         }
+        long measuredAfterAdd1 = meter.measureDeep( table ) - measuredMemoryTracker;
+        long estimatedAfterAdd1 = memoryTracker.estimatedHeapMemory() + size * HeapEstimator.LONG_SIZE;
+
         for ( int i = 0; i < size; i++ )
         {
             table.remove( i );
         }
+        long measuredAfterRemove1 = meter.measureDeep( table ) - measuredMemoryTracker;
+        long estimatedAfterRemove1 = memoryTracker.estimatedHeapMemory();
+
         assertNull( table.getFirst() );
         table.add( key );
         assertEquals( key, table.getFirst() );
@@ -325,13 +384,45 @@ class HeapTrackingOrderedChunkedListTest
         {
             table.add( key++ );
         }
+        long measuredAfterAdd2 = meter.measureDeep( table ) - measuredMemoryTracker;
+        long estimatedAfterAdd2 = memoryTracker.estimatedHeapMemory() + size * HeapEstimator.LONG_SIZE;
+
         for ( int i = 0; i < size; i++ )
         {
             table.remove( i + size );
         }
+        long measuredAfterRemove2 = meter.measureDeep( table ) - measuredMemoryTracker;
+        long estimatedAfterRemove2 = memoryTracker.estimatedHeapMemory();
+
         assertNull( table.getFirst() );
         table.add( key );
         assertEquals( key, table.getFirst() );
+        long measuredLast = meter.measureDeep( table ) - measuredMemoryTracker;
+        long estimatedLast = memoryTracker.estimatedHeapMemory() + HeapEstimator.LONG_SIZE;
+
+        // Memory estimation should be accurate
+        assertEquals( measuredAfterAdd1, estimatedAfterAdd1 );
+        assertEquals( measuredAfterRemove1, estimatedAfterRemove1 );
+        assertEquals( measuredAfterAdd2, estimatedAfterAdd2 );
+        assertEquals( measuredAfterRemove2, estimatedAfterRemove2 );
+        assertEquals( measuredLast, estimatedLast );
+
+        // Memory usage should not increase
+        assertEquals( measuredAfterAdd1, measuredAfterAdd2 );
+        assertEquals( measuredAfterRemove1, measuredAfterRemove2 );
+        assertEquals( estimatedAfterAdd1, estimatedAfterAdd2 );
+        assertEquals( estimatedAfterRemove1, estimatedAfterRemove2 );
+
+        // Memory usage of internal structure should also not increase when adding unless a new chunk is needed
+        assertEquals( measuredEmpty, measuredAfterAdd1 - size * HeapEstimator.LONG_SIZE );
+        assertEquals( measuredEmpty, measuredAfterRemove1 );
+        assertEquals( measuredEmpty, measuredAfterAdd2 - size * HeapEstimator.LONG_SIZE );
+        assertEquals( measuredEmpty, measuredAfterRemove2 );
+
+        assertEquals( estimatedEmpty, estimatedAfterAdd1 - size * HeapEstimator.LONG_SIZE );
+        assertEquals( estimatedEmpty, estimatedAfterRemove1 );
+        assertEquals( estimatedEmpty, estimatedAfterAdd2 - size * HeapEstimator.LONG_SIZE );
+        assertEquals( estimatedEmpty, estimatedAfterRemove2 );
     }
 
     @Test
@@ -389,14 +480,14 @@ class HeapTrackingOrderedChunkedListTest
     @Test
     void emptySize()
     {
-        long actual = meter.measureDeep( table ) - meter.measureDeep( memoryTracker );
-        assertEquals( actual, memoryTracker.estimatedHeapMemory() );
+        assertHeapUsageWithNumberOfLongs( 0 );
     }
 
     @Test
     void closeShouldReleaseEverything()
     {
         var value1 = 11L;
+
         // Allocate outside of table
         long externalAllocation = meter.measure( value1 );
         memoryTracker.allocateHeap( externalAllocation );
@@ -404,7 +495,7 @@ class HeapTrackingOrderedChunkedListTest
         table.add( value1 );
 
         // Validate size
-        long actualSize = meter.measureDeep( table ) - meter.measureDeep( memoryTracker );
+        long actualSize = meter.measureDeep( table ) - measuredMemoryTracker;
         assertEquals( actualSize, memoryTracker.estimatedHeapMemory() );
 
         // Close should release everything related to the table
@@ -412,5 +503,11 @@ class HeapTrackingOrderedChunkedListTest
         assertEquals( externalAllocation, memoryTracker.estimatedHeapMemory() );
 
         memoryTracker.releaseHeap( externalAllocation );
+    }
+
+    private void assertHeapUsageWithNumberOfLongs( long numberOfBoxedLongs )
+    {
+        long measured = meter.measureDeep( table ) - measuredMemoryTracker;
+        assertEquals( measured, memoryTracker.estimatedHeapMemory() + numberOfBoxedLongs * HeapEstimator.LONG_SIZE );
     }
 }

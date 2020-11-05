@@ -93,7 +93,7 @@ public final class HeapEstimator
         PRIMITIVE_SIZES = Collections.unmodifiableMap( primitiveSizesMap );
     }
 
-    private static final int LONG_SIZE;
+    public static final int LONG_SIZE;
     private static final int STRING_SIZE;
 
     static
