@@ -37,15 +37,15 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
-import static org.neo4j.kernel.impl.util.collection.HeapTrackingOrderedChunkedList.DEFAULT_CHUNK_SIZE;
+import static org.neo4j.kernel.impl.util.collection.HeapTrackingLongEnumerationList.DEFAULT_CHUNK_SIZE;
 
-class HeapTrackingOrderedChunkedListTest
+class HeapTrackingLongEnumerationListTest
 {
     private final MemoryMeter meter = new MemoryMeter();
     private final MemoryTracker memoryTracker = new LocalMemoryTracker();
     private final long measuredMemoryTracker = meter.measureDeep( memoryTracker );
 
-    private final HeapTrackingOrderedChunkedList<Long> table = HeapTrackingOrderedChunkedList.create( memoryTracker );
+    private final HeapTrackingLongEnumerationList<Long> table = HeapTrackingLongEnumerationList.create( memoryTracker );
 
     @AfterEach
     void tearDown()
@@ -57,7 +57,7 @@ class HeapTrackingOrderedChunkedListTest
     @Test
     void shouldThrowIfChunkSizeNotPowerOfTwo()
     {
-        assertThrows( IllegalArgumentException.class, () -> HeapTrackingOrderedChunkedList.create( memoryTracker, 3 ) );
+        assertThrows( IllegalArgumentException.class, () -> HeapTrackingLongEnumerationList.create( memoryTracker, 3 ) );
     }
 
     @Test

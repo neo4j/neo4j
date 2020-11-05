@@ -60,9 +60,9 @@ import static org.neo4j.memory.HeapEstimator.shallowSizeOfObjectArray;
  *
  * @param <V> value type
  */
-public class HeapTrackingOrderedChunkedList<V> extends DefaultCloseListenable
+public class HeapTrackingLongEnumerationList<V> extends DefaultCloseListenable
 {
-    private static final long SHALLOW_SIZE = shallowSizeOfInstance( HeapTrackingOrderedChunkedList.class );
+    private static final long SHALLOW_SIZE = shallowSizeOfInstance( HeapTrackingLongEnumerationList.class );
     static final int DEFAULT_CHUNK_SIZE = 4096; // Must be a power of 2
 
     private final int chunkSize;
@@ -78,20 +78,20 @@ public class HeapTrackingOrderedChunkedList<V> extends DefaultCloseListenable
     private long firstKey;
     private long lastKey;
 
-    public static <V> HeapTrackingOrderedChunkedList<V> create( MemoryTracker memoryTracker )
+    public static <V> HeapTrackingLongEnumerationList<V> create( MemoryTracker memoryTracker )
     {
         return create( memoryTracker, DEFAULT_CHUNK_SIZE );
     }
 
-    public static <V> HeapTrackingOrderedChunkedList<V> create( MemoryTracker memoryTracker, int chunkSize )
+    public static <V> HeapTrackingLongEnumerationList<V> create( MemoryTracker memoryTracker, int chunkSize )
     {
         Preconditions.requirePowerOfTwo( chunkSize );
         MemoryTracker scopedMemoryTracker = memoryTracker.getScopedMemoryTracker();
         scopedMemoryTracker.allocateHeap( SHALLOW_SIZE + SCOPED_MEMORY_TRACKER_SHALLOW_SIZE );
-        return new HeapTrackingOrderedChunkedList<>( scopedMemoryTracker, chunkSize );
+        return new HeapTrackingLongEnumerationList<>( scopedMemoryTracker, chunkSize );
     }
 
-    private HeapTrackingOrderedChunkedList( MemoryTracker scopedMemoryTracker, int chunkSize )
+    private HeapTrackingLongEnumerationList( MemoryTracker scopedMemoryTracker, int chunkSize )
     {
         this.chunkSize = chunkSize;
         this.chunkShiftAmount = Integer.numberOfTrailingZeros( chunkSize );
