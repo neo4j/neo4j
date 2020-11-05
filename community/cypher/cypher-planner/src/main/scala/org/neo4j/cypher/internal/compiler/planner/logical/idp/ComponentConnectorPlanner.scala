@@ -95,7 +95,7 @@ case class ComponentConnectorPlanner(singleComponentPlanner: SingleComponentPlan
     // Only even generate CP plans if no joins are available, since joins will always be better.
     val generator = ((composedJoinSolverStep || composedCPSolverStep) ++ composedOmSolverStep)
       // Filter out goals that are not solvable before even asking the connectors
-      .filter(goalBitAllocation.goalIsSolvable)
+      .filterGoals(goalBitAllocation.goalIsSolvable)
 
     val solver = new IDPSolver[QueryGraph, LogicalPlan, LogicalPlanningContext](
       generator = generator,
@@ -156,8 +156,11 @@ object GoalBitAllocation {
 
 /**
  * Helper class to keep track of which bit areas in a Goal refer to either components or optional matches.
- * @param numComponents the number of disconnected components to solve.
- * @param numOptionalMatches the number of optional matches to solve.
+ *
+ * @param numComponents             the number of disconnected components to solve.
+ * @param numOptionalMatches        the number of optional matches to solve.
+ * @param optionalMatchDependencies for each optional match a BitSet describing its dependencies to components and other optional matches.
+ *                                  Each bit that is set in this BitSet signifies a dependency to the component or optional match at that bit position.
  */
 case class GoalBitAllocation(numComponents: Int, numOptionalMatches: Int, optionalMatchDependencies: Seq[BitSet]) {
   private val startOptionals = startComponents + numComponents

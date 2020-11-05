@@ -58,7 +58,13 @@ trait IDPSolverStep[S, P, C] extends SolverStep[S, P, C] {
       }
     }
 
-  def filter(test: (IdRegistry[S], Goal) => Boolean): IDPSolverStep[S, P, C] =
+  /**
+   * Filter which goals should be given to the solver step this method is called on.
+   * This method returns a new solver step with the following behavior:
+   * If the supplied test function returns `true`, give it to this solver step and return the resulting Iterator.
+   * Otherwise, return an empty iterator.
+   */
+  def filterGoals(test: (IdRegistry[S], Goal) => Boolean): IDPSolverStep[S, P, C] =
     (registry: IdRegistry[S], goal: Goal, cache: IDPCache[P], context: C) => {
       if (test(registry, goal)) {
         self(registry, goal, cache, context)
