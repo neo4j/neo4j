@@ -79,6 +79,7 @@ object ResultOrdering {
       sealed trait Acc
       case class OrderNotYetDecided(providedOrderColumns: Seq[Column]) extends Acc
       case class IndexOrderDecided(indexOrder: IndexOrder, providedOrderColumns: Seq[Column]) extends Acc
+      case object IndexNotHelpful extends Acc
 
       def possibleOrdersForCandidate(candidate: OrderCandidate[_]): Acc =
         candidate.order.zipAll(indexProperties, null, null).foldLeft[Acc](OrderNotYetDecided(Seq.empty)) {
@@ -136,11 +137,26 @@ object ResultOrdering {
                 (orderColumn, PropertyAndPredicateType(prop, true))) if orderColumn != null && satisfies(prop, orderColumn.expression, orderColumn.projections) && indexOrderCapability != NONE =>
             OrderNotYetDecided(providedOrderColumns :+ getNewProvidedOrderColumn(orderColumn, prop))
 
-          // Index capability and required order don't agree, the index has more columns than the ORDER BY or the property doesn't match, so we have to add more columns in the same order to the provided order
+          // When we have already some provided order columns, but haven't yet decided on the order,
+          // that means all previous columns were single exact properties.
+          // We can fall into this case when, in addition to the above condition, we either
+          // * have more index columns than order candidate columns or
+          // * the column has a non-matching property or
+          // * the column has a non-matching order
+          // In all these cases we make a decision on the order(because that helps the previous single exact property columns).
           case (OrderNotYetDecided(providedOrderColumns),
-                (_, PropertyAndPredicateType(prop, _))) if indexOrderCapability != NONE =>
-            if (indexOrderCapability.asc) IndexOrderDecided(IndexOrderAscending, providedOrderColumns :+ ProvidedOrder.Asc(prop))
+                (_, PropertyAndPredicateType(prop, _))) if indexOrderCapability != NONE && providedOrderColumns.nonEmpty =>
+            if (indexOrderCapability.asc)
+              IndexOrderDecided(IndexOrderAscending, providedOrderColumns :+ ProvidedOrder.Asc(prop))
             else IndexOrderDecided(IndexOrderDescending, providedOrderColumns :+ ProvidedOrder.Desc(prop))
+
+          // Either there is no order candidate column or the first column either
+          // * has a non-matching property or
+          // * non-matching order on a non-(single exact) property or
+          // In these cases we can't really use the index to help with this order candidate
+          case (OrderNotYetDecided(Seq()),
+                (_, PropertyAndPredicateType(_, _))) if indexOrderCapability != NONE =>
+            IndexNotHelpful
 
           case (x, _) =>
             // Anything else does not influence the index order or the provided order columns

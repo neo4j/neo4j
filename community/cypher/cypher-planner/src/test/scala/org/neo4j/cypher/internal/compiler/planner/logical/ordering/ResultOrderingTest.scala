@@ -62,31 +62,34 @@ import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability.DESC
 import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability.NONE
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.scalatest.matchers.Matcher
 
 abstract class ResultOrderingTest[OC <: OrderCandidate[OC]](ascXFoo: InterestingOrder, descXFoo: InterestingOrder, ascX: InterestingOrder, descX: InterestingOrder,
                                   orderCandidateFactory: OrderCandidateFactory[OC], toInterestingOrder: OC => InterestingOrder) extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
   // Index operator
 
+  protected val beEmpty: Matcher[Any] = be((ProvidedOrder.empty, IndexOrderNone))
+
   test("IndexOperator: No interesting order results in no order") {
-    indexOrder(InterestingOrder.empty, indexPropertyXFoo, ASC) should be((ProvidedOrder.empty, IndexOrderNone))
-    indexOrder(InterestingOrder.empty, indexPropertyXFooExact, ASC) should be((ProvidedOrder.empty, IndexOrderNone))
+    indexOrder(InterestingOrder.empty, indexPropertyXFoo, ASC) should beEmpty
+    indexOrder(InterestingOrder.empty, indexPropertyXFooExact, ASC) should beEmpty
   }
 
   test("IndexOperator: Single property DESC still results in provided ASC if index is not capable of DESC") {
-    indexOrder(descXFoo, indexPropertyXFoo, ASC) should be((ProvidedOrder.asc(xFoo), IndexOrderAscending))
+    indexOrder(descXFoo, indexPropertyXFoo, ASC) should beEmpty
     indexOrder(descXFoo, indexPropertyXFooExact, ASC) should be((ProvidedOrder.desc(xFoo), IndexOrderAscending))
   }
 
   test("IndexOperator: Single property ASC results in provided DESC if index is not capable of ASC") {
-    indexOrder(ascXFoo, indexPropertyXFoo, DESC) should be((ProvidedOrder.desc(xFoo), IndexOrderDescending))
+    indexOrder(ascXFoo, indexPropertyXFoo, DESC) should beEmpty
     indexOrder(ascXFoo, indexPropertyXFooExact, DESC) should be((ProvidedOrder.asc(xFoo), IndexOrderDescending))
   }
 
   test("IndexOperator: Single property no capability results in empty provided order") {
-    indexOrder(InterestingOrder.empty, indexPropertyXFoo, NONE) should be((ProvidedOrder.empty, IndexOrderNone))
-    indexOrder(descXFoo, indexPropertyXFoo, NONE) should be((ProvidedOrder.empty, IndexOrderNone))
-    indexOrder(ascXFoo, indexPropertyXFooExact, NONE) should be((ProvidedOrder.empty, IndexOrderNone))
+    indexOrder(InterestingOrder.empty, indexPropertyXFoo, NONE) should beEmpty
+    indexOrder(descXFoo, indexPropertyXFoo, NONE) should beEmpty
+    indexOrder(ascXFoo, indexPropertyXFooExact, NONE) should beEmpty
   }
 
   test("IndexOperator: Single property order results in matching provided order for compatible index capability") {
@@ -133,13 +136,13 @@ abstract class ResultOrderingTest[OC <: OrderCandidate[OC]](ascXFoo: Interesting
   test("IndexOperator: Multi property order results in provided order if property order does not match (no exact predicates)") {
     val properties = Seq("y", "x", "z").map { node => PropertyAndPredicateType(prop(node, "foo"), isSingleExactPredicate = false) }
     val interestingOrder = toInterestingOrder(orderCandidateFactory.asc(xFoo).asc(yFoo).asc(zFoo))
-    indexOrder(interestingOrder, properties, ASC) should be((ProvidedOrder.asc(yFoo).asc(xFoo).asc(zFoo), IndexOrderAscending))
+    indexOrder(interestingOrder, properties, ASC) should beEmpty
   }
 
   test("IndexOperator: Multi property order results in provided order if property order does not match (all exact predicates)") {
     val properties = Seq("y", "x", "z").map { node => PropertyAndPredicateType(prop(node, "foo"), isSingleExactPredicate = true) }
     val interestingOrder = toInterestingOrder(orderCandidateFactory.asc(xFoo).asc(yFoo).asc(zFoo))
-    indexOrder(interestingOrder, properties, ASC) should be((ProvidedOrder.asc(yFoo).asc(xFoo).asc(zFoo), IndexOrderAscending))
+    indexOrder(interestingOrder, properties, ASC) should beEmpty
   }
 
   test("IndexOperator: Multi property order results in provided order if property order partially matches (no exact predicates)") {
@@ -296,9 +299,9 @@ class InterestingTestIndexOrder extends ResultOrderingTest[InterestingOrderCandi
   }
 
   test("IndexOperator: Single property capability results in default provided order when neither required nor interesting can be fulfilled") {
-    indexOrder(requiredDescXFoo.interesting(interestingDescXFoo), indexPropertyXFoo, ASC) should be((ProvidedOrder.asc(xFoo), IndexOrderAscending))
+    indexOrder(requiredDescXFoo.interesting(interestingDescXFoo), indexPropertyXFoo, ASC) should beEmpty
     indexOrder(requiredDescXFoo.interesting(interestingDescXFoo), indexPropertyXFooExact, ASC) should be((ProvidedOrder.desc(xFoo), IndexOrderAscending))
-    indexOrder(requiredAscXFoo.interesting(interestingAscXFoo), indexPropertyXFoo, DESC) should be((ProvidedOrder.desc(xFoo), IndexOrderDescending))
+    indexOrder(requiredAscXFoo.interesting(interestingAscXFoo), indexPropertyXFoo, DESC) should beEmpty
     indexOrder(requiredAscXFoo.interesting(interestingAscXFoo), indexPropertyXFooExact, DESC) should be((ProvidedOrder.asc(xFoo), IndexOrderDescending))
   }
 
@@ -329,16 +332,16 @@ class InterestingTestIndexOrder extends ResultOrderingTest[InterestingOrderCandi
     val properties = Seq("x", "y").map { node => PropertyAndPredicateType(prop(node, "foo"), isSingleExactPredicate = false) }
 
     val interestingDesc = InterestingOrder.interested(interestingDescXFoo.desc(yFoo)).interesting(interestingDescXFoo.desc(yFoo))
-    indexOrder(interestingDesc, properties, ASC) should be((ProvidedOrder.asc(xFoo).asc(yFoo), IndexOrderAscending))
+    indexOrder(interestingDesc, properties, ASC) should beEmpty
 
     val interestingAsc = InterestingOrder.interested(interestingAscXFoo).interesting(InterestingOrderCandidate.asc(yFoo))
-    indexOrder(interestingAsc, properties, DESC) should be((ProvidedOrder.desc(xFoo).desc(yFoo), IndexOrderDescending))
+    indexOrder(interestingAsc, properties, DESC) should beEmpty
 
     val interestingDescRequired = InterestingOrder.required(RequiredOrderCandidate.desc(xFoo).desc(yFoo)).interesting(interestingDescXFoo.desc(yFoo))
-    indexOrder(interestingDescRequired, properties, ASC) should be((ProvidedOrder.asc(xFoo).asc(yFoo), IndexOrderAscending))
+    indexOrder(interestingDescRequired, properties, ASC) should beEmpty
 
     val interestingAscRequired = InterestingOrder.required(RequiredOrderCandidate.asc(xFoo).asc(yFoo)).interesting(interestingAscXFoo.asc(yFoo))
-    indexOrder(interestingAscRequired, properties, DESC) should be((ProvidedOrder.desc(xFoo).desc(yFoo), IndexOrderDescending))
+    indexOrder(interestingAscRequired, properties, DESC) should beEmpty
   }
 
   test("IndexOperator: Multi property empty provided order when there is no capability") {

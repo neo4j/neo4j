@@ -322,13 +322,11 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTestBase(queryGraphSolve
       } getLogicalPlanFor(s"MATCH (m:Awesome), (n:Awesome) WHERE n.prop > 'foo' RETURN m.prop ORDER BY m.prop $cypherToken",
         stripProduceResults = false)
 
-      val expectedIndexOrder = if (orderCapability.asc) IndexOrderAscending else IndexOrderDescending
-
       plan._2 should equal(
         new LogicalPlanBuilder()
           .produceResults("`m.prop`")
           .cartesianProduct()
-          .|.nodeIndexOperator("n:Awesome(prop > 'foo')", indexOrder = expectedIndexOrder)
+          .|.nodeIndexOperator("n:Awesome(prop > 'foo')")
           .sort(Seq(sortOrder("m.prop")))
           .projection("m.prop AS `m.prop`")
           .nodeByLabelScan("m", "Awesome")
@@ -346,13 +344,11 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTestBase(queryGraphSolve
       } getLogicalPlanFor(s"MATCH (m:Awesome)-[r]-(x)-[p]-(y), (n:Awesome) WHERE n.prop > 'foo' RETURN m.prop ORDER BY m.prop $cypherToken",
         stripProduceResults = false)
 
-      val expectedIndexOrder = if (orderCapability.asc) IndexOrderAscending else IndexOrderDescending
-
       plan._2 should equal(
       new LogicalPlanBuilder()
         .produceResults("`m.prop`")
         .cartesianProduct()
-        .|.nodeIndexOperator("n:Awesome(prop > 'foo')", indexOrder = expectedIndexOrder)
+        .|.nodeIndexOperator("n:Awesome(prop > 'foo')")
         .filter("NOT p = r")
         .expand("(x)-[p]-(y)")
         .expand("(m)-[r]-(x)")
@@ -464,7 +460,6 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTestBase(queryGraphSolve
             IndexSeek(
               "a:A(prop > 'foo')", indexOrder = plannedOrder),
             IndexSeek("b:B(prop = ???)",
-              indexOrder = expectedBIndexOrder,
               paramExpr = Some(cachedNodeProp("a", "prop")),
               labelId = 1,
               argumentIds = Set("a"))
@@ -478,13 +473,11 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTestBase(queryGraphSolve
         indexOn("B", "prop").providesOrder(orderCapability)
       }.getLogicalPlanFor(s"MATCH (a:A), (b:B) WHERE a.prop = b.prop RETURN a ORDER BY a $cypherToken", stripProduceResults = false)
 
-      val expectedBIndexOrder = if (orderCapability.asc) IndexOrderAscending else IndexOrderDescending
-
       plan._2 should equal(
         new LogicalPlanBuilder()
           .produceResults("a")
           .apply()
-          .|.nodeIndexOperator("b:B(prop = ???)", indexOrder = expectedBIndexOrder, paramExpr = Some(prop("a", "prop")), argumentIds = Set("a"))
+          .|.nodeIndexOperator("b:B(prop = ???)", paramExpr = Some(prop("a", "prop")), argumentIds = Set("a"))
           .nodeByLabelScan("a", "A", plannedOrder)
           .build()
       )
@@ -514,15 +507,12 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTestBase(queryGraphSolve
         // This query is very fragile in the sense that the slightest modification will result in a stupid plan
       } getLogicalPlanFor s"MATCH (a:A), (b:B) WHERE a.prop STARTS WITH 'foo' AND b.prop > a.prop RETURN a.prop, b.prop ORDER BY a.prop $cypherToken, b.prop $cypherToken"
 
-      val expectedBIndexOrder = if (orderCapability.asc) IndexOrderAscending else IndexOrderDescending
-
       plan._2 should equal(
         PartialSort(
           Projection(
             Apply(
               IndexSeek("a:A(prop STARTS WITH 'foo')", indexOrder = plannedOrder),
               IndexSeek("b:B(prop > ???)",
-                indexOrder = expectedBIndexOrder,
                 paramExpr = Some(cachedNodeProp("a", "prop")),
                 labelId = 1,
                 argumentIds = Set("a"))
@@ -713,17 +703,17 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTestBase(queryGraphSolve
     Seq(
       // Ascending index
       ("n.prop1 ASC", ASC, IndexOrderAscending, false, false, Seq.empty, false, Seq.empty),
-      ("n.prop1 DESC", ASC, IndexOrderAscending, true, true, Seq(Descending("n.prop1")), false, Seq.empty),
+      ("n.prop1 DESC", ASC, IndexOrderNone, true, true, Seq(Descending("n.prop1")), false, Seq.empty),
       ("n.prop1 ASC, n.prop2 ASC", ASC, IndexOrderAscending, false, false, Seq.empty, false, Seq.empty),
       ("n.prop1 ASC, n.prop2 DESC", ASC, IndexOrderAscending, false, false, Seq(Descending("n.prop2")), true, Seq(Ascending("n.prop1"))),
-      ("n.prop1 DESC, n.prop2 ASC", ASC, IndexOrderAscending, true, false, Seq(Descending("n.prop1"), Ascending("n.prop2")), false, Seq.empty),
-      ("n.prop1 DESC, n.prop2 DESC", ASC, IndexOrderAscending, true, false, Seq(Descending("n.prop1"), Descending("n.prop2")), false, Seq.empty),
+      ("n.prop1 DESC, n.prop2 ASC", ASC, IndexOrderNone, true, false, Seq(Descending("n.prop1"), Ascending("n.prop2")), false, Seq.empty),
+      ("n.prop1 DESC, n.prop2 DESC", ASC, IndexOrderNone, true, false, Seq(Descending("n.prop1"), Descending("n.prop2")), false, Seq.empty),
 
       // Descending index
-      ("n.prop1 ASC", DESC, IndexOrderDescending, true, true, Seq(Ascending("n.prop1")), false, Seq.empty),
+      ("n.prop1 ASC", DESC, IndexOrderNone, true, true, Seq(Ascending("n.prop1")), false, Seq.empty),
       ("n.prop1 DESC", DESC, IndexOrderDescending, false, false, Seq.empty, false, Seq.empty),
-      ("n.prop1 ASC, n.prop2 ASC", DESC, IndexOrderDescending, true, false, Seq(Ascending("n.prop1"), Ascending("n.prop2")), false, Seq.empty),
-      ("n.prop1 ASC, n.prop2 DESC", DESC, IndexOrderDescending, true, false, Seq(Ascending("n.prop1"), Descending("n.prop2")), false, Seq.empty),
+      ("n.prop1 ASC, n.prop2 ASC", DESC, IndexOrderNone, true, false, Seq(Ascending("n.prop1"), Ascending("n.prop2")), false, Seq.empty),
+      ("n.prop1 ASC, n.prop2 DESC", DESC, IndexOrderNone, true, false, Seq(Ascending("n.prop1"), Descending("n.prop2")), false, Seq.empty),
       ("n.prop1 DESC, n.prop2 ASC", DESC, IndexOrderDescending, false, false, Seq(Ascending("n.prop2")), true, Seq(Descending("n.prop1"))),
       ("n.prop1 DESC, n.prop2 DESC", DESC, IndexOrderDescending, false, false, Seq.empty, false, Seq.empty),
 
@@ -735,7 +725,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTestBase(queryGraphSolve
       ("n.prop1 DESC, n.prop2 ASC", BOTH, IndexOrderDescending, false, false, Seq(Ascending("n.prop2")), true, Seq(Descending("n.prop1"))),
       ("n.prop1 DESC, n.prop2 DESC", BOTH, IndexOrderDescending, false, false, Seq.empty, false, Seq.empty)
     ).foreach {
-      case (orderByString, orderCapability, indexOrder, shouldFullSort, sortOnOnlyOne, sortItems, shouldPartialSort, alreadySorted) =>
+      case t @ (orderByString, orderCapability, indexOrder, shouldFullSort, sortOnOnlyOne, sortItems, shouldPartialSort, alreadySorted) => withClue(t) {
         // When
         val query =
           s"""MATCH (n:Label)
@@ -758,6 +748,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTestBase(queryGraphSolve
           else
             Projection(Selection(expr, leafPlan), projectionBoth)
         }
+      }
     }
   }
 
@@ -850,7 +841,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTestBase(queryGraphSolve
         Seq(Descending("n.prop2"), Descending("n.prop3"), Ascending("n.prop4")), true, Seq(Ascending("n.prop1"))),
       ("n.prop1 ASC, n.prop2 DESC, n.prop3 DESC, n.prop4 DESC", ASC, IndexOrderAscending, false,
         Seq(Descending("n.prop2"), Descending("n.prop3"), Descending("n.prop4")), true, Seq(Ascending("n.prop1"))),
-      ("n.prop1 DESC, n.prop2 DESC, n.prop3 DESC, n.prop4 DESC", ASC, IndexOrderAscending, true,
+      ("n.prop1 DESC, n.prop2 DESC, n.prop3 DESC, n.prop4 DESC", ASC, IndexOrderNone, true,
         descAll, false, Seq.empty),
 
       // Descending index
@@ -870,7 +861,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTestBase(queryGraphSolve
         Seq(Ascending("n.prop2"), Ascending("n.prop3"), Descending("n.prop4")), true, Seq(Descending("n.prop1"))),
       ("n.prop1 DESC, n.prop2 ASC, n.prop3 ASC, n.prop4 ASC", DESC, IndexOrderDescending, false,
         Seq(Ascending("n.prop2"), Ascending("n.prop3"), Ascending("n.prop4")), true, Seq(Descending("n.prop1"))),
-      ("n.prop1 ASC, n.prop2 ASC, n.prop3 ASC, n.prop4 ASC", DESC, IndexOrderDescending, true,
+      ("n.prop1 ASC, n.prop2 ASC, n.prop3 ASC, n.prop4 ASC", DESC, IndexOrderNone, true,
         ascAll, false, Seq.empty),
 
       // Both index
@@ -1033,37 +1024,37 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTestBase(queryGraphSolve
       ("n.prop1", "n.prop1 ASC, n.prop2 ASC, n.prop3 ASC", ASC, IndexOrderAscending, false, false, map_1, map_empty, expr, Seq.empty, Seq.empty),
       ("n.prop1", "n.prop1 ASC, n.prop2 ASC, n.prop3 DESC", ASC, IndexOrderAscending, false, true, map_1, map_2_3_cached, expr_2_3_cached, desc_3, asc_1_2),
       ("n.prop1", "n.prop1 ASC, n.prop2 DESC, n.prop3 ASC", ASC, IndexOrderAscending, false, true, map_1, map_2_3_cached, expr_2_3_cached, desc_2_asc_3, asc_1),
-      ("n.prop1", "n.prop1 DESC, n.prop2 DESC, n.prop3 DESC", ASC, IndexOrderAscending, true, false, map_1, map_2_3_cached, expr_2_3_cached, desc_1_2_3, Seq.empty),
+      ("n.prop1", "n.prop1 DESC, n.prop2 DESC, n.prop3 DESC", ASC, IndexOrderNone, true, false, map_1, map_2_3_cached, expr_2_3_cached, desc_1_2_3, Seq.empty),
       ("n.prop2", "n.prop1 ASC, n.prop2 ASC, n.prop3 ASC", ASC, IndexOrderAscending, false, false, map_2_cached, map_empty, expr_2_cached, Seq.empty, Seq.empty),
-      ("n.prop2", "n.prop1 DESC, n.prop2 DESC, n.prop3 DESC", ASC, IndexOrderAscending, true, false, map_2_cached, map_1 ++ map_3_cached, expr_2_3_cached, desc_1_2_3, Seq.empty),
+      ("n.prop2", "n.prop1 DESC, n.prop2 DESC, n.prop3 DESC", ASC, IndexOrderNone, true, false, map_2_cached, map_1 ++ map_3_cached, expr_2_3_cached, desc_1_2_3, Seq.empty),
       ("n.prop3", "n.prop1 ASC, n.prop2 ASC, n.prop3 ASC", ASC, IndexOrderAscending, false, false, map_3_cached, map_empty, expr_3_cached, Seq.empty, Seq.empty),
-      ("n.prop3", "n.prop1 DESC, n.prop2 DESC, n.prop3 DESC", ASC, IndexOrderAscending, true, false, map_3_cached, map_1 ++ map_2_cached, expr_2_3_cached, desc_1_2_3, Seq.empty),
+      ("n.prop3", "n.prop1 DESC, n.prop2 DESC, n.prop3 DESC", ASC, IndexOrderNone, true, false, map_3_cached, map_1 ++ map_2_cached, expr_2_3_cached, desc_1_2_3, Seq.empty),
 
       ("n.prop1, n.prop2", "n.prop1 ASC, n.prop2 ASC, n.prop3 ASC", ASC, IndexOrderAscending, false, false, map_1 ++ map_2_cached, map_empty, expr_2_cached, Seq.empty, Seq.empty),
       ("n.prop1, n.prop2", "n.prop1 ASC, n.prop2 ASC, n.prop3 DESC", ASC, IndexOrderAscending, false, true, map_1 ++ map_2_cached, map_3_cached, expr_2_3_cached, desc_3, asc_1_2),
       ("n.prop1, n.prop2", "n.prop1 ASC, n.prop2 DESC, n.prop3 ASC", ASC, IndexOrderAscending, false, true, map_1 ++ map_2_cached, map_3_cached, expr_2_3_cached, desc_2_asc_3, asc_1),
-      ("n.prop1, n.prop2", "n.prop1 DESC, n.prop2 DESC, n.prop3 DESC", ASC, IndexOrderAscending, true, false, map_1 ++ map_2_cached, map_3_cached, expr_2_3_cached, desc_1_2_3, Seq.empty),
+      ("n.prop1, n.prop2", "n.prop1 DESC, n.prop2 DESC, n.prop3 DESC", ASC, IndexOrderNone, true, false, map_1 ++ map_2_cached, map_3_cached, expr_2_3_cached, desc_1_2_3, Seq.empty),
       ("n.prop1, n.prop3", "n.prop1 ASC, n.prop2 ASC, n.prop3 ASC", ASC, IndexOrderAscending, false, false, map_1 ++ map_3_cached, map_empty, expr_3_cached, Seq.empty, Seq.empty),
       ("n.prop1, n.prop3", "n.prop1 ASC, n.prop2 ASC, n.prop3 DESC", ASC, IndexOrderAscending, false, true, map_1 ++ map_3_cached, map_2_cached, expr_2_3_cached, desc_3, asc_1_2),
       ("n.prop1, n.prop3", "n.prop1 ASC, n.prop2 DESC, n.prop3 ASC", ASC, IndexOrderAscending, false, true, map_1 ++ map_3_cached, map_2_cached, expr_2_3_cached, desc_2_asc_3, asc_1),
-      ("n.prop1, n.prop3", "n.prop1 DESC, n.prop2 DESC, n.prop3 DESC", ASC, IndexOrderAscending, true, false, map_1 ++ map_3_cached, map_2_cached, expr_2_3_cached, desc_1_2_3, Seq.empty),
+      ("n.prop1, n.prop3", "n.prop1 DESC, n.prop2 DESC, n.prop3 DESC", ASC, IndexOrderNone, true, false, map_1 ++ map_3_cached, map_2_cached, expr_2_3_cached, desc_1_2_3, Seq.empty),
 
 
       // Descending index
-      ("n.prop1", "n.prop1 ASC, n.prop2 ASC, n.prop3 ASC", DESC, IndexOrderDescending, true, false, map_1, map_2_3_cached, expr_2_3_cached, asc_1_2_3, Seq.empty),
+      ("n.prop1", "n.prop1 ASC, n.prop2 ASC, n.prop3 ASC", DESC, IndexOrderNone, true, false, map_1, map_2_3_cached, expr_2_3_cached, asc_1_2_3, Seq.empty),
       ("n.prop1", "n.prop1 DESC, n.prop2 DESC, n.prop3 ASC", DESC, IndexOrderDescending, false, true, map_1, map_2_3_cached, expr_2_3_cached, asc_3, desc_1_2),
       ("n.prop1", "n.prop1 DESC, n.prop2 ASC, n.prop3 ASC", DESC, IndexOrderDescending, false, true, map_1, map_2_3_cached, expr_2_3_cached, asc_2_3, desc_1),
       ("n.prop1", "n.prop1 DESC, n.prop2 DESC, n.prop3 DESC", DESC, IndexOrderDescending, false, false, map_1, map_empty, expr, Seq.empty, Seq.empty),
-      ("n.prop2", "n.prop1 ASC, n.prop2 ASC, n.prop3 ASC", DESC, IndexOrderDescending, true, false, map_2_cached, map_1 ++ map_3_cached, expr_2_3_cached, asc_1_2_3, Seq.empty),
+      ("n.prop2", "n.prop1 ASC, n.prop2 ASC, n.prop3 ASC", DESC, IndexOrderNone, true, false, map_2_cached, map_1 ++ map_3_cached, expr_2_3_cached, asc_1_2_3, Seq.empty),
       ("n.prop2", "n.prop1 DESC, n.prop2 DESC, n.prop3 DESC", DESC, IndexOrderDescending, false, false, map_2_cached, map_empty, expr_2_cached, Seq.empty, Seq.empty),
-      ("n.prop3", "n.prop1 ASC, n.prop2 ASC, n.prop3 ASC", DESC, IndexOrderDescending, true, false, map_3_cached, map_1 ++ map_2_cached, expr_2_3_cached, asc_1_2_3, Seq.empty),
+      ("n.prop3", "n.prop1 ASC, n.prop2 ASC, n.prop3 ASC", DESC, IndexOrderNone, true, false, map_3_cached, map_1 ++ map_2_cached, expr_2_3_cached, asc_1_2_3, Seq.empty),
       ("n.prop3", "n.prop1 DESC, n.prop2 DESC, n.prop3 DESC", DESC, IndexOrderDescending, false, false, map_3_cached, map_empty, expr_3_cached, Seq.empty, Seq.empty),
 
-      ("n.prop1, n.prop2", "n.prop1 ASC, n.prop2 ASC, n.prop3 ASC", DESC, IndexOrderDescending, true, false, map_1 ++ map_2_cached, map_3_cached, expr_2_3_cached, asc_1_2_3, Seq.empty),
+      ("n.prop1, n.prop2", "n.prop1 ASC, n.prop2 ASC, n.prop3 ASC", DESC, IndexOrderNone, true, false, map_1 ++ map_2_cached, map_3_cached, expr_2_3_cached, asc_1_2_3, Seq.empty),
       ("n.prop1, n.prop2", "n.prop1 DESC, n.prop2 ASC, n.prop3 ASC", DESC, IndexOrderDescending, false, true, map_1 ++ map_2_cached, map_3_cached, expr_2_3_cached, asc_2_3, desc_1),
       ("n.prop1, n.prop2", "n.prop1 DESC, n.prop2 DESC, n.prop3 ASC", DESC, IndexOrderDescending, false, true, map_1 ++ map_2_cached, map_3_cached, expr_2_3_cached, asc_3, desc_1_2),
       ("n.prop1, n.prop2", "n.prop1 DESC, n.prop2 DESC, n.prop3 DESC", DESC, IndexOrderDescending, false, false, map_1 ++ map_2_cached, map_empty, expr_2_cached, Seq.empty, Seq.empty),
-      ("n.prop1, n.prop3", "n.prop1 ASC, n.prop2 ASC, n.prop3 ASC", DESC, IndexOrderDescending, true, false, map_1 ++ map_3_cached, map_2_cached, expr_2_3_cached, asc_1_2_3, Seq.empty),
+      ("n.prop1, n.prop3", "n.prop1 ASC, n.prop2 ASC, n.prop3 ASC", DESC, IndexOrderNone, true, false, map_1 ++ map_3_cached, map_2_cached, expr_2_3_cached, asc_1_2_3, Seq.empty),
       ("n.prop1, n.prop3", "n.prop1 DESC, n.prop2 ASC, n.prop3 ASC", DESC, IndexOrderDescending, false, true, map_1 ++ map_3_cached, map_2_cached, expr_2_3_cached, asc_2_3, desc_1),
       ("n.prop1, n.prop3", "n.prop1 DESC, n.prop2 DESC, n.prop3 ASC", DESC, IndexOrderDescending, false, true, map_1 ++ map_3_cached, map_2_cached, expr_2_3_cached, asc_3, desc_1_2),
       ("n.prop1, n.prop3", "n.prop1 DESC, n.prop2 DESC, n.prop3 DESC", DESC, IndexOrderDescending, false, false, map_1 ++ map_3_cached, map_empty, expr_3_cached, Seq.empty, Seq.empty),
@@ -1174,12 +1165,12 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTestBase(queryGraphSolve
       // Ascending index
       ("n.prop1 ASC, n.prop2 ASC",   ASC, IndexOrderAscending, false, Seq.empty),
       ("n.prop1 ASC, n.prop2 DESC",  ASC, IndexOrderAscending, false, Seq.empty), // Index gives ASC ASC, reports ASC DESC (true after filter at least)
-      ("n.prop1 DESC, n.prop2 ASC",  ASC, IndexOrderAscending, true,  Seq(Descending("n.prop1"), Ascending("n.prop2"))),
-      ("n.prop1 DESC, n.prop2 DESC", ASC, IndexOrderAscending, true,  Seq(Descending("n.prop1"), Descending("n.prop2"))),
+      ("n.prop1 DESC, n.prop2 ASC",  ASC, IndexOrderNone, true,  Seq(Descending("n.prop1"), Ascending("n.prop2"))),
+      ("n.prop1 DESC, n.prop2 DESC", ASC, IndexOrderNone, true,  Seq(Descending("n.prop1"), Descending("n.prop2"))),
 
       // Descending index
-      ("n.prop1 ASC, n.prop2 ASC",   DESC, IndexOrderDescending, true,  Seq(Ascending("n.prop1"), Ascending("n.prop2"))),
-      ("n.prop1 ASC, n.prop2 DESC",  DESC, IndexOrderDescending, true,  Seq(Ascending("n.prop1"), Descending("n.prop2"))),
+      ("n.prop1 ASC, n.prop2 ASC",   DESC, IndexOrderNone, true,  Seq(Ascending("n.prop1"), Ascending("n.prop2"))),
+      ("n.prop1 ASC, n.prop2 DESC",  DESC, IndexOrderNone, true,  Seq(Ascending("n.prop1"), Descending("n.prop2"))),
       ("n.prop1 DESC, n.prop2 ASC",  DESC, IndexOrderDescending, false, Seq.empty), // Index gives DESC DESC, reports DESC ASC (true after filter at least)
       ("n.prop1 DESC, n.prop2 DESC", DESC, IndexOrderDescending, false, Seq.empty),
 
@@ -1421,7 +1412,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTestBase(queryGraphSolve
   }
 
   // Tests (ASC, max), (DESC, min) -> interesting and provided order differs
-  for ((TestOrder(plannedOrder, _, orderCapability, _), functionName) <- List((ASCENDING, "max"), (DESCENDING, "min"))) {
+  for ((TestOrder(_, _, orderCapability, _), functionName) <- List((ASCENDING, "max"), (DESCENDING, "min"))) {
 
     test(s"$orderCapability-$functionName: cannot use provided index order with range") {
       val plan = new given {
@@ -1430,7 +1421,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTestBase(queryGraphSolve
 
       plan._2 should equal(
         Aggregation(
-          IndexSeek("n:Awesome(prop > 0)", indexOrder = plannedOrder, getValue = GetValue),
+          IndexSeek("n:Awesome(prop > 0)", getValue = GetValue),
           Map.empty,
           Map(s"$functionName(n.prop)" -> function(functionName, cachedNodeProp("n", "prop")))
         )

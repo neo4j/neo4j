@@ -179,20 +179,15 @@ case object planMatch extends MatchPlanner {
     val interestingOrder = query.interestingOrder
     if (isRhs)
       interestingOrder.asInteresting
-    else
-      query.horizon match {
-        case _: AggregatingQueryProjection =>
-          interestingOrder.asInteresting
-
-        case _ =>
-          val orderCandidate = interestingOrder.requiredOrderCandidate.order
-          val orderingDependencies = orderCandidate.flatMap(_.projections).flatMap(_._2.dependencies) ++ orderCandidate.flatMap(_.expression.dependencies)
-          val mutatingDependencies = query.queryGraph.mutatingPatterns.flatMap(_.dependencies)
-          if (orderingDependencies.exists(dep => mutatingDependencies.contains(dep.name)))
-            interestingOrder.asInteresting
-          else
-            interestingOrder
-      }
+    else {
+      val orderCandidate = interestingOrder.requiredOrderCandidate.order
+      val orderingDependencies = orderCandidate.flatMap(_.projections).flatMap(_._2.dependencies) ++ orderCandidate.flatMap(_.expression.dependencies)
+      val mutatingDependencies = query.queryGraph.mutatingPatterns.flatMap(_.dependencies)
+      if (orderingDependencies.exists(dep => mutatingDependencies.contains(dep.name)))
+        interestingOrder.asInteresting
+      else
+        interestingOrder
+    }
   }
 
   private def limitSelectivityForPart(query: SinglePlannerQuery, context: LogicalPlanningContext): Option[Selectivity] = {
