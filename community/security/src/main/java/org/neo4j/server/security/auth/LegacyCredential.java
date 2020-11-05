@@ -23,7 +23,6 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Arrays;
-import java.util.Random;
 
 import org.neo4j.kernel.impl.security.Credential;
 import org.neo4j.string.HexString;

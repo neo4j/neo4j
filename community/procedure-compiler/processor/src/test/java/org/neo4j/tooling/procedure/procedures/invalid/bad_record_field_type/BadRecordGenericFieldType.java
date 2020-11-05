@@ -19,8 +19,6 @@
  */
 package org.neo4j.tooling.procedure.procedures.invalid.bad_record_field_type;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 

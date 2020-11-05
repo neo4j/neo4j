@@ -39,8 +39,6 @@ import org.neo4j.values.AnyValue;
 import org.neo4j.values.ValueMapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.internal.helpers.collection.Iterators.asList;

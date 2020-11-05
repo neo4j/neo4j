@@ -152,13 +152,13 @@ public class ProcedureProcessorTest extends ExtensionTestBase
 
         compilation.withErrorContaining(
                 "Record definition error: type of field BadRecordGenericFieldType#wrongType1 is not supported" )
-                .in( record ).onLine( 34 );
+                .in( record ).onLine( 32 );
         compilation.withErrorContaining(
                 "Record definition error: type of field BadRecordGenericFieldType#wrongType2 is not supported" )
-                .in( record ).onLine( 35 );
+                .in( record ).onLine( 33 );
         compilation.withErrorContaining(
                 "Record definition error: type of field BadRecordGenericFieldType#wrongType3 is not supported" )
-                .in( record ).onLine( 36 );
+                .in( record ).onLine( 34 );
     }
 
     @Test

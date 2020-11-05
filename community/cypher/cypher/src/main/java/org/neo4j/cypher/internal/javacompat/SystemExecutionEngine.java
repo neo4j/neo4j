@@ -24,7 +24,6 @@ import org.neo4j.cypher.internal.CompilerLibrary;
 import org.neo4j.cypher.internal.cache.CaffeineCacheFactory;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.scheduler.JobScheduler;
 
 /**
  * This class is a specialized form of the ExecutionEngine containing two internal Cypher engines.

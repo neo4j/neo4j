@@ -25,7 +25,6 @@ import java.util.Set;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.impl.security.User;
 import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
 
 /**
  * A component that can store and retrieve users. Implementations must be thread safe.

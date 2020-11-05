@@ -43,8 +43,6 @@ import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.logging.AssertableLogProvider.Level;
-import org.neo4j.logging.LogAssertions;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.Values;
