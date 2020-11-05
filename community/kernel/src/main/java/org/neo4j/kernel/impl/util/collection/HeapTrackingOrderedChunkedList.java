@@ -69,19 +69,21 @@ public class HeapTrackingOrderedChunkedList<V> extends DefaultCloseListenable
     private final int chunkShiftAmount;
     private final MemoryTracker scopedMemoryTracker;
 
-    // Linked chunk list used to store key-value pairs in order
-    private Chunk<V> first;
-    private Chunk<V> current;
-    private int indexInCurrentChunk;
+    // Linked chunk list used to store values
+    private Chunk<V> firstChunk;
+    private Chunk<V> lastChunk;
+    private int indexInLastChunk;
+
+    // The range of the enumeration that the chunk list currently contains values for
     private long firstKey;
     private long lastKey;
 
-    public static <V> HeapTrackingOrderedChunkedList<V> createOrderedMap( MemoryTracker memoryTracker )
+    public static <V> HeapTrackingOrderedChunkedList<V> create( MemoryTracker memoryTracker )
     {
-        return createOrderedMap( memoryTracker, DEFAULT_CHUNK_SIZE );
+        return create( memoryTracker, DEFAULT_CHUNK_SIZE );
     }
 
-    public static <V> HeapTrackingOrderedChunkedList<V> createOrderedMap( MemoryTracker memoryTracker, int chunkSize )
+    public static <V> HeapTrackingOrderedChunkedList<V> create( MemoryTracker memoryTracker, int chunkSize )
     {
         Preconditions.requirePowerOfTwo( chunkSize );
         MemoryTracker scopedMemoryTracker = memoryTracker.getScopedMemoryTracker();
@@ -95,38 +97,39 @@ public class HeapTrackingOrderedChunkedList<V> extends DefaultCloseListenable
         this.chunkShiftAmount = Integer.numberOfTrailingZeros( chunkSize );
         this.firstKey = -1;
         this.lastKey = -1;
-        this.indexInCurrentChunk = 0;
+        this.indexInLastChunk = 0;
         this.scopedMemoryTracker = scopedMemoryTracker;
-        first = new Chunk<>( scopedMemoryTracker, chunkSize );
-        current = first;
+        firstChunk = new Chunk<>( scopedMemoryTracker, chunkSize );
+        lastChunk = firstChunk;
     }
 
     /**
-     * @param key
-     * @return the value at `key` index
+     * Get a value by key
+     *
+     * @return the value at `key` index in the enumeration
      */
     @SuppressWarnings( "unchecked" )
     public V get( long key )
     {
         long index = key - firstKey;
-        int chunkMask = chunkSize - 1;
-        int removedInFirstChunk = (int) (firstKey & chunkMask);
-
-        if ( index < 0 || index >= size() )
+        if ( index < 0 || index >= size() ) // NOTE: This should work even when firstKey == -1, because size() will be 0
         {
             return null;
         }
 
         Chunk<V> chunk;
+        int chunkMask = chunkSize - 1;
+
         // Check if the key is in the last chunk
         if ( key >>> chunkShiftAmount == lastKey >>> chunkShiftAmount )
         {
-            chunk = current;
+            chunk = lastChunk;
             index = key & chunkMask;
         }
         else // Start looking from the first chunk
         {
-            chunk = first;
+            chunk = firstChunk;
+            int removedInFirstChunk = (int) (firstKey & chunkMask);
             index += removedInFirstChunk;
         }
         while ( index >= chunkSize ) // find chunk in which the value should be removed
@@ -137,12 +140,17 @@ public class HeapTrackingOrderedChunkedList<V> extends DefaultCloseListenable
         return (V) chunk.values[(int) index];
     }
 
+    /**
+     * Get the first value
+     *
+     * @return the value of the first added key in the enumeration that has not been removed, or null if no keys exist
+     */
     @SuppressWarnings( "unchecked" )
     public V getFirst()
     {
-        if ( firstKey >= 0 && first != null )
+        if ( firstKey >= 0 && firstChunk != null )
         {
-            return (V) first.values[(int) (firstKey & (chunkSize - 1))];
+            return (V) firstChunk.values[(int) (firstKey & (chunkSize - 1))];
         }
         else
         {
@@ -151,43 +159,51 @@ public class HeapTrackingOrderedChunkedList<V> extends DefaultCloseListenable
     }
 
     /**
-     * Adds the value to the current chunk if possible, otherwise creates a new chunk and inserts the value in the new chunk.
+     * Add a value at the end of the enumeration, accessible at index {@link #lastKey()}, which is increased by 1.
+     * <p>
+     * Adds to the last chunk if possible, otherwise creates a new chunk and inserts the value in the new chunk.
+     * If all the elements in the last chunk has already been removed, it will be reused instead of allocating a new chunk.
      *
      * @param value the value to be inserted
      */
     public void add( V value )
     {
         boolean isEmpty = isEmpty();
-        if ( indexInCurrentChunk >= chunkSize )
+
+        // The last chunk may be full
+        if ( indexInLastChunk >= chunkSize )
         {
             // If the list is empty we can reuse the current chunk (which is expected to be the common case under ideal usage conditions)
             if ( !isEmpty )
             {
+                // Otherwise we need to allocate a new chunk
                 Chunk<V> newChunk = new Chunk<>( scopedMemoryTracker, chunkSize );
-                current.next = newChunk;
-                current = newChunk;
+                lastChunk.next = newChunk;
+                lastChunk = newChunk;
             }
-            indexInCurrentChunk = 0;
+            indexInLastChunk = 0;
         }
+
         if ( isEmpty )
         {
             // If the list is empty we need to update first
             firstKey++;
-            first = current;
+            firstChunk = lastChunk;
         }
 
         // Set the value
-        current.values[indexInCurrentChunk] = value;
+        lastChunk.values[indexInLastChunk] = value;
 
+        // Update last
         lastKey++;
-        indexInCurrentChunk++;
+        indexInLastChunk++;
     }
 
     /**
-     * Remove the value at `key` index.
+     * Remove the value at `key` index in the enumeration.
      *
-     * @param key
-     * @return the value that was removed.
+     * @param key The enumeration
+     * @return the value that was removed, or null if it was not found or has already been removed.
      */
     @SuppressWarnings( "unchecked" )
     public V remove( long key )
@@ -196,7 +212,7 @@ public class HeapTrackingOrderedChunkedList<V> extends DefaultCloseListenable
         {
             return null;
         }
-        Chunk<V> chunk = first;
+        Chunk<V> chunk = firstChunk;
 
         // Find chunk and index where the value should be removed
         long i = (key - firstKey) + (firstKey & (chunkSize - 1));
@@ -224,22 +240,25 @@ public class HeapTrackingOrderedChunkedList<V> extends DefaultCloseListenable
      */
     private void updateFirstKey()
     {
-        int removedInFirstChunk = (int) (firstKey & (chunkSize - 1));
-        while ( firstKey < lastKey && first.values[removedInFirstChunk] == null )
+        int removedInFirstChunk = ((int) firstKey) & (chunkSize - 1);
+        while ( firstKey < lastKey && firstChunk.values[removedInFirstChunk] == null )
         {
             firstKey++;
             removedInFirstChunk++;
             if ( removedInFirstChunk >= chunkSize )
             {
                 removedInFirstChunk = 0;
-                first.close( scopedMemoryTracker );
-                first = first.next;
+                firstChunk.close( scopedMemoryTracker );
+                firstChunk = firstChunk.next;
             }
         }
     }
 
     /*
-     * The size of the
+     * The current size of the range of accessible elements.
+     *
+     * NOTE: Elements that have been removed _within_ this range are included in the size,
+     * so it is _not_ the same as numberOfElements
      *
      * E.g. if we have 3 chunks with chunk size 4:
      *
@@ -247,7 +266,7 @@ public class HeapTrackingOrderedChunkedList<V> extends DefaultCloseListenable
      *
      * then
      * firstKey = 3
-     * indexInCurrentChunk = 2
+     * lastKey = 9
      * size = 7 ([4, null, 3, 2, 4, 4, 3])
      */
     private long size()
@@ -255,20 +274,23 @@ public class HeapTrackingOrderedChunkedList<V> extends DefaultCloseListenable
         return isEmpty() ? 0 : lastKey - firstKey + 1;
     }
 
+    /*
+     * Do we have any values
+     */
     private boolean isEmpty()
     {
         return getFirst() == null;
     }
 
     /**
-     * Apply the function for each index-value pair in the list.
+     * Apply the function for each key-value pair in the list.
      */
     @SuppressWarnings( "unchecked" )
     public void foreach( BiConsumer<Long,V> fun )
     {
-        Chunk<V> chunk = first;
+        Chunk<V> chunk = firstChunk;
         long key = firstKey;
-        int index = (int) (key & (chunkSize - 1));
+        int index = ((int) key) & (chunkSize - 1);
         while ( key <= lastKey )
         {
             if ( index >= chunkSize )
@@ -287,7 +309,7 @@ public class HeapTrackingOrderedChunkedList<V> extends DefaultCloseListenable
     }
 
     /**
-     * @return The last added key or -1 if no key exists
+     * @return The last added key or -1 if no keys exist
      */
     public long lastKey()
     {
@@ -302,15 +324,15 @@ public class HeapTrackingOrderedChunkedList<V> extends DefaultCloseListenable
     @Override
     public void closeInternal()
     {
-        first = null;
-        current = null;
+        firstChunk = null;
+        lastChunk = null;
         scopedMemoryTracker.close();
     }
 
     @Override
     public boolean isClosed()
     {
-        return first == null;
+        return firstChunk == null;
     }
 
     public Iterator<V> iterator()
@@ -331,7 +353,7 @@ public class HeapTrackingOrderedChunkedList<V> extends DefaultCloseListenable
         private int index;
 
         {
-            chunk = first;
+            chunk = firstChunk;
             index = (int) (firstKey & (chunkSize - 1));
         }
 
@@ -376,6 +398,7 @@ public class HeapTrackingOrderedChunkedList<V> extends DefaultCloseListenable
     private static class Chunk<V>
     {
         private static final long SHALLOW_SIZE = shallowSizeOfInstance( Chunk.class );
+
         private final Object[] values;
         private Chunk<V> next;
 

@@ -35,6 +35,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.kernel.impl.util.collection.HeapTrackingOrderedChunkedList.DEFAULT_CHUNK_SIZE;
 
 class HeapTrackingOrderedChunkedListTest
@@ -82,6 +83,8 @@ class HeapTrackingOrderedChunkedListTest
         assertNull( table.get( 1 ) );
         assertNull( table.get( 2 ) );
         assertNull( table.getFirst() );
+        table.foreach( ( k, v ) -> fail() );
+        assertFalse( table.iterator().hasNext() );
 
         table.add( 42L );
 
@@ -90,6 +93,11 @@ class HeapTrackingOrderedChunkedListTest
         assertNull( table.get( 2 ) );
         assertEquals( 42L, table.get( 3 ) );
         assertEquals( 42L, table.getFirst() );
+        table.foreach( ( k, v ) -> assertEquals( 42L, v ) );
+        Iterator<Long> it = table.iterator();
+        assertTrue( it.hasNext() );
+        assertEquals( 42L, it.next() );
+        assertFalse( it.hasNext() );
 
         table.add( null );
         table.add( null );
@@ -99,43 +107,56 @@ class HeapTrackingOrderedChunkedListTest
         assertNull( table.get( 5 ) );
         assertNull( table.get( 6 ) );
         assertEquals( 42L, table.getFirst() );
+        table.foreach( ( k, v ) -> assertEquals( 42L, v ) );
+        Iterator<Long> it2 = table.iterator();
+        assertTrue( it2.hasNext() );
+        assertEquals( 42L, it2.next() );
+        assertFalse( it2.hasNext() );
+
+        table.remove( 3 );
+        assertNull( table.get( 0 ) );
+        assertNull( table.get( 1 ) );
+        assertNull( table.get( 2 ) );
+        assertNull( table.getFirst() );
+        table.foreach( ( k, v ) -> fail() );
+        assertFalse( table.iterator().hasNext() );
     }
 
     @Test
     void remove()
     {
-        int size = 10000;
+        long size = 10000;
 
         // add 0, .., 4999
-        for ( int i = 0; i < size / 2; i++ )
+        for ( long i = 0; i < size / 2; i++ )
         {
-            table.add( Long.valueOf( i + 1 ) );
+            table.add( i + 1 );
         }
 
         // remove 0, .., 2499
-        for ( int i = 0; i < size / 4; i++ )
+        for ( long i = 0; i < size / 4; i++ )
         {
-            table.remove( Long.valueOf( i ) );
+            table.remove( i );
         }
 
         // add 5000, .., 9999
-        for ( int i = size / 2; i < size; i++ )
+        for ( long i = size / 2; i < size; i++ )
         {
-            table.add( Long.valueOf( i + 1 ) );
+            table.add( i + 1 );
         }
 
         // remove 9901
         table.remove( 9901 );
 
-        for ( int i = 0; i < size; i++ )
+        for ( long i = 0; i < size; i++ )
         {
             if ( i < size / 4 || i == 9901 )
             {
-                assertEquals( null, table.get( i ) );
+                assertNull( table.get( i ) );
             }
             else
             {
-                assertEquals( Long.valueOf( i + 1 ), table.get( i ) );
+                assertEquals( i + 1, table.get( i ) );
             }
         }
     }
@@ -143,24 +164,24 @@ class HeapTrackingOrderedChunkedListTest
     @Test
     void foreach()
     {
-        int size = 10000;
+        long size = 10000;
 
         // add 0, .., 4999
-        for ( int i = 0; i < 5000; i++ )
+        for ( long i = 0; i < 5000; i++ )
         {
-            table.add( (long) i );
+            table.add( i );
         }
 
         // remove 0, .., 2499
-        for ( int i = 0; i < 2500; i++ )
+        for ( long i = 0; i < 2500; i++ )
         {
             table.remove( i );
         }
 
         // add 5000, .., 9999
-        for ( int i = 5000; i < size; i++ )
+        for ( long i = 5000; i < size; i++ )
         {
-            table.add( (long) i );
+            table.add( i );
         }
 
         // remove 9901
@@ -184,7 +205,7 @@ class HeapTrackingOrderedChunkedListTest
     @Test
     void removeAtChunkBoundaries()
     {
-        int size = DEFAULT_CHUNK_SIZE;
+        int size = Math.max( DEFAULT_CHUNK_SIZE, 4 );
 
         for ( int i = 0; i < size * 3 + 1; i++ )
         {
@@ -314,33 +335,42 @@ class HeapTrackingOrderedChunkedListTest
     }
 
     @Test
+    void getWhenEmpty()
+    {
+        assertNull( table.get( -1 ) );
+        assertNull( table.get( 0 ) );
+        assertNull( table.get( DEFAULT_CHUNK_SIZE - 1 ) );
+        assertNull( table.get( DEFAULT_CHUNK_SIZE ) );
+    }
+
+    @Test
     void valuesIterator()
     {
-        int size = 10000;
+        long size = 10000;
 
         // add 0, .., 4999
-        for ( int i = 0; i < size / 2; i++ )
+        for ( long i = 0; i < size / 2; i++ )
         {
-            table.add( (long) i );
+            table.add( i );
         }
 
         // remove 0, .., 2499
-        for ( int i = 0; i < size / 4; i++ )
+        for ( long i = 0; i < size / 4; i++ )
         {
             table.remove( i );
         }
 
         // add 5000, .., 9999
-        for ( int i = size / 2; i < size; i++ )
+        for ( long i = size / 2; i < size; i++ )
         {
-            table.add( (long) i );
+            table.add( i );
         }
 
         // remove 9901
         table.remove( 9901 );
 
         Iterator<Long> it = table.iterator();
-        for ( int i = size / 4; i < size - 1; i++ )
+        for ( long i = size / 4; i < size - 1; i++ )
         {
             assertTrue( it.hasNext() );
             Long entry = it.next();
