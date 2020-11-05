@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.function.LongPredicate;
 
 import org.neo4j.common.EntityType;
+import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
@@ -65,10 +66,10 @@ class FulltextIndexTransactionState implements Closeable
     private long lastUpdateRevision;
     private SearcherReference currentSearcher;
 
-    FulltextIndexTransactionState( IndexDescriptor descriptor, Analyzer analyzer, String[] propertyNames )
+    FulltextIndexTransactionState( IndexDescriptor descriptor, Config config, Analyzer analyzer, String[] propertyNames )
     {
         toCloseLater = new ArrayList<>();
-        writer = new TransactionStateLuceneIndexWriter( analyzer );
+        writer = new TransactionStateLuceneIndexWriter( config, analyzer );
         modifiedEntityIdsInThisTransaction = new LongHashSet();
         visitingNodes = descriptor.schema().entityType() == EntityType.NODE;
         txStateVisitor = new FulltextIndexTransactionStateVisitor( descriptor, propertyNames, modifiedEntityIdsInThisTransaction, writer );

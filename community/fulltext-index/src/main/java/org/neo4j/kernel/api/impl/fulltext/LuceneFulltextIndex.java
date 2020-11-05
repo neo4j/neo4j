@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.impl.index.AbstractLuceneIndex;
 import org.neo4j.kernel.api.impl.index.SearcherReference;
@@ -36,6 +37,7 @@ import org.neo4j.token.api.TokenHolder;
 
 public class LuceneFulltextIndex extends AbstractLuceneIndex<FulltextIndexReader> implements Closeable
 {
+    private final Config config;
     private final Analyzer analyzer;
     private final TokenHolder propertyKeyTokenHolder;
     private final String[] propertyNames;
@@ -43,10 +45,11 @@ public class LuceneFulltextIndex extends AbstractLuceneIndex<FulltextIndexReader
     private final IndexDescriptor descriptor;
 
     LuceneFulltextIndex( PartitionedIndexStorage storage, IndexPartitionFactory partitionFactory, IndexDescriptor descriptor,
-            TokenHolder propertyKeyTokenHolder, Analyzer analyzer, String[] propertyNames )
+            TokenHolder propertyKeyTokenHolder, Config config, Analyzer analyzer, String[] propertyNames )
     {
         super( storage, partitionFactory, descriptor );
         this.descriptor = descriptor;
+        this.config = config;
         this.analyzer = analyzer;
         this.propertyNames = propertyNames;
         this.propertyKeyTokenHolder = propertyKeyTokenHolder;
@@ -84,6 +87,6 @@ public class LuceneFulltextIndex extends AbstractLuceneIndex<FulltextIndexReader
     protected FulltextIndexReader createPartitionedReader( List<AbstractIndexPartition> partitions ) throws IOException
     {
         List<SearcherReference> searchers = acquireSearchers( partitions );
-        return new FulltextIndexReader( searchers, propertyKeyTokenHolder, getDescriptor(), analyzer, propertyNames );
+        return new FulltextIndexReader( searchers, propertyKeyTokenHolder, getDescriptor(), config, analyzer, propertyNames );
     }
 }

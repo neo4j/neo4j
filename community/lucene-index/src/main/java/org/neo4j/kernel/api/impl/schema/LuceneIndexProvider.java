@@ -103,7 +103,7 @@ public class LuceneIndexProvider extends IndexProvider
                                         .withOperationalMode( isSingleInstance )
                                         .withSamplingConfig( samplingConfig )
                                         .withIndexStorage( getIndexStorage( descriptor.getId() ) )
-                                        .withWriterConfig( IndexWriterConfigs::population )
+                                        .withWriterConfig( () -> IndexWriterConfigs.population( config ) )
                                         .build();
         if ( luceneIndex.isReadOnly() )
         {

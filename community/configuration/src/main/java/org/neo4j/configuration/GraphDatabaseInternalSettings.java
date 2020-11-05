@@ -587,4 +587,29 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
 
     @Internal
     public static Setting<Integer> index_populator_merge_factor = newBuilder( "unsupported.dbms.index.populator_merge_factor", INT, 8 ).build();
+
+    @Internal
+    public static Setting<Integer> lucene_writer_max_buffered_docs =
+            newBuilder( "unsupported.dbms.index.lucene.writer_max_buffered_docs", INT, 100000 ).build();
+
+    @Internal
+    public static Setting<Integer> lucene_population_max_buffered_docs =
+            newBuilder( "unsupported.dbms.index.lucene.population_max_buffered_docs", INT, null ).build();
+
+    @Internal
+    public static Setting<Integer> lucene_merge_factor = newBuilder( "unsupported.dbms.index.lucene.merge_factor", INT, 2 ).build();
+
+    @Internal
+    public static Setting<Double> lucene_nocfs_ratio = newBuilder( "unsupported.dbms.index.lucene.nocfs.ratio", DOUBLE, 1.0 ).build();
+
+    @Internal
+    public static Setting<Double> lucene_min_merge = newBuilder( "unsupported.dbms.index.lucene.min_merge", DOUBLE, 0.1 ).build();
+
+    @Internal
+    public static Setting<Double> lucene_standard_ram_buffer_size =
+            newBuilder( "unsupported.dbms.index.lucene.standard_ram_buffer_size", DOUBLE, null ).build();
+
+    @Internal
+    public static Setting<Double> lucene_population_ram_buffer_size =
+            newBuilder( "unsupported.dbms.index.lucene.population_ram_buffer_size", DOUBLE, 50D ).build();
 }

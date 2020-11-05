@@ -31,6 +31,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
@@ -71,7 +72,7 @@ class SimpleUniquenessVerifierTest
     {
         dirFactory = new DirectoryFactory.InMemoryDirectoryFactory();
         Directory dir = dirFactory.open( testDir.directory( "test" ) );
-        writer = new IndexWriter( dir, IndexWriterConfigs.standard() );
+        writer = new IndexWriter( dir, IndexWriterConfigs.standard( Config.defaults() ) );
         searcherManager = new SearcherManager( writer, new Neo4jSearcherFactory() );
     }
 

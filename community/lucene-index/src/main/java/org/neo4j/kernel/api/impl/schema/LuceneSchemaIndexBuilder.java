@@ -22,6 +22,8 @@ package org.neo4j.kernel.api.impl.schema;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 
+import java.util.function.Supplier;
+
 import org.neo4j.configuration.Config;
 import org.neo4j.function.Factory;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -44,13 +46,14 @@ public class LuceneSchemaIndexBuilder extends AbstractLuceneIndexBuilder<LuceneS
 {
     private final IndexDescriptor descriptor;
     private IndexSamplingConfig samplingConfig;
-    private Factory<IndexWriterConfig> writerConfigFactory = IndexWriterConfigs::standard;
+    private Supplier<IndexWriterConfig> writerConfigFactory;
 
     private LuceneSchemaIndexBuilder( IndexDescriptor descriptor, Config config )
     {
         super( config );
         this.descriptor = descriptor;
         this.samplingConfig = new IndexSamplingConfig( config );
+        this.writerConfigFactory = () -> IndexWriterConfigs.standard( config );
     }
 
     /**
@@ -82,7 +85,7 @@ public class LuceneSchemaIndexBuilder extends AbstractLuceneIndexBuilder<LuceneS
      * @param writerConfigFactory the supplier of writer configs
      * @return index builder
      */
-    public LuceneSchemaIndexBuilder withWriterConfig( Factory<IndexWriterConfig> writerConfigFactory )
+    public LuceneSchemaIndexBuilder withWriterConfig( Supplier<IndexWriterConfig> writerConfigFactory )
     {
         this.writerConfigFactory = writerConfigFactory;
         return this;

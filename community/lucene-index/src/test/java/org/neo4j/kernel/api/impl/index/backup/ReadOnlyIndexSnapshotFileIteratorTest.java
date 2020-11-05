@@ -33,6 +33,7 @@ import java.nio.file.Path;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
@@ -93,7 +94,7 @@ public class ReadOnlyIndexSnapshotFileIteratorTest
 
     private void prepareIndex() throws IOException
     {
-        try ( IndexWriter writer = new IndexWriter( dir, IndexWriterConfigs.standard() ) )
+        try ( IndexWriter writer = new IndexWriter( dir, IndexWriterConfigs.standard( Config.defaults() ) ) )
         {
             insertRandomDocuments( writer );
         }
@@ -120,5 +121,4 @@ public class ReadOnlyIndexSnapshotFileIteratorTest
                 .filter( file -> !IndexWriter.WRITE_LOCK_NAME.equals( file ) )
                 .collect( toSet() );
     }
-
 }

@@ -28,6 +28,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.nio.file.Path;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
 import org.neo4j.kernel.api.impl.index.SearcherReference;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
@@ -41,7 +42,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 @TestDirectoryExtension
 class IndexPartitionFactoryTest
 {
-
     @Inject
     private TestDirectory testDirectory;
     private Directory directory;
@@ -67,7 +67,7 @@ class IndexPartitionFactoryTest
     void createWritablePartition() throws Exception
     {
         try ( AbstractIndexPartition indexPartition =
-                      new WritableIndexPartitionFactory( IndexWriterConfigs::standard )
+                      new WritableIndexPartitionFactory( () -> IndexWriterConfigs.standard( Config.defaults() ) )
                               .createPartition( testDirectory.homePath(), directory ) )
         {
 
@@ -88,7 +88,7 @@ class IndexPartitionFactoryTest
     {
         Path location = testDirectory.homePath();
         try ( AbstractIndexPartition ignored =
-                      new WritableIndexPartitionFactory( IndexWriterConfigs::standard )
+                      new WritableIndexPartitionFactory( () -> IndexWriterConfigs.standard( Config.defaults() ) )
                               .createPartition( location, DirectoryFactory.PERSISTENT.open( location ) ) )
         {
             // empty

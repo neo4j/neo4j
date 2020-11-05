@@ -33,9 +33,9 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.Supplier;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.function.Factory;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.helpers.Strings;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -79,7 +79,7 @@ class LuceneSchemaIndexUniquenessVerificationIT
     {
         System.setProperty( "luceneSchemaIndex.maxPartitionSize", String.valueOf( DOCS_PER_PARTITION ) );
 
-        Factory<IndexWriterConfig> configFactory = new TestConfigFactory();
+        Supplier<IndexWriterConfig> configFactory = new TestConfigFactory( Config.defaults() );
         index = LuceneSchemaIndexBuilder.create( descriptor, Config.defaults() )
                 .withFileSystem( fileSystem )
                 .withIndexRootFolder( testDir.directory( "uniquenessVerification" ).resolve( "index" ) )
@@ -206,13 +206,19 @@ class LuceneSchemaIndexUniquenessVerificationIT
         return ThreadLocalRandom.current().nextInt( min, max );
     }
 
-    private static class TestConfigFactory implements Factory<IndexWriterConfig>
+    private static class TestConfigFactory implements Supplier<IndexWriterConfig>
     {
+        private final Config config;
+
+        TestConfigFactory( Config config )
+        {
+            this.config = config;
+        }
 
         @Override
-        public IndexWriterConfig newInstance()
+        public IndexWriterConfig get()
         {
-            IndexWriterConfig verboseConfig = IndexWriterConfigs.standard();
+            IndexWriterConfig verboseConfig = IndexWriterConfigs.standard( config );
             verboseConfig.setCodec( Codec.getDefault() );
             return verboseConfig;
         }

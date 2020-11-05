@@ -43,6 +43,7 @@ import java.util.List;
 import java.util.function.LongPredicate;
 
 import org.neo4j.common.EntityType;
+import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.QueryContext;
@@ -77,7 +78,7 @@ public class FulltextIndexReader implements IndexReader
     private final String[] propertyNames;
     private final FulltextIndexTransactionState transactionState;
 
-    FulltextIndexReader( List<SearcherReference> searchers, TokenHolder propertyKeyTokenHolder, IndexDescriptor descriptor,
+    FulltextIndexReader( List<SearcherReference> searchers, TokenHolder propertyKeyTokenHolder, IndexDescriptor descriptor, Config config,
             Analyzer analyzer, String[] propertyNames )
     {
         this.searchers = searchers;
@@ -85,7 +86,7 @@ public class FulltextIndexReader implements IndexReader
         this.index = descriptor;
         this.analyzer = analyzer;
         this.propertyNames = propertyNames;
-        this.transactionState = new FulltextIndexTransactionState( descriptor, analyzer, propertyNames );
+        this.transactionState = new FulltextIndexTransactionState( descriptor, config, analyzer, propertyNames );
     }
 
     @Override

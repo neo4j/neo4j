@@ -26,7 +26,16 @@ import org.apache.lucene.index.KeepOnlyLastCommitDeletionPolicy;
 import org.apache.lucene.index.LogByteSizeMergePolicy;
 import org.apache.lucene.index.SnapshotDeletionPolicy;
 
-import org.neo4j.util.FeatureToggles;
+import org.neo4j.configuration.Config;
+import org.neo4j.graphdb.config.Setting;
+
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.lucene_merge_factor;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.lucene_min_merge;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.lucene_nocfs_ratio;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.lucene_population_max_buffered_docs;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.lucene_population_ram_buffer_size;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.lucene_standard_ram_buffer_size;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.lucene_writer_max_buffered_docs;
 
 /**
  * Helper factory for standard lucene index writer configuration.
@@ -35,63 +44,58 @@ public final class IndexWriterConfigs
 {
     private static final Analyzer KEYWORD_ANALYZER = new KeywordAnalyzer();
 
-    private static final int MAX_BUFFERED_DOCS = FeatureToggles.getInteger( IndexWriterConfigs.class, "max_buffered_docs", 100000 );
-    private static final int POPULATION_MAX_BUFFERED_DOCS =
-            FeatureToggles.getInteger( IndexWriterConfigs.class, "population_max_buffered_docs", IndexWriterConfig.DISABLE_AUTO_FLUSH );
-    private static final int MERGE_POLICY_MERGE_FACTOR = FeatureToggles.getInteger( IndexWriterConfigs.class, "merge.factor", 2 );
-    private static final double MERGE_POLICY_NO_CFS_RATIO = FeatureToggles.getDouble( IndexWriterConfigs.class, "nocfs.ratio", 1.0 );
-    private static final double MERGE_POLICY_MIN_MERGE_MB = FeatureToggles.getDouble( IndexWriterConfigs.class, "min.merge", 0.1 );
-
-    private static final double STANDARD_RAM_BUFFER_SIZE_MB =
-            FeatureToggles.getDouble( IndexWriterConfigs.class, "standard.ram.buffer.size", IndexWriterConfig.DEFAULT_RAM_BUFFER_SIZE_MB );
-    private static final double POPULATION_RAM_BUFFER_SIZE_MB = FeatureToggles.getDouble( IndexWriterConfigs.class, "population.ram.buffer.size", 50 );
-
     private IndexWriterConfigs()
     {
         throw new AssertionError( "Not for instantiation!" );
     }
 
-    public static IndexWriterConfig standard()
+    public static IndexWriterConfig standard( Config config )
     {
-        return standard( KEYWORD_ANALYZER );
+        return standard( config, KEYWORD_ANALYZER );
     }
 
-    public static IndexWriterConfig standard( Analyzer analyzer )
+    public static IndexWriterConfig standard( Config config, Analyzer analyzer )
     {
         IndexWriterConfig writerConfig = new IndexWriterConfig( analyzer );
 
-        writerConfig.setMaxBufferedDocs( MAX_BUFFERED_DOCS );
+        writerConfig.setMaxBufferedDocs( config.get( lucene_writer_max_buffered_docs ) );
         writerConfig.setIndexDeletionPolicy( new SnapshotDeletionPolicy( new KeepOnlyLastCommitDeletionPolicy() ) );
         writerConfig.setUseCompoundFile( true );
-        writerConfig.setRAMBufferSizeMB( STANDARD_RAM_BUFFER_SIZE_MB );
+        writerConfig.setRAMBufferSizeMB( getConfigWithDefault( config, lucene_standard_ram_buffer_size, IndexWriterConfig.DEFAULT_RAM_BUFFER_SIZE_MB ) );
 
         LogByteSizeMergePolicy mergePolicy = new LogByteSizeMergePolicy();
-        mergePolicy.setNoCFSRatio( MERGE_POLICY_NO_CFS_RATIO );
-        mergePolicy.setMinMergeMB( MERGE_POLICY_MIN_MERGE_MB );
-        mergePolicy.setMergeFactor( MERGE_POLICY_MERGE_FACTOR );
+        mergePolicy.setNoCFSRatio( config.get( lucene_nocfs_ratio ) );
+        mergePolicy.setMinMergeMB( config.get( lucene_min_merge ) );
+        mergePolicy.setMergeFactor( config.get( lucene_merge_factor ) );
         writerConfig.setMergePolicy( mergePolicy );
 
         return writerConfig;
     }
 
-    public static IndexWriterConfig population()
+    public static IndexWriterConfig population( Config config )
     {
-        return population( KEYWORD_ANALYZER );
+        return population( config, KEYWORD_ANALYZER );
     }
 
-    public static IndexWriterConfig population( Analyzer analyzer )
+    public static IndexWriterConfig population( Config config, Analyzer analyzer )
     {
-        IndexWriterConfig writerConfig = standard( analyzer );
-        writerConfig.setMaxBufferedDocs( POPULATION_MAX_BUFFERED_DOCS );
-        writerConfig.setRAMBufferSizeMB( POPULATION_RAM_BUFFER_SIZE_MB );
+        IndexWriterConfig writerConfig = standard( config, analyzer );
+        writerConfig.setMaxBufferedDocs( getConfigWithDefault( config, lucene_population_max_buffered_docs, IndexWriterConfig.DISABLE_AUTO_FLUSH ) );
+        writerConfig.setRAMBufferSizeMB( config.get( lucene_population_ram_buffer_size ) );
         return writerConfig;
     }
 
-    public static IndexWriterConfig transactionState( Analyzer analyzer )
+    public static IndexWriterConfig transactionState( Config config, Analyzer analyzer )
     {
-        IndexWriterConfig config = standard( analyzer );
+        IndexWriterConfig writerConfig = standard( config, analyzer );
         // Index transaction state is never directly persisted, so never commit it on close.
-        config.setCommitOnClose( false );
-        return config;
+        writerConfig.setCommitOnClose( false );
+        return writerConfig;
+    }
+
+    public static <T> T getConfigWithDefault( Config config, Setting<T> setting, T defaultValue )
+    {
+        T value = config.get( setting );
+        return value != null ? value : defaultValue;
     }
 }

@@ -31,6 +31,7 @@ import org.apache.lucene.store.RAMDirectory;
 import java.io.Closeable;
 import java.io.IOException;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
 import org.neo4j.kernel.api.impl.index.SearcherReference;
@@ -39,12 +40,14 @@ import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
 
 class TransactionStateLuceneIndexWriter implements LuceneIndexWriter, Closeable
 {
+    private final Config config;
     private final Analyzer analyzer;
     private IndexWriter writer;
     private final Directory directory;
 
-    TransactionStateLuceneIndexWriter( Analyzer analyzer )
+    TransactionStateLuceneIndexWriter( Config config, Analyzer analyzer )
     {
+        this.config = config;
         this.analyzer = analyzer;
         directory = new RAMDirectory();
     }
@@ -91,7 +94,7 @@ class TransactionStateLuceneIndexWriter implements LuceneIndexWriter, Closeable
 
     private void openWriter() throws IOException
     {
-        writer = new IndexWriter( directory, IndexWriterConfigs.transactionState( analyzer ) );
+        writer = new IndexWriter( directory, IndexWriterConfigs.transactionState( config, analyzer ) );
     }
 
     SearcherReference getNearRealTimeSearcher() throws IOException

@@ -48,5 +48,4 @@ public interface Configuration
             return null;
         }
     };
-
 }

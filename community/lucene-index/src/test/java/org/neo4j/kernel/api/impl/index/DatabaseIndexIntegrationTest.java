@@ -50,6 +50,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.function.Supplier;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.api.impl.index.partition.AbstractIndexPartition;
 import org.neo4j.kernel.api.impl.index.partition.IndexPartitionFactory;
@@ -237,7 +238,7 @@ class DatabaseIndexIntegrationTest
         WritableTestDatabaseIndex( PartitionedIndexStorage indexStorage )
         {
             super( new TestLuceneIndex( indexStorage,
-                    new WritableIndexPartitionFactory( IndexWriterConfigs::standard ) ) );
+                    new WritableIndexPartitionFactory( () -> IndexWriterConfigs.standard( Config.defaults() ) ) ) );
         }
     }
 

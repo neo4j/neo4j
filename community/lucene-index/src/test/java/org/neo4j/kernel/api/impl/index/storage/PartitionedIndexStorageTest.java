@@ -36,6 +36,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -227,7 +228,7 @@ class PartitionedIndexStorageTest
     {
         Path folder = createRandomFolder( rootFolder );
         Directory directory = directoryFactory.open( folder );
-        try ( IndexWriter writer = new IndexWriter( directory, IndexWriterConfigs.standard() ) )
+        try ( IndexWriter writer = new IndexWriter( directory, IndexWriterConfigs.standard( Config.defaults() ) ) )
         {
             writer.addDocument( randomDocument() );
             writer.commit();
