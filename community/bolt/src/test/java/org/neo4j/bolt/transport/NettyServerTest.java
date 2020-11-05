@@ -27,6 +27,7 @@ import org.junit.jupiter.api.Test;
 import java.net.InetSocketAddress;
 import java.nio.channels.ServerSocketChannel;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.configuration.helpers.PortBindException;
@@ -63,7 +64,8 @@ class NettyServerTest
             var address = new SocketAddress( "localhost", port );
 
             // When
-            server = new NettyServer( newThreadFactory(), protocolOnAddress( address ), new ConnectorPortRegister(), NullLogService.getInstance() );
+            server = new NettyServer( newThreadFactory(), protocolOnAddress( address ), new ConnectorPortRegister(), NullLogService.getInstance(),
+                    Config.defaults() );
 
             // Then
             assertThrows( PortBindException.class, server::start );
@@ -79,7 +81,7 @@ class NettyServerTest
 
         // When
         server = new NettyServer( newThreadFactory(), protocolOnAddress( address ), protocolOnAddress( address ), new ConnectorPortRegister(),
-                                  NullLogService.getInstance() );
+                                  NullLogService.getInstance(), Config.defaults() );
 
         // Then
         assertThrows( PortBindException.class, server::start );
@@ -92,7 +94,7 @@ class NettyServerTest
         var portRegister = new ConnectorPortRegister();
 
         var address = new SocketAddress( "localhost", 0 );
-        server = new NettyServer( newThreadFactory(), protocolOnAddress( address ), portRegister, NullLogService.getInstance() );
+        server = new NettyServer( newThreadFactory(), protocolOnAddress( address ), portRegister, NullLogService.getInstance(), Config.defaults() );
 
         assertNull( portRegister.getLocalAddress( connector ) );
 
@@ -115,7 +117,7 @@ class NettyServerTest
         var external = new SocketAddress( "localhost", 0 );
         var internal = new SocketAddress( "localhost", 0 );
         server = new NettyServer( newThreadFactory(), protocolOnAddress( internal ),
-                                  protocolOnAddress( external ), portRegister, NullLogService.getInstance() );
+                                  protocolOnAddress( external ), portRegister, NullLogService.getInstance(), Config.defaults() );
 
         assertNull( portRegister.getLocalAddress( BoltConnector.NAME ) );
 

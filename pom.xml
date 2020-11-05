@@ -88,8 +88,6 @@
       -Dorg.neo4j.internal.unsafe.UnsafeUtil.CHECK_NATIVE_ACCESS=true
       -Dorg.neo4j.io.pagecache.impl.muninn.usePreciseCursorErrorStackTraces=true
       -Dorg.neo4j.codegen.bytecode.ByteCodeExpressionVisitor.checkByteCode=false
-      -Dorg.neo4j.bolt.transport.NettyServer.shutdownQuietPeriod=0
-      -Dorg.neo4j.bolt.transport.NettyServer.shutdownTimeout=3
       -Dorg.neo4j.kernel.impl.scheduler.ThreadPool.shutdownTimeout=2
       -Djunit.jupiter.extensions.autodetection.enabled=true
       -Djunit.jupiter.execution.parallel.enabled=true

@@ -20,10 +20,12 @@
 package org.neo4j.test;
 
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.Map;
 import java.util.function.Predicate;
 
+import org.neo4j.bolt.BoltSettings;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
@@ -151,6 +153,8 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
                      .setDefault( GraphDatabaseInternalSettings.track_tx_statement_close, true )
                      .setDefault( GraphDatabaseInternalSettings.trace_tx_statements, true )
                      .setDefault( GraphDatabaseInternalSettings.track_cursor_close, true )
+                     .setDefault( BoltSettings.netty_server_shutdown_quiet_period, 0 )
+                     .setDefault( BoltSettings.netty_server_shutdown_timeout, Duration.ofSeconds( 3 ) )
                 .build();
     }
 

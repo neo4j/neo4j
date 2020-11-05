@@ -32,9 +32,11 @@ import java.util.List;
 import java.util.concurrent.ThreadFactory;
 
 import org.neo4j.bolt.BoltServer;
+import org.neo4j.bolt.BoltSettings;
 import org.neo4j.bolt.transport.configuration.EpollConfigurationProvider;
 import org.neo4j.bolt.transport.configuration.NioConfigurationProvider;
 import org.neo4j.bolt.transport.configuration.ServerConfigurationProvider;
+import org.neo4j.configuration.Config;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.configuration.helpers.PortBindException;
@@ -42,7 +44,6 @@ import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.internal.LogService;
-import org.neo4j.util.FeatureToggles;
 
 import static java.lang.Boolean.TRUE;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -54,12 +55,9 @@ import static org.neo4j.function.ThrowingAction.executeAll;
  */
 public class NettyServer extends LifecycleAdapter
 {
-    private static final boolean USE_EPOLL = FeatureToggles.flag( NettyServer.class, "useEpoll", true );
-    private static final int SHUTDOWN_QUIET_PERIOD = FeatureToggles.getInteger( NettyServer.class, "shutdownQuietPeriod", 5 );
-    private static final int SHUTDOWN_TIMEOUT = FeatureToggles.getInteger( NettyServer.class, "shutdownTimeout", 15 );
-
     private final ServerConfigurationProvider configurationProvider;
     private final ProtocolInitializer externalInitializer;
+    private final Config config;
     private final ProtocolInitializer internalInitializer;
     private final ThreadFactory tf;
     private final ConnectorPortRegister portRegister;
@@ -85,15 +83,16 @@ public class NettyServer extends LifecycleAdapter
      * @param connectorRegister register to keep local address information on all configured connectors
      */
     public NettyServer( ThreadFactory tf, ProtocolInitializer externalInitializer,
-            ConnectorPortRegister connectorRegister, LogService logService )
+            ConnectorPortRegister connectorRegister, LogService logService, Config config )
     {
         this.externalInitializer = externalInitializer;
+        this.config = config;
         this.internalInitializer = null;
         this.tf = tf;
         this.portRegister = connectorRegister;
         this.userLog = logService.getUserLog( BoltServer.class );
         this.internalLog = logService.getUserLog( getClass() );
-        this.configurationProvider = createConfigurationProvider();
+        this.configurationProvider = createConfigurationProvider( config );
         this.serverChannels = new ArrayList<>();
     }
 
@@ -105,15 +104,16 @@ public class NettyServer extends LifecycleAdapter
      */
     public NettyServer( ThreadFactory tf, ProtocolInitializer externalInitializer,
                         ProtocolInitializer internalInitializer,
-                        ConnectorPortRegister connectorRegister, LogService logService )
+                        ConnectorPortRegister connectorRegister, LogService logService, Config config )
     {
         this.externalInitializer = externalInitializer;
+        this.config = config;
         this.internalInitializer = internalInitializer;
         this.tf = tf;
         this.portRegister = connectorRegister;
         this.userLog = logService.getUserLog( BoltServer.class );
         this.internalLog = logService.getUserLog( getClass() );
-        this.configurationProvider = createConfigurationProvider();
+        this.configurationProvider = createConfigurationProvider( config );
         this.serverChannels = new ArrayList<>();
     }
 
@@ -198,9 +198,9 @@ public class NettyServer extends LifecycleAdapter
                 .childHandler( protocolInitializer.channelInitializer() );
     }
 
-    private static ServerConfigurationProvider createConfigurationProvider()
+    private static ServerConfigurationProvider createConfigurationProvider( Config config )
     {
-        var useEpoll = USE_EPOLL && Epoll.isAvailable();
+        var useEpoll = config.get( BoltSettings.netty_server_use_epoll ) && Epoll.isAvailable();
         return useEpoll ? EpollConfigurationProvider.INSTANCE : NioConfigurationProvider.INSTANCE;
     }
 
@@ -236,7 +236,8 @@ public class NettyServer extends LifecycleAdapter
             try
             {
                 internalLog.debug( "Shutting down event loop group" );
-                eventLoopGroup.shutdownGracefully( SHUTDOWN_QUIET_PERIOD, SHUTDOWN_TIMEOUT, SECONDS ).syncUninterruptibly();
+                eventLoopGroup.shutdownGracefully( config.get( BoltSettings.netty_server_shutdown_quiet_period ),
+                        config.get( BoltSettings.netty_server_shutdown_timeout ).toSeconds(), SECONDS ).syncUninterruptibly();
                 internalLog.debug( "Event loop group shut down" );
             }
             catch ( Throwable t )

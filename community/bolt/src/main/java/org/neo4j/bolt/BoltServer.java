@@ -157,14 +157,14 @@ public class BoltServer extends LifecycleAdapter
                                                createExternalProtocolInitializer( externalBoltProtocolFactory, throttleGroup, log ),
                                                createInternalProtocolInitializer( internalBoltProtocolFactory, throttleGroup ),
                                                connectorPortRegister,
-                                               logService );
+                                               logService, config );
             }
             else
             {
                 nettyServer = new NettyServer( jobScheduler.threadFactory( Group.BOLT_NETWORK_IO ),
                                                createExternalProtocolInitializer( externalBoltProtocolFactory, throttleGroup, log ),
                                                connectorPortRegister,
-                                               logService );
+                                               logService, config );
             }
 
             var boltMemoryPool = new BoltNettyMemoryPool( memoryPools, NETTY_BUF_ALLOCATOR.metric() );
