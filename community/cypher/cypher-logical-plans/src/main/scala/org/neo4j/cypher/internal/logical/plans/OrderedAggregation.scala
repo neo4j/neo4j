@@ -27,8 +27,8 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
  * in a particular order, which it can leverage by keeping less state to aggregate at any given time.
  */
 case class OrderedAggregation(source: LogicalPlan,
-                              groupingExpressions: Map[String, Expression],
-                              aggregationExpression: Map[String, Expression],
+                              override val groupingExpressions: Map[String, Expression],
+                              override val aggregationExpressions: Map[String, Expression],
                               orderToLeverage: Seq[Expression])
                              (implicit idGen: IdGen)
   extends LogicalPlan(idGen) with EagerLogicalPlan with AggregatingPlan with ProjectingPlan {
@@ -37,6 +37,6 @@ case class OrderedAggregation(source: LogicalPlan,
 
   val groupingKeys: Set[String] = groupingExpressions.keySet
 
-  val availableSymbols: Set[String] = groupingKeys ++ aggregationExpression.keySet
+  val availableSymbols: Set[String] = groupingKeys ++ aggregationExpressions.keySet
 
 }

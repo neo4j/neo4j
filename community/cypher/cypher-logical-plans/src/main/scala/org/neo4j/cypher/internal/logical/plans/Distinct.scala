@@ -28,9 +28,11 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
  * unique combination of values is only produced once.
  */
 case class Distinct(source: LogicalPlan,
-                    groupingExpressions: Map[String, Expression])
+                    override val groupingExpressions: Map[String, Expression])
                    (implicit idGen: IdGen) extends LogicalPlan(idGen) with EagerLogicalPlan with ProjectingPlan with AggregatingPlan {
 
   override val projectExpressions: Map[String, Expression] = groupingExpressions
   override val availableSymbols: Set[String] = groupingExpressions.keySet
+
+  override def aggregationExpressions: Map[String, Expression] = Map.empty
 }

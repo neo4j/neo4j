@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 
+import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.expressions.CountStar
 import org.neo4j.cypher.internal.expressions.MultiRelationshipPathStep
@@ -65,6 +66,22 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     rewrite(input) should equal(expectedOutput)
   }
 
+  test("ordered distinct") {
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .orderedDistinct(Seq("a"), "a AS a")
+      .expandAll("(a)-[*1..3]->(b)")
+      .allNodeScan("a")
+      .build()
+
+    val after = new LogicalPlanBuilder(wholePlan = false)
+      .orderedDistinct(Seq("a"), "a AS a")
+      .pruningVarExpand("(a)-[*1..3]->(b)")
+      .allNodeScan("a")
+      .build()
+
+    rewrite(before) should equal(after)
+  }
+
   test("query with distinct aggregation") {
     // Simplest query:
     // match (from)-[*1..3]->(to) return count(distinct to)
@@ -83,6 +100,22 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     val expectedOutput = Aggregation(rewrittenExpand, Map.empty, Map("x" -> aggregatingExpression))
 
     rewrite(input) should equal(expectedOutput)
+  }
+
+  test("ordered grouping aggregation") {
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .orderedAggregation(Seq("a AS a"), Seq("count(distinct b) AS c"), Seq("a"))
+      .expand("(a)-[*1..3]->(b)")
+      .allNodeScan("a")
+      .build()
+
+    val after = new LogicalPlanBuilder(wholePlan = false)
+      .orderedAggregation(Seq("a AS a"), Seq("count(distinct b) AS c"), Seq("a"))
+      .pruningVarExpand("(a)-[*1..3]->(b)")
+      .allNodeScan("a")
+      .build()
+
+    rewrite(before) should equal(after)
   }
 
   test("Simple query that filters between expand and distinct") {

@@ -27,10 +27,12 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
  * * in a particular order, which it can leverage by keeping less state to aggregate at any given time.
  */
 case class OrderedDistinct(source: LogicalPlan,
-                           groupingExpressions: Map[String, Expression],
+                           override val groupingExpressions: Map[String, Expression],
                            orderToLeverage: Seq[Expression])
                           (implicit idGen: IdGen) extends LogicalPlan(idGen) with EagerLogicalPlan with ProjectingPlan with AggregatingPlan {
 
   override val projectExpressions: Map[String, Expression] = groupingExpressions
   override val availableSymbols: Set[String] = groupingExpressions.keySet
+
+  override def aggregationExpressions: Map[String, Expression] = Map.empty
 }

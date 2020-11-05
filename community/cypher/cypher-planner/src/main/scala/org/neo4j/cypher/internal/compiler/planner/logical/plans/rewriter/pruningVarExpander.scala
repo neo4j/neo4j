@@ -22,9 +22,8 @@ package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
-import org.neo4j.cypher.internal.logical.plans.Aggregation
+import org.neo4j.cypher.internal.logical.plans.AggregatingPlan
 import org.neo4j.cypher.internal.logical.plans.Apply
-import org.neo4j.cypher.internal.logical.plans.Distinct
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
@@ -48,12 +47,10 @@ case object pruningVarExpander extends Rewriter {
                            dependencies: Option[Set[String]]): Option[Set[String]] = {
 
       val lowerDistinctLand: Option[Set[String]] = plan match {
-        case Distinct(_, groupExpr) =>
-          Some(groupExpr.values.flatMap(_.dependencies.map(_.name)).toSet)
 
-        case Aggregation(_, groupExpr, aggrExpr) if aggrExpr.values.forall(isDistinct) =>
-          val variablesInTheDistinctSet = (groupExpr.values.flatMap(_.dependencies.map(_.name)) ++
-            aggrExpr.values.flatMap(_.dependencies.map(_.name))).toSet
+        case aggPlan: AggregatingPlan if aggPlan.aggregationExpressions.values.forall(isDistinct) =>
+          val variablesInTheDistinctSet = (aggPlan.groupingExpressions.values.flatMap(_.dependencies.map(_.name)) ++
+            aggPlan.aggregationExpressions.values.flatMap(_.dependencies.map(_.name))).toSet
           Some(variablesInTheDistinctSet)
 
         case expand: VarExpand
