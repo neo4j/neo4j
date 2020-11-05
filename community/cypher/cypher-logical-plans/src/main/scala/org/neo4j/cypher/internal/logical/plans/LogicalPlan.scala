@@ -203,7 +203,10 @@ abstract class LogicalPlan(idGen: IdGen)
 }
 
 // Marker interface for all plans that aggregate inputs.
-trait AggregatingPlan extends LogicalPlan
+trait AggregatingPlan extends LogicalPlan {
+  def groupingExpressions: Map[String, Expression]
+  def aggregationExpressions: Map[String, Expression]
+}
 
 // Marker interface for all plans that performs updates
 trait UpdatingPlan extends LogicalPlan
