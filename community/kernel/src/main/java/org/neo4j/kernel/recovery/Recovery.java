@@ -314,7 +314,7 @@ public final class Recovery
         // Label index
         NeoStoreIndexStoreView neoStoreIndexStoreView = new NeoStoreIndexStoreView( NO_LOCK_SERVICE, storageEngine::newReader );
         LabelScanStore labelScanStore = Database.buildLabelIndex( recoveryCleanupCollector, storageEngine, neoStoreIndexStoreView, monitors,
-                logProvider, databasePageCache, databaseLayout, fs, false, tracers.getPageCacheTracer(), memoryTracker );
+                logProvider, databasePageCache, databaseLayout, fs, false, config, tracers.getPageCacheTracer(), memoryTracker );
         RelationshipTypeScanStore relationshipTypeScanStore =
                 Database.buildRelationshipTypeIndex( recoveryCleanupCollector, storageEngine, neoStoreIndexStoreView, monitors, logProvider, databasePageCache,
                         databaseLayout, fs, false, config, tracers.getPageCacheTracer(), memoryTracker );

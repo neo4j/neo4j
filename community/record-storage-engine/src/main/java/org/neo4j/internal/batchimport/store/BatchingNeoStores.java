@@ -243,7 +243,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
         life = new LifeSupport();
         life.start();
         labelScanStore = TokenScanStore.labelScanStore( pageCache, databaseLayout, fileSystem, EMPTY, false, new Monitors(), immediate(),
-                pageCacheTracer, memoryTracker );
+                neo4jConfig, pageCacheTracer, memoryTracker );
         life.add( labelScanStore );
         relationshipTypeScanStore = TokenScanStore
                 .toggledRelationshipTypeScanStore( pageCache, databaseLayout, fileSystem, EMPTY, false, new Monitors(), immediate(), neo4jConfig,

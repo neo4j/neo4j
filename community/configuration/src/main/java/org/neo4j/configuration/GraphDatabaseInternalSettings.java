@@ -625,4 +625,15 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
     @Internal
     public static Setting<Duration> id_generator_log_prune_threshold =
             newBuilder( "unsupported.dbms.idgenerator.log.prune_threshold", DURATION, ofDays( 2 ) ).build();
+
+    @Internal
+    public static Setting<Boolean> token_scan_write_log_enabled = newBuilder( "unsupported.dbms.tokenscan.log.enabled", BOOL, false ).build();
+
+    @Internal
+    public static Setting<Long> token_scan_write_log_rotation_threshold =
+            newBuilder( "unsupported.dbms.tokenscan.log.rotation_threshold", BYTES, mebiBytes( 200 ) ).build();
+
+    @Internal
+    public static Setting<Duration> token_scan_write_log_prune_threshold =
+            newBuilder( "unsupported.dbms.tokenscan.log.prune_threshold", DURATION, ofDays( 2 ) ).build();
 }

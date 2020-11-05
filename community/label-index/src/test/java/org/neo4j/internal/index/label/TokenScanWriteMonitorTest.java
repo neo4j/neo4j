@@ -36,6 +36,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -78,11 +79,12 @@ class TokenScanWriteMonitorTest
     void shouldRotateExistingFileOnOpen() throws IOException
     {
         // given
-        TokenScanWriteMonitor writeMonitor = new TokenScanWriteMonitor( fs, databaseLayout, NODE );
+        Config config = Config.defaults();
+        TokenScanWriteMonitor writeMonitor = new TokenScanWriteMonitor( fs, databaseLayout, NODE, config );
         writeMonitor.close();
 
         // when
-        TokenScanWriteMonitor secondWriteMonitor = new TokenScanWriteMonitor( fs, databaseLayout, NODE );
+        TokenScanWriteMonitor secondWriteMonitor = new TokenScanWriteMonitor( fs, databaseLayout, NODE, config );
         secondWriteMonitor.close();
 
         // then
@@ -101,7 +103,7 @@ class TokenScanWriteMonitorTest
     void shouldLogAndDumpData() throws IOException
     {
         // given
-        TokenScanWriteMonitor writeMonitor = new TokenScanWriteMonitor( fs, databaseLayout, NODE );
+        TokenScanWriteMonitor writeMonitor = new TokenScanWriteMonitor( fs, databaseLayout, NODE, Config.defaults() );
         TokenScanValue value = new TokenScanValue();
         writeMonitor.range( 3, 0 );
         writeMonitor.prepareAdd( 123, 4 );
@@ -262,7 +264,7 @@ class TokenScanWriteMonitorTest
     {
         // given
         assertThat( fs.listFiles( databaseLayout.databaseDirectory() ).length ).isEqualTo( 0 );
-        TokenScanWriteMonitor writeMonitor = new TokenScanWriteMonitor( fs, databaseLayout, RELATIONSHIP );
+        TokenScanWriteMonitor writeMonitor = new TokenScanWriteMonitor( fs, databaseLayout, RELATIONSHIP, Config.defaults() );
         writeMonitor.close();
         List<Path> filesAfter = Arrays.asList( fs.listFiles( databaseLayout.databaseDirectory() ) );
         assertThat( filesAfter.size() ).isEqualTo( 1 );

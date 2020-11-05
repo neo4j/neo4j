@@ -55,10 +55,10 @@ public interface TokenScanStore extends Lifecycle, ConsistencyCheckable
      */
     static LabelScanStore labelScanStore( PageCache pageCache, DatabaseLayout directoryStructure, FileSystemAbstraction fs,
             FullStoreChangeStream fullStoreChangeStream, boolean readOnly, Monitors monitors, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-            PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
+            Config config, PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
     {
-        return new NativeLabelScanStore( pageCache, directoryStructure, fs, fullStoreChangeStream, readOnly, monitors, recoveryCleanupWorkCollector, NODE,
-                cacheTracer, memoryTracker );
+        return new NativeLabelScanStore( pageCache, directoryStructure, fs, fullStoreChangeStream, readOnly, config, monitors, recoveryCleanupWorkCollector,
+                NODE, cacheTracer, memoryTracker );
     }
 
     /**
@@ -66,10 +66,10 @@ public interface TokenScanStore extends Lifecycle, ConsistencyCheckable
      */
     static RelationshipTypeScanStore relationshipTypeScanStore( PageCache pageCache, DatabaseLayout directoryStructure, FileSystemAbstraction fs,
             FullStoreChangeStream fullStoreChangeStream, boolean readOnly, Monitors monitors, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-            PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
+            Config config, PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
     {
-        return new NativeRelationshipTypeScanStore( pageCache, directoryStructure, fs, fullStoreChangeStream, readOnly, monitors, recoveryCleanupWorkCollector,
-                RELATIONSHIP, cacheTracer, memoryTracker );
+        return new NativeRelationshipTypeScanStore( pageCache, directoryStructure, fs, fullStoreChangeStream, readOnly, config, monitors,
+                recoveryCleanupWorkCollector, RELATIONSHIP, cacheTracer, memoryTracker );
     }
 
     static RelationshipTypeScanStore toggledRelationshipTypeScanStore( PageCache pageCache, DatabaseLayout directoryStructure, FileSystemAbstraction fs,
@@ -79,7 +79,7 @@ public interface TokenScanStore extends Lifecycle, ConsistencyCheckable
         if ( config.get( RelationshipTypeScanStoreSettings.enable_relationship_type_scan_store ) )
         {
             return relationshipTypeScanStore( pageCache, directoryStructure, fs, fullStoreChangeStream, readOnly, monitors, recoveryCleanupWorkCollector,
-                    cacheTracer, memoryTracker );
+                    config, cacheTracer, memoryTracker );
         }
         return new EmptyingRelationshipTypeScanStore( fs, directoryStructure, readOnly );
     }

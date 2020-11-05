@@ -32,6 +32,8 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.neo4j.common.EntityType;
+import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.internal.helpers.Args;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -46,12 +48,9 @@ import org.neo4j.io.memory.NativeScopedBuffer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.SystemNanoClock;
-import org.neo4j.util.FeatureToggles;
 
 import static java.lang.String.format;
 import static java.util.Comparator.comparing;
-import static java.util.concurrent.TimeUnit.DAYS;
-import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.io.fs.ReadAheadChannel.DEFAULT_READ_AHEAD_SIZE;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
@@ -61,11 +60,6 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
  */
 public class TokenScanWriteMonitor implements NativeTokenScanWriter.WriteMonitor
 {
-    // configuration for this monitor
-    static final boolean ENABLED = FeatureToggles.flag( TokenScanWriteMonitor.class, "enabled", false );
-    private static final long ROTATION_SIZE_THRESHOLD = FeatureToggles.getLong( TokenScanWriteMonitor.class, "rotationThreshold", mebiBytes( 200 ) );
-    private static final long PRUNE_THRESHOLD = FeatureToggles.getLong( TokenScanWriteMonitor.class, "pruneThreshold", DAYS.toMillis( 2 ) );
-
     private static final byte TYPE_PREPARE_ADD = 0;
     private static final byte TYPE_PREPARE_REMOVE = 1;
     private static final byte TYPE_MERGE_ADD = 2;
@@ -88,9 +82,11 @@ public class TokenScanWriteMonitor implements NativeTokenScanWriter.WriteMonitor
     private final long rotationThreshold;
     private final long pruneThreshold;
 
-    TokenScanWriteMonitor( FileSystemAbstraction fs, DatabaseLayout databaseLayout, EntityType entityType )
+    TokenScanWriteMonitor( FileSystemAbstraction fs, DatabaseLayout databaseLayout, EntityType entityType, Config config )
     {
-        this( fs, databaseLayout, ROTATION_SIZE_THRESHOLD, ByteUnit.Byte, PRUNE_THRESHOLD, TimeUnit.MILLISECONDS, entityType, NO_MONITOR, Clocks.nanoClock() );
+        this( fs, databaseLayout, config.get( GraphDatabaseInternalSettings.token_scan_write_log_rotation_threshold ), ByteUnit.Byte,
+                config.get( GraphDatabaseInternalSettings.token_scan_write_log_prune_threshold ).toMillis(), TimeUnit.MILLISECONDS, entityType, NO_MONITOR,
+                Clocks.nanoClock() );
     }
 
     TokenScanWriteMonitor( FileSystemAbstraction fs, DatabaseLayout databaseLayout,

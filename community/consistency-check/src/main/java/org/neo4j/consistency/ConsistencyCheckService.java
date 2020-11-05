@@ -242,7 +242,7 @@ public class ConsistencyCheckService
             life.start();
 
             LabelScanStore labelScanStore = TokenScanStore.labelScanStore( pageCache, databaseLayout, fileSystem, EMPTY, true, monitors, workCollector,
-                    pageCacheTracer, memoryTracker );
+                    config, pageCacheTracer, memoryTracker );
             RelationshipTypeScanStore relationshipTypeScanstore = TokenScanStore.toggledRelationshipTypeScanStore( pageCache, databaseLayout, fileSystem,
                     EMPTY, true, monitors, workCollector, config, pageCacheTracer, memoryTracker );
             life.add( labelScanStore );

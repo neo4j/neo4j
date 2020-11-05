@@ -656,7 +656,7 @@ public class Database extends LifecycleAdapter
             NeoStoreIndexStoreView neoStoreIndexStoreView, Monitors monitors, PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker )
     {
         return life.add( buildLabelIndex( recoveryCleanupWorkCollector, storageEngine, neoStoreIndexStoreView, monitors, internalLogProvider,
-                pageCache, databaseLayout, fs, readOnly, pageCacheTracer, memoryTracker ) );
+                pageCache, databaseLayout, fs, readOnly, databaseConfig, pageCacheTracer, memoryTracker ) );
     }
 
     /**
@@ -688,13 +688,14 @@ public class Database extends LifecycleAdapter
             DatabaseLayout databaseLayout,
             FileSystemAbstraction fs,
             boolean readOnly,
+            Config config,
             PageCacheTracer cacheTracer,
             MemoryTracker memoryTracker )
     {
         monitors.addMonitorListener( new LoggingMonitor( logProvider.getLog( LabelScanStore.class ), EntityType.NODE ), LABEL_SCAN_STORE_MONITOR_TAG );
         FullStoreChangeStream labelStream = new FullLabelStream( indexStoreView );
         LabelScanStore labelScanStore = labelScanStore( pageCache, databaseLayout, fs, labelStream, readOnly, monitors, recoveryCleanupWorkCollector,
-                cacheTracer, memoryTracker );
+                config, cacheTracer, memoryTracker );
         storageEngine.addNodeLabelUpdateListener( labelScanStore.updateListener() );
         return labelScanStore;
     }

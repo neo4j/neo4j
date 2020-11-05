@@ -31,6 +31,8 @@ import java.util.function.IntFunction;
 
 import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.common.EntityType;
+import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.index.internal.gbptree.GBPTree;
@@ -140,6 +142,7 @@ public abstract class NativeTokenScanStore implements TokenScanStore, EntityToke
      * Layout of the database.
      */
     private final DatabaseLayout directoryStructure;
+    private final Config config;
     private final PageCacheTracer cacheTracer;
     private final MemoryTracker memoryTracker;
 
@@ -187,13 +190,14 @@ public abstract class NativeTokenScanStore implements TokenScanStore, EntityToke
     private static final Consumer<PageCursor> writeClean = pageCursor -> pageCursor.putByte( CLEAN );
 
     NativeTokenScanStore( PageCache pageCache, DatabaseLayout directoryStructure, FileSystemAbstraction fs, FullStoreChangeStream fullStoreChangeStream,
-            boolean readOnly, Monitors monitors, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, EntityType entityType,
+            boolean readOnly, Config config, Monitors monitors, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, EntityType entityType,
             PageCacheTracer cacheTracer, MemoryTracker memoryTracker, String tokenStoreName )
     {
         this.pageCache = pageCache;
         this.fs = fs;
         this.fullStoreChangeStream = fullStoreChangeStream;
         this.directoryStructure = directoryStructure;
+        this.config = config;
         this.cacheTracer = cacheTracer;
         this.memoryTracker = memoryTracker;
         boolean isLabelScanStore = entityType == EntityType.NODE;
@@ -389,8 +393,8 @@ public abstract class NativeTokenScanStore implements TokenScanStore, EntityToke
             isDirty = true;
         }
 
-        writeMonitor = TokenScanWriteMonitor.ENABLED
-                       ? new TokenScanWriteMonitor( fs, directoryStructure, entityType() )
+        writeMonitor = config.get( GraphDatabaseInternalSettings.token_scan_write_log_enabled )
+                       ? new TokenScanWriteMonitor( fs, directoryStructure, entityType(), config )
                        : NativeTokenScanWriter.EMPTY;
         singleWriter = new NativeTokenScanWriter( 1_000, writeMonitor );
 

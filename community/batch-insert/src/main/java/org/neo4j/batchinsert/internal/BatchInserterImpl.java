@@ -1132,7 +1132,7 @@ public class BatchInserterImpl implements BatchInserter
     {
         FullLabelStream labelStream = new FullLabelStream( storeIndexStoreView );
         LabelScanStore labelIndex = TokenScanStore.labelScanStore( pageCache, databaseLayout, fileSystem, labelStream, false, monitors, immediate(),
-                pageCacheTracer, memoryTracker );
+                config, pageCacheTracer, memoryTracker );
         if ( labelsTouched )
         {
             labelIndex.drop();

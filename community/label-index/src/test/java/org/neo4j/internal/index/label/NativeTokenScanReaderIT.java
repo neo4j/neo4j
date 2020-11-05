@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.util.BitSet;
 
 import org.neo4j.collection.PrimitiveLongResourceIterator;
+import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
@@ -88,7 +89,7 @@ class NativeTokenScanReaderIT
     {
         // given
         LabelScanStore store = life.add( TokenScanStore.labelScanStore( pageCache, databaseLayout, fileSystem, EMPTY, false, new Monitors(),
-                immediate(), PageCacheTracer.NULL, INSTANCE ) );
+                immediate(), Config.defaults(), PageCacheTracer.NULL, INSTANCE ) );
         int labelId = 1;
         int highNodeId = 100_000;
         BitSet expected = new BitSet( highNodeId );

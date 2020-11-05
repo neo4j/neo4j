@@ -1555,7 +1555,8 @@ class BatchInsertTest
 
     private LabelScanStore getLabelScanStore()
     {
-        return TokenScanStore.labelScanStore( pageCache, databaseLayout, fs, EMPTY, true, new Monitors(), immediate(), PageCacheTracer.NULL, INSTANCE );
+        return TokenScanStore.labelScanStore( pageCache, databaseLayout, fs, EMPTY, true, new Monitors(), immediate(), Config.defaults(), PageCacheTracer.NULL,
+                INSTANCE );
     }
 
     private static void assertLabelScanStoreContains( LabelScanStore labelScanStore, int labelId, long... nodes )

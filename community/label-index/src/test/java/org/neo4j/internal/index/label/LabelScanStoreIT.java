@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.util.BitSet;
 import java.util.Random;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -307,7 +308,7 @@ class LabelScanStoreIT
             store.shutdown();
         }
         store = life.add( TokenScanStore.labelScanStore( pageCache, databaseLayout, fileSystem, EMPTY, false, new Monitors(),
-                immediate(), cacheTracer, INSTANCE ) );
+                immediate(), Config.defaults(), cacheTracer, INSTANCE ) );
     }
 
     private void verifyReads( long[] expected )

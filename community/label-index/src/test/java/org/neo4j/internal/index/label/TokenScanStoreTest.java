@@ -217,7 +217,7 @@ public class TokenScanStoreTest
         // WHEN
         life = new LifeSupport();
         RelationshipTypeScanStore store = relationshipTypeScanStore( pageCache, databaseLayout, fileSystem, EMPTY, true, new Monitors(), ignore(),
-                PageCacheTracer.NULL, INSTANCE );
+                Config.defaults(), PageCacheTracer.NULL, INSTANCE );
         life.add( store );
 
         final Exception exception = assertThrows( Exception.class, () -> life.start() );
@@ -230,8 +230,8 @@ public class TokenScanStoreTest
     @Test
     void shouldUseLabelScanStoreFile()
     {
-        LabelScanStore store = labelScanStore( pageCache, databaseLayout, fileSystem, EMPTY, true, new Monitors(), ignore(), PageCacheTracer.NULL,
-                INSTANCE );
+        LabelScanStore store = labelScanStore( pageCache, databaseLayout, fileSystem, EMPTY, true, new Monitors(), ignore(), Config.defaults(),
+                PageCacheTracer.NULL, INSTANCE );
         ResourceIterator<Path> files = store.snapshotStoreFiles();
         assertTrue( files.hasNext() );
         Path storeFile = files.next();
@@ -243,7 +243,7 @@ public class TokenScanStoreTest
     void shouldUseRelationshipTypeScanStoreFile()
     {
         RelationshipTypeScanStore store = relationshipTypeScanStore( pageCache, databaseLayout, fileSystem, EMPTY, true, new Monitors(), ignore(),
-                PageCacheTracer.NULL, INSTANCE );
+                Config.defaults(), PageCacheTracer.NULL, INSTANCE );
         ResourceIterator<Path> files = store.snapshotStoreFiles();
         assertTrue( files.hasNext() );
         Path storeFile = files.next();
@@ -607,7 +607,7 @@ public class TokenScanStoreTest
     {
         // When
         RelationshipTypeScanStore relationshipTypeScanStore = relationshipTypeScanStore( pageCache, databaseLayout, fileSystem, EMPTY, false,
-                new Monitors(), ignore(), PageCacheTracer.NULL, INSTANCE );
+                new Monitors(), ignore(), Config.defaults(), PageCacheTracer.NULL, INSTANCE );
 
         // When
         assertThat( relationshipTypeScanStore.entityType() ).isEqualTo( EntityType.RELATIONSHIP );
@@ -640,7 +640,7 @@ public class TokenScanStoreTest
     {
         // given
         RelationshipTypeScanStore relationshipTypeScanStore = relationshipTypeScanStore( pageCache, databaseLayout, fileSystem, EMPTY, false,
-                new Monitors(), ignore(), PageCacheTracer.NULL, INSTANCE );
+                new Monitors(), ignore(), Config.defaults(), PageCacheTracer.NULL, INSTANCE );
         relationshipTypeScanStore.init();
         relationshipTypeScanStore.start();
         relationshipTypeScanStore.shutdown();
@@ -676,8 +676,8 @@ public class TokenScanStoreTest
     private LabelScanStore getLabelScanStore( FileSystemAbstraction fileSystemAbstraction, DatabaseLayout databaseLayout,
             FullStoreChangeStream fullStoreChangeStream, boolean readOnly, Monitors monitors )
     {
-        return labelScanStore( pageCache, databaseLayout, fileSystemAbstraction, fullStoreChangeStream, readOnly, monitors, immediate(), PageCacheTracer.NULL,
-                INSTANCE );
+        return labelScanStore( pageCache, databaseLayout, fileSystemAbstraction, fullStoreChangeStream, readOnly, monitors, immediate(), Config.defaults(),
+                PageCacheTracer.NULL, INSTANCE );
     }
 
     private void corruptIndex( DatabaseLayout databaseLayout ) throws IOException

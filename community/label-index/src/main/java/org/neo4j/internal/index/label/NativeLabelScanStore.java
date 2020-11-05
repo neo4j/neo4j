@@ -20,6 +20,7 @@
 package org.neo4j.internal.index.label;
 
 import org.neo4j.common.EntityType;
+import org.neo4j.configuration.Config;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -31,10 +32,10 @@ import org.neo4j.monitoring.Monitors;
 class NativeLabelScanStore extends NativeTokenScanStore implements LabelScanStore
 {
     NativeLabelScanStore( PageCache pageCache, DatabaseLayout directoryStructure, FileSystemAbstraction fs, FullStoreChangeStream fullStoreChangeStream,
-            boolean readOnly, Monitors monitors, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, EntityType entityType,
+            boolean readOnly, Config config, Monitors monitors, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, EntityType entityType,
             PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
     {
-        super( pageCache, directoryStructure, fs, fullStoreChangeStream, readOnly, monitors, recoveryCleanupWorkCollector, entityType, cacheTracer,
+        super( pageCache, directoryStructure, fs, fullStoreChangeStream, readOnly, config, monitors, recoveryCleanupWorkCollector, entityType, cacheTracer,
                 memoryTracker, "Label Scan Store" );
     }
 }
