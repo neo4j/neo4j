@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.procs
 
 import org.neo4j.cypher.internal.ast.AccessDatabaseAction
 import org.neo4j.cypher.internal.ast.AdminAction
-import org.neo4j.cypher.internal.ast.AllAdminAction
 import org.neo4j.cypher.internal.ast.AllConstraintActions
 import org.neo4j.cypher.internal.ast.AllDatabaseAction
 import org.neo4j.cypher.internal.ast.AllDatabaseManagementActions
@@ -152,7 +151,6 @@ object ActionMapper {
     case ExecuteBoostedFunctionAction => security.PrivilegeAction.EXECUTE_BOOSTED
 
     case AllDbmsAction => security.PrivilegeAction.DBMS_ACTIONS
-    case AllAdminAction => security.PrivilegeAction.ADMIN
 
     case _ => throw new IllegalStateException(s"Cannot handle action: $action")
   }
