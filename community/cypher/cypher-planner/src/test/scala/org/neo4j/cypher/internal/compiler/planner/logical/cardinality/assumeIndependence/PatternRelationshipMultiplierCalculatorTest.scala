@@ -50,7 +50,6 @@ class PatternRelationshipMultiplierCalculatorTest extends CypherFunSuite with As
     val relationship = PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
 
     implicit val semanticTable: SemanticTable = new SemanticTable(resolvedLabelNames = mutable.Map("L" -> LabelId(0)))
-    implicit val selections: Selections = Selections(Set(Predicate(Set("a"), hasLabels("a", "L"))))
     val result = calculator.relationshipMultiplier(relationship, Map("a" -> Set(labelName("L"))))
 
     result should equal(Multiplier.ZERO)
@@ -66,7 +65,6 @@ class PatternRelationshipMultiplierCalculatorTest extends CypherFunSuite with As
     val relationship = PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
 
     implicit val semanticTable: SemanticTable = new SemanticTable(resolvedLabelNames = mutable.Map("L" -> LabelId(0)))
-    implicit val selections: Selections = Selections(Set(Predicate(Set("a"), hasLabels("a", "L"))))
     val result = calculator.relationshipMultiplier(relationship, Map("a" -> Set(labelName("L"))))
 
     result should equal(Multiplier.ONE)
@@ -82,7 +80,6 @@ class PatternRelationshipMultiplierCalculatorTest extends CypherFunSuite with As
     val relationship = PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, VarPatternLength(33, Some(33)))
 
     implicit val semanticTable: SemanticTable = new SemanticTable(resolvedLabelNames = mutable.Map("L" -> LabelId(0)))
-    implicit val selections: Selections = Selections(Set(Predicate(Set("a"), hasLabels("a", "L"))))
     val result = calculator.relationshipMultiplier(relationship, Map("a" -> Set(labelName("L"))))
 
     // one node which has a single relationship to itself. Given the relationship uniqueness, we should get some result between 0 and 1, but not larger than 1
@@ -101,11 +98,10 @@ class PatternRelationshipMultiplierCalculatorTest extends CypherFunSuite with As
 
     val labels = new mutable.HashMap[String, LabelId]()
     for (i <- 1 to 100) labels.put(i.toString, LabelId(i))
-    val predicates = labels.keys.map(l => Predicate(Set("a"), hasLabels("a", l))).toSet
+    val labelInfo = Map("a" -> labels.keys.map(labelName).toSet)
 
     implicit val semanticTable: SemanticTable = new SemanticTable(resolvedLabelNames = labels)
-    implicit val selections: Selections = Selections(predicates)
-    val result = calculator.relationshipMultiplier(relationship, Map.empty)
+    val result = calculator.relationshipMultiplier(relationship, labelInfo)
 
     result should be >= Multiplier.ONE
   }

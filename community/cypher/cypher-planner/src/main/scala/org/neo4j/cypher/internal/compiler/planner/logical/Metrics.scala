@@ -66,6 +66,9 @@ object Metrics {
       copy(labelInfo = newLabels, inboundCardinality = newCardinalityInput, strictness = strictness)
     }
 
+    def withFusedLabelInfo(newLabelInfo: LabelInfo): QueryGraphSolverInput =
+      copy(labelInfo = labelInfo.fuse(newLabelInfo)(_ ++ _))
+
     def withPreferredStrictness(strictness: StrictnessMode): QueryGraphSolverInput = copy(strictness = Some(strictness))
     def withLimitSelectivity(s: Selectivity): QueryGraphSolverInput = copy(limitSelectivity = s)
   }

@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.cardinality
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.LabelInfo
 import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults.DEFAULT_EQUALITY_SELECTIVITY
 import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults.DEFAULT_LIST_CARDINALITY
 import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults.DEFAULT_NUMBER_OF_ID_LOOKUPS
@@ -67,7 +68,7 @@ import org.neo4j.cypher.internal.util.Selectivity
 
 case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: SelectivityCombiner) {
 
-  def apply(exp: Expression)(implicit semanticTable: SemanticTable, selections: Selections): Selectivity = exp match {
+  def apply(exp: Expression, labelInfo: LabelInfo)(implicit semanticTable: SemanticTable): Selectivity = exp match {
     // WHERE a:Label
     case HasLabels(_, label :: Nil) =>
       calculateSelectivityForLabel(semanticTable.id(label))
@@ -78,47 +79,47 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
 
     // SubPredicate(sub, super)
     case partial: PartialPredicate[_] =>
-      apply(partial.coveredPredicate)
+      apply(partial.coveredPredicate, labelInfo)
 
     // WHERE x.prop =/IN ...
     case AsPropertySeekable(seekable) =>
-      calculateSelectivityForPropertyEquality(seekable.name, seekable.args.sizeHint, selections, seekable.propertyKey)
+      calculateSelectivityForPropertyEquality(seekable.name, seekable.args.sizeHint, labelInfo, seekable.propertyKey)
 
     // WHERE x.prop STARTS WITH 'prefix'
     case AsStringRangeSeekable(seekable@PrefixRangeSeekable(PrefixRange(StringLiteral(prefix)), _, _, _)) =>
-      calculateSelectivityForSubstringSargable(seekable.name, selections, seekable.propertyKey, Some(prefix))
+      calculateSelectivityForSubstringSargable(seekable.name, labelInfo, seekable.propertyKey, Some(prefix))
 
     // WHERE x.prop STARTS WITH expression
     case AsStringRangeSeekable(seekable@PrefixRangeSeekable(_:PrefixRange[_], _, _, _)) =>
-      calculateSelectivityForSubstringSargable(seekable.name, selections, seekable.propertyKey, None)
+      calculateSelectivityForSubstringSargable(seekable.name, labelInfo, seekable.propertyKey, None)
 
     // WHERE x.prop CONTAINS 'substring'
     case Contains(Property(Variable(name), propertyKey), StringLiteral(substring)) =>
-      calculateSelectivityForSubstringSargable(name, selections, propertyKey, Some(substring))
+      calculateSelectivityForSubstringSargable(name, labelInfo, propertyKey, Some(substring))
 
     // WHERE x.prop CONTAINS expression
     case Contains(Property(Variable(name), propertyKey), expr) =>
-      calculateSelectivityForSubstringSargable(name, selections, propertyKey, None)
+      calculateSelectivityForSubstringSargable(name, labelInfo, propertyKey, None)
 
     // WHERE x.prop ENDS WITH 'substring'
     case EndsWith(Property(Variable(name), propertyKey), StringLiteral(substring)) =>
-      calculateSelectivityForSubstringSargable(name, selections, propertyKey, Some(substring))
+      calculateSelectivityForSubstringSargable(name, labelInfo, propertyKey, Some(substring))
 
     // WHERE x.prop ENDS WITH expression
     case EndsWith(Property(Variable(name), propertyKey), expr) =>
-      calculateSelectivityForSubstringSargable(name, selections, propertyKey, None)
+      calculateSelectivityForSubstringSargable(name, labelInfo, propertyKey, None)
 
     // WHERE x.prop <, <=, >=, > that could benefit from an index
     case AsValueRangeSeekable(seekable) =>
-      calculateSelectivityForValueRangeSeekable(seekable, selections)
+      calculateSelectivityForValueRangeSeekable(seekable, labelInfo)
 
     // WHERE distance(p.prop, otherPoint) <, <= number that could benefit from an index
     case AsDistanceSeekable(seekable) =>
-      calculateSelectivityForPointDistanceSeekable(seekable, selections)
+      calculateSelectivityForPointDistanceSeekable(seekable, labelInfo)
 
     // WHERE has(x.prop)
     case AsPropertyScannable(scannable) =>
-      calculateSelectivityForPropertyExistence(scannable.name, selections, scannable.propertyKey)
+      calculateSelectivityForPropertyExistence(scannable.name, labelInfo, scannable.propertyKey)
 
     // Implicit relation uniqueness predicates
     case Not(Equals(lhs: Variable, rhs: Variable))
@@ -127,10 +128,10 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
 
     // WHERE NOT [...]
     case Not(inner) =>
-      apply(inner).negate
+      apply(inner, labelInfo).negate
 
     case Ors(expressions) =>
-      val selectivities = expressions.toIndexedSeq.map(apply)
+      val selectivities = expressions.toIndexedSeq.map(apply(_, labelInfo))
       combiner.orTogetherSelectivities(selectivities).get // We can trust the AST to never have empty ORs
 
     // WHERE id(x) =/IN [...]
@@ -161,18 +162,18 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
   }
 
   private def calculateSelectivityForPropertyExistence(variable: String,
-                                                       selections: Selections,
+                                                       labelInfo: LabelInfo,
                                                        propertyKey: PropertyKeyName)
                                                       (implicit semanticTable: SemanticTable): Selectivity = {
-    val indexPropertyExistsSelectivities = indexPropertyExistsSelectivitiesFor(variable, selections, propertyKey)
+    val indexPropertyExistsSelectivities = indexPropertyExistsSelectivitiesFor(variable, labelInfo, propertyKey)
     combiner.orTogetherSelectivities(indexPropertyExistsSelectivities).getOrElse(DEFAULT_PROPERTY_SELECTIVITY)
   }
 
   private def indexPropertyExistsSelectivitiesFor(variable: String,
-                                                  selections: Selections,
+                                                  labelInfo: LabelInfo,
                                                   propertyKey: PropertyKeyName)
                                                  (implicit semanticTable: SemanticTable): Seq[Selectivity] = {
-    val labels: Set[LabelName] = selections.labelsOnNode(variable)
+    val labels = labelInfo.getOrElse(variable, Set.empty)
     labels.toIndexedSeq.flatMap {
       labelName =>
         (semanticTable.id(labelName), semanticTable.id(propertyKey)) match {
@@ -188,10 +189,10 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
 
   private def calculateSelectivityForPropertyEquality(variable: String,
                                                       sizeHint: Option[Int],
-                                                      selections: Selections,
+                                                      labelInfo: LabelInfo,
                                                       propertyKey: PropertyKeyName)
                                                      (implicit semanticTable: SemanticTable): Selectivity = {
-    val labels = selections.labelsOnNode(variable)
+    val labels = labelInfo.getOrElse(variable, Set.empty)
     val indexSelectivities = labels.toIndexedSeq.flatMap {
       labelName =>
         (semanticTable.id(labelName), semanticTable.id(propertyKey)) match {
@@ -218,7 +219,7 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
   }
 
   private def calculateSelectivityForValueRangeSeekable(seekable: InequalityRangeSeekable,
-                                                        selections: Selections)
+                                                        labelInfo: LabelInfo)
                                                        (implicit semanticTable: SemanticTable): Selectivity = {
 
     def default = {
@@ -231,7 +232,7 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
       }
     }
 
-    val labels: Set[LabelName] = selections.labelsOnNode(seekable.ident.name)
+    val labels = labelInfo.getOrElse(seekable.ident.name, Set.empty)
     val indexRangeSelectivities: Seq[Selectivity] = labels.toIndexedSeq.flatMap {
       labelName =>
         (semanticTable.id(labelName), semanticTable.id(seekable.expr.property.propertyKey)) match {
@@ -258,15 +259,15 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
   }
 
   private def calculateSelectivityForPointDistanceSeekable(seekable: PointDistanceSeekable,
-                                                           selections: Selections)
+                                                           labelInfo: LabelInfo)
                                                           (implicit semanticTable: SemanticTable): Selectivity = {
-    val indexPropertyExistsSelectivities = indexPropertyExistsSelectivitiesFor(seekable.ident.name, selections, seekable.propertyKeyName)
+    val indexPropertyExistsSelectivities = indexPropertyExistsSelectivitiesFor(seekable.ident.name, labelInfo, seekable.propertyKeyName)
     val indexDistanceSelectivities = indexPropertyExistsSelectivities.map(_ * Selectivity(DEFAULT_RANGE_SEEK_FACTOR))
     combiner.orTogetherSelectivities(indexDistanceSelectivities).getOrElse(DEFAULT_RANGE_SELECTIVITY)
   }
 
   private def calculateSelectivityForSubstringSargable(variable: String,
-                                                       selections: Selections,
+                                                       labelInfo: LabelInfo,
                                                        propertyKey: PropertyKeyName,
                                                        maybeString: Option[String])
                                                       (implicit semanticTable: SemanticTable): Selectivity = {
@@ -283,7 +284,7 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
       Selectivity(DEFAULT_RANGE_SELECTIVITY.factor / stringLength)
     }
 
-    val indexPropertyExistsSelectivities = indexPropertyExistsSelectivitiesFor(variable, selections, propertyKey)
+    val indexPropertyExistsSelectivities = indexPropertyExistsSelectivitiesFor(variable, labelInfo, propertyKey)
     val indexSubstringSelectivities = indexPropertyExistsSelectivities.map { exists =>
       if (stringLength == 0) {
         // This is equal to exists && isString

@@ -143,6 +143,17 @@ class StatisticsBackedCardinalityModelTest extends CypherFunSuite with Cardinali
         Math.min(i, 10.0) * DEFAULT_EQUALITY_SELECTIVITY)
   }
 
+  test("should reduce cardinality using index stats for a WHERE after a WITH") {
+    val i = personCount
+    val config = plannerBuilder()
+      .setAllNodesCardinality(allNodes)
+      .setLabelCardinality("Person", i)
+      .addIndex("Person", Seq("age"), 0.3, 0.2)
+      .build()
+    queryShouldHaveCardinality(config, "MATCH (a:Person) WITH a, 1 AS x WHERE a.age = 20",
+      i * 0.3 * 0.2)
+  }
+
   test("should reduce cardinality for a WHERE after a WITH, unknown LIMIT") {
     val i = personCount
     val config = plannerBuilder()

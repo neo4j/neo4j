@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.LabelInfo
 import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults.DEFAULT_REL_UNIQUENESS_SELECTIVITY
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.SelectivityCombiner
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.SpecifiedAndKnown
@@ -68,11 +69,11 @@ case class PatternRelationshipMultiplierCalculator(stats: GraphStatistics, combi
 
   private implicit val numericMultiplier: NumericMultiplier.type = NumericMultiplier
 
-  def relationshipMultiplier(pattern: PatternRelationship, labels: Map[String, Set[LabelName]])
-                            (implicit semanticTable: SemanticTable, selections: Selections): Multiplier = {
+  def relationshipMultiplier(pattern: PatternRelationship, labels: LabelInfo)
+                            (implicit semanticTable: SemanticTable): Multiplier = {
     val nbrOfNodesInGraph = stats.nodesAllCardinality()
     val (lhs, rhs) = pattern.nodes
-    val Seq(labelsOnLhs, labelsOnRhs) = Seq(lhs, rhs).map(side => mapToLabelTokenSpecs(selections.labelsOnNode(side) ++ labels.getOrElse(side, Set.empty)))
+    val Seq(labelsOnLhs, labelsOnRhs) = Seq(lhs, rhs).map(side => mapToLabelTokenSpecs(labels.getOrElse(side, Set.empty)))
 
     val lhsCardinality = nbrOfNodesInGraph * calculateLabelSelectivity(labelsOnLhs, nbrOfNodesInGraph)
     val rhsCardinality = nbrOfNodesInGraph * calculateLabelSelectivity(labelsOnRhs, nbrOfNodesInGraph)

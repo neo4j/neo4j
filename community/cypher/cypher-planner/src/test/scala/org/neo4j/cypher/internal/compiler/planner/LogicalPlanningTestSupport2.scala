@@ -276,11 +276,6 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       (output.maybePeriodicCommit.flatten, logicalPlan, output.semanticTable(), output.planningAttributes)
     }
 
-    def estimate(qg: QueryGraph, input: QueryGraphSolverInput = QueryGraphSolverInput.empty): Cardinality =
-      metricsFactory.
-        newMetrics(config.graphStatistics, mock[ExpressionEvaluator], cypherCompilerConfig).
-        queryGraphCardinalityModel(qg, input, semanticTable)
-
     def withLogicalPlanningContext[T](f: (C, LogicalPlanningContext) => T): T = {
       val metrics = metricsFactory.newMetrics(config.graphStatistics, mock[ExpressionEvaluator], cypherCompilerConfig)
       val planningAttributes = PlanningAttributes.newAttributes

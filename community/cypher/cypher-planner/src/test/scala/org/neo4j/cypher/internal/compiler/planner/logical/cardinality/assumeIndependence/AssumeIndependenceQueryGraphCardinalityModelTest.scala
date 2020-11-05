@@ -216,6 +216,52 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends CypherFunSuite wi
     expectCardinality(A * B * C)
   }
 
+  test("MATCH (a:A) OPTIONAL MATCH (b:B) OPTIONAL MATCH (b)") {
+    expectCardinality(A * B)
+  }
+
+  test("MATCH (a:A) OPTIONAL MATCH (b) OPTIONAL MATCH (b:B)") {
+    expectCardinality(A * N)
+  }
+
+  test("MATCH (a:A) OPTIONAL MATCH (a)-[:T1]->(b:B) OPTIONAL MATCH (b)") {
+    expectCardinality(Math.max(A, A_T1_B))
+  }
+
+  test("MATCH (a:A) OPTIONAL MATCH (a)-[:T1]->(b:B) OPTIONAL MATCH (a)-[:T1]->(c:C)") {
+    val a = A
+    val a_b = Math.max(a, a * B * A_T1_B_sel)
+    val a_c = Math.max(a_b, a_b * C * A_T1_C_sel)
+    expectCardinality(a_c)
+  }
+
+  test("MATCH (a:A) OPTIONAL MATCH (a)-[:T1]->(b:B) OPTIONAL MATCH (b)-[:T1]->(c:C)") {
+    val a = A
+    val a_b = Math.max(a, a * B * A_T1_B_sel)
+    val b_c = Math.max(a_b, a_b * C * B_T1_C_sel)
+    expectCardinality(b_c)
+  }
+
+  test("MATCH (a:A) OPTIONAL MATCH (a)-->(b) OPTIONAL MATCH (b)-->(c) OPTIONAL MATCH (c)-->(d)") {
+    val a = A
+    val a_b = Math.max(a, A_ANY_ANY)
+    val b_c = Math.max(a_b, a_b * N * R_sel)
+    val c_d = Math.max(b_c, b_c * N * R_sel)
+    expectCardinality(c_d)
+  }
+
+  test("MATCH (a:A) OPTIONAL MATCH (a) WHERE a.prop = 1") {
+    expectCardinality(Math.max(A, A * Aprop))
+  }
+
+  test("MATCH (a:A) OPTIONAL MATCH (b:B) WHERE a.prop = 1") {
+    expectCardinality(Math.max(A, A * B * Aprop))
+  }
+
+  test("MATCH (a:A) OPTIONAL MATCH (b:B) WHERE a.prop = 1 AND b.prop = 1") {
+    expectCardinality(Math.max(A, A * B * Aprop * Bprop))
+  }
+
   test("MATCH (a:A) WHERE id(a) IN [1,2,3]") {
     expectCardinality(A * (3.0 / N))
   }

@@ -182,6 +182,7 @@ trait ABCDECardinalityData extends CardinalityModelIntegrationTest {
 
   // Relationship count: the total number of relationships in the system
   val R = A_ANY_ANY + B_ANY_ANY + C_ANY_ANY + D_ANY_ANY + E_ANY_ANY
+  val R_sel = R / (N * N)
 
   override protected def plannerBuilder(): StatisticsBackedLogicalPlanningConfigurationBuilder =
     super.plannerBuilder()
