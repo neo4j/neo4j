@@ -131,6 +131,19 @@ public class LogAssert extends AbstractAssert<LogAssert, AssertableLogProvider>
         return this;
     }
 
+    public LogAssert eachMessageContains( String message )
+    {
+        isNotNull();
+        for ( LogCall logCall : actual.getLogCalls() )
+        {
+            if ( !matchedMessage( message, logCall ) )
+            {
+                failWithMessage( "Expected each log message to contain '%s', but message '%s' doesn't", message, logCall.toLogLikeString() );
+            }
+        }
+        return this;
+    }
+
     public AbstractThrowableAssert<?,? extends Throwable> assertExceptionForLogMessage( String message )
     {
         isNotNull();
