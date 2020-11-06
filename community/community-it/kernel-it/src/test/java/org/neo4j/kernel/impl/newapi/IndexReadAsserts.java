@@ -23,10 +23,13 @@ import org.eclipse.collections.api.set.primitive.MutableLongSet;
 
 import org.neo4j.internal.kernel.api.NodeIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipIndexCursor;
+import org.neo4j.internal.schema.IndexOrder;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.internal.kernel.api.Read.NO_ID;
 
 class IndexReadAsserts
 {
@@ -57,13 +60,17 @@ class IndexReadAsserts
         assertFalse( node.next(), "no more than " + expectedCount + " nodes" );
     }
 
-    static void assertRelationships( RelationshipIndexCursor edge, MutableLongSet uniqueIds, long... expected )
+    static void assertRelationships( RelationshipIndexCursor edge, MutableLongSet uniqueIds, IndexOrder order, long... expected )
     {
         uniqueIds.clear();
+        long previousId = NO_ID;
         for ( long count : expected )
         {
             assertTrue( edge.next(), "at least " + expected.length + " relationships" );
-            assertTrue( uniqueIds.add( edge.relationshipReference() ) );
+            long currentId = edge.relationshipReference();
+            assertTrue( uniqueIds.add( currentId ) );
+            checkRelationshipOrder( order, previousId, currentId );
+            previousId = currentId;
         }
         assertFalse( edge.next(), "no more than " + expected.length + " relationships" );
         assertEquals( expected.length, uniqueIds.size(), "all relationships are unique" );
@@ -81,5 +88,24 @@ class IndexReadAsserts
             assertTrue( uniqueIds.add( edge.relationshipReference() ) );
         }
         assertFalse( edge.next(), "no more than " + edges + " relationships" );
+    }
+
+    static void checkRelationshipOrder( IndexOrder expectedOrder, long previousId, long currentId )
+    {
+        if ( previousId != NO_ID )
+        {
+            switch ( expectedOrder )
+            {
+            case ASCENDING:
+                assertThat( previousId ).isLessThan( currentId );
+                break;
+            case DESCENDING:
+                assertThat( previousId ).isGreaterThan( currentId );
+                break;
+            case NONE:
+            default:
+                break;
+            }
+        }
     }
 }

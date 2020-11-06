@@ -1220,7 +1220,7 @@ public class Operations implements Write, SchemaWrite
         {
             try ( RelationshipTypeIndexCursor relationshipsWithType = cursors.allocateRelationshipTypeIndexCursor() )
             {
-                allStoreHolder.relationshipTypeScan( schema.getRelTypeId(), relationshipsWithType );
+                allStoreHolder.relationshipTypeScan( schema.getRelTypeId(), relationshipsWithType, IndexOrder.NONE );
                 constraintSemantics.validateRelationshipPropertyExistenceConstraint( relationshipsWithType, relationshipCursor, propertyCursor, schema, token );
             }
         }

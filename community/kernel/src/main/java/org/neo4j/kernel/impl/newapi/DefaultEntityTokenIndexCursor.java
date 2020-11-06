@@ -243,6 +243,7 @@ abstract class DefaultEntityTokenIndexCursor<SELF extends DefaultEntityTokenInde
             entity = NO_ID;
             tokens = null;
             read = null;
+            added = null;
             removed = null;
             accessMode = null;
 

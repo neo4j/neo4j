@@ -53,6 +53,7 @@ import org.neo4j.internal.kernel.api.security.AdminAccessMode;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
@@ -284,7 +285,7 @@ public class AllStoreHolder extends Read
                   DefaultNodeCursor sourceNode = cursors.allocateNodeCursor( cursorTracer );
                   DefaultNodeCursor targetNode = cursors.allocateNodeCursor( cursorTracer ) )
             {
-                this.relationshipTypeScan( typeId, relationshipsWithType );
+                this.relationshipTypeScan( typeId, relationshipsWithType, IndexOrder.NONE );
                 while ( relationshipsWithType.next() )
                 {
                     relationshipsWithType.relationship( relationship );

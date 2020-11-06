@@ -291,7 +291,14 @@ public interface Read
 
     void relationshipTypeScan( int type, RelationshipScanCursor cursor );
 
-    void relationshipTypeScan( int type, RelationshipTypeIndexCursor relationshipTypeIndexCursor );
+    /**
+     * Scan all relationships of a type.
+     *
+     * @param type the relationship type
+     * @param relationshipTypeIndexCursor the cursor to use for consuming the results.
+     * @param order the requested order on the query result.
+     */
+    void relationshipTypeScan( int type, RelationshipTypeIndexCursor relationshipTypeIndexCursor, IndexOrder order );
 
     /**
      * @param nodeReference

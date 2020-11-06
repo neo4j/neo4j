@@ -311,7 +311,7 @@ abstract class Read implements TxStateHolder,
     }
 
     @Override
-    public final void relationshipTypeScan( int type, RelationshipTypeIndexCursor relationshipTypeIndexCursor )
+    public final void relationshipTypeScan( int type, RelationshipTypeIndexCursor relationshipTypeIndexCursor, IndexOrder order )
     {
         ktx.assertOpen();
         if ( relationshipTypeScanStoreEnabled() )
@@ -321,9 +321,9 @@ abstract class Read implements TxStateHolder,
 
             TokenScanReader relationshipTypeScanReader = relationshipTypeScanReader();
             TokenScan relationshipTypeScan = relationshipTypeScanReader.entityTokenScan( type, cursorTracer );
-            IndexProgressor progressor = relationshipTypeScan.initialize( cursor.relationshipTypeClient(), IndexOrder.NONE, cursorTracer );
+            IndexProgressor progressor = relationshipTypeScan.initialize( cursor.entityTokenClient(), order, cursorTracer );
 
-            cursor.scan( progressor, type );
+            cursor.scan( progressor, type, order );
         }
         else
         {

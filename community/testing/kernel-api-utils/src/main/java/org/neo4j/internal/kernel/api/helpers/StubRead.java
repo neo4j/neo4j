@@ -179,7 +179,7 @@ public class StubRead implements Read
     }
 
     @Override
-    public void relationshipTypeScan( int type, RelationshipTypeIndexCursor relationshipTypeIndexCursor )
+    public void relationshipTypeScan( int type, RelationshipTypeIndexCursor relationshipTypeIndexCursor, IndexOrder order )
     {
         throw new UnsupportedOperationException();
     }

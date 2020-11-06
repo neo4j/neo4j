@@ -22,11 +22,14 @@ package org.neo4j.kernel.impl.newapi;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipTypeIndexCursor;
 import org.neo4j.internal.kernel.api.Write;
+import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.newapi.TestKernelReadTracer.TraceEvent;
 
@@ -37,24 +40,30 @@ import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.TraceEventKind.R
 
 abstract class RelationshipTypeIndexCursorTestBase<G extends KernelAPIWriteTestSupport> extends KernelAPIWriteTestBase<G>
 {
-    private int typeOne = 1;
-    private int typeTwo = 2;
-    private int typeThree = 3;
+    private final int typeOne = 1;
+    private final int typeTwo = 2;
+    private final int typeThree = 3;
 
-    @Test
-    void shouldFindRelationshipsByType() throws KernelException
+    @ParameterizedTest
+    @EnumSource( value = IndexOrder.class )
+    void shouldFindRelationshipsByType( IndexOrder order ) throws KernelException
     {
         // GIVEN
         long toDelete;
+        long relTwo;
+        long relThree;
+        long relTwo2;
+        long relThree2;
+        long relThree3;
         try ( KernelTransaction tx = beginTransaction() )
         {
             createRelationship( tx.dataWrite(), typeOne );
-            createRelationship( tx.dataWrite(), typeTwo );
-            createRelationship( tx.dataWrite(), typeThree );
+            relTwo = createRelationship( tx.dataWrite(), typeTwo );
+            relThree = createRelationship( tx.dataWrite(), typeThree );
             toDelete = createRelationship( tx.dataWrite(), typeOne );
-            createRelationship( tx.dataWrite(), typeTwo );
-            createRelationship( tx.dataWrite(), typeThree );
-            createRelationship( tx.dataWrite(), typeThree );
+            relTwo2 = createRelationship( tx.dataWrite(), typeTwo );
+            relThree2 = createRelationship( tx.dataWrite(), typeThree );
+            relThree3 = createRelationship( tx.dataWrite(), typeThree );
             tx.commit();
         }
 
@@ -73,38 +82,42 @@ abstract class RelationshipTypeIndexCursorTestBase<G extends KernelAPIWriteTestS
                 MutableLongSet uniqueIds = new LongHashSet();
 
                 // WHEN
-                read.relationshipTypeScan( typeOne, cursor );
+                read.relationshipTypeScan( typeOne, cursor, order );
 
                 // THEN
                 assertRelationshipCount( cursor, 1, uniqueIds );
 
                 // WHEN
-                read.relationshipTypeScan( typeTwo, cursor );
+                read.relationshipTypeScan( typeTwo, cursor, order );
 
                 // THEN
-                assertRelationshipCount( cursor, 2, uniqueIds );
+                assertRelationships( cursor, uniqueIds, order, relTwo, relTwo2 );
 
                 // WHEN
-                read.relationshipTypeScan( typeThree, cursor );
+                read.relationshipTypeScan( typeThree, cursor, order );
 
                 // THEN
-                assertRelationshipCount( cursor, 3, uniqueIds );
+                assertRelationships( cursor, uniqueIds, order, relThree, relThree2, relThree3 );
             }
         }
     }
 
-    @Test
-    void shouldFindRelationshipsByTypeInTx() throws KernelException
+    @ParameterizedTest
+    @EnumSource( value = IndexOrder.class )
+    void shouldFindRelationshipsByTypeInTx( IndexOrder order ) throws KernelException
     {
         long inStore;
+        long inStore2;
         long deletedInTx;
         long createdInTx;
+        long createdInTx2;
 
         try ( KernelTransaction tx = beginTransaction() )
         {
             inStore = createRelationship( tx.dataWrite(), typeOne );
             createRelationship( tx.dataWrite(), typeTwo );
             deletedInTx = createRelationship( tx.dataWrite(), typeOne );
+            inStore2 = createRelationship( tx.dataWrite(), typeOne );
             tx.commit();
         }
 
@@ -115,6 +128,8 @@ abstract class RelationshipTypeIndexCursorTestBase<G extends KernelAPIWriteTestS
 
             createRelationship( tx.dataWrite(), typeTwo );
 
+            createdInTx2 = createRelationship( tx.dataWrite(), typeOne );
+
             Read read = tx.dataRead();
 
             try ( RelationshipTypeIndexCursor cursor = tx.cursors().allocateRelationshipTypeIndexCursor() )
@@ -122,10 +137,10 @@ abstract class RelationshipTypeIndexCursorTestBase<G extends KernelAPIWriteTestS
                 MutableLongSet uniqueIds = new LongHashSet();
 
                 // when
-                read.relationshipTypeScan( typeOne, cursor );
+                read.relationshipTypeScan( typeOne, cursor, order );
 
                 // then
-                assertRelationships( cursor, uniqueIds, inStore, createdInTx );
+                assertRelationships( cursor, uniqueIds, order, inStore, inStore2, createdInTx, createdInTx2 );
             }
         }
     }
@@ -152,10 +167,9 @@ abstract class RelationshipTypeIndexCursorTestBase<G extends KernelAPIWriteTestS
             {
                 TestKernelReadTracer tracer = new TestKernelReadTracer();
                 cursor.setTracer( tracer );
-                MutableLongSet uniqueIds = new LongHashSet();
 
                 // when
-                read.relationshipTypeScan( typeOne, cursor );
+                read.relationshipTypeScan( typeOne, cursor, IndexOrder.NONE );
                 exhaustCursor( cursor );
 
                 // then
@@ -164,7 +178,7 @@ abstract class RelationshipTypeIndexCursorTestBase<G extends KernelAPIWriteTestS
                         new TraceEvent( Relationship, first ) );
 
                 // when
-                read.relationshipTypeScan( typeTwo, cursor );
+                read.relationshipTypeScan( typeTwo, cursor, IndexOrder.NONE );
                 exhaustCursor( cursor );
 
                 // then
