@@ -177,6 +177,17 @@ class DbmsDiagnosticsManagerTest
     }
 
     @Test
+    void dumpDatabaseDiagnosticsContainsDbName()
+    {
+        logProvider.assertNoLoggingOccurred();
+
+        diagnosticsManager.dumpDatabaseDiagnostics( defaultDatabase );
+
+        // Assert that database diagnostics contain the database name on each line
+        assertContainsOnEachLine( defaultDatabase.getNamedDatabaseId().name() );
+    }
+
+    @Test
     void dumpDiagnosticsEvenOnFailure()
     {
         DiagnosticsProvider diagnosticsProvider = new DiagnosticsProvider()
@@ -353,7 +364,6 @@ class DbmsDiagnosticsManagerTest
 
     private void assertContainsLogLineSequence( String[] expectedLines, String[] linesThatMustNotBeInterleaved )
     {
-        System.out.println( logProvider.serialize() );
         String[] allConsideredLines = union( expectedLines, linesThatMustNotBeInterleaved );
         Iterator<String> relevantLines = stream( logProvider.serialize().split( format( "%n" ) ) ).filter(
                 line -> stream( allConsideredLines ).anyMatch( line::contains ) ).iterator();
@@ -370,5 +380,13 @@ class DbmsDiagnosticsManagerTest
             }
         }
         fail( "Did not encounter first expected log line at all: " + expectedLines[0] );
+    }
+
+    private void assertContainsOnEachLine( String expected )
+    {
+        for ( String line : logProvider.serialize().split( format( "%n" ) ) )
+        {
+            assertThat( line, containsString( expected ) );
+        }
     }
 }
