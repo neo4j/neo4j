@@ -43,6 +43,8 @@ case class DeprecatedDropIndexSyntax(position: InputPosition) extends InternalNo
 
 case class DeprecatedDropConstraintSyntax(position: InputPosition) extends InternalNotification
 
+case class DeprecatedCreatePropertyExistenceConstraintSyntax(position: InputPosition) extends InternalNotification
+
 case class DeprecatedRepeatedRelVarInPatternExpression(position: InputPosition, relName: String) extends InternalNotification
 
 case class DeprecatedOctalLiteralSyntax(position: InputPosition) extends InternalNotification

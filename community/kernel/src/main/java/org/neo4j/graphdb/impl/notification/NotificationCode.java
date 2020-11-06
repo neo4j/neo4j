@@ -118,6 +118,12 @@ public enum NotificationCode
             Status.Statement.FeatureDeprecationWarning,
             "The drop constraint by schema syntax `DROP CONSTRAINT ON ...` is deprecated, please use `DROP CONSTRAINT constraint_name` instead"
     ),
+    DEPRECATED_CREATE_PROPERTY_EXISTENCE_CONSTRAINT_SYNTAX(
+            SeverityLevel.WARNING,
+            Status.Statement.FeatureDeprecationWarning,
+            "The create property existence constraint syntax `CREATE CONSTRAINT ON ... ASSERT exists(variable.property)` is deprecated, " +
+                    "please use `CREATE CONSTRAINT ON ... ASSERT (variable.property) IS NOT NULL` instead"
+    ),
     DEPRECATED_OCTAL_LITERAL_SYNTAX(
             SeverityLevel.WARNING,
             Status.Statement.FeatureDeprecationWarning,

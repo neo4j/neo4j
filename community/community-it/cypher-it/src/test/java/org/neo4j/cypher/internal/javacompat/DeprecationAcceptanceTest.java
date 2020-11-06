@@ -117,6 +117,20 @@ public class DeprecationAcceptanceTest extends NotificationTestSupport
                 containsItem( deprecatedDropConstraintSyntax ) );
     }
 
+    @Test
+    void deprecatedCreateNodePropertyExistenceConstraintSyntax()
+    {
+        assertNotificationsInSupportedVersions( "EXPLAIN CREATE CONSTRAINT ON (n:Label) ASSERT EXISTS (n.prop)",
+                containsItem( deprecatedCreatePropertyExistenceConstraintSyntax ) );
+    }
+
+    @Test
+    void deprecatedCreateRelationshipPropertyExistenceConstraintSyntax()
+    {
+        assertNotificationsInSupportedVersions( "EXPLAIN CREATE CONSTRAINT ON ()-[r:Type]-() ASSERT EXISTS (r.prop)",
+                containsItem( deprecatedCreatePropertyExistenceConstraintSyntax ) );
+    }
+
     // FUNCTIONALITY DEPRECATED IN 3.5, REMOVED IN 4.0
 
     @Test
@@ -242,44 +256,48 @@ public class DeprecationAcceptanceTest extends NotificationTestSupport
         }
     }
 
-    private Matcher<Notification> deprecatedFeatureWarning =
+    private final Matcher<Notification> deprecatedFeatureWarning =
             deprecation( "The query used a deprecated function." );
 
-    private Matcher<Notification> deprecatedProcedureWarning =
+    private final Matcher<Notification> deprecatedProcedureWarning =
             deprecation( "The query used a deprecated procedure." );
 
-    private Matcher<Notification> deprecatedProcedureReturnFieldWarning =
+    private final Matcher<Notification> deprecatedProcedureReturnFieldWarning =
             deprecation( "The query used a deprecated field from a procedure." );
 
-    private Matcher<Notification> deprecatedBindingWarning =
+    private final Matcher<Notification> deprecatedBindingWarning =
             deprecation( "Binding relationships to a list in a variable length pattern is deprecated." );
 
-    private Matcher<Notification> deprecatedSeparatorWarning =
+    private final Matcher<Notification> deprecatedSeparatorWarning =
             deprecation( "The semantics of using colon in the separation of alternative relationship " +
                          "types in conjunction with the use of variable binding, inlined property " +
                          "predicates, or variable length will change in a future version." );
 
-    private Matcher<Notification> deprecatedParameterSyntax =
+    private final Matcher<Notification> deprecatedParameterSyntax =
             deprecation( "The parameter syntax `{param}` is deprecated, please use `$param` instead" );
 
-    private Matcher<Notification> deprecatedCreateIndexSyntax =
+    private final Matcher<Notification> deprecatedCreateIndexSyntax =
             deprecation( "The create index syntax `CREATE INDEX ON :Label(property)` is deprecated, " +
                     "please use `CREATE INDEX FOR (n:Label) ON (n.property)` instead" );
 
-    private Matcher<Notification> deprecatedDropIndexSyntax =
+    private final Matcher<Notification> deprecatedDropIndexSyntax =
             deprecation( "The drop index syntax `DROP INDEX ON :Label(property)` is deprecated, please use `DROP INDEX index_name` instead" );
 
-    private Matcher<Notification> deprecatedDropConstraintSyntax =
+    private final Matcher<Notification> deprecatedDropConstraintSyntax =
             deprecation( "The drop constraint by schema syntax `DROP CONSTRAINT ON ...` is deprecated, " +
                     "please use `DROP CONSTRAINT constraint_name` instead" );
 
-    private Matcher<Notification> deprecatedLengthOnNonPath =
+    private final Matcher<Notification> deprecatedCreatePropertyExistenceConstraintSyntax =
+            deprecation( "The create property existence constraint syntax `CREATE CONSTRAINT ON ... ASSERT exists(variable.property)` is deprecated, " +
+                    "please use `CREATE CONSTRAINT ON ... ASSERT (variable.property) IS NOT NULL` instead" );
+
+    private final Matcher<Notification> deprecatedLengthOnNonPath =
             deprecation( "Using 'length' on anything that is not a path is deprecated, please use 'size' instead" );
 
-    private Matcher<Notification> deprecatedOctalLiteralSyntax =
+    private final Matcher<Notification> deprecatedOctalLiteralSyntax =
             deprecation( "The octal integer literal syntax `0123` is deprecated, please use `0o123` instead" );
 
-    private Matcher<Notification> deprecatedHexLiteralSyntax =
+    private final Matcher<Notification> deprecatedHexLiteralSyntax =
             deprecation( "The hex integer literal syntax `0X123` is deprecated, please use `0x123` instead" );
 
     private static Matcher<Notification> deprecation( String message )
