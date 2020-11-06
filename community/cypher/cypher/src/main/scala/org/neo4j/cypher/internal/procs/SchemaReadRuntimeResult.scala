@@ -47,6 +47,7 @@ case class SchemaReadRuntimeResult(ctx: QueryContext, subscriber: QuerySubscribe
       }
       subscriber.onRecordCompleted()
     }
+    subscriber.onResultCompleted(queryStatistics())
   }
 
   override def queryStatistics(): QueryStatistics = ctx.getOptStatistics.getOrElse(QueryStatistics())
