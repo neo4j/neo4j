@@ -32,6 +32,8 @@ import org.neo4j.internal.diagnostics.DiagnosticsManager;
 import org.neo4j.internal.diagnostics.DiagnosticsProvider;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.database.Database;
+import org.neo4j.kernel.database.DatabaseNameLogContext;
+import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLog;
@@ -90,11 +92,11 @@ public class DbmsDiagnosticsManager
 
     private void dumpConciseDiagnostics( Database database, Log log )
     {
-        dumpAsSingleMessage( log, stringJoiner ->
+        dumpAsSingleMessageWithDbPrefix( log, stringJoiner ->
         {
             dumpDatabaseSectionName( database, stringJoiner::add );
             logDatabaseStatus( database, stringJoiner::add );
-        } );
+        }, database.getNamedDatabaseId() );
     }
 
     private void dumpSystemDiagnostics( Log log )
@@ -112,7 +114,7 @@ public class DbmsDiagnosticsManager
 
     private void dumpDatabaseDiagnostics( Database database, Log log, boolean checkStatus )
     {
-        dumpAsSingleMessage( log, stringJoiner ->
+        dumpAsSingleMessageWithDbPrefix( log, stringJoiner ->
         {
             dumpDatabaseSectionName( database, stringJoiner::add );
             if ( checkStatus )
@@ -134,14 +136,23 @@ public class DbmsDiagnosticsManager
             DiagnosticsManager.dump( new StoreFilesDiagnostics( storageEngineFactory, fs, database.getDatabaseLayout() ), log, stringJoiner::add );
             DiagnosticsManager.dump( new TransactionRangeDiagnostics( database ), log, stringJoiner::add );
             storageEngine.dumpDiagnostics( log, stringJoiner::add );
-        });
+        }, database.getNamedDatabaseId() );
+    }
+
+    private void dumpAsSingleMessageWithDbPrefix( Log log, Consumer<StringJoiner> dumpFunction, NamedDatabaseId db )
+    {
+        dumpAsSingleMessageWithPrefix( log, dumpFunction, new DatabaseNameLogContext( db ).formatMessage( "" ) );
+    }
+
+    private void dumpAsSingleMessage( Log log, Consumer<StringJoiner> dumpFunction )
+    {
+                dumpAsSingleMessageWithPrefix( log, dumpFunction, "" );
     }
 
     /**
-     * Messages will be buffered and logged as one single message to make sure that diagnostics are
-     * grouped together in the log.
+     * Messages will be buffered and logged as one single message to make sure that diagnostics are grouped together in the log.
      */
-    private void dumpAsSingleMessage( Log log, Consumer<StringJoiner> dumpFunction )
+    private void dumpAsSingleMessageWithPrefix( Log log, Consumer<StringJoiner> dumpFunction, String prefix )
     {
         // Optimization to skip diagnostics dumping (which is time consuming) if there's no log anyway.
         // This is first and foremost useful for speeding up testing.
@@ -150,7 +161,8 @@ public class DbmsDiagnosticsManager
             return;
         }
 
-        StringJoiner message = new StringJoiner( System.lineSeparator() + " ".repeat( 64 ), System.lineSeparator() + " ".repeat( 64 ), "" );
+        StringJoiner message =
+                new StringJoiner( System.lineSeparator() + " ".repeat( 64 ) + prefix, prefix + System.lineSeparator() + " ".repeat( 64 ) + prefix, "" );
         dumpFunction.accept( message );
         log.info( message.toString() );
     }

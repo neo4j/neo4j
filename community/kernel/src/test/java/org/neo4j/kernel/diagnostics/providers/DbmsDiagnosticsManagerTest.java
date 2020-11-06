@@ -167,6 +167,17 @@ class DbmsDiagnosticsManagerTest
     }
 
     @Test
+    void dumpDatabaseDiagnosticsContainsDbName()
+    {
+        assertThat( logProvider ).doesNotHaveAnyLogs();
+
+        diagnosticsManager.dumpDatabaseDiagnostics( defaultDatabase );
+
+        // Assert that database diagnostics contain the database name on each line
+        assertThat( logProvider ).eachMessageContains( defaultDatabase.getNamedDatabaseId().name() );
+    }
+
+    @Test
     void dumpDiagnosticsEvenOnFailure()
     {
         DiagnosticsProvider diagnosticsProvider = new DiagnosticsProvider()
