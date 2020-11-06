@@ -92,7 +92,7 @@ class HeapTrackingLongEnumerationListTest
         assertNull( table.get( 2 ) );
         assertNull( table.getFirst() );
         table.foreach( ( k, v ) -> fail() );
-        assertFalse( table.iterator().hasNext() );
+        assertFalse( table.valuesIterator().hasNext() );
         assertHeapUsageWithNumberOfLongs( 0 );
 
         // When
@@ -105,7 +105,7 @@ class HeapTrackingLongEnumerationListTest
         assertEquals( 42L, table.get( 3 ) );
         assertEquals( 42L, table.getFirst() );
         table.foreach( ( k, v ) -> assertEquals( 42L, v ) );
-        Iterator<Long> it = table.iterator();
+        Iterator<Long> it = table.valuesIterator();
         assertTrue( it.hasNext() );
         assertEquals( 42L, it.next() );
         assertFalse( it.hasNext() );
@@ -122,7 +122,7 @@ class HeapTrackingLongEnumerationListTest
         assertNull( table.get( 6 ) );
         assertEquals( 42L, table.getFirst() );
         table.foreach( ( k, v ) -> assertEquals( 42L, v ) );
-        Iterator<Long> it2 = table.iterator();
+        Iterator<Long> it2 = table.valuesIterator();
         assertTrue( it2.hasNext() );
         assertEquals( 42L, it2.next() );
         assertFalse( it2.hasNext() );
@@ -137,7 +137,7 @@ class HeapTrackingLongEnumerationListTest
         assertNull( table.get( 2 ) );
         assertNull( table.getFirst() );
         table.foreach( ( k, v ) -> fail() );
-        assertFalse( table.iterator().hasNext() );
+        assertFalse( table.valuesIterator().hasNext() );
         assertHeapUsageWithNumberOfLongs( 0 );
     }
 
@@ -239,7 +239,7 @@ class HeapTrackingLongEnumerationListTest
         assertEquals( i.get(), size * 2 - 2 );
 
         // Test iterator
-        Iterator<Long> it = table.iterator();
+        Iterator<Long> it = table.valuesIterator();
         long expected = 1; // First element was removed
         while ( it.hasNext() )
         {
@@ -460,7 +460,7 @@ class HeapTrackingLongEnumerationListTest
         // remove 9901
         table.remove( 9901 );
 
-        Iterator<Long> it = table.iterator();
+        Iterator<Long> it = table.valuesIterator();
         for ( long i = size / 4; i < size - 1; i++ )
         {
             assertTrue( it.hasNext() );

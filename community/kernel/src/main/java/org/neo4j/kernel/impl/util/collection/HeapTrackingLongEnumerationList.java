@@ -335,7 +335,10 @@ public class HeapTrackingLongEnumerationList<V> extends DefaultCloseListenable
         return firstChunk == null;
     }
 
-    public Iterator<V> iterator()
+    /**
+     * Warning: not safe to modify during iteration.
+     */
+    public Iterator<V> valuesIterator()
     {
         if ( isEmpty() )
         {
@@ -351,10 +354,12 @@ public class HeapTrackingLongEnumerationList<V> extends DefaultCloseListenable
     {
         private Chunk<V> chunk;
         private int index;
+        private long remaining;
 
         {
             chunk = firstChunk;
             index = (int) (firstKey & (chunkSize - 1));
+            remaining = size();
         }
 
         @Override
@@ -385,13 +390,14 @@ public class HeapTrackingLongEnumerationList<V> extends DefaultCloseListenable
             do
             {
                 index++;
+                remaining--;
                 if ( index >= chunkSize )
                 {
                     index = 0;
                     chunk = chunk.next;
                 }
             }
-            while ( chunk != null && chunk.values[index] == null );
+            while ( chunk != null && chunk.values[index] == null && remaining > 0 );
         }
     }
 
