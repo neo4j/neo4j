@@ -28,7 +28,7 @@ This class ties together disparate query graphs through their event horizons. It
 which in most cases is then rewritten away by LogicalPlan rewriting.
 */
 case class PlanWithTail(planEventHorizon: EventHorizonPlanner = PlanEventHorizon,
-                        planPart: PartPlanner = planPart,
+                        planPart: MatchPlanner = planMatch,
                         planUpdates: UpdatesPlanner = PlanUpdates)
   extends TailPlanner {
 

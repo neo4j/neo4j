@@ -35,7 +35,7 @@ import scala.collection.mutable
 This coordinates PlannerQuery planning and delegates work to the classes that do the actual planning of
 QueryGraphs and EventHorizons
  */
-case class PlanSingleQuery(planPart: PartPlanner = planPart,
+case class PlanSingleQuery(planPart: MatchPlanner = planMatch,
                            planEventHorizon: EventHorizonPlanner = PlanEventHorizon,
                            planWithTail: TailPlanner = PlanWithTail(),
                            planUpdates:UpdatesPlanner = PlanUpdates)
@@ -117,7 +117,7 @@ case class PlanSingleQuery(planPart: PartPlanner = planPart,
   }
 }
 
-trait PartPlanner {
+trait MatchPlanner {
   def apply(query: SinglePlannerQuery, context: LogicalPlanningContext, rhsPart: Boolean = false): BestPlans
 }
 

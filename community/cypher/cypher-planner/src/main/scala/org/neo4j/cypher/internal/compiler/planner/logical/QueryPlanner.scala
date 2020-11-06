@@ -32,7 +32,6 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.verifyBestPlan
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
 import org.neo4j.cypher.internal.frontend.phases.Phase
 import org.neo4j.cypher.internal.ir.AggregatingQueryProjection
-import org.neo4j.cypher.internal.ir.DistinctQueryProjection
 import org.neo4j.cypher.internal.ir.PeriodicCommit
 import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.ir.PlannerQueryPart
@@ -155,7 +154,7 @@ case object plannerQueryPartPlanner {
     }
 }
 
-case object planPart extends PartPlanner {
+case object planMatch extends MatchPlanner {
 
   def apply(query: SinglePlannerQuery, context: LogicalPlanningContext, rhsPart: Boolean = false): BestPlans = {
     val ctx = query.preferredStrictness match {
