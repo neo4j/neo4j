@@ -52,12 +52,19 @@ public class NotificationTestSupport
     @Inject
     protected GraphDatabaseAPI db;
 
-    void assertNotifications( String query, Matcher<Iterable<Notification>> matchesExpectation )
+    private List<String> supportedCypherVersions = List.of( "CYPHER 3.5", "CYPHER 4.2", "CYPHER 4.3" );
+
+    void assertNotificationsInSupportedVersions( String query, Matcher<Iterable<Notification>> matchesExpectation )
     {
-        assertNotifications( List.of( "CYPHER 3.5", "CYPHER 4.2", "CYPHER 4.3" ), query, matchesExpectation );
+        assertNotifications( supportedCypherVersions, query, matchesExpectation );
     }
 
-    void assertNotifications( List<String> versions, String query, Matcher<Iterable<Notification>> matchesExpectation )
+    void assertNotificationsInLastMajorVersion( String query, Matcher<Iterable<Notification>> matchesExpectation )
+    {
+        assertNotifications( List.of( "CYPHER 3.5"), query, matchesExpectation );
+    }
+
+    private void assertNotifications( List<String> versions, String query, Matcher<Iterable<Notification>> matchesExpectation )
     {
 
         versions.forEach( version ->
@@ -144,7 +151,7 @@ public class NotificationTestSupport
 
     void shouldNotifyInStream( String query, InputPosition pos, NotificationCode code )
     {
-        Stream.of( "CYPHER 3.5", "CYPHER 4.2", "CYPHER 4.3" ).forEach( version ->
+        Stream.of( supportedCypherVersions.toArray() ).forEach( version ->
         {
             try ( Transaction transaction = db.beginTx() )
             {
@@ -165,7 +172,7 @@ public class NotificationTestSupport
     void shouldNotifyInStreamWithDetail( String query, InputPosition pos, NotificationCode code,
                                          NotificationDetail detail )
     {
-        Stream.of( "CYPHER 3.5", "CYPHER 4.2", "CYPHER 4.3" ).forEach( version ->
+        Stream.of( supportedCypherVersions.toArray() ).forEach( version ->
         {
             try ( Transaction transaction = db.beginTx() )
             {
@@ -186,7 +193,7 @@ public class NotificationTestSupport
 
     void shouldNotNotifyInStream( String query )
     {
-        Stream.of( "CYPHER 3.5", "CYPHER 4.2", "CYPHER 4.3" ).forEach( version ->
+        Stream.of( supportedCypherVersions.toArray() ).forEach( version ->
         {
             try ( Transaction transaction = db.beginTx() )
             {

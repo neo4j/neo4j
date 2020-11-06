@@ -16,36 +16,16 @@
  */
 package org.neo4j.cypher.internal.rewriting
 
-import org.neo4j.cypher.internal.ast.AlterUser
 import org.neo4j.cypher.internal.ast.CreateIndex
 import org.neo4j.cypher.internal.ast.CreateNodeKeyConstraint
 import org.neo4j.cypher.internal.ast.CreateNodePropertyExistenceConstraint
 import org.neo4j.cypher.internal.ast.CreateRelationshipPropertyExistenceConstraint
 import org.neo4j.cypher.internal.ast.CreateUniquePropertyConstraint
-import org.neo4j.cypher.internal.ast.CreateUser
-import org.neo4j.cypher.internal.ast.DatabasePrivilege
-import org.neo4j.cypher.internal.ast.DbmsPrivilege
-import org.neo4j.cypher.internal.ast.DefaultGraphScope
-import org.neo4j.cypher.internal.ast.DenyPrivilege
 import org.neo4j.cypher.internal.ast.DropConstraintOnName
 import org.neo4j.cypher.internal.ast.DropIndexOnName
-import org.neo4j.cypher.internal.ast.ExecuteAdminProcedureAction
-import org.neo4j.cypher.internal.ast.ExecuteBoostedFunctionAction
-import org.neo4j.cypher.internal.ast.ExecuteBoostedProcedureAction
-import org.neo4j.cypher.internal.ast.ExecuteFunctionAction
-import org.neo4j.cypher.internal.ast.ExecuteProcedureAction
-import org.neo4j.cypher.internal.ast.GrantPrivilege
 import org.neo4j.cypher.internal.ast.IfExistsDoNothing
-import org.neo4j.cypher.internal.ast.RevokePrivilege
-import org.neo4j.cypher.internal.ast.ShowConstraintAction
 import org.neo4j.cypher.internal.ast.ShowConstraints
-import org.neo4j.cypher.internal.ast.ShowCurrentUser
-import org.neo4j.cypher.internal.ast.ShowIndexAction
 import org.neo4j.cypher.internal.ast.ShowIndexes
-import org.neo4j.cypher.internal.ast.ShowPrivilegeCommands
-import org.neo4j.cypher.internal.ast.ShowPrivileges
-import org.neo4j.cypher.internal.ast.ShowRolesPrivileges
-import org.neo4j.cypher.internal.ast.ShowUsersPrivileges
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.UseGraph
 import org.neo4j.cypher.internal.expressions.ExistsSubClause
@@ -127,22 +107,6 @@ object Additions {
       // SHOW [ALL|UNIQUE|NODE EXIST[S]|RELATIONSHIP EXIST[S]|EXIST[S]|NODE KEY] CONSTRAINT[S] [BRIEF|VERBOSE[OUTPUT]]
       case s@ShowConstraints(_, _, _) =>
         throw cypherExceptionFactory.syntaxException("SHOW CONSTRAINTS is not supported in this Cypher version.", s.position)
-
-      // GRANT EXECUTE [BOOSTED|ADMIN] PROCEDURES ...
-      case p@GrantPrivilege(DbmsPrivilege(ExecuteProcedureAction), _, _, _, _) =>
-        throw cypherExceptionFactory.syntaxException("EXECUTE PROCEDURE is not supported in this Cypher version.", p.position)
-      case p@GrantPrivilege(DbmsPrivilege(ExecuteBoostedProcedureAction), _, _, _, _) =>
-        throw cypherExceptionFactory.syntaxException("EXECUTE BOOSTED PROCEDURE is not supported in this Cypher version.", p.position)
-      case p@GrantPrivilege(DbmsPrivilege(ExecuteAdminProcedureAction), _, _, _, _) =>
-        throw cypherExceptionFactory.syntaxException("EXECUTE ADMIN PROCEDURES is not supported in this Cypher version.", p.position)
-
-      // DENY EXECUTE [BOOSTED|ADMIN] PROCEDURES ...
-      case p@DenyPrivilege(DbmsPrivilege(ExecuteProcedureAction), _, _, _, _) =>
-        throw cypherExceptionFactory.syntaxException("EXECUTE PROCEDURE is not supported in this Cypher version.", p.position)
-      case p@DenyPrivilege(DbmsPrivilege(ExecuteBoostedProcedureAction), _, _, _, _) =>
-        throw cypherExceptionFactory.syntaxException("EXECUTE BOOSTED PROCEDURE is not supported in this Cypher version.", p.position)
-      case p@DenyPrivilege(DbmsPrivilege(ExecuteAdminProcedureAction), _, _, _, _) =>
-        throw cypherExceptionFactory.syntaxException("EXECUTE ADMIN PROCEDURES is not supported in this Cypher version.", p.position)
 
       // Administration commands against system database are not supported at all in CYPHER 3.5.
       // This is checked in CompilerFactory, so separate checks for such commands are not needed here.

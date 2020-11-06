@@ -57,6 +57,7 @@ object Deprecations {
   def renameFunctionTo(newName: String): FunctionInvocation => FunctionInvocation =
     f => f.copy(functionName = FunctionName(newName)(f.functionName.position))(f.position)
 
+  // Deprecated in 4.x
   case object V1 extends Deprecations {
     val functionRenames: Map[String, String] =
       TreeMap(
@@ -87,7 +88,6 @@ object Deprecations {
           () => Some(DeprecatedHexLiteralSyntax(p.position))
         )
 
-      // Deprecated in 4.X
       // timestamp
       case f@FunctionInvocation(namespace, FunctionName(name), distinct, args) if name.equalsIgnoreCase("timestamp")=>
         Deprecation(
