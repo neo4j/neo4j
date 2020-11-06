@@ -28,8 +28,9 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
-import org.neo4j.internal.kernel.api.RelationshipIndexCursor;
+import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
+import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.impl.newapi.KernelAPIReadTestBase;
 import org.neo4j.kernel.impl.newapi.KernelAPIReadTestSupport;
@@ -69,13 +70,14 @@ public abstract class AbstractIndexQueryingTest<S extends KernelAPIReadTestSuppo
     }
 
     @Test
-    void relationshipIndexSeekMustThrowOnWrongIndexEntityType()
+    void relationshipIndexSeekMustThrowOnWrongIndexEntityType() throws IndexNotFoundKernelException
     {
         IndexDescriptor index = schemaRead.indexGetForName( "ftsNodes" );
-        try ( RelationshipIndexCursor cursor = cursors.allocateRelationshipIndexCursor( NULL ) )
+        IndexReadSession indexReadSession = read.indexReadSession( index );
+        try ( RelationshipValueIndexCursor cursor = cursors.allocateRelationshipValueIndexCursor( NULL ) )
         {
             assertThrows( IndexNotApplicableKernelException.class, () ->
-                    read.relationshipIndexSeek( index, cursor, unconstrained(), IndexQuery.fulltextSearch( "search" ) ) );
+                    read.relationshipIndexSeek( indexReadSession, cursor, unconstrained(), IndexQuery.fulltextSearch( "search" ) ) );
         }
     }
 }

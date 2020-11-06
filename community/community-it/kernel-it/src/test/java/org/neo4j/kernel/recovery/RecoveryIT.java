@@ -37,7 +37,8 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.helpers.ArrayUtil;
-import org.neo4j.internal.kernel.api.RelationshipIndexCursor;
+import org.neo4j.internal.kernel.api.IndexReadSession;
+import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -370,10 +371,11 @@ class RecoveryIT
         {
             KernelTransaction ktx = ((InternalTransaction) transaction).kernelTransaction();
             IndexDescriptor index = ktx.schemaRead().indexGetForName( indexName );
+            IndexReadSession indexReadSession = ktx.dataRead().indexReadSession( index );
             int relationshipsInIndex = 0;
-            try ( RelationshipIndexCursor cursor = ktx.cursors().allocateRelationshipIndexCursor( ktx.pageCursorTracer() ) )
+            try ( RelationshipValueIndexCursor cursor = ktx.cursors().allocateRelationshipValueIndexCursor( ktx.pageCursorTracer() ) )
             {
-                ktx.dataRead().relationshipIndexSeek( index, cursor, unconstrained(), fulltextSearch( "*" ) );
+                ktx.dataRead().relationshipIndexSeek( indexReadSession, cursor, unconstrained(), fulltextSearch( "*" ) );
                 while ( cursor.next() )
                 {
                     relationshipsInIndex++;

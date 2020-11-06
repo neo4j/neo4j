@@ -26,6 +26,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.Cursor;
+import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -102,13 +103,14 @@ class ReadTracingIT
             var kernelTransaction = transaction.kernelTransaction();
             var dataRead = kernelTransaction.dataRead();
             var indexDescriptor = kernelTransaction.schemaRead().indexGetForName( indexName );
+            IndexReadSession indexReadSession = kernelTransaction.dataRead().indexReadSession( indexDescriptor );
             var cursorTracer = kernelTransaction.pageCursorTracer();
 
             assertZeroCursor( cursorTracer );
 
-            try ( var cursor = kernelTransaction.cursors().allocateRelationshipIndexCursor( kernelTransaction.pageCursorTracer() ) )
+            try ( var cursor = kernelTransaction.cursors().allocateRelationshipValueIndexCursor( kernelTransaction.pageCursorTracer() ) )
             {
-                dataRead.relationshipIndexSeek( indexDescriptor, cursor, unconstrained(), fulltextSearch( testPropertyValue ) );
+                dataRead.relationshipIndexSeek( indexReadSession, cursor, unconstrained(), fulltextSearch( testPropertyValue ) );
 
                 consumeCursor( cursor );
             }

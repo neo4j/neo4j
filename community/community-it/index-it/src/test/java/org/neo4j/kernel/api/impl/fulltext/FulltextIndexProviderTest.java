@@ -54,7 +54,7 @@ import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.Read;
-import org.neo4j.internal.kernel.api.RelationshipIndexCursor;
+import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
 import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
@@ -1320,19 +1320,20 @@ class FulltextIndexProviderTest
         {
             KernelTransaction ktx = LuceneFulltextTestSupport.kernelTransaction( tx );
             IndexDescriptor index = ktx.schemaRead().indexGetForName( "fulltext" );
-            try ( RelationshipIndexCursor cursor = ktx.cursors().allocateRelationshipIndexCursor( ktx.pageCursorTracer() ) )
+            IndexReadSession indexReadSession = ktx.dataRead().indexReadSession( index );
+            try ( RelationshipValueIndexCursor cursor = ktx.cursors().allocateRelationshipValueIndexCursor( ktx.pageCursorTracer() ) )
             {
-                ktx.dataRead().relationshipIndexSeek( index, cursor, unconstrained(), fulltextSearch( "valuuu" ) );
+                ktx.dataRead().relationshipIndexSeek( indexReadSession, cursor, unconstrained(), fulltextSearch( "valuuu" ) );
                 assertTrue( cursor.next() );
                 assertEquals( 0L, cursor.relationshipReference() );
                 assertFalse( cursor.next() );
 
-                ktx.dataRead().relationshipIndexSeek( index, cursor, unconstrained(), fulltextSearch( "villa" ) );
+                ktx.dataRead().relationshipIndexSeek( indexReadSession, cursor, unconstrained(), fulltextSearch( "villa" ) );
                 assertTrue( cursor.next() );
                 assertEquals( secondRelId, cursor.relationshipReference() );
                 assertFalse( cursor.next() );
 
-                ktx.dataRead().relationshipIndexSeek( index, cursor, unconstrained(), fulltextSearch( "value3" ) );
+                ktx.dataRead().relationshipIndexSeek( indexReadSession, cursor, unconstrained(), fulltextSearch( "value3" ) );
                 assertTrue( cursor.next() );
                 assertEquals( 0L, cursor.relationshipReference() );
                 assertTrue( cursor.next() );

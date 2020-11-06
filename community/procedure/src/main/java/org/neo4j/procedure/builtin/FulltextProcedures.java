@@ -49,7 +49,7 @@ import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
-import org.neo4j.internal.kernel.api.RelationshipIndexCursor;
+import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexType;
@@ -293,9 +293,10 @@ public class FulltextProcedures
             throw new IllegalArgumentException( "The '" + name + "' index (" + indexReference + ") is an index on " + entityType +
                     ", so it cannot be queried for relationships." );
         }
-        RelationshipIndexCursor cursor = tx.cursors().allocateRelationshipIndexCursor( tx.pageCursorTracer() );
+        RelationshipValueIndexCursor cursor = tx.cursors().allocateRelationshipValueIndexCursor( tx.pageCursorTracer() );
+        IndexReadSession indexReadSession = tx.dataRead().indexReadSession( indexReference );
         IndexQueryConstraints constraints = queryConstraints( options );
-        tx.dataRead().relationshipIndexSeek( indexReference, cursor, constraints, IndexQuery.fulltextSearch( query ) );
+        tx.dataRead().relationshipIndexSeek( indexReadSession, cursor, constraints, IndexQuery.fulltextSearch( query ) );
 
         Spliterator<RelationshipOutput> spliterator = new SpliteratorAdaptor<>()
         {

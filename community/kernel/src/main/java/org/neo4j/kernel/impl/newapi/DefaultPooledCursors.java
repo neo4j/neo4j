@@ -22,11 +22,11 @@ package org.neo4j.kernel.impl.newapi;
 import java.util.ArrayList;
 
 import org.neo4j.internal.kernel.api.CursorFactory;
-import org.neo4j.internal.kernel.api.RelationshipIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
 import org.neo4j.storageengine.api.StorageReader;
 
 /**
@@ -47,7 +47,7 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
     private FullAccessNodeValueIndexCursor fullAccessNodeValueIndexCursor;
     private DefaultNodeLabelIndexCursor nodeLabelIndexCursor;
     private DefaultNodeLabelIndexCursor fullAccessNodeLabelIndexCursor;
-    private DefaultRelationshipIndexCursor relationshipIndexCursor;
+    private DefaultRelationshipValueIndexCursor relationshipValueIndexCursor;
     private DefaultRelationshipTypeIndexCursor relationshipTypeIndexCursor;
 
     public DefaultPooledCursors( StorageReader storageReader )
@@ -405,35 +405,35 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
     }
 
     @Override
-    public RelationshipIndexCursor allocateRelationshipIndexCursor( PageCursorTracer cursorTracer )
+    public RelationshipValueIndexCursor allocateRelationshipValueIndexCursor( PageCursorTracer cursorTracer )
     {
-        if ( relationshipIndexCursor == null )
+        if ( relationshipValueIndexCursor == null )
         {
             DefaultNodeCursor nodeCursor = new DefaultNodeCursor( this::accept,
                     storageReader.allocateNodeCursor( cursorTracer ), storageReader.allocateNodeCursor( cursorTracer ) );
             DefaultRelationshipScanCursor relationshipScanCursor = new DefaultRelationshipScanCursor(
                     this::accept, storageReader.allocateRelationshipScanCursor( cursorTracer ), nodeCursor );
-            return trace( new DefaultRelationshipIndexCursor( this::accept, relationshipScanCursor ) );
+            return trace( new DefaultRelationshipValueIndexCursor( this::accept, relationshipScanCursor ) );
         }
 
         try
         {
-            return relationshipIndexCursor;
+            return relationshipValueIndexCursor;
         }
         finally
         {
-            relationshipIndexCursor = null;
+            relationshipValueIndexCursor = null;
         }
     }
 
-    private void accept( DefaultRelationshipIndexCursor cursor )
+    public void accept( DefaultRelationshipValueIndexCursor cursor )
     {
-        if ( relationshipIndexCursor != null )
+        if ( relationshipValueIndexCursor != null )
         {
-            relationshipIndexCursor.release();
+            relationshipValueIndexCursor.release();
         }
         cursor.removeTracer();
-        relationshipIndexCursor = cursor;
+        relationshipValueIndexCursor = cursor;
     }
 
     @Override
@@ -526,10 +526,10 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
             fullAccessNodeLabelIndexCursor.release();
             fullAccessNodeLabelIndexCursor = null;
         }
-        if ( relationshipIndexCursor != null )
+        if ( relationshipValueIndexCursor != null )
         {
-            relationshipIndexCursor.release();
-            relationshipIndexCursor = null;
+            relationshipValueIndexCursor.release();
+            relationshipValueIndexCursor = null;
         }
     }
 }

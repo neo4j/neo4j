@@ -33,9 +33,9 @@ import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
-import org.neo4j.internal.kernel.api.RelationshipIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
+import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexPrototype;
@@ -289,11 +289,12 @@ public abstract class DefaultPooledCursorsTestBase<G extends KernelAPIReadTestSu
 
         Predicates.awaitEx( () -> tx.schemaRead().indexGetState( index ) == ONLINE, 1, MINUTES );
 
-        RelationshipIndexCursor c1 = cursors.allocateRelationshipIndexCursor( NULL );
-        read.relationshipIndexSeek( index, c1, IndexQueryConstraints.unconstrained(), IndexQuery.fulltextSearch( "hello" ) );
+        RelationshipValueIndexCursor c1 = cursors.allocateRelationshipValueIndexCursor( NULL );
+        IndexReadSession indexSession = tx.dataRead().indexReadSession( index );
+        read.relationshipIndexSeek( indexSession, c1, IndexQueryConstraints.unconstrained(), IndexQuery.fulltextSearch( "hello" ) );
         c1.close();
 
-        RelationshipIndexCursor c2 = cursors.allocateRelationshipIndexCursor( NULL );
+        RelationshipValueIndexCursor c2 = cursors.allocateRelationshipValueIndexCursor( NULL );
         assertThat( c1 ).isSameAs( c2 );
         c2.close();
     }

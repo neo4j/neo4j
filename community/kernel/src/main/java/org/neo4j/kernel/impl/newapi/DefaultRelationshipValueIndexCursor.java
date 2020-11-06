@@ -22,18 +22,18 @@ package org.neo4j.kernel.impl.newapi;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.NodeCursor;
-import org.neo4j.internal.kernel.api.RelationshipIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.security.AccessMode;
+import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.values.storable.Value;
 
 import static org.neo4j.kernel.impl.newapi.Read.NO_ID;
 
-final class DefaultRelationshipIndexCursor extends IndexCursor<IndexProgressor> implements RelationshipIndexCursor, EntityIndexSeekClient
+final class DefaultRelationshipValueIndexCursor extends IndexCursor<IndexProgressor> implements RelationshipValueIndexCursor, EntityIndexSeekClient
 {
-    private final CursorPool<DefaultRelationshipIndexCursor> pool;
+    private final CursorPool<DefaultRelationshipValueIndexCursor> pool;
     private final DefaultRelationshipScanCursor relationshipScanCursor;
     private Read read;
     private long relationship;
@@ -42,7 +42,7 @@ final class DefaultRelationshipIndexCursor extends IndexCursor<IndexProgressor> 
     private int[] propertyIds;
     private boolean shortcutSecurity;
 
-    DefaultRelationshipIndexCursor( CursorPool<DefaultRelationshipIndexCursor> pool, DefaultRelationshipScanCursor relationshipScanCursor )
+    DefaultRelationshipValueIndexCursor( CursorPool<DefaultRelationshipValueIndexCursor> pool, DefaultRelationshipScanCursor relationshipScanCursor )
     {
         this.pool = pool;
         this.relationshipScanCursor = relationshipScanCursor;
@@ -243,5 +243,29 @@ final class DefaultRelationshipIndexCursor extends IndexCursor<IndexProgressor> 
     {
         relationshipScanCursor.close();
         relationshipScanCursor.release();
+    }
+
+    @Override
+    public int numberOfProperties()
+    {
+        throw new UnsupportedOperationException( "Todo" );
+    }
+
+    @Override
+    public int propertyKey( int offset )
+    {
+        throw new UnsupportedOperationException( "Todo" );
+    }
+
+    @Override
+    public boolean hasValue()
+    {
+        throw new UnsupportedOperationException( "Todo" );
+    }
+
+    @Override
+    public Value propertyValue( int offset )
+    {
+        throw new UnsupportedOperationException( "Todo" );
     }
 }

@@ -35,10 +35,10 @@ import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.QueryContext;
-import org.neo4j.internal.kernel.api.RelationshipIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.RelationshipTypeIndexCursor;
+import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
 import org.neo4j.internal.kernel.api.Scan;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
@@ -114,20 +114,20 @@ abstract class Read implements TxStateHolder,
     }
 
     @Override
-    public final void relationshipIndexSeek( IndexDescriptor index, RelationshipIndexCursor cursor, IndexQueryConstraints constraints, IndexQuery... query )
-            throws IndexNotApplicableKernelException, IndexNotFoundKernelException
+    public final void relationshipIndexSeek( IndexReadSession index, RelationshipValueIndexCursor cursor, IndexQueryConstraints constraints,
+            IndexQuery... query ) throws IndexNotApplicableKernelException
     {
         ktx.assertOpen();
-        if ( index.schema().entityType() != EntityType.RELATIONSHIP )
+        DefaultIndexReadSession indexSession = (DefaultIndexReadSession) index;
+        if ( indexSession.reference.schema().entityType() != EntityType.RELATIONSHIP )
         {
-            throw new IndexNotApplicableKernelException( "Relationship index seek can only be performed on node indexes: " + index );
+            throw new IndexNotApplicableKernelException( "Relationship index seek can only be performed on relationship indexes: " + index );
         }
 
         EntityIndexSeekClient client = (EntityIndexSeekClient) cursor;
-        IndexReader reader = indexReader( index, false );
         client.setRead( this );
-        IndexProgressor.EntityValueClient withFullPrecision = injectFullValuePrecision( client, query, reader );
-        reader.query( this, withFullPrecision, constraints, query );
+        IndexProgressor.EntityValueClient withFullPrecision = injectFullValuePrecision( client, query, indexSession.reader );
+        indexSession.reader.query( this, withFullPrecision, constraints, query );
     }
 
     private IndexProgressor.EntityValueClient injectFullValuePrecision( IndexProgressor.EntityValueClient cursor,

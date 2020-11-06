@@ -49,7 +49,7 @@ public interface Read
 
     /**
      * Seek all nodes matching the provided index query in an index.
-     * @param index {@link IndexReadSession} referencing index to query.
+     * @param index {@link IndexReadSession} referencing index to query. This must be an index of nodes.
      * @param cursor the cursor to use for consuming the results.
      * @param constraints The requested constraints on the query result, such as the {@link IndexOrder}, or whether the index should fetch property values
      * together with node ids for index queries. The constraints must be satisfiable given the capabilities of the index.
@@ -60,19 +60,13 @@ public interface Read
 
     /**
      * Seek all relationships matching the provided index query in an index.
-     *
-     * This is almost but not quite a relationship counterpart to
-     * {@link #nodeIndexSeek(IndexReadSession, NodeValueIndexCursor, IndexQueryConstraints, IndexQuery...)}, in that this method <em>currently</em> cannot
-     * return values from the index. This may be added in the future. When this happens, this method may be extended with parameters for {@code indexOrder} and
-     * {@code needsValues}, and the cursor parameter will likely require a "value" cursor instead of just an "index" cursor.
-     *
-     * @param index {@link IndexDescriptor} for the index to query. This must be an index of relationships.
+     * @param index {@link IndexReadSession} referencing index to query. This must be an index of relationships.
      * @param cursor the cursor to use for consuming the results.
      * @param constraints The requested constraints on the query result, such as the {@link IndexOrder}, or whether the index should fetch property values
      * together with relationship ids for index queries. The constraints must be satisfiable given the capabilities of the index.
      * @param query Combination of {@link IndexQuery index queries} to run against referenced index.
      */
-    void relationshipIndexSeek( IndexDescriptor index, RelationshipIndexCursor cursor, IndexQueryConstraints constraints, IndexQuery... query )
+    void relationshipIndexSeek( IndexReadSession index, RelationshipValueIndexCursor cursor, IndexQueryConstraints constraints, IndexQuery... query )
             throws KernelException;
 
     /**

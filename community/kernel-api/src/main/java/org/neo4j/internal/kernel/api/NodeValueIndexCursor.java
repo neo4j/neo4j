@@ -49,25 +49,8 @@ import static org.neo4j.values.storable.Values.NO_VALUE;
  *     }
  * </code></pre>
  */
-public interface NodeValueIndexCursor extends NodeIndexCursor
+public interface NodeValueIndexCursor extends NodeIndexCursor, ValueIndexCursor
 {
-    /**
-     * @return the number of properties accessible within the index, and thus from this cursor.
-     */
-    int numberOfProperties();
-
-    int propertyKey( int offset );
-
-    /**
-     * Check before trying to access values with {@link #propertyValue(int)}. Result can change with each call to {@link #next()}.
-     *
-     * @return {@code true} if {@link #propertyValue(int)} can be used to get property value on cursor's current location,
-     * else {@code false}.
-     */
-    boolean hasValue();
-
-    Value propertyValue( int offset );
-
     class Empty extends DoNothingCloseListenable implements NodeValueIndexCursor
     {
 

@@ -28,10 +28,10 @@ import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
-import org.neo4j.internal.kernel.api.RelationshipIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.RelationshipTypeIndexCursor;
+import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.memory.MemoryTracker;
 
@@ -158,9 +158,9 @@ public class ManagedTestCursors implements CursorFactory
     }
 
     @Override
-    public RelationshipIndexCursor allocateRelationshipIndexCursor( PageCursorTracer cursorTracer )
+    public RelationshipValueIndexCursor allocateRelationshipValueIndexCursor( PageCursorTracer cursorTracer )
     {
-        RelationshipIndexCursor n = cursors.allocateRelationshipIndexCursor( cursorTracer );
+        RelationshipValueIndexCursor n = cursors.allocateRelationshipValueIndexCursor( cursorTracer );
         allCursors.add( n );
         return n;
     }

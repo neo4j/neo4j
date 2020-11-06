@@ -17,26 +17,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.newapi;
+package org.neo4j.internal.kernel.api;
 
-import org.neo4j.internal.kernel.api.IndexReadSession;
-import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.kernel.api.index.IndexReader;
+import org.neo4j.values.storable.Value;
 
-class DefaultIndexReadSession implements IndexReadSession
+public interface ValueIndexCursor
 {
-    final IndexReader reader;
-    final IndexDescriptor reference;
+    /**
+     * @return the number of properties accessible within the index, and thus from this cursor.
+     */
+    int numberOfProperties();
 
-    DefaultIndexReadSession( IndexReader reader, IndexDescriptor reference )
-    {
-        this.reader = reader;
-        this.reference = reference;
-    }
+    int propertyKey( int offset );
 
-    @Override
-    public IndexDescriptor reference()
-    {
-        return reference;
-    }
+    /**
+     * Check before trying to access values with {@link #propertyValue(int)}. Result can change with each call to {@link #next()}.
+     *
+     * @return {@code true} if {@link #propertyValue(int)} can be used to get property value on cursor's current location,
+     * else {@code false}.
+     */
+    boolean hasValue();
+
+    Value propertyValue( int offset );
 }
