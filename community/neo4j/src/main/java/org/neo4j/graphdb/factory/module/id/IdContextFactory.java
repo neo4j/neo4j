@@ -23,18 +23,14 @@ import java.util.function.Function;
 
 import org.neo4j.internal.id.BufferedIdController;
 import org.neo4j.internal.id.BufferingIdGeneratorFactory;
-import org.neo4j.internal.id.DefaultIdController;
 import org.neo4j.internal.id.IdController;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.util.FeatureToggles;
 
 public class IdContextFactory
 {
-     private static final boolean ID_BUFFERING_FLAG = FeatureToggles.flag( IdContextFactory.class, "safeIdBuffering", true );
-
     private final JobScheduler jobScheduler;
     private final Function<NamedDatabaseId,IdGeneratorFactory> idFactoryProvider;
     private final Function<IdGeneratorFactory,IdGeneratorFactory> factoryWrapper;
@@ -51,14 +47,7 @@ public class IdContextFactory
 
     public DatabaseIdContext createIdContext( NamedDatabaseId namedDatabaseId )
     {
-        return ID_BUFFERING_FLAG ? createBufferingIdContext( idFactoryProvider, jobScheduler, cacheTracer, namedDatabaseId )
-                                 : createDefaultIdContext( idFactoryProvider, namedDatabaseId );
-    }
-
-    private DatabaseIdContext createDefaultIdContext( Function<NamedDatabaseId,? extends IdGeneratorFactory> idGeneratorFactoryProvider,
-            NamedDatabaseId namedDatabaseId )
-    {
-        return createIdContext( idGeneratorFactoryProvider.apply( namedDatabaseId ), createDefaultIdController() );
+        return createBufferingIdContext( idFactoryProvider, jobScheduler, cacheTracer, namedDatabaseId );
     }
 
     private DatabaseIdContext createBufferingIdContext( Function<NamedDatabaseId,? extends IdGeneratorFactory> idGeneratorFactoryProvider,
@@ -79,10 +68,5 @@ public class IdContextFactory
             PageCacheTracer cacheTracer, String databaseName )
     {
         return new BufferedIdController( idGeneratorFactory, scheduler, cacheTracer, databaseName );
-    }
-
-    private static DefaultIdController createDefaultIdController()
-    {
-        return new DefaultIdController();
     }
 }
