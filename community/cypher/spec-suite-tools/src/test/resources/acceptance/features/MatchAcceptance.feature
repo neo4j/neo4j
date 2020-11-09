@@ -359,7 +359,7 @@ Feature: MatchAcceptance
       """
     When executing query:
       """
-      MATCH (n:LBL1 {prop0:'foo'})-[]->(o:LBL1) WHERE EXISTS(o.prop1)
+      MATCH (n:LBL1 {prop0:'foo'})-[]->(o:LBL1) WHERE o.prop1 IS NOT NULL
       WITH o
       OPTIONAL MATCH (o)-[:rel1]->(p:LBL2)
       WITH p

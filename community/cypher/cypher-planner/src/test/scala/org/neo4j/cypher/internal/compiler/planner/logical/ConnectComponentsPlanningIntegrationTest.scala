@@ -60,7 +60,7 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
       .build()
       .plan(
         s"""MATCH $nodes, ($orderedNode:Many)
-           |WHERE exists($orderedNode.prop)
+           |WHERE $orderedNode.prop IS NOT NULL
            |RETURN * ORDER BY $orderedNode.prop
            |""".stripMargin)
 

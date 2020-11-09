@@ -346,10 +346,10 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     val plan = new given {
       indexOn("Awesome", "prop")
       cost = nodeIndexScanCost
-    } getLogicalPlanFor "MATCH (n:Awesome) WHERE exists(n.prop) AND n.prop = 42 RETURN n"
+    } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop IS NOT NULL AND n.prop = 42 RETURN n"
 
     plan._2 should equal(
-      Selection(ands(function("exists", cachedNodeProp("n", "prop"))),
+      Selection(ands(isNotNull(cachedNodeProp("n", "prop"))),
         IndexSeek("n:Awesome(prop = 42)", GetValue)
       ))
   }
@@ -517,10 +517,10 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   test("should plan composite index seek and filter when there is an index on two properties and both are in equality predicates together with other predicates") {
     val plan = new given {
       indexOn("Awesome", "prop", "prop2")
-    } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop2 = 'foo' AND exists(n.name) AND n.prop = 42 RETURN n"
+    } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop2 = 'foo' AND n.name IS NOT NULL AND n.prop = 42 RETURN n"
 
     plan._2 should equal(
-      Selection(ands(function("exists", prop("n", "name"))),
+      Selection(ands(isNotNull(prop("n", "name"))),
         IndexSeek("n:Awesome(prop = 42, prop2 = 'foo')")
       )
     )

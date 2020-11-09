@@ -67,7 +67,7 @@ Feature: ShortestPathAcceptance
     When executing query:
       """
       MATCH p = shortestPath((src:A)-[*]->(dst:D))
-      WHERE NONE(r in relationships(p) WHERE exists(r.blocked))
+      WHERE NONE(r in relationships(p) WHERE r.blocked IS NOT NULL)
       UNWIND [n IN nodes(p) | n.name] AS node
       RETURN node
       """
@@ -149,7 +149,7 @@ Feature: ShortestPathAcceptance
       """
       MATCH (src:A), (dest:D)
       MATCH p = shortestPath((src)-[rs*]->(dest))
-      WHERE ALL(r in rs WHERE type(rs[0]) = type(r)) AND ALL(r in rs WHERE NOT EXISTS(r.blocked) OR r.blocked <> true)
+      WHERE ALL(r in rs WHERE type(rs[0]) = type(r)) AND ALL(r in rs WHERE r.blocked IS NULL OR r.blocked <> true)
       RETURN p AS path
       """
     Then the result should be, in any order:
@@ -411,7 +411,7 @@ Feature: ShortestPathAcceptance
     When executing query:
       """
       MATCH p = allShortestPaths((start:START)-[*]->(end:END))
-      WHERE ALL(x in relationships(p) WHERE exists(x.p))
+      WHERE ALL(x in relationships(p) WHERE x.p IS NOT NULL)
       RETURN length(p) AS len
       """
     Then the result should be, in order:

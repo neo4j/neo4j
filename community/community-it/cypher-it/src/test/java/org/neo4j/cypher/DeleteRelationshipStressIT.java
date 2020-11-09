@@ -106,7 +106,7 @@ class DeleteRelationshipStressIT
     {
         // Given
         Future query1 =
-                executeInThread( "MATCH (:L)-[r:T {prop:42}]-(:L) OPTIONAL MATCH (:L)-[:T {prop:1337}]-(:L) WITH r MATCH ()-[r]-() return exists(r.prop)" );
+                executeInThread( "MATCH (:L)-[r:T {prop:42}]-(:L) OPTIONAL MATCH (:L)-[:T {prop:1337}]-(:L) WITH r MATCH ()-[r]-() return r.prop IS NOT NULL" );
         Future query2 = executeInThread( "MATCH (:L)-[r:T {prop:42}]-(:L) DELETE r" );
 
         query1.get();

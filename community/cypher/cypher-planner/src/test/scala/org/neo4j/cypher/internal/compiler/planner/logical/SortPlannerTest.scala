@@ -447,8 +447,8 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
   }
 
   test("should sort first unaliased and then aliased columns in the right order") {
-    // [WITH p] WITH p, EXISTS(p.born) AS bday ORDER BY p.name, bday
-    val bdayExp = function("exists", prop("p", "born"))
+    // [WITH p] WITH p, p.born IS NOT NULL AS bday ORDER BY p.name, bday
+    val bdayExp = isNotNull(prop("p", "born"))
 
     new given().withLogicalPlanningContext { (_, context) =>
       val io = InterestingOrder.required(RequiredOrderCandidate.asc(prop("p", "name")).asc(varFor("bday"), Map("bday" -> bdayExp)))
@@ -468,8 +468,8 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
   }
 
   test("should sort first aliased and then unaliased columns in the right order") {
-    // [WITH p] WITH p, EXISTS(p.born) AS bday ORDER BY bday, p.name
-    val bdayExp = function("exists", prop("p", "born"))
+    // [WITH p] WITH p, p.born IS NOT NULL AS bday ORDER BY bday, p.name
+    val bdayExp = isNotNull(prop("p", "born"))
 
     new given().withLogicalPlanningContext { (_, context) =>
       val io = InterestingOrder.required(RequiredOrderCandidate.asc(varFor("bday"), Map("bday" -> bdayExp)).asc(prop("p", "name")))

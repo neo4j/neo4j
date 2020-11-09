@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlannin
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Variable
-import org.neo4j.cypher.internal.expressions.functions.Exists
+import org.neo4j.cypher.internal.expressions.IsNotNull
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.logical.plans.Aggregation
 import org.neo4j.cypher.internal.logical.plans.Ascending
@@ -743,7 +743,7 @@ class OrderPlanningIntegrationTestBase(queryGraphSolverSetup: QueryGraphSolverSe
   test("Should not expand from lowest cardinality point, if sorting can be avoided, when sorting on 1 variables.") {
     val query =
       """MATCH (a:A)-->(b:B)-->(c:C)
-        |WHERE exists(a.prop) AND exists(b.prop) AND exists(c.prop)
+        |WHERE a.prop IS NOT NULL AND b.prop IS NOT NULL AND c.prop  IS NOT NULL
         |RETURN a, b, c
         |ORDER BY a.prop""".stripMargin
     val plan = new given {
@@ -766,7 +766,7 @@ class OrderPlanningIntegrationTestBase(queryGraphSolverSetup: QueryGraphSolverSe
     assume(queryGraphSolverSetup == QueryGraphSolverWithIDPConnectComponents, "This test requires the IDP connect components planner")
     val query =
       """MATCH (a:A), (b:B), (c:C)
-        |WHERE exists(a.prop) AND exists(b.prop) AND exists(c.prop)
+        |WHERE a.prop IS NOT NULL AND b.prop IS NOT NULL AND c.prop IS NOT NULL
         |RETURN a, b, c
         |ORDER BY a.prop""".stripMargin
     val plan = new given {
@@ -817,7 +817,7 @@ class OrderPlanningIntegrationTestBase(queryGraphSolverSetup: QueryGraphSolverSe
   test("Should not expand from lowest cardinality point, if sorting can be avoided, when sorting on 2 variables.") {
     val query =
       """MATCH (a:A)-->(b:B)-->(c:C)
-        |WHERE exists(a.prop) AND exists(b.prop) AND exists(c.prop)
+        |WHERE a.prop IS NOT NULL AND b.prop IS NOT NULL AND c.prop IS NOT NULL
         |RETURN a, b, c
         |ORDER BY a.prop, c.prop""".stripMargin
     val plan = new given {
@@ -842,7 +842,7 @@ class OrderPlanningIntegrationTestBase(queryGraphSolverSetup: QueryGraphSolverSe
     assume(queryGraphSolverSetup == QueryGraphSolverWithIDPConnectComponents, "This test requires the IDP connect components planner")
     val query =
       """MATCH (a:A), (b:B), (c:C)
-        |WHERE exists(a.prop) AND exists(b.prop) AND exists(c.prop)
+        |WHERE a.prop IS NOT NULL AND b.prop IS NOT NULL AND c.prop IS NOT NULL
         |RETURN a, b, c
         |ORDER BY a.prop, c.prop""".stripMargin
     val plan = new given {
@@ -898,7 +898,7 @@ class OrderPlanningIntegrationTestBase(queryGraphSolverSetup: QueryGraphSolverSe
   test("Should not expand (longer pattern) from lowest cardinality point, if sorting can be avoided, when sorting on 2 variables.") {
     val query =
       """MATCH (a:A)-->(b:B)-->(c:C)--(d:D)--(e:E)
-        |WHERE exists(a.prop) AND exists(b.prop) AND exists(c.prop) AND exists(d.prop) AND exists(e.prop)
+        |WHERE a.prop IS NOT NULL AND b.prop IS NOT NULL AND c.prop IS NOT NULL AND d.prop IS NOT NULL AND e.prop IS NOT NULL
         |RETURN a, b, c
         |ORDER BY a.prop, e.prop""".stripMargin
 
@@ -934,14 +934,14 @@ class OrderPlanningIntegrationTestBase(queryGraphSolverSetup: QueryGraphSolverSe
   test("Should choose larger index on the same variable, if sorting can be avoided, when sorting on 2 variables.") {
     val query =
       """MATCH (a:A)-->(b)-->(c)
-        |WHERE exists(a.prop) AND exists(a.foo)
+        |WHERE a.prop IS NOT NULL AND a.foo IS NOT NULL
         |RETURN a, b, c
         |ORDER BY a.prop, c.prop""".stripMargin
 
     val selectivities = Map[Expression, Double](
       hasLabels("a", "A") -> 1.0,
-      Exists(prop("a", "prop"))(pos) -> 0.5,
-      Exists(prop("a", "foo"))(pos) -> 0.1 // Make it cheapest to start on a.foo.
+      IsNotNull(prop("a", "prop"))(pos) -> 0.5,
+      IsNotNull(prop("a", "foo"))(pos) -> 0.1 // Make it cheapest to start on a.foo.
     ).withDefaultValue(1.0)
 
     val plan = new given {
@@ -964,14 +964,14 @@ class OrderPlanningIntegrationTestBase(queryGraphSolverSetup: QueryGraphSolverSe
   test("Should choose larger index on the same variable, if sorting can be avoided, when sorting on 3 variables.") {
     val query =
       """MATCH (a:A)-->(b)-->(c)
-        |WHERE exists(a.prop) AND exists(a.foo)
+        |WHERE a.prop IS NOT NULL AND a.foo IS NOT NULL
         |RETURN a, b, c
         |ORDER BY a.prop, b.prop, c.prop""".stripMargin
 
     val selectivities = Map[Expression, Double](
       hasLabels("a", "A") -> 1.0,
-      Exists(prop("a", "prop"))(pos) -> 0.5,
-      Exists(prop("a", "foo"))(pos) -> 0.1 // Make it cheapest to start on a.foo.
+      IsNotNull(prop("a", "prop"))(pos) -> 0.5,
+      IsNotNull(prop("a", "foo"))(pos) -> 0.1 // Make it cheapest to start on a.foo.
     ).withDefaultValue(1.0)
 
     val plan = new given {
@@ -996,14 +996,14 @@ class OrderPlanningIntegrationTestBase(queryGraphSolverSetup: QueryGraphSolverSe
   test("Should choose larger index on the same variable, if sorting can be avoided, when sorting on 2 variables, with projection.") {
     val query =
       """MATCH (a:A)-->(b)-->(c)
-        |WHERE exists(a.prop) AND exists(a.foo)
+        |WHERE a.prop IS NOT NULL AND a.foo IS NOT NULL
         |RETURN a.prop AS first, c.prop AS second
         |ORDER BY first, second""".stripMargin
 
     val selectivities = Map[Expression, Double](
       hasLabels("a", "A") -> 1.0,
-      Exists(prop("a", "prop"))(pos) -> 0.5,
-      Exists(prop("a", "foo"))(pos) -> 0.1
+      IsNotNull(prop("a", "prop"))(pos) -> 0.5,
+      IsNotNull(prop("a", "foo"))(pos) -> 0.1
     ).withDefaultValue(1.0)
 
     val plan = new given {
@@ -1027,13 +1027,13 @@ class OrderPlanningIntegrationTestBase(queryGraphSolverSetup: QueryGraphSolverSe
   test("Should plan Partial Sort in between Expands, when sorting on 2 variables with projection.") {
     val query =
       """MATCH (a:A)-->(b)-->(c)
-        |WHERE exists(a.prop)
+        |WHERE a.prop IS NOT NULL
         |RETURN a.prop AS first, b.prop AS second
         |ORDER BY first, second""".stripMargin
 
     val selectivities = Map[Expression, Double](
       hasLabels("a", "A") -> 1.0,
-      Exists(prop("a", "prop"))(pos) -> 0.5
+      IsNotNull(prop("a", "prop"))(pos) -> 0.5
     ).withDefaultValue(1.0)
 
     val plan = new given {
@@ -1056,13 +1056,13 @@ class OrderPlanningIntegrationTestBase(queryGraphSolverSetup: QueryGraphSolverSe
   test("Should plan Partial Sort in between Expands, when sorting on 3 variables with projection.") {
     val query =
       """MATCH (a:A)-->(b)-->(c)-->(d)
-        |WHERE exists(a.prop)
+        |WHERE a.prop IS NOT NULL
         |RETURN a.prop AS first, b.prop AS second, c.prop AS third
         |ORDER BY first, second, third""".stripMargin
 
     val selectivities = Map[Expression, Double](
       hasLabels("a", "A") -> 1.0,
-      Exists(prop("a", "prop"))(pos) -> 0.5
+      IsNotNull(prop("a", "prop"))(pos) -> 0.5
     ).withDefaultValue(1.0)
 
     val plan = new given {

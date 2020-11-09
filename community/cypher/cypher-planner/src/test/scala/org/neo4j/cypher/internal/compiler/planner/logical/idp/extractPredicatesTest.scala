@@ -70,7 +70,7 @@ class extractPredicatesTest extends CypherFunSuite with AstConstructionTestSuppo
     solvedPredicates shouldBe List(rewrittenPredicate)
   }
 
-  test("p = (n)-[x*]->(o) WHERE NONE(r in relationships(p) WHERE r.prop < 4) AND ALL(m in nodes(p) WHERE exists(m.prop))") {
+  test("p = (n)-[x*]->(o) WHERE NONE(r in relationships(p) WHERE r.prop < 4) AND ALL(m in nodes(p) WHERE m.prop IS NOT NULL)") {
 
     val rewrittenRelPredicate = NoneIterablePredicate(
       FilterScope(varFor("r"), Some(propLessThan("r", "prop", 4)))(pos),
@@ -82,7 +82,7 @@ class extractPredicatesTest extends CypherFunSuite with AstConstructionTestSuppo
             MultiRelationshipPathStep(varFor("x"), SemanticDirection.OUTGOING, Some(varFor("0")), NilPathStep)))(pos)))(pos)
 
     val rewrittenNodePredicate = AllIterablePredicate(
-      FilterScope(varFor("m"), Some(function("exists", prop("m", "prop"))))(pos),
+      FilterScope(varFor("m"), Some(isNotNull(prop("m", "prop"))))(pos),
       function(
         "nodes",
         PathExpression(
@@ -93,7 +93,7 @@ class extractPredicatesTest extends CypherFunSuite with AstConstructionTestSuppo
     val (nodePredicates: Seq[Expression], relationshipPredicates: Seq[Expression], solvedPredicates: Seq[Expression]) =
       extractPredicates(Seq(rewrittenRelPredicate, rewrittenNodePredicate), "x", "x-relationship", "x-node", "n")
 
-    nodePredicates shouldBe List(function("exists", prop("x-node", "prop")))
+    nodePredicates shouldBe List(isNotNull(prop("x-node", "prop")))
     relationshipPredicates shouldBe List(not(propLessThan("x-relationship", "prop", 4)))
     solvedPredicates shouldBe List(rewrittenRelPredicate, rewrittenNodePredicate)
   }

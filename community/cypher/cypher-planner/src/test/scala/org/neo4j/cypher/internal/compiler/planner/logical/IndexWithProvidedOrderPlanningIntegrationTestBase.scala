@@ -401,7 +401,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTestBase(queryGraphSolve
     test(s"$cypherToken-$orderCapability: Order by index backed property should plan with provided order (scan)") {
       val plan = new given {
         indexOn("Awesome", "prop").providesOrder(orderCapability)
-      } getLogicalPlanFor s"MATCH (n:Awesome) WHERE EXISTS(n.prop) RETURN n.prop ORDER BY n.prop $cypherToken"
+      } getLogicalPlanFor s"MATCH (n:Awesome) WHERE n.prop IS NOT NULL RETURN n.prop ORDER BY n.prop $cypherToken"
 
       plan._2 should equal(
         Projection(
@@ -1483,10 +1483,10 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTestBase(queryGraphSolve
       )
     }
 
-    test(s"should plan aggregation with exists and index for $functionName when there is no $orderCapability") {
+    test(s"should plan aggregation with IS NOT NULL and index for $functionName when there is no $orderCapability") {
       val plan = new given {
         indexOn("Awesome", "prop").providesValues()
-      } getLogicalPlanFor s"MATCH (n:Awesome) WHERE exists(n.prop) RETURN $functionName(n.prop)"
+      } getLogicalPlanFor s"MATCH (n:Awesome) WHERE n.prop IS NOT NULL RETURN $functionName(n.prop)"
 
       plan._2 should equal(
         Aggregation(

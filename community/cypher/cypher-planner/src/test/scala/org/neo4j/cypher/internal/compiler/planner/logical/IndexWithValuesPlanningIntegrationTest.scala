@@ -750,7 +750,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
   test("should plan exists scan with GetValue when the property is projected") {
     val plan = new given {
       indexOn("Awesome", "prop").providesValues()
-    } getLogicalPlanFor "MATCH (n:Awesome) WHERE exists(n.prop) RETURN n.prop"
+    } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop IS NOT NULL RETURN n.prop"
 
     plan._2 should equal(
       Projection(
@@ -768,7 +768,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
   test("should plan exists scan with DoNotGetValue when the index does not provide values") {
     val plan = new given {
       indexOn("Awesome", "prop")
-    } getLogicalPlanFor "MATCH (n:Awesome) WHERE exists(n.prop) RETURN n.prop"
+    } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop IS NOT NULL RETURN n.prop"
 
     plan._2 should equal(
       Projection(

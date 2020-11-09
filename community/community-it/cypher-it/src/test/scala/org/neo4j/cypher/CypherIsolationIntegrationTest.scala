@@ -45,7 +45,7 @@ class CypherIsolationIntegrationTest extends ExecutionEngineFunSuite {
     val n = createLabeledNode(Map("x" -> 0L), "L")
 
     val query =
-      """MATCH (n:L) WHERE exists(n.x)
+      """MATCH (n:L) WHERE n.x IS NOT NULL
         |SET n._LOCK_ = true
         |WITH n, n.x AS x
         |SET n.x = x + 1
@@ -65,7 +65,7 @@ class CypherIsolationIntegrationTest extends ExecutionEngineFunSuite {
     graph.createIndex("L", "x")
 
     val query =
-      """MATCH (n:L) WHERE exists(n.x)
+      """MATCH (n:L) WHERE n.x IS NOT NULL
         |SET n._LOCK_ = true
         |WITH n, n.x AS x
         |SET n.x = x + 1
@@ -85,7 +85,7 @@ class CypherIsolationIntegrationTest extends ExecutionEngineFunSuite {
     graph.createIndex("L", "x")
 
     val query =
-      """MATCH (n:L) WHERE exists(n.x)
+      """MATCH (n:L) WHERE n.x IS NOT NULL
         |SET n += {_LOCK_: true}
         |WITH n, n.x AS x
         |SET n.x = x + 1

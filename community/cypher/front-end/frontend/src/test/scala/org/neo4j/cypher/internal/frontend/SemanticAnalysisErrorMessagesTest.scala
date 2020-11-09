@@ -94,7 +94,7 @@ class SemanticAnalysisErrorMessagesTest extends CypherFunSuite {
   }
 
   test("Should give helpful error when accessing illegal variable in WHERE after WITH DISTINCT") {
-    val query = "MATCH (p) WITH DISTINCT p.email AS mail WHERE exists(p.name) RETURN mail AS mail"
+    val query = "MATCH (p) WITH DISTINCT p.email AS mail WHERE p.name IS NOT NULL RETURN mail AS mail"
 
     val startState = initStartState(query, Map.empty)
     val context = new ErrorCollectingContext()
@@ -105,7 +105,7 @@ class SemanticAnalysisErrorMessagesTest extends CypherFunSuite {
   }
 
   test("Should give helpful error when accessing illegal variable in WHERE after WITH with aggregation") {
-    val query = "MATCH (p) WITH collect(p.email) AS mail WHERE exists(p.name) RETURN mail AS mail"
+    val query = "MATCH (p) WITH collect(p.email) AS mail WHERE p.name IS NOT NULL RETURN mail AS mail"
 
     val startState = initStartState(query, Map.empty)
     val context = new ErrorCollectingContext()
@@ -161,7 +161,7 @@ class SemanticAnalysisErrorMessagesTest extends CypherFunSuite {
   }
 
   test("Should not invent helpful error when accessing undefined variable in WHERE after WITH DISTINCT") {
-    val query = "MATCH (p) WITH DISTINCT p.email AS mail WHERE exists(q.name) RETURN mail AS mail"
+    val query = "MATCH (p) WITH DISTINCT p.email AS mail WHERE q.name IS NOT NULL RETURN mail AS mail"
 
     val startState = initStartState(query, Map.empty)
     val context = new ErrorCollectingContext()
@@ -172,7 +172,7 @@ class SemanticAnalysisErrorMessagesTest extends CypherFunSuite {
   }
 
   test("Should not invent helpful error when accessing undefined variable in WHERE after WITH with aggregation") {
-    val query = "MATCH (p) WITH collect(p.email) AS mail WHERE exists(q.name) RETURN mail AS mail"
+    val query = "MATCH (p) WITH collect(p.email) AS mail WHERE q.name IS NOT NULL RETURN mail AS mail"
 
     val startState = initStartState(query, Map.empty)
     val context = new ErrorCollectingContext()

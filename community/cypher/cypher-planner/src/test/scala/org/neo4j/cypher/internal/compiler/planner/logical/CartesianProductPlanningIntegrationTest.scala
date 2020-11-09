@@ -41,7 +41,7 @@ class CartesianProductPlanningIntegrationTest extends CypherFunSuite with Logica
     val plan = new given {
       labelCardinality = Map("Few" -> 1.0, "Many" -> 1000.0)
       indexOn("Many", "prop").providesOrder(IndexOrderCapability.BOTH)
-    }.getLogicalPlanFor(s"MATCH $nodes, ($orderedNode:Many) WHERE exists($orderedNode.prop) RETURN * ORDER BY $orderedNode.prop")._2
+    }.getLogicalPlanFor(s"MATCH $nodes, ($orderedNode:Many) WHERE $orderedNode.prop IS NOT NULL RETURN * ORDER BY $orderedNode.prop")._2
 
     // We do not want a Sort
     plan shouldBe a[CartesianProduct]
