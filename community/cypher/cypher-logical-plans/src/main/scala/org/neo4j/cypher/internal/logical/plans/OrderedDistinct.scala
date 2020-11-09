@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.logical.plans
 
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.macros.AssertMacros
 import org.neo4j.cypher.internal.util.attribution.IdGen
 
 /**
@@ -35,4 +36,10 @@ case class OrderedDistinct(source: LogicalPlan,
   override val availableSymbols: Set[String] = groupingExpressions.keySet
 
   override def aggregationExpressions: Map[String, Expression] = Map.empty
+
+  AssertMacros.checkOnlyWhenAssertionsAreEnabled(orderToLeverage.forall(exp => groupingExpressions.values.exists(_ == exp)),
+   s"""orderToLeverage expressions can only be grouping expression values, i.e. the expressions _before_ the distinct.
+       |Grouping expressions: $groupingExpressions
+       |   Order to leverage: $orderToLeverage
+       |   """.stripMargin)
 }

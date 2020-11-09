@@ -28,10 +28,9 @@ object leverageOrder {
    * Given the order of a plan, and some grouping expressions, return the prefix
    * of the provided order that is part of the grouping expressions.
    */
-  def apply(inputProvidedOrder: ProvidedOrder, groupingExpressions: Map[String, Expression]): Seq[Expression] = {
-    val groupingValues = groupingExpressions.values.toSet
+  def apply(inputProvidedOrder: ProvidedOrder, groupingExpressions: Set[Expression]): Seq[Expression] = {
     inputProvidedOrder.columns.map(_.expression).takeWhile { exp =>
-      groupingValues.contains(exp)
+      groupingExpressions.contains(exp)
     }
   }
 }

@@ -26,14 +26,16 @@ import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.QueryGraphSolverSetup
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.QueryGraphSolverWithGreedyConnectComponents
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.QueryGraphSolverWithIDPConnectComponents
+import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfiguration
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.functions.Exists
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.logical.plans.Aggregation
 import org.neo4j.cypher.internal.logical.plans.Ascending
-import org.neo4j.cypher.internal.logical.plans.CacheProperties
 import org.neo4j.cypher.internal.logical.plans.Distinct
 import org.neo4j.cypher.internal.logical.plans.Expand
+import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
@@ -51,11 +53,14 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 class OrderIDPPlanningIntegrationTest extends OrderPlanningIntegrationTestBase(QueryGraphSolverWithIDPConnectComponents)
 class OrderGreedyPlanningIntegrationTest extends OrderPlanningIntegrationTestBase(QueryGraphSolverWithGreedyConnectComponents)
 
-class OrderPlanningIntegrationTestBase(queryGraphSolverSetup: QueryGraphSolverSetup)
+class OrderPlanningIntegrationTestBase(queryGraphSolverSetup: QueryGraphSolverSetup = QueryGraphSolverWithGreedyConnectComponents)
   extends CypherFunSuite
   with LogicalPlanningTestSupport2
   with LogicalPlanningIntegrationTestSupport {
-  queryGraphSolver = queryGraphSolverSetup.queryGraphSolver()
+
+  locally {
+    queryGraphSolver = queryGraphSolverSetup.queryGraphSolver()
+  }
 
   test("ORDER BY previously unprojected column in WITH") {
     val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH a ORDER BY a.age RETURN a.name")._2
@@ -370,43 +375,99 @@ class OrderPlanningIntegrationTestBase(queryGraphSolverSetup: QueryGraphSolverSe
 
   test("should use ordered distinct if there is one grouping column, ordered") {
     val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH a ORDER BY a.foo RETURN DISTINCT a.foo")._2
+    val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
+      .orderedDistinct(Seq("`a.foo`"), "`a.foo` AS `a.foo`")
+      .sort(Seq(Ascending("a.foo")))
+      .projection("a.foo AS `a.foo`")
+      .nodeByLabelScan("a", "A")
+      .build()
 
-    val labelScan = NodeByLabelScan("a", labelName("A"), Set.empty, IndexOrderNone)
-    val fooProperty = cachedNodeProp("a", "foo")
+    plan should equal(expectedPlan)
+  }
 
-    val projection = Projection(labelScan, Map("a.foo" -> fooProperty))
-    val sort = Sort(projection, Seq(Ascending("a.foo")))
-    val distinct = OrderedDistinct(sort, Map("a.foo" -> fooProperty), Seq(fooProperty))
+  test("should use ordered distinct if there is one aliased grouping column, ordered") {
+    val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH a ORDER BY a.foo RETURN DISTINCT a.foo AS x")._2
+    val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
+      .orderedDistinct(Seq("cache[a.foo]"), "cache[a.foo] AS x")
+      .sort(Seq(Ascending("a.foo")))
+      .projection("cache[a.foo] AS `a.foo`")
+      .nodeByLabelScan("a", "A")
+      .build()
 
-    plan should equal(distinct)
+    plan should equal(expectedPlan)
+  }
+
+  test("should use ordered distinct if there is one aliased grouping column, index-backed ordered") {
+    val plan = new given{
+      indexOn("A", "foo")
+        .providesOrder(IndexOrderCapability.BOTH)
+        .providesValues()
+    }.getLogicalPlanFor("MATCH (a:A) WHERE exists(a.foo) WITH a ORDER BY a.foo RETURN DISTINCT a.foo AS x")._2
+    val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
+      .orderedDistinct(Seq("cache[a.foo]"), "cache[a.foo] AS x")
+      .nodeIndexOperator("a:A(foo)", indexOrder = IndexOrderAscending, getValue = GetValue)
+      .build()
+
+    plan should equal(expectedPlan)
+  }
+
+  test("should use ordered distinct if there are two identical grouping columns (first aliased), ordered") {
+    val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH a ORDER BY a.foo RETURN DISTINCT a.foo AS x, a.foo")._2
+    val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
+      .orderedDistinct(Seq("`a.foo`"), "`a.foo` AS x", "`a.foo` AS `a.foo`")
+      .sort(Seq(Ascending("a.foo")))
+      .projection("a.foo AS `a.foo`")
+      .nodeByLabelScan("a", "A")
+      .build()
+
+    plan should equal(expectedPlan)
+  }
+
+  test("should use ordered distinct if there are two identical grouping columns (second aliased), ordered") {
+    val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH a ORDER BY a.foo RETURN DISTINCT a.foo, a.foo AS y")._2
+    val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
+      .orderedDistinct(Seq("`a.foo`"), "`a.foo` AS `a.foo`", "`a.foo` AS y")
+      .sort(Seq(Ascending("a.foo")))
+      .projection("a.foo AS `a.foo`")
+      .nodeByLabelScan("a", "A")
+      .build()
+
+    plan should equal(expectedPlan)
+  }
+  test("should use ordered distinct if there are two identical grouping columns (both aliased), ordered") {
+    val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH a ORDER BY a.foo RETURN DISTINCT a.foo AS x, a.foo AS y")._2
+    val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
+      .orderedDistinct(Seq("cache[a.foo]"), "cache[a.foo] AS x", "cache[a.foo] AS y")
+      .sort(Seq(Ascending("a.foo")))
+      .projection("cache[a.foo] AS `a.foo`")
+      .nodeByLabelScan("a", "A")
+      .build()
+
+    plan should equal(expectedPlan)
   }
 
   test("should use ordered distinct if there are two grouping columns, one ordered") {
     val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH a ORDER BY a.foo RETURN DISTINCT a.foo, a.bar")._2
+    val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
+      .orderedDistinct(Seq("`a.foo`"), "`a.foo` AS `a.foo`", "a.bar AS `a.bar`")
+      .sort(Seq(Ascending("a.foo")))
+      .projection("a.foo AS `a.foo`")
+      .nodeByLabelScan("a", "A")
+      .build()
 
-    val labelScan = NodeByLabelScan("a", labelName("A"), Set.empty, IndexOrderNone)
-    val fooProperty = cachedNodeProp("a", "foo")
-    val barProperty = prop("a", "bar")
-
-    val projection = Projection(labelScan, Map("a.foo" -> fooProperty))
-    val sort = Sort(projection, Seq(Ascending("a.foo")))
-    val distinct = OrderedDistinct(sort, Map("a.foo" -> fooProperty, "a.bar" -> barProperty), Seq(fooProperty))
-
-    plan should equal(distinct)
+    plan should equal(expectedPlan)
   }
 
   test("should use ordered distinct if there are two grouping columns, both ordered") {
     val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH a ORDER BY a.foo, a.bar RETURN DISTINCT a.foo, a.bar")._2
+    val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
+      .orderedDistinct(Seq("`a.foo`", "`a.bar`"), "`a.foo` AS `a.foo`", "`a.bar` AS `a.bar`")
+      .sort(Seq(Ascending("a.foo"), Ascending("a.bar")))
+      .projection("a.foo AS `a.foo`", "a.bar AS `a.bar`")
+      .nodeByLabelScan("a", "A")
+      .build()
 
-    val labelScan = NodeByLabelScan("a", labelName("A"), Set.empty, IndexOrderNone)
-    val fooProperty = cachedNodeProp("a", "foo")
-    val barProperty = cachedNodeProp("a", "bar")
-
-    val projection = Projection(labelScan, Map("a.foo" -> fooProperty, "a.bar" -> barProperty))
-    val sort = Sort(projection, Seq(Ascending("a.foo"), Ascending("a.bar")))
-    val distinct = OrderedDistinct(sort, Map("a.foo" -> fooProperty, "a.bar" -> barProperty), Seq(fooProperty, barProperty))
-
-    plan should equal(distinct)
+    plan should equal(expectedPlan)
   }
 
   private val idpGiven = new given {
@@ -1130,24 +1191,131 @@ class OrderPlanningIntegrationTestBase(queryGraphSolverSetup: QueryGraphSolverSe
     }
   }
 
+  private def wideningExpandConfig(): StatisticsBackedLogicalPlanningConfiguration = {
+    val nodeCount = 10000
+    plannerBuilder()
+      .setAllNodesCardinality(nodeCount)
+      .setRelationshipCardinality("()-[]->()", nodeCount * nodeCount)
+      .build()
+  }
+
   test("should sort before widening expand and distinct") {
     val query =
       """MATCH (a)-->(b)
         |RETURN DISTINCT a.prop
         |ORDER BY a.prop""".stripMargin
 
-    val nodeCount = 10000
-    val plan = plannerBuilder()
-      .setAllNodesCardinality(nodeCount)
-      .setLabelCardinality("A", nodeCount)
-      .setRelationshipCardinality("()-[]->()", nodeCount * nodeCount)
-      .build()
+    val plan = wideningExpandConfig()
       .plan(query)
       .stripProduceResults
 
-    // TODO should be `OrderedDistinct`
     plan should beLike {
-      case Distinct(Expand(CacheProperties(_: Sort, _), _, _, _, _, _, _), _) => ()
+      case OrderedDistinct(Expand(_: Sort, _, _, _, _, _, _), _, Seq(Variable("a.prop"))) => ()
+    }
+  }
+
+  test("should sort before widening expand and distinct with alias, ordering by alias") {
+    val query =
+      """MATCH (a)-->(b)
+        |RETURN DISTINCT a.prop AS x
+        |ORDER BY x""".stripMargin
+
+    val plan = wideningExpandConfig()
+      .plan(query)
+      .stripProduceResults
+
+    plan should beLike {
+      case OrderedDistinct(Expand(_: Sort, _, _, _, _, _, _), _, Seq(Variable("x"))) => ()
+    }
+  }
+
+  test("should sort before widening expand and distinct with alias, ordering by property") {
+    val query =
+      """MATCH (a)-->(b)
+        |RETURN DISTINCT a.prop AS x
+        |ORDER BY a.prop""".stripMargin
+
+    val plan = wideningExpandConfig()
+      .plan(query)
+      .stripProduceResults
+
+    plan should beLike {
+      case OrderedDistinct(Expand(_: Sort, _, _, _, _, _, _), _, Seq(Variable("x"))) => ()
+    }
+  }
+
+  test("should sort before widening expand and distinct expression with alias, ordering by alias") {
+    val query =
+      """MATCH (a)-->(b)
+        |RETURN DISTINCT a.prop+1 AS x
+        |ORDER BY x""".stripMargin
+
+    val plan = wideningExpandConfig()
+      .plan(query)
+      .stripProduceResults
+
+    plan should beLike {
+      case OrderedDistinct(Expand(_: Sort, _, _, _, _, _, _), _, Seq(Variable("x"))) => ()
+    }
+  }
+
+  test("should sort before widening expand and distinct expression with alias, ordering by expression") {
+    val query =
+      """MATCH (a)-->(b)
+        |RETURN DISTINCT a.prop+1 AS x
+        |ORDER BY a.prop+1""".stripMargin
+
+    val plan = wideningExpandConfig()
+      .plan(query)
+      .stripProduceResults
+
+    plan should beLike {
+      case OrderedDistinct(Expand(_: Sort, _, _, _, _, _, _), _, Seq(Variable("x"))) => ()
+    }
+  }
+
+  test("should sort before widening expand and distinct expression with alias, ordering by expression, difference in whitespace") {
+    val query =
+      """MATCH (a)-->(b)
+        |RETURN DISTINCT a.prop +1 AS x
+        |ORDER BY a.prop+ 1""".stripMargin
+
+    val plan = wideningExpandConfig()
+      .plan(query)
+      .stripProduceResults
+
+    plan should beLike {
+      case OrderedDistinct(Expand(_: Sort, _, _, _, _, _, _), _, Seq(Variable("x"))) => ()
+    }
+  }
+
+  test("should sort before widening expand and distinct expression, ordering by expression, difference in whitespace") {
+    val query =
+      """MATCH (a)-->(b)
+        |RETURN DISTINCT a.prop+ 1
+        |ORDER BY a.prop +1""".stripMargin
+
+    val plan = wideningExpandConfig()
+      .plan(query)
+      .stripProduceResults
+
+    plan should beLike {
+      case OrderedDistinct(Expand(_: Sort, _, _, _, _, _, _), _, Seq(Variable("a.prop+ 1"))) => ()
+    }
+  }
+
+  test("should sort before widening expand and distinct with two properties with alias, ordering by first alias") {
+    val query =
+      """MATCH (a)-->(b)
+        |RETURN DISTINCT a.prop AS p1, a.prop AS p2
+        |ORDER BY p1""".stripMargin
+
+    val plan = wideningExpandConfig()
+      .plan(query)
+      .stripProduceResults
+
+    plan should beLike {
+      case OrderedDistinct(Expand(_: Sort, _, _, _, _, _, _), _, Seq(Variable("p1"))) => ()
     }
   }
 
@@ -1160,7 +1328,6 @@ class OrderPlanningIntegrationTestBase(queryGraphSolverSetup: QueryGraphSolverSe
     val nodeCount = 10000
     val plan = plannerBuilder()
       .setAllNodesCardinality(nodeCount)
-      .setLabelCardinality("A", nodeCount)
       .setRelationshipCardinality("()-[]->()", nodeCount / 10)
       .build()
       .plan(query)
@@ -1170,5 +1337,4 @@ class OrderPlanningIntegrationTestBase(queryGraphSolverSetup: QueryGraphSolverSe
       case Sort(_: Distinct, _) => ()
     }
   }
-
 }

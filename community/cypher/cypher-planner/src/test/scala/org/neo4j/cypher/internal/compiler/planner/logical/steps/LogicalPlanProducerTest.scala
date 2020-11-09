@@ -328,7 +328,6 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       val resultsAndNames = Seq(
         ("PartialSort", lpp.planPartialSort(plan(), Seq(Ascending("x")), Seq(Ascending("y")), initialOrder.asc(varFor("y")).columns, InterestingOrder.empty, context)),
         ("OrderedAggregation with grouping", lpp.planOrderedAggregation(plan(), x_vx, foo_vx, Seq(vx), x_vx, foo_vx, context)),
-        ("OrderedAggregation no grouping", lpp.planOrderedAggregation(plan(), Map.empty, foo_vx, Seq(vx), Map.empty, foo_vx, context)),
         ("Limit for aggregation", lpp.planLimitForAggregation(plan(), DoNotIncludeTies, x_vx, foo_vx, InterestingOrder.empty, context).lhs.get), // Get the Limit under the Optional
         ("Limit", lpp.planLimit(plan(), one, one, interesting_vx, DoNotIncludeTies, context)),
         ("Skip", lpp.planSkip(plan(), one, interesting_vx, context)),

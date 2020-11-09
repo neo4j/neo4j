@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.logical.plans
 
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.macros.AssertMacros
 import org.neo4j.cypher.internal.util.attribution.IdGen
 
 /**
@@ -38,5 +39,11 @@ case class OrderedAggregation(source: LogicalPlan,
   val groupingKeys: Set[String] = groupingExpressions.keySet
 
   val availableSymbols: Set[String] = groupingKeys ++ aggregationExpressions.keySet
+
+  AssertMacros.checkOnlyWhenAssertionsAreEnabled(orderToLeverage.forall(exp => groupingExpressions.values.exists(_ == exp)),
+    s"""orderToLeverage expressions can only be grouping expression values, i.e. the expressions _before_ the aggregation.
+       |Grouping expressions: $groupingExpressions
+       |   Order to leverage: $orderToLeverage
+       |   """.stripMargin)
 
 }

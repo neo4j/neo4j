@@ -32,8 +32,6 @@ import org.neo4j.cypher.internal.logical.plans.ColumnOrder
 import org.neo4j.cypher.internal.logical.plans.Descending
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
-case class SortColumnsWithProjections(columnOrder: ColumnOrder, providedOrderColumn: ProvidedOrder.Column,
-                                      projections: Map[String, Expression], unaliasedProjections: Option[(String, Expression)])
 
 object SortPlanner {
   /**
@@ -124,6 +122,11 @@ object SortPlanner {
       else
         plan
     }
+
+    case class SortColumnsWithProjections(columnOrder: ColumnOrder,
+                                          providedOrderColumn: ProvidedOrder.Column,
+                                          projections: Map[String, Expression],
+                                          unaliasedProjections: Option[(String, Expression)])
 
     val sortItems: Seq[SortColumnsWithProjections] = interestingOrder.requiredOrderCandidate.order.map {
       // Aliased sort expressions

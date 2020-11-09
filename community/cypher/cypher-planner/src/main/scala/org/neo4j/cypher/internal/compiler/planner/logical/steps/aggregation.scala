@@ -91,7 +91,7 @@ object aggregation {
     } else {
       val inputProvidedOrder = context.planningAttributes.providedOrders(plan.id)
 
-      val orderToLeverage = leverageOrder(inputProvidedOrder, groupingExpressions)
+      val orderToLeverage = leverageOrder(inputProvidedOrder, groupingExpressions.values.toSet)
 
       if (orderToLeverage.isEmpty) {
         context.logicalPlanProducer.planAggregation(
