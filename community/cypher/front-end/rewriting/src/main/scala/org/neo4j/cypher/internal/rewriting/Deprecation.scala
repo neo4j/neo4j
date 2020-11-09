@@ -35,6 +35,7 @@ import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.SignedHexIntegerLiteral
 import org.neo4j.cypher.internal.expressions.SignedOctalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.StringLiteral
+import org.neo4j.cypher.internal.expressions.functions.Exists
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.DeprecatedCreateIndexSyntax
 import org.neo4j.cypher.internal.util.DeprecatedCreatePropertyExistenceConstraintSyntax
@@ -45,6 +46,7 @@ import org.neo4j.cypher.internal.util.DeprecatedHexLiteralSyntax
 import org.neo4j.cypher.internal.util.DeprecatedOctalLiteralSyntax
 import org.neo4j.cypher.internal.util.DeprecatedParameterSyntax
 import org.neo4j.cypher.internal.util.DeprecatedPatternExpressionOutsideExistsSyntax
+import org.neo4j.cypher.internal.util.DeprecatedPropertyExistenceSyntax
 import org.neo4j.cypher.internal.util.DeprecatedRelTypeSeparatorNotification
 import org.neo4j.cypher.internal.util.DeprecatedVarLengthBindingNotification
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
@@ -152,6 +154,12 @@ object Deprecations {
         Deprecation(
           () => c,
           () => Some(DeprecatedCreatePropertyExistenceConstraintSyntax(c.position))
+        )
+
+      case e@Exists(Property(_, _)) =>
+        Deprecation(
+          () => e,
+          () => Some(DeprecatedPropertyExistenceSyntax(e.position))
         )
     }
   }

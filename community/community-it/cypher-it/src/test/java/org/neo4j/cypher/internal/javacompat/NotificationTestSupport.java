@@ -70,6 +70,11 @@ public class NotificationTestSupport
         assertNotifications( List.of( "CYPHER 3.5"), query, matchesExpectation );
     }
 
+    void assertNotificationsInVersions4_2and4_3( String query, Matcher<Iterable<Notification>> matchesExpectation )
+    {
+        assertNotifications( List.of( "CYPHER 4.2", "CYPHER 4.3" ), query, matchesExpectation );
+    }
+
     private void assertNotifications( List<String> versions, String query, Matcher<Iterable<Notification>> matchesExpectation )
     {
 

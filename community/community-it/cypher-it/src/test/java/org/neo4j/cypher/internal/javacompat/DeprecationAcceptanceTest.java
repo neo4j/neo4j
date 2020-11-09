@@ -157,6 +157,47 @@ public class DeprecationAcceptanceTest extends NotificationTestSupport
                                                 containsNoItem( deprecatedUseOfPatternExpression ) );
     }
 
+    @Test
+    void deprecatedPropertyExistenceSyntaxOnNode()
+    {
+        assertNotificationsInSupportedVersions( "EXPLAIN MATCH (n) WHERE EXISTS(n.prop) RETURN n", containsItem( deprecatedPropertyExistenceSyntax ) );
+    }
+
+    @Test
+    void deprecatedPropertyExistenceSyntaxOnNodeWithNot()
+    {
+        assertNotificationsInSupportedVersions( "EXPLAIN MATCH (n) WHERE NOT EXISTS(n.prop) RETURN n", containsItem( deprecatedPropertyExistenceSyntax ) );
+    }
+
+    @Test
+    void deprecatedPropertyExistenceSyntaxOnRelationship()
+    {
+        assertNotificationsInSupportedVersions( "EXPLAIN MATCH ()-[r]-() WITH r WHERE EXISTS(r.prop) RETURN r.prop",
+                containsItem( deprecatedPropertyExistenceSyntax ) );
+    }
+
+    @Test
+    void deprecatedMapExistenceSyntax()
+    {
+        assertNotificationsInSupportedVersions( "EXPLAIN WITH {key:'blah'} as map RETURN EXISTS(map.key)",
+                containsItem( deprecatedPropertyExistenceSyntax ));
+    }
+
+    @Test
+    void existsOnPathsShouldNotBeDeprecated()
+    {
+        assertNotificationsInSupportedVersions( "EXPLAIN MATCH (n) WHERE EXISTS( (n)-[:REL]->() ) RETURN count(n)",
+                containsNoItem( deprecatedPropertyExistenceSyntax ) );
+    }
+
+    @Test
+    void existsSubclauseShouldNotBeDeprecated()
+    {
+        // Note: Exists subclause was introduced in Neo4j 4.0
+        assertNotificationsInVersions4_2and4_3("EXPLAIN MATCH (n) WHERE EXISTS { MATCH (n)-[]->() } RETURN n.prop",
+                containsNoItem( deprecatedPropertyExistenceSyntax ) );
+    }
+
     // FUNCTIONALITY DEPRECATED IN 3.5, REMOVED IN 4.0
 
     @Test
@@ -316,6 +357,9 @@ public class DeprecationAcceptanceTest extends NotificationTestSupport
     private final Matcher<Notification> deprecatedCreatePropertyExistenceConstraintSyntax =
             deprecation( "The create property existence constraint syntax `CREATE CONSTRAINT ON ... ASSERT exists(variable.property)` is deprecated, " +
                     "please use `CREATE CONSTRAINT ON ... ASSERT (variable.property) IS NOT NULL` instead" );
+
+    private final Matcher<Notification> deprecatedPropertyExistenceSyntax =
+            deprecation( "The property existence syntax `... exists(variable.property)` is deprecated, please use `variable.property IS NOT NULL` instead" );
 
     private final Matcher<Notification> deprecatedLengthOnNonPath =
             deprecation( "Using 'length' on anything that is not a path is deprecated, please use 'size' instead" );
