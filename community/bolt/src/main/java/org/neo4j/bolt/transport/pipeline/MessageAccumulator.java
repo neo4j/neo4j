@@ -26,16 +26,16 @@ import io.netty.handler.codec.DecoderException;
 
 import java.util.List;
 
-import org.neo4j.util.FeatureToggles;
+import org.neo4j.bolt.BoltSettings;
+import org.neo4j.configuration.Config;
 
 public class MessageAccumulator extends ByteToMessageDecoder
 {
-    private static final boolean USE_MERGE_CUMULATOR = FeatureToggles.flag( MessageAccumulator.class, "mergeCumulator", false );
     private boolean readMessageBoundary;
 
-    public MessageAccumulator()
+    public MessageAccumulator( Config config )
     {
-        if ( USE_MERGE_CUMULATOR )
+        if ( config.get( BoltSettings.netty_message_merge_cumulator ) )
         {
             setCumulator( MERGE_CUMULATOR );
         }

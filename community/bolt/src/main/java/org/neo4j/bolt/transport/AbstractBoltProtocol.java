@@ -36,6 +36,7 @@ import org.neo4j.bolt.transport.pipeline.HouseKeeper;
 import org.neo4j.bolt.transport.pipeline.MessageAccumulator;
 import org.neo4j.bolt.transport.pipeline.MessageDecoder;
 import org.neo4j.bolt.v3.runtime.bookmarking.BookmarksParserV3;
+import org.neo4j.configuration.Config;
 import org.neo4j.logging.internal.LogService;
 
 /**
@@ -44,6 +45,7 @@ import org.neo4j.logging.internal.LogService;
 public abstract class AbstractBoltProtocol implements BoltProtocol
 {
     private final BoltChannel channel;
+    private final Config config;
     private final LogService logging;
     private final TransportThrottleGroup throttleGroup;
 
@@ -52,16 +54,17 @@ public abstract class AbstractBoltProtocol implements BoltProtocol
     private final BookmarksParser bookmarksParser;
 
     public AbstractBoltProtocol( BoltChannel channel, BoltConnectionFactory connectionFactory,
-            BoltStateMachineFactory stateMachineFactory, LogService logging, TransportThrottleGroup throttleGroup )
+            BoltStateMachineFactory stateMachineFactory, Config config, LogService logging, TransportThrottleGroup throttleGroup )
     {
-        this( channel, connectionFactory, stateMachineFactory, BookmarksParserV3.INSTANCE, logging, throttleGroup );
+        this( channel, connectionFactory, stateMachineFactory, config, BookmarksParserV3.INSTANCE, logging, throttleGroup );
     }
 
     protected AbstractBoltProtocol( BoltChannel channel, BoltConnectionFactory connectionFactory,
-            BoltStateMachineFactory stateMachineFactory, BookmarksParser bookmarksParser, LogService logging,
+            BoltStateMachineFactory stateMachineFactory, Config config, BookmarksParser bookmarksParser, LogService logging,
             TransportThrottleGroup throttleGroup )
     {
         this.channel = channel;
+        this.config = config;
         this.logging = logging;
         this.throttleGroup = throttleGroup;
         this.stateMachineFactory = stateMachineFactory;
@@ -84,7 +87,7 @@ public abstract class AbstractBoltProtocol implements BoltProtocol
 
         channel.installBoltProtocol(
                 new ChunkDecoder(),
-                new MessageAccumulator(),
+                new MessageAccumulator( config ),
                 new MessageDecoder( neo4jPack, messageReader, logging ),
                 new HouseKeeper( connection, logging.getInternalLog( HouseKeeper.class ) ) );
     }

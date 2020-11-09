@@ -21,7 +21,6 @@ package org.neo4j.bolt.packstream;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.embedded.EmbeddedChannel;
-
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -42,6 +41,7 @@ import org.neo4j.bolt.v4.BoltProtocolV4;
 import org.neo4j.bolt.v4.BoltRequestMessageWriterV4;
 import org.neo4j.bolt.v4.messaging.RunMessage;
 import org.neo4j.common.HexPrinter;
+import org.neo4j.configuration.Config;
 import org.neo4j.logging.internal.NullLogService;
 
 import static io.netty.buffer.Unpooled.wrappedBuffer;
@@ -125,7 +125,7 @@ public class FragmentedMessageDeliveryTest
         NullLogService logging = NullLogService.getInstance();
         var bookmarksParser = mock( BookmarksParser.class );
         BoltProtocol boltProtocol = new BoltProtocolV4( boltChannel, ( ch, s, messageWriter ) -> boltConnection, ( v,
-                ch ) -> machine, bookmarksParser, logging, mock( TransportThrottleGroup.class ) );
+                ch ) -> machine, Config.defaults(), bookmarksParser, logging, mock( TransportThrottleGroup.class ) );
         boltProtocol.install();
 
         // When data arrives split up according to the current permutation

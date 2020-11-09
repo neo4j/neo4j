@@ -45,4 +45,8 @@ public class BoltSettings implements SettingsDeclaration
     @Internal
     public static final Setting<Duration> netty_server_shutdown_timeout =
             newBuilder( "unsupported.dbms.bolt.netty_server_shutdown_timeout", DURATION, ofSeconds( 15 ) ).build();
+
+    @Internal
+    public static final Setting<Boolean> netty_message_merge_cumulator =
+            newBuilder( "unsupported.dbms.bolt.netty_message_merge_cumulator", BOOL, false ).build();
 }

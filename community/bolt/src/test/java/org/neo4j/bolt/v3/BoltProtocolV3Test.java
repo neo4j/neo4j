@@ -31,6 +31,7 @@ import org.neo4j.bolt.runtime.statemachine.BoltStateMachineFactory;
 import org.neo4j.bolt.transport.TransportThrottleGroup;
 import org.neo4j.bolt.v3.messaging.BoltRequestMessageReaderV3;
 import org.neo4j.bolt.v3.messaging.BoltResponseMessageWriterV3;
+import org.neo4j.configuration.Config;
 import org.neo4j.logging.internal.NullLogService;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -83,7 +84,7 @@ class BoltProtocolV3Test
     private BoltProtocolV3 createProtocolV3()
     {
         return new BoltProtocolV3( newTestBoltChannel(), ( ch, st, mw ) -> mock( BoltConnection.class ),
-                mock( BoltStateMachineFactory.class ),
+                mock( BoltStateMachineFactory.class ), Config.defaults(),
                 NullLogService.getInstance(), mock( TransportThrottleGroup.class ) );
     }
 }

@@ -33,6 +33,7 @@ import org.neo4j.bolt.transport.AbstractBoltProtocol;
 import org.neo4j.bolt.transport.TransportThrottleGroup;
 import org.neo4j.bolt.v3.messaging.BoltRequestMessageReaderV3;
 import org.neo4j.bolt.v3.messaging.BoltResponseMessageWriterV3;
+import org.neo4j.configuration.Config;
 import org.neo4j.logging.internal.LogService;
 
 /**
@@ -43,9 +44,9 @@ public class BoltProtocolV3 extends AbstractBoltProtocol
     public static final BoltProtocolVersion VERSION = new BoltProtocolVersion( 3, 0 );
 
     public BoltProtocolV3( BoltChannel channel, BoltConnectionFactory connectionFactory,
-            BoltStateMachineFactory stateMachineFactory, LogService logging, TransportThrottleGroup throttleGroup )
+            BoltStateMachineFactory stateMachineFactory, Config config, LogService logging, TransportThrottleGroup throttleGroup )
     {
-        super( channel, connectionFactory, stateMachineFactory, logging, throttleGroup );
+        super( channel, connectionFactory, stateMachineFactory, config, logging, throttleGroup );
     }
 
     @Override

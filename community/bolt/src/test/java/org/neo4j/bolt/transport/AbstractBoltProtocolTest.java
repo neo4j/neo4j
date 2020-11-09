@@ -41,6 +41,7 @@ import org.neo4j.bolt.transport.pipeline.ChunkDecoder;
 import org.neo4j.bolt.transport.pipeline.HouseKeeper;
 import org.neo4j.bolt.transport.pipeline.MessageAccumulator;
 import org.neo4j.bolt.transport.pipeline.MessageDecoder;
+import org.neo4j.configuration.Config;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.logging.internal.NullLogService;
 
@@ -70,7 +71,7 @@ class AbstractBoltProtocolTest
         BoltConnectionFactory connectionFactory = mock( BoltConnectionFactory.class );
         when( connectionFactory.newConnection( eq( boltChannel ), any(), any() ) ).thenReturn( mock( BoltConnection.class ) );
         BoltProtocol boltProtocol =
-                new TestAbstractBoltProtocol( boltChannel, connectionFactory, mock( BoltStateMachineFactory.class ),
+                new TestAbstractBoltProtocol( boltChannel, connectionFactory, mock( BoltStateMachineFactory.class ), Config.defaults(),
                         NullLogService.getInstance(), mock( TransportThrottleGroup.class ) );
 
         // When
@@ -90,9 +91,9 @@ class AbstractBoltProtocolTest
         private static final BoltProtocolVersion DUMMY_VERSION = new BoltProtocolVersion( 0, 0 );
 
         TestAbstractBoltProtocol( BoltChannel channel, BoltConnectionFactory connectionFactory, BoltStateMachineFactory stateMachineFactory,
-                                  LogService logging, TransportThrottleGroup throttleGroup )
+                                  Config config, LogService logging, TransportThrottleGroup throttleGroup )
         {
-            super( channel, connectionFactory, stateMachineFactory, logging, throttleGroup );
+            super( channel, connectionFactory, stateMachineFactory, config, logging, throttleGroup );
         }
 
         @Override

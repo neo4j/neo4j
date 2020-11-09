@@ -328,7 +328,7 @@ public class BoltServer extends LifecycleAdapter
     {
         var customBookmarkParser = boltGraphDatabaseManagementServiceSPI.getCustomBookmarkFormatParser()
                 .orElse( CustomBookmarkFormatParser.DEFAULT );
-        return new DefaultBoltProtocolFactory( connectionFactory, stateMachineFactory, logService,
+        return new DefaultBoltProtocolFactory( connectionFactory, stateMachineFactory, config, logService,
                 databaseIdRepository, customBookmarkParser, throttleGroup, clock, keepAliveInterval );
     }
 

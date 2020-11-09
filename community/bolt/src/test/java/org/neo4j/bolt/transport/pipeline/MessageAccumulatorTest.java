@@ -23,6 +23,8 @@ import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
+import org.neo4j.configuration.Config;
+
 import static io.netty.buffer.Unpooled.wrappedBuffer;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -31,7 +33,7 @@ import static org.neo4j.bolt.testing.BoltTestUtil.assertByteBufEquals;
 
 public class MessageAccumulatorTest
 {
-    private final EmbeddedChannel channel = new EmbeddedChannel( new MessageAccumulator() );
+    private final EmbeddedChannel channel = new EmbeddedChannel( new MessageAccumulator( Config.defaults() ) );
 
     @AfterEach
     public void cleanup()
@@ -82,5 +84,4 @@ public class MessageAccumulatorTest
         assertByteBufEquals( wrappedBuffer( new byte[]{4, 5, 6} ), channel.readInbound() );
         assertByteBufEquals( wrappedBuffer( new byte[]{7, 8, 9, 10} ), channel.readInbound() );
     }
-
 }

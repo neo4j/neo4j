@@ -35,6 +35,7 @@ import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.runtime.BoltConnectionFactory;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachine;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachineFactory;
+import org.neo4j.configuration.Config;
 import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.time.Clocks;
@@ -57,7 +58,7 @@ class DefaultBoltProtocolFactoryTest
         int protocolVersion = 42;
         BoltChannel channel = newTestBoltChannel();
         BoltProtocolFactory factory =
-                new DefaultBoltProtocolFactory( mock( BoltConnectionFactory.class ), mock( BoltStateMachineFactory.class ),
+                new DefaultBoltProtocolFactory( mock( BoltConnectionFactory.class ), mock( BoltStateMachineFactory.class ), Config.defaults(),
                         NullLogService.getInstance(), new TestDatabaseIdRepository(), CustomBookmarkFormatParser.DEFAULT,
                         mock( TransportThrottleGroup.class ), Clocks.fakeClock(), Duration.ZERO );
 
@@ -84,7 +85,7 @@ class DefaultBoltProtocolFactoryTest
                 .thenReturn( connection );
 
         BoltProtocolFactory factory =
-                new DefaultBoltProtocolFactory( connectionFactory, stateMachineFactory, NullLogService.getInstance(),
+                new DefaultBoltProtocolFactory( connectionFactory, stateMachineFactory, Config.defaults(), NullLogService.getInstance(),
                         new TestDatabaseIdRepository(), CustomBookmarkFormatParser.DEFAULT,
                         mock( TransportThrottleGroup.class ), Clocks.fakeClock(), Duration.ZERO );
 

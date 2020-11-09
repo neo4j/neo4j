@@ -33,8 +33,8 @@ import org.neo4j.bolt.runtime.statemachine.BoltStateMachineFactory;
 import org.neo4j.bolt.transport.TransportThrottleGroup;
 import org.neo4j.bolt.v4.runtime.bookmarking.BookmarksParserV4;
 import org.neo4j.bolt.v41.messaging.BoltResponseMessageWriterV41;
-import org.neo4j.bolt.v42.BoltProtocolV42;
 import org.neo4j.bolt.v43.messaging.BoltRequestMessageReaderV43;
+import org.neo4j.configuration.Config;
 import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.time.Clocks;
@@ -84,8 +84,7 @@ class BoltProtocolV43Test
     private BoltProtocolV43 createProtocolV43()
     {
         return new BoltProtocolV43( newTestBoltChannel(), ( ch, st, mr ) -> mock( BoltConnection.class ),
-                                    mock( BoltStateMachineFactory.class ), bookmarksParser, NullLogService.getInstance(),
+                                    mock( BoltStateMachineFactory.class ), Config.defaults(), bookmarksParser, NullLogService.getInstance(),
                                     mock( TransportThrottleGroup.class ), Clocks.fakeClock(), Duration.ZERO );
     }
-
 }

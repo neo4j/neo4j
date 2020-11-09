@@ -35,6 +35,7 @@ import org.neo4j.bolt.transport.AbstractBoltProtocol;
 import org.neo4j.bolt.transport.TransportThrottleGroup;
 import org.neo4j.bolt.v41.messaging.BoltRequestMessageReaderV41;
 import org.neo4j.bolt.v41.messaging.BoltResponseMessageWriterV41;
+import org.neo4j.configuration.Config;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.time.SystemNanoClock;
 
@@ -48,10 +49,10 @@ public class BoltProtocolV41 extends AbstractBoltProtocol
     private final Duration keepAliveInterval;
 
     public BoltProtocolV41( BoltChannel channel, BoltConnectionFactory connectionFactory,
-            BoltStateMachineFactory stateMachineFactory, BookmarksParser bookmarksParser, LogService logging,
+            BoltStateMachineFactory stateMachineFactory, Config config, BookmarksParser bookmarksParser, LogService logging,
             TransportThrottleGroup throttleGroup, SystemNanoClock clock, Duration keepAliveInterval )
     {
-        super( channel, connectionFactory, stateMachineFactory, bookmarksParser, logging, throttleGroup );
+        super( channel, connectionFactory, stateMachineFactory, config, bookmarksParser, logging, throttleGroup );
         this.clock = clock;
         this.keepAliveInterval = keepAliveInterval;
     }
