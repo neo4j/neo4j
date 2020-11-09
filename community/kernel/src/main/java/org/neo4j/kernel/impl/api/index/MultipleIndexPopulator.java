@@ -41,6 +41,8 @@ import java.util.stream.IntStream;
 import org.neo4j.common.EntityType;
 import org.neo4j.common.Subject;
 import org.neo4j.common.TokenNameLookup;
+import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.function.Predicates;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.internal.helpers.Exceptions;
@@ -71,13 +73,11 @@ import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
-import org.neo4j.util.FeatureToggles;
 import org.neo4j.util.VisibleForTesting;
 
 import static java.lang.String.format;
 import static java.util.stream.Collectors.joining;
 import static org.eclipse.collections.impl.utility.ArrayIterate.contains;
-import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
 
 /**
@@ -103,14 +103,14 @@ import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
  * <li>Call to {@link #flipAfterStoreScan(boolean, PageCursorTracer)} after successful population, or {@link #cancel(Throwable, PageCursorTracer)} if not</li>
  * </ol>
  * <p>
- * The incoming updates from the {@link StoreScan} are batched in sizes of {@link #BATCH_SIZE_SCAN} and then
+ * The incoming updates from the {@link StoreScan} are batched in sizes of {@link #batchSizeScan} and then
  * flushed separately by different threads using {@link JobScheduler}.
  * <p>
  * It is possible for concurrent updates from transactions to arrive while index population is in progress. Such
  * updates are inserted in the {@link #queueConcurrentUpdate(IndexEntryUpdate) queue}. When store scan notices that
- * queue size has reached {@link #QUEUE_THRESHOLD} then it drains all batched updates and waits for all job scheduler
+ * queue size has reached {@link #queueThreshold} then it drains all batched updates and waits for all job scheduler
  * tasks to complete and flushes updates from the queue using {@link MultipleIndexUpdater}. If queue size never reaches
- * {@link #QUEUE_THRESHOLD} than all queued concurrent updates are flushed after the store scan in
+ * {@link #queueThreshold} than all queued concurrent updates are flushed after the store scan in
  * {@link MultipleIndexPopulator#flipAfterStoreScan(boolean, PageCursorTracer)}.
  * <p>
  */
@@ -118,22 +118,13 @@ public class MultipleIndexPopulator
 {
     private static final String MULTIPLE_INDEX_POPULATOR_TAG = "multipleIndexPopulator";
     private static final String POPULATION_WORK_FLUSH_TAG = "populationWorkFlush";
-    public static final String QUEUE_THRESHOLD_NAME = "queue_threshold";
-    public static final String BATCH_SIZE_NAME = "batch_size";
-    public static final String BATCH_MAX_BYTE_SIZE_NAME = "batch_max_byte_size";
-    static final String AWAIT_TIMEOUT_MINUTES_NAME = "await_timeout_minutes";
     private static final String EOL = System.lineSeparator();
 
-    static final int DEFAULT_BATCH_SIZE_SCAN = 10_000;
-    static final int DEFAULT_QUEUE_THRESHOLD = 20_000;
-    static final int DEFAULT_BATCH_MAX_BYTE_SIZE = (int) mebiBytes( 10 );
-    static final int DEFAULT_AWAIT_TIMEOUT_MINUTES = 30;
-
-    private final int QUEUE_THRESHOLD;
-    final int BATCH_SIZE_SCAN;
-    final int BATCH_MAX_BYTE_SIZE_SCAN;
-    private final boolean PRINT_DEBUG = FeatureToggles.flag( MultipleIndexPopulator.class, "print_debug", false );
-    private final int AWAIT_TIMEOUT_MINUTES;
+    private final int queueThreshold;
+    final int batchSizeScan;
+    final int batchMaxByteSizeScan;
+    private final boolean printDebug;
+    private final int awaitTimeoutMinutes;
 
     // Concurrency queue since multiple concurrent threads may enqueue updates into it. It is important for this queue
     // to have fast #size() method since it might be drained in batches
@@ -163,31 +154,9 @@ public class MultipleIndexPopulator
     private final String databaseName;
     private final Subject subject;
 
-    /**
-     * Creates a new multi-threaded populator for the given store view.
-     * @param storeView the view of the store as a visitable of nodes
-     * @param logProvider the log provider
-     * @param type entity type to populate
-     * @param schemaState the schema state
-     * @param jobScheduler the job scheduler
-     * @param tokenNameLookup token lookup
-     */
     public MultipleIndexPopulator( IndexStoreView storeView, LogProvider logProvider, EntityType type, SchemaState schemaState,
             IndexStatisticsStore indexStatisticsStore, JobScheduler jobScheduler, TokenNameLookup tokenNameLookup, PageCacheTracer cacheTracer,
-            MemoryTracker memoryTracker, String databaseName, Subject subject )
-    {
-        this( storeView, logProvider, type, schemaState, indexStatisticsStore, jobScheduler, tokenNameLookup, cacheTracer, memoryTracker, databaseName,
-                subject,
-                FeatureToggles.getInteger( MultipleIndexPopulator.class, QUEUE_THRESHOLD_NAME, DEFAULT_QUEUE_THRESHOLD ),
-                FeatureToggles.getInteger( MultipleIndexPopulator.class, BATCH_SIZE_NAME, DEFAULT_BATCH_SIZE_SCAN ),
-                FeatureToggles.getInteger( MultipleIndexPopulator.class, BATCH_MAX_BYTE_SIZE_NAME, DEFAULT_BATCH_MAX_BYTE_SIZE ),
-                FeatureToggles.getInteger( MultipleIndexPopulator.class, AWAIT_TIMEOUT_MINUTES_NAME, DEFAULT_AWAIT_TIMEOUT_MINUTES ) );
-    }
-
-    public MultipleIndexPopulator( IndexStoreView storeView, LogProvider logProvider, EntityType type, SchemaState schemaState,
-            IndexStatisticsStore indexStatisticsStore, JobScheduler jobScheduler, TokenNameLookup tokenNameLookup, PageCacheTracer cacheTracer,
-            MemoryTracker memoryTracker, String databaseName, Subject subject,
-            int queueThreshold, int batchSizeScan, int batchMaxByteSizeScan, int awaitTimeoutMillis )
+            MemoryTracker memoryTracker, String databaseName, Subject subject, Config config )
     {
         this.storeView = storeView;
         this.cursorTracer = cacheTracer.createPageCursorTracer( MULTIPLE_INDEX_POPULATOR_TAG );
@@ -205,10 +174,11 @@ public class MultipleIndexPopulator
         this.databaseName = databaseName;
         this.subject = subject;
 
-        this.QUEUE_THRESHOLD = queueThreshold;
-        this.BATCH_SIZE_SCAN = batchSizeScan;
-        this.BATCH_MAX_BYTE_SIZE_SCAN = batchMaxByteSizeScan;
-        this.AWAIT_TIMEOUT_MINUTES = awaitTimeoutMillis;
+        this.printDebug = config.get( GraphDatabaseInternalSettings.index_population_print_debug );
+        this.queueThreshold = config.get( GraphDatabaseInternalSettings.index_population_queue_threshold );
+        this.batchSizeScan = config.get( GraphDatabaseInternalSettings.index_population_scan_batch_size );
+        this.batchMaxByteSizeScan = config.get( GraphDatabaseInternalSettings.index_population_batch_max_byte_size ).intValue();
+        this.awaitTimeoutMinutes = (int) config.get( GraphDatabaseInternalSettings.index_population_await_timeout ).toMinutes();
     }
 
     IndexPopulation addPopulator( IndexPopulator populator, IndexDescriptor indexDescriptor, FlippableIndexProxy flipper,
@@ -448,7 +418,7 @@ public class MultipleIndexPopulator
 
     boolean applyConcurrentUpdateQueueBatched( long currentlyIndexedNodeId )
     {
-        return applyConcurrentUpdateQueue( QUEUE_THRESHOLD, currentlyIndexedNodeId );
+        return applyConcurrentUpdateQueue( queueThreshold, currentlyIndexedNodeId );
     }
 
     private void flushAll()
@@ -475,7 +445,7 @@ public class MultipleIndexPopulator
                     try ( var cursorTracer = cacheTracer.createPageCursorTracer( POPULATION_WORK_FLUSH_TAG ) )
                     {
                         String batchDescription = "EMPTY";
-                        if ( PRINT_DEBUG )
+                        if ( printDebug )
                         {
                             if ( !batch.isEmpty() )
                             {
@@ -485,7 +455,7 @@ public class MultipleIndexPopulator
                             log.info( "Applying scan batch %s", batchDescription );
                         }
                         population.populator.add( batch, cursorTracer );
-                        if ( PRINT_DEBUG )
+                        if ( printDebug )
                         {
                             log.info( "Applied scan batch %s", batchDescription );
                         }
@@ -509,9 +479,9 @@ public class MultipleIndexPopulator
     private boolean applyConcurrentUpdateQueue( int queueThreshold, long currentlyIndexedNodeId )
     {
         int queueSize = concurrentUpdateQueue.size();
-        if ( (queueSize > 0 && queueSize >= queueThreshold) || concurrentUpdateQueueByteSize.get() >= BATCH_MAX_BYTE_SIZE_SCAN )
+        if ( (queueSize > 0 && queueSize >= queueThreshold) || concurrentUpdateQueueByteSize.get() >= batchMaxByteSizeScan )
         {
-            if ( PRINT_DEBUG )
+            if ( printDebug )
             {
                 log.info( "Populating from queue at %d", currentlyIndexedNodeId );
             }
@@ -531,7 +501,7 @@ public class MultipleIndexPopulator
                     // drift over time. Therefore each update polled from the queue will subtract its size instead.
                     updateByteSizeDrained += update != null ? update.roughSizeOfUpdate() : 0;
                     storeScan.acceptUpdate( updater, update, currentlyIndexedNodeId );
-                    if ( PRINT_DEBUG )
+                    if ( printDebug )
                     {
                         log.info( "Applied %s from queue" + (update == null ? null : update.describe( tokenNameLookup ) ) );
                     }
@@ -539,7 +509,7 @@ public class MultipleIndexPopulator
                 while ( !concurrentUpdateQueue.isEmpty() );
                 concurrentUpdateQueueByteSize.addAndGet( -updateByteSizeDrained );
             }
-            if ( PRINT_DEBUG )
+            if ( printDebug )
             {
                 log.info( "Done applying updates from queue" );
             }
@@ -564,20 +534,20 @@ public class MultipleIndexPopulator
     }
 
     /**
-     * Awaits {@link #AWAIT_TIMEOUT_MINUTES} minutes for all previously submitted batch-flush tasks to complete.
+     * Awaits {@link #awaitTimeoutMinutes} minutes for all previously submitted batch-flush tasks to complete.
      * Restores the interrupted status and exits normally when interrupted during waiting.
      *
-     * @throws IllegalStateException if tasks did not complete in {@link #AWAIT_TIMEOUT_MINUTES} minutes.
+     * @throws IllegalStateException if tasks did not complete in {@link #awaitTimeoutMinutes} minutes.
      */
     private void awaitCompletion()
     {
         try
         {
-            log.debug( "Waiting " + AWAIT_TIMEOUT_MINUTES + " minutes for all submitted and active " +
+            log.debug( "Waiting " + awaitTimeoutMinutes + " minutes for all submitted and active " +
                     "flush tasks to complete." + EOL + this );
 
             BooleanSupplier allSubmittedTasksCompleted = () -> activeTasks.get() == 0;
-            Predicates.await( allSubmittedTasksCompleted, AWAIT_TIMEOUT_MINUTES, TimeUnit.MINUTES );
+            Predicates.await( allSubmittedTasksCompleted, awaitTimeoutMinutes, TimeUnit.MINUTES );
         }
         catch ( TimeoutException e )
         {
@@ -587,13 +557,13 @@ public class MultipleIndexPopulator
 
     private void handleTimeout()
     {
-        throw new IllegalStateException( "Index population tasks were not able to complete in " +
-                AWAIT_TIMEOUT_MINUTES + " minutes." + EOL + this + EOL + allStackTraces() );
+        throw new IllegalStateException(
+                "Index population tasks were not able to complete in " + awaitTimeoutMinutes + " minutes." + EOL + this + EOL + allStackTraces() );
     }
 
     /**
      * Finds all threads and corresponding stack traces which can potentially cause the
-     * {@link ExecutorService executor} to not terminate in {@link #AWAIT_TIMEOUT_MINUTES} minutes.
+     * {@link ExecutorService executor} to not terminate in {@link #awaitTimeoutMinutes} minutes.
      *
      * @return thread dump as string.
      */
@@ -708,7 +678,7 @@ public class MultipleIndexPopulator
             this.flipper = flipper;
             this.failedIndexProxyFactory = failedIndexProxyFactory;
             this.indexUserDescription = indexUserDescription;
-            this.batchedUpdatesFromScan = new ArrayList<>( BATCH_SIZE_SCAN );
+            this.batchedUpdatesFromScan = new ArrayList<>( batchSizeScan );
         }
 
         private void cancel( IndexPopulationFailure failure )
@@ -838,7 +808,7 @@ public class MultipleIndexPopulator
         {
             batchedUpdatesFromScan.add( update );
             sizeOfBatchedUpdates += update.roughSizeOfUpdate();
-            return batchedUpdatesFromScan.size() >= BATCH_SIZE_SCAN || sizeOfBatchedUpdates >= BATCH_MAX_BYTE_SIZE_SCAN;
+            return batchedUpdatesFromScan.size() >= batchSizeScan || sizeOfBatchedUpdates >= batchMaxByteSizeScan;
         }
 
         List<IndexEntryUpdate<?>> takeCurrentBatchFromScan()
@@ -848,7 +818,7 @@ public class MultipleIndexPopulator
                 return Collections.emptyList();
             }
             List<IndexEntryUpdate<?>> batch = batchedUpdatesFromScan;
-            batchedUpdatesFromScan = new ArrayList<>( BATCH_SIZE_SCAN );
+            batchedUpdatesFromScan = new ArrayList<>( batchSizeScan );
             sizeOfBatchedUpdates = 0;
             return batch;
         }
@@ -883,7 +853,7 @@ public class MultipleIndexPopulator
         public boolean visit( EntityUpdates updates )
         {
             addFromScan( updates );
-            if ( PRINT_DEBUG )
+            if ( printDebug )
             {
                 log.info( "Added scan updates for entity %d", updates.getEntityId() );
             }

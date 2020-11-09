@@ -640,4 +640,26 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
     @Internal
     public static Setting<Boolean> print_page_buffer_allocation_trace =
             newBuilder( "unsupported.dbms.debug.print_page_buffer_allocation_trace", BOOL, false ).build();
+
+    @Internal
+    public static Setting<Boolean> index_population_print_debug =
+            newBuilder( "unsupported.dbms.index.population_print_debug", BOOL, false ).build();
+
+    @Internal
+    public static Setting<Integer> index_population_queue_threshold =
+            newBuilder( "unsupported.dbms.index.population_queue_threshold", INT, 20_000 ).build();
+
+    @Internal
+    public static Setting<Integer> index_population_scan_batch_size =
+            newBuilder( "unsupported.dbms.index.population_scan_batch_size", INT, 10_000 ).build();
+
+    @Internal
+    public static Setting<Long> index_population_batch_max_byte_size =
+            newBuilder( "unsupported.dbms.index.population_batch_max_byte_size", BYTES, mebiBytes( 10 ) )
+                    .addConstraint( max( (long) Integer.MAX_VALUE ) )
+                    .build();
+
+    @Internal
+    public static Setting<Duration> index_population_await_timeout =
+            newBuilder( "unsupported.dbms.index.population_await_timeout", DURATION, ofMinutes( 30 ) ).build();
 }

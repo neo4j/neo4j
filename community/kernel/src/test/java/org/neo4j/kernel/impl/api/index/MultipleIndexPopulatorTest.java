@@ -29,6 +29,8 @@ import java.util.concurrent.Callable;
 import java.util.function.IntPredicate;
 
 import org.neo4j.common.EntityType;
+import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -104,7 +106,7 @@ class MultipleIndexPopulatorTest
         JobScheduler jobScheduler = mock( JobScheduler.class );
         tokens = new InMemoryTokens();
         multipleIndexPopulator = new MultipleIndexPopulator( indexStoreView, NullLogProvider.getInstance(), EntityType.NODE, schemaState, indexStatisticsStore,
-                jobScheduler, tokens, PageCacheTracer.NULL, INSTANCE, "", AUTH_DISABLED  );
+                jobScheduler, tokens, PageCacheTracer.NULL, INSTANCE, "", AUTH_DISABLED, Config.defaults() );
     }
 
     @Test
@@ -537,8 +539,8 @@ class MultipleIndexPopulatorTest
         IndexPopulation population = addPopulator( populator, 1 );
         multipleIndexPopulator.create( NULL );
         String largeString = random.nextAlphaNumericString( 100_000, 100_000 );
-        int roughlyNumUpdates = (int) (multipleIndexPopulator.BATCH_MAX_BYTE_SIZE_SCAN / HeapEstimator.sizeOf( largeString ));
-        assertThat( roughlyNumUpdates ).isLessThan( MultipleIndexPopulator.DEFAULT_BATCH_SIZE_SCAN / 10 );
+        int roughlyNumUpdates = (int) (multipleIndexPopulator.batchMaxByteSizeScan / HeapEstimator.sizeOf( largeString ));
+        assertThat( roughlyNumUpdates ).isLessThan( GraphDatabaseInternalSettings.index_population_scan_batch_size.defaultValue() / 10 );
         Value largeStringValue = Values.stringValue( largeString );
         IndexDescriptor indexDescriptor = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 0, 1 ) ).withName( "name" ).materialise( 99 );
         boolean full = false;
@@ -561,8 +563,8 @@ class MultipleIndexPopulatorTest
         createIndexPopulator();
         multipleIndexPopulator.create( NULL );
         String largeString = random.nextAlphaNumericString( 100_000, 100_000 );
-        int roughlyNumUpdates = (int) (multipleIndexPopulator.BATCH_MAX_BYTE_SIZE_SCAN / HeapEstimator.sizeOf( largeString ));
-        assertThat( roughlyNumUpdates ).isLessThan( multipleIndexPopulator.BATCH_SIZE_SCAN / 10 );
+        int roughlyNumUpdates = (int) (multipleIndexPopulator.batchMaxByteSizeScan / HeapEstimator.sizeOf( largeString ));
+        assertThat( roughlyNumUpdates ).isLessThan( multipleIndexPopulator.batchSizeScan / 10 );
         Value largeStringValue = Values.stringValue( largeString );
         IndexDescriptor indexDescriptor = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 0, 1 ) ).withName( "name" ).materialise( 99 );
         multipleIndexPopulator.createStoreScan( NULL );

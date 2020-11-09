@@ -29,6 +29,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.common.EntityType;
+import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.internal.kernel.api.PopulationProgress;
@@ -56,7 +58,6 @@ import org.neo4j.test.InMemoryTokens;
 import org.neo4j.test.scheduler.CallingThreadJobScheduler;
 import org.neo4j.test.scheduler.JobSchedulerAdapter;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
-import org.neo4j.util.FeatureToggles;
 import org.neo4j.values.storable.Values;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
@@ -71,10 +72,6 @@ import static org.neo4j.common.Subject.AUTH_DISABLED;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.kernel.api.index.IndexQueryHelper.add;
 import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
-import static org.neo4j.kernel.impl.api.index.MultipleIndexPopulator.DEFAULT_AWAIT_TIMEOUT_MINUTES;
-import static org.neo4j.kernel.impl.api.index.MultipleIndexPopulator.DEFAULT_BATCH_MAX_BYTE_SIZE;
-import static org.neo4j.kernel.impl.api.index.MultipleIndexPopulator.DEFAULT_BATCH_SIZE_SCAN;
-import static org.neo4j.kernel.impl.api.index.MultipleIndexPopulator.DEFAULT_QUEUE_THRESHOLD;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 public class BatchingMultipleIndexPopulatorTest
@@ -91,7 +88,7 @@ public class BatchingMultipleIndexPopulatorTest
         MultipleIndexPopulator batchingPopulator = new MultipleIndexPopulator(
                 mock( IndexStoreView.class ), NullLogProvider.getInstance(), EntityType.NODE,
                 mock( SchemaState.class ), mock( IndexStatisticsStore.class ), new CallingThreadJobScheduler(), tokens, NULL, INSTANCE, "", AUTH_DISABLED,
-                5, DEFAULT_BATCH_SIZE_SCAN, DEFAULT_BATCH_MAX_BYTE_SIZE, DEFAULT_AWAIT_TIMEOUT_MINUTES );
+                Config.defaults( GraphDatabaseInternalSettings.index_population_queue_threshold, 5 ) );
 
         IndexPopulator populator = addPopulator( batchingPopulator, index1 );
         IndexUpdater updater = mock( IndexUpdater.class );
@@ -116,7 +113,7 @@ public class BatchingMultipleIndexPopulatorTest
         MultipleIndexPopulator batchingPopulator = new MultipleIndexPopulator(
                 storeView, NullLogProvider.getInstance(), EntityType.NODE, mock( SchemaState.class ), mock( IndexStatisticsStore.class ),
                 new CallingThreadJobScheduler(), tokens, NULL, INSTANCE, "", AUTH_DISABLED,
-                2, DEFAULT_BATCH_SIZE_SCAN, DEFAULT_BATCH_MAX_BYTE_SIZE, DEFAULT_AWAIT_TIMEOUT_MINUTES );
+                Config.defaults( GraphDatabaseInternalSettings.index_population_queue_threshold, 2 ) );
 
         IndexPopulator populator1 = addPopulator( batchingPopulator, index1 );
         IndexUpdater updater1 = mock( IndexUpdater.class );
@@ -152,7 +149,7 @@ public class BatchingMultipleIndexPopulatorTest
 
         MultipleIndexPopulator batchingPopulator = new MultipleIndexPopulator( storeView,
                 NullLogProvider.getInstance(), EntityType.NODE, mock( SchemaState.class ), mock( IndexStatisticsStore.class ),
-                new CallingThreadJobScheduler(), tokens, NULL, INSTANCE, "", AUTH_DISABLED );
+                new CallingThreadJobScheduler(), tokens, NULL, INSTANCE, "", AUTH_DISABLED, Config.defaults() );
 
         IndexPopulator populator1 = addPopulator( batchingPopulator, index1 );
         IndexPopulator populator42 = addPopulator( batchingPopulator, index42 );
@@ -174,7 +171,7 @@ public class BatchingMultipleIndexPopulatorTest
         MultipleIndexPopulator batchingPopulator = new MultipleIndexPopulator( storeView,
                 NullLogProvider.getInstance(), EntityType.NODE, mock( SchemaState.class ), mock( IndexStatisticsStore.class ),
                 new CallingThreadJobScheduler(), tokens, NULL, INSTANCE, "", AUTH_DISABLED,
-                DEFAULT_QUEUE_THRESHOLD, 2, DEFAULT_BATCH_MAX_BYTE_SIZE, DEFAULT_AWAIT_TIMEOUT_MINUTES );
+                Config.defaults( GraphDatabaseInternalSettings.index_population_scan_batch_size, 2 ) );
 
         IndexPopulator populator = addPopulator( batchingPopulator, index1 );
 
@@ -201,7 +198,7 @@ public class BatchingMultipleIndexPopulatorTest
             MultipleIndexPopulator batchingPopulator = new MultipleIndexPopulator( storeView,
                     NullLogProvider.getInstance(), EntityType.NODE, mock( SchemaState.class ), mock( IndexStatisticsStore.class ),
                     jobScheduler, tokens, NULL, INSTANCE,  "", AUTH_DISABLED,
-                    DEFAULT_QUEUE_THRESHOLD, 2, DEFAULT_BATCH_MAX_BYTE_SIZE, DEFAULT_AWAIT_TIMEOUT_MINUTES );
+                    Config.defaults( GraphDatabaseInternalSettings.index_population_scan_batch_size, 2 ) );
 
             populator = addPopulator( batchingPopulator, index1 );
             List<IndexEntryUpdate<IndexDescriptor>> expected = forUpdates( index1, update1, update2 );
@@ -233,7 +230,7 @@ public class BatchingMultipleIndexPopulatorTest
         MultipleIndexPopulator batchingPopulator = new MultipleIndexPopulator( storeView,
                 NullLogProvider.getInstance(), EntityType.NODE, mock( SchemaState.class ), mock( IndexStatisticsStore.class ),
                 new CallingThreadJobScheduler(), tokens, NULL, INSTANCE,  "", AUTH_DISABLED,
-                DEFAULT_QUEUE_THRESHOLD, 2, DEFAULT_BATCH_MAX_BYTE_SIZE, DEFAULT_AWAIT_TIMEOUT_MINUTES );
+                Config.defaults( GraphDatabaseInternalSettings.index_population_scan_batch_size, 2 ) );
 
         IndexPopulator populator = addPopulator( batchingPopulator, index1 );
         doThrow( batchFlushError ).when( populator ).add( forUpdates( index1, update3, update4 ), PageCursorTracer.NULL );
@@ -270,7 +267,7 @@ public class BatchingMultipleIndexPopulatorTest
         MultipleIndexPopulator batchingPopulator = new MultipleIndexPopulator( storeView,
                 NullLogProvider.getInstance(), EntityType.NODE, mock( SchemaState.class ), mock( IndexStatisticsStore.class ),
                 jobScheduler, tokens, NULL, INSTANCE,  "", AUTH_DISABLED,
-                DEFAULT_QUEUE_THRESHOLD, 2, DEFAULT_BATCH_MAX_BYTE_SIZE, DEFAULT_AWAIT_TIMEOUT_MINUTES );
+                Config.defaults( GraphDatabaseInternalSettings.index_population_scan_batch_size, 2 ) );
         addPopulator( batchingPopulator, index1 );
 
         // when
@@ -325,16 +322,6 @@ public class BatchingMultipleIndexPopulatorTest
         } );
         when( storeView.newPropertyAccessor( any( PageCursorTracer.class ), any() ) ).thenReturn( mock( NodePropertyAccessor.class ) );
         return storeView;
-    }
-
-    private static void setProperty( String name, int value )
-    {
-        FeatureToggles.set( MultipleIndexPopulator.class, name, value );
-    }
-
-    private static void clearProperty( String name )
-    {
-        FeatureToggles.clear( MultipleIndexPopulator.class, name );
     }
 
     private static class IndexEntryUpdateScan implements StoreScan<IndexPopulationFailedKernelException>

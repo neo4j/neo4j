@@ -811,7 +811,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
     private IndexPopulationJob newIndexPopulationJob( EntityType type, boolean verifyBeforeFlipping, Subject subject )
     {
         MultipleIndexPopulator multiPopulator = new MultipleIndexPopulator( storeView, internalLogProvider, type, schemaState, indexStatisticsStore,
-                jobScheduler, tokenNameLookup, pageCacheTracer, memoryTracker, databaseName, subject );
+                jobScheduler, tokenNameLookup, pageCacheTracer, memoryTracker, databaseName, subject, config );
         return new IndexPopulationJob( multiPopulator, monitor, verifyBeforeFlipping, pageCacheTracer, memoryTracker, databaseName, subject, NODE, config );
     }
 

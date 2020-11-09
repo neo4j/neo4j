@@ -865,7 +865,7 @@ class IndexPopulationJobTest
 
         MultipleIndexPopulator multiPopulator =
                 new MultipleIndexPopulator( storeView, logProvider, type, stateHolder, indexStatisticsStore, jobScheduler, tokens, pageCacheTracer, INSTANCE,
-                        "", AUTH_DISABLED );
+                        "", AUTH_DISABLED, Config.defaults() );
         IndexPopulationJob job =
                 new IndexPopulationJob( multiPopulator, NO_MONITOR, false, pageCacheTracer, INSTANCE, "", AUTH_DISABLED, EntityType.NODE, Config.defaults() );
         IndexDescriptor descriptor = prototype.withName( "index_" + indexId ).materialise( indexId );
@@ -940,7 +940,8 @@ class IndexPopulationJobTest
         TrackingMultipleIndexPopulator( IndexStoreView storeView, LogProvider logProvider, EntityType type, SchemaState schemaState,
                 IndexStatisticsStore indexStatisticsStore, JobScheduler jobScheduler, TokenNameLookup tokens )
         {
-            super( storeView, logProvider, type, schemaState, indexStatisticsStore, jobScheduler, tokens, NULL, INSTANCE, "", AUTH_DISABLED  );
+            super( storeView, logProvider, type, schemaState, indexStatisticsStore, jobScheduler, tokens, NULL, INSTANCE, "", AUTH_DISABLED,
+                    Config.defaults() );
         }
 
         @Override

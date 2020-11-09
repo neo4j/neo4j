@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;
@@ -32,6 +30,7 @@ import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.function.Supplier;
 
 import org.neo4j.common.TokenNameLookup;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -59,7 +58,6 @@ import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.util.FeatureToggles;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -70,8 +68,6 @@ import static org.neo4j.internal.helpers.collection.Iterables.count;
 import static org.neo4j.internal.helpers.collection.Iterables.filter;
 import static org.neo4j.internal.kernel.api.InternalIndexState.POPULATING;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
-import static org.neo4j.kernel.impl.api.index.MultipleIndexPopulator.BATCH_SIZE_NAME;
-import static org.neo4j.kernel.impl.api.index.MultipleIndexPopulator.QUEUE_THRESHOLD_NAME;
 import static org.neo4j.test.TestLabels.LABEL_ONE;
 
 @ImpermanentDbmsExtension( configurationCallback = "configure" )
@@ -92,21 +88,8 @@ public class IndexPopulationMissConcurrentUpdateIT
     {
         builder.noOpSystemGraphInitializer().addExtension( index );
         builder.setConfig( GraphDatabaseSettings.default_schema_provider, ControlledSchemaIndexProvider.INDEX_PROVIDER.name() );
-    }
-
-    @BeforeEach
-    public void setFeatureToggle()
-    {
-        // let our populator have fine-grained insight into updates coming in
-        FeatureToggles.set( MultipleIndexPopulator.class, BATCH_SIZE_NAME, 1 );
-        FeatureToggles.set( MultipleIndexPopulator.class, QUEUE_THRESHOLD_NAME, 1 );
-    }
-
-    @AfterEach
-    public void resetFeatureToggle()
-    {
-        FeatureToggles.clear( MultipleIndexPopulator.class, BATCH_SIZE_NAME );
-        FeatureToggles.clear( MultipleIndexPopulator.class, QUEUE_THRESHOLD_NAME );
+        builder.setConfig( GraphDatabaseInternalSettings.index_population_scan_batch_size, 1 );
+        builder.setConfig( GraphDatabaseInternalSettings.index_population_queue_threshold, 1 );
     }
 
     /**

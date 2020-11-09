@@ -26,7 +26,7 @@ import java.util.function.IntPredicate;
 import java.util.function.Supplier;
 
 import org.neo4j.common.EntityType;
-import org.neo4j.common.Subject;
+import org.neo4j.configuration.Config;
 import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
@@ -47,9 +47,9 @@ import org.neo4j.kernel.impl.util.Listener;
 import org.neo4j.lock.LockService;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.storageengine.api.EntityTokenUpdate;
 import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
-import org.neo4j.storageengine.api.EntityTokenUpdate;
 import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.test.InMemoryTokens;
@@ -60,7 +60,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.common.Subject.ANONYMOUS;
 import static org.neo4j.common.Subject.AUTH_DISABLED;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
@@ -81,7 +80,7 @@ class MultipleIndexPopulatorUpdatesTest
         InMemoryTokens tokens = new InMemoryTokens();
         MultipleIndexPopulator indexPopulator = new MultipleIndexPopulator(
                 storeView, logProvider, EntityType.NODE, mock( SchemaState.class ), indexStatisticsStore,
-                JobSchedulerFactory.createInitialisedScheduler(), tokens, PageCacheTracer.NULL, INSTANCE, "", AUTH_DISABLED );
+                JobSchedulerFactory.createInitialisedScheduler(), tokens, PageCacheTracer.NULL, INSTANCE, "", AUTH_DISABLED, Config.defaults() );
 
         storeView.setProcessListener( new NodeUpdateProcessListener( indexPopulator ) );
 

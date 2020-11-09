@@ -73,13 +73,13 @@ import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
-import org.neo4j.util.FeatureToggles;
 import org.neo4j.values.storable.RandomValues;
 
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.index_population_queue_threshold;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.internal.batchimport.AdditionalInitialIds.EMPTY;
@@ -123,33 +123,25 @@ class MultipleIndexPopulationStressIT
     @Test
     public void populateMultipleIndexWithSeveralNodesMultiThreaded() throws Exception
     {
-        prepareAndRunTest( 10, TimeUnit.SECONDS.toMillis( 5 ) );
+        prepareAndRunTest( 10, TimeUnit.SECONDS.toMillis( 5 ), index_population_queue_threshold.defaultValue() );
     }
 
     @Test
     public void shouldPopulateMultipleIndexPopulatorsUnderStressMultiThreaded() throws Exception
     {
         int concurrentUpdatesQueueFlushThreshold = random.nextInt( 100, 5000 );
-        FeatureToggles.set( MultipleIndexPopulator.class, MultipleIndexPopulator.QUEUE_THRESHOLD_NAME, concurrentUpdatesQueueFlushThreshold );
-        try
-        {
-            readConfigAndRunTest();
-        }
-        finally
-        {
-            FeatureToggles.clear( MultipleIndexPopulator.class, MultipleIndexPopulator.QUEUE_THRESHOLD_NAME );
-        }
+        readConfigAndRunTest( concurrentUpdatesQueueFlushThreshold );
     }
 
-    private void readConfigAndRunTest() throws Exception
+    private void readConfigAndRunTest( int concurrentUpdatesQueueFlushThreshold ) throws Exception
     {
         // GIVEN a database with random data in it
         int nodeCount = (int) SettingValueParsers.parseLongWithUnit( System.getProperty( getClass().getName() + ".nodes", "200k" ) );
         long duration = TimeUtil.parseTimeMillis.apply( System.getProperty( getClass().getName() + ".duration", "5s" ) );
-        prepareAndRunTest( nodeCount, duration );
+        prepareAndRunTest( nodeCount, duration, concurrentUpdatesQueueFlushThreshold );
     }
 
-    private void prepareAndRunTest( int nodeCount, long durationMillis ) throws Exception
+    private void prepareAndRunTest( int nodeCount, long durationMillis, int concurrentUpdatesQueueFlushThreshold ) throws Exception
     {
         createRandomData( nodeCount );
         long endTime = currentTimeMillis() + durationMillis;
@@ -157,11 +149,11 @@ class MultipleIndexPopulationStressIT
         // WHEN/THEN run tests for at least the specified durationMillis
         while ( currentTimeMillis() < endTime )
         {
-            runTest( nodeCount );
+            runTest( nodeCount, concurrentUpdatesQueueFlushThreshold );
         }
     }
 
-    private void runTest( int nodeCount ) throws Exception
+    private void runTest( int nodeCount, int concurrentUpdatesQueueFlushThreshold ) throws Exception
     {
         // WHEN creating the indexes under stressful updates
         populateDbAndIndexes( nodeCount );
@@ -169,6 +161,7 @@ class MultipleIndexPopulationStressIT
         Config config = Config.newBuilder()
                 .set( neo4j_home, directory.homePath() )
                 .set( GraphDatabaseSettings.pagecache_memory, "8m" )
+                .set( index_population_queue_threshold, concurrentUpdatesQueueFlushThreshold )
                 .build();
         Result result = cc.runFullConsistencyCheck( DatabaseLayout.of( config ),
                 config,
@@ -391,5 +384,4 @@ class MultipleIndexPopulationStressIT
             badCollector.close();
         }
     }
-
 }

@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -38,6 +37,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Label;
@@ -59,7 +59,6 @@ import org.neo4j.test.Barrier;
 import org.neo4j.test.rule.DbmsRule;
 import org.neo4j.test.rule.EmbeddedDbmsRule;
 import org.neo4j.test.rule.RandomRule;
-import org.neo4j.util.FeatureToggles;
 import org.neo4j.util.concurrent.Futures;
 import org.neo4j.values.storable.Values;
 
@@ -100,6 +99,7 @@ public class IndexStatisticsTest
     @Rule
     public final DbmsRule db = new EmbeddedDbmsRule()
             .withSetting( GraphDatabaseSettings.index_background_sampling_enabled, false )
+            .withSetting( GraphDatabaseInternalSettings.index_population_print_debug, true )
             .startLazily();
     @Rule
     public final RandomRule random = new RandomRule();
@@ -110,19 +110,10 @@ public class IndexStatisticsTest
     public void before()
     {
         int batchSize = random.nextInt( 1, 5 );
-        FeatureToggles.set( MultipleIndexPopulator.class, MultipleIndexPopulator.QUEUE_THRESHOLD_NAME, batchSize );
-        FeatureToggles.set( MultipleIndexPopulator.class, "print_debug", true );
-
+        db.withSetting( GraphDatabaseInternalSettings.index_population_queue_threshold, batchSize );
         db.getGraphDatabaseAPI().getDependencyResolver()
                 .resolveDependency( Monitors.class )
                 .addMonitorListener( indexOnlineMonitor );
-    }
-
-    @After
-    public void tearDown()
-    {
-        FeatureToggles.clear( MultipleIndexPopulator.class, MultipleIndexPopulator.QUEUE_THRESHOLD_NAME );
-        FeatureToggles.clear( MultipleIndexPopulator.class, "print_debug" );
     }
 
     @Test
