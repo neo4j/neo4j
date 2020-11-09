@@ -22,13 +22,9 @@ package org.neo4j.internal.recordstorage;
 import org.neo4j.internal.diagnostics.DiagnosticsLogger;
 import org.neo4j.internal.diagnostics.NamedDiagnosticsProvider;
 import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.util.FeatureToggles;
 
 public abstract class NeoStoresDiagnostics extends NamedDiagnosticsProvider
 {
-    private static final boolean THROW_NEOSTORE_DIAGNOSTICS_ERRORS =
-            FeatureToggles.flag( NeoStoresDiagnostics.class, "THROW_NEOSTORE_DIAGNOSTICS_ERRORS", false );
-
     public static class NeoStoreVersions extends NeoStoresDiagnostics
     {
         NeoStoreVersions( NeoStores nodeStores )
@@ -89,11 +85,6 @@ public abstract class NeoStoresDiagnostics extends NamedDiagnosticsProvider
         }
         catch ( RuntimeException e )
         {
-            if ( THROW_NEOSTORE_DIAGNOSTICS_ERRORS )
-            {
-                throw e;
-            }
-
             logger.log( "Diagnostics not available: " + e.getMessage() );
         }
     }
