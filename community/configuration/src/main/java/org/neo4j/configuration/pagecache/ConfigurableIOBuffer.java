@@ -20,6 +20,7 @@
 package org.neo4j.configuration.pagecache;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.io.pagecache.buffer.NativeIOBuffer;
 import org.neo4j.memory.MemoryTracker;
 
@@ -27,11 +28,9 @@ import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_flush_buff
 import static org.neo4j.internal.unsafe.UnsafeUtil.allocateMemory;
 import static org.neo4j.internal.unsafe.UnsafeUtil.free;
 import static org.neo4j.io.pagecache.PageCache.PAGE_SIZE;
-import static org.neo4j.util.FeatureToggles.flag;
 
 public class ConfigurableIOBuffer implements NativeIOBuffer
 {
-    private static final boolean PRINT_ALLOCATION_EXCEPTION = flag( ConfigurableIOBuffer.class, "printAllocationException", false );
     private static final long NOT_INITIALIZED = 0;
     private final boolean enabled;
     private final MemoryTracker memoryTracker;
@@ -54,7 +53,7 @@ public class ConfigurableIOBuffer implements NativeIOBuffer
         }
         catch ( Throwable t )
         {
-            if ( PRINT_ALLOCATION_EXCEPTION )
+            if ( config.get( GraphDatabaseInternalSettings.print_page_buffer_allocation_trace ) )
             {
                 t.printStackTrace();
             }

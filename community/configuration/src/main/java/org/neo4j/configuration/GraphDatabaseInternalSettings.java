@@ -636,4 +636,8 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
     @Internal
     public static Setting<Duration> token_scan_write_log_prune_threshold =
             newBuilder( "unsupported.dbms.tokenscan.log.prune_threshold", DURATION, ofDays( 2 ) ).build();
+
+    @Internal
+    public static Setting<Boolean> print_page_buffer_allocation_trace =
+            newBuilder( "unsupported.dbms.debug.print_page_buffer_allocation_trace", BOOL, false ).build();
 }
