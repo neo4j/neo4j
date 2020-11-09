@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
-import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.leverageOrder.OrderToLeverageWithAliases
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -28,37 +28,61 @@ class LeverageOrderTest extends CypherFunSuite with AstConstructionTestSupport {
 
   test("should leverage ASC order for exact match with grouping column") {
     val po = ProvidedOrder.asc(varFor("a"))
-    val grouping = Set[Expression](varFor("a"))
-    leverageOrder(po, grouping) should be(Seq(varFor("a")))
+    val grouping = Map("newA" -> varFor("a"))
+    leverageOrder(po, grouping, Set.empty) should be(OrderToLeverageWithAliases(Seq(varFor("a")), grouping))
   }
 
   test("should leverage DESC order for exact match with grouping column") {
     val po = ProvidedOrder.desc(varFor("a"))
-    val grouping = Set[Expression](varFor("a"))
-    leverageOrder(po, grouping) should be(Seq(varFor("a")))
+    val grouping = Map("newA" -> varFor("a"))
+    leverageOrder(po, grouping, Set.empty) should be(OrderToLeverageWithAliases(Seq(varFor("a")), grouping))
   }
 
   test("should leverage order for prefix match with grouping column") {
     val po = ProvidedOrder.asc(varFor("a")).desc(varFor("b"))
-    val grouping = Set[Expression](varFor("a"))
-    leverageOrder(po, grouping) should be(Seq(varFor("a")))
+    val grouping = Map("newA" -> varFor("a"))
+    leverageOrder(po, grouping, Set.empty) should be(OrderToLeverageWithAliases(Seq(varFor("a")), grouping))
   }
 
   test("should leverage order for exact match with one of grouping columns") {
     val po = ProvidedOrder.asc(varFor("a"))
-    val grouping = Set[Expression](varFor("a"), varFor("b"))
-    leverageOrder(po, grouping) should be(Seq(varFor("a")))
+    val grouping = Map("newA" -> varFor("a"), "newB" -> varFor("b"))
+    leverageOrder(po, grouping, Set.empty) should be(OrderToLeverageWithAliases(Seq(varFor("a")), grouping))
   }
 
   test("should leverage order for prefix match with one of grouping columns") {
     val po = ProvidedOrder.asc(varFor("a")).desc(varFor("b"))
-    val grouping = Set[Expression](varFor("a"),  varFor("c"))
-    leverageOrder(po, grouping) should be(Seq(varFor("a")))
+    val grouping = Map("newA" -> varFor("a"),  "newC" -> varFor("c"))
+    leverageOrder(po, grouping, Set.empty) should be(OrderToLeverageWithAliases(Seq(varFor("a")), grouping))
   }
 
   test("should leverage order for prefix match with one of grouping columns as prefix and one as suffix") {
     val po = ProvidedOrder.asc(varFor("a")).desc(varFor("b")).asc(varFor("c"))
-    val grouping = Set[Expression](varFor("a"), varFor("c"))
-    leverageOrder(po, grouping) should be(Seq(varFor("a")))
+    val grouping = Map("newA" -> varFor("a"), "newC" -> varFor("c"))
+    leverageOrder(po, grouping, Set.empty) should be(OrderToLeverageWithAliases(Seq(varFor("a")), grouping))
+  }
+
+  test("should alias expressions if there are symbols available") {
+    val po = ProvidedOrder.asc(prop("a", "prop"))
+    val grouping = Map("aprop" -> prop("a", "prop"))
+    val aliasedOrder = Seq(varFor("aprop"))
+    val aliasedGroupings = Map("aprop" -> varFor("aprop"))
+    leverageOrder(po, grouping, Set("aprop")) should be(OrderToLeverageWithAliases(aliasedOrder, aliasedGroupings))
+  }
+
+  test("should alias multiple identical expressions if there are symbols available ASC") {
+    val po = ProvidedOrder.asc(prop("a", "prop"))
+    val grouping = Map("aprop" -> prop("a", "prop"), "xxx" -> prop("a", "prop"))
+    val aliasedOrder = Seq(varFor("aprop"))
+    val aliasedGroupings = Map("aprop" -> varFor("aprop"), "xxx" -> varFor("aprop"))
+    leverageOrder(po, grouping, Set("aprop")) should be(OrderToLeverageWithAliases(aliasedOrder, aliasedGroupings))
+  }
+
+  test("should alias multiple identical expressions if there are symbols available DESC") {
+    val po = ProvidedOrder.desc(prop("a", "prop"))
+    val grouping = Map("aprop" -> prop("a", "prop"), "xxx" -> prop("a", "prop"))
+    val aliasedOrder = Seq(varFor("aprop"))
+    val aliasedGroupings = Map("aprop" -> varFor("aprop"), "xxx" -> varFor("aprop"))
+    leverageOrder(po, grouping, Set("aprop")) should be(OrderToLeverageWithAliases(aliasedOrder, aliasedGroupings))
   }
 }

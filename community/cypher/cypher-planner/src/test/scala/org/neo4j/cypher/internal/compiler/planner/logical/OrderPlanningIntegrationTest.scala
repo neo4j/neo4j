@@ -332,45 +332,86 @@ class OrderPlanningIntegrationTestBase(queryGraphSolverSetup: QueryGraphSolverSe
   test("should use ordered aggregation if there is one grouping column, ordered") {
     val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH a ORDER BY a.foo RETURN a.foo, count(a.foo)")._2
 
-    val labelScan = NodeByLabelScan("a", labelName("A"), Set.empty, IndexOrderNone)
-    val fooProperty = cachedNodeProp("a", "foo")
-    val fooCount = count(fooProperty)
+    val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
+      .orderedAggregation(Seq("`a.foo` AS `a.foo`"), Seq("count(cache[a.foo]) AS `count(a.foo)`"), Seq("`a.foo`"))
+      .sort(Seq(Ascending("a.foo")))
+      .projection("cache[a.foo] AS `a.foo`")
+      .nodeByLabelScan("a", "A")
+      .build()
 
-    val projection = Projection(labelScan, Map("a.foo" -> fooProperty))
-    val sort = Sort(projection, Seq(Ascending("a.foo")))
-    val aggregation = OrderedAggregation(sort, Map("a.foo" -> fooProperty), Map("count(a.foo)" -> fooCount), Seq(fooProperty))
+    plan should equal(expectedPlan)
+  }
 
-    plan should equal(aggregation)
+  test("should use ordered aggregation if there is one aliased grouping column, ordered") {
+    val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH a ORDER BY a.foo RETURN a.foo AS x, count(a.foo)")._2
+    val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
+      .orderedAggregation(Seq("cache[a.foo] AS x"), Seq("count(cache[a.foo]) AS `count(a.foo)`"), Seq("cache[a.foo]"))
+      .sort(Seq(Ascending("a.foo")))
+      .projection("cache[a.foo] AS `a.foo`")
+      .nodeByLabelScan("a", "A")
+      .build()
+
+    plan should equal(expectedPlan)
+  }
+
+  test("should use ordered aggregation if there are two identical grouping columns (first aliased), ordered") {
+    val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH a ORDER BY a.foo RETURN a.foo AS x, a.foo, count(a.foo)")._2
+    val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
+      .orderedAggregation(Seq("`a.foo` AS x", "`a.foo` AS `a.foo`"), Seq("count(cache[a.foo]) AS `count(a.foo)`"), Seq("`a.foo`"))
+      .sort(Seq(Ascending("a.foo")))
+      .projection("cache[a.foo] AS `a.foo`")
+      .nodeByLabelScan("a", "A")
+      .build()
+
+    plan should equal(expectedPlan)
+  }
+
+  test("should use ordered aggregation if there are two identical grouping columns (second aliased), ordered") {
+    val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH a ORDER BY a.foo RETURN a.foo, a.foo AS y, count(a.foo)")._2
+    val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
+      .orderedAggregation(Seq("`a.foo` AS `a.foo`", "`a.foo` AS y"), Seq("count(cache[a.foo]) AS `count(a.foo)`"), Seq("`a.foo`"))
+      .sort(Seq(Ascending("a.foo")))
+      .projection("cache[a.foo] AS `a.foo`")
+      .nodeByLabelScan("a", "A")
+      .build()
+
+    plan should equal(expectedPlan)
+  }
+
+  test("should use ordered aggregation if there are two identical grouping columns (both aliased), ordered") {
+    val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH a ORDER BY a.foo RETURN a.foo AS x, a.foo AS y, count(a.foo)")._2
+    val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
+      .orderedAggregation(Seq("cache[a.foo] AS x", "cache[a.foo] AS y"), Seq("count(cache[a.foo]) AS `count(a.foo)`"), Seq("cache[a.foo]"))
+      .sort(Seq(Ascending("a.foo")))
+      .projection("cache[a.foo] AS `a.foo`")
+      .nodeByLabelScan("a", "A")
+      .build()
+
+    plan should equal(expectedPlan)
   }
 
   test("should use ordered aggregation if there are two grouping columns, one ordered") {
     val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH a ORDER BY a.foo RETURN a.foo, a.bar, count(a.foo)")._2
+    val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
+      .orderedAggregation(Seq("`a.foo` AS `a.foo`", "a.bar AS `a.bar`"), Seq("count(cache[a.foo]) AS `count(a.foo)`"), Seq("`a.foo`"))
+      .sort(Seq(Ascending("a.foo")))
+      .projection("cache[a.foo] AS `a.foo`")
+      .nodeByLabelScan("a", "A", IndexOrderNone)
+      .build()
 
-    val labelScan = NodeByLabelScan("a", labelName("A"), Set.empty, IndexOrderNone)
-    val fooProperty = cachedNodeProp("a", "foo")
-    val barProperty = prop("a", "bar")
-    val fooCount = count(fooProperty)
-
-    val projection = Projection(labelScan, Map("a.foo" -> fooProperty))
-    val sort = Sort(projection, Seq(Ascending("a.foo")))
-    val aggregation = OrderedAggregation(sort, Map("a.foo" -> fooProperty, "a.bar" -> barProperty), Map("count(a.foo)" -> fooCount), Seq(fooProperty))
-
-    plan should equal(aggregation)
+    plan should equal(expectedPlan)
   }
 
   test("should use ordered aggregation if there are two grouping columns, both ordered") {
     val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH a ORDER BY a.foo, a.bar RETURN a.foo, a.bar, count(a.foo)")._2
+    val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
+      .orderedAggregation(Seq("`a.foo` AS `a.foo`", "`a.bar` AS `a.bar`"), Seq("count(cache[a.foo]) AS `count(a.foo)`"), Seq("`a.foo`", "`a.bar`"))
+      .sort(Seq(Ascending("a.foo"), Ascending("a.bar")))
+      .projection("cache[a.foo] AS `a.foo`", "a.bar AS `a.bar`")
+      .nodeByLabelScan("a", "A", IndexOrderNone)
+      .build()
 
-    val labelScan = NodeByLabelScan("a", labelName("A"), Set.empty, IndexOrderNone)
-    val fooProperty = cachedNodeProp("a", "foo")
-    val barProperty = cachedNodeProp("a", "bar")
-    val fooCount = count(fooProperty)
-
-    val projection = Projection(labelScan, Map("a.foo" -> fooProperty, "a.bar" -> barProperty))
-    val sort = Sort(projection, Seq(Ascending("a.foo"), Ascending("a.bar")))
-    val aggregation = OrderedAggregation(sort, Map("a.foo" -> fooProperty, "a.bar" -> barProperty), Map("count(a.foo)" -> fooCount), Seq(fooProperty, barProperty))
-
-    plan should equal(aggregation)
+    plan should equal(expectedPlan)
   }
 
   test("should use ordered distinct if there is one grouping column, ordered") {
@@ -1196,6 +1237,9 @@ class OrderPlanningIntegrationTestBase(queryGraphSolverSetup: QueryGraphSolverSe
     plannerBuilder()
       .setAllNodesCardinality(nodeCount)
       .setRelationshipCardinality("()-[]->()", nodeCount * nodeCount)
+      .setRelationshipCardinality("()-[:R]->()", nodeCount * nodeCount)
+      .setRelationshipCardinality("()-[:Q]->()", nodeCount * nodeCount)
+      .setRelationshipCardinality("()-[:NARROW]->()", nodeCount / 10)
       .build()
   }
 
@@ -1335,6 +1379,159 @@ class OrderPlanningIntegrationTestBase(queryGraphSolverSetup: QueryGraphSolverSe
 
     plan should beLike {
       case Sort(_: Distinct, _) => ()
+    }
+  }
+
+  test("should sort before widening expand and aggregation") {
+    val query =
+      """MATCH (a)-[:R]->(b)-[:Q]->()
+        |RETURN a.prop, count(*) AS c
+        |ORDER BY a.prop""".stripMargin
+
+    val plan = wideningExpandConfig()
+      .plan(query)
+      .stripProduceResults
+
+    plan should beLike {
+      case OrderedAggregation(Expand(Expand(_: Sort, _, _, _, _, _, _), _, _, _, _, _, _), _, _, Seq(Variable("a.prop"))) => ()
+    }
+  }
+
+  test("should sort before widening expand and aggregation with alias, ordering by alias") {
+    val query =
+      """MATCH (a)-[:R]->(b)-[:Q]->()
+        |RETURN a.prop AS x, count(*) AS c
+        |ORDER BY x""".stripMargin
+
+    val plan = wideningExpandConfig()
+      .plan(query)
+      .stripProduceResults
+
+    plan should beLike {
+      case OrderedAggregation(Expand(Expand(_: Sort, _, _, _, _, _, _), _, _, _, _, _, _), _, _, Seq(Variable("x"))) => ()
+    }
+  }
+
+  test("should sort before widening expand and aggregation with alias, ordering by property") {
+    val query =
+      """MATCH (a)-[:R]->(b)-[:Q]->()
+        |RETURN a.prop AS x, count(*) AS c
+        |ORDER BY a.prop""".stripMargin
+
+    val plan = wideningExpandConfig()
+      .plan(query)
+      .stripProduceResults
+
+    plan should beLike {
+      case OrderedAggregation(Expand(Expand(_: Sort, _, _, _, _, _, _), _, _, _, _, _, _), _, _, Seq(Variable("x"))) => ()
+    }
+  }
+
+  test("should sort before widening expand and aggregation expression with alias, ordering by alias") {
+    val query =
+      """MATCH (a)-[:R]->(b)-[:Q]->()
+        |RETURN a.prop+1 AS x, count(*) AS c
+        |ORDER BY x""".stripMargin
+
+    val plan = wideningExpandConfig()
+      .plan(query)
+      .stripProduceResults
+
+    plan should beLike {
+      case OrderedAggregation(Expand(Expand(_: Sort, _, _, _, _, _, _), _, _, _, _, _, _), _, _, Seq(Variable("x"))) => ()
+    }
+  }
+
+  test("should sort before widening expand and aggregation expression with alias, ordering by expression") {
+    val query =
+      """MATCH (a)-[:R]->(b)-[:Q]->()
+        |RETURN a.prop+1 AS x, count(*) AS c
+        |ORDER BY a.prop+1""".stripMargin
+
+    val plan = wideningExpandConfig()
+      .plan(query)
+      .stripProduceResults
+
+    plan should beLike {
+      case OrderedAggregation(Expand(Expand(_: Sort, _, _, _, _, _, _), _, _, _, _, _, _), _, _, Seq(Variable("x"))) => ()
+    }
+  }
+
+  test("should sort before widening expand and aggregation expression with alias, ordering by expression, difference in whitespace") {
+    val query =
+      """MATCH (a)-[:R]->(b)-[:Q]->()
+        |RETURN a.prop +1 AS x, count(*) AS c
+        |ORDER BY a.prop+ 1""".stripMargin
+
+    val plan = wideningExpandConfig()
+      .plan(query)
+      .stripProduceResults
+
+    plan should beLike {
+      case OrderedAggregation(Expand(Expand(_: Sort, _, _, _, _, _, _), _, _, _, _, _, _), _, _, Seq(Variable("x"))) => ()
+    }
+  }
+
+  test("should sort before widening expand and aggregation expression, ordering by expression, difference in whitespace") {
+    val query =
+      """MATCH (a)-[:R]->(b)-[:Q]->()
+        |RETURN a.prop+ 1, count(*) AS c
+        |ORDER BY a.prop +1""".stripMargin
+
+    val plan = wideningExpandConfig()
+      .plan(query)
+      .stripProduceResults
+
+    plan should beLike {case OrderedAggregation(Expand(Expand(_: Sort, _, _, _, _, _, _), _, _, _, _, _, _), _, _, Seq(Variable("a.prop+ 1"))) => ()
+    }
+  }
+
+  test("should sort before widening expand and aggregation with two properties with alias, ordering by first alias") {
+    val query =
+      """MATCH (a)-[:R]->(b)-[:Q]->()
+        |RETURN a.prop AS p1, a.prop AS p2, count(*) AS c
+        |ORDER BY p1""".stripMargin
+
+    val plan = wideningExpandConfig()
+      .plan(query)
+      .stripProduceResults
+
+    plan should beLike {
+      case OrderedAggregation(Expand(Expand(_: Sort, _, _, _, _, _, _), _, _, _, _, _, _), _, _, Seq(Variable("p1"))) => ()
+    }
+  }
+
+  test("should sort after narrowing expand and aggregation") {
+    val query =
+      """MATCH (a)-->(b)
+        |RETURN a.prop, count(*) AS c
+        |ORDER BY a.prop""".stripMargin
+
+    val nodeCount = 10000
+    val plan = plannerBuilder()
+      .setAllNodesCardinality(nodeCount)
+      .setRelationshipCardinality("()-[]->()", nodeCount / 10)
+      .build()
+      .plan(query)
+      .stripProduceResults
+
+    plan should beLike {
+      case Sort(_: Aggregation, _) => ()
+    }
+  }
+
+  test("should sort between narrowing and widening expands with aggregation") {
+    val query =
+      """MATCH (a)-[:NARROW]->(b)-[wideRel:Q]->()
+        |RETURN a.prop AS p1, a.prop AS p2, count(*) AS c
+        |ORDER BY p1""".stripMargin
+
+    val plan = wideningExpandConfig()
+      .plan(query)
+      .stripProduceResults
+
+    plan should beLike {
+      case OrderedAggregation(Expand(Sort(Projection(_: Expand, _), _), _, _, _, _, "wideRel", _), _, _, Seq(Variable("p1"))) => ()
     }
   }
 }

@@ -76,7 +76,7 @@ class LimitPropagationPlanningIntegrationTest
       .|.nodeIndexOperator("c:C(id STARTS WITH '')", indexOrder = IndexOrderAscending)
       .filterExpression(hasLabels("b", "B"))
       .expandAll("(a)-[ab:REL_AB]->(b)")
-      .nodeIndexOperator("a:A(id = 123)", indexOrder = IndexOrderAscending)
+      .nodeIndexOperator("a:A(id = 123)")
       .build()
     }
   }
@@ -97,7 +97,7 @@ class LimitPropagationPlanningIntegrationTest
       .|.nodeIndexOperator("c:C(id)", indexOrder = IndexOrderAscending)
       .filterExpression(hasLabels("b", "B"))
       .expandAll("(a)-[ab:REL_AB]->(b)")
-      .nodeIndexOperator("a:A(id = 123)", indexOrder = IndexOrderAscending)
+      .nodeIndexOperator("a:A(id = 123)")
       .build()
     }
   }
@@ -123,7 +123,7 @@ class LimitPropagationPlanningIntegrationTest
       .expandAll("(b)<-[cb:REL_CB]-(c)")
       .filterExpression(hasLabels("b", "B"))
       .expandAll("(a)-[ab:REL_AB]->(b)")
-      .nodeIndexOperator("a:A(id = 123)", indexOrder = IndexOrderAscending)
+      .nodeIndexOperator("a:A(id = 123)")
       .build()
     }
   }
@@ -146,7 +146,7 @@ class LimitPropagationPlanningIntegrationTest
       .|.nodeIndexOperator("c:C(id STARTS WITH '')", indexOrder = IndexOrderAscending)
       .filterExpression(hasLabels("b", "B"))
       .expandAll("(a)-[ab:REL_AB]->(b)")
-      .nodeIndexOperator("a:A(id = 123)", indexOrder = IndexOrderAscending)
+      .nodeIndexOperator("a:A(id = 123)")
       .build()
     }
   }
@@ -169,7 +169,7 @@ class LimitPropagationPlanningIntegrationTest
       .|.nodeIndexOperator("c:C(id STARTS WITH '')", indexOrder = IndexOrderAscending)
       .filterExpression(hasLabels("b", "B"))
       .expandAll("(a)-[ab:REL_AB]->(b)")
-      .nodeIndexOperator("a:A(id = 123)", indexOrder = IndexOrderAscending)
+      .nodeIndexOperator("a:A(id = 123)")
       .build()
     }
   }
@@ -196,7 +196,7 @@ class LimitPropagationPlanningIntegrationTest
       .expandAll("(b)<-[cb:REL_CB]-(c)")
       .filterExpression(hasLabels("b", "B"))
       .expandAll("(a)-[ab:REL_AB]->(b)")
-      .nodeIndexOperator("a:A(id = 123)", indexOrder = IndexOrderAscending)
+      .nodeIndexOperator("a:A(id = 123)")
       .build()
     }
   }

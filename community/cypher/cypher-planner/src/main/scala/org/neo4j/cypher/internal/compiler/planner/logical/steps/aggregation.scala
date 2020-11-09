@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.helpers.AggregationHelper
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.leverageOrder.OrderToLeverageWithAliases
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.ir.AggregatingQueryProjection
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
@@ -40,12 +41,12 @@ object aggregation {
             context: LogicalPlanningContext): LogicalPlan = {
 
     val solver = PatternExpressionSolver.solverFor(plan, context)
-    val groupingExpressions = aggregation.groupingExpressions.map{ case (k,v) => (k, solver.solve(v, Some(k))) }
+    val groupingExpressionsMap = aggregation.groupingExpressions.map{ case (k,v) => (k, solver.solve(v, Some(k))) }
     val aggregations = aggregation.aggregationExpressions.map{ case (k,v) => (k, solver.solve(v, Some(k))) }
     val rewrittenPlan = solver.rewrittenPlan()
 
     val projectionMapForLimit: Map[String, Expression] =
-      if (groupingExpressions.isEmpty && aggregations.size == 1) {
+      if (groupingExpressionsMap.isEmpty && aggregations.size == 1) {
         val key = aggregations.keys.head // just checked that there is only one key
         val value: Expression = aggregations(key)
         val providedOrder = context.planningAttributes.providedOrders.get(rewrittenPlan.id)
@@ -90,13 +91,12 @@ object aggregation {
       )
     } else {
       val inputProvidedOrder = context.planningAttributes.providedOrders(plan.id)
-
-      val orderToLeverage = leverageOrder(inputProvidedOrder, groupingExpressions.values.toSet)
+      val OrderToLeverageWithAliases(orderToLeverage, newGroupingExpressionsMap) = leverageOrder(inputProvidedOrder, groupingExpressionsMap, plan.availableSymbols)
 
       if (orderToLeverage.isEmpty) {
         context.logicalPlanProducer.planAggregation(
           rewrittenPlan,
-          groupingExpressions,
+          newGroupingExpressionsMap,
           aggregations,
           aggregation.groupingExpressions,
           aggregation.aggregationExpressions,
@@ -105,7 +105,7 @@ object aggregation {
       } else {
         context.logicalPlanProducer.planOrderedAggregation(
           rewrittenPlan,
-          groupingExpressions,
+          newGroupingExpressionsMap,
           aggregations,
           orderToLeverage,
           aggregation.groupingExpressions,
