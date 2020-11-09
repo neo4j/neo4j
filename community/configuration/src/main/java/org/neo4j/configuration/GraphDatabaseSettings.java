@@ -780,14 +780,14 @@ public class GraphDatabaseSettings implements SettingsDeclaration
                     .dynamic().build();
 
     @Description( "Limit the amount of memory that a single transaction can consume, in bytes (or kilobytes with the 'k' " +
-            "suffix, megabytes with 'm' and gigabytes with 'g'). Zero means 'unlimited'." )
+            "suffix, megabytes with 'm' and gigabytes with 'g'). Zero means 'unlimited' if dbms.mode=SINGLE, otherwise '2 GB'." )
     public static final Setting<Long> memory_transaction_max_size =
             newBuilder( "dbms.memory.transaction.max_size", BYTES, 0L )
                     .addConstraint( any( min( mebiBytes( 1 ) ), is( 0L ) ) )
                     .addConstraint( ifCluster( max( gibiBytes( 2 ) ) ) )
                     .dynamic().build();
 
-    @Description( "Enable off heap and on heap memory tracking." )
+    @Description( "Enable off heap and on heap memory tracking. Should not be set to `false` for clusters." )
     public static final Setting<Boolean> memory_tracking = newBuilder( "dbms.memory.tracking.enable", BOOL, true ).build();
 
     public enum TransactionStateMemoryAllocation
