@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.newapi;
 
 import org.neo4j.internal.kernel.api.TokenSet;
+import org.neo4j.internal.kernel.api.security.AccessMode;
 
 class FullAccessNodeLabelIndexCursor extends DefaultNodeLabelIndexCursor
 {
@@ -35,7 +36,7 @@ class FullAccessNodeLabelIndexCursor extends DefaultNodeLabelIndexCursor
     }
 
     @Override
-    final boolean allowsTraverseAllNodesWithLabel( int label )
+    final boolean allowedToSeeEntity( AccessMode accessMode, long entityReference, TokenSet tokens )
     {
         return true;
     }

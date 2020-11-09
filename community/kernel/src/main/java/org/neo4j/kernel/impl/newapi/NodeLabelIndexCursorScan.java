@@ -57,7 +57,7 @@ class NodeLabelIndexCursorScan extends BaseCursorScan<NodeLabelIndexCursor,Token
     {
         DefaultNodeLabelIndexCursor indexCursor = (DefaultNodeLabelIndexCursor) cursor;
         indexCursor.setRead( read );
-        IndexProgressor indexProgressor = storageScan.initializeBatch( indexCursor.nodeLabelClient(), sizeHint, cursorTracer );
+        IndexProgressor indexProgressor = storageScan.initializeBatch( indexCursor.entityTokenClient(), sizeHint, cursorTracer );
 
         if ( indexProgressor == IndexProgressor.EMPTY && !addedItems.hasNext() )
         {

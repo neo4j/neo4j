@@ -251,7 +251,7 @@ abstract class Read implements TxStateHolder,
         DefaultNodeLabelIndexCursor indexCursor = (DefaultNodeLabelIndexCursor) cursor;
         indexCursor.setRead( this );
         TokenScan labelScan = labelScanReader().entityTokenScan( label, cursorTracer );
-        indexCursor.scan( labelScan.initialize( indexCursor.nodeLabelClient(), order, cursorTracer ), label, order );
+        indexCursor.scan( labelScan.initialize( indexCursor.entityTokenClient(), order, cursorTracer ), label, order );
     }
 
     @Override
