@@ -43,7 +43,7 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends CypherFunSuite wi
   }
 
   test("empty query") {
-    expectCardinality("", 1.0)
+    queryShouldHaveCardinality("", 1.0)
   }
 
   test("MATCH (a), (b:B)") {
@@ -328,8 +328,5 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends CypherFunSuite wi
   }
 
   private def expectCardinality(expected: Double): Unit =
-  expectCardinality(testName, expected)
-
-  private def expectCardinality(query: String, expected: Double): Unit =
-    queryShouldHaveCardinality(query, expected)
+    queryShouldHaveCardinality(testName, expected)
 }

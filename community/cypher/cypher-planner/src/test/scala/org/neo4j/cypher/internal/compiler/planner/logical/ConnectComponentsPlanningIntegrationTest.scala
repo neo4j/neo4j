@@ -48,21 +48,6 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
     super.plannerBuilder()
          .enableConnectComponentsPlanner()
 
-  test("card") {
-    val plan = plannerBuilder()
-      .setAllNodesCardinality(100)
-      .setLabelCardinality("A", 50)
-      .addIndex("A", Seq("prop"), 0.5, 0.01)
-      .build()
-      .plan(
-        s"""MATCH (a:A)
-           |WITH a, 1 AS x
-           |MATCH (a) WHERE a.prop = 1
-           |RETURN *
-           |""".stripMargin)
-
-  }
-
   test("should build cartesian product with sorted plan left for many disconnected components") {
     val nodes = (0 until COMPONENT_THRESHOLD_FOR_CARTESIAN_PRODUCT).map(i => s"(n$i:Few)").mkString(",")
     val orderedNode = s"n${COMPONENT_THRESHOLD_FOR_CARTESIAN_PRODUCT}"

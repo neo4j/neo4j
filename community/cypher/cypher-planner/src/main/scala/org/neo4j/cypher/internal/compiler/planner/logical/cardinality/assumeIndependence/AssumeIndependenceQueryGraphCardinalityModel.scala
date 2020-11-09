@@ -26,7 +26,6 @@ import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolv
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.ExpressionSelectivityCalculator
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.SelectivityCombiner
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence.AssumeIndependenceQueryGraphCardinalityModel.MIN_INBOUND_CARDINALITY
-import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.util.Cardinality
@@ -43,21 +42,22 @@ case class AssumeIndependenceQueryGraphCardinalityModel(stats: GraphStatistics, 
   override val expressionSelectivityCalculator: ExpressionSelectivityCalculator = ExpressionSelectivityCalculator(stats, combiner)
   private val relMultiplierCalculator = PatternRelationshipMultiplierCalculator(stats, combiner)
 
-  def apply(queryGraph: QueryGraph, input: QueryGraphSolverInput, semanticTable: SemanticTable): Cardinality =
-    cardinalityForFullQueryGraph(queryGraph, input, semanticTable)
-
-  private def cardinalityForFullQueryGraph(outer: QueryGraph, input: QueryGraphSolverInput, semanticTable: SemanticTable): Cardinality = {
+  def apply(queryGraph: QueryGraph, input: QueryGraphSolverInput, semanticTable: SemanticTable): Cardinality = {
     // Fold over query graph and optional query graphs, aggregating cardinality and label info using QueryGraphSolverInput
-    val fromOuter = visitQueryGraph(outer, input, semanticTable)
-    val fromOuterWithMultiply = fromOuter.copy(alwaysMultiply = true)
-    val result = outer.optionalMatches.foldLeft(fromOuterWithMultiply) { case (current, optional) =>
-      visitOptionalQueryGraph(optional, current, semanticTable)
-    }
-    result.inboundCardinality
+    val afterOuter = visitQueryGraph(queryGraph, input, semanticTable)
+    val afterOptionalMatches = visitOptionalMatchQueryGraphs(queryGraph.optionalMatches, afterOuter, semanticTable)
+    afterOptionalMatches.inboundCardinality
   }
 
   private def visitQueryGraph(outer: QueryGraph, input: QueryGraphSolverInput, semanticTable: SemanticTable): QueryGraphSolverInput =
     input.copy(inboundCardinality = cardinalityForQueryGraph(outer, input, semanticTable))
+
+  private def visitOptionalMatchQueryGraphs(optionals: Seq[QueryGraph], input: QueryGraphSolverInput, semanticTable: SemanticTable): QueryGraphSolverInput = {
+    val inputWithMultiply = input.copy(alwaysMultiply = true)
+    optionals.foldLeft(inputWithMultiply) { case (current, optional) =>
+      visitOptionalQueryGraph(optional, current, semanticTable)
+    }
+  }
 
   private def visitOptionalQueryGraph(optional: QueryGraph, input: QueryGraphSolverInput, semanticTable: SemanticTable): QueryGraphSolverInput = {
     val inputWithKnownLabelInfo = input.withFusedLabelInfo(optional.selections.labelInfo)
