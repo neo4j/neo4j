@@ -120,8 +120,8 @@ Eclipse Distribution License - v 1.0
   Extended StAX API
   fastinfoset
   istack common utility code runtime
-  jakarta.xml.bind-api
-  JavaBeans Activation Framework
+  Jakarta Activation
+  Jakarta XML Binding API
   JavaBeans Activation Framework API jar
   JAXB Runtime
   jersey-container-servlet
