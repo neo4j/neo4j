@@ -41,7 +41,6 @@ import org.neo4j.storageengine.api.EntityTokenUpdate;
 import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.StorageReader;
-import org.neo4j.util.FeatureToggles;
 
 /**
  * Store view that will try to use label scan store {@link LabelScanStore} to produce the view unless label scan
@@ -49,9 +48,6 @@ import org.neo4j.util.FeatureToggles;
  */
 public class DynamicIndexStoreView implements IndexStoreView
 {
-    private static final boolean USE_LABEL_INDEX_FOR_SCHEMA_INDEX_POPULATION = FeatureToggles.flag(
-            DynamicIndexStoreView.class, "use.label.index", true );
-
     private final NeoStoreIndexStoreView neoStoreIndexStoreView;
     private final LabelScanStore labelScanStore;
     private final RelationshipTypeScanStore relationshipTypeScanStore;
@@ -79,7 +75,7 @@ public class DynamicIndexStoreView implements IndexStoreView
             Visitor<EntityTokenUpdate,FAILURE> labelUpdateVisitor,
             boolean forceStoreScan, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
     {
-        if ( forceStoreScan || !USE_LABEL_INDEX_FOR_SCHEMA_INDEX_POPULATION || useAllNodeStoreScan( labelIds, cursorTracer ) )
+        if ( forceStoreScan || useAllNodeStoreScan( labelIds, cursorTracer ) )
         {
             return neoStoreIndexStoreView.visitNodes( labelIds, propertyKeyIdFilter, propertyUpdatesVisitor, labelUpdateVisitor,
                     forceStoreScan, cursorTracer, memoryTracker );
