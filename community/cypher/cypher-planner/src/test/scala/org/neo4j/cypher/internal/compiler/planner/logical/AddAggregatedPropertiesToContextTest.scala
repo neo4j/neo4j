@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
+import org.neo4j.cypher.internal.compiler.planner.logical.PlanSingleQuery.addAggregatedPropertiesToContext
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class AddAggregatedPropertiesToContextTest extends CypherFunSuite with LogicalPlanningTestSupport {
@@ -28,91 +29,100 @@ class AddAggregatedPropertiesToContextTest extends CypherFunSuite with LogicalPl
 
   test("should return input context if no aggregation in horizion") {
     val plannerQuery = buildSinglePlannerQuery("MATCH (n) RETURN n.prop")
-    val result = planSingeQuery.addAggregatedPropertiesToContext(plannerQuery, context)
+    val result = addAggregatedPropertiesToContext(plannerQuery, context)
 
     assertContextNotUpdated(result)
   }
 
   test("should return input context if aggregation with grouping in horizion") {
     val plannerQuery = buildSinglePlannerQuery("MATCH (n) RETURN min(n.prop), n.prop")
-    val result = planSingeQuery.addAggregatedPropertiesToContext(plannerQuery, context)
+    val result = addAggregatedPropertiesToContext(plannerQuery, context)
 
     assertContextNotUpdated(result)
   }
 
   test("should return input context if no properties could be extracted") {
     val plannerQuery = buildSinglePlannerQuery("MATCH (n) RETURN min(size(n.prop))")
-    val result = planSingeQuery.addAggregatedPropertiesToContext(plannerQuery, context)
+    val result = addAggregatedPropertiesToContext(plannerQuery, context)
 
     assertContextNotUpdated(result)
   }
 
   test("should return input context if query has mutating patterns before aggregation") {
     val plannerQuery = buildSinglePlannerQuery("MATCH (n:Label) CREATE (:NewLabel) RETURN min(n.prop)")
-    val result = planSingeQuery.addAggregatedPropertiesToContext(plannerQuery, context)
+    val result = addAggregatedPropertiesToContext(plannerQuery, context)
 
     assertContextNotUpdated(result)
   }
 
   test("should return input context if query has mutating patterns before renaming") {
     val plannerQuery = buildSinglePlannerQuery("MATCH (n:Label) CREATE (:NewLabel) WITH n.prop AS prop RETURN min(prop)")
-    val result = planSingeQuery.addAggregatedPropertiesToContext(plannerQuery, context)
+    val result = addAggregatedPropertiesToContext(plannerQuery, context)
 
     assertContextNotUpdated(result)
   }
 
   test("should return input context for merge before aggregation") {
     val plannerQuery = buildSinglePlannerQuery("MERGE (n:Label) RETURN min(n.prop)")
-    val result = planSingeQuery.addAggregatedPropertiesToContext(plannerQuery, context)
+    val result = addAggregatedPropertiesToContext(plannerQuery, context)
 
     assertContextNotUpdated(result)
   }
 
   test("should return updated context if no mutating patterns before aggregation") {
     val plannerQuery = buildSinglePlannerQuery("MATCH (n) RETURN min(n.prop)")
-    val result = planSingeQuery.addAggregatedPropertiesToContext(plannerQuery, context)
+    val result = addAggregatedPropertiesToContext(plannerQuery, context)
 
     assertContextUpdated(result, Set(("n", "prop")))
   }
 
+  test("addAggregatedPropertiesToContext should be usable for different queries") {
+    val plannerQuery1 = buildSinglePlannerQuery("MATCH (n) WITH n.prop AS prop RETURN min(prop)")
+    addAggregatedPropertiesToContext(plannerQuery1, context)
+    val plannerQuery2 = buildSinglePlannerQuery("MATCH (prop) RETURN min(prop)")
+    val result2 = addAggregatedPropertiesToContext(plannerQuery2, context)
+
+    assertContextNotUpdated(result2)
+  }
+
   test("should return updated context if no mutating patterns before projection followed by aggregation") {
     val plannerQuery = buildSinglePlannerQuery("MATCH (n) WITH n.prop AS prop RETURN min(prop)")
-    val result = planSingeQuery.addAggregatedPropertiesToContext(plannerQuery, context)
+    val result = addAggregatedPropertiesToContext(plannerQuery, context)
 
     assertContextUpdated(result, Set(("n", "prop")))
   }
 
   test("should return updated context if mutating patterns after aggregation") {
     val plannerQuery = buildSinglePlannerQuery("MATCH (n:Label) WITH min(n.prop) AS min CREATE (:NewLabel) RETURN min")
-    val result = planSingeQuery.addAggregatedPropertiesToContext(plannerQuery, context)
+    val result = addAggregatedPropertiesToContext(plannerQuery, context)
 
     assertContextUpdated(result, Set(("n", "prop")))
   }
 
   test("should return updated context for unwind before aggregation") {
     val plannerQuery = buildSinglePlannerQuery("UNWIND [1,2,3] AS i MATCH (n) RETURN min(n.prop)")
-    val result = planSingeQuery.addAggregatedPropertiesToContext(plannerQuery, context)
+    val result = addAggregatedPropertiesToContext(plannerQuery, context)
 
     assertContextUpdated(result, Set(("n", "prop")))
   }
 
   test("should return updated context for distinct before aggregation") {
     val plannerQuery = buildSinglePlannerQuery("MATCH (n) WITH DISTINCT n.prop AS prop RETURN min(prop)")
-    val result = planSingeQuery.addAggregatedPropertiesToContext(plannerQuery, context)
+    val result = addAggregatedPropertiesToContext(plannerQuery, context)
 
     assertContextUpdated(result, Set(("n", "prop")))
   }
 
   test("should return updated context for LOAD CSV before aggregation") {
     val plannerQuery = buildSinglePlannerQuery("LOAD CSV WITH HEADERS FROM '$url' AS row MATCH (n) WHERE toInteger(row.Value) > 20 RETURN count(n.prop)")
-    val result = planSingeQuery.addAggregatedPropertiesToContext(plannerQuery, context)
+    val result = addAggregatedPropertiesToContext(plannerQuery, context)
 
     assertContextUpdated(result, Set(("n", "prop")))
   }
 
   test("should return updated context for procedure call before aggregation") {
     val plannerQuery = buildSinglePlannerQuery("MATCH (n) CALL db.labels() YIELD label RETURN count(n.prop)")
-    val result = planSingeQuery.addAggregatedPropertiesToContext(plannerQuery, context)
+    val result = addAggregatedPropertiesToContext(plannerQuery, context)
 
     assertContextUpdated(result, Set(("n", "prop")))
   }

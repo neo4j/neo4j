@@ -125,6 +125,8 @@ case object QueryPlanner
  */
 case object plannerQueryPartPlanner {
 
+  private val planSingleQuery = PlanSingleQuery()
+
   /**
    * Plan a part of a query
    * @param plannerQueryPart the part to plan
@@ -135,7 +137,7 @@ case object plannerQueryPartPlanner {
   def plan(plannerQueryPart: PlannerQueryPart, context: LogicalPlanningContext, distinctifyUnions: Boolean = true): (LogicalPlan, LogicalPlanningContext) =
     plannerQueryPart match {
       case pq:SinglePlannerQuery =>
-        PlanSingleQuery()(pq, context)
+        planSingleQuery(pq, context)
       case UnionQuery(part, query, distinct, unionMappings) =>
         val projectionsForPart = unionMappings.map(um => um.unionVariable.name -> um.variableInPart).toMap
         val projectionsForQuery = unionMappings.map(um => um.unionVariable.name -> um.variableInQuery).toMap
@@ -143,7 +145,7 @@ case object plannerQueryPartPlanner {
         val (partPlan, partContext) = plan(part, context, distinctifyUnions = false) // Only one distinct at the top level
         val partPlanWithProjection = partContext.logicalPlanProducer.planProjectionForUnionMapping(partPlan, projectionsForPart, partContext)
 
-        val (queryPlan, finalContext) = PlanSingleQuery()(query, partContext)
+        val (queryPlan, finalContext) = planSingleQuery(query, partContext)
         val queryPlanWithProjection = finalContext.logicalPlanProducer.planRegularProjection(queryPlan, projectionsForQuery, Map.empty, finalContext)
 
         val unionPlan = finalContext.logicalPlanProducer.planUnion(partPlanWithProjection, queryPlanWithProjection, unionMappings, finalContext)

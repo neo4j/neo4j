@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.compiler.helpers.AggregationHelper
+import org.neo4j.cypher.internal.compiler.planner.logical.PlanSingleQuery.addAggregatedPropertiesToContext
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.BestPlans
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.countStorePlanner
 import org.neo4j.cypher.internal.expressions.Expression
@@ -29,7 +30,7 @@ import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
-import scala.collection.mutable
+import scala.annotation.tailrec
 
 /*
 This coordinates PlannerQuery planning and delegates work to the classes that do the actual planning of
@@ -79,41 +80,44 @@ case class PlanSingleQuery(planPart: MatchPlanner = planMatch,
 
     planEventHorizon(in, planWithInput, None, context)
   }
+}
 
-  // TODO this is wrong. We should pass along an immutable Map
-  val renamings: mutable.Map[String, Expression] = mutable.Map.empty
-
+object PlanSingleQuery {
   /*
    * Extract all properties over which aggregation is performed, where we potentially could use a NodeIndexScan.
-   * The renamings map is used to keep track of any projections changing the name of the property,
-   * as in MATCH (n:Label) WITH n.prop1 AS prop RETURN count(prop)
    */
   def addAggregatedPropertiesToContext(currentQuery: SinglePlannerQuery, context: LogicalPlanningContext): LogicalPlanningContext = {
 
-    // If the graph is mutated between the MATCH and the aggregation, an index scan might lead to the wrong number of mutations
-    if (currentQuery.queryGraph.mutatingPatterns.nonEmpty) return context
+    // The renamings map is used to keep track of any projections changing the name of the property,
+    // as in MATCH (n:Label) WITH n.prop1 AS prop RETURN count(prop)
+    @tailrec
+    def rec(currentQuery: SinglePlannerQuery, context: LogicalPlanningContext, renamings: Map[String, Expression]): LogicalPlanningContext = {
+      // If the graph is mutated between the MATCH and the aggregation, an index scan might lead to the wrong number of mutations
+      if (currentQuery.queryGraph.mutatingPatterns.nonEmpty) return context
 
-    currentQuery.horizon match {
-      case aggr: AggregatingQueryProjection =>
-        if (aggr.groupingExpressions.isEmpty) // needed here to not enter next case
-          AggregationHelper.extractProperties(aggr.aggregationExpressions, renamings.toMap) match {
-            case properties: Set[(String, String)] if properties.nonEmpty => context.withAggregationProperties(properties)
+      currentQuery.horizon match {
+        case aggr: AggregatingQueryProjection =>
+          if (aggr.groupingExpressions.isEmpty) // needed here to not enter next case
+            AggregationHelper.extractProperties(aggr.aggregationExpressions, renamings) match {
+              case properties: Set[(String, String)] if properties.nonEmpty => context.withAggregationProperties(properties)
+              case _ => context
+            }
+          else context
+        case proj: QueryProjection =>
+          currentQuery.tail match {
+            case Some(tail) =>
+              rec(tail, context, renamings ++ proj.projections)
             case _ => context
           }
-        else context
-      case proj: QueryProjection =>
-        currentQuery.tail match {
-          case Some(tail) =>
-            renamings ++= proj.projections
-            addAggregatedPropertiesToContext(tail, context)
-          case _ => context
-        }
-      case _ =>
-        currentQuery.tail match {
-          case Some(tail) => addAggregatedPropertiesToContext(tail, context)
-          case _ => context
-        }
+        case _ =>
+          currentQuery.tail match {
+            case Some(tail) => rec(tail, context, renamings)
+            case _ => context
+          }
+      }
     }
+
+    rec(currentQuery, context, Map.empty)
   }
 }
 
