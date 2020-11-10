@@ -148,6 +148,11 @@ class StatisticsBackedLogicalPlanningConfigurationBuilder() {
     this
   }
 
+  def addProcedure(signature: ProcedureSignature): this.type = {
+    indexes.procedure(signature)
+    this
+  }
+
   object RelDef {
 
     private implicit class RegexHelper(val sc: StringContext) {

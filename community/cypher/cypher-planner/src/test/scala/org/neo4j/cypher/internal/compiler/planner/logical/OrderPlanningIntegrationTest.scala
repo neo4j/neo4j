@@ -21,10 +21,12 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher.beLike
+import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.QueryGraphSolverSetup
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.QueryGraphSolverWithGreedyConnectComponents
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.QueryGraphSolverWithIDPConnectComponents
+import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.functions.Exists
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
@@ -49,8 +51,16 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 class OrderIDPPlanningIntegrationTest extends OrderPlanningIntegrationTestBase(QueryGraphSolverWithIDPConnectComponents)
 class OrderGreedyPlanningIntegrationTest extends OrderPlanningIntegrationTestBase(QueryGraphSolverWithGreedyConnectComponents)
 
-class OrderPlanningIntegrationTestBase(queryGraphSolverSetup: QueryGraphSolverSetup) extends CypherFunSuite with LogicalPlanningTestSupport2 {
+class OrderPlanningIntegrationTestBase(queryGraphSolverSetup: QueryGraphSolverSetup)
+  extends CypherFunSuite
+    with LogicalPlanningTestSupport2
+    with LogicalPlanningIntegrationTestSupport {
+
   queryGraphSolver = queryGraphSolverSetup.queryGraphSolver()
+
+  override def plannerBuilder(): StatisticsBackedLogicalPlanningConfigurationBuilder =
+    super.plannerBuilder()
+         .enableConnectComponentsPlanner(queryGraphSolverSetup.useIdpConnectComponents)
 
   test("ORDER BY previously unprojected column in WITH") {
     val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH a ORDER BY a.age RETURN a.name")._2

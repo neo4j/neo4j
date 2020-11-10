@@ -123,8 +123,11 @@ object LogicalPlanningTestSupport2 extends MockitoSugar {
   sealed trait QueryGraphSolverSetup {
     def queryGraphSolver(): QueryGraphSolver
     def queryGraphSolver(solverConfig: SingleComponentIDPSolverConfig): QueryGraphSolver
+    def useIdpConnectComponents: Boolean
   }
   case object QueryGraphSolverWithIDPConnectComponents extends QueryGraphSolverSetup {
+    val useIdpConnectComponents: Boolean = true
+
     def queryGraphSolver(): QueryGraphSolver = queryGraphSolver(DefaultIDPSolverConfig)
 
     def queryGraphSolver(solverConfig: SingleComponentIDPSolverConfig): QueryGraphSolver = {
@@ -135,6 +138,8 @@ object LogicalPlanningTestSupport2 extends MockitoSugar {
     }
   }
   case object QueryGraphSolverWithGreedyConnectComponents extends QueryGraphSolverSetup {
+    val useIdpConnectComponents: Boolean = false
+
     def queryGraphSolver(): QueryGraphSolver = queryGraphSolver(DefaultIDPSolverConfig)
 
     def queryGraphSolver(solverConfig: SingleComponentIDPSolverConfig): QueryGraphSolver = {

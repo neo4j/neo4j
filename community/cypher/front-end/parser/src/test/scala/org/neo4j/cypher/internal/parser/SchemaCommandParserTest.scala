@@ -585,9 +585,4 @@ class SchemaCommandParserTest
   private def propertyKeyName(name: String) = {
     expressions.PropertyKeyName(name)(pos)
   }
-
-  //noinspection SameParameterValue
-  private def relTypeName(name: String) = {
-    expressions.RelTypeName(name)(pos)
-  }
 }
