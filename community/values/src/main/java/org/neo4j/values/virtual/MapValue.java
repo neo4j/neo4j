@@ -83,6 +83,12 @@ public abstract class MapValue extends VirtualValue
         }
 
         @Override
+        public boolean isEmpty()
+        {
+            return true;
+        }
+
+        @Override
         public long estimatedHeapUsage()
         {
             return 0L;
@@ -132,6 +138,12 @@ public abstract class MapValue extends VirtualValue
         public int size()
         {
             return map.size();
+        }
+
+        @Override
+        public boolean isEmpty()
+        {
+            return map.isEmpty();
         }
 
         @Override
@@ -228,6 +240,12 @@ public abstract class MapValue extends VirtualValue
         }
 
         @Override
+        public boolean isEmpty()
+        {
+            return size() == 0;
+        }
+
+        @Override
         public long estimatedHeapUsage()
         {
             return FILTERING_MAP_VALUE_SHALLOW_SIZE + map.estimatedHeapUsage();
@@ -281,6 +299,12 @@ public abstract class MapValue extends VirtualValue
         public int size()
         {
             return map.size();
+        }
+
+        @Override
+        public boolean isEmpty()
+        {
+            return map.isEmpty();
         }
 
         @Override
@@ -388,6 +412,12 @@ public abstract class MapValue extends VirtualValue
         }
 
         @Override
+        public boolean isEmpty()
+        {
+            return false;
+        }
+
+        @Override
         public long estimatedHeapUsage()
         {
             return UPDATED_MAP_VALUE_SHALLOW_SIZE + map.estimatedHeapUsage() + sizeOf( updatedKey ) + updatedValue.estimatedHeapUsage();
@@ -491,6 +521,12 @@ public abstract class MapValue extends VirtualValue
             map1.foreach( consume );
             map2.foreach( consume );
             return size[0];
+        }
+
+        @Override
+        public boolean isEmpty()
+        {
+            return map1.isEmpty() && map2.isEmpty();
         }
 
         @Override
@@ -694,6 +730,8 @@ public abstract class MapValue extends VirtualValue
     public abstract AnyValue get( String key );
 
     public abstract int size();
+
+    public abstract boolean isEmpty();
 
     public MapValue filter( BiFunction<String,AnyValue,Boolean> filterFunction )
     {

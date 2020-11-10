@@ -219,6 +219,26 @@ class MapValueTest
         assertThat( x ).as( "Two combined maps should be different" ).isNotEqualTo( y );
     }
 
+    @Test
+    void shouldReportIsEmpty()
+    {
+        // Given
+        MapValue empty = MapValue.EMPTY;
+        MapValue nonEmpty = mapValue( "key", stringValue( "value" ) );
+        MapValue otherNonEmpty = mapValue( "key", stringValue( "hello" ) );
+        MapValue combined = otherNonEmpty.updatedWith( otherNonEmpty );
+        MapValue filtered = nonEmpty.filter( ( k, v ) -> false );
+        MapValue combinedFiltered = combined.filter( ( k, v ) -> false );
+
+        // Then
+        assertThat( empty.isEmpty() ).isTrue();
+        assertThat( nonEmpty.isEmpty() ).isFalse();
+        assertThat( otherNonEmpty.isEmpty() ).isFalse();
+        assertThat( combined.isEmpty() ).isFalse();
+        assertThat( filtered.isEmpty() ).isTrue();
+        assertThat( combinedFiltered.isEmpty() ).isTrue();
+    }
+
     private void assertMapValueEquals( MapValue a, MapValue b )
     {
         assertThat( a ).isEqualTo( b );

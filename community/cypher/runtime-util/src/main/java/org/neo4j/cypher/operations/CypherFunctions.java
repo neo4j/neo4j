@@ -1113,7 +1113,7 @@ public final class CypherFunctions
         }
         else if ( item instanceof MapValue )
         {
-            return Values.booleanValue( ((MapValue) item).size() == 0 );
+            return Values.booleanValue( ((MapValue) item).isEmpty() );
         }
         else if ( item instanceof TextValue )
         {

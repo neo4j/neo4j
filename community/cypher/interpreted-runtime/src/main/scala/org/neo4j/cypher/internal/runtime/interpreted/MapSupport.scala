@@ -89,6 +89,8 @@ class LazyMap[T, CURSOR](ctx: QueryContext, ops: Operations[T, CURSOR], cursor: 
 
   override def size(): Int = allProps.size()
 
+  override def isEmpty: Boolean = allProps.isEmpty
+
   //we need a way forcefully load lazy values
   def load(): MapValue =
     if (allProps != null) this
