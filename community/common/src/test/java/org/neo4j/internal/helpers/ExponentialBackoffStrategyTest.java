@@ -33,7 +33,7 @@ class ExponentialBackoffStrategyTest
     void shouldDoubleEachTime()
     {
         // given
-        ExponentialBackoffStrategy strategy = new ExponentialBackoffStrategy( 1, 1 << NUMBER_OF_ACCESSES, MILLISECONDS );
+        TimeoutStrategy strategy = IncreasingTimeoutStrategy.exponential( 1, 1 << NUMBER_OF_ACCESSES, MILLISECONDS );
         TimeoutStrategy.Timeout timeout = strategy.newTimeout();
 
         // when
@@ -50,7 +50,7 @@ class ExponentialBackoffStrategyTest
     void shouldProvidePreviousTimeout()
     {
         // given
-        ExponentialBackoffStrategy strategy = new ExponentialBackoffStrategy( 1, 1 << NUMBER_OF_ACCESSES, MILLISECONDS );
+        TimeoutStrategy strategy = IncreasingTimeoutStrategy.exponential( 1, 1 << NUMBER_OF_ACCESSES, MILLISECONDS );
         TimeoutStrategy.Timeout timeout = strategy.newTimeout();
 
         // when
@@ -68,7 +68,8 @@ class ExponentialBackoffStrategyTest
     {
         // given
         long upperBound = (1 << NUMBER_OF_ACCESSES) - 5;
-        ExponentialBackoffStrategy strategy = new ExponentialBackoffStrategy( 1, upperBound, MILLISECONDS );
+
+        TimeoutStrategy strategy = IncreasingTimeoutStrategy.exponential( 1, upperBound, MILLISECONDS );
         TimeoutStrategy.Timeout timeout = strategy.newTimeout();
 
         // when

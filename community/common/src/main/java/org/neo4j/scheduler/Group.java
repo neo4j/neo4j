@@ -94,6 +94,7 @@ public enum Group
     DOWNLOAD_SNAPSHOT( "DownloadSnapshot" ),
     CATCHUP_CLIENT( "CatchupClient" ),
     CATCHUP_SERVER( "CatchupServer" ),
+    STORE_COPY_CLIENT( "StoreCopyClient" ),
     THROUGHPUT_MONITOR( "ThroughputMonitor" ),
     PANIC_SERVICE( "PanicService" ),
     CLUSTER_STATUS_CHECK_SERVICE( "ClusterStatusService" ),
