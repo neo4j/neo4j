@@ -1117,7 +1117,7 @@ public final class CypherFunctions
         }
         else if ( item instanceof TextValue )
         {
-            return Values.booleanValue( ((TextValue) item).length() == 0 );
+            return Values.booleanValue( ((TextValue) item).isEmpty() );
         }
         else
         {

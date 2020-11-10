@@ -141,4 +141,14 @@ class TextValueTest
                 stringArray( "Separating", "by", "comma", "is", "a", "common", "use", "case" ) );
         assertThat( value.apply( "HELLO" ).split( "HELLO" ) ).isEqualTo( stringArray( "", "" ) );
     }
+
+    @ParameterizedTest
+    @MethodSource( "functions" )
+    void isEmpty( Function<String, TextValue> value )
+    {
+        assertThat( value.apply( "" ).isEmpty() ).isTrue();
+        assertThat( value.apply( "non-empty" ).isEmpty() ).isFalse();
+        assertThat( value.apply( " " ).isEmpty() ).isFalse();
+        assertThat( value.apply( "\u2009㺂࿝鋦毠\u2009" ).isEmpty() ).isFalse();
+    }
 }

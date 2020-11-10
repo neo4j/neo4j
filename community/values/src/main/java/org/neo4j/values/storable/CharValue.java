@@ -117,6 +117,12 @@ public final class CharValue extends TextValue
     }
 
     @Override
+    public boolean isEmpty()
+    {
+        return false;
+    }
+
+    @Override
     public TextValue substring( int start, int length )
     {
         if ( length != 1 && start != 0 )

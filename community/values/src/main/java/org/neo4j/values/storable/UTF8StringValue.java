@@ -113,6 +113,12 @@ public final class UTF8StringValue extends StringValue
     }
 
     @Override
+    public boolean isEmpty()
+    {
+        return bytes.length == 0 || byteLength == 0;
+    }
+
+    @Override
     public long estimatedHeapUsage()
     {
         return SHALLOW_SIZE + sizeOf( bytes );

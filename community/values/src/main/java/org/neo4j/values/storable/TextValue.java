@@ -46,6 +46,8 @@ public abstract class TextValue extends HashMemoizingScalarValue
      */
     public abstract int length();
 
+    public abstract boolean isEmpty();
+
     public abstract TextValue substring( int start, int length );
 
     public TextValue substring( int start )

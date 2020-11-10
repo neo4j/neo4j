@@ -57,6 +57,12 @@ final class StringWrappingStringValue extends StringValue
     }
 
     @Override
+    public boolean isEmpty()
+    {
+        return value.isEmpty();
+    }
+
+    @Override
     protected int computeHashToMemoize()
     {
         //NOTE that we are basing the hash code on code points instead of char[] values.

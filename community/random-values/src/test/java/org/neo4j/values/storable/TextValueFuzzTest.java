@@ -80,6 +80,15 @@ class TextValueFuzzTest
     }
 
     @Test
+    void shouldComputeIsEmpty()
+    {
+        for ( int i = 0; i < ITERATIONS; i++ )
+        {
+            assertConsistent( random.nextString(),  TextValue::isEmpty );
+        }
+    }
+
+    @Test
     void shouldReverse()
     {
         for ( int i = 0; i < ITERATIONS; i++ )
