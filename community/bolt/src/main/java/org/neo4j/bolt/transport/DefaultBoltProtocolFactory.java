@@ -32,6 +32,7 @@ import org.neo4j.bolt.v4.BoltProtocolV4;
 import org.neo4j.bolt.v4.runtime.bookmarking.BookmarksParserV4;
 import org.neo4j.bolt.v41.BoltProtocolV41;
 import org.neo4j.bolt.v42.BoltProtocolV42;
+import org.neo4j.bolt.v43.BoltProtocolV43;
 import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.time.SystemNanoClock;
@@ -80,6 +81,11 @@ public class DefaultBoltProtocolFactory implements BoltProtocolFactory
         else if ( protocolVersion.equals( BoltProtocolV42.VERSION ) )
         {
             return new BoltProtocolV42( channel, connectionFactory, stateMachineFactory, bookmarksParserV4, logService,
+                                        throttleGroup, clock, keepAliveInterval );
+        }
+        else if ( protocolVersion.equals( BoltProtocolV43.VERSION ) )
+        {
+            return new BoltProtocolV43( channel, connectionFactory, stateMachineFactory, bookmarksParserV4, logService,
                                         throttleGroup, clock, keepAliveInterval );
         }
         else

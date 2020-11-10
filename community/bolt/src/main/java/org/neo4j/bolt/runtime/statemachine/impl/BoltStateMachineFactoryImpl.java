@@ -35,6 +35,8 @@ import org.neo4j.bolt.v41.BoltProtocolV41;
 import org.neo4j.bolt.v41.BoltStateMachineV41;
 import org.neo4j.bolt.v42.BoltProtocolV42;
 import org.neo4j.bolt.v42.BoltStateMachineV42;
+import org.neo4j.bolt.v43.BoltProtocolV43;
+import org.neo4j.bolt.v43.BoltStateMachineV43;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.logging.internal.LogService;
@@ -77,6 +79,10 @@ public class BoltStateMachineFactoryImpl implements BoltStateMachineFactory
         {
             return newStateMachineV42( boltChannel );
         }
+        else if ( protocolVersion.equals( BoltProtocolV43.VERSION ) )
+        {
+            return newStateMachineV43( boltChannel );
+        }
         else
         {
             throw new IllegalArgumentException( "Failed to create a state machine for protocol version " + protocolVersion );
@@ -109,5 +115,12 @@ public class BoltStateMachineFactoryImpl implements BoltStateMachineFactory
         var transactionSpiProvider = new TransactionStateMachineSPIProviderV4( boltGraphDatabaseManagementServiceSPI, defaultDatabaseName, boltChannel, clock );
         var boltSPI = new BoltStateMachineSPIImpl( logging, authentication, transactionSpiProvider );
         return new BoltStateMachineV42( boltSPI, boltChannel, clock );
+    }
+
+    private BoltStateMachine newStateMachineV43( BoltChannel boltChannel )
+    {
+        var transactionSpiProvider = new TransactionStateMachineSPIProviderV4( boltGraphDatabaseManagementServiceSPI, defaultDatabaseName, boltChannel, clock );
+        var boltSPI = new BoltStateMachineSPIImpl( logging, authentication, transactionSpiProvider );
+        return new BoltStateMachineV43( boltSPI, boltChannel, clock );
     }
 }

@@ -46,4 +46,5 @@ public interface StateMachineContext
     void initStatementProcessorProvider( AuthenticationResult authResult, RoutingContext routingContext );
 
     StatementProcessor setCurrentStatementProcessorForDatabase( String databaseName ) throws BoltProtocolBreachFatality, BoltIOException;
+
 }

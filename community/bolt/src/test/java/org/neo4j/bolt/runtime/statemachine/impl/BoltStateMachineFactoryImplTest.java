@@ -36,6 +36,7 @@ import org.neo4j.bolt.v3.BoltStateMachineV3;
 import org.neo4j.bolt.v4.BoltStateMachineV4;
 import org.neo4j.bolt.v41.BoltStateMachineV41;
 import org.neo4j.bolt.v42.BoltStateMachineV42;
+import org.neo4j.bolt.v43.BoltStateMachineV43;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -101,6 +102,17 @@ class BoltStateMachineFactoryImplTest
 
         assertNotNull( boltStateMachine );
         assertThat( boltStateMachine ).isInstanceOf( BoltStateMachineV42.class );
+    }
+
+    @Test
+    void shouldCreateBoltStateMachinesV43()
+    {
+        BoltStateMachineFactoryImpl factory = newBoltFactory();
+
+        BoltStateMachine boltStateMachine = factory.newStateMachine( new BoltProtocolVersion( 4,  3 ), CHANNEL );
+
+        assertNotNull( boltStateMachine );
+        assertThat( boltStateMachine ).isInstanceOf( BoltStateMachineV43.class );
     }
 
     @ParameterizedTest( name = "V{0}" )

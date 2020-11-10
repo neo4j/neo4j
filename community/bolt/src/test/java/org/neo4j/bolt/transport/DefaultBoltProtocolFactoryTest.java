@@ -67,7 +67,7 @@ class DefaultBoltProtocolFactoryTest
     }
 
     @ParameterizedTest( name = "V{0}.{1}" )
-    @CsvSource( { "3, 0", "4, 0", "4, 1", "4, 2"} )
+    @CsvSource( { "3, 0", "4, 0", "4, 1", "4, 2", "4, 3"} )
     void shouldCreateBoltProtocol( int majorVersion, int minorVersion ) throws Throwable
     {
         EmbeddedChannel channel = new EmbeddedChannel();
