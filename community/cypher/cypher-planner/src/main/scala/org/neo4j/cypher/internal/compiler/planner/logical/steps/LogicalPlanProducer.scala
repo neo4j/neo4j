@@ -115,9 +115,9 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     // We don't want to keep the arguments that this Apply is inserting on the RHS, so we remove them here.
     val rhsSolved = solveds.get(right.id).asSinglePlannerQuery.updateTailOrSelf(_.amendQueryGraph(_.withArgumentIds(Set.empty)))
     val solved = solveds.get(left.id).asSinglePlannerQuery ++ rhsSolved
-    // If the LHS has duplicate values, we cannot guarantee any added order from the RHS
-    val providedOrder = providedOrders.get(left.id)
-    annotate(Apply(left, right), solved, providedOrder, context)
+    val plan = Apply(left, right)
+    val providedOrder = providedOrderOfApply(left, right)
+    annotate(plan, solved, providedOrder, context)
   }
 
   def planSubqueryCartesianProduct(left: LogicalPlan, right: LogicalPlan, context: LogicalPlanningContext): LogicalPlan = {
@@ -125,15 +125,14 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     val solvedRight = solveds.get(right.id)
     val solved = solvedLeft.asSinglePlannerQuery.updateTailOrSelf(_.withHorizon(CallSubqueryHorizon(solvedRight)))
 
-    // If the LHS has duplicate values, we cannot guarantee any added order from the RHS
-    val providedOrder = providedOrders.get(left.id)
-    annotate(CartesianProduct(left, right), solved, providedOrder, context)
+    val plan = CartesianProduct(left, right)
+    val providedOrder = providedOrderOfApply(left, right)
+    annotate(plan, solved, providedOrder, context)
   }
 
   def planTailApply(left: LogicalPlan, right: LogicalPlan, context: LogicalPlanningContext): LogicalPlan = {
     val solved = solveds.get(left.id).asSinglePlannerQuery.updateTailOrSelf(_.withTail(solveds.get(right.id).asSinglePlannerQuery))
-    // If the LHS has duplicate values, we cannot guarantee any added order from the RHS
-    val providedOrder = providedOrders.get(left.id)
+    val providedOrder = providedOrderOfApply(left, right)
     annotate(Apply(left, right), solved, providedOrder, context)
   }
 
@@ -146,8 +145,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
 
   def planCartesianProduct(left: LogicalPlan, right: LogicalPlan, context: LogicalPlanningContext): LogicalPlan = {
     val solved: SinglePlannerQuery = solveds.get(left.id).asSinglePlannerQuery ++ solveds.get(right.id).asSinglePlannerQuery
-    // If the LHS has duplicate values, we cannot guarantee any added order from the RHS
-    val providedOrder = providedOrders.get(left.id)
+    val providedOrder = providedOrderOfApply(left, right)
     annotate(CartesianProduct(left, right), solved, providedOrder, context)
   }
 
@@ -690,7 +688,8 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     val solver = PatternExpressionSolver.solverFor(inner, context)
     val rewrittenCall = call.mapCallArguments(solver.solve(_))
     val rewrittenInner = solver.rewrittenPlan()
-    annotate(ProcedureCall(rewrittenInner, rewrittenCall), solved, providedOrders.get(rewrittenInner.id), context)
+    val providedOrder = if (call.containsNoUpdates) providedOrders.get(rewrittenInner.id) else ProvidedOrder.empty
+    annotate(ProcedureCall(rewrittenInner, rewrittenCall), solved, providedOrder, context)
   }
 
   def planPassAll(inner: LogicalPlan, context: LogicalPlanningContext): LogicalPlan = {
@@ -877,122 +876,145 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
   def planCreate(inner: LogicalPlan, pattern: CreatePattern, interestingOrder: InterestingOrder, context: LogicalPlanningContext): LogicalPlan = {
     val solved = solveds.get(inner.id).asSinglePlannerQuery.amendQueryGraph(_.addMutatingPatterns(pattern))
     val (rewrittenPattern, rewrittenInner) = PatternExpressionSolver.ForMappable().solve(inner, pattern, context)
-    annotate(plans.Create(rewrittenInner, rewrittenPattern.nodes, rewrittenPattern.relationships), solved, providedOrders.get(rewrittenInner.id), context)
+    val plan = plans.Create(rewrittenInner, rewrittenPattern.nodes, rewrittenPattern.relationships)
+    val providedOrder = providedOrderOfUpdate(plan, rewrittenInner)
+    annotate(plan, solved, providedOrder, context)
   }
 
   def planMergeCreateNode(inner: LogicalPlan, pattern: CreateNode, interestingOrder: InterestingOrder, context: LogicalPlanningContext): LogicalPlan = {
     val solved = solveds.get(inner.id).asSinglePlannerQuery.amendQueryGraph(_.addMutatingPatterns(CreatePattern(List(pattern), Nil)))
     val (rewrittenPattern, rewrittenInner) = PatternExpressionSolver.ForMappable().solve(inner, pattern, context)
-    annotate(MergeCreateNode(rewrittenInner, rewrittenPattern.idName, rewrittenPattern.labels, rewrittenPattern.properties), solved, providedOrders.get(rewrittenInner.id), context)
+    val plan = MergeCreateNode(rewrittenInner, rewrittenPattern.idName, rewrittenPattern.labels, rewrittenPattern.properties)
+    val providedOrder = providedOrderOfUpdate(plan, rewrittenInner)
+    annotate(plan, solved, providedOrder, context)
   }
 
   def planMergeCreateRelationship(inner: LogicalPlan, pattern: CreateRelationship, interestingOrder: InterestingOrder, context: LogicalPlanningContext): LogicalPlan = {
 
     val solved = solveds.get(inner.id).asSinglePlannerQuery.amendQueryGraph(_.addMutatingPatterns(CreatePattern(Nil, List(pattern))))
     val (rewrittenPattern, rewrittenInner) = PatternExpressionSolver.ForMappable().solve(inner, pattern, context)
-    annotate(MergeCreateRelationship(rewrittenInner, rewrittenPattern.idName, rewrittenPattern.startNode, rewrittenPattern.relType, rewrittenPattern.endNode, rewrittenPattern.properties), solved, providedOrders.get(rewrittenInner.id), context)
+    val plan = MergeCreateRelationship(rewrittenInner, rewrittenPattern.idName, rewrittenPattern.startNode, rewrittenPattern.relType, rewrittenPattern.endNode, rewrittenPattern.properties)
+    val providedOrder = providedOrderOfUpdate(plan, rewrittenInner)
+    annotate(plan, solved, providedOrder, context)
   }
 
   def planConditionalApply(lhs: LogicalPlan, rhs: LogicalPlan, idNames: Seq[String], context: LogicalPlanningContext): LogicalPlan = {
     val solved = solveds.get(lhs.id).asSinglePlannerQuery ++ solveds.get(rhs.id).asSinglePlannerQuery
-    // If the LHS has duplicate values, we cannot guarantee any added order from the RHS
-    val providedOrder = providedOrders.get(lhs.id)
+    val providedOrder = providedOrderOfApply(lhs, rhs)
     annotate(ConditionalApply(lhs, rhs, idNames), solved, providedOrder, context)
   }
 
-
-  def planAntiConditionalApply(inner: LogicalPlan, outer: LogicalPlan, idNames: Seq[String], context: LogicalPlanningContext, maybeSolved: Option[SinglePlannerQuery] = None): LogicalPlan = {
-    val solved = maybeSolved.getOrElse(solveds.get(inner.id).asSinglePlannerQuery ++ solveds.get(outer.id).asSinglePlannerQuery)
-    // If the LHS has duplicate values, we cannot guarantee any added order from the RHS
-    val providedOrder = providedOrders.get(inner.id)
-    annotate(AntiConditionalApply(inner, outer, idNames), solved, providedOrder, context)
+  def planAntiConditionalApply(lhs: LogicalPlan, rhs: LogicalPlan, idNames: Seq[String], context: LogicalPlanningContext, maybeSolved: Option[SinglePlannerQuery] = None): LogicalPlan = {
+    val solved = maybeSolved.getOrElse(solveds.get(lhs.id).asSinglePlannerQuery ++ solveds.get(rhs.id).asSinglePlannerQuery)
+    val providedOrder = providedOrderOfApply(lhs, rhs)
+    annotate(AntiConditionalApply(lhs, rhs, idNames), solved, providedOrder, context)
   }
 
   def planDeleteNode(inner: LogicalPlan, delete: DeleteExpression, interestingOrder: InterestingOrder, context: LogicalPlanningContext): LogicalPlan = {
     val solved = solveds.get(inner.id).asSinglePlannerQuery.amendQueryGraph(_.addMutatingPatterns(delete))
     val (rewrittenDelete, rewrittenInner) = PatternExpressionSolver.ForMappable().solve(inner, delete, context)
-    if (delete.forced) {
-      annotate(DetachDeleteNode(rewrittenInner, rewrittenDelete.expression), solved, providedOrders.get(rewrittenInner.id), context)
+    val plan = if (delete.forced) {
+      DetachDeleteNode(rewrittenInner, rewrittenDelete.expression)
     } else {
-      annotate(DeleteNode(rewrittenInner, rewrittenDelete.expression), solved, providedOrders.get(rewrittenInner.id), context)
+      DeleteNode(rewrittenInner, rewrittenDelete.expression)
     }
+    val providedOrder = providedOrderOfUpdate(plan, inner)
+    annotate(plan, solved, providedOrder, context)
   }
 
   def planDeleteRelationship(inner: LogicalPlan, delete: DeleteExpression, interestingOrder: InterestingOrder, context: LogicalPlanningContext): LogicalPlan = {
     val solved = solveds.get(inner.id).asSinglePlannerQuery.amendQueryGraph(_.addMutatingPatterns(delete))
     val (rewrittenDelete, rewrittenInner) = PatternExpressionSolver.ForMappable().solve(inner, delete, context)
-    annotate(DeleteRelationship(rewrittenInner, rewrittenDelete.expression), solved, providedOrders.get(rewrittenInner.id), context)
+    val plan = DeleteRelationship(rewrittenInner, rewrittenDelete.expression)
+    val providedOrder = providedOrderOfUpdate(plan, inner)
+    annotate(plan, solved, providedOrder, context)
   }
 
   def planDeletePath(inner: LogicalPlan, delete: DeleteExpression, context: LogicalPlanningContext): LogicalPlan = {
     // `delete.expression` can only be a PathExpression, PatternExpressionSolver not needed
     val solved = solveds.get(inner.id).asSinglePlannerQuery.amendQueryGraph(_.addMutatingPatterns(delete))
 
-    if (delete.forced) {
-      annotate(DetachDeletePath(inner, delete.expression), solved, providedOrders.get(inner.id), context)
+    val plan = if (delete.forced) {
+      DetachDeletePath(inner, delete.expression)
     } else {
-      annotate(DeletePath(inner, delete.expression), solved, providedOrders.get(inner.id), context)
+      DeletePath(inner, delete.expression)
     }
+    val providedOrder = providedOrderOfUpdate(plan, inner)
+    annotate(plan, solved, providedOrder, context)
   }
 
   def planDeleteExpression(inner: LogicalPlan, delete: DeleteExpression, interestingOrder: InterestingOrder, context: LogicalPlanningContext): LogicalPlan = {
     val solved = solveds.get(inner.id).asSinglePlannerQuery.amendQueryGraph(_.addMutatingPatterns(delete))
     val (rewrittenDelete, rewrittenInner) = PatternExpressionSolver.ForMappable().solve(inner, delete, context)
-    if (delete.forced) {
-      annotate(DetachDeleteExpression(rewrittenInner, rewrittenDelete.expression), solved, providedOrders.get(rewrittenInner.id), context)
+    val plan = if (delete.forced) {
+      DetachDeleteExpression(rewrittenInner, rewrittenDelete.expression)
     } else {
-      annotate(DeleteExpressionPlan(rewrittenInner, rewrittenDelete.expression), solved, providedOrders.get(rewrittenInner.id), context)
+      plans.DeleteExpression(rewrittenInner, rewrittenDelete.expression)
     }
+    val providedOrder = providedOrderOfUpdate(plan, inner)
+    annotate(plan, solved, providedOrder, context)
   }
 
   def planSetLabel(inner: LogicalPlan, pattern: SetLabelPattern, context: LogicalPlanningContext): LogicalPlan = {
-
     val solved = solveds.get(inner.id).asSinglePlannerQuery.amendQueryGraph(_.addMutatingPatterns(pattern))
-
-    annotate(SetLabels(inner, pattern.idName, pattern.labels), solved, providedOrders.get(inner.id), context)
+    val plan = SetLabels(inner, pattern.idName, pattern.labels)
+    val providedOrder = providedOrderOfUpdate(plan, inner)
+    annotate(plan, solved, providedOrder, context)
   }
 
   def planSetNodeProperty(inner: LogicalPlan, pattern: SetNodePropertyPattern, interestingOrder: InterestingOrder, context: LogicalPlanningContext): LogicalPlan = {
     val solved = solveds.get(inner.id).asSinglePlannerQuery.amendQueryGraph(_.addMutatingPatterns(pattern))
     val (rewrittenPattern, rewrittenInner) = PatternExpressionSolver.ForMappable().solve(inner, pattern, context)
-    annotate(SetNodeProperty(rewrittenInner, rewrittenPattern.idName, rewrittenPattern.propertyKey, rewrittenPattern.expression), solved, providedOrders.get(rewrittenInner.id), context)
+    val plan = SetNodeProperty(rewrittenInner, rewrittenPattern.idName, rewrittenPattern.propertyKey, rewrittenPattern.expression)
+    val providedOrder = providedOrderOfUpdate(plan, rewrittenInner)
+    annotate(plan, solved, providedOrder, context)
   }
 
   def planSetNodePropertiesFromMap(inner: LogicalPlan, pattern: SetNodePropertiesFromMapPattern, interestingOrder: InterestingOrder, context: LogicalPlanningContext): LogicalPlan = {
     val solved = solveds.get(inner.id).asSinglePlannerQuery.amendQueryGraph(_.addMutatingPatterns(pattern))
     val (rewrittenPattern, rewrittenInner) = PatternExpressionSolver.ForMappable().solve(inner, pattern, context)
-    annotate(SetNodePropertiesFromMap(rewrittenInner, rewrittenPattern.idName, rewrittenPattern.expression, rewrittenPattern.removeOtherProps), solved, providedOrders.get(rewrittenInner.id), context)
+    val plan = SetNodePropertiesFromMap(rewrittenInner, rewrittenPattern.idName, rewrittenPattern.expression, rewrittenPattern.removeOtherProps)
+    val providedOrder = providedOrderOfUpdate(plan, rewrittenInner)
+    annotate(plan, solved, providedOrder, context)
   }
 
   def planSetRelationshipProperty(inner: LogicalPlan, pattern: SetRelationshipPropertyPattern, interestingOrder: InterestingOrder, context: LogicalPlanningContext): LogicalPlan = {
     val solved = solveds.get(inner.id).asSinglePlannerQuery.amendQueryGraph(_.addMutatingPatterns(pattern))
     val (rewrittenPattern, rewrittenInner) = PatternExpressionSolver.ForMappable().solve(inner, pattern, context)
-    annotate(SetRelationshipProperty(rewrittenInner, rewrittenPattern.idName, rewrittenPattern.propertyKey, rewrittenPattern.expression), solved, providedOrders.get(rewrittenInner.id), context)
+    val plan = SetRelationshipProperty(rewrittenInner, rewrittenPattern.idName, rewrittenPattern.propertyKey, rewrittenPattern.expression)
+    val providedOrder = providedOrderOfUpdate(plan, rewrittenInner)
+    annotate(plan, solved, providedOrder, context)
   }
 
   def planSetRelationshipPropertiesFromMap(inner: LogicalPlan, pattern: SetRelationshipPropertiesFromMapPattern, interestingOrder: InterestingOrder, context: LogicalPlanningContext): LogicalPlan = {
     val solved = solveds.get(inner.id).asSinglePlannerQuery.amendQueryGraph(_.addMutatingPatterns(pattern))
     val (rewrittenPattern, rewrittenInner) = PatternExpressionSolver.ForMappable().solve(inner, pattern, context)
-    annotate(SetRelationshipPropertiesFromMap(rewrittenInner, rewrittenPattern.idName, rewrittenPattern.expression, rewrittenPattern.removeOtherProps), solved, providedOrders.get(rewrittenInner.id), context)
+    val plan = SetRelationshipPropertiesFromMap(rewrittenInner, rewrittenPattern.idName, rewrittenPattern.expression, rewrittenPattern.removeOtherProps)
+    val providedOrder = providedOrderOfUpdate(plan, rewrittenInner)
+    annotate(plan, solved, providedOrder, context)
   }
 
   def planSetPropertiesFromMap(inner: LogicalPlan, pattern: SetPropertiesFromMapPattern, interestingOrder: InterestingOrder, context: LogicalPlanningContext): LogicalPlan = {
     val solved = solveds.get(inner.id).asSinglePlannerQuery.amendQueryGraph(_.addMutatingPatterns(pattern))
     val (rewrittenPattern, rewrittenInner) = PatternExpressionSolver.ForMappable().solve(inner, pattern, context)
-    annotate(SetPropertiesFromMap(rewrittenInner, rewrittenPattern.entityExpression, rewrittenPattern.expression, rewrittenPattern.removeOtherProps), solved, providedOrders.get(inner.id), context)
+    val plan = SetPropertiesFromMap(rewrittenInner, rewrittenPattern.entityExpression, rewrittenPattern.expression, rewrittenPattern.removeOtherProps)
+    val providedOrder = providedOrderOfUpdate(plan, rewrittenInner)
+    annotate(plan, solved, providedOrder, context)
   }
 
   def planSetProperty(inner: LogicalPlan, pattern: SetPropertyPattern, interestingOrder: InterestingOrder, context: LogicalPlanningContext): LogicalPlan = {
     val solved = solveds.get(inner.id).asSinglePlannerQuery.amendQueryGraph(_.addMutatingPatterns(pattern))
     val (rewrittenPattern, rewrittenInner) = PatternExpressionSolver.ForMappable().solve(inner, pattern, context)
-    annotate(SetProperty(rewrittenInner, rewrittenPattern.entityExpression, rewrittenPattern.propertyKeyName, rewrittenPattern.expression), solved, providedOrders.get(rewrittenInner.id), context)
+    val plan = SetProperty(rewrittenInner, rewrittenPattern.entityExpression, rewrittenPattern.propertyKeyName, rewrittenPattern.expression)
+    val providedOrder = providedOrderOfUpdate(plan, rewrittenInner)
+    annotate(plan, solved, providedOrder, context)
   }
 
   def planRemoveLabel(inner: LogicalPlan, pattern: RemoveLabelPattern, context: LogicalPlanningContext): LogicalPlan = {
-
     val solved = solveds.get(inner.id).asSinglePlannerQuery.amendQueryGraph(_.addMutatingPatterns(pattern))
-
-    annotate(RemoveLabels(inner, pattern.idName, pattern.labels), solved, providedOrders.get(inner.id), context)
+    val plan = RemoveLabels(inner, pattern.idName, pattern.labels)
+    val providedOrder = providedOrderOfUpdate(plan, inner)
+    annotate(plan, solved, providedOrder, context)
   }
 
   def planForeachApply(left: LogicalPlan,
@@ -1003,7 +1025,9 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
                        expression: Expression): LogicalPlan = {
     val solved = solveds.get(left.id).asSinglePlannerQuery.amendQueryGraph(_.addMutatingPatterns(pattern))
     val (rewrittenExpression, rewrittenLeft) = PatternExpressionSolver.ForSingle.solve(left, expression, context)
-    annotate(ForeachApply(rewrittenLeft, innerUpdates, pattern.variable, rewrittenExpression), solved, providedOrders.get(rewrittenLeft.id), context)
+    val plan = ForeachApply(rewrittenLeft, innerUpdates, pattern.variable, rewrittenExpression)
+    val providedOrder = providedOrderOfApply(rewrittenLeft, innerUpdates)
+    annotate(plan, solved, providedOrder, context)
   }
 
   def planEager(inner: LogicalPlan, context: LogicalPlanningContext): LogicalPlan =
@@ -1021,6 +1045,39 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     providedOrders.copy(inner.id, produceResult.id)
     produceResult
   }
+
+  /**
+   * Updates may make the current provided order invalid since the order may depend on something that gets mutated.
+   * If this is the case, this method returns an empty provided order, otherwise it forwards the provided order from the left.
+   */
+  private def providedOrderOfUpdate(updatePlan: UpdatingPlan, sourcePlan: LogicalPlan): ProvidedOrder =
+    if (invalidatesProvidedOrder(updatePlan))
+      ProvidedOrder.empty
+    else
+      providedOrders.get(sourcePlan.id)
+
+  /**
+   * Plans with a rhs may invalidate the provided order coming from the lhs.
+   * If this is the case, this method returns an empty provided order, otherwise it forwards the provided order from the left.
+   */
+  private def providedOrderOfApply(left: LogicalPlan, right: LogicalPlan): ProvidedOrder = {
+    if (invalidatesProvidedOrderRecursive(right))
+      ProvidedOrder.empty
+    else
+      // If the LHS has duplicate values, we cannot guarantee any added order from the RHS
+      providedOrders.get(left.id)
+  }
+
+  /**
+   * Currently we consider all updates as invalidating provided order
+   */
+  private def invalidatesProvidedOrder(plan: LogicalPlan): Boolean = plan match {
+    case _: UpdatingPlan => true
+    case _               => false
+  }
+
+  private def invalidatesProvidedOrderRecursive(plan: LogicalPlan): Boolean =
+    plan.treeExists { case plan: LogicalPlan if invalidatesProvidedOrder(plan) => true}
 
   /**
     * Compute cardinality for a plan. Set this cardinality in the Cardinalities attribute.

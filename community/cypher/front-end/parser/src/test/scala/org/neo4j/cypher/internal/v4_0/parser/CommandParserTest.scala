@@ -259,8 +259,4 @@ class CommandParserTest
   private def propertyKeyName(name: String) = {
     exp.PropertyKeyName(name)(pos)
   }
-
-  private def relTypeName(name: String) = {
-    exp.RelTypeName(name)(pos)
-  }
 }

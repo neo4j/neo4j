@@ -255,6 +255,9 @@ trait AstConstructionTestSupport extends CypherTestSupport {
       NodePattern(Some(nodeVar2), Seq.empty, None)(pos)
     )(pos))(pos))
 
+  def relTypeName(s: String): RelTypeName =
+    RelTypeName(s)(pos)
+
   def query(part: QueryPart): Query =
     Query(None, part)(pos)
 
