@@ -52,6 +52,7 @@ import org.neo4j.cypher.internal.expressions.functions.Floor
 import org.neo4j.cypher.internal.expressions.functions.Function
 import org.neo4j.cypher.internal.expressions.functions.Haversin
 import org.neo4j.cypher.internal.expressions.functions.Head
+import org.neo4j.cypher.internal.expressions.functions.IsEmpty
 import org.neo4j.cypher.internal.expressions.functions.Keys
 import org.neo4j.cypher.internal.expressions.functions.LTrim
 import org.neo4j.cypher.internal.expressions.functions.Labels
@@ -383,6 +384,7 @@ case class CommunityExpressionConverter(tokenContext: TokenContext) extends Expr
           self.toCommandExpression(id, invocation.arguments(1))
         )
       case Length => commands.expressions.LengthFunction(self.toCommandExpression(id, invocation.arguments.head))
+      case IsEmpty => commands.expressions.IsEmptyFunction(self.toCommandExpression(id, invocation.arguments.head))
       case Linenumber => commands.expressions.Linenumber()
       case Log => commands.expressions.LogFunction(self.toCommandExpression(id, invocation.arguments.head))
       case Log10 => commands.expressions.Log10Function(self.toCommandExpression(id, invocation.arguments.head))

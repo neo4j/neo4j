@@ -1104,6 +1104,27 @@ public final class CypherFunctions
         }
     }
 
+    public static BooleanValue isEmpty( AnyValue item )
+    {
+        assert item != NO_VALUE : "NO_VALUE checks need to happen outside this call";
+        if ( item instanceof SequenceValue )
+        {
+            return Values.booleanValue( !((SequenceValue) item).iterator().hasNext() );
+        }
+        else if ( item instanceof MapValue )
+        {
+            return Values.booleanValue( ((MapValue) item).size() == 0 );
+        }
+        else if ( item instanceof TextValue )
+        {
+            return Values.booleanValue( ((TextValue) item).length() == 0 );
+        }
+        else
+        {
+            throw new ParameterWrongTypeException( "Expected a List, Map, or String, got: " + item, null );
+        }
+    }
+
     public static IntegralValue length( AnyValue item )
     {
         assert item != NO_VALUE : "NO_VALUE checks need to happen outside this call";

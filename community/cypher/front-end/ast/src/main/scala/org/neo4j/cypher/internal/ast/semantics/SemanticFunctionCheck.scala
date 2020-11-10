@@ -35,6 +35,7 @@ import org.neo4j.cypher.internal.expressions.functions.Distance
 import org.neo4j.cypher.internal.expressions.functions.Exists
 import org.neo4j.cypher.internal.expressions.functions.Function
 import org.neo4j.cypher.internal.expressions.functions.Head
+import org.neo4j.cypher.internal.expressions.functions.IsEmpty
 import org.neo4j.cypher.internal.expressions.functions.Last
 import org.neo4j.cypher.internal.expressions.functions.Length
 import org.neo4j.cypher.internal.expressions.functions.Max
@@ -142,6 +143,9 @@ object SemanticFunctionCheck extends SemanticAnalysisTooling {
         checkTypeSignatures(ctx, Max, invocation) ifOkChain {
           specifyType(types(invocation.arguments(0))(_), invocation)
         }
+
+      case IsEmpty =>
+        checkTypeSignatures(ctx, IsEmpty, invocation)
 
       case Min =>
         checkTypeSignatures(ctx, Min, invocation) ifOkChain {
