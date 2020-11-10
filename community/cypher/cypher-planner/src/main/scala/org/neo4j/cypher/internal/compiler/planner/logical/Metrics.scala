@@ -69,8 +69,14 @@ object Metrics {
     def withFusedLabelInfo(newLabelInfo: LabelInfo): QueryGraphSolverInput =
       copy(labelInfo = labelInfo.fuse(newLabelInfo)(_ ++ _))
 
-    def withPreferredStrictness(strictness: StrictnessMode): QueryGraphSolverInput = copy(strictness = Some(strictness))
-    def withLimitSelectivity(s: Selectivity): QueryGraphSolverInput = copy(limitSelectivity = s)
+    def withCardinality(cardinality: Cardinality): QueryGraphSolverInput =
+      copy(inboundCardinality = cardinality)
+
+    def withPreferredStrictness(strictness: StrictnessMode): QueryGraphSolverInput =
+      copy(strictness = Some(strictness))
+
+    def withLimitSelectivity(s: Selectivity): QueryGraphSolverInput =
+      copy(limitSelectivity = s)
   }
 
   // This metric calculates how expensive executing a logical plan is.

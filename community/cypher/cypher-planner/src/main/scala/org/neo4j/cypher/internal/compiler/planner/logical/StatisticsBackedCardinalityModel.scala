@@ -66,9 +66,9 @@ class StatisticsBackedCardinalityModel(queryGraphCardinalityModel: QueryGraphCar
       case query: SinglePlannerQuery =>
         val output = query.fold(input0) {
           case (input, RegularSinglePlannerQuery(graph, _, horizon, _, _)) =>
-            val newInput = calculateCardinalityForQueryGraph(graph, input, semanticTable)
-            val horizonCardinality = calculateCardinalityForQueryHorizon(newInput, horizon, semanticTable)
-            newInput.copy( inboundCardinality = horizonCardinality)
+            val afterQueryGraph = calculateCardinalityForQueryGraph(graph, input, semanticTable)
+            val afterHorizon = calculateCardinalityForQueryHorizon(afterQueryGraph, horizon, semanticTable)
+            afterHorizon
           case (input, v) => throw new IllegalStateException(s"cannot handle $input and $v")
         }
         output.inboundCardinality
@@ -82,12 +82,12 @@ class StatisticsBackedCardinalityModel(queryGraphCardinalityModel: QueryGraphCar
     }
   }
 
-  private def calculateCardinalityForQueryHorizon(input: QueryGraphSolverInput, horizon: QueryHorizon, semanticTable: SemanticTable): Cardinality = horizon match {
+  private def calculateCardinalityForQueryHorizon(input: QueryGraphSolverInput, horizon: QueryHorizon, semanticTable: SemanticTable): QueryGraphSolverInput = horizon match {
     case projection: QueryProjection =>
       val cardinalityBeforeSkip = queryProjectionCardinalityBeforeLimit(input.inboundCardinality, projection)
       val cardinalityBeforeLimit = queryProjectionCardinalityWithSkip(cardinalityBeforeSkip, projection.queryPagination)
       val cardinalityBeforeSelection = queryProjectionCardinalityWithLimit(cardinalityBeforeLimit, projection.queryPagination)
-      queryProjectionCardinalityWithSelections(input.copy(inboundCardinality = cardinalityBeforeSelection), projection.selections, semanticTable)
+      queryProjectionCardinalityWithSelections(input.withCardinality(cardinalityBeforeSelection), projection.selections, semanticTable)
 
     // Unwind
     case UnwindProjection(_, expression) =>
@@ -102,22 +102,22 @@ class StatisticsBackedCardinalityModel(queryGraphCardinalityModel: QueryGraphCar
           Multiplier(Math.max(0, steps))
         case _ => DEFAULT_MULTIPLIER
       }
-      input.inboundCardinality * multiplier
+      input.withCardinality(input.inboundCardinality * multiplier)
 
     // ProcedureCall
     case _: ProcedureCallProjection =>
-      Cardinality.max(input.inboundCardinality * DEFAULT_MULTIPLIER, 1.0) // At least 1 row
+      input.withCardinality(Cardinality.max(input.inboundCardinality * DEFAULT_MULTIPLIER, 1.0)) // At least 1 row
 
     // Load CSV
     case _: LoadCSVProjection =>
-      Cardinality.max(input.inboundCardinality * DEFAULT_MULTIPLIER, 1.0) // At least 1 row
+      input.withCardinality(Cardinality.max(input.inboundCardinality * DEFAULT_MULTIPLIER, 1.0)) // At least 1 row
 
     case _: PassthroughAllHorizon =>
-      input.inboundCardinality
+      input
 
     case CallSubqueryHorizon(subquery, _) =>
       val subQueryCardinality = apply(subquery, QueryGraphSolverInput.empty, semanticTable)
-      input.inboundCardinality * subQueryCardinality
+      input.withCardinality(input.inboundCardinality * subQueryCardinality)
   }
 
   private def queryProjectionCardinalityBeforeLimit(in: Cardinality, projection: QueryProjection): Cardinality = projection match {
@@ -177,19 +177,23 @@ class StatisticsBackedCardinalityModel(queryGraphCardinalityModel: QueryGraphCar
 
   private def queryProjectionCardinalityWithSelections(inputBeforeSelection: QueryGraphSolverInput,
                                                        where: Selections,
-                                                       semanticTable: SemanticTable): Cardinality = {
-    val expressionSelectivities = where.flatPredicates.map(expressionSelectivityCalculator(_, inputBeforeSelection.labelInfo)(semanticTable))
+                                                       semanticTable: SemanticTable): QueryGraphSolverInput = {
+    val inboundCardinality = inputBeforeSelection.inboundCardinality
+    val inputWithKnownLabelInfo = inputBeforeSelection.withFusedLabelInfo(where.labelInfo)
+    val expressionSelectivities = where.flatPredicates.map(expressionSelectivityCalculator(_, inputWithKnownLabelInfo.labelInfo)(semanticTable))
     val maybeWhereSelectivity = combiner.andTogetherSelectivities(expressionSelectivities)
-    maybeWhereSelectivity match {
-      case Some(whereSelectivity) => inputBeforeSelection.inboundCardinality * whereSelectivity
-      case None => inputBeforeSelection.inboundCardinality
+    val cardinality = maybeWhereSelectivity match {
+      case Some(whereSelectivity) => inboundCardinality * whereSelectivity
+      case None => inboundCardinality
     }
+    inputWithKnownLabelInfo.withCardinality(cardinality)
   }
 
   private def calculateCardinalityForQueryGraph(graph: QueryGraph, input: QueryGraphSolverInput,
                                                 semanticTable: SemanticTable): QueryGraphSolverInput = {
     val inputWithKnownLabelInfo = input.withFusedLabelInfo(graph.patternNodeLabels)
-    inputWithKnownLabelInfo.copy(inboundCardinality = queryGraphCardinalityModel(graph, inputWithKnownLabelInfo, semanticTable))
+    val cardinality = queryGraphCardinalityModel(graph, inputWithKnownLabelInfo, semanticTable)
+    inputWithKnownLabelInfo.withCardinality(cardinality)
   }
 }
 

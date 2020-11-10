@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence
 
+import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults.DEFAULT_EQUALITY_SELECTIVITY
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.ABCDECardinalityData
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence.PatternRelationshipMultiplierCalculator.uniquenessSelectivityForNRels
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -194,6 +195,26 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends CypherFunSuite wi
     ).min
     val relMult = relMultT1 + relMultT2
     expectCardinality(maxRelCount * relMult)
+  }
+
+  test("MATCH (a) WITH a, 1 AS foo WHERE a:A AND a.prop = 2") {
+    // Use index for a.prop = 2
+    expectCardinality(A * Aprop)
+  }
+
+  test("MATCH (a) WITH a, 1 AS foo WHERE a:A MATCH (a) WHERE a.prop = 2") {
+    // Propagate label info and use index for a.prop = 2
+    expectCardinality(A * Aprop)
+  }
+
+  test("MATCH (a:A) WITH 1 AS foo MATCH (a) WHERE a.prop = 2") {
+    // Different a-variables, don't use index for a.prop = 2
+    expectCardinality(A * N * DEFAULT_EQUALITY_SELECTIVITY)
+  }
+
+  test("MATCH (a:A) WITH a, 1 AS foo MATCH (a) WHERE a.prop = 1") {
+    // Propagate label info and use index for a.prop = 1
+    expectCardinality(A * Aprop)
   }
 
   test("MATCH (a) OPTIONAL MATCH (a)-[:T1]->(:B)") {
