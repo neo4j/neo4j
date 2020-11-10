@@ -79,7 +79,7 @@
       -Dorg.org.neo4j.kernel.impl.newapi.DefaultCursors.trackCursors=true
       -XX:+UnlockExperimentalVMOptions -XX:+TrustFinalNonStaticFields ${java.exports} ${test.runner.jvm.settings.additional}
     </test.runner.jvm.settings>
-    <jetty.version>9.4.17.v20190418</jetty.version>
+    <jetty.version>9.4.34.v20201102</jetty.version>
     <findbugs.version>3.0.1</findbugs.version>
     <git.commit>unknown-commit</git.commit>
     <forkCounts>0</forkCounts>
