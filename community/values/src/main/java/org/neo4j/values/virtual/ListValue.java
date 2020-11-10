@@ -188,6 +188,12 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         }
 
         @Override
+        public boolean isEmpty()
+        {
+            return values.isEmpty();
+        }
+
+        @Override
         public int size()
         {
             return values.size();
@@ -327,6 +333,12 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         }
 
         @Override
+        public boolean isEmpty()
+        {
+            return inner.isEmpty();
+        }
+
+        @Override
         public AnyValue value( int offset )
         {
             return inner.value( size() - 1 - offset );
@@ -447,6 +459,19 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         }
 
         @Override
+        public boolean isEmpty()
+        {
+            for ( ListValue list : lists )
+            {
+                if ( !list.isEmpty() )
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        @Override
         public AnyValue value( int offset )
         {
             for ( ListValue list : lists )
@@ -495,6 +520,12 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         public int size()
         {
             return base.size() + 1;
+        }
+
+        @Override
+        public boolean isEmpty()
+        {
+            return false;
         }
 
         @Override
@@ -561,6 +592,12 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         }
 
         @Override
+        public boolean isEmpty()
+        {
+            return false;
+        }
+
+        @Override
         public AnyValue value( int offset )
         {
             int size = base.size();
@@ -599,14 +636,9 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         }
     }
 
-    public boolean isEmpty()
-    {
-        return size() == 0;
-    }
-
     public boolean nonEmpty()
     {
-        return size() != 0;
+        return !isEmpty();
     }
 
     public boolean storable()

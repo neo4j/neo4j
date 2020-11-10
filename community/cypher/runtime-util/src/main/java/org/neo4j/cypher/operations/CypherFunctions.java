@@ -1109,7 +1109,7 @@ public final class CypherFunctions
         assert item != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( item instanceof SequenceValue )
         {
-            return Values.booleanValue( !((SequenceValue) item).iterator().hasNext() );
+            return Values.booleanValue( ((SequenceValue) item).isEmpty() );
         }
         else if ( item instanceof MapValue )
         {

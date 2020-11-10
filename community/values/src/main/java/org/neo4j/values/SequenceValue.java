@@ -46,6 +46,11 @@ public interface SequenceValue extends Iterable<AnyValue>
 
     int length();
 
+    default boolean isEmpty()
+    {
+        return length() == 0;
+    }
+
     AnyValue value( int offset );
 
     @Override
