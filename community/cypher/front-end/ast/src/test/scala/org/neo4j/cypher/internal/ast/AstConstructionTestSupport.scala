@@ -74,6 +74,7 @@ import org.neo4j.cypher.internal.expressions.RELATIONSHIP_TYPE
 import org.neo4j.cypher.internal.expressions.ReduceExpression
 import org.neo4j.cypher.internal.expressions.ReduceScope
 import org.neo4j.cypher.internal.expressions.RegexMatch
+import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.RelationshipsPattern
@@ -332,6 +333,9 @@ trait AstConstructionTestSupport extends CypherTestSupport {
       RelationshipPattern(None, Seq.empty, None, None, BOTH)(pos),
       NodePattern(Some(nodeVar2), Seq.empty, None)(pos)
     )(pos))(pos))
+
+  def relTypeName(s: String): RelTypeName =
+    RelTypeName(s)(pos)
 
   def query(part: QueryPart): Query =
     Query(None, part)(pos)

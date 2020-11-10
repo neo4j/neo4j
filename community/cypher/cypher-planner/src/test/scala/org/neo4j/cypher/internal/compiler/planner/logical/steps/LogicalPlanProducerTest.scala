@@ -21,16 +21,41 @@ package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
 import org.neo4j.cypher.internal.ast.UsingIndexHint
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
+import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.PlanMatchHelp
+import org.neo4j.cypher.internal.expressions.EveryPath
+import org.neo4j.cypher.internal.expressions.ExistsSubClause
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.FunctionName
+import org.neo4j.cypher.internal.expressions.Pattern
+import org.neo4j.cypher.internal.expressions.PropertyKeyName
+import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.functions.Collect
+import org.neo4j.cypher.internal.ir.CreateNode
+import org.neo4j.cypher.internal.ir.CreatePattern
+import org.neo4j.cypher.internal.ir.CreateRelationship
+import org.neo4j.cypher.internal.ir.DeleteExpression
+import org.neo4j.cypher.internal.ir.ForeachPattern
+import org.neo4j.cypher.internal.ir.RemoveLabelPattern
+import org.neo4j.cypher.internal.ir.SetLabelPattern
+import org.neo4j.cypher.internal.ir.SetNodePropertiesFromMapPattern
+import org.neo4j.cypher.internal.ir.SetNodePropertyPattern
+import org.neo4j.cypher.internal.ir.SetPropertiesFromMapPattern
+import org.neo4j.cypher.internal.ir.SetPropertyPattern
+import org.neo4j.cypher.internal.ir.SetRelationshipPropertiesFromMapPattern
+import org.neo4j.cypher.internal.ir.SetRelationshipPropertyPattern
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.ir.ordering.RequiredOrderCandidate
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.DoNotIncludeTies
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.ProcedureReadOnlyAccess
+import org.neo4j.cypher.internal.logical.plans.ProcedureReadWriteAccess
+import org.neo4j.cypher.internal.logical.plans.ProcedureSignature
+import org.neo4j.cypher.internal.logical.plans.QualifiedName
+import org.neo4j.cypher.internal.logical.plans.ResolvedCall
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -303,6 +328,408 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       // then
       context.planningAttributes.providedOrders.get(result.id) should be(ProvidedOrder.asc(varFor("y")).fromLeft)
     }
+  }
+
+  test("Create should eliminate provided order") {
+    shouldEliminateProvidedOrder(ctx =>
+      ctx.producer.planCreate(ctx.lhs, CreatePattern(Seq(CreateNode("n", Seq(), None)), Seq()), ctx.context))
+  }
+
+  test("MergeCreateNode should eliminate provided order") {
+    shouldEliminateProvidedOrder(ctx =>
+      ctx.producer.planMergeCreateNode(ctx.lhs, CreateNode("n", Seq(), None), ctx.context))
+  }
+
+  test("MergeCreateRelationship should eliminate provided order") {
+    shouldEliminateProvidedOrder(ctx =>
+      ctx.producer.planMergeCreateRelationship(ctx.lhs, CreateRelationship("r", "n", relTypeName("R"), "m", SemanticDirection.OUTGOING, None), ctx.context))
+  }
+
+  test("DeleteNode should eliminate provided order") {
+    shouldEliminateProvidedOrder(ctx =>
+      ctx.producer.planDeleteNode(ctx.lhs, DeleteExpression(varFor("n"), false), ctx.context))
+  }
+
+  test("DeleteRelationship should eliminate provided order") {
+    shouldEliminateProvidedOrder(ctx =>
+      ctx.producer.planDeleteRelationship(ctx.lhs, DeleteExpression(varFor("r"), false), ctx.context))
+  }
+
+  test("DeletePath should eliminate provided order") {
+    shouldEliminateProvidedOrder(ctx =>
+      ctx.producer.planDeletePath(ctx.lhs, DeleteExpression(varFor("p"), false), ctx.context))
+  }
+
+  test("DeleteExpression should eliminate provided order") {
+    shouldEliminateProvidedOrder(ctx =>
+      ctx.producer.planDeleteExpression(ctx.lhs, DeleteExpression(varFor("x"), false), ctx.context))
+  }
+
+  test("Setlabel should eliminate provided order") {
+    shouldEliminateProvidedOrder(ctx =>
+      ctx.producer.planSetLabel(ctx.lhs, SetLabelPattern("n", Seq(labelName("N"))), ctx.context))
+  }
+
+  test("RemoveLabel should eliminate provided order") {
+    shouldEliminateProvidedOrder(ctx =>
+      ctx.producer.planRemoveLabel(ctx.lhs, RemoveLabelPattern("n", Seq(labelName("N"))), ctx.context))
+  }
+
+  test("SetProperty should eliminate provided order") {
+    shouldEliminateProvidedOrder(ctx =>
+      ctx.producer.planSetProperty(ctx.lhs, SetPropertyPattern(varFor("x"), PropertyKeyName("p")(pos), literalInt(1)), ctx.context))
+  }
+
+  test("SetPropertiesFromMap should eliminate provided order") {
+    shouldEliminateProvidedOrder(ctx =>
+      ctx.producer.planSetPropertiesFromMap(ctx.lhs, SetPropertiesFromMapPattern(varFor("x"), mapOfInt("p" -> 1), false), ctx.context))
+  }
+
+  test("SetNodeProperty should eliminate provided order") {
+    shouldEliminateProvidedOrder(ctx =>
+      ctx.producer.planSetNodeProperty(ctx.lhs, SetNodePropertyPattern("x", PropertyKeyName("p")(pos), literalInt(1)), ctx.context))
+  }
+
+  test("SetNodePropertiesFromMap should eliminate provided order") {
+    shouldEliminateProvidedOrder(ctx =>
+      ctx.producer.planSetNodePropertiesFromMap(ctx.lhs, SetNodePropertiesFromMapPattern("x", mapOfInt("p" -> 1), false), ctx.context))
+  }
+
+  test("SetRelationshipProperty should eliminate provided order") {
+    shouldEliminateProvidedOrder(ctx =>
+      ctx.producer.planSetRelationshipProperty(ctx.lhs, SetRelationshipPropertyPattern("x", PropertyKeyName("p")(pos), literalInt(1)), ctx.context))
+  }
+
+  test("SetRelationshipPropertiesFromMap should eliminate provided order") {
+    shouldEliminateProvidedOrder(ctx =>
+      ctx.producer.planSetRelationshipPropertiesFromMap(ctx.lhs, SetRelationshipPropertiesFromMapPattern("r", mapOfInt("p" -> 1), false), ctx.context))
+  }
+
+  test("ProcedureCall RW should eliminate provided order") {
+    val writer = ProcedureSignature(
+      QualifiedName(Seq(),"writer"),
+      IndexedSeq(),
+      None,
+      None,
+      ProcedureReadWriteAccess(Array.empty),
+      id = 0)
+    shouldEliminateProvidedOrder(ctx =>
+      ctx.producer.planCallProcedure(ctx.lhs, ResolvedCall(writer, Seq(), IndexedSeq())(pos), ctx.context))
+  }
+
+  test("ProcedureCall RO should retain provided order") {
+    val reader = ProcedureSignature(
+      QualifiedName(Seq(), "reader"),
+      IndexedSeq(),
+      None,
+      None,
+      ProcedureReadOnlyAccess(Array.empty),
+      id = 1)
+
+    shouldRetainProvidedOrder(ctx =>
+      ctx.producer.planCallProcedure(ctx.lhs, ResolvedCall(reader, Seq(), IndexedSeq())(pos), ctx.context))
+  }
+
+  test("CartesianProduct should eliminate provided order when rhs contains update") {
+    shouldEliminateProvidedOrder(ctx =>
+      ctx.producer.planCartesianProduct(ctx.lhs, ctx.rhsWithUpdate, ctx.context))
+  }
+
+  test("CartesianProduct should retain provided order when rhs contains no update") {
+    shouldRetainProvidedOrder(ctx =>
+      ctx.producer.planCartesianProduct(ctx.lhs, ctx.rhsWithoutUpdate, ctx.context))
+  }
+
+  test("Apply should eliminate provided order when rhs contains update") {
+    shouldEliminateProvidedOrder(ctx =>
+      ctx.producer.planApply(ctx.lhs, ctx.rhsWithUpdate, ctx.context)
+    )
+  }
+
+  test("Apply should retain provided order when rhs contains no update") {
+    shouldRetainProvidedOrder(ctx =>
+      ctx.producer.planApply(ctx.lhs, ctx.rhsWithoutUpdate, ctx.context)
+    )
+  }
+
+  test("uncorrelated Subquery should eliminate provided order when rhs contains update") {
+    shouldEliminateProvidedOrder(ctx =>
+      ctx.producer.planSubquery(ctx.lhs, ctx.rhsWithUpdate, ctx.context, correlated = false)
+    )
+  }
+
+  test("uncorrelated Subquery should retain provided order when rhs contains no update") {
+    shouldRetainProvidedOrder(ctx =>
+      ctx.producer.planSubquery(ctx.lhs, ctx.rhsWithoutUpdate, ctx.context, correlated = false)
+    )
+  }
+
+  test("correlated Subquery should eliminate provided order when rhs contains update") {
+    shouldEliminateProvidedOrder(ctx =>
+      ctx.producer.planSubquery(ctx.lhs, ctx.rhsWithUpdate, ctx.context, correlated = true)
+    )
+  }
+
+  test("correlated Subquery should retain provided order when rhs contains no update") {
+    shouldRetainProvidedOrder(ctx =>
+      ctx.producer.planSubquery(ctx.lhs, ctx.rhsWithoutUpdate, ctx.context, correlated = true)
+    )
+  }
+
+  test("ForPatternExpressionSolver.planApply fail when rhs contains update") {
+    shouldFailAssertion(ctx =>
+      ctx.producer.ForPatternExpressionSolver.planApply(ctx.lhs, ctx.rhsWithUpdate, ctx.context)
+    )
+  }
+
+  test("ForPatternExpressionSolver.planApply should retain provided order when rhs contains no update") {
+    shouldRetainProvidedOrder(ctx =>
+      ctx.producer.ForPatternExpressionSolver.planApply(ctx.lhs, ctx.rhsWithoutUpdate, ctx.context)
+    )
+  }
+
+  test("ForPatternExpressionSolver.planRollup should fail when rhs contains update") {
+    shouldFailAssertion(ctx =>
+      ctx.producer.ForPatternExpressionSolver.planRollup(ctx.lhs, ctx.rhsWithUpdate, "x", "y", Set(), ctx.context)
+    )
+  }
+
+  test("ForPatternExpressionSolver.planRollup should retain provided order when rhs contains no update") {
+    shouldRetainProvidedOrder(ctx =>
+      ctx.producer.ForPatternExpressionSolver.planRollup(ctx.lhs, ctx.rhsWithoutUpdate, "x", "y", Set(), ctx.context)
+    )
+  }
+
+  test("TriadicSelection should fail when rhs contains update") {
+    shouldFailAssertion(ctx =>
+      ctx.producer.planTriadicSelection(positivePredicate = true, ctx.lhs, "a", "b", "c", ctx.rhsWithUpdate, varFor("x"), ctx.context)
+    )
+  }
+
+  test("TriadicSelection should retain provided order when rhs contains no update") {
+    shouldRetainProvidedOrder(ctx =>
+      ctx.producer.planTriadicSelection(positivePredicate = true, ctx.lhs, "a", "b", "c", ctx.rhsWithoutUpdate, varFor("x"), ctx.context)
+    )
+  }
+
+  test("ConditionalApply should eliminate provided order when rhs contains update") {
+    shouldEliminateProvidedOrder(ctx =>
+      ctx.producer.planConditionalApply(ctx.lhs, ctx.rhsWithUpdate, Seq("a"), ctx.context)
+    )
+  }
+
+  test("ConditionalApply should retain provided order when rhs contains no update") {
+    shouldRetainProvidedOrder(ctx =>
+      ctx.producer.planConditionalApply(ctx.lhs, ctx.rhsWithoutUpdate, Seq("a"), ctx.context)
+    )
+  }
+
+  test("AntiConditionalApply should eliminate provided order when rhs contains update") {
+    shouldEliminateProvidedOrder(ctx =>
+      ctx.producer.planAntiConditionalApply(ctx.lhs, ctx.rhsWithUpdate, Seq("a"), ctx.context)
+    )
+  }
+
+  test("AntiConditionalApply should retain provided order when rhs contains no update") {
+    shouldRetainProvidedOrder(ctx =>
+      ctx.producer.planAntiConditionalApply(ctx.lhs, ctx.rhsWithoutUpdate, Seq("a"), ctx.context)
+    )
+  }
+
+  test("TailApply should eliminate provided order when rhs contains update") {
+    shouldEliminateProvidedOrder(ctx =>
+      ctx.producer.planTailApply(ctx.lhs, ctx.rhsWithUpdate, ctx.context)
+    )
+  }
+
+  test("TailApply should retain provided order when rhs contains no update") {
+    shouldRetainProvidedOrder(ctx =>
+      ctx.producer.planTailApply(ctx.lhs, ctx.rhsWithoutUpdate, ctx.context)
+    )
+  }
+
+  test("InputApply should fail when rhs contains update") {
+    shouldFailAssertion(ctx =>
+      ctx.producer.planInputApply(ctx.lhs, ctx.rhsWithUpdate, Seq("x"), ctx.context)
+    )
+  }
+
+  test("InputApply should retain provided order when rhs contains no update") {
+    shouldRetainProvidedOrder(ctx =>
+      ctx.producer.planInputApply(ctx.lhs, ctx.rhsWithoutUpdate, Seq("x"), ctx.context)
+    )
+  }
+
+  test("ForeachApply should eliminate provided order when rhs contains update") {
+    shouldEliminateProvidedOrder(ctx =>
+      ctx.producer.planForeachApply(ctx.lhs, ctx.rhsWithUpdate, ForeachPattern("x", varFor("x"), SinglePlannerQuery.empty), ctx.context, varFor("x"))
+    )
+  }
+
+  test("ForeachApply should retain provided order when rhs contains no update") {
+    shouldRetainProvidedOrder(ctx =>
+      ctx.producer.planForeachApply(ctx.lhs, ctx.rhsWithoutUpdate, ForeachPattern("x", varFor("x"), SinglePlannerQuery.empty), ctx.context, varFor("x"))
+    )
+  }
+
+  test("SemiApply should fail when rhs contains update") {
+    shouldFailAssertion(ctx =>
+      ctx.producer.planSemiApply(ctx.lhs, ctx.rhsWithUpdate, varFor("x"), ctx.context)
+    )
+  }
+
+  test("SemiApply should retain provided order when rhs contains no update") {
+    shouldRetainProvidedOrder(ctx =>
+      ctx.producer.planSemiApply(ctx.lhs, ctx.rhsWithoutUpdate, varFor("x"), ctx.context)
+    )
+  }
+
+  test("AntiSemiApply should fail when rhs contains update") {
+    shouldFailAssertion(ctx =>
+      ctx.producer.planAntiSemiApply(ctx.lhs, ctx.rhsWithUpdate, varFor("x"), ctx.context)
+    )
+  }
+
+  test("AntiSemiApply should retain provided order when rhs contains no update") {
+    shouldRetainProvidedOrder(ctx =>
+      ctx.producer.planAntiSemiApply(ctx.lhs, ctx.rhsWithoutUpdate, varFor("x"), ctx.context)
+    )
+  }
+
+  test("LetSemiApply should fail when rhs contains update") {
+    shouldFailAssertion(ctx =>
+      ctx.producer.planLetSemiApply(ctx.lhs, ctx.rhsWithUpdate, "x", ctx.context)
+    )
+  }
+
+  test("LetSemiApply should retain provided order when rhs contains no update") {
+    shouldRetainProvidedOrder(ctx =>
+      ctx.producer.planLetSemiApply(ctx.lhs, ctx.rhsWithoutUpdate, "x", ctx.context)
+    )
+  }
+
+  test("LetAntiSemiApply should fail when rhs contains update") {
+    shouldFailAssertion(ctx =>
+      ctx.producer.planLetAntiSemiApply(ctx.lhs, ctx.rhsWithUpdate, "x", ctx.context)
+    )
+  }
+
+  test("LetAntiSemiApply should retain provided order when rhs contains no update") {
+    shouldRetainProvidedOrder(ctx =>
+      ctx.producer.planLetAntiSemiApply(ctx.lhs, ctx.rhsWithoutUpdate, "x", ctx.context)
+    )
+  }
+
+  test("SelectOrSemiApply should fail when rhs contains update") {
+    shouldFailAssertion(ctx =>
+      ctx.producer.planSelectOrSemiApply(ctx.lhs, ctx.rhsWithUpdate, varFor("x"), ctx.context)
+    )
+  }
+
+  test("SelectOrSemiApply should retain provided order when rhs contains no update") {
+    shouldRetainProvidedOrder(ctx =>
+      ctx.producer.planSelectOrSemiApply(ctx.lhs, ctx.rhsWithoutUpdate, varFor("x"), ctx.context)
+    )
+  }
+
+  test("SelectOrAntiSemiApply should fail when rhs contains update") {
+    shouldFailAssertion(ctx =>
+      ctx.producer.planSelectOrAntiSemiApply(ctx.lhs, ctx.rhsWithUpdate, varFor("x"), ctx.context)
+    )
+  }
+
+  test("SelectOrAntiSemiApply should retain provided order when rhs contains no update") {
+    shouldRetainProvidedOrder(ctx =>
+      ctx.producer.planSelectOrAntiSemiApply(ctx.lhs, ctx.rhsWithoutUpdate, varFor("x"), ctx.context)
+    )
+  }
+
+  test("LetSelectOrSemiApply should fail when rhs contains update") {
+    shouldFailAssertion(ctx =>
+      ctx.producer.planLetSelectOrSemiApply(ctx.lhs, ctx.rhsWithUpdate, "x", varFor("x"), ctx.context)
+    )
+  }
+
+  test("LetSelectOrSemiApply should retain provided order when rhs contains no update") {
+    shouldRetainProvidedOrder(ctx =>
+      ctx.producer.planLetSelectOrSemiApply(ctx.lhs, ctx.rhsWithoutUpdate, "x", varFor("x"), ctx.context)
+    )
+  }
+
+  test("LetSelectOrAntiSemiApply should fail when rhs contains update") {
+    shouldFailAssertion(ctx =>
+      ctx.producer.planLetSelectOrAntiSemiApply(ctx.lhs, ctx.rhsWithUpdate, "x", varFor("x"), ctx.context)
+    )
+  }
+
+  test("LetSelectOrAntiSemiApply should retain provided order when rhs contains no update") {
+    shouldRetainProvidedOrder(ctx =>
+      ctx.producer.planLetSelectOrAntiSemiApply(ctx.lhs, ctx.rhsWithoutUpdate, "x", varFor("x"), ctx.context)
+    )
+  }
+
+  test("SemiApplyInHorizon should fail when rhs contains update") {
+    shouldFailAssertion(ctx =>
+      ctx.producer.planSemiApplyInHorizon(ctx.lhs, ctx.rhsWithUpdate, ExistsSubClause(Pattern(Seq(EveryPath(nodePat("x"))))(pos), None)(pos, Set.empty), ctx.context)
+    )
+  }
+
+  test("SemiApplyInHorizon should retain provided order when rhs contains no update") {
+    shouldRetainProvidedOrder(ctx =>
+      ctx.producer.planSemiApplyInHorizon(ctx.lhs, ctx.rhsWithoutUpdate, ExistsSubClause(Pattern(Seq(EveryPath(nodePat("x"))))(pos), None)(pos, Set.empty), ctx.context)
+    )
+  }
+
+  test("AntiSemiApplyInHorizon should fail when rhs contains update") {
+    shouldFailAssertion(ctx =>
+      ctx.producer.planAntiSemiApplyInHorizon(ctx.lhs, ctx.rhsWithUpdate, ExistsSubClause(Pattern(Seq(EveryPath(nodePat("x"))))(pos), None)(pos, Set.empty), ctx.context)
+    )
+  }
+
+  test("AntiSemiApplyInHorizon should retain provided order when rhs contains no update") {
+    shouldRetainProvidedOrder(ctx =>
+      ctx.producer.planAntiSemiApplyInHorizon(ctx.lhs, ctx.rhsWithoutUpdate, ExistsSubClause(Pattern(Seq(EveryPath(nodePat("x"))))(pos), None)(pos, Set.empty), ctx.context)
+    )
+  }
+
+  case class PlanCreationContext(
+    producer: LogicalPlanProducer,
+    context: LogicalPlanningContext,
+    lhs: LogicalPlan,
+    rhsWithUpdate: LogicalPlan,
+    rhsWithoutUpdate: LogicalPlan,
+  )
+
+  private def shouldEliminateProvidedOrder(createPlan: PlanCreationContext => LogicalPlan) = {
+    new given().withLogicalPlanningContext { (_, context) =>
+      val result = getPlan(context, createPlan)
+      context.planningAttributes.providedOrders.get(result.id) should be(ProvidedOrder.empty)
+    }
+  }
+
+  private def shouldRetainProvidedOrder(createPlan: PlanCreationContext => LogicalPlan) = {
+    new given().withLogicalPlanningContext { (_, context) =>
+      val result = getPlan(context, createPlan)
+      val lhsOrder = context.planningAttributes.providedOrders.get(result.lhs.get.id)
+      context.planningAttributes.providedOrders.get(result.id) should be(lhsOrder.fromLeft)
+    }
+  }
+
+  private def shouldFailAssertion(createPlan: PlanCreationContext => LogicalPlan) = {
+    new given().withLogicalPlanningContext { (_, context) =>
+      intercept[AssertionError](getPlan(context, createPlan))
+    }
+  }
+
+  private def getPlan(context: LogicalPlanningContext, createPlan: PlanCreationContext => LogicalPlan) = {
+    val lpp = LogicalPlanProducer(context.cardinality, context.planningAttributes, idGen)
+    val lhs = fakeLogicalPlanFor(context.planningAttributes, "x", "y")
+    val providedOrder = ProvidedOrder.asc(varFor("y")).asc(varFor("x"))
+    context.planningAttributes.providedOrders.set(lhs.id, providedOrder)
+
+    val rhs = fakeLogicalPlanFor(context.planningAttributes, "a")
+    val rhsWithUpdate = lpp.planSetLabel(rhs, SetLabelPattern("n", Seq(labelName("N"))), context)
+    createPlan(PlanCreationContext(lpp, context, lhs, rhsWithUpdate, rhs))
   }
 
   test("should mark leveraged order in plans and their origin") {
