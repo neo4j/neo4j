@@ -102,19 +102,16 @@ case class QueryOptions(offset: InputPosition,
   def withRecompilationLimitReached: QueryOptions = copy(recompilationLimitReached = true)
 
   def cacheKey: QueryOptions.CacheKey = QueryOptions.CacheKey(
-    version = version.render,
-    executionMode match {
-      case CypherExecutionMode.profile => "PROFILE"
-      case _ => ""
-    },
-    plannerInfo = planner.render,
-    runtimeInfo = runtime.render,
-    updateStrategyInfo = updateStrategy.render,
-    expressionEngineInfo = expressionEngine.render,
-    operatorEngineInfo = operatorEngine.render,
-    interpretedPipesFallbackInfo = interpretedPipesFallback.render,
-    connectComponentsPlannerInfo = connectComponentsPlanner.render,
-    debugFlags = debugOptions.enabledOptionsSeq.map(_.render).mkString(" ")
+    version = version.cacheKey,
+    executionMode.cacheKey,
+    plannerInfo = planner.cacheKey,
+    runtimeInfo = runtime.cacheKey,
+    updateStrategyInfo = updateStrategy.cacheKey,
+    expressionEngineInfo = expressionEngine.cacheKey,
+    operatorEngineInfo = operatorEngine.cacheKey,
+    interpretedPipesFallbackInfo = interpretedPipesFallback.cacheKey,
+    connectComponentsPlannerInfo = connectComponentsPlanner.cacheKey,
+    debugFlags = debugOptions.enabledOptionsSeq.map(_.cacheKey).mkString(" ")
   )
 
   def render: Option[String] = {

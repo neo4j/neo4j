@@ -134,14 +134,16 @@ case object CypherExecutionMode extends CypherOptionCompanion[CypherExecutionMod
 
   case object default extends CypherExecutionMode("normal")
   case object profile extends CypherExecutionMode("profile")
-  case object explain extends CypherExecutionMode("explain")
+  case object explain extends CypherExecutionMode("explain") {
+    override def cacheKey: String = ""
+  }
 
   def values: Set[CypherExecutionMode] = Set(profile, explain)
 }
 
 sealed abstract class CypherVersion(versionName: String) extends CypherOption(versionName) {
   override def companion: CypherVersion.type = CypherVersion
-  override def render: String = name
+  override def cacheKey: String = name
 }
 
 case object CypherVersion extends CypherOptionCompanion[CypherVersion](

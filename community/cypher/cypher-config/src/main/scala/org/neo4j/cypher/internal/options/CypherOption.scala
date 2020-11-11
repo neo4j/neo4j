@@ -36,6 +36,8 @@ abstract class CypherOption(inputName: String) {
   def companion: CypherOptionCompanion[_ <: CypherOption]
 
   def render: String = if (this == companion.default) "" else name
+
+  def cacheKey: String = render
 }
 
 abstract class CypherKeyValueOption(inputName: String) extends CypherOption(inputName) {
