@@ -25,13 +25,13 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.frontend.PlannerName
 import org.neo4j.cypher.internal.frontend.phases.BaseState
-import org.neo4j.cypher.internal.frontend.phases.Condition
 import org.neo4j.cypher.internal.ir.PeriodicCommit
 import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.ObfuscationMetadata
+import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.symbols.CypherType
 
 /*
@@ -52,7 +52,7 @@ case class LogicalPlanState(queryText: String,
                             maybeQuery: Option[PlannerQuery] = None,
                             maybeLogicalPlan: Option[LogicalPlan] = None,
                             maybePeriodicCommit: Option[Option[PeriodicCommit]] = None,
-                            accumulatedConditions: Set[Condition] = Set.empty,
+                            accumulatedConditions: Set[StepSequencer.Condition] = Set.empty,
                             initialFields: Map[String, CypherType] = Map.empty,
                             hasLoadCSV: Boolean = false,
                             maybeReturnColumns: Option[Seq[String]] = None,

@@ -21,15 +21,15 @@ package org.neo4j.cypher.internal.compiler.phases
 
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
-import org.neo4j.cypher.internal.frontend.phases.Condition
 import org.neo4j.cypher.internal.ir.UnionQuery
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.rewriting.ValidatingCondition
 
 import scala.reflect.ClassTag
 
-case class CompilationContains[T: ClassTag](implicit manifest: Manifest[T]) extends Condition {
+case class CompilationContains[T: ClassTag](implicit manifest: Manifest[T]) extends ValidatingCondition {
 
-  override def check(in: AnyRef): Seq[String] = in match {
+  override def apply(in: Any): Seq[String] = in match {
     case state: LogicalPlanState =>
       manifest.runtimeClass match {
         case x if classOf[Statement] == x && state.maybeStatement.isEmpty => Seq("Statement missing")
@@ -40,4 +40,6 @@ case class CompilationContains[T: ClassTag](implicit manifest: Manifest[T]) exte
       }
     case x => throw new IllegalArgumentException(s"Unknown state: $x")
   }
+
+  override def name: String = s"$productPrefix[${manifest.runtimeClass.getSimpleName}]"
 }

@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.expressions.SensitiveString
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.METADATA_COLLECTION
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.ObfuscationMetadata
+import org.neo4j.cypher.internal.util.StepSequencer
 
 object ObfuscationMetadataCollection extends Phase[BaseContext, BaseState, BaseState] {
 
@@ -30,7 +31,7 @@ object ObfuscationMetadataCollection extends Phase[BaseContext, BaseState, BaseS
 
   override def description: String = "collect sensitive literals and parameters"
 
-  override def postConditions: Set[Condition] = Set.empty
+  override def postConditions: Set[StepSequencer.Condition] = Set.empty
 
   override def process(from: BaseState, context: BaseContext): BaseState = {
     val extractedParamNames = from.maybeExtractedParams.map(_.keys.toSet).getOrElse(Set.empty)

@@ -34,10 +34,10 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.cache.ExecutorBasedCaffeineCacheFactory
 import org.neo4j.cypher.internal.frontend.PlannerName
 import org.neo4j.cypher.internal.frontend.phases.BaseState
-import org.neo4j.cypher.internal.frontend.phases.Condition
 import org.neo4j.cypher.internal.planner.spi.ProcedureSignatureResolver
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.ObfuscationMetadata
+import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.symbols.AnyType
 import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.cypher.internal.util.symbols.IntegerType
@@ -84,7 +84,7 @@ trait FragmentTestUtils {
     override val maybeExtractedParams: Option[Map[String, Any]] = Option.empty
     override val maybeSemanticTable: Option[SemanticTable] = Option.empty
     override val maybeObfuscationMetadata: Option[ObfuscationMetadata] = Option.empty
-    override val accumulatedConditions: Set[Condition] = Set.empty
+    override val accumulatedConditions: Set[StepSequencer.Condition] = Set.empty
     override def withStatement(s: Statement): BaseState = this
     override def withReturnColumns(cols: Seq[String]): BaseState = this
     override def withSemanticTable(s: SemanticTable): BaseState = this

@@ -24,7 +24,6 @@ import org.neo4j.cypher.internal.frontend.phases.BaseContains
 import org.neo4j.cypher.internal.frontend.phases.BaseContext
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.PARSING
-import org.neo4j.cypher.internal.frontend.phases.Condition
 import org.neo4j.cypher.internal.frontend.phases.Phase
 import org.neo4j.cypher.internal.parser.Expressions
 import org.neo4j.cypher.internal.parser.Statement
@@ -32,6 +31,7 @@ import org.neo4j.cypher.internal.util.CypherException
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.ObfuscationMetadata
+import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.parboiled.scala.EOI
 import org.parboiled.scala.Parser
@@ -63,7 +63,7 @@ case class InputDataStreamTestInitialState(idsQueryText: String,
                                            maybeSemantics: Option[SemanticState] = None,
                                            maybeExtractedParams: Option[Map[String, Any]] = None,
                                            maybeSemanticTable: Option[SemanticTable] = None,
-                                           accumulatedConditions: Set[Condition] = Set.empty,
+                                           accumulatedConditions: Set[StepSequencer.Condition] = Set.empty,
                                            maybeReturnColumns: Option[Seq[String]] = None,
                                            maybeObfuscationMetadata: Option[ObfuscationMetadata] = None) extends BaseState {
 

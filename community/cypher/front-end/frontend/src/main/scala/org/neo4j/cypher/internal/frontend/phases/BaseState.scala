@@ -22,6 +22,7 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.frontend.PlannerName
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.ObfuscationMetadata
+import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.symbols.CypherType
 
 trait BaseState {
@@ -36,7 +37,7 @@ trait BaseState {
   def maybeSemanticTable: Option[SemanticTable]
   def maybeObfuscationMetadata: Option[ObfuscationMetadata]
 
-  def accumulatedConditions: Set[Condition]
+  def accumulatedConditions: Set[StepSequencer.Condition]
 
 
   def statement(): Statement = maybeStatement getOrElse fail("Statement")
@@ -66,7 +67,7 @@ case class InitialState(queryText: String,
   maybeSemantics: Option[SemanticState] = None,
   maybeExtractedParams: Option[Map[String, Any]] = None,
   maybeSemanticTable: Option[SemanticTable] = None,
-  accumulatedConditions: Set[Condition] = Set.empty,
+  accumulatedConditions: Set[StepSequencer.Condition] = Set.empty,
   maybeReturnColumns: Option[Seq[String]] = None,
   maybeObfuscationMetadata: Option[ObfuscationMetadata] = None) extends BaseState {
 

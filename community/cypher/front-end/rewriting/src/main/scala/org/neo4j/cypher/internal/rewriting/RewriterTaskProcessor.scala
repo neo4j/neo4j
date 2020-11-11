@@ -27,6 +27,7 @@ trait RewriterTaskProcessor extends (RewriterTask => Rewriter) {
   }
 }
 
+// TODO do we need this?
 case class RunConditionRewriter(sequenceName: String, name: Option[String], conditions: Set[RewriterCondition]) extends Rewriter {
   def apply(input: AnyRef): AnyRef = {
     val failures = conditions.toIndexedSeq.flatMap(condition => condition(input))

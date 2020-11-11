@@ -35,6 +35,7 @@ import org.neo4j.cypher.internal.rewriting.conditions.aggregationsAreIsolated
 import org.neo4j.cypher.internal.rewriting.conditions.hasAggregateButIsNotAggregate
 import org.neo4j.cypher.internal.util.AggregationNameGenerator
 import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.bottomUp
 import org.neo4j.cypher.internal.util.helpers.fixedPoint
 import org.neo4j.cypher.internal.util.topDown
@@ -61,7 +62,7 @@ case object isolateAggregation extends StatementRewriter {
 
   override def description: String = "Makes sure that aggregations are on their own in RETURN/WITH clauses"
 
-  override def postConditions: Set[Condition] = Set(StatementCondition(aggregationsAreIsolated))
+  override def postConditions: Set[StepSequencer.Condition] = Set(StatementCondition(aggregationsAreIsolated))
 
   private val rewriter = Rewriter.lift {
     case q@SingleQuery(clauses) =>

@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.bottomUp
 import org.neo4j.cypher.internal.util.helpers.fixedPoint
 
@@ -44,7 +45,7 @@ case object transitiveClosure extends StatementRewriter {
 
   override def instance(ignored: BaseContext): Rewriter = transitiveClosureRewriter
 
-  override def postConditions: Set[Condition] = Set.empty
+  override def postConditions: Set[StepSequencer.Condition] = Set.empty
 
   private case object transitiveClosureRewriter extends Rewriter {
 

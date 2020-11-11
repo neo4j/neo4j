@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.rewriting.conditions.noUnnamedPatternElementsIn
 import org.neo4j.cypher.internal.rewriting.conditions.noUnnamedPatternElementsInPatternComprehension
 import org.neo4j.cypher.internal.rewriting.conditions.normalizedEqualsArguments
 import org.neo4j.cypher.internal.rewriting.rewriters.InnerVariableNamer
+import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.symbols.CypherType
 
 case class AstRewriting(innerVariableNamer: InnerVariableNamer,
@@ -43,7 +44,7 @@ case class AstRewriting(innerVariableNamer: InnerVariableNamer,
 
   override def description = "normalize the AST into a form easier for the planner to work with"
 
-  override def postConditions: Set[Condition] = {
+  override def postConditions: Set[StepSequencer.Condition] = {
     val rewriterConditions = Set(
       noReferenceEqualityAmongVariables,
       noDuplicatesInReturnItems,

@@ -89,7 +89,6 @@ import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.PIPE_BUILDING
-import org.neo4j.cypher.internal.frontend.phases.Condition
 import org.neo4j.cypher.internal.frontend.phases.Phase
 import org.neo4j.cypher.internal.logical.plans
 import org.neo4j.cypher.internal.logical.plans.DatabaseAdministrationLogicalPlan
@@ -100,6 +99,7 @@ import org.neo4j.cypher.internal.logical.plans.ResolvedCall
 import org.neo4j.cypher.internal.logical.plans.SecurityAdministrationLogicalPlan
 import org.neo4j.cypher.internal.planner.spi.AdministrationPlannerName
 import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
 
 /**
@@ -114,7 +114,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
 
   override def description = "take on administrative queries that require no planning such as multi-database administration commands"
 
-  override def postConditions: Set[Condition] = Set.empty
+  override def postConditions: Set[StepSequencer.Condition] = Set.empty
 
   override def process(from: BaseState, context: PlannerContext): LogicalPlanState = {
     implicit val idGen: SequentialIdGen = new SequentialIdGen()
@@ -425,7 +425,7 @@ case object UnsupportedSystemCommand extends Phase[PlannerContext, BaseState, Lo
 
   override def description: String = "Unsupported system command"
 
-  override def postConditions: Set[Condition] = Set.empty
+  override def postConditions: Set[StepSequencer.Condition] = Set.empty
 
   override def process(from: BaseState, context: PlannerContext): LogicalPlanState = throw new RuntimeException(s"Not a recognised system command or procedure. " +
     s"This Cypher command can only be executed in a user database: ${from.queryText}")

@@ -19,6 +19,8 @@ package org.neo4j.cypher.internal.frontend.phases
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.ast.prettifier.Prettifier
 import org.neo4j.cypher.internal.macros.AssertMacros.checkOnlyWhenAssertionsAreEnabled
+import org.neo4j.cypher.internal.rewriting.ValidatingCondition
+import org.neo4j.cypher.internal.util.StepSequencer
 
 trait Transformer[-C <: BaseContext, -FROM, TO] {
   def transform(from: FROM, context: C): TO
@@ -26,7 +28,7 @@ trait Transformer[-C <: BaseContext, -FROM, TO] {
   def andThen[D <: C, TO2](other: Transformer[D, TO, TO2]): Transformer[D, FROM, TO2] =
     new PipeLine(this, other)
 
-  def adds(condition: Condition): Transformer[C, FROM, TO] = this andThen AddCondition[C, TO](condition)
+  def adds(condition: StepSequencer.Condition): Transformer[C, FROM, TO] = this andThen AddCondition[C, TO](condition)
 
   def name: String
 }
@@ -70,7 +72,9 @@ class PipeLine[-C <: BaseContext, FROM, MID, TO](first: Transformer[C, FROM, MID
     (from, transformer) match {
       case (f: BaseState, phase: Phase[_, _, _]) =>
         val conditions = f.accumulatedConditions ++ phase.postConditions
-        val messages = conditions.flatMap(condition => condition.check(f))
+        val messages: Seq[String] = conditions.toSeq.collect {
+          case v:ValidatingCondition => v(f)
+        }.flatten
         if (messages.nonEmpty) {
           throw new IllegalStateException(messages.mkString(", "))
         }

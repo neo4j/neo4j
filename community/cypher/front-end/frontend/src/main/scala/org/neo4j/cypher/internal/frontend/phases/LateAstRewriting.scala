@@ -19,6 +19,7 @@ package org.neo4j.cypher.internal.frontend.phases
 import org.neo4j.cypher.internal.rewriting.rewriters.collapseMultipleInPredicates
 import org.neo4j.cypher.internal.rewriting.rewriters.projectNamedPaths
 import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.inSequence
 
 object LateAstRewriting extends StatementRewriter {
@@ -30,5 +31,5 @@ object LateAstRewriting extends StatementRewriter {
 
   override def description: String = "normalize the AST"
 
-  override def postConditions: Set[Condition] = Set.empty
+  override def postConditions: Set[StepSequencer.Condition] = Set.empty
 }

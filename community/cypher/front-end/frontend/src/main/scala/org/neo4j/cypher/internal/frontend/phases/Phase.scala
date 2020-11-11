@@ -19,6 +19,7 @@ package org.neo4j.cypher.internal.frontend.phases
 import org.neo4j.cypher.internal.frontend.helpers.closing
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.PIPE_BUILDING
+import org.neo4j.cypher.internal.util.StepSequencer
 
 /*
 A phase is a leaf component of the tree structure that is the compilation pipe line.
@@ -38,7 +39,7 @@ trait Phase[-C <: BaseContext, FROM, TO] extends Transformer[C, FROM, TO] {
 
   def process(from: FROM, context: C): TO
 
-  def postConditions: Set[Condition]
+  def postConditions: Set[StepSequencer.Condition]
 
   def name: String = getClass.getSimpleName
 }
@@ -54,10 +55,10 @@ trait VisitorPhase[-C <: BaseContext, STATE] extends Phase[C, STATE, STATE] {
 
   def visit(value: STATE, context: C): Unit
 
-  override def postConditions: Set[Condition] = Set.empty
+  override def postConditions: Set[StepSequencer.Condition] = Set.empty
 }
 
-case class AddCondition[-C <: BaseContext, STATE](postCondition: Condition) extends Phase[C, STATE, STATE] {
+case class AddCondition[-C <: BaseContext, STATE](postCondition: StepSequencer.Condition) extends Phase[C, STATE, STATE] {
   override def phase: CompilationPhase = PIPE_BUILDING
 
   override def description: String = "adds a condition"

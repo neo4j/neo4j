@@ -34,6 +34,7 @@ import org.neo4j.cypher.internal.rewriting.conditions.containsNoNodesOfType
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.Ref
 import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.bottomUp
 import org.neo4j.cypher.internal.util.inSequence
 
@@ -62,7 +63,7 @@ object Namespacer extends Phase[BaseContext, BaseState, BaseState] {
     }
   }
 
-  override def postConditions: Set[Condition] = Set(
+  override def postConditions: Set[StepSequencer.Condition] = Set(
     StatementCondition(containsNoNodesOfType[UnionAll]),
     StatementCondition(containsNoNodesOfType[UnionDistinct]))
 

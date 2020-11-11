@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.rewriting.rewriters.normalizeInequalities
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizeSargablePredicates
 import org.neo4j.cypher.internal.rewriting.rewriters.simplifyPredicates
 import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.inSequence
 
 case object CNFNormalizer extends StatementRewriter {
@@ -43,5 +44,5 @@ case object CNFNormalizer extends StatementRewriter {
     )
   }
 
-  override def postConditions: Set[Condition] = Set.empty
+  override def postConditions: Set[StepSequencer.Condition] = Set.empty
 }

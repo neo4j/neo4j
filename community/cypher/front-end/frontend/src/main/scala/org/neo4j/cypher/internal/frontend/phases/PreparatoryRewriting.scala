@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.rewriting.rewriters.insertWithBetweenOptionalMa
 import org.neo4j.cypher.internal.rewriting.rewriters.mergeInPredicates
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizeWithAndReturnClauses
 import org.neo4j.cypher.internal.rewriting.rewriters.replaceDeprecatedCypherSyntax
+import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.inSequence
 
 case class PreparatoryRewriting(deprecations: Deprecations) extends Phase[BaseContext, BaseState, BaseState] {
@@ -45,5 +46,5 @@ case class PreparatoryRewriting(deprecations: Deprecations) extends Phase[BaseCo
 
   override val description = "rewrite the AST into a shape that semantic analysis can be performed on"
 
-  override def postConditions: Set[Condition] = Set.empty
+  override def postConditions: Set[StepSequencer.Condition] = Set.empty
 }

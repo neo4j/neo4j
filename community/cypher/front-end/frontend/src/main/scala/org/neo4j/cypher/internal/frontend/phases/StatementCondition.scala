@@ -17,12 +17,16 @@
 package org.neo4j.cypher.internal.frontend.phases
 
 import org.neo4j.cypher.internal.rewriting.RewriterCondition
+import org.neo4j.cypher.internal.rewriting.ValidatingCondition
 
-case class StatementCondition(inner: Any => Seq[String]) extends Condition {
-  override def check(state: AnyRef): Seq[String] = state match {
+// TODO change inner to be a ValidatingCondition
+case class StatementCondition(inner: Any => Seq[String]) extends ValidatingCondition {
+  override def apply(state: Any): Seq[String] = state match {
     case s: BaseState => inner(s.statement())
     case x => throw new IllegalStateException(s"Unknown state: $x")
   }
+
+  override def name: String = productPrefix
 }
 
 object StatementCondition {
