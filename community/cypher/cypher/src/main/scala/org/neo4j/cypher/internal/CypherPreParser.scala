@@ -45,13 +45,11 @@ case object CypherPreParser extends org.parboiled.scala.Parser with Base {
 
   def AllOptions: Rule1[List[PreParserOption]] = zeroOrMore(AnyCypherOption, WS) ~~> (_.flatten)
 
-  def AnyCypherOption: Rule1[List[PreParserOption]] = Cypher | (Mode ~~> (m => List(m)))
-
-  def Mode: Rule1[ModePreParserOption] = rule("execution mode")(Profile | Explain)
-
-  def Profile: Rule1[ModePreParserOption] = keyword("PROFILE") ~ push(ProfileModePreParserOption)
+  def AnyCypherOption: Rule1[List[PreParserOption]] = Cypher | ((Explain | Profile) ~~> (m => List(m)))
 
   def Explain: Rule1[ModePreParserOption] = keyword("EXPLAIN") ~ push(ExplainModePreParserOption)
+
+  def Profile: Rule1[ModePreParserOption] = keyword("PROFILE") ~ push(ProfileModePreParserOption)
 
   def Cypher: Rule1[List[PreParserOption]] = rule("CYPHER options") {
     keyword("CYPHER") ~~ optional(Version) ~~ KeyValueOptions ~~> ((ver, opts) => ver.toList ++ opts)
