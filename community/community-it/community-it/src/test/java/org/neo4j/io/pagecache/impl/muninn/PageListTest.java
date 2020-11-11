@@ -69,7 +69,7 @@ import static org.junit.Assert.fail;
 @RunWith( Parameterized.class )
 public class PageListTest
 {
-    private static final long TIMEOUT = 5000;
+    private static final long TIMEOUT = 30000;
     private static final int ALIGNMENT = 8;
 
     private static final int[] pageIds = new int[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
