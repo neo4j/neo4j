@@ -43,8 +43,8 @@ import org.neo4j.cypher.internal.QueryCache.ParameterTypeMap
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.cache.TestExecutorCaffeineCacheFactory
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
+import org.neo4j.cypher.internal.compiler.StatsDivergenceCalculator
 import org.neo4j.cypher.internal.compiler.phases.Compatibility4_3
-import org.neo4j.cypher.internal.config.StatsDivergenceCalculator
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.options.CypherPlannerOption
 import org.neo4j.cypher.internal.options.CypherRuntimeOption
@@ -324,8 +324,8 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
   }
 
   test("when running queries with debug options - never cache") {
-    runQuery("CYPHER debug=foo RETURN 42")
-    runQuery("CYPHER debug=foo RETURN 42")
+    runQuery("CYPHER debug=logicalplan RETURN 42")
+    runQuery("CYPHER debug=logicalplan RETURN 42")
 
     counter.counts.hits should equal(0)
   }
