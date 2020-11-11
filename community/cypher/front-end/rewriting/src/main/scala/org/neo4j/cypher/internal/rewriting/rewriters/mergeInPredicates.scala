@@ -26,8 +26,14 @@ import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.Or
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.expressions.ScopeExpression
+import org.neo4j.cypher.internal.rewriting.RewritingStep
 import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.StepSequencer
+import org.neo4j.cypher.internal.util.StepSequencer.Condition
 import org.neo4j.cypher.internal.util.bottomUp
+
+case object LiteralsAreAvailable extends Condition
+case object MultipleInPredicatesAreMerged extends Condition
 
 /**
  * Merges multiple IN predicates into one.
@@ -45,9 +51,15 @@ import org.neo4j.cypher.internal.util.bottomUp
  * NOTE: this rewriter must be applied before auto parameterization, since after
  * that we are just dealing with opaque parameters.
  */
-case object mergeInPredicates extends Rewriter {
+case object mergeInPredicates extends RewritingStep {
 
-  def apply(that: AnyRef): AnyRef = inner.apply(that)
+  override def preConditions: Set[StepSequencer.Condition] = Set(LiteralsAreAvailable)
+
+  override def postConditions: Set[StepSequencer.Condition] = Set(MultipleInPredicatesAreMerged)
+
+  override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
+
+  def rewrite(that: AnyRef): AnyRef = inner.apply(that)
 
   private val inner: Rewriter = bottomUp(Rewriter.lift {
 

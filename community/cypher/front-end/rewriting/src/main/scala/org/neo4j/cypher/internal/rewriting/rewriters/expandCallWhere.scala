@@ -21,11 +21,25 @@ import org.neo4j.cypher.internal.ast.ReturnItems
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.UnresolvedCall
 import org.neo4j.cypher.internal.ast.With
+import org.neo4j.cypher.internal.rewriting.RewritingStep
 import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.StepSequencer
+import org.neo4j.cypher.internal.util.StepSequencer.Condition
 import org.neo4j.cypher.internal.util.bottomUp
 
+case object WithBetweenCallAndWhereInserted extends Condition
+
 // Rewrites CALL proc WHERE <p> ==> CALL proc WITH * WHERE <p>
-case object expandCallWhere extends Rewriter {
+case object expandCallWhere extends RewritingStep {
+
+  override def rewrite(v: AnyRef): AnyRef =
+    instance(v)
+
+  override def preConditions: Set[StepSequencer.Condition] = Set.empty
+
+  override def postConditions: Set[StepSequencer.Condition] = Set(WithBetweenCallAndWhereInserted)
+
+  override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
 
   private val instance = bottomUp(Rewriter.lift {
     case query@SingleQuery(clauses) =>
@@ -42,7 +56,4 @@ case object expandCallWhere extends Rewriter {
       }
       query.copy(clauses = newClauses)(query.position)
   })
-
-  override def apply(v: AnyRef): AnyRef =
-    instance(v)
 }

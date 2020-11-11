@@ -18,6 +18,10 @@ package org.neo4j.cypher.internal.frontend.phases
 
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
 import org.neo4j.cypher.internal.rewriting.Deprecations
+import org.neo4j.cypher.internal.rewriting.RewritingStepSequencer
+import org.neo4j.cypher.internal.rewriting.rewriters.LiteralsAreAvailable
+import org.neo4j.cypher.internal.rewriting.rewriters.PatternExpressionsHaveSemanticInfo
+import org.neo4j.cypher.internal.rewriting.rewriters.ProjectionClausesHaveSemanticInfo
 import org.neo4j.cypher.internal.rewriting.rewriters.expandCallWhere
 import org.neo4j.cypher.internal.rewriting.rewriters.expandShowWhere
 import org.neo4j.cypher.internal.rewriting.rewriters.insertWithBetweenOptionalMatchAndMatch
@@ -25,19 +29,22 @@ import org.neo4j.cypher.internal.rewriting.rewriters.mergeInPredicates
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizeWithAndReturnClauses
 import org.neo4j.cypher.internal.rewriting.rewriters.replaceDeprecatedCypherSyntax
 import org.neo4j.cypher.internal.util.StepSequencer
+import org.neo4j.cypher.internal.util.StepSequencer.AccumulatedSteps
 import org.neo4j.cypher.internal.util.inSequence
 
 case class PreparatoryRewriting(deprecations: Deprecations) extends Phase[BaseContext, BaseState, BaseState] {
 
   override def process(from: BaseState, context: BaseContext): BaseState = {
 
-    val rewrittenStatement = from.statement().endoRewrite(inSequence(
+    val AccumulatedSteps(orderedSteps, _) = RewritingStepSequencer.orderSteps(Set(
       normalizeWithAndReturnClauses(context.cypherExceptionFactory, context.notificationLogger),
       insertWithBetweenOptionalMatchAndMatch,
       expandCallWhere,
       expandShowWhere,
       replaceDeprecatedCypherSyntax(deprecations),
-      mergeInPredicates))
+      mergeInPredicates), initialConditions = Set(LiteralsAreAvailable))
+
+    val rewrittenStatement = from.statement().endoRewrite(inSequence(orderedSteps: _*))
 
     from.withStatement(rewrittenStatement)
   }

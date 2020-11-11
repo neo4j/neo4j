@@ -25,11 +25,25 @@ import org.neo4j.cypher.internal.ast.ShowRoles
 import org.neo4j.cypher.internal.ast.ShowUsers
 import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.ast.Yield
+import org.neo4j.cypher.internal.rewriting.RewritingStep
 import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.StepSequencer
+import org.neo4j.cypher.internal.util.StepSequencer.Condition
 import org.neo4j.cypher.internal.util.bottomUp
 
+case object WithBetweenShowAndWhereInserted extends Condition
+
 // rewrites SHOW ... WHERE <e> " ==> SHOW ... YIELD * WHERE <e>
-case object expandShowWhere extends Rewriter {
+case object expandShowWhere extends RewritingStep {
+
+  override def preConditions: Set[StepSequencer.Condition] = Set.empty
+
+  override def postConditions: Set[StepSequencer.Condition] = Set(WithBetweenShowAndWhereInserted)
+
+  override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
+
+  override def rewrite(v: AnyRef): AnyRef =
+    instance(v)
 
     private val instance = bottomUp(Rewriter.lift {
       case s @ ShowDatabase(_, Some(Right(where)),_) => s.copy(yieldOrWhere = Some(Left((whereToYield(where), None))))(s.position)
@@ -42,7 +56,4 @@ case object expandShowWhere extends Rewriter {
 
     private def whereToYield(where: Where): Yield =
       Yield(ReturnItems(includeExisting = true, Seq.empty)(where.position), None, None, None, Some(where))(where.position)
-
-  override def apply(v: AnyRef): AnyRef =
-      instance(v)
-  }
+}

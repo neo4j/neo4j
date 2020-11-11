@@ -20,12 +20,14 @@ import org.neo4j.cypher.internal.ast.AdministrationCommand
 import org.neo4j.cypher.internal.ast.SchemaCommand
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
 import org.neo4j.cypher.internal.rewriting.rewriters.LiteralExtractionStrategy
+import org.neo4j.cypher.internal.rewriting.rewriters.LiteralsAreAvailable
 import org.neo4j.cypher.internal.rewriting.rewriters.literalReplacement
 import org.neo4j.cypher.internal.rewriting.rewriters.sensitiveLiteralReplacement
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
+import org.neo4j.cypher.internal.util.StepSequencer.Step
 
-case class LiteralExtraction(literalExtraction: LiteralExtractionStrategy) extends Phase[BaseContext, BaseState, BaseState] {
+case class LiteralExtraction(literalExtraction: LiteralExtractionStrategy) extends Phase[BaseContext, BaseState, BaseState] with Step {
 
   override def process(in: BaseState, context: BaseContext): BaseState = {
     val statement = in.statement()
@@ -43,5 +45,9 @@ case class LiteralExtraction(literalExtraction: LiteralExtractionStrategy) exten
 
   override def description = "replace literals with parameters"
 
+  override def preConditions: Set[StepSequencer.Condition] = Set.empty
+
   override def postConditions: Set[StepSequencer.Condition] = Set.empty
+
+  override def invalidatedConditions: Set[StepSequencer.Condition] = Set(LiteralsAreAvailable)
 }

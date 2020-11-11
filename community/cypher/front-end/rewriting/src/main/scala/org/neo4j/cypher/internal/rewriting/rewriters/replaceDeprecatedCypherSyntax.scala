@@ -17,11 +17,22 @@
 package org.neo4j.cypher.internal.rewriting.rewriters
 
 import org.neo4j.cypher.internal.rewriting.Deprecations
+import org.neo4j.cypher.internal.rewriting.RewritingStep
 import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.StepSequencer
+import org.neo4j.cypher.internal.util.StepSequencer.Condition
 import org.neo4j.cypher.internal.util.bottomUp
 
-case class replaceDeprecatedCypherSyntax(deprecations: Deprecations) extends Rewriter {
+case object DeprecatedSyntaxReplaced extends Condition
 
-  override def apply(that: AnyRef): AnyRef = instance(that)
+case class replaceDeprecatedCypherSyntax(deprecations: Deprecations) extends RewritingStep {
+
+  override def rewrite(that: AnyRef): AnyRef = instance(that)
   val instance: Rewriter = bottomUp(Rewriter.lift(deprecations.find.andThen(d => d.generateReplacement())))
+
+  override def preConditions: Set[StepSequencer.Condition] = Set.empty
+
+  override def postConditions: Set[StepSequencer.Condition] = Set(DeprecatedSyntaxReplaced)
+
+  override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
 }

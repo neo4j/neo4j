@@ -20,13 +20,24 @@ import org.neo4j.cypher.internal.ast.Match
 import org.neo4j.cypher.internal.ast.ReturnItems
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.With
+import org.neo4j.cypher.internal.rewriting.RewritingStep
 import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.StepSequencer
+import org.neo4j.cypher.internal.util.StepSequencer.Condition
 import org.neo4j.cypher.internal.util.topDown
 
-// Rewrites OPTIONAL MATCH (<n>) MATCH (<n>) RETURN <n> ==> OPTIONAL MATCH (<n>) WITH * MATCH (<n>) RETURN <n>
-case object insertWithBetweenOptionalMatchAndMatch extends Rewriter {
+case object WithBetweenOptionalMatchAndMatchInserted extends Condition
 
-  override def apply(that: AnyRef): AnyRef = instance(that)
+// Rewrites OPTIONAL MATCH (<n>) MATCH (<n>) RETURN <n> ==> OPTIONAL MATCH (<n>) WITH * MATCH (<n>) RETURN <n>
+case object insertWithBetweenOptionalMatchAndMatch extends RewritingStep {
+
+  override def rewrite(that: AnyRef): AnyRef = instance(that)
+
+  override def preConditions: Set[StepSequencer.Condition] = Set.empty
+
+  override def postConditions: Set[StepSequencer.Condition] = Set(WithBetweenOptionalMatchAndMatchInserted)
+
+  override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
 
   private val instance: Rewriter = topDown(Rewriter.lift {
     case sq@SingleQuery(clauses) if clauses.nonEmpty =>
