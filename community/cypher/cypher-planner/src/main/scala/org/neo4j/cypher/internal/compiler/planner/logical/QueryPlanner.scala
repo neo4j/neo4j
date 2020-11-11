@@ -188,7 +188,7 @@ case object planPart extends PartPlanner {
           val orderCandidate = interestingOrder.requiredOrderCandidate.order
           val orderingDependencies = orderCandidate.flatMap(_.projections).flatMap(_._2.dependencies) ++ orderCandidate.flatMap(_.expression.dependencies)
           val mutatingDependencies = query.queryGraph.mutatingPatterns.flatMap(_.dependencies)
-          if (orderingDependencies.exists(dep => query.queryGraph.argumentIds.contains(dep.name) || mutatingDependencies.contains(dep.name)))
+          if (orderingDependencies.exists(dep => mutatingDependencies.contains(dep.name)))
             interestingOrder.asInteresting
           else
             interestingOrder
