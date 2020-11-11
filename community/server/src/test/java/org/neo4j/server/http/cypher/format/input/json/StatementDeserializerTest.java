@@ -205,7 +205,7 @@ class StatementDeserializerTest
         assertYieldsErrors( "{ \"statements\" : [ { \"statement\" : \"stmt\", \"parameters\" : [\"AN ARRAY!!\"] } ] }",
                          "Could not map the incoming JSON", "Cannot deserialize instance of" +
                                 " `java.util.LinkedHashMap<java.lang.Object,java.lang.Object>` out of START_ARRAY token\n " +
-                        "at [Source: (ByteArrayInputStream); line: 1, column: 59]" );
+                        "at [Source: (ByteArrayInputStream); line: 1, column: 60]" );
     }
 
     private void assertYieldsErrors( String json, String... expectedErrorMessages )

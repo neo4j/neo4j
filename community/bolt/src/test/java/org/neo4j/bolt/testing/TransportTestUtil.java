@@ -337,6 +337,7 @@ public class TransportTestUtil
                     }
                     catch ( IOException | WebSocketException e )
                     {
+                        // take an IOException or jetty WebSocketException on send/receive as evidence of disconnection
                         return true;
                     }
                     catch ( Exception e )

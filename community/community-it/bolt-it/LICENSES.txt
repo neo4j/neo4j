@@ -21,7 +21,6 @@ Apache Software License, Version 2.0
   Apache Shiro :: Event
   Apache Shiro :: Lang
   Caffeine cache
-  fastinfoset
   Jackson module: JAXB Annotations
   Jackson-annotations
   Jackson-core
@@ -1278,12 +1277,10 @@ express Statement of Purpose.
 Eclipse Distribution License - v 1.0
   Eclipse Collections API
   Eclipse Collections Main Library
-  Extended StAX API
-  fastinfoset
   istack common utility code runtime
-  jakarta.xml.bind-api
-  JavaBeans Activation Framework
-  JavaBeans Activation Framework API jar
+  Jakarta Activation
+  Jakarta Activation API jar
+  Jakarta XML Binding API
   JAXB Runtime
   jersey-container-servlet
   jersey-container-servlet-core
@@ -2276,10 +2273,6 @@ Eclipse Collections API
 Eclipse Collections Main Library
   Eclipse Distribution License - v 1.0
   Eclipse Public License - v 1.0
-
-fastinfoset
-  Apache Software License, Version 2.0
-  Eclipse Distribution License - v 1.0
 
 jersey-container-servlet
   Apache Software License, Version 2.0

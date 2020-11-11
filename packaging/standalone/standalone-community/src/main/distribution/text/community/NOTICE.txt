@@ -67,7 +67,6 @@ Apache Software License, Version 2.0
   caseless
   detect-libc
   disposables
-  fastinfoset
   firebase
   forever-agent
   grpc
@@ -168,12 +167,10 @@ Creative Commons 0
 Eclipse Distribution License - v 1.0
   Eclipse Collections API
   Eclipse Collections Main Library
-  Extended StAX API
-  fastinfoset
   istack common utility code runtime
-  jakarta.xml.bind-api
-  JavaBeans Activation Framework
-  JavaBeans Activation Framework API jar
+  Jakarta Activation
+  Jakarta Activation API jar
+  Jakarta XML Binding API
   JAXB Runtime
   jersey-container-servlet
   jersey-container-servlet-core
@@ -426,10 +423,6 @@ Eclipse Collections Main Library
 Java Servlet API
   Common Development and Distribution License Version 1.1
   GNU General Public License, version 2 with the Classpath Exception
-
-fastinfoset
-  Apache Software License, Version 2.0
-  Eclipse Distribution License - v 1.0
 
 jersey-container-servlet
   Apache Software License, Version 2.0
