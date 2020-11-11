@@ -19,6 +19,7 @@
  */
 package org.neo4j.bolt.testing;
 
+import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
@@ -440,10 +441,14 @@ public class TransportTestUtil
                         connection.send( new byte[]{0,0});
                         connection.recv( 1 );
                     }
+                    catch ( IOException | WebSocketException e )
+                    {
+                        // take an IOException or jetty WebSocketException on send/receive as evidence of disconnection
+                        return true;
+                    }
                     catch ( Exception e )
                     {
-                        // take an IOException on send/receive as evidence of disconnection
-                        return e instanceof IOException;
+                        return false;
                     }
                     return false;
                 };

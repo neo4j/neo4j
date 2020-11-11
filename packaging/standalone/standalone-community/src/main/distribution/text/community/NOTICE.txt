@@ -63,14 +63,12 @@ Apache Software License, Version 2.0
   Apache Shiro :: Lang
   ascli
   aws-sign2
-  Bean Validation API
   bytebuffer
   Caffeine cache
   caseless
   Commons Lang
   detect-libc
   disposables
-  fastinfoset
   firebase
   forever-agent
   grpc
@@ -80,6 +78,7 @@ Apache Software License, Version 2.0
   jackson-databind
   Jackson-JAXRS-base
   Jackson-JAXRS-JSON
+  Jakarta Bean Validation API
   Java Concurrency Tools Core Library
   Javassist
   jersey-container-servlet
@@ -164,12 +163,10 @@ Common Development and Distribution License Version 1.1
 Eclipse Distribution License - v 1.0
   Eclipse Collections API
   Eclipse Collections Main Library
-  Extended StAX API
-  fastinfoset
   istack common utility code runtime
-  jakarta.xml.bind-api
-  JavaBeans Activation Framework
-  JavaBeans Activation Framework API jar
+  Jakarta Activation
+  Jakarta Activation API jar
+  Jakarta XML Binding API
   JAXB Runtime
   jersey-container-servlet
   jersey-container-servlet-core
@@ -185,7 +182,8 @@ Eclipse Public License - v 1.0
 Eclipse Public License v2.0
   HK2 API module
   HK2 Implementation Utilities
-  jakarta.annotation API
+  Jakarta Annotations API
+  jakarta.ws.rs-api
   javax.inject:1 as OSGi bundle
   javax.ws.rs-api
   jersey-container-servlet
@@ -421,10 +419,6 @@ Eclipse Collections Main Library
 Java Servlet API
   Common Development and Distribution License Version 1.1
   GNU General Public License, version 2 with the Classpath Exception
-
-fastinfoset
-  Apache Software License, Version 2.0
-  Eclipse Distribution License - v 1.0
 
 jersey-container-servlet
   Apache Software License, Version 2.0
