@@ -19,15 +19,17 @@
  */
 package org.neo4j.kernel.impl.coreapi.internal;
 
+import org.neo4j.graphdb.Node;
 import org.neo4j.internal.kernel.api.NodeIndexCursor;
+import org.neo4j.kernel.impl.core.NodeEntity;
 
 import static org.neo4j.io.IOUtils.closeAllSilently;
 
-public class NodeCursorResourceIterator<CURSOR extends NodeIndexCursor> extends PrefetchingNodeResourceIterator
+public class NodeCursorResourceIterator<CURSOR extends NodeIndexCursor> extends PrefetchingEntityResourceIterator<Node>
 {
     private final CURSOR cursor;
 
-    public NodeCursorResourceIterator( CURSOR cursor, NodeFactory nodeFactory )
+    public NodeCursorResourceIterator( CURSOR cursor, EntityFactory<Node> nodeFactory )
     {
         super( nodeFactory );
         this.cursor = cursor;

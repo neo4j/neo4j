@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.impl.coreapi.internal;
 
-import org.neo4j.kernel.impl.core.NodeEntity;
+import org.neo4j.graphdb.Entity;
 
-public interface NodeFactory
+public interface EntityFactory<T extends Entity>
 {
-    NodeEntity make( long id );
+    T make( long id );
 }

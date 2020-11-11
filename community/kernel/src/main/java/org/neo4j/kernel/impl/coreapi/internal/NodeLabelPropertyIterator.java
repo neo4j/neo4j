@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.coreapi.internal;
 
+import org.neo4j.graphdb.Node;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
@@ -26,7 +27,7 @@ import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.io.IOUtils;
 
-public class NodeLabelPropertyIterator extends PrefetchingNodeResourceIterator
+public class NodeLabelPropertyIterator extends PrefetchingEntityResourceIterator<Node>
 {
     private final Read read;
     private final NodeLabelIndexCursor nodeLabelCursor;
@@ -39,7 +40,7 @@ public class NodeLabelPropertyIterator extends PrefetchingNodeResourceIterator
             NodeLabelIndexCursor nodeLabelCursor,
             NodeCursor nodeCursor,
             PropertyCursor propertyCursor,
-            NodeFactory nodeFactory,
+            EntityFactory<Node> nodeFactory,
             IndexQuery... queries )
     {
         super( nodeFactory );

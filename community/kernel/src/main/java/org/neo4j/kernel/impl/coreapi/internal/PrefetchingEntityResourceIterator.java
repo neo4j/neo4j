@@ -21,21 +21,21 @@ package org.neo4j.kernel.impl.coreapi.internal;
 
 import java.util.NoSuchElementException;
 
-import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.ResourceIterator;
 
-abstract class PrefetchingNodeResourceIterator implements ResourceIterator<Node>
+abstract class PrefetchingEntityResourceIterator<T extends Entity> implements ResourceIterator<T>
 {
-    private final NodeFactory nodeFactory;
+    private final EntityFactory<T> entityFactory;
     private long next;
     private boolean closed;
 
     private static final long NOT_INITIALIZED = -2L;
     protected static final long NO_ID = -1L;
 
-    PrefetchingNodeResourceIterator( NodeFactory nodeFactory )
+    PrefetchingEntityResourceIterator( EntityFactory<T> entityFactory )
     {
-        this.nodeFactory = nodeFactory;
+        this.entityFactory = entityFactory;
         this.next = NOT_INITIALIZED;
     }
 
@@ -50,16 +50,16 @@ abstract class PrefetchingNodeResourceIterator implements ResourceIterator<Node>
     }
 
     @Override
-    public Node next()
+    public T next()
     {
         if ( !hasNext() )
         {
             close();
             throw new NoSuchElementException();
         }
-        Node node = nodeFactory.make( next );
+        T entity = entityFactory.make( next );
         next = fetchNext();
-        return node;
+        return entity;
     }
 
     @Override
