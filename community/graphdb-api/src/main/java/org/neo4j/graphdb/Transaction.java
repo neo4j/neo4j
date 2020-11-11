@@ -374,6 +374,18 @@ public interface Transaction extends AutoCloseable
     ResourceIterator<Node> findNodes( Label label );
 
     /**
+     * Returns all {@link Relationship relationships} of a specific {@link RelationshipType type}.
+     *
+     * Please take care that the returned {@link ResourceIterator} is closed correctly and as soon as possible
+     * inside your transaction to avoid potential blocking of write operations.
+     *
+     * @param relationshipType the {@link RelationshipType} to return relationships for.
+     * @return an iterator containing all relationships with matching type. See {@link ResourceIterator} for responsibilities.
+     * @throws IllegalStateException if relationship index feature not enabled
+     */
+    ResourceIterator<Relationship> findRelationships( RelationshipType relationshipType );
+
+    /**
      * Marks this transaction as terminated, which means that it will be, much like in the case of failure,
      * unconditionally rolled back when {@link #close()} is called. Once this method has been invoked, it doesn't matter
      * if {@link #commit()} ()} is invoked afterwards -- the transaction will still be rolled back.

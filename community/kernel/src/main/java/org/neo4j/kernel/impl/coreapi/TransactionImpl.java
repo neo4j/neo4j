@@ -59,6 +59,7 @@ import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
+import org.neo4j.internal.kernel.api.RelationshipTypeIndexCursor;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Write;
@@ -81,6 +82,7 @@ import org.neo4j.kernel.impl.core.NodeEntity;
 import org.neo4j.kernel.impl.core.RelationshipEntity;
 import org.neo4j.kernel.impl.coreapi.internal.NodeCursorResourceIterator;
 import org.neo4j.kernel.impl.coreapi.internal.NodeLabelPropertyIterator;
+import org.neo4j.kernel.impl.coreapi.internal.RelationshipCursorResourceIterator;
 import org.neo4j.kernel.impl.coreapi.schema.SchemaImpl;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
@@ -445,6 +447,12 @@ public class TransactionImpl extends EntityValidationTransactionImpl
     }
 
     @Override
+    public ResourceIterator<Relationship> findRelationships( RelationshipType relationshipType )
+    {
+        return allRelationshipsWithType( relationshipType );
+    }
+
+    @Override
     public ResourceIterable<Relationship> getAllRelationships()
     {
         KernelTransaction ktx = kernelTransaction();
@@ -802,6 +810,21 @@ public class TransactionImpl extends EntityValidationTransactionImpl
         NodeLabelIndexCursor cursor = ktx.cursors().allocateNodeLabelIndexCursor( transaction.pageCursorTracer() );
         ktx.dataRead().nodeLabelScan( labelId, cursor, IndexOrder.NONE );
         return new NodeCursorResourceIterator<>( cursor, this::newNodeEntity );
+    }
+
+    private ResourceIterator<Relationship> allRelationshipsWithType( final RelationshipType type )
+    {
+        KernelTransaction ktx = kernelTransaction();
+
+        int typeId = ktx.tokenRead().relationshipType( type.name() );
+        if ( typeId == TokenRead.NO_TOKEN )
+        {
+            return Iterators.emptyResourceIterator();
+        }
+
+        RelationshipTypeIndexCursor cursor = ktx.cursors().allocateRelationshipTypeIndexCursor();
+        ktx.dataRead().relationshipTypeScan( typeId, cursor, IndexOrder.NONE );
+        return new RelationshipCursorResourceIterator<>( cursor, this::newRelationshipEntity );
     }
 
     private static IndexDescriptor findMatchingIndex( KernelTransaction transaction, int labelId, int[] propertyIds )

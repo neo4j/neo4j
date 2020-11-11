@@ -218,6 +218,13 @@ class RequireTransactionIT
     }
 
     @Test
+    void requireTransactionForRelationshipLookupByType()
+    {
+        Executable executable = () -> transaction.findRelationships( RelationshipType.withName( "type" ) );
+        checkTransactionRequirement( transaction, executable );
+    }
+
+    @Test
     void terminateCanBeCalledOnAnyTransaction()
     {
         transaction.terminate();

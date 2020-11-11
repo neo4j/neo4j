@@ -27,19 +27,31 @@ import java.util.Set;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.internal.index.label.RelationshipTypeScanStoreSettings;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 
-@ImpermanentDbmsExtension
+@ImpermanentDbmsExtension( configurationCallback = "configuration" )
 class TestConcurrentIteratorModification
 {
     @Inject
     private GraphDatabaseService db;
+
+    @ExtensionCallback
+    void configuration( TestDatabaseManagementServiceBuilder builder )
+    {
+        builder.setConfig( RelationshipTypeScanStoreSettings.enable_relationship_type_scan_store, true );
+    }
 
     @Test
     void shouldNotThrowConcurrentModificationExceptionWhenUpdatingWhileIterating()
@@ -74,5 +86,42 @@ class TestConcurrentIteratorModification
 
         // then does not throw and retains view from iterator creation time
         assertEquals( asSet( node1, node2, node3 ), result );
+    }
+
+    @Test
+    void shouldNotThrowConcurrentModificationExceptionWhenUpdatingWhileIteratingRelationships()
+    {
+        // given
+        RelationshipType type = RelationshipType.withName( "type" );
+
+        Relationship rel1;
+        Relationship rel2;
+        Relationship rel3;
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node1 = tx.createNode();
+            Node node2 = tx.createNode();
+            rel1 = node1.createRelationshipTo( node2, type );
+            rel2 = node2.createRelationshipTo( node1, type );
+            tx.commit();
+        }
+
+        // when
+        Set<Relationship> result = new HashSet<>();
+        try ( Transaction tx = db.beginTx() )
+        {
+            rel3 = tx.createNode().createRelationshipTo( tx.createNode(), type );
+            ResourceIterator<Relationship> iterator = tx.findRelationships( type );
+            rel3.delete();
+            tx.createNode().createRelationshipTo( tx.createNode(), type );
+            while ( iterator.hasNext() )
+            {
+                result.add( iterator.next() );
+            }
+            tx.commit();
+        }
+
+        // then does not throw and retains view from iterator creation time
+        assertThat( result ).containsExactlyInAnyOrder( rel1, rel2, rel3 );
     }
 }
