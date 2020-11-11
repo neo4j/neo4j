@@ -150,7 +150,7 @@ object LogicalPlanningTestSupport2 extends MockitoSugar {
     // if you ever want to have parameters in here, fix the map
     parsing(ParsingConfig(innerVariableNamer, literalExtractionStrategy = Never, parameterTypeMapping = Map.empty, useJavaCCParser = cypherCompilerConfig.useJavaCCParser)) andThen
       prepareForCaching andThen
-      planPipeLine(newPlain, pushdownPropertyReads = pushdownPropertyReads)
+      planPipeLine(pushdownPropertyReads = pushdownPropertyReads)
   }
 }
 

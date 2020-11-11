@@ -25,7 +25,6 @@ import org.neo4j.cypher.CypherConnectComponentsPlannerOption
 import org.neo4j.cypher.CypherPlannerOption
 import org.neo4j.cypher.CypherUpdateStrategy
 import org.neo4j.cypher.internal.AdministrationCommandRuntime
-import org.neo4j.cypher.internal.Assertion.assertionsEnabled
 import org.neo4j.cypher.internal.CacheTracer
 import org.neo4j.cypher.internal.CompilerWithExpressionCodeGenOption
 import org.neo4j.cypher.internal.CypherQueryObfuscator
@@ -84,7 +83,6 @@ import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.rewriting.RewriterStepSequencer.newPlain
-import org.neo4j.cypher.internal.rewriting.RewriterStepSequencer.newValidating
 import org.neo4j.cypher.internal.rewriting.rewriters.GeneratingNamer
 import org.neo4j.cypher.internal.rewriting.rewriters.InnerVariableNamer
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionalContextWrapper
@@ -156,10 +154,6 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
     case _ => None
   }
 
-  private val rewriterSequencer: String => RewriterStepSequencer = {
-    if (assertionsEnabled()) newValidating else newPlain
-  }
-
   private val plannerName: CostBasedPlannerName =
     plannerOption match {
       case CypherPlannerOption.default => CostBasedPlannerName.default
@@ -169,8 +163,7 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
     }
 
   private val planner: compiler.CypherPlanner[PlannerContext] =
-    new CypherPlannerFactory().costBasedCompiler(config, clock, monitors, rewriterSequencer,
-      maybeUpdateStrategy, contextCreator)
+    new CypherPlannerFactory().costBasedCompiler(config, clock, monitors, maybeUpdateStrategy, contextCreator)
 
   private val schemaStateKey: SchemaStateKey = SchemaStateKey.newKey()
 

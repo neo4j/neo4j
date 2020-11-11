@@ -140,7 +140,6 @@ object CompilationPhases {
 
   // Phase 3
   def planPipeLine(
-    sequencer: String => RewriterStepSequencer,
     pushdownPropertyReads: Boolean = true,
     semanticFeatures: Seq[SemanticFeature] = defaultSemanticFeatures,
   ): Transformer[PlannerContext, BaseState, LogicalPlanState] =
@@ -160,7 +159,7 @@ object CompilationPhases {
           CreatePlannerQuery.adds(CompilationContains[UnionQuery]) andThen
           OptionalMatchRemover andThen
           QueryPlanner.adds(CompilationContains[LogicalPlan]) andThen
-          PlanRewriter(sequencer) andThen
+          PlanRewriter andThen
           InsertCachedProperties(pushdownPropertyReads) andThen
           If((s: LogicalPlanState) => s.query.readOnly)(
             CheckForUnresolvedTokens

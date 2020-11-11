@@ -28,23 +28,12 @@ case class RewriterContract(childRewriters: Seq[Rewriter], postConditions: Set[R
 object RewriterStepSequencer {
   def newPlain(sequenceName: String) =
     PlainRewriterStepSequencer(sequenceName, DefaultRewriterTaskProcessor(sequenceName))
-
-  def newValidating(sequenceName: String) =
-    ValidatingRewriterStepSequencer(sequenceName, DefaultRewriterTaskProcessor(sequenceName))
-
-  def newTracing(sequenceName: String, onlyIfChanged: Boolean = true) =
-    ValidatingRewriterStepSequencer(sequenceName, TracingRewriterTaskProcessor(sequenceName, onlyIfChanged))
 }
 
 trait RewriterStepSequencer extends ((RewriterStep *) => RewriterContract) {
   self =>
 
   private val _steps: mutable.Builder[RewriterStep, Seq[RewriterStep]] = Seq.newBuilder
-
-  def withPrecondition(conditions: Set[RewriterCondition]) = {
-    conditions.foldLeft(_steps) { (acc, cond) => acc += EnableRewriterCondition(cond) }
-    self
-  }
 
   def apply(steps: RewriterStep*): RewriterContract =
     internalResult(steps.foldLeft(_steps) { (acc, step) => acc += step }.result())
@@ -57,15 +46,5 @@ case class PlainRewriterStepSequencer(sequenceName: String, taskProcessor: Rewri
   protected def internalResult(steps: Seq[RewriterStep]): RewriterContract = {
     val rewriters = steps.collect { case ApplyRewriter(name, rewriter) => taskProcessor(RunRewriter(name, rewriter)) }
     RewriterContract(rewriters, Set.empty)
-  }
-}
-
-case class ValidatingRewriterStepSequencer(sequenceName: String, taskProcessor: RewriterTaskProcessor) extends RewriterStepSequencer {
-
-  protected def internalResult(steps: Seq[RewriterStep]): RewriterContract = {
-    val tasks = RewriterTaskBuilder(steps)
-    val rewriters = tasks.map(taskProcessor)
-    val postConditions = tasks.lastOption.collect { case task: RunConditions => task.conditions }.getOrElse(Set.empty)
-    RewriterContract(rewriters, postConditions)
   }
 }

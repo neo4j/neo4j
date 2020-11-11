@@ -44,7 +44,6 @@ import org.neo4j.cypher.internal.util.InternalNotificationLogger
 import org.neo4j.values.virtual.MapValue
 
 case class CypherPlanner[Context <: PlannerContext](monitors: Monitors,
-                                                    sequencer: String => RewriterStepSequencer,
                                                     metricsFactory: MetricsFactory,
                                                     config: CypherPlannerConfiguration,
                                                     updateStrategy: UpdateStrategy,
@@ -57,9 +56,9 @@ case class CypherPlanner[Context <: PlannerContext](monitors: Monitors,
     val pipeLine = if(config.planSystemCommands)
       systemPipeLine
     else if (context.debugOptions.contains("tostring"))
-      planPipeLine(sequencer) andThen DebugPrinter
+      planPipeLine() andThen DebugPrinter
     else
-      planPipeLine(sequencer)
+      planPipeLine()
 
     pipeLine.transform(state, context)
   }

@@ -39,7 +39,7 @@ import org.neo4j.cypher.internal.util.helpers.fixedPoint
  * receiving a valid plan and producing a valid plan. It should be possible
  * to disable any and all of these rewriters, and still produce correct behavior.
  */
-case class PlanRewriter(rewriterSequencer: String => RewriterStepSequencer) extends LogicalPlanRewriter {
+case object PlanRewriter extends LogicalPlanRewriter {
   override def description: String = "optimize logical plans using heuristic rewriting"
 
   override def postConditions: Set[StepSequencer.Condition] = Set.empty
@@ -48,7 +48,7 @@ case class PlanRewriter(rewriterSequencer: String => RewriterStepSequencer) exte
                         solveds: Solveds,
                         cardinalities: Cardinalities,
                         providedOrders: ProvidedOrders,
-                        otherAttributes: Attributes[LogicalPlan]) = fixedPoint(rewriterSequencer("LogicalPlanRewriter")(
+                        otherAttributes: Attributes[LogicalPlan]) = fixedPoint(RewriterStepSequencer.newPlain("LogicalPlanRewriter")(
     fuseSelections,
     unnestApply(solveds, otherAttributes.withAlso(cardinalities, providedOrders)),
     unnestCartesianProduct,

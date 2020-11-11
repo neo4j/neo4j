@@ -34,12 +34,10 @@ class CypherPlannerFactory[C <: PlannerContext, T <: Transformer[C, LogicalPlanS
   def costBasedCompiler(config: CypherPlannerConfiguration,
                         clock: Clock,
                         monitors: Monitors,
-                        rewriterSequencer: String => RewriterStepSequencer,
                         updateStrategy: Option[UpdateStrategy],
                         contextCreator: ContextCreator[C]): CypherPlanner[C] = {
     val metricsFactory = CachedMetricsFactory(SimpleMetricsFactory)
     val actualUpdateStrategy: UpdateStrategy = updateStrategy.getOrElse(defaultUpdateStrategy)
-    CypherPlanner(monitors, rewriterSequencer,
-      metricsFactory, config, actualUpdateStrategy, clock, contextCreator)
+    CypherPlanner(monitors, metricsFactory, config, actualUpdateStrategy, clock, contextCreator)
   }
 }

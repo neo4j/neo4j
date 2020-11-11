@@ -62,16 +62,11 @@ trait RewritingStep extends Rewriter with Step {
 }
 
 object RewriterStep {
-   implicit def namedProductRewriter(p: Product with Rewriter): ApplyRewriter = ApplyRewriter(p.productPrefix, p)
-
-   def enableCondition(p: ValidatingCondition) = EnableRewriterCondition(RewriterCondition(p.name, p))
-   def disableCondition(p: ValidatingCondition) = DisableRewriterCondition(RewriterCondition(p.name, p))
- }
+  implicit def namedProductRewriter(p: Product with Rewriter): ApplyRewriter = ApplyRewriter(p.productPrefix, p)
+}
 
 sealed trait RewriterStep
 final case class ApplyRewriter(name: String, rewriter: Rewriter) extends RewriterStep
-final case class EnableRewriterCondition(cond: RewriterCondition) extends RewriterStep
-final case class DisableRewriterCondition(cond: RewriterCondition) extends RewriterStep
 
 trait ValidatingCondition extends (Any => Seq[String]) with StepSequencer.Condition {
    def name: String
