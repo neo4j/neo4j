@@ -91,4 +91,10 @@ abstract class CypherKeyValueOptionCompanion[Opt <: CypherOption](
   cypherConfigField: Option[CypherConfiguration => Opt],
 ) extends CypherOptionCompanion[Opt](key, setting, cypherConfigField) {
   self: Product =>
+
+  private val canonicalKey = CypherOption.asCanonicalName(key)
+
+  def matchesKey(inputKey: String): Boolean =
+    CypherOption.asCanonicalName(inputKey) == canonicalKey
+
 }

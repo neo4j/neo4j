@@ -93,7 +93,7 @@ object CypherQueryOptions {
                         .getOrElse(option.fromCypherConfiguration(config))
 
     def resolveAll[T <: CypherOption](option: CypherKeyValueOptionCompanion[T]): Set[T] = {
-      val (matches, other) = rest.partition { case (k, _) => option.key == k }
+      val (matches, other) = rest.partition { case (k, _) => option.matchesKey(k) }
       rest = other
       val values = matches.map { case (_, v) => v }
       option.fromValues(values)
