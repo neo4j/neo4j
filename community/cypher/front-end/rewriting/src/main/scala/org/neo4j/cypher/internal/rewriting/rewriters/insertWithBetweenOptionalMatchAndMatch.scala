@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.ast.With
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.topDown
 
+// Rewrites OPTIONAL MATCH (<n>) MATCH (<n>) RETURN <n> ==> OPTIONAL MATCH (<n>) WITH * MATCH (<n>) RETURN <n>
 case object insertWithBetweenOptionalMatchAndMatch extends Rewriter {
 
   override def apply(that: AnyRef): AnyRef = instance(that)

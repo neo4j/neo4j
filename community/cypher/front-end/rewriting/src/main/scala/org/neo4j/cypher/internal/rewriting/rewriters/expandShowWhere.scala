@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.ast.Yield
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.bottomUp
 
+// rewrites SHOW ... WHERE <e> " ==> SHOW ... YIELD * WHERE <e>
 case object expandShowWhere extends Rewriter {
 
     private val instance = bottomUp(Rewriter.lift {
