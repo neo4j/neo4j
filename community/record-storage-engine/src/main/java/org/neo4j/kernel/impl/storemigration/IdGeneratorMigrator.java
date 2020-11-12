@@ -27,7 +27,6 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.function.LongConsumer;
 import java.util.stream.Stream;
 
 import org.neo4j.common.ProgressReporter;
@@ -35,9 +34,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
-import org.neo4j.internal.id.FreeIds;
 import org.neo4j.internal.id.IdGenerator;
-import org.neo4j.internal.id.IdGenerator.Marker;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.ScanOnOpenReadOnlyIdGeneratorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -192,7 +189,7 @@ public class IdGeneratorMigrator extends AbstractStoreMigrationParticipant
                     AbstractBaseRecord record = store.newRecord();
                     for ( long id = numberOfReservedLowIds; id < highId; id++ )
                     {
-                        store.getRecordByCursor( id, record, RecordLoad.CHECK, cursor );
+                        store.getRecordByCursor( id, record, RecordLoad.LENIENT_CHECK, cursor );
                         if ( !record.inUse() )
                         {
                             visitor.accept( id );

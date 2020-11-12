@@ -68,7 +68,8 @@ public class ReadGroupRecordsByCacheStep extends ProducerStep
 
     private class NodeVisitor implements NodeChangeVisitor, AutoCloseable, NodeRelationshipCache.GroupVisitor, Supplier<RelationshipGroupRecord[]>
     {
-        private final RecordDataAssembler<RelationshipGroupRecord> assembler = new RecordDataAssembler<>( store::newRecord );
+        private final RecordDataAssembler<RelationshipGroupRecord> assembler = new RecordDataAssembler<>( store::newRecord,
+                false /*In this scenario we know exactly which node IDs we're visiting, so we can be a bit more strict*/ );
         private final PageCursorTracer cursorTracer;
         private RelationshipGroupRecord[] batch = get();
         private int cursor;

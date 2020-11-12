@@ -101,7 +101,7 @@ public abstract class TokenStore<RECORD extends TokenRecord>
         RECORD record = newRecord();
         for ( int i = 0; i < highId; i++ )
         {
-            if ( !getRecord( i, record, RecordLoad.CHECK, cursorTracer ).inUse() )
+            if ( !getRecord( i, record, RecordLoad.LENIENT_CHECK, cursorTracer ).inUse() )
             {
                 continue;
             }

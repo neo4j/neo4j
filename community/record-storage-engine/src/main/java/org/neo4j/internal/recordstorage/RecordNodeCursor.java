@@ -447,11 +447,11 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
 
     private void node( NodeRecord record, long reference, PageCursor pageCursor )
     {
-        read.getRecordByCursor( reference, record, loadMode.orElse( RecordLoad.CHECK ), pageCursor );
+        read.getRecordByCursor( reference, record, loadMode.orElse( RecordLoad.CHECK ).lenient(), pageCursor );
     }
 
     private void nodeAdvance( NodeRecord record, PageCursor pageCursor )
     {
-        read.nextRecordByCursor( record, loadMode.orElse( RecordLoad.CHECK ), pageCursor );
+        read.nextRecordByCursor( record, loadMode.orElse( RecordLoad.CHECK ).lenient(), pageCursor );
     }
 }

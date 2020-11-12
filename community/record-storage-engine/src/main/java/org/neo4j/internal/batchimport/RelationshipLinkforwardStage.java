@@ -45,7 +45,7 @@ public class RelationshipLinkforwardStage extends Stage
         super( NAME, topic, config, Step.ORDER_SEND_DOWNSTREAM | Step.RECYCLE_BATCHES );
         RelationshipStore store = stores.getRelationshipStore();
         add( new BatchFeedStep( control(), config, RecordIdIterator.forwards( 0, store.getHighId(), config ), store.getRecordSize() ) );
-        add( new ReadRecordsStep<>( control(), config, true, store, new RecordDataAssembler<>( store::newRecord, readFilter ), true, pageCacheTracer ) );
+        add( new ReadRecordsStep<>( control(), config, true, store, new RecordDataAssembler<>( store::newRecord, readFilter, true ), true, pageCacheTracer ) );
         add( new RelationshipLinkforwardStep( control(), config, cache, denseChangeFilter, nodeTypes, additionalStatsProvider ) );
         add( new UpdateRecordsStep<>( control(), config, store, PrepareIdSequence.of( stores.usesDoubleRelationshipRecordUnits() ), pageCacheTracer ) );
     }

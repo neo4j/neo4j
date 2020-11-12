@@ -65,8 +65,8 @@ import static org.neo4j.io.pagecache.PagedFile.PF_EAGER_FLUSH;
 import static org.neo4j.io.pagecache.PagedFile.PF_READ_AHEAD;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
-import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
+import static org.neo4j.kernel.impl.store.record.RecordLoad.LENIENT_CHECK;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
 /**
@@ -1004,7 +1004,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
             long highId = getHighId();
             for ( long id = getNumberOfReservedLowIds(); id < highId; id++ )
             {
-                getRecordByCursor( id, record, CHECK, cursor );
+                getRecordByCursor( id, record, LENIENT_CHECK, cursor );
                 if ( record.inUse() )
                 {
                     visitor.visit( record );
@@ -1021,6 +1021,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         return list;
     }
 
+    @Override
     public void streamRecords( long firstId, RecordLoad mode, boolean guardForCycles, PageCursorTracer cursorTracer, RecordSubscriber<RECORD> subscriber )
     {
         if ( Record.NULL_REFERENCE.is( firstId ) )
