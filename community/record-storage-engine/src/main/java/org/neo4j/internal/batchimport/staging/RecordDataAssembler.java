@@ -39,18 +39,20 @@ public class RecordDataAssembler<RECORD extends AbstractBaseRecord>
     private final Supplier<RECORD> factory;
     private final Class<RECORD> klass;
     private final Predicate<RECORD> filter;
+    private final RecordLoad loadMode;
 
-    public RecordDataAssembler( Supplier<RECORD> factory )
+    public RecordDataAssembler( Supplier<RECORD> factory, boolean forScan )
     {
-        this( factory, Predicates.alwaysTrue() );
+        this( factory, Predicates.alwaysTrue(), forScan );
     }
 
     @SuppressWarnings( "unchecked" )
-    public RecordDataAssembler( Supplier<RECORD> factory, Predicate<RECORD> filter )
+    public RecordDataAssembler( Supplier<RECORD> factory, Predicate<RECORD> filter, boolean forScan )
     {
         this.factory = factory;
         this.filter = filter;
         this.klass = (Class<RECORD>) factory.get().getClass();
+        this.loadMode = forScan ? RecordLoad.LENIENT_CHECK : RecordLoad.CHECK;
     }
 
     @SuppressWarnings( "unchecked" )
@@ -67,7 +69,7 @@ public class RecordDataAssembler<RECORD extends AbstractBaseRecord>
     public boolean append( RecordStore<RECORD> store, PageCursor cursor, RECORD[] array, long id, int index )
     {
         RECORD record = array[index];
-        store.getRecordByCursor( id, record, RecordLoad.CHECK, cursor );
+        store.getRecordByCursor( id, record, loadMode, cursor );
         return record.inUse() && filter.test( record );
     }
 

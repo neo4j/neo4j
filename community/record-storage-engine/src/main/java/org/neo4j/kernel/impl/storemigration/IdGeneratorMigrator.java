@@ -189,7 +189,7 @@ public class IdGeneratorMigrator extends AbstractStoreMigrationParticipant
                     AbstractBaseRecord record = store.newRecord();
                     for ( long id = numberOfReservedLowIds; id < highId; id++ )
                     {
-                        store.getRecordByCursor( id, record, RecordLoad.CHECK, cursor );
+                        store.getRecordByCursor( id, record, RecordLoad.LENIENT_CHECK, cursor );
                         if ( !record.inUse() )
                         {
                             visitor.accept( id );

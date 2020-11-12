@@ -108,7 +108,7 @@ abstract class RecordRelationshipCursor extends RelationshipRecord implements Re
     void relationship( RelationshipRecord record, long reference, PageCursor pageCursor )
     {
         // When scanning, we inspect RelationshipRecord.inUse(), so using RecordLoad.CHECK is fine
-        relationshipStore.getRecordByCursor( reference, record, loadMode.orElse( CHECK ), pageCursor );
+        relationshipStore.getRecordByCursor( reference, record, loadMode.orElse( CHECK ).lenient(), pageCursor );
     }
 
     void relationshipFull( RelationshipRecord record, long reference, PageCursor pageCursor )

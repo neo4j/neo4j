@@ -100,7 +100,7 @@ public class SchemaStorage35 implements SchemaStorage
                 while ( currentId <= highestId )
                 {
                     long id = currentId++;
-                    schemaStore.getRecord( id, record, RecordLoad.CHECK, cursorTracer );
+                    schemaStore.getRecord( id, record, RecordLoad.LENIENT_CHECK, cursorTracer );
                     if ( !record.inUse() )
                     {
                         continue;

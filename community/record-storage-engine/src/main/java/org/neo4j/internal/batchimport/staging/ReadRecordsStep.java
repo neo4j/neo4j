@@ -45,7 +45,7 @@ public class ReadRecordsStep<RECORD extends AbstractBaseRecord> extends Processo
     public ReadRecordsStep( StageControl control, Configuration config, boolean inRecordWritingStage, RecordStore<RECORD> store,
             PageCacheTracer pageCacheTracer )
     {
-        this( control, config, inRecordWritingStage, store, new RecordDataAssembler<>( store::newRecord ), false, pageCacheTracer );
+        this( control, config, inRecordWritingStage, store, new RecordDataAssembler<>( store::newRecord, true ), false, pageCacheTracer );
     }
 
     public ReadRecordsStep( StageControl control, Configuration config, boolean inRecordWritingStage,
