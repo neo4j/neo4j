@@ -177,7 +177,7 @@ object CardinalityCostModel extends CostModel {
                             strictness: Option[StrictnessMode],
                             cardinalities: Cardinalities,
                             semanticTable: SemanticTable): Cost = {
-    val (lhsLimitSelectivity, rhsLimitSelectivity) = childrenLimitSelectivities(plan, limitSelectivity)
+    val (lhsLimitSelectivity, rhsLimitSelectivity) = childrenLimitSelectivities(plan, limitSelectivity, cardinalities)
 
     val lhsCost = plan.lhs.map(p => calculateCost(p, lhsLimitSelectivity, strictness, cardinalities, semanticTable)) getOrElse Cost.ZERO
     val rhsCost = plan.rhs.map(p => calculateCost(p, rhsLimitSelectivity, strictness, cardinalities, semanticTable)) getOrElse Cost.ZERO
@@ -196,10 +196,16 @@ object CardinalityCostModel extends CostModel {
     }
   }
 
-  private def childrenLimitSelectivities(plan: LogicalPlan, incomingLimitSelectivity: Selectivity): (Selectivity, Selectivity) = plan match {
+  private def childrenLimitSelectivities(plan: LogicalPlan, incomingLimitSelectivity: Selectivity, cardinalities: Cardinalities): (Selectivity, Selectivity) = plan match {
     case _: CartesianProduct =>
       val sqrt = Selectivity.of(math.sqrt(incomingLimitSelectivity.factor)).getOrElse(Selectivity.ONE)
       (sqrt, sqrt)
+
+    case limit: Limit =>
+      val sourceCardinality = cardinalities.get(limit.source.id)
+      val limitCardinality = cardinalities.get(limit.id)
+      val s = (limitCardinality / sourceCardinality) getOrElse Selectivity.ONE
+      (s, s)
 
     case HashJoin() =>
       (Selectivity.ONE, incomingLimitSelectivity)
