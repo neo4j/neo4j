@@ -38,7 +38,7 @@ public enum IndexType
      *     <li>They can be used as the {@link ConstraintCreator#withIndexType(IndexType) constraint index type} for index-backed constraints.</li>
      *     <li>They can have their spatial indexing behaviour fine-tuned, using the {@linkplain IndexSetting index settings} that start with "spatial_".</li>
      *     <li>They do not support {@linkplain Schema#indexFor(Label...) creating} {@linkplain IndexDefinition#isMultiTokenIndex() multi-token} indexes.</li>
-     *     <li>They cannot be created on {@link Schema#indexFor(RelationshipType) relationship types}.</li>
+     *     <li>They can be created on both {@link Schema#indexFor(Label) labels}, and {@link Schema#indexFor(RelationshipType) relationship types}.</li>
      * </ul>
      */
     BTREE,
@@ -51,7 +51,7 @@ public enum IndexType
      *     <li>They cannot be used as the {@link ConstraintCreator#withIndexType(IndexType) constraint index type} for index-backed constraints.</li>
      *     <li>They can have their behaviour fine-tuned, using the {@linkplain IndexSetting index settings} that start with "fulltext_".</li>
      *     <li>They can be {@linkplain Schema#indexFor(Label...) created} as {@linkplain IndexDefinition#isMultiTokenIndex() multi-token} indexes.</li>
-     *     <li>They can be created on both labels, and {@link Schema#indexFor(RelationshipType) relationship types}.</li>
+     *     <li>They can be created on both {@link Schema#indexFor(Label) labels}, and {@link Schema#indexFor(RelationshipType) relationship types}.</li>
      * </ul>
      */
     FULLTEXT

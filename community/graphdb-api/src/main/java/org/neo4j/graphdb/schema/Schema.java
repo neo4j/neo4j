@@ -60,8 +60,7 @@ public interface Schema
      * All existing and all future nodes matching the index definition will be indexed,
      * speeding up future read operations.
      *
-     * @param label {@link Label label} on nodes to be indexed
-     *
+     * @param label {@link Label label} on nodes to be indexed.
      * @return an {@link IndexCreator} capable of providing details for, as well as creating
      * an index for the given {@link Label label}.
      */
@@ -124,6 +123,13 @@ public interface Schema
      * All existing and all future relationships matching the index definition will be indexes,
      * speeding up future read operations.
      *
+     * This behaves similar to the {@link #indexFor(RelationshipType)} method, with the exception that
+     * multiple relationship types can be specified. Doing so will create a so-called
+     * {@linkplain IndexDefinition#isMultiTokenIndex() multi-token} index.
+     *
+     * Note that not all index types support multi-token indexes.
+     * See {@link IndexType} for more information.
+     *
      * @param types {@link RelationshipType relationship types} on relationships to be indexed.
      * @return an {@link IndexCreator} capable of providing details for, as well as creating
      * an index for the given {@link RelationshipType RelationshipTypes}.
@@ -135,6 +141,12 @@ public interface Schema
      * @return all {@link IndexDefinition indexes} attached to the given {@link Label label}.
      */
     Iterable<IndexDefinition> getIndexes( Label label );
+
+    /**
+     * @param relationshipType the {@link RelationshipType} to get {@link IndexDefinition indexes} for.
+     * @return all {@link IndexDefinition indexes} attached to the given {@link RelationshipType relationship type}.
+     */
+    Iterable<IndexDefinition> getIndexes( RelationshipType relationshipType );
 
     /**
      * @return all {@link IndexDefinition indexes} in this database.

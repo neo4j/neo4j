@@ -142,6 +142,23 @@ public class SchemaImpl implements Schema
     }
 
     @Override
+    public Iterable<IndexDefinition> getIndexes( RelationshipType relationshipType )
+    {
+        transaction.assertOpen();
+        TokenRead tokenRead = transaction.tokenRead();
+        SchemaRead schemaRead = transaction.schemaRead();
+        List<IndexDefinition> definitions = new ArrayList<>();
+        int relationshipTypeId = tokenRead.relationshipType( relationshipType.name() );
+        if ( relationshipTypeId == TokenRead.NO_TOKEN )
+        {
+            return emptyList();
+        }
+        Iterator<IndexDescriptor> indexes = schemaRead.indexesGetForRelationshipType( relationshipTypeId );
+        addDefinitions( definitions, tokenRead, IndexDescriptor.sortByType( indexes ) );
+        return definitions;
+    }
+
+    @Override
     public Iterable<IndexDefinition> getIndexes()
     {
         transaction.assertOpen();
@@ -680,9 +697,14 @@ public class SchemaImpl implements Schema
                 {
                     schema = fulltext( EntityType.RELATIONSHIP, typeIds, propertyKeyIds );
                 }
+                else if ( typeIds.length == 1 )
+                {
+                    schema = forRelType( typeIds[0], propertyKeyIds );
+                }
                 else
                 {
-                    throw new IllegalArgumentException( indexType + " indexes cannot be created on relationship types." );
+                    throw new IllegalArgumentException( indexType + " indexes can only be created with exactly one relationship type, " +
+                            "but got " + ( types.length == 0 ? "no" : String.valueOf( types.length ) ) + " relationship types." );
                 }
                 IndexDescriptor indexReference = createIndex( indexName, schema, indexType, indexConfig );
                 return new IndexDefinitionImpl( this, indexReference, types, propertyKeys, false );

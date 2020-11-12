@@ -87,6 +87,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
     private final Label otherLabel = Label.label( "MY_OTHER_LABEL" );
     private final RelationshipType relType = RelationshipType.withName( "MY_REL_TYPE" );
     private final RelationshipType otherRelType = RelationshipType.withName( "MY_OTHER_REL_TYPE" );
+    private final RelationshipType thirdRelType = RelationshipType.withName( "MY_THIRD_REL_TYPE" );
     private final String propertyKey = "my_property_key";
     private final String secondPropertyKey = "my_second_property_key";
 
@@ -1257,21 +1258,13 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
     }
 
     @Test
-    void mustThrowWhenCreatingBtreeIndexOnRelationshipType()
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            assertThrows( IllegalArgumentException.class, () -> tx.schema().indexFor( relType ).on( propertyKey ).create() );
-            tx.commit();
-        }
-    }
-
-    @Test
     void mustThrowWhenCreatingBtreeIndexOnZeroRelationshipTypes()
     {
         try ( Transaction tx = db.beginTx() )
         {
-            assertThrows( IllegalArgumentException.class, () -> tx.schema().indexFor( new RelationshipType[0] ).on( propertyKey ).create() );
+            IllegalArgumentException e =
+                    assertThrows( IllegalArgumentException.class, () -> tx.schema().indexFor( new RelationshipType[0] ).on( propertyKey ).create() );
+            assertThat( e ).hasMessageContaining( "BTREE indexes can only be created with exactly one relationship type, but got no relationship types." );
             tx.commit();
         }
     }
@@ -1281,7 +1274,9 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
     {
         try ( Transaction tx = db.beginTx() )
         {
-            assertThrows( IllegalArgumentException.class, () -> tx.schema().indexFor( relType, otherRelType ).on( propertyKey ).create() );
+            IllegalArgumentException e =
+                    assertThrows( IllegalArgumentException.class, () -> tx.schema().indexFor( relType, otherRelType ).on( propertyKey ).create() );
+            assertThat( e ).hasMessageContaining( "BTREE indexes can only be created with exactly one relationship type, but got 2 relationship types." );
             tx.commit();
         }
     }
@@ -1400,6 +1395,53 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
         {
             ConstraintCreator creator = tx.schema().constraintFor( relType ).withIndexConfiguration( Map.of() ).assertPropertyExists( propertyKey );
             assertThrows( IllegalArgumentException.class, creator::create );
+            tx.commit();
+        }
+    }
+
+    @Test
+    void creatingBtreeRelationshipIndex()
+    {
+        IndexDefinition index = createIndex( db, relType, propertyKey );
+
+        // THEN
+        try ( Transaction tx = db.beginTx() )
+        {
+            assertThat( getIndexes( tx, relType ) ).containsOnly( index );
+        }
+    }
+
+    @Test
+    void creatingCompositeBtreeRelationshipIndex()
+    {
+        IndexDefinition index = createIndex( db, relType, propertyKey, secondPropertyKey );
+
+        // THEN
+        try ( Transaction tx = db.beginTx() )
+        {
+            assertThat( getIndexes( tx, relType ) ).containsOnly( index );
+        }
+    }
+
+    @Test
+    void mustBePossibleToGetFulltextIndexesBasedOnRelationshipType()
+    {
+        IndexDefinition index1;
+        IndexDefinition index2;
+        try ( Transaction tx = db.beginTx() )
+        {
+            index1 = tx.schema().indexFor( relType ).on( propertyKey ).withIndexType( IndexType.FULLTEXT ).create();
+            index2 = tx.schema().indexFor( relType, otherRelType ).on( propertyKey ).withIndexType( IndexType.FULLTEXT ).create();
+            tx.commit();
+        }
+        waitForIndex( db, index1 );
+        waitForIndex( db, index2 );
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            assertThat( tx.schema().getIndexes( relType ) ).containsExactly( index1, index2 );
+            assertThat( tx.schema().getIndexes( otherRelType ) ).containsOnly( index2 );
+            assertThat( tx.schema().getIndexes( thirdRelType ) ).isEmpty();
             tx.commit();
         }
     }
@@ -1711,6 +1753,38 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
         }
     }
 
+    public static IndexDefinition createIndex( GraphDatabaseService db, RelationshipType relType, String... properties )
+    {
+        return createIndex( db, null, relType, properties );
+    }
+
+    public static IndexDefinition createIndex( GraphDatabaseService db, String name, RelationshipType relType, String... properties )
+    {
+        IndexDefinition indexDef = createIndexNoWait( db, name, relType, properties );
+        waitForIndex( db, indexDef );
+        return indexDef;
+    }
+
+    static IndexDefinition createIndexNoWait( GraphDatabaseService db, String name, RelationshipType relType, String... properties )
+    {
+        IndexDefinition indexDef;
+        try ( Transaction tx = db.beginTx() )
+        {
+            IndexCreator indexCreator = tx.schema().indexFor( relType );
+            for ( String property : properties )
+            {
+                indexCreator = indexCreator.on( property );
+            }
+            if ( name != null )
+            {
+                indexCreator = indexCreator.withName( name );
+            }
+            indexDef = indexCreator.create();
+            tx.commit();
+        }
+        return indexDef;
+    }
+
     public static IndexDefinition createIndex( GraphDatabaseService db, Label label, String... properties )
     {
         return createIndex( db, null, label, properties );
@@ -1723,7 +1797,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
         return indexDef;
     }
 
-    public static IndexDefinition createIndexNoWait( GraphDatabaseService db, String name, Label label, String... properties )
+    static IndexDefinition createIndexNoWait( GraphDatabaseService db, String name, Label label, String... properties )
     {
         IndexDefinition indexDef;
         try ( Transaction tx = db.beginTx() )
@@ -1743,12 +1817,17 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
         return indexDef;
     }
 
-    public static void waitForIndex( GraphDatabaseService beansAPI, IndexDefinition indexDef )
+    static void waitForIndex( GraphDatabaseService beansAPI, IndexDefinition indexDef )
     {
         try ( Transaction tx = beansAPI.beginTx() )
         {
             tx.schema().awaitIndexOnline( indexDef, 10, MINUTES );
         }
+    }
+
+    private Iterable<IndexDefinition> getIndexes( Transaction tx, RelationshipType relType )
+    {
+        return tx.schema().getIndexes( relType );
     }
 
     private Iterable<IndexDefinition> getIndexes( Transaction tx, Label label )

@@ -419,6 +419,7 @@ org.neo4j.graphdb.schema.Schema::getIndexPopulationProgress(org.neo4j.graphdb.sc
 org.neo4j.graphdb.schema.Schema::getIndexState(org.neo4j.graphdb.schema.IndexDefinition) org.neo4j.graphdb.schema.Schema.IndexState public abstract
 org.neo4j.graphdb.schema.Schema::getIndexes() java.lang.Iterable<org.neo4j.graphdb.schema.IndexDefinition> public abstract
 org.neo4j.graphdb.schema.Schema::getIndexes(org.neo4j.graphdb.Label) java.lang.Iterable<org.neo4j.graphdb.schema.IndexDefinition> public abstract
+org.neo4j.graphdb.schema.Schema::getIndexes(org.neo4j.graphdb.RelationshipType) java.lang.Iterable<org.neo4j.graphdb.schema.IndexDefinition> public abstract
 org.neo4j.graphdb.schema.Schema::indexFor(org.neo4j.graphdb.Label) org.neo4j.graphdb.schema.IndexCreator public abstract
 org.neo4j.graphdb.schema.Schema::indexFor(org.neo4j.graphdb.Label...) org.neo4j.graphdb.schema.IndexCreator public abstract
 org.neo4j.graphdb.schema.Schema::indexFor(org.neo4j.graphdb.RelationshipType) org.neo4j.graphdb.schema.IndexCreator public abstract
