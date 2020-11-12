@@ -40,6 +40,8 @@ public class ByteArrayPageCursor extends PageCursor
 {
     private final MutableLongObjectMap<ByteBuffer> buffers;
     private long pageId;
+    // If this is false then the next call to next() will just set it to true, this to adhere to the general PageCursor interaction contract
+    private boolean initialized;
     private ByteBuffer buffer;
     private CursorException cursorException;
 
@@ -79,12 +81,14 @@ public class ByteArrayPageCursor extends PageCursor
         buffers.put( pageId, buffer );
         this.pageId = pageId;
         this.buffer = buffer;
+        this.initialized = true;
     }
 
     public ByteArrayPageCursor( MutableLongObjectMap<ByteBuffer> buffers, long pageId )
     {
         this.buffers = buffers;
         this.pageId = pageId;
+        this.initialized = false;
         this.buffer = buffers.get( pageId );
     }
 
@@ -267,12 +271,18 @@ public class ByteArrayPageCursor extends PageCursor
     @Override
     public boolean next()
     {
+        if ( !initialized )
+        {
+            initialized = true;
+            return true;
+        }
         return next( pageId + 1 );
     }
 
     @Override
     public boolean next( long pageId )
     {
+        this.initialized = true;
         this.pageId = pageId;
         if ( buffers.containsKey( pageId ) )
         {
