@@ -75,6 +75,7 @@ class HeapTrackingLongEnumerationListTest
             assertEquals( i + 1, table.get( i ) );
         }
 
+        assertEquals( 9999L, table.lastKey() );
         assertHeapUsageWithNumberOfLongs( 10000 );
     }
 
@@ -91,6 +92,7 @@ class HeapTrackingLongEnumerationListTest
         assertNull( table.get( 1 ) );
         assertNull( table.get( 2 ) );
         assertNull( table.getFirst() );
+        assertEquals( 2L, table.lastKey() );
         table.foreach( ( k, v ) -> fail() );
         assertFalse( table.valuesIterator().hasNext() );
         assertHeapUsageWithNumberOfLongs( 0 );
@@ -104,6 +106,7 @@ class HeapTrackingLongEnumerationListTest
         assertNull( table.get( 2 ) );
         assertEquals( 42L, table.get( 3 ) );
         assertEquals( 42L, table.getFirst() );
+        assertEquals( 3L, table.lastKey() );
         table.foreach( ( k, v ) -> assertEquals( 42L, v ) );
         Iterator<Long> it = table.valuesIterator();
         assertTrue( it.hasNext() );
@@ -121,6 +124,7 @@ class HeapTrackingLongEnumerationListTest
         assertNull( table.get( 5 ) );
         assertNull( table.get( 6 ) );
         assertEquals( 42L, table.getFirst() );
+        assertEquals( 6L, table.lastKey() );
         table.foreach( ( k, v ) -> assertEquals( 42L, v ) );
         Iterator<Long> it2 = table.valuesIterator();
         assertTrue( it2.hasNext() );
@@ -136,6 +140,7 @@ class HeapTrackingLongEnumerationListTest
         assertNull( table.get( 1 ) );
         assertNull( table.get( 2 ) );
         assertNull( table.getFirst() );
+        assertEquals( 6L, table.lastKey() );
         table.foreach( ( k, v ) -> fail() );
         assertFalse( table.valuesIterator().hasNext() );
         assertHeapUsageWithNumberOfLongs( 0 );
@@ -151,6 +156,7 @@ class HeapTrackingLongEnumerationListTest
         {
             table.add( i + 1 );
         }
+        assertEquals( 4999L, table.lastKey() );
         assertHeapUsageWithNumberOfLongs( 5000 );
 
         // remove 0, .., 2499
@@ -158,6 +164,7 @@ class HeapTrackingLongEnumerationListTest
         {
             table.remove( i );
         }
+        assertEquals( 4999L, table.lastKey() );
         assertHeapUsageWithNumberOfLongs( 2500 );
 
         // add 5000, .., 9999
@@ -165,6 +172,7 @@ class HeapTrackingLongEnumerationListTest
         {
             table.add( i + 1 );
         }
+        assertEquals( 9999L, table.lastKey() );
         assertHeapUsageWithNumberOfLongs( 7500 );
 
         // remove 9901
@@ -298,7 +306,85 @@ class HeapTrackingLongEnumerationListTest
     }
 
     @Test
-    void getFirstAddRemoveAllCycle()
+    void addRemoveScenario()
+    {
+        MemoryTracker memoryTracker = new LocalMemoryTracker();
+        HeapTrackingLongEnumerationList<Long> table = HeapTrackingLongEnumerationList.create( memoryTracker, 4 );
+
+        assertEmpty( table );
+        table.add( 0L );
+        table.add( 1L );
+        table.add( 2L );
+        assertContainsOnly( table,  0, 2 );
+
+        table.remove( 0L );
+        table.remove( 1L );
+        assertContainsOnly( table,  2 );
+
+        table.remove( 2 );
+        assertEmpty( table );
+
+        table.add( 3L );
+        table.add( 4L );
+        table.add( 5L );
+        assertContainsOnly( table,  3, 5 );
+
+        table.remove( 5 );
+        assertContainsOnly( table,  3, 4 );
+
+        table.remove( 4 );
+        assertContainsOnly( table,  3 );
+
+        long measured1 = meter.measureDeep( table ) - measuredMemoryTracker;
+        assertEquals( measured1, memoryTracker.estimatedHeapMemory() + HeapEstimator.LONG_SIZE );
+
+        table.add( 6L );
+        assertContainsOnly( table,  new long[]{3L, 6L} );
+        long measured2 = meter.measureDeep( table ) - measuredMemoryTracker;
+        assertEquals( measured2, memoryTracker.estimatedHeapMemory() + 2 * HeapEstimator.LONG_SIZE );
+        assertEquals(  HeapEstimator.LONG_SIZE, measured2 - measured1 );
+
+        table.add( 7L ); // New chunk needed
+        assertContainsOnly( table,  new long[]{3L, 6, 7L} );
+        table.add( 8L ); // New chunk allocated because of poor alignment in tail chunks
+        assertContainsOnly( table,  new long[]{3L, 6L, 7L, 8L} );
+
+        table.remove( 6L );
+        assertContainsOnly( table,  new long[]{3L, 7L, 8L} );
+        table.remove( 3L ); // Should recycle chunk
+        assertContainsOnly( table,  new long[]{7L, 8L} );
+
+        table.remove( 7L ); // Should recycle chunk
+        assertContainsOnly( table, 8L );
+
+        // Memory should be back to one chunk + one value
+        long measured3 = meter.measureDeep( table ) - measuredMemoryTracker;
+        assertEquals( measured3, memoryTracker.estimatedHeapMemory() + HeapEstimator.LONG_SIZE );
+        assertEquals( measured1, measured3 );
+
+        table.add( 9L );
+        table.add( 10L );
+        table.add( 11L );
+        assertContainsOnly( table, 8, 11 );
+        table.remove( 8L );
+        table.remove( 10L );
+        table.remove( 11L );
+        assertContainsOnly( table, 9 );
+        table.add( 12L );
+        assertContainsOnly( table,  new long[]{9L, 12L} );
+        table.remove( 9L );
+        assertContainsOnly( table, 12 );
+
+        // Memory should be one chunk + one value
+        long measured4 = meter.measureDeep( table ) - measuredMemoryTracker;
+        assertEquals( measured4, memoryTracker.estimatedHeapMemory() + HeapEstimator.LONG_SIZE );
+        assertEquals( measured3, measured4 );
+
+        table.close();
+    }
+
+    @Test
+    void addRemoveAllFirstCycle()
     {
         long key = 0;
 
@@ -318,9 +404,10 @@ class HeapTrackingLongEnumerationListTest
         long estimatedAfterRemove1 = memoryTracker.estimatedHeapMemory();
 
         assertNull( table.getFirst() );
-        table.add( key );
-        assertEquals( key, table.getFirst() );
-        key++;
+        assertEquals( key - 1, table.lastKey() );
+        table.add( key++ );
+        assertEquals( key - 1, table.getFirst() );
+        assertEquals( key - 1, table.lastKey() );
         for ( int i = 1; i < 5000; i++ )
         {
             table.add( key++ );
@@ -336,8 +423,10 @@ class HeapTrackingLongEnumerationListTest
         long estimatedAfterRemove2 = memoryTracker.estimatedHeapMemory();
 
         assertNull( table.getFirst() );
-        table.add( key );
-        assertEquals( key, table.getFirst() );
+        assertEquals( key - 1, table.lastKey() );
+        table.add( key++ );
+        assertEquals( key - 1, table.getFirst() );
+        assertEquals( key - 1, table.lastKey() );
         long measured = meter.measureDeep( table ) - measuredMemoryTracker;
 
         // Memory estimation should be accurate
@@ -353,7 +442,7 @@ class HeapTrackingLongEnumerationListTest
     }
 
     @Test
-    void getFirstAddRemoveChunkCycle()
+    void addRemoveChunkFirstCycle()
     {
         int size = DEFAULT_CHUNK_SIZE;
         long key = 0;
@@ -391,6 +480,85 @@ class HeapTrackingLongEnumerationListTest
         {
             table.remove( i + size );
         }
+        long measuredAfterRemove2 = meter.measureDeep( table ) - measuredMemoryTracker;
+        long estimatedAfterRemove2 = memoryTracker.estimatedHeapMemory();
+
+        assertNull( table.getFirst() );
+        table.add( key );
+        assertEquals( key, table.getFirst() );
+        long measuredLast = meter.measureDeep( table ) - measuredMemoryTracker;
+        long estimatedLast = memoryTracker.estimatedHeapMemory() + HeapEstimator.LONG_SIZE;
+
+        // Memory estimation should be accurate
+        assertEquals( measuredAfterAdd1, estimatedAfterAdd1 );
+        assertEquals( measuredAfterRemove1, estimatedAfterRemove1 );
+        assertEquals( measuredAfterAdd2, estimatedAfterAdd2 );
+        assertEquals( measuredAfterRemove2, estimatedAfterRemove2 );
+        assertEquals( measuredLast, estimatedLast );
+
+        // Memory usage should not increase
+        assertEquals( measuredAfterAdd1, measuredAfterAdd2 );
+        assertEquals( measuredAfterRemove1, measuredAfterRemove2 );
+        assertEquals( estimatedAfterAdd1, estimatedAfterAdd2 );
+        assertEquals( estimatedAfterRemove1, estimatedAfterRemove2 );
+
+        // Memory usage of internal structure should also not increase when adding unless a new chunk is needed
+        assertEquals( measuredEmpty, measuredAfterAdd1 - size * HeapEstimator.LONG_SIZE );
+        assertEquals( measuredEmpty, measuredAfterRemove1 );
+        assertEquals( measuredEmpty, measuredAfterAdd2 - size * HeapEstimator.LONG_SIZE );
+        assertEquals( measuredEmpty, measuredAfterRemove2 );
+
+        assertEquals( estimatedEmpty, estimatedAfterAdd1 - size * HeapEstimator.LONG_SIZE );
+        assertEquals( estimatedEmpty, estimatedAfterRemove1 );
+        assertEquals( estimatedEmpty, estimatedAfterAdd2 - size * HeapEstimator.LONG_SIZE );
+        assertEquals( estimatedEmpty, estimatedAfterRemove2 );
+    }
+
+    @Test
+    void addRemoveChunkFirstCycleWithOffset()
+    {
+        int size = DEFAULT_CHUNK_SIZE;
+        long key = 0;
+
+        long measuredEmpty = meter.measureDeep( table ) - measuredMemoryTracker;
+        long estimatedEmpty = memoryTracker.estimatedHeapMemory();
+
+        assertNull( table.getFirst() );
+
+        table.add( key );
+        table.remove( key );
+        key++;
+        assertNull( table.getFirst() );
+
+        for ( long i = key; i < key + size; i++ )
+        {
+            table.add( i );
+        }
+        long measuredAfterAdd1 = meter.measureDeep( table ) - measuredMemoryTracker;
+        long estimatedAfterAdd1 = memoryTracker.estimatedHeapMemory() + size * HeapEstimator.LONG_SIZE;
+
+        for ( long i = key; i < key + size; i++ )
+        {
+            table.remove( i );
+        }
+        key += size;
+        long measuredAfterRemove1 = meter.measureDeep( table ) - measuredMemoryTracker;
+        long estimatedAfterRemove1 = memoryTracker.estimatedHeapMemory();
+
+        assertNull( table.getFirst() );
+
+        for ( long i = key; i < key + size; i++ )
+        {
+            table.add( i );
+        }
+        long measuredAfterAdd2 = meter.measureDeep( table ) - measuredMemoryTracker;
+        long estimatedAfterAdd2 = memoryTracker.estimatedHeapMemory() + size * HeapEstimator.LONG_SIZE;
+
+        for ( long i = key; i < key + size; i++ )
+        {
+            table.remove( i );
+        }
+        key += size;
         long measuredAfterRemove2 = meter.measureDeep( table ) - measuredMemoryTracker;
         long estimatedAfterRemove2 = memoryTracker.estimatedHeapMemory();
 
@@ -509,5 +677,116 @@ class HeapTrackingLongEnumerationListTest
     {
         long measured = meter.measureDeep( table ) - measuredMemoryTracker;
         assertEquals( measured, memoryTracker.estimatedHeapMemory() + numberOfBoxedLongs * HeapEstimator.LONG_SIZE );
+    }
+
+    private void assertEmpty( HeapTrackingLongEnumerationList<Long> table )
+    {
+        assertNull( table.getFirst() );
+        assertFalse( table.valuesIterator().hasNext() );
+        table.foreach( ( k, v ) -> fail() );
+    }
+
+    private void assertContainsOnly( HeapTrackingLongEnumerationList<Long> table, long element )
+    {
+        assertContainsOnly( table, element, element );
+    }
+
+    private void assertContainsOnly( HeapTrackingLongEnumerationList<Long> table, long from, long to )
+    {
+        long until = to + 1;
+
+        // getFirst
+        assertEquals( from, table.getFirst() );
+
+        // get
+        for ( long i = from; i <= to; i++ )
+        {
+            assertEquals( i, table.get( i ) );
+        }
+        assertNull( table.get( from - 1 ) );
+        assertNull( table.get( to + 1 ) );
+
+        // foreach
+        {
+            long[] i = new long[1];
+
+            i[0] = from;
+            table.foreach( ( k, v ) ->
+            {
+                if ( i[0] >= until )
+                {
+                    fail( "foreach out of range" );
+                }
+                var expected = i[0];
+                assertEquals( expected, k );
+                assertEquals( expected, v );
+                i[0]++;
+            } );
+            assertEquals( until, i[0] );
+        }
+
+        // valuesIterator
+        {
+            long i = from;
+            var it = table.valuesIterator();
+            while ( it.hasNext() )
+            {
+                long value = it.next();
+                assertEquals( i, value );
+                i++;
+            }
+            assertEquals( until, i );
+        }
+
+    }
+
+    private void assertContainsOnly( HeapTrackingLongEnumerationList<Long> table, long[] expected )
+    {
+        // getFirst
+        if ( expected.length > 0 )
+        {
+            assertEquals( expected[0], table.getFirst() );
+        }
+
+        // get
+        for ( long i : expected )
+        {
+            assertEquals( i, table.get( i ) );
+        }
+        if ( expected.length > 0 )
+        {
+            assertNull( table.get( expected[0] - 1 ) );
+            assertNull( table.get( expected[expected.length - 1] + 1 ) );
+        }
+
+        // foreach
+        {
+            int[] i = new int[1];
+            table.foreach( ( k, v ) ->
+            {
+                if ( i[0] >= expected.length )
+                {
+                    fail( "foreach out of range" );
+                }
+                var expect = expected[i[0]];
+                assertEquals( expect, k );
+                assertEquals( expect, v );
+                i[0]++;
+            } );
+            assertEquals( expected.length, i[0] );
+        }
+
+        // valuesIterator
+        {
+            int i = 0;
+            var it = table.valuesIterator();
+            while ( it.hasNext() )
+            {
+                long value = it.next();
+                assertEquals( expected[i], value );
+                i++;
+            }
+            assertEquals( expected.length, i );
+        }
     }
 }
