@@ -686,6 +686,98 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTestBase(queryGraphSolve
           Map("n.prop" -> prop("n", "prop")))
       )
     }
+
+    test(s"$cypherToken-$orderCapability: Should use OrderedDistinct if there is an ordered index available") {
+      val plan = new given{
+        indexOn("A", "prop")
+          .providesOrder(orderCapability)
+          .providesValues()
+      }.getLogicalPlanFor("MATCH (a:A) WHERE exists(a.prop) RETURN DISTINCT a.prop")._2
+
+      // We should prefer ASC index order if we can choose between both
+      val expectedPlannedOrder = if (orderCapability == DESC) IndexOrderDescending else IndexOrderAscending
+
+      val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
+        .orderedDistinct(Seq("cache[a.prop]"), "cache[a.prop] AS `a.prop`")
+        .nodeIndexOperator("a:A(prop)", indexOrder = expectedPlannedOrder, getValue = GetValue)
+        .build()
+
+      plan shouldEqual expectedPlan
+    }
+
+    test(s"$cypherToken-$orderCapability: Should use OrderedDistinct if there is an ordered index available (multiple columns)") {
+      val plan = new given{
+        indexOn("A", "prop")
+          .providesOrder(orderCapability)
+          .providesValues()
+      }.getLogicalPlanFor("MATCH (a:A) WHERE exists(a.prop) RETURN DISTINCT a.foo, a.prop")._2
+
+      // We should prefer ASC index order if we can choose between both
+      val expectedPlannedOrder = if (orderCapability == DESC) IndexOrderDescending else IndexOrderAscending
+
+      val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
+        .orderedDistinct(Seq("cache[a.prop]"), "a.foo AS `a.foo`", "cache[a.prop] AS `a.prop`")
+        .nodeIndexOperator("a:A(prop)", indexOrder = expectedPlannedOrder, getValue = GetValue)
+        .build()
+
+      plan shouldEqual expectedPlan
+    }
+
+    test(s"$cypherToken-$orderCapability: Should use OrderedDistinct if there is an ordered composite index available") {
+      val plan = new given{
+        indexOn("A", "foo", "prop")
+          .providesOrder(orderCapability)
+          .providesValues()
+      }.getLogicalPlanFor("MATCH (a:A) WHERE exists(a.prop) AND exists(a.foo) RETURN DISTINCT a.foo, a.prop")._2
+
+      // We should prefer ASC index order if we can choose between both
+      val expectedPlannedOrder = if (orderCapability == DESC) IndexOrderDescending else IndexOrderAscending
+
+      val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
+        .orderedDistinct(Seq("cache[a.foo]", "cache[a.prop]"), "cache[a.foo] AS `a.foo`", "cache[a.prop] AS `a.prop`")
+        .nodeIndexOperator("a:A(foo, prop)", indexOrder = expectedPlannedOrder, getValue = GetValue)
+        .build()
+
+      plan shouldEqual expectedPlan
+    }
+
+    test(s"$cypherToken-$orderCapability: Should use OrderedDistinct if there is an ordered composite index available (reveresed column order)") {
+      val plan = new given{
+        indexOn("A", "foo", "prop")
+          .providesOrder(orderCapability)
+          .providesValues()
+      }.getLogicalPlanFor("MATCH (a:A) WHERE exists(a.prop) AND exists(a.foo) RETURN DISTINCT a.prop, a.foo")._2
+
+      // We should prefer ASC index order if we can choose between both
+      val expectedPlannedOrder = if (orderCapability == DESC) IndexOrderDescending else IndexOrderAscending
+
+      val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
+        .orderedDistinct(Seq("cache[a.foo]", "cache[a.prop]"), "cache[a.foo] AS `a.foo`", "cache[a.prop] AS `a.prop`")
+        .nodeIndexOperator("a:A(foo, prop)", indexOrder = expectedPlannedOrder, getValue = GetValue)
+        .build()
+
+      plan shouldEqual expectedPlan
+    }
+
+    test(s"$cypherToken-$orderCapability: Should use OrderedAggregation if there is an ordered index available, in presence of ORDER BY for aggregating column") {
+      val plan = new given{
+        indexOn("A", "prop")
+          .providesOrder(orderCapability)
+          .providesValues()
+      }.getLogicalPlanFor(s"MATCH (a:A) WHERE a.prop > 0 RETURN a.prop, count(*) AS c ORDER BY c $cypherToken")._2
+
+      // We should prefer ASC index order if we can choose between both
+      val expectedPlannedOrder = if (orderCapability == DESC) IndexOrderDescending else IndexOrderAscending
+
+      val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
+        .sort(Seq(sortOrder("c")))
+        .orderedAggregation(Seq("cache[a.prop] AS `a.prop`"), Seq("count(*) AS c"), Seq("cache[a.prop]"))
+        .nodeIndexOperator("a:A(prop > 0)", indexOrder = expectedPlannedOrder, getValue = GetValue)
+        .build()
+
+      plan shouldEqual expectedPlan
+    }
+
   }
 
   // Composite index

@@ -123,7 +123,11 @@ object ResultOrdering {
                 (orderColumn, PropertyAndPredicateType(prop, true))) if orderColumn != null && satisfies(prop, orderColumn.expression, orderColumn.projections) =>
             IndexOrderDecided(indexOrder, poColumns :+ getNewProvidedOrderColumn(orderColumn, prop))
 
-          // We find a contradicting order without exact predicate, the index has more columns than the ORDER BY or the property doesn't match, so we have to add more columns in the same order to the provided order
+          // Either
+          // * we find a contradicting order without exact predicate,
+          // * the index has more columns than the ORDER BY or
+          // * the property doesn't match.
+          // So we have to add more columns in the same order to the provided order.
           case (IndexOrderDecided(indexOrder, poColumns),
                 (_, PropertyAndPredicateType(prop, _))) =>
             val nextCol = indexOrder match {

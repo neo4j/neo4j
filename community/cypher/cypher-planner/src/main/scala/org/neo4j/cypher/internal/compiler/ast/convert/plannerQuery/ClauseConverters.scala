@@ -196,43 +196,52 @@ object ClauseConverters {
   def findRequiredOrder(horizon: QueryHorizon, optOrderBy: Option[OrderBy]): InterestingOrder = {
 
     val sortItems = if(optOrderBy.isDefined) optOrderBy.get.sortItems else Seq.empty
-    val (requiredOrderColumns, interestingOrderColumns: Seq[ColumnOrder]) = horizon match {
+    val (requiredOrderCandidate, interestingOrderCandidates: Seq[InterestingOrderCandidate]) = horizon match {
       case RegularQueryProjection(projections, _, _) =>
-        (extractColumnOrderFromOrderBy(sortItems, projections), Seq.empty)
+        val requiredOrderCandidate = extractColumnOrderFromOrderBy(sortItems, projections)
+        (requiredOrderCandidate, Seq.empty)
       case AggregatingQueryProjection(groupingExpressions, aggregationExpressions, _, _) =>
-        val requiredOrders = extractColumnOrderFromOrderBy(sortItems, groupingExpressions)
-        val interestingColumnOrders =
-          if (groupingExpressions.isEmpty && aggregationExpressions.size == 1) {
-            // just checked that there is only one key
-            val value = aggregationExpressions(aggregationExpressions.keys.head)
-            AggregationHelper.checkMinOrMax(value, e => Seq(Asc(e)), e => Seq(Desc(e)), Seq.empty)
-          } else if (requiredOrders.isEmpty) {
-            groupingExpressions.values.collect {
-              case e: Property => Asc(e)
-            }
-          } else {
-            Seq.empty
-          }
-        (requiredOrders, interestingColumnOrders)
+        val requiredOrderCandidate = extractColumnOrderFromOrderBy(sortItems, groupingExpressions)
+        val interestingCandidates =
+          interestingOrderCandidatesForGroupingExpressions(groupingExpressions) ++
+            interestingOrderCandidateForMinOrMax(groupingExpressions, aggregationExpressions)
+        (requiredOrderCandidate, interestingCandidates)
       case DistinctQueryProjection(groupingExpressions, _, _) =>
-        val requiredColumns = extractColumnOrderFromOrderBy(sortItems, groupingExpressions)
-        val interestingColumnOrders = if (requiredColumns.isEmpty) groupingExpressions.values.collect {
-            case e: Property => Asc(e)
-        } else Seq.empty
+        val requiredOrderCandidate = extractColumnOrderFromOrderBy(sortItems, groupingExpressions)
+        val interestingCandidates = interestingOrderCandidatesForGroupingExpressions(groupingExpressions)
 
-        (requiredColumns, interestingColumnOrders)
-      case _ => (Seq.empty, Seq.empty)
+        (requiredOrderCandidate, interestingCandidates)
+      case _ => (RequiredOrderCandidate(Seq.empty), Seq.empty)
     }
 
-    if (interestingOrderColumns.isEmpty)
-      InterestingOrder(RequiredOrderCandidate(requiredOrderColumns))
-    else
-      InterestingOrder(RequiredOrderCandidate(requiredOrderColumns), Seq(InterestingOrderCandidate(interestingOrderColumns)))
+    InterestingOrder(requiredOrderCandidate, interestingOrderCandidates)
   }
 
-  private def extractColumnOrderFromOrderBy(sortItems: Seq[SortItem], projections: Map[String, Expression]): Seq[InterestingOrder.ColumnOrder] = {
+  private def interestingOrderCandidateForMinOrMax(groupingExpressions: Map[String, Expression], aggregationExpressions: Map[String, Expression]): Option[InterestingOrderCandidate] = {
+    if (groupingExpressions.isEmpty && aggregationExpressions.size == 1) {
+      // just checked that there is only one key
+      val value = aggregationExpressions(aggregationExpressions.keys.head)
+      val columns: Seq[ColumnOrder] = AggregationHelper.checkMinOrMax(value, e => Seq(Asc(e)), e => Seq(Desc(e)), Seq.empty)
+      Some(InterestingOrderCandidate(columns))
+    } else {
+      None
+    }
+  }
 
-    sortItems.map {
+  private def interestingOrderCandidatesForGroupingExpressions(groupingExpressions: Map[String, Expression]): Seq[InterestingOrderCandidate] = {
+    val props = groupingExpressions.values.collect {
+      case e: Property => e
+    }.toSeq
+
+    val orderings = Seq(Asc(_, Map.empty), Desc(_, Map.empty))
+    for {
+      prop <- props
+      indexOrder <- orderings
+    } yield InterestingOrderCandidate(Seq(indexOrder(prop)))
+  }
+
+  private def extractColumnOrderFromOrderBy(sortItems: Seq[SortItem], projections: Map[String, Expression]): RequiredOrderCandidate = {
+    val columns = sortItems.map {
       // RETURN a AS b ORDER BY b.prop
       case AscSortItem(e@Property(LogicalVariable(varName), _)) =>
         projections.get(varName) match {
@@ -268,6 +277,7 @@ object ClauseConverters {
         val orderProjections = projections.filter(p => depNames.contains(p._1))
         Desc(expression, orderProjections)
     }
+    RequiredOrderCandidate(columns)
   }
 
   private def addSetClauseToLogicalPlanInput(acc: PlannerQueryBuilder, clause: SetClause): PlannerQueryBuilder =

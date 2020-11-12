@@ -62,6 +62,19 @@ class InterestingOrderStatementConvertersTest extends CypherFunSuite with Logica
     result should equal(expectation)
   }
 
+  test(s"Extracts interesting order from DISTINCT") {
+    val result = buildSinglePlannerQuery("MATCH (n) RETURN DISTINCT n.prop, n.foo")
+    result.interestingOrder shouldBe InterestingOrder(
+      RequiredOrderCandidate(Seq.empty),
+      Seq(
+        InterestingOrderCandidate.asc(prop("n", "prop")),
+        InterestingOrderCandidate.desc(prop("n", "prop")),
+        InterestingOrderCandidate.asc(prop("n", "foo")),
+        InterestingOrderCandidate.desc(prop("n", "foo")),
+      )
+    )
+  }
+
   test("Extracts required order from aggregation") {
     val result = buildSinglePlannerQuery("MATCH (n) RETURN n.prop, count(*) ORDER BY n.prop")
 
@@ -72,6 +85,19 @@ class InterestingOrderStatementConvertersTest extends CypherFunSuite with Logica
     )
 
     result should equal(expectation)
+  }
+
+  test(s"Extracts interesting order from aggregation") {
+    val result = buildSinglePlannerQuery("MATCH (n) RETURN n.prop, n.foo, count(*)")
+    result.interestingOrder shouldBe InterestingOrder(
+      RequiredOrderCandidate(Seq.empty),
+      Seq(
+        InterestingOrderCandidate.asc(prop("n", "prop")),
+        InterestingOrderCandidate.desc(prop("n", "prop")),
+        InterestingOrderCandidate.asc(prop("n", "foo")),
+        InterestingOrderCandidate.desc(prop("n", "foo")),
+      )
+    )
   }
 
   test("Extracts interesting order from min") {
@@ -392,7 +418,7 @@ class InterestingOrderStatementConvertersTest extends CypherFunSuite with Logica
     result should equal(expectation)
   }
 
-  def interestingOrders(plannerQuery: SinglePlannerQuery): List[InterestingOrder] =
+  private def interestingOrders(plannerQuery: SinglePlannerQuery): List[InterestingOrder] =
     plannerQuery.tail match {
       case None => List(plannerQuery.interestingOrder)
       case Some(tail) => plannerQuery.interestingOrder :: interestingOrders(tail)
