@@ -39,6 +39,7 @@ import org.neo4j.kernel.impl.store.format.RecordGenerators.Generator;
 import org.neo4j.kernel.impl.store.id.BatchingIdSequence;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.Record;
+import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.test.impl.EphemeralPageSwapperFactory;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.RandomRule;
@@ -215,21 +216,12 @@ public abstract class AbstractRecordFormatTest
             assertedNext( cursor );
             read.setId( written.getId() );
 
-            /*
-             Retry loop is needed here because format does not handle retries on the primary cursor.
-             Same retry is done on the store level in {@link org.neo4j.kernel.impl.store.CommonAbstractStore}
-             */
-            do
-            {
-                cursor.setOffset( 0 );
-                format.read( read, cursor, NORMAL, recordSize );
-            }
-            while ( cursor.shouldRetry() );
+            readRecord( read, format, cursor, recordSize, NORMAL );
             assertWithinBounds( written, cursor, "reading" );
             if ( assertPostReadOffset )
             {
                 assertEquals( "Cursor is positioned on first byte of next record after a read",
-                              recordSize, cursor.getOffset() );
+                        recordSize, cursor.getOffset() );
             }
             cursor.checkAndClearCursorException();
 
@@ -248,8 +240,25 @@ public abstract class AbstractRecordFormatTest
         }
     }
 
-    private <R extends AbstractBaseRecord> void writeRecord( R record, RecordFormat<R> format, PagedFile storeFile,
-            int recordSize, BatchingIdSequence idSequence, boolean prepare ) throws IOException
+    protected <R extends AbstractBaseRecord> void readRecord( R read, RecordFormat<R> format, PageCursor cursor, int recordSize,
+            RecordLoad mode ) throws IOException
+    {
+        /*
+         Retry loop is needed here because format does not handle retries on the primary cursor.
+         Same retry is done on the store level in {@link org.neo4j.kernel.impl.store.CommonAbstractStore}
+         */
+        cursor.mark();
+        do
+        {
+            cursor.setOffsetToMark();
+            format.read( read, cursor, mode, recordSize );
+        }
+        while ( cursor.shouldRetry() );
+    }
+
+    protected <R extends AbstractBaseRecord> void writeRecord( R record, RecordFormat<R> format, PagedFile storeFile,
+            int recordSize,
+            BatchingIdSequence idSequence, boolean prepare ) throws IOException
     {
         try ( PageCursor cursor = storeFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK ) )
         {
@@ -273,7 +282,7 @@ public abstract class AbstractRecordFormatTest
         }
     }
 
-    private void assertedNext( PageCursor cursor ) throws IOException
+    protected void assertedNext( PageCursor cursor ) throws IOException
     {
         assertTrue( cursor.next() );
     }
