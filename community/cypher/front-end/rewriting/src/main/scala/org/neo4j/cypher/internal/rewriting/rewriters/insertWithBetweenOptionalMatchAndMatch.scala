@@ -20,18 +20,22 @@ import org.neo4j.cypher.internal.ast.Match
 import org.neo4j.cypher.internal.ast.ReturnItems
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.With
-import org.neo4j.cypher.internal.rewriting.RewritingStep
+import org.neo4j.cypher.internal.rewriting.Deprecations
+import org.neo4j.cypher.internal.rewriting.rewriters.factories.PreparatoryRewritingRewriterFactory
+import org.neo4j.cypher.internal.util.CypherExceptionFactory
+import org.neo4j.cypher.internal.util.InternalNotificationLogger
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.StepSequencer.Condition
+import org.neo4j.cypher.internal.util.StepSequencer.Step
 import org.neo4j.cypher.internal.util.topDown
 
 case object WithBetweenOptionalMatchAndMatchInserted extends Condition
 
 // Rewrites OPTIONAL MATCH (<n>) MATCH (<n>) RETURN <n> ==> OPTIONAL MATCH (<n>) WITH * MATCH (<n>) RETURN <n>
-case object insertWithBetweenOptionalMatchAndMatch extends RewritingStep {
+case object insertWithBetweenOptionalMatchAndMatch extends Rewriter with Step with PreparatoryRewritingRewriterFactory {
 
-  override def rewrite(that: AnyRef): AnyRef = instance(that)
+  override def apply(that: AnyRef): AnyRef = instance(that)
 
   override def preConditions: Set[StepSequencer.Condition] = Set.empty
 
@@ -49,4 +53,8 @@ case object insertWithBetweenOptionalMatchAndMatch extends RewritingStep {
       }.flatten.toSeq :+ clauses.last
       SingleQuery(newClauses)(sq.position)
   })
+
+  override def getRewriter(deprecations: Deprecations,
+                           cypherExceptionFactory: CypherExceptionFactory,
+                           notificationLogger: InternalNotificationLogger): Rewriter = instance
 }

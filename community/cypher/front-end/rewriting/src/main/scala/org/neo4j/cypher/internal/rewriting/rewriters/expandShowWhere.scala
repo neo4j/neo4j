@@ -25,16 +25,20 @@ import org.neo4j.cypher.internal.ast.ShowRoles
 import org.neo4j.cypher.internal.ast.ShowUsers
 import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.ast.Yield
-import org.neo4j.cypher.internal.rewriting.RewritingStep
+import org.neo4j.cypher.internal.rewriting.Deprecations
+import org.neo4j.cypher.internal.rewriting.rewriters.factories.PreparatoryRewritingRewriterFactory
+import org.neo4j.cypher.internal.util.CypherExceptionFactory
+import org.neo4j.cypher.internal.util.InternalNotificationLogger
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.StepSequencer.Condition
+import org.neo4j.cypher.internal.util.StepSequencer.Step
 import org.neo4j.cypher.internal.util.bottomUp
 
 case object WithBetweenShowAndWhereInserted extends Condition
 
 // rewrites SHOW ... WHERE <e> " ==> SHOW ... YIELD * WHERE <e>
-case object expandShowWhere extends RewritingStep {
+case object expandShowWhere extends Rewriter with Step with PreparatoryRewritingRewriterFactory {
 
   override def preConditions: Set[StepSequencer.Condition] = Set.empty
 
@@ -42,7 +46,7 @@ case object expandShowWhere extends RewritingStep {
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
 
-  override def rewrite(v: AnyRef): AnyRef =
+  override def apply(v: AnyRef): AnyRef =
     instance(v)
 
     private val instance = bottomUp(Rewriter.lift {
@@ -56,4 +60,8 @@ case object expandShowWhere extends RewritingStep {
 
     private def whereToYield(where: Where): Yield =
       Yield(ReturnItems(includeExisting = true, Seq.empty)(where.position), None, None, None, Some(where))(where.position)
+
+  override def getRewriter(deprecations: Deprecations,
+                           cypherExceptionFactory: CypherExceptionFactory,
+                           notificationLogger: InternalNotificationLogger): Rewriter = instance
 }

@@ -18,12 +18,12 @@ package org.neo4j.cypher.internal.frontend.phases
 
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
 import org.neo4j.cypher.internal.rewriting.Deprecations
-import org.neo4j.cypher.internal.rewriting.RewritingStepSequencer
+import org.neo4j.cypher.internal.rewriting.ListStepAccumulator
+import org.neo4j.cypher.internal.rewriting.RewriterStep
 import org.neo4j.cypher.internal.rewriting.rewriters.LiteralsAreAvailable
-import org.neo4j.cypher.internal.rewriting.rewriters.PatternExpressionsHaveSemanticInfo
-import org.neo4j.cypher.internal.rewriting.rewriters.ProjectionClausesHaveSemanticInfo
 import org.neo4j.cypher.internal.rewriting.rewriters.expandCallWhere
 import org.neo4j.cypher.internal.rewriting.rewriters.expandShowWhere
+import org.neo4j.cypher.internal.rewriting.rewriters.factories.PreparatoryRewritingRewriterFactory
 import org.neo4j.cypher.internal.rewriting.rewriters.insertWithBetweenOptionalMatchAndMatch
 import org.neo4j.cypher.internal.rewriting.rewriters.mergeInPredicates
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizeWithAndReturnClauses
@@ -34,17 +34,22 @@ import org.neo4j.cypher.internal.util.inSequence
 
 case class PreparatoryRewriting(deprecations: Deprecations) extends Phase[BaseContext, BaseState, BaseState] {
 
+  val AccumulatedSteps(orderedSteps, _) = new StepSequencer(ListStepAccumulator[StepSequencer.Step with PreparatoryRewritingRewriterFactory]()).orderSteps(Set(
+    normalizeWithAndReturnClauses,
+    insertWithBetweenOptionalMatchAndMatch,
+    expandCallWhere,
+    expandShowWhere,
+    replaceDeprecatedCypherSyntax,
+    mergeInPredicates), initialConditions = Set(LiteralsAreAvailable))
+
   override def process(from: BaseState, context: BaseContext): BaseState = {
 
-    val AccumulatedSteps(orderedSteps, _) = RewritingStepSequencer.orderSteps(Set(
-      normalizeWithAndReturnClauses(context.cypherExceptionFactory, context.notificationLogger),
-      insertWithBetweenOptionalMatchAndMatch,
-      expandCallWhere,
-      expandShowWhere,
-      replaceDeprecatedCypherSyntax(deprecations),
-      mergeInPredicates), initialConditions = Set(LiteralsAreAvailable))
+    val rewriters = orderedSteps.map { step =>
+      val rewriter = step.getRewriter(deprecations, context.cypherExceptionFactory, context.notificationLogger)
+      RewriterStep.validatingRewriter(rewriter, step)
+    }
 
-    val rewrittenStatement = from.statement().endoRewrite(inSequence(orderedSteps: _*))
+    val rewrittenStatement = from.statement().endoRewrite(inSequence(rewriters: _*))
 
     from.withStatement(rewrittenStatement)
   }
@@ -55,3 +60,4 @@ case class PreparatoryRewriting(deprecations: Deprecations) extends Phase[BaseCo
 
   override def postConditions: Set[StepSequencer.Condition] = Set.empty
 }
+

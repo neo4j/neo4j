@@ -24,12 +24,16 @@ import org.neo4j.cypher.internal.expressions.In
 import org.neo4j.cypher.internal.expressions.ListLiteral
 import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.Or
-import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.expressions.ScopeExpression
-import org.neo4j.cypher.internal.rewriting.RewritingStep
+import org.neo4j.cypher.internal.rewriting.Deprecations
+import org.neo4j.cypher.internal.rewriting.rewriters.factories.PreparatoryRewritingRewriterFactory
+import org.neo4j.cypher.internal.util.CypherExceptionFactory
+import org.neo4j.cypher.internal.util.Foldable.SkipChildren
+import org.neo4j.cypher.internal.util.InternalNotificationLogger
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.StepSequencer.Condition
+import org.neo4j.cypher.internal.util.StepSequencer.Step
 import org.neo4j.cypher.internal.util.bottomUp
 
 case object LiteralsAreAvailable extends Condition
@@ -51,7 +55,7 @@ case object MultipleInPredicatesAreMerged extends Condition
  * NOTE: this rewriter must be applied before auto parameterization, since after
  * that we are just dealing with opaque parameters.
  */
-case object mergeInPredicates extends RewritingStep {
+case object mergeInPredicates extends Rewriter with Step with PreparatoryRewritingRewriterFactory {
 
   override def preConditions: Set[StepSequencer.Condition] = Set(LiteralsAreAvailable)
 
@@ -59,7 +63,7 @@ case object mergeInPredicates extends RewritingStep {
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
 
-  def rewrite(that: AnyRef): AnyRef = inner.apply(that)
+  override def apply(that: AnyRef): AnyRef = inner.apply(that)
 
   private val inner: Rewriter = bottomUp(Rewriter.lift {
 
@@ -143,4 +147,8 @@ case object mergeInPredicates extends RewritingStep {
       acc ++ updates ++ (current -- sharedKeys)
     })
   }
+
+  override def getRewriter(deprecations: Deprecations,
+                           cypherExceptionFactory: CypherExceptionFactory,
+                           notificationLogger: InternalNotificationLogger): Rewriter = this
 }

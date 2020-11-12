@@ -41,13 +41,15 @@ import org.neo4j.cypher.internal.ast.Yield
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.Variable
-import org.neo4j.cypher.internal.rewriting.RewritingStep
+import org.neo4j.cypher.internal.rewriting.Deprecations
+import org.neo4j.cypher.internal.rewriting.rewriters.factories.PreparatoryRewritingRewriterFactory
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.InternalNotificationLogger
 import org.neo4j.cypher.internal.util.MissingAliasNotification
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.StepSequencer.Condition
+import org.neo4j.cypher.internal.util.StepSequencer.Step
 import org.neo4j.cypher.internal.util.topDown
 
 case object ReturnItemsAreAliased extends Condition
@@ -73,9 +75,9 @@ case object ExpressionsInOrderByAndWhereUseAliases extends Condition
  * WITH n.prop AS prop ORDER BY prop DESC
  * RETURN prop AS prop
  */
-case class normalizeWithAndReturnClauses(cypherExceptionFactory: CypherExceptionFactory, notificationLogger: InternalNotificationLogger) extends RewritingStep {
+case class normalizeWithAndReturnClauses(cypherExceptionFactory: CypherExceptionFactory, notificationLogger: InternalNotificationLogger) extends Rewriter {
 
-  def rewrite(that: AnyRef): AnyRef = that match {
+  def apply(that: AnyRef): AnyRef = that match {
     case q@Query(_, queryPart) => q.copy(part = rewriteTopLevelQueryPart(queryPart))(q.position)
 
     case s@ShowPrivileges(_, Some(Left((yields, returns))),_) =>
@@ -104,12 +106,6 @@ case class normalizeWithAndReturnClauses(cypherExceptionFactory: CypherException
 
     case x => x
   }
-
-  override def preConditions: Set[StepSequencer.Condition] = Set.empty
-
-  override def postConditions: Set[StepSequencer.Condition] = Set(ReturnItemsAreAliased, ExpressionsInOrderByAndWhereUseAliases)
-
-  override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
 
   /**
    * Rewrites all single queries in the top level query (which can be a single or a union query of single queries).
@@ -234,4 +230,16 @@ case class normalizeWithAndReturnClauses(cypherExceptionFactory: CypherException
         newExpression
     }
   }
+}
+
+object normalizeWithAndReturnClauses extends Step with PreparatoryRewritingRewriterFactory {
+  override def getRewriter(deprecations: Deprecations, cypherExceptionFactory: CypherExceptionFactory, notificationLogger: InternalNotificationLogger): Rewriter = {
+    normalizeWithAndReturnClauses(cypherExceptionFactory, notificationLogger)
+  }
+
+  override def preConditions: Set[StepSequencer.Condition] = Set.empty
+
+  override def postConditions: Set[StepSequencer.Condition] = Set(ReturnItemsAreAliased, ExpressionsInOrderByAndWhereUseAliases)
+
+  override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
 }
