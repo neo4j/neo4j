@@ -37,6 +37,7 @@ import org.neo4j.kernel.impl.store.IntStoreHeader;
 import org.neo4j.kernel.impl.store.format.RecordGenerators.Generator;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.Record;
+import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.SuppressOutputExtension;
@@ -185,16 +186,7 @@ public abstract class AbstractRecordFormatTest
     {
         read.setId( written.getId() );
 
-            /*
-             Retry loop is needed here because format does not handle retries on the primary cursor.
-             Same retry is done on the store level in {@link org.neo4j.kernel.impl.store.CommonAbstractStore}
-             */
-        do
-        {
-            cursor.setOffset( 0 );
-            format.read( read, cursor, NORMAL, recordSize, 1 );
-        }
-        while ( cursor.shouldRetry() );
+        readRecord( read, format, cursor, recordSize, 0, NORMAL );
         assertWithinBounds( written, cursor, "reading" );
         if ( assertPostReadOffset )
         {
@@ -208,16 +200,37 @@ public abstract class AbstractRecordFormatTest
         {
             assertEquals( written.getId(), read.getId() );
             assertEquals( written.requiresSecondaryUnit(), read.requiresSecondaryUnit() );
-                if ( written.requiresSecondaryUnit() )
-                {
-                    assertEquals( written.getSecondaryUnitId(), read.getSecondaryUnitId() );
-                }
+            if ( written.requiresSecondaryUnit() )
+            {
+                assertEquals( written.getSecondaryUnitId(), read.getSecondaryUnitId() );
+            }
             key.assertRecordsEquals( written, read );
         }
     }
 
-    private <R extends AbstractBaseRecord> void writeRecord( R record, RecordFormat<R> format, PageCursor cursor, int recordSize, BatchingIdSequence idSequence,
-            boolean prepare ) throws IOException
+    /**
+     * @param actualId is essentially the ID of the record, except it isn't in the normal case because these tests here in this
+     * hierarchy tests records with very large IDs, but still writes at ID 0 for convenience in various ways. However this method can be used
+     * for reading things like e.g. secondary unit where the actual ID is the ID that should be read.
+     */
+    protected <R extends AbstractBaseRecord> void readRecord( R read, RecordFormat<R> format, PageCursor cursor, int recordSize, long actualId,
+            RecordLoad mode ) throws IOException
+    {
+        cursor.next( actualId ); // this looks weird, but this test has only a single record per page to simplify things
+        /*
+         Retry loop is needed here because format does not handle retries on the primary cursor.
+         Same retry is done on the store level in {@link org.neo4j.kernel.impl.store.CommonAbstractStore}
+         */
+        do
+        {
+            cursor.setOffset( 0 );
+            format.read( read, cursor, mode, recordSize, 1 );
+        }
+        while ( cursor.shouldRetry() );
+    }
+
+    protected <R extends AbstractBaseRecord> void writeRecord( R record, RecordFormat<R> format, PageCursor cursor, int recordSize,
+            BatchingIdSequence idSequence, boolean prepare ) throws IOException
     {
         if ( prepare && record.inUse() )
         {
