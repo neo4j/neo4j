@@ -18,18 +18,21 @@ package org.neo4j.cypher.internal.rewriting.rewriters
 
 import org.neo4j.cypher.internal.ast.Match
 import org.neo4j.cypher.internal.ast.Where
+import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.expressions.And
 import org.neo4j.cypher.internal.expressions.Expression
-import org.neo4j.cypher.internal.rewriting.RewritingStep
 import org.neo4j.cypher.internal.rewriting.conditions.noUnnamedPatternElementsInMatch
+import org.neo4j.cypher.internal.rewriting.rewriters.factories.ASTRewriterFactory
+import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
+import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.cypher.internal.util.topDown
 
 case object NoPredicatesInNamedPartsOfMatchPattern extends StepSequencer.Condition
 
-abstract class MatchPredicateNormalization(normalizer: MatchPredicateNormalizer) extends RewritingStep {
+abstract class MatchPredicateNormalization(normalizer: MatchPredicateNormalizer) extends Rewriter with StepSequencer.Step with ASTRewriterFactory {
 
   override def preConditions: Set[StepSequencer.Condition] = Set(
     noUnnamedPatternElementsInMatch // unnamed pattern cannot be rewritten, so they need to handled first
@@ -39,7 +42,12 @@ abstract class MatchPredicateNormalization(normalizer: MatchPredicateNormalizer)
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
 
-  override def rewrite(that: AnyRef): AnyRef = instance(that)
+  override def getRewriter(innerVariableNamer: InnerVariableNamer,
+                           semanticState: SemanticState,
+                           parameterTypeMapping: Map[String, CypherType],
+                           cypherExceptionFactory: CypherExceptionFactory): Rewriter = instance
+
+  override def apply(that: AnyRef): AnyRef = instance(that)
 
   private val rewriter = Rewriter.lift {
     case m@Match(_, pattern, _, where) =>

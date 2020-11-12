@@ -16,20 +16,24 @@
  */
 package org.neo4j.cypher.internal.rewriting.rewriters
 
+import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.PathExpression
 import org.neo4j.cypher.internal.expressions.PatternComprehension
 import org.neo4j.cypher.internal.expressions.PatternElement
-import org.neo4j.cypher.internal.rewriting.RewritingStep
 import org.neo4j.cypher.internal.rewriting.conditions.noUnnamedPatternElementsInPatternComprehension
+import org.neo4j.cypher.internal.rewriting.rewriters.factories.ASTRewriterFactory
+import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
+import org.neo4j.cypher.internal.util.StepSequencer.Step
 import org.neo4j.cypher.internal.util.bottomUp
+import org.neo4j.cypher.internal.util.symbols.CypherType
 
 case object NoNamedPathsInPatternComprehensions extends StepSequencer.Condition
 
-case object inlineNamedPathsInPatternComprehensions extends RewritingStep {
+case object inlineNamedPathsInPatternComprehensions extends Rewriter with Step with ASTRewriterFactory {
 
   override def preConditions: Set[StepSequencer.Condition] = Set(noUnnamedPatternElementsInPatternComprehension)
 
@@ -57,5 +61,10 @@ case object inlineNamedPathsInPatternComprehensions extends RewritingStep {
       }
   }
 
-  override def rewrite(v: AnyRef): AnyRef = instance(v)
+  override def apply(v: AnyRef): AnyRef = instance(v)
+
+  override def getRewriter(innerVariableNamer: InnerVariableNamer,
+                           semanticState: SemanticState,
+                           parameterTypeMapping: Map[String, CypherType],
+                           cypherExceptionFactory: CypherExceptionFactory): Rewriter = instance
 }

@@ -22,13 +22,16 @@ import org.neo4j.cypher.internal.ast.Match
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.SubQuery
 import org.neo4j.cypher.internal.ast.With
+import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.expressions.LogicalVariable
-import org.neo4j.cypher.internal.rewriting.RewritingStep
 import org.neo4j.cypher.internal.rewriting.conditions.containsNoReturnAll
+import org.neo4j.cypher.internal.rewriting.rewriters.factories.ASTRewriterFactory
+import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.helpers.fixedPoint
 import org.neo4j.cypher.internal.util.inSequence
+import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.cypher.internal.util.topDown
 
 case object IndependentWithsMovedAfterMatch extends StepSequencer.Condition
@@ -41,9 +44,14 @@ case object IndependentWithsMovedAfterMatch extends StepSequencer.Condition
  * This could potentially move projections to a point of higher cardinality, but the cached properties mechanism
  * should take care that expensive projections are pushed down again.
  */
-case object moveWithPastMatch extends RewritingStep {
+case object moveWithPastMatch extends Rewriter with StepSequencer.Step with ASTRewriterFactory {
 
-  override def rewrite(that: AnyRef): AnyRef = instance(that)
+  override def getRewriter(innerVariableNamer: InnerVariableNamer,
+                           semanticState: SemanticState,
+                           parameterTypeMapping: Map[String, CypherType],
+                           cypherExceptionFactory: CypherExceptionFactory): Rewriter = instance
+
+  override def apply(that: AnyRef): AnyRef = instance(that)
 
   override def preConditions: Set[StepSequencer.Condition] = Set(
     containsNoReturnAll // It's better to know the variables in WITH already

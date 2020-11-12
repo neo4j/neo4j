@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.rewriting.rewriters
 
+import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.expressions.Add
 import org.neo4j.cypher.internal.expressions.DecimalDoubleLiteral
 import org.neo4j.cypher.internal.expressions.Divide
@@ -36,26 +37,18 @@ import org.neo4j.cypher.internal.expressions.Subtract
 import org.neo4j.cypher.internal.expressions.True
 import org.neo4j.cypher.internal.expressions.UnaryAdd
 import org.neo4j.cypher.internal.expressions.UnarySubtract
-import org.neo4j.cypher.internal.rewriting.RewritingStep
+import org.neo4j.cypher.internal.rewriting.rewriters.factories.ASTRewriterFactory
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.bottomUp
+import org.neo4j.cypher.internal.util.symbols.CypherType
 
 case object ConstantNumberLiteralsFolded extends StepSequencer.Condition
 
-case class foldConstants(cypherExceptionFactory: CypherExceptionFactory) extends RewritingStep {
+case class foldConstants(cypherExceptionFactory: CypherExceptionFactory) extends Rewriter {
 
-  override def preConditions: Set[StepSequencer.Condition] = Set()
-
-  override def postConditions: Set[StepSequencer.Condition] = Set(ConstantNumberLiteralsFolded)
-
-  override def invalidatedConditions: Set[StepSequencer.Condition] = Set(
-    ProjectionClausesHaveSemanticInfo, // It can invalidate this condition by rewriting things inside WITH/RETURN.
-    PatternExpressionsHaveSemanticInfo, // It can invalidate this condition by rewriting things inside PatternExpressions.
-  )
-
-  override def rewrite(that: AnyRef): AnyRef =
+  override def apply(that: AnyRef): AnyRef =
   try {
     instance.apply(that)
   } catch {
@@ -150,4 +143,20 @@ case class foldConstants(cypherExceptionFactory: CypherExceptionFactory) extends
   })
 
   private def asAst(b: Boolean, e: Expression) = if (b) True()(e.position) else False()(e.position)
+}
+
+object foldConstants extends StepSequencer.Step with ASTRewriterFactory {
+  override def preConditions: Set[StepSequencer.Condition] = Set()
+
+  override def postConditions: Set[StepSequencer.Condition] = Set(ConstantNumberLiteralsFolded)
+
+  override def invalidatedConditions: Set[StepSequencer.Condition] = Set(
+    ProjectionClausesHaveSemanticInfo, // It can invalidate this condition by rewriting things inside WITH/RETURN.
+    PatternExpressionsHaveSemanticInfo, // It can invalidate this condition by rewriting things inside PatternExpressions.
+  )
+
+  override def getRewriter(innerVariableNamer: InnerVariableNamer,
+                           semanticState: SemanticState,
+                           parameterTypeMapping: Map[String, CypherType],
+                           cypherExceptionFactory: CypherExceptionFactory): Rewriter = foldConstants(cypherExceptionFactory)
 }

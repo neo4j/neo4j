@@ -26,10 +26,12 @@ import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.PropertySelector
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.VariableSelector
-import org.neo4j.cypher.internal.rewriting.RewritingStep
+import org.neo4j.cypher.internal.rewriting.rewriters.factories.ASTRewriterFactory
+import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
+import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.cypher.internal.util.topDown
 
 case object OnlyDesugaredMapProjections extends StepSequencer.Condition
@@ -43,17 +45,8 @@ so the runtime only has two cases to handle - literal entries and the special al
 We can't rewrite all the way to literal maps, since map projections yield a null map when the map_variable is null,
 and the same behaviour can't be mimicked with literal maps.
  */
-case class desugarMapProjection(state: SemanticState) extends RewritingStep {
-  override def rewrite(that: AnyRef): AnyRef = topDown(instance).apply(that)
-
-  override def preConditions: Set[StepSequencer.Condition] = Set.empty
-
-  override def postConditions: Set[StepSequencer.Condition] = Set(OnlyDesugaredMapProjections)
-
-  override def invalidatedConditions: Set[StepSequencer.Condition] = Set(
-    ProjectionClausesHaveSemanticInfo, // It can invalidate this condition by rewriting things inside WITH/RETURN.
-    PatternExpressionsHaveSemanticInfo, // It can invalidate this condition by rewriting things inside PatternExpressions.
-  )
+case class desugarMapProjection(state: SemanticState) extends Rewriter {
+  override def apply(that: AnyRef): AnyRef = topDown(instance).apply(that)
 
   private val instance: Rewriter = Rewriter.lift {
     case e@MapProjection(id, items) =>
@@ -78,4 +71,20 @@ case class desugarMapProjection(state: SemanticState) extends RewritingStep {
 
       DesugaredMapProjection(id, mapExpressionItems, includeAllProps)(e.position)
   }
+}
+
+object desugarMapProjection extends StepSequencer.Step with ASTRewriterFactory {
+  override def preConditions: Set[StepSequencer.Condition] = Set.empty
+
+  override def postConditions: Set[StepSequencer.Condition] = Set(OnlyDesugaredMapProjections)
+
+  override def invalidatedConditions: Set[StepSequencer.Condition] = Set(
+    ProjectionClausesHaveSemanticInfo, // It can invalidate this condition by rewriting things inside WITH/RETURN.
+    PatternExpressionsHaveSemanticInfo, // It can invalidate this condition by rewriting things inside PatternExpressions.
+  )
+
+  override def getRewriter(innerVariableNamer: InnerVariableNamer,
+                           semanticState: SemanticState,
+                           parameterTypeMapping: Map[String, CypherType],
+                           cypherExceptionFactory: CypherExceptionFactory): Rewriter = desugarMapProjection(semanticState)
 }

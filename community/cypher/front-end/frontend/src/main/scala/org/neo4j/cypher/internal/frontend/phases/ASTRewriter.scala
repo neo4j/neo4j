@@ -18,13 +18,15 @@ package org.neo4j.cypher.internal.frontend.phases
 
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
-import org.neo4j.cypher.internal.rewriting.RewritingStepSequencer
+import org.neo4j.cypher.internal.rewriting.ListStepAccumulator
+import org.neo4j.cypher.internal.rewriting.RewriterStep
 import org.neo4j.cypher.internal.rewriting.rewriters.AddUniquenessPredicates
 import org.neo4j.cypher.internal.rewriting.rewriters.InnerVariableNamer
 import org.neo4j.cypher.internal.rewriting.rewriters.PatternExpressionsHaveSemanticInfo
 import org.neo4j.cypher.internal.rewriting.rewriters.ProjectionClausesHaveSemanticInfo
 import org.neo4j.cypher.internal.rewriting.rewriters.desugarMapProjection
 import org.neo4j.cypher.internal.rewriting.rewriters.expandStar
+import org.neo4j.cypher.internal.rewriting.rewriters.factories.ASTRewriterFactory
 import org.neo4j.cypher.internal.rewriting.rewriters.foldConstants
 import org.neo4j.cypher.internal.rewriting.rewriters.inlineNamedPathsInPatternComprehensions
 import org.neo4j.cypher.internal.rewriting.rewriters.moveWithPastMatch
@@ -39,36 +41,42 @@ import org.neo4j.cypher.internal.rewriting.rewriters.normalizeSargablePredicates
 import org.neo4j.cypher.internal.rewriting.rewriters.parameterValueTypeReplacement
 import org.neo4j.cypher.internal.rewriting.rewriters.replaceLiteralDynamicPropertyLookups
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
+import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.StepSequencer.AccumulatedSteps
 import org.neo4j.cypher.internal.util.inSequence
 import org.neo4j.cypher.internal.util.symbols.CypherType
 
 class ASTRewriter(innerVariableNamer: InnerVariableNamer) {
 
+  private val AccumulatedSteps(orderedSteps, _) = StepSequencer(ListStepAccumulator[StepSequencer.Step with ASTRewriterFactory]()).orderSteps(Set(
+    expandStar,
+    normalizeHasLabelsAndHasType,
+    desugarMapProjection,
+    moveWithPastMatch,
+    normalizeComparisons,
+    foldConstants,
+    normalizeExistsPatternExpressions,
+    nameAllPatternElements,
+    normalizeMatchPredicates,
+    normalizeNotEquals,
+    normalizeArgumentOrder,
+    normalizeSargablePredicates,
+    AddUniquenessPredicates,
+    replaceLiteralDynamicPropertyLookups,
+    inlineNamedPathsInPatternComprehensions,
+    parameterValueTypeReplacement,
+  ), initialConditions = Set(ProjectionClausesHaveSemanticInfo, PatternExpressionsHaveSemanticInfo))
+
   def rewrite(statement: Statement,
               semanticState: SemanticState,
               parameterTypeMapping: Map[String, CypherType],
               cypherExceptionFactory: CypherExceptionFactory): Statement = {
+    val rewriters = orderedSteps.map { step =>
+      val rewriter = step.getRewriter(innerVariableNamer, semanticState, parameterTypeMapping, cypherExceptionFactory)
+      RewriterStep.validatingRewriter(rewriter, step)
+    }
 
-    val AccumulatedSteps(orderedSteps, _) = RewritingStepSequencer.orderSteps(Set(
-      expandStar(semanticState),
-      normalizeHasLabelsAndHasType(semanticState),
-      desugarMapProjection(semanticState),
-      moveWithPastMatch,
-      normalizeComparisons,
-      foldConstants(cypherExceptionFactory),
-      normalizeExistsPatternExpressions(semanticState),
-      nameAllPatternElements,
-      normalizeMatchPredicates,
-      normalizeNotEquals,
-      normalizeArgumentOrder,
-      normalizeSargablePredicates,
-      AddUniquenessPredicates(innerVariableNamer),
-      replaceLiteralDynamicPropertyLookups,
-      inlineNamedPathsInPatternComprehensions,
-      parameterValueTypeReplacement(parameterTypeMapping),
-    ), initialConditions = Set(ProjectionClausesHaveSemanticInfo, PatternExpressionsHaveSemanticInfo))
-    val combined = inSequence(orderedSteps: _*)
+    val combined = inSequence(rewriters: _*)
 
     statement.endoRewrite(combined)
   }

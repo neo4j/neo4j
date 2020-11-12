@@ -48,7 +48,7 @@ case class StepSequencer[S <: Step, ACC](stepAccumulator: StepAccumulator[S, ACC
    */
   def orderSteps(steps: Set[S], initialConditions: Set[Condition] = Set.empty): AccumulatedSteps[ACC] = {
     // For each post-condition, find the step that introduces it
-    val introducingSteps: Map[Condition, Either[ByInitialCondition.type, S]] = {
+    val introducingSteps: Map[Condition, Either[StepSequencer.ByInitialCondition.type, S]] = {
       val is = for {
         step <- steps.toSeq
         _ = { if (step.postConditions.isEmpty) throw new IllegalArgumentException(s"Step $step has no post-conditions. That is not allowed.") }
@@ -56,9 +56,13 @@ case class StepSequencer[S <: Step, ACC](stepAccumulator: StepAccumulator[S, ACC
         _ = { if (initialConditions.contains(postCondition)) throw new IllegalArgumentException(s"Step $step introduces $postCondition, which is an initial condition. That is currently not allowed.") }
       } yield postCondition -> Right(step)
 
-      if (is.map(_._1).distinct != is.map(_._1)) {
-        throw new IllegalArgumentException("It is not allowed for multiple steps to have the same post-conditions.")
-      }
+        is.groupBy(_._1)
+          .filter(_._2.size > 1)
+          .mapValues(_.map(_._2.right.get))
+          .foreach {
+            case (condition, steps) =>
+              throw new IllegalArgumentException(s"Found same post-condition $condition in these steps: $steps.")
+          }
 
       (is ++ initialConditions.map(_ -> Left(ByInitialCondition))).toMap
     }

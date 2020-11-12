@@ -16,17 +16,20 @@
  */
 package org.neo4j.cypher.internal.rewriting.rewriters
 
+import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.expressions.ExplicitParameter
-import org.neo4j.cypher.internal.rewriting.RewritingStep
+import org.neo4j.cypher.internal.rewriting.rewriters.factories.ASTRewriterFactory
+import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
+import org.neo4j.cypher.internal.util.StepSequencer.Step
 import org.neo4j.cypher.internal.util.bottomUp
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CypherType
 
 case object ExplicitParametersKnowTheirTypes extends StepSequencer.Condition
 
-case class parameterValueTypeReplacement(parameterTypeMapping: Map[String, CypherType]) extends RewritingStep {
+case class parameterValueTypeReplacement(parameterTypeMapping: Map[String, CypherType]) extends Rewriter {
 
   private val rewriter: Rewriter = bottomUp(Rewriter.lift {
     case p@ExplicitParameter(name, CTAny) =>
@@ -35,8 +38,10 @@ case class parameterValueTypeReplacement(parameterTypeMapping: Map[String, Cyphe
   })
 
 
-  override def rewrite(that: AnyRef): AnyRef = rewriter(that)
+  override def apply(that: AnyRef): AnyRef = rewriter(that)
+}
 
+object parameterValueTypeReplacement extends Step with ASTRewriterFactory {
   override def preConditions: Set[StepSequencer.Condition] = Set.empty
 
   override def postConditions: Set[StepSequencer.Condition] = Set(ExplicitParametersKnowTheirTypes)
@@ -45,4 +50,9 @@ case class parameterValueTypeReplacement(parameterTypeMapping: Map[String, Cyphe
     ProjectionClausesHaveSemanticInfo, // It can invalidate this condition by rewriting things inside WITH/RETURN.
     PatternExpressionsHaveSemanticInfo, // It can invalidate this condition by rewriting things inside PatternExpressions.
   )
+
+  override def getRewriter(innerVariableNamer: InnerVariableNamer,
+                           semanticState: SemanticState,
+                           parameterTypeMapping: Map[String, CypherType],
+                           cypherExceptionFactory: CypherExceptionFactory): Rewriter = parameterValueTypeReplacement(parameterTypeMapping)
 }

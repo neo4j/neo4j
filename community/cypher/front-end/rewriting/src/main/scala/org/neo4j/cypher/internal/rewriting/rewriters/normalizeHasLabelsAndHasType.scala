@@ -22,17 +22,30 @@ import org.neo4j.cypher.internal.expressions.HasLabelsOrTypes
 import org.neo4j.cypher.internal.expressions.HasTypes
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.RelTypeName
-import org.neo4j.cypher.internal.rewriting.RewritingStep
+import org.neo4j.cypher.internal.rewriting.rewriters.factories.ASTRewriterFactory
+import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTRelationship
+import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.cypher.internal.util.topDown
 
 case object HasLabelsOrTypesReplacedIfPossible extends StepSequencer.Condition
 
-case class normalizeHasLabelsAndHasType(semanticState: SemanticState) extends RewritingStep {
+case class normalizeHasLabelsAndHasType(semanticState: SemanticState) extends Rewriter {
 
+  override def apply(that: AnyRef): AnyRef = instance(that)
+
+  private val instance: Rewriter = topDown(Rewriter.lift {
+    case p@HasLabelsOrTypes(e, labels) if semanticState.expressionType(e).actual == CTNode.invariant =>
+      HasLabels(e, labels.map(l => LabelName(l.name)(l.position)))(p.position)
+    case p@HasLabelsOrTypes(e, labels) if semanticState.expressionType(e).actual == CTRelationship.invariant =>
+      HasTypes(e, labels.map(l => RelTypeName(l.name)(l.position)))(p.position)
+  })
+}
+
+object normalizeHasLabelsAndHasType extends StepSequencer.Step with ASTRewriterFactory {
   override def preConditions: Set[StepSequencer.Condition] = Set.empty
 
   override def postConditions: Set[StepSequencer.Condition] = Set(HasLabelsOrTypesReplacedIfPossible)
@@ -42,12 +55,8 @@ case class normalizeHasLabelsAndHasType(semanticState: SemanticState) extends Re
     PatternExpressionsHaveSemanticInfo, // It can invalidate this condition by rewriting things inside PatternExpressions.
   )
 
-  override def rewrite(that: AnyRef): AnyRef = instance(that)
-
-  private val instance: Rewriter = topDown(Rewriter.lift {
-    case p@HasLabelsOrTypes(e, labels) if semanticState.expressionType(e).actual == CTNode.invariant =>
-      HasLabels(e, labels.map(l => LabelName(l.name)(l.position)))(p.position)
-    case p@HasLabelsOrTypes(e, labels) if semanticState.expressionType(e).actual == CTRelationship.invariant =>
-      HasTypes(e, labels.map(l => RelTypeName(l.name)(l.position)))(p.position)
-  })
+  override def getRewriter(innerVariableNamer: InnerVariableNamer,
+                           semanticState: SemanticState,
+                           parameterTypeMapping: Map[String, CypherType],
+                           cypherExceptionFactory: CypherExceptionFactory): Rewriter = normalizeHasLabelsAndHasType(semanticState)
 }

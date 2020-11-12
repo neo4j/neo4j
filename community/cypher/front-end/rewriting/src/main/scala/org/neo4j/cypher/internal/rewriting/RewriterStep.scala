@@ -21,24 +21,21 @@ import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.StepSequencer.Step
 
-object RewritingStepSequencer extends StepSequencer(new StepSequencer.StepAccumulator[RewritingStep, Seq[RewritingStep]] {
-  override def empty: Seq[RewritingStep] = Seq.empty
-  override def addNext(acc: Seq[RewritingStep], step: RewritingStep): Seq[RewritingStep] = acc :+ step
-})
+case class ListStepAccumulator[T <: StepSequencer.Step]() extends StepSequencer.StepAccumulator[T, Seq[T]] {
+  override def empty: Seq[T] = Seq.empty
+  override def addNext(acc: Seq[T], step: T): Seq[T] = acc :+ step
+}
 
-trait RewritingStep extends Rewriter with Step {
-  override def toString(): String = this.getClass.getSimpleName
+case class ValidatingRewriter(inner: Rewriter, step: Step) extends Rewriter {
 
   final override def apply(that: AnyRef): AnyRef = {
-    val result = rewrite(that)
-    if (AssertionRunner.isAssertionsEnabled) {
-      validate(result)
-    }
+    val result = inner(that)
+    validate(result)
     result
   }
 
   private def validate(input: AnyRef): Unit = {
-    val failures = postConditions.collect {
+    val failures = step.postConditions.collect {
       case f:ValidatingCondition => f.name -> f(input)
     }
     if (failures.exists(_._2.nonEmpty)) {
@@ -57,12 +54,18 @@ trait RewritingStep extends Rewriter with Step {
     }
     builder.toString()
   }
-
-  def rewrite(that:AnyRef): AnyRef
 }
 
 object RewriterStep {
   implicit def namedProductRewriter(p: Product with Rewriter): ApplyRewriter = ApplyRewriter(p.productPrefix, p)
+
+  def validatingRewriter(inner: Rewriter, step: Step): Rewriter = {
+    if (AssertionRunner.isAssertionsEnabled) {
+      ValidatingRewriter(inner, step)
+    } else {
+      inner
+    }
+  }
 }
 
 sealed trait RewriterStep

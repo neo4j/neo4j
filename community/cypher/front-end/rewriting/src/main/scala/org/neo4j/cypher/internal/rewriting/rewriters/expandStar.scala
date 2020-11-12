@@ -26,26 +26,20 @@ import org.neo4j.cypher.internal.ast.Yield
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Variable
-import org.neo4j.cypher.internal.rewriting.RewritingStep
 import org.neo4j.cypher.internal.rewriting.conditions.containsNoReturnAll
+import org.neo4j.cypher.internal.rewriting.rewriters.factories.ASTRewriterFactory
+import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.StepSequencer.Condition
 import org.neo4j.cypher.internal.util.bottomUp
+import org.neo4j.cypher.internal.util.symbols.CypherType
 
 case object ProjectionClausesHaveSemanticInfo extends Condition
 
-case class expandStar(state: SemanticState) extends RewritingStep {
+case class expandStar(state: SemanticState) extends Rewriter {
 
-  override def rewrite(that: AnyRef): AnyRef = instance(that)
-
-  override def preConditions: Set[StepSequencer.Condition] = Set(
-    ProjectionClausesHaveSemanticInfo // Looks up recorded scopes of projection clauses.
-  )
-
-  override def postConditions: Set[StepSequencer.Condition] = Set(containsNoReturnAll)
-
-  override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
+  override def apply(that: AnyRef): AnyRef = instance(that)
 
   private val rewriter = Rewriter.lift {
     case clause@With(_, values, _, _, _, _) if values.includeExisting =>
@@ -84,4 +78,19 @@ case class expandStar(state: SemanticState) extends RewritingStep {
     val newItems = expandedItems ++ listedItems
     ReturnItems(includeExisting = false, newItems)(clausePos)
   }
+}
+
+object expandStar extends StepSequencer.Step with ASTRewriterFactory {
+  override def preConditions: Set[StepSequencer.Condition] = Set(
+    ProjectionClausesHaveSemanticInfo // Looks up recorded scopes of projection clauses.
+  )
+
+  override def postConditions: Set[StepSequencer.Condition] = Set(containsNoReturnAll)
+
+  override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
+
+  override def getRewriter(innerVariableNamer: InnerVariableNamer,
+                           semanticState: SemanticState,
+                           parameterTypeMapping: Map[String, CypherType],
+                           cypherExceptionFactory: CypherExceptionFactory): Rewriter = expandStar(semanticState)
 }
