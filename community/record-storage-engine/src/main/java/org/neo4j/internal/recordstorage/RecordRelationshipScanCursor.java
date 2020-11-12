@@ -226,6 +226,6 @@ public class RecordRelationshipScanCursor extends RecordRelationshipCursor imple
     private void relationshipAdvance( RelationshipRecord record, PageCursor pageCursor )
     {
         // When scanning, we inspect RelationshipRecord.inUse(), so using RecordLoad.CHECK is fine
-        relationshipStore.nextRecordByCursor( record, loadMode.orElse( CHECK ), pageCursor );
+        relationshipStore.nextRecordByCursor( record, loadMode.orElse( CHECK ).lenient(), pageCursor );
     }
 }

@@ -242,7 +242,7 @@ public class SchemaStorage implements SchemaRuleAccess, org.neo4j.kernel.impl.st
         long startId = schemaStore.getNumberOfReservedLowIds();
         long endId = schemaStore.getHighId();
         return LongStream.range( startId, endId )
-                .mapToObj( id -> schemaStore.getRecord( id, schemaStore.newRecord(), RecordLoad.ALWAYS, cursorTracer ) )
+                .mapToObj( id -> schemaStore.getRecord( id, schemaStore.newRecord(), RecordLoad.LENIENT_ALWAYS, cursorTracer ) )
                 .filter( AbstractBaseRecord::inUse )
                 .flatMap( record -> readSchemaRuleThrowingRuntimeException( record, ignoreMalformed, cursorTracer ) );
     }
