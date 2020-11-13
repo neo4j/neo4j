@@ -287,6 +287,8 @@ object LogicalPlanToPlanBuilderString {
         indexOperator(idName, labelToken, properties, argumentIds, indexOrder, unique = true, queryStr)
       case RollUpApply(_, _, collectionName, variableToCollect) =>
         s"""${wrapInQuotations(collectionName)}, ${wrapInQuotations(variableToCollect)}"""
+      case ForeachApply(_, _, variable, expression) =>
+        Seq(variable, expressionStringifier(expression)).map(wrapInQuotations).mkString(", ")
       case ConditionalApply(_, _, items) => wrapInQuotationsAndMkString(items)
       case AntiConditionalApply(_, _, items) => wrapInQuotationsAndMkString(items)
       case LetSemiApply(_, _, idName) => wrapInQuotations(idName)

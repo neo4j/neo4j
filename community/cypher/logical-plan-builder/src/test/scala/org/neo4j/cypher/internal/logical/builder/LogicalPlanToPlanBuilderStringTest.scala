@@ -299,6 +299,16 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
       .allNodeScan("x")
       .build())
 
+  testPlan("foreachApply",
+    new TestPlanBuilder()
+      .produceResults("x", "list")
+      .foreachApply("i", "[1, 2, 3]")
+      .|.setNodeProperty("n", "n.prop", "i")
+      .|.create(createNode("n"))
+      .|.argument("i")
+      .allNodeScan("x")
+      .build())
+
   testPlan("anti",
     new TestPlanBuilder()
       .produceResults("x")
