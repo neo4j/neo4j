@@ -57,6 +57,10 @@ object Additions {
       case c@CreateNodeKeyConstraint(_, _, _, _, IfExistsDoNothing, _, _) =>
         throw cypherExceptionFactory.syntaxException("Creating node key constraint using `IF NOT EXISTS` is not supported in this Cypher version.", c.position)
 
+      // CREATE CONSTRAINT ... IS NODE KEY OPTIONS {...}
+      case c@CreateNodeKeyConstraint(_, _, _, _, _, options, _) if options.nonEmpty =>
+        throw cypherExceptionFactory.syntaxException("Creating node key constraint with options is not supported in this Cypher version.", c.position)
+
       // CREATE CONSTRAINT name ON ... IS UNIQUE
       case c@CreateUniquePropertyConstraint(_, _, _, Some(_),_, _, _) =>
         throw cypherExceptionFactory.syntaxException("Creating named uniqueness constraint is not supported in this Cypher version.", c.position)
@@ -64,6 +68,10 @@ object Additions {
       // CREATE CONSTRAINT [name] IF NOT EXISTS ON ... IS UNIQUE
       case c@CreateUniquePropertyConstraint(_, _, _, _, IfExistsDoNothing, _, _) =>
         throw cypherExceptionFactory.syntaxException("Creating uniqueness constraint using `IF NOT EXISTS` is not supported in this Cypher version.", c.position)
+
+      // CREATE CONSTRAINT ... IS UNIQUE OPTIONS {...}
+      case c@CreateUniquePropertyConstraint(_, _, _, _, _, options, _) if options.nonEmpty =>
+        throw cypherExceptionFactory.syntaxException("Creating uniqueness constraint with options is not supported in this Cypher version.", c.position)
 
       // CREATE CONSTRAINT name ON () ... EXISTS
       case c@CreateNodePropertyExistenceConstraint(_, _, _, Some(_), _, _, _, _) =>
@@ -87,14 +95,6 @@ object Additions {
 
       case e: ExistsSubClause =>
         throw cypherExceptionFactory.syntaxException("Existential subquery is not supported in this Cypher version.", e.position)
-
-      // CREATE CONSTRAINT ... IS NODE KEY OPTIONS {...}
-      case c@CreateNodeKeyConstraint(_, _, _, _, _, options, _) if options.nonEmpty =>
-        throw cypherExceptionFactory.syntaxException("Creating node key constraint with options is not supported in this Cypher version.", c.position)
-
-      // CREATE CONSTRAINT ... IS UNIQUE OPTIONS {...}
-      case c@CreateUniquePropertyConstraint(_, _, _, _, _, options, _) if options.nonEmpty =>
-        throw cypherExceptionFactory.syntaxException("Creating uniqueness constraint with options is not supported in this Cypher version.", c.position)
 
       // SHOW [ALL|BTREE] INDEX[ES] [BRIEF|VERBOSE[OUTPUT]]
       case s@ShowIndexes(_, _, _) =>
