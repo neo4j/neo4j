@@ -81,12 +81,6 @@ public class NodeStore extends CommonAbstractStore<NodeRecord,NoStoreHeader>
     }
 
     @Override
-    public <FAILURE extends Exception> void accept( Processor<FAILURE> processor, NodeRecord record, PageCursorTracer cursorTracer ) throws FAILURE
-    {
-        processor.processNode( this, record, cursorTracer );
-    }
-
-    @Override
     public void ensureHeavy( NodeRecord node, PageCursorTracer cursorTracer )
     {
         if ( NodeLabelsField.fieldPointsToDynamicRecordOfLabels( node.getLabelField() ) )

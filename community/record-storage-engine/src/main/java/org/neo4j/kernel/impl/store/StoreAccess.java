@@ -29,7 +29,6 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
@@ -120,7 +119,7 @@ public class StoreAccess
         this.arrayStore = wrapStore( neoStores.getPropertyStore().getArrayStore() );
         this.relationshipTypeTokenStore = wrapStore( neoStores.getRelationshipTypeTokenStore() );
         this.labelTokenStore = wrapStore( neoStores.getLabelTokenStore() );
-        this.nodeDynamicLabelStore = wrapStore( wrapNodeDynamicLabelStore( neoStores.getNodeStore().getDynamicLabelStore() ) );
+        this.nodeDynamicLabelStore = wrapStore( wrapStore( neoStores.getNodeStore().getDynamicLabelStore() ) );
         this.propertyKeyTokenStore = wrapStore( neoStores.getPropertyStore().getPropertyKeyTokenStore() );
         this.relationshipTypeNameStore = wrapStore( neoStores.getRelationshipTypeTokenStore().getNameStore() );
         this.labelNameStore = wrapStore( neoStores.getLabelTokenStore().getNameStore() );
@@ -208,19 +207,6 @@ public class StoreAccess
     public <T extends AbstractBaseRecord> RecordStore<T> getStore( StoreType type )
     {
         return (RecordStore<T>) STORE_MAPPINGS.get( type ).apply( this );
-    }
-
-    private static RecordStore<DynamicRecord> wrapNodeDynamicLabelStore( RecordStore<DynamicRecord> store )
-    {
-        return new RecordStore.Delegator<>( store )
-        {
-            @Override
-            public <FAILURE extends Exception> void accept( Processor<FAILURE> processor, DynamicRecord record, PageCursorTracer cursorTracer )
-                    throws FAILURE
-            {
-                processor.processLabelArrayWithOwner( this, record, cursorTracer );
-            }
-        };
     }
 
     protected <R extends AbstractBaseRecord> RecordStore<R> wrapStore( RecordStore<R> store )

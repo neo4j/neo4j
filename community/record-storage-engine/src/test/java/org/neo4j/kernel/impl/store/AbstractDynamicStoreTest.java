@@ -240,11 +240,6 @@ class AbstractDynamicStoreTest
                 formats.dynamic(), formats.storeVersion(), immutable.empty() )
         {
             @Override
-            public void accept( Processor processor, DynamicRecord record, PageCursorTracer cursorTracer )
-            {   // Ignore
-            }
-
-            @Override
             public String getTypeDescriptor()
             {
                 return "TestDynamicStore";

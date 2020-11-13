@@ -940,12 +940,6 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     }
 
     @Override
-    public <FAILURE extends Exception> void accept( Processor<FAILURE> processor, MetaDataRecord record, PageCursorTracer cursorTracer )
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public void prepareForCommit( MetaDataRecord record, PageCursorTracer cursorTracer )
     {   // No need to do anything with these records before commit
     }

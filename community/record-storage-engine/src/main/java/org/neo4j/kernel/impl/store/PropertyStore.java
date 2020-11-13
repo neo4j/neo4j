@@ -181,13 +181,6 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
                 recordFormats.hasCapability( RecordStorageCapability.TEMPORAL_PROPERTIES );
     }
 
-    @Override
-    public <FAILURE extends Exception> void accept( RecordStore.Processor<FAILURE> processor, PropertyRecord record, PageCursorTracer cursorTracer )
-            throws FAILURE
-    {
-        processor.processProperty( this, record, cursorTracer );
-    }
-
     public DynamicStringStore getStringStore()
     {
         return stringStore;

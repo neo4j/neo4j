@@ -22,29 +22,14 @@ package org.neo4j.kernel.impl.store;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
-import java.util.function.Predicate;
 
-import org.neo4j.graphdb.ResourceIterable;
-import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.helpers.collection.Visitor;
-import org.neo4j.internal.helpers.progress.ProgressListener;
 import org.neo4j.internal.id.IdSequence;
-import org.neo4j.internal.id.IdType;
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
-import org.neo4j.kernel.impl.store.record.DynamicRecord;
-import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
-import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
-import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
-import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
-import org.neo4j.kernel.impl.store.record.RelationshipRecord;
-import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
-import org.neo4j.kernel.impl.store.record.SchemaRecord;
 
 /**
  * A store for {@link #updateRecord(AbstractBaseRecord, PageCursorTracer) updating} and
@@ -239,16 +224,6 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
     }
 
     /**
-     * Lets {@code record} be processed by {@link Processor}.
-     *
-     * @param processor {@link Processor} of records.
-     * @param record to process.
-     * @param cursorTracer underlying page cache access tracer
-     * @throws FAILURE if the processor fails.
-     */
-    <FAILURE extends Exception> void accept( Processor<FAILURE> processor, RECORD record, PageCursorTracer cursorTracer ) throws FAILURE;
-
-    /**
      * @return number of bytes each record in this store occupies. All records in a store is of the same size.
      */
     int getRecordSize();
@@ -427,12 +402,6 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
         }
 
         @Override
-        public <FAILURE extends Exception> void accept( Processor<FAILURE> processor, R record, PageCursorTracer cursorTracer ) throws FAILURE
-        {
-            actual.accept( processor, record, cursorTracer );
-        }
-
-        @Override
         public int getRecordSize()
         {
             return actual.getRecordSize();
@@ -496,81 +465,6 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
         public <EXCEPTION extends Exception> void scanAllRecords( Visitor<R,EXCEPTION> visitor, PageCursorTracer cursorTracer ) throws EXCEPTION
         {
             actual.scanAllRecords( visitor, cursorTracer );
-        }
-    }
-
-    @SuppressWarnings( "unchecked" )
-    abstract class Processor<FAILURE extends Exception>
-    {
-        private static final String RECORD_PROCESSOR_APPLIER_TAG = "recordProcessorApplier";
-        // Have it volatile so that it can be stopped from a different thread.
-        private volatile boolean shouldStop;
-
-        public void stop()
-        {
-            shouldStop = true;
-        }
-
-        public abstract void processSchema( RecordStore<SchemaRecord> store, SchemaRecord schema, PageCursorTracer cursorTracer ) throws FAILURE;
-
-        public abstract void processNode( RecordStore<NodeRecord> store, NodeRecord node, PageCursorTracer cursorTracer ) throws FAILURE;
-
-        public abstract void processRelationship( RecordStore<RelationshipRecord> store, RelationshipRecord rel, PageCursorTracer cursorTracer )
-                throws FAILURE;
-
-        public abstract void processProperty( RecordStore<PropertyRecord> store, PropertyRecord property, PageCursorTracer cursorTracer ) throws
-                FAILURE;
-
-        public abstract void processString( RecordStore<DynamicRecord> store, DynamicRecord string, IdType idType, PageCursorTracer cursorTracer )
-                throws FAILURE;
-
-        public abstract void processArray( RecordStore<DynamicRecord> store, DynamicRecord array, PageCursorTracer cursorTracer ) throws FAILURE;
-
-        public abstract void processLabelArrayWithOwner( RecordStore<DynamicRecord> store, DynamicRecord labelArray, PageCursorTracer cursorTracer )
-                throws FAILURE;
-
-        public abstract void processRelationshipTypeToken( RecordStore<RelationshipTypeTokenRecord> store,
-                RelationshipTypeTokenRecord record, PageCursorTracer cursorTracer ) throws FAILURE;
-
-        public abstract void processPropertyKeyToken( RecordStore<PropertyKeyTokenRecord> store, PropertyKeyTokenRecord record,
-                PageCursorTracer cursorTracer ) throws FAILURE;
-
-        public abstract void processLabelToken( RecordStore<LabelTokenRecord> store, LabelTokenRecord record, PageCursorTracer cursorTracer ) throws
-                FAILURE;
-
-        public abstract void processRelationshipGroup( RecordStore<RelationshipGroupRecord> store,
-                RelationshipGroupRecord record, PageCursorTracer cursorTracer ) throws FAILURE;
-
-        public <R extends AbstractBaseRecord> void applyFiltered( RecordStore<R> store,
-                ProgressListener progressListener, PageCacheTracer pageCacheTracer,
-                Predicate<? super R>... filters ) throws FAILURE
-        {
-            apply( store, progressListener, pageCacheTracer, filters );
-        }
-
-        private <R extends AbstractBaseRecord> void apply( RecordStore<R> store, ProgressListener progressListener, PageCacheTracer pageCacheTracer,
-                Predicate<? super R>... filters ) throws FAILURE
-        {
-            ResourceIterable<R> iterable = Scanner.scan( store, true, pageCacheTracer, filters );
-            long lastReported = -1;
-            try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( RECORD_PROCESSOR_APPLIER_TAG );
-                  ResourceIterator<R> scan = iterable.iterator() )
-            {
-                while ( scan.hasNext() )
-                {
-                    R record = scan.next();
-                    if ( shouldStop )
-                    {
-                        break;
-                    }
-
-                    store.accept( this, record, cursorTracer );
-                    long diff = record.getId() - lastReported;
-                    progressListener.add( diff );
-                    lastReported = record.getId();
-                }
-                progressListener.done();
-            }
         }
     }
 }

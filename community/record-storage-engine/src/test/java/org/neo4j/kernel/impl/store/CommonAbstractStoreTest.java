@@ -280,11 +280,6 @@ class CommonAbstractStoreTest
         {
             return HIGH_ID;
         }
-
-        @Override
-        public <FAILURE extends Exception> void accept( Processor<FAILURE> processor, TheRecord record, PageCursorTracer cursorTracer )
-        {
-        }
     }
 
     private static class TheRecord extends AbstractBaseRecord

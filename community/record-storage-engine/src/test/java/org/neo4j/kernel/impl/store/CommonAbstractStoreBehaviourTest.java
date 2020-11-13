@@ -39,7 +39,6 @@ import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.format.BaseRecordFormat;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
@@ -437,12 +436,6 @@ class CommonAbstractStoreBehaviourTest
             super( Path.of( STORE_FILENAME ), Path.of( ID_FILENAME ), config, IdType.NODE,
                     new DefaultIdGeneratorFactory( fs, immediate() ), pageCache,
                     NullLogProvider.getInstance(), "T", format, format, "XYZ", immutable.empty() );
-        }
-
-        @Override
-        public <FAILURE extends Exception> void accept( Processor<FAILURE> processor, IntRecord record, PageCursorTracer cursorTracer )
-        {
-            throw new UnsupportedOperationException();
         }
 
         @Override

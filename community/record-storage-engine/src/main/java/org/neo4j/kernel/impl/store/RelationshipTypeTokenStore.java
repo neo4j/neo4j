@@ -28,7 +28,6 @@ import org.neo4j.configuration.Config;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.logging.LogProvider;
@@ -55,12 +54,5 @@ public class RelationshipTypeTokenStore extends TokenStore<RelationshipTypeToken
         super( path, idFile, config, IdType.RELATIONSHIP_TYPE_TOKEN, idGeneratorFactory, pageCache, logProvider, nameStore,
                 TYPE_DESCRIPTOR, recordFormats.relationshipTypeToken(),
                 recordFormats.storeVersion(), openOptions );
-    }
-
-    @Override
-    public <FAILURE extends Exception> void accept( Processor<FAILURE> processor, RelationshipTypeTokenRecord record, PageCursorTracer cursorTracer )
-            throws FAILURE
-    {
-        processor.processRelationshipTypeToken( this, record, cursorTracer );
     }
 }

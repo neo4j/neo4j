@@ -144,12 +144,6 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord,IntStoreHeader
         return recordFormats.hasCapability( RecordStorageCapability.FLEXIBLE_SCHEMA_STORE ) ? VALID_STORE_HEADER : DISABLED_STORE_HEADER;
     }
 
-    @Override
-    public <FAILURE extends Exception> void accept( Processor<FAILURE> processor, SchemaRecord record, PageCursorTracer cursorTracer ) throws FAILURE
-    {
-        processor.processSchema( this, record, cursorTracer );
-    }
-
     public PropertyStore propertyStore()
     {
         return propertyStore;
