@@ -832,7 +832,7 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
         |+---------------------+------------------------------------------------------------------------------------------------------+----------------+
         || +MultiNodeIndexSeek | UNIQUE x:Label(Prop, Foo, Distance, Name) WHERE Prop = 10 AND Foo = 1 AND Distance = 6 AND Name = "K |              2 |
         ||                     | aroline Getinge", y:Label(Prop, Name) WHERE Prop = 12 AND Name = "Foo",                              |                |
-        ||                     | z:Label(Prop, Name) WHERE Prop > 100 AND exists(Name)                                                |                |
+        ||                     | z:Label(Prop, Name) WHERE Prop > 100 AND Name IS NOT NULL                                            |                |
         |+---------------------+------------------------------------------------------------------------------------------------------+----------------+
         |""".stripMargin)
   }

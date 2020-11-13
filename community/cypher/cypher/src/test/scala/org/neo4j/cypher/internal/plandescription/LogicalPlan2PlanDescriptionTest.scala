@@ -391,23 +391,24 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   test("IndexSeek") {
     assertGood(
       attach(IndexSeek("x:Label(Prop)"), 23.0),
-      planDescription(id, "NodeIndexScan", NoChildren, Seq(details("x:Label(Prop) WHERE exists(Prop)")), Set("x")))
+      planDescription(id, "NodeIndexScan", NoChildren, Seq(details("x:Label(Prop) WHERE Prop IS NOT NULL")), Set("x")))
 
     assertGood(
       attach(IndexSeek("x:Label(Prop)"), 23.0),
-      planDescription(id, "NodeIndexScan", NoChildren, Seq(details("x:Label(Prop) WHERE exists(Prop)")), Set("x")))
+      planDescription(id, "NodeIndexScan", NoChildren, Seq(details("x:Label(Prop) WHERE Prop IS NOT NULL")), Set("x")))
 
     assertGood(
       attach(IndexSeek("x:Label(Prop)", getValue = GetValue), 23.0),
-      planDescription(id, "NodeIndexScan", NoChildren, Seq(details("x:Label(Prop) WHERE exists(Prop), cache[x.Prop]")), Set("x")))
+      planDescription(id, "NodeIndexScan", NoChildren, Seq(details("x:Label(Prop) WHERE Prop IS NOT NULL, cache[x.Prop]")), Set("x")))
 
     assertGood(
       attach(IndexSeek("x:Label(Prop,Foo)"), 23.0),
-      planDescription(id, "NodeIndexScan", NoChildren, Seq(details("x:Label(Prop, Foo) WHERE exists(Prop) AND exists(Foo)")), Set("x")))
+      planDescription(id, "NodeIndexScan", NoChildren, Seq(details("x:Label(Prop, Foo) WHERE Prop IS NOT NULL AND Foo IS NOT NULL")), Set("x")))
 
     assertGood(
       attach(IndexSeek("x:Label(Prop,Foo)", getValue = GetValue), 23.0),
-      planDescription(id, "NodeIndexScan", NoChildren, Seq(details("x:Label(Prop, Foo) WHERE exists(Prop) AND exists(Foo), cache[x.Prop], cache[x.Foo]")), Set("x")))
+      planDescription(id, "NodeIndexScan", NoChildren,
+        Seq(details("x:Label(Prop, Foo) WHERE Prop IS NOT NULL AND Foo IS NOT NULL, cache[x.Prop], cache[x.Foo]")), Set("x")))
 
     assertGood(
       attach(IndexSeek("x:Label(Prop = 'Andres')"), 23.0),
@@ -463,7 +464,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(
       attach(IndexSeek("x:Label(Prop > 10,Foo)"), 23.0),
-      planDescription(id, "NodeIndexSeek", NoChildren, Seq(details("x:Label(Prop, Foo) WHERE Prop > 10 AND exists(Foo)")), Set("x")))
+      planDescription(id, "NodeIndexSeek", NoChildren, Seq(details("x:Label(Prop, Foo) WHERE Prop > 10 AND Foo IS NOT NULL")), Set("x")))
 
     // This is ManyQueryExpression with only a single expression. That is possible to get, but the test utility IndexSeek cannot create those.
     assertGood(

@@ -288,7 +288,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
       case p@NodeIndexScan(idName, label, properties, _, _) =>
         val tokens = properties.map(_.propertyKeyToken)
         val props = tokens.map(x => asPrettyString(x.name))
-        val predicates = props.map(p => pretty"exists($p)").mkPrettyString(" AND ")
+        val predicates = props.map(p => pretty"$p IS NOT NULL").mkPrettyString(" AND ")
         val info = indexInfoString(idName, unique = false, label, tokens, predicates, p.cachedProperties)
         PlanDescriptionImpl(id, "NodeIndexScan", NoChildren, Seq(Details(info)), variables)
 
@@ -822,7 +822,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
   private def indexPredicateString(propertyKeys: Seq[PropertyKeyToken],
                                    valueExpr: QueryExpression[expressions.Expression]): PrettyString = valueExpr match {
     case _: ExistenceQueryExpression[expressions.Expression] =>
-      pretty"exists(${asPrettyString(propertyKeys.head.name)})"
+      pretty"${asPrettyString(propertyKeys.head.name)} IS NOT NULL"
 
     case e: RangeQueryExpression[expressions.Expression] =>
       checkOnlyWhenAssertionsAreEnabled(propertyKeys.size == 1)
