@@ -25,7 +25,7 @@ import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
 
-class RecordRelationshipScanCursor extends RecordRelationshipCursor implements StorageRelationshipScanCursor
+public class RecordRelationshipScanCursor extends RecordRelationshipCursor implements StorageRelationshipScanCursor
 {
     private int filterType;
     private long next;

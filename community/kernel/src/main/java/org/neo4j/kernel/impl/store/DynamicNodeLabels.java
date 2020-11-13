@@ -169,7 +169,12 @@ public class DynamicNodeLabels implements NodeLabels
 
     public static long dynamicPointer( Collection<DynamicRecord> newRecords )
     {
-        return 0x8000000000L | Iterables.first( newRecords ).getId();
+        return dynamicPointer( Iterables.first( newRecords ).getId() );
+    }
+
+    public static long dynamicPointer( long id )
+    {
+        return 0x8000000000L | id;
     }
 
     private static void setNotInUse( Collection<DynamicRecord> changedDynamicRecords )
