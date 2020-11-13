@@ -20,11 +20,14 @@
 package org.neo4j.cypher.internal.logical.plans
 
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
+import org.neo4j.cypher.internal.expressions.CachedProperty
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.FunctionName
 import org.neo4j.cypher.internal.expressions.LabelToken
 import org.neo4j.cypher.internal.expressions.ListLiteral
+import org.neo4j.cypher.internal.expressions.NODE_TYPE
+import org.neo4j.cypher.internal.expressions.RELATIONSHIP_TYPE
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
@@ -37,7 +40,7 @@ import org.neo4j.cypher.internal.ir.VarPatternLength
 import org.neo4j.cypher.internal.util.NonEmptyList
 
 object LogicalPlanToPlanBuilderString {
-  private val expressionStringifier = ExpressionStringifier(_.asCanonicalStringVal, preferSingleQuotes = true)
+  private val expressionStringifier = ExpressionStringifier(expressionStringifierExtension, preferSingleQuotes = true)
 
   private case class LevelPlanItem(level: Int, plan: LogicalPlan)
 
@@ -47,6 +50,14 @@ object LogicalPlanToPlanBuilderString {
   def apply(logicalPlan: LogicalPlan): String = render(logicalPlan, None)
 
   def apply(logicalPlan: LogicalPlan, extra: LogicalPlan => String): String = render(logicalPlan, Some(extra))
+
+  def expressionStringifierExtension(expression: Expression): String = {
+    expression match {
+      case p@CachedProperty(_, _, _, NODE_TYPE) => s"cacheN[${p.propertyAccessString}]"
+      case p@CachedProperty(_, _, _, RELATIONSHIP_TYPE) => s"cacheR[${p.propertyAccessString}]"
+      case e => e.asCanonicalStringVal
+    }
+  }
 
   private def render(logicalPlan: LogicalPlan, extra: Option[LogicalPlan => String]) = {
     var childrenStack = LevelPlanItem(0, logicalPlan) :: Nil
