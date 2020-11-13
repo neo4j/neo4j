@@ -41,7 +41,7 @@ object Additions {
       case u: UseGraph =>
         throw cypherExceptionFactory.syntaxException("The USE clause is not supported in this Cypher version.", u.position)
 
-      // CREATE INDEX [name] [IF NOT EXISTS] FOR (n:Label) ON (n.prop)
+      // CREATE INDEX [name] [IF NOT EXISTS] FOR (n:Label) ON (n.prop) [OPTIONS {...}]
       case c: CreateIndex =>
         throw cypherExceptionFactory.syntaxException("Creating index using this syntax is not supported in this Cypher version.", c.position)
 
@@ -87,10 +87,6 @@ object Additions {
 
       case e: ExistsSubClause =>
         throw cypherExceptionFactory.syntaxException("Existential subquery is not supported in this Cypher version.", e.position)
-
-      // CREATE INDEX ... OPTIONS {...}
-      case c@CreateIndex(_, _, _, _, _, options, _) if options.nonEmpty =>
-        throw cypherExceptionFactory.syntaxException("Creating index with options is not supported in this Cypher version.", c.position)
 
       // CREATE CONSTRAINT ... IS NODE KEY OPTIONS {...}
       case c@CreateNodeKeyConstraint(_, _, _, _, _, options, _) if options.nonEmpty =>
