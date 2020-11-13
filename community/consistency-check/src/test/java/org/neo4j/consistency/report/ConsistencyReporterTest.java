@@ -35,7 +35,6 @@ import java.util.List;
 import org.neo4j.annotations.documented.Warning;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.consistency.RecordType;
-import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.consistency.store.synthetic.CountsEntry;
 import org.neo4j.consistency.store.synthetic.IndexEntry;
 import org.neo4j.consistency.store.synthetic.TokenScanDocument;
@@ -85,10 +84,9 @@ class ConsistencyReporterTest
         {
             // given
             ConsistencySummaryStatistics summary = mock( ConsistencySummaryStatistics.class );
-            RecordAccess records = mock( RecordAccess.class );
             ConsistencyReporter.ReportHandler handler = new ConsistencyReporter.ReportHandler(
                     new InconsistencyReport( mock( InconsistencyLogger.class ), summary ),
-                    mock( ConsistencyReporter.ProxyFactory.class ), RecordType.PROPERTY, records,
+                    mock( ConsistencyReporter.ProxyFactory.class ), RecordType.PROPERTY,
                     new PropertyRecord( 0 ), NO_MONITOR, PageCacheTracer.NULL );
 
             // then
@@ -107,8 +105,7 @@ class ConsistencyReporterTest
             Method reportMethod = methods.reportedMethod;
             Method method = methods.method;
             InconsistencyReport report = mock( InconsistencyReport.class );
-            ConsistencyReport.Reporter reporter = new ConsistencyReporter(
-                    mock( RecordAccess.class ), report, PageCacheTracer.NULL );
+            ConsistencyReport.Reporter reporter = new ConsistencyReporter( report, PageCacheTracer.NULL );
 
             // when
             reportMethod.invoke( reporter, parameters( reportMethod ) );

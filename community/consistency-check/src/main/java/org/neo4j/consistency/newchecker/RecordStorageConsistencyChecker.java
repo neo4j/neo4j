@@ -35,7 +35,6 @@ import org.neo4j.consistency.checking.index.IndexAccessors;
 import org.neo4j.consistency.report.ConsistencyReporter;
 import org.neo4j.consistency.report.InconsistencyReport;
 import org.neo4j.consistency.statistics.Counts;
-import org.neo4j.consistency.store.DirectRecordAccess;
 import org.neo4j.counts.CountsStore;
 import org.neo4j.internal.helpers.collection.LongRange;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
@@ -45,7 +44,6 @@ import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.token.DelegatingTokenHolder;
 import org.neo4j.token.ReadOnlyTokenCreator;
@@ -107,7 +105,7 @@ public class RecordStorageConsistencyChecker implements AutoCloseable
         // TODO we pass in null RecordAccess here because this checker will only use methods that won't use it.
         //      As long as the old one exists the ConsistencyReporter will be a bit schizofrenic, but its connection to RecordAccess can be removed
         //      when the old checker goes.
-        this.reporter = new ConsistencyReporter( new DirectRecordAccess( new StoreAccess( neoStores ), null ), report, monitor, cacheTracer );
+        this.reporter = new ConsistencyReporter( report, monitor, cacheTracer );
         this.tokenHolders = new TokenHolders(
                 new DelegatingTokenHolder( new ReadOnlyTokenCreator(), TokenHolder.TYPE_PROPERTY_KEY ),
                 new DelegatingTokenHolder( new ReadOnlyTokenCreator(), TokenHolder.TYPE_LABEL ),

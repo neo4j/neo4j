@@ -43,7 +43,6 @@ import org.neo4j.consistency.report.ConsistencyReport.RelationshipGroupConsisten
 import org.neo4j.consistency.report.ConsistencyReport.RelationshipTypeConsistencyReport;
 import org.neo4j.consistency.report.ConsistencyReport.RelationshipTypeScanConsistencyReport;
 import org.neo4j.consistency.report.ConsistencyReport.SchemaConsistencyReport;
-import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.consistency.store.synthetic.CountsEntry;
 import org.neo4j.consistency.store.synthetic.IndexEntry;
 import org.neo4j.consistency.store.synthetic.TokenScanDocument;
@@ -81,7 +80,6 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
     private static final ProxyFactory<RelationshipGroupConsistencyReport> RELATIONSHIP_GROUP_REPORT = create( RelationshipGroupConsistencyReport.class );
     private static final ProxyFactory<CountsConsistencyReport> COUNTS_REPORT = create( CountsConsistencyReport.class );
 
-    private final RecordAccess records;
     private final InconsistencyReport report;
     private final Monitor monitor;
     private final PageCacheTracer pageCacheTracer;
@@ -95,14 +93,13 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
     {
     };
 
-    public ConsistencyReporter( RecordAccess records, InconsistencyReport report, PageCacheTracer pageCacheTracer )
+    public ConsistencyReporter( InconsistencyReport report, PageCacheTracer pageCacheTracer )
     {
-        this( records, report, NO_MONITOR, pageCacheTracer );
+        this( report, NO_MONITOR, pageCacheTracer );
     }
 
-    public ConsistencyReporter( RecordAccess records, InconsistencyReport report, Monitor monitor, PageCacheTracer pageCacheTracer )
+    public ConsistencyReporter( InconsistencyReport report, Monitor monitor, PageCacheTracer pageCacheTracer )
     {
-        this.records = records;
         this.report = report;
         this.monitor = monitor;
         this.pageCacheTracer = pageCacheTracer;
@@ -113,7 +110,7 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
             Class<REPORT> cls, RecordType recordType )
     {
         ProxyFactory<REPORT> proxyFactory = ProxyFactory.get( cls );
-        ReportInvocationHandler<RECORD,REPORT> handler = new ReportHandler<>( report, proxyFactory, recordType, records, record, monitor, pageCacheTracer )
+        ReportInvocationHandler<RECORD,REPORT> handler = new ReportHandler<>( report, proxyFactory, recordType, record, monitor, pageCacheTracer )
         {
             @Override
             protected void inconsistencyReported()
@@ -172,17 +169,15 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
         private final ProxyFactory<REPORT> factory;
         final RecordType type;
         private short references = 1/*this*/;
-        private final RecordAccess records;
         private final PageCacheTracer pageCacheTracer;
         private final Monitor monitor;
 
         private ReportInvocationHandler( InconsistencyReport report, ProxyFactory<REPORT> factory, RecordType type,
-               RecordAccess records, Monitor monitor, PageCacheTracer pageCacheTracer )
+               Monitor monitor, PageCacheTracer pageCacheTracer )
         {
             this.report = report;
             this.factory = factory;
             this.type = type;
-            this.records = records;
             this.monitor = monitor;
             this.pageCacheTracer = pageCacheTracer;
         }
@@ -234,9 +229,9 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
         private final AbstractBaseRecord record;
 
         public ReportHandler( InconsistencyReport report, ProxyFactory<REPORT> factory, RecordType type,
-                RecordAccess records, AbstractBaseRecord record, Monitor monitor, PageCacheTracer pageCacheTracer )
+                AbstractBaseRecord record, Monitor monitor, PageCacheTracer pageCacheTracer )
         {
-            super( report, factory, type, records, monitor, pageCacheTracer );
+            super( report, factory, type, monitor, pageCacheTracer );
             this.record = record;
         }
 
@@ -347,7 +342,7 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
 
     private <RECORD extends AbstractBaseRecord,REPORT extends ConsistencyReport> REPORT report( ProxyFactory<REPORT> factory, RecordType type, RECORD record )
     {
-        return new ReportHandler<>( report, factory, type, records, record, monitor, pageCacheTracer ).report();
+        return new ReportHandler<>( report, factory, type, record, monitor, pageCacheTracer ).report();
     }
 
     public static class ProxyFactory<T>
