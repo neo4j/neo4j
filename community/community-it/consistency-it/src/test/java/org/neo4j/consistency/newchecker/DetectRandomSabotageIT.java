@@ -111,7 +111,6 @@ import org.neo4j.values.storable.Values;
 import static java.lang.System.currentTimeMillis;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.experimental_consistency_checker;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.consistency.checking.full.ConsistencyFlags.DEFAULT;
@@ -388,7 +387,6 @@ public class DetectRandomSabotageIT
     protected  <T> T addConfig( T t, SetConfigAction<T> action )
     {
         action.setConfig( t, enable_relationship_type_scan_store, true );
-        action.setConfig( t, experimental_consistency_checker, true );
         return t;
     }
 

@@ -19,10 +19,6 @@
  */
 package org.neo4j.consistency.store;
 
-import java.util.Iterator;
-
-import org.neo4j.consistency.checking.cache.CacheAccess;
-import org.neo4j.consistency.checking.full.MultiPassStore;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
@@ -63,12 +59,4 @@ public interface RecordAccess
     RecordReference<DynamicRecord> propertyKeyName( int id, PageCursorTracer cursorTracer );
 
     RecordReference<RelationshipGroupRecord> relationshipGroup( long id, PageCursorTracer cursorTracer );
-
-    // The following methods doesn't belong here, but makes code in the rest of the CC immensely easier
-
-    Iterator<PropertyRecord> rawPropertyChain( long firstId, PageCursorTracer cursorTracer );
-
-    boolean shouldCheck( long id, MultiPassStore store );
-
-    CacheAccess cacheAccess();
 }

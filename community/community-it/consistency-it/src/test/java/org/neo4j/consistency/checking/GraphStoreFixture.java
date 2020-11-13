@@ -34,10 +34,6 @@ import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.consistency.LookupAccessorsFromRunningDb;
 import org.neo4j.consistency.checking.index.IndexAccessors;
-import org.neo4j.consistency.statistics.AccessStatistics;
-import org.neo4j.consistency.statistics.DefaultCounts;
-import org.neo4j.consistency.statistics.Statistics;
-import org.neo4j.consistency.statistics.VerboseStatistics;
 import org.neo4j.consistency.store.DirectStoreAccess;
 import org.neo4j.counts.CountsAccessor;
 import org.neo4j.counts.CountsStore;
@@ -77,7 +73,6 @@ import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.logging.NullLog;
 import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageNodeCursor;
@@ -96,7 +91,6 @@ import org.neo4j.util.Preconditions;
 
 import static java.lang.System.currentTimeMillis;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.consistency.ConsistencyCheckService.defaultConsistencyCheckThreadsNumber;
 import static org.neo4j.internal.kernel.api.TokenRead.ANY_LABEL;
 import static org.neo4j.internal.recordstorage.StoreTokens.allReadableTokens;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
@@ -105,14 +99,12 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 public abstract class GraphStoreFixture implements AutoCloseable
 {
     private DirectStoreAccess directStoreAccess;
-    private Statistics statistics;
-    private final boolean keepStatistics;
-    private long[] highIds = new long[StoreType.values().length];
+    private final long[] highIds = new long[StoreType.values().length];
 
     /**
      * Record format used to generate initial database.
      */
-    private String formatName;
+    private final String formatName;
     private PageCache pageCache;
     private final TestDirectory testDirectory;
 
@@ -126,18 +118,12 @@ public abstract class GraphStoreFixture implements AutoCloseable
     private RecordStorageEngine storageEngine;
     private CountsAccessor countsStore;
 
-    private GraphStoreFixture( boolean keepStatistics, String formatName, TestDirectory testDirectory )
+    protected GraphStoreFixture( String formatName, TestDirectory testDirectory )
     {
-        this.keepStatistics = keepStatistics;
         this.formatName = formatName;
         this.testDirectory = testDirectory;
         startDatabaseAndExtractComponents();
         generateInitialData();
-    }
-
-    protected GraphStoreFixture( String formatName, TestDirectory testDirectory )
-    {
-        this( false, formatName, testDirectory );
     }
 
     private void startDatabaseAndExtractComponents()
@@ -173,8 +159,6 @@ public abstract class GraphStoreFixture implements AutoCloseable
                 dependencyResolver.resolveDependency( IndexStatisticsStore.class ),
                 dependencyResolver.resolveDependency( IdGeneratorFactory.class ) );
         countsStore = storageEngine.countsAccessor();
-        statistics = keepStatistics ? new VerboseStatistics( new AccessStatistics(), new DefaultCounts( defaultConsistencyCheckThreadsNumber() ),
-                NullLog.getInstance() ) : Statistics.NONE;
         pageCache = dependencyResolver.resolveDependency( PageCache.class );
 
     }
@@ -235,11 +219,6 @@ public abstract class GraphStoreFixture implements AutoCloseable
     public DatabaseLayout databaseLayout()
     {
         return Neo4jLayout.of( testDirectory.homePath() ).databaseLayout( DEFAULT_DATABASE_NAME );
-    }
-
-    public Statistics getAccessStatistics()
-    {
-        return statistics;
     }
 
     public IndexingService indexingService()

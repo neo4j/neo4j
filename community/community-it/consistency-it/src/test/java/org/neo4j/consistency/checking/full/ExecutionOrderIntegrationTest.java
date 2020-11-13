@@ -37,7 +37,6 @@ import org.neo4j.consistency.newchecker.NodeBasedMemoryLimiter;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
 import org.neo4j.consistency.report.InconsistencyLogger;
 import org.neo4j.consistency.report.InconsistencyReport;
-import org.neo4j.consistency.statistics.Statistics;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
@@ -105,9 +104,8 @@ public class ExecutionOrderIntegrationTest
         // given
         int threads = defaultConsistencyCheckThreadsNumber();
 
-        FullCheck singlePass =
-                new FullCheck( ProgressMonitorFactory.NONE, Statistics.NONE, threads, ConsistencyFlags.DEFAULT, getTuningConfiguration(), false,
-                        NodeBasedMemoryLimiter.DEFAULT );
+        FullCheck singlePass = new FullCheck( ProgressMonitorFactory.NONE, threads, ConsistencyFlags.DEFAULT, getTuningConfiguration(), false,
+                NodeBasedMemoryLimiter.DEFAULT );
 
         ConsistencySummaryStatistics singlePassSummary = new ConsistencySummaryStatistics();
         InconsistencyLogger logger = mock( InconsistencyLogger.class );

@@ -19,11 +19,7 @@
  */
 package org.neo4j.consistency.store;
 
-import java.util.Iterator;
-
 import org.neo4j.consistency.checking.cache.CacheAccess;
-import org.neo4j.consistency.checking.full.MultiPassStore;
-import org.neo4j.internal.helpers.collection.PrefetchingIterator;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
@@ -33,7 +29,6 @@ import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
-import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
@@ -80,28 +75,6 @@ public class DirectRecordAccess implements RecordAccess
     public RecordReference<PropertyRecord> property( long id, PageCursorTracer cursorTracer )
     {
         return referenceTo( access.getPropertyStore(), id, cursorTracer );
-    }
-
-    @Override
-    public Iterator<PropertyRecord> rawPropertyChain( final long firstId, PageCursorTracer cursorTracer )
-    {
-        return new PrefetchingIterator<>()
-        {
-            private long next = firstId;
-
-            @Override
-            protected PropertyRecord fetchNextOrNull()
-            {
-                if ( Record.NO_NEXT_PROPERTY.is( next ) )
-                {
-                    return null;
-                }
-
-                PropertyRecord record = referenceTo( access.getPropertyStore(), next, cursorTracer ).record();
-                next = record.getNextProp();
-                return record;
-            }
-        };
     }
 
     @Override
@@ -158,20 +131,8 @@ public class DirectRecordAccess implements RecordAccess
         return referenceTo( access.getPropertyKeyNameStore(), id, cursorTracer );
     }
 
-    @Override
-    public boolean shouldCheck( long id, MultiPassStore store )
-    {
-        return true;
-    }
-
     <RECORD extends AbstractBaseRecord> DirectRecordReference<RECORD> referenceTo( RecordStore<RECORD> store, long id, PageCursorTracer cursorTracer )
     {
         return new DirectRecordReference<>( store.getRecord( id, store.newRecord(), FORCE, cursorTracer ), this, cursorTracer );
-    }
-
-    @Override
-    public CacheAccess cacheAccess()
-    {
-        return cacheAccess;
     }
 }

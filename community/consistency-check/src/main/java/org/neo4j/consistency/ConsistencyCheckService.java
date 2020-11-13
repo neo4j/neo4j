@@ -31,11 +31,6 @@ import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.consistency.checking.full.FullCheck;
 import org.neo4j.consistency.newchecker.NodeBasedMemoryLimiter;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
-import org.neo4j.consistency.statistics.AccessStatistics;
-import org.neo4j.consistency.statistics.AccessStatsKeepingStoreAccess;
-import org.neo4j.consistency.statistics.DefaultCounts;
-import org.neo4j.consistency.statistics.Statistics;
-import org.neo4j.consistency.statistics.VerboseStatistics;
 import org.neo4j.consistency.store.DirectStoreAccess;
 import org.neo4j.counts.CountsAccessor;
 import org.neo4j.counts.CountsStore;
@@ -257,24 +252,12 @@ public class ConsistencyCheckService
             life.add( indexStatisticsStore );
 
             int numberOfThreads = defaultConsistencyCheckThreadsNumber();
-            Statistics statistics;
-            StoreAccess storeAccess;
-            AccessStatistics stats = new AccessStatistics();
-            if ( verbose )
-            {
-                statistics = new VerboseStatistics( stats, new DefaultCounts( numberOfThreads ), log );
-                storeAccess = new AccessStatsKeepingStoreAccess( neoStores, stats );
-            }
-            else
-            {
-                statistics = Statistics.NONE;
-                storeAccess = new StoreAccess( neoStores );
-            }
+            StoreAccess storeAccess = new StoreAccess( neoStores );
             storeAccess.initialize();
             DirectStoreAccess stores =
                     new DirectStoreAccess( storeAccess, labelScanStore, relationshipTypeScanstore, indexes, tokenHolders, indexStatisticsStore,
                             idGeneratorFactory );
-            FullCheck check = new FullCheck( progressFactory, statistics, numberOfThreads, consistencyFlags, config, verbose, NodeBasedMemoryLimiter.DEFAULT );
+            FullCheck check = new FullCheck( progressFactory, numberOfThreads, consistencyFlags, config, verbose, NodeBasedMemoryLimiter.DEFAULT );
             summary = check.execute( pageCache, stores, countsManager, null, pageCacheTracer, memoryTracker, new DuplicatingLog( log, reportLog ) );
         }
         finally

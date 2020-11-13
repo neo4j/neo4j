@@ -27,13 +27,11 @@ import java.util.List;
 import org.neo4j.annotations.documented.Documented;
 import org.neo4j.annotations.documented.Warning;
 import org.neo4j.consistency.RecordType;
-import org.neo4j.consistency.checking.RecordCheck;
 import org.neo4j.consistency.store.synthetic.CountsEntry;
 import org.neo4j.consistency.store.synthetic.IndexEntry;
 import org.neo4j.consistency.store.synthetic.TokenScanDocument;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
@@ -50,48 +48,6 @@ public interface ConsistencyReport
 {
     interface Reporter
     {
-        void forSchema( SchemaRecord schema,
-                        RecordCheck<SchemaRecord, SchemaConsistencyReport> checker, PageCursorTracer cursorTracer );
-
-        void forNode( NodeRecord node,
-                      RecordCheck<NodeRecord, NodeConsistencyReport> checker, PageCursorTracer cursorTracer );
-
-        void forRelationship( RelationshipRecord relationship,
-                              RecordCheck<RelationshipRecord, RelationshipConsistencyReport> checker, PageCursorTracer cursorTracer );
-
-        void forProperty( PropertyRecord property,
-                          RecordCheck<PropertyRecord, PropertyConsistencyReport> checker, PageCursorTracer cursorTracer );
-
-        void forRelationshipTypeName( RelationshipTypeTokenRecord relationshipType,
-                                      RecordCheck<RelationshipTypeTokenRecord, RelationshipTypeConsistencyReport> checker, PageCursorTracer cursorTracer );
-
-        void forLabelName( LabelTokenRecord label,
-                           RecordCheck<LabelTokenRecord, LabelTokenConsistencyReport> checker, PageCursorTracer cursorTracer );
-
-        void forPropertyKey( PropertyKeyTokenRecord key,
-                             RecordCheck<PropertyKeyTokenRecord, PropertyKeyTokenConsistencyReport> checker, PageCursorTracer cursorTracer );
-
-        void forDynamicBlock( RecordType type, DynamicRecord record,
-                              RecordCheck<DynamicRecord, DynamicConsistencyReport> checker, PageCursorTracer cursorTracer );
-
-        void forDynamicLabelBlock( RecordType type, DynamicRecord record,
-                                   RecordCheck<DynamicRecord, DynamicLabelConsistencyReport> checker, PageCursorTracer cursorTracer );
-
-        void forNodeLabelScan( TokenScanDocument document,
-                               RecordCheck<TokenScanDocument, ConsistencyReport.LabelScanConsistencyReport> checker, PageCursorTracer cursorTracer );
-
-        void forRelationshipTypeScan( TokenScanDocument document,
-                RecordCheck<TokenScanDocument,ConsistencyReport.RelationshipTypeScanConsistencyReport> checker, PageCursorTracer cursorTracer );
-
-        void forIndexEntry( IndexEntry entry,
-                            RecordCheck<IndexEntry, ConsistencyReport.IndexConsistencyReport> checker, PageCursorTracer cursorTracer );
-
-        void forRelationshipGroup( RelationshipGroupRecord record,
-                RecordCheck<RelationshipGroupRecord, ConsistencyReport.RelationshipGroupConsistencyReport> checker, PageCursorTracer cursorTracer );
-
-        void forCounts( CountsEntry countsEntry,
-                        RecordCheck<CountsEntry, ConsistencyReport.CountsConsistencyReport> checker, PageCursorTracer cursorTracer );
-
         SchemaConsistencyReport forSchema( SchemaRecord schema );
 
         NodeConsistencyReport forNode( NodeRecord node );
@@ -661,97 +617,6 @@ public interface ConsistencyReport
             reports.add( CountsConsistencyReport.class );
             InvocationHandler noop = ( proxy, method, args ) -> null;
             this.proxy = Proxy.newProxyInstance( NoConsistencyReport.class.getClassLoader(), reports.toArray( new Class[0] ), noop );
-        }
-
-        @Override
-        public void forSchema( SchemaRecord schema, RecordCheck<SchemaRecord,SchemaConsistencyReport> checker, PageCursorTracer cursorTracer )
-        {
-        }
-
-        @Override
-        public void forNode( NodeRecord node, RecordCheck<NodeRecord,NodeConsistencyReport> checker, PageCursorTracer cursorTracer )
-        {
-
-        }
-
-        @Override
-        public void forRelationship( RelationshipRecord relationship, RecordCheck<RelationshipRecord,RelationshipConsistencyReport> checker,
-                PageCursorTracer cursorTracer )
-        {
-
-        }
-
-        @Override
-        public void forProperty( PropertyRecord property, RecordCheck<PropertyRecord,PropertyConsistencyReport> checker, PageCursorTracer cursorTracer )
-        {
-
-        }
-
-        @Override
-        public void forRelationshipTypeName( RelationshipTypeTokenRecord relationshipType,
-                RecordCheck<RelationshipTypeTokenRecord,RelationshipTypeConsistencyReport> checker, PageCursorTracer cursorTracer )
-        {
-
-        }
-
-        @Override
-        public void forLabelName( LabelTokenRecord label, RecordCheck<LabelTokenRecord,LabelTokenConsistencyReport> checker, PageCursorTracer cursorTracer )
-        {
-
-        }
-
-        @Override
-        public void forPropertyKey( PropertyKeyTokenRecord key, RecordCheck<PropertyKeyTokenRecord,PropertyKeyTokenConsistencyReport> checker,
-                PageCursorTracer cursorTracer )
-        {
-
-        }
-
-        @Override
-        public void forDynamicBlock( RecordType type, DynamicRecord record, RecordCheck<DynamicRecord,DynamicConsistencyReport> checker,
-                PageCursorTracer cursorTracer )
-        {
-
-        }
-
-        @Override
-        public void forDynamicLabelBlock( RecordType type, DynamicRecord record, RecordCheck<DynamicRecord,DynamicLabelConsistencyReport> checker,
-                PageCursorTracer cursorTracer )
-        {
-
-        }
-
-        @Override
-        public void forNodeLabelScan( TokenScanDocument document, RecordCheck<TokenScanDocument,LabelScanConsistencyReport> checker,
-                PageCursorTracer cursorTracer )
-        {
-
-        }
-
-        @Override
-        public void forRelationshipTypeScan( TokenScanDocument document, RecordCheck<TokenScanDocument,RelationshipTypeScanConsistencyReport> checker,
-                PageCursorTracer cursorTracer )
-        {
-
-        }
-
-        @Override
-        public void forIndexEntry( IndexEntry entry, RecordCheck<IndexEntry,IndexConsistencyReport> checker, PageCursorTracer cursorTracer )
-        {
-
-        }
-
-        @Override
-        public void forRelationshipGroup( RelationshipGroupRecord record, RecordCheck<RelationshipGroupRecord,RelationshipGroupConsistencyReport> checker,
-                PageCursorTracer cursorTracer )
-        {
-
-        }
-
-        @Override
-        public void forCounts( CountsEntry countsEntry, RecordCheck<CountsEntry,CountsConsistencyReport> checker, PageCursorTracer cursorTracer )
-        {
-
         }
 
         @Override

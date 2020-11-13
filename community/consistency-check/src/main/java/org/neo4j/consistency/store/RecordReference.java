@@ -19,25 +19,16 @@
  */
 package org.neo4j.consistency.store;
 
-import org.neo4j.consistency.report.PendingReferenceCheck;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 
 public interface RecordReference<RECORD extends AbstractBaseRecord>
 {
-    void dispatch( PendingReferenceCheck<RECORD> reporter );
-
     class SkippingReference<RECORD extends AbstractBaseRecord> implements RecordReference<RECORD>
     {
         @SuppressWarnings( "unchecked" )
         public static <RECORD extends AbstractBaseRecord> SkippingReference<RECORD> skipReference()
         {
             return INSTANCE;
-        }
-
-        @Override
-        public void dispatch( PendingReferenceCheck<RECORD> reporter )
-        {
-            reporter.skip();
         }
 
         @Override

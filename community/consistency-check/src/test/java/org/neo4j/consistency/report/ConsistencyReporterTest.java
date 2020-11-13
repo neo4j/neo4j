@@ -21,10 +21,8 @@ package org.neo4j.consistency.report;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatcher;
 
 import java.lang.reflect.Method;
@@ -33,17 +31,11 @@ import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.annotations.documented.Warning;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.consistency.RecordType;
-import org.neo4j.consistency.checking.CheckerEngine;
-import org.neo4j.consistency.checking.ComparativeRecordChecker;
-import org.neo4j.consistency.checking.RecordCheck;
-import org.neo4j.consistency.report.ConsistencyReport.NodeConsistencyReport;
 import org.neo4j.consistency.store.RecordAccess;
-import org.neo4j.consistency.store.RecordReference;
 import org.neo4j.consistency.store.synthetic.CountsEntry;
 import org.neo4j.consistency.store.synthetic.IndexEntry;
 import org.neo4j.consistency.store.synthetic.TokenScanDocument;
@@ -70,16 +62,11 @@ import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.test.InMemoryTokens;
 
 import static java.lang.String.format;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyVararg;
 import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.consistency.report.ConsistencyReporter.NO_MONITOR;
@@ -106,99 +93,6 @@ class ConsistencyReporterTest
 
             // then
             verifyNoMoreInteractions( summary );
-        }
-
-        @Test
-        @SuppressWarnings( "unchecked" )
-        void shouldOnlySummarizeStatisticsWhenAllReferencesAreChecked()
-        {
-            // given
-            ConsistencySummaryStatistics summary = mock( ConsistencySummaryStatistics.class );
-            RecordAccess records = mock( RecordAccess.class );
-            ConsistencyReporter.ReportHandler handler = new ConsistencyReporter.ReportHandler(
-                    new InconsistencyReport( mock( InconsistencyLogger.class ), summary ),
-                    mock( ConsistencyReporter.ProxyFactory.class ), RecordType.PROPERTY, records,
-                    new PropertyRecord( 0 ), NO_MONITOR, PageCacheTracer.NULL );
-
-            RecordReference<PropertyRecord> reference = mock( RecordReference.class );
-            ComparativeRecordChecker<PropertyRecord, PropertyRecord, ConsistencyReport.PropertyConsistencyReport>
-                    checker = mock( ComparativeRecordChecker.class );
-
-            handler.comparativeCheck( reference, checker );
-            ArgumentCaptor<PendingReferenceCheck<PropertyRecord>> captor =
-                    (ArgumentCaptor) ArgumentCaptor.forClass( PendingReferenceCheck.class );
-            verify( reference ).dispatch( captor.capture() );
-            PendingReferenceCheck pendingRefCheck = captor.getValue();
-
-            // then
-            verifyNoInteractions( summary );
-
-            // when
-            pendingRefCheck.skip();
-
-            // then
-            verifyNoMoreInteractions( summary );
-        }
-
-        @Test
-        void shouldIncludeStackTraceInUnexpectedCheckException( TestInfo testInfo )
-        {
-            // GIVEN
-            ConsistencySummaryStatistics summary = mock( ConsistencySummaryStatistics.class );
-            RecordAccess records = mock( RecordAccess.class );
-            final AtomicReference<String> loggedError = new AtomicReference<>();
-            InconsistencyLogger logger = new InconsistencyLogger()
-            {
-                @Override
-                public void error( RecordType recordType, AbstractBaseRecord record, String message, Object... args )
-                {
-                    assertTrue( loggedError.compareAndSet( null, message ) );
-                }
-
-                @Override
-                public void error( RecordType recordType, AbstractBaseRecord oldRecord, AbstractBaseRecord newRecord,
-                        String message, Object... args )
-                {
-                    assertTrue( loggedError.compareAndSet( null, message ) );
-                }
-
-                @Override
-                public void error( String message )
-                {
-                    assertTrue( loggedError.compareAndSet( null, message ) );
-                }
-
-                @Override
-                public void warning( RecordType recordType, AbstractBaseRecord record, String message, Object... args )
-                {
-                }
-
-                @Override
-                public void warning( RecordType recordType, AbstractBaseRecord oldRecord, AbstractBaseRecord newRecord,
-                        String message, Object... args )
-                {
-                }
-
-                @Override
-                public void warning( String message )
-                {
-                }
-            };
-            InconsistencyReport inconsistencyReport = new InconsistencyReport( logger, summary );
-            ConsistencyReporter reporter = new ConsistencyReporter( records, inconsistencyReport, PageCacheTracer.NULL );
-            NodeRecord node = new NodeRecord( 10 );
-            RecordCheck<NodeRecord,NodeConsistencyReport> checker = mock( RecordCheck.class );
-            RuntimeException exception = new RuntimeException( "My specific exception" );
-            doThrow( exception ).when( checker )
-                    .check( any( NodeRecord.class ), any( CheckerEngine.class ), any( RecordAccess.class ), any( PageCursorTracer.class ) );
-
-            // WHEN
-            reporter.forNode( node, checker, NULL );
-
-            // THEN
-            String error = loggedError.get();
-            assertThat( error ).contains( "at " );
-            assertThat( error ).contains( testInfo.getTestMethod().orElseThrow().getName() );
         }
     }
 
@@ -267,10 +161,6 @@ class ConsistencyReporterTest
             if ( type == RecordType.class )
             {
                 return RecordType.STRING_PROPERTY;
-            }
-            if ( type == RecordCheck.class )
-            {
-                return mockChecker( method );
             }
             if ( type == NodeRecord.class )
             {
@@ -392,30 +282,6 @@ class ConsistencyReporterTest
                 }
             };
         }
-
-        @SuppressWarnings( "unchecked" )
-        private RecordCheck mockChecker( Method method )
-        {
-            RecordCheck checker = mock( RecordCheck.class );
-            doAnswer( invocation ->
-            {
-                Object[] arguments = invocation.getArguments();
-                ConsistencyReport report = ((CheckerEngine)arguments[arguments.length - 2]).report();
-                try
-                {
-                    return method.invoke( report, parameters( method ) );
-                }
-                catch ( IllegalArgumentException ex )
-                {
-                    throw new IllegalArgumentException(
-                            format( "%s.%s#%s(...)", report, method.getDeclaringClass().getSimpleName(), method.getName() ),
-                            ex );
-                }
-            } ).when( checker ).check( any( AbstractBaseRecord.class ),
-                                                    any( CheckerEngine.class ),
-                                                    any( RecordAccess.class ), any( PageCursorTracer.class ) );
-            return checker;
-        }
     }
 
     private static ArgumentMatcher<String> expectedFormat()
@@ -464,10 +330,5 @@ class ConsistencyReporterTest
             this.reportedMethod = reportedMethod;
             this.method = method;
         }
-    }
-
-    private static <T> T[] nullSafeAny()
-    {
-        return argThat( argument -> true );
     }
 }

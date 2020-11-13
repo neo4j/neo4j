@@ -43,7 +43,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.checking.GraphStoreFixture;
@@ -125,8 +124,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.consistency.ConsistencyCheckService.defaultConsistencyCheckThreadsNumber;
-import static org.neo4j.consistency.checking.RecordCheckTestBase.inUse;
-import static org.neo4j.consistency.checking.RecordCheckTestBase.notInUse;
 import static org.neo4j.consistency.checking.SchemaRuleUtil.constraintIndexRule;
 import static org.neo4j.consistency.checking.SchemaRuleUtil.indexRule;
 import static org.neo4j.consistency.checking.SchemaRuleUtil.nodePropertyExistenceConstraintRule;
@@ -2139,7 +2136,7 @@ public class FullCheckIntegrationTest
 
     protected Map<Setting<?>,Object> getSettings()
     {
-        return MapUtil.genericMap( GraphDatabaseInternalSettings.experimental_consistency_checker, false );
+        return MapUtil.genericMap();
     }
 
     private GraphStoreFixture createFixture()
@@ -2283,8 +2280,8 @@ public class FullCheckIntegrationTest
             Config config, ConsistencyFlags consistencyFlags )
             throws ConsistencyCheckIncompleteException
     {
-        FullCheck checker = new FullCheck( ProgressMonitorFactory.NONE, fixture.getAccessStatistics(), defaultConsistencyCheckThreadsNumber(),
-                consistencyFlags, config, false, memoryLimit() );
+        FullCheck checker =
+                new FullCheck( ProgressMonitorFactory.NONE, defaultConsistencyCheckThreadsNumber(), consistencyFlags, config, false, memoryLimit() );
         return checker.execute( pageCache, stores, counts, fixture.indexAccessorLookup(), PageCacheTracer.NULL, INSTANCE,
                 logProvider.getLog( "test" ) );
     }
@@ -2635,5 +2632,17 @@ public class FullCheckIntegrationTest
         return new RelationshipGroupRecord( id )
                 .initialize( false, type, NULL_REFERENCE.longValue(), NULL_REFERENCE.longValue(), NULL_REFERENCE.longValue(), NULL_REFERENCE.longValue(),
                         NULL_REFERENCE.longValue() );
+    }
+
+    public static <R extends AbstractBaseRecord> R inUse( R record )
+    {
+        record.setInUse( true );
+        return record;
+    }
+
+    public static <R extends AbstractBaseRecord> R notInUse( R record )
+    {
+        record.setInUse( false );
+        return record;
     }
 }

@@ -20,16 +20,12 @@
 package org.neo4j.consistency.checking.full;
 
 import java.io.IOException;
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.configuration.Config;
 import org.neo4j.consistency.RecordType;
-import org.neo4j.consistency.checking.CheckDecorator;
-import org.neo4j.consistency.checking.cache.CacheAccess;
-import org.neo4j.consistency.checking.cache.DefaultCacheAccess;
 import org.neo4j.consistency.checking.index.IndexAccessors;
 import org.neo4j.consistency.newchecker.NodeBasedMemoryLimiter;
 import org.neo4j.consistency.newchecker.RecordStorageConsistencyChecker;
@@ -37,11 +33,7 @@ import org.neo4j.consistency.report.ConsistencyReporter;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
 import org.neo4j.consistency.report.InconsistencyMessageLogger;
 import org.neo4j.consistency.report.InconsistencyReport;
-import org.neo4j.consistency.statistics.Statistics;
-import org.neo4j.consistency.store.CacheSmallStoresRecordAccess;
-import org.neo4j.consistency.store.DirectRecordAccess;
 import org.neo4j.consistency.store.DirectStoreAccess;
-import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.counts.CountsStore;
 import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.internal.helpers.collection.Iterables;
@@ -59,44 +51,28 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.index.schema.ConsistencyCheckable;
-import org.neo4j.kernel.impl.store.RecordStore;
-import org.neo4j.kernel.impl.store.StoreAccess;
-import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
-import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
-import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
-import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.logging.Log;
 import org.neo4j.memory.MemoryTracker;
-
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.experimental_consistency_checker;
-import static org.neo4j.consistency.report.ConsistencyReporter.NO_MONITOR;
-import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 
 public class FullCheck
 {
     private static final String INDEX_STRUCTURE_CHECKER_TAG = "indexStructureChecker";
-    private static final String CONSISTENCY_RECORD_ACCESSOR_TAG = "consistencyRecordAccessor";
-    private static final String COUNT_STORE_CONSISTENCY_CHECKER_TAG = "countStoreConsistencyChecker";
-    private final boolean useExperimentalChecker;
     private final Config config;
     private final boolean verbose;
     private final NodeBasedMemoryLimiter.Factory memoryLimit;
     private final ProgressMonitorFactory progressFactory;
     private final IndexSamplingConfig samplingConfig;
     private final int threads;
-    private final Statistics statistics;
     private ConsistencyFlags flags;
 
-    public FullCheck( ProgressMonitorFactory progressFactory, Statistics statistics, int threads,
+    public FullCheck( ProgressMonitorFactory progressFactory, int threads,
                       ConsistencyFlags consistencyFlags, Config config, boolean verbose, NodeBasedMemoryLimiter.Factory memoryLimit )
     {
-        this.statistics = statistics;
         this.threads = threads;
         this.progressFactory = progressFactory;
         this.flags = consistencyFlags;
         this.samplingConfig = new IndexSamplingConfig( config );
         this.config = config;
-        this.useExperimentalChecker = config.get( experimental_consistency_checker );
         this.verbose = verbose;
         this.memoryLimit = memoryLimit;
     }
@@ -115,18 +91,6 @@ public class FullCheck
             log.warn( "Inconsistencies found: " + summary );
         }
         return summary;
-    }
-
-    private void checkCountsStoreConsistency( InconsistencyReport report, CountsBuilderDecorator countsBuilder, RecordAccess records, CountsStore countsStore,
-            PageCacheTracer pageCacheTracer )
-    {
-        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( COUNT_STORE_CONSISTENCY_CHECKER_TAG ) )
-        {
-            if ( flags.isCheckGraph() && countsStore != CountsStore.NULL_INSTANCE )
-            {
-                countsBuilder.checkCounts( countsStore, new ConsistencyReporter( records, report, pageCacheTracer ), progressFactory, cursorTracer );
-            }
-        }
     }
 
     private CountsStore getCountsStore( ThrowingSupplier<CountsStore,IOException> countsSupplier, Log log, ConsistencySummaryStatistics summary )
@@ -172,40 +136,12 @@ public class FullCheck
                         pageCacheTracer );
             }
 
-            if ( !useExperimentalChecker )
+            try ( RecordStorageConsistencyChecker checker = new RecordStorageConsistencyChecker( pageCache,
+                    directStoreAccess.nativeStores().getRawNeoStores(), countsStore, directStoreAccess.labelScanStore(),
+                    directStoreAccess.relationshipTypeScanStore(), indexes, report, progressFactory, config, threads, verbose, flags, memoryLimit,
+                    pageCacheTracer, memoryTracker ) )
             {
-                CacheAccess cacheAccess = new DefaultCacheAccess(
-                        DefaultCacheAccess.defaultByteArray( directStoreAccess.nativeStores().getNodeStore().getHighId(), memoryTracker ),
-                        statistics.getCounts(), threads );
-                RecordAccess recordAccess = recordAccess( directStoreAccess.nativeStores(), cacheAccess, pageCacheTracer );
-                OwnerCheck ownerCheck = new OwnerCheck( flags.isCheckPropertyOwners() );
-                CountsBuilderDecorator countsBuilder = new CountsBuilderDecorator( directStoreAccess.nativeStores() );
-                CheckDecorator decorator = new CheckDecorator.ChainCheckDecorator( ownerCheck, countsBuilder );
-                final ConsistencyReporter reporter = new ConsistencyReporter( recordAccess, report, NO_MONITOR, pageCacheTracer );
-                final StoreAccess nativeStores = directStoreAccess.nativeStores();
-                StoreProcessor processEverything = new StoreProcessor( decorator, reporter, Stage.SEQUENTIAL_FORWARD, cacheAccess );
-                ProgressMonitorFactory.MultiPartBuilder progress = progressFactory.multipleParts( "Full Consistency Check" );
-                MultiPassStore.Factory multiPass = new MultiPassStore.Factory( decorator, recordAccess, cacheAccess, report, NO_MONITOR, pageCacheTracer );
-                ConsistencyCheckTasks taskCreator =
-                        new ConsistencyCheckTasks( progress, processEverything, nativeStores, statistics, cacheAccess, directStoreAccess.labelScanStore(),
-                                directStoreAccess.relationshipTypeScanStore(), indexes, multiPass, reporter, threads, pageCacheTracer );
-                List<ConsistencyCheckerTask> tasks =
-                        taskCreator.createTasksForFullCheck( flags.isCheckLabelScanStore(), flags.isCheckRelationshipTypeScanStore(), flags.isCheckIndexes(),
-                                flags.isCheckGraph() );
-                progress.build();
-                TaskExecutor.execute( tasks, decorator::prepare );
-                checkCountsStoreConsistency( report, countsBuilder, recordAccess, countsStore, pageCacheTracer );
-                ownerCheck.scanForOrphanChains( progressFactory );
-            }
-            else
-            {
-                try ( RecordStorageConsistencyChecker checker = new RecordStorageConsistencyChecker( pageCache,
-                        directStoreAccess.nativeStores().getRawNeoStores(), countsStore, directStoreAccess.labelScanStore(),
-                        directStoreAccess.relationshipTypeScanStore(), indexes, report, progressFactory, config, threads, verbose, flags, memoryLimit,
-                        pageCacheTracer, memoryTracker ) )
-                {
-                    checker.check();
-                }
+                checker.check();
             }
         }
         catch ( Exception e )
@@ -219,17 +155,6 @@ public class FullCheck
         List<IdGenerator> idGenerators = new ArrayList<>();
         directStoreAccess.idGeneratorFactory().visit( idGenerators::add );
         return idGenerators;
-    }
-
-    private static RecordAccess recordAccess( StoreAccess store, CacheAccess cacheAccess, PageCacheTracer pageCacheTracer )
-    {
-        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( CONSISTENCY_RECORD_ACCESSOR_TAG ) )
-        {
-            return new CacheSmallStoresRecordAccess( new DirectRecordAccess( store, cacheAccess ),
-                    readAllRecords( PropertyKeyTokenRecord.class, store.getPropertyKeyTokenStore(), cursorTracer ),
-                    readAllRecords( RelationshipTypeTokenRecord.class, store.getRelationshipTypeTokenStore(), cursorTracer ),
-                    readAllRecords( LabelTokenRecord.class, store.getLabelTokenStore(), cursorTracer ) );
-        }
     }
 
     private static void consistencyCheckIndexStructure( LabelScanStore labelScanStore,
@@ -299,16 +224,5 @@ public class FullCheck
         {
             indexes.remove( toRemove );
         }
-    }
-
-    private static <T extends AbstractBaseRecord> T[] readAllRecords( Class<T> type, RecordStore<T> store, PageCursorTracer cursorTracer )
-    {
-        @SuppressWarnings( "unchecked" )
-        T[] records = (T[]) Array.newInstance( type, (int) store.getHighId() );
-        for ( int i = 0; i < records.length; i++ )
-        {
-            records[i] = store.getRecord( i, store.newRecord(), FORCE, cursorTracer );
-        }
-        return records;
     }
 }

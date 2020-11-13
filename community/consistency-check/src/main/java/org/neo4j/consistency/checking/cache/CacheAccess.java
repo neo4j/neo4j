@@ -21,10 +21,8 @@ package org.neo4j.consistency.checking.cache;
 
 import java.util.Collection;
 
-import org.neo4j.consistency.checking.full.CheckStage;
 import org.neo4j.consistency.statistics.Counts;
 import org.neo4j.consistency.statistics.Counts.Type;
-import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 

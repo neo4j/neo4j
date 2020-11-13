@@ -19,6 +19,7 @@
  */
 package org.neo4j.consistency.newchecker;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
 import org.eclipse.collections.api.set.primitive.MutableIntSet;
 import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
@@ -27,6 +28,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.function.LongConsumer;
 
+import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.consistency.checking.cache.CacheAccess;
 import org.neo4j.consistency.checking.cache.CacheSlots;
 import org.neo4j.consistency.checking.full.ConsistencyFlags;
@@ -54,11 +56,11 @@ import org.neo4j.token.TokenHolders;
 import org.neo4j.values.storable.Value;
 
 import static java.lang.Math.toIntExact;
+import static java.util.Arrays.sort;
 import static org.apache.commons.lang3.math.NumberUtils.max;
 import static org.apache.commons.lang3.math.NumberUtils.min;
 import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.consistency.checking.cache.CacheSlots.longOf;
-import static org.neo4j.consistency.checking.full.NodeInUseWithCorrectLabelsCheck.sortAndDeduplicate;
 import static org.neo4j.consistency.newchecker.RecordLoading.checkValidToken;
 import static org.neo4j.consistency.newchecker.RecordLoading.lightClear;
 import static org.neo4j.kernel.impl.store.record.Record.NO_LABELS_FIELD;
@@ -474,5 +476,15 @@ class NodeChecker implements Checker
     public String toString()
     {
         return String.format( "%s[highId:%d,indexesToCheck:%d]", getClass().getSimpleName(), neoStores.getNodeStore().getHighId(), smallIndexes.size() );
+    }
+
+    public static long[] sortAndDeduplicate( long[] labels )
+    {
+        if ( ArrayUtils.isNotEmpty( labels ) )
+        {
+            sort( labels );
+            return PrimitiveLongCollections.deduplicate( labels );
+        }
+        return labels;
     }
 }
