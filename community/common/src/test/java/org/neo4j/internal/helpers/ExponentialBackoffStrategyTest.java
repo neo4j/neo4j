@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.internal.helpers.DefaultTimeoutStrategy.exponential;
 
 class ExponentialBackoffStrategyTest
 {
@@ -33,7 +34,7 @@ class ExponentialBackoffStrategyTest
     void shouldDoubleEachTime()
     {
         // given
-        TimeoutStrategy strategy = IncreasingTimeoutStrategy.exponential( 1, 1 << NUMBER_OF_ACCESSES, MILLISECONDS );
+        TimeoutStrategy strategy = exponential( 1, 1 << NUMBER_OF_ACCESSES, MILLISECONDS );
         TimeoutStrategy.Timeout timeout = strategy.newTimeout();
 
         // when
@@ -50,7 +51,7 @@ class ExponentialBackoffStrategyTest
     void shouldProvidePreviousTimeout()
     {
         // given
-        TimeoutStrategy strategy = IncreasingTimeoutStrategy.exponential( 1, 1 << NUMBER_OF_ACCESSES, MILLISECONDS );
+        TimeoutStrategy strategy = exponential( 1, 1 << NUMBER_OF_ACCESSES, MILLISECONDS );
         TimeoutStrategy.Timeout timeout = strategy.newTimeout();
 
         // when
@@ -69,7 +70,7 @@ class ExponentialBackoffStrategyTest
         // given
         long upperBound = (1 << NUMBER_OF_ACCESSES) - 5;
 
-        TimeoutStrategy strategy = IncreasingTimeoutStrategy.exponential( 1, upperBound, MILLISECONDS );
+        TimeoutStrategy strategy = exponential( 1, upperBound, MILLISECONDS );
         TimeoutStrategy.Timeout timeout = strategy.newTimeout();
 
         // when
