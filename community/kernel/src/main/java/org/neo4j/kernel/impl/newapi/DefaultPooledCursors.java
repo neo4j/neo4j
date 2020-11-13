@@ -405,7 +405,7 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
     }
 
     @Override
-    public RelationshipValueIndexCursor allocateRelationshipValueIndexCursor( PageCursorTracer cursorTracer )
+    public RelationshipValueIndexCursor allocateRelationshipValueIndexCursor( PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
     {
         if ( relationshipValueIndexCursor == null )
         {
@@ -413,7 +413,7 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
                     storageReader.allocateNodeCursor( cursorTracer ), storageReader.allocateNodeCursor( cursorTracer ) );
             DefaultRelationshipScanCursor relationshipScanCursor = new DefaultRelationshipScanCursor(
                     this::accept, storageReader.allocateRelationshipScanCursor( cursorTracer ), nodeCursor );
-            return trace( new DefaultRelationshipValueIndexCursor( this::accept, relationshipScanCursor ) );
+            return trace( new DefaultRelationshipValueIndexCursor( this::accept, relationshipScanCursor, memoryTracker ) );
         }
 
         try

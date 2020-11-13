@@ -158,9 +158,9 @@ public class ManagedTestCursors implements CursorFactory
     }
 
     @Override
-    public RelationshipValueIndexCursor allocateRelationshipValueIndexCursor( PageCursorTracer cursorTracer )
+    public RelationshipValueIndexCursor allocateRelationshipValueIndexCursor( PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
     {
-        RelationshipValueIndexCursor n = cursors.allocateRelationshipValueIndexCursor( cursorTracer );
+        RelationshipValueIndexCursor n = cursors.allocateRelationshipValueIndexCursor( cursorTracer, memoryTracker );
         allCursors.add( n );
         return n;
     }

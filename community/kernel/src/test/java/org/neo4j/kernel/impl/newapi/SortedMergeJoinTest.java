@@ -103,27 +103,27 @@ class SortedMergeJoinTest
                                    node( 6L, "c", "e" ) ), indexOrder );
     }
 
-    private void assertThatItWorks( List<NodeWithPropertyValues> listA, List<NodeWithPropertyValues> listB, IndexOrder indexOrder )
+    private void assertThatItWorks( List<EntityWithPropertyValues> listA, List<EntityWithPropertyValues> listB, IndexOrder indexOrder )
     {
         assertThatItWorksOneWay( listA, listB, indexOrder );
         assertThatItWorksOneWay( listB, listA, indexOrder );
     }
 
-    private void assertThatItWorksOneWay( List<NodeWithPropertyValues> listA, List<NodeWithPropertyValues> listB, IndexOrder indexOrder )
+    private void assertThatItWorksOneWay( List<EntityWithPropertyValues> listA, List<EntityWithPropertyValues> listB, IndexOrder indexOrder )
     {
         SortedMergeJoin sortedMergeJoin = new SortedMergeJoin();
         sortedMergeJoin.initialize( indexOrder );
 
-        Comparator<NodeWithPropertyValues> comparator = indexOrder == IndexOrder.ASCENDING ?
+        Comparator<EntityWithPropertyValues> comparator = indexOrder == IndexOrder.ASCENDING ?
                 ( a, b ) -> ValueTuple.COMPARATOR.compare( ValueTuple.of( a.getValues() ), ValueTuple.of( b.getValues() ) ) :
                 ( a, b ) -> ValueTuple.COMPARATOR.compare( ValueTuple.of( b.getValues() ), ValueTuple.of( a.getValues() ) );
 
         listA.sort( comparator );
         listB.sort( comparator );
 
-        List<NodeWithPropertyValues> result = process( sortedMergeJoin, listA.iterator(), listB.iterator() );
+        List<EntityWithPropertyValues> result = process( sortedMergeJoin, listA.iterator(), listB.iterator() );
 
-        List<NodeWithPropertyValues> expected = new ArrayList<>();
+        List<EntityWithPropertyValues> expected = new ArrayList<>();
         expected.addAll( listA );
         expected.addAll( listB );
         expected.sort( comparator );
@@ -131,22 +131,22 @@ class SortedMergeJoinTest
         assertThat( result ).isEqualTo( expected );
     }
 
-    private List<NodeWithPropertyValues> process( SortedMergeJoin sortedMergeJoin,
-                                                  Iterator<NodeWithPropertyValues> iteratorA,
-                                                  Iterator<NodeWithPropertyValues> iteratorB )
+    private List<EntityWithPropertyValues> process( SortedMergeJoin sortedMergeJoin,
+                                                    Iterator<EntityWithPropertyValues> iteratorA,
+                                                    Iterator<EntityWithPropertyValues> iteratorB )
     {
         Collector collector = new Collector();
         while ( !collector.done )
         {
             if ( iteratorA.hasNext() && sortedMergeJoin.needsA() )
             {
-                NodeWithPropertyValues a = iteratorA.next();
-                sortedMergeJoin.setA( a.getNodeId(), a.getValues() );
+                EntityWithPropertyValues a = iteratorA.next();
+                sortedMergeJoin.setA( a.getEntityId(), a.getValues() );
             }
             if ( iteratorB.hasNext() && sortedMergeJoin.needsB() )
             {
-                NodeWithPropertyValues b = iteratorB.next();
-                sortedMergeJoin.setB( b.getNodeId(), b.getValues() );
+                EntityWithPropertyValues b = iteratorB.next();
+                sortedMergeJoin.setB( b.getEntityId(), b.getValues() );
             }
 
             sortedMergeJoin.next( collector );
@@ -154,14 +154,14 @@ class SortedMergeJoinTest
         return collector.result;
     }
 
-    private NodeWithPropertyValues node( long id, Object... values )
+    private EntityWithPropertyValues node( long id, Object... values )
     {
-        return new NodeWithPropertyValues( id, Stream.of( values ).map( Values::of ).toArray( Value[]::new ) );
+        return new EntityWithPropertyValues( id, Stream.of( values ).map( Values::of ).toArray( Value[]::new ) );
     }
 
     static class Collector implements SortedMergeJoin.Sink
     {
-        final List<NodeWithPropertyValues> result = new ArrayList<>();
+        final List<EntityWithPropertyValues> result = new ArrayList<>();
         boolean done;
 
         @Override
@@ -173,7 +173,7 @@ class SortedMergeJoinTest
             }
             else
             {
-                result.add( new NodeWithPropertyValues( nodeId, values ) );
+                result.add( new EntityWithPropertyValues( nodeId, values ) );
             }
         }
     }

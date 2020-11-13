@@ -25,24 +25,24 @@ import java.util.Objects;
 import org.neo4j.values.storable.Value;
 
 /**
- * A node together with properties. This class is needed to present changes in the transaction state to index operations
+ * An entity together with properties. This class is needed to present changes in the transaction state to index operations
  * that require knowing the affected property values as well.
  */
-public class NodeWithPropertyValues
+public class EntityWithPropertyValues
 {
 
-    private final long nodeId;
+    private final long entityId;
     private final Value[] values;
 
-    NodeWithPropertyValues( long nodeId, Value[] values )
+    EntityWithPropertyValues( long entityId, Value[] values )
     {
-        this.nodeId = nodeId;
+        this.entityId = entityId;
         this.values = values;
     }
 
-    public long getNodeId()
+    public long getEntityId()
     {
-        return nodeId;
+        return entityId;
     }
 
     public Value[] getValues()
@@ -53,7 +53,7 @@ public class NodeWithPropertyValues
     @Override
     public String toString()
     {
-        return "NodeWithPropertyValues{" + "nodeId=" + nodeId + ", values=" + Arrays.toString( values ) + '}';
+        return "EntityWithPropertyValues{" + "entityId=" + entityId + ", values=" + Arrays.toString( values ) + '}';
     }
 
     @Override
@@ -67,14 +67,14 @@ public class NodeWithPropertyValues
         {
             return false;
         }
-        NodeWithPropertyValues that = (NodeWithPropertyValues) o;
-        return nodeId == that.nodeId && Arrays.equals( values, that.values );
+        EntityWithPropertyValues that = (EntityWithPropertyValues) o;
+        return entityId == that.entityId && Arrays.equals( values, that.values );
     }
 
     @Override
     public int hashCode()
     {
-        int result = Objects.hash( nodeId );
+        int result = Objects.hash( entityId );
         result = 31 * result + Arrays.hashCode( values );
         return result;
     }

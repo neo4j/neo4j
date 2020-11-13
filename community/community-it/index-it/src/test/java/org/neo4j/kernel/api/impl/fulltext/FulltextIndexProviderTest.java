@@ -1321,7 +1321,7 @@ class FulltextIndexProviderTest
             KernelTransaction ktx = LuceneFulltextTestSupport.kernelTransaction( tx );
             IndexDescriptor index = ktx.schemaRead().indexGetForName( "fulltext" );
             IndexReadSession indexReadSession = ktx.dataRead().indexReadSession( index );
-            try ( RelationshipValueIndexCursor cursor = ktx.cursors().allocateRelationshipValueIndexCursor( ktx.pageCursorTracer() ) )
+            try ( RelationshipValueIndexCursor cursor = ktx.cursors().allocateRelationshipValueIndexCursor( ktx.pageCursorTracer(), ktx.memoryTracker() ) )
             {
                 ktx.dataRead().relationshipIndexSeek( indexReadSession, cursor, unconstrained(), fulltextSearch( "valuuu" ) );
                 assertTrue( cursor.next() );

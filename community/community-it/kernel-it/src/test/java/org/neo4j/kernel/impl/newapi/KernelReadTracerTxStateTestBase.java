@@ -288,14 +288,14 @@ abstract class KernelReadTracerTxStateTestBase<G extends KernelAPIWriteTestSuppo
         TestKernelReadTracer tracer = new TestKernelReadTracer();
 
         try ( KernelTransaction tx = beginTransaction();
-              RelationshipValueIndexCursor cursor = tx.cursors().allocateRelationshipValueIndexCursor( NULL ) )
+              RelationshipValueIndexCursor cursor = tx.cursors().allocateRelationshipValueIndexCursor( NULL, tx.memoryTracker() ) )
         {
             cursor.setTracer( tracer );
             IndexReadSession indexReadSession = tx.dataRead().indexReadSession( index );
             tx.dataRead().relationshipIndexSeek( indexReadSession, cursor, unconstrained(), IndexQuery.fulltextSearch( "transformational" ) );
 
             assertTrue( cursor.next() );
-            tracer.assertEvents( OnRelationship( cursor.relationshipReference() ) );
+            tracer.assertEvents( OnIndexSeek(), OnRelationship( cursor.relationshipReference() ) );
 
             assertFalse( cursor.next() );
             tracer.assertEvents();

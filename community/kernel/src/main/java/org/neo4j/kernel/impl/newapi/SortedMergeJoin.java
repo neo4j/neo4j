@@ -26,7 +26,7 @@ import org.neo4j.values.storable.Values;
 import static org.neo4j.util.Preconditions.checkArgument;
 
 /**
- * A sort merge join that sorts nodes by their values (properties).
+ * A sort merge join that sorts entities by their values (properties).
  */
 final class SortedMergeJoin
 {
@@ -55,15 +55,15 @@ final class SortedMergeJoin
         return nextFromB == -1;
     }
 
-    void setA( long nodeId, Value[] values )
+    void setA( long entityId, Value[] values )
     {
-        nextFromA = nodeId;
+        nextFromA = entityId;
         valuesFromA = values;
     }
 
-    void setB( long nodeId, Value[] values )
+    void setB( long entityId, Value[] values )
     {
-        nextFromB = nodeId;
+        nextFromB = entityId;
         valuesFromB = values;
     }
 
@@ -98,6 +98,6 @@ final class SortedMergeJoin
 
     interface Sink
     {
-        void acceptSortedMergeJoin( long nodeId, Value[] values );
+        void acceptSortedMergeJoin( long entityId, Value[] values );
     }
 }

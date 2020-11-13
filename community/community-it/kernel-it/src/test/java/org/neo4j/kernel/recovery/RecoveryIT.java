@@ -373,7 +373,7 @@ class RecoveryIT
             IndexDescriptor index = ktx.schemaRead().indexGetForName( indexName );
             IndexReadSession indexReadSession = ktx.dataRead().indexReadSession( index );
             int relationshipsInIndex = 0;
-            try ( RelationshipValueIndexCursor cursor = ktx.cursors().allocateRelationshipValueIndexCursor( ktx.pageCursorTracer() ) )
+            try ( RelationshipValueIndexCursor cursor = ktx.cursors().allocateRelationshipValueIndexCursor( ktx.pageCursorTracer(), ktx.memoryTracker() ) )
             {
                 ktx.dataRead().relationshipIndexSeek( indexReadSession, cursor, unconstrained(), fulltextSearch( "*" ) );
                 while ( cursor.next() )

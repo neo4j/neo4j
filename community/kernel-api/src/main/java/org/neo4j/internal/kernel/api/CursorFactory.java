@@ -60,7 +60,7 @@ public interface CursorFactory
 
     NodeLabelIndexCursor allocateFullAccessNodeLabelIndexCursor( PageCursorTracer cursorTracer );
 
-    RelationshipValueIndexCursor allocateRelationshipValueIndexCursor( PageCursorTracer cursorTracer );
+    RelationshipValueIndexCursor allocateRelationshipValueIndexCursor( PageCursorTracer cursorTracer, MemoryTracker memoryTracker );
 
     RelationshipTypeIndexCursor allocateRelationshipTypeIndexCursor();
 

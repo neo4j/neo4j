@@ -19,119 +19,85 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.neo4j.internal.kernel.api.IndexQuery;
-import org.neo4j.internal.kernel.api.IndexQueryConstraints;
+import org.eclipse.collections.api.set.primitive.LongSet;
+
+import org.neo4j.internal.kernel.api.KernelReadTracer;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.kernel.api.index.IndexProgressor;
-import org.neo4j.values.storable.Value;
+import org.neo4j.kernel.api.txstate.TransactionState;
+import org.neo4j.memory.MemoryTracker;
 
-import static org.neo4j.kernel.impl.newapi.Read.NO_ID;
+import static org.neo4j.collection.PrimitiveLongCollections.mergeToSet;
 
-final class DefaultRelationshipValueIndexCursor extends IndexCursor<IndexProgressor> implements RelationshipValueIndexCursor, EntityIndexSeekClient
+class DefaultRelationshipValueIndexCursor extends DefaultEntityValueIndexCursor implements RelationshipValueIndexCursor
 {
     private final CursorPool<DefaultRelationshipValueIndexCursor> pool;
-    private final DefaultRelationshipScanCursor relationshipScanCursor;
-    private Read read;
-    private long relationship;
-    private float score;
-    private AccessMode accessMode;
+    private final DefaultRelationshipScanCursor securityRelationshipCursor;
     private int[] propertyIds;
-    private boolean shortcutSecurity;
 
-    DefaultRelationshipValueIndexCursor( CursorPool<DefaultRelationshipValueIndexCursor> pool, DefaultRelationshipScanCursor relationshipScanCursor )
+    DefaultRelationshipValueIndexCursor( CursorPool<DefaultRelationshipValueIndexCursor> pool,
+            DefaultRelationshipScanCursor securityRelationshipCursor,
+            MemoryTracker memoryTracker )
     {
+        super( memoryTracker );
         this.pool = pool;
-        this.relationshipScanCursor = relationshipScanCursor;
-        relationship = NO_ID;
-        score = Float.NaN;
+        this.securityRelationshipCursor = securityRelationshipCursor;
     }
 
     @Override
-    public void setRead( Read read )
+    public void relationship( RelationshipScanCursor cursor )
     {
-        this.read = read;
+        readEntity( read -> read.singleRelationship( entityReference(), cursor ) );
     }
 
     @Override
-    public void initialize( IndexDescriptor descriptor, IndexProgressor progressor, IndexQuery[] query, IndexQueryConstraints constraints,
-            boolean indexIncludesTransactionState )
+    public void sourceNode( NodeCursor cursor )
     {
-        assert query != null && query.length > 0;
-        super.initialize( progressor );
-
-        if ( constraints.isOrdered() )
-        {
-            throw new IllegalArgumentException( "The relationship index cursor does not yet support index orders other than IndexOrder.NONE, " +
-                    "but IndexOrder." + constraints.order() + " was requested." );
-        }
-
-        if ( constraints.needsValues() )
-        {
-            throw new IllegalArgumentException( "This relationship index cursor was told to fetch the values of the index entries, but this functionality " +
-                    "has not been implemented." );
-        }
-
-        if ( !indexIncludesTransactionState && read.hasTxStateWithChanges() )
-        {
-            String index = descriptor.userDescription( read.ktx.tokenRead() );
-            throw new IllegalStateException( "There is transaction state in this transaction, and the index (" + index + ") does not take transaction " +
-                    "state into account. This means that the relationship index cursor has to account for the transaction state, but this has not been " +
-                    "implemented." );
-        }
-
-        shortcutSecurity = setupSecurity( descriptor, query );
+        throw new UnsupportedOperationException( "We have not yet implemented tracking of the relationship end nodes in the relationship index cursor." );
     }
 
     @Override
-    public boolean acceptEntity( long reference, float score, Value... values )
+    public void targetNode( NodeCursor cursor )
     {
-        if ( !allows( reference ) )
-        {
-            return false;
-        }
-        this.relationship = reference;
-        this.score = score;
-        return true;
+        throw new UnsupportedOperationException( "We have not yet implemented tracking of the relationship end nodes in the relationship index cursor." );
     }
 
-    private boolean allows( long reference )
+    @Override
+    public int type()
     {
-        if ( shortcutSecurity )
-        {
-            return true;
-        }
+        throw new UnsupportedOperationException( "We have not yet implemented tracking of the relationship type in the relationship index cursor." );
+    }
 
-        read.singleRelationship( reference, relationshipScanCursor );
-        if ( !relationshipScanCursor.next() )
-        {
-            return false;
-        }
+    @Override
+    public long relationshipReference()
+    {
+        return entityReference();
+    }
 
-        int relType = relationshipScanCursor.type();
-        for ( int prop : propertyIds )
-        {
-            if ( !accessMode.allowsReadRelationshipProperty( () -> relType, prop ) )
-            {
-                return false;
-            }
-        }
-        return true;
+    @Override
+    public long sourceNodeReference()
+    {
+        throw new UnsupportedOperationException( "We have not yet implemented tracking of the relationship end nodes in the relationship index cursor." );
+    }
+
+    @Override
+    public long targetNodeReference()
+    {
+        throw new UnsupportedOperationException( "We have not yet implemented tracking of the relationship end nodes in the relationship index cursor." );
     }
 
     /**
+     * Check that the user is allowed to access all relationships and properties given by the index descriptor.
+     * <p>
      * If the current user is allowed to traverse all relationships  nodes and read the properties no matter what label
      * the node has, we can skip checking on every node we get back.
      */
-    private boolean setupSecurity( IndexDescriptor descriptor, IndexQuery[] query )
+    @Override
+    protected boolean canAccessAllDescribedEntities( IndexDescriptor descriptor, AccessMode accessMode )
     {
-        if ( accessMode == null )
-        {
-            accessMode = read.ktx.securityContext().mode();
-        }
         propertyIds = descriptor.schema().getPropertyIds();
 
         for ( int relType : descriptor.schema().getEntityTokenIds() )
@@ -156,116 +122,56 @@ final class DefaultRelationshipValueIndexCursor extends IndexCursor<IndexProgres
     }
 
     @Override
-    public boolean needsValues()
+    protected LongSet removed( TransactionState txState, LongSet removedFromIndex )
     {
-        return false;
+        return mergeToSet( txState.addedAndRemovedRelationships().getRemoved(), removedFromIndex );
     }
 
     @Override
-    public void relationship( RelationshipScanCursor cursor )
+    protected boolean allowed( long reference, AccessMode accessMode )
     {
-        read.singleRelationship( relationship, cursor );
-    }
-
-    @Override
-    public void sourceNode( NodeCursor cursor )
-    {
-        throw new UnsupportedOperationException( "We have not yet implemented tracking of the relationship end nodes in the relationship index cursor." );
-    }
-
-    @Override
-    public void targetNode( NodeCursor cursor )
-    {
-        throw new UnsupportedOperationException( "We have not yet implemented tracking of the relationship end nodes in the relationship index cursor." );
-    }
-
-    @Override
-    public int type()
-    {
-        throw new UnsupportedOperationException( "We have not yet implemented tracking of the relationship type in the relationship index cursor." );
-    }
-
-    @Override
-    public long sourceNodeReference()
-    {
-        throw new UnsupportedOperationException( "We have not yet implemented tracking of the relationship end nodes in the relationship index cursor." );
-    }
-
-    @Override
-    public long targetNodeReference()
-    {
-        throw new UnsupportedOperationException( "We have not yet implemented tracking of the relationship end nodes in the relationship index cursor." );
-    }
-
-    @Override
-    public long relationshipReference()
-    {
-        return relationship;
-    }
-
-    @Override
-    public boolean next()
-    {
-        boolean next = super.innerNext();
-        if ( tracer != null && next )
+        readEntity( read -> read.singleRelationship( reference, securityRelationshipCursor ) );
+        if ( !securityRelationshipCursor.next() )
         {
-           tracer.onRelationship( relationship );
+            // This relationship is not visible to this security context
+            return false;
         }
-        return next;
-    }
 
-    @Override
-    public float score()
-    {
-        return score;
-    }
-
-    @Override
-    public void closeInternal()
-    {
-        if ( !isClosed() )
+        int relType = securityRelationshipCursor.type();
+        for ( int prop : propertyIds )
         {
-            closeProgressor();
-            this.accessMode = null;
-            this.relationship = NO_ID;
-            this.score = Float.NaN;
-            pool.accept( this );
+            if ( !accessMode.allowsReadRelationshipProperty( () -> relType, prop ) )
+            {
+                return false;
+            }
         }
+        return true;
     }
 
     @Override
-    public boolean isClosed()
+    void traceOnEntity( KernelReadTracer tracer, long entity )
     {
-        return isProgressorClosed();
+        tracer.onRelationship( entity );
+    }
+
+    @Override
+    void returnToPool()
+    {
+        pool.accept( this );
     }
 
     public void release()
     {
-        relationshipScanCursor.close();
-        relationshipScanCursor.release();
+        if ( securityRelationshipCursor != null )
+        {
+            securityRelationshipCursor.close();
+            securityRelationshipCursor.release();
+        }
     }
 
     @Override
-    public int numberOfProperties()
+    public String toString()
     {
-        throw new UnsupportedOperationException( "Todo" );
-    }
-
-    @Override
-    public int propertyKey( int offset )
-    {
-        throw new UnsupportedOperationException( "Todo" );
-    }
-
-    @Override
-    public boolean hasValue()
-    {
-        throw new UnsupportedOperationException( "Todo" );
-    }
-
-    @Override
-    public Value propertyValue( int offset )
-    {
-        throw new UnsupportedOperationException( "Todo" );
+        return toString( "RelationshipValueIndexCursor" );
     }
 }

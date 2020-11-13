@@ -289,12 +289,12 @@ public abstract class DefaultPooledCursorsTestBase<G extends KernelAPIReadTestSu
 
         Predicates.awaitEx( () -> tx.schemaRead().indexGetState( index ) == ONLINE, 1, MINUTES );
 
-        RelationshipValueIndexCursor c1 = cursors.allocateRelationshipValueIndexCursor( NULL );
+        RelationshipValueIndexCursor c1 = cursors.allocateRelationshipValueIndexCursor( NULL, EmptyMemoryTracker.INSTANCE );
         IndexReadSession indexSession = tx.dataRead().indexReadSession( index );
         read.relationshipIndexSeek( indexSession, c1, IndexQueryConstraints.unconstrained(), IndexQuery.fulltextSearch( "hello" ) );
         c1.close();
 
-        RelationshipValueIndexCursor c2 = cursors.allocateRelationshipValueIndexCursor( NULL );
+        RelationshipValueIndexCursor c2 = cursors.allocateRelationshipValueIndexCursor( NULL, EmptyMemoryTracker.INSTANCE );
         assertThat( c1 ).isSameAs( c2 );
         c2.close();
     }

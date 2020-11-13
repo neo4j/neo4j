@@ -137,7 +137,7 @@ public class StubCursorFactory implements CursorFactory
     }
 
     @Override
-    public RelationshipValueIndexCursor allocateRelationshipValueIndexCursor( PageCursorTracer cursorTracer )
+    public RelationshipValueIndexCursor allocateRelationshipValueIndexCursor( PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
     {
         return poll( relationshipValueIndexCursors );
     }

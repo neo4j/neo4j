@@ -74,7 +74,7 @@ public abstract class AbstractIndexQueryingTest<S extends KernelAPIReadTestSuppo
     {
         IndexDescriptor index = schemaRead.indexGetForName( "ftsNodes" );
         IndexReadSession indexReadSession = read.indexReadSession( index );
-        try ( RelationshipValueIndexCursor cursor = cursors.allocateRelationshipValueIndexCursor( NULL ) )
+        try ( RelationshipValueIndexCursor cursor = cursors.allocateRelationshipValueIndexCursor( NULL, EmptyMemoryTracker.INSTANCE ) )
         {
             assertThrows( IndexNotApplicableKernelException.class, () ->
                     read.relationshipIndexSeek( indexReadSession, cursor, unconstrained(), IndexQuery.fulltextSearch( "search" ) ) );

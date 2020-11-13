@@ -66,7 +66,7 @@ public interface IndexProgressor extends AutoCloseable
     void close();
 
     /**
-     * Client which accepts nodes and some of their property values.
+     * Client which accepts entities and some of their property values.
      */
     interface EntityValueClient
     {
@@ -87,7 +87,7 @@ public interface IndexProgressor extends AutoCloseable
                          IndexQuery[] query, IndexQueryConstraints constraints, boolean indexIncludesTransactionState );
 
         /**
-         * Accept the node id and values of a candidate index entry. Return true if the entry is
+         * Accept the entity id and values of a candidate index entry. Return true if the entry is
          * accepted, false otherwise.
          * @param reference the node id of the candidate index entry
          * @param score a score figure for the quality of the match, for indexes where this makes sense, otherwise {@link Float#NaN}.

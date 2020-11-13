@@ -162,7 +162,7 @@ public class LuceneFulltextTestSupport
         }
         else
         {
-            try ( RelationshipValueIndexCursor cursor = ktx.cursors().allocateRelationshipValueIndexCursor( ktx.pageCursorTracer() ) )
+            try ( RelationshipValueIndexCursor cursor = ktx.cursors().allocateRelationshipValueIndexCursor( ktx.pageCursorTracer(), ktx.memoryTracker() ) )
             {
                 ktx.dataRead().relationshipIndexSeek( indexSession, cursor, unconstrained(), IndexQuery.fulltextSearch( query ) );
                 while ( cursor.next() )

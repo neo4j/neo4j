@@ -144,14 +144,14 @@ class TxStateIndexChangesTest
         AddedAndRemoved changes = indexUpdatesForScan( state, index, indexOrder );
         AddedWithValuesAndRemoved changesWithValues = indexUpdatesWithValuesForScan( state, index, indexOrder );
 
-        NodeWithPropertyValues[] expectedNodesWithValues = {nodeWithPropertyValues( 40L, "Aaron" ),
-                                                            nodeWithPropertyValues( 41L, "Agatha" ),
-                                                            nodeWithPropertyValues( 44L, "Andrea" ),
-                                                            nodeWithPropertyValues( 42L, "Andreas" ),
-                                                            nodeWithPropertyValues( 45L, "Aristotle" ),
-                                                            nodeWithPropertyValues( 46L, "Barbara" ),
-                                                            nodeWithPropertyValues( 43L, "Barbarella" ),
-                                                            nodeWithPropertyValues( 47L, "Cinderella" )};
+        EntityWithPropertyValues[] expectedNodesWithValues = {nodeWithPropertyValues( 40L, "Aaron" ),
+                                                              nodeWithPropertyValues( 41L, "Agatha" ),
+                                                              nodeWithPropertyValues( 44L, "Andrea" ),
+                                                              nodeWithPropertyValues( 42L, "Andreas" ),
+                                                              nodeWithPropertyValues( 45L, "Aristotle" ),
+                                                              nodeWithPropertyValues( 46L, "Barbara" ),
+                                                              nodeWithPropertyValues( 43L, "Barbarella" ),
+                                                              nodeWithPropertyValues( 47L, "Cinderella" )};
 
         // THEN
         assertContains( indexOrder, changes, changesWithValues, expectedNodesWithValues );
@@ -266,7 +266,7 @@ class TxStateIndexChangesTest
     }
 
     private Collection<DynamicTest> rangeTest( ReadableTransactionState state, Value lo, boolean includeLo, Value hi, boolean includeHi,
-            NodeWithPropertyValues... expected )
+            EntityWithPropertyValues... expected )
     {
         return Arrays.asList( rangeTest( state, IndexOrder.NONE, lo, includeLo, hi, includeHi, expected ),
                               rangeTest( state, IndexOrder.ASCENDING, lo, includeLo, hi, includeHi, expected ),
@@ -279,7 +279,7 @@ class TxStateIndexChangesTest
                                    boolean includeLo,
                                    Value hi,
                                    boolean includeHi,
-                                   NodeWithPropertyValues... expected )
+                                   EntityWithPropertyValues... expected )
     {
         return DynamicTest.dynamicTest( String.format( "range seek: lo=%s (incl: %s), hi=%s (incl: %s)", lo, includeLo, hi, includeHi ), () ->
         {
@@ -378,11 +378,11 @@ class TxStateIndexChangesTest
             AddedAndRemoved changes = indexUpdatesForSuffixOrContains( state, index, indexQuery, indexOrder );
             AddedWithValuesAndRemoved changesWithValues = indexUpdatesWithValuesForSuffixOrContains( state, index, indexQuery, indexOrder );
 
-            NodeWithPropertyValues[] expected = {nodeWithPropertyValues( 40L, "Aaron" ),
-                                                 nodeWithPropertyValues( 41L, "Bonbon" ),
-                                                 nodeWithPropertyValues( 48L, "Evon" ),
-                                                 nodeWithPropertyValues( 46L, "Macron" ),
-                                                 nodeWithPropertyValues( 45L, "Ton" )};
+            EntityWithPropertyValues[] expected = {nodeWithPropertyValues( 40L, "Aaron" ),
+                                                   nodeWithPropertyValues( 41L, "Bonbon" ),
+                                                   nodeWithPropertyValues( 48L, "Evon" ),
+                                                   nodeWithPropertyValues( 46L, "Macron" ),
+                                                   nodeWithPropertyValues( 45L, "Ton" )};
 
             // THEN
             assertContains( indexOrder, changes, changesWithValues, expected );
@@ -448,11 +448,11 @@ class TxStateIndexChangesTest
             AddedAndRemoved changes = indexUpdatesForSuffixOrContains( state, index, indexQuery, indexOrder );
             AddedWithValuesAndRemoved changesWithValues = indexUpdatesWithValuesForSuffixOrContains( state, index, indexQuery, indexOrder );
 
-            NodeWithPropertyValues[] expected = {nodeWithPropertyValues( 41L, "Bashley" ),
-                                                 nodeWithPropertyValues( 44L, "Seashell" ),
-                                                 nodeWithPropertyValues( 40L, "Smashing" ),
-                                                 nodeWithPropertyValues( 46L, "The Flash" ),
-                                                 nodeWithPropertyValues( 48L, "Trashy" )};
+            EntityWithPropertyValues[] expected = {nodeWithPropertyValues( 41L, "Bashley" ),
+                                                   nodeWithPropertyValues( 44L, "Seashell" ),
+                                                   nodeWithPropertyValues( 40L, "Smashing" ),
+                                                   nodeWithPropertyValues( 46L, "The Flash" ),
+                                                   nodeWithPropertyValues( 48L, "Trashy" )};
 
             // THEN
             assertContains( indexOrder, changes, changesWithValues, expected );
@@ -516,10 +516,10 @@ class TxStateIndexChangesTest
             AddedWithValuesAndRemoved changesWithValues =
                     indexUpdatesWithValuesForRangeSeekByPrefix( state, index, new Value[0], stringValue( "And" ), indexOrder );
 
-            NodeWithPropertyValues[] expected = {nodeWithPropertyValues( 44L, "Andrea" ),
-                                                 nodeWithPropertyValues( 42L, "Andreas" ),
-                                                 nodeWithPropertyValues( 49L, "Andromeda" ),
-                                                 nodeWithPropertyValues( 47L, "Andy" )};
+            EntityWithPropertyValues[] expected = {nodeWithPropertyValues( 44L, "Andrea" ),
+                                                   nodeWithPropertyValues( 42L, "Andreas" ),
+                                                   nodeWithPropertyValues( 49L, "Andromeda" ),
+                                                   nodeWithPropertyValues( 47L, "Andy" )};
 
             // THEN
             assertContains( indexOrder, changes, changesWithValues, expected );
@@ -770,12 +770,12 @@ class TxStateIndexChangesTest
                             .withAdded( 48L, "540", "random48" )
                             .build();
 
-            NodeWithPropertyValues[] expectedInt = new NodeWithPropertyValues[]{
+            EntityWithPropertyValues[] expectedInt = new EntityWithPropertyValues[]{
                     nodeWithPropertyValues( 43L, 510, "random43" ),
                     nodeWithPropertyValues( 42L, 520, "random42" ),
                     nodeWithPropertyValues( 44L, 550, "random44" )
             };
-            NodeWithPropertyValues[] expectedString = new NodeWithPropertyValues[]{
+            EntityWithPropertyValues[] expectedString = new EntityWithPropertyValues[]{
                     nodeWithPropertyValues( 48L, "540", "random48" ),
                     nodeWithPropertyValues( 47L, "560", "random47" )
             };
@@ -818,7 +818,7 @@ class TxStateIndexChangesTest
             AddedWithValuesAndRemoved changesWithValues =
                     indexUpdatesWithValuesForRangeSeekByPrefix( state, compositeIndex, new Value[0], stringValue( "And" ), indexOrder );
 
-            NodeWithPropertyValues[] expected = {
+            EntityWithPropertyValues[] expected = {
                     nodeWithPropertyValues( 44L, "Andrea", "Kormos" ),
                     nodeWithPropertyValues( 42L, "Andreas", "Jona" ),
                     nodeWithPropertyValues( 49L, "Andromeda", "Black" ),
@@ -831,14 +831,14 @@ class TxStateIndexChangesTest
     }
 
     private static void assertContains( IndexOrder indexOrder, AddedAndRemoved changes, AddedWithValuesAndRemoved changesWithValues,
-            NodeWithPropertyValues[] expected )
+            EntityWithPropertyValues[] expected )
     {
         if ( indexOrder == IndexOrder.DESCENDING )
         {
             ArrayUtils.reverse( expected );
         }
 
-        long[] expectedNodeIds = Arrays.stream( expected ).mapToLong( NodeWithPropertyValues::getNodeId ).toArray();
+        long[] expectedNodeIds = Arrays.stream( expected ).mapToLong( EntityWithPropertyValues::getEntityId ).toArray();
 
         if ( indexOrder == IndexOrder.NONE )
         {
@@ -852,9 +852,9 @@ class TxStateIndexChangesTest
         }
     }
 
-    private static NodeWithPropertyValues nodeWithPropertyValues( long nodeId, Object... values )
+    private static EntityWithPropertyValues nodeWithPropertyValues( long nodeId, Object... values )
     {
-        return new NodeWithPropertyValues( nodeId, Arrays.stream( values ).map( ValueUtils::of ).toArray( Value[]::new ) );
+        return new EntityWithPropertyValues( nodeId, Arrays.stream( values ).map( ValueUtils::of ).toArray( Value[]::new ) );
     }
 
     private static void assertContains( LongIterable iterable, long... nodeIds )
@@ -862,7 +862,7 @@ class TxStateIndexChangesTest
         assertEquals( newSetWith( nodeIds ), LongSets.immutable.ofAll( iterable ) );
     }
 
-    private static void assertContains( Iterable<NodeWithPropertyValues> iterable, NodeWithPropertyValues... expected )
+    private static void assertContains( Iterable<EntityWithPropertyValues> iterable, EntityWithPropertyValues... expected )
     {
         assertEquals( UnifiedSet.newSetWith( expected ), UnifiedSet.newSet( iterable ) );
     }
@@ -872,7 +872,7 @@ class TxStateIndexChangesTest
         assertTrue( iterable.containsAll( nodeIds ), "Expected: " + iterable + " to contains: " + Arrays.toString( nodeIds ) );
     }
 
-    private static void assertContainsInOrder( Iterable<NodeWithPropertyValues> iterable, NodeWithPropertyValues... expected )
+    private static void assertContainsInOrder( Iterable<EntityWithPropertyValues> iterable, EntityWithPropertyValues... expected )
     {
         if ( expected.length == 0 )
         {

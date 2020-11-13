@@ -126,9 +126,10 @@ public class DefaultThreadSafeCursors extends DefaultCursors implements CursorFa
     }
 
     @Override
-    public RelationshipValueIndexCursor allocateRelationshipValueIndexCursor( PageCursorTracer cursorTracer )
+    public RelationshipValueIndexCursor allocateRelationshipValueIndexCursor( PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
     {
-        return trace( new DefaultRelationshipValueIndexCursor( DefaultRelationshipValueIndexCursor::release, allocateRelationshipScanCursor( cursorTracer ) ) );
+        return trace( new DefaultRelationshipValueIndexCursor(
+                DefaultRelationshipValueIndexCursor::release, allocateRelationshipScanCursor( cursorTracer ), memoryTracker ) );
     }
 
     @Override

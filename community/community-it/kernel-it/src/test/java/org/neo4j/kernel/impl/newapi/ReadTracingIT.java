@@ -108,7 +108,8 @@ class ReadTracingIT
 
             assertZeroCursor( cursorTracer );
 
-            try ( var cursor = kernelTransaction.cursors().allocateRelationshipValueIndexCursor( kernelTransaction.pageCursorTracer() ) )
+            try ( var cursor = kernelTransaction.cursors().allocateRelationshipValueIndexCursor( kernelTransaction.pageCursorTracer(),
+                    kernelTransaction.memoryTracker() ) )
             {
                 dataRead.relationshipIndexSeek( indexReadSession, cursor, unconstrained(), fulltextSearch( testPropertyValue ) );
 

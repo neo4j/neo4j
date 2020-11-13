@@ -175,7 +175,7 @@ class TxStateIndexChanges
                                         RangeFilterValues.fromExists( size, equalityPrefix ) :
                                         RangeFilterValues.fromRange( size, equalityPrefix, predicate );
 
-        MutableList<NodeWithPropertyValues> added = Lists.mutable.empty();
+        MutableList<EntityWithPropertyValues> added = Lists.mutable.empty();
         MutableLongSet removed = LongSets.mutable.empty();
 
         Map<ValueTuple,? extends LongDiffSets> inRange = sortedUpdates.subMap( rangeFilter.lower, true, rangeFilter.upper, true );
@@ -193,7 +193,7 @@ class TxStateIndexChanges
             // The TreeMap cannot perfectly order multi-dimensional types (spatial) and need additional filtering out false positives
             if ( allowed && (predicate == null || predicate.isRegularOrder() || predicate.acceptsValue( rangeKey )) )
             {
-                diffForSpecificValue.getAdded().each( nodeId -> added.add( new NodeWithPropertyValues( nodeId, valuesArray ) ) );
+                diffForSpecificValue.getAdded().each( nodeId -> added.add( new EntityWithPropertyValues( nodeId, valuesArray ) ) );
                 removed.addAll( diffForSpecificValue.getRemoved() );
             }
         }
@@ -253,7 +253,7 @@ class TxStateIndexChanges
         ValueTuple floor = getCompositeValueTuple( keySize, equalityPrefix, prefix, true );
         ValueTuple maxString = getCompositeValueTuple( keySize, equalityPrefix, Values.MAX_STRING, false );
 
-        MutableList<NodeWithPropertyValues> added = Lists.mutable.empty();
+        MutableList<EntityWithPropertyValues> added = Lists.mutable.empty();
         MutableLongSet removed = LongSets.mutable.empty();
 
         for ( Map.Entry<ValueTuple,? extends LongDiffSets> entry : sortedUpdates.subMap( floor, maxString ).entrySet() )
@@ -265,7 +265,7 @@ class TxStateIndexChanges
             {
                 LongDiffSets diffSets = entry.getValue();
                 Value[] values = key.getValues();
-                diffSets.getAdded().each( nodeId -> added.add( new NodeWithPropertyValues( nodeId, values ) ) );
+                diffSets.getAdded().each( nodeId -> added.add( new EntityWithPropertyValues( nodeId, values ) ) );
                 removed.addAll( diffSets.getRemoved() );
             }
             else
@@ -318,7 +318,7 @@ class TxStateIndexChanges
             return EMPTY_ADDED_AND_REMOVED_WITH_VALUES;
         }
 
-        MutableList<NodeWithPropertyValues> added = Lists.mutable.empty();
+        MutableList<EntityWithPropertyValues> added = Lists.mutable.empty();
         MutableLongSet removed = LongSets.mutable.empty();
 
         for ( Map.Entry<ValueTuple,? extends LongDiffSets> entry : updates.entrySet() )
@@ -328,7 +328,7 @@ class TxStateIndexChanges
             {
                 Value[] values = key.getValues();
                 LongDiffSets diffSet = entry.getValue();
-                diffSet.getAdded().each( nodeId -> added.add( new NodeWithPropertyValues( nodeId, values ) ) );
+                diffSet.getAdded().each( nodeId -> added.add( new EntityWithPropertyValues( nodeId, values ) ) );
                 removed.addAll( diffSet.getRemoved() );
             }
         }
@@ -387,10 +387,10 @@ class TxStateIndexChanges
 
     public static class AddedWithValuesAndRemoved
     {
-        private final Iterable<NodeWithPropertyValues> added;
+        private final Iterable<EntityWithPropertyValues> added;
         private final LongSet removed;
 
-        AddedWithValuesAndRemoved( Iterable<NodeWithPropertyValues> added, LongSet removed )
+        AddedWithValuesAndRemoved( Iterable<EntityWithPropertyValues> added, LongSet removed )
         {
             this.added = added;
             this.removed = removed;
@@ -401,7 +401,7 @@ class TxStateIndexChanges
             return !added.iterator().hasNext() && removed.isEmpty();
         }
 
-        public Iterable<NodeWithPropertyValues> getAdded()
+        public Iterable<EntityWithPropertyValues> getAdded()
         {
             return added;
         }

@@ -293,7 +293,7 @@ public class FulltextProcedures
             throw new IllegalArgumentException( "The '" + name + "' index (" + indexReference + ") is an index on " + entityType +
                     ", so it cannot be queried for relationships." );
         }
-        RelationshipValueIndexCursor cursor = tx.cursors().allocateRelationshipValueIndexCursor( tx.pageCursorTracer() );
+        RelationshipValueIndexCursor cursor = tx.cursors().allocateRelationshipValueIndexCursor( tx.pageCursorTracer(), tx.memoryTracker() );
         IndexReadSession indexReadSession = tx.dataRead().indexReadSession( indexReference );
         IndexQueryConstraints constraints = queryConstraints( options );
         tx.dataRead().relationshipIndexSeek( indexReadSession, cursor, constraints, IndexQuery.fulltextSearch( query ) );
