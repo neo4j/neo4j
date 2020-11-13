@@ -28,8 +28,7 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.values.storable.Value;
 
 /**
- * Reader for an index. Must honor repeatable reads, which means that if a lookup is executed multiple times the
- * same result set must be returned.
+ * Reader for an index.
  */
 public interface IndexReader extends Resource
 {

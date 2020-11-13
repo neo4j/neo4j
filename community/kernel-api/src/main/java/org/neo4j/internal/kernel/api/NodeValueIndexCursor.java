@@ -29,7 +29,7 @@ import static org.neo4j.values.storable.Values.NO_VALUE;
  * Usage pattern:
  * <pre><code>
  *     int nbrOfProps = cursor.numberOfProperties();
-
+ *
  *     Value[] values = new Value[nbrOfProps];
  *     while ( cursor.next() )
  *     {
@@ -42,7 +42,10 @@ import static org.neo4j.values.storable.Values.NO_VALUE;
  *         }
  *         else
  *         {
- *             values[i] = getPropertyValueFromStore( cursor.nodeReference(), cursor.propertyKey( i ) )
+ *              for ( int i = 0; i < nbrOfProps; i++ )
+ *              {
+ *                  values[i] = getPropertyValueFromStore( cursor.nodeReference(), cursor.propertyKey( i ) )
+ *              }
  *         }
  *
  *         doWhatYouWantToDoWith( values );
