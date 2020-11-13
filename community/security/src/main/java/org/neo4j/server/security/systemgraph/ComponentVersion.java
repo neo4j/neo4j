@@ -83,6 +83,9 @@ public enum ComponentVersion
      *
      * Version 7 (Neo4j 4.2.0-Drop07):
      *   - Added support for show index and show constraint privileges
+     *
+     * Version 8 (Neo4j 4.2.1):
+     *   - Fix bug with missing PUBLIC role
      */
     ENTERPRISE_SECURITY_35( 0, SECURITY_PRIVILEGE_COMPONENT, Neo4jVersions.VERSION_35 ),
     ENTERPRISE_SECURITY_36( 1, SECURITY_PRIVILEGE_COMPONENT, Neo4jVersions.VERSION_36 ),
@@ -92,6 +95,7 @@ public enum ComponentVersion
     ENTERPRISE_SECURITY_42D4( 5, SECURITY_PRIVILEGE_COMPONENT, Neo4jVersions.VERSION_42D4 ),
     ENTERPRISE_SECURITY_42D6( 6, SECURITY_PRIVILEGE_COMPONENT, Neo4jVersions.VERSION_42D6 ),
     ENTERPRISE_SECURITY_42D7( 7, SECURITY_PRIVILEGE_COMPONENT, Neo4jVersions.VERSION_42D7 ),
+    ENTERPRISE_SECURITY_42P1( 8, SECURITY_PRIVILEGE_COMPONENT, Neo4jVersions.VERSION_42P1 ),
 
     ENTERPRISE_SECURITY_UNKNOWN_VERSION( UNKNOWN_VERSION, SECURITY_PRIVILEGE_COMPONENT, String.format( "no '%s' graph found", SECURITY_PRIVILEGE_COMPONENT ) ),
     ENTERPRISE_SECURITY_FUTURE_VERSION( Integer.MIN_VALUE, SECURITY_PRIVILEGE_COMPONENT, "Unrecognized future version" ),
@@ -107,7 +111,7 @@ public enum ComponentVersion
     // Static variables for SECURITY_PRIVILEGE_COMPONENT versions
     public static final int FIRST_VALID_ENTERPRISE_SECURITY_COMPONENT_VERSION = ENTERPRISE_SECURITY_35.getVersion();
     public static final int FIRST_RUNTIME_SUPPORTED_ENTERPRISE_SECURITY_COMPONENT_VERSION = ENTERPRISE_SECURITY_40.getVersion();
-    public static final int LATEST_ENTERPRISE_SECURITY_COMPONENT_VERSION = ENTERPRISE_SECURITY_42D7.getVersion();
+    public static final int LATEST_ENTERPRISE_SECURITY_COMPONENT_VERSION = ENTERPRISE_SECURITY_42P1.getVersion();
 
     private final String componentName;
     private final int version;
@@ -185,6 +189,7 @@ public enum ComponentVersion
         public static final String VERSION_42D4 = "Neo4j 4.2.0-Drop04";
         public static final String VERSION_42D6 = "Neo4j 4.2.0-Drop06";
         public static final String VERSION_42D7 = "Neo4j 4.2.0-Drop07";
+        public static final String VERSION_42P1 = "Neo4j 4.2.1";
 
         public static final int UNKNOWN_VERSION = -1;
     }
