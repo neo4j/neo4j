@@ -84,7 +84,10 @@ public enum ComponentVersion
      * Version 7 (Neo4j 4.2.0-Drop07):
      *   - Added support for show index and show constraint privileges
      *
-     * Version 8 (Neo4j 4.3.0-Drop01):
+     * Version 8 (Neo4j 4.2.1):
+     *   - Fix bug with missing PUBLIC role
+     *
+     * Version 9 (Neo4j 4.3.0-Drop01):
      *   - Restructure privileges for admin role
      */
     ENTERPRISE_SECURITY_35( 0, SECURITY_PRIVILEGE_COMPONENT, Neo4jVersions.VERSION_35 ),
@@ -95,7 +98,8 @@ public enum ComponentVersion
     ENTERPRISE_SECURITY_42D4( 5, SECURITY_PRIVILEGE_COMPONENT, Neo4jVersions.VERSION_42D4 ),
     ENTERPRISE_SECURITY_42D6( 6, SECURITY_PRIVILEGE_COMPONENT, Neo4jVersions.VERSION_42D6 ),
     ENTERPRISE_SECURITY_42D7( 7, SECURITY_PRIVILEGE_COMPONENT, Neo4jVersions.VERSION_42D7 ),
-    ENTERPRISE_SECURITY_43D1( 8, SECURITY_PRIVILEGE_COMPONENT, Neo4jVersions.VERSION_43D1 ),
+    ENTERPRISE_SECURITY_42P1( 8, SECURITY_PRIVILEGE_COMPONENT, Neo4jVersions.VERSION_42P1 ),
+    ENTERPRISE_SECURITY_43D1( 9, SECURITY_PRIVILEGE_COMPONENT, Neo4jVersions.VERSION_43D1 ),
 
     ENTERPRISE_SECURITY_UNKNOWN_VERSION( UNKNOWN_VERSION, SECURITY_PRIVILEGE_COMPONENT, String.format( "no '%s' graph found", SECURITY_PRIVILEGE_COMPONENT ) ),
     ENTERPRISE_SECURITY_FUTURE_VERSION( Integer.MIN_VALUE, SECURITY_PRIVILEGE_COMPONENT, "Unrecognized future version" ),
@@ -189,6 +193,7 @@ public enum ComponentVersion
         public static final String VERSION_42D4 = "Neo4j 4.2.0-Drop04";
         public static final String VERSION_42D6 = "Neo4j 4.2.0-Drop06";
         public static final String VERSION_42D7 = "Neo4j 4.2.0-Drop07";
+        public static final String VERSION_42P1 = "Neo4j 4.2.1";
         public static final String VERSION_43D1 = "Neo4j 4.3.0-Drop01";
 
         public static final int UNKNOWN_VERSION = -1;
