@@ -257,6 +257,7 @@ class ProcedureCompiler
         Mode mode = procedure.mode();
         boolean admin = method.isAnnotationPresent( Admin.class );
         boolean systemProcedure = method.isAnnotationPresent( SystemProcedure.class );
+        boolean checkCredentialsExpired = systemProcedure ? method.getAnnotation( SystemProcedure.class ).checkCredentialsExpired() : false;
         boolean internal = method.isAnnotationPresent( Internal.class );
         String deprecated = deprecated( method, procedure::deprecatedBy,
                 "Use of @Procedure(deprecatedBy) without @Deprecated in " + procName );
@@ -273,14 +274,16 @@ class ProcedureCompiler
                 description = describeAndLogLoadFailure( procName );
                 ProcedureSignature signature =
                         new ProcedureSignature( procName, inputSignature, outputSignature, Mode.DEFAULT,
-                                admin, null, new String[0], description, warning, procedure.eager(), false, systemProcedure, internal );
+                                                admin, null, new String[0], description, warning, procedure.eager(), false, systemProcedure, internal,
+                                                checkCredentialsExpired );
                 return new FailedLoadProcedure( signature );
             }
         }
 
         ProcedureSignature signature =
                 new ProcedureSignature( procName, inputSignature, outputSignature, mode, admin, deprecated,
-                        config.rolesFor( procName.toString() ), description, warning, procedure.eager(), false, systemProcedure, internal );
+                                        config.rolesFor( procName.toString() ), description, warning, procedure.eager(), false, systemProcedure, internal,
+                                        checkCredentialsExpired );
 
         return ProcedureCompilation.compileProcedure( signature, setters, method );
     }
@@ -321,14 +324,14 @@ class ProcedureCompiler
                 description = describeAndLogLoadFailure( procName );
                 UserFunctionSignature signature =
                         new UserFunctionSignature( procName, inputSignature, typeChecker.type(), deprecated,
-                                config.rolesFor( procName.toString() ), description, null, false );
+                                                   config.rolesFor( procName.toString() ), description, null, false );
                 return new FailedLoadFunction( signature );
             }
         }
 
         UserFunctionSignature signature =
                 new UserFunctionSignature( procName, inputSignature, typeChecker.type(), deprecated,
-                        config.rolesFor( procName.toString() ), description, null, false );
+                                           config.rolesFor( procName.toString() ), description, null, false );
 
         return ProcedureCompilation.compileFunction( signature, setters, method );
     }
@@ -399,8 +402,8 @@ class ProcedureCompiler
         if ( !isPublic( result.getModifiers() ) )
         {
             throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
-                    "Aggregation result method '%s' in %s must be public.", result.getName(),
-                    aggregator.getSimpleName() );
+                                          "Aggregation result method '%s' in %s must be public.", result.getName(),
+                                          aggregator.getSimpleName() );
         }
 
         List<FieldSignature> inputSignature = inputSignatureDeterminer.signatureFor( update );
@@ -410,7 +413,7 @@ class ProcedureCompiler
         UserAggregationFunction function = create.getAnnotation( UserAggregationFunction.class );
 
         String deprecated = deprecated( create, function::deprecatedBy,
-                "Use of @UserAggregationFunction(deprecatedBy) without @Deprecated in " + funcName );
+                                        "Use of @UserAggregationFunction(deprecatedBy) without @Deprecated in " + funcName );
 
         List<FieldSetter> setters = allFieldInjections.setters( definition );
         if ( !config.fullAccessFor( funcName.toString() ) )
@@ -424,7 +427,7 @@ class ProcedureCompiler
                 description = describeAndLogLoadFailure( funcName );
                 UserFunctionSignature signature =
                         new UserFunctionSignature( funcName, inputSignature, valueConverter.type(), deprecated,
-                                config.rolesFor( funcName.toString() ), description, null, false );
+                                                   config.rolesFor( funcName.toString() ), description, null, false );
 
                 return new FailedLoadAggregatedFunction( signature );
             }
@@ -432,7 +435,7 @@ class ProcedureCompiler
 
         UserFunctionSignature signature =
                 new UserFunctionSignature( funcName, inputSignature, valueConverter.type(), deprecated,
-                        config.rolesFor( funcName.toString() ), description, null, false );
+                                           config.rolesFor( funcName.toString() ), description, null, false );
 
         return ProcedureCompilation.compileAggregation( signature, setters, create, update, result );
     }
@@ -534,5 +537,4 @@ class ProcedureCompiler
                     "e.g. `@UserFunction(\"org.example.com.%s\")", name.name() );
         }
     }
-
 }

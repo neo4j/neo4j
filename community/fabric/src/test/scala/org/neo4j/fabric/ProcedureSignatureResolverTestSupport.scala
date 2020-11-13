@@ -100,7 +100,7 @@ trait ProcedureSignatureResolverTestSupport {
       new procs.QualifiedName(name.init.toArray, name.last),
       ListBuffer(args: _*).map(inputField(_, procs.Neo4jTypes.NTAny)).asJava,
       ListBuffer(out: _*).map(inputField(_, procs.Neo4jTypes.NTAny)).asJava,
-      mode, false, null, Array[String](), name.last, null, false, false, false, false
+      mode, false, null, Array[String](), name.last, null, false, false, false, false, false
     )) {
       override def apply(ctx: procedure.Context, input: Array[AnyValue], resourceTracker: ResourceTracker): RawIterator[Array[AnyValue], ProcedureException] =
         RawIterator.of(values: _*)

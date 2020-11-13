@@ -176,7 +176,7 @@ public class BuiltInProcedures
     }
 
     @Deprecated( since = "4.2.0", forRemoval = true )
-    @SystemProcedure
+    @SystemProcedure( checkCredentialsExpired = true )
     @Description( "List all indexes in the database." )
     @Procedure( name = "db.indexes", mode = READ, deprecatedBy = "SHOW INDEXES command" )
     public Stream<IndexResult> listIndexes()

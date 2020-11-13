@@ -30,8 +30,8 @@ import org.neo4j.procedure.Mode;
 import static java.util.Collections.unmodifiableList;
 
 /**
- * This describes the signature of a procedure, made up of its namespace, name, and input/output description.
- * Procedure uniqueness is currently *only* on the namespace/name level - no procedure overloading allowed (yet).
+ * This describes the signature of a procedure, made up of its namespace, name, and input/output description. Procedure uniqueness is currently *only* on the
+ * namespace/name level - no procedure overloading allowed (yet).
  */
 public class ProcedureSignature
 {
@@ -50,6 +50,7 @@ public class ProcedureSignature
     private final boolean caseInsensitive;
     private final boolean systemProcedure;
     private final boolean internal;
+    private final boolean checkCredentialsExpired;
 
     public ProcedureSignature(
             QualifiedName name,
@@ -64,7 +65,8 @@ public class ProcedureSignature
             boolean eager,
             boolean caseInsensitive,
             boolean systemProcedure,
-            boolean internal )
+            boolean internal,
+            boolean checkCredentialsExpired )
     {
         this.name = name;
         this.inputSignature = unmodifiableList( inputSignature );
@@ -79,6 +81,7 @@ public class ProcedureSignature
         this.caseInsensitive = caseInsensitive;
         this.systemProcedure = systemProcedure;
         this.internal = internal;
+        this.checkCredentialsExpired = checkCredentialsExpired;
     }
 
     public QualifiedName name()
@@ -151,6 +154,11 @@ public class ProcedureSignature
         return internal;
     }
 
+    public boolean checkCredentialsExpired()
+    {
+        return checkCredentialsExpired;
+    }
+
     @Override
     public boolean equals( Object o )
     {
@@ -203,6 +211,7 @@ public class ProcedureSignature
         private boolean admin;
         private boolean systemProcedure;
         private boolean internal;
+        private boolean checkCredentialsExpired;
 
         public Builder( String[] namespace, String name )
         {
@@ -267,7 +276,7 @@ public class ProcedureSignature
 
         public Builder warning( String warning )
         {
-            this.warning =  warning;
+            this.warning = warning;
             return this;
         }
 
@@ -289,10 +298,16 @@ public class ProcedureSignature
             return this;
         }
 
+        public Builder checkCredentialsExpired()
+        {
+            this.checkCredentialsExpired = true;
+            return this;
+        }
+
         public ProcedureSignature build()
         {
             return new ProcedureSignature( name, inputSignature, outputSignature, mode, admin, deprecated, allowed,
-                    description, warning, eager, false, systemProcedure, internal );
+                                           description, warning, eager, false, systemProcedure, internal, checkCredentialsExpired );
         }
     }
 

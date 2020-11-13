@@ -189,7 +189,7 @@ object LogicalPlanToPlanBuilderString {
         val (dirStrA, dirStrB) = arrows(dir)
         val predStr = predicate.fold("")(p => s""", Some("${expressionStringifier(p)}")""")
         s""" "($from)$dirStrA[$relName]$dirStrB($to)"$predStr""".trim
-      case ProcedureCall(_, ResolvedCall(ProcedureSignature(QualifiedName(namespace, name), _, _, _, _, _, _, _, _, _), callArguments, callResults, _, _)) =>
+      case ProcedureCall(_, ResolvedCall(ProcedureSignature(QualifiedName(namespace, name), _, _, _, _, _, _, _, _, _, _), callArguments, callResults, _, _)) =>
         val yielding = if(callResults.isEmpty) "" else callResults.map(i => expressionStringifier(i.variable)).mkString(" YIELD ", ",", "")
         s""" "${namespace.mkString(".")}.$name(${callArguments.map(expressionStringifier(_)).mkString(", ")})$yielding" """.trim
       case ProduceResult(_, columns) =>
