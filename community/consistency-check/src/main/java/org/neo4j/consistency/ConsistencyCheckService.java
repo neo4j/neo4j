@@ -56,7 +56,6 @@ import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -252,10 +251,8 @@ public class ConsistencyCheckService
             life.add( indexStatisticsStore );
 
             int numberOfThreads = defaultConsistencyCheckThreadsNumber();
-            StoreAccess storeAccess = new StoreAccess( neoStores );
-            storeAccess.initialize();
             DirectStoreAccess stores =
-                    new DirectStoreAccess( storeAccess, labelScanStore, relationshipTypeScanstore, indexes, tokenHolders, indexStatisticsStore,
+                    new DirectStoreAccess( neoStores, labelScanStore, relationshipTypeScanstore, indexes, tokenHolders, indexStatisticsStore,
                             idGeneratorFactory );
             FullCheck check = new FullCheck( progressFactory, numberOfThreads, consistencyFlags, config, verbose, NodeBasedMemoryLimiter.DEFAULT );
             summary = check.execute( pageCache, stores, countsManager, null, pageCacheTracer, memoryTracker, new DuplicatingLog( log, reportLog ) );

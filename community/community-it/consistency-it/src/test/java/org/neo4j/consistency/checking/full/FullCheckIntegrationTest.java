@@ -87,13 +87,14 @@ import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;
 import org.neo4j.kernel.impl.store.DynamicArrayStore;
 import org.neo4j.kernel.impl.store.DynamicRecordAllocator;
+import org.neo4j.kernel.impl.store.DynamicStringStore;
+import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.StandardDynamicRecordAllocator;
-import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.allocator.ReusableRecordsAllocator;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -747,12 +748,12 @@ public class FullCheckIntegrationTest
             }
         } );
 
-        StoreAccess storeAccess = fixture.directStoreAccess().nativeStores();
+        NeoStores neoStores = fixture.directStoreAccess().nativeStores();
         NodeRecord nodeRecord = new NodeRecord( nodeId );
-        storeAccess.getNodeStore().getRecord( nodeId, nodeRecord, FORCE, NULL );
+        neoStores.getNodeStore().getRecord( nodeId, nodeRecord, FORCE, NULL );
         nodeRecord.setLabelField( dynamicPointer( duplicatedLabel ), duplicatedLabel );
         nodeRecord.setInUse( true );
-        storeAccess.getNodeStore().updateRecord( nodeRecord, NULL );
+        neoStores.getNodeStore().updateRecord( nodeRecord, NULL );
 
         // when
         ConsistencySummaryStatistics stats = check();
@@ -1134,11 +1135,11 @@ public class FullCheckIntegrationTest
                 tx.relationshipType( inconsistentName.get(), "FOO", false );
             }
         } );
-        StoreAccess access = fixture.directStoreAccess().nativeStores();
-        DynamicRecord record = access.getRelationshipTypeNameStore().getRecord( inconsistentName.get(),
-                access.getRelationshipTypeNameStore().newRecord(), FORCE, NULL );
+        NeoStores neoStores = fixture.directStoreAccess().nativeStores();
+        DynamicStringStore nameStore = neoStores.getRelationshipTypeTokenStore().getNameStore();
+        DynamicRecord record = nameStore.getRecord( inconsistentName.get(), nameStore.newRecord(), FORCE, NULL );
         record.setNextBlock( record.getId() );
-        access.getRelationshipTypeNameStore().updateRecord( record, NULL );
+        nameStore.updateRecord( record, NULL );
 
         // when
         ConsistencySummaryStatistics stats = check();
@@ -1163,11 +1164,11 @@ public class FullCheckIntegrationTest
                 propertyKeyNameIds.set( dynamicIds );
             }
         } );
-        StoreAccess access = fixture.directStoreAccess().nativeStores();
-        DynamicRecord record = access.getPropertyKeyNameStore().getRecord( propertyKeyNameIds.get()[0],
-                access.getPropertyKeyNameStore().newRecord(), FORCE, NULL );
+        NeoStores neoStores = fixture.directStoreAccess().nativeStores();
+        DynamicStringStore nameStore = neoStores.getPropertyKeyTokenStore().getNameStore();
+        DynamicRecord record = nameStore.getRecord( propertyKeyNameIds.get()[0], nameStore.newRecord(), FORCE, NULL );
         record.setNextBlock( record.getId() );
-        access.getPropertyKeyNameStore().updateRecord( record, NULL );
+        nameStore.updateRecord( record, NULL );
 
         // when
         ConsistencySummaryStatistics stats = check();
@@ -1181,8 +1182,8 @@ public class FullCheckIntegrationTest
     void shouldReportRelationshipTypeInconsistencies() throws Exception
     {
         // given
-        StoreAccess access = fixture.directStoreAccess().nativeStores();
-        RecordStore<RelationshipTypeTokenRecord> relTypeStore = access.getRelationshipTypeTokenStore();
+        NeoStores neoStores = fixture.directStoreAccess().nativeStores();
+        RecordStore<RelationshipTypeTokenRecord> relTypeStore = neoStores.getRelationshipTypeTokenStore();
         RelationshipTypeTokenRecord record = relTypeStore.getRecord( (int) relTypeStore.nextId( NULL ),
                 relTypeStore.newRecord(), FORCE, NULL );
         record.setNameId( 20 );
@@ -1193,7 +1194,7 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check();
 
         // then
-        access.close();
+        neoStores.close();
         on( stats ).verify( RecordType.RELATIONSHIP_TYPE, 1 )
                    .andThatsAllFolks();
     }
@@ -1202,12 +1203,12 @@ public class FullCheckIntegrationTest
     void shouldReportLabelInconsistencies() throws Exception
     {
         // given
-        StoreAccess access = fixture.directStoreAccess().nativeStores();
-        LabelTokenRecord record = access.getLabelTokenStore().getRecord( 1,
-                access.getLabelTokenStore().newRecord(), FORCE, NULL );
+        NeoStores neoStores = fixture.directStoreAccess().nativeStores();
+        LabelTokenRecord record = neoStores.getLabelTokenStore().getRecord( 1,
+                neoStores.getLabelTokenStore().newRecord(), FORCE, NULL );
         record.setNameId( 20 );
         record.setInUse( true );
-        access.getLabelTokenStore().updateRecord( record, NULL );
+        neoStores.getLabelTokenStore().updateRecord( record, NULL );
 
         // when
         ConsistencySummaryStatistics stats = check();
@@ -1232,11 +1233,11 @@ public class FullCheckIntegrationTest
                 propertyKeyNameIds.set( nameIds );
             }
         } );
-        StoreAccess access = fixture.directStoreAccess().nativeStores();
-        DynamicRecord record = access.getPropertyKeyNameStore().getRecord( propertyKeyNameIds.get()[0],
-                access.getPropertyKeyNameStore().newRecord(), FORCE, NULL );
+        NeoStores neoStores = fixture.directStoreAccess().nativeStores();
+        DynamicStringStore nameStore = neoStores.getPropertyKeyTokenStore().getNameStore();
+        DynamicRecord record = nameStore.getRecord( propertyKeyNameIds.get()[0], nameStore.newRecord(), FORCE, NULL );
         record.setInUse( false );
-        access.getPropertyKeyNameStore().updateRecord( record, NULL );
+        nameStore.updateRecord( record, NULL );
 
         // when
         ConsistencySummaryStatistics stats = check();

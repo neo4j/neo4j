@@ -52,7 +52,6 @@ import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RelationshipStore;
-import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -130,8 +129,7 @@ public class DetectAllRelationshipInconsistenciesIT
             DependencyResolver resolver = db.getDependencyResolver();
             NeoStores neoStores = resolver.resolveDependency( RecordStorageEngine.class ).testAccessNeoStores();
             CountsStore counts = resolver.resolveDependency( CountsStore.class );
-            StoreAccess storeAccess = new StoreAccess( neoStores ).initialize();
-            DirectStoreAccess directStoreAccess = new DirectStoreAccess( storeAccess,
+            DirectStoreAccess directStoreAccess = new DirectStoreAccess( neoStores,
                     db.getDependencyResolver().resolveDependency( LabelScanStore.class ),
                     db.getDependencyResolver().resolveDependency( RelationshipTypeScanStore.class ),
                     db.getDependencyResolver().resolveDependency( IndexProviderMap.class ),

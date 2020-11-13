@@ -61,9 +61,10 @@ import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
-import org.neo4j.kernel.impl.store.StoreAccess;
+import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.TokenStore;
+import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
@@ -114,7 +115,6 @@ public abstract class GraphStoreFixture implements AutoCloseable
     private TransactionIdStore transactionIdStore;
     private NeoStores neoStores;
     private IndexingService indexingService;
-    private StoreAccess storeAccess;
     private RecordStorageEngine storageEngine;
     private CountsAccessor countsStore;
 
@@ -150,8 +150,7 @@ public abstract class GraphStoreFixture implements AutoCloseable
         storageEngine = dependencyResolver.resolveDependency( RecordStorageEngine.class );
         neoStores = storageEngine.testAccessNeoStores();
         indexingService = dependencyResolver.resolveDependency( IndexingService.class );
-        storeAccess = new StoreAccess( neoStores ).initialize();
-        directStoreAccess = new DirectStoreAccess( storeAccess,
+        directStoreAccess = new DirectStoreAccess( neoStores,
                 dependencyResolver.resolveDependency( LabelScanStore.class ),
                 dependencyResolver.resolveDependency( RelationshipTypeScanStore.class ),
                 dependencyResolver.resolveDependency( IndexProviderMap.class ),
@@ -305,7 +304,7 @@ public abstract class GraphStoreFixture implements AutoCloseable
             return id;
         } ), TokenHolder.TYPE_RELATIONSHIP_TYPE );
         TokenHolders tokenHolders = new TokenHolders( propertyKeyTokens, labelTokens, relationshipTypeTokens );
-        tokenHolders.setInitialTokens( allReadableTokens( directStoreAccess().nativeStores().getRawNeoStores() ), NULL );
+        tokenHolders.setInitialTokens( allReadableTokens( directStoreAccess().nativeStores() ), NULL );
         return tokenHolders;
     }
 
@@ -609,10 +608,22 @@ public abstract class GraphStoreFixture implements AutoCloseable
     private void generateInitialData()
     {
         generateInitialData( database );
-        for ( StoreType storeType : StoreAccess.ACCESSIBLE_STORE_TYPES )
-        {
-            highIds[storeType.ordinal()] = storeAccess.getStore( storeType ).getHighId();
-        }
+        keepHighId( StoreType.SCHEMA, neoStores.getSchemaStore() );
+        keepHighId( StoreType.NODE, neoStores.getNodeStore() );
+        keepHighId( StoreType.LABEL_TOKEN, neoStores.getLabelTokenStore() );
+        keepHighId( StoreType.NODE_LABEL, neoStores.getNodeStore().getDynamicLabelStore() );
+        keepHighId( StoreType.RELATIONSHIP, neoStores.getRelationshipStore() );
+        keepHighId( StoreType.RELATIONSHIP_GROUP, neoStores.getRelationshipGroupStore() );
+        keepHighId( StoreType.PROPERTY, neoStores.getPropertyStore() );
+        keepHighId( StoreType.PROPERTY_STRING, neoStores.getPropertyStore().getStringStore() );
+        keepHighId( StoreType.PROPERTY_ARRAY, neoStores.getPropertyStore().getArrayStore() );
+        keepHighId( StoreType.RELATIONSHIP_TYPE_TOKEN, neoStores.getRelationshipTypeTokenStore() );
+        keepHighId( StoreType.PROPERTY_KEY_TOKEN, neoStores.getPropertyKeyTokenStore() );
+    }
+
+    private void keepHighId( StoreType storeType, RecordStore<? extends AbstractBaseRecord> store )
+    {
+        highIds[storeType.ordinal()] = store.getHighId();
     }
 
     protected abstract Map<Setting<?>, Object> getConfig();

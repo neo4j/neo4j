@@ -117,7 +117,7 @@ public class FullCheck
             IndexAccessors.IndexAccessorLookup indexAccessorLookup, PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker )
             throws ConsistencyCheckIncompleteException
     {
-        try ( IndexAccessors indexes = new IndexAccessors( directStoreAccess.indexes(), directStoreAccess.nativeStores().getRawNeoStores(), samplingConfig,
+        try ( IndexAccessors indexes = new IndexAccessors( directStoreAccess.indexes(), directStoreAccess.nativeStores(), samplingConfig,
                 indexAccessorLookup, pageCacheTracer, directStoreAccess.tokenHolders().lookupWithIds() ) )
         {
             if ( !config.get( RelationshipTypeScanStoreSettings.enable_relationship_type_scan_store ) && flags.isCheckRelationshipTypeScanStore() )
@@ -137,7 +137,7 @@ public class FullCheck
             }
 
             try ( RecordStorageConsistencyChecker checker = new RecordStorageConsistencyChecker( pageCache,
-                    directStoreAccess.nativeStores().getRawNeoStores(), countsStore, directStoreAccess.labelScanStore(),
+                    directStoreAccess.nativeStores(), countsStore, directStoreAccess.labelScanStore(),
                     directStoreAccess.relationshipTypeScanStore(), indexes, report, progressFactory, config, threads, verbose, flags, memoryLimit,
                     pageCacheTracer, memoryTracker ) )
             {

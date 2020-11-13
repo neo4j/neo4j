@@ -24,12 +24,12 @@ import org.neo4j.internal.index.label.LabelScanStore;
 import org.neo4j.internal.index.label.RelationshipTypeScanStore;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
-import org.neo4j.kernel.impl.store.StoreAccess;
+import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.token.TokenHolders;
 
 public class DirectStoreAccess
 {
-    private final StoreAccess nativeStores;
+    private final NeoStores nativeStores;
     private final LabelScanStore labelScanStore;
     private final RelationshipTypeScanStore relationshipTypeScanstore;
     private final IndexProviderMap indexes;
@@ -37,7 +37,7 @@ public class DirectStoreAccess
     private final IndexStatisticsStore indexStatisticsStore;
     private final IdGeneratorFactory idGeneratorFactory;
 
-    public DirectStoreAccess( StoreAccess nativeStores, LabelScanStore labelScanStore,
+    public DirectStoreAccess( NeoStores nativeStores, LabelScanStore labelScanStore,
             RelationshipTypeScanStore relationshipTypeScanstore, IndexProviderMap indexes, TokenHolders tokenHolders,
             IndexStatisticsStore indexStatisticsStore, IdGeneratorFactory idGeneratorFactory )
     {
@@ -50,7 +50,7 @@ public class DirectStoreAccess
         this.idGeneratorFactory = idGeneratorFactory;
     }
 
-    public StoreAccess nativeStores()
+    public NeoStores nativeStores()
     {
         return nativeStores;
     }
