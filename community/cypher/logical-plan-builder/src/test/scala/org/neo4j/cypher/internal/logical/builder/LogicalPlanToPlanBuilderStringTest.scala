@@ -107,6 +107,8 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
       .expandAll("(x)-[r]->(y)")
       .expandAll("(x)<-[r]-(y)")
       .expandAll("(x)-[r]-(y)")
+      .expandAll("(x)-[r:R]-(y)")
+      .expandAll("(x)-[r:R|L]-(y)")
       .argument()
       .build())
 

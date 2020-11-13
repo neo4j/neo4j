@@ -129,9 +129,10 @@ object LogicalPlanToPlanBuilderString {
         wrapInQuotationsAndMkString(properties.toSeq.map(expressionStringifier(_)))
       case Create(_, nodes, _) =>
         nodes.map(createNode => "createNode(" + wrapInQuotationsAndMkString(createNode.idName +: createNode.labels.map(_.name)) + ")").mkString(", ")
-      case Expand(_, from, dir, _, to, relName, _) =>
+      case Expand(_, from, dir, types, to, relName, _) =>
         val (dirStrA, dirStrB) = arrows(dir)
-        s""" "($from)$dirStrA[$relName]$dirStrB($to)" """.trim
+        val relTypeStr = if (types.nonEmpty) ":" + types.map(_.name).mkString("|") else ""
+        s""" "($from)$dirStrA[$relName$relTypeStr]$dirStrB($to)" """.trim
       case VarExpand(_, from, dir, pDir, types, to, relName, length, mode, nodePredicate, relationshipPredicate) =>
         val (dirStrA, dirStrB) = arrows(dir)
         val typeStr = relTypeStr(types)
