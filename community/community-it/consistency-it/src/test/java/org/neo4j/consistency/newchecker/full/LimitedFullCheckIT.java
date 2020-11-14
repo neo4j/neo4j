@@ -19,11 +19,12 @@
  */
 package org.neo4j.consistency.newchecker.full;
 
+import org.neo4j.consistency.checking.full.FullCheckIntegrationTest;
 import org.neo4j.consistency.newchecker.NodeBasedMemoryLimiter;
 
 import static org.neo4j.consistency.checking.cache.CacheSlots.CACHE_LINE_SIZE_BYTES;
 
-class ExperimentalLimitedFullCheckIT extends ExperimentalFullCheckIntegrationTest
+class LimitedFullCheckIT extends FullCheckIntegrationTest
 {
     @Override
     protected NodeBasedMemoryLimiter.Factory memoryLimit()
