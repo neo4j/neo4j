@@ -32,8 +32,8 @@ import java.util.Map;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.consistency.checker.NodeBasedMemoryLimiter;
 import org.neo4j.consistency.checking.GraphStoreFixture;
-import org.neo4j.consistency.newchecker.NodeBasedMemoryLimiter;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
 import org.neo4j.consistency.report.InconsistencyLogger;
 import org.neo4j.consistency.report.InconsistencyReport;

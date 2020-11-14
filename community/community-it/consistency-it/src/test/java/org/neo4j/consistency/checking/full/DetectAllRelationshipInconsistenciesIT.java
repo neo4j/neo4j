@@ -29,7 +29,7 @@ import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.consistency.RecordType;
-import org.neo4j.consistency.newchecker.NodeBasedMemoryLimiter;
+import org.neo4j.consistency.checker.NodeBasedMemoryLimiter;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
 import org.neo4j.consistency.store.DirectStoreAccess;
 import org.neo4j.counts.CountsStore;
