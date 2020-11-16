@@ -176,7 +176,7 @@ public class BuiltInProcedures
     }
 
     @Deprecated( since = "4.2.0", forRemoval = true )
-    @SystemProcedure( checkCredentialsExpired = true )
+    @SystemProcedure
     @Description( "List all indexes in the database." )
     @Procedure( name = "db.indexes", mode = READ, deprecatedBy = "SHOW INDEXES command" )
     public Stream<IndexResult> listIndexes()
@@ -501,7 +501,7 @@ public class BuiltInProcedures
         return indexProcedures.createUniquePropertyConstraint( constraintName, labels, properties, indexProviderDescriptor, config );
     }
 
-    @SystemProcedure
+    @SystemProcedure( allowExpiredCredentials = true )
     @Procedure( name = "db.ping", mode = READ )
     @Description( "This procedure can be used by client side tooling to test whether they are correctly connected to a database. " +
                   "The procedure is available in all databases and always returns true. A faulty connection can be detected by not being able to call this " +

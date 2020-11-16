@@ -257,7 +257,7 @@ class ProcedureCompiler
         Mode mode = procedure.mode();
         boolean admin = method.isAnnotationPresent( Admin.class );
         boolean systemProcedure = method.isAnnotationPresent( SystemProcedure.class );
-        boolean checkCredentialsExpired = systemProcedure ? method.getAnnotation( SystemProcedure.class ).checkCredentialsExpired() : false;
+        boolean allowExpiredCredentials = systemProcedure ? method.getAnnotation( SystemProcedure.class ).allowExpiredCredentials() : false;
         boolean internal = method.isAnnotationPresent( Internal.class );
         String deprecated = deprecated( method, procedure::deprecatedBy,
                 "Use of @Procedure(deprecatedBy) without @Deprecated in " + procName );
@@ -275,7 +275,7 @@ class ProcedureCompiler
                 ProcedureSignature signature =
                         new ProcedureSignature( procName, inputSignature, outputSignature, Mode.DEFAULT,
                                                 admin, null, new String[0], description, warning, procedure.eager(), false, systemProcedure, internal,
-                                                checkCredentialsExpired );
+                                                allowExpiredCredentials );
                 return new FailedLoadProcedure( signature );
             }
         }
@@ -283,7 +283,7 @@ class ProcedureCompiler
         ProcedureSignature signature =
                 new ProcedureSignature( procName, inputSignature, outputSignature, mode, admin, deprecated,
                                         config.rolesFor( procName.toString() ), description, warning, procedure.eager(), false, systemProcedure, internal,
-                                        checkCredentialsExpired );
+                                        allowExpiredCredentials );
 
         return ProcedureCompilation.compileProcedure( signature, setters, method );
     }

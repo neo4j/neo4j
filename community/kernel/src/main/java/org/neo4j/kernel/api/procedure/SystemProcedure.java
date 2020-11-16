@@ -31,5 +31,10 @@ import java.lang.annotation.Target;
 @Retention( RetentionPolicy.RUNTIME )
 public @interface SystemProcedure
 {
-    boolean checkCredentialsExpired() default false;
+    /**
+     * Credentials are always checked, but may pass if the password is expired, if this flag is set to true.
+     *
+     * @return whether expired credentials are allowed
+     */
+    boolean allowExpiredCredentials() default false;
 }

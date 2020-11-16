@@ -400,7 +400,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
       case Query(None, SingleQuery(Seq(resolved@ResolvedCall(signature, _, _, _, _),Return(_,_,_,_,_,_)))) if signature.systemProcedure =>
         val SemanticCheckResult(_, errors) = resolved.semanticCheck(SemanticState.clean)
         errors.foreach { error => throw context.cypherExceptionFactory.syntaxException(error.msg, error.position) }
-        Some(plans.SystemProcedureCall(signature.name.toString, resolved, context.params, signature.checkCredentialsExpired))
+        Some(plans.SystemProcedureCall(signature.name.toString, resolved, context.params, checkCredentialsExpired = !signature.allowExpiredCredentials))
 
       case _ => None
     }

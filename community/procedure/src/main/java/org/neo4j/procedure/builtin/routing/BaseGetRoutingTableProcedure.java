@@ -163,6 +163,7 @@ public abstract class BaseGetRoutingTableProcedure implements CallableProcedure
                 .mode( Mode.DBMS )
                 .description( description() )
                 .systemProcedure()
+                .allowExpiredCredentials()
                 .build();
     }
 

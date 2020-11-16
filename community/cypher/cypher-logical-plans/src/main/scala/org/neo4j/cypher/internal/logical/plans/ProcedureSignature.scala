@@ -29,13 +29,13 @@ case class ProcedureSignature(name: QualifiedName,
                               inputSignature: IndexedSeq[FieldSignature],
                               outputSignature: Option[IndexedSeq[FieldSignature]],
                               deprecationInfo: Option[String],
-                              accessMode: ProcedureAccessMode ,
+                              accessMode: ProcedureAccessMode,
                               description: Option[String] = None,
                               warning: Option[String] = None,
                               eager: Boolean = false,
                               id: Int,
                               systemProcedure: Boolean = false,
-                              checkCredentialsExpired: Boolean = false
+                              allowExpiredCredentials: Boolean = false
                              ) {
 
   def outputFields: Seq[FieldSignature] = outputSignature.getOrElse(Seq.empty)

@@ -50,7 +50,7 @@ public class ProcedureSignature
     private final boolean caseInsensitive;
     private final boolean systemProcedure;
     private final boolean internal;
-    private final boolean checkCredentialsExpired;
+    private final boolean allowExpiredCredentials;
 
     public ProcedureSignature(
             QualifiedName name,
@@ -66,7 +66,7 @@ public class ProcedureSignature
             boolean caseInsensitive,
             boolean systemProcedure,
             boolean internal,
-            boolean checkCredentialsExpired )
+            boolean allowExpiredCredentials )
     {
         this.name = name;
         this.inputSignature = unmodifiableList( inputSignature );
@@ -81,7 +81,7 @@ public class ProcedureSignature
         this.caseInsensitive = caseInsensitive;
         this.systemProcedure = systemProcedure;
         this.internal = internal;
-        this.checkCredentialsExpired = checkCredentialsExpired;
+        this.allowExpiredCredentials = allowExpiredCredentials;
     }
 
     public QualifiedName name()
@@ -154,9 +154,9 @@ public class ProcedureSignature
         return internal;
     }
 
-    public boolean checkCredentialsExpired()
+    public boolean allowExpiredCredentials()
     {
-        return checkCredentialsExpired;
+        return allowExpiredCredentials;
     }
 
     @Override
@@ -211,7 +211,7 @@ public class ProcedureSignature
         private boolean admin;
         private boolean systemProcedure;
         private boolean internal;
-        private boolean checkCredentialsExpired;
+        private boolean allowExpiredCredentials;
 
         public Builder( String[] namespace, String name )
         {
@@ -298,16 +298,16 @@ public class ProcedureSignature
             return this;
         }
 
-        public Builder checkCredentialsExpired()
+        public Builder allowExpiredCredentials()
         {
-            this.checkCredentialsExpired = true;
+            this.allowExpiredCredentials = true;
             return this;
         }
 
         public ProcedureSignature build()
         {
             return new ProcedureSignature( name, inputSignature, outputSignature, mode, admin, deprecated, allowed,
-                                           description, warning, eager, false, systemProcedure, internal, checkCredentialsExpired );
+                                           description, warning, eager, false, systemProcedure, internal, allowExpiredCredentials );
         }
     }
 
