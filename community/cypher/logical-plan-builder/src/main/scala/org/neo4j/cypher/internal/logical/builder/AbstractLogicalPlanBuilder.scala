@@ -60,6 +60,7 @@ import org.neo4j.cypher.internal.logical.plans.AntiConditionalApply
 import org.neo4j.cypher.internal.logical.plans.AntiSemiApply
 import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.Argument
+import org.neo4j.cypher.internal.logical.plans.AssertSameNode
 import org.neo4j.cypher.internal.logical.plans.CacheProperties
 import org.neo4j.cypher.internal.logical.plans.CartesianProduct
 import org.neo4j.cypher.internal.logical.plans.ColumnOrder
@@ -734,6 +735,9 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
 
   def union(): IMPL =
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) => Union(lhs, rhs)(_)))
+
+  def assertSameNode(node: String): IMPL =
+    appendAtCurrentIndent(BinaryOperator((lhs, rhs) => AssertSameNode(node, lhs, rhs)(_)))
 
   def expandAll(pattern: String): IMPL = expand(pattern, ExpandAll)
 
