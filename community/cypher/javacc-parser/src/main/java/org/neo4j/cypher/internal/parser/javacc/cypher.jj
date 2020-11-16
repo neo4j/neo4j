@@ -1855,7 +1855,7 @@ EXPRESSION Expression1() :
   | LOOKAHEAD(2) e=MapProjection()
   | e=OldParameter()
   | LOOKAHEAD(3) e=ListComprehension() // before literal because it takes precedence
-  | LOOKAHEAD(3) e=PatternComprehension()
+  | LOOKAHEAD(PatternComprehensionPrefix()) e=PatternComprehension() // Only after matching up to "WHERE" or "|" can we be sure it is a PatternComprehension and not a ListLiteral.
   | LOOKAHEAD(3) e=ListLiteral()
   | LOOKAHEAD(3) e=FilterExpression()
   | LOOKAHEAD(3) e=ExtractExpression()
@@ -1917,6 +1917,12 @@ EXPRESSION PatternComprehension() :
 {
   t=<LBRACKET> ( v=Variable() <EQ> )? p=EveryPathPattern() ( where=Where() )? <BAR> projection=Expression() <RBRACKET>
   { return astFactory.patternComprehension(pos(t), v, p, where, projection); }
+}
+
+void PatternComprehensionPrefix() :
+{}
+{
+  <LBRACKET> ( Variable() <EQ> )? EveryPathPattern() (<WHERE> | <BAR>)
 }
 
 EXPRESSION FilterExpression() :
