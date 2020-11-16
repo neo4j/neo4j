@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.util.InputPosition.NONE
 class PatternParser
 {
   private val ID = "([a-zA-Z0-9` @]*)"
-  private val REL_TYPES = "([a-zA-Z_|]*)"
+  private val REL_TYPES = "([a-zA-Z0-9_|]*)"
   private val regex = s"\\($ID\\)(<?)-\\[?$ID:?$REL_TYPES(\\*?)([0-9]*)(\\.?\\.?)([0-9]*)\\]?-(>?)\\($ID\\)".r
   private var unnamedCount = 0
 

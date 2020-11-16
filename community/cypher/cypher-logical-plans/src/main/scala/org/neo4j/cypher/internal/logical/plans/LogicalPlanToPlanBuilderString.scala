@@ -144,8 +144,8 @@ object LogicalPlanToPlanBuilderString {
         nodes.map(createNode => "createNode(" + wrapInQuotationsAndMkString(createNode.idName +: createNode.labels.map(_.name)) + ")").mkString(", ")
       case Expand(_, from, dir, types, to, relName, _) =>
         val (dirStrA, dirStrB) = arrows(dir)
-        val relTypeStr = if (types.nonEmpty) ":" + types.map(_.name).mkString("|") else ""
-        s""" "($from)$dirStrA[$relName$relTypeStr]$dirStrB($to)" """.trim
+        val typeStr = relTypeStr(types)
+        s""" "($from)$dirStrA[$relName$typeStr]$dirStrB($to)" """.trim
       case VarExpand(_, from, dir, pDir, types, to, relName, length, mode, nodePredicate, relationshipPredicate) =>
         val (dirStrA, dirStrB) = arrows(dir)
         val typeStr = relTypeStr(types)
@@ -189,10 +189,11 @@ object LogicalPlanToPlanBuilderString {
         args.mkString(", ")
       case Optional(_, protectedSymbols) =>
         wrapInQuotationsAndMkString(protectedSymbols)
-      case OptionalExpand(_, from, dir, _, to, relName, _, predicate) =>
+      case OptionalExpand(_, from, dir, types, to, relName, _, predicate) =>
         val (dirStrA, dirStrB) = arrows(dir)
+        val typeStr = relTypeStr(types)
         val predStr = predicate.fold("")(p => s""", Some("${expressionStringifier(p)}")""")
-        s""" "($from)$dirStrA[$relName]$dirStrB($to)"$predStr""".trim
+        s""" "($from)$dirStrA[$relName$typeStr]$dirStrB($to)"$predStr""".trim
       case ProcedureCall(_, ResolvedCall(ProcedureSignature(QualifiedName(namespace, name), _, _, _, _, _, _, _, _, _, _), callArguments, callResults, _, _)) =>
         val yielding = if(callResults.isEmpty) "" else callResults.map(i => expressionStringifier(i.variable)).mkString(" YIELD ", ",", "")
         s""" "${namespace.mkString(".")}.$name(${callArguments.map(expressionStringifier(_)).mkString(", ")})$yielding" """.trim
