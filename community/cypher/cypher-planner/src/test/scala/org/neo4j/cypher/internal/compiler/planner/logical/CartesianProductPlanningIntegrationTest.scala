@@ -24,6 +24,9 @@ import org.neo4j.cypher.internal.compiler.ExecutionModel.Volcano
 import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher.beLike
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
+import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.QueryGraphSolverSetup
+import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.QueryGraphSolverWithGreedyConnectComponents
+import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.cartesianProductsOrValueJoins.COMPONENT_THRESHOLD_FOR_CARTESIAN_PRODUCT
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.logical.plans.AllNodesScan
@@ -35,7 +38,23 @@ import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class CartesianProductPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 with LogicalPlanningIntegrationTestSupport {
+/**
+ * This class tests only greedy - the idp counterpart is tested in [[ConnectComponentsPlanningIntegrationTest]]
+ */
+class CartesianProductGreedyPlanningIntegrationTest extends CartesianProductPlanningIntegrationTest(QueryGraphSolverWithGreedyConnectComponents)
+
+abstract class CartesianProductPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSolverSetup)
+  extends CypherFunSuite
+  with LogicalPlanningTestSupport2
+  with LogicalPlanningIntegrationTestSupport {
+
+  locally {
+    queryGraphSolver = queryGraphSolverSetup.queryGraphSolver()
+  }
+
+  override protected def plannerBuilder(): StatisticsBackedLogicalPlanningConfigurationBuilder =
+    super.plannerBuilder().enableConnectComponentsPlanner(queryGraphSolverSetup.useIdpConnectComponents)
+
 
   test("should build cartesian product with sorted plan left for many disconnected components") {
     val nodes = (0 until COMPONENT_THRESHOLD_FOR_CARTESIAN_PRODUCT).map(i => s"(n$i:Few)").mkString(",")

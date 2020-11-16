@@ -19,13 +19,17 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
+import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
+import org.neo4j.cypher.internal.compiler.planner.LogicalPlanTestOps
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
+import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.QueryGraphSolverSetup
+import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.QueryGraphSolverWithGreedyConnectComponents
+import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.QueryGraphSolverWithIDPConnectComponents
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.unnestOptional
 import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.LabelName
-import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.logical.plans.Aggregation
@@ -54,7 +58,18 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.kernel.impl.util.dbstructure.DbStructureLargeOptionalMatchStructure
 import org.scalatest.Inside
 
-class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 with LogicalPlanningIntegrationTestSupport with Inside {
+class OptionalMatchIDPPlanningIntegrationTest extends OptionalMatchPlanningIntegrationTest(QueryGraphSolverWithIDPConnectComponents)
+class OptionalMatchGreedyPlanningIntegrationTest extends OptionalMatchPlanningIntegrationTest(QueryGraphSolverWithGreedyConnectComponents)
+
+abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSolverSetup)
+  extends CypherFunSuite
+  with LogicalPlanningTestSupport2
+  with LogicalPlanTestOps
+  with LogicalPlanningIntegrationTestSupport with Inside {
+
+  locally {
+    queryGraphSolver = queryGraphSolverSetup.queryGraphSolver()
+  }
 
   test("should build plans containing left outer joins") {
     (new given {
@@ -241,14 +256,18 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
   }
 
   test("should solve multiple optional matches") {
-    val plan = planFor("MATCH (a) OPTIONAL MATCH (a)-[:R1]->(x1) OPTIONAL MATCH (a)-[:R2]->(x2) RETURN a, x1, x2")._2.endoRewrite(unnestOptional)
-    plan should equal(
-      OptionalExpand(
-        OptionalExpand(
-          AllNodesScan("a", Set.empty),
-          "a", SemanticDirection.OUTGOING, List(RelTypeName("R1") _), "x1", "  REL29", ExpandAll, None),
-        "a", SemanticDirection.OUTGOING, List(RelTypeName("R2") _), "x2", "  REL60", ExpandAll, None)
-    )
+    val plan = planFor("MATCH (a) OPTIONAL MATCH (a)-[r1:R1]->(x1) OPTIONAL MATCH (a)-[r2:R2]->(x2) RETURN a, x1, x2")._2
+    val alternative1 = new LogicalPlanBuilder(wholePlan = false)
+      .optionalExpandAll("(a)-[r2:R2]->(x2)")
+      .optionalExpandAll("(a)-[r1:R1]->(x1)")
+      .allNodeScan("a")
+      .build()
+    val alternative2 = new LogicalPlanBuilder(wholePlan = false)
+      .optionalExpandAll("(a)-[r1:R1]->(x1)")
+      .optionalExpandAll("(a)-[r2:R2]->(x2)")
+      .allNodeScan("a")
+      .build()
+    plan should (equal(alternative1) or equal(alternative2))
   }
 
   test("should solve optional matches with arguments and predicates") {

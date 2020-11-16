@@ -48,10 +48,6 @@ import org.neo4j.cypher.internal.compiler.planner.logical.QueryPlannerConfigurat
 import org.neo4j.cypher.internal.compiler.planner.logical.SimpleMetricsFactory
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.BestResults
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.DefaultIDPSolverConfig
-import org.neo4j.cypher.internal.compiler.planner.logical.idp.IDPQueryGraphSolver
-import org.neo4j.cypher.internal.compiler.planner.logical.idp.IDPQueryGraphSolverMonitor
-import org.neo4j.cypher.internal.compiler.planner.logical.idp.SingleComponentPlanner
-import org.neo4j.cypher.internal.compiler.planner.logical.idp.cartesianProductsOrValueJoins
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.devNullListener
 import org.neo4j.cypher.internal.compiler.test_helpers.ContextHelper
@@ -195,14 +191,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
 
   def mockedMetrics: Metrics = newSimpleMetrics(hardcodedStatistics)
 
-  private def newMockQueryGraphSolver = {
-    val solverMonitor = mock[IDPQueryGraphSolverMonitor]
-    val singleComponentPlanner = SingleComponentPlanner(solverMonitor)
-    new IDPQueryGraphSolver(
-      singleComponentPlanner,
-      cartesianProductsOrValueJoins,
-      solverMonitor)
-  }
+  private def newMockQueryGraphSolver = LogicalPlanningTestSupport2.QueryGraphSolverWithIDPConnectComponents.queryGraphSolver()
 
   def newMockedLogicalPlanningContext(planContext: PlanContext,
                                       metrics: Metrics = mockedMetrics,

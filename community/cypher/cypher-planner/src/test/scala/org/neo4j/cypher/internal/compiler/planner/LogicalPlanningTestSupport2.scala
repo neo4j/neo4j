@@ -32,7 +32,7 @@ import org.neo4j.cypher.internal.compiler.phases.CompilationPhases.planPipeLine
 import org.neo4j.cypher.internal.compiler.phases.CompilationPhases.prepareForCaching
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
-import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.QueryGraphSolverWithGreedyConnectComponents
+import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.QueryGraphSolverWithIDPConnectComponents
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.cypherCompilerConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.ExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
@@ -169,7 +169,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
   val innerVariableNamer: InnerVariableNamer = LogicalPlanningTestSupport2.innerVariableNamer
   var astRewriter = new ASTRewriter(innerVariableNamer = innerVariableNamer)
   final var planner = QueryPlanner
-  var queryGraphSolver: QueryGraphSolver = QueryGraphSolverWithGreedyConnectComponents.queryGraphSolver()
+  var queryGraphSolver: QueryGraphSolver = QueryGraphSolverWithIDPConnectComponents.queryGraphSolver()
 
   val realConfig = RealLogicalPlanningConfiguration(cypherCompilerConfig)
 

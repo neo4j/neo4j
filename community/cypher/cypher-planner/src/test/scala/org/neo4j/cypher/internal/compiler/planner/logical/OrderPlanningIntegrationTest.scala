@@ -51,10 +51,10 @@ import org.neo4j.cypher.internal.logical.plans.Top
 import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class OrderIDPPlanningIntegrationTest extends OrderPlanningIntegrationTestBase(QueryGraphSolverWithIDPConnectComponents)
-class OrderGreedyPlanningIntegrationTest extends OrderPlanningIntegrationTestBase(QueryGraphSolverWithGreedyConnectComponents)
+class OrderIDPPlanningIntegrationTest extends OrderPlanningIntegrationTest(QueryGraphSolverWithIDPConnectComponents)
+class OrderGreedyPlanningIntegrationTest extends OrderPlanningIntegrationTest(QueryGraphSolverWithGreedyConnectComponents)
 
-class OrderPlanningIntegrationTestBase(queryGraphSolverSetup: QueryGraphSolverSetup = QueryGraphSolverWithGreedyConnectComponents)
+abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSolverSetup)
   extends CypherFunSuite
   with LogicalPlanningTestSupport2
   with LogicalPlanningIntegrationTestSupport {

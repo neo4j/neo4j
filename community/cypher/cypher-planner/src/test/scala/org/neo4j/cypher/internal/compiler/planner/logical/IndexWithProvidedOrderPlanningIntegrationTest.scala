@@ -66,12 +66,17 @@ import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class IndexWithProvidedOrderIDPPlanningIntegrationTest extends IndexWithProvidedOrderPlanningIntegrationTestBase(QueryGraphSolverWithIDPConnectComponents)
-class IndexWithProvidedOrderGreedyPlanningIntegrationTest extends IndexWithProvidedOrderPlanningIntegrationTestBase(QueryGraphSolverWithGreedyConnectComponents)
+class IndexWithProvidedOrderIDPPlanningIntegrationTest extends IndexWithProvidedOrderPlanningIntegrationTest(QueryGraphSolverWithIDPConnectComponents)
+class IndexWithProvidedOrderGreedyPlanningIntegrationTest extends IndexWithProvidedOrderPlanningIntegrationTest(QueryGraphSolverWithGreedyConnectComponents)
 
-abstract class IndexWithProvidedOrderPlanningIntegrationTestBase(queryGraphSolverSetup: QueryGraphSolverSetup) extends CypherFunSuite with LogicalPlanningTestSupport2 with PlanMatchHelp {
+abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSolverSetup)
+  extends CypherFunSuite
+  with LogicalPlanningTestSupport2
+  with PlanMatchHelp {
 
-  queryGraphSolver = queryGraphSolverSetup.queryGraphSolver()
+  locally {
+    queryGraphSolver = queryGraphSolverSetup.queryGraphSolver()
+  }
 
   case class TestOrder(indexOrder: IndexOrder, cypherToken: String, indexOrderCapability: IndexOrderCapability, sortOrder: String => ColumnOrder)
   private val ASCENDING = TestOrder(IndexOrderAscending, "ASC", ASC, Ascending)

@@ -72,7 +72,7 @@ object StatisticsBackedLogicalPlanningConfigurationBuilder {
 
   case class Options(
                       debug: CypherDebugOptions = CypherDebugOptions(Set.empty),
-                      connectComponentsPlanner: Boolean = false,
+                      connectComponentsPlanner: Boolean = true,
                       executionModel: ExecutionModel = ExecutionModel.default,
                     )
   case class Cardinalities(
