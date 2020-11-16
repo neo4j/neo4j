@@ -401,17 +401,18 @@ class HeapTrackingLongEnumerationListTest
     @Test
     void addRemoveAllFirstCycle()
     {
+        int nElements = 2500;
         long key = 0;
 
         assertNull( table.getFirst() );
-        for ( int i = 0; i < 5000; i++ )
+        for ( int i = 0; i < nElements; i++ )
         {
             table.add( key++ );
         }
         long measuredAfterAdd1 = meter.measureDeep( table ) - measuredMemoryTracker;
-        long estimatedAfterAdd1 = memoryTracker.estimatedHeapMemory() + 5000 * HeapEstimator.LONG_SIZE;
+        long estimatedAfterAdd1 = memoryTracker.estimatedHeapMemory() + nElements * HeapEstimator.LONG_SIZE;
 
-        for ( int i = 0; i < 5000; i++ )
+        for ( int i = 0; i < nElements; i++ )
         {
             table.remove( i );
         }
@@ -423,16 +424,16 @@ class HeapTrackingLongEnumerationListTest
         table.add( key++ );
         assertEquals( key - 1, table.getFirst() );
         assertEquals( key - 1, table.lastKey() );
-        for ( int i = 1; i < 5000; i++ )
+        for ( int i = 1; i < nElements; i++ )
         {
             table.add( key++ );
         }
         long measuredAfterAdd2 = meter.measureDeep( table ) - measuredMemoryTracker;
-        long estimatedAfterAdd2 = memoryTracker.estimatedHeapMemory() + 5000 * HeapEstimator.LONG_SIZE;
+        long estimatedAfterAdd2 = memoryTracker.estimatedHeapMemory() + nElements * HeapEstimator.LONG_SIZE;
 
-        for ( int i = 0; i < 5000; i++ )
+        for ( int i = 0; i < nElements; i++ )
         {
-            table.remove( i + 5000 );
+            table.remove( i + nElements );
         }
         long measuredAfterRemove2 = meter.measureDeep( table ) - measuredMemoryTracker;
         long estimatedAfterRemove2 = memoryTracker.estimatedHeapMemory();
