@@ -701,10 +701,10 @@ class HeapTrackingLongEnumerationListTest
         int chunkSize = random.among( new Integer[]{1, 2, 4, 8, 16, DEFAULT_CHUNK_SIZE} );
         HeapTrackingLongEnumerationList<Long> table = HeapTrackingLongEnumerationList.create( memoryTracker, chunkSize );
 
-        int ITERATIONS = random.intBetween( 1000, 2000 );
+        int iterations = random.intBetween( 1000, 2000 );
         int addPercentage = random.intBetween( 40, 70 );
-        int nAdds = ITERATIONS * addPercentage / 100;
-        int nRemoves = ITERATIONS - nAdds;
+        int nAdds = iterations * addPercentage / 100;
+        int nRemoves = iterations - nAdds;
 
         for ( int i = 0; i < nAdds; i++ )
         {
@@ -744,6 +744,10 @@ class HeapTrackingLongEnumerationListTest
                     {
                         assertEmpty( table );
                     }
+                    break;
+
+                default:
+                    throw new UnsupportedOperationException();
                 }
                 assertEquals( key - 1, table.lastKey() );
                 opCount++;
