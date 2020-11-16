@@ -283,6 +283,24 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
             newBuilder( "unsupported.dbms.block_start_stop_database", BOOL, false ).build();
 
     @Internal
+    @Description( "Enable or disable the ability to execute the `dbms.upgrade` procedure." )
+    public static final Setting<Boolean> block_upgrade_procedures =
+            newBuilder( "unsupported.dbms.upgrade_restriction_enabled", BOOL, false ).build();
+
+    @Internal
+    @Description( "The port the loopback connector should bind to." )
+    public static final Setting<Integer> loopback_listen_port =
+            newBuilder( "unsupported.dbms.loopback_port", INT, DEFAULT_LOOPBACK_CONNECTOR_PORT ).build();
+
+    @Internal
+    @Description( "Enable or disable to loopback authentication. " +
+                  "A user successfully authenticated over this will execute all queries with no security restrictions. " +
+                  "This includes overriding the `" + "unsupported.dbms.block_create_drop_database" + "`, " +
+                  "`" + "unsupported.dbms.block_start_stop_database" + "` and `" + "unsupported.dbms.upgrade_restriction_enabled" + "` settings." )
+    public static final Setting<Boolean> enable_loopback_auth =
+            newBuilder( "unsupported.dbms.loopback_enabled", BOOL, false ).build();
+
+    @Internal
     @Description( "The maximum amount of time to wait for the database to become available, when starting a new transaction." )
     public static final Setting<Duration> transaction_start_timeout =
             newBuilder( "unsupported.dbms.transaction_start_timeout", DURATION, ofSeconds( 1 ) ).build();
@@ -518,18 +536,6 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
     @Description( "Enables logging of leaked driver session" )
     public static final Setting<Boolean> routing_driver_log_leaked_sessions =
             newBuilder( "dbms.routing.driver.logging.leaked_sessions", BOOL, false ).build();
-
-    @Internal
-    @Description( "Setting this to true will limit who execute the `dbms.upgrade` procedure. " +
-                  "Only someone logging in over the loopback port will be able to execute the `dbms.upgrade*` procedures." )
-    public static final Setting<Boolean> restrict_upgrade =
-            newBuilder( "unsupported.dbms.upgrade_restriction_enabled", BOOL, false ).build();
-
-    @Internal
-    @Description( "The port the loopback connector should bind to. This will only be enabled when `" + "unsupported.dbms.upgrade_restriction_enabled" + "` " +
-                  "is set to true." )
-    public static final Setting<Integer> loopback_listen_port =
-            newBuilder( "unsupported.dbms.loopback_port", INT, DEFAULT_LOOPBACK_CONNECTOR_PORT ).build();
 
     @Description( "Specifies at which file size the checkpoint log will auto-rotate. Minimum accepted value is 1 KiB. " )
     public static final Setting<Long> checkpoint_logical_log_rotation_threshold =

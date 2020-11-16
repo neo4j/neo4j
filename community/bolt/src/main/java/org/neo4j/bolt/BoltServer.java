@@ -255,7 +255,7 @@ public class BoltServer extends LifecycleAdapter
     private ProtocolInitializer createLoopbackProtocolInitializer( BoltProtocolFactory boltProtocolFactory, TransportThrottleGroup throttleGroup )
 
     {
-        if ( config.get( GraphDatabaseInternalSettings.restrict_upgrade ) )
+        if ( config.get( GraphDatabaseInternalSettings.enable_loopback_auth ) )
         {
             // TODO maybe enable/enforce ssl?
 
