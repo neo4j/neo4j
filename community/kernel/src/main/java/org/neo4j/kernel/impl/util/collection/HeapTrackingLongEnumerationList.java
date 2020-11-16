@@ -114,8 +114,6 @@ public class HeapTrackingLongEnumerationList<V> extends DefaultCloseListenable
         }
         int chunkMask = chunkSize - 1;
 
-        long keyOffset = key - firstKey;
-
         // Check if the key is within the first chunk
         if ( key < lastKeyInFirstChunk )
         {
@@ -126,7 +124,7 @@ public class HeapTrackingLongEnumerationList<V> extends DefaultCloseListenable
         }
 
         // Check if the key is within the last chunk
-        if ( key >>> chunkShiftAmount == lastKey >>> chunkShiftAmount )
+        if ( key >>> chunkShiftAmount == (lastKey - 1) >>> chunkShiftAmount )
         {
             // Get in last chunk
             Chunk<V> chunk = lastChunk;
@@ -134,18 +132,21 @@ public class HeapTrackingLongEnumerationList<V> extends DefaultCloseListenable
             return (V) chunk.values[index];
         }
 
-        // Otherwise traverse from the first chunk
-        Chunk<V> chunk = firstChunk;
+        // Otherwise traverse from the second chunk
+        Chunk<V> chunk = firstChunk.next;
 
-        // We need to align this key offset since chunk boundaries are fixed
-        int firstIndexInFirstChunk = (int) (firstKey & chunkMask);
-        long index = keyOffset + firstIndexInFirstChunk; // We need to align this key offset since chunk boundaries are fixed
-        while ( index >= chunkSize ) // find the chunk where the key is
+        // We need to align the key offset since tail chunk boundaries are always fixed in the enumeration key space:
+        //   [0..chunkSize-1][chunkSize..2*chunkSize-1]...
+        long offset = key - lastKeyInFirstChunk;
+        long alignment = lastKeyInFirstChunk & chunkMask;
+        long index = offset + alignment;
+
+        long nChunkHops = index >>> chunkShiftAmount;
+        for ( int i = 0; i < nChunkHops; i++ )
         {
             chunk = chunk.next;
-            index -= chunkSize;
         }
-        int indexInChunk = (int) index; // Now indexInChunk is within [0..chunkSize[ so can safely be cast to int
+        int indexInChunk = ((int) key) & chunkMask;
         return (V) chunk.values[indexInChunk];
     }
 
@@ -292,22 +293,39 @@ public class HeapTrackingLongEnumerationList<V> extends DefaultCloseListenable
     private V removeInMultipleChunks( long key )
     {
         // Find chunk and index where the value should be removed
-        long keyOffset = key - firstKey;
-        if ( keyOffset < chunkSize )
+        if ( key < lastKeyInFirstChunk )
         {
             return removeInFirstOfMultipleChunks( key );
         }
 
-        Chunk<V> chunk = firstChunk;
+        Chunk<V> chunk;
         int chunkMask = chunkSize - 1;
-        int firstIndexInChunk = ((int) firstKey) & chunkMask;
-        long index = keyOffset + firstIndexInChunk; // We need to align the key offset since chunk boundaries are fixed
-        while ( index >= chunkSize )
+
+        // Check if the key is within the last chunk
+        if ( key >>> chunkShiftAmount == (lastKey - 1) >>> chunkShiftAmount )
         {
-            chunk = chunk.next;
-            index -= chunkSize;
+            // Get in last chunk
+            chunk = lastChunk;
         }
-        int indexInChunk = (int) index; // Now indexInChunk is within [0..chunkSize[ so can safely be cast to int
+        else
+        {
+            // Otherwise traverse from the second chunk
+            chunk = firstChunk.next;
+
+            // We need to align the key offset since tail chunk boundaries are always fixed in the enumeration key space:
+            //   [0..chunkSize-1][chunkSize..2*chunkSize-1]...
+            long offset = key - lastKeyInFirstChunk;
+            long alignment = lastKeyInFirstChunk & chunkMask;
+            long index = offset + alignment;
+
+            long nChunkHops = index >>> chunkShiftAmount;
+            for ( int i = 0; i < nChunkHops; i++ )
+            {
+                chunk = chunk.next;
+            }
+        }
+
+        int indexInChunk = ((int) key) & chunkMask;
         V removedValue = (V) chunk.values[indexInChunk];
         chunk.values[indexInChunk] = null;
 
@@ -359,7 +377,7 @@ public class HeapTrackingLongEnumerationList<V> extends DefaultCloseListenable
                 firstIndexInChunk++;
                 moveToNextChunk = firstIndexInChunk >= chunkSize;
             }
-            if ( moveToNextChunk && firstChunk != lastChunk )
+            if ( moveToNextChunk && chunk != lastChunk )
             {
                 firstIndexInChunk = ((int) firstKey) & chunkMask;
                 chunk.close( scopedMemoryTracker );
@@ -372,41 +390,17 @@ public class HeapTrackingLongEnumerationList<V> extends DefaultCloseListenable
             // Update references to the new first chunk
             firstChunk = chunk;
 
-            // We also need to find a new lastIndexInFirstChunk, so that we can start using it as a ring-buffer
-            if ( firstKey == lastKey )
+            // Update lastKeyInFirstChunk
+            if ( chunk == lastChunk )
             {
                 lastKeyInFirstChunk = lastKey;
             }
             else
             {
-                int lastIndexInChunk = chunkSize - 1;
-                while ( lastIndexInChunk >= 0 && chunk.values[lastIndexInChunk] == null )
-                {
-                    lastIndexInChunk--;
-                }
-                lastKeyInFirstChunk = firstKey + (lastIndexInChunk - firstIndexInChunk) + 1;
+                // Middle chunks are always aligned so that lastKeyInFirstChunk should be at the chunk boundary
+                lastKeyInFirstChunk = (firstKey & ~chunkMask) + chunkSize;
             }
         }
-    }
-
-    /*
-     * The current size of the range of accessible elements.
-     *
-     * NOTE: Elements that have been removed _within_ this range are included in the size,
-     * so it is _not_ the same as numberOfElements
-     *
-     * E.g. if we have 3 chunks with chunk size 4:
-     *
-     * [null, null, null, 4] -> [null, 3, 2, 4] -> [4, 3, null, null]
-     *
-     * then
-     * firstKey = 3
-     * lastKey = 9
-     * size = 7 ([4, null, 3, 2, 4, 4, 3])
-     */
-    private long size()
-    {
-        return lastKey - firstKey;
     }
 
     /*
@@ -440,7 +434,7 @@ public class HeapTrackingLongEnumerationList<V> extends DefaultCloseListenable
             key++;
         }
 
-        // Move to the next chunk
+        // Move to the next chunk (cannot be null unless key == lastKey)
         chunk = chunk.next;
 
         // Iterate over remaining chunks

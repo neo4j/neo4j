@@ -22,13 +22,22 @@ package org.neo4j.kernel.impl.util.collection;
 import org.github.jamm.MemoryMeter;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 import org.neo4j.memory.HeapEstimator;
 import org.neo4j.memory.LocalMemoryTracker;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
+import org.neo4j.test.rule.RandomRule;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -38,12 +47,18 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.kernel.impl.util.collection.HeapTrackingLongEnumerationList.DEFAULT_CHUNK_SIZE;
+import static org.neo4j.kernel.impl.util.collection.HeapTrackingLongEnumerationListTest.ListOperation.ADD;
+import static org.neo4j.kernel.impl.util.collection.HeapTrackingLongEnumerationListTest.ListOperation.REMOVE;
 
+@ExtendWith( RandomExtension.class )
 class HeapTrackingLongEnumerationListTest
 {
     private final MemoryMeter meter = new MemoryMeter();
     private final MemoryTracker memoryTracker = new LocalMemoryTracker();
     private final long measuredMemoryTracker = meter.measureDeep( memoryTracker );
+
+    @Inject
+    private RandomRule random;
 
     private final HeapTrackingLongEnumerationList<Long> table = HeapTrackingLongEnumerationList.create( memoryTracker );
 
@@ -315,11 +330,11 @@ class HeapTrackingLongEnumerationListTest
         table.add( 0L );
         table.add( 1L );
         table.add( 2L );
-        assertContainsOnly( table,  0, 2 );
+        assertContainsOnly( table, 0, 2 );
 
         table.remove( 0L );
         table.remove( 1L );
-        assertContainsOnly( table,  2 );
+        assertContainsOnly( table, 2 );
 
         table.remove( 2 );
         assertEmpty( table );
@@ -327,32 +342,32 @@ class HeapTrackingLongEnumerationListTest
         table.add( 3L );
         table.add( 4L );
         table.add( 5L );
-        assertContainsOnly( table,  3, 5 );
+        assertContainsOnly( table, 3, 5 );
 
         table.remove( 5 );
-        assertContainsOnly( table,  3, 4 );
+        assertContainsOnly( table, 3, 4 );
 
         table.remove( 4 );
-        assertContainsOnly( table,  3 );
+        assertContainsOnly( table, 3 );
 
         long measured1 = meter.measureDeep( table ) - measuredMemoryTracker;
         assertEquals( measured1, memoryTracker.estimatedHeapMemory() + HeapEstimator.LONG_SIZE );
 
         table.add( 6L );
-        assertContainsOnly( table,  new long[]{3L, 6L} );
+        assertContainsOnly( table, new long[]{3L, 6L} );
         long measured2 = meter.measureDeep( table ) - measuredMemoryTracker;
         assertEquals( measured2, memoryTracker.estimatedHeapMemory() + 2 * HeapEstimator.LONG_SIZE );
-        assertEquals(  HeapEstimator.LONG_SIZE, measured2 - measured1 );
+        assertEquals( HeapEstimator.LONG_SIZE, measured2 - measured1 );
 
         table.add( 7L ); // New chunk needed
-        assertContainsOnly( table,  new long[]{3L, 6, 7L} );
+        assertContainsOnly( table, new long[]{3L, 6, 7L} );
         table.add( 8L ); // New chunk allocated because of poor alignment in tail chunks
-        assertContainsOnly( table,  new long[]{3L, 6L, 7L, 8L} );
+        assertContainsOnly( table, new long[]{3L, 6L, 7L, 8L} );
 
         table.remove( 6L );
-        assertContainsOnly( table,  new long[]{3L, 7L, 8L} );
+        assertContainsOnly( table, new long[]{3L, 7L, 8L} );
         table.remove( 3L ); // Should recycle chunk
-        assertContainsOnly( table,  new long[]{7L, 8L} );
+        assertContainsOnly( table, new long[]{7L, 8L} );
 
         table.remove( 7L ); // Should recycle chunk
         assertContainsOnly( table, 8L );
@@ -371,7 +386,7 @@ class HeapTrackingLongEnumerationListTest
         table.remove( 11L );
         assertContainsOnly( table, 9 );
         table.add( 12L );
-        assertContainsOnly( table,  new long[]{9L, 12L} );
+        assertContainsOnly( table, new long[]{9L, 12L} );
         table.remove( 9L );
         assertContainsOnly( table, 12 );
 
@@ -673,6 +688,82 @@ class HeapTrackingLongEnumerationListTest
         memoryTracker.releaseHeap( externalAllocation );
     }
 
+    @Test
+    void fuzzTest()
+    {
+        ArrayList<Long> referenceValues = new ArrayList<>();
+        ArrayList<ListOperation> opList = new ArrayList<>();
+
+        // If it fails, set the seed here to reproduce:
+        // random.setSeed( 0L );
+
+        int chunkSize = random.among( new Integer[]{1, 2, 4, 8, 16, DEFAULT_CHUNK_SIZE} );
+        HeapTrackingLongEnumerationList<Long> table = HeapTrackingLongEnumerationList.create( memoryTracker, chunkSize );
+
+        int ITERATIONS = random.intBetween( 1000, 2000 );
+        int addPercentage = random.intBetween( 40, 70 );
+        int nAdds = ITERATIONS * addPercentage / 100;
+        int nRemoves = ITERATIONS - nAdds;
+
+        for ( int i = 0; i < nAdds; i++ )
+        {
+            opList.add( ADD );
+        }
+        for ( int i = 0; i < nRemoves; i++ )
+        {
+            opList.add( REMOVE );
+        }
+        Collections.shuffle( opList, random.random() );
+
+        int opCount = 0;
+        long key = 0;
+        try
+        {
+            for ( ListOperation op : opList )
+            {
+                switch ( op )
+                {
+                case ADD:
+                    referenceValues.add( key );
+                    table.add( key++ );
+                    assertEquals( key - 1, table.get( key - 1 ) );
+                    assertContainsOnly( table, referenceValues );
+                    break;
+
+                case REMOVE:
+                    if ( !referenceValues.isEmpty() )
+                    {
+                        var i = random.intBetween( 0, referenceValues.size() - 1 );
+                        int k = referenceValues.remove( i ).intValue();
+                        var actual = table.remove( k );
+                        assertEquals( k, actual );
+                        assertContainsOnly( table, referenceValues );
+                    }
+                    else
+                    {
+                        assertEmpty( table );
+                    }
+                }
+                assertEquals( key - 1, table.lastKey() );
+                opCount++;
+            }
+            table.close();
+        }
+        catch ( Throwable t )
+        {
+            System.err.println( String.format( "Failed with chunk size %s after %s operations (last added key = %s)", chunkSize, opCount, key - 1 ) );
+            throw t;
+        }
+
+        //System.out.println( String.format( "Succeeded with chunk size %s after %s operations (last added key = %s)", chunkSize, opCount, key - 1 ) );
+    }
+
+    enum ListOperation
+    {
+        ADD,
+        REMOVE
+    }
+
     private void assertHeapUsageWithNumberOfLongs( long numberOfBoxedLongs )
     {
         long measured = meter.measureDeep( table ) - measuredMemoryTracker;
@@ -684,6 +775,8 @@ class HeapTrackingLongEnumerationListTest
         assertNull( table.getFirst() );
         assertFalse( table.valuesIterator().hasNext() );
         table.foreach( ( k, v ) -> fail() );
+        assertNull( table.get( 0 ) );
+        assertNull( table.get( table.lastKey() ) );
     }
 
     private void assertContainsOnly( HeapTrackingLongEnumerationList<Long> table, long element )
@@ -737,26 +830,38 @@ class HeapTrackingLongEnumerationListTest
             }
             assertEquals( until, i );
         }
-
     }
 
+    // NOTE: expected needs to be sorted incrementally
     private void assertContainsOnly( HeapTrackingLongEnumerationList<Long> table, long[] expected )
     {
+        assertContainsOnly( table, Arrays.stream( expected ).boxed().collect( Collectors.toList() ) );
+    }
+
+    // NOTE: expected needs to be sorted incrementally
+    private void assertContainsOnly( HeapTrackingLongEnumerationList<Long> table, List<Long> expected )
+    {
         // getFirst
-        if ( expected.length > 0 )
+        if ( expected.size() > 0 )
         {
-            assertEquals( expected[0], table.getFirst() );
+            assertEquals( expected.get( 0 ), table.getFirst() );
         }
 
         // get
+        long nullFrom = -1;
         for ( long i : expected )
         {
             assertEquals( i, table.get( i ) );
+            for ( long nullKey = nullFrom; nullKey < i; nullKey++ )
+            {
+                assertNull( table.get( nullKey ) );
+            }
+            nullFrom = i + 1;
         }
-        if ( expected.length > 0 )
+        if ( expected.size() > 0 )
         {
-            assertNull( table.get( expected[0] - 1 ) );
-            assertNull( table.get( expected[expected.length - 1] + 1 ) );
+            assertNull( table.get( expected.get( 0 ) - 1 ) );
+            assertNull( table.get( expected.get( expected.size() - 1 ) + 1 ) );
         }
 
         // foreach
@@ -764,16 +869,16 @@ class HeapTrackingLongEnumerationListTest
             int[] i = new int[1];
             table.foreach( ( k, v ) ->
             {
-                if ( i[0] >= expected.length )
+                if ( i[0] >= expected.size() )
                 {
                     fail( "foreach out of range" );
                 }
-                var expect = expected[i[0]];
+                var expect = expected.get( i[0] );
                 assertEquals( expect, k );
                 assertEquals( expect, v );
                 i[0]++;
             } );
-            assertEquals( expected.length, i[0] );
+            assertEquals( expected.size(), i[0] );
         }
 
         // valuesIterator
@@ -783,10 +888,10 @@ class HeapTrackingLongEnumerationListTest
             while ( it.hasNext() )
             {
                 long value = it.next();
-                assertEquals( expected[i], value );
+                assertEquals( expected.get( i ), value );
                 i++;
             }
-            assertEquals( expected.length, i );
+            assertEquals( expected.size(), i );
         }
     }
 }
