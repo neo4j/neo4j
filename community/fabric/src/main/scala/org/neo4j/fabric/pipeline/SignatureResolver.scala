@@ -102,7 +102,8 @@ object SignatureResolver {
       warning = signature.warning().asScala,
       eager = signature.eager(),
       id = handle.id(),
-      systemProcedure = signature.systemProcedure()
+      systemProcedure = signature.systemProcedure(),
+      allowExpiredCredentials = signature.allowExpiredCredentials()
     )
   }
 
