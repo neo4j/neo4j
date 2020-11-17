@@ -103,7 +103,7 @@ public class ProfilingTracer implements QueryProfiler, QueryProfile
         }
         if ( trackTime )
         {
-            return new TimeTrackingExecutionEvent( clock, statisticProvider, operatorData );
+            return new TrackingExecutionEvent( clock, statisticProvider, operatorData );
         }
         else
         {
@@ -170,14 +170,14 @@ public class ProfilingTracer implements QueryProfiler, QueryProfile
         }
     }
 
-    private static class TimeTrackingExecutionEvent extends ExecutionEvent
+    private static class TrackingExecutionEvent extends ExecutionEvent
     {
         private final long start;
         private final Clock clock;
         private long pageCountHitsStart;
         private long pageCountMissesStart;
 
-        TimeTrackingExecutionEvent( Clock clock, KernelStatisticProvider statisticProvider, ProfilingTracerData data )
+        TrackingExecutionEvent( Clock clock, KernelStatisticProvider statisticProvider, ProfilingTracerData data )
         {
             super( statisticProvider, data );
             this.clock = clock;

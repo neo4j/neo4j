@@ -113,7 +113,7 @@ abstract class LogicalPlan(idGen: IdGen)
 
   def copyPlanWithIdGen(idGen: IdGen): LogicalPlan = {
     try {
-      val arguments = this.children.toList :+ idGen
+      val arguments = this.treeChildren.toList :+ idGen
       copyConstructor.invoke(this, arguments: _*).asInstanceOf[this.type]
     } catch {
       case e: IllegalArgumentException if e.getMessage.startsWith("wrong number of arguments") =>
@@ -124,9 +124,9 @@ abstract class LogicalPlan(idGen: IdGen)
   lazy val copyConstructor: Method = this.getClass.getMethods.find(_.getName == "copy").get
 
   def dup(children: Seq[AnyRef]): this.type =
-    if (children.iterator eqElements this.children)
+    if (children.iterator eqElements this.treeChildren) {
       this
-    else {
+    } else {
       val constructor = this.copyConstructor
       val params = constructor.getParameterTypes
       val args = children.toIndexedSeq

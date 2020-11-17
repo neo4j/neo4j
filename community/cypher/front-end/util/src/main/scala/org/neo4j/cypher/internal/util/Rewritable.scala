@@ -75,7 +75,7 @@ object Rewritable {
 
   def dupAny(that: AnyRef, children: Seq[AnyRef]): AnyRef =
     try {
-      if (children.iterator eqElements that.children) {
+      if (children.iterator eqElements that.treeChildren) {
         that
       } else {
         that match {
@@ -104,7 +104,7 @@ object Rewritable {
     case a: Rewritable =>
       a.dup(children)
     case _ =>
-      if (children.iterator eqElements product.children)
+      if (children.iterator eqElements product.treeChildren)
         product
       else
         copyConstructor(product).invoke(product, children: _*).asInstanceOf[Product]
@@ -183,7 +183,7 @@ object topDown {
         } else {
           val rewrittenJob = newJob.rewrite(rewriter)
           stack.push((rewrittenJob :: jobs, doneJobs))
-          stack.push((rewrittenJob.children.toList, new mutable.MutableList()))
+          stack.push((rewrittenJob.treeChildren.toList, new mutable.MutableList()))
         }
         rec(stack)
       }
@@ -225,7 +225,7 @@ object bottomUp {
           val (job :: jobs, doneJobs) = stack.pop()
           stack.push((jobs, doneJobs += job))
         } else {
-          stack.push((next.children.toList, new mutable.MutableList()))
+          stack.push((next.treeChildren.toList, new mutable.MutableList()))
         }
         rec(stack)
       }
@@ -267,7 +267,7 @@ object bottomUpWithArgs {
           val (job :: jobs, doneJobs) = stack.pop()
           stack.push((jobs, doneJobs += job))
         } else {
-          stack.push((next.children.toList, new mutable.MutableList()))
+          stack.push((next.treeChildren.toList, new mutable.MutableList()))
         }
         rec(stack)
       }
@@ -311,7 +311,7 @@ object bottomUpWithRecorder {
           val (job :: jobs, doneJobs) = stack.pop()
           stack.push((jobs, doneJobs += job))
         } else {
-          stack.push((next.children.toList, new mutable.MutableList()))
+          stack.push((next.treeChildren.toList, new mutable.MutableList()))
         }
         rec(stack)
       }

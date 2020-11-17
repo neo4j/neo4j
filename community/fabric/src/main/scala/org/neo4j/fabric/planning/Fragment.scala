@@ -167,7 +167,7 @@ object Fragment {
     protected def pos: InputPosition
 
     def dup(children: Seq[AnyRef]): this.type =
-      if (children.iterator eqElements this.children)
+      if (children.iterator eqElements this.treeChildren)
         this
       else {
         val constructor = Rewritable.copyConstructor(this)

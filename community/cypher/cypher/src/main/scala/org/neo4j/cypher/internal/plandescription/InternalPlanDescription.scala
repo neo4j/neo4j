@@ -35,6 +35,9 @@ import org.neo4j.cypher.internal.plandescription.Arguments.SourceCode
 import org.neo4j.cypher.internal.plandescription.Arguments.Time
 import org.neo4j.cypher.internal.plandescription.Arguments.Version
 import org.neo4j.cypher.internal.plandescription.InternalPlanDescription.TotalHits
+import org.neo4j.cypher.internal.util.Foldable
+import org.neo4j.cypher.internal.util.Rewritable
+import org.neo4j.cypher.internal.util.Rewritable.IteratorEq
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.exceptions.InternalException
 import org.neo4j.graphdb.ExecutionPlanDescription
@@ -49,7 +52,7 @@ import scala.collection.mutable.ArrayBuffer
 /**
  * Abstract description of an execution plan
  */
-sealed trait InternalPlanDescription extends org.neo4j.graphdb.ExecutionPlanDescription {
+sealed trait InternalPlanDescription extends org.neo4j.graphdb.ExecutionPlanDescription with Rewritable with Foldable {
   self =>
 
   def arguments: Seq[Argument]
@@ -234,6 +237,22 @@ final case class PlanDescriptionImpl(id: Id,
       case _ => None
     }.mkString(NL, NL, "")
   }
+
+  override def dup(children: Seq[AnyRef]): PlanDescriptionImpl.this.type = {
+    if (children.iterator eqElements this.treeChildren) {
+      this
+    } else {
+      val id = children.head
+      copy(
+        // TODO Better way to achieve this!
+        if (id.isInstanceOf[java.lang.Integer]) Id(id.asInstanceOf[java.lang.Integer]) else id.asInstanceOf[Id],
+        children(1).asInstanceOf[String],
+        children(2).asInstanceOf[Children],
+        children(3).asInstanceOf[Seq[Argument]],
+        children(4).asInstanceOf[Set[PrettyString]]
+      ).asInstanceOf[this.type]
+    }
+  }
 }
 
 object CompactedPlanDescription {
@@ -287,6 +306,13 @@ final case class CompactedPlanDescription(similar: Seq[InternalPlanDescription])
   (similar = similar
     .map(f)))
 
+  override def dup(children: Seq[AnyRef]): CompactedPlanDescription.this.type = {
+    if (children.iterator eqElements this.treeChildren) {
+      this
+    } else {
+      copy(children.head.asInstanceOf[Seq[InternalPlanDescription]]).asInstanceOf[this.type]
+    }
+  }
 }
 
 final case class ArgumentPlanDescription(id: Id,
@@ -309,4 +335,16 @@ final case class ArgumentPlanDescription(id: Id,
   def map(f: InternalPlanDescription => InternalPlanDescription): InternalPlanDescription = f(this)
 
   def toIndexedSeq: Seq[InternalPlanDescription] = Seq(this)
+
+  override def dup(children: Seq[AnyRef]): ArgumentPlanDescription.this.type = {
+    if (children.iterator eqElements this.treeChildren) {
+      this
+    } else {
+      copy(
+        children(0).asInstanceOf[Id],
+        children(1).asInstanceOf[Seq[Argument]],
+        children(2).asInstanceOf[Set[PrettyString]]
+      ).asInstanceOf[this.type]
+    }
+  }
 }

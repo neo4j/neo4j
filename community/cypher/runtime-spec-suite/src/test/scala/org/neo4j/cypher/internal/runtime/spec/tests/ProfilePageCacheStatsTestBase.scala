@@ -28,8 +28,10 @@ import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RecordingRuntimeResult
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
+import org.neo4j.cypher.result.OperatorProfile
 
-abstract class ProfilePageCacheStatsTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT],
+abstract class ProfilePageCacheStatsTestBase[CONTEXT <: RuntimeContext](canFuseOverPipelines: Boolean,
+                                                                        edition: Edition[CONTEXT],
                                                                         runtime: CypherRuntime[CONTEXT]
                                                                        ) extends RuntimeTestSuite[CONTEXT](
   edition.copyWith(GraphDatabaseSettings.pagecache_memory -> "164480"), // 20 pages
@@ -58,8 +60,49 @@ abstract class ProfilePageCacheStatsTestBase[CONTEXT <: RuntimeContext](edition:
     consume(runtimeResult)
 
     // then
+    val expectedOperatorPageCacheStats: Map[Int, (Long, Long)] = if (canFuseOverPipelines) {
+      Map(0 -> (-1, -1), // ProduceResults is part of a fused pipeline
+          1 -> (-1, -1), // Projection is part of a fused pipeline
+          2 -> (-1, -1)) // Filer is part of a fused pipeline
+    } else {
+      Map(0 -> (0, 0)) // Projection of a previous row should not access store
+    }
     checkProfilerStatsMakeSense(runtimeResult, 4,
-      Seq(0) // Projection of a previous row should not access store
+      expectedOperatorPageCacheStats
+    )
+  }
+
+  test("should profile page cache stats of linear plan with breaks") {
+    given {
+      nodePropertyGraph(SIZE, {
+        case i => Map("prop" -> i)
+      })
+      () // This makes sure we don't reattach the nodes to the new transaction, since that would create additional page cache hits/misses
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("c")
+      .aggregation(Seq("p AS p"), Seq("count(*) AS c"))
+      .projection("x.prop AS p")
+      .filter("x.prop > 0")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val expectedOperatorPageCacheStats: Map[Int, (Long, Long)] = if (canFuseOverPipelines) {
+      Map(1 -> (-1, -1), // Aggregation is part of a fused pipeline
+          2 -> (-1, -1), // Projection is part of a fused pipeline
+          3 -> (-1, -1)  // Filter is part of a fused pipeline
+      )
+    } else {
+      Map.empty
+    }
+    checkProfilerStatsMakeSense(runtimeResult, 5,
+      expectedOperatorPageCacheStats
     )
   }
 
@@ -87,18 +130,66 @@ abstract class ProfilePageCacheStatsTestBase[CONTEXT <: RuntimeContext](edition:
     consume(runtimeResult)
 
     // then
-    checkProfilerStatsMakeSense(runtimeResult, 8,
-      Seq(2, // A join should not access store
-        3, // Apply does not do anything
-        4, // Aggregation should not access store
-        5, // Argument does not do anything
+    val expectedOperatorPageCacheStats: Map[Int, (Long, Long)] = if (canFuseOverPipelines) {
+      Map(2 -> (0, 0), // A join should not access store
+          3 -> (0, 0), // Apply does not do anything
+          4 -> (-1, -1), // Aggregation is part of a fused pipeline
+          5 -> (0, 0), // Argument does not do anything
       )
+    } else {
+      Map(2 -> (0, 0), // A join should not access store
+          3 -> (0, 0), // Apply does not do anything
+          4 -> (0, 0), // Aggregation should not access store
+          5 -> (0, 0), // Argument does not do anything
+      )
+    }
+    checkProfilerStatsMakeSense(runtimeResult, 8,
+      expectedOperatorPageCacheStats
+    )
+  }
+
+  test("should profile page cache stats of plan with apply over aggregation") {
+    given {
+      index("M", "prop")
+      nodePropertyGraph(SIZE, {
+        case i => Map("prop" -> i)
+      }, "N", "M")
+      () // This makes sure we don't reattach the nodes to the new transaction, since that would create additional page cache hits/misses
+    }
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("c")
+      .apply()
+      .|.aggregation(Seq.empty, Seq("count(*) AS c"))
+      .|.expandAll("(a)-->(b)")
+      .|.argument("a")
+      .nodeByLabelScan("a", "A", IndexOrderNone)
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val expectedOperatorPageCacheStats: Map[Int, (Long, Long)] = if (canFuseOverPipelines) {
+      Map(
+        0 -> (0, 0), // Produce result should not access store
+        1 -> (0, 0), // Apply does not do anything
+        // TODO Shouldn't it be like this: 3 -> (-1, -1) // Expand all is part of a fused pipeline
+      )
+    } else {
+      Map(
+        0 -> (0, 0), // Produce result should not access store
+        1 -> (0, 0) // Apply does not do anything
+      )
+    }
+    checkProfilerStatsMakeSense(runtimeResult, 8,
+      expectedOperatorPageCacheStats
     )
   }
 
   protected def checkProfilerStatsMakeSense(runtimeResult: RecordingRuntimeResult,
-                                          numberOfOperators: Int,
-                                          idSOfOperatorsThatShouldNotHaveAnyStats: Seq[Int] = Seq.empty): Unit = {
+                                            numberOfOperators: Int,
+                                            expectedOperatorPageCacheStats: Map[Int, (Long, Long)] = Map.empty): Unit = {
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
     var accHits = 0L
     var accMisses = 0L
@@ -107,16 +198,22 @@ abstract class ProfilePageCacheStatsTestBase[CONTEXT <: RuntimeContext](edition:
       val hits = op.pageCacheHits()
       val misses = op.pageCacheMisses()
 
-      if (idSOfOperatorsThatShouldNotHaveAnyStats.contains(i)) {
-        hits should be(0L)
-        misses should be(0L)
-      } else {
-        hits should be >= 0L
-        misses should be >= 0L
+      withClue(s"Incorrect page cache stats for operator $i.") {
+        if (expectedOperatorPageCacheStats.contains(i)) {
+          val (expectedHits, expectedMisses) = expectedOperatorPageCacheStats(i)
+          hits should be(expectedHits)
+          misses should be(expectedMisses)
+        } else {
+          hits should be >= 0L
+          misses should be >= 0L
+        }
+        if (hits > 0) {
+          accHits += hits
+        }
+        if (misses > 0) {
+          accMisses += misses
+        }
       }
-
-      accHits += hits
-      accMisses += misses
     }
 
     val totalHits = runtimeResult.pageCacheHits

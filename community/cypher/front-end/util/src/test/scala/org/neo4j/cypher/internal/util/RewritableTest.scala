@@ -207,7 +207,7 @@ class RewritableTest extends CypherFunSuite {
   test("should not create unnecessary copies of objects that have Seq's as Children (when using ListBuffer)") {
     case class Thing(texts: Seq[String]) extends Rewritable {
       def dup(children: Seq[AnyRef]): this.type =
-        if (children.iterator eqElements this.children)
+        if (children.iterator eqElements this.treeChildren)
           this
         else {
           Thing(children.head.asInstanceOf[Seq[String]]).asInstanceOf[this.type]

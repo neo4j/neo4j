@@ -321,6 +321,28 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
         |""".stripMargin)
   }
 
+  test("pipeline information is rendered correctly with multiple last operators that do not have pipeline info") {
+    val args1 = Seq(Rows(42), DbHits(33), EstimatedRows(1), Memory(5))
+    val args2 = Seq(Rows(2), DbHits(633), details("Index stuff"), PipelineInfo(52, true), EstimatedRows(1))
+
+    val plan1 = planDescription(id, "NAME1", NoChildren, args1, Set("a"))
+    val plan2 = planDescription(id, "NAME2", SingleChild(plan1), args1, Set("b"))
+    val plan3 = planDescription(id, "NAME3", SingleChild(plan2), args2, Set("c"))
+
+    println(renderAsTreeTable(plan3))
+    renderAsTreeTable(plan3) should equal(
+      """+----------+-------------+----------------+------+---------+----------------+----------------------+
+        || Operator | Details     | Estimated Rows | Rows | DB Hits | Memory (Bytes) | Other                |
+        |+----------+-------------+----------------+------+---------+----------------+----------------------+
+        || +NAME3   | Index stuff |              1 |    2 |     633 |                | Fused in Pipeline 52 |
+        || |        +-------------+----------------+------+---------+----------------+----------------------+
+        || +NAME2   |             |              1 |   42 |      33 |              5 |                      |
+        || |        +-------------+----------------+------+---------+----------------+----------------------+
+        || +NAME1   |             |              1 |   42 |      33 |              5 |                      |
+        |+----------+-------------+----------------+------+---------+----------------+----------------------+
+        |""".stripMargin)
+  }
+
   test("plan information is rendered on the corresponding row to the tree") {
     val args1 = Seq(Rows(42), DbHits(33), EstimatedRows(1), Memory(5))
     val args2 = Seq(Rows(2), DbHits(633), details("Index stuff"), EstimatedRows(1))
@@ -812,6 +834,118 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
         ||                     | aroline Getinge", y:Label(Prop, Name) WHERE Prop = 12 AND Name = "Foo",                              |                |
         ||                     | z:Label(Prop, Name) WHERE Prop > 100 AND exists(Name)                                                |                |
         |+---------------------+------------------------------------------------------------------------------------------------------+----------------+
+        |""".stripMargin)
+  }
+
+  test("format merged cells in fused pipelines") {
+    val args1 = Seq(Rows(42), DbHits(33), EstimatedRows(1), Memory(5), PageCacheHits(5), PageCacheMisses(1), Time(200000), PipelineInfo(52, true))
+    val args2 = Seq(Rows(2), DbHits(633), details("Index stuff"), PipelineInfo(52, true), EstimatedRows(1))
+    val args3 = Seq(Rows(2), DbHits(633), details("Do other stuff"), PipelineInfo(52, true), EstimatedRows(1))
+    val args4 = Seq(Rows(2), DbHits(633), details("Even more stuff"), PageCacheHits(1), PageCacheMisses(2), Time(1000000), PipelineInfo(60, true), EstimatedRows(1))
+    val args5 = Seq(Rows(2), DbHits(633), details("Final stuff"), PipelineInfo(60, true), EstimatedRows(1))
+
+    val plan1 = planDescription(id, "NAME5", NoChildren, args1, Set.empty)
+    val plan2 = planDescription(id, "NAME4", SingleChild(plan1), args2, Set.empty)
+    val plan3 = planDescription(id, "NAME3", SingleChild(plan2), args3, Set.empty)
+    val plan4 = planDescription(id, "NAME2", SingleChild(plan3), args4, Set.empty)
+    val plan5 = planDescription(id, "NAME1", SingleChild(plan4), args5, Set.empty)
+
+    renderAsTreeTable(plan5) should equal(
+      """+----------+-----------------+----------------+------+---------+----------------+------------------------+-----------+----------------------+
+        || Operator | Details         | Estimated Rows | Rows | DB Hits | Memory (Bytes) | Page Cache Hits/Misses | Time (ms) | Other                |
+        |+----------+-----------------+----------------+------+---------+----------------+------------------------+-----------+----------------------+
+        || +NAME1   | Final stuff     |              1 |    2 |     633 |                |                        |           | Fused in Pipeline 60 |
+        || |        +-----------------+----------------+------+---------+----------------+                        |           +----------------------+
+        || +NAME2   | Even more stuff |              1 |    2 |     633 |                |                    1/2 |     1.000 | Fused in Pipeline 60 |
+        || |        +-----------------+----------------+------+---------+----------------+------------------------+-----------+----------------------+
+        || +NAME3   | Do other stuff  |              1 |    2 |     633 |                |                        |           | Fused in Pipeline 52 |
+        || |        +-----------------+----------------+------+---------+----------------+                        |           +----------------------+
+        || +NAME4   | Index stuff     |              1 |    2 |     633 |                |                        |           | Fused in Pipeline 52 |
+        || |        +-----------------+----------------+------+---------+----------------+                        |           +----------------------+
+        || +NAME5   |                 |              1 |   42 |      33 |              5 |                    5/1 |     0.200 | Fused in Pipeline 52 |
+        |+----------+-----------------+----------------+------+---------+----------------+------------------------+-----------+----------------------+
+        |""".stripMargin)
+  }
+
+  test("format merged cells in fused pipelines, but not merge across same pipeline when one is not fused") {
+    val produceResultsArgs = Seq(PageCacheHits(5), PageCacheMisses(1), Time(200000), PipelineInfo(1, false))
+    val projectArgs = Seq()
+    val allNodesScanArgs = Seq(PageCacheHits(1), PageCacheMisses(2), Time(1000000), PipelineInfo(1, true))
+
+    val allNodesScan = planDescription(id, "ALLNODESSCAN", NoChildren, allNodesScanArgs, Set.empty)
+    val project = planDescription(id, "PROJECT", SingleChild(allNodesScan), projectArgs, Set.empty)
+    val produceResults = planDescription(id, "PRODUCERESULTS", SingleChild(project), produceResultsArgs, Set.empty)
+
+    renderAsTreeTable(produceResults) should equal(
+      """+-----------------+------------------------+-----------+---------------------+
+        || Operator        | Page Cache Hits/Misses | Time (ms) | Other               |
+        |+-----------------+------------------------+-----------+---------------------+
+        || +PRODUCERESULTS |                    5/1 |     0.200 | In Pipeline 1       |
+        || |               +------------------------+-----------+---------------------+
+        || +PROJECT        |                        |           |                     |
+        || |               +------------------------+-----------+---------------------+
+        || +ALLNODESSCAN   |                    1/2 |     1.000 | Fused in Pipeline 1 |
+        |+-----------------+------------------------+-----------+---------------------+
+        |""".stripMargin)
+  }
+
+  test("format merged cells in fused pipeline with branch") {
+    val leaf1Args = Seq(Rows(5), DbHits(1), EstimatedRows(4), PageCacheHits(5), PageCacheMisses(10), Time(200000), PipelineInfo(1, true))
+    val leaf2Args = Seq(Rows(2), DbHits(2), EstimatedRows(2), PipelineInfo(1, true))
+    val planArgs = Seq(Rows(10), DbHits(0), EstimatedRows(9), PipelineInfo(1, true))
+
+    val leaf1 = planDescription(id, "LEAF1", NoChildren, leaf1Args, Set())
+    val leaf2 = planDescription(id, "LEAF2", NoChildren, leaf2Args, Set())
+    val plan = planDescription(id, "ROOT", TwoChildren(leaf1, leaf2), planArgs, Set())
+
+    renderAsTreeTable(plan) should equal(
+      """+----------+----------------+------+---------+------------------------+-----------+---------------------+
+        || Operator | Estimated Rows | Rows | DB Hits | Page Cache Hits/Misses | Time (ms) | Other               |
+        |+----------+----------------+------+---------+------------------------+-----------+---------------------+
+        || +ROOT    |              9 |   10 |       0 |                        |           | Fused in Pipeline 1 |
+        || |\       +----------------+------+---------+                        |           +---------------------+
+        || | +LEAF2 |              2 |    2 |       2 |                        |           | Fused in Pipeline 1 |
+        || |        +----------------+------+---------+                        |           +---------------------+
+        || +LEAF1   |              4 |    5 |       1 |                   5/10 |     0.200 | Fused in Pipeline 1 |
+        |+----------+----------------+------+---------+------------------------+-----------+---------------------+
+        |""".stripMargin)
+  }
+
+  test("format merged cells when pipeline fused across two child") {
+    val indexSeekArgs = Seq(Rows(5), DbHits(1), EstimatedRows(4), PageCacheHits(5), PageCacheMisses(10), Time(200000), PipelineInfo(1, true))
+    val filterArgs = Seq(Rows(5), DbHits(1), EstimatedRows(4), PipelineInfo(1, true))
+    val allNodeScanArgs = Seq(Rows(5), DbHits(1), EstimatedRows(4), PageCacheHits(5), PageCacheMisses(10), Time(200000), PipelineInfo(0, true))
+    val projectArgs = Seq(Rows(5), DbHits(1), EstimatedRows(4), PipelineInfo(0, true))
+    val applyArgs = Seq(Rows(5), DbHits(1), EstimatedRows(4))
+    val aggregationArgs = Seq(Rows(5), DbHits(1), EstimatedRows(4), PipelineInfo(1, true))
+    val produceResultArgs = Seq(Rows(5), DbHits(1), EstimatedRows(4), PageCacheHits(5), PageCacheMisses(10), Time(200000), PipelineInfo(2, false))
+
+    val indexSeek = planDescription(id, "INDEXSEEK", NoChildren, indexSeekArgs, Set())
+    val filter = planDescription(id, "FILTER", SingleChild(indexSeek), filterArgs, Set())
+    val allNodeScan = planDescription(id, "ALLNODESCAN", NoChildren, allNodeScanArgs, Set())
+    val project = planDescription(id, "PROJECT", SingleChild(allNodeScan), projectArgs, Set())
+    val apply = planDescription(id, "APPLY", TwoChildren(project, filter), applyArgs, Set())
+    val aggregation = planDescription(id, "AGGREGATION", SingleChild(apply), aggregationArgs, Set())
+    val produceResults = planDescription(id, "PRODUCERESULT", SingleChild(aggregation), produceResultArgs, Set())
+
+    renderAsTreeTable(produceResults) should equal(
+      """+----------------+----------------+------+---------+------------------------+-----------+---------------------+
+        || Operator       | Estimated Rows | Rows | DB Hits | Page Cache Hits/Misses | Time (ms) | Other               |
+        |+----------------+----------------+------+---------+------------------------+-----------+---------------------+
+        || +PRODUCERESULT |              4 |    5 |       1 |                   5/10 |     0.200 | In Pipeline 2       |
+        || |              +----------------+------+---------+------------------------+-----------+---------------------+
+        || +AGGREGATION   |              4 |    5 |       1 |                        |           | Fused in Pipeline 1 |
+        || |              +----------------+------+---------+                        |           +---------------------+
+        || +APPLY         |              4 |    5 |       1 |                        |           |                     |
+        || |\             +----------------+------+---------+                        |           +---------------------+
+        || | +FILTER      |              4 |    5 |       1 |                        |           | Fused in Pipeline 1 |
+        || | |            +----------------+------+---------+                        |           +---------------------+
+        || | +INDEXSEEK   |              4 |    5 |       1 |                   5/10 |     0.200 | Fused in Pipeline 1 |
+        || |              +----------------+------+---------+------------------------+-----------+---------------------+
+        || +PROJECT       |              4 |    5 |       1 |                        |           | Fused in Pipeline 0 |
+        || |              +----------------+------+---------+                        |           +---------------------+
+        || +ALLNODESCAN   |              4 |    5 |       1 |                   5/10 |     0.200 | Fused in Pipeline 0 |
+        |+----------------+----------------+------+---------+------------------------+-----------+---------------------+
         |""".stripMargin)
   }
 }

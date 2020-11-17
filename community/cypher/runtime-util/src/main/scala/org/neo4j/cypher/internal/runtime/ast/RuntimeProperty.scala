@@ -39,7 +39,7 @@ abstract class RuntimeProperty(val prop: LogicalProperty) extends LogicalPropert
   override def propertyKey: PropertyKeyName = prop.propertyKey
 
   override def dup(children: Seq[AnyRef]): this.type =
-    if (children.iterator eqElements this.children)
+    if (children.iterator eqElements this.treeChildren)
       this
     else {
       val constructor = Rewritable.copyConstructor(this)

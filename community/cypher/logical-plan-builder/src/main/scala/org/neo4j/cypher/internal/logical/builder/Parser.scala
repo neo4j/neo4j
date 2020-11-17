@@ -47,7 +47,7 @@ object Parser {
       CachedProperty(relationship, v, pkn, RELATIONSHIP_TYPE)(AbstractLogicalPlanBuilder.pos)
   })
   val invalidateInputPositions: Rewriter = topDown(Rewriter.lift {
-    case a:ASTNode => a.dup(a.children.toSeq :+ AbstractLogicalPlanBuilder.pos)
+    case a:ASTNode => a.dup(a.treeChildren.toSeq :+ AbstractLogicalPlanBuilder.pos)
   })
 
   def cleanup[T <: ASTNode](in: T): T = inSequence(

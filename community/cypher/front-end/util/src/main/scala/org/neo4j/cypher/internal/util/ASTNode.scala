@@ -25,7 +25,7 @@ trait ASTNode extends Product with Foldable with Rewritable {
   def position: InputPosition
 
   def dup(children: Seq[AnyRef]): this.type =
-    if (children.iterator eqElements this.children)
+    if (children.iterator eqElements this.treeChildren)
       this
     else {
       val constructor = Rewritable.copyConstructor(this)

@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.plandescription.Argument
+import org.neo4j.cypher.internal.plandescription.rewrite.InternalPlanDescriptionRewriter
 import org.neo4j.cypher.internal.runtime.ExecutionMode
 import org.neo4j.cypher.internal.runtime.InputDataStream
 import org.neo4j.cypher.internal.runtime.QueryContext
@@ -57,6 +58,8 @@ abstract class ExecutionPlan {
   def notifications: Set[InternalNotification]
 
   def rewrittenPlan: Option[LogicalPlan] = None
+
+  def internalPlanDescriptionRewriter: Option[InternalPlanDescriptionRewriter] = None
 }
 
 trait ResourceManagerFactory {

@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.frontend.PlannerName
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.plandescription.Arguments.Runtime
 import org.neo4j.cypher.internal.plandescription.Arguments.RuntimeImpl
+import org.neo4j.cypher.internal.plandescription.Arguments.Time
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.result.OperatorProfile
@@ -50,11 +51,9 @@ class PlanDescriptionBuilder(logicalPlan: LogicalPlan,
   def profile(queryProfile: QueryProfile): InternalPlanDescription = {
 
     val planDescription = BuildPlanDescription(explain())
-        .addArgument(Arguments.GlobalMemory, queryProfile.maxAllocatedMemory())
-        .plan
-
-    planDescription map {
-      input: InternalPlanDescription =>
+      .addArgument(Arguments.GlobalMemory, queryProfile.maxAllocatedMemory())
+      .plan
+      .map { input: InternalPlanDescription =>
         val data = queryProfile.operatorProfile(input.id.x)
 
         BuildPlanDescription(input)
@@ -62,9 +61,14 @@ class PlanDescriptionBuilder(logicalPlan: LogicalPlan,
           .addArgument(Arguments.DbHits, data.dbHits)
           .addArgument(Arguments.PageCacheHits, data.pageCacheHits)
           .addArgument(Arguments.PageCacheMisses, data.pageCacheMisses)
-          .addArgument(Arguments.Time, data.time())
+          .addArgument(Time, data.time())
           .addArgument(Arguments.Memory, data.maxAllocatedMemory())
-        .plan
+          .plan
+      }
+
+    executionPlan.internalPlanDescriptionRewriter match {
+      case Some(rewriter) => rewriter.rewrite(planDescription)
+      case None => planDescription
     }
   }
 
@@ -72,7 +76,10 @@ class PlanDescriptionBuilder(logicalPlan: LogicalPlan,
 
     def addArgument[T](argument: T => Argument,
                        value: T): BuildPlanDescription =
-      if (value == OperatorProfile.NO_DATA) this
-      else BuildPlanDescription(plan.addArgument(argument(value)))
+      if (value == OperatorProfile.NO_DATA) {
+        this
+      } else {
+        BuildPlanDescription(plan.addArgument(argument(value)))
+      }
   }
 }
