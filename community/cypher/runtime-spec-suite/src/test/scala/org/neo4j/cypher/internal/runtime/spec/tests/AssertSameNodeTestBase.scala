@@ -31,7 +31,7 @@ import org.neo4j.exceptions.MergeConstraintConflictException
 abstract class AssertSameNodeTestBase[CONTEXT <: RuntimeContext](
                                                                edition: Edition[CONTEXT],
                                                                runtime: CypherRuntime[CONTEXT],
-                                                               sizeHint: Int
+                                                               val sizeHint: Int
                                                              ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
   test("should verify that two nodes are identical") {
     val nodes = given {
@@ -233,6 +233,14 @@ abstract class AssertSameNodeTestBase[CONTEXT <: RuntimeContext](
     // then
     runtimeResult should beColumns("x").withNoRows()
   }
+}
+
+/**
+ * These are tests for cases which don't really happen in production
+ * but is still supported by the legacy implementation.
+ */
+trait EsotericAssertSameNodeTestBase[CONTEXT <: RuntimeContext] {
+  self: AssertSameNodeTestBase[CONTEXT] =>
 
   test("should fail if lhs is not a node") {
     given {
@@ -325,7 +333,7 @@ abstract class AssertSameNodeTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should fail if some of the nodes coming from rhs are different") {
-    val (nodes, _) = given {
+    given {
       uniqueIndex("Honey", "prop")
       bipartiteGraph(sizeHint, "Honey", "Bee", "R", {
         case i => Map("prop" -> i)
@@ -347,3 +355,4 @@ abstract class AssertSameNodeTestBase[CONTEXT <: RuntimeContext](
     a [MergeConstraintConflictException] shouldBe thrownBy(consume(execute(logicalQuery, runtime)))
   }
 }
+
