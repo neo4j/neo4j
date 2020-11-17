@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.compiler.planner.ResolveTokens
 import org.neo4j.cypher.internal.compiler.planner.logical.OptionalMatchRemover
 import org.neo4j.cypher.internal.compiler.planner.logical.QueryPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.PlanRewriter
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.CompressPlanIDs
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.InsertCachedProperties
 import org.neo4j.cypher.internal.frontend.phases.AstRewriting
 import org.neo4j.cypher.internal.frontend.phases.BaseContains
@@ -161,6 +162,7 @@ object CompilationPhases {
           QueryPlanner.adds(CompilationContains[LogicalPlan]) andThen
           PlanRewriter andThen
           InsertCachedProperties(pushdownPropertyReads) andThen
+          CompressPlanIDs andThen
           If((s: LogicalPlanState) => s.query.readOnly)(
             CheckForUnresolvedTokens
           )

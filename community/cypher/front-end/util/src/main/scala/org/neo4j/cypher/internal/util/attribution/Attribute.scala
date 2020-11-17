@@ -50,6 +50,10 @@ trait Attribute[KEY, VALUE] {
     array.size > id.x && id.x >= 0 && array(id.x).hasValue
   }
 
+  def getOption(id: Id): Option[VALUE] = {
+    if (isDefinedAt(id)) Some(get(id)) else None
+  }
+
   def getOrElse(id: Id, other: => VALUE): VALUE = {
     if (isDefinedAt(id)) get(id) else other
   }
