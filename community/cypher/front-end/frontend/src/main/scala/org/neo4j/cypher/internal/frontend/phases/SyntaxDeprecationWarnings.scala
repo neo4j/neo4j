@@ -28,10 +28,16 @@ case class SyntaxDeprecationWarnings(deprecations: Deprecations) extends Visitor
     warnings.foreach(context.notificationLogger.log)
   }
 
-  private def findDeprecations(statement: Statement): Set[InternalNotification] =
-    statement.fold(Set.empty[InternalNotification])(
+  private def findDeprecations(statement: Statement): Set[InternalNotification] = {
+
+    val foundWithoutContext = statement.fold(Set.empty[InternalNotification])(
       deprecations.find.andThen(deprecation => acc => acc ++ deprecation.generateNotification())
     )
+
+    val foundWithContext = deprecations.findWithContext(statement).map(_.generateNotification().get)
+
+    foundWithoutContext ++ foundWithContext
+  }
 
   override def phase = DEPRECATION_WARNINGS
 

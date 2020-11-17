@@ -59,6 +59,11 @@ public class NotificationTestSupport
         assertNotifications( supportedCypherVersions, query, matchesExpectation );
     }
 
+    void assertNotificationsInVersions( List<String> versions, String query, Matcher<Iterable<Notification>> matchesExpectation )
+    {
+        assertNotifications( versions, query, matchesExpectation );
+    }
+
     void assertNotificationsInLastMajorVersion( String query, Matcher<Iterable<Notification>> matchesExpectation )
     {
         assertNotifications( List.of( "CYPHER 3.5"), query, matchesExpectation );

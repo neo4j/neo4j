@@ -46,6 +46,7 @@ import org.neo4j.cypher.internal.util.DeprecatedFunctionNotification
 import org.neo4j.cypher.internal.util.DeprecatedHexLiteralSyntax
 import org.neo4j.cypher.internal.util.DeprecatedOctalLiteralSyntax
 import org.neo4j.cypher.internal.util.DeprecatedParameterSyntax
+import org.neo4j.cypher.internal.util.DeprecatedPatternExpressionOutsideExistsSyntax
 import org.neo4j.cypher.internal.util.DeprecatedRelTypeSeparatorNotification
 import org.neo4j.cypher.internal.util.DeprecatedRepeatedRelVarInPatternExpression
 import org.neo4j.cypher.internal.util.DeprecatedVarLengthBindingNotification
@@ -127,9 +128,11 @@ object NotificationWrapping {
       NotificationCode.REPEATED_REL_IN_PATTERN_EXPRESSION.notification(pos.withOffset(offset).asInputPosition, NotificationDetail.Factory.repeatedRel(relName))
     case DeprecatedOctalLiteralSyntax(pos) =>
       NotificationCode.DEPRECATED_OCTAL_LITERAL_SYNTAX.notification(pos.withOffset(offset).asInputPosition)
-    case DeprecatedHexLiteralSyntax(pos) =>
+    case DeprecatedHexLiteralSyntax(pos)                     =>
       NotificationCode.DEPRECATED_HEX_LITERAL_SYNTAX.notification(pos.withOffset(offset).asInputPosition)
-    case SubqueryVariableShadowing(pos, varName) =>
+    case DeprecatedPatternExpressionOutsideExistsSyntax(pos) =>
+      NotificationCode.DEPRECATED_PATTERN_EXPRESSION_OUTSIDE_EXISTS.notification(pos.withOffset(offset).asInputPosition)
+    case SubqueryVariableShadowing(pos, varName)             =>
       NotificationCode.SUBQUERY_VARIABLE_SHADOWING.notification(pos.withOffset(offset).asInputPosition, NotificationDetail.Factory.shadowingVariable(varName))
     case MissingAliasNotification(pos) =>
       NotificationCode.MISSING_ALIAS.notification(pos.withOffset(offset).asInputPosition)

@@ -112,6 +112,7 @@ object CompilationPhases {
   def parsing(config: ParsingConfig): Transformer[BaseContext, BaseState, BaseState] = {
     parsingBase(config) andThen
       AstRewriting(innerVariableNamer = config.innerVariableNamer, parameterTypeMapping = config.parameterTypeMapping) andThen
+      SyntaxDeprecationWarnings(Deprecations.deprecatedFeaturesIn4_3AfterRewrite) andThen
       LiteralExtraction(config.literalExtractionStrategy)
   }
 

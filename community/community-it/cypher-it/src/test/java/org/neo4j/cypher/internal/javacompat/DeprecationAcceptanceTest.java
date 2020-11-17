@@ -131,6 +131,33 @@ public class DeprecationAcceptanceTest extends NotificationTestSupport
                 containsItem( deprecatedCreatePropertyExistenceConstraintSyntax ) );
     }
 
+    @Test
+    void deprecatedPatternExpressionSyntax()
+    {
+        // deprecated
+        assertNotificationsInSupportedVersions( "EXPLAIN MATCH (a) RETURN (a)--()",
+                                                containsItem( deprecatedPatternExpressionSyntax ) );
+        assertNotificationsInSupportedVersions( "EXPLAIN MATCH (a) WHERE ANY (x IN (a)--() WHERE 1=1) RETURN a",
+                                                containsItem( deprecatedPatternExpressionSyntax ) );
+    }
+
+    @Test
+    void notDeprecatedPatternExpressionSyntax()
+    {
+        // not deprecated
+        assertNotificationsInVersions( List.of("CYPHER 4.2", "CYPHER 4.3"),
+                                       "EXPLAIN MATCH (a) WHERE EXISTS {(x) WHERE (x)--()} RETURN a",
+                                       containsNoItem( deprecatedPatternExpressionSyntax ) );
+        assertNotificationsInSupportedVersions( "EXPLAIN MATCH (a)--() RETURN a",
+                                                containsNoItem( deprecatedPatternExpressionSyntax ) );
+        assertNotificationsInSupportedVersions( "EXPLAIN MATCH (a) WHERE exists((a)--()) RETURN a",
+                                                containsNoItem( deprecatedPatternExpressionSyntax ) );
+        assertNotificationsInSupportedVersions( "EXPLAIN MATCH (a) WHERE (a)--() RETURN a",
+                                                containsNoItem( deprecatedPatternExpressionSyntax ) );
+        assertNotificationsInSupportedVersions( "EXPLAIN MATCH (a) RETURN [p=(a)--(b) | p]",
+                                                containsNoItem( deprecatedPatternExpressionSyntax ) );
+    }
+
     // FUNCTIONALITY DEPRECATED IN 3.5, REMOVED IN 4.0
 
     @Test
@@ -299,6 +326,9 @@ public class DeprecationAcceptanceTest extends NotificationTestSupport
 
     private final Matcher<Notification> deprecatedHexLiteralSyntax =
             deprecation( "The hex integer literal syntax `0X123` is deprecated, please use `0x123` instead" );
+
+    private final Matcher<Notification> deprecatedPatternExpressionSyntax =
+            deprecation( "Pattern expressions are deprecated, except for use in 'WHERE' clauses or in the 'exists()' function. Consider using pattern comprehension instead." );
 
     private static Matcher<Notification> deprecation( String message )
     {

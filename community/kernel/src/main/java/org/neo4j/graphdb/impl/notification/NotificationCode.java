@@ -134,6 +134,12 @@ public enum NotificationCode
             Status.Statement.FeatureDeprecationWarning,
             "The hex integer literal syntax `0X123` is deprecated, please use `0x123` instead"
     ),
+    DEPRECATED_PATTERN_EXPRESSION_OUTSIDE_EXISTS(
+            SeverityLevel.WARNING,
+            Status.Statement.FeatureDeprecationWarning,
+            "Pattern expressions are deprecated, except for use in 'WHERE' clauses or in the 'exists()' function. " +
+            "Consider using pattern comprehension instead."
+    ),
     EAGER_LOAD_CSV(
         SeverityLevel.WARNING,
         Status.Statement.EagerOperatorWarning,
