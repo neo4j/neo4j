@@ -53,7 +53,7 @@ import static org.neo4j.memory.HeapEstimator.shallowSizeOfObjectArray;
  * Indexed access in between the first and the last chunk is also possible, but has access complexity linear to
  * the number of chunks traversed.
  * <p>
- * Fast access to the last chunk avoids linear traverse in cases where the elements accessed by index are
+ * Fast access to the last chunk and the second to last chunk avoids linear traverse in cases where the elements accessed by index are
  * in the range of a sliding window at the end of the list, even if no elements are removed.
  * E.g. the pattern: add(0..c-1), get(0..c-1), add(c..2c-1), get(c..2c-1), ...
  * (This should be fast, but memory usage will build up)
@@ -72,6 +72,7 @@ public class HeapTrackingLongEnumerationList<V> extends DefaultCloseListenable
     // Linked chunk list used to store values
     private Chunk<V> firstChunk;
     private Chunk<V> lastChunk;
+    private Chunk<V> secondLastChunk;
 
     // The range of the enumeration that the chunk list currently contains values for
     private long firstKey;
@@ -97,7 +98,7 @@ public class HeapTrackingLongEnumerationList<V> extends DefaultCloseListenable
         this.chunkShiftAmount = Integer.numberOfTrailingZeros( chunkSize );
         this.scopedMemoryTracker = scopedMemoryTracker;
         firstChunk = new Chunk<>( scopedMemoryTracker, chunkSize );
-        lastChunk = firstChunk;
+        lastChunk = secondLastChunk = firstChunk;
     }
 
     /**
@@ -124,11 +125,22 @@ public class HeapTrackingLongEnumerationList<V> extends DefaultCloseListenable
         }
 
         // Check if the key is within the last chunk
-        if ( key >>> chunkShiftAmount == (lastKey - 1) >>> chunkShiftAmount )
+        long keyChunkNumber = key >>> chunkShiftAmount;
+        long lastChunkNumber = (lastKey - 1) >>> chunkShiftAmount;
+        if ( keyChunkNumber == lastChunkNumber )
         {
             // Get in last chunk
             Chunk<V> chunk = lastChunk;
             int index = ((int) key) & chunkMask;
+            return (V) chunk.values[index];
+        }
+        // Or the second to last chunk
+        else if ( keyChunkNumber == lastChunkNumber - 1 )
+        {
+            // Get in the second last chunk
+            Chunk<V> chunk = secondLastChunk;
+            int index = ((int) key) & chunkMask;
+            //System.out.println( String.format( "  *** get in second last chunk key=%s index=%s", key, index ) );
             return (V) chunk.values[index];
         }
 
@@ -202,6 +214,7 @@ public class HeapTrackingLongEnumerationList<V> extends DefaultCloseListenable
             {
                 // The chunk is full. We need to allocate a new chunk
                 Chunk<V> newChunk = new Chunk<>( scopedMemoryTracker, chunkSize );
+                secondLastChunk = lastChunk;
                 lastChunk.next = newChunk;
                 lastChunk = newChunk;
                 addedNewChunk = true;
@@ -220,7 +233,6 @@ public class HeapTrackingLongEnumerationList<V> extends DefaultCloseListenable
         lastKey++;
         if ( !addedNewChunk )
         {
-            //lastIndexInFirstChunk = (lastIndexInChunk + 1) & chunkMask;
             lastKeyInFirstChunk = lastKey;
         }
     }
@@ -234,6 +246,7 @@ public class HeapTrackingLongEnumerationList<V> extends DefaultCloseListenable
         {
             // We need to allocate a new chunk
             Chunk<V> newChunk = new Chunk<>( scopedMemoryTracker, chunkSize );
+            secondLastChunk = lastChunk;
             lastChunk.next = newChunk;
             lastChunk = newChunk;
         }
@@ -302,10 +315,19 @@ public class HeapTrackingLongEnumerationList<V> extends DefaultCloseListenable
         int chunkMask = chunkSize - 1;
 
         // Check if the key is within the last chunk
-        if ( key >>> chunkShiftAmount == (lastKey - 1) >>> chunkShiftAmount )
+        long keyChunkNumber = key >>> chunkShiftAmount;
+        long lastChunkNumber = (lastKey - 1) >>> chunkShiftAmount;
+
+        if ( keyChunkNumber == lastChunkNumber )
         {
             // Get in last chunk
             chunk = lastChunk;
+        }
+        // Or the second to last chunk
+        else if ( keyChunkNumber == lastChunkNumber - 1 )
+        {
+            // Get in the second last chunk
+            chunk = secondLastChunk;
         }
         else
         {
@@ -388,6 +410,10 @@ public class HeapTrackingLongEnumerationList<V> extends DefaultCloseListenable
         if ( chunk != firstChunk )
         {
             // Update references to the new first chunk
+            if ( secondLastChunk == firstChunk )
+            {
+                secondLastChunk = null;
+            }
             firstChunk = chunk;
 
             // Update lastKeyInFirstChunk
@@ -473,6 +499,7 @@ public class HeapTrackingLongEnumerationList<V> extends DefaultCloseListenable
     {
         firstChunk = null;
         lastChunk = null;
+        secondLastChunk = null;
         scopedMemoryTracker.close();
     }
 
