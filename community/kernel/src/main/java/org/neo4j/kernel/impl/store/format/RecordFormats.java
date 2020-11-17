@@ -36,6 +36,8 @@ import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
  */
 public interface RecordFormats
 {
+    int NO_GENERATION = -1;
+
     abstract class Factory extends Service
     {
         public Factory( String key, String... altKeys )
@@ -67,6 +69,8 @@ public interface RecordFormats
      *
      * @return format generation, with the intent of usage being that a store can migrate to a newer or
      * same generation, but not to an older generation within same format family.
+     * May return {@link #NO_GENERATION} meaning that it should not be considered for succession etc.
+     * (useful for marking test-only formats with).
      */
     int generation();
 
