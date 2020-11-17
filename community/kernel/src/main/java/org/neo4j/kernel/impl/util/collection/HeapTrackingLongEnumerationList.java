@@ -113,52 +113,8 @@ public class HeapTrackingLongEnumerationList<V> extends DefaultCloseListenable
         {
             return null;
         }
-        int chunkMask = chunkSize - 1;
-
-        // Check if the key is within the first chunk
-        if ( key < lastKeyInFirstChunk )
-        {
-            // Get in first chunk
-            Chunk<V> chunk = firstChunk;
-            int index = ((int) key) & chunkMask;
-            return (V) chunk.values[index];
-        }
-
-        // Check if the key is within the last chunk
-        long keyChunkNumber = key >>> chunkShiftAmount;
-        long lastChunkNumber = (lastKey - 1) >>> chunkShiftAmount;
-        if ( keyChunkNumber == lastChunkNumber )
-        {
-            // Get in last chunk
-            Chunk<V> chunk = lastChunk;
-            int index = ((int) key) & chunkMask;
-            return (V) chunk.values[index];
-        }
-        // Or the second to last chunk
-        else if ( keyChunkNumber == lastChunkNumber - 1 )
-        {
-            // Get in the second last chunk
-            Chunk<V> chunk = secondLastChunk;
-            int index = ((int) key) & chunkMask;
-            //System.out.println( String.format( "  *** get in second last chunk key=%s index=%s", key, index ) );
-            return (V) chunk.values[index];
-        }
-
-        // Otherwise traverse from the second chunk
-        Chunk<V> chunk = firstChunk.next;
-
-        // We need to align the key offset since tail chunk boundaries are always fixed in the enumeration key space:
-        //   [0..chunkSize-1][chunkSize..2*chunkSize-1]...
-        long offset = key - lastKeyInFirstChunk;
-        long alignment = lastKeyInFirstChunk & chunkMask;
-        long index = offset + alignment;
-
-        long nChunkHops = index >>> chunkShiftAmount;
-        for ( int i = 0; i < nChunkHops; i++ )
-        {
-            chunk = chunk.next;
-        }
-        int indexInChunk = ((int) key) & chunkMask;
+        Chunk<V> chunk = findChunk( key );
+        int indexInChunk = ((int) key) & (chunkSize - 1);
         return (V) chunk.values[indexInChunk];
     }
 
@@ -292,7 +248,7 @@ public class HeapTrackingLongEnumerationList<V> extends DefaultCloseListenable
         V removedValue = (V) chunk.values[removeIndexInChunk];
         chunk.values[removeIndexInChunk] = null;
 
-        // Update first
+        // Update first in single chunk
         while ( firstKey < lastKey && firstChunk.values[firstIndexInChunk] == null )
         {
             firstKey++;
@@ -305,39 +261,52 @@ public class HeapTrackingLongEnumerationList<V> extends DefaultCloseListenable
     @SuppressWarnings( "unchecked" )
     private V removeInMultipleChunks( long key )
     {
-        // Find chunk and index where the value should be removed
-        if ( key < lastKeyInFirstChunk )
+        Chunk<V> chunk = findChunk( key );
+
+        int chunkMask = chunkSize - 1;
+        int indexInChunk = ((int) key) & chunkMask;
+        V removedValue = (V) chunk.values[indexInChunk];
+        chunk.values[indexInChunk] = null;
+
+        // If we removed the first key we need to move the references to the first element
+        if ( key == firstKey )
         {
-            return removeInFirstOfMultipleChunks( key );
+            updateFirstOfMultipleChunks( chunk, chunkMask );
         }
 
-        Chunk<V> chunk;
-        int chunkMask = chunkSize - 1;
+        return removedValue;
+    }
 
-        // Check if the key is within the last chunk
+    private Chunk<V> findChunk( long key )
+    {
+        // Check if the key is within the first chunk
+        if ( key < lastKeyInFirstChunk )
+        {
+            return firstChunk;
+        }
+
         long keyChunkNumber = key >>> chunkShiftAmount;
         long lastChunkNumber = (lastKey - 1) >>> chunkShiftAmount;
 
+        // Check if the key is within the last chunk
         if ( keyChunkNumber == lastChunkNumber )
         {
-            // Get in last chunk
-            chunk = lastChunk;
+            return lastChunk;
         }
         // Or the second to last chunk
         else if ( keyChunkNumber == lastChunkNumber - 1 )
         {
-            // Get in the second last chunk
-            chunk = secondLastChunk;
+            return secondLastChunk;
         }
         else
         {
             // Otherwise traverse from the second chunk
-            chunk = firstChunk.next;
+            Chunk<V> chunk = firstChunk.next;
 
             // We need to align the key offset since tail chunk boundaries are always fixed in the enumeration key space:
             //   [0..chunkSize-1][chunkSize..2*chunkSize-1]...
             long offset = key - lastKeyInFirstChunk;
-            long alignment = lastKeyInFirstChunk & chunkMask;
+            long alignment = lastKeyInFirstChunk & (chunkSize - 1);
             long index = offset + alignment;
 
             long nChunkHops = index >>> chunkShiftAmount;
@@ -345,32 +314,8 @@ public class HeapTrackingLongEnumerationList<V> extends DefaultCloseListenable
             {
                 chunk = chunk.next;
             }
+            return chunk;
         }
-
-        int indexInChunk = ((int) key) & chunkMask;
-        V removedValue = (V) chunk.values[indexInChunk];
-        chunk.values[indexInChunk] = null;
-
-        return removedValue;
-    }
-
-    @SuppressWarnings( "unchecked" )
-    private V removeInFirstOfMultipleChunks( long key )
-    {
-        Chunk<V> chunk = firstChunk;
-        int chunkMask = chunkSize - 1;
-        int indexInChunk = ((int) key) & chunkMask;
-
-        V removedValue = (V) chunk.values[indexInChunk];
-        chunk.values[indexInChunk] = null;
-
-        // If we removed the first key we need to move the references to the first element
-        if ( key == firstKey )
-        {
-            updateFirst( chunk, chunkMask );
-        }
-
-        return removedValue;
     }
 
     /*
@@ -381,7 +326,7 @@ public class HeapTrackingLongEnumerationList<V> extends DefaultCloseListenable
      *
      * if we remove index 2 we get [null, null, null, null, 3] -> then firstKey = 4
      */
-    private void updateFirst( Chunk<V> chunk, int chunkMask )
+    private void updateFirstOfMultipleChunks( Chunk<V> chunk, int chunkMask )
     {
         int firstIndexInChunk = ((int) firstKey) & chunkMask;
         while ( firstKey < lastKey && chunk.values[firstIndexInChunk] == null )
