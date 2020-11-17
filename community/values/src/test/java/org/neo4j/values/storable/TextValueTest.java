@@ -149,6 +149,7 @@ class TextValueTest
         assertThat( value.apply( "" ).isEmpty() ).isTrue();
         assertThat( value.apply( "non-empty" ).isEmpty() ).isFalse();
         assertThat( value.apply( " " ).isEmpty() ).isFalse();
+        assertThat( value.apply( "\u00A0" ).isEmpty() ).isFalse();
         assertThat( value.apply( "\u2009㺂࿝鋦毠\u2009" ).isEmpty() ).isFalse();
     }
 }
