@@ -43,6 +43,8 @@ import static org.neo4j.memory.HeapEstimator.shallowSizeOfObjectArray;
  * but removing elements is possible at any index.
  * If a range of first elements are removed so that a chunk becomes empty, its heap memory will be reclaimed.
  * <p>
+ * The chunk size is configurable at creation, but must be a power of two. It is fixed for every chunk.
+ * <p>
  * The ideal use case is to remove elements at the beginning and adding new elements at the end,
  * like a sliding window.
  * Optimal memory usage is achieved if this sliding window size is below the configured chunk size,
@@ -76,8 +78,8 @@ public class HeapTrackingLongEnumerationList<V> extends DefaultCloseListenable
 
     // The range of the enumeration that the chunk list currently contains values for
     private long firstKey;
-    private long lastKey;
-    private long lastKeyInFirstChunk;
+    private long lastKey; // NOTE: This is the last added key in the entire list _plus_ 1, i.e. the next key to be added
+    private long lastKeyInFirstChunk; // NOTE: This is the last added key in the first chunk _plus_ 1
 
     public static <V> HeapTrackingLongEnumerationList<V> create( MemoryTracker memoryTracker )
     {
@@ -383,7 +385,7 @@ public class HeapTrackingLongEnumerationList<V> extends DefaultCloseListenable
     }
 
     /**
-     * Apply the function for each key-value pair in the list.
+     * Apply the function for each key-value pair in the list, but skipping over null values.
      */
     @SuppressWarnings( "unchecked" )
     public void foreach( BiConsumer<Long,V> fun )
@@ -455,6 +457,7 @@ public class HeapTrackingLongEnumerationList<V> extends DefaultCloseListenable
     }
 
     /**
+     * Iterator of all non-null values in the list
      * Warning: not safe to modify during iteration.
      */
     public Iterator<V> valuesIterator()
