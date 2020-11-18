@@ -273,6 +273,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
     public void shutdown()
     {
         disposeAll();
+        unblockNewTransactions(); // Release the lock before we discard this object
     }
 
     @Override
