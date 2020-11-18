@@ -622,7 +622,15 @@ public class FabricExecutor
                                                          .mapToObj( i -> record.getValue( i ).toString() )
                                                          .collect( Collectors.joining( ", ", "[", "]" ) );
                                    trace( id, "output", rec );
-                               } );
+                               } )
+                    .doOnError( err ->
+                                {
+                                    String rec = err.getClass().getSimpleName() + ": " + err.getMessage();
+                                    trace( id, "error", rec );
+                                }
+                    )
+                    .doOnCancel( () -> trace( id, "cancel", "cancel" ) )
+                    .doOnComplete( () -> trace( id, "complete", "complete" ) );
             return new FragmentResult( records, fragmentResult.planDescription, fragmentResult.executionType );
         }
 
