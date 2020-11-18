@@ -433,7 +433,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
             plans.AssertDatabaseAdmin(StopDatabaseAction, dbName), dbName, "stop"), dbName))
 
       // Global call: CALL foo.bar.baz("arg1", 2) // only if system procedure is allowed!
-      case Query(None, SingleQuery(Seq(resolved@ResolvedCall(signature, _, _, _, _),Return(_,_,_,_,_,_)))) if signature.systemProcedure =>
+      case Query(None, SingleQuery(Seq(resolved@ResolvedCall(signature, _, _, _, _),returns@Return(_,_,_,_,_,_)))) if signature.systemProcedure =>
         val checkCredentialsExpired = signature.name match {
           // TODO this is a hot fix to get browser to get password change required error
           // It should be changed so that only a few key procedures are allowed to be run with password change required
@@ -442,7 +442,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         }
         val SemanticCheckResult(_, errors) = resolved.semanticCheck(SemanticState.clean)
         errors.foreach { error => throw context.cypherExceptionFactory.syntaxException(error.msg, error.position) }
-        Some(plans.SystemProcedureCall(signature.name.toString, resolved, context.params, checkCredentialsExpired))
+        Some(plans.SystemProcedureCall(signature.name.toString, resolved, returns, context.params, checkCredentialsExpired))
 
       case _ => None
     }

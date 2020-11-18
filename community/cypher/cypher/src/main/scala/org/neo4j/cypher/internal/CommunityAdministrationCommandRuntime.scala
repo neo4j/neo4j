@@ -23,6 +23,7 @@ import org.neo4j.common.DependencyResolver
 import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.configuration.helpers.NormalizedDatabaseName
 import org.neo4j.cypher.internal.ast.Return
+import org.neo4j.cypher.internal.ast.ReturnItems
 import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.expressions.Parameter
@@ -310,8 +311,11 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
       )
 
     // SUPPORT PROCEDURES (need to be cleared before here)
-    case SystemProcedureCall(_, call, _, checkCredentialsExpired) => (_, parameterMapping) =>
-      val queryString = QueryRenderer.render(Seq(call))
+    case SystemProcedureCall(_, call, returns, _, checkCredentialsExpired) => (_, parameterMapping) =>
+      val queryString = returns match {
+        case Return(_, ReturnItems(_, items), _, _, _, _) if items.nonEmpty => QueryRenderer.render(Seq(call, returns))
+        case _ => QueryRenderer.render(Seq(call))
+      }
 
       def addParameterDefaults(transaction: Transaction, params: MapValue): MapValue = {
         val builder = new MapValueBuilder()

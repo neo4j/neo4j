@@ -430,7 +430,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
       case ShowDefaultDatabase(_, _, where, _) =>
         PlanDescriptionImpl(id, "ShowDefaultDatabase", NoChildren, showCommandDetails(where), variables)
 
-      case SystemProcedureCall(procedureName, _, _, _) =>
+      case SystemProcedureCall(procedureName, _, _, _, _) =>
         PlanDescriptionImpl(id, procedureName, NoChildren, Seq.empty, variables)
 
       case AssertDbmsAdmin(actions) =>
