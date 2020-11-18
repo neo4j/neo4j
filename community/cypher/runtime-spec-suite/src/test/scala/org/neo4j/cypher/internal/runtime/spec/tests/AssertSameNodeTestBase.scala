@@ -76,6 +76,57 @@ abstract class AssertSameNodeTestBase[CONTEXT <: RuntimeContext](
     a [MergeConstraintConflictException] shouldBe thrownBy(consume(execute(logicalQuery, runtime)))
   }
 
+  test("should verify that many nodes are identical") {
+    val nodes = given {
+      uniqueIndex("Honey", "prop")
+      nodePropertyGraph(sizeHint, {
+        case i => Map("prop" -> i)
+      }, "Honey")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .assertSameNode("x")
+      .|.assertSameNode("x")
+      .|.|.assertSameNode("x")
+      .|.|.|.nodeIndexOperator("x:Honey(prop = 20)")
+      .|.|.nodeIndexOperator("x:Honey(prop = 20)")
+      .|.nodeIndexOperator("x:Honey(prop = 20)")
+      .nodeIndexOperator("x:Honey(prop = 20)")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = nodes(20)
+    runtimeResult should beColumns("x").withSingleRow(expected)
+  }
+
+  test("should fail if two nodes out of many are different") {
+    given {
+      uniqueIndex("Honey", "prop")
+      nodePropertyGraph(sizeHint, {
+        case i => Map("prop" -> i)
+      }, "Honey")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .assertSameNode("x")
+      .|.assertSameNode("x")
+      .|.|.assertSameNode("x")
+      .|.|.|.nodeIndexOperator("x:Honey(prop = 20)")
+      .|.|.nodeIndexOperator("x:Honey(prop = 21)")
+      .|.nodeIndexOperator("x:Honey(prop = 20)")
+      .nodeIndexOperator("x:Honey(prop = 20)")
+      .build()
+
+    //then
+    a [MergeConstraintConflictException] shouldBe thrownBy(consume(execute(logicalQuery, runtime)))
+  }
+
   test("should verify that three nodes are identical") {
     val nodes = given {
       uniqueIndex("Honey", "prop")
