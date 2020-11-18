@@ -298,6 +298,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
     {
         transactionMemoryPool.close();
         disposeAll();
+		unblockNewTransactions();
     }
 
     @Override
