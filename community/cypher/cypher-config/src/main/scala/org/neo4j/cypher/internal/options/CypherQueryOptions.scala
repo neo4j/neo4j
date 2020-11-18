@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.options
 import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.cypher.internal.config.CypherConfiguration
+import org.neo4j.cypher.internal.options.CypherExecutionMode.profile.modeName
 import org.neo4j.cypher.internal.options.CypherQueryOptions.ILLEGAL_EXPRESSION_ENGINE_RUNTIME_COMBINATIONS
 import org.neo4j.cypher.internal.options.CypherQueryOptions.ILLEGAL_INTERPRETED_PIPES_FALLBACK_RUNTIME_COMBINATIONS
 import org.neo4j.cypher.internal.options.CypherQueryOptions.ILLEGAL_OPERATOR_ENGINE_RUNTIME_COMBINATIONS
@@ -122,7 +123,7 @@ object CypherQueryOptions {
     )
 }
 
-sealed abstract class CypherExecutionMode(modeName: String) extends CypherOption(modeName) {
+sealed abstract class CypherExecutionMode(val modeName: String) extends CypherOption(modeName) {
   override def companion: CypherExecutionMode.type = CypherExecutionMode
 }
 
@@ -133,8 +134,11 @@ case object CypherExecutionMode extends CypherOptionCompanion[CypherExecutionMod
 ) {
 
   case object default extends CypherExecutionMode("normal")
-  case object profile extends CypherExecutionMode("profile")
-  case object explain extends CypherExecutionMode("explain") {
+  case object profile extends CypherExecutionMode("PROFILE") {
+    override def render: String = modeName
+  }
+  case object explain extends CypherExecutionMode("EXPLAIN") {
+    override def render: String = modeName
     override def cacheKey: String = ""
   }
 
