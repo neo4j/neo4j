@@ -31,8 +31,8 @@ import org.neo4j.cypher.internal.options.CypherQueryOptions.ILLEGAL_OPERATOR_ENG
  * Collects all cypher options that can be set on query basis (pre-parser options)
  */
 case class CypherQueryOptions(
-  executionMode: CypherExecutionMode,
   version: CypherVersion,
+  executionMode: CypherExecutionMode,
   planner: CypherPlannerOption,
   runtime: CypherRuntimeOption,
   updateStrategy: CypherUpdateStrategy,
