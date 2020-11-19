@@ -51,68 +51,41 @@ case class CypherQueryOptions(
 
   if (ILLEGAL_INTERPRETED_PIPES_FALLBACK_RUNTIME_COMBINATIONS((interpretedPipesFallback, runtime)))
     throw new InvalidCypherOption(s"Cannot combine INTERPRETED PIPES FALLBACK '${interpretedPipesFallback.name}' with RUNTIME '${runtime.name}'")
+
+  def render: String = CypherQueryOptions.renderer.render(this)
+
+  def cacheKey: String = CypherQueryOptions.cacheKey.cacheKey(this)
 }
 
 object CypherQueryOptions {
 
-  def fromValues(config: CypherConfiguration, executionMode: Set[String], version: Set[String], keyValues: Set[(String, String)]): CypherQueryOptions = {
+  private val hasDefault = OptionDefault.derive[CypherQueryOptions]
+  private val renderer = OptionRenderer.derive[CypherQueryOptions]
+  private val cacheKey = OptionCacheKey.derive[CypherQueryOptions]
+  private val reader = OptionReader.derive[CypherQueryOptions]
 
-    val kvs = new KeyValueExtractor(keyValues)
+  val default: CypherQueryOptions = hasDefault.default
 
-    val result = CypherQueryOptions(
-      executionMode = resolveSingle(CypherExecutionMode, executionMode, config),
-      version = resolveSingle(CypherVersion, version, config),
-      planner = kvs.resolveSingle(CypherPlannerOption, config),
-      runtime = kvs.resolveSingle(CypherRuntimeOption, config),
-      updateStrategy = kvs.resolveSingle(CypherUpdateStrategy, config),
-      expressionEngine = kvs.resolveSingle(CypherExpressionEngineOption, config),
-      operatorEngine = kvs.resolveSingle(CypherOperatorEngineOption, config),
-      interpretedPipesFallback = kvs.resolveSingle(CypherInterpretedPipesFallbackOption, config),
-      replan = kvs.resolveSingle(CypherReplanOption, config),
-      connectComponentsPlanner = kvs.resolveSingle(CypherConnectComponentsPlannerOption, config),
-      debugOptions = CypherDebugOptions(kvs.resolveAll(CypherDebugOption))
-    )
+  def fromValues(config: CypherConfiguration, keyValues: Set[(String, String)]): CypherQueryOptions = {
+    reader.read(OptionReader.Input(config, keyValues)) match {
 
-    kvs.failOnUnknown()
+      case OptionReader.Result(remainder, _) if remainder.keyValues.nonEmpty =>
+        val keys = remainder.keyValues.map(_._1).mkString(", ")
+        throw new InvalidCypherOption(s"Unsupported options: $keys")
 
-    result
-  }
-
-  def fromConfiguration(config: CypherConfiguration): CypherQueryOptions =
-    fromValues(config, Set.empty, Set.empty, Set.empty)
-
-  private def resolveSingle[T <: CypherOption](option: CypherOptionCompanion[T], values: Set[String], config: CypherConfiguration): T =
-    option.fromValues(values).headOption
-          .getOrElse(option.fromCypherConfiguration(config))
-
-  private class KeyValueExtractor(keyValues: Set[(String, String)]) {
-
-    private var rest = keyValues
-
-    def resolveSingle[T <: CypherOption](option: CypherKeyValueOptionCompanion[T], config: CypherConfiguration): T =
-      resolveAll(option).headOption
-                        .getOrElse(option.fromCypherConfiguration(config))
-
-    def resolveAll[T <: CypherOption](option: CypherKeyValueOptionCompanion[T]): Set[T] = {
-      val (matches, other) = rest.partition { case (k, _) => option.matchesKey(k) }
-      rest = other
-      val values = matches.map { case (_, v) => v }
-      option.fromValues(values)
-    }
-
-    def failOnUnknown(): Unit = rest.foreach { case (key, _) =>
-      throw new InvalidCypherOption(s"Unsupported option: $key")
+      case OptionReader.Result(_, options) =>
+        options
     }
   }
 
-  private final val ILLEGAL_EXPRESSION_ENGINE_RUNTIME_COMBINATIONS: Set[(CypherExpressionEngineOption, CypherRuntimeOption)] =
+  private final def ILLEGAL_EXPRESSION_ENGINE_RUNTIME_COMBINATIONS: Set[(CypherExpressionEngineOption, CypherRuntimeOption)] =
     Set(
       (CypherExpressionEngineOption.compiled, CypherRuntimeOption.interpreted))
-  private final val ILLEGAL_OPERATOR_ENGINE_RUNTIME_COMBINATIONS: Set[(CypherOperatorEngineOption, CypherRuntimeOption)] =
+  private final def ILLEGAL_OPERATOR_ENGINE_RUNTIME_COMBINATIONS: Set[(CypherOperatorEngineOption, CypherRuntimeOption)] =
     Set(
       (CypherOperatorEngineOption.compiled, CypherRuntimeOption.slotted),
       (CypherOperatorEngineOption.compiled, CypherRuntimeOption.interpreted))
-  private final val ILLEGAL_INTERPRETED_PIPES_FALLBACK_RUNTIME_COMBINATIONS: Set[(CypherInterpretedPipesFallbackOption, CypherRuntimeOption)] =
+  private final def ILLEGAL_INTERPRETED_PIPES_FALLBACK_RUNTIME_COMBINATIONS: Set[(CypherInterpretedPipesFallbackOption, CypherRuntimeOption)] =
     Set(
       (CypherInterpretedPipesFallbackOption.disabled, CypherRuntimeOption.slotted),
       (CypherInterpretedPipesFallbackOption.disabled, CypherRuntimeOption.interpreted),
@@ -125,6 +98,8 @@ object CypherQueryOptions {
 
 sealed abstract class CypherExecutionMode(val modeName: String) extends CypherOption(modeName) {
   override def companion: CypherExecutionMode.type = CypherExecutionMode
+  override def render: String = super.render.toUpperCase
+  override def cacheKey: String = super.cacheKey.toUpperCase
 }
 
 case object CypherExecutionMode extends CypherOptionCompanion[CypherExecutionMode](
@@ -143,6 +118,11 @@ case object CypherExecutionMode extends CypherOptionCompanion[CypherExecutionMod
   }
 
   def values: Set[CypherExecutionMode] = Set(profile, explain)
+
+  implicit val hasDefault: OptionDefault[CypherExecutionMode] = OptionDefault.create(default)
+  implicit val renderer: OptionRenderer[CypherExecutionMode] = OptionRenderer.create(_.render)
+  implicit val cacheKey: OptionCacheKey[CypherExecutionMode] = OptionCacheKey.create(_.cacheKey)
+  implicit val reader: OptionReader[CypherExecutionMode] = singleOptionReader()
 }
 
 sealed abstract class CypherVersion(versionName: String) extends CypherOption(versionName) {
@@ -161,14 +141,19 @@ case object CypherVersion extends CypherOptionCompanion[CypherVersion](
 
   val default: CypherVersion = v4_3
   def values: Set[CypherVersion] = Set(v3_5, v4_2, v4_3)
+
+  implicit val hasDefault: OptionDefault[CypherVersion] = OptionDefault.create(default)
+  implicit val renderer: OptionRenderer[CypherVersion] = OptionRenderer.create(_.render)
+  implicit val cacheKey: OptionCacheKey[CypherVersion] = OptionCacheKey.create(_.cacheKey)
+  implicit val reader: OptionReader[CypherVersion] = singleOptionReader()
 }
 
 sealed abstract class CypherPlannerOption(plannerName: String) extends CypherKeyValueOption(plannerName) {
   override def companion: CypherPlannerOption.type = CypherPlannerOption
 }
 
-case object CypherPlannerOption extends CypherKeyValueOptionCompanion[CypherPlannerOption](
-  key = "planner",
+case object CypherPlannerOption extends CypherOptionCompanion[CypherPlannerOption](
+  name = "planner",
   setting = Some(GraphDatabaseSettings.cypher_planner),
   cypherConfigField = Some(_.planner),
 ) {
@@ -179,14 +164,19 @@ case object CypherPlannerOption extends CypherKeyValueOptionCompanion[CypherPlan
   case object dp extends CypherPlannerOption("dp")
 
   def values: Set[CypherPlannerOption] = Set(cost, idp, dp)
+
+  implicit val hasDefault: OptionDefault[CypherPlannerOption] = OptionDefault.create(default)
+  implicit val renderer: OptionRenderer[CypherPlannerOption] = OptionRenderer.create(_.render)
+  implicit val cacheKey: OptionCacheKey[CypherPlannerOption] = OptionCacheKey.create(_.cacheKey)
+  implicit val reader: OptionReader[CypherPlannerOption] = singleOptionReader()
 }
 
 sealed abstract class CypherRuntimeOption(runtimeName: String) extends CypherKeyValueOption(runtimeName) {
   override val companion: CypherRuntimeOption.type = CypherRuntimeOption
 }
 
-case object CypherRuntimeOption extends CypherKeyValueOptionCompanion[CypherRuntimeOption](
-  key = "runtime",
+case object CypherRuntimeOption extends CypherOptionCompanion[CypherRuntimeOption](
+  name = "runtime",
   setting = Some(GraphDatabaseInternalSettings.cypher_runtime),
   cypherConfigField = Some(_.runtime),
 ) {
@@ -198,14 +188,19 @@ case object CypherRuntimeOption extends CypherKeyValueOptionCompanion[CypherRunt
   case object parallel extends CypherRuntimeOption("parallel")
 
   def values: Set[CypherRuntimeOption] = Set(interpreted, slotted, pipelined, parallel)
+
+  implicit val hasDefault: OptionDefault[CypherRuntimeOption] = OptionDefault.create(default)
+  implicit val renderer: OptionRenderer[CypherRuntimeOption] = OptionRenderer.create(_.render)
+  implicit val cacheKey: OptionCacheKey[CypherRuntimeOption] = OptionCacheKey.create(_.cacheKey)
+  implicit val reader: OptionReader[CypherRuntimeOption] = singleOptionReader()
 }
 
 sealed abstract class CypherUpdateStrategy(strategy: String) extends CypherKeyValueOption(strategy) {
   override def companion: CypherUpdateStrategy.type = CypherUpdateStrategy
 }
 
-case object CypherUpdateStrategy extends CypherKeyValueOptionCompanion[CypherUpdateStrategy](
-  key = "updateStrategy",
+case object CypherUpdateStrategy extends CypherOptionCompanion[CypherUpdateStrategy](
+  name = "updateStrategy",
   setting = None,
   cypherConfigField = None,
 ) {
@@ -214,14 +209,19 @@ case object CypherUpdateStrategy extends CypherKeyValueOptionCompanion[CypherUpd
   case object eager extends CypherUpdateStrategy("eager")
 
   def values: Set[CypherUpdateStrategy] = Set(default, eager)
+
+  implicit val hasDefault: OptionDefault[CypherUpdateStrategy] = OptionDefault.create(default)
+  implicit val renderer: OptionRenderer[CypherUpdateStrategy] = OptionRenderer.create(_.render)
+  implicit val cacheKey: OptionCacheKey[CypherUpdateStrategy] = OptionCacheKey.create(_.cacheKey)
+  implicit val reader: OptionReader[CypherUpdateStrategy] = singleOptionReader()
 }
 
 sealed abstract class CypherExpressionEngineOption(engineName: String) extends CypherKeyValueOption(engineName) {
   override def companion: CypherExpressionEngineOption.type = CypherExpressionEngineOption
 }
 
-case object CypherExpressionEngineOption extends CypherKeyValueOptionCompanion[CypherExpressionEngineOption](
-  key = "expressionEngine",
+case object CypherExpressionEngineOption extends CypherOptionCompanion[CypherExpressionEngineOption](
+  name = "expressionEngine",
   setting = Some(GraphDatabaseInternalSettings.cypher_expression_engine),
   cypherConfigField = Some(_.expressionEngineOption)
 ) {
@@ -232,14 +232,19 @@ case object CypherExpressionEngineOption extends CypherKeyValueOptionCompanion[C
   case object onlyWhenHot extends CypherExpressionEngineOption("only_when_hot")
 
   def values: Set[CypherExpressionEngineOption] = Set(interpreted, compiled, onlyWhenHot)
+
+  implicit val hasDefault: OptionDefault[CypherExpressionEngineOption] = OptionDefault.create(default)
+  implicit val renderer: OptionRenderer[CypherExpressionEngineOption] = OptionRenderer.create(_.render)
+  implicit val cacheKey: OptionCacheKey[CypherExpressionEngineOption] = OptionCacheKey.create(_.cacheKey)
+  implicit val reader: OptionReader[CypherExpressionEngineOption] = singleOptionReader()
 }
 
 sealed abstract class CypherOperatorEngineOption(mode: String) extends CypherKeyValueOption(mode) {
   override def companion: CypherOperatorEngineOption.type = CypherOperatorEngineOption
 }
 
-case object CypherOperatorEngineOption extends CypherKeyValueOptionCompanion[CypherOperatorEngineOption](
-  key = "operatorEngine",
+case object CypherOperatorEngineOption extends CypherOptionCompanion[CypherOperatorEngineOption](
+  name = "operatorEngine",
   setting = Some(GraphDatabaseInternalSettings.cypher_operator_engine),
   cypherConfigField = Some(_.operatorEngine),
 ) {
@@ -248,14 +253,19 @@ case object CypherOperatorEngineOption extends CypherKeyValueOptionCompanion[Cyp
   case object interpreted extends CypherOperatorEngineOption("interpreted")
 
   def values: Set[CypherOperatorEngineOption] = Set(compiled, interpreted)
+
+  implicit val hasDefault: OptionDefault[CypherOperatorEngineOption] = OptionDefault.create(default)
+  implicit val renderer: OptionRenderer[CypherOperatorEngineOption] = OptionRenderer.create(_.render)
+  implicit val cacheKey: OptionCacheKey[CypherOperatorEngineOption] = OptionCacheKey.create(_.cacheKey)
+  implicit val reader: OptionReader[CypherOperatorEngineOption] = singleOptionReader()
 }
 
 sealed abstract class CypherInterpretedPipesFallbackOption(mode: String) extends CypherKeyValueOption(mode) {
   override def companion: CypherInterpretedPipesFallbackOption.type = CypherInterpretedPipesFallbackOption
 }
 
-case object CypherInterpretedPipesFallbackOption extends CypherKeyValueOptionCompanion[CypherInterpretedPipesFallbackOption](
-  key = "interpretedPipesFallback",
+case object CypherInterpretedPipesFallbackOption extends CypherOptionCompanion[CypherInterpretedPipesFallbackOption](
+  name = "interpretedPipesFallback",
   setting = Some(GraphDatabaseInternalSettings.cypher_pipelined_interpreted_pipes_fallback),
   cypherConfigField = Some(_.interpretedPipesFallback),
 ) {
@@ -266,14 +276,19 @@ case object CypherInterpretedPipesFallbackOption extends CypherKeyValueOptionCom
   case object allPossiblePlans extends CypherInterpretedPipesFallbackOption("all")
 
   def values: Set[CypherInterpretedPipesFallbackOption] = Set(disabled, whitelistedPlansOnly, allPossiblePlans)
+
+  implicit val hasDefault: OptionDefault[CypherInterpretedPipesFallbackOption] = OptionDefault.create(default)
+  implicit val renderer: OptionRenderer[CypherInterpretedPipesFallbackOption] = OptionRenderer.create(_.render)
+  implicit val cacheKey: OptionCacheKey[CypherInterpretedPipesFallbackOption] = OptionCacheKey.create(_.cacheKey)
+  implicit val reader: OptionReader[CypherInterpretedPipesFallbackOption] = singleOptionReader()
 }
 
 sealed abstract class CypherReplanOption(strategy: String) extends CypherKeyValueOption(strategy) {
   override def companion: CypherReplanOption.type = CypherReplanOption
 }
 
-case object CypherReplanOption extends CypherKeyValueOptionCompanion[CypherReplanOption](
-  key = "replan",
+case object CypherReplanOption extends CypherOptionCompanion[CypherReplanOption](
+  name = "replan",
   setting = None,
   cypherConfigField = None,
 ) {
@@ -283,14 +298,19 @@ case object CypherReplanOption extends CypherKeyValueOptionCompanion[CypherRepla
   case object skip extends CypherReplanOption("skip")
 
   def values: Set[CypherReplanOption] = Set(force, skip)
+
+  implicit val hasDefault: OptionDefault[CypherReplanOption] = OptionDefault.create(default)
+  implicit val renderer: OptionRenderer[CypherReplanOption] = OptionRenderer.create(_.render)
+  implicit val cacheKey: OptionCacheKey[CypherReplanOption] = OptionCacheKey.create(_.cacheKey)
+  implicit val reader: OptionReader[CypherReplanOption] = singleOptionReader()
 }
 
 sealed abstract class CypherConnectComponentsPlannerOption(planner: String) extends CypherKeyValueOption(planner) {
   override def companion: CypherConnectComponentsPlannerOption.type = CypherConnectComponentsPlannerOption
 }
 
-case object CypherConnectComponentsPlannerOption extends CypherKeyValueOptionCompanion[CypherConnectComponentsPlannerOption](
-  key = "connectComponentsPlanner",
+case object CypherConnectComponentsPlannerOption extends CypherOptionCompanion[CypherConnectComponentsPlannerOption](
+  name = "connectComponentsPlanner",
   setting = None,
   cypherConfigField = None,
 ) {
@@ -300,14 +320,19 @@ case object CypherConnectComponentsPlannerOption extends CypherKeyValueOptionCom
   case object idp extends CypherConnectComponentsPlannerOption("idp")
 
   def values: Set[CypherConnectComponentsPlannerOption] = Set(greedy, idp)
+
+  implicit val hasDefault: OptionDefault[CypherConnectComponentsPlannerOption] = OptionDefault.create(default)
+  implicit val renderer: OptionRenderer[CypherConnectComponentsPlannerOption] = OptionRenderer.create(_.render)
+  implicit val cacheKey: OptionCacheKey[CypherConnectComponentsPlannerOption] = OptionCacheKey.create(_.cacheKey)
+  implicit val reader: OptionReader[CypherConnectComponentsPlannerOption] = singleOptionReader()
 }
 
 sealed abstract class CypherDebugOption(flag: String) extends CypherKeyValueOption(flag) {
   override def companion: CypherDebugOption.type = CypherDebugOption
 }
 
-case object CypherDebugOption extends CypherKeyValueOptionCompanion[CypherDebugOption](
-  key = "debug",
+case object CypherDebugOption extends CypherOptionCompanion[CypherDebugOption](
+  name = "debug",
   setting = None,
   cypherConfigField = None,
 ) {
@@ -345,12 +370,17 @@ case object CypherDebugOption extends CypherKeyValueOptionCompanion[CypherDebugO
     fabricLogRecords
   )
 
-  override def fromValues(values: Set[String]): Set[CypherDebugOption] =
-    values.map(fromValue)
+  implicit val hasDefault: OptionDefault[CypherDebugOption] = OptionDefault.create(default)
+  implicit val renderer: OptionRenderer[CypherDebugOption] = OptionRenderer.create(_.render)
+  implicit val cacheKey: OptionCacheKey[CypherDebugOption] = OptionCacheKey.create(_.cacheKey)
+  implicit val reader: OptionReader[Set[CypherDebugOption]] = multiOptionReader()
 }
 
 object CypherDebugOptions {
   def default: CypherDebugOptions = CypherDebugOptions(Set.empty)
+  implicit val hasDefault: OptionDefault[CypherDebugOptions] = OptionDefault.create(default)
+  implicit val renderer: OptionRenderer[CypherDebugOptions] = OptionRenderer.create(_.render)
+  implicit val cacheKey: OptionCacheKey[CypherDebugOptions] = OptionCacheKey.create(_.cacheKey)
 }
 
 case class CypherDebugOptions(enabledOptions: Set[CypherDebugOption]) {
@@ -358,6 +388,10 @@ case class CypherDebugOptions(enabledOptions: Set[CypherDebugOption]) {
   def withOptionEnabled(option: CypherDebugOption): CypherDebugOptions = copy(enabledOptions + option)
 
   def enabledOptionsSeq: Seq[CypherDebugOption] = enabledOptions.toSeq.sortBy(_.name)
+
+  def render: String = enabledOptionsSeq.map(_.render).mkString(" ")
+
+  def cacheKey: String = render
 
   def isEmpty: Boolean = enabledOptions.isEmpty
 

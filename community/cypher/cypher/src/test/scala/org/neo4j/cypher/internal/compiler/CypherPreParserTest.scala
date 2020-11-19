@@ -20,11 +20,10 @@
 package org.neo4j.cypher.internal.compiler
 
 import org.neo4j.cypher.internal.CypherPreParser
-import org.neo4j.cypher.internal.ExplainModePreParserOption
-import org.neo4j.cypher.internal.KeyValuePreParserOption
 import org.neo4j.cypher.internal.PreParsedStatement
-import org.neo4j.cypher.internal.ProfileModePreParserOption
-import org.neo4j.cypher.internal.VersionPreParserOption
+import org.neo4j.cypher.internal.PreParserOption
+import org.neo4j.cypher.internal.options.CypherExecutionMode
+import org.neo4j.cypher.internal.options.CypherVersion
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.scalatest.prop.TableDrivenPropertyChecks
@@ -32,29 +31,33 @@ import org.scalatest.prop.TableFor2
 
 class CypherPreParserTest extends CypherFunSuite with TableDrivenPropertyChecks {
 
+  private def version(ver: String) = PreParserOption(CypherVersion.name, ver)
+  private def mode(mode: String) = PreParserOption(CypherExecutionMode.name, mode)
+  private def opt(key: String, value: String) = PreParserOption(key, value)
+
   val queries: TableFor2[String, PreParsedStatement] = Table(
     ("query", "expected"),
-    ("CYPHER 4.1 PRO", PreParsedStatement("PRO", List(VersionPreParserOption("4.1")), (1, 12, 11))),
-    ("PROFILE THINGS", PreParsedStatement("THINGS", List(ProfileModePreParserOption), (1, 9, 8))),
-    ("EXPLAIN THIS", PreParsedStatement("THIS", List(ExplainModePreParserOption), (1, 9, 8))),
-    ("EXPLAIN CYPHER 4.1 YALL", PreParsedStatement("YALL", List(ExplainModePreParserOption, VersionPreParserOption("4.1")), (1, 20, 19))),
-    ("CYPHER planner=cost RETURN", PreParsedStatement("RETURN", List(KeyValuePreParserOption("planner", "cost")), (1, 21, 20))),
-    ("CYPHER 4.1 planner=cost RETURN", PreParsedStatement("RETURN", List(VersionPreParserOption("4.1"), KeyValuePreParserOption("planner", "cost")), (1, 25, 24))),
-    ("CYPHER 4.1 planner = idp RETURN", PreParsedStatement("RETURN", List(VersionPreParserOption("4.1"), KeyValuePreParserOption("planner", "idp")), (1, 26, 25))),
-    ("CYPHER planner =dp RETURN", PreParsedStatement("RETURN", List(KeyValuePreParserOption("planner", "dp")), (1, 20, 19))),
-    ("CYPHER runtime=interpreted RETURN", PreParsedStatement("RETURN", List(KeyValuePreParserOption("runtime", "interpreted")), (1, 28, 27))),
-    ("CYPHER 4.1 planner=cost runtime=interpreted RETURN", PreParsedStatement("RETURN", List(VersionPreParserOption("4.1"), KeyValuePreParserOption("planner", "cost"), KeyValuePreParserOption("runtime", "interpreted")), (1, 45, 44))),
-    ("CYPHER 4.1 planner=dp runtime=interpreted RETURN", PreParsedStatement("RETURN", List(VersionPreParserOption("4.1"), KeyValuePreParserOption("planner", "dp"), KeyValuePreParserOption("runtime", "interpreted")), (1, 43, 42))),
-    ("CYPHER 4.1 planner=idp runtime=interpreted RETURN", PreParsedStatement("RETURN", List(VersionPreParserOption("4.1"), KeyValuePreParserOption("planner", "idp"), KeyValuePreParserOption("runtime", "interpreted")), (1, 44, 43))),
-    ("CYPHER 4.1 planner=idp planner=dp runtime=interpreted RETURN", PreParsedStatement("RETURN", List(VersionPreParserOption("4.1"), KeyValuePreParserOption("planner", "idp"), KeyValuePreParserOption("planner", "dp"), KeyValuePreParserOption("runtime", "interpreted")), (1, 55, 54))),
+    ("CYPHER 4.1 PRO", PreParsedStatement("PRO", List(version("4.1")), (1, 12, 11))),
+    ("PROFILE THINGS", PreParsedStatement("THINGS", List(mode("PROFILE")), (1, 9, 8))),
+    ("EXPLAIN THIS", PreParsedStatement("THIS", List(mode("EXPLAIN")), (1, 9, 8))),
+    ("EXPLAIN CYPHER 4.1 YALL", PreParsedStatement("YALL", List(mode("EXPLAIN"), version("4.1")), (1, 20, 19))),
+    ("CYPHER planner=cost RETURN", PreParsedStatement("RETURN", List(opt("planner", "cost")), (1, 21, 20))),
+    ("CYPHER 4.1 planner=cost RETURN", PreParsedStatement("RETURN", List(version("4.1"), opt("planner", "cost")), (1, 25, 24))),
+    ("CYPHER 4.1 planner = idp RETURN", PreParsedStatement("RETURN", List(version("4.1"), opt("planner", "idp")), (1, 26, 25))),
+    ("CYPHER planner =dp RETURN", PreParsedStatement("RETURN", List(opt("planner", "dp")), (1, 20, 19))),
+    ("CYPHER runtime=interpreted RETURN", PreParsedStatement("RETURN", List(opt("runtime", "interpreted")), (1, 28, 27))),
+    ("CYPHER 4.1 planner=cost runtime=interpreted RETURN", PreParsedStatement("RETURN", List(version("4.1"), opt("planner", "cost"), opt("runtime", "interpreted")), (1, 45, 44))),
+    ("CYPHER 4.1 planner=dp runtime=interpreted RETURN", PreParsedStatement("RETURN", List(version("4.1"), opt("planner", "dp"), opt("runtime", "interpreted")), (1, 43, 42))),
+    ("CYPHER 4.1 planner=idp runtime=interpreted RETURN", PreParsedStatement("RETURN", List(version("4.1"), opt("planner", "idp"), opt("runtime", "interpreted")), (1, 44, 43))),
+    ("CYPHER 4.1 planner=idp planner=dp runtime=interpreted RETURN", PreParsedStatement("RETURN", List(version("4.1"), opt("planner", "idp"), opt("planner", "dp"), opt("runtime", "interpreted")), (1, 55, 54))),
     ("explainmatch", PreParsedStatement("explainmatch", List.empty, (1, 1, 0))),
-    ("CYPHER updateStrategy=eager RETURN", PreParsedStatement("RETURN", List(KeyValuePreParserOption("updateStrategy", "eager")), (1, 29, 28))),
-    ("CYPHER debug=tostring debug=reportCostComparisonsAsRows RETURN", PreParsedStatement("RETURN", List(KeyValuePreParserOption("debug", "tostring"), KeyValuePreParserOption("debug", "reportCostComparisonsAsRows")), (1, 57, 56))),
-    ("CYPHER runtime=slotted RETURN", PreParsedStatement("RETURN", List(KeyValuePreParserOption("runtime", "slotted")), (1, 24, 23))),
-    ("CYPHER expressionEngine=interpreted RETURN", PreParsedStatement("RETURN", List(KeyValuePreParserOption("expressionEngine", "interpreted")), (1, 37, 36))),
-    ("CYPHER expressionEngine=compiled RETURN", PreParsedStatement("RETURN", List(KeyValuePreParserOption("expressionEngine", "compiled")), (1, 34, 33))),
-    ("CYPHER replan=force RETURN", PreParsedStatement("RETURN", List(KeyValuePreParserOption("replan", "force")), (1, 21, 20))),
-    ("CYPHER replan=skip RETURN", PreParsedStatement("RETURN", List(KeyValuePreParserOption("replan", "skip")), (1, 20, 19))),
+    ("CYPHER updateStrategy=eager RETURN", PreParsedStatement("RETURN", List(opt("updateStrategy", "eager")), (1, 29, 28))),
+    ("CYPHER debug=tostring debug=reportCostComparisonsAsRows RETURN", PreParsedStatement("RETURN", List(opt("debug", "tostring"), opt("debug", "reportCostComparisonsAsRows")), (1, 57, 56))),
+    ("CYPHER runtime=slotted RETURN", PreParsedStatement("RETURN", List(opt("runtime", "slotted")), (1, 24, 23))),
+    ("CYPHER expressionEngine=interpreted RETURN", PreParsedStatement("RETURN", List(opt("expressionEngine", "interpreted")), (1, 37, 36))),
+    ("CYPHER expressionEngine=compiled RETURN", PreParsedStatement("RETURN", List(opt("expressionEngine", "compiled")), (1, 34, 33))),
+    ("CYPHER replan=force RETURN", PreParsedStatement("RETURN", List(opt("replan", "force")), (1, 21, 20))),
+    ("CYPHER replan=skip RETURN", PreParsedStatement("RETURN", List(opt("replan", "skip")), (1, 20, 19))),
   )
 
   test("run the tests") {

@@ -20,18 +20,15 @@
 package org.neo4j.cypher.internal.options
 
 import org.neo4j.configuration.Config
-import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.cypher.internal.config.CypherConfiguration
 import org.neo4j.graphdb.config.Setting
 
 object CypherOption {
   val DEFAULT: String = "default"
-
-  def asCanonicalName(name: String): String = name.toLowerCase
 }
 
 abstract class CypherOption(inputName: String) {
-  val name: String = CypherOption.asCanonicalName(inputName)
+  val name: String = OptionReader.canonical(inputName)
 
   def companion: CypherOptionCompanion[_ <: CypherOption]
 
@@ -41,9 +38,7 @@ abstract class CypherOption(inputName: String) {
 }
 
 abstract class CypherKeyValueOption(inputName: String) extends CypherOption(inputName) {
-  override def companion: CypherKeyValueOptionCompanion[_ <: CypherKeyValueOption]
-
-  override def render: String = if (this == companion.default) "" else s"${companion.key}=$name"
+  override def render: String = if (this == companion.default) "" else s"${companion.name}=$name"
 }
 
 abstract class CypherOptionCompanion[Opt <: CypherOption](
@@ -53,7 +48,10 @@ abstract class CypherOptionCompanion[Opt <: CypherOption](
 ) {
   self: Product =>
 
+  private val key = OptionReader.canonical(name)
+
   def default: Opt
+
   /**
    * When overriding this, make sure it is not defined as val, to avoid hitting this:
    * https://stackoverflow.com/questions/28151338/case-object-gets-initialized-to-null-how-is-that-even-possible
@@ -67,36 +65,36 @@ abstract class CypherOptionCompanion[Opt <: CypherOption](
            .getOrElse(default)
   }
 
-  def fromCypherConfiguration(configuration: CypherConfiguration): Opt =
+  def singleOptionReader(): OptionReader[Opt] =
+    (input: OptionReader.Input) =>
+      input.extract(key)
+           .map(values => fromValues(values).headOption)
+           .map(value => value.getOrElse(fromCypherConfiguration(input.config)))
+
+  def multiOptionReader(): OptionReader[Set[Opt]] =
+    (input: OptionReader.Input) =>
+      input.extract(key)
+           .map(values => values.map(fromValue))
+
+  private def fromCypherConfiguration(configuration: CypherConfiguration): Opt =
     cypherConfigField.map(f => f(configuration))
                      .getOrElse(default)
 
-  def fromValues(values: Set[String]): Set[Opt] = values.size match {
+  private def fromValues(input: Set[String]): Set[Opt] = input.size match {
     case 0 => Set.empty
-    case 1 => Set(fromValue(values.head))
-    case _ => throw new InvalidCypherOption(s"Can't specify multiple conflicting values for $name")
+    case 1 => Set(fromValue(input.head))
+    case _ => conflictingValuesError()
   }
 
-  protected def fromValue(value: String): Opt = findByExactName(CypherOption.asCanonicalName(value)).getOrElse {
-    throw new InvalidCypherOption(s"$value is not a valid option for $name. Valid options are: ${values.map(_.name).mkString(", ")}")
+  protected def fromValue(input: String): Opt = OptionReader.canonical(input) match {
+    case CypherOption.DEFAULT => default
+    case value                => values.find(_.name == value).getOrElse(invalidValueError(input))
+
   }
 
-  private def findByExactName(name: String) = if (CypherOption.DEFAULT == name)
-    Some(default)
-  else
-    values.find(_.name == name)
-}
+  private def invalidValueError(input: String): Nothing =
+    throw new InvalidCypherOption(s"$input is not a valid option for $name. Valid options are: ${values.map(_.name).mkString(", ")}")
 
-abstract class CypherKeyValueOptionCompanion[Opt <: CypherOption](
-  val key: String,
-  setting: Option[Setting[_]],
-  cypherConfigField: Option[CypherConfiguration => Opt],
-) extends CypherOptionCompanion[Opt](key, setting, cypherConfigField) {
-  self: Product =>
-
-  private val canonicalKey = CypherOption.asCanonicalName(key)
-
-  def matchesKey(inputKey: String): Boolean =
-    CypherOption.asCanonicalName(inputKey) == canonicalKey
-
+  private def conflictingValuesError(): Nothing =
+    throw new InvalidCypherOption(s"Can't specify multiple conflicting values for $name")
 }

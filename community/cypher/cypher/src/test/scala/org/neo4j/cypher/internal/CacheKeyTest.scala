@@ -19,29 +19,53 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.internal.QueryOptions.CacheKey
+import org.neo4j.cypher.internal.options.CypherConnectComponentsPlannerOption
+import org.neo4j.cypher.internal.options.CypherDebugOption
+import org.neo4j.cypher.internal.options.CypherDebugOptions
+import org.neo4j.cypher.internal.options.CypherExecutionMode
+import org.neo4j.cypher.internal.options.CypherExpressionEngineOption
+import org.neo4j.cypher.internal.options.CypherInterpretedPipesFallbackOption
+import org.neo4j.cypher.internal.options.CypherOperatorEngineOption
+import org.neo4j.cypher.internal.options.CypherPlannerOption
+import org.neo4j.cypher.internal.options.CypherQueryOptions
+import org.neo4j.cypher.internal.options.CypherReplanOption
+import org.neo4j.cypher.internal.options.CypherRuntimeOption
+import org.neo4j.cypher.internal.options.CypherUpdateStrategy
+import org.neo4j.cypher.internal.options.CypherVersion
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class CacheKeyTest extends CypherFunSuite {
 
-  test("All members should be part of render") {
-    //given
-    val cacheKey = CacheKey("100",
-                            "PROFILE",
-                            "INFO",
-                            "SUPER_FAST",
-                            "AGGRESSIVE",
-                            "WARP_SPEED",
-                            "LUDICROUS_SPEED",
-                            "NO_CHANCE",
-                            "CONNECT_ME",
-                            "DEBUGGING_IS_WEAK")
+  test("For default options, only version is part of cache key") {
+    val options = CypherQueryOptions.default
 
-    //then
-    cacheKey.productIterator.foreach(x => {
-      withClue(s"render must contain '$x''") {
-        cacheKey.render.contains(x.toString) shouldBe true
-      }
-    })
+    options.cacheKey
+           .shouldEqual(CypherVersion.default.name)
+  }
+
+  test("EXPLAIN does not appear in cache key") {
+    val options = CypherQueryOptions.default.copy(executionMode = CypherExecutionMode.explain)
+
+    options.cacheKey
+           .shouldEqual(CypherVersion.default.name)
+  }
+
+  test("All non-default options should be part of cache key") {
+    val options = CypherQueryOptions(
+      executionMode = CypherExecutionMode.profile,
+      version = CypherVersion.v3_5,
+      planner = CypherPlannerOption.dp,
+      runtime = CypherRuntimeOption.pipelined,
+      updateStrategy = CypherUpdateStrategy.eager,
+      expressionEngine = CypherExpressionEngineOption.interpreted,
+      operatorEngine = CypherOperatorEngineOption.interpreted,
+      interpretedPipesFallback = CypherInterpretedPipesFallbackOption.allPossiblePlans,
+      replan = CypherReplanOption.force,
+      connectComponentsPlanner = CypherConnectComponentsPlannerOption.idp,
+      debugOptions = CypherDebugOptions(Set(CypherDebugOption.queryGraph, CypherDebugOption.tostring))
+    )
+
+    options.cacheKey
+      .shouldEqual("PROFILE 3.5 planner=dp runtime=pipelined updateStrategy=eager expressionEngine=interpreted operatorEngine=interpreted interpretedPipesFallback=all replan=force connectComponentsPlanner=idp debug=querygraph debug=tostring")
   }
 }

@@ -83,7 +83,7 @@ class PreParser(
       preParsedQueries.computeIfAbsent(queryText, actuallyPreParse(queryText))
     }
     if (profile) {
-      preParsedQuery.copy(options = preParsedQuery.options.copy(executionMode = CypherExecutionMode.profile))
+      preParsedQuery.copy(options = preParsedQuery.options.withExecutionMode(CypherExecutionMode.profile))
     } else {
       preParsedQuery
     }
@@ -113,28 +113,14 @@ object PreParser {
     isPeriodicCommit: Boolean,
     configuration: CypherConfiguration): QueryOptions = {
 
-    val preParsedOptionsSet = preParsedOptions.toSet
+    val preParsedOptionsSet = preParsedOptions.map(o => (o.key, o.value)).toSet
 
-    val versions = preParsedOptionsSet.collect { case option: VersionPreParserOption => option.value }
-    val executionModes = preParsedOptionsSet.collect { case option: ModePreParserOption => option.value.name }
-    val keyValues = preParsedOptionsSet.collect { case option: KeyValuePreParserOption => option.key -> option.value }
-
-    val options = CypherQueryOptions.fromValues(configuration, executionModes, versions, keyValues)
+    val options = CypherQueryOptions.fromValues(configuration, preParsedOptionsSet)
 
     QueryOptions(
       offset,
       isPeriodicCommit,
-      options.version,
-      options.executionMode,
-      options.planner,
-      options.runtime,
-      options.updateStrategy,
-      options.expressionEngine,
-      options.operatorEngine,
-      options.interpretedPipesFallback,
-      options.replan,
-      options.connectComponentsPlanner,
-      options.debugOptions,
+      options,
     )
   }
 }

@@ -44,6 +44,7 @@ import org.neo4j.cypher.internal.options.CypherExpressionEngineOption
 import org.neo4j.cypher.internal.options.CypherInterpretedPipesFallbackOption
 import org.neo4j.cypher.internal.options.CypherOperatorEngineOption
 import org.neo4j.cypher.internal.options.CypherPlannerOption
+import org.neo4j.cypher.internal.options.CypherQueryOptions
 import org.neo4j.cypher.internal.options.CypherReplanOption
 import org.neo4j.cypher.internal.options.CypherRuntimeOption
 import org.neo4j.cypher.internal.options.CypherUpdateStrategy
@@ -713,22 +714,26 @@ class FabricPlannerTest
       val expectedInner = QueryOptions(
         offset = InputPosition.NONE,
         isPeriodicCommit = false,
-        executionMode = CypherExecutionMode.default,
-        version = CypherVersion.v4_2,
-        planner = CypherPlannerOption.cost,
-        runtime = CypherRuntimeOption.parallel,
-        updateStrategy = CypherUpdateStrategy.eager,
-        expressionEngine = CypherExpressionEngineOption.compiled,
-        operatorEngine = CypherOperatorEngineOption.interpreted,
-        interpretedPipesFallback = CypherInterpretedPipesFallbackOption.disabled,
-        replan = CypherReplanOption.force,
-        connectComponentsPlanner = CypherConnectComponentsPlannerOption.greedy,
-        debugOptions = CypherDebugOptions(Set(CypherDebugOption.tostring, CypherDebugOption.reportCostComparisonsAsRows)),
+        queryOptions = CypherQueryOptions(
+          executionMode = CypherExecutionMode.default,
+          version = CypherVersion.v4_2,
+          planner = CypherPlannerOption.cost,
+          runtime = CypherRuntimeOption.parallel,
+          updateStrategy = CypherUpdateStrategy.eager,
+          expressionEngine = CypherExpressionEngineOption.compiled,
+          operatorEngine = CypherOperatorEngineOption.interpreted,
+          interpretedPipesFallback = CypherInterpretedPipesFallbackOption.disabled,
+          replan = CypherReplanOption.force,
+          connectComponentsPlanner = CypherConnectComponentsPlannerOption.greedy,
+          debugOptions = CypherDebugOptions(Set(CypherDebugOption.tostring, CypherDebugOption.reportCostComparisonsAsRows)),
+        ),
       )
 
       val expectedLast = QueryOptions.default.copy(
-        runtime = CypherRuntimeOption.slotted,
-        expressionEngine = CypherExpressionEngineOption.interpreted,
+        queryOptions = QueryOptions.default.queryOptions.copy(
+          runtime = CypherRuntimeOption.slotted,
+          expressionEngine = CypherExpressionEngineOption.interpreted,
+        ),
         materializedEntitiesMode = true,
       )
 
@@ -763,22 +768,14 @@ class FabricPlannerTest
       val expectedInner = QueryOptions(
         offset = InputPosition.NONE,
         isPeriodicCommit = false,
-        executionMode = CypherExecutionMode.default,
-        version = CypherVersion.v4_3,
-        planner = CypherPlannerOption.default,
-        runtime = CypherRuntimeOption.default,
-        updateStrategy = CypherUpdateStrategy.default,
-        expressionEngine = CypherExpressionEngineOption.default,
-        operatorEngine = CypherOperatorEngineOption.default,
-        interpretedPipesFallback = CypherInterpretedPipesFallbackOption.default,
-        replan = CypherReplanOption.default,
-        connectComponentsPlanner = CypherConnectComponentsPlannerOption.default,
-        debugOptions = CypherDebugOptions.default,
+        queryOptions = CypherQueryOptions.default,
       )
 
       val expectedLast = QueryOptions.default.copy(
-        runtime = CypherRuntimeOption.slotted,
-        expressionEngine = CypherExpressionEngineOption.interpreted,
+        queryOptions = QueryOptions.default.queryOptions.copy(
+          runtime = CypherRuntimeOption.slotted,
+          expressionEngine = CypherExpressionEngineOption.interpreted,
+        ),
         materializedEntitiesMode = true,
       )
 

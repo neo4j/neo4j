@@ -113,8 +113,10 @@ case class FabricPlanner(
     private def optionsFor(fragment: Fragment) =
       if (isFabricFragment(fragment))
         QueryOptions.default.copy(
-          runtime = CypherRuntimeOption.slotted,
-          expressionEngine = CypherExpressionEngineOption.interpreted,
+          queryOptions = QueryOptions.default.queryOptions.copy(
+            runtime = CypherRuntimeOption.slotted,
+            expressionEngine = CypherExpressionEngineOption.interpreted,
+          ),
           materializedEntitiesMode = true,
         )
       else

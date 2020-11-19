@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.options.CypherExpressionEngineOption
 import org.neo4j.cypher.internal.options.CypherInterpretedPipesFallbackOption
 import org.neo4j.cypher.internal.options.CypherOperatorEngineOption
 import org.neo4j.cypher.internal.options.CypherPlannerOption
+import org.neo4j.cypher.internal.options.CypherQueryOptions
 import org.neo4j.cypher.internal.options.CypherReplanOption
 import org.neo4j.cypher.internal.options.CypherRuntimeOption
 import org.neo4j.cypher.internal.options.CypherUpdateStrategy
@@ -52,7 +53,7 @@ sealed trait InputQuery {
 case class PreParsedQuery(statement: String, rawStatement: String, options: QueryOptions) extends InputQuery {
 
   val statementWithVersionAndPlanner: String =
-    s"${options.cacheKey.render} $statement"
+    s"${options.cacheKey} $statement"
 
   override def cacheKey: String = statementWithVersionAndPlanner
 
@@ -72,7 +73,7 @@ case class FullyParsedQuery(state: BaseState, options: QueryOptions) extends Inp
 
   override def withRecompilationLimitReached: FullyParsedQuery = copy(options = options.withRecompilationLimitReached)
 
-  override val cacheKey: String = s"${options.cacheKey.render} ${state.queryText}"
+  override val cacheKey: String = s"${options.cacheKey} ${state.queryText}"
 
 }
 
@@ -81,19 +82,21 @@ case class FullyParsedQuery(state: BaseState, options: QueryOptions) extends Inp
  */
 case class QueryOptions(offset: InputPosition,
                         isPeriodicCommit: Boolean,
-                        version: CypherVersion,
-                        executionMode: CypherExecutionMode,
-                        planner: CypherPlannerOption,
-                        runtime: CypherRuntimeOption,
-                        updateStrategy: CypherUpdateStrategy,
-                        expressionEngine: CypherExpressionEngineOption,
-                        operatorEngine: CypherOperatorEngineOption,
-                        interpretedPipesFallback: CypherInterpretedPipesFallbackOption,
-                        replan: CypherReplanOption,
-                        connectComponentsPlanner: CypherConnectComponentsPlannerOption,
-                        debugOptions: CypherDebugOptions,
+                        queryOptions: CypherQueryOptions,
                         recompilationLimitReached: Boolean = false,
                         materializedEntitiesMode: Boolean = false) {
+
+  def version: CypherVersion = queryOptions.version
+  def executionMode: CypherExecutionMode = queryOptions.executionMode
+  def planner: CypherPlannerOption = queryOptions.planner
+  def runtime: CypherRuntimeOption = queryOptions.runtime
+  def updateStrategy: CypherUpdateStrategy = queryOptions.updateStrategy
+  def expressionEngine: CypherExpressionEngineOption = queryOptions.expressionEngine
+  def operatorEngine: CypherOperatorEngineOption = queryOptions.operatorEngine
+  def interpretedPipesFallback: CypherInterpretedPipesFallbackOption = queryOptions.interpretedPipesFallback
+  def replan: CypherReplanOption = queryOptions.replan
+  def connectComponentsPlanner: CypherConnectComponentsPlannerOption = queryOptions.connectComponentsPlanner
+  def debugOptions: CypherDebugOptions = queryOptions.debugOptions
 
   def compileWhenHot: Boolean = expressionEngine == CypherExpressionEngineOption.onlyWhenHot || expressionEngine == CypherExpressionEngineOption.default
 
@@ -101,80 +104,26 @@ case class QueryOptions(offset: InputPosition,
 
   def withRecompilationLimitReached: QueryOptions = copy(recompilationLimitReached = true)
 
-  def cacheKey: QueryOptions.CacheKey = QueryOptions.CacheKey(
-    version = version.cacheKey,
-    executionMode.cacheKey,
-    plannerInfo = planner.cacheKey,
-    runtimeInfo = runtime.cacheKey,
-    updateStrategyInfo = updateStrategy.cacheKey,
-    expressionEngineInfo = expressionEngine.cacheKey,
-    operatorEngineInfo = operatorEngine.cacheKey,
-    interpretedPipesFallbackInfo = interpretedPipesFallback.cacheKey,
-    connectComponentsPlannerInfo = connectComponentsPlanner.cacheKey,
-    debugFlags = debugOptions.enabledOptionsSeq.map(_.cacheKey).mkString(" ")
-  )
+  def withExecutionMode(executionMode: CypherExecutionMode): QueryOptions =
+    copy(queryOptions = queryOptions.copy(executionMode = executionMode))
+
+  def cacheKey: String = {
+    val key = queryOptions.cacheKey
+    if (key.isBlank) key else "CYPHER " + key
+  }
 
   def render: Option[String] = {
-    val parts = Seq(
-      Seq(
-        version.render,
-        planner.render,
-        runtime.render,
-        updateStrategy.render,
-        expressionEngine.render,
-        operatorEngine.render,
-        interpretedPipesFallback.render,
-        replan.render,
-        connectComponentsPlanner.render,
-      ),
-      debugOptions.enabledOptionsSeq.map(_.render)
-    ).flatten.filterNot(_.isEmpty)
-
-    if (parts.nonEmpty) Some(s"CYPHER ${parts.mkString(" ")}")
-    else None
+    val text = queryOptions.render
+    if (text.isBlank) None else Some("CYPHER " + text)
   }
 
 }
 
 object QueryOptions {
-  case class CacheKey(version: String,
-                      profile: String,
-                      plannerInfo: String,
-                      runtimeInfo: String,
-                      updateStrategyInfo: String,
-                      expressionEngineInfo: String,
-                      operatorEngineInfo: String,
-                      interpretedPipesFallbackInfo: String,
-                      connectComponentsPlannerInfo: String,
-                      debugFlags: String) {
-    def render: String = Seq(
-        version,
-        profile,
-        plannerInfo,
-        runtimeInfo,
-        updateStrategyInfo,
-        expressionEngineInfo,
-        operatorEngineInfo,
-        interpretedPipesFallbackInfo,
-        connectComponentsPlannerInfo,
-        debugFlags,
-    ).filterNot(_.isEmpty)
-     .mkString("CYPHER ", " ", "")
-  }
-
   val default: QueryOptions = QueryOptions(
-    InputPosition.NONE,
+    offset = InputPosition.NONE,
     isPeriodicCommit = false,
-    CypherVersion.default,
-    CypherExecutionMode.default,
-    CypherPlannerOption.default,
-    CypherRuntimeOption.default,
-    CypherUpdateStrategy.default,
-    CypherExpressionEngineOption.default,
-    CypherOperatorEngineOption.default,
-    CypherInterpretedPipesFallbackOption.default,
-    CypherReplanOption.default,
-    CypherConnectComponentsPlannerOption.default,
-    CypherDebugOptions.default,
+    queryOptions = CypherQueryOptions.default,
   )
+
 }

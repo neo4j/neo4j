@@ -21,18 +21,20 @@ package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.internal.compiler.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.options.CypherExecutionMode
+import org.neo4j.cypher.internal.options.CypherVersion
 import org.neo4j.cypher.internal.parser.Base
 import org.neo4j.cypher.internal.util.InputPosition
 import org.parboiled.scala.Rule0
 import org.parboiled.scala.Rule1
 import org.parboiled.scala.group
 
-sealed trait PreParserOption
-sealed abstract class ModePreParserOption(val value: CypherExecutionMode) extends PreParserOption
-case object ExplainModePreParserOption extends ModePreParserOption(CypherExecutionMode.explain)
-case object ProfileModePreParserOption extends ModePreParserOption(CypherExecutionMode.profile)
-final case class VersionPreParserOption(value: String) extends PreParserOption
-final case class KeyValuePreParserOption(key: String, value: String) extends PreParserOption
+final case class PreParserOption(key: String, value: String)
+object PreParserOption {
+  val explain: PreParserOption = PreParserOption(CypherExecutionMode.name, "EXPLAIN")
+  val profile: PreParserOption = PreParserOption(CypherExecutionMode.name, "PROFILE")
+  def version(value: String): PreParserOption = PreParserOption(CypherVersion.name, value)
+  def generic(key: String, value: String): PreParserOption = PreParserOption(key, value)
+}
 
 final case class PreParsedStatement(statement: String, options: List[PreParserOption], offset: InputPosition)
 
@@ -47,24 +49,24 @@ case object CypherPreParser extends org.parboiled.scala.Parser with Base {
 
   def AnyCypherOption: Rule1[List[PreParserOption]] = Cypher | ((Explain | Profile) ~~> (m => List(m)))
 
-  def Explain: Rule1[ModePreParserOption] = keyword("EXPLAIN") ~ push(ExplainModePreParserOption)
+  def Explain: Rule1[PreParserOption] = keyword("EXPLAIN") ~ push(PreParserOption.explain)
 
-  def Profile: Rule1[ModePreParserOption] = keyword("PROFILE") ~ push(ProfileModePreParserOption)
+  def Profile: Rule1[PreParserOption] = keyword("PROFILE") ~ push(PreParserOption.profile)
 
   def Cypher: Rule1[List[PreParserOption]] = rule("CYPHER options") {
     keyword("CYPHER") ~~ optional(Version) ~~ KeyValueOptions ~~> ((ver, opts) => ver.toList ++ opts)
   }
 
-  def Version: Rule1[VersionPreParserOption] = rule("Version") {
-    group(Digits ~ "." ~ Digits) ~> VersionPreParserOption
+  def Version: Rule1[PreParserOption] = rule("Version") {
+    group(Digits ~ "." ~ Digits) ~> PreParserOption.version
   }
 
   def Digits: Rule0 = oneOrMore("0" - "9")
 
-  def KeyValueOptions: Rule1[List[KeyValuePreParserOption]] = zeroOrMore(KeyValueOption, WS)
+  def KeyValueOptions: Rule1[List[PreParserOption]] = zeroOrMore(KeyValueOption, WS)
 
-  def KeyValueOption: Rule1[KeyValuePreParserOption] = rule("cypher option")(
-    (UnescapedSymbolicNameString ~~ "=" ~~ UnescapedSymbolicNameString) ~~> KeyValuePreParserOption
+  def KeyValueOption: Rule1[PreParserOption] = rule("cypher option")(
+    (UnescapedSymbolicNameString ~~ "=" ~~ UnescapedSymbolicNameString) ~~> PreParserOption.generic
   )
 
   def AnySomething: Rule1[String] = rule("Query") { oneOrMore(org.parboiled.scala.ANY) ~> identity }
