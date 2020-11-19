@@ -10,6 +10,8 @@ Apache Software License, Version 2.0
   Apache Log4j API
   Apache Log4j Core
   Jettison
+  magnolia
+  mercator
   Scala Compiler
 ------------------------------------------------------------------------------
 

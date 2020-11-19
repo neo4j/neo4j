@@ -171,6 +171,12 @@
                     </exclusion>
                 </exclusions>
             </dependency>
+
+            <dependency>
+                <groupId>com.propensive</groupId>
+                <artifactId>magnolia_${scala.binary.version}</artifactId>
+                <version>0.17.0</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 </project>

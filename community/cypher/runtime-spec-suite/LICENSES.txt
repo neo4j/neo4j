@@ -29,6 +29,8 @@ Apache Software License, Version 2.0
   Lucene Core
   Lucene Memory
   Lucene QueryParsers
+  magnolia
+  mercator
   parboiled-core
   parboiled-scala
   Scala Compiler
