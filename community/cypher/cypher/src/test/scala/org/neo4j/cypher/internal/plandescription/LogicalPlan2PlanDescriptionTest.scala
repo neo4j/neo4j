@@ -305,8 +305,8 @@ object LogicalPlan2PlanDescriptionTest {
   def planDescription(id: Id,
                       name: String,
                       children: Children,
-                      arguments: Seq[Argument],
-                      variables: Set[String]): PlanDescriptionImpl = PlanDescriptionImpl(id, name, children, arguments, variables.map(asPrettyString.raw))
+                      arguments: Seq[Argument] = Seq.empty,
+                      variables: Set[String] = Set.empty): PlanDescriptionImpl = PlanDescriptionImpl(id, name, children, arguments, variables.map(asPrettyString.raw))
 }
 
 class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPropertyChecks {

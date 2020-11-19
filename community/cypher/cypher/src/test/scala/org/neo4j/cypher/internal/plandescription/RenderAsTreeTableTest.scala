@@ -948,4 +948,58 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
         |+----------------+----------------+------+---------+------------------------+-----------+---------------------+
         |""".stripMargin)
   }
+
+  test("not merge columns of plan without pipeline info if it's surrounded by plans in other pipelines") {
+    val node1 = planDescription(id, "Node1", NoChildren, Seq(PipelineInfo(1, fused = true), Time(1000000)))
+    val node2 = planDescription(id, "Node2", SingleChild(node1), Seq(PipelineInfo(2, fused = true), Time(1000000)))
+    val node3 = planDescription(id, "Node3", SingleChild(node2), Seq(PipelineInfo(3, fused = true), Time(1000000)))
+    val node4 = planDescription(id, "Node4", SingleChild(node3), Seq(Time(1000000)))
+    val node5 = planDescription(id, "Node5", SingleChild(node4), Seq(PipelineInfo(4, fused = true), Time(1000000)))
+
+    renderAsTreeTable(node5) should equal(
+      """+----------+-----------+---------------------+
+        || Operator | Time (ms) | Other               |
+        |+----------+-----------+---------------------+
+        || +Node5   |     1.000 | Fused in Pipeline 4 |
+        || |        +-----------+---------------------+
+        || +Node4   |     1.000 |                     |
+        || |        +-----------+---------------------+
+        || +Node3   |     1.000 | Fused in Pipeline 3 |
+        || |        +-----------+---------------------+
+        || +Node2   |     1.000 | Fused in Pipeline 2 |
+        || |        +-----------+---------------------+
+        || +Node1   |     1.000 | Fused in Pipeline 1 |
+        |+----------+-----------+---------------------+
+        |""".stripMargin)
+  }
+
+  test("not merge columns without pipeline info of plan with branching if it's surrounded by plans in other pipelines") {
+    val leaf1 = planDescription(id, "Leaf1", NoChildren, Seq(PipelineInfo(5, fused = false), PageCacheHits(7), PageCacheMisses(6)))
+    val leaf2 = planDescription(id, "Leaf2", NoChildren, Seq(PipelineInfo(4, fused = false), PageCacheHits(6), PageCacheMisses(5)))
+    val leaf3 = planDescription(id, "Leaf3", NoChildren, Seq(PipelineInfo(3, fused = false), PageCacheHits(4), PageCacheMisses(3)))
+    val leaf4 = planDescription(id, "Leaf4", NoChildren, Seq(PipelineInfo(2, fused = false), PageCacheHits(3), PageCacheMisses(2)))
+    val intermediate1 = planDescription(id, "Intermediate1", TwoChildren(leaf1, leaf2), Seq(PageCacheHits(5), PageCacheMisses(4)))
+    val intermediate2 = planDescription(id, "Intermediate2", TwoChildren(leaf3, leaf4), Seq(PageCacheHits(2), PageCacheMisses(1)))
+    val plan = planDescription(id, "Root", TwoChildren(intermediate1, intermediate2), Seq(PipelineInfo(1, fused = false), PageCacheHits(1), PageCacheMisses(0)), Set())
+
+    renderAsTreeTable(plan) should equal(
+      """+------------------+------------------------+---------------+
+        || Operator         | Page Cache Hits/Misses | Other         |
+        |+------------------+------------------------+---------------+
+        || +Root            |                    1/0 | In Pipeline 1 |
+        || |\               +------------------------+---------------+
+        || | +Intermediate2 |                    2/1 |               |
+        || | |\             +------------------------+---------------+
+        || | | +Leaf4       |                    3/2 | In Pipeline 2 |
+        || | |              +------------------------+---------------+
+        || | +Leaf3         |                    4/3 | In Pipeline 3 |
+        || |                +------------------------+---------------+
+        || +Intermediate1   |                    5/4 |               |
+        || |\               +------------------------+---------------+
+        || | +Leaf2         |                    6/5 | In Pipeline 4 |
+        || |                +------------------------+---------------+
+        || +Leaf1           |                    7/6 | In Pipeline 5 |
+        |+------------------+------------------------+---------------+
+        |""".stripMargin)
+  }
 }

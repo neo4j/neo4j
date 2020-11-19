@@ -131,8 +131,8 @@ object renderAsTreeTable extends (InternalPlanDescription => String) {
   case class LevelledPlan(plan: InternalPlanDescription, level: Level, var maybePipelineInfo: Option[PipelineInfo])
 
   private def accumulate(incoming: InternalPlanDescription): (Seq[TableRow], Map[String, Int]) = {
-    var lastSeenPipelineInfo:Option[PipelineInfo] = None
-    var plansWithoutPipelineInfo = Seq.empty[(LevelledPlan, Option[String])]
+    var lastSeenPipelineInfo: Option[PipelineInfo] = None
+    val plansWithoutPipelineInfo = mutable.ArrayBuffer.empty[(LevelledPlan, Option[String])]
     var previousLevelledPlan: Option[LevelledPlan] = None
     val stack = new mutable.ArrayStack[(InternalPlanDescription, Level)]
     stack.push((compactPlan(incoming), Root))
@@ -147,6 +147,19 @@ object renderAsTreeTable extends (InternalPlanDescription => String) {
       val mergedColumns = if (isMerged(levelledPlan, previousLevelledPlan)) MERGABLE_COLUMNS else Set.empty[String]
       rows.append(TableRow(line, tableRow(plan, mergedColumns, columns), level.connector, childConnector.map(_.replace("\\", "")), mergedColumns))
     }
+
+    def flushPlansWithoutPipelineInfo(mergeWithLastSeen: Boolean): Unit = {
+      if (mergeWithLastSeen) {
+        plansWithoutPipelineInfo.foreach { case (lp, cc) =>
+          lp.maybePipelineInfo = lastSeenPipelineInfo
+          appendRow(lp, cc)
+        }
+      } else {
+        plansWithoutPipelineInfo.foreach { case (lp, cc) => appendRow(lp, cc) }
+      }
+      plansWithoutPipelineInfo.clear()
+    }
+
 
     while (stack.nonEmpty) {
       val (plan, level) = stack.pop()
@@ -164,40 +177,29 @@ object renderAsTreeTable extends (InternalPlanDescription => String) {
           level.fork.connector
       }
 
-      (lastSeenPipelineInfo, levelledPlan.maybePipelineInfo) match {
-        case (None, Some(currentInfo)) =>
-          // first (or next first) time encountering a plan that has pipeline info
-          lastSeenPipelineInfo = Some(currentInfo)
-          appendRow(levelledPlan, childConnector)
-        case (Some(lastSeen), None) =>
-          // encountered a plan that does not have a pipeline info, but we have seen a pipeline info before
-          // buffer this row (rather than immediately appending) until we know what pipeline it is in
-          plansWithoutPipelineInfo = plansWithoutPipelineInfo :+ (levelledPlan, childConnector)
-          if (stack.isEmpty) {
-            plansWithoutPipelineInfo.foreach { case (lp, cc) => appendRow(lp, cc) }
-          }
-        case (Some(lastSeen), Some(currentInfo)) if lastSeen == currentInfo =>
-          // encountered plan with same pipeline info again, after encountering intermediate plan(s) without any pipeline info
-          // we need to merge all the intermediate plans into this pipeline when rendering
+      levelledPlan.maybePipelineInfo match {
+        case Some(currentInfo) =>
+          // Append rows for intermediate plans without info, if we're still part of the same pipeline we update the missing info
+          flushPlansWithoutPipelineInfo(mergeWithLastSeen = lastSeenPipelineInfo.contains(currentInfo))
 
-          // add a (derived) pipeline info to plans that do not have one, so we can later decide if their table cells can be merged
-          plansWithoutPipelineInfo.foreach { case (lp, cc) =>
-            lp.maybePipelineInfo = Some(currentInfo)
-            appendRow(lp, cc)
-          }
-          plansWithoutPipelineInfo = Seq.empty[(LevelledPlan, Option[String])]
           appendRow(levelledPlan, childConnector)
-        case (Some(lastSeen), Some(currentInfo)) =>
           lastSeenPipelineInfo = Some(currentInfo)
-          plansWithoutPipelineInfo.foreach { case (lp, cc) => appendRow(lp, cc) }
-          appendRow(levelledPlan, childConnector)
-        case (None, None) =>
-          assert(plansWithoutPipelineInfo.isEmpty, "In this case, every operator in the plan should have no pipeline info")
-          appendRow(levelledPlan, childConnector)
+        case None =>
+          if (lastSeenPipelineInfo.isDefined) {
+            // encountered a plan that does not have a pipeline info, but we have seen a pipeline info before
+            // buffer this row (rather than immediately appending) until we know what pipeline it is in
+            plansWithoutPipelineInfo += ((levelledPlan, childConnector))
+          } else {
+            assert(plansWithoutPipelineInfo.isEmpty, "In this case, every operator in the plan should have no pipeline info")
+            appendRow(levelledPlan, childConnector)
+          }
       }
 
       previousLevelledPlan = Some(levelledPlan)
     }
+
+    flushPlansWithoutPipelineInfo(mergeWithLastSeen = false)
+
     (rows, columns.toMap)
   }
 
