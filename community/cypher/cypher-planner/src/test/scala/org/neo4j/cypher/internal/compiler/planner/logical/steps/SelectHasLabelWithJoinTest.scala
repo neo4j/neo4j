@@ -19,17 +19,22 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
+import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher.beLike
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.HasLabelsOrTypes
+import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.Argument
+import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.FieldSignature
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.NodeHashJoin
+import org.neo4j.cypher.internal.logical.plans.Optional
 import org.neo4j.cypher.internal.logical.plans.ProcedureCall
 import org.neo4j.cypher.internal.logical.plans.ProcedureReadOnlyAccess
 import org.neo4j.cypher.internal.logical.plans.ProcedureSignature
 import org.neo4j.cypher.internal.logical.plans.QualifiedName
+import org.neo4j.cypher.internal.logical.plans.RightOuterHashJoin
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -79,6 +84,33 @@ class SelectHasLabelWithJoinTest extends CypherFunSuite with LogicalPlanningTest
         exprs.toList should matchPattern {
           case List(HasLabelsOrTypes(_, _)) => ()
         }
+    }
+  }
+
+  test("should plan label scan with argument") {
+    val query =
+      """MATCH (n:N)
+        |OPTIONAL MATCH (n)-[:REL]->(m:M)
+        |RETURN n, m
+        |""".stripMargin
+
+    val plan = new given {
+      cost = {
+        case (_: Selection, _, _) => 1000.0
+        case (_: RightOuterHashJoin, _, _) => 1000.0
+        case (_: NodeHashJoin, _, _) => 20.0
+        case (_: NodeByLabelScan, _, _) => 20.0
+      }
+    } getLogicalPlanFor query
+
+    plan._2 should beLike {
+      case
+        Apply
+          (NodeByLabelScan("n", _, _, _),
+          Optional
+            (Expand
+              (NodeByLabelScan("m", _, args, _), _, _, _, _, _, _), _))
+        if args == Set("n") => ()
     }
   }
 }
