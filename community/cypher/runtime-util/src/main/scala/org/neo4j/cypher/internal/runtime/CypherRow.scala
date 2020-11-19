@@ -111,7 +111,7 @@ class MapCypherRow(private val m: mutable.Map[String, AnyValue], private var cac
 
   private def fail(): Nothing = throw new InternalException("Tried using a map context as a slotted context")
 
-  override def mergeWith(other: ReadableRow, entityById: EntityById): Unit = other match {
+  override def mergeWith(other: ReadableRow, entityById: EntityById, checkNullability: Boolean = true): Unit = other match {
     case otherMapCtx: MapCypherRow =>
       m ++= otherMapCtx.m
       if (otherMapCtx.cachedProperties != null) {

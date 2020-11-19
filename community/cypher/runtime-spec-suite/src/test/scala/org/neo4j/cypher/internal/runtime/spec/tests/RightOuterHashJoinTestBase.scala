@@ -454,6 +454,28 @@ abstract class RightOuterHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Ed
     runtimeResult should beColumns("x").withRows(expectedResultRows)
   }
 
+  test("should join on nodes with different types and different nullability") {
+    // given
+    val (nodes, _) = given {
+      circleGraph(sizeHint)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .rightOuterHashJoin("x")
+      .|.allNodeScan("x") // non-nullable longslot
+      .unwind("[xLong] as x") // nullable refslot
+      .allNodeScan("xLong")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, NO_INPUT)
+
+    // then
+    val expectedResultRows = nodes.map(Array(_))
+    runtimeResult should beColumns("x").withRows(expectedResultRows)
+  }
+
   test("should join with alias on join-key on RHS") {
     // given
     val (nodes, _) = given { circleGraph(sizeHint) }

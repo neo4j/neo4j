@@ -48,7 +48,8 @@ case class NodeRightOuterHashJoinPipe(nodeVariables: Set[String],
           if (lhsRows.hasNext) {
             lhsRows.asScala.map { lhsRow =>
               val outputRow = rowFactory.copyWith(rhsRow)
-              outputRow.mergeWith(lhsRow, state.query)
+              // lhs and rhs might have different nullability - should use nullability on rhs
+              outputRow.mergeWith(lhsRow, state.query, false)
               outputRow
             }
           } else {

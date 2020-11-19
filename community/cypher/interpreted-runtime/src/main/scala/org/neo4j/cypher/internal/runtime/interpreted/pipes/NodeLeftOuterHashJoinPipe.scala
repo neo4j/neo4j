@@ -52,7 +52,8 @@ case class NodeLeftOuterHashJoinPipe(nodeVariables: Set[String],
       lhsRow <- probeTable(joinKey).asScala
     } yield {
       val outputRow = rowFactory.copyWith(lhsRow)
-      outputRow.mergeWith(rhsRow, state.query)
+      // lhs and rhs might have different nullability - should use nullability on lhs
+      outputRow.mergeWith(rhsRow, state.query, false)
       outputRow
     }
 
