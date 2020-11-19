@@ -19,18 +19,21 @@
  */
 package org.neo4j.cypher.internal.runtime.spec.tests
 
+import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
+import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.runtime.QueryStatistics
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RecordingRuntimeResult
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
+import org.neo4j.exceptions.InternalException
 import org.neo4j.graphdb.Label.label
 import org.neo4j.internal.helpers.collection.Iterables
 
@@ -194,4 +197,42 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
     relationships should have size 2 * sizeHint
     runtimeResult should beColumns("r").withRows(singleColumn(relationships)).withStatistics(relationshipsCreated = 2 * sizeHint)
   }
+
+  test("should fail to create relationship if nodes are missing") {
+    // given an empty data base
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r")
+      .create(nodes = Seq.empty,
+        relationships = Seq(createRelationship("r", "n", "R", "n", OUTGOING)))
+      .input(nodes = Seq("n"))
+      .build(readOnly = false)
+
+    the [InternalException] thrownBy consume(execute(logicalQuery, runtime, inputValues(Array[Any](null)))) should have message
+      "Failed to create relationship `r`, node `n` is missing. If you prefer to simply ignore rows where a relationship node is missing, " +
+       "set 'cypher.lenient_create_relationship = true' in neo4j.conf"
+  }
+}
+
+abstract class LenientCreateRelationshipTestBase[CONTEXT <: RuntimeContext](
+                                                                            edition: Edition[CONTEXT],
+                                                                            runtime: CypherRuntime[CONTEXT]
+                                                                          )
+  extends RuntimeTestSuite[CONTEXT](edition.copyWith(
+    GraphDatabaseSettings.cypher_lenient_create_relationship -> java.lang.Boolean.TRUE), runtime) {
+  test("should ignore to create relationship if nodes are missing") {
+    // given an empty data base
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r")
+      .create(nodes = Seq.empty,
+        relationships = Seq(createRelationship("r", "n", "R", "n", OUTGOING)))
+      .input(nodes = Seq("n"))
+      .build(readOnly = false)
+
+    val results = execute(logicalQuery, runtime, inputValues(Array[Any](null)))
+    consume(results)
+    results should beColumns("r").withSingleRow(null).withStatistics(relationshipsCreated = 0)  }
 }

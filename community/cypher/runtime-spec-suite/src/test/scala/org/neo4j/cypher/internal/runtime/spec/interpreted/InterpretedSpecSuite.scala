@@ -56,6 +56,7 @@ import org.neo4j.cypher.internal.runtime.spec.tests.FullSupportProfileMemoryTest
 import org.neo4j.cypher.internal.runtime.spec.tests.InputTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.LabelScanTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.LeftOuterHashJoinTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.LenientCreateRelationshipTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.LetAntiSemiApplyTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.LetSelectOrAntiSemiApplyTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.LetSelectOrSemiApplyTestBase
@@ -225,3 +226,4 @@ class InterpretedEmptyResultTest extends EmptyResultTestBase(COMMUNITY.EDITION, 
 class InterpretedTriadicSelectionTest extends TriadicSelectionTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedAssertSameNodeTest extends AssertSameNodeTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT) with EsotericAssertSameNodeTestBase[CommunityRuntimeContext]
 class InterpretedCreateTest extends CreateTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
+class InterpretedLenientCreateRelationshipTest extends LenientCreateRelationshipTestBase(COMMUNITY.EDITION, InterpretedRuntime)
