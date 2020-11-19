@@ -285,6 +285,7 @@ case object CypherInterpretedPipesFallbackOption extends CypherOptionCompanion[C
 
 sealed abstract class CypherReplanOption(strategy: String) extends CypherKeyValueOption(strategy) {
   override def companion: CypherReplanOption.type = CypherReplanOption
+  override def cacheKey: String = ""
 }
 
 case object CypherReplanOption extends CypherOptionCompanion[CypherReplanOption](

@@ -264,12 +264,17 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
     graph.withTx(tx => {
       tx.execute(s"CYPHER replan=force $query").resultAsString()
     })
+    graph.withTx(tx => {
+      tx.execute(s"CYPHER replan=force $query").resultAsString()
+    })
 
     val actual = cacheListener.trace.map(str => str.replaceAll("\\s+", " "))
     val expected = List(
       s"cacheFlushDetected",
       s"cacheMiss: (CYPHER 4.3 $query, $empty_parameters)",
       s"cacheCompile: (CYPHER 4.3 $query, $empty_parameters)",
+      s"cacheMiss: (CYPHER 4.3 $query, $empty_parameters)",
+      s"cacheCompileWithExpressionCodeGen: (CYPHER 4.3 $query, $empty_parameters)",
       s"cacheMiss: (CYPHER 4.3 $query, $empty_parameters)",
       s"cacheCompileWithExpressionCodeGen: (CYPHER 4.3 $query, $empty_parameters)",
     )
