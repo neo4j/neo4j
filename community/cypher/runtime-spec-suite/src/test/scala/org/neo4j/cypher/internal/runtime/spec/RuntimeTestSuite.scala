@@ -38,7 +38,6 @@ import org.neo4j.cypher.internal.plandescription.InternalPlanDescription
 import org.neo4j.cypher.internal.runtime.InputDataStream
 import org.neo4j.cypher.internal.runtime.InputValues
 import org.neo4j.cypher.internal.runtime.NoInput
-import org.neo4j.cypher.internal.runtime.QueryStatistics
 import org.neo4j.cypher.internal.runtime.debug.DebugLog
 import org.neo4j.cypher.internal.spi.TransactionBoundPlanContext
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -46,6 +45,7 @@ import org.neo4j.cypher.result.QueryProfile
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.dbms.api.DatabaseManagementService
 import org.neo4j.graphdb.GraphDatabaseService
+import org.neo4j.graphdb.QueryStatistics
 import org.neo4j.kernel.api.Kernel
 import org.neo4j.kernel.api.procedure.CallableProcedure
 import org.neo4j.kernel.api.procedure.CallableUserAggregationFunction
@@ -191,7 +191,7 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
                                                 parameters: Map[String, Any] = Map.empty
                                                ): IndexedSeq[Array[AnyValue]] = runtimeTestSupport.executeAndConsumeTransactionally(logicalQuery, runtime)
 
-  override def execute(executablePlan: ExecutionPlan): RecordingRuntimeResult = runtimeTestSupport.execute(executablePlan)
+  override def execute(executablePlan: ExecutionPlan, readOnly: Boolean): RecordingRuntimeResult = runtimeTestSupport.execute(executablePlan, readOnly)
 
   override def buildPlan(logicalQuery: LogicalQuery,
                          runtime: CypherRuntime[CONTEXT]): ExecutionPlan = runtimeTestSupport.buildPlan(logicalQuery, runtime)
@@ -284,10 +284,16 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
   class RuntimeResultMatcher(expectedColumns: Seq[String]) extends Matcher[RecordingRuntimeResult] {
 
     private var rowsMatcher: RowsMatcher = AnyRowsMatcher
-    private var maybeStatisticts: Option[QueryStatistics] = None
+    private var maybeStatisticts: Option[QueryStatisticsMatcher] = None
 
-    def withStatistics(stats: QueryStatistics): RuntimeResultMatcher = {
-      maybeStatisticts = Some(stats)
+    def withStatistics(nodesCreated: Int = 0,
+                       nodesDeleted: Int = 0,
+                       relationshipsCreated: Int = 0,
+                       relationshipsDeleted: Int = 0,
+                       labelsAdded: Int = 0,
+                       labelsRemoved: Int = 0,
+                       propertiesSet: Int = 0): RuntimeResultMatcher = {
+      maybeStatisticts = Some(new QueryStatisticsMatcher(nodesCreated, nodesDeleted, relationshipsCreated, relationshipsDeleted, labelsAdded, labelsRemoved, propertiesSet))
       this
     }
 
@@ -307,14 +313,43 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
       val columns = left.runtimeResult.fieldNames().toIndexedSeq
       if (columns != expectedColumns) {
         MatchResult(matches = false, s"Expected result columns $expectedColumns, got $columns", "")
-      } else if (maybeStatisticts.exists(_ != left.runtimeResult.queryStatistics())) {
-        MatchResult(matches = false, s"Expected statistics ${left.runtimeResult.queryStatistics()}, got ${maybeStatisticts.get}", "")
+      } else if (maybeStatisticts.isDefined) {
+        maybeStatisticts.get.apply(left.runtimeResult.queryStatistics())
       } else {
         val rows = consume(left)
         rowsMatcher.matches(columns, rows) match {
           case RowsMatch => MatchResult(matches = true, "", "")
           case RowsDontMatch(msg) => MatchResult(matches = false, msg, "")
         }
+      }
+    }
+  }
+
+  class QueryStatisticsMatcher(nodesCreated: Int,
+                               nodesDeleted: Int,
+                               relationshipsCreated: Int,
+                               relationshipsDeleted: Int,
+                               labelsAdded: Int,
+                               labelsRemoved: Int,
+                               propertiesSet: Int) extends Matcher[QueryStatistics] {
+
+    override def apply(left: QueryStatistics): MatchResult = {
+      if (nodesCreated != left.getNodesCreated) {
+        MatchResult(matches = false, s"expected nodesCreated=$nodesCreated but was ${left.getNodesCreated}", "")
+      } else if (nodesDeleted != left.getNodesDeleted) {
+        MatchResult(matches = false, s"expected nodesDeleted=$nodesDeleted but was ${left.getNodesDeleted}", "")
+      } else if (relationshipsCreated != left.getRelationshipsCreated) {
+        MatchResult(matches = false, s"expected relationshipCreated=$relationshipsCreated but was ${left.getRelationshipsCreated}", "")
+      } else if (relationshipsDeleted != left.getRelationshipsDeleted) {
+        MatchResult(matches = false, s"expected relationshipsDeleted=$relationshipsDeleted but was ${left.getRelationshipsDeleted}", "")
+      } else if (labelsAdded != left.getLabelsAdded) {
+        MatchResult(matches = false, s"expected labelsAdded=$labelsAdded but was ${left.getLabelsAdded}", "")
+      } else if (labelsRemoved != left.getLabelsRemoved) {
+        MatchResult(matches = false, s"expected labelsRemoved=$labelsRemoved but was ${left.getLabelsRemoved}", "")
+      } else if (propertiesSet != left.getPropertiesSet) {
+        MatchResult(matches = false, s"expected propertiesSet=$propertiesSet but was ${left.getPropertiesSet}", "")
+      } else {
+        MatchResult(matches = true, "", "")
       }
     }
   }

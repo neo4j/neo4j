@@ -54,7 +54,12 @@ trait RuntimeExecutionSupport[CONTEXT <: RuntimeContext] extends InputDataStream
   /**
    * Execute an pre-compiled query with an ExecutionPlan
    */
-  def execute(executablePlan: ExecutionPlan): RecordingRuntimeResult
+  def execute(executablePlan: ExecutionPlan): RecordingRuntimeResult = execute(executablePlan, readOnly = true)
+
+  /**
+   * Execute an pre-compiled query with an ExecutionPlan
+   */
+  def execute(executablePlan: ExecutionPlan, readOnly: Boolean): RecordingRuntimeResult
 
   /**
    * Execute a Logical query.

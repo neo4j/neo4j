@@ -47,6 +47,7 @@ import org.neo4j.cypher.internal.runtime.ResourceMonitor
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionalContextWrapper
+import org.neo4j.cypher.internal.runtime.interpreted.UpdateCountingQueryContext
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.graphdb.GraphDatabaseService
@@ -118,16 +119,17 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
   def txContext: TransactionalContext = _txContext
 
   override def buildPlan(logicalQuery: LogicalQuery,
-                         runtime: CypherRuntime[CONTEXT]): ExecutionPlan =
-    compileWithTx(logicalQuery, runtime, newQueryContext(_txContext))._1
+                         runtime: CypherRuntime[CONTEXT]): ExecutionPlan = {
+    compileWithTx(logicalQuery, runtime, newQueryContext(_txContext, logicalQuery.readOnly))._1
+  }
 
   override def buildPlanAndContext(logicalQuery: LogicalQuery,
                                    runtime: CypherRuntime[CONTEXT]): (ExecutionPlan, CONTEXT) =
-    compileWithTx(logicalQuery, runtime, newQueryContext(_txContext))
+    compileWithTx(logicalQuery, runtime, newQueryContext(_txContext, logicalQuery.readOnly))
 
-  override def execute(executablePlan: ExecutionPlan): RecordingRuntimeResult = {
+  override def execute(executablePlan: ExecutionPlan, readOnly: Boolean = true): RecordingRuntimeResult = {
     val subscriber = new RecordingQuerySubscriber
-    val result = run(executablePlan, NoInput, (_, result) => result, subscriber, profile = false)
+    val result = run(executablePlan, NoInput, (_, result) => result, subscriber, profile = false, readOnly)
     RecordingRuntimeResult(result, subscriber)
   }
 
@@ -194,7 +196,7 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
                                  input: InputValues): (RecordingRuntimeResult, InternalPlanDescription) = {
     val subscriber = new RecordingQuerySubscriber
     val executionPlan = buildPlan(logicalQuery, runtime)
-    val result = run(executionPlan, input.stream(), (_, result) => result, subscriber, profile = false, parameters = Map.empty)
+    val result = run(executionPlan, input.stream(), (_, result) => result, subscriber, profile = false, logicalQuery.readOnly, parameters = Map.empty)
     val executionPlanDescription = {
       val planDescriptionBuilder =
         new PlanDescriptionBuilder(executionPlan.rewrittenPlan.getOrElse(logicalQuery.logicalPlan),
@@ -218,7 +220,7 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
                          subscriber: QuerySubscriber,
                          profile: Boolean,
                          parameters: Map[String, Any] = Map.empty): RESULT = {
-    run(buildPlan(logicalQuery, runtime), input, resultMapper, subscriber, profile, parameters)
+    run(buildPlan(logicalQuery, runtime), input, resultMapper, subscriber, profile, logicalQuery.readOnly, parameters)
   }
 
   private def runTransactionally[RESULT](logicalQuery: LogicalQuery,
@@ -229,10 +231,10 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
                                          parameters: Map[String, Any]): RESULT = {
     val tx = cypherGraphDb.beginTransaction(Type.EXPLICIT, LoginContext.AUTH_DISABLED)
     val txContext = contextFactory.newContext(tx, "<<queryText>>", VirtualValues.EMPTY_MAP)
-    val queryContext = newQueryContext(txContext)
+    val queryContext = newQueryContext(txContext, logicalQuery.readOnly)
     try {
       val executionPlan = compileWithTx(logicalQuery, runtime, queryContext)._1
-      runWithTx(executionPlan, input, resultMapper, subscriber, profile = false, parameters, tx, txContext)
+      runWithTx(executionPlan, input, resultMapper, subscriber, profile = false, logicalQuery.readOnly, parameters, tx, txContext)
     } finally {
       txContext.close()
       tx.close()
@@ -244,8 +246,9 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
                   resultMapper: (CONTEXT, RuntimeResult) => RESULT,
                   subscriber: QuerySubscriber,
                   profile: Boolean,
+                  readOnly: Boolean,
                   parameters: Map[String, Any] = Map.empty): RESULT = {
-    runWithTx(executableQuery, input, resultMapper, subscriber, profile, parameters, _tx, _txContext)
+    runWithTx(executableQuery, input, resultMapper, subscriber, profile, readOnly, parameters, _tx, _txContext)
   }
 
   private def runWithTx[RESULT](executableQuery: ExecutionPlan,
@@ -253,10 +256,11 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
                         resultMapper: (CONTEXT, RuntimeResult) => RESULT,
                         subscriber: QuerySubscriber,
                         profile: Boolean,
+                        readOnly: Boolean,
                         parameters: Map[String, Any],
                         tx: InternalTransaction,
                         txContext: TransactionalContext): RESULT = {
-    val queryContext = newQueryContext(txContext, executableQuery.threadSafeExecutionResources())
+    val queryContext = newQueryContext(txContext, readOnly, executableQuery.threadSafeExecutionResources())
     val runtimeContext = newRuntimeContext(queryContext)
 
     val executionMode = if(profile) ProfileMode else NormalMode
@@ -300,12 +304,14 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
                                  interpretedPipesFallback = queryOptions.queryOptions.interpretedPipesFallback)
   }
 
-  private def newQueryContext(txContext: TransactionalContext, maybeExecutionResources: Option[(CursorFactory, ResourceManagerFactory)] = None): QueryContext = {
+  private def newQueryContext(txContext: TransactionalContext, readOnly: Boolean, maybeExecutionResources: Option[(CursorFactory, ResourceManagerFactory)] = None): QueryContext = {
     val (threadSafeCursorFactory, resourceManager) = maybeExecutionResources match {
       case Some((tFactory, rFactory)) => (tFactory, rFactory(ResourceMonitor.NOOP))
       case None => (null, new ResourceManager(ResourceMonitor.NOOP))
     }
 
-    new TransactionBoundQueryContext(TransactionalContextWrapper(txContext, threadSafeCursorFactory), resourceManager)(monitors.newMonitor(classOf[IndexSearchMonitor]))
+    val txBoundQueryContext = new TransactionBoundQueryContext(TransactionalContextWrapper(txContext, threadSafeCursorFactory), resourceManager)(monitors.newMonitor(classOf[IndexSearchMonitor]))
+    if (readOnly) txBoundQueryContext
+    else new UpdateCountingQueryContext(txBoundQueryContext)
   }
 }

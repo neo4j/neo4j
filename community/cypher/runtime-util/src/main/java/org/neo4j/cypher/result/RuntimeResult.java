@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.result;
 
-import org.neo4j.cypher.internal.runtime.QueryStatistics;
+import org.neo4j.graphdb.QueryStatistics;
 import org.neo4j.kernel.impl.query.QuerySubscription;
 import org.neo4j.memory.OptionalMemoryTracker;
 

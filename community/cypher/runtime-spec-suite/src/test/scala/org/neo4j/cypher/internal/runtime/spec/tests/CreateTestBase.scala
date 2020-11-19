@@ -26,8 +26,10 @@ import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.crea
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
+import org.neo4j.cypher.internal.runtime.QueryStatistics
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
+import org.neo4j.cypher.internal.runtime.spec.RecordingRuntimeResult
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.graphdb.Label.label
 import org.neo4j.internal.helpers.collection.Iterables
@@ -51,13 +53,13 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
       .produceResults("n")
       .create(createNode("n", "A", "B", "C"))
       .argument()
-      .build()
+      .build(readOnly = false)
 
     // then
-    val runtimeResult = execute(logicalQuery, runtime)
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
     consume(runtimeResult)
     val node = Iterables.single(tx.getAllNodes)
-    runtimeResult should beColumns("n").withSingleRow(node)
+    runtimeResult should beColumns("n").withSingleRow(node).withStatistics(nodesCreated = 1, labelsAdded = 3)
     node.getLabels.asScala.map(_.name()).toList should equal(List("A", "B", "C"))
   }
 
@@ -69,13 +71,13 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
       .produceResults("n")
       .create(createNodeWithProperties("n", Seq("A"), mapOf("p1" -> literal(1), "p2" -> literal(2), "p3" -> literal(3))))
       .argument()
-      .build()
+      .build(readOnly = false)
 
     // then
     val runtimeResult = execute(logicalQuery, runtime)
     consume(runtimeResult)
     val node = Iterables.single(tx.getAllNodes)
-    runtimeResult should beColumns("n").withSingleRow(node)
+    runtimeResult should beColumns("n").withSingleRow(node).withStatistics(nodesCreated = 1, labelsAdded = 1, propertiesSet = 3)
     node.getAllProperties.asScala should equal(Map("p1" -> 1 , "p2" -> 2, "p3" -> 3))
   }
 
@@ -91,14 +93,14 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
       .create(createNode("n", "A", "B", "C"))
       .expand("(x)--(y)")
       .nodeByLabelScan("x", "L", IndexOrderNone)
-      .build()
+      .build(readOnly = false)
 
     // then
     val runtimeResult = execute(logicalQuery, runtime)
     consume(runtimeResult)
     val nodes = tx.findNodes(label("A")).asScala.toList
     nodes should have size 2 * sizeHint
-    runtimeResult should beColumns("n").withRows(singleColumn(nodes))
+    runtimeResult should beColumns("n").withRows(singleColumn(nodes)).withStatistics(nodesCreated = 2 * sizeHint, labelsAdded = 2 * 3 * sizeHint)
     nodes.foreach(n => n.getLabels.asScala.map(_.name()).toList should equal(List("A", "B", "C")))
   }
 
@@ -112,13 +114,13 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
       .|.create(createNode("n", "A", "B", "C"))
       .|.argument()
       .argument()
-      .build()
+      .build(readOnly = false)
 
     // then
     val runtimeResult = execute(logicalQuery, runtime)
     consume(runtimeResult)
     val node = Iterables.single(tx.getAllNodes)
-    runtimeResult should beColumns("n").withSingleRow(node)
+    runtimeResult should beColumns("n").withSingleRow(node).withStatistics(nodesCreated = 1, labelsAdded = 3)
     node.getLabels.asScala.map(_.name()).toList should equal(List("A", "B", "C"))
   }
 
@@ -136,14 +138,14 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
       .|.expand("(x)--(y)")
       .|.argument("x")
       .nodeByLabelScan("x", "L", IndexOrderNone)
-      .build()
+      .build(readOnly = false)
 
     // then
     val runtimeResult = execute(logicalQuery, runtime)
     consume(runtimeResult)
     val nodes = tx.findNodes(label("A")).asScala.toList
     nodes should have size 2 * sizeHint
-    runtimeResult should beColumns("n").withRows(singleColumn(nodes))
+    runtimeResult should beColumns("n").withRows(singleColumn(nodes)).withStatistics(nodesCreated = 2 * sizeHint, labelsAdded = 2 * 3 * sizeHint)
     nodes.foreach(n => n.getLabels.asScala.map(_.name()).toList should equal(List("A", "B", "C")))
   }
 
@@ -157,13 +159,13 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
         relationships = Seq(
           createRelationship("r", "n", "R", "m", OUTGOING, Some(mapOf("p1" -> literal(1), "p2" -> literal(2), "p3" -> literal(3))))))
       .argument()
-      .build()
+      .build(readOnly = false)
 
     // then
     val runtimeResult = execute(logicalQuery, runtime)
     consume(runtimeResult)
     val relationship = Iterables.single(tx.getAllRelationships)
-    runtimeResult should beColumns("r").withSingleRow(relationship)
+    runtimeResult should beColumns("r").withSingleRow(relationship).withStatistics(nodesCreated = 2, labelsAdded = 2, relationshipsCreated = 1, propertiesSet = 3)
     relationship.getType.name() should equal("R")
     relationship.getAllProperties.asScala should equal(Map("p1" -> 1 , "p2" -> 2, "p3" -> 3))
   }
@@ -183,13 +185,13 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
       .|.expand("(x)-[:R]-(y)")
       .|.argument("x")
       .nodeByLabelScan("x", "L", IndexOrderNone)
-      .build()
+      .build(readOnly = false)
 
     // then
     val runtimeResult = execute(logicalQuery, runtime)
     consume(runtimeResult)
     val relationships = tx.getAllRelationships.asScala.filter(_.getType.name() == "NEW").toList
     relationships should have size 2 * sizeHint
-    runtimeResult should beColumns("r").withRows(singleColumn(relationships))
+    runtimeResult should beColumns("r").withRows(singleColumn(relationships)).withStatistics(relationshipsCreated = 2 * sizeHint)
   }
 }
