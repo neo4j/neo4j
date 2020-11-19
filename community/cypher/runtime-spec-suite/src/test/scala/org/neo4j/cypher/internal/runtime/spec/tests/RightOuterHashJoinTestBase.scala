@@ -476,6 +476,35 @@ abstract class RightOuterHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Ed
     runtimeResult should beColumns("x").withRows(expectedResultRows)
   }
 
+  test("nested joins on nodes with different types and different nullability") {
+    // given
+    val (nodes, _) = given {
+      circleGraph(sizeHint)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("y")
+      .rightOuterHashJoin("y")
+      .|.unwind("[x] as y")
+      .|.rightOuterHashJoin("x")
+      .|.|.allNodeScan("x")
+      .|.unwind("[xLong] as x")
+      .|.allNodeScan("xLong")
+      .rightOuterHashJoin("y")
+      .|.unwind("[yLong] as y")
+      .|.allNodeScan("yLong")
+      .allNodeScan("y")
+
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, NO_INPUT)
+
+    // then
+    val expectedResultRows = nodes.map(Array(_))
+    runtimeResult should beColumns("y").withRows(expectedResultRows)
+  }
+
   test("should join with alias on join-key on RHS") {
     // given
     val (nodes, _) = given { circleGraph(sizeHint) }
