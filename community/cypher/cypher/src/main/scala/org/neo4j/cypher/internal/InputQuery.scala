@@ -86,21 +86,9 @@ case class QueryOptions(offset: InputPosition,
                         recompilationLimitReached: Boolean = false,
                         materializedEntitiesMode: Boolean = false) {
 
-  def version: CypherVersion = queryOptions.version
-  def executionMode: CypherExecutionMode = queryOptions.executionMode
-  def planner: CypherPlannerOption = queryOptions.planner
-  def runtime: CypherRuntimeOption = queryOptions.runtime
-  def updateStrategy: CypherUpdateStrategy = queryOptions.updateStrategy
-  def expressionEngine: CypherExpressionEngineOption = queryOptions.expressionEngine
-  def operatorEngine: CypherOperatorEngineOption = queryOptions.operatorEngine
-  def interpretedPipesFallback: CypherInterpretedPipesFallbackOption = queryOptions.interpretedPipesFallback
-  def replan: CypherReplanOption = queryOptions.replan
-  def connectComponentsPlanner: CypherConnectComponentsPlannerOption = queryOptions.connectComponentsPlanner
-  def debugOptions: CypherDebugOptions = queryOptions.debugOptions
+  def compileWhenHot: Boolean = queryOptions.expressionEngine == CypherExpressionEngineOption.onlyWhenHot || queryOptions.expressionEngine == CypherExpressionEngineOption.default
 
-  def compileWhenHot: Boolean = expressionEngine == CypherExpressionEngineOption.onlyWhenHot || expressionEngine == CypherExpressionEngineOption.default
-
-  def useCompiledExpressions: Boolean = expressionEngine == CypherExpressionEngineOption.compiled || (compileWhenHot && recompilationLimitReached)
+  def useCompiledExpressions: Boolean = queryOptions.expressionEngine == CypherExpressionEngineOption.compiled || (compileWhenHot && recompilationLimitReached)
 
   def withRecompilationLimitReached: QueryOptions = copy(recompilationLimitReached = true)
 

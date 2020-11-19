@@ -70,17 +70,17 @@ class PreParserTest extends CypherFunSuite {
   }
 
   test("should accept just one operator execution mode") {
-    preParser.preParseQuery("CYPHER operatorEngine=interpreted RETURN 42").options.operatorEngine should equal(CypherOperatorEngineOption.interpreted)
+    preParser.preParseQuery("CYPHER operatorEngine=interpreted RETURN 42").options.queryOptions.operatorEngine should equal(CypherOperatorEngineOption.interpreted)
   }
 
   test("should accept just one replan strategy") {
-    preParser.preParseQuery("CYPHER replan=force RETURN 42").options.replan should equal(CypherReplanOption.force)
-    preParser.preParseQuery("CYPHER replan=skip RETURN 42").options.replan should equal(CypherReplanOption.skip)
-    preParser.preParseQuery("CYPHER replan=default RETURN 42").options.replan should equal(CypherReplanOption.default)
+    preParser.preParseQuery("CYPHER replan=force RETURN 42").options.queryOptions.replan should equal(CypherReplanOption.force)
+    preParser.preParseQuery("CYPHER replan=skip RETURN 42").options.queryOptions.replan should equal(CypherReplanOption.skip)
+    preParser.preParseQuery("CYPHER replan=default RETURN 42").options.queryOptions.replan should equal(CypherReplanOption.default)
   }
 
   test("should accept just one connect components planner") {
-    preParser.preParseQuery("CYPHER connectComponentsPlanner=idp RETURN 42").options.connectComponentsPlanner should equal(CypherConnectComponentsPlannerOption.idp)
+    preParser.preParseQuery("CYPHER connectComponentsPlanner=idp RETURN 42").options.queryOptions.connectComponentsPlanner should equal(CypherConnectComponentsPlannerOption.idp)
   }
 
   test("should not allow multiple conflicting replan strategies") {
@@ -88,13 +88,13 @@ class PreParserTest extends CypherFunSuite {
   }
 
   test("should accept just one interpreted pipes fallback mode") {
-    preParser.preParseQuery("CYPHER interpretedPipesFallback=disabled RETURN 42").options.interpretedPipesFallback should
+    preParser.preParseQuery("CYPHER interpretedPipesFallback=disabled RETURN 42").options.queryOptions.interpretedPipesFallback should
       equal(CypherInterpretedPipesFallbackOption.disabled)
-    preParser.preParseQuery("CYPHER interpretedPipesFallback=default RETURN 42").options.interpretedPipesFallback should
+    preParser.preParseQuery("CYPHER interpretedPipesFallback=default RETURN 42").options.queryOptions.interpretedPipesFallback should
       equal(CypherInterpretedPipesFallbackOption.default)
-    preParser.preParseQuery("CYPHER interpretedPipesFallback=whitelisted_plans_only RETURN 42").options.interpretedPipesFallback should
+    preParser.preParseQuery("CYPHER interpretedPipesFallback=whitelisted_plans_only RETURN 42").options.queryOptions.interpretedPipesFallback should
       equal(CypherInterpretedPipesFallbackOption.whitelistedPlansOnly)
-    preParser.preParseQuery("CYPHER interpretedPipesFallback=all RETURN 42").options.interpretedPipesFallback should
+    preParser.preParseQuery("CYPHER interpretedPipesFallback=all RETURN 42").options.queryOptions.interpretedPipesFallback should
       equal(CypherInterpretedPipesFallbackOption.allPossiblePlans)
   }
 
@@ -157,19 +157,19 @@ class PreParserTest extends CypherFunSuite {
 
   test("should take defaults from config") {
     preParserWith(GraphDatabaseSettings.cypher_planner -> GraphDatabaseSettings.CypherPlanner.COST)
-      .preParseQuery("RETURN 1").options.planner shouldEqual CypherPlannerOption.cost
+      .preParseQuery("RETURN 1").options.queryOptions.planner shouldEqual CypherPlannerOption.cost
 
     preParserWith(GraphDatabaseInternalSettings.cypher_runtime -> GraphDatabaseInternalSettings.CypherRuntime.PIPELINED)
-      .preParseQuery("RETURN 1").options.runtime shouldEqual CypherRuntimeOption.pipelined
+      .preParseQuery("RETURN 1").options.queryOptions.runtime shouldEqual CypherRuntimeOption.pipelined
 
     preParserWith(GraphDatabaseInternalSettings.cypher_expression_engine -> GraphDatabaseInternalSettings.CypherExpressionEngine.COMPILED)
-      .preParseQuery("RETURN 1").options.expressionEngine shouldEqual CypherExpressionEngineOption.compiled
+      .preParseQuery("RETURN 1").options.queryOptions.expressionEngine shouldEqual CypherExpressionEngineOption.compiled
 
     preParserWith(GraphDatabaseInternalSettings.cypher_operator_engine -> GraphDatabaseInternalSettings.CypherOperatorEngine.COMPILED)
-      .preParseQuery("RETURN 1").options.operatorEngine shouldEqual CypherOperatorEngineOption.compiled
+      .preParseQuery("RETURN 1").options.queryOptions.operatorEngine shouldEqual CypherOperatorEngineOption.compiled
 
     preParserWith(GraphDatabaseInternalSettings.cypher_pipelined_interpreted_pipes_fallback -> GraphDatabaseInternalSettings.CypherPipelinedInterpretedPipesFallback.ALL)
-      .preParseQuery("RETURN 1").options.interpretedPipesFallback shouldEqual CypherInterpretedPipesFallbackOption.allPossiblePlans
+      .preParseQuery("RETURN 1").options.queryOptions.interpretedPipesFallback shouldEqual CypherInterpretedPipesFallbackOption.allPossiblePlans
   }
 
   test("should not accept illegal combinations") {

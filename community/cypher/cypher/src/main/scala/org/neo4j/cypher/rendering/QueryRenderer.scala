@@ -81,13 +81,7 @@ object QueryRenderer {
     renderOptions(options) + statement
 
   def renderOptions(options: QueryOptions): String =
-    renderExecutionMode(options.executionMode) + options.render.map(_ + NL).getOrElse("")
-
-  private def renderExecutionMode(executionMode: CypherExecutionMode): String = executionMode match {
-    case CypherExecutionMode.explain => "EXPLAIN " + NL
-    case CypherExecutionMode.profile => "PROFILE " + NL
-    case _                           => ""
-  }
+    options.render.map(_ + NL).getOrElse("")
 
   def pretty(expression: Expression): String =
     renderPretty.expr.apply(expression)

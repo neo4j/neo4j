@@ -74,10 +74,10 @@ class MasterCompiler(compilerLibrary: CompilerLibrary) {
 
     // Do the compilation
     val compiler = compilerLibrary.selectCompiler(
-      query.options.version,
-      query.options.planner,
-      query.options.runtime,
-      query.options.updateStrategy)
+      query.options.queryOptions.version,
+      query.options.queryOptions.planner,
+      query.options.queryOptions.runtime,
+      query.options.queryOptions.updateStrategy)
 
     compiler.compile(query, tracer, notificationsSoFar(), transactionalContext, params)
   }

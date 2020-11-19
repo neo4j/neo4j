@@ -191,8 +191,8 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
       val parsedQuery = planner.parseQuery(preParsedQuery.statement,
         preParsedQuery.rawStatement,
         notificationLogger,
-        preParsedQuery.options.planner.name,
-        preParsedQuery.options.debugOptions,
+        preParsedQuery.options.queryOptions.planner.name,
+        preParsedQuery.options.queryOptions.debugOptions,
         Some(offset),
         tracer,
         innerVariableNamer,
@@ -272,11 +272,11 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
       notificationLogger,
       planContext,
       rawQueryText,
-      options.debugOptions,
+      options.queryOptions.debugOptions,
       Some(options.offset),
       monitors,
       CachedMetricsFactory(SimpleMetricsFactory),
-      createQueryGraphSolver(options.connectComponentsPlanner),
+      createQueryGraphSolver(options.queryOptions.connectComponentsPlanner),
       config,
       maybeUpdateStrategy.getOrElse(defaultUpdateStrategy),
       clock,
@@ -315,11 +315,11 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
 
     val cacheableLogicalPlan =
     // We don't want to cache any query without enough given parameters (although EXPLAIN queries will succeed)
-      if (options.debugOptions.isEmpty && (queryParamNames.isEmpty || enoughParametersSupplied)) {
+      if (options.queryOptions.debugOptions.isEmpty && (queryParamNames.isEmpty || enoughParametersSupplied)) {
         planCache.computeIfAbsentOrStale(Pair.of(syntacticQuery.statement(), QueryCache.extractParameterTypeMap(filteredParams)),
           transactionalContext,
           compilerWithExpressionCodeGenOption,
-          options.replan,
+          options.queryOptions.replan,
           syntacticQuery.queryText)
       } else if (!enoughParametersSupplied) {
         createPlan(shouldBeCached = false, missingParameterNames = queryParamNames.filterNot(filteredParams.containsKey))

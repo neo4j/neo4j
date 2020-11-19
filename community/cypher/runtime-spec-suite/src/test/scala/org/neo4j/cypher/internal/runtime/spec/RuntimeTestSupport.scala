@@ -296,8 +296,8 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
                                  debugOptions,
                                  compileExpressions = queryOptions.useCompiledExpressions,
                                  materializedEntitiesMode = queryOptions.materializedEntitiesMode,
-                                 operatorEngine = queryOptions.operatorEngine,
-                                 interpretedPipesFallback = queryOptions.interpretedPipesFallback)
+                                 operatorEngine = queryOptions.queryOptions.operatorEngine,
+                                 interpretedPipesFallback = queryOptions.queryOptions.interpretedPipesFallback)
   }
 
   private def newQueryContext(txContext: TransactionalContext, maybeExecutionResources: Option[(CursorFactory, ResourceManagerFactory)] = None): QueryContext = {

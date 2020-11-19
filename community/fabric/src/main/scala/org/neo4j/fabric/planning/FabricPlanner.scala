@@ -100,7 +100,7 @@ case class FabricPlanner(
         queryType = QueryType.recursive(stitchedFragments),
         executionType = FabricPlan.Execute,
         queryString = query.statement,
-        debugOptions = DebugOptions.from(query.options.debugOptions),
+        debugOptions = DebugOptions.from(query.options.queryOptions.debugOptions),
         obfuscationMetadata = prepared.obfuscationMetadata(),
         inFabricContext = fabricContext,
         notifications = pipeline.notifications

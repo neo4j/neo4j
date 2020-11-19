@@ -78,7 +78,7 @@ case class FabricFrontEnd(
       cacheFactory
     )
 
-    def executionType(options: QueryOptions, inFabricContext: Boolean): FabricPlan.ExecutionType = options.executionMode match {
+    def executionType(options: QueryOptions, inFabricContext: Boolean): FabricPlan.ExecutionType = options.queryOptions.executionMode match {
       case CypherExecutionMode.default => FabricPlan.Execute
       case CypherExecutionMode.explain => FabricPlan.Explain
       case CypherExecutionMode.profile if inFabricContext => Errors.semantic("'PROFILE' not supported in Fabric context")
@@ -91,7 +91,7 @@ case class FabricFrontEnd(
 
     def isPeriodicCommit(queryString: String): Boolean = {
       val preParsedQuery = preParser.preParseQuery(queryString)
-      preParsedQuery.options.executionMode != CypherExecutionMode.explain && preParsedQuery.options.isPeriodicCommit
+      preParsedQuery.options.queryOptions.executionMode != CypherExecutionMode.explain && preParsedQuery.options.isPeriodicCommit
     }
   }
 
@@ -114,7 +114,7 @@ case class FabricFrontEnd(
     }
 
     private val compatibilityMode =
-      query.options.version match {
+      query.options.queryOptions.version match {
         case CypherVersion.v3_5 => Compatibility3_5
         case CypherVersion.v4_2 => Compatibility4_2
         case CypherVersion.v4_3 => Compatibility4_3
@@ -149,7 +149,7 @@ case class FabricFrontEnd(
 
       def process(statement: Statement): BaseState = {
         val localQueryString = QueryRenderer.pretty(statement)
-        val plannerName = PlannerNameFor(query.options.planner.name)
+        val plannerName = PlannerNameFor(query.options.queryOptions.planner.name)
         transformer.transform(InitialState(localQueryString, None, plannerName).withStatement(statement), context)
       }
     }

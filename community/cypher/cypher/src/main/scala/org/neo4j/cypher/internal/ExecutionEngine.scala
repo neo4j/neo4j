@@ -204,7 +204,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
           queryMonitor.endFailure(context.executingQuery(), up.getMessage)
         throw up
     }
-    if (query.options.executionMode.name != "explain") {
+    if (query.options.queryOptions.executionMode.name != "explain") {
       checkParameters(executableQuery.paramNames, params, executableQuery.extractedParams)
     }
     val combinedParams = params.updatedWith(executableQuery.extractedParams)
@@ -272,10 +272,10 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
         val executableQuery = queryCache.computeIfAbsentOrStale(cacheKey,
           tc,
           compiler,
-          inputQuery.options.replan,
+          inputQuery.options.queryOptions.replan,
           inputQuery.description)
 
-        if (schemaHelper.lockLabels(schemaToken, executableQuery, inputQuery.options.version, tc)) {
+        if (schemaHelper.lockLabels(schemaToken, executableQuery, inputQuery.options.queryOptions.version, tc)) {
           return executableQuery
         }
 
@@ -297,7 +297,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
    */
   def isPeriodicCommit(query: String): Boolean = {
     val preParsedQuery = preParser.preParseQuery(query)
-    preParsedQuery.options.executionMode != CypherExecutionMode.explain && preParsedQuery.options.isPeriodicCommit
+    preParsedQuery.options.queryOptions.executionMode != CypherExecutionMode.explain && preParsedQuery.options.isPeriodicCommit
   }
 
   def getCypherFunctions: java.util.List[FunctionInformation] = {

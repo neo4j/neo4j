@@ -130,8 +130,8 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
       logicalPlanResult.plannerContext.debugOptions,
       query.options.useCompiledExpressions,
       query.options.materializedEntitiesMode,
-      query.options.operatorEngine,
-      query.options.interpretedPipesFallback)
+      query.options.queryOptions.operatorEngine,
+      query.options.queryOptions.interpretedPipesFallback)
 
     // Make copy, so per-runtime logical plan rewriting does not mutate cached attributes
     val planningAttributesCopy = logicalPlanResult.logicalPlanState.planningAttributes.copy()
@@ -148,7 +148,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
       planState.hasLoadCSV,
       planState.maybePeriodicCommit.flatMap(_.map(x => PeriodicCommitInfo(x.batchSize))),
       new SequentialIdGen(planningAttributesCopy.cardinalities.size),
-      query.options.executionMode == CypherExecutionMode.profile)
+      query.options.queryOptions.executionMode == CypherExecutionMode.profile)
 
 
     val executionPlan: ExecutionPlan = try {
@@ -175,7 +175,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
       logicalPlanResult.extractedParams,
       buildCompilerInfo(logicalPlan, planState.plannerName, executionPlan.runtimeName),
       planState.plannerName,
-      query.options.version,
+      query.options.queryOptions.version,
       queryType,
       logicalPlanResult.shouldBeCached,
       runtimeContext.config.enableMonitors,
@@ -282,7 +282,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
                          subscriber: QuerySubscriber): QueryExecution = {
 
       val taskCloser = new TaskCloser
-      val queryContext = getQueryContext(transactionalContext, queryOptions.debugOptions, taskCloser)
+      val queryContext = getQueryContext(transactionalContext, queryOptions.queryOptions.debugOptions, taskCloser)
       if (isOutermostQuery) taskCloser.addTask(success => {
         val context = queryContext.transactionalContext
         if (!success) {
@@ -323,7 +323,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
                              subscriber: QuerySubscriber,
                              isOutermostQuery: Boolean): InternalExecutionResult = {
 
-      val innerExecutionMode = queryOptions.executionMode match {
+      val innerExecutionMode = queryOptions.queryOptions.executionMode match {
         case CypherExecutionMode.explain => ExplainMode
         case CypherExecutionMode.profile => ProfileMode
         case CypherExecutionMode.default => NormalMode
