@@ -38,6 +38,7 @@ import org.neo4j.bolt.transport.configuration.ServerConfigurationProvider;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
+import org.neo4j.configuration.connectors.BoltConnectorInternalSettings;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.configuration.helpers.PortBindException;
 import org.neo4j.configuration.helpers.SocketAddress;
@@ -154,7 +155,7 @@ public class NettyServer extends LifecycleAdapter
         if ( loopbackInitializer != null )
         {
             var loopbackLocalAddress = configureInitializer( loopbackInitializer );
-            portRegister.register( BoltConnector.INTERNAL_NAME, loopbackLocalAddress );
+            portRegister.register( BoltConnectorInternalSettings.LOOPBACK_NAME, loopbackLocalAddress );
 
             var host = loopbackInitializer.address().getHostname();
             var port = loopbackLocalAddress.getPort();
@@ -222,6 +223,7 @@ public class NettyServer extends LifecycleAdapter
     {
         portRegister.deregister( BoltConnector.NAME );
         portRegister.deregister( BoltConnector.INTERNAL_NAME );
+        portRegister.deregister( BoltConnectorInternalSettings.LOOPBACK_NAME );
     }
 
     private void closeChannels()

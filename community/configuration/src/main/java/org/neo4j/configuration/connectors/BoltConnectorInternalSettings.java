@@ -31,6 +31,7 @@ import org.neo4j.io.ByteUnit;
 import static java.time.Duration.ofMinutes;
 import static java.time.Duration.ofSeconds;
 import static org.neo4j.configuration.SettingImpl.newBuilder;
+import static org.neo4j.configuration.SettingValueParsers.BOOL;
 import static org.neo4j.configuration.SettingValueParsers.BYTES;
 import static org.neo4j.configuration.SettingValueParsers.DURATION;
 import static org.neo4j.configuration.SettingValueParsers.INT;
@@ -38,6 +39,9 @@ import static org.neo4j.configuration.SettingValueParsers.INT;
 @ServiceProvider
 public final class BoltConnectorInternalSettings implements SettingsDeclaration
 {
+    public static final String LOOPBACK_NAME = "bolt-loopback";
+    public static final int DEFAULT_LOOPBACK_CONNECTOR_PORT = 7689;
+
     @Internal
     @Description( "The queue size of the thread pool bound to this connector (-1 for unbounded, 0 for direct handoff, > 0 for bounded)" )
     public static final Setting<Integer> unsupported_thread_pool_queue_size =
@@ -63,4 +67,17 @@ public final class BoltConnectorInternalSettings implements SettingsDeclaration
     @Description( "The maximum inbound message size in bytes are allowed before a connection is authenticated." )
     public static final Setting<Long> unsupported_bolt_unauth_connection_max_inbound_bytes =
             newBuilder( "dbms.connector.bolt.unsupported_unauth_max_inbound_bytes", BYTES, ByteUnit.kibiBytes( 8 ) ).build();
+
+    @Internal
+    @Description( "The port the loopback connector should bind to. Care should be taken to not expose this port beyond this machine." )
+    public static final Setting<Integer> loopback_listen_port =
+            newBuilder( "unsupported.dbms.loopback_port", INT, DEFAULT_LOOPBACK_CONNECTOR_PORT ).build();
+
+    @Internal
+    @Description( "Enable or disable the bolt loopback connector. " +
+                  "A user successfully authenticated over this will execute all queries with no security restrictions. " +
+                  "This includes overriding the `" + "unsupported.dbms.block_create_drop_database" + "`, " +
+                  "`" + "unsupported.dbms.block_start_stop_database" + "` and `" + "unsupported.dbms.upgrade_restriction_enabled" + "` settings." )
+    public static final Setting<Boolean> enable_loopback_auth =
+            newBuilder( "unsupported.dbms.loopback_enabled", BOOL, false ).build();
 }

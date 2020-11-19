@@ -51,8 +51,6 @@ import static org.neo4j.io.ByteUnit.mebiBytes;
 @ServiceProvider
 public class GraphDatabaseInternalSettings implements SettingsDeclaration
 {
-    public static final int DEFAULT_LOOPBACK_CONNECTOR_PORT = 7689;
-
     @Internal
     public static final Setting<Path> databases_root_path =
             newBuilder( "unsupported.dbms.directories.databases.root", PATH, Path.of( GraphDatabaseSettings.DEFAULT_DATABASES_ROOT_DIR_NAME ) )
@@ -286,19 +284,6 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
     @Description( "Enable or disable the ability to execute the `dbms.upgrade` procedure." )
     public static final Setting<Boolean> block_upgrade_procedures =
             newBuilder( "unsupported.dbms.upgrade_restriction_enabled", BOOL, false ).build();
-
-    @Internal
-    @Description( "The port the loopback connector should bind to." )
-    public static final Setting<Integer> loopback_listen_port =
-            newBuilder( "unsupported.dbms.loopback_port", INT, DEFAULT_LOOPBACK_CONNECTOR_PORT ).build();
-
-    @Internal
-    @Description( "Enable or disable to loopback authentication. " +
-                  "A user successfully authenticated over this will execute all queries with no security restrictions. " +
-                  "This includes overriding the `" + "unsupported.dbms.block_create_drop_database" + "`, " +
-                  "`" + "unsupported.dbms.block_start_stop_database" + "` and `" + "unsupported.dbms.upgrade_restriction_enabled" + "` settings." )
-    public static final Setting<Boolean> enable_loopback_auth =
-            newBuilder( "unsupported.dbms.loopback_enabled", BOOL, false ).build();
 
     @Internal
     @Description( "The maximum amount of time to wait for the database to become available, when starting a new transaction." )

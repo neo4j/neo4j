@@ -255,16 +255,14 @@ public class BoltServer extends LifecycleAdapter
     private ProtocolInitializer createLoopbackProtocolInitializer( BoltProtocolFactory boltProtocolFactory, TransportThrottleGroup throttleGroup )
 
     {
-        if ( config.get( GraphDatabaseInternalSettings.enable_loopback_auth ) )
+        if ( config.get( BoltConnectorInternalSettings.enable_loopback_auth ) )
         {
-            // TODO maybe enable/enforce ssl?
-
-            SocketAddress loopbackListenAddress = new SocketAddress( config.get( GraphDatabaseInternalSettings.loopback_listen_port ) );
+            SocketAddress loopbackListenAddress = new SocketAddress( config.get( BoltConnectorInternalSettings.loopback_listen_port ) );
 
             Duration channelTimeout = config.get( BoltConnectorInternalSettings.unsupported_bolt_unauth_connection_timeout );
             long maxMessageSize = config.get( BoltConnectorInternalSettings.unsupported_bolt_unauth_connection_max_inbound_bytes );
 
-            return new SocketTransport( BoltConnector.NAME, loopbackListenAddress, null, false, logService.getInternalLogProvider(),
+            return new SocketTransport( BoltConnectorInternalSettings.LOOPBACK_NAME, loopbackListenAddress, null, false, logService.getInternalLogProvider(),
                     throttleGroup, boltProtocolFactory, connectionTracker, channelTimeout, maxMessageSize, BoltServer.NETTY_BUF_ALLOCATOR );
         }
         else
