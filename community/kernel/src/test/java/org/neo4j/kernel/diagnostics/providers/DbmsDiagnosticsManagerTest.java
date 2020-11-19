@@ -40,27 +40,37 @@ import org.neo4j.dbms.database.StandaloneDatabaseContext;
 import org.neo4j.internal.diagnostics.DiagnosticsLogger;
 import org.neo4j.internal.diagnostics.DiagnosticsProvider;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.DatabaseIdFactory;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.kernel.impl.factory.DbmsInfo;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.internal.SimpleLogService;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.test.Race;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
+import org.neo4j.test.rule.TestDirectory;
 
 import static java.util.Collections.singletonMap;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder.logFilesBasedOnlyBuilder;
 import static org.neo4j.logging.LogAssertions.assertThat;
 
+@TestDirectoryExtension
 class DbmsDiagnosticsManagerTest
 {
     private static final NamedDatabaseId DEFAULT_DATABASE_ID = TestDatabaseIdRepository.randomNamedDatabaseId();
     private static final String DEFAULT_DATABASE_NAME = DEFAULT_DATABASE_ID.name();
+
+    @Inject
+    private TestDirectory directory;
 
     private DbmsDiagnosticsManager diagnosticsManager;
     private AssertableLogProvider logProvider;
@@ -154,6 +164,17 @@ class DbmsDiagnosticsManagerTest
                         "Database: ", "Version", "Store files", "Transaction log", "Testlog message" ),
                 string -> assertThat( string ).containsSubsequence(
                         "Testlog message", "Database: ", "Version", "Store files", "Transaction log" ) );
+    }
+
+    @Test
+    void dumpDatabaseDiagnosticsContainsDbName()
+    {
+        assertThat( logProvider ).doesNotHaveAnyLogs();
+
+        diagnosticsManager.dumpDatabaseDiagnostics( defaultDatabase );
+
+        // Assert that database diagnostics contain the database name on each line
+        assertThat( logProvider ).eachMessageContains( defaultDatabase.getNamedDatabaseId().logPrefix() );
     }
 
     @Test
@@ -304,12 +325,12 @@ class DbmsDiagnosticsManagerTest
                                                     "Transaction log" );
     }
 
-    private Database prepareDatabase()
+    private Database prepareDatabase() throws IOException
     {
         return prepareDatabase( DEFAULT_DATABASE_ID );
     }
 
-    private Database prepareDatabase( NamedDatabaseId databaseId )
+    private Database prepareDatabase( NamedDatabaseId databaseId ) throws IOException
     {
         Database database = mock( Database.class );
         Dependencies databaseDependencies = new Dependencies();
@@ -317,9 +338,12 @@ class DbmsDiagnosticsManagerTest
         databaseDependencies.satisfyDependency( storageEngine );
         databaseDependencies.satisfyDependency( storageEngineFactory );
         databaseDependencies.satisfyDependency( new DefaultFileSystemAbstraction() );
+        databaseDependencies.satisfyDependency(
+                logFilesBasedOnlyBuilder( directory.homePath(), directory.getFileSystem() ).withLogEntryReader( mock( LogEntryReader.class ) ).build() );
         when( database.getDependencyResolver() ).thenReturn( databaseDependencies );
         when( database.getNamedDatabaseId() ).thenReturn( databaseId );
         when( database.isStarted() ).thenReturn( true );
+        when( database.getDatabaseLayout() ).thenReturn( DatabaseLayout.ofFlat( directory.homePath() ) );
         return database;
     }
 }
