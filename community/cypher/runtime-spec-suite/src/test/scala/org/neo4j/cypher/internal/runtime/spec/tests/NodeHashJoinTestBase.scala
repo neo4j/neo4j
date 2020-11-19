@@ -607,6 +607,28 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition[
     runtimeResult should beColumns("x", "y", "y2").withRows(expectedResultRows)
   }
 
+  test("should join on nodes with different types on rhs and lhs") {
+    // given
+    val (nodes, _) = given {
+      circleGraph(sizeHint)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nodeHashJoin("x")
+      .|.unwind("[xLong] as x") // refslot
+      .|.allNodeScan("xLong")
+      .allNodeScan("x") // longslot
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, NO_INPUT)
+
+    // then
+    val expectedResultRows = nodes.map(Array(_))
+    runtimeResult should beColumns("x").withRows(expectedResultRows)
+  }
+
   test("should join with alias on join-key on RHS") {
     // given
     val (unfilteredNodes, _) = given { circleGraph(sizeHint) }
