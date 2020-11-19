@@ -100,7 +100,7 @@ public class HeapTrackingLongEnumerationList<V> extends DefaultCloseListenable
         this.chunkShiftAmount = Integer.numberOfTrailingZeros( chunkSize );
         this.scopedMemoryTracker = scopedMemoryTracker;
         firstChunk = new Chunk<>( scopedMemoryTracker, chunkSize );
-        lastChunk = secondLastChunk = firstChunk;
+        lastChunk = firstChunk;
     }
 
     /**
