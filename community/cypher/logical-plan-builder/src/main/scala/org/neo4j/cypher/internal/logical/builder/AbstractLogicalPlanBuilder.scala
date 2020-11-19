@@ -47,6 +47,7 @@ import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.expressions.UnsignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.CreateNode
+import org.neo4j.cypher.internal.ir.CreateRelationship
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.ShortestPathPattern
 import org.neo4j.cypher.internal.ir.SimplePatternLength
@@ -161,6 +162,7 @@ import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.util.attribution.SameId
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
+import org.neo4j.cypher.internal.util.symbols.RelationshipType
 import org.neo4j.cypher.internal.util.topDown
 
 import scala.collection.mutable.ArrayBuffer
@@ -793,6 +795,10 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     appendAtCurrentIndent(UnaryOperator(source => Create(source, nodes, Seq.empty)(_)))
   }
 
+  def create(nodes :Seq[CreateNode], relationships: Seq[CreateRelationship]): IMPL = {
+    appendAtCurrentIndent(UnaryOperator(source => Create(source, nodes, relationships)(_)))
+  }
+
   def nodeHashJoin(nodes: String*): IMPL = {
     appendAtCurrentIndent(BinaryOperator((left, right) => NodeHashJoin(nodes.toSet, left, right)(_)))
   }
@@ -967,4 +973,15 @@ object AbstractLogicalPlanBuilder {
 
   def createNode(node: String, labels: String*): CreateNode =
     CreateNode(node, labels.map(LabelName(_)(pos)), None)
+
+  def createNodeWithProperties(node: String, labels: Seq[String], properties: Expression): CreateNode =
+    CreateNode(node, labels.map(LabelName(_)(pos)), Some(properties))
+
+  def createRelationship(relationship: String,
+                         left: String,
+                         typ: String,
+                         right: String,
+                         direction: SemanticDirection,
+                         properties: Option[Expression] = None): CreateRelationship =
+    CreateRelationship(relationship, left, RelTypeName(typ)(pos), right, direction,  properties)
 }
