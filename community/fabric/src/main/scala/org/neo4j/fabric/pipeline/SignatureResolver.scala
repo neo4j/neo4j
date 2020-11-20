@@ -103,7 +103,7 @@ object SignatureResolver {
       eager = signature.eager(),
       id = handle.id(),
       systemProcedure = signature.systemProcedure(),
-      allowExpiredCredentials = signature.allowExpiredCredentials()
+      allowExpiredCredentials = signature.allowedExpiredCredentials()
     )
   }
 

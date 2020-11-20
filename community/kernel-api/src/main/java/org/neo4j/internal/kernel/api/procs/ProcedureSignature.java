@@ -154,7 +154,7 @@ public class ProcedureSignature
         return internal;
     }
 
-    public boolean allowExpiredCredentials()
+    public boolean allowedExpiredCredentials()
     {
         return allowExpiredCredentials;
     }

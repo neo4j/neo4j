@@ -111,6 +111,6 @@ object procsHelpers {
     val warning = asOption(signature.warning())
 
    ProcedureSignature(name, input, output, deprecationInfo, mode, description, warning, signature.eager(), id, signature.systemProcedure(),
-      signature.allowExpiredCredentials())
+      signature.allowedExpiredCredentials())
   }
 }
