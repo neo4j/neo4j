@@ -50,7 +50,7 @@ class CacheKeyTest extends CypherFunSuite {
            .shouldEqual(CypherVersion.default.name)
   }
 
-  test("All non-default options should be part of cache key") {
+  test("All non-default options should be part of cache key, except replan") {
     val options = CypherQueryOptions(
       executionMode = CypherExecutionMode.profile,
       version = CypherVersion.v3_5,
@@ -66,6 +66,6 @@ class CacheKeyTest extends CypherFunSuite {
     )
 
     options.cacheKey
-      .shouldEqual("PROFILE 3.5 planner=dp runtime=pipelined updateStrategy=eager expressionEngine=interpreted operatorEngine=interpreted interpretedPipesFallback=all replan=force connectComponentsPlanner=idp debug=querygraph debug=tostring")
+      .shouldEqual("3.5 PROFILE planner=dp runtime=pipelined updateStrategy=eager expressionEngine=interpreted operatorEngine=interpreted interpretedPipesFallback=all connectComponentsPlanner=idp debug=querygraph debug=tostring")
   }
 }
