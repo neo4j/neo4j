@@ -79,6 +79,7 @@ object CardinalityCostModel extends CostModel {
   // A property has at least 2 db hits, even though it could even have many more.
   val PROPERTY_ACCESS_DB_HITS = 2
   val LABEL_CHECK_DB_HITS = 1
+  val EXPAND_INTO = 6.4
 
   private def costPerRow(plan: LogicalPlan, cardinality: Cardinality, semanticTable: SemanticTable): CostPerRow = plan match {
     /*
@@ -98,10 +99,10 @@ object CardinalityCostModel extends CostModel {
     => 1.2
 
     case e: Expand if e.mode == ExpandInto
-    => 4.5
+    => EXPAND_INTO
 
     case e: VarExpand if e.mode == ExpandInto
-    => 4.5
+    => EXPAND_INTO
 
     case _: Expand |
          _: VarExpand
