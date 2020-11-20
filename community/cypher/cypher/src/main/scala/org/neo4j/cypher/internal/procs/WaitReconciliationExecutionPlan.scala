@@ -54,9 +54,9 @@ case class WaitReconciliationExecutionPlan(
     queryHandler: QueryHandler,
     databaseNameParamKey: String,
     timeoutInSeconds: Long,
-    source: Option[ExecutionPlan] = None,
+    source: ExecutionPlan,
     parameterConverter: (Transaction, MapValue) => MapValue = (_, p) => p,
-) extends AdministrationChainedExecutionPlan(source) {
+) extends AdministrationChainedExecutionPlan(Some(source)) {
 
   override def onSkip(ctx: SystemUpdateCountingQueryContext,
                       subscriber: QuerySubscriber): RuntimeResult = {
