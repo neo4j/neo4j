@@ -84,6 +84,24 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
     node.getAllProperties.asScala should equal(Map("p1" -> 1 , "p2" -> 2, "p3" -> 3))
   }
 
+  test("should handle creating node with null properties") {
+    // given an empty data base
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .create(createNodeWithProperties("n", Seq("A"), mapOf("p1" -> literal(1), "p2" -> nullLiteral)))
+      .argument()
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    val node = Iterables.single(tx.getAllNodes)
+    runtimeResult should beColumns("n").withSingleRow(node).withStatistics(nodesCreated = 1, labelsAdded = 1, propertiesSet = 1)
+    node.getAllProperties.asScala should equal(Map("p1" -> 1))
+  }
+
   test("should create many node with labels") {
     // given
     given {
@@ -171,6 +189,27 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("r").withSingleRow(relationship).withStatistics(nodesCreated = 2, labelsAdded = 2, relationshipsCreated = 1, propertiesSet = 3)
     relationship.getType.name() should equal("R")
     relationship.getAllProperties.asScala should equal(Map("p1" -> 1 , "p2" -> 2, "p3" -> 3))
+  }
+
+  test("should create relationship with null property") {
+    // given an empty data base
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r")
+      .create(nodes = Seq(createNode("n", "A"), createNode("m", "B")),
+        relationships = Seq(
+          createRelationship("r", "n", "R", "m", OUTGOING, Some(mapOf("p1" -> literal(1), "p2" -> nullLiteral)))))
+      .argument()
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    val relationship = Iterables.single(tx.getAllRelationships)
+    runtimeResult should beColumns("r").withSingleRow(relationship).withStatistics(nodesCreated = 2, labelsAdded = 2, relationshipsCreated = 1, propertiesSet = 1)
+    relationship.getType.name() should equal("R")
+    relationship.getAllProperties.asScala should equal(Map("p1" -> 1 ))
   }
 
   test("should create many relationship on the RHS of an Apply") {
