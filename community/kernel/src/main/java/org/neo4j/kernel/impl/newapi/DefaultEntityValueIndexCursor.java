@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.newapi;
 
 import org.eclipse.collections.api.iterator.LongIterator;
+import org.eclipse.collections.api.set.primitive.ImmutableLongSet;
 import org.eclipse.collections.api.set.primitive.LongSet;
 import org.eclipse.collections.api.tuple.primitive.LongObjectPair;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
@@ -32,7 +33,6 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
-import java.util.function.Consumer;
 
 import org.neo4j.collection.trackable.HeapTrackingArrayList;
 import org.neo4j.graphdb.Resource;
@@ -49,6 +49,8 @@ import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.txstate.TransactionState;
+import org.neo4j.kernel.impl.newapi.TxStateIndexChanges.AddedAndRemoved;
+import org.neo4j.kernel.impl.newapi.TxStateIndexChanges.AddedWithValuesAndRemoved;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.values.storable.PointArray;
 import org.neo4j.values.storable.PointValue;
@@ -68,7 +70,7 @@ import static org.neo4j.kernel.impl.newapi.TxStateIndexChanges.indexUpdatesWithV
 import static org.neo4j.kernel.impl.newapi.TxStateIndexChanges.indexUpdatesWithValuesForScan;
 import static org.neo4j.kernel.impl.newapi.TxStateIndexChanges.indexUpdatesWithValuesForSuffixOrContains;
 
-public abstract class DefaultEntityValueIndexCursor extends IndexCursor<IndexProgressor> implements
+abstract class DefaultEntityValueIndexCursor extends IndexCursor<IndexProgressor> implements
         ValueIndexCursor, IndexResultScore, EntityIndexSeekClient, SortedMergeJoin.Sink
 {
     private static final Comparator<LongObjectPair<Value[]>> ASCENDING_COMPARATOR = computeComparator( Values.COMPARATOR );
@@ -83,7 +85,7 @@ public abstract class DefaultEntityValueIndexCursor extends IndexCursor<IndexPro
     private ResourceIterator<LongObjectPair<Value[]>> eagerPointIterator;
     private LongIterator added = ImmutableEmptyLongIterator.INSTANCE;
     private Iterator<EntityWithPropertyValues> addedWithValues = Collections.emptyIterator();
-    private LongSet removed = LongSets.immutable.empty();
+    private ImmutableLongSet removed = LongSets.immutable.empty();
     private boolean needsValues;
     private IndexOrder indexOrder;
     private final MemoryTracker memoryTracker;
@@ -91,7 +93,7 @@ public abstract class DefaultEntityValueIndexCursor extends IndexCursor<IndexPro
     private AccessMode accessMode;
     private boolean shortcutSecurity;
 
-    protected DefaultEntityValueIndexCursor( MemoryTracker memoryTracker )
+    DefaultEntityValueIndexCursor( MemoryTracker memoryTracker )
     {
         this.memoryTracker = memoryTracker;
         entity = NO_ID;
@@ -100,7 +102,7 @@ public abstract class DefaultEntityValueIndexCursor extends IndexCursor<IndexPro
     }
 
     @Override
-    public void initialize( IndexDescriptor descriptor,
+    public final void initialize( IndexDescriptor descriptor,
             IndexProgressor progressor,
             IndexQuery[] query,
             IndexQueryConstraints constraints,
@@ -208,7 +210,7 @@ public abstract class DefaultEntityValueIndexCursor extends IndexCursor<IndexPro
     }
 
     @Override
-    public boolean acceptEntity( long reference, float score, Value... values )
+    public final boolean acceptEntity( long reference, float score, Value... values )
     {
         if ( isRemoved( reference ) || !allowed( reference ) )
         {
@@ -229,13 +231,13 @@ public abstract class DefaultEntityValueIndexCursor extends IndexCursor<IndexPro
     }
 
     @Override
-    public boolean needsValues()
+    public final boolean needsValues()
     {
         return needsValues;
     }
 
     @Override
-    public boolean next()
+    public final boolean next()
     {
         if ( indexOrder == IndexOrder.NONE )
         {
@@ -298,8 +300,7 @@ public abstract class DefaultEntityValueIndexCursor extends IndexCursor<IndexPro
             sortedMergeJoin.setB( entity, values );
         }
 
-        sortedMergeJoin.next( this );
-        boolean next = entity != -1;
+        boolean next = sortedMergeJoin.next( this );
         if ( tracer != null && next )
         {
             traceOnEntity( tracer, entity );
@@ -429,50 +430,50 @@ public abstract class DefaultEntityValueIndexCursor extends IndexCursor<IndexPro
     }
 
     @Override
-    public void acceptSortedMergeJoin( long entityId, Value[] values )
+    public final void acceptSortedMergeJoin( long entityId, Value[] values )
     {
         this.entity = entityId;
         this.values = values;
     }
 
     @Override
-    public void setRead( Read read )
+    public final void setRead( Read read )
     {
         this.read = read;
     }
 
     @Override
-    public int numberOfProperties()
+    public final int numberOfProperties()
     {
         return query == null ? 0 : query.length;
     }
 
     @Override
-    public int propertyKey( int offset )
+    public final int propertyKey( int offset )
     {
         return query[offset].propertyKeyId();
     }
 
     @Override
-    public boolean hasValue()
+    public final boolean hasValue()
     {
         return values != null;
     }
 
     @Override
-    public float score()
+    public final float score()
     {
         return score;
     }
 
     @Override
-    public Value propertyValue( int offset )
+    public final Value propertyValue( int offset )
     {
         return values[offset];
     }
 
     @Override
-    public void closeInternal()
+    public final void closeInternal()
     {
         if ( !isClosed() )
         {
@@ -496,23 +497,23 @@ public abstract class DefaultEntityValueIndexCursor extends IndexCursor<IndexPro
     }
 
     @Override
-    public boolean isClosed()
+    public final boolean isClosed()
     {
         return isProgressorClosed();
     }
 
-    protected String toString( String implementationName )
+    @Override
+    public String toString()
     {
         if ( isClosed() )
         {
-            return implementationName + "[closed state]";
+            return implementationName() + "[closed state]";
         }
         else
         {
             String keys = query == null ? "unknown" : Arrays.toString( stream( query ).map( IndexQuery::propertyKeyId ).toArray( Integer[]::new ) );
-            return implementationName + "[entity=" + entity + ", open state with: keys=" + keys +
-                    ", values=" + Arrays.toString( values ) +
-                    ", underlying record=" + super.toString() + "]";
+            return implementationName() + "[entity=" + entity + ", open state with: keys=" + keys +
+                    ", values=" + Arrays.toString( values ) + "]";
         }
     }
 
@@ -522,14 +523,14 @@ public abstract class DefaultEntityValueIndexCursor extends IndexCursor<IndexPro
 
         if ( needsValues )
         {
-            TxStateIndexChanges.AddedWithValuesAndRemoved changes =
+            AddedWithValuesAndRemoved changes =
                     indexUpdatesWithValuesForRangeSeekByPrefix( txState, descriptor, equalityPrefix, predicate.prefix(), indexOrder );
             addedWithValues = changes.getAdded().iterator();
             removed = removed( txState, changes.getRemoved() );
         }
         else
         {
-            TxStateIndexChanges.AddedAndRemoved changes =
+            AddedAndRemoved changes =
                     indexUpdatesForRangeSeekByPrefix( txState, descriptor, equalityPrefix, predicate.prefix(), indexOrder );
             added = changes.getAdded().longIterator();
             removed = removed( txState, changes.getRemoved() );
@@ -542,14 +543,14 @@ public abstract class DefaultEntityValueIndexCursor extends IndexCursor<IndexPro
 
         if ( needsValues )
         {
-            TxStateIndexChanges.AddedWithValuesAndRemoved
+            AddedWithValuesAndRemoved
                     changes = indexUpdatesWithValuesForRangeSeek( txState, descriptor, equalityPrefix, predicate, indexOrder );
             addedWithValues = changes.getAdded().iterator();
             removed = removed( txState, changes.getRemoved() );
         }
         else
         {
-            TxStateIndexChanges.AddedAndRemoved changes = indexUpdatesForRangeSeek( txState, descriptor, equalityPrefix, predicate, indexOrder );
+            AddedAndRemoved changes = indexUpdatesForRangeSeek( txState, descriptor, equalityPrefix, predicate, indexOrder );
             added = changes.getAdded().longIterator();
             removed = removed( txState, changes.getRemoved() );
         }
@@ -561,13 +562,13 @@ public abstract class DefaultEntityValueIndexCursor extends IndexCursor<IndexPro
 
         if ( needsValues )
         {
-            TxStateIndexChanges.AddedWithValuesAndRemoved changes = indexUpdatesWithValuesForScan( txState, descriptor, indexOrder );
+            AddedWithValuesAndRemoved changes = indexUpdatesWithValuesForScan( txState, descriptor, indexOrder );
             addedWithValues = changes.getAdded().iterator();
             removed = removed( txState, changes.getRemoved() );
         }
         else
         {
-            TxStateIndexChanges.AddedAndRemoved changes = indexUpdatesForScan( txState, descriptor, indexOrder );
+            AddedAndRemoved changes = indexUpdatesForScan( txState, descriptor, indexOrder );
             added = changes.getAdded().longIterator();
             removed = removed( txState, changes.getRemoved() );
         }
@@ -579,13 +580,13 @@ public abstract class DefaultEntityValueIndexCursor extends IndexCursor<IndexPro
 
         if ( needsValues )
         {
-            TxStateIndexChanges.AddedWithValuesAndRemoved changes = indexUpdatesWithValuesForSuffixOrContains( txState, descriptor, query, indexOrder );
+            AddedWithValuesAndRemoved changes = indexUpdatesWithValuesForSuffixOrContains( txState, descriptor, query, indexOrder );
             addedWithValues = changes.getAdded().iterator();
             removed = removed( txState, changes.getRemoved() );
         }
         else
         {
-            TxStateIndexChanges.AddedAndRemoved changes = indexUpdatesForSuffixOrContains( txState, descriptor, query, indexOrder );
+            AddedAndRemoved changes = indexUpdatesForSuffixOrContains( txState, descriptor, query, indexOrder );
             added = changes.getAdded().longIterator();
             removed = removed( txState, changes.getRemoved() );
         }
@@ -595,19 +596,19 @@ public abstract class DefaultEntityValueIndexCursor extends IndexCursor<IndexPro
     {
         TransactionState txState = read.txState();
 
-        TxStateIndexChanges.AddedAndRemoved changes = indexUpdatesForSeek( txState, descriptor, ValueTuple.of( values ) );
+        AddedAndRemoved changes = indexUpdatesForSeek( txState, descriptor, ValueTuple.of( values ) );
         added = changes.getAdded().longIterator();
         removed = removed( txState, changes.getRemoved() );
     }
 
-    protected long entityReference()
+    final long entityReference()
     {
         return entity;
     }
 
-    protected void readEntity( Consumer<Read> entityReader )
+    final void readEntity( EntityReader entityReader )
     {
-        entityReader.accept( read );
+        entityReader.read( read );
     }
 
     private boolean setupSecurity( IndexDescriptor descriptor )
@@ -640,17 +641,17 @@ public abstract class DefaultEntityValueIndexCursor extends IndexCursor<IndexPro
      * <p>
      * If {@code true} is returned, it means that security check does not need to be performed for each item in the cursor.
      */
-    protected abstract boolean canAccessAllDescribedEntities( IndexDescriptor descriptor, AccessMode accessMode );
+    abstract boolean canAccessAllDescribedEntities( IndexDescriptor descriptor, AccessMode accessMode );
 
     /**
      * Gets entities removed in the current transaction that are relevant for the index.
      */
-    protected abstract LongSet removed( TransactionState txState, LongSet removedFromIndex );
+    abstract ImmutableLongSet removed( TransactionState txState, LongSet removedFromIndex );
 
     /**
      * Checks if the user is allowed to see the entity and properties the cursor is currently pointing at.
      */
-    protected abstract boolean allowed( long reference, AccessMode accessMode );
+    abstract boolean allowed( long reference, AccessMode accessMode );
 
     /**
      * An abstraction over {@link KernelReadTracer#onNode(long)} and {@link KernelReadTracer#onRelationship(long)}.
@@ -661,4 +662,15 @@ public abstract class DefaultEntityValueIndexCursor extends IndexCursor<IndexPro
      * A callback instructing the implementation cursor to return itself into a pool.
      */
     abstract void returnToPool();
+
+    /**
+     * Name of the concrete implementation used in {@link #toString()}.
+     */
+    abstract String implementationName();
+
+    @FunctionalInterface
+    interface EntityReader
+    {
+        void read( Read read );
+    }
 }

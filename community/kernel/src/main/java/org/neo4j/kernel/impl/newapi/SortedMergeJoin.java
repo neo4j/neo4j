@@ -67,7 +67,10 @@ final class SortedMergeJoin
         valuesFromB = values;
     }
 
-    void next( Sink sink )
+    /**
+     * Produces a next entity unless it is at the end of the entity stream, in which case it returns {@code false}.
+     */
+    boolean next( Sink sink )
     {
         int c = 0;
         if ( valuesFromA != null && valuesFromB != null )
@@ -84,6 +87,11 @@ final class SortedMergeJoin
 
         if ( nextFromB == -1 || Integer.signum( c ) == indexOrder )
         {
+            if ( nextFromA == -1 )
+            {
+                return false;
+            }
+
             sink.acceptSortedMergeJoin( nextFromA, valuesFromA );
             nextFromA = -1;
             valuesFromA = null;
@@ -94,6 +102,8 @@ final class SortedMergeJoin
             nextFromB = -1;
             valuesFromB = null;
         }
+
+        return true;
     }
 
     interface Sink

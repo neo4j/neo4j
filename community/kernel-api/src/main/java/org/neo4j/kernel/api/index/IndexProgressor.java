@@ -89,7 +89,7 @@ public interface IndexProgressor extends AutoCloseable
         /**
          * Accept the entity id and values of a candidate index entry. Return true if the entry is
          * accepted, false otherwise.
-         * @param reference the node id of the candidate index entry
+         * @param reference the entity id of the candidate index entry
          * @param score a score figure for the quality of the match, for indexes where this makes sense, otherwise {@link Float#NaN}.
          * @param values the values of the candidate index entry
          * @return true if the entry is accepted, false otherwise

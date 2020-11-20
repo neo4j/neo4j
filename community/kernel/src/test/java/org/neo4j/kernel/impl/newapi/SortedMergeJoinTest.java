@@ -136,7 +136,7 @@ class SortedMergeJoinTest
                                                     Iterator<EntityWithPropertyValues> iteratorB )
     {
         Collector collector = new Collector();
-        while ( !collector.done )
+        do
         {
             if ( iteratorA.hasNext() && sortedMergeJoin.needsA() )
             {
@@ -148,9 +148,8 @@ class SortedMergeJoinTest
                 EntityWithPropertyValues b = iteratorB.next();
                 sortedMergeJoin.setB( b.getEntityId(), b.getValues() );
             }
-
-            sortedMergeJoin.next( collector );
         }
+        while ( sortedMergeJoin.next( collector ) );
         return collector.result;
     }
 
@@ -162,19 +161,11 @@ class SortedMergeJoinTest
     static class Collector implements SortedMergeJoin.Sink
     {
         final List<EntityWithPropertyValues> result = new ArrayList<>();
-        boolean done;
 
         @Override
         public void acceptSortedMergeJoin( long nodeId, Value[] values )
         {
-            if ( nodeId == -1 )
-            {
-                done = true;
-            }
-            else
-            {
-                result.add( new EntityWithPropertyValues( nodeId, values ) );
-            }
+            result.add( new EntityWithPropertyValues( nodeId, values ) );
         }
     }
 }

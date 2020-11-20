@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import org.eclipse.collections.api.set.primitive.ImmutableLongSet;
 import org.eclipse.collections.api.set.primitive.LongSet;
 
 import java.util.Arrays;
@@ -111,6 +112,12 @@ class DefaultNodeValueIndexCursor extends DefaultEntityValueIndexCursor implemen
     }
 
     @Override
+    String implementationName()
+    {
+        return "NodeValueIndexCursor";
+    }
+
+    @Override
     protected boolean allowed( long reference, AccessMode accessMode )
     {
         readEntity( read -> read.singleNode( reference, securityNodeCursor ) );
@@ -143,15 +150,9 @@ class DefaultNodeValueIndexCursor extends DefaultEntityValueIndexCursor implemen
     }
 
     @Override
-    public String toString()
+    protected ImmutableLongSet removed( TransactionState txState, LongSet removedFromIndex )
     {
-        return toString( "NodeValueIndexCursor" );
-    }
-
-    @Override
-    protected LongSet removed( TransactionState txState, LongSet removedFromIndex )
-    {
-        return mergeToSet( txState.addedAndRemovedNodes().getRemoved(), removedFromIndex );
+        return mergeToSet( txState.addedAndRemovedNodes().getRemoved(), removedFromIndex ).toImmutable();
     }
 
     public void release()

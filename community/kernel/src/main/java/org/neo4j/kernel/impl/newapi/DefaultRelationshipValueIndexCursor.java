@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import org.eclipse.collections.api.set.primitive.ImmutableLongSet;
 import org.eclipse.collections.api.set.primitive.LongSet;
 
 import org.neo4j.internal.kernel.api.KernelReadTracer;
@@ -92,8 +93,12 @@ class DefaultRelationshipValueIndexCursor extends DefaultEntityValueIndexCursor 
     /**
      * Check that the user is allowed to access all relationships and properties given by the index descriptor.
      * <p>
-     * If the current user is allowed to traverse all relationships  nodes and read the properties no matter what label
-     * the node has, we can skip checking on every node we get back.
+     * We can skip checking permissions on every relationship we get back if the current user is allowed to:
+     * <ul>
+     *     <li>traverse all relationships of type the index is defined for</li>
+     *     <li>traverse all nodes no matter what label the node has</li>
+     *     <li>read all the indexed properties</li>
+     * </ul>
      */
     @Override
     protected boolean canAccessAllDescribedEntities( IndexDescriptor descriptor, AccessMode accessMode )
@@ -122,9 +127,9 @@ class DefaultRelationshipValueIndexCursor extends DefaultEntityValueIndexCursor 
     }
 
     @Override
-    protected LongSet removed( TransactionState txState, LongSet removedFromIndex )
+    protected ImmutableLongSet removed( TransactionState txState, LongSet removedFromIndex )
     {
-        return mergeToSet( txState.addedAndRemovedRelationships().getRemoved(), removedFromIndex );
+        return mergeToSet( txState.addedAndRemovedRelationships().getRemoved(), removedFromIndex ).toImmutable();
     }
 
     @Override
@@ -160,6 +165,12 @@ class DefaultRelationshipValueIndexCursor extends DefaultEntityValueIndexCursor 
         pool.accept( this );
     }
 
+    @Override
+    String implementationName()
+    {
+        return "RelationshipValueIndexCursor";
+    }
+
     public void release()
     {
         if ( securityRelationshipCursor != null )
@@ -167,11 +178,5 @@ class DefaultRelationshipValueIndexCursor extends DefaultEntityValueIndexCursor 
             securityRelationshipCursor.close();
             securityRelationshipCursor.release();
         }
-    }
-
-    @Override
-    public String toString()
-    {
-        return toString( "RelationshipValueIndexCursor" );
     }
 }
