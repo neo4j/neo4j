@@ -155,7 +155,7 @@ object RewindableExecutionResult {
         result,
         executionMode,
         planDescription(),
-        subscriber.queryStatistics().asInstanceOf[QueryStatistics],
+        QueryStatistics(subscriber.queryStatistics()),
         notifications)
     } finally subscription.cancel()
   }
