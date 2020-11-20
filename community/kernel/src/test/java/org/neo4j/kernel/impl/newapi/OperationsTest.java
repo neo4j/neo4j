@@ -1066,7 +1066,7 @@ class OperationsTest
         StatementLocks statementLocks = mock( StatementLocks.class );
         when( ktx.statementLocks() ).thenReturn( statementLocks );
         when( ktx.securityContext() ).thenReturn( sctx );
-        when( statementLocks.optimistic() ).thenReturn( mock( Locks.Client.class ) );
+        when( statementLocks.lockClient() ).thenReturn( mock( Locks.Client.class ) );
         CommandCreationContext commandCreationContext = mock( CommandCreationContext.class );
         DefaultPooledCursors cursors = mock( DefaultPooledCursors.class );
         when( cursors.allocateFullAccessNodeCursor( NULL ) ).thenReturn( mock( FullAccessNodeCursor.class ) );
@@ -1098,8 +1098,8 @@ class OperationsTest
         StatementLocks statementLocks = mock( StatementLocks.class );
         when( ktx.statementLocks() ).thenReturn( statementLocks );
         when( ktx.securityContext() ).thenReturn( sctx );
-        when( statementLocks.optimistic() ).thenReturn( mock( Locks.Client.class ) );
-        when( statementLocks.pessimistic() ).thenReturn( mock( Locks.Client.class ) );
+        when( statementLocks.lockClient() ).thenReturn( mock( Locks.Client.class ) );
+        when( statementLocks.lockClient() ).thenReturn( mock( Locks.Client.class ) );
         CommandCreationContext commandCreationContext = mock( CommandCreationContext.class );
         AllStoreHolder allStoreHolder = mock( AllStoreHolder.class );
         when( allStoreHolder.nodeExists( anyLong() ) ).thenReturn( true );
@@ -1128,8 +1128,8 @@ class OperationsTest
         when( ktx.txState() ).thenReturn( mock( TransactionState.class ) );
         StatementLocks statementLocks = mock( StatementLocks.class );
         when( ktx.statementLocks() ).thenReturn( statementLocks );
-        when( statementLocks.optimistic() ).thenReturn( mock( Locks.Client.class ) );
-        when( statementLocks.pessimistic() ).thenReturn( mock( Locks.Client.class ) );
+        when( statementLocks.lockClient() ).thenReturn( mock( Locks.Client.class ) );
+        when( statementLocks.lockClient() ).thenReturn( mock( Locks.Client.class ) );
         CommandCreationContext commandCreationContext = mock( CommandCreationContext.class );
         IndexingProvidersService indexingProvidersService = mock( IndexingProvidersService.class );
         when( indexingProvidersService.getDefaultProvider() ).thenReturn( mock( IndexProviderDescriptor.class ) );

@@ -728,7 +728,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 // grab all optimistic locks now, locks can't be deferred any further
                 statementLocks.prepareForCommit( currentStatement.lockTracer() );
                 // use pessimistic locks for the rest of the commit process, locks can't be deferred any further
-                Locks.Client commitLocks = statementLocks.pessimistic();
+                Locks.Client commitLocks = statementLocks.lockClient();
 
                 // Gather up commands from the various sources
                 HeapTrackingArrayList<StorageCommand> extractedCommands = HeapTrackingCollections.newArrayList( memoryTracker );

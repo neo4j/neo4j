@@ -216,7 +216,7 @@ public class Operations implements Write, SchemaWrite
             lockingIds[i] = labels[i];
         }
         Arrays.sort( lockingIds ); // Sort to ensure labels are locked and assigned in order.
-        ktx.statementLocks().optimistic().acquireShared( ktx.lockTracer(), ResourceTypes.LABEL, lockingIds );
+        ktx.statementLocks().lockClient().acquireShared( ktx.lockTracer(), ResourceTypes.LABEL, lockingIds );
         TransactionState txState = ktx.txState();
         long nodeId = commandCreationContext.reserveNode();
         txState.nodeDoCreate( nodeId );
@@ -393,7 +393,7 @@ public class Operations implements Write, SchemaWrite
 
         if ( lock )
         {
-            ktx.statementLocks().optimistic().acquireExclusive( ktx.lockTracer(), ResourceTypes.NODE, node );
+            ktx.statementLocks().lockClient().acquireExclusive( ktx.lockTracer(), ResourceTypes.NODE, node );
         }
 
         allStoreHolder.singleNode( node, nodeCursor );
@@ -416,7 +416,7 @@ public class Operations implements Write, SchemaWrite
     private long[] acquireSharedNodeLabelLocks()
     {
         long[] labels = nodeCursor.labels().all();
-        ktx.statementLocks().optimistic().acquireShared( ktx.lockTracer(), ResourceTypes.LABEL, labels );
+        ktx.statementLocks().lockClient().acquireShared( ktx.lockTracer(), ResourceTypes.LABEL, labels );
         return labels;
     }
 
@@ -553,7 +553,7 @@ public class Operations implements Write, SchemaWrite
             }
 
             //Take a big fat lock, and check for existing node in index
-            ktx.statementLocks().optimistic().acquireExclusive(
+            ktx.statementLocks().lockClient().acquireExclusive(
                     ktx.lockTracer(), INDEX_ENTRY,
                     indexEntryResourceId( labelIds[0], propertyValues )
             );
@@ -1377,14 +1377,14 @@ public class Operations implements Write, SchemaWrite
 
     private void exclusiveOptimisticLock( ResourceType resource, long[] resourceIds )
     {
-        ktx.statementLocks().optimistic().acquireExclusive( ktx.lockTracer(), resource, resourceIds );
+        ktx.statementLocks().lockClient().acquireExclusive( ktx.lockTracer(), resource, resourceIds );
     }
 
     private void acquireExclusiveNodeLock( long node )
     {
         if ( !ktx.hasTxStateWithChanges() || !ktx.txState().nodeIsAddedInThisTx( node ) )
         {
-            ktx.statementLocks().optimistic().acquireExclusive( ktx.lockTracer(), ResourceTypes.NODE, node );
+            ktx.statementLocks().lockClient().acquireExclusive( ktx.lockTracer(), ResourceTypes.NODE, node );
         }
     }
 
@@ -1392,32 +1392,32 @@ public class Operations implements Write, SchemaWrite
     {
         if ( !ktx.hasTxStateWithChanges() || !ktx.txState().relationshipIsAddedInThisTx( relationshipId ) )
         {
-            ktx.statementLocks().optimistic()
+            ktx.statementLocks().lockClient()
                     .acquireExclusive( ktx.lockTracer(), ResourceTypes.RELATIONSHIP, relationshipId );
         }
     }
 
     private void sharedSchemaLock( ResourceType type, int tokenId )
     {
-        ktx.statementLocks().optimistic().acquireShared( ktx.lockTracer(), type, tokenId );
+        ktx.statementLocks().lockClient().acquireShared( ktx.lockTracer(), type, tokenId );
     }
 
     private void exclusiveSchemaLock( SchemaDescriptor schema )
     {
         long[] lockingIds = schema.lockingKeys();
-        ktx.statementLocks().optimistic().acquireExclusive( ktx.lockTracer(), schema.keyType(), lockingIds );
+        ktx.statementLocks().lockClient().acquireExclusive( ktx.lockTracer(), schema.keyType(), lockingIds );
     }
 
     private void exclusiveSchemaUnlock( SchemaDescriptor schema )
     {
         long[] lockingIds = schema.lockingKeys();
-        ktx.statementLocks().optimistic().releaseExclusive( schema.keyType(), lockingIds );
+        ktx.statementLocks().lockClient().releaseExclusive( schema.keyType(), lockingIds );
     }
 
     private void exclusiveSchemaNameLock( String schemaName )
     {
         long lockingId = ResourceIds.schemaNameResourceId( schemaName );
-        ktx.statementLocks().optimistic().acquireExclusive( ktx.lockTracer(), SCHEMA_NAME, lockingId );
+        ktx.statementLocks().lockClient().acquireExclusive( ktx.lockTracer(), SCHEMA_NAME, lockingId );
     }
 
     private void lockRelationshipNodes( long startNodeId, long endNodeId )

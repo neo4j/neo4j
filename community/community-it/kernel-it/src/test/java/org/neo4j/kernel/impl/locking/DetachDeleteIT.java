@@ -295,7 +295,7 @@ class DetachDeleteIT
     private Locks.Client getLocksClient( Transaction tx )
     {
         KernelTransactionImplementation kti = (KernelTransactionImplementation) getKernelTransaction( tx );
-        return kti.statementLocks().pessimistic();
+        return kti.statementLocks().lockClient();
     }
 
     private KernelTransaction getKernelTransaction( Transaction tx )

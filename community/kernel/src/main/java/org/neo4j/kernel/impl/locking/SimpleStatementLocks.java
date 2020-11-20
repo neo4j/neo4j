@@ -26,7 +26,7 @@ import org.neo4j.lock.LockTracer;
 
 /**
  * A {@link StatementLocks} implementation that uses given {@link Locks.Client} for both
- * {@link #optimistic() optimistic} and {@link #pessimistic() pessimistic} locks.
+ * {@link #optimistic() optimistic} and {@link #lockClient() pessimistic} locks.
  */
 public class SimpleStatementLocks implements StatementLocks
 {
@@ -44,13 +44,7 @@ public class SimpleStatementLocks implements StatementLocks
     }
 
     @Override
-    public Locks.Client pessimistic()
-    {
-        return client;
-    }
-
-    @Override
-    public Locks.Client optimistic()
+    public Locks.Client lockClient()
     {
         return client;
     }

@@ -26,13 +26,12 @@ import org.neo4j.kernel.impl.api.LeaseClient;
 import org.neo4j.lock.LockTracer;
 
 /**
- * Component used by {@link KernelStatement} to acquire {@link #pessimistic() pessimistic} and
- * {@link #optimistic() optimistic} locks.
+ * Component used by {@link KernelStatement} to acquire locks.
  */
 public interface StatementLocks extends AutoCloseable
 {
     /**
-     * Initializes this locks instance with a {@link LeaseClient}. Must be called before the first call to {@link #pessimistic()} or {@link #optimistic()}.
+     * Initializes this locks instance with a {@link LeaseClient}. Must be called before the first call to {@link #lockClient()}.
      * @param leaseClient {@link LeaseClient} of the transaction owning this locks instance.
      * @param transactionId owning transaction id
      */
@@ -43,20 +42,10 @@ public interface StatementLocks extends AutoCloseable
      *
      * @return the locks client to serve pessimistic locks.
      */
-    Locks.Client pessimistic();
+    Locks.Client lockClient();
 
     /**
-     * Get {@link Locks.Client} responsible for optimistic locks. Such locks could potentially be grabbed later at
-     * commit time.
-     *
-     * @return the locks client to serve optimistic locks.
-     */
-    Locks.Client optimistic();
-
-    /**
-     * Prepare the underlying {@link Locks.Client client}(s) for commit. This will grab all locks that have
-     * previously been taken {@link #optimistic() optimistically}, and tell the underlying lock client to enter the
-     * <em>prepare</em> state.
+     * Prepare the underlying {@link Locks.Client client}(s) for commit.
      * @param lockTracer lock tracer
      */
     void prepareForCommit( LockTracer lockTracer );

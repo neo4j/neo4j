@@ -199,10 +199,10 @@ class ConstraintIndexCreatorTest
         creator.createUniquenessConstraintIndex( transaction, constraint, prototype );
 
         // then
-        verify( transaction.statementLocks().pessimistic() )
+        verify( transaction.statementLocks().lockClient() )
                 .releaseExclusive( ResourceTypes.LABEL, schema.getLabelId() );
 
-        verify( transaction.statementLocks().pessimistic() )
+        verify( transaction.statementLocks().lockClient() )
                 .acquireExclusive( transaction.lockTracer(), ResourceTypes.LABEL, schema.getLabelId() );
     }
 

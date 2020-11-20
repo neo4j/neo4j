@@ -59,8 +59,8 @@ class StatementLocksFactorySelectorTest
         assertThat( factory ).isInstanceOf( SimpleStatementLocksFactory.class );
         assertThat( statementLocks ).isInstanceOf( SimpleStatementLocks.class );
 
-        assertSame( locksClient, statementLocks.optimistic() );
-        assertSame( locksClient, statementLocks.pessimistic() );
+        assertSame( locksClient, statementLocks.lockClient() );
+        assertSame( locksClient, statementLocks.lockClient() );
     }
 
     @Test

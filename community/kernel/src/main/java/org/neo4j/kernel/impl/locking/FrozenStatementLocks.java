@@ -56,21 +56,15 @@ public class FrozenStatementLocks implements StatementLocks
     }
 
     @Override
-    public Locks.Client pessimistic()
+    public Locks.Client lockClient()
     {
-        throw new FrozenLocksException( realStatementLocks.pessimistic().getLockSessionId() );
-    }
-
-    @Override
-    public Locks.Client optimistic()
-    {
-        throw new FrozenLocksException( realStatementLocks.pessimistic().getLockSessionId() );
+        throw new FrozenLocksException( realStatementLocks.lockClient().getLockSessionId() );
     }
 
     @Override
     public void prepareForCommit( LockTracer lockTracer )
     {
-        throw new FrozenLocksException( realStatementLocks.pessimistic().getLockSessionId() );
+        throw new FrozenLocksException( realStatementLocks.lockClient().getLockSessionId() );
     }
 
     @Override
@@ -82,7 +76,7 @@ public class FrozenStatementLocks implements StatementLocks
     @Override
     public void close()
     {
-        throw new FrozenLocksException( realStatementLocks.pessimistic().getLockSessionId() );
+        throw new FrozenLocksException( realStatementLocks.lockClient().getLockSessionId() );
     }
 
     @Override
