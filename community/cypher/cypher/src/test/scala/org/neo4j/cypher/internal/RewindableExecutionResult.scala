@@ -91,7 +91,7 @@ object RewindableExecutionResult {
         result,
         NormalMode,
         in.getExecutionPlanDescription.asInstanceOf[InternalPlanDescription],
-        in.getQueryStatistics.asInstanceOf[QueryStatistics],
+        QueryStatistics(in.getQueryStatistics),
         Seq.empty)
     } finally in.close()
   }

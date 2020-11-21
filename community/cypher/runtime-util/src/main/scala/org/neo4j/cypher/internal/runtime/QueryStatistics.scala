@@ -104,19 +104,23 @@ case class QueryStatistics(@BeanProperty nodesCreated: Int = 0,
 
 object QueryStatistics {
   val empty: QueryStatistics = QueryStatistics()
-  def apply(statistics: org.neo4j.graphdb.QueryStatistics): QueryStatistics =
-    QueryStatistics(
-      nodesCreated = statistics.getNodesCreated,
-      nodesDeleted = statistics.getNodesDeleted,
-      relationshipsCreated = statistics.getRelationshipsCreated,
-      relationshipsDeleted = statistics.getRelationshipsCreated,
-      propertiesSet = statistics.getPropertiesSet,
-      labelsAdded = statistics.getLabelsAdded,
-      labelsRemoved = statistics.getLabelsRemoved,
-      indexesAdded = statistics.getIndexesAdded,
-      indexesRemoved = statistics.getIndexesRemoved,
-      uniqueConstraintsAdded = statistics.getConstraintsAdded,
-      uniqueConstraintsRemoved = statistics.getConstraintsRemoved,
-      systemUpdates = statistics.getSystemUpdates
-  )
+
+  def apply(statistics: org.neo4j.graphdb.QueryStatistics): QueryStatistics = statistics match {
+    case q: QueryStatistics => q
+    case _ =>
+      QueryStatistics(
+        nodesCreated = statistics.getNodesCreated,
+        nodesDeleted = statistics.getNodesDeleted,
+        relationshipsCreated = statistics.getRelationshipsCreated,
+        relationshipsDeleted = statistics.getRelationshipsDeleted,
+        propertiesSet = statistics.getPropertiesSet,
+        labelsAdded = statistics.getLabelsAdded,
+        labelsRemoved = statistics.getLabelsRemoved,
+        indexesAdded = statistics.getIndexesAdded,
+        indexesRemoved = statistics.getIndexesRemoved,
+        uniqueConstraintsAdded = statistics.getConstraintsAdded,
+        uniqueConstraintsRemoved = statistics.getConstraintsRemoved,
+        systemUpdates = statistics.getSystemUpdates
+      )
+  }
 }

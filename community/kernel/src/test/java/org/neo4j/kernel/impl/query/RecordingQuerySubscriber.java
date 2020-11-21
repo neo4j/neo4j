@@ -31,7 +31,7 @@ public class RecordingQuerySubscriber implements QuerySubscriber
     private List<AnyValue[]> all = new ArrayList<>();
     private AnyValue[] current;
     private Throwable throwable;
-    private QueryStatistics statistics;
+    private QueryStatistics statistics = QueryStatistics.EMPTY;
 
     @Override
     public void onResult( int numberOfFields )
