@@ -91,7 +91,7 @@ public class IndexConfigMigrator extends AbstractStoreMigrationParticipant
         {
             for ( SchemaRule rule : ruleAccess.getAll() )
             {
-                SchemaRule upgraded = migrateIndexConfig( rule, directoryLayout, cursorTracer );
+                SchemaRule upgraded = migrateIndexConfig( rule, directoryLayout, fs, pageCache, indexProviderMap, log, cursorTracer );
 
                 if ( upgraded != rule )
                 {
@@ -101,7 +101,8 @@ public class IndexConfigMigrator extends AbstractStoreMigrationParticipant
         }
     }
 
-    private SchemaRule migrateIndexConfig( SchemaRule rule, DatabaseLayout directoryLayout, PageCursorTracer cursorTracer ) throws IOException
+    public static SchemaRule migrateIndexConfig( SchemaRule rule, DatabaseLayout directoryLayout, FileSystemAbstraction fs, PageCache pageCache,
+            IndexProviderMap indexProviderMap, Log log, PageCursorTracer cursorTracer ) throws IOException
     {
         if ( rule instanceof IndexDescriptor )
         {

@@ -182,7 +182,7 @@ public class StoreUpgrader
         }
     }
 
-    private boolean hasCurrentVersion( StoreVersionCheck storeVersionCheck, PageCursorTracer cursorTracer )
+    private static boolean hasCurrentVersion( StoreVersionCheck storeVersionCheck, PageCursorTracer cursorTracer )
     {
         String configuredVersion = storeVersionCheck.configuredVersion();
         StoreVersionCheck.Result versionResult = storeVersionCheck.checkUpgrade( configuredVersion, cursorTracer );
