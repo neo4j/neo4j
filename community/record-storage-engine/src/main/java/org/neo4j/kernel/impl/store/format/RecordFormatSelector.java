@@ -295,7 +295,7 @@ public class RecordFormatSelector
         }
     }
 
-    private static Optional<RecordFormats> findLatestFormatInFamily( RecordFormats result )
+    public static Optional<RecordFormats> findLatestFormatInFamily( RecordFormats result )
     {
         return Iterables.stream( allFormats() )
                 .filter( format -> isSameFamily( result, format ) )

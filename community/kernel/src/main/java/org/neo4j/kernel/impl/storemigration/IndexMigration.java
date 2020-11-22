@@ -139,11 +139,11 @@ enum IndexMigration
                     //        └── fulltext-1.0
                     //            └── 1
                     //                ├── fulltext-1.0
-                    //                │   ├── 1
-                    //                │   │   ├── segments_1
-                    //                │   │   └── write.lock
-                    //                │   ├── failure-message
-                    //                │   └── fulltext-index.properties <- Fulltext index settings
+                    //                │   ├── 1
+                    //                │   │   ├── segments_1
+                    //                │   │   └── write.lock
+                    //                │   ├── failure-message
+                    //                │   └── fulltext-index.properties <- Fulltext index settings
                     //                └── fulltext-1.0.tx               <- Transaction folder
                     Path fulltext10Dir = providerRootDirectories( layout )[0];
                     Path directoryForIndex = fulltext10Dir.resolve( String.valueOf( indexId ) );
