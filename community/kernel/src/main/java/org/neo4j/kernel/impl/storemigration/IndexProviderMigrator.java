@@ -106,7 +106,7 @@ public class IndexProviderMigrator extends AbstractStoreMigrationParticipant
         // Nothing to clean up.
     }
 
-    private SchemaRule upgradeIndexProvider( SchemaRule rule )
+    public static SchemaRule upgradeIndexProvider( SchemaRule rule )
     {
         if ( rule instanceof IndexDescriptor )
         {

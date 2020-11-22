@@ -735,17 +735,27 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
 
     static void migrateSchemaRules( TokenHolders srcTokenHolders, SchemaStorage srcAccess, SchemaRuleMigrationAccess dstAccess ) throws KernelException
     {
-        SchemaNameGiver nameGiver = new SchemaNameGiver( srcTokenHolders );
         LinkedHashMap<Long,SchemaRule> rules = new LinkedHashMap<>();
 
+        schemaGenerateNames( srcAccess, srcTokenHolders, rules );
+
+        // Once all rules have been processed, write them out.
+        for ( SchemaRule rule : rules.values() )
         {
-            List<SchemaRule> namedRules = new ArrayList<>();
-            List<SchemaRule> unnamedRules = new ArrayList<>();
-            srcAccess.getAll().forEach( r -> (hasName( r ) ? namedRules : unnamedRules).add( r ) );
-            // Make sure that we process explicitly named schemas first.
-            namedRules.forEach( r -> rules.put( r.getId(), r ) );
-            unnamedRules.forEach( r -> rules.put( r.getId(), r ) );
+            dstAccess.writeSchemaRule( rule );
         }
+    }
+
+    public static void schemaGenerateNames( SchemaStorage srcAccess, TokenHolders srcTokenHolders,
+            Map<Long,SchemaRule> rules ) throws KernelException
+    {
+        SchemaNameGiver nameGiver = new SchemaNameGiver( srcTokenHolders );
+        List<SchemaRule> namedRules = new ArrayList<>();
+        List<SchemaRule> unnamedRules = new ArrayList<>();
+        srcAccess.getAll().forEach( r -> (hasName( r ) ? namedRules : unnamedRules).add( r ) );
+        // Make sure that we process explicitly named schemas first.
+        namedRules.forEach( r -> rules.put( r.getId(), r ) );
+        unnamedRules.forEach( r -> rules.put( r.getId(), r ) );
 
         for ( Map.Entry<Long,SchemaRule> entry : rules.entrySet() )
         {
@@ -784,12 +794,6 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
                     }
                 }
             }
-        }
-
-        // Once all rules have been processed, write them out.
-        for ( SchemaRule rule : rules.values() )
-        {
-            dstAccess.writeSchemaRule( rule );
         }
     }
 

@@ -31,16 +31,21 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.batchimport.AdditionalInitialIds;
 import org.neo4j.internal.batchimport.BatchImporter;
 import org.neo4j.internal.batchimport.BatchImporterFactory;
@@ -58,6 +63,7 @@ import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.recordstorage.SchemaRuleAccess;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -68,6 +74,10 @@ import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
+import org.neo4j.kernel.extension.DatabaseExtensions;
+import org.neo4j.kernel.extension.ExtensionFactory;
+import org.neo4j.kernel.extension.context.DatabaseExtensionContext;
+import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -80,15 +90,25 @@ import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
+import org.neo4j.kernel.impl.storemigration.RecordStorageMigrator;
+import org.neo4j.kernel.impl.storemigration.SchemaStorage;
+import org.neo4j.kernel.impl.storemigration.legacy.SchemaStorage35;
+import org.neo4j.kernel.impl.storemigration.legacy.SchemaStore35;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogInitializer;
+import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
+import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.DuplicatingLogProvider;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.logging.internal.SimpleLogService;
 import org.neo4j.memory.EmptyMemoryTracker;
+import org.neo4j.monitoring.Monitors;
+import org.neo4j.procedure.builtin.SchemaStatementProcedure;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.service.Services;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.token.api.NamedToken;
 import org.neo4j.token.api.NonUniqueTokenException;
@@ -103,10 +123,14 @@ import static org.neo4j.internal.batchimport.ImportLogic.NO_MONITOR;
 import static org.neo4j.internal.recordstorage.StoreTokens.allReadableTokens;
 import static org.neo4j.internal.recordstorage.StoreTokens.createReadOnlyTokenHolder;
 import static org.neo4j.io.mem.MemoryAllocator.createAllocator;
+import static org.neo4j.kernel.extension.ExtensionFailureStrategies.ignore;
 import static org.neo4j.kernel.impl.scheduler.JobSchedulerFactory.createInitialisedScheduler;
+import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.findLatestFormatInFamily;
+import static org.neo4j.kernel.impl.store.format.RecordStorageCapability.FLEXIBLE_SCHEMA_STORE;
+import static org.neo4j.kernel.impl.storemigration.IndexConfigMigrator.migrateIndexConfig;
+import static org.neo4j.kernel.impl.storemigration.IndexProviderMigrator.upgradeIndexProvider;
 import static org.neo4j.logging.Level.DEBUG;
 import static org.neo4j.logging.Level.INFO;
-import static org.neo4j.procedure.builtin.SchemaStatementProcedure.createStatement;
 
 public class StoreCopy
 {
@@ -171,11 +195,10 @@ public class StoreCopy
                 recreatedTokens = Maps.mutable.empty();
                 tokenHolders = createTokenHolders( neoStores );
                 stats = new StoreCopyStats( log );
-                SchemaStore schemaStore = neoStores.getSchemaStore();
 
                 storeCopyFilter = convertFilter( deleteNodesWithLabels, skipLabels, skipProperties, skipRelationships, tokenHolders, stats );
 
-                RecordFormats recordFormats = setupRecordFormats( neoStores, format );
+                RecordFormats recordFormats = setupRecordFormats( neoStores.getRecordFormats(), format );
 
                 ExecutionMonitor executionMonitor = verbose ? new SpectrumExecutionMonitor( 2, TimeUnit.SECONDS, out,
                         SpectrumExecutionMonitor.DEFAULT_WIDTH ) : ExecutionMonitors.defaultVisible();
@@ -197,7 +220,17 @@ public class StoreCopy
                 // Display schema information
                 log.info( "### Extracting schema ###" );
                 log.info( "Trying to extract schema..." );
-                Map<String,String> schemaStatements = getSchemaStatements( stats, schemaStore, tokenHolders );
+
+                Collection<String> schemaStatements;
+                if ( neoStores.getRecordFormats().hasCapability( FLEXIBLE_SCHEMA_STORE ) )
+                {
+                    schemaStatements = getSchemaStatements40( stats, neoStores.getSchemaStore(), tokenHolders );
+                }
+                else
+                {
+                    // Prior to 4.0, try to read with 3.5 parser
+                    schemaStatements = getSchemaStatements35( log, neoStores.getRecordFormats(), fromPageCache, fs, tokenHolders );
+                }
                 int schemaCount = schemaStatements.size();
                 if ( schemaCount == 0 )
                 {
@@ -207,7 +240,7 @@ public class StoreCopy
                 {
                     log.info( "... found %d schema definitions. The following can be used to recreate the schema:", schemaCount );
                     String newLine = System.lineSeparator();
-                    log.info( newLine + newLine + String.join( ";" + newLine, schemaStatements.values() ) );
+                    log.info( newLine + newLine + String.join( ";" + newLine, schemaStatements ) );
                     log.info( "You have to manually apply the above commands to the database when it is stared to recreate the indexes and constraints. " +
                             "The commands are saved to " + logFilePath.toAbsolutePath() + " as well for reference.");
                 }
@@ -423,53 +456,128 @@ public class StoreCopy
         return config.get( logs_directory ).resolve( format( "neo4j-admin-copy-%s.log", new SimpleDateFormat( "yyyy-MM-dd.HH.mm.ss" ).format( new Date() ) ) );
     }
 
-    private static Map<String,String> getSchemaStatements( StoreCopyStats stats, SchemaStore schemaStore,
+    private static Collection<String> getSchemaStatements40( StoreCopyStats stats, SchemaStore schemaStore,
             TokenHolders tokenHolders )
     {
-        TokenRead tokenRead = new ReadOnlyTokenRead( tokenHolders );
-        SchemaRuleAccess schemaRuleAccess = SchemaRuleAccess.getSchemaRuleAccess( schemaStore, tokenHolders );
         Map<String,IndexDescriptor> indexes = new HashMap<>();
         List<ConstraintDescriptor> constraints = new ArrayList<>();
+        SchemaRuleAccess schemaRuleAccess = SchemaRuleAccess.getSchemaRuleAccess( schemaStore, tokenHolders );
         schemaRuleAccess.indexesGetAllIgnoreMalformed().forEachRemaining( i -> indexes.put( i.getName(), i ) );
         schemaRuleAccess.constraintsGetAllIgnoreMalformed().forEachRemaining(constraints::add );
+        return getSchemaStatements( stats, tokenHolders, indexes, constraints );
+    }
 
-        Map<String,String> schemaStatements = new HashMap<>();
-        for ( var entry : indexes.entrySet() )
+    private Collection<String> getSchemaStatements35( Log log, RecordFormats recordFormats, PageCache fromPageCache, FileSystemAbstraction fs,
+            TokenHolders tokenHolders )
+    {
+        Map<String,IndexDescriptor> indexes = new HashMap<>();
+        List<ConstraintDescriptor> constraints = new ArrayList<>();
+
+        // Open store with old reader
+        LifeSupport life = new LifeSupport();
+        try ( SchemaStore35 schemaStore35 = new SchemaStore35( from.schemaStore(), from.idSchemaStore(), config, org.neo4j.internal.id.IdType.SCHEMA,
+                new ScanOnOpenReadOnlyIdGeneratorFactory(), fromPageCache, NullLogProvider.getInstance(), recordFormats ) )
         {
-            String statement;
+            schemaStore35.initialise( true );
+            SchemaStorage schemaStorage35 = new SchemaStorage35( schemaStore35 );
+
+            // Load index providers
+            Dependencies deps = new Dependencies();
+            Monitors monitors = new Monitors();
+            deps.satisfyDependencies( fs, config, fromPageCache, NullLogService.getInstance(), monitors, RecoveryCleanupWorkCollector.immediate() );
+            DatabaseExtensionContext extensionContext = new DatabaseExtensionContext( from, DatabaseInfo.UNKNOWN, deps );
+            Iterable<?> extensionFactories = Services.loadAll( ExtensionFactory.class );
+            @SuppressWarnings( "unchecked" )
+            DatabaseExtensions databaseExtensions =
+                    life.add( new DatabaseExtensions( extensionContext, (Iterable<ExtensionFactory<?>>) extensionFactories, deps, ignore() ) );
+            DefaultIndexProviderMap indexProviderMap = life.add( new DefaultIndexProviderMap( databaseExtensions, config ) );
+            life.start();
+
+            // Get rules and migrate to latest
+            Map<Long,SchemaRule> ruleById = new LinkedHashMap<>();
+            schemaStorage35.getAll().forEach( rule -> ruleById.put( rule.getId(), rule ) );
+            RecordStorageMigrator.schemaGenerateNames( schemaStorage35, tokenHolders, ruleById );
+
+            for ( Map.Entry<Long,SchemaRule> entry : ruleById.entrySet() )
+            {
+                SchemaRule schemaRule = entry.getValue();
+
+                if ( schemaRule instanceof IndexDescriptor )
+                {
+                    IndexDescriptor indexDescriptor = (IndexDescriptor) schemaRule;
+                    try
+                    {
+                        indexDescriptor = (IndexDescriptor) migrateIndexConfig( indexDescriptor, from, fs, fromPageCache, indexProviderMap, log );
+                        indexDescriptor = (IndexDescriptor) upgradeIndexProvider( indexDescriptor );
+                        indexes.put( indexDescriptor.getName(), indexDescriptor );
+                    }
+                    catch ( IOException e )
+                    {
+                        stats.invalidIndex( indexDescriptor, e );
+                    }
+                }
+                else if ( schemaRule instanceof ConstraintDescriptor )
+                {
+                    constraints.add( (ConstraintDescriptor) schemaRule );
+                }
+            }
+        }
+        catch ( Exception e )
+        {
+            log.error( format( "Failed to read schema store %s with 3.5 parser", from.schemaStore() ), e );
+            return Collections.emptyList();
+        }
+        finally
+        {
+            life.shutdown();
+        }
+
+        // Convert to cypher statements
+        return getSchemaStatements( stats, tokenHolders, indexes, constraints );
+    }
+
+    private static Collection<String> getSchemaStatements( StoreCopyStats stats, TokenHolders tokenHolders, Map<String,IndexDescriptor> indexes,
+            List<ConstraintDescriptor> constraints )
+    {
+        TokenRead tokenRead = new ReadOnlyTokenRead( tokenHolders );
+        // Here we use a map and insert index first, if it have a backing constraint, it will be replaced when we
+        // insert them after since they have the same name
+        Map<String,String> schemaStatements = new HashMap<>();
+        for ( IndexDescriptor index : indexes.values() )
+        {
             try
             {
-                statement = createStatement( tokenRead, entry.getValue() );
+                if ( !index.isUnique() )
+                {
+                    schemaStatements.put( index.getName(), SchemaStatementProcedure.createStatement( tokenRead, index ) );
+                }
             }
             catch ( Exception e )
             {
-                stats.invalidIndex( entry.getValue(), e );
-                continue;
+                stats.invalidIndex( index, e );
             }
-            schemaStatements.put( entry.getKey(), statement );
         }
         for ( ConstraintDescriptor constraint : constraints )
         {
-            String statement;
             try
             {
-                statement = createStatement( indexes::get, tokenRead, constraint );
+                schemaStatements.put( constraint.getName(), SchemaStatementProcedure.createStatement( indexes::get, tokenRead, constraint ) );
             }
             catch ( Exception e )
             {
                 stats.invalidConstraint( constraint, e );
-                continue;
             }
-            schemaStatements.put( constraint.getName(), statement );
         }
-        return schemaStatements;
+
+        return schemaStatements.values();
     }
 
-    private static RecordFormats setupRecordFormats( NeoStores neoStores, FormatEnum format )
+    private static RecordFormats setupRecordFormats( RecordFormats fromRecordFormat, FormatEnum format )
     {
         if ( format == FormatEnum.same )
         {
-            return neoStores.getRecordFormats();
+            return findLatestFormatInFamily( fromRecordFormat )
+                    .orElseThrow( () -> new IllegalArgumentException( "This version do not support format family " +  fromRecordFormat.getFormatFamily() ) );
         }
         else if ( format == FormatEnum.high_limit )
         {

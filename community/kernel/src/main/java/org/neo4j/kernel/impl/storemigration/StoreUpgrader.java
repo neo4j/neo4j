@@ -161,7 +161,7 @@ public class StoreUpgrader
         }
     }
 
-    private boolean hasCurrentVersion( StoreVersionCheck storeVersionCheck )
+    private static boolean hasCurrentVersion( StoreVersionCheck storeVersionCheck )
     {
         String configuredVersion = storeVersionCheck.configuredVersion();
         StoreVersionCheck.Result versionResult = storeVersionCheck.checkUpgrade( configuredVersion );
