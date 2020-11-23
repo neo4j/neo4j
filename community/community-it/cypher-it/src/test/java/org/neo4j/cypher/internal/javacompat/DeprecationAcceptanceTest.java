@@ -328,7 +328,8 @@ public class DeprecationAcceptanceTest extends NotificationTestSupport
             deprecation( "The hex integer literal syntax `0X123` is deprecated, please use `0x123` instead" );
 
     private final Matcher<Notification> deprecatedPatternExpressionSyntax =
-            deprecation( "Pattern expressions are deprecated, except for use in 'WHERE' clauses or in the 'exists()' function. Consider using pattern comprehension instead." );
+            deprecation( "Pattern expressions are deprecated, except for use in 'WHERE' clauses or in the 'exists()' function. " +
+                         "Consider using pattern comprehension instead." );
 
     private static Matcher<Notification> deprecation( String message )
     {
