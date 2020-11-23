@@ -292,8 +292,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
 
   def planTailApply(left: LogicalPlan, right: LogicalPlan, context: LogicalPlanningContext): LogicalPlan = {
     val solved = solveds.get(left.id).asSinglePlannerQuery.updateTailOrSelf(_.withTail(solveds.get(right.id).asSinglePlannerQuery))
-    // If the LHS has duplicate values, we cannot guarantee any added order from the RHS
-    val providedOrder = providedOrders.get(left.id).fromLeft
+    val providedOrder = providedOrderOfApply(left, right)
     annotate(Apply(left, right), solved, providedOrder, context)
   }
 
