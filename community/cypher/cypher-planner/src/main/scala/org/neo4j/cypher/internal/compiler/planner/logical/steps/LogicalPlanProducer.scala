@@ -1308,12 +1308,13 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
   /**
    * Currently we consider all updates as invalidating provided order
    */
-  private def invalidatesProvidedOrder(plan: UpdatingPlan): Boolean = plan match {
-    case _ => true
+  private def invalidatesProvidedOrder(plan: LogicalPlan): Boolean = plan match {
+    case _: UpdatingPlan => true
+    case _               => false
   }
 
   private def invalidatesProvidedOrderRecursive(plan: LogicalPlan): Boolean =
-    plan.treeExists { case plan: UpdatingPlan if invalidatesProvidedOrder(plan) => true}
+    plan.treeExists { case plan: LogicalPlan if invalidatesProvidedOrder(plan) => true}
 
   /**
    * Compute cardinality for a plan. Set this cardinality in the Cardinalities attribute.
