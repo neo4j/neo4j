@@ -558,7 +558,9 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
             withScopedState { // saves us from leaking to the outside
               SemanticPatternCheck.check(Pattern.SemanticContext.Match, x.pattern) chain
                 when(x.optionalWhereExpression.isDefined) {
-                  check(ctx, x.optionalWhereExpression.get, x +: parents)
+                  val whereExpression = x.optionalWhereExpression.get
+                  check(ctx, whereExpression, x +: parents) chain
+                    expectType(CTBoolean.covariant, whereExpression)
                 }
             }
 
