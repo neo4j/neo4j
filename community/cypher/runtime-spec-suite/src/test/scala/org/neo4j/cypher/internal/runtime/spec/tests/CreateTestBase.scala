@@ -303,7 +303,7 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("r").withRows(singleColumn(relationships)).withStatistics(relationshipsCreated = 2 * sizeHint)
   }
 
-  test("should fail to create relationship if nodes are missing") {
+  test("should fail to create relationship if both nodes are missing") {
     // given an empty data base
 
     // when
@@ -318,6 +318,38 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
       "Failed to create relationship `r`, node `n` is missing. If you prefer to simply ignore rows where a relationship node is missing, " +
        "set 'cypher.lenient_create_relationship = true' in neo4j.conf"
   }
+
+  test("should fail to create relationship if start node is missing") {
+    // given an empty data base
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r")
+      .create(nodes = Seq(createNode("m", "A")),
+        relationships = Seq(createRelationship("r", "n", "R", "m", OUTGOING)))
+      .input(nodes = Seq("n"))
+      .build(readOnly = false)
+
+    the [InternalException] thrownBy consume(execute(logicalQuery, runtime, inputValues(Array[Any](null)))) should have message
+      "Failed to create relationship `r`, node `n` is missing. If you prefer to simply ignore rows where a relationship node is missing, " +
+        "set 'cypher.lenient_create_relationship = true' in neo4j.conf"
+  }
+
+  test("should fail to create relationship if end node is missing") {
+    // given an empty data base
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r")
+      .create(nodes = Seq(createNode("n", "A")),
+        relationships = Seq(createRelationship("r", "n", "R", "m", OUTGOING)))
+      .input(nodes = Seq("m"))
+      .build(readOnly = false)
+
+    the [InternalException] thrownBy consume(execute(logicalQuery, runtime, inputValues(Array[Any](null)))) should have message
+      "Failed to create relationship `r`, node `m` is missing. If you prefer to simply ignore rows where a relationship node is missing, " +
+        "set 'cypher.lenient_create_relationship = true' in neo4j.conf"
+  }
 }
 
 abstract class LenientCreateRelationshipTestBase[CONTEXT <: RuntimeContext](
@@ -326,7 +358,7 @@ abstract class LenientCreateRelationshipTestBase[CONTEXT <: RuntimeContext](
                                                                           )
   extends RuntimeTestSuite[CONTEXT](edition.copyWith(
     GraphDatabaseSettings.cypher_lenient_create_relationship -> java.lang.Boolean.TRUE), runtime) {
-  test("should ignore to create relationship if nodes are missing") {
+  test("should ignore to create relationship if both nodes are missing") {
     // given an empty data base
 
     // when
@@ -339,5 +371,39 @@ abstract class LenientCreateRelationshipTestBase[CONTEXT <: RuntimeContext](
 
     val results = execute(logicalQuery, runtime, inputValues(Array[Any](null)))
     consume(results)
-    results should beColumns("r").withSingleRow(null).withNoUpdates() }
+    results should beColumns("r").withSingleRow(null).withNoUpdates()
+  }
+
+  test("should ignore to create relationship if start node is missing") {
+    // given an empty data base
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r")
+      .create(nodes = Seq(createNode("m", "A")),
+        relationships = Seq(createRelationship("r", "n", "R", "m", OUTGOING)))
+      .input(nodes = Seq("n"))
+      .build(readOnly = false)
+
+    val results = execute(logicalQuery, runtime, inputValues(Array[Any](null)))
+    consume(results)
+    results should beColumns("r").withSingleRow(null).withStatistics(nodesCreated = 1, labelsAdded = 1)
+  }
+
+  test("should ignore to create relationship if end node is missing") {
+    // given an empty data base
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r")
+      .create(nodes = Seq(createNode("n", "A")),
+        relationships = Seq(createRelationship("r", "n", "R", "m", OUTGOING)))
+      .input(nodes = Seq("m"))
+      .build(readOnly = false)
+
+    val results = execute(logicalQuery, runtime, inputValues(Array[Any](null)))
+    consume(results)
+    results should beColumns("r").withSingleRow(null).withStatistics(nodesCreated = 1, labelsAdded = 1)
+  }
+
 }

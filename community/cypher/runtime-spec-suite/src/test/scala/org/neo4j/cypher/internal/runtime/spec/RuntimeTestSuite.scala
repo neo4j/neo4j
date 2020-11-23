@@ -286,6 +286,8 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
     private var rowsMatcher: RowsMatcher = AnyRowsMatcher
     private var maybeStatisticts: Option[QueryStatisticsMatcher] = None
 
+    def withNoUpdates(): RuntimeResultMatcher = withStatistics()
+
     def withStatistics(nodesCreated: Int = 0,
                        nodesDeleted: Int = 0,
                        relationshipsCreated: Int = 0,
