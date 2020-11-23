@@ -83,7 +83,6 @@ import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.layout.DatabaseFile;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
@@ -127,6 +126,7 @@ import static java.util.Arrays.asList;
 import static org.apache.commons.io.IOUtils.lineIterator;
 import static org.eclipse.collections.impl.factory.Sets.immutable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.internal.batchimport.Configuration.defaultConfiguration;
 import static org.neo4j.internal.batchimport.staging.ExecutionSupervisors.withDynamicProcessorAssignment;
 import static org.neo4j.internal.recordstorage.StoreTokens.allTokens;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.CHECKPOINT_LOG_VERSION;
@@ -441,14 +441,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
               OutputStream badOutput = new BufferedOutputStream( Files.newOutputStream( badFile ) );
               Collector badCollector = Collectors.badCollector( badOutput, 0 ) )
         {
-            Configuration importConfig = new Configuration.Overridden( config )
-            {
-                @Override
-                public boolean highIO()
-                {
-                    return FileUtils.highIODevice( sourceDirectoryStructure.databaseDirectory() );
-                }
-            };
+            Configuration importConfig = new Configuration.Overridden( defaultConfiguration( sourceDirectoryStructure.databaseDirectory() ), config );
             AdditionalInitialIds additionalInitialIds =
                     readAdditionalIds( lastTxId, lastTxChecksum, lastTxLogVersion, lastTxLogByteOffset );
 

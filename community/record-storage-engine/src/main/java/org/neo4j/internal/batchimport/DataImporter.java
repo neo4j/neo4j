@@ -122,17 +122,18 @@ public class DataImporter
         }
     }
 
-    private static long importData( String title, int numRunners, InputIterable data, BatchingNeoStores stores,
+    private static long importData( String title, Configuration configuration, InputIterable data, BatchingNeoStores stores,
             Supplier<EntityImporter> visitors, ExecutionMonitor executionMonitor, StatsProvider memoryStatsProvider )
             throws IOException
     {
         LongAdder roughEntityCountProgress = new LongAdder();
+        int numRunners = configuration.maxNumberOfProcessors();
         ExecutorService pool = Executors.newFixedThreadPool( numRunners,
                 new NamedThreadFactory( title + "Importer" ) );
         IoMonitor writeMonitor = new IoMonitor( stores.getIoTracer() );
-        ControllableStep step = new ControllableStep( title, roughEntityCountProgress, Configuration.DEFAULT,
+        ControllableStep step = new ControllableStep( title, roughEntityCountProgress, configuration,
                 writeMonitor, memoryStatsProvider );
-        StageExecution execution = new StageExecution( title, null, Configuration.DEFAULT, Collections.singletonList( step ), 0 );
+        StageExecution execution = new StageExecution( title, null, configuration, Collections.singletonList( step ), 0 );
         long startTime = currentTimeMillis();
         List<EntityImporter> importers = new ArrayList<>();
         try ( InputIterator dataIterator = data.iterator() )
@@ -173,22 +174,22 @@ public class DataImporter
         return roughEntityCountProgress.sum();
     }
 
-    static void importNodes( int numRunners, Input input, BatchingNeoStores stores, IdMapper idMapper, Collector badCollector,
+    static void importNodes( Configuration configuration, Input input, BatchingNeoStores stores, IdMapper idMapper, Collector badCollector,
             ExecutionMonitor executionMonitor, Monitor monitor, PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker ) throws IOException
     {
         Supplier<EntityImporter> importers = () -> new NodeImporter( stores, idMapper, monitor, pageCacheTracer, memoryTracker );
-        importData( NODE_IMPORT_NAME, numRunners, input.nodes( badCollector ), stores, importers, executionMonitor,
+        importData( NODE_IMPORT_NAME, configuration, input.nodes( badCollector ), stores, importers, executionMonitor,
                 new MemoryUsageStatsProvider( stores, idMapper ) );
     }
 
-    static DataStatistics importRelationships( int numRunners, Input input,
+    static DataStatistics importRelationships( Configuration configuration, Input input,
             BatchingNeoStores stores, IdMapper idMapper, Collector badCollector, ExecutionMonitor executionMonitor,
             Monitor monitor, boolean validateRelationshipData, PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker ) throws IOException
     {
         DataStatistics typeDistribution = new DataStatistics( monitor, new DataStatistics.RelationshipTypeCount[0] );
         Supplier<EntityImporter> importers = () -> new RelationshipImporter( stores, idMapper, typeDistribution, monitor,
                 badCollector, validateRelationshipData, stores.usesDoubleRelationshipRecordUnits(), pageCacheTracer, memoryTracker );
-        importData( RELATIONSHIP_IMPORT_NAME, numRunners, input.relationships( badCollector ), stores, importers, executionMonitor,
+        importData( RELATIONSHIP_IMPORT_NAME, configuration, input.relationships( badCollector ), stores, importers, executionMonitor,
                 new MemoryUsageStatsProvider( stores, idMapper ) );
         return typeDistribution;
     }

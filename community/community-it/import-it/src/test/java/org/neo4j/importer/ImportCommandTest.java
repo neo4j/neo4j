@@ -161,6 +161,7 @@ class ImportCommandTest
         runImport(
                 "--additional-config", dbConfig.toAbsolutePath().toString(),
                 "--nodes", nodeData( true, config, nodeIds, TRUE ).toAbsolutePath().toString(),
+                "--high-io", "false",
                 "--relationships", relationshipData( true, config, nodeIds, TRUE, true ).toAbsolutePath().toString() );
 
         // THEN
