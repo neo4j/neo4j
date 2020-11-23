@@ -44,6 +44,7 @@ import org.neo4j.values.storable.CoordinateReferenceSystem;
 import static java.lang.String.format;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.consistency_checker_fail_fast_threshold;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_advertised_address;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_listen_address;
@@ -318,11 +319,7 @@ public final class SettingMigrators
         @Override
         public void migrate( Map<String,String> values, Map<String,String> defaultValues, Log log )
         {
-            if ( values.containsKey( settingName ) )
-            {
-                log.warn( "Setting %s is removed. It's no longer possible to disable verbose kill query logging.", settingName );
-                values.remove( settingName );
-            }
+            migrateSettingRemoval( values, log, settingName, "It's no longer possible to disable verbose kill query logging" );
         }
     }
 
@@ -334,11 +331,7 @@ public final class SettingMigrators
         @Override
         public void migrate( Map<String,String> values, Map<String,String> defaultValues, Log log )
         {
-            if ( values.containsKey( settingName ) )
-            {
-                log.warn( "Setting %s is removed. It's no longer possible to disable multi-threaded index population.", settingName );
-                values.remove( settingName );
-            }
+            migrateSettingRemoval( values, log, settingName, "It's no longer possible to disable multi-threaded index population" );
         }
     }
 
@@ -471,6 +464,18 @@ public final class SettingMigrators
         }
     }
 
+    @ServiceProvider
+    public static class ConsistencyCheckerSettingsMigrator implements SettingMigrator
+    {
+        @Override
+        public void migrate( Map<String,String> values, Map<String,String> defaultValues, Log log )
+        {
+            migrateSettingRemoval( values, log, "unsupported.consistency_checker.experimental",
+                    "There is no longer multiple different consistency checkers to choose from" );
+            migrateSettingNameChange( values, log, "unsupported.consistency_checker.experimental.fail_fast", consistency_checker_fail_fast_threshold );
+        }
+    }
+
     public static void migrateSettingNameChange( Map<String,String> values, Log log, String oldSetting, Setting<?> newSetting )
     {
         String value = values.remove( oldSetting );
@@ -478,6 +483,15 @@ public final class SettingMigrators
         {
             log.warn( "Use of deprecated setting %s. It is replaced by %s", oldSetting, newSetting.name() );
             values.putIfAbsent( newSetting.name(), value );
+        }
+    }
+
+    public static void migrateSettingRemoval( Map<String,String> values, Log log, String name, String additionalDescription )
+    {
+        if ( values.containsKey( name ) )
+        {
+            log.warn( "Setting %s is removed. %s.", name, additionalDescription );
+            values.remove( name );
         }
     }
 }

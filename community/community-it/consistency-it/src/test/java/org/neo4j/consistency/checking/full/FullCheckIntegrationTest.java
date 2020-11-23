@@ -125,7 +125,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.consistency_checker_stop_threshold;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.consistency_checker_fail_fast_threshold;
 import static org.neo4j.consistency.ConsistencyCheckService.defaultConsistencyCheckThreadsNumber;
 import static org.neo4j.consistency.checking.SchemaRuleUtil.constraintIndexRule;
 import static org.neo4j.consistency.checking.SchemaRuleUtil.indexRule;
@@ -2092,7 +2092,7 @@ public class FullCheckIntegrationTest
             }
         } );
 
-        settings.put( consistency_checker_stop_threshold, 1 );
+        settings.put( consistency_checker_fail_fast_threshold, 1 );
 
         // when
         ConsistencySummaryStatistics stats = check();
@@ -2120,7 +2120,7 @@ public class FullCheckIntegrationTest
                 tx.create( relationshipB );
             }
         } );
-        settings.put( consistency_checker_stop_threshold, 1 );
+        settings.put( consistency_checker_fail_fast_threshold, 1 );
 
         // when
         ConsistencySummaryStatistics stats = check();

@@ -194,9 +194,8 @@ class SettingMigratorsTest
         var logProvider = new AssertableLogProvider();
         config.setLogger( logProvider.getLog( Config.class ) );
 
-        assertThat( logProvider ).forClass( Config.class ).forLevel( WARN )
-                .containsMessageWithArguments( "Setting %s is removed. It's no longer possible to disable verbose kill query logging.",
-                        "dbms.procedures.kill_query_verbose" );
+        assertThat( logProvider ).forClass( Config.class ).forLevel( WARN ).containsMessages(
+                "Setting dbms.procedures.kill_query_verbose is removed. It's no longer possible to disable verbose kill query logging." );
     }
 
     @Test
@@ -210,8 +209,8 @@ class SettingMigratorsTest
         config.setLogger( logProvider.getLog( Config.class ) );
 
         assertThat( logProvider ).forClass( Config.class ).forLevel( WARN )
-                .containsMessageWithArguments( "Setting %s is removed. It's no longer possible to disable multi-threaded index population.",
-                        "unsupported.dbms.multi_threaded_schema_index_population_enabled" );
+                .containsMessages( "Setting unsupported.dbms.multi_threaded_schema_index_population_enabled is removed. " +
+                        "It's no longer possible to disable multi-threaded index population." );
     }
 
     @Test
@@ -360,6 +359,37 @@ class SettingMigratorsTest
                                                                 "dbms.memory.transaction.datababase_max_size", memory_transaction_database_max_size.name() );
 
         assertEquals( 1073741824L, config.get( memory_transaction_database_max_size ) );
+    }
+
+    @Test
+    void testExperimentalConsistencyCheckerRemoval() throws IOException
+    {
+        Path confFile = testDirectory.createFile( "test.conf" );
+        Files.write( confFile, List.of( "unsupported.consistency_checker.experimental=true" ) );
+
+        Config config = Config.newBuilder().fromFile( confFile ).build();
+        var logProvider = new AssertableLogProvider();
+        config.setLogger( logProvider.getLog( Config.class ) );
+
+        assertThat( logProvider ).forClass( Config.class ).forLevel( WARN ).containsMessages(
+                "Setting unsupported.consistency_checker.experimental is removed. There is no longer multiple different consistency checkers to choose from." );
+    }
+
+    @Test
+    void testConsistencyCheckerFailFastRename() throws IOException
+    {
+        Path confFile = testDirectory.createFile( "test.conf" );
+        Files.write( confFile, List.of( "unsupported.consistency_checker.experimental.fail_fast=1" ) );
+
+        Config config = Config.newBuilder().fromFile( confFile ).build();
+        var logProvider = new AssertableLogProvider();
+        config.setLogger( logProvider.getLog( Config.class ) );
+
+        assertThat( logProvider ).forClass( Config.class ).forLevel( WARN ).containsMessages(
+                "Use of deprecated setting unsupported.consistency_checker.experimental.fail_fast. " +
+                        "It is replaced by unsupported.consistency_checker.fail_fast_threshold" );
+
+        assertEquals( 1, config.get( GraphDatabaseInternalSettings.consistency_checker_fail_fast_threshold ) );
     }
 
     private static void testQueryLogMigration( Boolean oldValue, LogQueryLevel newValue )

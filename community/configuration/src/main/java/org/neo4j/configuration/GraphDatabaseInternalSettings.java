@@ -75,10 +75,10 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
     public static final Setting<Boolean> dump_configuration = newBuilder( "unsupported.dbms.report_configuration", BOOL, false ).build();
 
     @Internal
-    @Description( "Specifies if the experimental consistency checker should stop when number of observed inconsistencies exceed the threshold. " +
+    @Description( "Specifies if the consistency checker should stop when number of observed inconsistencies exceed the threshold. " +
             "If the value is zero, all inconsistencies will be reported" )
-    public static final Setting<Integer> consistency_checker_stop_threshold =
-            newBuilder( "unsupported.consistency_checker.experimental.fail_fast", INT, 0 ).addConstraint( min( 0 ) ).build();
+    public static final Setting<Integer> consistency_checker_fail_fast_threshold =
+            newBuilder( "unsupported.consistency_checker.fail_fast_threshold", INT, 0 ).addConstraint( min( 0 ) ).build();
 
     public enum CypherRuntime
     {
