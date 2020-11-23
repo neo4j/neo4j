@@ -26,13 +26,12 @@ import java.util.function.Supplier;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseServiceSPI;
 import org.neo4j.bolt.dbapi.CustomBookmarkFormatParser;
-import org.neo4j.bolt.txtracking.SimpleReconciledTransactionTracker;
 import org.neo4j.bolt.txtracking.TransactionIdTracker;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.cypher.internal.config.CypherConfiguration;
 import org.neo4j.cypher.internal.cache.ExecutorBasedCaffeineCacheFactory;
+import org.neo4j.cypher.internal.config.CypherConfiguration;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.api.DatabaseNotFoundException;
 import org.neo4j.dbms.database.DatabaseContext;
@@ -49,8 +48,8 @@ import org.neo4j.fabric.eval.UseEvaluation;
 import org.neo4j.fabric.executor.FabricDatabaseAccess;
 import org.neo4j.fabric.executor.FabricExecutor;
 import org.neo4j.fabric.executor.FabricLocalExecutor;
-import org.neo4j.fabric.executor.FabricStatementLifecycles;
 import org.neo4j.fabric.executor.FabricRemoteExecutor;
+import org.neo4j.fabric.executor.FabricStatementLifecycles;
 import org.neo4j.fabric.executor.ThrowingFabricRemoteExecutor;
 import org.neo4j.fabric.pipeline.SignatureResolver;
 import org.neo4j.fabric.planning.FabricPlanner;
@@ -109,7 +108,7 @@ public abstract class FabricServicesBootstrap
 
         @SuppressWarnings( "unchecked" )
         var databaseManager = (DatabaseManager<DatabaseContext>) resolve( DatabaseManager.class );
-        var fabricDatabaseManager = register( createFabricDatabaseManager(), FabricDatabaseManager.class );
+        var fabricDatabaseManager = register( createFabricDatabaseManager( fabricConfig ), FabricDatabaseManager.class );
 
         var jobScheduler = resolve( JobScheduler.class );
         var monitors = resolve( Monitors.class );
@@ -199,7 +198,7 @@ public abstract class FabricServicesBootstrap
         };
     }
 
-    protected abstract FabricDatabaseManager createFabricDatabaseManager();
+    protected abstract FabricDatabaseManager createFabricDatabaseManager( FabricConfig fabricConfig );
 
     protected abstract CatalogManager createCatalogManger();
 
@@ -211,17 +210,16 @@ public abstract class FabricServicesBootstrap
 
     public static class Community extends FabricServicesBootstrap
     {
-
         public Community( LifeSupport lifeSupport, Dependencies dependencies, LogService logService )
         {
             super( lifeSupport, dependencies, logService );
         }
 
         @Override
-        protected FabricDatabaseManager createFabricDatabaseManager()
+        protected FabricDatabaseManager createFabricDatabaseManager( FabricConfig fabricConfig )
         {
             var databaseManager = (DatabaseManager<DatabaseContext>) resolve( DatabaseManager.class );
-            return new FabricDatabaseManager.Community( databaseManager );
+            return new FabricDatabaseManager.Community( fabricConfig, databaseManager );
         }
 
         @Override

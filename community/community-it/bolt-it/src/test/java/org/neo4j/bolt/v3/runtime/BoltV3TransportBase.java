@@ -36,6 +36,7 @@ import org.neo4j.bolt.testing.client.WebSocketConnection;
 import org.neo4j.bolt.transport.Neo4jWithSocket;
 import org.neo4j.bolt.transport.Neo4jWithSocketExtension;
 import org.neo4j.bolt.v3.messaging.request.HelloMessage;
+import org.neo4j.fabric.config.FabricSettings;
 import org.neo4j.internal.helpers.HostnamePort;
 import org.neo4j.internal.helpers.collection.MapUtil;
 import org.neo4j.test.extension.Inject;
@@ -75,7 +76,11 @@ public abstract class BoltV3TransportBase
     @BeforeEach
     public void setUp( TestInfo testInfo ) throws IOException
     {
-        server.setConfigure( withOptionalBoltEncryption() );
+        server.setConfigure( settings ->
+        {
+            withOptionalBoltEncryption().accept( settings );
+            settings.put( FabricSettings.enabled_by_default, fabricEnabled() );
+        } );
         server.init( testInfo );
         address = server.lookupDefaultConnector();
         util = new TransportTestUtil( newMessageEncoder() );
@@ -88,6 +93,11 @@ public abstract class BoltV3TransportBase
         {
             connection.disconnect();
         }
+    }
+
+    protected boolean fabricEnabled()
+    {
+        return true;
     }
 
     protected void negotiateBoltV3() throws Exception

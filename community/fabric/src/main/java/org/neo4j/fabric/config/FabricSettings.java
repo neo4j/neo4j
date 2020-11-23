@@ -27,6 +27,7 @@ import org.neo4j.graphdb.config.Setting;
 
 import static org.neo4j.configuration.SettingConstraints.min;
 import static org.neo4j.configuration.SettingImpl.newBuilder;
+import static org.neo4j.configuration.SettingValueParsers.BOOL;
 import static org.neo4j.configuration.SettingValueParsers.INT;
 
 @ServiceProvider
@@ -37,4 +38,7 @@ public class FabricSettings implements SettingsDeclaration
     public static final Setting<Integer> batch_size_setting = newBuilder( "fabric.stream.batch_size", INT, 50 )
             .addConstraint( min(1) )
             .build();
+
+    @Internal
+    public static final Setting<Boolean> enabled_by_default = newBuilder( "fabric.enabled_by_default", BOOL, true ).build();
 }

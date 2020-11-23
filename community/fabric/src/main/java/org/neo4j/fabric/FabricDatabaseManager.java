@@ -19,33 +19,33 @@
  */
 package org.neo4j.fabric;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.dbms.api.DatabaseNotFoundException;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.fabric.config.FabricConfig;
+import org.neo4j.fabric.config.FabricSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.availability.UnavailableException;
 import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
-import org.neo4j.util.FeatureToggles;
 
 public abstract class FabricDatabaseManager
 {
-    public static final String FABRIC_BY_DEFAULT_FLAG_NAME = "fabric_by_default";
-    public static final boolean FABRIC_BY_DEFAULT_DEFAULT_VALUE = true;
-
     private final DatabaseManager<DatabaseContext> databaseManager;
     private final DatabaseIdRepository databaseIdRepository;
-    private final boolean multiGraphEverywhere = fabricByDefault();
+    private final boolean multiGraphEverywhere;
 
-    public FabricDatabaseManager( DatabaseManager<DatabaseContext> databaseManager )
+    public FabricDatabaseManager( FabricConfig fabricConfig, DatabaseManager<DatabaseContext> databaseManager )
     {
         this.databaseManager = databaseManager;
         this.databaseIdRepository = databaseManager.databaseIdRepository();
+        this.multiGraphEverywhere = fabricConfig.isEnabledByDefault();
     }
 
-    public static boolean fabricByDefault()
+    public static boolean fabricByDefault( Config config )
     {
-        return FeatureToggles.flag( FabricDatabaseManager.class, FABRIC_BY_DEFAULT_FLAG_NAME, FABRIC_BY_DEFAULT_DEFAULT_VALUE );
+        return config.get( FabricSettings.enabled_by_default );
     }
 
     public DatabaseIdRepository databaseIdRepository()
@@ -81,10 +81,9 @@ public abstract class FabricDatabaseManager
 
     public static class Community extends FabricDatabaseManager
     {
-
-        public Community( DatabaseManager<DatabaseContext> databaseManager )
+        public Community( FabricConfig fabricConfig, DatabaseManager<DatabaseContext> databaseManager )
         {
-            super( databaseManager );
+            super( fabricConfig, databaseManager );
         }
 
         @Override

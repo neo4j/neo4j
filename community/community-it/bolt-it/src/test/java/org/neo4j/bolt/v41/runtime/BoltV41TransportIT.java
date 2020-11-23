@@ -46,7 +46,7 @@ import org.neo4j.bolt.v4.messaging.PullMessage;
 import org.neo4j.bolt.v4.messaging.RunMessage;
 import org.neo4j.bolt.v4.runtime.bookmarking.BookmarkWithDatabaseId;
 import org.neo4j.bolt.v41.BoltProtocolV41;
-import org.neo4j.fabric.FabricDatabaseManager;
+import org.neo4j.fabric.config.FabricSettings;
 import org.neo4j.internal.helpers.HostnamePort;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.NamedDatabaseId;
@@ -58,7 +58,6 @@ import org.neo4j.values.AnyValue;
 
 import static java.util.Collections.singletonMap;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import static org.neo4j.bolt.testing.MessageConditions.msgRecord;
 import static org.neo4j.bolt.testing.MessageConditions.msgSuccess;
 import static org.neo4j.bolt.testing.StreamConditions.eqRecord;
@@ -91,7 +90,11 @@ public class BoltV41TransportIT
     @BeforeEach
     public void setUp( TestInfo testInfo ) throws IOException
     {
-        server.setConfigure( withOptionalBoltEncryption() );
+        server.setConfigure( settings ->
+        {
+            withOptionalBoltEncryption().accept( settings );
+            settings.put( FabricSettings.enabled_by_default, false );
+        } );
         server.init( testInfo );
         address = server.lookupDefaultConnector();
         util = new TransportTestUtil( newMessageEncoder() );
@@ -117,8 +120,6 @@ public class BoltV41TransportIT
     {
         init( connectionClass );
 
-        assumeFalse( FabricDatabaseManager.fabricByDefault() );
-
         negotiateBoltV41();
 
         // bookmark is expected to advance once the auto-commit transaction is committed
@@ -138,8 +139,6 @@ public class BoltV41TransportIT
     public void shouldReturnUpdatedBookmarkAfterExplicitTransaction( Class<? extends TransportConnection> connectionClass ) throws Exception
     {
         init( connectionClass );
-
-        assumeFalse( FabricDatabaseManager.fabricByDefault() );
 
         negotiateBoltV41();
 

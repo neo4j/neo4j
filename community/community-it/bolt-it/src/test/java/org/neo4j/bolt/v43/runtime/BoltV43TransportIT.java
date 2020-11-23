@@ -53,6 +53,7 @@ import org.neo4j.bolt.v4.runtime.bookmarking.BookmarkWithDatabaseId;
 import org.neo4j.bolt.v43.BoltProtocolV43;
 import org.neo4j.bolt.v43.BoltProtocolV43ComponentFactory;
 import org.neo4j.bolt.v43.messaging.request.RouteMessage;
+import org.neo4j.configuration.Config;
 import org.neo4j.fabric.FabricDatabaseManager;
 import org.neo4j.internal.helpers.HostnamePort;
 import org.neo4j.kernel.database.Database;
@@ -200,7 +201,7 @@ public class BoltV43TransportIT
     {
         init( connectionClass );
 
-        assumeFalse( FabricDatabaseManager.fabricByDefault() );
+        assumeFalse( FabricDatabaseManager.fabricByDefault( Config.defaults() ) );
 
         negotiateBoltV43();
 
@@ -222,7 +223,7 @@ public class BoltV43TransportIT
     {
         init( connectionClass );
 
-        assumeFalse( FabricDatabaseManager.fabricByDefault() );
+        assumeFalse( FabricDatabaseManager.fabricByDefault( Config.defaults() ) );
 
         negotiateBoltV43();
 
