@@ -30,12 +30,13 @@ import org.neo4j.bolt.v4.runtime.AutoCommitState;
 import org.neo4j.bolt.v4.runtime.FailedState;
 import org.neo4j.bolt.v4.runtime.InTransactionState;
 import org.neo4j.bolt.v4.runtime.ReadyState;
+import org.neo4j.kernel.database.DefaultDatabaseResolver;
 
 public class BoltStateMachineV4 extends AbstractBoltStateMachine
 {
-    public BoltStateMachineV4( BoltStateMachineSPI boltSPI, BoltChannel boltChannel, Clock clock )
+    public BoltStateMachineV4( BoltStateMachineSPI boltSPI, BoltChannel boltChannel, Clock clock, DefaultDatabaseResolver defaultDatabaseResolver )
     {
-        super( boltSPI, boltChannel, clock );
+        super( boltSPI, boltChannel, clock, defaultDatabaseResolver );
     }
 
     @Override

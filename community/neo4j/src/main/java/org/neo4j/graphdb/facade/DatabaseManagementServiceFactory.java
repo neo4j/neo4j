@@ -138,6 +138,9 @@ public class DatabaseManagementServiceFactory
 
         setupProcedures( globalModule, edition, databaseManager );
 
+        edition.createDefaultDatabaseResolver( globalModule );
+        globalDependencies.satisfyDependency( edition.getDefaultDatabaseResolver() );
+
         globalLife.add( edition.createSystemGraphInitializer( globalModule, databaseManager ) );
 
         var dbmsRuntimeSystemGraphComponent = new DbmsRuntimeSystemGraphComponent( globalModule.getGlobalConfig() );
@@ -336,6 +339,6 @@ public class DatabaseManagementServiceFactory
                                edition.getConnectionTracker(), databaseIdRepository, globalModule.getGlobalConfig(), globalModule.getGlobalClock(),
                                globalModule.getGlobalMonitors(), globalModule.getLogService(), globalModule.getGlobalDependencies(),
                                edition.getBoltAuthManager( globalModule.getGlobalDependencies() ), edition.getBoltInClusterAuthManager(),
-                               globalModule.getMemoryPools() );
+                               globalModule.getMemoryPools(), edition.getDefaultDatabaseResolver() );
     }
 }

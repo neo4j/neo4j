@@ -43,6 +43,7 @@ public class BoltChannel implements TrackedNetworkConnection
     private volatile String username;
     private volatile String userAgent;
     private volatile ClientConnectionInfo info;
+    private volatile String defaultDatabase;
 
     public BoltChannel( String id, String connector, Channel rawChannel, ChannelProtector protector )
     {
@@ -120,6 +121,16 @@ public class BoltChannel implements TrackedNetworkConnection
         this.userAgent = userAgent;
         this.info = createConnectionInfo();
         this.protector.disable();
+    }
+
+    public void updateDefaultDatabase( String defaultDatabase )
+    {
+        this.defaultDatabase = defaultDatabase;
+    }
+
+    public String defaultDatabase()
+    {
+        return defaultDatabase;
     }
 
     @Override

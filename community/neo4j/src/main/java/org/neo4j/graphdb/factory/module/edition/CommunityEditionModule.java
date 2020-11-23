@@ -25,7 +25,6 @@ import java.util.function.Supplier;
 
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
 import org.neo4j.bolt.dbapi.impl.BoltKernelDatabaseManagementServiceProvider;
-import org.neo4j.bolt.txtracking.SimpleReconciledTransactionTracker;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
@@ -81,6 +80,7 @@ import org.neo4j.procedure.builtin.routing.BaseRoutingProcedureInstaller;
 import org.neo4j.procedure.builtin.routing.SingleInstanceRoutingProcedureInstaller;
 import org.neo4j.server.CommunityNeoWebServer;
 import org.neo4j.server.security.auth.CommunitySecurityModule;
+import org.neo4j.server.security.systemgraph.CommunityDefaultDatabaseResolver;
 import org.neo4j.server.security.systemgraph.UserSecurityGraphComponent;
 import org.neo4j.ssl.config.SslPolicyLoader;
 import org.neo4j.time.SystemNanoClock;
@@ -281,6 +281,15 @@ public class CommunityEditionModule extends StandaloneEditionModule
     public void createSecurityModule( GlobalModule globalModule )
     {
         setSecurityProvider( makeSecurityModule( globalModule ) );
+    }
+
+    @Override
+    public void createDefaultDatabaseResolver( GlobalModule globalModule )
+    {
+        Supplier<GraphDatabaseService> systemDbSupplier = systemSupplier( globalModule.getGlobalDependencies() );
+        CommunityDefaultDatabaseResolver defaultDatabaseResolver = new CommunityDefaultDatabaseResolver( globalModule.getGlobalConfig(), systemDbSupplier );
+        globalModule.getTransactionEventListeners().registerTransactionEventListener( SYSTEM_DATABASE_NAME, defaultDatabaseResolver );
+        setDefaultDatabaseResolver( defaultDatabaseResolver );
     }
 
     private SecurityProvider makeSecurityModule( GlobalModule globalModule )

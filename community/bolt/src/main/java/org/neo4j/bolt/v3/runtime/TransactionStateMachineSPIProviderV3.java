@@ -30,10 +30,9 @@ import org.neo4j.time.SystemNanoClock;
 public class TransactionStateMachineSPIProviderV3 extends AbstractTransactionStatementSPIProvider
 {
     public TransactionStateMachineSPIProviderV3( BoltGraphDatabaseManagementServiceSPI boltGraphDatabaseManagementServiceSPI,
-            String defaultDatabaseName, BoltChannel boltChannel,
-            SystemNanoClock clock )
+                                                 BoltChannel boltChannel, SystemNanoClock clock )
     {
-        super( boltGraphDatabaseManagementServiceSPI, defaultDatabaseName, boltChannel, clock );
+        super( boltGraphDatabaseManagementServiceSPI, boltChannel, clock );
     }
 
     @Override

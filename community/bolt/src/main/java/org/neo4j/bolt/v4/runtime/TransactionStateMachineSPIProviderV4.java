@@ -34,17 +34,16 @@ import static org.neo4j.bolt.v4.messaging.MessageMetadataParser.ABSENT_DB_NAME;
 public class TransactionStateMachineSPIProviderV4 extends AbstractTransactionStatementSPIProvider
 {
     public TransactionStateMachineSPIProviderV4( BoltGraphDatabaseManagementServiceSPI boltGraphDatabaseManagementServiceSPI,
-            String defaultDatabaseName,
-            BoltChannel boltChannel,
-            SystemNanoClock clock )
+                                                 BoltChannel boltChannel,
+                                                 SystemNanoClock clock )
     {
-        super( boltGraphDatabaseManagementServiceSPI, defaultDatabaseName, boltChannel, clock );
+        super( boltGraphDatabaseManagementServiceSPI, boltChannel, clock );
     }
 
     @Override
     protected String selectDatabaseName( String databaseName )
     {
-        return Objects.equals( databaseName, ABSENT_DB_NAME ) ? defaultDatabaseName : databaseName;
+        return Objects.equals( databaseName, ABSENT_DB_NAME ) ? boltChannel.defaultDatabase() : databaseName;
     }
 
     @Override

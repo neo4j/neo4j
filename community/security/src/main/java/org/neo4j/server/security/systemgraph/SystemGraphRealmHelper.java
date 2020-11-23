@@ -58,14 +58,13 @@ public class SystemGraphRealmHelper
 
     public User getUser( String username ) throws InvalidArgumentsException, FormatException
     {
-        InvalidArgumentsException userDontExists = new InvalidArgumentsException( "User '" + username + "' does not exist." );
         try ( Transaction tx = getSystemDb().beginTx() )
         {
             Node userNode = tx.findNode( Label.label( "User" ), "name", username );
 
             if ( userNode == null )
             {
-                throw userDontExists;
+                throw new InvalidArgumentsException( "User '" + username + "' does not exist." );
             }
 
             Credential credential = SystemGraphCredential.deserialize( (String) userNode.getProperty( "credentials" ), secureHasher );
@@ -80,7 +79,7 @@ public class SystemGraphRealmHelper
         catch ( NotFoundException n )
         {
             // Can occur if the user was dropped by another thread after the null check.
-            throw userDontExists;
+            throw new InvalidArgumentsException( "User '" + username + "' does not exist." );
         }
     }
 

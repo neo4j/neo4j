@@ -31,15 +31,17 @@ import org.neo4j.bolt.v4.runtime.InTransactionState;
 import org.neo4j.bolt.v4.runtime.ReadyState;
 import org.neo4j.bolt.v41.runtime.ConnectedState;
 import org.neo4j.bolt.v43.runtime.RouteMessageHandleStateDecorator;
+import org.neo4j.kernel.database.DefaultDatabaseResolver;
 
 /**
  * BoltStateMachineV43 holds all the state transitions for the Bolt 4.3
  */
 public class BoltStateMachineV43 extends AbstractBoltStateMachine
 {
-    public BoltStateMachineV43( BoltStateMachineSPI boltSPI, BoltChannel boltChannel, Clock clock )
+    public BoltStateMachineV43( BoltStateMachineSPI boltSPI, BoltChannel boltChannel, Clock clock,
+                               DefaultDatabaseResolver defaultDatabaseResolver )
     {
-        super( boltSPI, boltChannel, clock );
+        super( boltSPI, boltChannel, clock, defaultDatabaseResolver );
     }
 
     @Override

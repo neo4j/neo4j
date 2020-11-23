@@ -41,7 +41,6 @@ import org.neo4j.bolt.runtime.statemachine.BoltStateMachine;
 import org.neo4j.bolt.runtime.statemachine.impl.BoltStateMachineFactoryImpl;
 import org.neo4j.bolt.security.auth.Authentication;
 import org.neo4j.bolt.security.auth.BasicAuthentication;
-import org.neo4j.bolt.txtracking.DefaultReconciledTransactionTracker;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -50,9 +49,11 @@ import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.database.DatabaseIdRepository;
+import org.neo4j.kernel.database.DefaultDatabaseResolver;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.monitoring.Monitors;
+import org.neo4j.server.security.systemgraph.CommunityDefaultDatabaseResolver;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.time.Clocks;
@@ -118,6 +119,8 @@ public class SessionExtension implements BeforeEachCallback, AfterEachCallback
         Authentication authentication = authentication( resolver.resolveDependency( AuthManager.class ) );
         Config config = resolver.resolveDependency( Config.class );
         SystemNanoClock clock = Clocks.nanoClock();
+        DefaultDatabaseResolver defaultDatabaseResolver =
+                new CommunityDefaultDatabaseResolver( config, () -> managementService.database( GraphDatabaseSettings.SYSTEM_DATABASE_NAME ) );
         BoltGraphDatabaseManagementServiceSPI databaseManagementService = new BoltKernelDatabaseManagementServiceProvider( managementService,
                 new Monitors(), clock, ofSeconds( 30 ) );
         boltFactory = new BoltStateMachineFactoryImpl(
@@ -125,7 +128,8 @@ public class SessionExtension implements BeforeEachCallback, AfterEachCallback
                 authentication,
                 clock,
                 config,
-                NullLogService.getInstance()
+                NullLogService.getInstance(),
+                defaultDatabaseResolver
         );
     }
 

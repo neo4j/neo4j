@@ -31,12 +31,13 @@ import org.neo4j.bolt.v3.runtime.ReadyState;
 import org.neo4j.bolt.v3.runtime.StreamingState;
 import org.neo4j.bolt.v3.runtime.TransactionReadyState;
 import org.neo4j.bolt.v3.runtime.TransactionStreamingState;
+import org.neo4j.kernel.database.DefaultDatabaseResolver;
 
 public class BoltStateMachineV3 extends AbstractBoltStateMachine
 {
-    public BoltStateMachineV3( BoltStateMachineSPI boltSPI, BoltChannel boltChannel, Clock clock )
+    public BoltStateMachineV3( BoltStateMachineSPI boltSPI, BoltChannel boltChannel, Clock clock, DefaultDatabaseResolver defaultDatabaseResolver )
     {
-        super( boltSPI, boltChannel, clock );
+        super( boltSPI, boltChannel, clock, defaultDatabaseResolver );
     }
 
     @Override

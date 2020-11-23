@@ -41,14 +41,12 @@ public abstract class AbstractTransactionStatementSPIProvider implements Transac
 {
     protected final SystemNanoClock clock;
     protected final BoltChannel boltChannel;
-    protected final String defaultDatabaseName;
-    private final BoltGraphDatabaseManagementServiceSPI boltGraphDatabaseManagementServiceSPI;
+    protected final BoltGraphDatabaseManagementServiceSPI boltGraphDatabaseManagementServiceSPI;
 
-    public AbstractTransactionStatementSPIProvider( BoltGraphDatabaseManagementServiceSPI boltGraphDatabaseManagementServiceSPI, String defaultDatabaseName,
-            BoltChannel boltChannel, SystemNanoClock clock )
+    public AbstractTransactionStatementSPIProvider( BoltGraphDatabaseManagementServiceSPI boltGraphDatabaseManagementServiceSPI,
+                                                    BoltChannel boltChannel, SystemNanoClock clock )
     {
         this.boltGraphDatabaseManagementServiceSPI = boltGraphDatabaseManagementServiceSPI;
-        this.defaultDatabaseName = defaultDatabaseName;
         this.clock = clock;
         this.boltChannel = boltChannel;
     }
@@ -86,6 +84,6 @@ public abstract class AbstractTransactionStatementSPIProvider implements Transac
             throw new BoltProtocolBreachFatality( format( "Database selection by name not supported by Bolt protocol version lower than BoltV4. " +
                     "Please contact your Bolt client author to report this bug in the client code. Requested database name: '%s'.", databaseName ) );
         }
-        return defaultDatabaseName;
+        return boltChannel.defaultDatabase();
     }
 }

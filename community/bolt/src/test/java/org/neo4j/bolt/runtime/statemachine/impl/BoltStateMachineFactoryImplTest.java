@@ -31,7 +31,6 @@ import org.neo4j.bolt.dbapi.impl.BoltKernelDatabaseManagementServiceProvider;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachine;
 import org.neo4j.bolt.security.auth.Authentication;
 import org.neo4j.bolt.testing.BoltTestUtil;
-import org.neo4j.bolt.txtracking.DefaultReconciledTransactionTracker;
 import org.neo4j.bolt.v3.BoltStateMachineV3;
 import org.neo4j.bolt.v4.BoltStateMachineV4;
 import org.neo4j.bolt.v41.BoltStateMachineV41;
@@ -42,6 +41,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.kernel.GraphDatabaseQueryService;
+import org.neo4j.kernel.database.DefaultDatabaseResolver;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.monitoring.Monitors;
@@ -135,7 +135,8 @@ class BoltStateMachineFactoryImplTest
     {
         var config = Config.defaults( GraphDatabaseSettings.default_database, CUSTOM_DB_NAME );
         var dbProvider = new BoltKernelDatabaseManagementServiceProvider( managementService, new Monitors(), CLOCK, Duration.ZERO );
-        return new BoltStateMachineFactoryImpl( dbProvider, mock( Authentication.class ), CLOCK, config, NullLogService.getInstance() );
+        return new BoltStateMachineFactoryImpl( dbProvider, mock( Authentication.class ), CLOCK, config, NullLogService.getInstance(),
+                                                mock( DefaultDatabaseResolver.class) );
     }
 
     private static DatabaseManagementService newDbMock()

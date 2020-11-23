@@ -60,6 +60,7 @@ import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.database.DatabaseIdRepository;
+import org.neo4j.kernel.database.DefaultDatabaseResolver;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
@@ -89,6 +90,7 @@ public class BoltServer extends LifecycleAdapter
     private final AuthManager externalAuthManager;
     private final AuthManager internalAuthManager;
     private final MemoryPools memoryPools;
+    private final DefaultDatabaseResolver defaultDatabaseResolver;
 
     // edition specific dependencies are resolved dynamically
     private final DependencyResolver dependencyResolver;
@@ -99,7 +101,8 @@ public class BoltServer extends LifecycleAdapter
                        ConnectorPortRegister connectorPortRegister, NetworkConnectionTracker connectionTracker,
                        DatabaseIdRepository databaseIdRepository, Config config, SystemNanoClock clock,
                        Monitors monitors, LogService logService, DependencyResolver dependencyResolver,
-                       AuthManager externalAuthManager, AuthManager internalAuthManager, MemoryPools memoryPools )
+                       AuthManager externalAuthManager, AuthManager internalAuthManager, MemoryPools memoryPools,
+                       DefaultDatabaseResolver defaultDatabaseResolver )
     {
         this.boltGraphDatabaseManagementServiceSPI = boltGraphDatabaseManagementServiceSPI;
         this.jobScheduler = jobScheduler;
@@ -114,6 +117,7 @@ public class BoltServer extends LifecycleAdapter
         this.externalAuthManager = externalAuthManager;
         this.internalAuthManager = internalAuthManager;
         this.memoryPools = memoryPools;
+        this.defaultDatabaseResolver = defaultDatabaseResolver;
     }
 
     @Override
@@ -330,7 +334,7 @@ public class BoltServer extends LifecycleAdapter
 
     private BoltStateMachineFactory createBoltStateMachineFactory( Authentication authentication, SystemNanoClock clock )
     {
-        return new BoltStateMachineFactoryImpl( boltGraphDatabaseManagementServiceSPI, authentication, clock, config, logService );
+        return new BoltStateMachineFactoryImpl( boltGraphDatabaseManagementServiceSPI, authentication, clock, config, logService, defaultDatabaseResolver );
     }
 
     private static class BoltMemoryPoolLifeCycleAdapter extends LifecycleAdapter

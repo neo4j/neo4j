@@ -29,7 +29,6 @@ import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.bolt.runtime.statemachine.StatementProcessorReleaseManager;
 import org.neo4j.bolt.runtime.statemachine.TransactionStateMachineSPI;
 import org.neo4j.bolt.runtime.statemachine.TransactionStateMachineSPIProvider;
-import org.neo4j.bolt.txtracking.SimpleReconciledTransactionTracker;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.api.DatabaseNotFoundException;
@@ -37,7 +36,6 @@ import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
-import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.time.SystemNanoClock;
 
@@ -49,6 +47,8 @@ import static org.mockito.Mockito.when;
 
 class TransactionStateMachineSPIProviderV4Test
 {
+    private BoltChannel mockBoltChannel = mock( BoltChannel.class );
+
     @Test
     void shouldReturnTransactionStateMachineSPIIfDatabaseExists() throws Throwable
     {
@@ -66,6 +66,7 @@ class TransactionStateMachineSPIProviderV4Test
         String databaseName = "neo4j";
         DatabaseManagementService managementService = managementService( databaseName );
         TransactionStateMachineSPIProvider spiProvider = newSpiProvider( managementService );
+        when( mockBoltChannel.defaultDatabase() ).thenReturn( "neo4j" );
 
         TransactionStateMachineSPI spi = spiProvider.getTransactionStateMachineSPI( "", mock( StatementProcessorReleaseManager.class ) );
         assertThat( spi ).isInstanceOf( TransactionStateMachineV4SPI.class );
@@ -106,6 +107,6 @@ class TransactionStateMachineSPIProviderV4Test
     {
         var clock = mock( SystemNanoClock.class );
         var dbProvider = new BoltKernelDatabaseManagementServiceProvider( managementService, new Monitors(), clock, Duration.ZERO );
-        return new TransactionStateMachineSPIProviderV4( dbProvider, "neo4j", mock( BoltChannel.class ), clock );
+        return new TransactionStateMachineSPIProviderV4( dbProvider, mockBoltChannel, clock );
     }
 }

@@ -38,7 +38,7 @@ import org.neo4j.bolt.v42.BoltStateMachineV42;
 import org.neo4j.bolt.v43.BoltProtocolV43;
 import org.neo4j.bolt.v43.BoltStateMachineV43;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.kernel.database.DefaultDatabaseResolver;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.time.SystemNanoClock;
 
@@ -48,16 +48,16 @@ public class BoltStateMachineFactoryImpl implements BoltStateMachineFactory
     private final LogService logging;
     private final Authentication authentication;
     private final SystemNanoClock clock;
-    private final String defaultDatabaseName;
+    private final DefaultDatabaseResolver defaultDatabaseResolver;
 
     public BoltStateMachineFactoryImpl( BoltGraphDatabaseManagementServiceSPI boltGraphDatabaseManagementServiceSPI, Authentication authentication,
-            SystemNanoClock clock, Config config, LogService logging )
+                                        SystemNanoClock clock, Config config, LogService logging, DefaultDatabaseResolver defaultDatabaseResolver )
     {
         this.boltGraphDatabaseManagementServiceSPI = boltGraphDatabaseManagementServiceSPI;
         this.logging = logging;
         this.authentication = authentication;
         this.clock = clock;
-        this.defaultDatabaseName = config.get( GraphDatabaseSettings.default_database );
+        this.defaultDatabaseResolver = defaultDatabaseResolver;
     }
 
     @Override
@@ -91,36 +91,41 @@ public class BoltStateMachineFactoryImpl implements BoltStateMachineFactory
 
     private BoltStateMachine newStateMachineV3( BoltChannel boltChannel )
     {
-        var transactionSpiProvider = new TransactionStateMachineSPIProviderV3( boltGraphDatabaseManagementServiceSPI, defaultDatabaseName, boltChannel, clock );
+        var transactionSpiProvider = new TransactionStateMachineSPIProviderV3( boltGraphDatabaseManagementServiceSPI,
+                                                                               boltChannel, clock );
         var boltSPI = new BoltStateMachineSPIImpl( logging, authentication, transactionSpiProvider );
-        return new BoltStateMachineV3( boltSPI, boltChannel, clock );
+        return new BoltStateMachineV3( boltSPI, boltChannel, clock, defaultDatabaseResolver );
     }
 
     private BoltStateMachine newStateMachineV4( BoltChannel boltChannel )
     {
-        var transactionSpiProvider = new TransactionStateMachineSPIProviderV4( boltGraphDatabaseManagementServiceSPI, defaultDatabaseName, boltChannel, clock );
+        var transactionSpiProvider = new TransactionStateMachineSPIProviderV4( boltGraphDatabaseManagementServiceSPI,
+                                                                               boltChannel, clock );
         var boltSPI = new BoltStateMachineSPIImpl( logging, authentication, transactionSpiProvider );
-        return new BoltStateMachineV4( boltSPI, boltChannel, clock );
+        return new BoltStateMachineV4( boltSPI, boltChannel, clock, defaultDatabaseResolver );
     }
 
     private BoltStateMachine newStateMachineV41( BoltChannel boltChannel )
     {
-        var transactionSpiProvider = new TransactionStateMachineSPIProviderV4( boltGraphDatabaseManagementServiceSPI, defaultDatabaseName, boltChannel, clock );
+        var transactionSpiProvider = new TransactionStateMachineSPIProviderV4( boltGraphDatabaseManagementServiceSPI,
+                                                                               boltChannel, clock );
         var boltSPI = new BoltStateMachineSPIImpl( logging, authentication, transactionSpiProvider );
-        return new BoltStateMachineV41( boltSPI, boltChannel, clock );
+        return new BoltStateMachineV41( boltSPI, boltChannel, clock, defaultDatabaseResolver  );
     }
 
     private BoltStateMachine newStateMachineV42( BoltChannel boltChannel )
     {
-        var transactionSpiProvider = new TransactionStateMachineSPIProviderV4( boltGraphDatabaseManagementServiceSPI, defaultDatabaseName, boltChannel, clock );
+        var transactionSpiProvider = new TransactionStateMachineSPIProviderV4( boltGraphDatabaseManagementServiceSPI,
+                                                                               boltChannel, clock );
         var boltSPI = new BoltStateMachineSPIImpl( logging, authentication, transactionSpiProvider );
-        return new BoltStateMachineV42( boltSPI, boltChannel, clock );
+        return new BoltStateMachineV42( boltSPI, boltChannel, clock, defaultDatabaseResolver );
     }
 
     private BoltStateMachine newStateMachineV43( BoltChannel boltChannel )
     {
-        var transactionSpiProvider = new TransactionStateMachineSPIProviderV4( boltGraphDatabaseManagementServiceSPI, defaultDatabaseName, boltChannel, clock );
+        var transactionSpiProvider = new TransactionStateMachineSPIProviderV4( boltGraphDatabaseManagementServiceSPI,
+                                                                               boltChannel, clock );
         var boltSPI = new BoltStateMachineSPIImpl( logging, authentication, transactionSpiProvider );
-        return new BoltStateMachineV43( boltSPI, boltChannel, clock );
+        return new BoltStateMachineV43( boltSPI, boltChannel, clock, defaultDatabaseResolver );
     }
 }

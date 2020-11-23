@@ -58,6 +58,7 @@ public class ConnectedState implements BoltStateMachineState
 
             if ( processAuthentication( userAgent, authToken, context, new RoutingContext( false, Collections.emptyMap() ) ) )
             {
+                context.resolveDefaultDatabase();
                 context.connectionState().onMetadata( CONNECTION_ID_KEY, Values.utf8Value( context.connectionId() ) );
                 return readyState;
             }

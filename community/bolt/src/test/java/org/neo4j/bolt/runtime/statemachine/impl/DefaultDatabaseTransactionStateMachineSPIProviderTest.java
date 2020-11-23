@@ -30,13 +30,11 @@ import org.neo4j.bolt.runtime.BoltProtocolBreachFatality;
 import org.neo4j.bolt.runtime.statemachine.StatementProcessorReleaseManager;
 import org.neo4j.bolt.runtime.statemachine.TransactionStateMachineSPI;
 import org.neo4j.bolt.runtime.statemachine.TransactionStateMachineSPIProvider;
-import org.neo4j.bolt.txtracking.SimpleReconciledTransactionTracker;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
-import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.time.SystemNanoClock;
 
@@ -49,6 +47,8 @@ import static org.neo4j.bolt.v4.messaging.MessageMetadataParser.ABSENT_DB_NAME;
 
 class DefaultDatabaseTransactionStateMachineSPIProviderTest
 {
+    private BoltChannel mockBoltChannel = mock( BoltChannel.class );
+
     @Test
     void shouldReturnDefaultTransactionStateMachineSPIWithEmptyDatabaseName() throws Throwable
     {
@@ -82,6 +82,7 @@ class DefaultDatabaseTransactionStateMachineSPIProviderTest
         when( dependencyResolver.resolveDependency( GraphDatabaseQueryService.class ) ).thenReturn( queryService );
         when( queryService.getDependencyResolver() ).thenReturn( dependencyResolver );
         when( dependencyResolver.resolveDependency( Database.class ) ).thenReturn( mock( Database.class ) );
+        when( mockBoltChannel.defaultDatabase() ).thenReturn( "neo4j" );
 
         return managementService;
     }
@@ -90,7 +91,7 @@ class DefaultDatabaseTransactionStateMachineSPIProviderTest
     {
         var clock = mock( SystemNanoClock.class );
         var dbProvider = new BoltKernelDatabaseManagementServiceProvider( managementService, new Monitors(), clock, Duration.ZERO );
-        return new AbstractTransactionStatementSPIProvider( dbProvider, "neo4j", mock( BoltChannel.class ), clock )
+        return new AbstractTransactionStatementSPIProvider( dbProvider, mockBoltChannel, clock )
         {
             @Override
             protected TransactionStateMachineSPI newTransactionStateMachineSPI( BoltGraphDatabaseServiceSPI activeBoltGraphDatabaseServiceSPI,

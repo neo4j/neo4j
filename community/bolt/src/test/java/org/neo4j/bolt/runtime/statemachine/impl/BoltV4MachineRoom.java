@@ -35,6 +35,7 @@ import org.neo4j.bolt.runtime.statemachine.TransactionStateMachineSPIProvider;
 import org.neo4j.bolt.testing.BoltTestUtil;
 import org.neo4j.bolt.v4.BoltStateMachineV4;
 import org.neo4j.bolt.v4.messaging.BoltV4Messages;
+import org.neo4j.kernel.database.DefaultDatabaseResolver;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -61,7 +62,7 @@ public class BoltV4MachineRoom
     public static BoltStateMachine newMachine( BoltStateMachineSPIImpl spi )
     {
         BoltChannel boltChannel = BoltTestUtil.newTestBoltChannel();
-        return new BoltStateMachineV4( spi, boltChannel, Clock.systemUTC() );
+        return new BoltStateMachineV4( spi, boltChannel, Clock.systemUTC(), mock( DefaultDatabaseResolver.class ) );
     }
 
     public static BoltStateMachine newMachineWithTransaction() throws BoltConnectionFatality, BoltIOException
@@ -82,7 +83,7 @@ public class BoltV4MachineRoom
         when( spi.transactionStateMachineSPIProvider() ).thenReturn( transactionSPIProvider );
 
         BoltChannel boltChannel = BoltTestUtil.newTestBoltChannel();
-        BoltStateMachine machine = new BoltStateMachineV4( spi, boltChannel, Clock.systemUTC() );
+        BoltStateMachine machine = new BoltStateMachineV4( spi, boltChannel, Clock.systemUTC(), mock( DefaultDatabaseResolver.class ) );
         init( machine );
         return machine;
     }

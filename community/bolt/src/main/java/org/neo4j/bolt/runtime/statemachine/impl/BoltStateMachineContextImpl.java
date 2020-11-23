@@ -34,6 +34,7 @@ import org.neo4j.bolt.runtime.statemachine.StatementProcessorReleaseManager;
 import org.neo4j.bolt.runtime.statemachine.TransactionStateMachineSPIProvider;
 import org.neo4j.bolt.security.auth.AuthenticationResult;
 import org.neo4j.bolt.v41.messaging.RoutingContext;
+import org.neo4j.kernel.database.DefaultDatabaseResolver;
 
 import static java.lang.String.format;
 import static org.neo4j.bolt.runtime.statemachine.StatementProcessor.EMPTY;
@@ -45,22 +46,30 @@ public class BoltStateMachineContextImpl implements StateMachineContext, Stateme
     private final BoltStateMachineSPI spi;
     private final MutableConnectionState connectionState;
     private final Clock clock;
+    private final DefaultDatabaseResolver defaultDatabaseResolver;
     private StatementProcessorProvider statementProcessorProvider;
 
     public BoltStateMachineContextImpl( BoltStateMachine machine, BoltChannel boltChannel, BoltStateMachineSPI spi, MutableConnectionState connectionState,
-            Clock clock )
+                                        Clock clock, DefaultDatabaseResolver defaultDatabaseResolver )
     {
         this.machine = machine;
         this.boltChannel = boltChannel;
         this.spi = spi;
         this.connectionState = connectionState;
         this.clock = clock;
+        this.defaultDatabaseResolver = defaultDatabaseResolver;
     }
 
     @Override
     public void authenticatedAsUser( String username, String userAgent )
     {
         boltChannel.updateUser( username, userAgent );
+    }
+
+    @Override
+    public void resolveDefaultDatabase()
+    {
+        boltChannel.updateDefaultDatabase( defaultDatabaseResolver.defaultDatabase() );
     }
 
     @Override

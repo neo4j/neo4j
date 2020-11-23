@@ -48,6 +48,7 @@ import org.neo4j.function.ThrowingBiConsumer;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.security.AuthorizationExpiredException;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.database.DefaultDatabaseResolver;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -459,7 +460,7 @@ class BoltStateMachineV4Test
     {
         BoltStateMachineSPIImpl spi = mock( BoltStateMachineSPIImpl.class );
         BoltChannel boltChannel = mock( BoltChannel.class );
-        BoltStateMachine machine = new BoltStateMachineV4( spi, boltChannel, Clock.systemUTC() );
+        BoltStateMachine machine = new BoltStateMachineV4( spi, boltChannel, Clock.systemUTC(), mock( DefaultDatabaseResolver.class) );
 
         machine.close();
 
@@ -471,7 +472,7 @@ class BoltStateMachineV4Test
     {
         BoltStateMachineSPIImpl spi = mock( BoltStateMachineSPIImpl.class );
         BoltChannel boltChannel = mock( BoltChannel.class );
-        BoltStateMachine machine = new BoltStateMachineV4( spi, boltChannel, Clock.systemUTC() );
+        BoltStateMachine machine = new BoltStateMachineV4( spi, boltChannel, Clock.systemUTC(), mock( DefaultDatabaseResolver.class) );
         Neo4jError error = Neo4jError.from( Status.Request.NoThreadsAvailable, "no threads" );
 
         machine.markFailed( error );

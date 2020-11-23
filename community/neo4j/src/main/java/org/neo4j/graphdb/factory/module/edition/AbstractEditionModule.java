@@ -47,6 +47,7 @@ import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.security.provider.SecurityProvider;
 import org.neo4j.kernel.database.DatabaseStartupController;
+import org.neo4j.kernel.database.DefaultDatabaseResolver;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.factory.DbmsInfo;
@@ -79,6 +80,7 @@ public abstract class AbstractEditionModule
     protected IOLimiter ioLimiter;
     protected Function<DatabaseLayout,DatabaseLayoutWatcher> watcherServiceFactory;
     protected SecurityProvider securityProvider;
+    protected DefaultDatabaseResolver defaultDatabaseResolver;
 
     public abstract EditionDatabaseComponents createDatabaseComponents( NamedDatabaseId namedDatabaseId );
 
@@ -154,6 +156,18 @@ public abstract class AbstractEditionModule
     public void setSecurityProvider( SecurityProvider securityProvider )
     {
         this.securityProvider = securityProvider;
+    }
+
+    public abstract void createDefaultDatabaseResolver( GlobalModule globalModule );
+
+    public void setDefaultDatabaseResolver( DefaultDatabaseResolver defaultDatabaseResolver )
+    {
+        this.defaultDatabaseResolver = defaultDatabaseResolver;
+    }
+
+    public DefaultDatabaseResolver getDefaultDatabaseResolver()
+    {
+        return defaultDatabaseResolver;
     }
 
     /**

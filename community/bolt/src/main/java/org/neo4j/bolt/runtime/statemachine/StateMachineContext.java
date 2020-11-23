@@ -31,6 +31,8 @@ public interface StateMachineContext
 {
     void authenticatedAsUser( String username, String userAgent );
 
+    void resolveDefaultDatabase();
+
     void handleFailure( Throwable cause, boolean fatal ) throws BoltConnectionFatality;
 
     boolean resetMachine() throws BoltConnectionFatality;
