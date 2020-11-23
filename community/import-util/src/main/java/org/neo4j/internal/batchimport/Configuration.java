@@ -19,8 +19,11 @@
  */
 package org.neo4j.internal.batchimport;
 
+import java.nio.file.Path;
+
 import org.neo4j.configuration.Config;
 import org.neo4j.io.ByteUnit;
+import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.os.OsBeanUtil;
 
 import static java.lang.Math.min;
@@ -171,6 +174,24 @@ public interface Configuration
     Configuration DEFAULT = new Configuration()
     {
     };
+
+    /**
+     * {@link #DEFAULT} configuration additionally specialized for the given {@code pathOnDevice}.
+     * @param pathOnDevice {@link Path} to look for clues how to fine tune the configuration even more.
+     * @return a {@link Configuration} instance with {@link #DEFAULT defaults} and additionally further specialized for the given device.
+     */
+    static Configuration defaultConfiguration( Path pathOnDevice )
+    {
+        boolean highIoForDevice = FileUtils.highIODevice( pathOnDevice );
+        return new Overridden( Configuration.DEFAULT )
+        {
+            @Override
+            public boolean highIO()
+            {
+                return highIoForDevice;
+            }
+        };
+    }
 
     class Overridden implements Configuration
     {

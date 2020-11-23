@@ -276,7 +276,7 @@ public class ImportLogic implements Closeable
     {
         // Import nodes, properties, labels
         neoStore.startFlushingPageCache();
-        DataImporter.importNodes( config.maxNumberOfProcessors(), input, neoStore, idMapper, badCollector, executionMonitor, storeUpdateMonitor,
+        DataImporter.importNodes( config, input, neoStore, idMapper, badCollector, executionMonitor, storeUpdateMonitor,
                 pageCacheTracer, memoryTracker );
         neoStore.stopFlushingPageCache();
         updatePeakMemoryUsage();
@@ -313,7 +313,7 @@ public class ImportLogic implements Closeable
         // Import relationships (unlinked), properties
         neoStore.startFlushingPageCache();
         DataStatistics typeDistribution = DataImporter.importRelationships(
-                config.maxNumberOfProcessors(), input, neoStore, idMapper, badCollector, executionMonitor, storeUpdateMonitor,
+                config, input, neoStore, idMapper, badCollector, executionMonitor, storeUpdateMonitor,
                 !badCollector.isCollectingBadRelationships(), pageCacheTracer, memoryTracker );
         neoStore.stopFlushingPageCache();
         updatePeakMemoryUsage();

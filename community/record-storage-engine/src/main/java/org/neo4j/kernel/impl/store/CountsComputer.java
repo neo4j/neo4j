@@ -43,6 +43,7 @@ public class CountsComputer implements CountsBuilder
     private final int highLabelId;
     private final int highRelationshipTypeId;
     private final long lastCommittedTransactionId;
+    private final DatabaseLayout databaseLayout;
     private final ProgressReporter progressMonitor;
     private final NumberArrayFactory numberArrayFactory;
     private final PageCacheTracer pageCacheTracer;
@@ -56,18 +57,19 @@ public class CountsComputer implements CountsBuilder
                 (int) stores.getLabelTokenStore().getHighId(),
                 (int) stores.getRelationshipTypeTokenStore().getHighId(),
                 NumberArrayFactory.auto( pageCache, pageCacheTracer, databaseLayout.databaseDirectory(), true, NO_MONITOR ),
-                pageCacheTracer, memoryTracker );
+                databaseLayout, pageCacheTracer, memoryTracker );
     }
 
     private CountsComputer( long lastCommittedTransactionId, NodeStore nodes, RelationshipStore relationships, int highLabelId, int highRelationshipTypeId,
-            NumberArrayFactory numberArrayFactory, PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker )
+            NumberArrayFactory numberArrayFactory, DatabaseLayout databaseLayout, PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker )
     {
         this( lastCommittedTransactionId, nodes, relationships, highLabelId, highRelationshipTypeId,
-                numberArrayFactory, ProgressReporter.SILENT, pageCacheTracer, memoryTracker );
+                numberArrayFactory, databaseLayout, ProgressReporter.SILENT, pageCacheTracer, memoryTracker );
     }
 
     public CountsComputer( long lastCommittedTransactionId, NodeStore nodes, RelationshipStore relationships, int highLabelId, int highRelationshipTypeId,
-            NumberArrayFactory numberArrayFactory, ProgressReporter progressMonitor, PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker )
+            NumberArrayFactory numberArrayFactory, DatabaseLayout databaseLayout, ProgressReporter progressMonitor,
+            PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker )
     {
         this.lastCommittedTransactionId = lastCommittedTransactionId;
         this.nodes = nodes;
@@ -75,6 +77,7 @@ public class CountsComputer implements CountsBuilder
         this.highLabelId = highLabelId;
         this.highRelationshipTypeId = highRelationshipTypeId;
         this.numberArrayFactory = numberArrayFactory;
+        this.databaseLayout = databaseLayout;
         this.progressMonitor = progressMonitor;
         this.pageCacheTracer = pageCacheTracer;
         this.memoryTracker = memoryTracker;
@@ -100,12 +103,14 @@ public class CountsComputer implements CountsBuilder
     {
         try ( NodeLabelsCache cache = new NodeLabelsCache( numberArrayFactory, highLabelId, memoryTracker ) )
         {
+            Configuration configuration = Configuration.defaultConfiguration( databaseLayout.databaseDirectory() );
+
             // Count nodes
             superviseDynamicExecution(
-                    new NodeCountsStage( Configuration.DEFAULT, cache, nodes, highLabelId, countsUpdater, progressMonitor, pageCacheTracer ) );
+                    new NodeCountsStage( configuration, cache, nodes, highLabelId, countsUpdater, progressMonitor, pageCacheTracer ) );
             // Count relationships
             superviseDynamicExecution(
-                    new RelationshipCountsStage( Configuration.DEFAULT, cache, relationships, highLabelId, highRelationshipTypeId, countsUpdater,
+                    new RelationshipCountsStage( configuration, cache, relationships, highLabelId, highRelationshipTypeId, countsUpdater,
                             numberArrayFactory, progressMonitor, pageCacheTracer, memoryTracker ) );
         }
     }
