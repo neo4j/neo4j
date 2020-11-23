@@ -217,7 +217,7 @@ class CheckerTestBase
         ConsistencySummaryStatistics inconsistenciesSummary = new ConsistencySummaryStatistics();
         InconsistencyReport report = new InconsistencyReport( new InconsistencyMessageLogger( NullLog.getInstance() ), inconsistenciesSummary );
         monitor = mock( ConsistencyReporter.Monitor.class );
-        reporter = new ConsistencyReporter( report, monitor, PageCacheTracer.NULL );
+        reporter = new ConsistencyReporter( report, monitor );
         countsState = new CountsState( neoStores, cacheAccess, INSTANCE );
         NodeBasedMemoryLimiter limiter = new NodeBasedMemoryLimiter( pageCache.pageSize() * pageCache.maxCachedPages(),
                 Runtime.getRuntime().maxMemory(), Long.MAX_VALUE, CacheSlots.CACHE_LINE_SIZE_BYTES, nodeStore.getHighId() );

@@ -102,10 +102,7 @@ public class RecordStorageConsistencyChecker implements AutoCloseable
                 }
             };
         }
-        // TODO we pass in null RecordAccess here because this checker will only use methods that won't use it.
-        //      As long as the old one exists the ConsistencyReporter will be a bit schizofrenic, but its connection to RecordAccess can be removed
-        //      when the old checker goes.
-        this.reporter = new ConsistencyReporter( report, monitor, cacheTracer );
+        this.reporter = new ConsistencyReporter( report, monitor );
         this.tokenHolders = new TokenHolders(
                 new DelegatingTokenHolder( new ReadOnlyTokenCreator(), TokenHolder.TYPE_PROPERTY_KEY ),
                 new DelegatingTokenHolder( new ReadOnlyTokenCreator(), TokenHolder.TYPE_LABEL ),

@@ -26,10 +26,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentMatcher;
 
 import java.lang.reflect.Method;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import org.neo4j.annotations.documented.Warning;
@@ -44,7 +41,6 @@ import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -62,7 +58,6 @@ import org.neo4j.test.InMemoryTokens;
 
 import static java.lang.String.format;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyVararg;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -87,7 +82,7 @@ class ConsistencyReporterTest
             ConsistencyReporter.ReportHandler handler = new ConsistencyReporter.ReportHandler(
                     new InconsistencyReport( mock( InconsistencyLogger.class ), summary ),
                     mock( ConsistencyReporter.ProxyFactory.class ), RecordType.PROPERTY,
-                    new PropertyRecord( 0 ), NO_MONITOR, PageCacheTracer.NULL );
+                    new PropertyRecord( 0 ), NO_MONITOR );
 
             // then
             verifyNoMoreInteractions( summary );
@@ -97,7 +92,7 @@ class ConsistencyReporterTest
     @Nested
     class TestAllReportMessages
     {
-        @ParameterizedTest
+        @ParameterizedTest( name = "{0}" )
         @MethodSource( value = "org.neo4j.consistency.report.ConsistencyReporterTest#methods" )
         void shouldLogInconsistency( ReportMethods methods ) throws Exception
         {
@@ -105,55 +100,42 @@ class ConsistencyReporterTest
             Method reportMethod = methods.reportedMethod;
             Method method = methods.method;
             InconsistencyReport report = mock( InconsistencyReport.class );
-            ConsistencyReport.Reporter reporter = new ConsistencyReporter( report, PageCacheTracer.NULL );
+            ConsistencyReport.Reporter reporter = new ConsistencyReporter( report );
 
             // when
-            reportMethod.invoke( reporter, parameters( reportMethod ) );
+            ConsistencyReport section = (ConsistencyReport) reportMethod.invoke( reporter, parameters( reportMethod ) );
+            method.invoke( section, parameters( method ) );
 
             // then
             if ( method.getAnnotation( Warning.class ) == null )
             {
-                if ( reportMethod.getName().endsWith( "Change" ) )
-                {
-                    verify( report ).error( any( RecordType.class ),
-                                            any( AbstractBaseRecord.class ), any( AbstractBaseRecord.class ),
-                                            argThat( expectedFormat() ), any( Object[].class ) );
-                }
-                else
-                {
-                    verify( report ).error( any( RecordType.class ),
-                                            any( AbstractBaseRecord.class ), argThat( expectedFormat() ), anyVararg() );
-                }
+                verify( report ).error( any( RecordType.class ), any( AbstractBaseRecord.class ), argThat( expectedFormat() ), any() );
             }
             else
             {
-                if ( reportMethod.getName().endsWith( "Change" ) )
-                {
-                    verify( report ).warning( any( RecordType.class ),
-                                              any( AbstractBaseRecord.class ), any( AbstractBaseRecord.class ),
-                                              argThat( expectedFormat() ), any( Object[].class ) );
-                }
-                else
-                {
-                    verify( report ).error( any( RecordType.class ),
-                                              any( AbstractBaseRecord.class ),
-                                              argThat( expectedFormat() ), anyVararg() );
-                }
+                verify( report ).warning( any( RecordType.class ), any( AbstractBaseRecord.class ), argThat( expectedFormat() ), any() );
             }
         }
 
         private Object[] parameters( Method method )
         {
-            Class<?>[] parameterTypes = method.getParameterTypes();
-            Object[] parameters = new Object[parameterTypes.length];
-            for ( int i = 0; i < parameters.length; i++ )
+            try
             {
-                parameters[i] = parameter( parameterTypes[i], method );
+                Class<?>[] parameterTypes = method.getParameterTypes();
+                Object[] parameters = new Object[parameterTypes.length];
+                for ( int i = 0; i < parameters.length; i++ )
+                {
+                    parameters[i] = parameter( parameterTypes[i] );
+                }
+                return parameters;
             }
-            return parameters;
+            catch ( Exception e )
+            {
+                throw e;
+            }
         }
 
-        private Object parameter( Class<?> type, Method method )
+        private Object parameter( Class<?> type )
         {
             if ( type == RecordType.class )
             {
@@ -241,6 +223,22 @@ class ConsistencyReporterTest
             {
                 return "object";
             }
+            if ( type == int.class )
+            {
+                return 2;
+            }
+            if ( type == String.class )
+            {
+                return "abc";
+            }
+            if ( type == Object[].class )
+            {
+                return new Object[]{1, 2};
+            }
+            if ( type == Class.class )
+            {
+                return SchemaRule.class;
+            }
             throw new IllegalArgumentException( format( "Don't know how to provide parameter of type %s", type.getName() ) );
         }
 
@@ -291,30 +289,13 @@ class ConsistencyReporterTest
         List<ReportMethods> methods = new ArrayList<>();
         for ( Method reporterMethod : ConsistencyReport.Reporter.class.getMethods() )
         {
-            if ( reporterMethod.getReturnType() == Void.TYPE )
+            Class<?> reportType = reporterMethod.getReturnType();
+            for ( Method method : reportType.getMethods() )
             {
-                Type[] parameterTypes = reporterMethod.getGenericParameterTypes();
-                ParameterizedType checkerParameter = findParametrizedType( parameterTypes );
-                Class reportType = (Class) checkerParameter.getActualTypeArguments()[1];
-                for ( Method method : reportType.getMethods() )
-                {
-                    methods.add( new ReportMethods( reporterMethod, method ) );
-                }
+                methods.add( new ReportMethods( reporterMethod, method ) );
             }
         }
         return methods;
-    }
-
-    private static ParameterizedType findParametrizedType( Type[] types )
-    {
-        for ( Type type : types )
-        {
-            if ( type instanceof ParameterizedType )
-            {
-                return (ParameterizedType) type;
-            }
-        }
-        throw new IllegalStateException( "Parametrized type expected but not found. Actual types: " + Arrays.toString( types ) );
     }
 
     public static class ReportMethods
@@ -326,6 +307,12 @@ class ConsistencyReporterTest
         {
             this.reportedMethod = reportedMethod;
             this.method = method;
+        }
+
+        @Override
+        public String toString()
+        {
+            return reportedMethod.getReturnType().getSimpleName() + "#" + method.getName();
         }
     }
 }

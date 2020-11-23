@@ -23,8 +23,6 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
-import java.util.HashMap;
-import java.util.Map;
 
 import org.neo4j.annotations.documented.DocumentedUtils;
 import org.neo4j.annotations.documented.Warning;
@@ -46,7 +44,6 @@ import org.neo4j.consistency.report.ConsistencyReport.SchemaConsistencyReport;
 import org.neo4j.consistency.store.synthetic.CountsEntry;
 import org.neo4j.consistency.store.synthetic.IndexEntry;
 import org.neo4j.consistency.store.synthetic.TokenScanDocument;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
@@ -63,7 +60,6 @@ import static org.neo4j.consistency.report.ConsistencyReporter.ProxyFactory.crea
 
 public class ConsistencyReporter implements ConsistencyReport.Reporter
 {
-    private static final String CONSISTENCY_REPORT_READER_TAG = "consistencyReportReader";
     private static final ProxyFactory<SchemaConsistencyReport> SCHEMA_REPORT = create( SchemaConsistencyReport.class );
     private static final ProxyFactory<NodeConsistencyReport> NODE_REPORT = create( NodeConsistencyReport.class );
     private static final ProxyFactory<RelationshipConsistencyReport> RELATIONSHIP_REPORT = create( RelationshipConsistencyReport.class );
@@ -82,7 +78,6 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
 
     private final InconsistencyReport report;
     private final Monitor monitor;
-    private final PageCacheTracer pageCacheTracer;
 
     public interface Monitor
     {
@@ -93,31 +88,15 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
     {
     };
 
-    public ConsistencyReporter( InconsistencyReport report, PageCacheTracer pageCacheTracer )
+    public ConsistencyReporter( InconsistencyReport report )
     {
-        this( report, NO_MONITOR, pageCacheTracer );
+        this( report, NO_MONITOR );
     }
 
-    public ConsistencyReporter( InconsistencyReport report, Monitor monitor, PageCacheTracer pageCacheTracer )
+    public ConsistencyReporter( InconsistencyReport report, Monitor monitor )
     {
         this.report = report;
         this.monitor = monitor;
-        this.pageCacheTracer = pageCacheTracer;
-    }
-
-    @Override
-    public <RECORD extends AbstractBaseRecord,REPORT extends ConsistencyReport> REPORT report( RECORD record,
-            Class<REPORT> cls, RecordType recordType )
-    {
-        ProxyFactory<REPORT> proxyFactory = ProxyFactory.get( cls );
-        ReportInvocationHandler<RECORD,REPORT> handler = new ReportHandler<>( report, proxyFactory, recordType, record, monitor, pageCacheTracer )
-        {
-            @Override
-            protected void inconsistencyReported()
-            {
-            }
-        };
-        return handler.report();
     }
 
     public static FormattingDocumentedHandler formattingHandler( InconsistencyReport report, RecordType type )
@@ -161,28 +140,20 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
         }
     }
 
-    public abstract static class ReportInvocationHandler
-            <RECORD extends AbstractBaseRecord, REPORT extends ConsistencyReport>
-            implements InvocationHandler
+    public abstract static class ReportInvocationHandler<REPORT extends ConsistencyReport> implements InvocationHandler
     {
         final InconsistencyReport report;
         private final ProxyFactory<REPORT> factory;
         final RecordType type;
-        private short references = 1/*this*/;
-        private final PageCacheTracer pageCacheTracer;
         private final Monitor monitor;
 
-        private ReportInvocationHandler( InconsistencyReport report, ProxyFactory<REPORT> factory, RecordType type,
-               Monitor monitor, PageCacheTracer pageCacheTracer )
+        private ReportInvocationHandler( InconsistencyReport report, ProxyFactory<REPORT> factory, RecordType type, Monitor monitor )
         {
             this.report = report;
             this.factory = factory;
             this.type = type;
             this.monitor = monitor;
-            this.pageCacheTracer = pageCacheTracer;
         }
-
-        abstract long recordId();
 
         REPORT report()
         {
@@ -197,6 +168,11 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
         @Override
         public Object invoke( Object proxy, Method method, Object[] args )
         {
+            if ( method.getName().equals( "toString" ) )
+            {
+                return factory.type.getName();
+            }
+
             String message = DocumentedUtils.extractMessage( method );
             if ( method.getAnnotation( Warning.class ) == null )
             {
@@ -222,23 +198,14 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
         protected abstract void logWarning( String message, Object... args );
     }
 
-    public static class ReportHandler
-            <RECORD extends AbstractBaseRecord, REPORT extends ConsistencyReport>
-            extends ReportInvocationHandler<RECORD,REPORT>
+    public static class ReportHandler<REPORT extends ConsistencyReport> extends ReportInvocationHandler<REPORT>
     {
         private final AbstractBaseRecord record;
 
-        public ReportHandler( InconsistencyReport report, ProxyFactory<REPORT> factory, RecordType type,
-                AbstractBaseRecord record, Monitor monitor, PageCacheTracer pageCacheTracer )
+        public ReportHandler( InconsistencyReport report, ProxyFactory<REPORT> factory, RecordType type, AbstractBaseRecord record, Monitor monitor )
         {
-            super( report, factory, type, monitor, pageCacheTracer );
+            super( report, factory, type, monitor );
             this.record = record;
-        }
-
-        @Override
-        long recordId()
-        {
-            return record.getId();
         }
 
         @Override
@@ -342,20 +309,13 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
 
     private <RECORD extends AbstractBaseRecord,REPORT extends ConsistencyReport> REPORT report( ProxyFactory<REPORT> factory, RecordType type, RECORD record )
     {
-        return new ReportHandler<>( report, factory, type, record, monitor, pageCacheTracer ).report();
+        return new ReportHandler<>( report, factory, type, record, monitor ).report();
     }
 
     public static class ProxyFactory<T>
     {
-        private static final Map<Class<?>,ProxyFactory<?>> INSTANCES = new HashMap<>();
-        private Constructor<? extends T> constructor;
+        private final Constructor<? extends T> constructor;
         private final Class<T> type;
-
-        @SuppressWarnings( "unchecked" )
-        static <T> ProxyFactory<T> get( Class<T> cls )
-        {
-            return (ProxyFactory<T>) INSTANCES.get( cls );
-        }
 
         @SuppressWarnings( "unchecked" )
         ProxyFactory( Class<T> type ) throws LinkageError
@@ -366,7 +326,6 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
                 this.constructor = (Constructor<? extends T>) Proxy
                         .getProxyClass( ConsistencyReporter.class.getClassLoader(), type )
                         .getConstructor( InvocationHandler.class );
-                INSTANCES.put( type, this );
             }
             catch ( NoSuchMethodException e )
             {

@@ -32,7 +32,6 @@ import org.neo4j.consistency.store.synthetic.IndexEntry;
 import org.neo4j.consistency.store.synthetic.TokenScanDocument;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
-import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -75,8 +74,6 @@ public interface ConsistencyReport
         RelationshipGroupConsistencyReport forRelationshipGroup( RelationshipGroupRecord group );
 
         CountsConsistencyReport forCounts( CountsEntry countsEntry );
-
-        <RECORD extends AbstractBaseRecord, REPORT extends ConsistencyReport> REPORT report( RECORD record, Class<REPORT> cls, RecordType recordType );
     }
 
     interface PrimitiveConsistencyReport extends ConsistencyReport
@@ -569,6 +566,10 @@ public interface ConsistencyReport
         void relationshipNotInUse( RelationshipRecord referredRelationshipRecord );
 
         @Override
+        @Documented( "This relationship record has a type that is not found in the index for this relationship." )
+        void relationshipTypeNotInIndex( RelationshipRecord referredRelationshipRecord, long missingTypeId );
+
+        @Override
         @Documented( "This index entry refers to a node that does not have the expected label." )
         void nodeDoesNotHaveExpectedLabel( NodeRecord referredNodeRecord, long expectedLabelId );
 
@@ -701,12 +702,6 @@ public interface ConsistencyReport
         public CountsConsistencyReport forCounts( CountsEntry countsEntry )
         {
             return (CountsConsistencyReport) proxy;
-        }
-
-        @Override
-        public <RECORD extends AbstractBaseRecord, REPORT extends ConsistencyReport> REPORT report( RECORD record, Class<REPORT> cls, RecordType recordType )
-        {
-            return (REPORT) proxy;
         }
     }
 
