@@ -125,6 +125,72 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
     nodes.foreach(n => n.getLabels.asScala.map(_.name()).toList should equal(List("A", "B", "C")))
   }
 
+  test("should not create node when LIMIT 0 before CREATE") {
+    // given an empty data base
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .create(createNode("n", "A", "B", "C"))
+      .limit(0)
+      .argument()
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    tx.getAllNodes.asScala shouldBe empty
+    runtimeResult should beColumns("n").withNoRows().withNoUpdates()
+  }
+
+  test("should only create n nodes if LIMIT n") {
+    // given
+    given {
+      circleGraph(sizeHint, "L")
+    }
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .create(createNode("n", "A", "B", "C"))
+      .limit(3)
+      .expand("(x)--(y)")
+      .nodeByLabelScan("x", "L", IndexOrderNone)
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    val nodes = tx.findNodes(label("A")).asScala.toList
+    nodes should have size 3
+    runtimeResult should beColumns("n").withRows(singleColumn(nodes)).withStatistics(nodesCreated = 3, labelsAdded = 9)
+    nodes.foreach(n => n.getLabels.asScala.map(_.name()).toList should equal(List("A", "B", "C")))
+  }
+
+  test("should handle LIMIT and CREATE on the RHS of an Apply") {
+    // given
+    given {
+      circleGraph(sizeHint, "L")
+    }
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .apply()
+      .|.create(createNode("n", "A", "B", "C"))
+      .|.limit(1)
+      .|.expand("(x)--(y)")
+      .|.argument("x")
+      .nodeByLabelScan("x", "L", IndexOrderNone)
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    val nodes = tx.findNodes(label("A")).asScala.toList
+    nodes should have size sizeHint
+    runtimeResult should beColumns("n").withRows(singleColumn(nodes)).withStatistics(nodesCreated = sizeHint, labelsAdded = 3 * sizeHint)
+    nodes.foreach(n => n.getLabels.asScala.map(_.name()).toList should equal(List("A", "B", "C")))
+  }
+
   test("should create node with labels on the RHS of an Apply") {
     // given an empty data base
 
@@ -273,5 +339,5 @@ abstract class LenientCreateRelationshipTestBase[CONTEXT <: RuntimeContext](
 
     val results = execute(logicalQuery, runtime, inputValues(Array[Any](null)))
     consume(results)
-    results should beColumns("r").withSingleRow(null).withStatistics(relationshipsCreated = 0)  }
+    results should beColumns("r").withSingleRow(null).withNoUpdates() }
 }
