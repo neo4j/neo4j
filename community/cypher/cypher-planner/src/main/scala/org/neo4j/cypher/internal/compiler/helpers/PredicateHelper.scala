@@ -41,6 +41,7 @@ import org.neo4j.cypher.internal.expressions.ListComprehension
 import org.neo4j.cypher.internal.expressions.OperatorExpression
 import org.neo4j.cypher.internal.expressions.Ors
 import org.neo4j.cypher.internal.expressions.PatternExpression
+import org.neo4j.cypher.internal.expressions.TypeSignatures
 import org.neo4j.cypher.internal.expressions.UnsignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.functions
 import org.neo4j.cypher.internal.logical.plans.CoerceToPredicate
@@ -82,7 +83,10 @@ object PredicateHelper {
   def isPredicate(expression: Expression): Boolean = {
     expression match {
       case o: OperatorExpression => o.signatures.forall(_.outputType == symbols.CTBoolean)
-      case f: FunctionInvocation => BOOLEAN_FUNCTIONS.contains(f.function)
+      case f: FunctionInvocation => f.function match {
+        case ts: TypeSignatures => ts.signatures.forall(_.outputType == symbols.CTBoolean)
+        case func => BOOLEAN_FUNCTIONS.contains(func)
+      }
       case f: ResolvedFunctionInvocation => f.fcnSignature.forall(_.outputType == symbols.CTBoolean)
       case _:Ands | _: Ors | _: In | _:BooleanLiteral | _:HasLabels | _:HasTypes | _:HasLabelsOrTypes | _:AndedPropertyInequalities | _:IterablePredicateExpression => true
       case _:ExistsSubClause => true
