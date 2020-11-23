@@ -158,7 +158,7 @@ class ImportCommandTest
                         "                             Ignore environment-based heuristics, and assume" + lineSeparator() +
                         "                               that the target storage subsystem can support" + lineSeparator() +
                         "                               parallel IO with high throughput." + lineSeparator() +
-                        "                               Default: false" + lineSeparator() +
+                        "                               Default: null" + lineSeparator() +
                         "      --cache-on-heap[=<true/false>]" + lineSeparator() +
                         "                             (advanced) Whether or not to allow allocating" + lineSeparator() +
                         "                               memory for the cache on heap. If 'false' then" + lineSeparator() +

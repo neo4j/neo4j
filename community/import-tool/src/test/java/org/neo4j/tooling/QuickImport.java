@@ -55,6 +55,7 @@ import static java.lang.System.currentTimeMillis;
 import static org.neo4j.configuration.SettingValueParsers.parseLongWithUnit;
 import static org.neo4j.internal.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.internal.batchimport.Configuration.calculateMaxMemoryFromPercent;
+import static org.neo4j.internal.batchimport.Configuration.defaultConfiguration;
 import static org.neo4j.internal.batchimport.ImportLogic.NO_MONITOR;
 import static org.neo4j.internal.batchimport.staging.ExecutionMonitors.defaultVisible;
 import static org.neo4j.kernel.impl.scheduler.JobSchedulerFactory.createScheduler;
@@ -109,39 +110,38 @@ public class QuickImport
             dbConfig = Config.defaults();
         }
 
-        boolean highIo = args.getBoolean( "high-io" );
+        Boolean highIo = args.has( "high-io" ) ? args.getBoolean( "high-io" ) : null;
 
         LogProvider logging = NullLogProvider.getInstance();
         long pageCacheMemory = args.getNumber( "pagecache-memory",
                 org.neo4j.internal.batchimport.Configuration.MAX_PAGE_CACHE_MEMORY ).longValue();
-        org.neo4j.internal.batchimport.Configuration importConfig =
-                new org.neo4j.internal.batchimport.Configuration()
-                {
-                    @Override
-                    public int maxNumberOfProcessors()
-                    {
-                        return args.getNumber( "processors", DEFAULT.maxNumberOfProcessors() ).intValue();
-                    }
+        org.neo4j.internal.batchimport.Configuration importConfig = new org.neo4j.internal.batchimport.Configuration.Overridden( defaultConfiguration( dir ) )
+        {
+            @Override
+            public int maxNumberOfProcessors()
+            {
+                return args.getNumber( "processors", super.maxNumberOfProcessors() ).intValue();
+            }
 
-                    @Override
-                    public boolean highIO()
-                    {
-                        return highIo;
-                    }
+            @Override
+            public boolean highIO()
+            {
+                return highIo != null ? highIo : super.highIO();
+            }
 
-                    @Override
-                    public long pageCacheMemory()
-                    {
-                        return pageCacheMemory;
-                    }
+            @Override
+            public long pageCacheMemory()
+            {
+                return pageCacheMemory;
+            }
 
-                    @Override
-                    public long maxMemoryUsage()
-                    {
-                        String custom = args.get( "max-memory", null );
-                        return custom != null ? parseMaxMemory( custom ) : DEFAULT.maxMemoryUsage();
-                    }
-                };
+            @Override
+            public long maxMemoryUsage()
+            {
+                String custom = args.get( "max-memory", null );
+                return custom != null ? parseMaxMemory( custom ) : super.maxMemoryUsage();
+            }
+        };
 
         float factorBadNodeData = args.getNumber( "factor-bad-node-data", 0 ).floatValue();
         float factorBadRelationshipData = args.getNumber( "factor-bad-relationship-data", 0 ).floatValue();

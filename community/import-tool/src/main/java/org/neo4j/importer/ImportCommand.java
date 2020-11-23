@@ -46,6 +46,7 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.helpers.NormalizedDatabaseName;
 import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.batchimport.input.IdType;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.kernel.impl.util.Converters;
 import org.neo4j.kernel.impl.util.Validators;
@@ -150,7 +151,8 @@ public class ImportCommand extends AbstractCommand
 
     @Option( names = "--high-io", arity = "0..1", showDefaultValue = ALWAYS, paramLabel = "<true/false>",
             description = "Ignore environment-based heuristics, and assume that the target storage subsystem can support parallel IO with high throughput." )
-    private boolean highIo = DEFAULT_IMPORTER_CONFIG.highIO();
+    // Intentionally made a Boolean such that if there's no explicit decision from config then the value will be based on information from the target device
+    private Boolean highIo;
 
     @Option( names = "--cache-on-heap", showDefaultValue = ALWAYS, arity = "0..1", paramLabel = "<true/false>",
             description = "(advanced) Whether or not to allow allocating memory for the cache on heap. If 'false' then caches will still be " +
@@ -214,7 +216,7 @@ public class ImportCommand extends AbstractCommand
             final var databaseConfig = loadNeo4jConfig();
             final var databaseLayout = Neo4jLayout.of( databaseConfig ).databaseLayout( database.name() );
             final var csvConfig = csvConfiguration();
-            final var importConfig = importConfiguration();
+            final var importConfig = importConfiguration( databaseLayout );
 
             final var importerBuilder = CsvImporter.builder()
                     .withDatabaseLayout( databaseLayout )
@@ -283,9 +285,9 @@ public class ImportCommand extends AbstractCommand
                 .build();
     }
 
-    private org.neo4j.internal.batchimport.Configuration importConfiguration()
+    private org.neo4j.internal.batchimport.Configuration importConfiguration( DatabaseLayout databaseLayout )
     {
-        return new org.neo4j.internal.batchimport.Configuration()
+        return new Configuration.Overridden( Configuration.defaultConfiguration( databaseLayout.databaseDirectory() ) )
         {
             @Override
             public int maxNumberOfProcessors()
@@ -302,7 +304,8 @@ public class ImportCommand extends AbstractCommand
             @Override
             public boolean highIO()
             {
-                return highIo;
+                // super.highIO will look at the device and make a decision
+                return highIo != null ? highIo : super.highIO();
             }
 
             @Override
