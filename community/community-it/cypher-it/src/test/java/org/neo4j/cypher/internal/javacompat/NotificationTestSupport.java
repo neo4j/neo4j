@@ -76,7 +76,7 @@ public class NotificationTestSupport
         {
             try ( Transaction transaction = db.beginTx() )
             {
-                try ( Result result = transaction.execute( version + query ) )
+                try ( Result result = transaction.execute( String.format("%s %s", version, query) ) )
                 {
                     assertThat( result.getNotifications(), matchesExpectation );
                 }
