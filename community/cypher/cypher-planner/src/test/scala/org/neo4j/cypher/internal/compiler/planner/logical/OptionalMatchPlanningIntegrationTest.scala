@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
+import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.unnestOptional
 import org.neo4j.cypher.internal.expressions.Ands
@@ -53,7 +54,7 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.kernel.impl.util.dbstructure.DbStructureLargeOptionalMatchStructure
 import org.scalatest.Inside
 
-class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 with Inside {
+class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 with LogicalPlanningIntegrationTestSupport with Inside {
 
   test("should build plans containing left outer joins") {
     (new given {
@@ -394,9 +395,26 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
       case Aggregation(Apply(_, rhs), _, _) =>
         rhs.leaves.foreach( leaf => leaf shouldBe an [Argument])
     }
-
   }
 
+  test("should prefer OptionalExpand over hasLabel with join") {
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(4792670 / 2)
+      .setLabelCardinality("Foo", 137)
+      .setLabelCardinality("Model", 0)
+      .setAllRelationshipsCardinality(4792670)
+      .setRelationshipCardinality("()-[]-(:Foo)", 30)
+      .build()
 
+    val plan = cfg.plan(
+      s"""
+         |MATCH (a)
+         |OPTIONAL MATCH (a)-[r]-(b:Foo)
+         |WHERE NOT b:Model
+         |  AND ANY (p IN b.latest WHERE p IN [1, 2])
+         |RETURN a""".stripMargin)
+
+    plan.stripProduceResults shouldBe an[OptionalExpand]
+  }
 
 }
