@@ -2,10 +2,6 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher.beLike
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
-import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
-import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.QueryGraphSolverSetup
-import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.QueryGraphSolverWithGreedyConnectComponents
-import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.QueryGraphSolverWithIDPConnectComponents
 import org.neo4j.cypher.internal.logical.plans.AntiConditionalApply
 import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.CartesianProduct
@@ -39,17 +35,12 @@ import org.neo4j.cypher.internal.logical.plans.Sort
 import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class OrderWithUpdatesIDPPlanningIntegrationTest extends OrderWithUpdatesPlanningIntegrationTestBase(QueryGraphSolverWithIDPConnectComponents)
-class OrderWithUpdatesGreedyPlanningIntegrationTest extends OrderWithUpdatesPlanningIntegrationTestBase(QueryGraphSolverWithGreedyConnectComponents)
+class OrderWithUpdatesIDPPlanningIntegrationTest extends OrderWithUpdatesPlanningIntegrationTestBase(true)
+class OrderWithUpdatesGreedyPlanningIntegrationTest extends OrderWithUpdatesPlanningIntegrationTestBase(false)
 
-class OrderWithUpdatesPlanningIntegrationTestBase(queryGraphSolverSetup: QueryGraphSolverSetup = QueryGraphSolverWithGreedyConnectComponents)
+class OrderWithUpdatesPlanningIntegrationTestBase(useIDPConnectComponents: Boolean)
   extends CypherFunSuite
-    with LogicalPlanningTestSupport2
     with LogicalPlanningIntegrationTestSupport {
-
-  locally {
-    queryGraphSolver = queryGraphSolverSetup.queryGraphSolver()
-  }
 
   test("SetProperty should eliminate provided order and cause planning Sort") {
     shouldEliminateProvidedSortOrder(
@@ -242,6 +233,7 @@ class OrderWithUpdatesPlanningIntegrationTestBase(queryGraphSolverSetup: QueryGr
       id = 1)
 
     val cfg = plannerBuilder()
+      .enableConnectComponentsPlanner(useIDPConnectComponents)
       .setAllNodesCardinality(100)
       .setLabelCardinality("N", 100)
       .setAllRelationshipsCardinality(100)

@@ -1235,6 +1235,7 @@ class OrderPlanningIntegrationTestBase(queryGraphSolverSetup: QueryGraphSolverSe
   private def wideningExpandConfig(): StatisticsBackedLogicalPlanningConfiguration = {
     val nodeCount = 10000
     plannerBuilder()
+      .enableConnectComponentsPlanner(queryGraphSolverSetup.useIdpConnectComponents)
       .setAllNodesCardinality(nodeCount)
       .setRelationshipCardinality("()-[]->()", nodeCount * nodeCount)
       .setRelationshipCardinality("()-[:R]->()", nodeCount * nodeCount)
@@ -1371,6 +1372,7 @@ class OrderPlanningIntegrationTestBase(queryGraphSolverSetup: QueryGraphSolverSe
 
     val nodeCount = 10000
     val plan = plannerBuilder()
+      .enableConnectComponentsPlanner(queryGraphSolverSetup.useIdpConnectComponents)
       .setAllNodesCardinality(nodeCount)
       .setRelationshipCardinality("()-[]->()", nodeCount / 10)
       .build()
@@ -1509,6 +1511,7 @@ class OrderPlanningIntegrationTestBase(queryGraphSolverSetup: QueryGraphSolverSe
 
     val nodeCount = 10000
     val plan = plannerBuilder()
+      .enableConnectComponentsPlanner(queryGraphSolverSetup.useIdpConnectComponents)
       .setAllNodesCardinality(nodeCount)
       .setRelationshipCardinality("()-[]->()", nodeCount / 10)
       .build()

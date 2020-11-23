@@ -78,12 +78,10 @@ import org.neo4j.cypher.internal.planner.spi.InstrumentedGraphStatistics
 import org.neo4j.cypher.internal.planner.spi.MutableGraphStatisticsSnapshot
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
-import org.neo4j.cypher.internal.rewriting.RewriterStepSequencer.newPlain
 import org.neo4j.cypher.internal.rewriting.rewriters.GeneratingNamer
 import org.neo4j.cypher.internal.rewriting.rewriters.InnerVariableNamer
 import org.neo4j.cypher.internal.rewriting.rewriters.Never
 import org.neo4j.cypher.internal.util.Cardinality
-import org.neo4j.cypher.internal.util.Cost
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.PropertyKeyId
@@ -122,8 +120,11 @@ object LogicalPlanningTestSupport2 extends MockitoSugar {
   sealed trait QueryGraphSolverSetup {
     def queryGraphSolver(): QueryGraphSolver
     def queryGraphSolver(solverConfig: SingleComponentIDPSolverConfig): QueryGraphSolver
+    def useIdpConnectComponents: Boolean
   }
   case object QueryGraphSolverWithIDPConnectComponents extends QueryGraphSolverSetup {
+    val useIdpConnectComponents: Boolean = true
+
     def queryGraphSolver(): QueryGraphSolver = queryGraphSolver(DefaultIDPSolverConfig)
 
     def queryGraphSolver(solverConfig: SingleComponentIDPSolverConfig): QueryGraphSolver = {
@@ -134,6 +135,8 @@ object LogicalPlanningTestSupport2 extends MockitoSugar {
     }
   }
   case object QueryGraphSolverWithGreedyConnectComponents extends QueryGraphSolverSetup {
+    val useIdpConnectComponents: Boolean = false
+
     def queryGraphSolver(): QueryGraphSolver = queryGraphSolver(DefaultIDPSolverConfig)
 
     def queryGraphSolver(solverConfig: SingleComponentIDPSolverConfig): QueryGraphSolver = {
