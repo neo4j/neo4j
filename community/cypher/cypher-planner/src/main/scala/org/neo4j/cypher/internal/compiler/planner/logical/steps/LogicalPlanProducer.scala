@@ -1298,7 +1298,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     if (AssertionRunner.ASSERTIONS_ENABLED) {
       (plan.lhs, plan.rhs, providedOrder.orderOrigin) match {
         case (Some(left), Some(right), Some(ProvidedOrder.Left)) if invalidatesProvidedOrderRecursive(right) =>
-          val msg = s"We assume the RHS does not contain operators that invalidate the provided order of the LHS\nLHS: $left\nRHS: $right"
+          val msg = s"LHS claims to provide an order, but RHS contains clauses that invalidates this order.\nProvided order: $providedOrder\nLHS: $left\nRHS: $right"
           throw new AssertionError(msg)
         case _ =>
       }
