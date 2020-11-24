@@ -179,7 +179,7 @@ public class IdGeneratorMigrator extends AbstractStoreMigrationParticipant
             renameMap.add( Pair.of( idFile, actualIdFile ) );
             boolean readOnly = config.get( GraphDatabaseSettings.read_only );
             int numberOfReservedLowIds = store.getNumberOfReservedLowIds();
-            try ( PageCursor cursor = store.openPageCursorForReading( store.getNumberOfReservedLowIds(), cursorTracer );
+            try ( PageCursor cursor = store.openPageCursorForReadingWithPrefetching( store.getNumberOfReservedLowIds(), cursorTracer );
                     // about maxId: let's not concern ourselves with maxId here; if it's in the store it can be in the id generator
                   IdGenerator idGenerator = rebuiltIdGenerators.create( pageCache, idFile, storeType.getIdType(), highId, true, Long.MAX_VALUE,
                             readOnly, cursorTracer, immutable.empty() ) )
