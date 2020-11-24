@@ -52,6 +52,7 @@ public abstract class ProcessorStep<T> extends AbstractStep<T>
     // Time stamp for when we processed the last queued batch received from upstream.
     // Useful for tracking how much time we spend waiting for batches from upstream.
     private final AtomicLong lastBatchEndTime = new AtomicLong();
+    private String cursorTracerName;
 
     protected ProcessorStep( StageControl control, String name, Configuration config, int maxProcessors, PageCacheTracer pageCacheTracer,
             StatsProvider... additionalStatsProviders )
@@ -59,6 +60,7 @@ public abstract class ProcessorStep<T> extends AbstractStep<T>
         super( control, name, config, additionalStatsProviders );
         this.maxProcessors = maxProcessors;
         this.pageCacheTracer = pageCacheTracer;
+        updateCursorTracerName();
     }
 
     @Override
@@ -78,7 +80,7 @@ public abstract class ProcessorStep<T> extends AbstractStep<T>
         {
             assertHealthy();
             sender.initialize( ticket );
-            try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( IMPORT_STEP_TAG_PREFIX + name() ) )
+            try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( cursorTracerName ) )
             {
                 long startTime = nanoTime();
                 process( batch, sender, cursorTracer );
@@ -207,6 +209,18 @@ public abstract class ProcessorStep<T> extends AbstractStep<T>
 
     protected void lastCallForEmittingOutstandingBatches( BatchSender sender )
     {   // Nothing to emit, subclasses might have though
+    }
+
+    @Override
+    protected void changeName( String name )
+    {
+        super.changeName( name );
+        updateCursorTracerName();
+    }
+
+    private void updateCursorTracerName()
+    {
+        this.cursorTracerName = IMPORT_STEP_TAG_PREFIX + name();
     }
 
     @VisibleForTesting
