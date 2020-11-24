@@ -662,4 +662,8 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
     @Internal
     public static Setting<Duration> index_population_await_timeout =
             newBuilder( "unsupported.dbms.index.population_await_timeout", DURATION, ofMinutes( 30 ) ).build();
+
+    @Internal
+    public static Setting<Duration> config_command_evaluation_timeout =
+            newBuilder( "unsupported.dbms.config.command_evaluation_timeout", DURATION, ofSeconds( 30 ) ).build();
 }

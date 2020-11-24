@@ -42,6 +42,7 @@ import java.nio.file.attribute.PosixFileAttributeView;
 import java.nio.file.attribute.PosixFileAttributes;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.UserPrincipal;
+import java.time.Duration;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -64,12 +65,12 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.logging.Log;
 import org.neo4j.service.Services;
-import org.neo4j.util.FeatureToggles;
 import org.neo4j.util.Preconditions;
 
 import static java.lang.String.format;
 import static java.lang.System.lineSeparator;
 import static java.util.Objects.requireNonNull;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.config_command_evaluation_timeout;
 import static org.neo4j.configuration.GraphDatabaseSettings.strict_config_validation;
 
 @IgnoreApiCheck
@@ -299,7 +300,7 @@ public class Config implements Configuration
             String processOwner = SystemUtils.getUserName();
             if ( SystemUtils.IS_OS_UNIX )
             {
-                String processGroup = executeCommand( "id -gn", DEFAULT_COMMAND_EVALUATION_TIMEOUT );
+                String processGroup = executeCommand( "id -gn", config_command_evaluation_timeout.defaultValue() );
 
                 for ( Path path : files )
                 {
@@ -509,9 +510,7 @@ public class Config implements Configuration
     private Log log;
     private final boolean expandCommands;
     private final Configuration validationConfig = new ValidationConfig();
-
-    static final int DEFAULT_COMMAND_EVALUATION_TIMEOUT = 30;
-    private final int commandEvaluationTimeout = FeatureToggles.getInteger( Config.class, "CommandEvaluationTimeout", DEFAULT_COMMAND_EVALUATION_TIMEOUT );
+    private Duration commandEvaluationTimeout = config_command_evaluation_timeout.defaultValue();
 
     protected Config()
     {
@@ -574,6 +573,13 @@ public class Config implements Configuration
             evaluateSetting( strict_config_validation, settingValueStrings, settingValueObjects,
                     fromConfig, overriddenDefaultStrings, overriddenDefaultObjects );
             strict = get( strict_config_validation );
+        }
+
+        if ( keys.remove( config_command_evaluation_timeout.name() ) )
+        {
+            evaluateSetting( config_command_evaluation_timeout, settingValueStrings, settingValueObjects,
+                    fromConfig, overriddenDefaultStrings, overriddenDefaultObjects );
+            commandEvaluationTimeout = get( config_command_evaluation_timeout );
         }
 
         newSettings.addAll( getActiveSettings( keys, definedGroups, definedSettings, strict ) );
@@ -800,7 +806,7 @@ public class Config implements Configuration
         return str.length() > 3 && str.charAt( 0 ) == '$' && str.charAt( 1 ) == '(' && str.charAt( str.length() - 1 ) == ')';
     }
 
-    private static String executeCommand( String command, int timeout )
+    private static String executeCommand( String command, Duration timeout )
     {
         Process process = null;
         try
@@ -818,7 +824,7 @@ public class Config implements Configuration
             process = new ProcessBuilder( commands ).start();
             BufferedReader out = new BufferedReader( new InputStreamReader( process.getInputStream() ) );
             BufferedReader err = new BufferedReader( new InputStreamReader( process.getErrorStream() ) );
-            if ( !process.waitFor( timeout, TimeUnit.SECONDS ) )
+            if ( !process.waitFor( timeout.toMillis(), TimeUnit.MILLISECONDS ) )
             {
                 throw new IllegalArgumentException( format( "Timed out executing command `%s`", command ) );
             }

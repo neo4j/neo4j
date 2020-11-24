@@ -35,6 +35,7 @@ import java.nio.file.attribute.AclEntryType;
 import java.nio.file.attribute.AclFileAttributeView;
 import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.PosixFilePermissions;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -56,14 +57,8 @@ import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.util.FeatureToggles;
 
-import static java.nio.file.attribute.PosixFilePermission.GROUP_READ;
-import static java.nio.file.attribute.PosixFilePermission.GROUP_WRITE;
-import static java.nio.file.attribute.PosixFilePermission.OTHERS_READ;
-import static java.nio.file.attribute.PosixFilePermission.OTHERS_WRITE;
-import static java.nio.file.attribute.PosixFilePermission.OWNER_EXECUTE;
 import static java.nio.file.attribute.PosixFilePermission.OWNER_READ;
 import static java.nio.file.attribute.PosixFilePermission.OWNER_WRITE;
-import static org.apache.commons.lang3.SystemUtils.IS_OS_MAC;
 import static org.apache.commons.lang3.SystemUtils.IS_OS_WINDOWS;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -962,24 +957,18 @@ class ConfigTest
     void shouldTimeoutOnSlowCommands()
     {
         assumeUnixOrWindows();
-        try
-        {
-            String command = IS_OS_WINDOWS ? "ping -n 3 localhost" : "sleep 3";
-            //This should be the only test modifying this value, so no issue of modifying feature flag
-            FeatureToggles.set( Config.class, "CommandEvaluationTimeout", 1 );
-            //Given
-            Config.Builder builder = Config.newBuilder()
-                    .allowCommandExpansion()
-                    .addSettingsClass( TestSettings.class )
-                    .setRaw( Map.of( TestSettings.intSetting.name(), String.format( "$(%s)", command ) ) );
-            //Then
-            String msg = assertThrows( IllegalArgumentException.class, builder::build ).getMessage();
-            assertThat( msg ).contains( "Timed out executing command" );
-        }
-        finally
-        {
-            FeatureToggles.set( Config.class, "CommandEvaluationTimeout", Config.DEFAULT_COMMAND_EVALUATION_TIMEOUT );
-        }
+        String command = IS_OS_WINDOWS ? "ping -n 3 localhost" : "sleep 3";
+        //This should be the only test modifying this value, so no issue of modifying feature flag
+        FeatureToggles.set( Config.class, "CommandEvaluationTimeout", 1 );
+        //Given
+        Config.Builder builder = Config.newBuilder()
+                .set( GraphDatabaseInternalSettings.config_command_evaluation_timeout, Duration.ofSeconds( 1 ) )
+                .allowCommandExpansion()
+                .addSettingsClass( TestSettings.class )
+                .setRaw( Map.of( TestSettings.intSetting.name(), String.format( "$(%s)", command ) ) );
+        //Then
+        String msg = assertThrows( IllegalArgumentException.class, builder::build ).getMessage();
+        assertThat( msg ).contains( "Timed out executing command" );
     }
 
     @Test
