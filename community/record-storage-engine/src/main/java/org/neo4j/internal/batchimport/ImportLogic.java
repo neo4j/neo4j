@@ -516,7 +516,8 @@ public class ImportLogic implements Closeable
                 public void initialize( CountsAccessor.Updater updater, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
                 {
                     MigrationProgressMonitor progressMonitor = MigrationProgressMonitor.SILENT;
-                    nodeLabelsCache = new NodeLabelsCache( numberArrayFactory, neoStore.getLabelRepository().getHighId(), memoryTracker );
+                    nodeLabelsCache = new NodeLabelsCache( numberArrayFactory, neoStore.getNodeStore().getHighId(), neoStore.getLabelRepository().getHighId(),
+                            memoryTracker );
                     MemoryUsageStatsProvider memoryUsageStats = new MemoryUsageStatsProvider( neoStore, nodeLabelsCache );
                     executeStage( new NodeCountsAndLabelIndexBuildStage( config, nodeLabelsCache, neoStore.getNodeStore(),
                             neoStore.getLabelRepository().getHighId(),
