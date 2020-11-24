@@ -33,6 +33,7 @@ import org.neo4j.internal.batchimport.stats.StatsProvider;
 import org.neo4j.internal.batchimport.store.PrepareIdSequence;
 import org.neo4j.internal.id.IdSequence;
 import org.neo4j.internal.id.IdValidator;
+import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.RecordStore;
@@ -66,15 +67,18 @@ public class UpdateRecordsStep<RECORD extends AbstractBaseRecord>
     {
         LongFunction<IdSequence> idSequence = prepareIdSequence.apply( store );
         int recordsUpdatedInThisBatch = 0;
-        for ( RECORD record : batch )
+        try ( PageCursor cursor = store.openPageCursorForWriting( 0, cursorTracer ) )
         {
-            if ( record != null && record.inUse() && !IdValidator.isReservedId( record.getId() ) )
+            for ( RECORD record : batch )
             {
-                store.prepareForCommit( record, idSequence.apply( record.getId() ), cursorTracer );
-                // Don't update id generators because at the time of writing this they require special handling for multi-threaded updates
-                // instead just note the highId. It will be mostly correct in the end.
-                store.updateRecord( record, IGNORE, cursorTracer );
-                recordsUpdatedInThisBatch++;
+                if ( record != null && record.inUse() && !IdValidator.isReservedId( record.getId() ) )
+                {
+                    store.prepareForCommit( record, idSequence.apply( record.getId() ), cursorTracer );
+                    // Don't update id generators because at the time of writing this they require special handling for multi-threaded updates
+                    // instead just note the highId. It will be mostly correct in the end.
+                    store.updateRecord( record, IGNORE, cursor, cursorTracer );
+                    recordsUpdatedInThisBatch++;
+                }
             }
         }
         recordsUpdated.add( recordsUpdatedInThisBatch );

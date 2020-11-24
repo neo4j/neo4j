@@ -31,6 +31,7 @@ import org.neo4j.internal.batchimport.store.BatchingNeoStores;
 import org.neo4j.internal.batchimport.store.BatchingTokenRepository;
 import org.neo4j.internal.batchimport.store.PrepareIdSequence;
 import org.neo4j.internal.id.IdSequence;
+import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
@@ -56,6 +57,7 @@ public class RelationshipImporter extends EntityImporter
     private final boolean validateRelationshipData;
     private final boolean doubleRecordUnits;
     private final LongFunction<IdSequence> prepareIdSequence;
+    private final PageCursor relationshipUpdateCursor;
 
     private long relationshipCount;
 
@@ -81,6 +83,7 @@ public class RelationshipImporter extends EntityImporter
         this.relationshipIds = new BatchingIdGetter( relationshipStore );
         this.typeCounts = typeDistribution.newClient();
         this.prepareIdSequence = PrepareIdSequence.of( doubleRecordUnits ).apply( stores.getRelationshipStore() );
+        this.relationshipUpdateCursor = relationshipStore.openPageCursorForWriting( 0, cursorTracer );
         relationshipRecord.setInUse( true );
     }
 
@@ -174,7 +177,7 @@ public class RelationshipImporter extends EntityImporter
             relationshipRecord.setSecondPrevRel( Record.NO_NEXT_RELATIONSHIP.intValue() );
 
             relationshipStore.prepareForCommit( relationshipRecord, prepareIdSequence.apply( relationshipRecord.getId() ), cursorTracer );
-            relationshipStore.updateRecord( relationshipRecord, IGNORE, cursorTracer );
+            relationshipStore.updateRecord( relationshipRecord, IGNORE, relationshipUpdateCursor, cursorTracer );
             relationshipCount++;
             typeCounts.increment( relationshipRecord.getType() );
         }
@@ -231,6 +234,7 @@ public class RelationshipImporter extends EntityImporter
         super.close();
         typeCounts.close();
         monitor.relationshipsImported( relationshipCount );
+        relationshipUpdateCursor.close();
         cursorTracer.close();
     }
 

@@ -121,9 +121,9 @@ class RelationshipGroupDefragmenterTest
         var pageCacheTracer = new DefaultPageCacheTracer();
         defrag( nodeCount, groupStore, pageCacheTracer );
 
-        assertThat( pageCacheTracer.pins() ).isEqualTo( 65 );
-        assertThat( pageCacheTracer.unpins() ).isEqualTo( 65 );
-        assertThat( pageCacheTracer.hits() ).isEqualTo( 65 );
+        assertThat( pageCacheTracer.pins() ).isEqualTo( 8 );
+        assertThat( pageCacheTracer.unpins() ).isEqualTo( 8 );
+        assertThat( pageCacheTracer.hits() ).isEqualTo( 8 );
     }
 
     @ParameterizedTest

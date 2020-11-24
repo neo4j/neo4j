@@ -27,6 +27,7 @@ import org.neo4j.internal.batchimport.input.Group;
 import org.neo4j.internal.batchimport.input.InputChunk;
 import org.neo4j.internal.batchimport.store.BatchingNeoStores;
 import org.neo4j.internal.batchimport.store.BatchingTokenRepository;
+import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.InlineNodeLabels;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -56,6 +57,8 @@ public class NodeImporter extends EntityImporter
     private final PropertyStore idPropertyStore;
     private final PropertyRecord idPropertyRecord;
     private final PropertyBlock idPropertyBlock = new PropertyBlock();
+    private final PageCursor nodeUpdateCursor;
+    private final PageCursor idPropertyUpdateCursor;
     private String[] labels = new String[10];
     private int labelsCursor;
 
@@ -73,6 +76,8 @@ public class NodeImporter extends EntityImporter
         this.nodeIds = new BatchingIdGetter( nodeStore );
         this.idPropertyStore = stores.getTemporaryPropertyStore();
         this.idPropertyRecord = idPropertyStore.newRecord();
+        this.nodeUpdateCursor = nodeStore.openPageCursorForWriting( 0, cursorTracer );
+        this.idPropertyUpdateCursor = idPropertyStore.openPageCursorForWriting( 0, cursorTracer );
         nodeRecord.setInUse( true );
     }
 
@@ -98,7 +103,7 @@ public class NodeImporter extends EntityImporter
             idPropertyRecord.addPropertyBlock( idPropertyBlock );
             idPropertyRecord.setId( nodeId ); // yes nodeId
             idPropertyRecord.setInUse( true );
-            idPropertyStore.updateRecord( idPropertyRecord, IGNORE, cursorTracer );
+            idPropertyStore.updateRecord( idPropertyRecord, IGNORE, idPropertyUpdateCursor, cursorTracer );
             idPropertyRecord.clear();
         }
         return true;
@@ -146,7 +151,7 @@ public class NodeImporter extends EntityImporter
         // Write data to stores
         nodeRecord.setNextProp( createAndWritePropertyChain( cursorTracer ) );
         nodeRecord.setInUse( true );
-        nodeStore.updateRecord( nodeRecord, IGNORE, cursorTracer );
+        nodeStore.updateRecord( nodeRecord, IGNORE, nodeUpdateCursor, cursorTracer );
         nodeCount++;
         nodeRecord.clear();
         nodeRecord.setId( NULL_REFERENCE.longValue() );
@@ -166,6 +171,8 @@ public class NodeImporter extends EntityImporter
         super.close();
         monitor.nodesImported( nodeCount );
         nodeStore.setHighestPossibleIdInUse( highestId ); // for the case of #id(long)
+        nodeUpdateCursor.close();
+        idPropertyUpdateCursor.close();
         cursorTracer.close();
     }
 

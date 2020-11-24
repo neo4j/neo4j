@@ -26,6 +26,7 @@ import org.neo4j.internal.batchimport.input.InputEntityVisitor;
 import org.neo4j.internal.batchimport.store.BatchingNeoStores;
 import org.neo4j.internal.batchimport.store.BatchingTokenRepository;
 import org.neo4j.internal.id.IdGenerator.Marker;
+import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
@@ -52,6 +53,7 @@ abstract class EntityImporter extends InputEntityVisitor.Adapter
     private final BatchingTokenRepository.BatchingPropertyKeyTokenRepository propertyKeyTokenRepository;
     private final PropertyStore propertyStore;
     private final PropertyRecord propertyRecord;
+    private final PageCursor propertyUpdateCursor;
     private PropertyBlock[] propertyBlocks = new PropertyBlock[100];
     private int propertyBlocksCursor;
     private final BatchingIdGetter propertyIds;
@@ -84,6 +86,7 @@ abstract class EntityImporter extends InputEntityVisitor.Adapter
         this.dynamicStringRecordAllocator = new StandardDynamicRecordAllocator( stringPropertyIds, propertyStore.getStringStore().getRecordDataSize() );
         this.arrayPropertyIds = new BatchingIdGetter( propertyStore.getArrayStore(), propertyStore.getArrayStore().getRecordsPerPage() );
         this.dynamicArrayRecordAllocator = new StandardDynamicRecordAllocator( arrayPropertyIds, propertyStore.getStringStore().getRecordDataSize() );
+        this.propertyUpdateCursor = propertyStore.openPageCursorForWriting( 0, cursorTracer );
     }
 
     @Override
@@ -163,7 +166,7 @@ abstract class EntityImporter extends InputEntityVisitor.Adapter
                 long nextPropertyId = propertyIds.nextId( cursorTracer );
                 long prevId = currentRecord.getId();
                 currentRecord.setNextProp( nextPropertyId );
-                propertyStore.updateRecord( currentRecord, IGNORE, cursorTracer );
+                propertyStore.updateRecord( currentRecord, IGNORE, propertyUpdateCursor, cursorTracer );
                 currentRecord = propertyRecord( nextPropertyId );
                 currentRecord.setPrevProp( prevId );
             }
@@ -174,7 +177,7 @@ abstract class EntityImporter extends InputEntityVisitor.Adapter
 
         if ( currentRecord.size() > 0 )
         {
-            propertyStore.updateRecord( currentRecord, IGNORE, cursorTracer );
+            propertyStore.updateRecord( currentRecord, IGNORE, propertyUpdateCursor, cursorTracer );
         }
 
         return firstRecordId;
@@ -196,6 +199,7 @@ abstract class EntityImporter extends InputEntityVisitor.Adapter
     public void close()
     {
         monitor.propertiesImported( propertyCount );
+        propertyUpdateCursor.close();
     }
 
     void freeUnusedIds()

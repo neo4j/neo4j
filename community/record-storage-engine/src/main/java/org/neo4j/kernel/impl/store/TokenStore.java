@@ -33,6 +33,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -139,9 +140,9 @@ public abstract class TokenStore<RECORD extends TokenRecord>
     }
 
     @Override
-    public void updateRecord( RECORD record, IdUpdateListener idUpdateListener, PageCursorTracer cursorTracer )
+    public void updateRecord( RECORD record, IdUpdateListener idUpdateListener, PageCursor cursor, PageCursorTracer cursorTracer )
     {
-        super.updateRecord( record, idUpdateListener, cursorTracer );
+        super.updateRecord( record, idUpdateListener, cursor, cursorTracer );
         if ( !record.isLight() )
         {
             for ( DynamicRecord keyRecord : record.getNameRecords() )

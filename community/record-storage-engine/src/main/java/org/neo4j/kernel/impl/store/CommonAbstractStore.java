@@ -442,6 +442,20 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         }
     }
 
+    @Override
+    public PageCursor openPageCursorForWriting( long id, PageCursorTracer cursorTracer )
+    {
+        try
+        {
+            long pageId = pageIdForRecord( id );
+            return pagedFile.io( pageId, PF_SHARED_WRITE_LOCK, cursorTracer );
+        }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException( e );
+        }
+    }
+
     private void checkIdScanCursorBounds( PageCursor cursor )
     {
         if ( cursor.checkAndClearBoundsFlag() )
@@ -936,16 +950,16 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     }
 
     @Override
-    public void updateRecord( RECORD record, IdUpdateListener idUpdateListener, PageCursorTracer cursorTracer )
+    public void updateRecord( RECORD record, IdUpdateListener idUpdateListener, PageCursor cursor, PageCursorTracer cursorTracer )
     {
         long id = record.getId();
         IdValidator.assertValidId( getIdType(), id, recordFormat.getMaxId() );
 
         long pageId = pageIdForRecord( id );
         int offset = offsetForId( id );
-        try ( PageCursor cursor = pagedFile.io( pageId, PF_SHARED_WRITE_LOCK, cursorTracer ) )
+        try
         {
-            if ( cursor.next() )
+            if ( cursor.next( pageId ) )
             {
                 cursor.setOffset( offset );
                 recordFormat.write( record, cursor, recordSize, recordsPerPage );

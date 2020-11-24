@@ -197,10 +197,10 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
     }
 
     @Override
-    public void updateRecord( PropertyRecord record, IdUpdateListener idUpdateListener, PageCursorTracer cursorTracer )
+    public void updateRecord( PropertyRecord record, IdUpdateListener idUpdateListener, PageCursor cursor, PageCursorTracer cursorTracer )
     {
         updatePropertyBlocks( record, idUpdateListener, cursorTracer );
-        super.updateRecord( record, idUpdateListener, cursorTracer );
+        super.updateRecord( record, idUpdateListener, cursor, cursorTracer );
     }
 
     private void updatePropertyBlocks( PropertyRecord record, IdUpdateListener idUpdateListener, PageCursorTracer cursorTracer )

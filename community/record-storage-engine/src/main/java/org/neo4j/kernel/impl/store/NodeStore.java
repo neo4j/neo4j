@@ -30,6 +30,7 @@ import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -108,9 +109,9 @@ public class NodeStore extends CommonAbstractStore<NodeRecord,NoStoreHeader>
     }
 
     @Override
-    public void updateRecord( NodeRecord record, IdUpdateListener idUpdateListener, PageCursorTracer cursorTracer )
+    public void updateRecord( NodeRecord record, IdUpdateListener idUpdateListener, PageCursor cursor, PageCursorTracer cursorTracer )
     {
-        super.updateRecord( record, idUpdateListener, cursorTracer );
+        super.updateRecord( record, idUpdateListener, cursor, cursorTracer );
         updateDynamicLabelRecords( record.getDynamicLabelRecords(), idUpdateListener, cursorTracer );
     }
 

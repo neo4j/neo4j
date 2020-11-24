@@ -129,6 +129,17 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
     PageCursor openPageCursorForReadingWithPrefetching( long id, PageCursorTracer cursorTracer );
 
     /**
+     * Opens a {@link PageCursor} on this store, capable of writing records using
+     * {@link #updateRecord(AbstractBaseRecord, IdUpdateListener, PageCursor, PageCursorTracer)}.
+     * The caller is responsible for closing it when done with it.
+     *
+     * @param id cursor will initially be placed at the page containing this record id.
+     * @param cursorTracer underlying page cursor tracer.
+     * @return PageCursor for writing records.
+     */
+    PageCursor openPageCursorForWriting( long id, PageCursorTracer cursorTracer );
+
+    /**
      * Reads a record from the store into {@code target}, see
      * {@link RecordStore#getRecord(long, AbstractBaseRecord, RecordLoad, PageCursorTracer)}.
      * <p>
@@ -216,7 +227,15 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
      * specified by the record.
      * @param cursorTracer underlying page cursor tracer.
      */
-    void updateRecord( RECORD record, IdUpdateListener idUpdates, PageCursorTracer cursorTracer );
+    default void updateRecord( RECORD record, IdUpdateListener idUpdates, PageCursorTracer cursorTracer )
+    {
+        try ( PageCursor cursor = openPageCursorForWriting( 0, cursorTracer ) )
+        {
+            updateRecord( record, idUpdates, cursor, cursorTracer );
+        }
+    }
+
+    void updateRecord( RECORD record, IdUpdateListener idUpdates, PageCursor cursor, PageCursorTracer cursorTracer );
 
     default void updateRecord( RECORD record , PageCursorTracer cursorTracer )
     {
@@ -337,6 +356,12 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
         }
 
         @Override
+        public PageCursor openPageCursorForWriting( long id, PageCursorTracer cursorTracer )
+        {
+            return actual.openPageCursorForWriting( id, cursorTracer );
+        }
+
+        @Override
         public void getRecordByCursor( long id, R target, RecordLoad mode, PageCursor cursor ) throws InvalidRecordException
         {
             actual.getRecordByCursor( id, target, mode, cursor );
@@ -396,9 +421,9 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
         }
 
         @Override
-        public void updateRecord( R record, IdUpdateListener idUpdateListener, PageCursorTracer cursorTracer )
+        public void updateRecord( R record, IdUpdateListener idUpdateListener, PageCursor cursor, PageCursorTracer cursorTracer )
         {
-            actual.updateRecord( record, idUpdateListener, cursorTracer );
+            actual.updateRecord( record, idUpdateListener, cursor, cursorTracer );
         }
 
         @Override

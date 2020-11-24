@@ -88,9 +88,9 @@ class UpdateRecordsStepTest
         step.process( batch, mock( BatchSender.class ), NULL );
 
         verify( store ).prepareForCommit( eq( node1 ), any( IdSequence.class ), any( PageCursorTracer.class ) );
-        verify( store ).updateRecord( eq( node1 ), any(), any() );
+        verify( store ).updateRecord( eq( node1 ), any(), any(), any() );
         verify( store ).prepareForCommit( eq( node2 ), any( IdSequence.class ), any( PageCursorTracer.class ) );
-        verify( store ).updateRecord( eq( node2 ), any(), any() );
+        verify( store ).updateRecord( eq( node2 ), any(), any(), any() );
         verify( store, never() ).prepareForCommit( eq( nodeWithReservedId ), any( IdSequence.class ), any( PageCursorTracer.class ) );
         verify( store, never() ).updateRecord( eq( nodeWithReservedId ), any() );
     }
