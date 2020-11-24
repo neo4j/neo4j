@@ -45,8 +45,10 @@ object OptionReader {
     keyValues: Set[(String, String)],
   ) {
     /** Grab all values from keyValues mapped for the given key. Return the values and the remaining input */
-    def extract(key: String): Result[Set[String]] =
-      Result(copy(keyValues = keyValues.filterNot(_._1 == key)), keyValues.filter(_._1 == key).map(_._2))
+    def extract(key: String): Result[Set[String]] = {
+      val (hits, misses) = keyValues.partition(_._1 == key)
+      Result(copy(keyValues = misses), hits.map(_._2))
+    }
   }
 
   object Input {
