@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.options
 
-import language.experimental.macros
 import magnolia.CaseClass
 import magnolia.Magnolia
-import magnolia.SealedTrait
+
+import scala.language.experimental.macros
 
 
 /**
@@ -51,13 +51,6 @@ object OptionCacheKey {
                            .map(param => param.typeclass.cacheKey(param.dereference(value)))
                            .filterNot(_.isBlank)
                            .mkString(" ")
-
-  /**
-   * Generic OptionCacheKey for any sealed trait (given that there are OptionCacheKey:s for all its subtypes)
-   * that delegates to the OptionCacheKey for the subtype
-   */
-  def dispatch[T](sealedTrait: SealedTrait[OptionCacheKey, T]): OptionCacheKey[T] =
-    (value: T) => sealedTrait.dispatch(value)(sub => sub.typeclass.cacheKey(sub.cast(value)))
 
   def derive[T]: OptionCacheKey[T] = macro Magnolia.gen[T]
 }

@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.options
 
-import language.experimental.macros
 import magnolia.CaseClass
 import magnolia.Magnolia
-import magnolia.SealedTrait
+
+import scala.language.experimental.macros
 
 
 /**
@@ -49,18 +49,6 @@ object OptionDefault {
    */
   def combine[T](caseClass: CaseClass[OptionDefault, T]): OptionDefault[T] = {
     val value = caseClass.construct(_.typeclass.default)
-    OptionDefault.create(value)
-  }
-
-  /**
-   * Generic OptionDefault for any case class (given that there are OptionDefault:s for all its parameter types)
-   * that picks the first subtype and returns the default value of that
-   */
-  def dispatch[T](sealedTrait: SealedTrait[OptionDefault, T]): OptionDefault[T] = {
-    val value = sealedTrait.subtypes.headOption match {
-      case Some(sub) => sub.typeclass.default
-      case None      => throw new RuntimeException("Can't create a default value for a trait with no subtypes")
-    }
     OptionDefault.create(value)
   }
 

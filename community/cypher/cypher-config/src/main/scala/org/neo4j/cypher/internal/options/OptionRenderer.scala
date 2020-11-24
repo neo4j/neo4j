@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.options
 
-import language.experimental.macros
 import magnolia.CaseClass
 import magnolia.Magnolia
-import magnolia.SealedTrait
+
+import scala.language.experimental.macros
 
 
 /**
@@ -51,13 +51,6 @@ object OptionRenderer {
                            .map(p => p.typeclass.render(p.dereference(value)))
                            .filterNot(_.isBlank)
                            .mkString(" ")
-
-  /**
-   * Generic OptionRenderer for any sealed trait (given that there are OptionRenderer:s for all its subtypes)
-   * that delegates to the OptionRenderer for the subtype
-   */
-  def dispatch[T](sealedTrait: SealedTrait[OptionRenderer, T]): OptionRenderer[T] =
-    (value: T) => sealedTrait.dispatch(value)(sub => sub.typeclass.render(sub.cast(value)))
 
   def derive[T]: OptionRenderer[T] = macro Magnolia.gen[T]
 }
