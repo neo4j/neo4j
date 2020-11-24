@@ -22,12 +22,14 @@ package org.neo4j.cypher.internal.compiler.planner.logical.steps
 import org.neo4j.cypher.internal.ast.ASTAnnotationMap
 import org.neo4j.cypher.internal.ast.semantics.ExpressionTypeInfo
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.planner.logical.PlanMatchHelp
 import org.neo4j.cypher.internal.expressions.CachedProperty
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.LogicalProperty
 import org.neo4j.cypher.internal.expressions.NODE_TYPE
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
@@ -472,6 +474,34 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
     )
     val initialType = initialTable.types(nProp1)
     newTable.types(cachedNProp1) should be(initialType)
+  }
+
+  test("handle cached property with missing input position") {
+    // MATCH (n:A) WITH n AS n2, count(n) AS count MATCH (n2), (m:B) WITH n2 AS n3 MATCH (n3) RETURN n3.prop
+    val n2InputPosition = InputPosition(10, 2, 3)
+    val plan = new LogicalPlanBuilder()
+      .produceResults("`n3.prop`").withCardinality(200)
+      .projection("n3.prop as `n3.prop`").withCardinality(200)
+      .projection("n2 AS n3").withCardinality(200).newVar("n3", CTNode)
+      .apply().withCardinality(200)
+      .|.nodeByLabelScan("m", "B").withCardinality(200)
+      // Note, push down properties don't keep track of input position in all cases and can produce output like the following
+      .cacheProperties(Set[LogicalProperty](Property(Variable("n2")(InputPosition.NONE), PropertyKeyName("prop")(InputPosition.NONE))(InputPosition.NONE)))
+      .aggregation(Seq("n as n2"), Seq("count(n) AS count")).withCardinality(3).newVar("n2", n2InputPosition, CTNode)
+      .nodeByLabelScan("n", "A").withCardinality(10)
+
+    val (resultPlan, resultSemanticTable) = replace(plan.build(), plan.getSemanticTable)
+    resultPlan shouldBe
+      new LogicalPlanBuilder()
+        .produceResults("`n3.prop`")
+        .projection(Map("n3.prop" -> CachedProperty("n", Variable("n3")(n2InputPosition), PropertyKeyName("prop")(InputPosition.NONE), NODE_TYPE)(InputPosition.NONE)))
+        .projection("n2 AS n3")
+        .apply()
+        .|.nodeByLabelScan("m", "B")
+        .cacheProperties(Set[LogicalProperty](CachedProperty("n", Variable("n2")(n2InputPosition), PropertyKeyName("prop")(InputPosition.NONE), NODE_TYPE)(InputPosition.NONE)))
+        .aggregation(Seq("n as n2"), Seq("count(n) AS count"))
+        .nodeByLabelScan("n", "A")
+        .build()
   }
 
   private def replace(plan: LogicalPlan, initialTable: SemanticTable): (LogicalPlan, SemanticTable) = {

@@ -490,8 +490,11 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   }
 
   def projection(projectionStrings: String*): IMPL = {
-    val projections = Parser.parseProjections(projectionStrings: _*)
-    appendAtCurrentIndent(UnaryOperator(lp => Projection(lp, projections)(_)))
+    projection(Parser.parseProjections(projectionStrings: _*))
+  }
+
+  def projection(projectExpressions: Map[String, Expression]): IMPL = {
+    appendAtCurrentIndent(UnaryOperator(lp => Projection(lp, projectExpressions)(_)))
     self
   }
 
@@ -738,8 +741,11 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     appendAtCurrentIndent(UnaryOperator(lp => NonFuseable(lp)(_)))
 
   def cacheProperties(properties: String*): IMPL = {
-    appendAtCurrentIndent(UnaryOperator(source => CacheProperties(source,
-      properties.map(Parser.parseExpression(_).asInstanceOf[LogicalProperty]).toSet)(_)))
+    cacheProperties(properties.map(Parser.parseExpression(_).asInstanceOf[LogicalProperty]).toSet)
+  }
+
+  def cacheProperties(properties: Set[LogicalProperty]): IMPL = {
+    appendAtCurrentIndent(UnaryOperator(source => CacheProperties(source, properties)(_)))
   }
 
   def setProperty(entity: String, propertyKey: String, value: String): IMPL = {

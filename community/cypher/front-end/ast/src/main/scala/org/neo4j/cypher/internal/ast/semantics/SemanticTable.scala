@@ -67,6 +67,22 @@ class SemanticTable(
   def getActualTypeFor(expr: Expression): TypeSpec =
     types.getOrElse(expr, throw new IllegalStateException(s"Did not find any type information for expression $expr")).actual
 
+  /**
+   * Returns the actual type of the specified variable name if it exists and has no conflicting type information, else none.
+   */
+  def getOptionalActualTypeFor(variableName: String): Option[TypeSpec] = {
+    val matchedTypes = types.collect {
+      case (Variable(name), typ) if name == variableName => typ.actual
+    }
+
+    if (matchedTypes.nonEmpty) {
+      Some(matchedTypes.reduce(_ intersect _))
+        .filterNot(_.isEmpty) // Ignores cases when semantic table contains conflicting type information
+    } else {
+      None
+    }
+  }
+
   def containsNode(expr: String): Boolean = types.exists {
     case (v@Variable(name), _) => name == expr && isNode(v) // NOTE: Profiling showed that checking node type last is better
     case _ => false
@@ -82,7 +98,17 @@ class SemanticTable(
 
   def isNode(expr: String): Boolean = getTypeFor(expr) == CTNode.invariant
 
+  /**
+   * Returns true if the specified variable exists, is a node and has no conflicting type information.
+   */
+  def isNodeNoFail(variableName: String): Boolean = getOptionalActualTypeFor(variableName).contains(CTNode.invariant)
+
   def isRelationship(expr: String): Boolean = getTypeFor(expr) == CTRelationship.invariant
+
+  /**
+   * Returns true if the specified variable exists, is a relationship and has no conflicting type information.
+   */
+  def isRelationshipNoFail(variableName: String): Boolean = getOptionalActualTypeFor(variableName).contains(CTRelationship.invariant)
 
   def isRelationshipCollection(expr: String): Boolean = getTypeFor(expr) == CTList(CTRelationship).invariant
 

@@ -47,6 +47,7 @@ import org.neo4j.cypher.internal.util.attribution.SameId
 import org.neo4j.cypher.internal.util.bottomUp
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTRelationship
+import org.neo4j.cypher.internal.util.symbols.TypeSpec
 
 import scala.collection.mutable
 
@@ -67,8 +68,9 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean) extends Transf
       } else {
         from.logicalPlan
       }
-    def isNode(variable: Variable) = from.semanticTable().types.get(variable).exists(t => t.actual == CTNode.invariant)
-    def isRel(variable: Variable) = from.semanticTable().types.get(variable).exists(t => t.actual == CTRelationship.invariant)
+
+    def isNode(variable: Variable) = from.semanticTable().isNodeNoFail(variable.name)
+    def isRel(variable: Variable) = from.semanticTable().isRelationshipNoFail(variable.name)
 
     case class PropertyUsages(canGetFromIndex: Boolean, usages: Int, entityType: EntityType) {
       //always prefer reading from index

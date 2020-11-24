@@ -70,6 +70,11 @@ case object PushdownPropertyReads {
   // Negligible quantity of cardinality when considering pushdown
   private val CARDINALITY_EPSILON = 0.0000001
 
+  /**
+   * Rewrites the specified plan to include CacheProperties at cardinality optimums.
+   *
+   * Note, input position is NOT guaranteed to be accurate in cached properties.
+   */
   def pushdown(logicalPlan: LogicalPlan,
                cardinalities: Cardinalities,
                attributes: Attributes[LogicalPlan],
