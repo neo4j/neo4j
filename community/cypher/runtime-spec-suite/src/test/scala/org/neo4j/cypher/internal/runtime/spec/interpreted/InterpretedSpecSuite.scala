@@ -63,6 +63,7 @@ import org.neo4j.cypher.internal.runtime.spec.tests.MemoryManagementDisabledTest
 import org.neo4j.cypher.internal.runtime.spec.tests.MemoryManagementTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.MiscTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.MultiNodeIndexSeekTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.NestedLeftOuterHashJoinTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.NestedPlanDbHitsTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.NestedPlanExpressionTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.NodeByIdSeekTestBase
@@ -172,6 +173,7 @@ class InterpretedNodeHashJoinTest extends NodeHashJoinTestBase(COMMUNITY.EDITION
 class InterpretedValueHashJoinTest extends ValueHashJoinTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedRightOuterHashJoinTest extends RightOuterHashJoinTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedLeftOuterHashJoinTest extends LeftOuterHashJoinTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
+                                       with NestedLeftOuterHashJoinTestBase[CommunityRuntimeContext]
 class InterpretedReactiveResultsTest extends ReactiveResultTestBase(COMMUNITY.EDITION, InterpretedRuntime)
 class InterpretedMiscTest extends MiscTestBase(COMMUNITY.EDITION, InterpretedRuntime)
 class InterpretedOptionalTest extends OptionalTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)

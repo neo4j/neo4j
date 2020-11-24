@@ -215,35 +215,6 @@ abstract class LeftOuterHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edi
     runtimeResult should beColumns("x").withRows(expectedResultRows)
   }
 
-  test("nested joins on nodes with different types and different nullability") {
-    // given
-    val (nodes, _) = given {
-      circleGraph(sizeHint)
-    }
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("y")
-      .leftOuterHashJoin("y")
-      .|.unwind("[x] as y")
-      .|.leftOuterHashJoin("x")
-      .|.|.allNodeScan("x")
-      .|.unwind("[xLong] as x")
-      .|.allNodeScan("xLong")
-      .leftOuterHashJoin("y")
-      .|.unwind("[yLong] as y")
-      .|.allNodeScan("yLong")
-      .allNodeScan("y")
-
-      .build()
-
-    val runtimeResult = execute(logicalQuery, runtime, NO_INPUT)
-
-    // then
-    val expectedResultRows = nodes.map(Array(_))
-    runtimeResult should beColumns("y").withRows(expectedResultRows)
-  }
-
   test("should handle apply on LHS and RHS") {
     // given
     val (nodes, _) = given { circleGraph(sizeHint) }
@@ -604,5 +575,36 @@ abstract class LeftOuterHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edi
     case k                                              => k == candidate
   }
 
+}
 
+trait NestedLeftOuterHashJoinTestBase[CONTEXT <: RuntimeContext] {
+  self: LeftOuterHashJoinTestBase[CONTEXT] =>
+
+  test("nested joins on nodes with different types and different nullability") {
+    // given
+    val (nodes, _) = given {
+      circleGraph(sizeHint)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("y")
+      .leftOuterHashJoin("y")
+      .|.unwind("[x] as y")
+      .|.leftOuterHashJoin("x")
+      .|.|.allNodeScan("x")
+      .|.unwind("[xLong] as x")
+      .|.allNodeScan("xLong")
+      .leftOuterHashJoin("y")
+      .|.unwind("[yLong] as y")
+      .|.allNodeScan("yLong")
+      .allNodeScan("y")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, NO_INPUT)
+
+    // then
+    val expectedResultRows = nodes.map(Array(_))
+    runtimeResult should beColumns("y").withRows(expectedResultRows)
+  }
 }
