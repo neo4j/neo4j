@@ -202,6 +202,6 @@ public class FusionIndexProvider extends IndexProvider
 
     private IndexFiles indexFiles( IndexDescriptor descriptor )
     {
-        return new IndexFiles( fs, directoryStructure(), descriptor.getId() );
+        return new IndexFiles.Directory( fs, directoryStructure(), descriptor.getId() );
     }
 }

@@ -131,7 +131,7 @@ abstract class FusionIndexAccessorTest
         InstanceSelector<IndexAccessor> instanceSelector = new InstanceSelector<>( accessors );
         fs = mock( FileSystemAbstraction.class );
         directoryStructure = directoriesByProvider( Path.of( "storeDir" ) ).forProvider( UNDECIDED );
-        IndexFiles indexFiles = new IndexFiles( fs, directoryStructure, indexDescriptor.getId() );
+        IndexFiles indexFiles = new IndexFiles.Directory( fs, directoryStructure, indexDescriptor.getId() );
         fusionIndexAccessor = new FusionIndexAccessor( slotSelector, instanceSelector, indexDescriptor, indexFiles );
     }
 

@@ -108,7 +108,7 @@ abstract class FusionIndexPopulatorTest
         InstanceSelector<IndexPopulator> instanceSelector = new InstanceSelector<>( populators );
         fs = mock( FileSystemAbstraction.class );
         directoryStructure = directoriesByProvider( Path.of( "storeDir" ) ).forProvider( UNDECIDED );
-        IndexFiles indexFiles = new IndexFiles( fs, directoryStructure, indexId );
+        IndexFiles indexFiles = new IndexFiles.Directory( fs, directoryStructure, indexId );
         fusionIndexPopulator = new FusionIndexPopulator( slotSelector, instanceSelector, indexFiles, false );
     }
 

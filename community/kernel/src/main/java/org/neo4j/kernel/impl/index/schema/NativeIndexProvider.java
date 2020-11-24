@@ -156,6 +156,6 @@ abstract class NativeIndexProvider<KEY extends NativeIndexKey<KEY>,VALUE extends
 
     private IndexFiles indexFiles( IndexDescriptor descriptor )
     {
-        return new IndexFiles( databaseIndexContext.fileSystem, directoryStructure(), descriptor.getId() );
+        return new IndexFiles.Directory( databaseIndexContext.fileSystem, directoryStructure(), descriptor.getId() );
     }
 }

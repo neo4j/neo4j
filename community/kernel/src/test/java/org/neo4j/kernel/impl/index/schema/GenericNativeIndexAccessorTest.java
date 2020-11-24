@@ -59,7 +59,7 @@ class GenericNativeIndexAccessorTest
         long indexId = 8;
         IndexDescriptor descriptor = forSchema( SchemaDescriptor.forLabel( 1, 1 ) ).withName( "index" ).materialise( indexId );
         IndexSpecificSpaceFillingCurveSettings spatialSettings = mock( IndexSpecificSpaceFillingCurveSettings.class );
-        IndexFiles indexFiles = new IndexFiles( fs, directoryStructure, descriptor.getId() );
+        IndexFiles indexFiles = new IndexFiles.Directory( fs, directoryStructure, descriptor.getId() );
         DatabaseIndexContext databaseIndexContext = DatabaseIndexContext.builder( pageCache, fs ).build();
         GenericNativeIndexAccessor accessor =
                 new GenericNativeIndexAccessor( databaseIndexContext, indexFiles, new GenericLayout( 1, spatialSettings ), immediate(), descriptor,

@@ -91,7 +91,7 @@ class GenericAccessorPointsTest
     {
         IndexDirectoryStructure directoryStructure = IndexDirectoryStructure.directoriesByProvider( directory.homePath() ).forProvider( DESCRIPTOR );
         descriptor = TestIndexDescriptorFactory.forLabel( 1, 1 );
-        IndexFiles indexFiles = new IndexFiles( fs, directoryStructure, descriptor.getId() );
+        IndexFiles indexFiles = new IndexFiles.Directory( fs, directoryStructure, descriptor.getId() );
         GenericLayout layout = new GenericLayout( 1, indexSettings );
         RecoveryCleanupWorkCollector collector = RecoveryCleanupWorkCollector.ignore();
         DatabaseIndexContext databaseIndexContext = DatabaseIndexContext.builder( pageCache, fs ).build();
