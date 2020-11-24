@@ -101,7 +101,7 @@ public class CountsComputer implements CountsBuilder
 
     private void populateCountStore( CountsAccessor.Updater countsUpdater )
     {
-        try ( NodeLabelsCache cache = new NodeLabelsCache( numberArrayFactory, highLabelId, memoryTracker ) )
+        try ( NodeLabelsCache cache = new NodeLabelsCache( numberArrayFactory, nodes.getHighId(), highLabelId, memoryTracker ) )
         {
             Configuration configuration = Configuration.defaultConfiguration( databaseLayout.databaseDirectory() );
 

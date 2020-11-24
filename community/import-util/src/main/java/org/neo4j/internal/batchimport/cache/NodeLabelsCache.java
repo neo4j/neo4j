@@ -55,15 +55,15 @@ public class NodeLabelsCache implements MemoryStatsVisitor.Visitable, AutoClosea
     private final int worstCaseLongsNeeded;
     private final Client putClient;
 
-    public NodeLabelsCache( NumberArrayFactory cacheFactory, int highLabelId, MemoryTracker memoryTracker )
+    public NodeLabelsCache( NumberArrayFactory cacheFactory, long highNodeId, int highLabelId, MemoryTracker memoryTracker )
     {
-        this( cacheFactory, highLabelId, 10_000_000, memoryTracker );
+        this( cacheFactory, highNodeId, highLabelId, 2_000_000, memoryTracker );
     }
 
-    public NodeLabelsCache( NumberArrayFactory cacheFactory, int highLabelId, int chunkSize, MemoryTracker memoryTracker )
+    public NodeLabelsCache( NumberArrayFactory cacheFactory, long highNodeId, int highLabelId, int spillOverChunkSize, MemoryTracker memoryTracker )
     {
-        this.cache = cacheFactory.newDynamicLongArray( chunkSize, 0, memoryTracker );
-        this.spillOver = cacheFactory.newDynamicLongArray( chunkSize / 5, 0, memoryTracker ); // expect way less of these
+        this.cache = cacheFactory.newLongArray( highNodeId, 0, memoryTracker );
+        this.spillOver = cacheFactory.newDynamicLongArray( spillOverChunkSize, 0, memoryTracker ); // expect way less of these
         this.bitsPerLabel = max( Integer.SIZE - numberOfLeadingZeros( highLabelId ), 1 );
         this.worstCaseLongsNeeded = ((bitsPerLabel * (highLabelId + 1 /*length slot*/)) - 1) / Long.SIZE + 1;
         this.putClient = new Client( worstCaseLongsNeeded );
