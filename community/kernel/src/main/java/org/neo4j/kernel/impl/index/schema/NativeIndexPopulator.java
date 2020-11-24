@@ -23,14 +23,12 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
-import java.util.function.Consumer;
 
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.index.internal.gbptree.Writer;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.pagecache.IOLimiter;
-import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -60,7 +58,6 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
     private final KEY treeKey;
     private final VALUE treeValue;
     private final UniqueIndexSampler uniqueSampler;
-    private final Consumer<PageCursor> additionalHeaderWriter;
 
     private ConflictDetectingValueMerger<KEY,VALUE,Value[]> mainConflictDetector;
     private ConflictDetectingValueMerger<KEY,VALUE,Value[]> updatesConflictDetector;
@@ -70,12 +67,11 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
     private boolean closed;
 
     NativeIndexPopulator( DatabaseIndexContext databaseIndexContext, IndexFiles indexFiles, IndexLayout<KEY,VALUE> layout,
-            IndexDescriptor descriptor, Consumer<PageCursor> additionalHeaderWriter, GBPTree.Monitor treeMonitor )
+            IndexDescriptor descriptor, GBPTree.Monitor treeMonitor )
     {
         super( databaseIndexContext, layout, indexFiles, descriptor, treeMonitor );
         this.treeKey = layout.newKey();
         this.treeValue = layout.newValue();
-        this.additionalHeaderWriter = additionalHeaderWriter;
         this.uniqueSampler = descriptor.isUnique() ? new UniqueIndexSampler() : null;
     }
 
@@ -88,7 +84,7 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
         assertNotClosed();
 
         indexFiles.clear();
-        NativeIndexHeaderWriter headerWriter = new NativeIndexHeaderWriter( BYTE_POPULATING, additionalHeaderWriter );
+        NativeIndexHeaderWriter headerWriter = new NativeIndexHeaderWriter( BYTE_POPULATING );
         instantiateTree( RecoveryCleanupWorkCollector.immediate(), headerWriter );
 
         // true:  tree uniqueness is (value,entityId)
@@ -208,8 +204,7 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
 
     void flushTreeAndMarkAs( byte state, PageCursorTracer cursorTracer )
     {
-        tree.checkpoint( IOLimiter.UNLIMITED,
-                new NativeIndexHeaderWriter( state, additionalHeaderWriter ), cursorTracer );
+        tree.checkpoint( IOLimiter.UNLIMITED, new NativeIndexHeaderWriter( state ), cursorTracer );
     }
 
     IndexSample buildNonUniqueIndexSample( PageCursorTracer cursorTracer )

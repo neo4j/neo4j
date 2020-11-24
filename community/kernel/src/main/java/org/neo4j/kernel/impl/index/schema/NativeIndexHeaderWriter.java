@@ -30,18 +30,15 @@ import org.neo4j.io.pagecache.PageCursor;
 public class NativeIndexHeaderWriter implements Consumer<PageCursor>
 {
     private final byte state;
-    private final Consumer<PageCursor> additionalHeaderWriter;
 
-    public NativeIndexHeaderWriter( byte state, Consumer<PageCursor> additionalHeaderWriter )
+    public NativeIndexHeaderWriter( byte state )
     {
         this.state = state;
-        this.additionalHeaderWriter = additionalHeaderWriter;
     }
 
     @Override
     public void accept( PageCursor cursor )
     {
         cursor.putByte( state );
-        additionalHeaderWriter.accept( cursor );
     }
 }

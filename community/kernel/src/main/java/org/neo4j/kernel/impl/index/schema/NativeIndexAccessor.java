@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.index.schema;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
-import java.util.function.Consumer;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.index.internal.gbptree.GBPTree;
@@ -30,7 +29,6 @@ import org.neo4j.index.internal.gbptree.TreeInconsistencyException;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.pagecache.IOLimiter;
-import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexReader;
@@ -48,11 +46,11 @@ public abstract class NativeIndexAccessor<KEY extends NativeIndexKey<KEY>, VALUE
     final NativeIndexHeaderWriter headerWriter;
 
     NativeIndexAccessor( DatabaseIndexContext databaseIndexContext, IndexFiles indexFiles, IndexLayout<KEY,VALUE> layout,
-            IndexDescriptor descriptor, Consumer<PageCursor> additionalHeaderWriter )
+            IndexDescriptor descriptor )
     {
         super( databaseIndexContext, layout, indexFiles, descriptor, GBPTree.NO_MONITOR );
         singleUpdater = new NativeIndexUpdater<>( layout.newKey(), layout.newValue() );
-        headerWriter = new NativeIndexHeaderWriter( BYTE_ONLINE, additionalHeaderWriter );
+        headerWriter = new NativeIndexHeaderWriter( BYTE_ONLINE );
     }
 
     @Override

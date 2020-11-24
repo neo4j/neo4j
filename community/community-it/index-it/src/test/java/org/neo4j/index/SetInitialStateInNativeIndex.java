@@ -34,7 +34,6 @@ import org.neo4j.kernel.impl.index.schema.NativeIndexes;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 public class SetInitialStateInNativeIndex extends NativeIndexRestartAction
@@ -97,7 +96,7 @@ public class SetInitialStateInNativeIndex extends NativeIndexRestartAction
 
     private static void overwriteState( PageCache pageCache, Path indexFile, byte state ) throws IOException
     {
-        NativeIndexHeaderWriter stateWriter = new NativeIndexHeaderWriter( state, NO_HEADER_WRITER );
+        NativeIndexHeaderWriter stateWriter = new NativeIndexHeaderWriter( state );
         GBPTree.overwriteHeader( pageCache, indexFile, stateWriter, NULL );
     }
 }

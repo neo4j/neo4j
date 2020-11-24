@@ -40,8 +40,6 @@ import org.neo4j.kernel.api.index.IndexValueValidator;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 import org.neo4j.values.storable.Value;
 
-import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
-
 class GenericNativeIndexAccessor extends NativeIndexAccessor<GenericKey,NativeIndexValue>
 {
     private final IndexSpecificSpaceFillingCurveSettings spaceFillingCurveSettings;
@@ -53,7 +51,7 @@ class GenericNativeIndexAccessor extends NativeIndexAccessor<GenericKey,NativeIn
             IndexLayout<GenericKey,NativeIndexValue> layout, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IndexDescriptor descriptor,
             IndexSpecificSpaceFillingCurveSettings spaceFillingCurveSettings, SpaceFillingCurveConfiguration configuration, TokenNameLookup tokenNameLookup )
     {
-        super( databaseIndexContext, indexFiles, layout, descriptor, NO_HEADER_WRITER );
+        super( databaseIndexContext, indexFiles, layout, descriptor );
         this.spaceFillingCurveSettings = spaceFillingCurveSettings;
         this.configuration = configuration;
         this.tokenNameLookup = tokenNameLookup;

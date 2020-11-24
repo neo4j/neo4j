@@ -52,16 +52,13 @@ import org.neo4j.kernel.api.index.IndexValueValidator;
 import org.neo4j.kernel.impl.api.index.PhaseTracker;
 import org.neo4j.kernel.impl.api.index.updater.DelegatingIndexUpdater;
 import org.neo4j.memory.MemoryTracker;
-import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
-import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.UpdateMode;
 import org.neo4j.util.FeatureToggles;
 import org.neo4j.util.Preconditions;
 import org.neo4j.values.storable.Value;
 
-import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
 import static org.neo4j.internal.helpers.collection.Iterables.first;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
@@ -127,7 +124,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
             BlockStorage.Monitor blockStorageMonitor,
             GBPTree.Monitor treeMonitor )
     {
-        super( databaseIndexContext, indexFiles, layout, descriptor, NO_HEADER_WRITER, treeMonitor );
+        super( databaseIndexContext, indexFiles, layout, descriptor, treeMonitor );
         this.archiveFailedIndex = archiveFailedIndex;
         this.memoryTracker = memoryTracker;
         this.mergeFactor = mergeFactor;
