@@ -33,8 +33,8 @@ class OptionRendererTest extends CypherFunSuite {
       anotherString: String,
     )
 
-    implicit val renderInts: OptionRenderer[Int] = (value: Int) => s"the number $value"
-    implicit val renderStrings: OptionRenderer[String] = (value: String) => s"text $value"
+    implicit val renderInts: OptionRenderer[Int] = OptionRenderer.create(value => s"the number $value")
+    implicit val renderStrings: OptionRenderer[String] = OptionRenderer.create(value => s"text $value")
     implicit val renderInner: OptionRenderer[MyInner] = OptionRenderer.derive[MyInner]
     implicit val renderOuter: OptionRenderer[MyOuter] = OptionRenderer.derive[MyOuter]
 
