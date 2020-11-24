@@ -65,12 +65,19 @@ abstract class CypherOptionCompanion[Opt <: CypherOption](
            .getOrElse(default)
   }
 
+  /**
+   * An OptionReader for reading exactly one value of this option
+   * Fails if there are more than one.
+   */
   def singleOptionReader(): OptionReader[Opt] =
     (input: OptionReader.Input) =>
       input.extract(key)
            .map(values => fromValues(values).headOption)
            .map(value => value.getOrElse(fromCypherConfiguration(input.config)))
 
+  /**
+   * An OptionReader for reading all values of this option
+   */
   def multiOptionReader(): OptionReader[Set[Opt]] =
     (input: OptionReader.Input) =>
       input.extract(key)

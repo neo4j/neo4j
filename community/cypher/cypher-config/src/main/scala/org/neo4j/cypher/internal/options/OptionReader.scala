@@ -19,13 +19,17 @@
  */
 package org.neo4j.cypher.internal.options
 
-import language.experimental.macros
 import magnolia.CaseClass
 import magnolia.Magnolia
-import magnolia.SealedTrait
 import org.neo4j.cypher.internal.config.CypherConfiguration
 
+import scala.language.experimental.macros
 
+
+/**
+ * Reads a value of T by consuming part of the input,
+ * returning the value and the remainder of input
+ */
 trait OptionReader[T] {
   def read(input: OptionReader.Input): OptionReader.Result[T]
 
@@ -34,23 +38,29 @@ trait OptionReader[T] {
 }
 
 object OptionReader {
+
+  /** Input to OptionReader:s */
   case class Input(
     config: CypherConfiguration,
     keyValues: Set[(String, String)],
   ) {
+    /** Grab all values from keyValues mapped for the given key. Return the values and the remaining input */
     def extract(key: String): Result[Set[String]] =
       Result(copy(keyValues = keyValues.filterNot(_._1 == key)), keyValues.filter(_._1 == key).map(_._2))
   }
 
   object Input {
+    /** Creates an input with canonical keys and values */
     def apply(config: CypherConfiguration, keyValues: Set[(String, String)]): Input =
       new Input(config, keyValues.map { case (k, v) => (canonical(k), canonical(v)) })
   }
 
-  def canonical(str: String): String = str.toLowerCase
-
-  def matches(a: String, b: String): Boolean = canonical(a) == canonical(b)
-
+  /**
+   * Output from OptionReader:s
+   *
+   * @param remainder remaining input that has not been read yet
+   * @param result    a read value
+   */
   case class Result[T](
     remainder: Input,
     result: T,
@@ -58,6 +68,8 @@ object OptionReader {
     def map[R](transform: T => R): Result[R] =
       copy(result = transform(result))
   }
+
+  def canonical(str: String): String = str.toLowerCase
 
   // Magnolia generic derivation
   // Check out the tutorial at https://propensive.com/opensource/magnolia/tutorial
