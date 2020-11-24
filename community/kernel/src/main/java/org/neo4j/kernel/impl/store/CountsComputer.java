@@ -100,7 +100,7 @@ public class CountsComputer implements DataInitializer<CountsAccessor.Updater>
 
     private void populateCountStore( CountsAccessor.Updater countsUpdater )
     {
-        try ( NodeLabelsCache cache = new NodeLabelsCache( numberArrayFactory, highLabelId ) )
+        try ( NodeLabelsCache cache = new NodeLabelsCache( numberArrayFactory, nodes.getHighId(), highLabelId ) )
         {
             // Count nodes
             superviseDynamicExecution( new NodeCountsStage( Configuration.DEFAULT, cache, nodes, highLabelId, countsUpdater, progressMonitor ) );

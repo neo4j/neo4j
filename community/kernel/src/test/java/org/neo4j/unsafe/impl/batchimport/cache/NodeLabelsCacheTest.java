@@ -29,6 +29,7 @@ import org.neo4j.test.Race;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
+import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.AUTO_WITHOUT_PAGECACHE;
 
 public class NodeLabelsCacheTest
 {
@@ -36,7 +37,7 @@ public class NodeLabelsCacheTest
     public void shouldCacheSmallSetOfLabelsPerNode()
     {
         // GIVEN
-        NodeLabelsCache cache = new NodeLabelsCache( NumberArrayFactory.AUTO_WITHOUT_PAGECACHE, 5, CHUNK_SIZE );
+        NodeLabelsCache cache = new NodeLabelsCache( AUTO_WITHOUT_PAGECACHE, 5, CHUNK_SIZE );
         NodeLabelsCache.Client client = cache.newClient();
         long nodeId = 0;
 
@@ -54,7 +55,7 @@ public class NodeLabelsCacheTest
     {
         // GIVEN
         int highLabelId = 1000;
-        NodeLabelsCache cache = new NodeLabelsCache( NumberArrayFactory.AUTO_WITHOUT_PAGECACHE, highLabelId, CHUNK_SIZE );
+        NodeLabelsCache cache = new NodeLabelsCache( AUTO_WITHOUT_PAGECACHE, 10, highLabelId, CHUNK_SIZE );
         NodeLabelsCache.Client client = cache.newClient();
         long nodeId = 0;
 
@@ -73,9 +74,9 @@ public class NodeLabelsCacheTest
     {
         // GIVEN a really weird scenario where we have 5000 different labels
         int highLabelId = 1_000;
-        NodeLabelsCache cache = new NodeLabelsCache( NumberArrayFactory.AUTO_WITHOUT_PAGECACHE, highLabelId, 1_000_000 );
-        NodeLabelsCache.Client client = cache.newClient();
         int numberOfNodes = 100_000;
+        NodeLabelsCache cache = new NodeLabelsCache( AUTO_WITHOUT_PAGECACHE, numberOfNodes, highLabelId );
+        NodeLabelsCache.Client client = cache.newClient();
         int[][] expectedLabels = new int[numberOfNodes][];
         for ( int i = 0; i < numberOfNodes; i++ )
         {
@@ -97,7 +98,7 @@ public class NodeLabelsCacheTest
     public void shouldEndTargetArrayWithMinusOne()
     {
         // GIVEN
-        NodeLabelsCache cache = new NodeLabelsCache( NumberArrayFactory.AUTO_WITHOUT_PAGECACHE, 10 );
+        NodeLabelsCache cache = new NodeLabelsCache( AUTO_WITHOUT_PAGECACHE, 20, 10 );
         NodeLabelsCache.Client client = cache.newClient();
         cache.put( 10, new long[] { 5, 6, 7, 8 } );
 
@@ -117,7 +118,7 @@ public class NodeLabelsCacheTest
     public void shouldReturnEmptyArrayForNodeWithNoLabelsAndNoLabelsWhatsoever()
     {
         // GIVEN
-        NodeLabelsCache cache = new NodeLabelsCache( NumberArrayFactory.AUTO_WITHOUT_PAGECACHE, 0 );
+        NodeLabelsCache cache = new NodeLabelsCache( AUTO_WITHOUT_PAGECACHE, 10, 0 );
         NodeLabelsCache.Client client = cache.newClient();
 
         // WHEN
@@ -135,7 +136,7 @@ public class NodeLabelsCacheTest
         int highLabelId = 10;
         int numberOfNodes = 100;
         int[][] expectedLabels = new int[numberOfNodes][];
-        NodeLabelsCache cache = new NodeLabelsCache( NumberArrayFactory.AUTO_WITHOUT_PAGECACHE, highLabelId );
+        NodeLabelsCache cache = new NodeLabelsCache( AUTO_WITHOUT_PAGECACHE, numberOfNodes, highLabelId );
         for ( int i = 0; i < numberOfNodes; i++ )
         {
             cache.put( i, asLongArray( expectedLabels[i] = randomLabels( random.nextInt( 5 ), highLabelId ) ) );
