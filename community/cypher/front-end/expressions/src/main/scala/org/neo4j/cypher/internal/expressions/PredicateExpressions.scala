@@ -46,7 +46,7 @@ object Ands {
  * but equals and hashCode are overridden to get set semantics for comparison
  * (we assume set semantics when tracking solved expressions during planing)
  */
-case class Ands(exprs: Seq[Expression])(val position: InputPosition) extends Expression with MultiOperatorExpression {
+case class Ands(exprs: Seq[Expression])(val position: InputPosition) extends BooleanExpression with MultiOperatorExpression {
   override def canonicalOperatorSymbol = "AND"
 
   private val exprSet = exprs.toSet
@@ -61,7 +61,7 @@ case class Ands(exprs: Seq[Expression])(val position: InputPosition) extends Exp
     31 * exprSet.hashCode()
 }
 
-case class Or(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression with BinaryOperatorExpression {
+case class Or(lhs: Expression, rhs: Expression)(val position: InputPosition) extends BooleanExpression with BinaryOperatorExpression {
   override val signatures = Vector(
     TypeSignature(argumentTypes = Vector(CTBoolean, CTBoolean), outputType = CTBoolean)
   )
@@ -73,7 +73,7 @@ case class Or(lhs: Expression, rhs: Expression)(val position: InputPosition) ext
  * but equals and hashCode are overridden to get set semantics for comparison
  * (we assume set semantics when tracking solved expressions during planing)
  */
-case class Ors(exprs: Seq[Expression])(val position: InputPosition) extends Expression with MultiOperatorExpression {
+case class Ors(exprs: Seq[Expression])(val position: InputPosition) extends BooleanExpression with MultiOperatorExpression {
   override def canonicalOperatorSymbol = "OR"
 
   private val exprSet = exprs.toSet
@@ -88,19 +88,19 @@ case class Ors(exprs: Seq[Expression])(val position: InputPosition) extends Expr
     31 * exprSet.hashCode()
 }
 
-case class Xor(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression with BinaryOperatorExpression {
+case class Xor(lhs: Expression, rhs: Expression)(val position: InputPosition) extends BooleanExpression with BinaryOperatorExpression {
   override val signatures = Vector(
     TypeSignature(Vector(CTBoolean, CTBoolean), outputType = CTBoolean)
   )
 }
 
-case class Not(rhs: Expression)(val position: InputPosition) extends Expression with LeftUnaryOperatorExpression {
+case class Not(rhs: Expression)(val position: InputPosition) extends BooleanExpression with LeftUnaryOperatorExpression {
   override val signatures = Vector(
     TypeSignature(Vector(CTBoolean), outputType = CTBoolean)
   )
 }
 
-case class Equals(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression with ChainableBinaryOperatorExpression {
+case class Equals(lhs: Expression, rhs: Expression)(val position: InputPosition) extends BooleanExpression with ChainableBinaryOperatorExpression {
   override val signatures = Vector(
     TypeSignature(argumentTypes = Vector(CTAny, CTAny), outputType = CTBoolean)
   )
@@ -110,7 +110,7 @@ case class Equals(lhs: Expression, rhs: Expression)(val position: InputPosition)
   def switchSides: Equals = copy(rhs, lhs)(position)
 }
 
-case class Equivalent(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression with ChainableBinaryOperatorExpression {
+case class Equivalent(lhs: Expression, rhs: Expression)(val position: InputPosition) extends BooleanExpression with ChainableBinaryOperatorExpression {
   override val signatures = Vector(
     TypeSignature(argumentTypes = Vector(CTAny, CTAny), outputType = CTBoolean)
   )
@@ -118,7 +118,7 @@ case class Equivalent(lhs: Expression, rhs: Expression)(val position: InputPosit
   override def canonicalOperatorSymbol = "~"
 }
 
-case class NotEquals(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression with ChainableBinaryOperatorExpression {
+case class NotEquals(lhs: Expression, rhs: Expression)(val position: InputPosition) extends BooleanExpression with ChainableBinaryOperatorExpression {
   override val signatures = Vector(
     TypeSignature(argumentTypes = Vector(CTAny, CTAny), outputType = CTBoolean)
   )
@@ -126,11 +126,11 @@ case class NotEquals(lhs: Expression, rhs: Expression)(val position: InputPositi
   override def canonicalOperatorSymbol = "<>"
 }
 
-case class InvalidNotEquals(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression with ChainableBinaryOperatorExpression {
+case class InvalidNotEquals(lhs: Expression, rhs: Expression)(val position: InputPosition) extends BooleanExpression with ChainableBinaryOperatorExpression {
   override def canonicalOperatorSymbol = "!="
 }
 
-case class RegexMatch(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression with BinaryOperatorExpression {
+case class RegexMatch(lhs: Expression, rhs: Expression)(val position: InputPosition) extends BooleanExpression with BinaryOperatorExpression {
   override val signatures = Vector(
     TypeSignature(argumentTypes = Vector(CTString, CTString), outputType = CTBoolean)
   )
@@ -138,7 +138,7 @@ case class RegexMatch(lhs: Expression, rhs: Expression)(val position: InputPosit
   override def canonicalOperatorSymbol = "=~"
 }
 
-case class In(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression with BinaryOperatorExpression
+case class In(lhs: Expression, rhs: Expression)(val position: InputPosition) extends BooleanExpression with BinaryOperatorExpression
 
 // Partial predicates are predicates that are covered by a larger predicate which is going to be solved later during planning
 // (and then will replace this predicate).
@@ -251,28 +251,28 @@ case class HasDegreeLessThan(node: Expression,
                              relType: Option[RelTypeName],
                              dir: SemanticDirection,
                              degree: Expression
-                            )(val position: InputPosition) extends Expression
+                            )(val position: InputPosition) extends BooleanExpression
 
 case class HasDegreeLessThanOrEqual(node: Expression,
                                     relType: Option[RelTypeName],
                                     dir: SemanticDirection,
                                     degree: Expression
-                                   )(val position: InputPosition) extends Expression
+                                   )(val position: InputPosition) extends BooleanExpression
 
 case class HasDegreeGreaterThan(node: Expression,
                                 relType: Option[RelTypeName],
                                 dir: SemanticDirection,
                                 degree: Expression
-                               )(val position: InputPosition) extends Expression
+                               )(val position: InputPosition) extends BooleanExpression
 
 case class HasDegreeGreaterThanOrEqual(node: Expression,
                                        relType: Option[RelTypeName],
                                        dir: SemanticDirection,
                                        degree: Expression
-                                      )(val position: InputPosition) extends Expression
+                                      )(val position: InputPosition) extends BooleanExpression
 
 case class HasDegree(node: Expression,
                      relType: Option[RelTypeName],
                      dir: SemanticDirection,
                      degree: Expression
-                    )(val position: InputPosition) extends Expression
+                    )(val position: InputPosition) extends BooleanExpression

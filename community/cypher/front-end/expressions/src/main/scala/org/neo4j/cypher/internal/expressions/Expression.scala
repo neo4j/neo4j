@@ -155,3 +155,8 @@ abstract class Expression extends ASTNode {
     case _ => false
   }
 }
+
+/**
+ * Signifies that this expression doesn't have to be coerced if used as a predicate
+ */
+trait BooleanExpression extends Expression

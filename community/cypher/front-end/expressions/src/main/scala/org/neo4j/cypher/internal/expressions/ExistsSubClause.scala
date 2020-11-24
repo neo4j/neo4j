@@ -19,7 +19,7 @@ package org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.util.InputPosition
 
 case class ExistsSubClause(pattern: Pattern, optionalWhereExpression: Option[Expression])
-                          (val position: InputPosition, override val outerScope: Set[Variable]) extends ScopeExpression with ExpressionWithOuterScope {
+                          (val position: InputPosition, override val outerScope: Set[Variable]) extends ScopeExpression with BooleanExpression with ExpressionWithOuterScope {
 
   self =>
 

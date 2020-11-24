@@ -16,12 +16,13 @@
  */
 package org.neo4j.cypher.internal.expressions
 
+import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.NonEmptyList
 
 case class AndedPropertyInequalities(
                                       variable: LogicalVariable,
                                       property: LogicalProperty,
                                       inequalities: NonEmptyList[InequalityExpression]
-                                    ) extends Expression {
-  def position = variable.position
+                                    ) extends BooleanExpression {
+  def position: InputPosition = variable.position
 }

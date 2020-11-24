@@ -109,7 +109,7 @@ sealed trait IterableExpressionWithInfo extends FunctionWithName {
   def isAggregationFunction = false
 }
 
-sealed trait IterablePredicateExpression extends FilteringExpression {
+sealed trait IterablePredicateExpression extends FilteringExpression with BooleanExpression {
   def scope: FilterScope
   def variable: LogicalVariable = scope.variable
   def innerPredicate: Option[Expression] = scope.innerPredicate

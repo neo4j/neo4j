@@ -18,17 +18,17 @@ package org.neo4j.cypher.internal.expressions
 
 import org.neo4j.cypher.internal.util.InputPosition
 
-case class HasLabels(expression: Expression, labels: Seq[LabelName])(val position: InputPosition) extends Expression {
+case class HasLabels(expression: Expression, labels: Seq[LabelName])(val position: InputPosition) extends BooleanExpression {
 
   override def asCanonicalStringVal = s"${expression.asCanonicalStringVal}${labels.map(_.asCanonicalStringVal).mkString(":", ":", "")}"
 }
 
-case class HasLabelsOrTypes(expression: Expression, labelsOrTypes: Seq[LabelOrRelTypeName])(val position: InputPosition) extends Expression {
+case class HasLabelsOrTypes(expression: Expression, labelsOrTypes: Seq[LabelOrRelTypeName])(val position: InputPosition) extends BooleanExpression {
 
   override def asCanonicalStringVal = s"${expression.asCanonicalStringVal}${labelsOrTypes.map(_.asCanonicalStringVal).mkString(":", ":", "")}"
 }
 
-case class HasTypes(expression: Expression, types: Seq[RelTypeName])(val position: InputPosition) extends Expression {
+case class HasTypes(expression: Expression, types: Seq[RelTypeName])(val position: InputPosition) extends BooleanExpression {
 
   override def asCanonicalStringVal = s"${expression.asCanonicalStringVal}${types.map(_.asCanonicalStringVal).mkString(":", ":", "")}"
 }

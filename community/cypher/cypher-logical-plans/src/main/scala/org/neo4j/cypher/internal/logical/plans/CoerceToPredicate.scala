@@ -22,12 +22,13 @@ package org.neo4j.cypher.internal.logical.plans
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheck
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckResult
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckableExpression
+import org.neo4j.cypher.internal.expressions.BooleanExpression
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Expression.SemanticContext
 import org.neo4j.cypher.internal.util.InputPosition
 
 //TODO move into frontend?
-case class CoerceToPredicate(inner: Expression) extends Expression with SemanticCheckableExpression {
+case class CoerceToPredicate(inner: Expression) extends BooleanExpression with SemanticCheckableExpression {
 
   override def semanticCheck(ctx: SemanticContext): SemanticCheck = SemanticCheckResult.success
 
