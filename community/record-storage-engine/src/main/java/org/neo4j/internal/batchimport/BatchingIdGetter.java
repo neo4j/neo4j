@@ -33,8 +33,8 @@ import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 
+import static java.lang.String.format;
 import static org.neo4j.internal.id.IdRangeIterator.VALUE_REPRESENTING_NULL;
-import static org.neo4j.util.Preconditions.checkState;
 
 /**
  * Exposes batches of ids from a {@link RecordStore} as a {@link LongIterator}.
@@ -78,7 +78,11 @@ public class BatchingIdGetter implements IdSequence
         }
         if ( idExpectation != NO_ID_EXPECTATION )
         {
-            checkState( id == idExpectation, "Id generator allocated range with non-consecutive IDs, expected:%d, but got:%d", idExpectation, id );
+            if ( id != idExpectation )
+            {
+                throw new IllegalStateException(
+                        format( "Id generator allocated range with non-consecutive IDs, expected:%d, but got:%d", idExpectation, id ) );
+            }
         }
         idExpectation = id + 1;
         return id;
