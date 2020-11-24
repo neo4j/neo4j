@@ -132,13 +132,9 @@ public abstract class NativeTokenScanStore implements TokenScanStore, EntityToke
 
     /**
      * {@link FileSystemAbstraction} the backing file lives on.
-     */
-    private final FileSystemAbstraction fs;
-
-    /**
      * Used for all file operations on the gbpTree file.
      */
-    private final FileSystemAbstraction fileSystem;
+    private final FileSystemAbstraction fs;
 
     /**
      * Layout of the database.
@@ -207,7 +203,6 @@ public abstract class NativeTokenScanStore implements TokenScanStore, EntityToke
         String monitorTag = isLabelScanStore ? TokenScanStore.LABEL_SCAN_STORE_MONITOR_TAG : TokenScanStore.RELATIONSHIP_TYPE_SCAN_STORE_MONITOR_TAG;
         this.monitor = monitors.newMonitor( Monitor.class, monitorTag );
         this.recoveryCleanupWorkCollector = recoveryCleanupWorkCollector;
-        this.fileSystem = fs;
         this.entityType = entityType;
         this.tokenStoreName = tokenStoreName;
     }
@@ -413,7 +408,7 @@ public abstract class NativeTokenScanStore implements TokenScanStore, EntityToke
 
     private boolean hasStore()
     {
-        return fileSystem.fileExists( storeFile );
+        return fs.fileExists( storeFile );
     }
 
     /**
@@ -465,7 +460,7 @@ public abstract class NativeTokenScanStore implements TokenScanStore, EntityToke
             index.close();
             index = null;
         }
-        fileSystem.deleteFileOrThrow( storeFile );
+        fs.deleteFileOrThrow( storeFile );
     }
 
     /**
