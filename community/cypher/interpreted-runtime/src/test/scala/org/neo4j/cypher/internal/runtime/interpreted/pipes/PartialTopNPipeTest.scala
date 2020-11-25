@@ -89,7 +89,7 @@ class PartialTopNPipeTest extends CypherFunSuite {
       input.sortBy(m => (m("x"), m("y"))).take(4)
   }
 
-  test("partial top -1 should be very lazy") {
+  test("partial top 0 should be very lazy") {
     val input = List(
       Map("x" -> 1, "y" -> 5),
       Map("x" -> 1, "y" -> 5),
@@ -106,11 +106,11 @@ class PartialTopNPipeTest extends CypherFunSuite {
     )
 
     val source = new FakePipe(input)
-    val sortPipe = PartialTopNPipe(source, literal(-1), None, compareX, compareY)()
+    val sortPipe = PartialTopNPipe(source, literal(0), None, compareX, compareY)()
 
     val iterator = sortPipe.createResults(QueryStateHelper.emptyWithValueSerialization)
 
     iterator.hasNext should be(false)
-    source.numberOfPulledRows should be(1)
+    source.numberOfPulledRows should be(0)
   }
 }

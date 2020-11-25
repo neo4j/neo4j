@@ -39,16 +39,14 @@ case class PartialTopNPipe(source: Pipe,
                           (val id: Id = Id.INVALID_ID)
   extends PipeWithSource(source: Pipe) with OrderedInputPipe {
 
-  override def getReceiver(state: QueryState): OrderedChunkReceiver = new PartialTopNReceiver(state)
+  override def getReceiver(state: QueryState): OrderedChunkReceiver = throw new IllegalStateException()
 
-  class PartialTopNReceiver(state: QueryState) extends OrderedChunkReceiver {
+  class PartialTopNReceiver(var remainingLimit: Long, state: QueryState) extends OrderedChunkReceiver {
     private val memoryTracker = state.memoryTracker.memoryTrackerForOperator(id.x)
     private val rowsMemoryTracker = memoryTracker.getScopedMemoryTracker
-    private val limit = SkipPipe.evaluateStaticSkipOrLimitNumberOrThrow(countExpression, state, "LIMIT")
     private val skip = skipExpression.map(SkipPipe.evaluateStaticSkipOrLimitNumberOrThrow(_, state, "SKIP"))
 
     private var remainingSkipRows: Long = skip.getOrElse(-1L)
-    private var remainingLimit = limit
     private val topTable = new DefaultComparatorTopTable[CypherRow](suffixComparator, remainingLimit, memoryTracker)
 
     override def clear(): Unit = {
@@ -87,6 +85,21 @@ case class PartialTopNPipe(source: Pipe,
     override def processNextChunk: Boolean = remainingLimit > 0
   }
 
+  protected override def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
+    if (input.isEmpty) {
+      ClosingIterator.empty
+    } else {
+      val longCount = SkipPipe.evaluateStaticSkipOrLimitNumberOrThrow(countExpression, state, "LIMIT")
+      if (longCount <= 0) {
+        ClosingIterator.empty
+      } else {
+        // We don't need a special case for LIMIT > Int.Max (Like the TopPipe)
+        // We use something similar to PartialSort in any way, and that will only fail at runtime if one chunk is too big.
+        val receiver = new PartialTopNReceiver(longCount, state)
+        internalCreateResultsWithReceiver(input, receiver)
+      }
+    }
+  }
 }
 
 /*

@@ -386,3 +386,14 @@ Feature: SkipLimitAcceptance
     Then the result should be, in order:
       | id |
     And no side effects
+
+  Scenario: PartialTop with limit 0
+    When executing query:
+      """
+      UNWIND range(1, 10) AS i
+      WITH i AS i, -i AS j ORDER BY i
+      RETURN i, j ORDER BY i, j LIMIT 0
+      """
+    Then the result should be, in order:
+      | i | j |
+    And no side effects
