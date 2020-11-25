@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.FieldSignature
+import org.neo4j.cypher.internal.logical.plans.LeftOuterHashJoin
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.NodeHashJoin
 import org.neo4j.cypher.internal.logical.plans.Optional
@@ -98,6 +99,7 @@ class SelectHasLabelWithJoinTest extends CypherFunSuite with LogicalPlanningTest
       cost = {
         case (_: Selection, _, _) => 1000.0
         case (_: RightOuterHashJoin, _, _) => 1000.0
+        case (_: LeftOuterHashJoin, _, _) => 1000.0
         case (_: NodeHashJoin, _, _) => 20.0
         case (_: NodeByLabelScan, _, _) => 20.0
       }
