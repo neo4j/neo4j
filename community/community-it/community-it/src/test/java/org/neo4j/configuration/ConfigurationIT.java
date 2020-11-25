@@ -25,17 +25,30 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.server.helpers.CommunityWebContainerBuilder;
 import org.neo4j.server.helpers.TestWebContainer;
+import org.neo4j.test.Race;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.configuration.SettingImpl.newBuilder;
 import static org.neo4j.configuration.SettingValueParsers.STRING;
 
 public class ConfigurationIT
 {
+
+    @Test
+    void shouldNotDeadlockWhenConcurrentlyAccessingSettings()
+    {
+        Race race = new Race();
+        race.addContestant( GraphDatabaseSettings.neo4j_home::defaultValue, 1 );
+        race.addContestant( HttpConnector.advertised_address::defaultValue, 1 );
+        assertThatCode( () -> race.go( 1, TimeUnit.MINUTES ) ).doesNotThrowAnyException(); //throws TimeoutException on deadlock
+    }
+
     @Test
     void shouldBeAbleToEvaluateSettingFromWebServer() throws IOException
     {
