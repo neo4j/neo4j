@@ -240,12 +240,30 @@ public final class HTTP
         {
             try
             {
-                return CLIENT.sendAsync( request, BodyHandlers.ofString() ).get( 4, TimeUnit.MINUTES );
+                return getStringHttpResponse( request );
             }
             catch ( Exception e )
             {
+                if ( e.getMessage().contains( "HTTP/1.1 header parser received no bytes" ) )
+                {
+                    // Retry once to avoid flakiness
+                    try
+                    {
+                        return getStringHttpResponse( request );
+                    }
+                    catch ( Exception e2 )
+                    {
+                        throw new RuntimeException( e2 );
+                    }
+                }
                 throw new RuntimeException( e );
             }
+        }
+
+        private static HttpResponse<String> getStringHttpResponse( HttpRequest request )
+                throws InterruptedException, java.util.concurrent.ExecutionException, java.util.concurrent.TimeoutException
+        {
+            return CLIENT.sendAsync( request, BodyHandlers.ofString() ).get( 4, TimeUnit.MINUTES );
         }
     }
 
