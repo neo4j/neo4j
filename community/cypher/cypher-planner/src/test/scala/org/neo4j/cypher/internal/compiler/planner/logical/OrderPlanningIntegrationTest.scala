@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.Qu
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.QueryGraphSolverWithGreedyConnectComponents
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.QueryGraphSolverWithIDPConnectComponents
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfiguration
+import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.functions.Exists
@@ -61,6 +62,10 @@ class OrderPlanningIntegrationTestBase(queryGraphSolverSetup: QueryGraphSolverSe
   locally {
     queryGraphSolver = queryGraphSolverSetup.queryGraphSolver()
   }
+
+  override def plannerBuilder(): StatisticsBackedLogicalPlanningConfigurationBuilder =
+    super.plannerBuilder()
+         .enableConnectComponentsPlanner(queryGraphSolverSetup.useIdpConnectComponents)
 
   test("ORDER BY previously unprojected column in WITH") {
     val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH a ORDER BY a.age RETURN a.name")._2
@@ -1235,7 +1240,6 @@ class OrderPlanningIntegrationTestBase(queryGraphSolverSetup: QueryGraphSolverSe
   private def wideningExpandConfig(): StatisticsBackedLogicalPlanningConfiguration = {
     val nodeCount = 10000
     plannerBuilder()
-      .enableConnectComponentsPlanner(queryGraphSolverSetup.useIdpConnectComponents)
       .setAllNodesCardinality(nodeCount)
       .setRelationshipCardinality("()-[]->()", nodeCount * nodeCount)
       .setRelationshipCardinality("()-[:R]->()", nodeCount * nodeCount)
@@ -1372,7 +1376,6 @@ class OrderPlanningIntegrationTestBase(queryGraphSolverSetup: QueryGraphSolverSe
 
     val nodeCount = 10000
     val plan = plannerBuilder()
-      .enableConnectComponentsPlanner(queryGraphSolverSetup.useIdpConnectComponents)
       .setAllNodesCardinality(nodeCount)
       .setRelationshipCardinality("()-[]->()", nodeCount / 10)
       .build()
@@ -1511,7 +1514,6 @@ class OrderPlanningIntegrationTestBase(queryGraphSolverSetup: QueryGraphSolverSe
 
     val nodeCount = 10000
     val plan = plannerBuilder()
-      .enableConnectComponentsPlanner(queryGraphSolverSetup.useIdpConnectComponents)
       .setAllNodesCardinality(nodeCount)
       .setRelationshipCardinality("()-[]->()", nodeCount / 10)
       .build()

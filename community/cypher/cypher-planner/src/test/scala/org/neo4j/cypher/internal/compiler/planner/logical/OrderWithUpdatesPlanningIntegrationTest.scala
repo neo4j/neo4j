@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher.beLike
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
+import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder
 import org.neo4j.cypher.internal.logical.plans.AntiConditionalApply
 import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.CartesianProduct
@@ -60,6 +61,10 @@ class OrderWithUpdatesGreedyPlanningIntegrationTest extends OrderWithUpdatesPlan
 class OrderWithUpdatesPlanningIntegrationTestBase(useIDPConnectComponents: Boolean)
   extends CypherFunSuite
     with LogicalPlanningIntegrationTestSupport {
+
+  override def plannerBuilder(): StatisticsBackedLogicalPlanningConfigurationBuilder =
+    super.plannerBuilder()
+         .enableConnectComponentsPlanner(useIDPConnectComponents)
 
   test("SetProperty should eliminate provided order and cause planning Sort") {
     shouldEliminateProvidedSortOrder(
@@ -252,7 +257,6 @@ class OrderWithUpdatesPlanningIntegrationTestBase(useIDPConnectComponents: Boole
       id = 1)
 
     val cfg = plannerBuilder()
-      .enableConnectComponentsPlanner(useIDPConnectComponents)
       .setAllNodesCardinality(100)
       .setLabelCardinality("N", 100)
       .setAllRelationshipsCardinality(100)
