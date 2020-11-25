@@ -423,7 +423,7 @@ abstract class PartialTopNTestBase[CONTEXT <: RuntimeContext](
       .apply()
       .|.partialTop(Seq(Ascending("b")), Seq(Ascending("c")), topLimit)
       .|.unwind("range(a, b, -1) AS c")
-      .|.unwind("range(1, a) AS b")
+      .|.unwind("range(0, a) AS b")
       .|.argument("a")
       .input(variables = Seq("a"))
       .build()
@@ -434,7 +434,7 @@ abstract class PartialTopNTestBase[CONTEXT <: RuntimeContext](
     val expected = for {
       a <- 0 until inputSize
       rhs = for {
-        b <- 1 to a
+        b <- 0 to a
         c <- b to a
       } yield (b, c)
       (b, c) <- rhs.take(topLimit)

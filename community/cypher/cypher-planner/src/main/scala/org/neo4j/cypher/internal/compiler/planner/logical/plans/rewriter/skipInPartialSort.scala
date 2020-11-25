@@ -34,10 +34,10 @@ case object skipInPartialSort extends Rewriter {
 
   private val instance: Rewriter = bottomUp(Rewriter.lift {
     case s@Skip(ps@PartialSort(_, _, _, None), skip) =>
-      Skip(ps.copy(skipSortingPrefixLength = Some(skip))(SameId(ps.id)), skip)(SameId(s.id))
+      s.copy(source = ps.copy(skipSortingPrefixLength = Some(skip))(SameId(ps.id)))(SameId(s.id))
 
     case s@Skip(ptop@PartialTop(_, _, _, _, None), skip) =>
-      Skip(ptop.copy(skipSortingPrefixLength = Some(skip))(SameId(ptop.id)), skip)(SameId(s.id))
+      s.copy(source = ptop.copy(skipSortingPrefixLength = Some(skip))(SameId(ptop.id)))(SameId(s.id))
   })
 
   override def apply(input: AnyRef): AnyRef = instance.apply(input)

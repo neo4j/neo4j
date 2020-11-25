@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.PartialSortPipe.NO_MORE_ROWS_TO_SKIP_SORTING
 import org.neo4j.cypher.internal.util.attribution.Id
 
 import scala.collection.JavaConverters.asScalaIteratorConverter
@@ -46,7 +47,7 @@ case class PartialTopNPipe(source: Pipe,
     private val rowsMemoryTracker = memoryTracker.getScopedMemoryTracker
     private val skip = skipExpression.map(SkipPipe.evaluateStaticSkipOrLimitNumberOrThrow(_, state, "SKIP"))
 
-    private var remainingSkipRows: Long = skip.getOrElse(-1L)
+    private var remainingSkipRows: Long = skip.getOrElse(NO_MORE_ROWS_TO_SKIP_SORTING)
     private val topTable = new DefaultComparatorTopTable[CypherRow](suffixComparator, remainingLimit, memoryTracker)
 
     override def clear(): Unit = {
@@ -70,11 +71,11 @@ case class PartialTopNPipe(source: Pipe,
       }
 
       remainingLimit = math.max(0, remainingLimit - 1)
-      remainingSkipRows = math.max(-1L, remainingSkipRows - 1L)
+      remainingSkipRows = math.max(NO_MORE_ROWS_TO_SKIP_SORTING, remainingSkipRows - 1)
     }
 
     override def result(): Iterator[CypherRow] = {
-      if (remainingSkipRows == -1) {
+      if (remainingSkipRows == NO_MORE_ROWS_TO_SKIP_SORTING) {
         topTable.sort()
         topTable.iterator().asScala
       } else {
