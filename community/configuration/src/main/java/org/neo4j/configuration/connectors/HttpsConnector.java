@@ -29,7 +29,6 @@ import org.neo4j.graphdb.config.Setting;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_advertised_address;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_listen_address;
 import static org.neo4j.configuration.SettingImpl.newBuilder;
-import static org.neo4j.configuration.SettingValueParsers.BOOL;
 import static org.neo4j.configuration.SettingValueParsers.SOCKET_ADDRESS;
 
 @ServiceProvider
@@ -40,7 +39,7 @@ public final class HttpsConnector implements SettingsDeclaration
     public static final String NAME = "https";
 
     @Description( "Enable the https connector" )
-    public static final Setting<Boolean> enabled = newBuilder( "dbms.connector.https.enabled", BOOL, false ).build();
+    public static final Setting<Boolean> enabled = ConnectorDefaults.https_enabled;
 
     @Description( "Address the connector should bind to" )
     public static final Setting<SocketAddress> listen_address =

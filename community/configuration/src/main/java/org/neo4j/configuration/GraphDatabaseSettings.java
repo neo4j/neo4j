@@ -19,6 +19,8 @@
  */
 package org.neo4j.configuration;
 
+import org.eclipse.collections.api.factory.Maps;
+
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.ZoneId;
@@ -28,9 +30,7 @@ import java.util.Map;
 
 import org.neo4j.annotations.api.PublicApi;
 import org.neo4j.annotations.service.ServiceProvider;
-import org.neo4j.configuration.connectors.BoltConnector;
-import org.neo4j.configuration.connectors.HttpConnector;
-import org.neo4j.configuration.connectors.HttpsConnector;
+import org.neo4j.configuration.connectors.ConnectorDefaults;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.io.ByteUnit;
@@ -952,12 +952,9 @@ public class GraphDatabaseSettings implements SettingsDeclaration
      * Default settings for connectors. The default values are assumes to be default for embedded deployments through the code.
      * This map contains default connector settings that you can pass to the builders.
      */
-    public static final Map<Setting<?>, Object> SERVER_DEFAULTS = Map.of(
-            HttpConnector.enabled, true,
-            HttpsConnector.enabled, false,
-            BoltConnector.enabled, true,
-            auth_enabled, true
-    );
+    public static final Map<Setting<?>,Object> SERVER_DEFAULTS = Maps.mutable
+            .withMap( ConnectorDefaults.SERVER_CONNECTOR_DEFAULTS )
+            .withKeyValue( auth_enabled, true );
 
     public enum Mode
     {
