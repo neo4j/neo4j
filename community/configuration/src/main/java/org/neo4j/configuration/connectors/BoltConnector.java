@@ -35,7 +35,6 @@ import static java.time.Duration.ofSeconds;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_advertised_address;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_listen_address;
 import static org.neo4j.configuration.SettingImpl.newBuilder;
-import static org.neo4j.configuration.SettingValueParsers.BOOL;
 import static org.neo4j.configuration.SettingValueParsers.DURATION;
 import static org.neo4j.configuration.SettingValueParsers.INT;
 import static org.neo4j.configuration.SettingValueParsers.SOCKET_ADDRESS;
@@ -51,7 +50,7 @@ public final class BoltConnector implements SettingsDeclaration
 
     @Description( "Enable the bolt connector" )
     @DocumentedDefaultValue( "true" ) // Should document server defaults.
-    public static final Setting<Boolean> enabled = newBuilder( "dbms.connector.bolt.enabled", BOOL, false ).build();
+    public static final Setting<Boolean> enabled = ConnectorDefaults.bolt_enabled;
 
     @Description( "Encryption level to require this connector to use" )
     public static final Setting<EncryptionLevel> encryption_level =
