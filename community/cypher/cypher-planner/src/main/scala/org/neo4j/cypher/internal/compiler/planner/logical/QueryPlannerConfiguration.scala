@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.indexSeekLeafPla
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.labelScanLeafPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.outerHashJoin
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.pickBestPlanUsingHintsAndCost
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.relationshipTypeScanLeafPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.selectCovered
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.selectHasLabelWithJoin
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.selectPatternPredicates
@@ -55,7 +56,7 @@ object QueryPlannerConfiguration {
     indexScanLeafPlanner(restrictions.symbolsThatShouldOnlyUseIndexLeafPlanners),
 
     // MATCH (n:Person) RETURN n
-    labelScanLeafPlanner(restrictions.symbolsThatShouldOnlyUseIndexLeafPlanners)
+    labelScanLeafPlanner(restrictions.symbolsThatShouldOnlyUseIndexLeafPlanners),
   )
 
   private def allLeafPlanners(restrictions: LeafPlanRestrictions): IndexedSeq[LeafPlanner] = {
@@ -65,6 +66,9 @@ object QueryPlannerConfiguration {
 
       // MATCH (n) RETURN n
       allNodesLeafPlanner(restrictions.symbolsThatShouldOnlyUseIndexLeafPlanners),
+
+      //MATCH ()-[r:R]->()
+     relationshipTypeScanLeafPlanner(restrictions.symbolsThatShouldOnlyUseIndexLeafPlanners),
 
       // Handles OR between other leaf planners
       OrLeafPlanner(expressionLeafPlanners))

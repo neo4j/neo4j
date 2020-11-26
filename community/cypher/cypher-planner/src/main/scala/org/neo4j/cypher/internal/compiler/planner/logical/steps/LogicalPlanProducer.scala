@@ -103,6 +103,7 @@ import org.neo4j.cypher.internal.logical.plans.DetachDeleteExpression
 import org.neo4j.cypher.internal.logical.plans.DetachDeleteNode
 import org.neo4j.cypher.internal.logical.plans.DetachDeletePath
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
+import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.Distinct
 import org.neo4j.cypher.internal.logical.plans.Eager
 import org.neo4j.cypher.internal.logical.plans.EmptyResult
@@ -170,6 +171,7 @@ import org.neo4j.cypher.internal.logical.plans.Top
 import org.neo4j.cypher.internal.logical.plans.Top1WithTies
 import org.neo4j.cypher.internal.logical.plans.TriadicSelection
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByIdSeek
+import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.Union
 import org.neo4j.cypher.internal.logical.plans.UnwindCollection
 import org.neo4j.cypher.internal.logical.plans.UpdatingPlan
@@ -266,6 +268,40 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
   def planAllNodesScan(idName: String, argumentIds: Set[String], context: LogicalPlanningContext): LogicalPlan = {
     val solved = RegularSinglePlannerQuery(queryGraph = QueryGraph(argumentIds = argumentIds, patternNodes = Set(idName)))
     annotate(AllNodesScan(idName, argumentIds), solved, ProvidedOrder.empty, context)
+  }
+
+  def planDirectedRelationshipByTypeScan(idName: String,
+                                         startNode: String,
+                                         typ: RelTypeName,
+                                         endNode: String,
+                                         pattern: PatternRelationship,
+                                         argumentIds: Set[String],
+                                         context: LogicalPlanningContext): LogicalPlan = {
+    val solved = RegularSinglePlannerQuery(queryGraph = QueryGraph.empty
+      .addPatternRelationship(pattern)
+      .addArgumentIds(argumentIds.toIndexedSeq)
+    )
+    val solver = PatternExpressionSolver.solverForLeafPlan(argumentIds, context)
+    val newArguments = solver.newArguments
+    val leafPlan = annotate(DirectedRelationshipTypeScan(idName, startNode, typ, endNode, argumentIds ++ newArguments), solved, ProvidedOrder.empty, context)
+    solver.rewriteLeafPlan(leafPlan)
+  }
+
+  def planUndirectedRelationshipByTypeScan(idName: String,
+                                           startNode: String,
+                                           typ: RelTypeName,
+                                           endNode: String,
+                                           pattern: PatternRelationship,
+                                           argumentIds: Set[String],
+                                           context: LogicalPlanningContext): LogicalPlan = {
+    val solved = RegularSinglePlannerQuery(queryGraph = QueryGraph.empty
+      .addPatternRelationship(pattern)
+      .addArgumentIds(argumentIds.toIndexedSeq)
+    )
+    val solver = PatternExpressionSolver.solverForLeafPlan(argumentIds, context)
+    val newArguments = solver.newArguments
+    val leafPlan = annotate(UndirectedRelationshipTypeScan(idName, startNode, typ, endNode, argumentIds ++ newArguments), solved, ProvidedOrder.empty, context)
+    solver.rewriteLeafPlan(leafPlan)
   }
 
   def planApply(left: LogicalPlan, right: LogicalPlan, context: LogicalPlanningContext): LogicalPlan = {
