@@ -29,6 +29,7 @@ import org.neo4j.token.api.NonUniqueTokenException;
 import org.neo4j.token.api.TokenConstants;
 import org.neo4j.token.api.TokenHolder;
 import org.neo4j.token.api.TokenNotFoundException;
+import org.neo4j.util.VisibleForTesting;
 
 import static org.neo4j.internal.recordstorage.StoreTokens.createReadOnlyTokenHolder;
 
@@ -49,7 +50,7 @@ class RecreatingTokenHolder implements TokenHolder
     }
 
     @Override
-    public synchronized void setInitialTokens( List<NamedToken> tokens ) throws NonUniqueTokenException
+    public void setInitialTokens( List<NamedToken> tokens ) throws NonUniqueTokenException
     {
         delegate.setInitialTokens( tokens );
     }
@@ -73,7 +74,7 @@ class RecreatingTokenHolder implements TokenHolder
     }
 
     @Override
-    public synchronized NamedToken getTokenById( int id )
+    public NamedToken getTokenById( int id )
     {
         try
         {
@@ -81,53 +82,70 @@ class RecreatingTokenHolder implements TokenHolder
         }
         catch ( TokenNotFoundException e )
         {
-            stats.addCorruptToken( tokenType, id );
-            String tokenName;
-            do
+            // this path should happen rarely, only when reading from a corrupted store such that the referred token is missing
+            synchronized ( this )
             {
-                createdTokenCounter++;
-                tokenName = getTokenType() + "_" + createdTokenCounter;
+                try
+                {
+                    return delegate.getTokenById( id );
+                }
+                catch ( TokenNotFoundException ee )
+                {
+                    stats.addCorruptToken( tokenType, id );
+                    String tokenName;
+                    do
+                    {
+                        createdTokenCounter++;
+                        tokenName = generateRecreatedTokenName( createdTokenCounter );
+                    }
+                    while ( getIdByName( tokenName ) != TokenConstants.NO_TOKEN );
+                    NamedToken token = new NamedToken( tokenName, id );
+                    delegate.addToken( token );
+                    recreatedTokens.getIfAbsentPut( getTokenType(), ArrayList::new ).add( token );
+                    return token;
+                }
             }
-            while ( getIdByName( tokenName ) != TokenConstants.NO_TOKEN );
-            NamedToken token = new NamedToken( tokenName, id );
-            delegate.addToken( token );
-            recreatedTokens.getIfAbsentPut( getTokenType(), ArrayList::new ).add( token );
-            return token;
         }
     }
 
+    @VisibleForTesting
+    String generateRecreatedTokenName( int number )
+    {
+        return getTokenType() + "_" + number;
+    }
+
     @Override
-    public synchronized int getIdByName( String name )
+    public int getIdByName( String name )
     {
         return delegate.getIdByName( name );
     }
 
     @Override
-    public synchronized boolean getIdsByNames( String[] names, int[] ids )
+    public boolean getIdsByNames( String[] names, int[] ids )
     {
         return delegate.getIdsByNames( names, ids );
     }
 
     @Override
-    public synchronized Iterable<NamedToken> getAllTokens()
+    public Iterable<NamedToken> getAllTokens()
     {
         return delegate.getAllTokens();
     }
 
     @Override
-    public synchronized String getTokenType()
+    public String getTokenType()
     {
         return delegate.getTokenType();
     }
 
     @Override
-    public synchronized boolean hasToken( int id )
+    public boolean hasToken( int id )
     {
         return delegate.hasToken( id );
     }
 
     @Override
-    public synchronized int size()
+    public int size()
     {
         return delegate.size();
     }
@@ -139,7 +157,7 @@ class RecreatingTokenHolder implements TokenHolder
     }
 
     @Override
-    public synchronized NamedToken getInternalTokenById( int id ) throws TokenNotFoundException
+    public NamedToken getInternalTokenById( int id ) throws TokenNotFoundException
     {
         return delegate.getInternalTokenById( id );
     }
