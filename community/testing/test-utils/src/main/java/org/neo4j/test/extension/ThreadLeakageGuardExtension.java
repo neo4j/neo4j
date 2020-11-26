@@ -74,10 +74,10 @@ public class ThreadLeakageGuardExtension implements AfterAllCallback, BeforeAllC
             "neo4j.CheckPoint",                 //Sometimes erroneously leaked on database shutdown, possible race-condition, to be fixed!
             "neo4j.IndexSampling",              //Sometimes erroneously leaked on database shutdown, possible race-condition, to be fixed!
             "junit-jupiter-timeout-watcher",
-            "tc-okhttp-stream",                 //TestContainers monitoring thread. Might be possible to remove once we are on testcontainers 1.15.x
-            "OkHttp ConnectionPool",            //TestContainers connection pool. Might be possible to remove once we are on testcontainers 1.15.x
-            "Okio Watchdog",                    //TestContainers watchdog. Might be possible to remove once we are on testcontainers 1.15.x
-            "testcontainers-ryuk"               //TestContainers reaper. Might be possible to remove once we are on testcontainers 1.15.x
+            "docker-java-stream",               //Docker testcontainers related, will be cleaned up at end of test run
+            "OkHttp",                           //Docker testcontainers related, will be cleaned up at end of test run
+            "Okio Watchdog",                    //Docker testcontainers related, will be cleaned up at end of test run
+            "testcontainers-ryuk"               //Docker testcontainers related, will be cleaned up at end of test run
     );
 
     @Override
