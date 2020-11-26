@@ -127,7 +127,6 @@ import static org.apache.commons.io.IOUtils.lineIterator;
 import static org.eclipse.collections.impl.factory.Sets.immutable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.batchimport.Configuration.defaultConfiguration;
-import static org.neo4j.internal.batchimport.staging.ExecutionSupervisors.withDynamicProcessorAssignment;
 import static org.neo4j.internal.recordstorage.StoreTokens.allTokens;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.CHECKPOINT_LOG_VERSION;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET;
@@ -452,8 +451,8 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
             // We have to make sure to keep the token ids if we're migrating properties/labels
             BatchImporter importer = batchImporterFactory.instantiate(
                     migrationDirectoryStructure, fileSystem, pageCache, cacheTracer, importConfig, logService,
-                    withDynamicProcessorAssignment( migrationBatchImporterMonitor( legacyStore, progressReporter,
-                            importConfig ), importConfig ), additionalInitialIds, config, newFormat, ImportLogic.NO_MONITOR, jobScheduler, badCollector,
+                    migrationBatchImporterMonitor( legacyStore, progressReporter,
+                            importConfig ), additionalInitialIds, config, newFormat, ImportLogic.NO_MONITOR, jobScheduler, badCollector,
                     LogFilesInitializer.NULL, memoryTracker );
             InputIterable nodes = () -> legacyNodesAsInput( legacyStore, requiresPropertyMigration, cacheTracer, memoryTracker );
             InputIterable relationships = () -> legacyRelationshipsAsInput( legacyStore, requiresPropertyMigration, cacheTracer, memoryTracker );
