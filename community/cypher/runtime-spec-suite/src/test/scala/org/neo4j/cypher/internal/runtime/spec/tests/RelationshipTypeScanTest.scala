@@ -59,7 +59,7 @@ abstract class RelationshipTypeScanTest[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r", "x", "y")
       .filter("x:NOT_THERE")
-      .relationshipTypeScan("(x)-[:R]->(y)")
+      .relationshipTypeScan("(x)-[r:R]->(y)")
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -117,7 +117,7 @@ abstract class RelationshipTypeScanTest[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r", "x", "y")
       .filter("x:NOT_THERE")
-      .relationshipTypeScan("(x)-[:R]-(y)")
+      .relationshipTypeScan("(x)-[r:R]-(y)")
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
