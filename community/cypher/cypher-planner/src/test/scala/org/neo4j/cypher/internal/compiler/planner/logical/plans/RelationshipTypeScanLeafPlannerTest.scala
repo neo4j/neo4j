@@ -1,7 +1,8 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.plans
 
-import org.neo4j.cypher.internal.ast.semantics.SemanticTable
+import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
+import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.labelScanLeafPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.relationshipTypeScanLeafPlanner
@@ -21,8 +22,7 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 class RelationshipTypeScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
   test("simple outgoing directed type scan") {
     // given
-    val semanticTable = new SemanticTable()
-    val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext(), semanticTable = semanticTable)
+    val context = planningContext()
     //(a)-[:R]->(b)
     val qg = pattern("r", "a", "b", OUTGOING, "R")
 
@@ -37,8 +37,7 @@ class RelationshipTypeScanLeafPlannerTest extends CypherFunSuite with LogicalPla
 
   test("simple incoming directed type scan") {
     // given
-    val semanticTable = new SemanticTable()
-    val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext(), semanticTable = semanticTable)
+    val context = planningContext()
     //(a)<-[:R]-(b)
     val qg = pattern("r", "a", "b", INCOMING, "R")
 
@@ -53,8 +52,7 @@ class RelationshipTypeScanLeafPlannerTest extends CypherFunSuite with LogicalPla
 
   test("simple undirected type scan") {
     // given
-    val semanticTable = new SemanticTable()
-    val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext(), semanticTable = semanticTable)
+    val context = planningContext()
     //(a)-[:R]-(b)
     val qg = pattern("r", "a", "b", BOTH, "R")
 
@@ -69,8 +67,7 @@ class RelationshipTypeScanLeafPlannerTest extends CypherFunSuite with LogicalPla
 
   test("should not scan if multiple types") {
     // given
-    val semanticTable = new SemanticTable()
-    val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext(), semanticTable = semanticTable)
+    val context = planningContext()
     //(a)-[:R1|R2]->(b)
     val qg = pattern("r", "a", "b", OUTGOING, "R1", "R2")
 
@@ -83,10 +80,9 @@ class RelationshipTypeScanLeafPlannerTest extends CypherFunSuite with LogicalPla
 
   test("should not scan if variable length pattern") {
     // given
-    val semanticTable = new SemanticTable()
-    val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext(), semanticTable = semanticTable)
+    val context = planningContext()
     //(a)-[:R*]->(b)
-    val qg =varPattern("r", "a", "b", OUTGOING, "R")
+    val qg = varPattern("r", "a", "b", OUTGOING, "R")
 
     // when
     val resultPlans = relationshipTypeScanLeafPlanner(Set.empty)(qg, InterestingOrder.empty, context)
@@ -109,20 +105,30 @@ class RelationshipTypeScanLeafPlannerTest extends CypherFunSuite with LogicalPla
     // given
     val context = planningContext(typeScanEnabled = false)
 
-      // then
-      labelScanLeafPlanner(Set("n"))(qg, InterestingOrder.empty, context) should be(empty)
-      labelScanLeafPlanner(Set("a"))(qg, InterestingOrder.empty, context) should be(empty)
-      labelScanLeafPlanner(Set("b"))(qg, InterestingOrder.empty, context) should be(empty)
-    }
+    //(a)-[:R]->(b)
+    val qg = pattern("r", "a", "b", OUTGOING, "R")
+
+    // when
+    val resultPlans = relationshipTypeScanLeafPlanner(Set.empty)(qg, InterestingOrder.empty, context)
+
+    // then
+    resultPlans shouldBe empty
+  }
 
   private def pattern(name: String, from: String, to: String, direction: SemanticDirection, types: String*) =
     QueryGraph(
-      patternNodes = Set(name,  from, to),
+      patternNodes = Set(name, from, to),
       patternRelationships = Set(PatternRelationship(name, (from, to), direction, types.map(relTypeName), SimplePatternLength)))
 
   private def varPattern(name: String, from: String, to: String, direction: SemanticDirection, types: String*) =
     QueryGraph(
-      patternNodes = Set(name,  from, to),
+      patternNodes = Set(name, from, to),
       patternRelationships = Set(PatternRelationship(name, (from, to), direction, types.map(relTypeName), VarPatternLength(1, None))))
+
+  def planningContext(typeScanEnabled: Boolean = true): LogicalPlanningContext = {
+    val planContext = newMockedPlanContext()
+    when(planContext.relationshipTypeScanStoreEnabled).thenReturn(typeScanEnabled)
+    newMockedLogicalPlanningContext(planContext = planContext, semanticTable = newMockedSemanticTable)
+  }
 
 }

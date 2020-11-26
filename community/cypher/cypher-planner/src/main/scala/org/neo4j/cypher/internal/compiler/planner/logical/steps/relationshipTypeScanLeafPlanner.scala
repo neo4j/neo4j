@@ -34,6 +34,7 @@ case class relationshipTypeScanLeafPlanner(skipIDs: Set[String]) extends LeafPla
 
   def apply(queryGraph: QueryGraph, interestingOrder: InterestingOrder, context: LogicalPlanningContext): Seq[LogicalPlan] = {
     def shouldIgnore(pattern: PatternRelationship) =
+      !context.planContext.relationshipTypeScanStoreEnabled ||
       queryGraph.argumentIds.contains(pattern.name) ||
       skipIDs.contains(pattern.name)
 

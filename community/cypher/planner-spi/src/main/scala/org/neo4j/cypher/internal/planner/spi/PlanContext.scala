@@ -67,6 +67,8 @@ trait PlanContext extends TokenContext with ProcedureSignatureResolver {
   def statistics: InstrumentedGraphStatistics
 
   def notificationLogger(): InternalNotificationLogger
+
+  def relationshipTypeScanStoreEnabled: Boolean
 }
 
 trait ProcedureSignatureResolver {

@@ -50,7 +50,6 @@ import org.neo4j.internal.kernel.api.InternalIndexState
 import org.neo4j.internal.kernel.api.procs
 import org.neo4j.internal.schema
 import org.neo4j.internal.schema.ConstraintDescriptor
-import org.neo4j.internal.schema.IndexBehaviour
 import org.neo4j.internal.schema.IndexOrderCapability.ASC_FULLY_SORTED
 import org.neo4j.internal.schema.IndexOrderCapability.ASC_PARTIALLY_SORTED
 import org.neo4j.internal.schema.IndexOrderCapability.BOTH_FULLY_SORTED
@@ -248,4 +247,6 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
   override def functionSignature(name: QualifiedName): Option[UserFunctionSignature] = TransactionBoundPlanContext.functionSignature(tc.kernelTransaction, name)
 
   override def notificationLogger(): InternalNotificationLogger = logger
+
+  override def relationshipTypeScanStoreEnabled: Boolean = tc.schemaRead.relationshipTypeScanStoreEnabled()
 }

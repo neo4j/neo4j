@@ -20,9 +20,13 @@
 package org.neo4j.cypher
 
 import org.neo4j.configuration.Config
+import org.neo4j.cypher.internal.CypherQueryObfuscator
+import org.neo4j.cypher.internal.PreParser
+import org.neo4j.cypher.internal.cache.ExecutorBasedCaffeineCacheFactory
 import org.neo4j.cypher.internal.compiler.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.compiler.phases.RewriteProcedureCalls
+import org.neo4j.cypher.internal.config.CypherConfiguration
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.frontend.phases.InitialState
 import org.neo4j.cypher.internal.frontend.phases.ObfuscationMetadataCollection
@@ -31,10 +35,6 @@ import org.neo4j.cypher.internal.logical.plans.ProcedureSignature
 import org.neo4j.cypher.internal.logical.plans.QualifiedName
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.spi.procsHelpers.asCypherProcedureSignature
-import org.neo4j.cypher.internal.CypherQueryObfuscator
-import org.neo4j.cypher.internal.PreParser
-import org.neo4j.cypher.internal.cache.ExecutorBasedCaffeineCacheFactory
-import org.neo4j.cypher.internal.config.CypherConfiguration
 import org.neo4j.kernel.api.query.QueryObfuscator
 import org.neo4j.procedure.impl.GlobalProceduresRegistry
 
@@ -112,6 +112,7 @@ class CypherQueryObfuscatorFactory {
     override def getRelTypeName(id: Int): Nothing = fail()
     override def getOptRelTypeId(relType: String): Nothing = fail()
     override def getRelTypeId(relType: String): Nothing = fail()
+    override def relationshipTypeScanStoreEnabled: Boolean = fail()
 
     private def fail() = throw new IllegalStateException("Should not have been called in this test.")
   }

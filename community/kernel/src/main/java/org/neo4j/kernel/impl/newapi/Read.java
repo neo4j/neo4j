@@ -471,7 +471,8 @@ abstract class Read implements TxStateHolder,
         ktx.statementLocks().optimistic().acquireShared( ktx.lockTracer(), resource, resourceId );
     }
 
-    boolean relationshipTypeScanStoreEnabled()
+    @Override
+    public boolean relationshipTypeScanStoreEnabled()
     {
         return relationshipTypeScanStoreEnabled;
     }
