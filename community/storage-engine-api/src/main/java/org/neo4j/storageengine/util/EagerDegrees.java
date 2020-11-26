@@ -123,6 +123,12 @@ public class EagerDegrees implements Degrees, Degrees.Mutator
         }
     }
 
+    @Override
+    public boolean isSplit()
+    {
+        return true;
+    }
+
     private static class Degree
     {
         private int outgoing;

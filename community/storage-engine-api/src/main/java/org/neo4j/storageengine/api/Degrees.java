@@ -152,9 +152,14 @@ public interface Degrees
     interface Mutator
     {
         /**
-         * Returns <code>true</code> if computation should continue otherwis
+         * Returns <code>true</code> if computation should continue otherwise
          * <code>false</code>
          */
         boolean add( int type, int outgoing, int incoming, int loop );
+
+        /**
+         * @return whether or not this mutator collects relationships split by type and direction.
+         */
+        boolean isSplit();
     }
 }

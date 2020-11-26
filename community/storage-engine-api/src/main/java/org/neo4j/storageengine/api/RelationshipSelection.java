@@ -97,6 +97,14 @@ public abstract class RelationshipSelection
     public abstract boolean isTypeLimited();
 
     /**
+     * @return {@code true} if this selection is limited in any way, otherwise {@code false} where all relationships should be selected.
+     */
+    public boolean isLimited()
+    {
+        return true;
+    }
+
+    /**
      * Selects the correct set of added relationships from transaction state, based on the selection criteria.
      *
      * @param transactionState the {@link NodeState} to select added relationships from.
@@ -426,6 +434,12 @@ public abstract class RelationshipSelection
 
         @Override
         public boolean isTypeLimited()
+        {
+            return false;
+        }
+
+        @Override
+        public boolean isLimited()
         {
             return false;
         }

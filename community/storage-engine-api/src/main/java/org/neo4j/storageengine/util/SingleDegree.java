@@ -43,6 +43,12 @@ public class SingleDegree implements Degrees.Mutator
         return this.total < maxDegree;
     }
 
+    @Override
+    public boolean isSplit()
+    {
+        return false;
+    }
+
     public int getTotal()
     {
         return total;

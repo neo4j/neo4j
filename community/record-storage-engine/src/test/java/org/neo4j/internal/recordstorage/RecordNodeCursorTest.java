@@ -22,17 +22,29 @@ package org.neo4j.internal.recordstorage;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.kernel.impl.store.NodeStore;
+import org.neo4j.kernel.impl.store.RelationshipGroupStore;
+import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.storageengine.api.RelationshipSelection;
+import org.neo4j.storageengine.util.SingleDegree;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.kernel.impl.store.record.Record.NO_LABELS_FIELD;
+import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 
 class RecordNodeCursorTest
 {
@@ -48,7 +60,7 @@ class RecordNodeCursorTest
             long id = invocationOnMock.getArgument( 0 );
             NodeRecord record = invocationOnMock.getArgument( 1 );
             record.setId( id );
-            record.initialize( id == 200, 1L, false, 1L, 0L );
+            record.initialize( id == 200, 1L, false, 1L, NO_LABELS_FIELD.longValue() );
             return null;
         } ).when( nodeStore ).getRecordByCursor( anyLong(), any(), any(), any() );
         doAnswer( invocationOnMock ->
@@ -67,5 +79,48 @@ class RecordNodeCursorTest
         assertTrue( cursor.next() );
         assertEquals( 200, cursor.getId() );
         assertFalse( cursor.next() );
+    }
+
+    @Test
+    void shouldChooseFastTotalDegreeLookupWhenPossible()
+    {
+        // given
+        NodeStore nodeStore = mock( NodeStore.class );
+        long relationshipId = 99;
+        long nextRelationshipId = relationshipId + 1;
+        long nodeId = 5;
+        int degree = 123;
+        when( nodeStore.getHighestPossibleIdInUse( NULL ) ).thenReturn( nodeId + 1 );
+        doAnswer( invocationOnMock ->
+        {
+            long id = invocationOnMock.getArgument( 0 );
+            NodeRecord record = invocationOnMock.getArgument( 1 );
+            record.setId( id );
+            record.initialize( true, NULL_REFERENCE.longValue(), false, relationshipId, NO_LABELS_FIELD.longValue() );
+            return null;
+        } ).when( nodeStore ).getRecordByCursor( eq( nodeId ), any(), any(), any() );
+        RelationshipStore relationshipStore = mock( RelationshipStore.class );
+        doAnswer( invocationOnMock ->
+        {
+            long id = invocationOnMock.getArgument( 0 );
+            RelationshipRecord record = invocationOnMock.getArgument( 1 );
+            record.setId( id );
+            record.initialize( true, NULL_REFERENCE.longValue(), nodeId, nodeId + 10, 1, degree, nextRelationshipId, 33, 44, true, false );
+            return null;
+        } ).when( relationshipStore ).getRecordByCursor( eq( relationshipId ), any(), any(), any() );
+        RelationshipGroupStore groupStore = mock( RelationshipGroupStore.class );
+        RecordNodeCursor nodeCursor = new RecordNodeCursor( nodeStore, relationshipStore, groupStore, NULL );
+
+        // when
+        nodeCursor.single( nodeId );
+        assertThat( nodeCursor.next() ).isTrue();
+        SingleDegree mutator = new SingleDegree();
+        nodeCursor.degrees( RelationshipSelection.ALL_RELATIONSHIPS, mutator, true );
+
+        // then
+        assertThat( mutator.getTotal() ).isEqualTo( degree );
+        verifyNoInteractions( groupStore );
+        verify( relationshipStore ).getRecordByCursor( eq( relationshipId ), any(), any(), any() );
+        verify( relationshipStore, never() ).getRecordByCursor( eq( nextRelationshipId ), any(), any(), any() );
     }
 }
