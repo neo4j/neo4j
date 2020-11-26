@@ -30,11 +30,13 @@ case class DirectedRelationshipTypeScanPipe(ident: String, fromNode: String, typ
   protected def internalCreateResults(state: QueryState): ClosingIterator[CypherRow] = {
     val ctx = state.newRowWithArgument(rowFactory)
     val query = state.query
-    val relIds = query.getRelationshipsByType(typ.getId(query))
-
-    PrimitiveLongHelper.map(relIds, relationshipId => {
-      val relationship = state.query.relationshipById(relationshipId)
-      rowFactory.copyWith(ctx, ident, relationship, fromNode, relationship.startNode(), toNode, relationship.endNode())
-    })
+    val typeId = typ.getId(query)
+    if (typeId == LazyType.UNKNOWN) ClosingIterator.empty
+    else {
+      PrimitiveLongHelper.map(query.getRelationshipsByType(typeId), relationshipId => {
+        val relationship = state.query.relationshipById(relationshipId)
+        rowFactory.copyWith(ctx, ident, relationship, fromNode, relationship.startNode(), toNode, relationship.endNode())
+      })
+    }
   }
 }
