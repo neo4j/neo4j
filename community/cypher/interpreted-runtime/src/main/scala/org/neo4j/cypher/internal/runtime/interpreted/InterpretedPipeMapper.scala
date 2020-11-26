@@ -113,6 +113,7 @@ import org.neo4j.cypher.internal.logical.plans.Top
 import org.neo4j.cypher.internal.logical.plans.Top1WithTies
 import org.neo4j.cypher.internal.logical.plans.TriadicSelection
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByIdSeek
+import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.Union
 import org.neo4j.cypher.internal.logical.plans.UnwindCollection
 import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
@@ -221,6 +222,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.Top1WithTiesPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.TopNPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.TriadicSelectionPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.UndirectedRelationshipByIdSeekPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.UndirectedRelationshipTypeScanPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.UnionPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.UnwindPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.ValueHashJoinPipe
@@ -283,6 +285,9 @@ case class InterpretedPipeMapper(readOnly: Boolean,
 
       case DirectedRelationshipTypeScan(ident, fromNode, typ, toNode, _) =>
         DirectedRelationshipTypeScanPipe(ident, fromNode, LazyType(typ)(semanticTable), toNode)(id = id)
+
+      case UndirectedRelationshipTypeScan(ident, fromNode, typ, toNode, _) =>
+        UndirectedRelationshipTypeScanPipe(ident, fromNode, LazyType(typ)(semanticTable), toNode)(id = id)
 
       case NodeIndexSeek(ident, label, properties, valueExpr, _, indexOrder) =>
         val indexSeekMode = IndexSeekModeFactory(unique = false, readOnly = readOnly).fromQueryExpression(valueExpr)

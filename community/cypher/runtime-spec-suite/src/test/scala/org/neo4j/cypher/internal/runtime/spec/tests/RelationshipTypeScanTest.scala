@@ -88,4 +88,62 @@ abstract class RelationshipTypeScanTest[CONTEXT <: RuntimeContext](
     val expected = for {r1 <- relationships; r2 <- relationships; r3 <- relationships} yield Array(r1, r2, r3)
     runtimeResult should beColumns("r1", "r2", "r3").withRows(expected)
   }
+
+  test("should support undirected relationship scan") {
+    // given
+    val (_, _, relationships, _) = given {
+      bidirectionalBipartiteGraph(sizeHint, "A", "B", "R", "S")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r", "x", "y")
+      .relationshipTypeScan("(x)-[r:R]-(y)")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("r", "x", "y").withRows(relationships.flatMap(r => Seq(Array(r, r.getStartNode, r.getEndNode), Array(r, r.getEndNode, r.getStartNode))))
+  }
+
+  test("should combine undirected type scan and filter") {
+    // given
+    val (_, _, relationships, _) = given {
+      bidirectionalBipartiteGraph(sizeHint, "A", "B", "R", "S")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r", "x", "y")
+      .filter("x:NOT_THERE")
+      .relationshipTypeScan("(x)-[:R]-(y)")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("r", "x", "y").withNoRows()
+  }
+
+  test("should handle multiple undirected scans") {
+    // given
+    val (_, relationships) = given { circleGraph(10, "L") }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r1", "r2", "r3")
+      .apply()
+      .|.relationshipTypeScan("()-[r3:R]-()")
+      .apply()
+      .|.relationshipTypeScan("()-[r2:R]-()")
+      .relationshipTypeScan("()-[r1:R]-()")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = for {r1 <- relationships; r2 <- relationships; r3 <- relationships} yield Seq.fill(8)(Array(r1, r2, r3))
+    runtimeResult should beColumns("r1", "r2", "r3").withRows(expected.flatten)
+  }
 }
