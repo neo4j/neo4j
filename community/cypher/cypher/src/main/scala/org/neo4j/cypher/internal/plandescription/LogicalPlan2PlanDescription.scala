@@ -75,6 +75,7 @@ import org.neo4j.cypher.internal.logical.plans.DetachDeleteExpression
 import org.neo4j.cypher.internal.logical.plans.DetachDeleteNode
 import org.neo4j.cypher.internal.logical.plans.DetachDeletePath
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
+import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.Distinct
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForConstraint
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForIndex
@@ -172,6 +173,7 @@ import org.neo4j.cypher.internal.logical.plans.TriadicBuild
 import org.neo4j.cypher.internal.logical.plans.TriadicFilter
 import org.neo4j.cypher.internal.logical.plans.TriadicSelection
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByIdSeek
+import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.Union
 import org.neo4j.cypher.internal.logical.plans.Uniqueness
 import org.neo4j.cypher.internal.logical.plans.UnwindCollection
@@ -269,6 +271,14 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
       case UndirectedRelationshipByIdSeek(idName, relIds, startNode, endNode, _) =>
         val details = Details(relationshipByIdSeekInfo(idName, relIds, startNode, endNode, false))
         PlanDescriptionImpl(id, "UndirectedRelationshipByIdSeek", NoChildren, Seq(details), variables)
+
+      case DirectedRelationshipTypeScan(idName, _, typeName, _, _) =>
+        val prettyDetails = pretty"${asPrettyString(idName)}:${asPrettyString(typeName.name)}"
+        PlanDescriptionImpl(id, "DirectedRelationshipTypeScan", NoChildren, Seq(Details(prettyDetails)), variables)
+
+      case UndirectedRelationshipTypeScan(idName, _, typeName, _, _) =>
+        val prettyDetails = pretty"${asPrettyString(idName)}:${asPrettyString(typeName.name)}"
+        PlanDescriptionImpl(id, "UndirectedRelationshipTypeScan", NoChildren, Seq(Details(prettyDetails)), variables)
 
       case Input(nodes, rels, inputVars, _) =>
         PlanDescriptionImpl(id, "Input", NoChildren, Seq(Details((nodes ++ rels ++ inputVars).map(asPrettyString(_)))), variables)
