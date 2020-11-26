@@ -627,6 +627,14 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
              .directedRelationshipByIdSeek("r1", "x", "y", Set(), 23, 22.0, -1)
              .build())
 
+  testPlan("relationshipTypeScan",
+    new TestPlanBuilder()
+      .produceResults("x", "y")
+      .apply()
+      .|.relationshipTypeScan("(x)-[r:R]-(y)")
+      .relationshipTypeScan("(x)-[r:R]->(y)")
+      .build())
+
   // Formatting paramExpr and customQueryExpression is currently not supported.
   // These cases will need manual fixup.
   testPlan("nodeIndexOperator", {
