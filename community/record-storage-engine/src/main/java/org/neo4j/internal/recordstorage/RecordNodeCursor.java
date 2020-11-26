@@ -57,6 +57,7 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
     private boolean batched;
     private RecordRelationshipGroupCursor groupCursor;
     private RecordRelationshipTraversalCursor relationshipCursor;
+    private RecordRelationshipScanCursor relationshipScanCursor;
     private RecordLoadOverride loadMode;
 
     RecordNodeCursor( NodeStore read, RelationshipStore relationshipStore, RelationshipGroupStore groupStore, PageCursorTracer cursorTracer )
@@ -193,10 +194,7 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
         MutableIntSet types = IntSets.mutable.empty();
         if ( !isDense() )
         {
-            if ( relationshipCursor == null )
-            {
-                relationshipCursor = new RecordRelationshipTraversalCursor( relationshipStore, groupStore, cursorTracer );
-            }
+            ensureRelationshipTraversalCursorInitialized();
             relationshipCursor.init( this, ALL_RELATIONSHIPS );
             while ( relationshipCursor.next() )
             {
@@ -218,15 +216,43 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
         return types.toArray();
     }
 
+    private void ensureRelationshipTraversalCursorInitialized()
+    {
+        if ( relationshipCursor == null )
+        {
+            relationshipCursor = new RecordRelationshipTraversalCursor( relationshipStore, groupStore, cursorTracer );
+        }
+    }
+
+    private void ensureRelationshipScanCursorInitialized()
+    {
+        if ( relationshipScanCursor == null )
+        {
+            relationshipScanCursor = new RecordRelationshipScanCursor( relationshipStore, cursorTracer );
+        }
+    }
+
     @Override
     public void degrees( RelationshipSelection selection, Degrees.Mutator mutator, boolean allowFastDegreeLookup )
     {
+        if ( !mutator.isSplit() && !isDense() && allowFastDegreeLookup && !selection.isLimited() )
+        {
+            // There's an optimization for getting only the total degree directly and we're not limited by security
+            ensureRelationshipScanCursorInitialized();
+            relationshipScanCursor.single( getNextRel() );
+            if ( relationshipScanCursor.next() )
+            {
+                int degree = relationshipScanCursor.sourceNodeReference() == getId()
+                        ? (int) relationshipScanCursor.getFirstPrevRel()
+                        : (int) relationshipScanCursor.getSecondPrevRel();
+                mutator.add( -1, degree, 0, 0 );
+            }
+            return;
+        }
+
         if ( !isDense() || !allowFastDegreeLookup )
         {
-            if ( relationshipCursor == null )
-            {
-                relationshipCursor = new RecordRelationshipTraversalCursor( relationshipStore, groupStore, cursorTracer );
-            }
+            ensureRelationshipTraversalCursorInitialized();
             relationshipCursor.init( this, ALL_RELATIONSHIPS );
             while ( relationshipCursor.next() )
             {
@@ -438,6 +464,11 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
         {
             relationshipCursor.close();
             relationshipCursor = null;
+        }
+        if ( relationshipScanCursor != null )
+        {
+            relationshipScanCursor.close();
+            relationshipScanCursor = null;
         }
     }
 
