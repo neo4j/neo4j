@@ -131,7 +131,7 @@ object NotificationWrapping {
     case DeprecatedHexLiteralSyntax(pos)                     =>
       NotificationCode.DEPRECATED_HEX_LITERAL_SYNTAX.notification(pos.withOffset(offset).asInputPosition)
     case DeprecatedPatternExpressionOutsideExistsSyntax(pos) =>
-      NotificationCode.DEPRECATED_PATTERN_EXPRESSION_OUTSIDE_EXISTS.notification(pos.withOffset(offset).asInputPosition)
+      NotificationCode.DEPRECATED_USE_OF_PATTERN_EXPRESSION.notification(pos.withOffset(offset).asInputPosition)
     case SubqueryVariableShadowing(pos, varName)             =>
       NotificationCode.SUBQUERY_VARIABLE_SHADOWING.notification(pos.withOffset(offset).asInputPosition, NotificationDetail.Factory.shadowingVariable(varName))
     case MissingAliasNotification(pos) =>

@@ -34,7 +34,7 @@ case class SyntaxDeprecationWarnings(deprecations: Deprecations) extends Visitor
       deprecations.find.andThen(deprecation => acc => acc ++ deprecation.generateNotification())
     )
 
-    val foundWithContext = deprecations.findWithContext(statement).map(_.generateNotification().get)
+    val foundWithContext = deprecations.findWithContext(statement).map(_.generateNotification()).collect{case Some(n) => n}
 
     foundWithoutContext ++ foundWithContext
   }

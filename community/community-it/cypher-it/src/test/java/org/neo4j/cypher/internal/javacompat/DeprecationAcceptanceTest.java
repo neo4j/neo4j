@@ -136,26 +136,25 @@ public class DeprecationAcceptanceTest extends NotificationTestSupport
     {
         // deprecated
         assertNotificationsInSupportedVersions( "EXPLAIN MATCH (a) RETURN (a)--()",
-                                                containsItem( deprecatedPatternExpressionSyntax ) );
+                                                containsItem( deprecatedUseOfPatternExpression ) );
         assertNotificationsInSupportedVersions( "EXPLAIN MATCH (a) WHERE ANY (x IN (a)--() WHERE 1=1) RETURN a",
-                                                containsItem( deprecatedPatternExpressionSyntax ) );
+                                                containsItem( deprecatedUseOfPatternExpression ) );
     }
 
     @Test
     void notDeprecatedPatternExpressionSyntax()
     {
-        // not deprecated
-        assertNotificationsInVersions( List.of("CYPHER 4.2", "CYPHER 4.3"),
-                                       "EXPLAIN MATCH (a) WHERE EXISTS {(x) WHERE (x)--()} RETURN a",
-                                       containsNoItem( deprecatedPatternExpressionSyntax ) );
+        // Existential subqueries are not supported in 3.5
+        assertNotificationsInSupportedVersions_4_X( "EXPLAIN MATCH (a) WHERE EXISTS {(x) WHERE (x)--()} RETURN a",
+                                                    containsNoItem( deprecatedUseOfPatternExpression ) );
         assertNotificationsInSupportedVersions( "EXPLAIN MATCH (a)--() RETURN a",
-                                                containsNoItem( deprecatedPatternExpressionSyntax ) );
+                                                containsNoItem( deprecatedUseOfPatternExpression ) );
         assertNotificationsInSupportedVersions( "EXPLAIN MATCH (a) WHERE exists((a)--()) RETURN a",
-                                                containsNoItem( deprecatedPatternExpressionSyntax ) );
+                                                containsNoItem( deprecatedUseOfPatternExpression ) );
         assertNotificationsInSupportedVersions( "EXPLAIN MATCH (a) WHERE (a)--() RETURN a",
-                                                containsNoItem( deprecatedPatternExpressionSyntax ) );
+                                                containsNoItem( deprecatedUseOfPatternExpression ) );
         assertNotificationsInSupportedVersions( "EXPLAIN MATCH (a) RETURN [p=(a)--(b) | p]",
-                                                containsNoItem( deprecatedPatternExpressionSyntax ) );
+                                                containsNoItem( deprecatedUseOfPatternExpression ) );
     }
 
     // FUNCTIONALITY DEPRECATED IN 3.5, REMOVED IN 4.0
@@ -327,9 +326,10 @@ public class DeprecationAcceptanceTest extends NotificationTestSupport
     private final Matcher<Notification> deprecatedHexLiteralSyntax =
             deprecation( "The hex integer literal syntax `0X123` is deprecated, please use `0x123` instead" );
 
-    private final Matcher<Notification> deprecatedPatternExpressionSyntax =
-            deprecation( "Pattern expressions are deprecated, except for use in 'WHERE' clauses or in the 'exists()' function. " +
-                         "Consider using pattern comprehension instead." );
+    private final Matcher<Notification> deprecatedUseOfPatternExpression =
+            deprecation( "A pattern expression should only be used in order to test the existence of a pattern. " +
+                         "It should therefore only be used in contexts that evaluate to a Boolean, e.g. inside the function exists() or in a WHERE-clause. " +
+                         "All other uses are deprecated." );
 
     private static Matcher<Notification> deprecation( String message )
     {

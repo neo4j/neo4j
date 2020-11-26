@@ -53,15 +53,16 @@ public class NotificationTestSupport
     protected GraphDatabaseAPI db;
 
     private List<String> supportedCypherVersions = List.of( "CYPHER 3.5", "CYPHER 4.2", "CYPHER 4.3" );
+    private List<String> supportedCypherVersions_4_X = List.of( "CYPHER 4.2", "CYPHER 4.3" );
 
     void assertNotificationsInSupportedVersions( String query, Matcher<Iterable<Notification>> matchesExpectation )
     {
         assertNotifications( supportedCypherVersions, query, matchesExpectation );
     }
 
-    void assertNotificationsInVersions( List<String> versions, String query, Matcher<Iterable<Notification>> matchesExpectation )
+    void assertNotificationsInSupportedVersions_4_X( String query, Matcher<Iterable<Notification>> matchesExpectation )
     {
-        assertNotifications( versions, query, matchesExpectation );
+        assertNotifications( supportedCypherVersions_4_X, query, matchesExpectation );
     }
 
     void assertNotificationsInLastMajorVersion( String query, Matcher<Iterable<Notification>> matchesExpectation )
