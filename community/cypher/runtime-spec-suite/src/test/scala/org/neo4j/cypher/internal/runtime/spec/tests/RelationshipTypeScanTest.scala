@@ -31,7 +31,7 @@ abstract class RelationshipTypeScanTest[CONTEXT <: RuntimeContext](
                                                                sizeHint: Int
                                                              ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
-  test("should find relationship") {
+  test("should support directed relationship scan") {
     // given
     val (_, _, relationships, _) = given {
       bidirectionalBipartiteGraph(sizeHint, "A", "B", "R", "S")
@@ -49,7 +49,7 @@ abstract class RelationshipTypeScanTest[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("r", "x", "y").withRows(relationships.map(r => Array(r, r.getStartNode, r.getEndNode)))
   }
 
-  test("should work with filter") {
+  test("should combine directed type scan and filter") {
     // given
     val (_, _, relationships, _) = given {
       bidirectionalBipartiteGraph(sizeHint, "A", "B", "R", "S")
