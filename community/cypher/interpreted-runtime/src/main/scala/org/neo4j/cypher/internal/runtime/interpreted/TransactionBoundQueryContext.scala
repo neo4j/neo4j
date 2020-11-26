@@ -84,6 +84,7 @@ import org.neo4j.internal.kernel.api.helpers.RelationshipSelections.allCursor
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelections.incomingCursor
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelections.outgoingCursor
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext
+import org.neo4j.internal.schema
 import org.neo4j.internal.schema.ConstraintDescriptor
 import org.neo4j.internal.schema.ConstraintType
 import org.neo4j.internal.schema.IndexConfig
@@ -242,7 +243,6 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
 
   override def getRelationshipsForIdsPrimitive(node: Long, dir: SemanticDirection,
                                                types: Array[Int]): ClosingLongIterator with RelationshipIterator = {
-
     val cursor = allocateNodeCursor()
     try {
       val read = reads()
@@ -261,6 +261,16 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
       }
     } finally {
       cursor.close()
+    }
+  }
+
+  override def getRelationshipsByType(id: Int): ClosingLongIterator = {
+    val cursor = transactionalContext.cursors.allocateRelationshipTypeIndexCursor()
+    resources.trace(cursor)
+    reads().relationshipTypeScan(id, cursor, schema.IndexOrder.NONE)
+    new PrimitiveCursorIterator {
+      override protected def fetchNext(): Long = if (cursor.next()) cursor.relationshipReference() else -1L
+      override def close(): Unit = cursor.close()
     }
   }
 

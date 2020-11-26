@@ -98,6 +98,8 @@ trait QueryContext extends TokenContext with DbAccess {
 
   def getRelationshipsForIdsPrimitive(node: Long, dir: SemanticDirection, types: Array[Int]): ClosingLongIterator with RelationshipIterator
 
+  def getRelationshipsByType(id: Int): ClosingLongIterator
+
   def nodeCursor(): NodeCursor
 
   def relationshipScanCursor(): RelationshipScanCursor

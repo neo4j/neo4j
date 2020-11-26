@@ -45,6 +45,7 @@ import org.neo4j.cypher.internal.logical.plans.DetachDeleteExpression
 import org.neo4j.cypher.internal.logical.plans.DetachDeleteNode
 import org.neo4j.cypher.internal.logical.plans.DetachDeletePath
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
+import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.Distinct
 import org.neo4j.cypher.internal.logical.plans.DropResult
 import org.neo4j.cypher.internal.logical.plans.Eager
@@ -146,6 +147,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.CreatePipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.CreateRelationshipCommand
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.DeletePipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.DirectedRelationshipByIdSeekPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.DirectedRelationshipTypeScanPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.DistinctPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.DropResultPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.EagerAggregationPipe
@@ -278,6 +280,9 @@ case class InterpretedPipeMapper(readOnly: Boolean,
 
       case UndirectedRelationshipByIdSeek(ident, relIdExpr, fromNode, toNode, _) =>
         UndirectedRelationshipByIdSeekPipe(ident, expressionConverters.toCommandSeekArgs(id, relIdExpr), toNode, fromNode)(id = id)
+
+      case DirectedRelationshipTypeScan(ident, fromNode, typ, toNode, _) =>
+        DirectedRelationshipTypeScanPipe(ident, fromNode, LazyType(typ)(semanticTable), toNode)(id = id)
 
       case NodeIndexSeek(ident, label, properties, valueExpr, _, indexOrder) =>
         val indexSeekMode = IndexSeekModeFactory(unique = false, readOnly = readOnly).fromQueryExpression(valueExpr)

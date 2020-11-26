@@ -286,6 +286,9 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def getRelationshipsForIdsPrimitive(node: Long, dir: SemanticDirection, types: Array[Int]): ClosingLongIterator with RelationshipIterator =
     translateException(tokenNameLookup, inner.getRelationshipsForIdsPrimitive(node, dir, types))
 
+  override def getRelationshipsByType(id: Int): ClosingLongIterator =
+    translateException(tokenNameLookup, inner.getRelationshipsByType(id))
+
   override def nodeCursor(): NodeCursor = translateException(tokenNameLookup, inner.nodeCursor())
 
   override def relationshipScanCursor(): RelationshipScanCursor = translateException(tokenNameLookup, inner.relationshipScanCursor())

@@ -123,6 +123,9 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
   override def getRelationshipsForIdsPrimitive(node: Long, dir: SemanticDirection, types: Array[Int]): ClosingLongIterator with RelationshipIterator =
     manyDbHitsCliRi(inner.getRelationshipsForIdsPrimitive(node, dir, types))
 
+  override def getRelationshipsByType(id: Int): ClosingLongIterator =
+    manyDbHits(inner.getRelationshipsByType(id))
+
   override def nodeCursor(): NodeCursor = manyDbHits(inner.nodeCursor())
 
   override def relationshipScanCursor(): RelationshipScanCursor = manyDbHits(inner.relationshipScanCursor())
