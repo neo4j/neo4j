@@ -20,6 +20,8 @@
 package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.compiler.ExecutionModel
+import org.neo4j.cypher.internal.compiler.VolcanoModelExecution
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.PROPERTY_ACCESS_DB_HITS
@@ -154,8 +156,9 @@ class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSu
   private def costFor(plan: LogicalPlan,
                       input: QueryGraphSolverInput,
                       semanticTable: SemanticTable,
-                      cardinalities: Cardinalities): Cost = {
-    CardinalityCostModel.costFor(plan, input, semanticTable, cardinalities)
+                      cardinalities: Cardinalities,
+                      executionModel: ExecutionModel = VolcanoModelExecution): Cost = {
+    CardinalityCostModel(executionModel).costFor(plan, input, semanticTable, cardinalities)
   }
 
   test("lazy plans should be cheaper when limit selectivity is < 1.0") {

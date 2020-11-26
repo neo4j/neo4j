@@ -24,6 +24,7 @@ import java.time.Clock
 import org.neo4j.cypher.internal.ast.semantics.SemanticErrorDef
 import org.neo4j.cypher.internal.compiler.ContextCreator
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
+import org.neo4j.cypher.internal.compiler.ExecutionModel
 import org.neo4j.cypher.internal.compiler.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.compiler.SyntaxExceptionCreator
 import org.neo4j.cypher.internal.compiler.UpdateStrategy
@@ -75,6 +76,7 @@ object PlannerContextCreator extends ContextCreator[PlannerContext] {
                       planContext: PlanContext,
                       queryText: String,
                       debugOptions: CypherDebugOptions,
+                      executionModel: ExecutionModel,
                       offset: Option[InputPosition],
                       monitors: Monitors,
                       metricsFactory: MetricsFactory,
@@ -92,7 +94,7 @@ object PlannerContextCreator extends ContextCreator[PlannerContext] {
     val metrics: Metrics = if (planContext == null)
       null
     else
-      metricsFactory.newMetrics(planContext.statistics, evaluator, config)
+      metricsFactory.newMetrics(planContext.statistics, evaluator, config, executionModel)
 
     new PlannerContext(exceptionFactory, tracer, notificationLogger, planContext,
       monitors, metrics, config, queryGraphSolver, updateStrategy, debugOptions, clock, logicalPlanIdGen, innerVariableNamer, params)

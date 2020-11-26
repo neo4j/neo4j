@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
+import org.neo4j.cypher.internal.compiler.ExecutionModel
 import org.neo4j.cypher.internal.compiler.helpers.CachedFunction
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CardinalityModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CostModel
@@ -34,18 +35,18 @@ import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
 import org.neo4j.cypher.internal.util.Cardinality
 
 case class CachedMetricsFactory(metricsFactory: MetricsFactory) extends MetricsFactory {
-  def newCardinalityEstimator(queryGraphCardinalityModel: QueryGraphCardinalityModel, evaluator: ExpressionEvaluator): CardinalityModel = {
+  override def newCardinalityEstimator(queryGraphCardinalityModel: QueryGraphCardinalityModel, evaluator: ExpressionEvaluator): CardinalityModel = {
     val wrapped: CardinalityModel = metricsFactory.newCardinalityEstimator(queryGraphCardinalityModel, evaluator)
     val cached = CachedFunction[PlannerQueryPart, Metrics.QueryGraphSolverInput, SemanticTable, Cardinality] { (a, b, c) => wrapped(a, b, c) }
     (query: PlannerQueryPart, input: Metrics.QueryGraphSolverInput, semanticTable: SemanticTable) => cached.apply(query, input, semanticTable)
   }
 
-  def newCostModel(config: CypherPlannerConfiguration): CostModel = {
-    val cached = CachedFunction(metricsFactory.newCostModel(config: CypherPlannerConfiguration).costFor _)
+  override def newCostModel(config: CypherPlannerConfiguration, executionModel: ExecutionModel): CostModel = {
+    val cached = CachedFunction(metricsFactory.newCostModel(config: CypherPlannerConfiguration, executionModel).costFor _)
     (plan: LogicalPlan, input: Metrics.QueryGraphSolverInput,  semanticTable: SemanticTable, cardinalities: PlanningAttributes.Cardinalities) => cached(plan, input, semanticTable, cardinalities)
   }
 
-  def newQueryGraphCardinalityModel(statistics: GraphStatistics): QueryGraphCardinalityModel = {
+  override def newQueryGraphCardinalityModel(statistics: GraphStatistics): QueryGraphCardinalityModel = {
     val wrapped: QueryGraphCardinalityModel = metricsFactory.newQueryGraphCardinalityModel(statistics)
     val cached = CachedFunction[QueryGraph, Metrics.QueryGraphSolverInput, SemanticTable, Cardinality] { (a, b, c) => wrapped(a, b, c) }
     new QueryGraphCardinalityModel {

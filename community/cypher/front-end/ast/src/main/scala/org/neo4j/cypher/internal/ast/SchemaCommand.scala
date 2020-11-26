@@ -37,15 +37,24 @@ sealed trait SchemaCommand extends Statement {
   def withGraph(useGraph: Option[GraphSelection]): SchemaCommand
 
   override def returnColumns: List[LogicalVariable] = List.empty
+
 }
 
-case class CreateIndexOldSyntax(label: LabelName, properties: List[PropertyKeyName], useGraph: Option[GraphSelection] = None)(val position: InputPosition) extends SchemaCommand {
+sealed trait ReadSchemaCommand extends SchemaCommand {
+  override def containsUpdates: Boolean = false
+}
+
+sealed trait WriteSchemaCommand extends SchemaCommand {
+  override def containsUpdates: Boolean = true
+}
+
+case class CreateIndexOldSyntax(label: LabelName, properties: List[PropertyKeyName], useGraph: Option[GraphSelection] = None)(val position: InputPosition) extends WriteSchemaCommand {
   override def withGraph(useGraph: Option[GraphSelection]): SchemaCommand = copy(useGraph = useGraph)(position)
   def semanticCheck = Seq()
 }
 
 case class CreateIndex(variable: Variable, label: LabelName, properties: List[Property], name: Option[String], ifExistsDo: IfExistsDo, options: Map[String, Expression], useGraph: Option[GraphSelection] = None)(val position: InputPosition)
-  extends SchemaCommand with SemanticAnalysisTooling {
+  extends WriteSchemaCommand with SemanticAnalysisTooling {
   override def withGraph(useGraph: Option[GraphSelection]): SchemaCommand = copy(useGraph = useGraph)(position)
   override def semanticCheck: SemanticCheck = ifExistsDo match {
     case IfExistsInvalidSyntax | IfExistsReplace => SemanticError(s"Failed to create index: `OR REPLACE` cannot be used together with this command.", position)
@@ -65,18 +74,18 @@ case class CreateIndex(variable: Variable, label: LabelName, properties: List[Pr
   }
 }
 
-case class DropIndex(label: LabelName, properties: List[PropertyKeyName], useGraph: Option[GraphSelection] = None)(val position: InputPosition) extends SchemaCommand {
+case class DropIndex(label: LabelName, properties: List[PropertyKeyName], useGraph: Option[GraphSelection] = None)(val position: InputPosition) extends WriteSchemaCommand {
   override def withGraph(useGraph: Option[GraphSelection]): SchemaCommand = copy(useGraph = useGraph)(position)
   def property: PropertyKeyName = properties.head
   def semanticCheck = Seq()
 }
 
-case class DropIndexOnName(name: String, ifExists: Boolean, useGraph: Option[GraphSelection] = None)(val position: InputPosition) extends SchemaCommand {
+case class DropIndexOnName(name: String, ifExists: Boolean, useGraph: Option[GraphSelection] = None)(val position: InputPosition) extends WriteSchemaCommand {
   override def withGraph(useGraph: Option[GraphSelection]): SchemaCommand = copy(useGraph = useGraph)(position)
   def semanticCheck = Seq()
 }
 
-case class ShowIndexes(all: Boolean, verbose: Boolean, useGraph: Option[GraphSelection] = None)(val position: InputPosition) extends SchemaCommand {
+case class ShowIndexes(all: Boolean, verbose: Boolean, useGraph: Option[GraphSelection] = None)(val position: InputPosition) extends ReadSchemaCommand {
   override def withGraph(useGraph: Option[GraphSelection]): SchemaCommand = copy(useGraph = useGraph)(position)
   def semanticCheck = Seq()
 
@@ -87,7 +96,7 @@ case class ShowIndexes(all: Boolean, verbose: Boolean, useGraph: Option[GraphSel
   override def returnColumns: List[LogicalVariable] = defaultColumnNames.map(name => Variable(name)(position))
 }
 
-trait PropertyConstraintCommand extends SchemaCommand with SemanticAnalysisTooling {
+trait PropertyConstraintCommand extends WriteSchemaCommand with SemanticAnalysisTooling {
   def variable: Variable
 
   def property: Property
@@ -102,7 +111,7 @@ trait PropertyConstraintCommand extends SchemaCommand with SemanticAnalysisTooli
       }
 }
 
-trait CompositePropertyConstraintCommand extends SchemaCommand with SemanticAnalysisTooling {
+trait CompositePropertyConstraintCommand extends WriteSchemaCommand with SemanticAnalysisTooling {
   def variable: Variable
 
   def properties: Seq[Property]
@@ -223,12 +232,12 @@ case class DropRelationshipPropertyExistenceConstraint(variable: Variable, relTy
   override def withGraph(useGraph: Option[GraphSelection]): SchemaCommand = copy(useGraph = useGraph)(position)
 }
 
-case class DropConstraintOnName(name: String, ifExists: Boolean, useGraph: Option[GraphSelection] = None)(val position: InputPosition) extends SchemaCommand {
+case class DropConstraintOnName(name: String, ifExists: Boolean, useGraph: Option[GraphSelection] = None)(val position: InputPosition) extends WriteSchemaCommand {
   override def withGraph(useGraph: Option[GraphSelection]): SchemaCommand = copy(useGraph = useGraph)(position)
   def semanticCheck = Seq()
 }
 
-case class ShowConstraints(constraintType: ShowConstraintType, verbose: Boolean, useGraph: Option[GraphSelection] = None)(val position: InputPosition) extends SchemaCommand {
+case class ShowConstraints(constraintType: ShowConstraintType, verbose: Boolean, useGraph: Option[GraphSelection] = None)(val position: InputPosition) extends ReadSchemaCommand {
   override def withGraph(useGraph: Option[GraphSelection]): SchemaCommand = copy(useGraph = useGraph)(position)
   def semanticCheck = Seq()
 

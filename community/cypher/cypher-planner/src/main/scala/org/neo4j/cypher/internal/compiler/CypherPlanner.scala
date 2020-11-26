@@ -41,7 +41,6 @@ import org.neo4j.cypher.internal.frontend.phases.Monitors
 import org.neo4j.cypher.internal.options.CypherDebugOptions
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
 import org.neo4j.cypher.internal.planner.spi.PlannerNameFor
-import org.neo4j.cypher.internal.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.rewriting.rewriters.InnerVariableNamer
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.InternalNotificationLogger
@@ -86,6 +85,7 @@ case class CypherPlanner[Context <: PlannerContext](monitors: Monitors,
                                          planContext = null,
                                          rawQueryText,
                                          debugOptions,
+                                         executionModel = null,
                                          offset,
                                          monitors,
                                          metricsFactory,

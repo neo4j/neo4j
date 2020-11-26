@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
+import org.neo4j.cypher.internal.compiler.ExecutionModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CardinalityModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CostModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphCardinalityModel
@@ -27,11 +28,11 @@ import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.QueryGraph
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 
 object SimpleMetricsFactory extends MetricsFactory {
-  def newCostModel(config: CypherPlannerConfiguration): CostModel = CardinalityCostModel
+  override def newCostModel(config: CypherPlannerConfiguration, executionModel: ExecutionModel): CostModel = CardinalityCostModel(executionModel)
 
-  def newCardinalityEstimator(queryGraphCardinalityModel: QueryGraphCardinalityModel, expressionEvaluator: ExpressionEvaluator): CardinalityModel =
+  override def newCardinalityEstimator(queryGraphCardinalityModel: QueryGraphCardinalityModel, expressionEvaluator: ExpressionEvaluator): CardinalityModel =
     new StatisticsBackedCardinalityModel(queryGraphCardinalityModel, expressionEvaluator)
 
-  def newQueryGraphCardinalityModel(statistics: GraphStatistics) =
+  override def newQueryGraphCardinalityModel(statistics: GraphStatistics) =
     QueryGraphCardinalityModel.default(statistics)
 }

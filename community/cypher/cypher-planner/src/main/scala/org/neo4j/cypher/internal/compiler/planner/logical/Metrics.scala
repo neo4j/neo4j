@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
+import org.neo4j.cypher.internal.compiler.ExecutionModel
 import org.neo4j.cypher.internal.compiler.helpers.MapSupport.PowerMap
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CardinalityModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CostModel
@@ -135,13 +136,13 @@ case class Metrics(cost: CostModel,
 
 trait MetricsFactory {
   def newCardinalityEstimator(queryGraphCardinalityModel: QueryGraphCardinalityModel, expressionEvaluator: ExpressionEvaluator): CardinalityModel
-  def newCostModel(config: CypherPlannerConfiguration): CostModel
+  def newCostModel(config: CypherPlannerConfiguration, executionModel: ExecutionModel): CostModel
   def newQueryGraphCardinalityModel(statistics: GraphStatistics): QueryGraphCardinalityModel
 
-  def newMetrics(statistics: GraphStatistics, expressionEvaluator: ExpressionEvaluator, config: CypherPlannerConfiguration): Metrics = {
+  def newMetrics(statistics: GraphStatistics, expressionEvaluator: ExpressionEvaluator, config: CypherPlannerConfiguration, executionModel: ExecutionModel): Metrics = {
     val queryGraphCardinalityModel = newQueryGraphCardinalityModel(statistics)
     val cardinality = newCardinalityEstimator(queryGraphCardinalityModel, expressionEvaluator)
-    Metrics(newCostModel(config), cardinality, queryGraphCardinalityModel)
+    Metrics(newCostModel(config, executionModel), cardinality, queryGraphCardinalityModel)
   }
 }
 

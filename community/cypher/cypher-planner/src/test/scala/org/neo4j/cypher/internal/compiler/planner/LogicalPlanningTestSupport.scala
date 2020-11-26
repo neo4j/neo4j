@@ -30,9 +30,11 @@ import org.neo4j.cypher.internal.ast.Hint
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
+import org.neo4j.cypher.internal.compiler.ExecutionModel
 import org.neo4j.cypher.internal.compiler.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.compiler.StatsDivergenceCalculator
 import org.neo4j.cypher.internal.compiler.TestSignatureResolvingPlanContext
+import org.neo4j.cypher.internal.compiler.VolcanoModelExecution
 import org.neo4j.cypher.internal.compiler.phases.CreatePlannerQuery
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.RewriteProcedureCalls
@@ -124,8 +126,8 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
   class SpyableMetricsFactory extends MetricsFactory {
     def newCardinalityEstimator(queryGraphCardinalityModel: QueryGraphCardinalityModel, evaluator: ExpressionEvaluator) =
       SimpleMetricsFactory.newCardinalityEstimator(queryGraphCardinalityModel, evaluator)
-    def newCostModel(config: CypherPlannerConfiguration) =
-      SimpleMetricsFactory.newCostModel(config)
+    def newCostModel(config: CypherPlannerConfiguration, executionModel: ExecutionModel) =
+      SimpleMetricsFactory.newCostModel(config, executionModel)
     def newQueryGraphCardinalityModel(statistics: GraphStatistics): QueryGraphCardinalityModel =
       SimpleMetricsFactory.newQueryGraphCardinalityModel(statistics)
   }
@@ -139,7 +141,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
   }
 
   def newSimpleMetrics(stats: GraphStatistics = newMockedGraphStatistics) =
-    newMetricsFactory.newMetrics(stats, newExpressionEvaluator, config)
+    newMetricsFactory.newMetrics(stats, newExpressionEvaluator, config, VolcanoModelExecution)
 
   def newMockedGraphStatistics = mock[GraphStatistics]
 

@@ -44,7 +44,9 @@ import org.neo4j.cypher.internal.compiler
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
 import org.neo4j.cypher.internal.compiler.CypherPlannerFactory
 import org.neo4j.cypher.internal.compiler.MissingParametersNotification
+import org.neo4j.cypher.internal.compiler.PushBatchedExecution
 import org.neo4j.cypher.internal.compiler.UpdateStrategy
+import org.neo4j.cypher.internal.compiler.VolcanoModelExecution
 import org.neo4j.cypher.internal.compiler.defaultUpdateStrategy
 import org.neo4j.cypher.internal.compiler.eagerUpdateStrategy
 import org.neo4j.cypher.internal.compiler.phases.CypherCompatibilityVersion
@@ -76,13 +78,12 @@ import org.neo4j.cypher.internal.logical.plans.ResolvedCall
 import org.neo4j.cypher.internal.logical.plans.SystemProcedureCall
 import org.neo4j.cypher.internal.options.CypherConnectComponentsPlannerOption
 import org.neo4j.cypher.internal.options.CypherPlannerOption
+import org.neo4j.cypher.internal.options.CypherRuntimeOption
 import org.neo4j.cypher.internal.options.CypherUpdateStrategy
 import org.neo4j.cypher.internal.planner.spi.CostBasedPlannerName
 import org.neo4j.cypher.internal.planner.spi.DPPlannerName
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
 import org.neo4j.cypher.internal.planner.spi.PlanContext
-import org.neo4j.cypher.internal.rewriting.RewriterStepSequencer
-import org.neo4j.cypher.internal.rewriting.RewriterStepSequencer.newPlain
 import org.neo4j.cypher.internal.rewriting.rewriters.GeneratingNamer
 import org.neo4j.cypher.internal.rewriting.rewriters.InnerVariableNamer
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionalContextWrapper
@@ -267,12 +268,24 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
     val createPlanContext = CypherPlanner.customPlanContextCreator.getOrElse(TransactionBoundPlanContext.apply _)
     val planContext = new ExceptionTranslatingPlanContext(createPlanContext(transactionalContextWrapper, notificationLogger, log))
 
+    val inferredRuntime: CypherRuntimeOption = options.queryOptions.runtime match {
+      case CypherRuntimeOption.default => runtime.correspondingRuntimeOption.getOrElse(CypherRuntimeOption.default)
+      case x => x
+    }
+    val containsUpdates: Boolean = syntacticQuery.statement().containsUpdates
+    val executionMode = inferredRuntime match {
+      case CypherRuntimeOption.pipelined if !containsUpdates => PushBatchedExecution
+      case CypherRuntimeOption.parallel if !containsUpdates => PushBatchedExecution
+      case _ => VolcanoModelExecution
+    }
+
     // Context used to create logical plans
     val plannerContext = contextCreator.create(tracer,
       notificationLogger,
       planContext,
       rawQueryText,
       options.queryOptions.debugOptions,
+      executionMode,
       Some(options.offset),
       monitors,
       CachedMetricsFactory(SimpleMetricsFactory),

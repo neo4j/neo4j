@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.planner
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.compiler.NotImplementedPlanContext
+import org.neo4j.cypher.internal.compiler.VolcanoModelExecution
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanResolver
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
@@ -344,7 +345,8 @@ class StatisticsBackedLogicalPlanningConfiguration(
 
   def planState(queryString: String): LogicalPlanState = {
     val exceptionFactory = Neo4jCypherExceptionFactory(queryString, Some(pos))
-    val metrics = SimpleMetricsFactory.newMetrics(planContext.statistics, simpleExpressionEvaluator, cypherCompilerConfig)
+  // TODO: Configure ExecutionMode
+    val metrics = SimpleMetricsFactory.newMetrics(planContext.statistics, simpleExpressionEvaluator, cypherCompilerConfig, VolcanoModelExecution)
 
     val context = ContextHelper.create(
       planContext = planContext,

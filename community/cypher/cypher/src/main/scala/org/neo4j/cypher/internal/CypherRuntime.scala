@@ -63,6 +63,8 @@ trait CypherRuntime[-CONTEXT <: RuntimeContext] {
   def compileToExecutable(logicalQuery: LogicalQuery, context: CONTEXT): ExecutionPlan
 
   def name: String
+
+  def correspondingRuntimeOption: Option[CypherRuntimeOption]
 }
 
 /**
@@ -146,6 +148,8 @@ class RuntimeResourceLeakException(msg: String) extends IllegalStateException(ms
 case class UnknownRuntime(requestedRuntime: String) extends CypherRuntime[RuntimeContext] {
   override def name: String = "unknown"
 
+  override def correspondingRuntimeOption: Option[CypherRuntimeOption] = None
+
   override def compileToExecutable(logicalQuery: LogicalQuery, context: RuntimeContext): ExecutionPlan =
     throw new CantCompileQueryException(s"This version of Neo4j does not support requested runtime: $requestedRuntime")
 }
@@ -160,6 +164,10 @@ class FallbackRuntime[CONTEXT <: RuntimeContext](runtimes: Seq[CypherRuntime[CON
                                                  requestedRuntime: CypherRuntimeOption) extends CypherRuntime[CONTEXT] {
 
   override def name: String = "fallback"
+
+  override def correspondingRuntimeOption: Option[CypherRuntimeOption] = runtimes.collectFirst {
+    case r if r.correspondingRuntimeOption.isDefined => r.correspondingRuntimeOption.get
+  }
 
   private def publicCannotCompile(originalException: Exception) = {
     throw new RuntimeUnsupportedException(originalException.getMessage, originalException)

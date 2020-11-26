@@ -22,9 +22,11 @@ package org.neo4j.cypher.internal.compiler.planner
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
+import org.neo4j.cypher.internal.compiler.ExecutionModel
 import org.neo4j.cypher.internal.compiler.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.compiler.NotImplementedPlanContext
 import org.neo4j.cypher.internal.compiler.StatsDivergenceCalculator
+import org.neo4j.cypher.internal.compiler.VolcanoModelExecution
 import org.neo4j.cypher.internal.compiler.phases.CompilationPhases.ParsingConfig
 import org.neo4j.cypher.internal.compiler.phases.CompilationPhases.parsing
 import org.neo4j.cypher.internal.compiler.phases.CompilationPhases.planPipeLine
@@ -179,13 +181,13 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     lazy val semanticTable: SemanticTable = config.updateSemanticTableWithTokens(SemanticTable())
 
     def metricsFactory: MetricsFactory = new MetricsFactory {
-      def newCostModel(ignore: CypherPlannerConfiguration): CostModel =
+      override def newCostModel(ignore: CypherPlannerConfiguration, executionModel: ExecutionModel): CostModel =
         (plan: LogicalPlan, input: QueryGraphSolverInput, semanticTable: SemanticTable, cardinalities: Cardinalities) => config.costModel()((plan, input, semanticTable, cardinalities))
 
-      def newCardinalityEstimator(queryGraphCardinalityModel: QueryGraphCardinalityModel, evaluator: ExpressionEvaluator): CardinalityModel =
+      override def newCardinalityEstimator(queryGraphCardinalityModel: QueryGraphCardinalityModel, evaluator: ExpressionEvaluator): CardinalityModel =
         config.cardinalityModel(queryGraphCardinalityModel, mock[ExpressionEvaluator])
 
-      def newQueryGraphCardinalityModel(statistics: GraphStatistics): QueryGraphCardinalityModel = QueryGraphCardinalityModel.default(statistics)
+      override def newQueryGraphCardinalityModel(statistics: GraphStatistics): QueryGraphCardinalityModel = QueryGraphCardinalityModel.default(statistics)
     }
 
     def table = Map.empty[PatternExpression, QueryGraph]
@@ -261,7 +263,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
                           queryGraphSolver: QueryGraphSolver = queryGraphSolver,
                           stripProduceResults: Boolean = true): (Option[PeriodicCommit], LogicalPlan, SemanticTable, PlanningAttributes) = {
       val exceptionFactory = Neo4jCypherExceptionFactory(queryString, Some(pos))
-      val metrics = metricsFactory.newMetrics(planContext.statistics, mock[ExpressionEvaluator], config)
+      val metrics = metricsFactory.newMetrics(planContext.statistics, mock[ExpressionEvaluator], config, VolcanoModelExecution)
       def context = ContextHelper.create(planContext = planContext,
         cypherExceptionFactory = exceptionFactory,
         queryGraphSolver = queryGraphSolver,
@@ -280,7 +282,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     }
 
     def withLogicalPlanningContext[T](f: (C, LogicalPlanningContext) => T): T = {
-      val metrics = metricsFactory.newMetrics(config.graphStatistics, mock[ExpressionEvaluator], cypherCompilerConfig)
+      val metrics = metricsFactory.newMetrics(config.graphStatistics, mock[ExpressionEvaluator], cypherCompilerConfig, VolcanoModelExecution)
       val planningAttributes = PlanningAttributes.newAttributes
       val logicalPlanProducer = LogicalPlanProducer(metrics.cardinality, planningAttributes, idGen)
       val ctx = LogicalPlanningContext(
@@ -301,7 +303,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
 
 
     def withLogicalPlanningContextWithFakeAttributes[T](f: (C, LogicalPlanningContext) => T): T = {
-      val metrics = metricsFactory.newMetrics(config.graphStatistics, mock[ExpressionEvaluator], cypherCompilerConfig)
+      val metrics = metricsFactory.newMetrics(config.graphStatistics, mock[ExpressionEvaluator], cypherCompilerConfig, VolcanoModelExecution)
       val planningAttributes = newStubbedPlanningAttributes
       val logicalPlanProducer = LogicalPlanProducer(metrics.cardinality, planningAttributes, idGen)
       val ctx = LogicalPlanningContext(

@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.ast.semantics.SemanticState.ScopeLocation
 import org.neo4j.cypher.internal.ast.semantics.SemanticState.ScopeZipper
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.compiler.VolcanoModelExecution
 import org.neo4j.cypher.internal.compiler.helpers.PredicateHelper
 import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.LabelInfo
@@ -225,7 +226,7 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int],
     oneChildPlan(state),
     twoChildPlan(state),
   ).suchThat {
-    case WithState(plan, state) => CardinalityCostModel.costFor(plan, QueryGraphSolverInput.empty, state.semanticTable, state.cardinalities) <= costLimit
+    case WithState(plan, state) => CardinalityCostModel(VolcanoModelExecution).costFor(plan, QueryGraphSolverInput.empty, state.semanticTable, state.cardinalities) <= costLimit
   }
 
   def innerLogicalPlanWithAtLeastOneSymbol(state: State): Gen[WithState[LogicalPlan]] =

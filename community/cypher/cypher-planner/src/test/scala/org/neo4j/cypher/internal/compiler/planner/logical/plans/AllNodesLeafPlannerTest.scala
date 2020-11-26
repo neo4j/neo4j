@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
-import org.neo4j.cypher.internal.compiler.planner.logical.ExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.allNodesLeafPlanner
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
@@ -34,7 +33,7 @@ class AllNodesLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
     val queryGraph = QueryGraph(patternNodes = Set("n"))
 
     val planContext = newMockedPlanContext()
-    val context = newMockedLogicalPlanningContext(planContext = planContext, metrics = newMockedMetricsFactory.newMetrics(hardcodedStatistics, mock[ExpressionEvaluator], config))
+    val context = newMockedLogicalPlanningContext(planContext = planContext)
 
     // when
     val resultPlans = allNodesLeafPlanner(Set.empty)(queryGraph, InterestingOrder.empty, context)
@@ -48,7 +47,7 @@ class AllNodesLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
     val queryGraph = QueryGraph(patternNodes = Set("n"))
 
     val planContext = newMockedPlanContext()
-    val context = newMockedLogicalPlanningContext(planContext = planContext, metrics = newMockedMetricsFactory.newMetrics(hardcodedStatistics, mock[ExpressionEvaluator], config))
+    val context = newMockedLogicalPlanningContext(planContext = planContext)
 
     // when
     val resultPlans = allNodesLeafPlanner(Set("n"))(queryGraph, InterestingOrder.empty, context)

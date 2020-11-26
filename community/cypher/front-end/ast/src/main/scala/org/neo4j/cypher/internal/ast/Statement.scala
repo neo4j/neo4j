@@ -24,4 +24,9 @@ trait Statement extends ASTNode {
   def semanticCheck: SemanticCheck
 
   def returnColumns: List[LogicalVariable]
+
+  /**
+   * @return true if the statement can write to the database.
+   */
+  def containsUpdates: Boolean
 }

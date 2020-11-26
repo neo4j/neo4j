@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal
 
+import org.neo4j.cypher.internal.options.CypherRuntimeOption
 import org.neo4j.cypher.internal.plandescription.Argument
 import org.neo4j.cypher.internal.runtime.ExecutionMode
 import org.neo4j.cypher.internal.runtime.ExplainMode
@@ -47,6 +48,8 @@ import org.neo4j.values.virtual.MapValue
 
 object InterpretedRuntime extends CypherRuntime[RuntimeContext] {
   override def name: String = "interpreted"
+
+  override def correspondingRuntimeOption: Option[CypherRuntimeOption] = Some(CypherRuntimeOption.interpreted)
 
   override def compileToExecutable(query: LogicalQuery, context: RuntimeContext): ExecutionPlan = {
     val Result(logicalPlan, nExpressionSlots, availableExpressionVars) = expressionVariableAllocation.allocate(query.logicalPlan)

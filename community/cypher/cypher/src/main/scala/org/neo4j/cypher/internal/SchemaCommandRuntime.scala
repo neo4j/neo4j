@@ -61,6 +61,7 @@ import org.neo4j.cypher.internal.logical.plans.RelationshipPropertyExistence
 import org.neo4j.cypher.internal.logical.plans.ShowConstraints
 import org.neo4j.cypher.internal.logical.plans.ShowIndexes
 import org.neo4j.cypher.internal.logical.plans.Uniqueness
+import org.neo4j.cypher.internal.options.CypherRuntimeOption
 import org.neo4j.cypher.internal.procs.AssertConstraint
 import org.neo4j.cypher.internal.procs.AssertIndex
 import org.neo4j.cypher.internal.procs.IgnoredResult
@@ -111,6 +112,8 @@ import scala.util.Try
  */
 object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
   override def name: String = "schema"
+
+  override def correspondingRuntimeOption: Option[CypherRuntimeOption] = None
 
   override def compileToExecutable(state: LogicalQuery, context: RuntimeContext): ExecutionPlan = {
 

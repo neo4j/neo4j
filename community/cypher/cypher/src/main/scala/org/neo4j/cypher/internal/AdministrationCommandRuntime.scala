@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.logical.plans.NameValidator
+import org.neo4j.cypher.internal.options.CypherRuntimeOption
 import org.neo4j.cypher.internal.procs.QueryHandler
 import org.neo4j.cypher.internal.procs.UpdatingSystemCommandExecutionPlan
 import org.neo4j.cypher.internal.runtime.ast.ParameterFromSlot
@@ -50,6 +51,8 @@ import org.neo4j.values.virtual.VirtualValues
 trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
   protected val followerError = "Administration commands must be executed on the LEADER server."
   protected val secureHasher = new SecureHasher
+
+  override def correspondingRuntimeOption: Option[CypherRuntimeOption] = None
 
   def isApplicableAdministrationCommand(logicalPlanState: LogicalPlanState): Boolean
 

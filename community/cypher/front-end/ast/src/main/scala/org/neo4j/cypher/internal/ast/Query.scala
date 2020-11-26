@@ -49,6 +49,8 @@ case class Query(periodicCommitHint: Option[PeriodicCommitHint], part: QueryPart
     when(periodicCommitHint.nonEmpty && !part.containsUpdates) {
       SemanticError("Cannot use periodic commit in a non-updating query", periodicCommitHint.get.position)
     }
+
+  override def containsUpdates: Boolean = part.containsUpdates
 }
 
 sealed trait QueryPart extends ASTNode with SemanticCheckable {

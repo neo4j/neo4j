@@ -20,6 +20,16 @@
 package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.compiler.ExecutionModel
+import org.neo4j.cypher.internal.compiler.PushBatchedExecution
+import org.neo4j.cypher.internal.compiler.VolcanoModelExecution
+import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.DEFAULT_COST_PER_ROW
+import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.EAGERNESS_MULTIPLIER
+import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.EXPAND_INTO_COST
+import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.LABEL_CHECK_DB_HITS
+import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.PROBE_BUILD_COST
+import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.PROBE_SEARCH_COST
+import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.PROPERTY_ACCESS_DB_HITS
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CostModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.expressions.Expression
@@ -73,16 +83,9 @@ import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.Multiplier
 import org.neo4j.cypher.internal.util.Selectivity
 
-object CardinalityCostModel extends CostModel {
+class CardinalityCostModelWithVolcano extends CardinalityCostModel(VolcanoModelExecution)
 
-  val DEFAULT_COST_PER_ROW: CostPerRow = 0.1
-  val PROBE_BUILD_COST: CostPerRow = 3.1
-  val PROBE_SEARCH_COST: CostPerRow = 2.4
-  val EAGERNESS_MULTIPLIER: Multiplier = 2.0
-  // A property has at least 2 db hits, even though it could even have many more.
-  val PROPERTY_ACCESS_DB_HITS = 2
-  val LABEL_CHECK_DB_HITS = 1
-  val EXPAND_INTO = 6.4
+case class CardinalityCostModel(executionModel: ExecutionModel) extends CostModel {
 
   private def costPerRow(plan: LogicalPlan, cardinality: Cardinality, semanticTable: SemanticTable): CostPerRow = plan match {
     /*
@@ -102,10 +105,10 @@ object CardinalityCostModel extends CostModel {
     => 1.2
 
     case e: Expand if e.mode == ExpandInto
-    => EXPAND_INTO
+    => EXPAND_INTO_COST
 
     case e: VarExpand if e.mode == ExpandInto
-    => EXPAND_INTO
+    => EXPAND_INTO_COST
 
     case _: Expand |
          _: VarExpand
@@ -232,7 +235,14 @@ object CardinalityCostModel extends CostModel {
                                   semanticTable: SemanticTable): Cost = plan match {
     case _: CartesianProduct =>
       val lhsCardinality = Cardinality.max(Cardinality.SINGLE, effectiveCardinalities.lhs)
-      lhsCost + lhsCardinality * rhsCost
+      val nonChunkedCost = lhsCost + lhsCardinality * rhsCost
+      val chunks = Math.ceil(lhsCardinality.amount / 1024).toInt
+      val chunkedCost = lhsCost + Cardinality(chunks) * rhsCost
+
+      executionModel match {
+        case VolcanoModelExecution => nonChunkedCost
+        case PushBatchedExecution => chunkedCost
+      }
 
     case _: ApplyPlan =>
       // the rCost has already been multiplied by the lhs cardinality
@@ -258,4 +268,28 @@ object CardinalityCostModel extends CostModel {
       case _ => false
     }
   }
+}
+
+object CardinalityCostModel {
+  val DEFAULT_COST_PER_ROW: CostPerRow = 0.1
+  val PROBE_BUILD_COST: CostPerRow = 3.1
+  val PROBE_SEARCH_COST: CostPerRow = 2.4
+  val EAGERNESS_MULTIPLIER: Multiplier = 2.0
+  // A property has at least 2 db hits, even though it could even have many more.
+  val PROPERTY_ACCESS_DB_HITS = 2
+  val LABEL_CHECK_DB_HITS = 1
+  val EXPAND_INTO_COST: CostPerRow = 6.4
+
+  def costPerRowFor(expression: Expression, semanticTable: SemanticTable): CostPerRow = {
+    val noOfStoreAccesses = expression.treeFold(0) {
+      case x: Property if semanticTable.isNodeNoFail(x.map) || semanticTable.isRelationshipNoFail(x.map) => count => TraverseChildren(count + PROPERTY_ACCESS_DB_HITS)
+      case _: HasLabels => count => TraverseChildren(count + LABEL_CHECK_DB_HITS)
+      case _ => count => TraverseChildren(count)
+    }
+    if (noOfStoreAccesses > 0)
+      CostPerRow(noOfStoreAccesses)
+    else
+      DEFAULT_COST_PER_ROW
+  }
+
 }
