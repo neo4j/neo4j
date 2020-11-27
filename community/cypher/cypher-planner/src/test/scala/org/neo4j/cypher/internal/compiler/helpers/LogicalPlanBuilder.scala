@@ -23,27 +23,30 @@ import org.neo4j.cypher.internal.ast.semantics.ExpressionTypeInfo
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder.FakeLeafPlan
 import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.pos
 import org.neo4j.cypher.internal.logical.builder.Resolver
 import org.neo4j.cypher.internal.logical.plans.LogicalLeafPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.InputPosition
-import org.neo4j.cypher.internal.util.attribution.Id
+import org.neo4j.cypher.internal.util.attribution.Default
 import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.util.attribution.SameId
 import org.neo4j.cypher.internal.util.symbols.CypherType
 
 class LogicalPlanBuilder(wholePlan: Boolean = true, resolver: Resolver = new LogicalPlanResolver) extends AbstractLogicalPlanBuilder[LogicalPlan, LogicalPlanBuilder](resolver, wholePlan) {
 
-  class CardinalitiesWithDefault extends Cardinalities {
-    override def get(id: Id): Cardinality =
-      if (isDefinedAt(id)) super.get(id) else Cardinality.SINGLE
+  val cardinalities: Cardinalities = new Cardinalities with Default[LogicalPlan, Cardinality] {
+    override protected def defaultValue: Cardinality = Cardinality.SINGLE
   }
 
-  val cardinalities: Cardinalities = new CardinalitiesWithDefault
+  val providedOrders: ProvidedOrders = new ProvidedOrders with Default[LogicalPlan, ProvidedOrder] {
+    override protected def defaultValue: ProvidedOrder = ProvidedOrder.empty
+  }
 
   private var semanticTable = new SemanticTable()
 
@@ -65,6 +68,11 @@ class LogicalPlanBuilder(wholePlan: Boolean = true, resolver: Resolver = new Log
 
   def withCardinality(x: Double): LogicalPlanBuilder = {
     cardinalities.set(idOfLastPlan, Cardinality(x))
+    this
+  }
+
+  def withProvidedOrder(order: ProvidedOrder): LogicalPlanBuilder = {
+    providedOrders.set(idOfLastPlan, order)
     this
   }
 

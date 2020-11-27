@@ -41,6 +41,7 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.ResolvedFunctionInvocation
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.Cost
@@ -80,16 +81,25 @@ object Metrics {
       copy(limitSelectivity = s)
   }
 
-  // This metric calculates how expensive executing a logical plan is.
-  // (e.g. by looking at cardinality, expression selectivity and taking into account the effort
-  // required to execute a step)
   trait CostModel {
-    def costFor(plan: LogicalPlan, input: QueryGraphSolverInput, semanticTable: SemanticTable, cardinalities: Cardinalities): Cost
+    /**
+     * This metric calculates how expensive executing a logical plan is.
+     * (e.g. by looking at cardinality, expression selectivity and taking into account the effort
+     * required to execute a step)
+     *
+     * @return the cost of the given plan
+     */
+    def costFor(plan: LogicalPlan, input: QueryGraphSolverInput, semanticTable: SemanticTable, cardinalities: Cardinalities, providedOrders: ProvidedOrders): Cost
   }
 
-  // This metric estimates how many rows of data a logical plan produces
-  // (e.g. by asking the database for statistics)
+
   trait CardinalityModel {
+    /**
+     * This metric estimates how many rows of data a query produces
+     * (e.g. by asking the database for statistics)
+     *
+     * @return the cardinality of the query
+     */
     def apply(query: PlannerQueryPart, input: QueryGraphSolverInput, semanticTable: SemanticTable): Cardinality
   }
 

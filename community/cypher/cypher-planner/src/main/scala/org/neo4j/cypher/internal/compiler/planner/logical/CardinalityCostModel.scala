@@ -22,14 +22,13 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.ExecutionModel
 import org.neo4j.cypher.internal.compiler.PushBatchedExecution
-import org.neo4j.cypher.internal.compiler.VolcanoModelExecution
+import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.BIG_CHUNK_SIZE
 import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.DEFAULT_COST_PER_ROW
 import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.EAGERNESS_MULTIPLIER
 import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.EXPAND_INTO_COST
-import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.LABEL_CHECK_DB_HITS
 import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.PROBE_BUILD_COST
 import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.PROBE_SEARCH_COST
-import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.PROPERTY_ACCESS_DB_HITS
+import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.costPerRowFor
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CostModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.expressions.Expression
@@ -76,6 +75,7 @@ import org.neo4j.cypher.internal.logical.plans.UnwindCollection
 import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
 import org.neo4j.cypher.internal.logical.plans.VarExpand
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.Cost
 import org.neo4j.cypher.internal.util.CostPerRow
@@ -83,10 +83,21 @@ import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.Multiplier
 import org.neo4j.cypher.internal.util.Selectivity
 
-class CardinalityCostModelWithVolcano extends CardinalityCostModel(VolcanoModelExecution)
-
 case class CardinalityCostModel(executionModel: ExecutionModel) extends CostModel {
 
+  override def costFor(plan: LogicalPlan,
+                       input: QueryGraphSolverInput,
+                       semanticTable: SemanticTable,
+                       cardinalities: Cardinalities,
+                       providedOrders: ProvidedOrders): Cost =
+    calculateCost(plan, input.limitSelectivity, input.strictness, cardinalities, providedOrders, semanticTable)
+
+  /**
+   * @param plan the plan
+   * @param cardinality the outgoing cardinality of the plan ???
+   * @param semanticTable the semantic table
+   * @return the cost of the plan per outgoing row
+   */
   private def costPerRow(plan: LogicalPlan, cardinality: Cardinality, semanticTable: SemanticTable): CostPerRow = plan match {
     /*
      * These constants are approximations derived from test runs,
@@ -159,38 +170,30 @@ case class CardinalityCostModel(executionModel: ExecutionModel) extends CostMode
     => DEFAULT_COST_PER_ROW
   }
 
+  /**
+   * The input cardinality if defined, otherwise the output cardinality
+   */
   private def cardinalityForPlan(plan: LogicalPlan, cardinalities: Cardinalities): Cardinality =
     plan.lhs.map(p => cardinalities.get(p.id)).getOrElse(cardinalities.get(plan.id))
 
-  def costPerRowFor(expression: Expression, semanticTable: SemanticTable): CostPerRow = {
-    val noOfStoreAccesses = expression.treeFold(0) {
-      case x: Property if semanticTable.isNodeNoFail(x.map) || semanticTable.isRelationshipNoFail(x.map) => count => TraverseChildren(count + PROPERTY_ACCESS_DB_HITS)
-      case _: HasLabels => count => TraverseChildren(count + LABEL_CHECK_DB_HITS)
-      case _ => count => TraverseChildren(count)
-    }
-    if (noOfStoreAccesses > 0)
-      CostPerRow(noOfStoreAccesses)
-    else
-      DEFAULT_COST_PER_ROW
-  }
-
-  def costFor(plan: LogicalPlan,
-              input: QueryGraphSolverInput,
-              semanticTable: SemanticTable,
-              cardinalities: Cardinalities): Cost =
-    calculateCost(plan, input.limitSelectivity, input.strictness, cardinalities, semanticTable)
-
   private final case class EffectiveCardinalities(currentPlanWorkload: Cardinality, lhs: Cardinality, rhs: Cardinality)
 
+  /**
+   * Recursively calculate the cost of a plan
+   *
+   * @param plan the plan
+   * @param limitSelectivity the selectivity of a LIMIT affecting this plan
+   */
   private def calculateCost(plan: LogicalPlan,
                             limitSelectivity: Selectivity,
                             strictness: Option[StrictnessMode],
                             cardinalities: Cardinalities,
+                            providedOrders: ProvidedOrders,
                             semanticTable: SemanticTable): Cost = {
     val (lhsLimitSelectivity, rhsLimitSelectivity) = childrenLimitSelectivities(plan, limitSelectivity, cardinalities)
 
-    val lhsCost = plan.lhs.map(p => calculateCost(p, lhsLimitSelectivity, strictness, cardinalities, semanticTable)) getOrElse Cost.ZERO
-    val rhsCost = plan.rhs.map(p => calculateCost(p, rhsLimitSelectivity, strictness, cardinalities, semanticTable)) getOrElse Cost.ZERO
+    val lhsCost = plan.lhs.map(p => calculateCost(p, lhsLimitSelectivity, strictness, cardinalities, providedOrders, semanticTable)) getOrElse Cost.ZERO
+    val rhsCost = plan.rhs.map(p => calculateCost(p, rhsLimitSelectivity, strictness, cardinalities, providedOrders, semanticTable)) getOrElse Cost.ZERO
 
     val effectiveCardinalitiess = EffectiveCardinalities(
       cardinalityForPlan(plan, cardinalities) * lhsLimitSelectivity,
@@ -198,7 +201,7 @@ case class CardinalityCostModel(executionModel: ExecutionModel) extends CostMode
       plan.rhs.map(p => cardinalities.get(p.id) * rhsLimitSelectivity) getOrElse Cardinality.EMPTY
     )
 
-    val cost = combinedCostForPlan(plan, effectiveCardinalitiess, lhsCost, rhsCost, semanticTable)
+    val cost = combinedCostForPlan(plan, effectiveCardinalitiess, providedOrders, lhsCost, rhsCost, semanticTable)
 
     strictness match {
       case Some(LazyMode) if !LazyMode(plan) => cost * EAGERNESS_MULTIPLIER
@@ -206,6 +209,9 @@ case class CardinalityCostModel(executionModel: ExecutionModel) extends CostMode
     }
   }
 
+  /**
+   * Given an incomingLimitSelectivity, calculate how this selectivity applies to the LHS and RHS of the plan.
+   */
   private def childrenLimitSelectivities(plan: LogicalPlan, incomingLimitSelectivity: Selectivity, cardinalities: Cardinalities): (Selectivity, Selectivity) = plan match {
     case _: CartesianProduct =>
       val sqrt = Selectivity.of(math.sqrt(incomingLimitSelectivity.factor)).getOrElse(Selectivity.ONE)
@@ -228,20 +234,33 @@ case class CardinalityCostModel(executionModel: ExecutionModel) extends CostMode
       (incomingLimitSelectivity, incomingLimitSelectivity)
   }
 
+  /**
+   * Calculate the combined cost of a plan, including the costs of its children.
+   *
+   * @param plan the plan
+   * @param effectiveCardinalities the effective cardinalities for this plan, the LHS and the RHS
+   */
   private def combinedCostForPlan(plan: LogicalPlan,
                                   effectiveCardinalities: EffectiveCardinalities,
+                                  providedOrders: ProvidedOrders,
                                   lhsCost: Cost,
                                   rhsCost: Cost,
                                   semanticTable: SemanticTable): Cost = plan match {
-    case _: CartesianProduct =>
+    case cp: CartesianProduct =>
       val lhsCardinality = Cardinality.max(Cardinality.SINGLE, effectiveCardinalities.lhs)
-      val nonChunkedCost = lhsCost + lhsCardinality * rhsCost
-      val chunks = Math.ceil(lhsCardinality.amount / 1024).toInt
-      val chunkedCost = lhsCost + Cardinality(chunks) * rhsCost
+      // Ideally we would want to check leveragedOrders here. But that attribute will not be set properly at this point of planning,
+      // since that only happens when the leveraging plan is planned.
+      val providesOrder = !providedOrders(cp.id).isEmpty
 
       executionModel match {
-        case VolcanoModelExecution => nonChunkedCost
-        case PushBatchedExecution => chunkedCost
+        case PushBatchedExecution if !providesOrder =>
+          // The RHS is executed for each chunk of LHS rows
+          val chunkSize = BIG_CHUNK_SIZE
+          val chunks = Math.ceil(lhsCardinality.amount / chunkSize).toInt
+          lhsCost + Cardinality(chunks) * rhsCost
+        case _ =>
+          // The RHS is executed for each LHS row
+          lhsCost + lhsCardinality * rhsCost
       }
 
     case _: ApplyPlan =>
@@ -280,6 +299,11 @@ object CardinalityCostModel {
   val LABEL_CHECK_DB_HITS = 1
   val EXPAND_INTO_COST: CostPerRow = 6.4
 
+  val BIG_CHUNK_SIZE = 1024
+
+  /**
+   * The cost of evaluating an expression, per row.
+   */
   def costPerRowFor(expression: Expression, semanticTable: SemanticTable): CostPerRow = {
     val noOfStoreAccesses = expression.treeFold(0) {
       case x: Property if semanticTable.isNodeNoFail(x.map) || semanticTable.isRelationshipNoFail(x.map) => count => TraverseChildren(count + PROPERTY_ACCESS_DB_HITS)
@@ -291,5 +315,4 @@ object CardinalityCostModel {
     else
       DEFAULT_COST_PER_ROW
   }
-
 }

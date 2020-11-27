@@ -34,6 +34,7 @@ import org.neo4j.cypher.internal.logical.plans.ProcedureSignature
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.Cost
 import org.neo4j.cypher.internal.util.LabelId
@@ -92,7 +93,7 @@ class StubbedLogicalPlanningConfiguration(val parent: LogicalPlanningConfigurati
   var knownLabels: Set[String] = Set.empty
   var knownRelationships: Set[String] = Set.empty
   var cardinality: PartialFunction[PlannerQueryPart, Cardinality] = PartialFunction.empty
-  var cost: PartialFunction[(LogicalPlan, QueryGraphSolverInput, Cardinalities), Cost] = PartialFunction.empty
+  var cost: PartialFunction[(LogicalPlan, QueryGraphSolverInput, Cardinalities, ProvidedOrders), Cost] = PartialFunction.empty
   var labelCardinality: Map[String, Cardinality] = Map.empty
   var statistics: GraphStatistics = _
   var qg: QueryGraph = _
@@ -106,12 +107,12 @@ class StubbedLogicalPlanningConfiguration(val parent: LogicalPlanningConfigurati
 
   lazy val labelsById: Map[Int, String] = indexes.keys.map(_.label).zipWithIndex.map(_.swap).toMap
 
-  override def costModel(): PartialFunction[(LogicalPlan, QueryGraphSolverInput, SemanticTable, Cardinalities), Cost] = {
-    case (lp, input, semanticTable, cardinalities) =>
-      if (cost.isDefinedAt((lp, input, cardinalities))) {
-        cost((lp, input, cardinalities))
+  override def costModel(): PartialFunction[(LogicalPlan, QueryGraphSolverInput, SemanticTable, Cardinalities, ProvidedOrders), Cost] = {
+    case (lp, input, semanticTable, cardinalities, providedOrders) =>
+      if (cost.isDefinedAt((lp, input, cardinalities, providedOrders))) {
+        cost((lp, input, cardinalities, providedOrders))
       } else {
-        parent.costModel()((lp, input, semanticTable, cardinalities))
+        parent.costModel()((lp, input, semanticTable, cardinalities, providedOrders))
       }
   }
 

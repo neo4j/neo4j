@@ -427,8 +427,8 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
 
     new given {
       cost = {
-        case (ProjectEndpoints(Expand(_, _, _, _, _, _, _),_, _, _, _, _, _, _,_), _, _) => 10.0
-        case (Expand(ProjectEndpoints(_,_, _, _, _, _, _, _, _), _, _, _, _, _, _), _, _) => 1.0
+        case (ProjectEndpoints(Expand(_, _, _, _, _, _, _),_, _, _, _, _, _, _,_), _, _, _) => 10.0
+        case (Expand(ProjectEndpoints(_,_, _, _, _, _, _, _, _), _, _, _, _, _, _), _, _, _) => 1.0
       }
 
       queryGraphSolver = createQueryGraphSolver(monitor = monitor, solverConfig = ExpandOnlyIDPSolverConfig)
@@ -753,7 +753,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
 
     new given {
       cost = {
-        case (_: LeftOuterHashJoin, _, _) => 20.0
+        case (_: LeftOuterHashJoin, _, _, _) => 20.0
         case _ => Double.MaxValue
       }
 

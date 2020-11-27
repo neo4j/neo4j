@@ -46,6 +46,7 @@ import org.neo4j.cypher.internal.logical.plans.NodeByIdSeek
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.util.Cost
 import org.neo4j.cypher.internal.util.NodeNameGenerator
 import org.neo4j.cypher.internal.util.RelTypeId
@@ -67,7 +68,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     )
 
     val factory = newMockedMetricsFactory
-    when(factory.newCostModel(config, any[ExecutionModel])).thenReturn((plan: LogicalPlan, _: QueryGraphSolverInput, _: SemanticTable, _: Cardinalities) => plan match {
+    when(factory.newCostModel(config, any[ExecutionModel])).thenReturn((plan: LogicalPlan, _: QueryGraphSolverInput, _: SemanticTable, _: Cardinalities, _: ProvidedOrders) => plan match {
       case _: NodeByIdSeek => Cost(1)
       case _               => Cost(Double.MaxValue)
     })
@@ -92,7 +93,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     )
 
     val factory = newMockedMetricsFactory
-    when(factory.newCostModel(config, any[ExecutionModel])).thenReturn((plan: LogicalPlan, _: QueryGraphSolverInput, _: SemanticTable, _: Cardinalities) => plan match {
+    when(factory.newCostModel(config, any[ExecutionModel])).thenReturn((plan: LogicalPlan, _: QueryGraphSolverInput, _: SemanticTable, _: Cardinalities, _: ProvidedOrders) => plan match {
       case _: NodeByIdSeek => Cost(1)
       case _               => Cost(Double.MaxValue)
     })
@@ -117,7 +118,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     )
 
     val factory = newMockedMetricsFactory
-    when(factory.newCostModel(config, any[ExecutionModel])).thenReturn((plan: LogicalPlan, _: QueryGraphSolverInput, _: SemanticTable, _: Cardinalities) => plan match {
+    when(factory.newCostModel(config, any[ExecutionModel])).thenReturn((plan: LogicalPlan, _: QueryGraphSolverInput, _: SemanticTable, _: Cardinalities, _: ProvidedOrders) => plan match {
       case _: NodeByIdSeek => Cost(1)
       case _               => Cost(Double.MaxValue)
     })
@@ -143,7 +144,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     )
 
     val factory = newMockedMetricsFactory
-    when(factory.newCostModel(config, any[ExecutionModel])).thenReturn((plan: LogicalPlan, _: QueryGraphSolverInput, _: SemanticTable, _: Cardinalities) => plan match {
+    when(factory.newCostModel(config, any[ExecutionModel])).thenReturn((plan: LogicalPlan, _: QueryGraphSolverInput, _: SemanticTable, _: Cardinalities, _: ProvidedOrders) => plan match {
       case _: NodeByIdSeek => Cost(1)
       case _               => Cost(Double.MaxValue)
     })
@@ -167,7 +168,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     )
 
     val factory = newMockedMetricsFactory
-    when(factory.newCostModel(config, any[ExecutionModel])).thenReturn((plan: LogicalPlan, _: QueryGraphSolverInput, _: SemanticTable, _: Cardinalities) => plan match {
+    when(factory.newCostModel(config, any[ExecutionModel])).thenReturn((plan: LogicalPlan, _: QueryGraphSolverInput, _: SemanticTable, _: Cardinalities, _: ProvidedOrders) => plan match {
       case _: NodeByIdSeek => Cost(1)
       case _               => Cost(Double.MaxValue)
     })
@@ -194,7 +195,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     )
 
     val factory = newMockedMetricsFactory
-    when(factory.newCostModel(config, any[ExecutionModel])).thenReturn((plan: LogicalPlan, _: QueryGraphSolverInput, _: SemanticTable, _: Cardinalities) => plan match {
+    when(factory.newCostModel(config, any[ExecutionModel])).thenReturn((plan: LogicalPlan, _: QueryGraphSolverInput, _: SemanticTable, _: Cardinalities, _: ProvidedOrders) => plan match {
       case _: DirectedRelationshipByIdSeek => Cost(1)
       case _                               => Cost(Double.MaxValue)
     })
@@ -222,7 +223,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
       patternRelationships = Set(patternRel))
 
     val factory = newMockedMetricsFactory
-    when(factory.newCostModel(config, any[ExecutionModel])).thenReturn((plan: LogicalPlan, _: QueryGraphSolverInput, _: SemanticTable, _: Cardinalities) => plan match {
+    when(factory.newCostModel(config, any[ExecutionModel])).thenReturn((plan: LogicalPlan, _: QueryGraphSolverInput, _: SemanticTable, _: Cardinalities, _: ProvidedOrders) => plan match {
       case _: UndirectedRelationshipByIdSeek => Cost(2)
       case _                                 => Cost(Double.MaxValue)
     })
@@ -262,7 +263,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
       patternRelationships = Set(patternRel))
 
     val factory = newMockedMetricsFactory
-    when(factory.newCostModel(config, any[ExecutionModel])).thenReturn((plan: LogicalPlan, _: QueryGraphSolverInput, _: SemanticTable, _: Cardinalities) => plan match {
+    when(factory.newCostModel(config, any[ExecutionModel])).thenReturn((plan: LogicalPlan, _: QueryGraphSolverInput, _: SemanticTable, _: Cardinalities, _: ProvidedOrders) => plan match {
       case _: UndirectedRelationshipByIdSeek => Cost(2)
       case _                                 => Cost(Double.MaxValue)
     })
@@ -306,7 +307,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
       patternRelationships = Set(patternRel))
 
     val factory = newMockedMetricsFactory
-    when(factory.newCostModel(config, any[ExecutionModel])).thenReturn((plan: LogicalPlan, _: QueryGraphSolverInput, _: SemanticTable, _: Cardinalities) => plan match {
+    when(factory.newCostModel(config, any[ExecutionModel])).thenReturn((plan: LogicalPlan, _: QueryGraphSolverInput, _: SemanticTable, _: Cardinalities, _: ProvidedOrders) => plan match {
       case _: UndirectedRelationshipByIdSeek => Cost(2)
       case _                                 => Cost(Double.MaxValue)
     })

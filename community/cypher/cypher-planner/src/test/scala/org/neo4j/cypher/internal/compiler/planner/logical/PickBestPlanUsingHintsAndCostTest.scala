@@ -52,8 +52,8 @@ class PickBestPlanUsingHintsAndCostTest extends CypherFunSuite with LogicalPlann
 
     assertTopPlan(winner = b, newStubbedPlanningAttributes, a, b)(new given {
       cost = {
-        case (p, _, _) if p == a => Cost(100)
-        case (p, _, _) if p == b => Cost(50)
+        case (p, _, _, _) if p == a => Cost(100)
+        case (p, _, _, _) if p == b => Cost(50)
       }
     })
   }

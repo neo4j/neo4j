@@ -31,7 +31,8 @@ import org.neo4j.cypher.internal.ir.PlannerQueryPart
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
-import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.util.Cardinality
 
 case class CachedMetricsFactory(metricsFactory: MetricsFactory) extends MetricsFactory {
@@ -43,7 +44,7 @@ case class CachedMetricsFactory(metricsFactory: MetricsFactory) extends MetricsF
 
   override def newCostModel(config: CypherPlannerConfiguration, executionModel: ExecutionModel): CostModel = {
     val cached = CachedFunction(metricsFactory.newCostModel(config: CypherPlannerConfiguration, executionModel).costFor _)
-    (plan: LogicalPlan, input: Metrics.QueryGraphSolverInput,  semanticTable: SemanticTable, cardinalities: PlanningAttributes.Cardinalities) => cached(plan, input, semanticTable, cardinalities)
+    (plan: LogicalPlan, input: Metrics.QueryGraphSolverInput, semanticTable: SemanticTable, cardinalities: Cardinalities, providedOrders: ProvidedOrders) => cached(plan, input, semanticTable, cardinalities, providedOrders)
   }
 
   override def newQueryGraphCardinalityModel(statistics: GraphStatistics): QueryGraphCardinalityModel = {

@@ -20,23 +20,27 @@
 package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.compiler.PushBatchedExecution
+import org.neo4j.cypher.internal.compiler.VolcanoModelExecution
 import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher.beLike
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.cartesianProductsOrValueJoins.COMPONENT_THRESHOLD_FOR_CARTESIAN_PRODUCT
+import org.neo4j.cypher.internal.logical.plans.Aggregation
 import org.neo4j.cypher.internal.logical.plans.AllNodesScan
 import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.CartesianProduct
 import org.neo4j.cypher.internal.logical.plans.NodeIndexScan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
+import org.neo4j.cypher.internal.logical.plans.Optional
 import org.neo4j.cypher.internal.logical.plans.OptionalExpand
 import org.neo4j.cypher.internal.logical.plans.RangeQueryExpression
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.SingleQueryExpression
 import org.neo4j.cypher.internal.logical.plans.Sort
 import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
-import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
+import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability.BOTH
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -56,7 +60,7 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
       .setAllNodesCardinality(100)
       .setLabelCardinality("Few", 2)
       .setLabelCardinality("Many", 50)
-      .addIndex("Many", Seq("prop"), 0.5, 0.01, providesOrder = IndexOrderCapability.BOTH)
+      .addIndex("Many", Seq("prop"), 0.5, 0.01, providesOrder = BOTH)
       .build()
       .plan(
         s"""MATCH $nodes, ($orderedNode:Many)
@@ -694,5 +698,73 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
         .nodeByLabelScan("m", "M")
         .build()
       )
+  }
+
+  test("Should switch order of CartesianProduct vs. Apply-Optional in grid query depending on runtime") {
+    val builder = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setLabelCardinality("Person", 100)
+      .addIndex("Person", Seq("name"), 1.0, 0.01)
+      .setRelationshipCardinality("(:Person)-[]->()", 400)
+      .setRelationshipCardinality("()-[]->()", 400)
+
+    val query =
+      """MATCH (p0:Person { name:'n(0,0)' }),
+        |      (p1:Person { name:'n(0,1)' }),
+        |      (p2:Person { name:'n(0,2)' })
+        |OPTIONAL MATCH (p0)-->(p0_1)-->(p0_2)
+        |OPTIONAL MATCH (p1)-->(p1_1)-->(p1_2)
+        |OPTIONAL MATCH (p2)-->(p2_1)-->(p2_2)
+        |RETURN count(*)
+        |""".stripMargin
+    val volcanoPlan = builder
+      .setExecutionModel(VolcanoModelExecution)
+      .build()
+      .plan(query)
+
+    val batchedPlan = builder
+      .setExecutionModel(PushBatchedExecution)
+      .build()
+      .plan(query)
+
+    // The execution model highly affects the cost of Cartesian Product.
+    // However, we cannot assert on the full plans here.
+    // Planning this query will lead to compaction in IDP and the exact shape of the plan will be different sometimes.
+
+    volcanoPlan.stripProduceResults should beLike {
+      case Aggregation(Apply(_, _: Optional), _, _) => ()
+    }
+    batchedPlan.stripProduceResults should beLike {
+      case Aggregation(_: CartesianProduct, _, _) => ()
+    }
+  }
+
+  test("Should switch order of CartesianProduct vs. Apply-Optional in grid query depending on runtime 2") {
+    val builder = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setLabelCardinality("Person", 100)
+      .addIndex("Person", Seq("name"), 1.0, 0.01, withValues = true, providesOrder = BOTH)
+      .setRelationshipCardinality("(:Person)-[]->()", 400)
+      .setRelationshipCardinality("()-[]->()", 400)
+
+    val query =
+      """MATCH (p0:Person),
+        |      (p1:Person)
+        |OPTIONAL MATCH (p0)-->(p0_1)-->(p0_2)
+        |RETURN * ORDER BY p1.name
+        |""".stripMargin
+    val volcanoPlan = builder
+      .setExecutionModel(VolcanoModelExecution)
+      .build()
+      .plan(query)
+
+    val batchedPlan = builder
+      .setExecutionModel(PushBatchedExecution)
+      .build()
+      .plan(query)
+
+    // Because of the order by, the CartesianProduct will have a provided order, and thus it will not get cheaper with batched execution.
+    // Both execution models should find the same plan.
+    batchedPlan should equal(volcanoPlan)
   }
 }

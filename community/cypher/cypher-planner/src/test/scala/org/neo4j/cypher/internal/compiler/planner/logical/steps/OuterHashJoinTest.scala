@@ -41,6 +41,7 @@ import org.neo4j.cypher.internal.logical.plans.LeftOuterHashJoin
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.RightOuterHashJoin
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.util.Cost
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -61,7 +62,7 @@ class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport w
 
     val factory = newMockedMetricsFactory
 
-    when(factory.newCostModel(config, any[ExecutionModel])).thenReturn((plan: LogicalPlan, _: QueryGraphSolverInput, _: SemanticTable, _: Cardinalities) => plan match {
+    when(factory.newCostModel(config, any[ExecutionModel])).thenReturn((plan: LogicalPlan, _: QueryGraphSolverInput, _: SemanticTable, _: Cardinalities, _: ProvidedOrders) => plan match {
       case AllNodesScan(`bNode`, _) => Cost(1) // Make sure we start the inner plan using b
       case _ => Cost(1000)
     })
@@ -92,7 +93,7 @@ class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport w
     )
 
     val factory = newMockedMetricsFactory
-    when(factory.newCostModel(config, any[ExecutionModel])).thenReturn((plan: LogicalPlan, _: QueryGraphSolverInput, _: SemanticTable, _: Cardinalities) => plan match {
+    when(factory.newCostModel(config, any[ExecutionModel])).thenReturn((plan: LogicalPlan, _: QueryGraphSolverInput, _: SemanticTable, _: Cardinalities, _: ProvidedOrders) => plan match {
       case AllNodesScan(`bNode`, _) => Cost(1) // Make sure we start the inner plan using b
       case _ => Cost(1000)
     })
@@ -126,7 +127,7 @@ class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport w
     )
 
     val factory = newMockedMetricsFactory
-    when(factory.newCostModel(config, any[ExecutionModel])).thenReturn((plan: LogicalPlan, _: QueryGraphSolverInput, _: SemanticTable, _: Cardinalities) => plan match {
+    when(factory.newCostModel(config, any[ExecutionModel])).thenReturn((plan: LogicalPlan, _: QueryGraphSolverInput, _: SemanticTable, _: Cardinalities, _: ProvidedOrders) => plan match {
       case AllNodesScan(`bNode`, _) => Cost(1) // Make sure we start the inner plan using b
       case _ => Cost(1000)
     })

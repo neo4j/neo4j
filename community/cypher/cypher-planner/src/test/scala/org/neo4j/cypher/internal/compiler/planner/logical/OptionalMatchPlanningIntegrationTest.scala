@@ -59,12 +59,12 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
   test("should build plans containing left outer joins") {
     (new given {
       cost = {
-        case (_: AllNodesScan, _, _) => 2000000.0
-        case (_: NodeByLabelScan, _, _) => 20.0
-        case (p: Expand, _, _) if p.findByAllClass[CartesianProduct].nonEmpty => Double.MaxValue
-        case (_: Expand, _, _) => 10.0
-        case (_: LeftOuterHashJoin, _, _) => 20.0
-        case (_: Argument, _, _) => 1.0
+        case (_: AllNodesScan, _, _, _) => 2000000.0
+        case (_: NodeByLabelScan, _, _, _) => 20.0
+        case (p: Expand, _, _, _) if p.findByAllClass[CartesianProduct].nonEmpty => Double.MaxValue
+        case (_: Expand, _, _, _) => 10.0
+        case (_: LeftOuterHashJoin, _, _, _) => 20.0
+        case (_: Argument, _, _, _) => 1.0
         case _ => Double.MaxValue
       }
     } getLogicalPlanFor "MATCH (a:X)-[r1]->(b) OPTIONAL MATCH (b)-[r2]->(c:Y) RETURN b")._2 should equal(
@@ -78,12 +78,12 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
   test("should build plans containing right outer joins") {
     (new given {
       cost = {
-        case (_: AllNodesScan, _, _) => 2000000.0
-        case (_: NodeByLabelScan, _, _) => 20.0
-        case (p: Expand, _, _) if p.findByAllClass[CartesianProduct].nonEmpty => Double.MaxValue
-        case (_: Expand, _, _) => 10.0
-        case (_: RightOuterHashJoin, _, _) => 20.0
-        case (_: Argument, _, _) => 1.0
+        case (_: AllNodesScan, _, _, _) => 2000000.0
+        case (_: NodeByLabelScan, _, _, _) => 20.0
+        case (p: Expand, _, _, _) if p.findByAllClass[CartesianProduct].nonEmpty => Double.MaxValue
+        case (_: Expand, _, _, _) => 10.0
+        case (_: RightOuterHashJoin, _, _, _) => 20.0
+        case (_: Argument, _, _, _) => 1.0
         case _ => Double.MaxValue
       }
     } getLogicalPlanFor "MATCH (a:X)-[r1]->(b) OPTIONAL MATCH (b)-[r2]->(c:Y) RETURN b")._2 should equal(
@@ -113,7 +113,7 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
         }
       }
       cost = {
-        case (_: Apply, _, _) => Double.MaxValue
+        case (_: Apply, _, _, _) => Double.MaxValue
       }
     } getLogicalPlanFor "MATCH (a:X)-[r1]->(b) OPTIONAL MATCH (b)-[r2]->(c:Y) RETURN b")._2 should equal(
       LeftOuterHashJoin(Set("b"),
@@ -142,7 +142,7 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
         }
       }
       cost = {
-        case (_: Apply, _, _) => Double.MaxValue
+        case (_: Apply, _, _, _) => Double.MaxValue
       }
     } getLogicalPlanFor "MATCH (a:X)-[r1]->(b) OPTIONAL MATCH (b)-[r2]->(c:Y) RETURN b")._2 should equal(
       RightOuterHashJoin(Set("b"),
@@ -254,7 +254,7 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
   test("should solve optional matches with arguments and predicates") {
     val plan = new given {
       cost = {
-        case (_: Expand, _, _) => 1000.0
+        case (_: Expand, _, _, _) => 1000.0
       }
     }.getLogicalPlanFor(
       """MATCH (n:X)
@@ -340,8 +340,8 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
 
     val cfg = new given {
       cost = {
-        case (_: RightOuterHashJoin, _, _) => 1.0
-        case (_: LeftOuterHashJoin, _, _) => 1.0
+        case (_: RightOuterHashJoin, _, _, _) => 1.0
+        case (_: LeftOuterHashJoin, _, _, _) => 1.0
         case _ => Double.MaxValue
       }
     }

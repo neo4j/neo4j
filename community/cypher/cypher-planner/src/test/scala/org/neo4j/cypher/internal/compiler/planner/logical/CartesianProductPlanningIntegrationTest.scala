@@ -63,8 +63,8 @@ class CartesianProductPlanningIntegrationTest extends CypherFunSuite with Logica
   test("should build plans so the cheaper plan is on the left") {
     (new given {
       cost = {
-        case (_: Selection, _, _) => 1000.0
-        case (_: NodeByLabelScan, _, _) => 20.0
+        case (_: Selection, _, _, _) => 1000.0
+        case (_: NodeByLabelScan, _, _, _) => 20.0
       }
       cardinality = mapCardinality {
         case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.selections.predicates.size == 1 => 10

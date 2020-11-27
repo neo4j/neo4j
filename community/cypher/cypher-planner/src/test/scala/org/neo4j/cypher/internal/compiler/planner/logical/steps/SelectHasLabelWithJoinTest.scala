@@ -46,9 +46,9 @@ class SelectHasLabelWithJoinTest extends CypherFunSuite with LogicalPlanningTest
 
     val plan = new given {
       cost = {
-        case (_: Selection, _, _) => 1000.0
-        case (_: NodeHashJoin, _, _) => 20.0
-        case (_: NodeByLabelScan, _, _) => 20.0
+        case (_: Selection, _, _, _) => 1000.0
+        case (_: NodeHashJoin, _, _, _) => 20.0
+        case (_: NodeByLabelScan, _, _, _) => 20.0
       }
     } getLogicalPlanFor "MATCH (n:Foo:Bar:Baz) RETURN n"
 
@@ -74,9 +74,9 @@ class SelectHasLabelWithJoinTest extends CypherFunSuite with LogicalPlanningTest
     val plan = new given {
       procedure(signature)
       cost = {
-        case (_: Selection, _, _) => 1000.0
-        case (_: NodeHashJoin, _, _) => 20.0
-        case (_: NodeByLabelScan, _, _) => 20.0
+        case (_: Selection, _, _, _) => 1000.0
+        case (_: NodeHashJoin, _, _, _) => 20.0
+        case (_: NodeByLabelScan, _, _, _) => 20.0
       }
     } getLogicalPlanFor "CALL getNode() YIELD node WHERE node:Label RETURN node"
 
@@ -97,11 +97,11 @@ class SelectHasLabelWithJoinTest extends CypherFunSuite with LogicalPlanningTest
 
     val plan = new given {
       cost = {
-        case (_: Selection, _, _) => 1000.0
-        case (_: RightOuterHashJoin, _, _) => 1000.0
-        case (_: LeftOuterHashJoin, _, _) => 1000.0
-        case (_: NodeHashJoin, _, _) => 20.0
-        case (_: NodeByLabelScan, _, _) => 20.0
+        case (_: Selection, _, _, _) => 1000.0
+        case (_: RightOuterHashJoin, _, _, _) => 1000.0
+        case (_: LeftOuterHashJoin, _, _, _) => 1000.0
+        case (_: NodeHashJoin, _, _, _) => 20.0
+        case (_: NodeByLabelScan, _, _, _) => 20.0
       }
     } getLogicalPlanFor query
 

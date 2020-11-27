@@ -70,7 +70,7 @@ object SystemOutCostLogger extends CostComparisonListener {
                ): Unit = {
 
     def costString(plan: LogicalPlan) = {
-      val cost = context.cost.costFor(plan, context.input, context.semanticTable, context.planningAttributes.cardinalities).gummyBears
+      val cost = context.cost.costFor(plan, context.input, context.semanticTable, context.planningAttributes.cardinalities, context.planningAttributes.providedOrders).gummyBears
       val cardinality = context.planningAttributes.cardinalities.get(plan.id).amount
       magenta(" // cost ") + magenta_bold(cost.toString) + magenta(" cardinality ") + magenta_bold(cardinality.toString)
     }

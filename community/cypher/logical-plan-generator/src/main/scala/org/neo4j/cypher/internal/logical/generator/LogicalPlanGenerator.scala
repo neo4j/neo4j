@@ -42,6 +42,7 @@ import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.logical.generator.LogicalPlanGenerator.State
 import org.neo4j.cypher.internal.logical.generator.LogicalPlanGenerator.WithState
 import org.neo4j.cypher.internal.logical.plans.Aggregation
@@ -80,10 +81,12 @@ import org.neo4j.cypher.internal.logical.plans.UnwindCollection
 import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.Cost
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.RelTypeId
+import org.neo4j.cypher.internal.util.attribution.Default
 import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.util.symbols.CTAny
@@ -226,7 +229,12 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int],
     oneChildPlan(state),
     twoChildPlan(state),
   ).suchThat {
-    case WithState(plan, state) => CardinalityCostModel(VolcanoModelExecution).costFor(plan, QueryGraphSolverInput.empty, state.semanticTable, state.cardinalities) <= costLimit
+    case WithState(plan, state) =>
+      val po = new ProvidedOrders with Default[LogicalPlan, ProvidedOrder] {
+        override protected def defaultValue: ProvidedOrder = ProvidedOrder.empty
+      }
+      CardinalityCostModel(VolcanoModelExecution)
+        .costFor(plan, QueryGraphSolverInput.empty, state.semanticTable, state.cardinalities, po) <= costLimit
   }
 
   def innerLogicalPlanWithAtLeastOneSymbol(state: State): Gen[WithState[LogicalPlan]] =

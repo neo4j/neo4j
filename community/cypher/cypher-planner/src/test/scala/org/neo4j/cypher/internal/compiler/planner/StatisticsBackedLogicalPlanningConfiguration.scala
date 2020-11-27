@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.compiler.ExecutionModel
 import org.neo4j.cypher.internal.compiler.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.compiler.NotImplementedPlanContext
 import org.neo4j.cypher.internal.compiler.VolcanoModelExecution
@@ -63,6 +64,7 @@ object StatisticsBackedLogicalPlanningConfigurationBuilder {
   case class Options(
     debug: CypherDebugOptions = CypherDebugOptions(Set.empty),
     connectComponentsPlanner: Boolean = false,
+    executionModel: ExecutionModel = VolcanoModelExecution,
   )
 }
 
@@ -209,6 +211,11 @@ class StatisticsBackedLogicalPlanningConfigurationBuilder() {
     this
   }
 
+  def setExecutionModel(executionModel: ExecutionModel): this.type = {
+    options = options.copy(executionModel = executionModel)
+    this
+  }
+
   def build(): StatisticsBackedLogicalPlanningConfiguration = {
     require(cardinalities.allNodes.isDefined, "Please specify allNodesCardinality using `setAllNodesCardinality`.")
     cardinalities.allNodes.foreach(anc =>
@@ -345,8 +352,7 @@ class StatisticsBackedLogicalPlanningConfiguration(
 
   def planState(queryString: String): LogicalPlanState = {
     val exceptionFactory = Neo4jCypherExceptionFactory(queryString, Some(pos))
-  // TODO: Configure ExecutionMode
-    val metrics = SimpleMetricsFactory.newMetrics(planContext.statistics, simpleExpressionEvaluator, cypherCompilerConfig, VolcanoModelExecution)
+    val metrics = SimpleMetricsFactory.newMetrics(planContext.statistics, simpleExpressionEvaluator, cypherCompilerConfig, options.executionModel)
 
     val context = ContextHelper.create(
       planContext = planContext,

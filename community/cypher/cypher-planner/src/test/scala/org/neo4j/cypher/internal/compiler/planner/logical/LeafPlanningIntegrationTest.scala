@@ -74,6 +74,7 @@ import org.neo4j.cypher.internal.logical.plans.Union
 import org.neo4j.cypher.internal.planner.spi.DelegatingGraphStatistics
 import org.neo4j.cypher.internal.planner.spi.MinimumGraphStatistics
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.Cost
 import org.neo4j.cypher.internal.util.LabelId
@@ -97,16 +98,16 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   test("should prefer cheaper optional expand over joins, even if not cheaper before rewriting") {
     (new given {
       cost = {
-        case (_: RightOuterHashJoin, _, _) => 6.610321376825E9
-        case (_: LeftOuterHashJoin, _, _) => 8.1523761738E9
-        case (_: Apply, _, _) => 7.444573003149691E9
-        case (_: OptionalExpand, _, _) => 4.76310362E8
-        case (_: Optional, _, _) => 7.206417822149691E9
-        case (_: Selection, _, _) => 1.02731056E8
-        case (_: Expand, _, _) => 7.89155379E7
-        case (_: AllNodesScan, _, _) => 3.50735724E7
-        case (_: Argument, _, _) => 2.38155181E8
-        case (_: ProjectEndpoints, _, _) => 11.0
+        case (_: RightOuterHashJoin, _, _, _) => 6.610321376825E9
+        case (_: LeftOuterHashJoin, _, _, _) => 8.1523761738E9
+        case (_: Apply, _, _, _) => 7.444573003149691E9
+        case (_: OptionalExpand, _, _, _) => 4.76310362E8
+        case (_: Optional, _, _, _) => 7.206417822149691E9
+        case (_: Selection, _, _, _) => 1.02731056E8
+        case (_: Expand, _, _, _) => 7.89155379E7
+        case (_: AllNodesScan, _, _, _) => 3.50735724E7
+        case (_: Argument, _, _, _) => 2.38155181E8
+        case (_: ProjectEndpoints, _, _, _) => 11.0
       }
     } getLogicalPlanFor
       """UNWIND $createdRelationships as r
@@ -231,12 +232,12 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       indexOn("Person", "name")
       indexOn("Person", "age")
       cost = {
-        case (_: AllNodesScan, _, _) => 1000.0
-        case (_: NodeByLabelScan, _, _) => 50.0
-        case (_: NodeIndexScan, _, _) => 10.0
-        case (plan: NodeIndexSeek, _, _) if plan.properties.headOption.map(_.propertyKeyToken.name).contains("name") => 1.0
-        case (plan: NodeIndexSeek, _, _) if plan.properties.headOption.map(_.propertyKeyToken.name).contains("age")  => 5.0
-        case (Selection(_, source), x, y) => cost((source, x, y)) + 30.0
+        case (_: AllNodesScan, _, _, _) => 1000.0
+        case (_: NodeByLabelScan, _, _, _) => 50.0
+        case (_: NodeIndexScan, _, _, _) => 10.0
+        case (plan: NodeIndexSeek, _, _, _) if plan.properties.headOption.map(_.propertyKeyToken.name).contains("name") => 1.0
+        case (plan: NodeIndexSeek, _, _, _) if plan.properties.headOption.map(_.propertyKeyToken.name).contains("age")  => 5.0
+        case (Selection(_, source), x, y, z) => cost((source, x, y, z)) + 30.0
         case _ => Double.MaxValue
       }
     } getLogicalPlanFor "MATCH (a:Person) WHERE a.age > 40 AND a.name >= 'Cinderella' RETURN a")._2 should equal(
@@ -266,9 +267,9 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   test("should plan label scans even without having a compile-time label id") {
     (new given {
       cost =  {
-        case (_: AllNodesScan, _, _) => 1000.0
-        case (_: NodeByIdSeek, _, _) => 2.0
-        case (_: NodeByLabelScan, _, _) => 1.0
+        case (_: AllNodesScan, _, _, _) => 1000.0
+        case (_: NodeByIdSeek, _, _, _) => 2.0
+        case (_: NodeByLabelScan, _, _, _) => 1.0
         case _ => Double.MaxValue
       }
     } getLogicalPlanFor "MATCH (n:Awesome) RETURN n")._2 should equal(
@@ -279,9 +280,9 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   test("should plan label scans when having a compile-time label id") {
     val plan = new given {
       cost =  {
-        case (_: AllNodesScan, _, _) => 1000.0
-        case (_: NodeByIdSeek, _, _) => 2.0
-        case (_: NodeByLabelScan, _, _) => 1.0
+        case (_: AllNodesScan, _, _, _) => 1000.0
+        case (_: NodeByIdSeek, _, _, _) => 2.0
+        case (_: NodeByLabelScan, _, _, _) => 1.0
         case _ => Double.MaxValue
       }
       knownLabels = Set("Awesome")
@@ -292,25 +293,25 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     )
   }
 
-  private val nodeIndexScanCost: PartialFunction[(LogicalPlan, QueryGraphSolverInput, Cardinalities), Cost] = {
-    case (_: AllNodesScan, _, _) => 1000.0
-    case (_: NodeByLabelScan, _, _) => 50.0
-    case (_: NodeIndexScan, _, _) => 10.0
-    case (_: NodeIndexContainsScan, _, _) => 10.0
-    case (nodeIndexSeek: NodeIndexSeek, _, cardinalities) =>
+  private val nodeIndexScanCost: PartialFunction[(LogicalPlan, QueryGraphSolverInput, Cardinalities, ProvidedOrders), Cost] = {
+    case (_: AllNodesScan, _, _, _) => 1000.0
+    case (_: NodeByLabelScan, _, _, _) => 50.0
+    case (_: NodeIndexScan, _, _, _) => 10.0
+    case (_: NodeIndexContainsScan, _, _, _) => 10.0
+    case (nodeIndexSeek: NodeIndexSeek, _, cardinalities, providedOrders) =>
       val planCardinality = cardinalities.get(nodeIndexSeek.id).amount
       val rowCost = 1.0
       val allNodesCardinality = 1000.0
       rowCost * planCardinality / allNodesCardinality
-    case (Selection(_, plan), input, c) => nodeIndexScanCost((plan, input, c)) + 1.0
+    case (Selection(_, plan), input, c, p) => nodeIndexScanCost((plan, input, c, p)) + 1.0
     case _ => Double.MaxValue
   }
 
-  private val nodeIndexSeekCost: PartialFunction[(LogicalPlan, QueryGraphSolverInput, Cardinalities), Cost] = {
-    case (_: AllNodesScan, _, _) => 1000000000.0
-    case (_: NodeIndexSeek, _, _) => 0.1
-    case (Expand(plan, _, _, _, _, _, _), input, c) => nodeIndexSeekCost((plan, input, c))
-    case (Selection(_, plan), input, c) => nodeIndexSeekCost((plan, input, c))
+  private val nodeIndexSeekCost: PartialFunction[(LogicalPlan, QueryGraphSolverInput, Cardinalities, ProvidedOrders), Cost] = {
+    case (_: AllNodesScan, _, _, _) => 1000000000.0
+    case (_: NodeIndexSeek, _, _, _) => 0.1
+    case (Expand(plan, _, _, _, _, _, _), input, c, p) => nodeIndexSeekCost((plan, input, c, p))
+    case (Selection(_, plan), input, c, p) => nodeIndexSeekCost((plan, input, c, p))
     case _ => 1000.0
   }
 
@@ -477,9 +478,9 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   test("should use indexes for large collections if it is a unique index") {
     val result = new given {
       cost =  {
-        case (_: AllNodesScan, _, _)    => 10000.0
-        case (_: NodeByLabelScan, _, _) =>  1000.0
-        case (_: NodeByIdSeek, _, _)    =>     2.0
+        case (_: AllNodesScan, _, _, _)    => 10000.0
+        case (_: NodeByLabelScan, _, _, _) =>  1000.0
+        case (_: NodeByIdSeek, _, _, _)    =>     2.0
         case _                       => Double.MaxValue
       }
       uniqueIndexOn("Awesome", "prop")
@@ -534,9 +535,9 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
 
     val plan = new given {
       cost = {
-        case (_: Selection, _, _) => 20.0
-        case (_: NodeHashJoin, _, _) => 1000.0
-        case (_: NodeByLabelScan, _, _) => 20.0
+        case (_: Selection, _, _, _) => 20.0
+        case (_: NodeHashJoin, _, _, _) => 1000.0
+        case (_: NodeByLabelScan, _, _, _) => 20.0
       }
     } getLogicalPlanFor "MATCH (n:Foo:Bar:Baz) USING SCAN n:Bar RETURN n"
 
@@ -655,9 +656,9 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   test("should plan node by ID seek based on a predicate with an id collection variable as the rhs") {
     val plan = new given {
       cost =  {
-        case (_: AllNodesScan, _, _) => 1000.0
-        case (_: NodeByIdSeek, _, _) => 2.0
-        case (_: NodeByLabelScan, _, _) => 1.0
+        case (_: AllNodesScan, _, _, _) => 1000.0
+        case (_: NodeByIdSeek, _, _, _) => 2.0
+        case (_: NodeByLabelScan, _, _, _) => 1.0
         case _ => Double.MaxValue
       }
     } getLogicalPlanFor "WITH [0,1,3] AS arr MATCH (n) WHERE id(n) IN arr return count(*)"

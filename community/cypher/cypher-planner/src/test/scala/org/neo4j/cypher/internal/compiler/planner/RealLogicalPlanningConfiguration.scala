@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.ProcedureSignature
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.Cost
 
@@ -44,8 +45,9 @@ case class RealLogicalPlanningConfiguration(cypherCompilerConfig: CypherPlannerC
   }
 
   //noinspection ScalaUnnecessaryParentheses
-  override def costModel(): PartialFunction[(LogicalPlan, QueryGraphSolverInput, SemanticTable, Cardinalities), Cost] = {
-    case (plan: LogicalPlan, input: QueryGraphSolverInput, semanticTable: SemanticTable, cardinalities: Cardinalities) => CardinalityCostModel(VolcanoModelExecution).costFor(plan, input, semanticTable, cardinalities)
+  override def costModel(): PartialFunction[(LogicalPlan, QueryGraphSolverInput, SemanticTable, Cardinalities, ProvidedOrders), Cost] = {
+    case (plan: LogicalPlan, input: QueryGraphSolverInput, semanticTable: SemanticTable, cardinalities: Cardinalities, providedOrders: ProvidedOrders) =>
+      CardinalityCostModel(VolcanoModelExecution).costFor(plan, input, semanticTable, cardinalities, providedOrders)
   }
 
   override def graphStatistics: GraphStatistics = HardcodedGraphStatistics

@@ -31,7 +31,6 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.devNullListener
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.verifyBestPlan
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
 import org.neo4j.cypher.internal.frontend.phases.Phase
-import org.neo4j.cypher.internal.ir.AggregatingQueryProjection
 import org.neo4j.cypher.internal.ir.PeriodicCommit
 import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.ir.PlannerQueryPart
@@ -40,6 +39,7 @@ import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.UnionQuery
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.util.Selectivity
 
 case object QueryPlanner
@@ -101,7 +101,7 @@ case object QueryPlanner
   }
 
   private def getMetricsFrom(context: PlannerContext) = if (context.debugOptions.inverseCostEnabled) {
-    context.metrics.copy(cost = (v1: LogicalPlan, v2: QueryGraphSolverInput, v3: SemanticTable, v4: Cardinalities) => -context.metrics.cost.costFor(v1, v2, v3, v4))
+    context.metrics.copy(cost = (v1: LogicalPlan, v2: QueryGraphSolverInput, v3: SemanticTable, v4: Cardinalities, v5: ProvidedOrders) => -context.metrics.cost.costFor(v1, v2, v3, v4, v5))
   } else {
     context.metrics
   }

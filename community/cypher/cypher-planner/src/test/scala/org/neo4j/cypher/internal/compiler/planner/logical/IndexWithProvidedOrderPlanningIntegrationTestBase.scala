@@ -130,9 +130,9 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTestBase(queryGraphSolve
         )
         cost = {
           // Selection is usually cheap. Let's avoid it by making it expensive to plan, so that our options are index seeks and label scans.
-          case (Selection(_, _: NodeIndexSeek), _, _) => 50000.0
-          case (Selection(_, _: NodeIndexScan), _, _) => 50000.0
-          case (Selection(_, _: NodeByLabelScan), _, _) => 50000.0
+          case (Selection(_, _: NodeIndexSeek), _, _, _) => 50000.0
+          case (Selection(_, _: NodeIndexScan), _, _, _) => 50000.0
+          case (Selection(_, _: NodeByLabelScan), _, _, _) => 50000.0
         }
       }.getLogicalPlanFor(s"MATCH (n:Foo:Bar) WHERE n.prop > 0 RETURN n ORDER BY n $cypherToken", stripProduceResults = false)
 

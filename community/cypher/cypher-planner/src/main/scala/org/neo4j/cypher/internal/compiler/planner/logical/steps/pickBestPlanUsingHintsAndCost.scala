@@ -51,6 +51,7 @@ object pickBestPlanUsingHintsAndCost extends CandidateSelectorFactory {
   private def score[X](projector: X => LogicalPlan, input: X, context: LogicalPlanningContext) = {
     val costs = context.cost
     val plan = projector(input)
-    (-context.planningAttributes.solveds.get(plan.id).numHints, costs.costFor(plan, context.input, context.semanticTable, context.planningAttributes.cardinalities).gummyBears)
+    (-context.planningAttributes.solveds.get(plan.id).numHints,
+      costs.costFor(plan, context.input, context.semanticTable, context.planningAttributes.cardinalities, context.planningAttributes.providedOrders).gummyBears)
   }
 }

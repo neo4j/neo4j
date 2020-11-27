@@ -21,144 +21,122 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.ExecutionModel
+import org.neo4j.cypher.internal.compiler.PushBatchedExecution
 import org.neo4j.cypher.internal.compiler.VolcanoModelExecution
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
+import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.BIG_CHUNK_SIZE
+import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.DEFAULT_COST_PER_ROW
 import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.PROPERTY_ACCESS_DB_HITS
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
-import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.ir.LazyMode
-import org.neo4j.cypher.internal.logical.plans.Argument
-import org.neo4j.cypher.internal.logical.plans.Expand
-import org.neo4j.cypher.internal.logical.plans.ExpandAll
-import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
+import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
-import org.neo4j.cypher.internal.logical.plans.NodeHashJoin
-import org.neo4j.cypher.internal.logical.plans.Projection
-import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
+import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.Cost
 import org.neo4j.cypher.internal.util.Selectivity
+import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
-
-  test("expand should only be counted once") {
-    val cardinalities = new Cardinalities
-    val plan =
-      setC(Selection(ands(hasLabels("a", "Awesome")),
-        setC(Expand(
-          setC(Selection(ands(hasLabels("a", "Awesome")),
-            setC(Expand(
-              setC(Argument(Set("a")), cardinalities, 10.0),
-              "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r1"), cardinalities, 100.0)
-          ), cardinalities, 10.0), "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r1"), cardinalities, 100.0)
-      ), cardinalities, 10.0)
-
-    costFor(plan, QueryGraphSolverInput.empty, SemanticTable(), cardinalities) should equal(Cost(231))
-  }
-
-  test("should introduce increase cost when estimating an eager operator and laziness is preferred") {
-    val cardinalities = new Cardinalities
-    val plan = setC(NodeHashJoin(Set("a"),
-      setC(NodeByLabelScan("a", labelName("A"), Set.empty, IndexOrderNone), cardinalities, 10.0),
-      setC(Expand(
-        setC(NodeByLabelScan("b", labelName("B"), Set.empty, IndexOrderNone), cardinalities, 5.0),
-        "b", SemanticDirection.OUTGOING, Seq.empty, "a", "r", ExpandAll), cardinalities, 15.0)
-    ), cardinalities, 10.0)
-
-    val pleaseLazy = QueryGraphSolverInput.empty.withPreferredStrictness(LazyMode)
-    val whatever = QueryGraphSolverInput.empty
-
-    costFor(plan, whatever, SemanticTable(), cardinalities) should be < costFor(plan, pleaseLazy, SemanticTable(), cardinalities)
-  }
-
-  test("non-lazy plan should be penalized when estimating cost wrt a lazy one when laziness is preferred") {
-    // MATCH (a1: A)-[r1]->(b)<-[r2]-(a2: A) RETURN b
-    val lazyCardinalities = new Cardinalities
-    val lazyPlan = setC(Projection(
-      setC(Selection(
-        Seq(hasLabels("a2", "A")),
-        setC(Expand(
-          setC(Expand(
-            setC(NodeByLabelScan("a1", labelName("A"), Set.empty, IndexOrderNone), lazyCardinalities, 10.0),
-            "a1", SemanticDirection.OUTGOING, Seq.empty, "b", "r1", ExpandAll
-          ), lazyCardinalities, 50.0),
-          "b", SemanticDirection.INCOMING, Seq.empty, "a2", "r2", ExpandAll
-        ), lazyCardinalities, 250.0)
-      ), lazyCardinalities, 250.0), Map("b" -> varFor("b"))
-    ), lazyCardinalities, 250.0)
-
-    val eagerCardinalities = new Cardinalities
-    val eagerPlan = setC(Projection(
-      setC(NodeHashJoin(Set("b"),
-        setC(Expand(
-          setC(NodeByLabelScan("a1", labelName("A"), Set.empty, IndexOrderNone), eagerCardinalities, 10.0),
-          "a1", SemanticDirection.OUTGOING, Seq.empty, "b", "r1", ExpandAll
-        ), eagerCardinalities, 50.0),
-        setC(Expand(
-          setC(NodeByLabelScan("a2", labelName("A"), Set.empty, IndexOrderNone), eagerCardinalities, 10.0),
-          "a2", SemanticDirection.OUTGOING, Seq.empty, "b", "r2", ExpandAll
-        ), eagerCardinalities, 50.0)
-      ), eagerCardinalities, 250.0), Map("b" -> varFor("b"))
-    ), eagerCardinalities, 250.0)
-
-    val whatever = QueryGraphSolverInput.empty
-    costFor(lazyPlan, whatever, SemanticTable(), lazyCardinalities) should be > costFor(eagerPlan, whatever, SemanticTable(), eagerCardinalities)
-
-    val pleaseLazy = QueryGraphSolverInput.empty.withPreferredStrictness(LazyMode)
-    costFor(lazyPlan, pleaseLazy, SemanticTable(), lazyCardinalities) should be < costFor(eagerPlan, pleaseLazy, SemanticTable(), eagerCardinalities)
-  }
-
-  test("multiple property expressions are counted for in cost") {
-    val cardinalities = new Cardinalities
-    val cardinality = 10.0
-    val plan =
-      setC(Selection(List(propEquality("a", "prop1", 42), propEquality("a", "prop1", 43), propEquality("a", "prop1", 44)),
-        setC(Argument(Set("a")), cardinalities, cardinality)), cardinalities, cardinality)
-
-    val numberOfPredicates = 3
-    val costForSelection = cardinality * numberOfPredicates * PROPERTY_ACCESS_DB_HITS
-    val costForArgument = cardinality * .1
-    costFor(plan, QueryGraphSolverInput.empty, SemanticTable().addNode(varFor("a")), cardinalities) should equal(Cost(costForSelection + costForArgument))
-  }
-
-  test("deeply nested property access does not increase cost") {
-    val cardinalities = new Cardinalities
-    val cardinality = 10.0
-
-    val shallowPredicate = propEquality("a", "prop1", 42)
-    val ap0 = prop("a", "foo")
-    val ap1 = prop(ap0, "bar")
-    val ap2 = prop(ap1, "baz")
-    val ap3 = prop(ap2, "blob")
-    val ap4 = prop(ap3, "boing")
-    val ap5 = prop(ap4, "peng")
-    val ap6 = prop(ap5, "brrt")
-    val deepPredicate = equals(ap6, literalInt(2))
-    val semanticTable = SemanticTable()
-      .addNode(varFor("a"))
-      .addTypeInfoCTAny(ap0)
-      .addTypeInfoCTAny(ap1)
-      .addTypeInfoCTAny(ap2)
-      .addTypeInfoCTAny(ap3)
-      .addTypeInfoCTAny(ap4)
-      .addTypeInfoCTAny(ap5)
-      .addTypeInfoCTAny(ap6)
-
-    val plan1 = setC(Selection(List(shallowPredicate), setC(Argument(Set("a")), cardinalities, cardinality)), cardinalities, cardinality)
-    val plan2 = setC(Selection(List(deepPredicate), setC(Argument(Set("a")), cardinalities, cardinality)), cardinalities, cardinality)
-
-    costFor(plan1, QueryGraphSolverInput.empty, semanticTable, cardinalities) should equal(costFor(plan2, QueryGraphSolverInput.empty, semanticTable, cardinalities))
-  }
 
   private def costFor(plan: LogicalPlan,
                       input: QueryGraphSolverInput,
                       semanticTable: SemanticTable,
                       cardinalities: Cardinalities,
+                      providedOrders: ProvidedOrders,
                       executionModel: ExecutionModel = VolcanoModelExecution): Cost = {
-    CardinalityCostModel(executionModel).costFor(plan, input, semanticTable, cardinalities)
+    CardinalityCostModel(executionModel).costFor(plan, input, semanticTable, cardinalities, providedOrders)
+  }
+
+  test("expand should only be counted once") {
+    val builder = new LogicalPlanBuilder(wholePlan = false)
+    val plan = builder
+      .filterExpression(hasLabels("a", "Awesome")).withCardinality(10)
+      .expand("(a)-[r1]->(b)").withCardinality(100)
+      .filterExpression(hasLabels("a", "Awesome")).withCardinality(10)
+      .expand("(a)-[r1]->(b)").withCardinality(100)
+      .argument("a").withCardinality(10)
+      .build()
+
+    costFor(plan, QueryGraphSolverInput.empty, builder.getSemanticTable, builder.cardinalities, builder.providedOrders) should equal(Cost(231))
+  }
+
+  test("should introduce increase cost when estimating an eager operator and laziness is preferred") {
+    val builder = new LogicalPlanBuilder(wholePlan = false)
+    val plan = builder
+      .nodeHashJoin("a").withCardinality(10)
+      .|.nodeByLabelScan("a", "A").withCardinality(10)
+      .expand("(b)-[r]->(a)").withCardinality(15)
+      .nodeByLabelScan("b", "B").withCardinality(5)
+      .build()
+
+    val pleaseLazy = QueryGraphSolverInput.empty.withPreferredStrictness(LazyMode)
+    val whatever = QueryGraphSolverInput.empty
+
+    costFor(plan, whatever, builder.getSemanticTable, builder.cardinalities, builder.providedOrders) should be < costFor(plan, pleaseLazy, builder.getSemanticTable, builder.cardinalities, builder.providedOrders)
+  }
+
+  test("non-lazy plan should be penalized when estimating cost wrt a lazy one when laziness is preferred") {
+    // MATCH (a1: A)-[r1]->(b)<-[r2]-(a2: A) RETURN b
+    val lazyBuilder = new LogicalPlanBuilder(wholePlan = false)
+    val lazyPlan = lazyBuilder
+      .projection("b AS b").withCardinality(250)
+      .filterExpression(hasLabels("a2", "A")).withCardinality(250)
+      .expand("(b)<-[r2]-(a2)").withCardinality(250)
+      .expand("(a1)-[r1]->(b)").withCardinality(50)
+      .nodeByLabelScan("a1", "A").withCardinality(10)
+      .build()
+
+    val eagerBuilder = new LogicalPlanBuilder(wholePlan = false)
+    val eagerPlan = eagerBuilder
+      .projection("b AS b").withCardinality(250)
+      .nodeHashJoin("b").withCardinality(250)
+      .|.expand("(a2)-[r2]->(b)").withCardinality(50)
+      .|.nodeByLabelScan("a2", "A").withCardinality(10)
+      .expand("(a1)-[r1]->(b)").withCardinality(50)
+      .nodeByLabelScan("a1", "A").withCardinality(10)
+      .build()
+
+    val whatever = QueryGraphSolverInput.empty
+    costFor(lazyPlan, whatever, lazyBuilder.getSemanticTable, lazyBuilder.cardinalities, lazyBuilder.providedOrders) should be > costFor(eagerPlan, whatever, eagerBuilder.getSemanticTable, eagerBuilder.cardinalities, eagerBuilder.providedOrders)
+
+    val pleaseLazy = QueryGraphSolverInput.empty.withPreferredStrictness(LazyMode)
+    costFor(lazyPlan, pleaseLazy, lazyBuilder.getSemanticTable, lazyBuilder.cardinalities, lazyBuilder.providedOrders) should be < costFor(eagerPlan, pleaseLazy, eagerBuilder.getSemanticTable, eagerBuilder.cardinalities, eagerBuilder.providedOrders)
+  }
+
+  test("multiple property expressions are counted for in cost") {
+    val cardinality = 10.0
+    val builder = new LogicalPlanBuilder(wholePlan = false)
+    val plan = builder
+      .filter("a.prop1 = 42", "a.prop1 = 43", "a.prop1 = 44").withCardinality(cardinality)
+      .argument("a").withCardinality(cardinality).newVar("a", CTNode)
+      .build()
+
+    val numberOfPredicates = 3
+    val costForSelection = cardinality * numberOfPredicates * PROPERTY_ACCESS_DB_HITS
+    val costForArgument = cardinality * DEFAULT_COST_PER_ROW.cost
+    costFor(plan, QueryGraphSolverInput.empty, builder.getSemanticTable, builder.cardinalities, builder.providedOrders) should equal(Cost(costForSelection + costForArgument))
+  }
+
+  test("deeply nested property access does not increase cost") {
+    val cardinality = 10.0
+
+    val shallowPlanBuilder = new LogicalPlanBuilder(wholePlan = false)
+    val shallowPlan = shallowPlanBuilder
+      .filter("a.prop1 = 42").withCardinality(cardinality)
+      .argument("a").withCardinality(cardinality).newVar("a", CTNode)
+      .build()
+    val deepPlanBuilder = new LogicalPlanBuilder(wholePlan = false)
+    val deepPlan = deepPlanBuilder
+      .filter("a.foo.bar.baz.blob.boing.peng.brrt = 2").withCardinality(cardinality)
+      .argument("a").withCardinality(cardinality).newVar("a", CTNode)
+      .build()
+
+    costFor(shallowPlan, QueryGraphSolverInput.empty, shallowPlanBuilder.getSemanticTable, shallowPlanBuilder.cardinalities, shallowPlanBuilder.providedOrders) should
+      equal(costFor(deepPlan, QueryGraphSolverInput.empty, deepPlanBuilder.getSemanticTable, deepPlanBuilder.cardinalities, deepPlanBuilder.providedOrders))
   }
 
   test("lazy plans should be cheaper when limit selectivity is < 1.0") {
@@ -168,12 +146,10 @@ class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSu
       .allNodeScan("n").withCardinality(123)
       .build()
 
-    val semanticTable = SemanticTable().addNode(varFor("n"))
-
     val withoutLimit = QueryGraphSolverInput.empty
     val withLimit = QueryGraphSolverInput.empty.withLimitSelectivity(Selectivity.of(0.5).get)
 
-    costFor(plan, withLimit, semanticTable, builder.cardinalities) should be < costFor(plan, withoutLimit, semanticTable, builder.cardinalities)
+    costFor(plan, withLimit, builder.getSemanticTable, builder.cardinalities, new StubProvidedOrders) should be < costFor(plan, withoutLimit, builder.getSemanticTable, builder.cardinalities, builder.providedOrders)
   }
 
   test("hash join should be cheaper when limit selectivity is < 1.0") {
@@ -187,12 +163,10 @@ class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSu
       .nodeByLabelScan("a", "A").withCardinality(123)
       .build()
 
-    val semanticTable = SemanticTable().addNode(varFor("n"))
-
     val withoutLimit = QueryGraphSolverInput.empty
     val withLimit = QueryGraphSolverInput.empty.withLimitSelectivity(Selectivity.of(0.5).get)
 
-    costFor(plan, withLimit, semanticTable, builder.cardinalities) should be < costFor(plan, withoutLimit, semanticTable, builder.cardinalities)
+    costFor(plan, withLimit, builder.getSemanticTable, builder.cardinalities, builder.providedOrders) should be < costFor(plan, withoutLimit, builder.getSemanticTable, builder.cardinalities, builder.providedOrders)
   }
 
   test("eager plans should cost the same regardless of limit selectivity") {
@@ -202,11 +176,50 @@ class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSu
       .allNodeScan("n").withCardinality(123)
       .build()
 
-    val semanticTable = SemanticTable().addNode(varFor("n"))
-
     val withoutLimit = QueryGraphSolverInput.empty
     val withLimit = QueryGraphSolverInput.empty.withLimitSelectivity(Selectivity.of(0.5).get)
 
-    costFor(plan, withLimit, semanticTable, builder.cardinalities) should equal(costFor(plan, withoutLimit, semanticTable, builder.cardinalities))
+    costFor(plan, withLimit, builder.getSemanticTable, builder.cardinalities, builder.providedOrders) should equal(costFor(plan, withoutLimit, builder.getSemanticTable, builder.cardinalities, builder.providedOrders))
+  }
+
+  test("cartesian product with 1 row from the left is equally expensive in both execution models") {
+    val builder = new LogicalPlanBuilder(wholePlan = false)
+    val plan = builder
+      .cartesianProduct().withCardinality(100)
+      .|.argument("b").withCardinality(100)
+      .argument("a").withCardinality(1)
+      .build()
+
+    costFor(plan, QueryGraphSolverInput.empty, builder.getSemanticTable, builder.cardinalities, builder.providedOrders, VolcanoModelExecution) should equal(
+      costFor(plan, QueryGraphSolverInput.empty, builder.getSemanticTable, builder.cardinalities, builder.providedOrders, PushBatchedExecution)
+    )
+  }
+
+  test("cartesian product with many row from the left is cheaper in PushBatchedExecution, big chunk size") {
+    val cardinality = 1500.0
+    val builder = new LogicalPlanBuilder(wholePlan = false)
+    val plan = builder
+      .cartesianProduct().withCardinality(cardinality * cardinality)
+      .|.argument("b").withCardinality(cardinality)
+      .argument("a").withCardinality(cardinality)
+      .build()
+
+    val argCost = Cardinality(cardinality) * DEFAULT_COST_PER_ROW
+
+    costFor(plan, QueryGraphSolverInput.empty, builder.getSemanticTable, builder.cardinalities, builder.providedOrders, VolcanoModelExecution) should equal(argCost + argCost * cardinality)
+    costFor(plan, QueryGraphSolverInput.empty, builder.getSemanticTable, builder.cardinalities, builder.providedOrders, PushBatchedExecution) should equal(argCost + argCost * Math.ceil(cardinality / BIG_CHUNK_SIZE))
+  }
+
+  test("cartesian product with many row from the left but with provided order is equally expensive in both execution models") {
+    val builder = new LogicalPlanBuilder(wholePlan = false)
+    val plan = builder
+      .cartesianProduct().withCardinality(10000).withProvidedOrder(ProvidedOrder.asc(varFor("a")))
+      .|.argument("b").withCardinality(100)
+      .argument("a").withCardinality(100).withProvidedOrder(ProvidedOrder.asc(varFor("a")))
+      .build()
+
+    costFor(plan, QueryGraphSolverInput.empty, builder.getSemanticTable, builder.cardinalities, builder.providedOrders, VolcanoModelExecution) should equal(
+      costFor(plan, QueryGraphSolverInput.empty, builder.getSemanticTable, builder.cardinalities, builder.providedOrders, PushBatchedExecution)
+    )
   }
 }
