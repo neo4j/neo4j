@@ -21,7 +21,7 @@ import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTBoolean
 import org.neo4j.cypher.internal.util.symbols.CTString
 
-case class And(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression with BinaryOperatorExpression {
+case class And(lhs: Expression, rhs: Expression)(val position: InputPosition) extends BooleanExpression with BinaryOperatorExpression {
   override val signatures = Vector(
     TypeSignature(argumentTypes = Vector(CTBoolean, CTBoolean), outputType = CTBoolean)
   )
@@ -161,7 +161,7 @@ object PartialPredicate {
   }
 }
 
-case class StartsWith(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression with BinaryOperatorExpression {
+case class StartsWith(lhs: Expression, rhs: Expression)(val position: InputPosition) extends BooleanExpression with BinaryOperatorExpression {
   override val signatures = Vector(
     TypeSignature(argumentTypes = Vector(CTString, CTString), outputType = CTBoolean)
   )
@@ -169,7 +169,7 @@ case class StartsWith(lhs: Expression, rhs: Expression)(val position: InputPosit
   override def canonicalOperatorSymbol = "STARTS WITH"
 }
 
-case class EndsWith(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression with BinaryOperatorExpression {
+case class EndsWith(lhs: Expression, rhs: Expression)(val position: InputPosition) extends BooleanExpression with BinaryOperatorExpression {
   override val signatures = Vector(
     TypeSignature(argumentTypes = Vector(CTString, CTString), outputType = CTBoolean)
   )
@@ -177,13 +177,13 @@ case class EndsWith(lhs: Expression, rhs: Expression)(val position: InputPositio
   override def canonicalOperatorSymbol = "ENDS WITH"
 }
 
-case class Contains(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression with BinaryOperatorExpression {
+case class Contains(lhs: Expression, rhs: Expression)(val position: InputPosition) extends BooleanExpression with BinaryOperatorExpression {
   override val signatures = Vector(
     TypeSignature(argumentTypes = Vector(CTString, CTString), outputType = CTBoolean)
   )
 }
 
-case class IsNull(lhs: Expression)(val position: InputPosition) extends Expression with RightUnaryOperatorExpression {
+case class IsNull(lhs: Expression)(val position: InputPosition) extends BooleanExpression with RightUnaryOperatorExpression {
   override val signatures = Vector(
     TypeSignature(argumentTypes = Vector(CTAny), outputType = CTBoolean)
   )
@@ -191,7 +191,7 @@ case class IsNull(lhs: Expression)(val position: InputPosition) extends Expressi
   override def canonicalOperatorSymbol = "IS NULL"
 }
 
-case class IsNotNull(lhs: Expression)(val position: InputPosition) extends Expression with RightUnaryOperatorExpression {
+case class IsNotNull(lhs: Expression)(val position: InputPosition) extends BooleanExpression with RightUnaryOperatorExpression {
   override val signatures = Vector(
     TypeSignature(argumentTypes = Vector(CTAny), outputType = CTBoolean)
   )
@@ -199,7 +199,7 @@ case class IsNotNull(lhs: Expression)(val position: InputPosition) extends Expre
   override def canonicalOperatorSymbol = "IS NOT NULL"
 }
 
-sealed trait InequalityExpression extends Expression with ChainableBinaryOperatorExpression {
+sealed trait InequalityExpression extends BooleanExpression with ChainableBinaryOperatorExpression {
   override val signatures = Vector(TypeSignature(argumentTypes = Vector(CTAny, CTAny), outputType = CTBoolean))
 
   def includeEquality: Boolean

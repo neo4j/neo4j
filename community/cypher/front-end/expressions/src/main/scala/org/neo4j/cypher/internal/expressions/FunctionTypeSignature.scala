@@ -29,7 +29,7 @@ trait TypeSignature {
 
 case class FunctionTypeSignature(functionName : String, outputType: CypherType, names: IndexedSeq[String], description: String, category: String, argumentTypes: IndexedSeq[CypherType], optionalTypes: IndexedSeq[CypherType] = Vector.empty, deprecated: Boolean = false) extends TypeSignature {
   def getSignatureAsString: String =
-    functionName.toLowerCase + "(" + names.zip(argumentTypes.map(_.toNeoTypeString) ++ optionalTypes.map(_.toNeoTypeString)).map { f =>
+    functionName + "(" + names.zip(argumentTypes.map(_.toNeoTypeString) ++ optionalTypes.map(_.toNeoTypeString)).map { f =>
       f._1 + " :: " + f._2
     }.mkString(", ") + ") :: (" + outputType.toNeoTypeString + ")"
 
