@@ -1061,9 +1061,4 @@ public class MuninnPageCache implements PageCache
         PreFetcher preFetcher = new PreFetcher( cursor, cursorFactory, pageCacheTracer, clock );
         cursor.preFetcher = scheduler.schedule( Group.PAGE_CACHE_PRE_FETCHER, preFetcher );
     }
-
-    void allocateFileAsync( PageSwapper swapper, long newFileSize )
-    {
-        scheduler.schedule( Group.FILE_IO_HELPER, new AllocateFileTask( swapper, newFileSize ) );
-    }
 }

@@ -713,7 +713,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
      * @param maxChunkId The new translation table must be big enough to include at least this chunkId.
      * @return A reference to the expanded transaction table.
      */
-    synchronized int[][] expandCapacity( int maxChunkId )
+    synchronized int[][] expandCapacity( int maxChunkId ) throws IOException
     {
         int[][] tt = translationTable;
         if ( tt.length <= maxChunkId )
@@ -726,7 +726,6 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
                 ntt[i] = newChunk();
             }
             tt = ntt;
-            translationTable = tt;
             if ( swapper.canAllocate() )
             {
                 // Hint to the file system that we've grown our file.
@@ -734,9 +733,17 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
                 long newFileSize = tt.length; // New number of chunks.
                 newFileSize *= translationTableChunkSize; // Pages per chunk.
                 newFileSize *= filePageSize; // Bytes per page.
-                pageCache.allocateFileAsync( swapper, newFileSize );
+                swapper.allocate( newFileSize );
             }
         }
+        // It is important to publish the extended table only
+        // after the new region of the file has been allocated.
+        // Allocating a new region of a file and using
+        // the region is not thread safe on all file systems,
+        // so if the new extended table is published before
+        // the allocation has finished, other threads might start
+        // using pages in the region, which might not be safe.
+        translationTable = tt;
         return tt;
     }
 

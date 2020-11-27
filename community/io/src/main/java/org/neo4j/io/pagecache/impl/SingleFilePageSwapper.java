@@ -46,6 +46,7 @@ import org.neo4j.util.FeatureToggles;
 
 import static org.apache.commons.lang3.SystemUtils.IS_OS_LINUX;
 import static org.neo4j.io.fs.DefaultFileSystemAbstraction.WRITE_OPTIONS;
+import static org.neo4j.io.fs.FileSystemAbstraction.INVALID_FILE_DESCRIPTOR;
 
 /**
  * A simple PageSwapper implementation that directs all page swapping to a
@@ -679,7 +680,10 @@ public class SingleFilePageSwapper implements PageSwapper
     @Override
     public boolean canAllocate()
     {
-        return PREALLOCATE_MAPPED_FILES && NativeAccessProvider.getNativeAccess().isAvailable();
+        return PREALLOCATE_MAPPED_FILES
+                && NativeAccessProvider.getNativeAccess().isAvailable()
+                // this type of operation requires the underlying channel to provide a file descriptor
+                && channel.getFileDescriptor() != INVALID_FILE_DESCRIPTOR;
     }
 
     @Override
