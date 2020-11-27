@@ -22,8 +22,6 @@ package org.neo4j.cypher.internal.compiler.planner.logical.plans
 import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
-import org.neo4j.cypher.internal.compiler.planner.logical.steps.labelScanLeafPlanner
-import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.relationshipTypeScanLeafPlanner
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
@@ -118,6 +116,20 @@ class RelationshipTypeScanLeafPlannerTest extends CypherFunSuite with LogicalPla
 
     // then
     relationshipTypeScanLeafPlanner(Set("r"))(qg, InterestingOrder.empty, context) should be(empty)
+    relationshipTypeScanLeafPlanner(Set("a"))(qg, InterestingOrder.empty, context) should be(empty)
+    relationshipTypeScanLeafPlanner(Set("b"))(qg, InterestingOrder.empty, context) should be(empty)
+  }
+
+  test("should not plan type scan when ids are in arguments") {
+    // given
+    //(a)-[:R]->(b)
+    val context = planningContext()
+    val qg = pattern("r", "a", "b", OUTGOING, "R")
+
+    // then
+    relationshipTypeScanLeafPlanner(Set.empty)(qg.withArgumentIds(Set("r")), InterestingOrder.empty, context) should be(empty)
+    relationshipTypeScanLeafPlanner(Set.empty)(qg.withArgumentIds(Set("a")), InterestingOrder.empty, context) should be(empty)
+    relationshipTypeScanLeafPlanner(Set.empty)(qg.withArgumentIds(Set("b")), InterestingOrder.empty, context) should be(empty)
   }
 
   test("should not plan type scan if no type index") {

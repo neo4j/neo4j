@@ -70,5 +70,5 @@ class NotImplementedPlanContext extends PlanContext {
 
   override def getRelTypeId(relType: String): Int = ???
 
-  override def relationshipTypeScanStoreEnabled: Boolean = ???
+  override def relationshipTypeScanStoreEnabled: Boolean = false
 }

@@ -36,7 +36,11 @@ case class relationshipTypeScanLeafPlanner(skipIDs: Set[String]) extends LeafPla
     def shouldIgnore(pattern: PatternRelationship) =
       !context.planContext.relationshipTypeScanStoreEnabled ||
       queryGraph.argumentIds.contains(pattern.name) ||
-      skipIDs.contains(pattern.name)
+      queryGraph.argumentIds.contains(pattern.nodes._1) ||
+      queryGraph.argumentIds.contains(pattern.nodes._2) ||
+      skipIDs.contains(pattern.name) ||
+      skipIDs.contains(pattern.nodes._1) ||
+      skipIDs.contains(pattern.nodes._2)
 
     queryGraph.patternRelationships.flatMap {
 
