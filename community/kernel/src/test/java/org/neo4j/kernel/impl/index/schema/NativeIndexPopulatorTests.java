@@ -57,7 +57,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
-import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
 import static org.neo4j.internal.kernel.api.InternalIndexState.FAILED;
 import static org.neo4j.internal.kernel.api.InternalIndexState.ONLINE;
 import static org.neo4j.internal.kernel.api.InternalIndexState.POPULATING;
@@ -516,7 +515,7 @@ abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,VALUE e
 
     private void assertHeader( InternalIndexState expectedState, String failureMessage, boolean messageTruncated ) throws IOException
     {
-        NativeIndexHeaderReader headerReader = new NativeIndexHeaderReader( NO_HEADER_READER );
+        NativeIndexHeaderReader headerReader = new NativeIndexHeaderReader();
         try ( GBPTree<KEY,VALUE> ignored = new GBPTreeBuilder<>( pageCache, indexFiles.getStoreFile(), layout ).with( headerReader ).build() )
         {
             switch ( expectedState )

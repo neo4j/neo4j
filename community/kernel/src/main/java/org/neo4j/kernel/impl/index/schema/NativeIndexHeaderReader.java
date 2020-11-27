@@ -32,14 +32,8 @@ import static org.neo4j.kernel.impl.index.schema.NativeIndexPopulator.BYTE_FAILE
 
 class NativeIndexHeaderReader implements Header.Reader
 {
-    private final Header.Reader additionalReader;
     byte state;
     String failureMessage;
-
-    NativeIndexHeaderReader( Header.Reader additionalReader )
-    {
-        this.additionalReader = additionalReader;
-    }
 
     @Override
     public void read( ByteBuffer headerData )
@@ -51,10 +45,6 @@ class NativeIndexHeaderReader implements Header.Reader
             {
                 failureMessage = readFailureMessage( headerData );
             }
-            else
-            {
-                additionalReader.read( headerData );
-            }
         }
         catch ( BufferUnderflowException e )
         {
@@ -65,11 +55,7 @@ class NativeIndexHeaderReader implements Header.Reader
         }
     }
 
-    /**
-     * Alternative header readers should react to FAILED indexes by using this, because their specific headers will have been
-     * overwritten by the FailedHeaderWriter.
-     */
-    static String readFailureMessage( ByteBuffer headerData )
+    private static String readFailureMessage( ByteBuffer headerData )
     {
         short messageLength = headerData.getShort();
         byte[] failureMessageBytes = new byte[messageLength];

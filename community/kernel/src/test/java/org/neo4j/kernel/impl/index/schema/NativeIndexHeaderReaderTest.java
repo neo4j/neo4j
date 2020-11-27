@@ -25,7 +25,6 @@ import java.nio.ByteBuffer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexPopulator.BYTE_FAILED;
 
 class NativeIndexHeaderReaderTest
@@ -34,18 +33,7 @@ class NativeIndexHeaderReaderTest
     void mustReportFailedIfNoHeader()
     {
         ByteBuffer emptyBuffer = ByteBuffer.wrap( new byte[0] );
-        NativeIndexHeaderReader nativeIndexHeaderReader = new NativeIndexHeaderReader( NO_HEADER_READER );
-        nativeIndexHeaderReader.read( emptyBuffer );
-        assertSame( BYTE_FAILED, nativeIndexHeaderReader.state );
-        assertThat( nativeIndexHeaderReader.failureMessage ).contains(
-                "Could not read header, most likely caused by index not being fully constructed. Index needs to be recreated. Stacktrace:" );
-    }
-
-    @Test
-    void mustReportFailedIfHeaderTooShort()
-    {
-        ByteBuffer emptyBuffer = ByteBuffer.wrap( new byte[1] );
-        NativeIndexHeaderReader nativeIndexHeaderReader = new NativeIndexHeaderReader( ByteBuffer::get );
+        NativeIndexHeaderReader nativeIndexHeaderReader = new NativeIndexHeaderReader();
         nativeIndexHeaderReader.read( emptyBuffer );
         assertSame( BYTE_FAILED, nativeIndexHeaderReader.state );
         assertThat( nativeIndexHeaderReader.failureMessage ).contains(
@@ -56,7 +44,7 @@ class NativeIndexHeaderReaderTest
     void mustNotThrowIfHeaderLongEnough()
     {
         ByteBuffer emptyBuffer = ByteBuffer.wrap( new byte[1] );
-        NativeIndexHeaderReader nativeIndexHeaderReader = new NativeIndexHeaderReader( NO_HEADER_READER );
+        NativeIndexHeaderReader nativeIndexHeaderReader = new NativeIndexHeaderReader();
         nativeIndexHeaderReader.read( emptyBuffer );
     }
 }
