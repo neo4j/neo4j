@@ -1086,9 +1086,4 @@ public class MuninnPageCache implements PageCache
         var monitoringParams = systemJob( pagedFile.databaseName, "Pre-fetching of file '" + fileName + "'" );
         cursor.preFetcher = scheduler.schedule( Group.PAGE_CACHE_PRE_FETCHER, monitoringParams, preFetcher );
     }
-
-    void allocateFileAsync( PageSwapper swapper, long newFileSize )
-    {
-        scheduler.schedule( FILE_IO_HELPER, systemJob( "File size increase" ), new AllocateFileTask( swapper, newFileSize ) );
-    }
 }

@@ -300,7 +300,7 @@ public abstract class MuninnPageCursor extends PageCursor
         int[][] tt = pagedFile.translationTable;
         if ( tt.length <= chunkId )
         {
-            tt = expandTranslationTableCapacity( chunkId );
+            tt = pagedFile.expandCapacity( chunkId );
         }
         int[] chunk = tt[chunkId];
 
@@ -340,11 +340,6 @@ public abstract class MuninnPageCursor extends PageCursor
                 }
             }
         }
-    }
-
-    private int[][] expandTranslationTableCapacity( int chunkId )
-    {
-        return pagedFile.expandCapacity( chunkId );
     }
 
     private boolean uncommonPin( long filePageId, long chunkOffset, int[] chunk ) throws IOException
