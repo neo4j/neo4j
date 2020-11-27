@@ -19,47 +19,47 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
 
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.ValueMerger;
 import org.neo4j.index.internal.gbptree.Writer;
+import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
-import org.neo4j.storageengine.api.EntityTokenUpdate;
+import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.storageengine.api.IndexEntryUpdate;
+import org.neo4j.storageengine.api.TokenIndexEntryUpdate;
 
 import static java.lang.Long.min;
 import static java.lang.Math.toIntExact;
 import static org.neo4j.kernel.impl.index.schema.TokenScanValue.RANGE_SIZE;
 
 /**
- * Note that this class will be replaced by NativeTokenIndexUpdater when scan stores are made into indexes,
- * and changes to functionality should be made there as well.
- *
- * {@link TokenScanWriter} for {@link NativeTokenScanStore}, or rather a {@link Writer} for its
+ * {@link IndexUpdater} for {@link NativeTokenScanStore}, or rather a {@link Writer} for its
  * internal {@link GBPTree}.
  * <p>
- * {@link #write(EntityTokenUpdate) updates} are queued up to a maximum batch size and, for performance,
+ * {@link #process(IndexEntryUpdate) updates} are queued up to a maximum batch size and, for performance,
  * applied in sorted order (by the token and entity id) when reaches batch size or on {@link #close()}.
  * <p>
  * Updates aren't visible to {@link TokenScanReader readers} immediately, rather when queue happens to be applied.
  * <p>
- * Incoming {@link EntityTokenUpdate updates} are actually modified from representing physical before/after
+ * Incoming {@link TokenIndexEntryUpdate updates} are actually modified from representing physical before/after
  * state to represent logical to-add/to-remove state. These changes are done directly inside the provided
- * {@link EntityTokenUpdate#getTokensAfter()} and {@link EntityTokenUpdate#getTokensBefore()} arrays,
+ * {@link TokenIndexEntryUpdate#values()} and {@link TokenIndexEntryUpdate#beforeValues()} arrays,
  * relying on the fact that those arrays are returned in its essential form, instead of copies.
  * This conversion is done like so mostly to reduce garbage.
  *
- * @see PhysicalToLogicalTokenChanges
+ * @see PhysicalToLogicalTokenChanges2
  */
-class NativeTokenScanWriter implements TokenScanWriter
+class NativeTokenIndexUpdater implements IndexUpdater
 {
     /**
      * {@link Comparator} for sorting the entity id ranges, used in batches to apply updates in sorted order.
      */
-    private static final Comparator<EntityTokenUpdate> UPDATE_SORTER =
-            Comparator.comparingLong( EntityTokenUpdate::getEntityId );
+    private static final Comparator<TokenIndexEntryUpdate<?>> UPDATE_SORTER =
+            Comparator.comparingLong( TokenIndexEntryUpdate::getEntityId );
 
     /**
      * {@link ValueMerger} used for adding token->entity mappings, see {@link TokenScanValue#add(TokenScanValue)}.
@@ -71,10 +71,10 @@ class NativeTokenScanWriter implements TokenScanWriter
      */
     private final ValueMerger<TokenScanKey,TokenScanValue> removeMerger;
 
-    private final WriteMonitor monitor;
+    private final NativeTokenScanWriter.WriteMonitor monitor;
 
     /**
-     * {@link Writer} acquired when acquiring this {@link NativeTokenScanWriter},
+     * {@link Writer} acquired when acquiring this {@link NativeTokenIndexUpdater},
      * acquired from {@link GBPTree#writer(PageCursorTracer)}.
      */
     private Writer<TokenScanKey,TokenScanValue> writer;
@@ -91,20 +91,20 @@ class NativeTokenScanWriter implements TokenScanWriter
     private final TokenScanValue value = new TokenScanValue();
 
     /**
-     * Batch currently building up as {@link #write(EntityTokenUpdate) updates} come in. Cursor for where
+     * Batch currently building up as {@link #process(IndexEntryUpdate) updates} come in. Cursor for where
      * to place new updates is {@link #pendingUpdatesCursor}. The constructor set the length of this queue
      * and the length defines the maximum batch size.
      */
-    private final EntityTokenUpdate[] pendingUpdates;
+    private final TokenIndexEntryUpdate<?>[] pendingUpdates;
 
     /**
-     * Cursor into {@link #pendingUpdates}, where to place new {@link #write(EntityTokenUpdate) updates}.
+     * Cursor into {@link #pendingUpdates}, where to place new {@link #process(IndexEntryUpdate) updates}.
      * When full the batch is applied and this cursor reset to {@code 0}.
      */
     private int pendingUpdatesCursor;
 
     /**
-     * There are two levels of batching, one for {@link EntityTokenUpdate updates} and one when applying.
+     * There are two levels of batching, one for {@link TokenIndexEntryUpdate updates} and one when applying.
      * This variable helps keeping track of the second level where updates to the actual {@link GBPTree}
      * are batched per entity id range, i.e. to add several tokenId->entityId mappings falling into the same
      * range, all of those updates are made into one {@link TokenScanValue} and then issues as one update
@@ -113,59 +113,18 @@ class NativeTokenScanWriter implements TokenScanWriter
     private boolean addition;
 
     /**
-     * When applying {@link EntityTokenUpdate updates} (when batch full or in {@link #close()}), updates are
+     * When applying {@link TokenIndexEntryUpdate updates} (when batch full or in {@link #close()}), updates are
      * applied tokenId by tokenId. All updates are scanned through multiple times, with one token in mind at a time.
      * For each round the current round tries to figure out which is the closest higher tokenId to apply
      * in the next round. This variable keeps track of that next tokenId.
      */
     private long lowestTokenId;
 
-    interface WriteMonitor
+    private boolean closed = true;
+
+    NativeTokenIndexUpdater( int batchSize, NativeTokenScanWriter.WriteMonitor monitor )
     {
-        default void range( long range, int tokenId )
-        {
-        }
-
-        default void prepareAdd( long txId, int offset )
-        {
-        }
-
-        default void prepareRemove( long txId, int offset )
-        {
-        }
-
-        default void mergeAdd( TokenScanValue existingValue, TokenScanValue newValue )
-        {
-        }
-
-        default void mergeRemove( TokenScanValue existingValue, TokenScanValue newValue )
-        {
-        }
-
-        default void flushPendingUpdates()
-        {
-        }
-
-        default void writeSessionEnded()
-        {
-        }
-
-        default void force()
-        {
-        }
-
-        default void close()
-        {
-        }
-    }
-
-    static final WriteMonitor EMPTY = new WriteMonitor()
-    {
-    };
-
-    NativeTokenScanWriter( int batchSize, WriteMonitor monitor )
-    {
-        this.pendingUpdates = new EntityTokenUpdate[batchSize];
+        this.pendingUpdates = new TokenIndexEntryUpdate[batchSize];
         this.addMerger = new AddMerger( monitor );
         this.removeMerger = ( existingKey, newKey, existingValue, newValue ) ->
         {
@@ -178,31 +137,41 @@ class NativeTokenScanWriter implements TokenScanWriter
         this.monitor = monitor;
     }
 
-    NativeTokenScanWriter initialize( Writer<TokenScanKey,TokenScanValue> writer )
+    NativeTokenIndexUpdater initialize( Writer<TokenScanKey,TokenScanValue> writer )
     {
+        if ( !closed )
+        {
+            throw new IllegalStateException( "Updater still open" );
+        }
+
         this.writer = writer;
         this.pendingUpdatesCursor = 0;
         this.addition = false;
         this.lowestTokenId = Long.MAX_VALUE;
+        closed = false;
         return this;
     }
 
     /**
-     * Queues a {@link EntityTokenUpdate} to this writer for applying when batch gets full,
+     * Queues a {@link TokenIndexEntryUpdate} to this writer for applying when batch gets full,
      * or when {@link #close() closing}.
+     *
+     * Calls to this method MUST be ordered by ascending entity id.
      */
     @Override
-    public void write( EntityTokenUpdate update ) throws IOException
+    public void process( IndexEntryUpdate<?> update ) throws IndexEntryConflictException
     {
+        assertOpen();
+        TokenIndexEntryUpdate<?> tokenUpdate = asTokenUpdate( update );
         if ( pendingUpdatesCursor == pendingUpdates.length )
         {
             flushPendingChanges();
         }
 
-        pendingUpdates[pendingUpdatesCursor++] = update;
-        PhysicalToLogicalTokenChanges.convertToAdditionsAndRemovals( update );
-        checkNextTokenId( update.getTokensBefore() );
-        checkNextTokenId( update.getTokensAfter() );
+        pendingUpdates[pendingUpdatesCursor++] = tokenUpdate;
+        PhysicalToLogicalTokenChanges2.convertToAdditionsAndRemovals( tokenUpdate );
+        checkNextTokenId( tokenUpdate.beforeValues() );
+        checkNextTokenId( tokenUpdate.values() );
     }
 
     private void checkNextTokenId( long[] tokens )
@@ -225,10 +194,11 @@ class NativeTokenScanWriter implements TokenScanWriter
             long nextTokenId = Long.MAX_VALUE;
             for ( int i = 0; i < pendingUpdatesCursor; i++ )
             {
-                EntityTokenUpdate update = pendingUpdates[i];
+                TokenIndexEntryUpdate<?> update = pendingUpdates[i];
                 long entityId = update.getEntityId();
-                nextTokenId = extractChange( update.getTokensAfter(), currentTokenId, entityId, nextTokenId, true, update.getTxId() );
-                nextTokenId = extractChange( update.getTokensBefore(), currentTokenId, entityId, nextTokenId, false, update.getTxId() );
+                // FIXME The monitor wants transaction id. Should be added to the update and sent in here
+                nextTokenId = extractChange( update.values(), currentTokenId, entityId, nextTokenId, true, -1 );
+                nextTokenId = extractChange( update.beforeValues(), currentTokenId, entityId, nextTokenId, false, -1 );
             }
             currentTokenId = nextTokenId;
         }
@@ -333,11 +303,11 @@ class NativeTokenScanWriter implements TokenScanWriter
     }
 
     /**
-     * Applies {@link #write(EntityTokenUpdate) queued updates} which has not yet been applied.
-     * No more {@link #write(EntityTokenUpdate) updates} can be applied after this call.
+     * Applies {@link #process(IndexEntryUpdate) queued updates} which has not yet been applied.
+     * No more {@link #process(IndexEntryUpdate) updates} can be applied after this call.
      */
     @Override
-    public void close() throws IOException
+    public void close()
     {
         try
         {
@@ -346,7 +316,16 @@ class NativeTokenScanWriter implements TokenScanWriter
         }
         finally
         {
-            writer.close();
+            closed = true;
+            IOUtils.closeAllUnchecked( writer );
+        }
+    }
+
+    private void assertOpen()
+    {
+        if ( closed )
+        {
+            throw new IllegalStateException( "Updater has been closed" );
         }
     }
 }

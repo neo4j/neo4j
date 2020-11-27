@@ -19,35 +19,31 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.neo4j.storageengine.api.EntityTokenUpdate;
+import org.neo4j.storageengine.api.TokenIndexEntryUpdate;
 
-/**
- * Note that this class will be replaced by PhysicalToLogicalTokenChanges2 when scan stores are made into indexes,
- * and changes to functionality should be made there as well.
- */
-class PhysicalToLogicalTokenChanges
+class PhysicalToLogicalTokenChanges2
 {
-    private PhysicalToLogicalTokenChanges()
+    private PhysicalToLogicalTokenChanges2()
     {
     }
 
     /**
      * Converts physical before/after state to logical remove/add state. This conversion reuses the existing
-     * long[] arrays in {@link EntityTokenUpdate}, 'before' is used for removals and 'after' is used for adds,
+     * long[] arrays in {@link TokenIndexEntryUpdate}, 'before' is used for removals and 'values' is used for adds,
      * by shuffling numbers around and possible terminates them with -1 because the logical change set will be
      * equally big or smaller than the physical change set.
      *
-     * @param update {@link EntityTokenUpdate} containing physical before/after state.
+     * @param update {@link TokenIndexEntryUpdate} containing physical before/after state.
      */
-    static void convertToAdditionsAndRemovals( EntityTokenUpdate update )
+    static void convertToAdditionsAndRemovals( TokenIndexEntryUpdate<?> update )
     {
-        int beforeLength = update.getTokensBefore().length;
-        int afterLength = update.getTokensAfter().length;
+        int beforeLength = update.beforeValues().length;
+        int afterLength = update.values().length;
 
         int bc = 0;
         int ac = 0;
-        long[] before = update.getTokensBefore();
-        long[] after = update.getTokensAfter();
+        long[] before = update.beforeValues();
+        long[] after = update.values();
         for ( int bi = 0, ai = 0; bi < beforeLength || ai < afterLength; )
         {
             long beforeId = bi < beforeLength ? before[bi] : -1;
@@ -64,7 +60,7 @@ class PhysicalToLogicalTokenChanges
                 while ( smaller( beforeId, afterId ) && bi < beforeLength )
                 {
                     // looks like there's an id in before which isn't in after ==> REMOVE
-                    update.getTokensBefore()[bc++] = beforeId;
+                    update.beforeValues()[bc++] = beforeId;
                     bi++;
                     beforeId = bi < beforeLength ? before[bi] : -1;
                 }
@@ -74,15 +70,15 @@ class PhysicalToLogicalTokenChanges
                 while ( smaller( afterId, beforeId ) && ai < afterLength )
                 {
                     // looks like there's an id in after which isn't in before ==> ADD
-                    update.getTokensAfter()[ac++] = afterId;
+                    update.values()[ac++] = afterId;
                     ai++;
                     afterId = ai < afterLength ? after[ai] : -1;
                 }
             }
         }
 
-        terminateWithMinusOneIfNeeded( update.getTokensBefore(), bc );
-        terminateWithMinusOneIfNeeded( update.getTokensAfter(), ac );
+        terminateWithMinusOneIfNeeded( update.beforeValues(), bc );
+        terminateWithMinusOneIfNeeded( update.values(), ac );
     }
 
     private static boolean smaller( long id, long otherId )
