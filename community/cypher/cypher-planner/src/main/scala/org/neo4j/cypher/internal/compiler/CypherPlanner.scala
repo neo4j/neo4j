@@ -121,7 +121,9 @@ object CypherPlannerConfiguration {
       csvBufferSize = config.csvBufferSize,
       nonIndexedLabelWarningThreshold = cfg.get(GraphDatabaseInternalSettings.query_non_indexed_label_warning_threshold).longValue(),
       planSystemCommands = planSystemCommands,
-      useJavaCCParser = config.useJavaCCParser
+      useJavaCCParser = config.useJavaCCParser,
+      pipelinedBatchSizeSmall = config.pipelinedBatchSizeSmall,
+      pipelinedBatchSizeBig = config.pipelinedBatchSizeBig,
     )
 }
 
@@ -136,4 +138,6 @@ case class CypherPlannerConfiguration(queryCacheSize: Int,
                                       csvBufferSize: Int,
                                       nonIndexedLabelWarningThreshold: Long,
                                       planSystemCommands: Boolean,
-                                      useJavaCCParser: Boolean)
+                                      useJavaCCParser: Boolean,
+                                      pipelinedBatchSizeSmall: Int,
+                                      pipelinedBatchSizeBig: Int)

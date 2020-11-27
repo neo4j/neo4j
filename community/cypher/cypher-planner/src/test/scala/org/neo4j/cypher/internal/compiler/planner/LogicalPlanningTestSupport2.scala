@@ -117,7 +117,9 @@ object LogicalPlanningTestSupport2 extends MockitoSugar {
     csvBufferSize = 4 * 1024 * 1024,
     nonIndexedLabelWarningThreshold = 10000,
     planSystemCommands = false,
-    useJavaCCParser = true
+    useJavaCCParser = true,
+    pipelinedBatchSizeSmall = 128,
+    pipelinedBatchSizeBig = 1024,
   )
 
   sealed trait QueryGraphSolverSetup {

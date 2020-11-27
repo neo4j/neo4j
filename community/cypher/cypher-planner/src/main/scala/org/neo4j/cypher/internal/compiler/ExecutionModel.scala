@@ -19,6 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler
 
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
+
 /**
  * The execution model of how a runtime executes a query.
  * This information can be used in planning.
@@ -27,5 +30,14 @@ sealed trait ExecutionModel
 
 case object VolcanoModelExecution extends ExecutionModel
 
-case object PushBatchedExecution extends ExecutionModel
+case class PushBatchedExecution(smallBatchSize: Int, bigBatchSize: Int) extends ExecutionModel {
+
+  /**
+   * Select the batch size for executing a logical plan.
+   */
+  def selectBatchSize(logicalPlan: LogicalPlan, cardinalities: Cardinalities): Int = {
+    val maxCardinality = logicalPlan.flatten.map(plan => cardinalities.get(plan.id)).max
+    if (maxCardinality.amount.toLong > bigBatchSize) bigBatchSize else smallBatchSize
+  }
+}
 

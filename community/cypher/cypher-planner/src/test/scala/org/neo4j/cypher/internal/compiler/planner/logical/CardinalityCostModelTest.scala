@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.compiler.PushBatchedExecution
 import org.neo4j.cypher.internal.compiler.VolcanoModelExecution
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
-import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.BIG_CHUNK_SIZE
 import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.DEFAULT_COST_PER_ROW
 import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.PROPERTY_ACCESS_DB_HITS
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
@@ -41,6 +40,9 @@ import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
+
+  private val SMALL_CHUNK_SIZE = 128
+  private val BIG_CHUNK_SIZE = 1024
 
   private def costFor(plan: LogicalPlan,
                       input: QueryGraphSolverInput,
@@ -191,7 +193,7 @@ class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSu
       .build()
 
     costFor(plan, QueryGraphSolverInput.empty, builder.getSemanticTable, builder.cardinalities, builder.providedOrders, VolcanoModelExecution) should equal(
-      costFor(plan, QueryGraphSolverInput.empty, builder.getSemanticTable, builder.cardinalities, builder.providedOrders, PushBatchedExecution)
+      costFor(plan, QueryGraphSolverInput.empty, builder.getSemanticTable, builder.cardinalities, builder.providedOrders, PushBatchedExecution(SMALL_CHUNK_SIZE, BIG_CHUNK_SIZE))
     )
   }
 
@@ -199,16 +201,72 @@ class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSu
     val cardinality = 1500.0
     val builder = new LogicalPlanBuilder(wholePlan = false)
     val plan = builder
-      .cartesianProduct().withCardinality(cardinality * cardinality)
+      .cartesianProduct().withCardinality(cardinality * cardinality) // 2250000 > BIG_CHUNK_SIZE, so big chunk size should be picked
       .|.argument("b").withCardinality(cardinality)
       .argument("a").withCardinality(cardinality)
       .build()
 
     val argCost = Cardinality(cardinality) * DEFAULT_COST_PER_ROW
 
-    costFor(plan, QueryGraphSolverInput.empty, builder.getSemanticTable, builder.cardinalities, builder.providedOrders, VolcanoModelExecution) should equal(argCost + argCost * cardinality)
-    costFor(plan, QueryGraphSolverInput.empty, builder.getSemanticTable, builder.cardinalities, builder.providedOrders, PushBatchedExecution) should equal(argCost + argCost * Math.ceil(cardinality / BIG_CHUNK_SIZE))
+    costFor(plan, QueryGraphSolverInput.empty, builder.getSemanticTable, builder.cardinalities, builder.providedOrders, VolcanoModelExecution)should
+      equal(argCost + argCost * cardinality)
+    costFor(plan, QueryGraphSolverInput.empty, builder.getSemanticTable, builder.cardinalities, builder.providedOrders, PushBatchedExecution(SMALL_CHUNK_SIZE, BIG_CHUNK_SIZE)) should
+      equal(argCost + argCost * Math.ceil(cardinality / BIG_CHUNK_SIZE))
   }
+
+  test("cartesian product with many row from the left is cheaper in PushBatchedExecution, small chunk size") {
+    val cardinalityLeft = 200.0
+    val cardinalityRight = 2.0
+    val builder = new LogicalPlanBuilder(wholePlan = false)
+    val plan = builder
+      .cartesianProduct().withCardinality(cardinalityLeft * cardinalityRight) // 400 < BIG_CHUNK_SIZE, so small batch size should be picked
+      .|.argument("b").withCardinality(cardinalityRight)
+      .argument("a").withCardinality(cardinalityLeft)
+      .build()
+
+    val argLeftCost = Cardinality(cardinalityLeft) * DEFAULT_COST_PER_ROW
+    val argRightCost = Cardinality(cardinalityRight) * DEFAULT_COST_PER_ROW
+
+    costFor(plan, QueryGraphSolverInput.empty, builder.getSemanticTable, builder.cardinalities, builder.providedOrders, VolcanoModelExecution) should
+      equal(argLeftCost + argRightCost * cardinalityLeft)
+    costFor(plan, QueryGraphSolverInput.empty, builder.getSemanticTable, builder.cardinalities, builder.providedOrders, PushBatchedExecution(SMALL_CHUNK_SIZE, BIG_CHUNK_SIZE)) should
+      equal(argLeftCost + argRightCost * Math.ceil(cardinalityLeft / SMALL_CHUNK_SIZE))
+  }
+
+  test("should pick big chunk size if a plan below the cartesian product has a higher cardinality than big chunk size") {
+    val cardinalityLeaves = 1500.0
+    val cardinalityCP = 500.0
+    val builder = new LogicalPlanBuilder(wholePlan = false)
+    val plan = builder
+      .cartesianProduct().withCardinality(cardinalityCP) // This does not make sense mathematically, but that is OK for this test
+      .|.argument("b").withCardinality(cardinalityLeaves)
+      .argument("a").withCardinality(cardinalityLeaves)
+      .build()
+
+    val argCost = Cardinality(cardinalityLeaves) * DEFAULT_COST_PER_ROW
+
+    costFor(plan, QueryGraphSolverInput.empty, builder.getSemanticTable, builder.cardinalities, builder.providedOrders, PushBatchedExecution(SMALL_CHUNK_SIZE, BIG_CHUNK_SIZE)) should
+      equal(argCost + argCost * Math.ceil(cardinalityLeaves / BIG_CHUNK_SIZE))
+  }
+
+  test("should pick big chunk size if a plan above the cartesian product has a higher cardinality than big chunk size") {
+    val cardinalityLater = 1500.0
+    val cardinalityEarlier = 500.0
+    val builder = new LogicalPlanBuilder(wholePlan = false)
+    val plan = builder
+      .unwind("[1, 2, 3] AS x").withCardinality(cardinalityLater)
+      .cartesianProduct().withCardinality(cardinalityEarlier) // This does not make sense mathematically, but that is OK for this test
+      .|.argument("b").withCardinality(cardinalityEarlier)
+      .argument("a").withCardinality(cardinalityEarlier)
+      .build()
+
+    val argCost = Cardinality(cardinalityEarlier) * DEFAULT_COST_PER_ROW
+    val unwindCost = Cardinality(cardinalityEarlier) * DEFAULT_COST_PER_ROW // cost of unwind is determined on the amount of incoming rows
+
+    costFor(plan, QueryGraphSolverInput.empty, builder.getSemanticTable, builder.cardinalities, builder.providedOrders, PushBatchedExecution(SMALL_CHUNK_SIZE, BIG_CHUNK_SIZE)) should
+      equal(unwindCost + argCost + argCost * Math.ceil(cardinalityEarlier / BIG_CHUNK_SIZE))
+  }
+
 
   test("cartesian product with many row from the left but with provided order is equally expensive in both execution models") {
     val builder = new LogicalPlanBuilder(wholePlan = false)
@@ -219,7 +277,7 @@ class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSu
       .build()
 
     costFor(plan, QueryGraphSolverInput.empty, builder.getSemanticTable, builder.cardinalities, builder.providedOrders, VolcanoModelExecution) should equal(
-      costFor(plan, QueryGraphSolverInput.empty, builder.getSemanticTable, builder.cardinalities, builder.providedOrders, PushBatchedExecution)
+      costFor(plan, QueryGraphSolverInput.empty, builder.getSemanticTable, builder.cardinalities, builder.providedOrders, PushBatchedExecution(SMALL_CHUNK_SIZE, BIG_CHUNK_SIZE))
     )
   }
 }

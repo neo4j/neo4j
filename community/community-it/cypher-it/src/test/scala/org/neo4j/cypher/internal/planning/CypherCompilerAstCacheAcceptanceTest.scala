@@ -35,7 +35,6 @@ import org.neo4j.cypher.internal.CommunityRuntimeContextManager
 import org.neo4j.cypher.internal.CommunityRuntimeFactory
 import org.neo4j.cypher.internal.Compiler
 import org.neo4j.cypher.internal.CompilerLibrary
-import org.neo4j.cypher.internal.config.CypherConfiguration
 import org.neo4j.cypher.internal.CypherCurrentCompiler
 import org.neo4j.cypher.internal.CypherRuntimeConfiguration
 import org.neo4j.cypher.internal.PreParser
@@ -45,6 +44,7 @@ import org.neo4j.cypher.internal.cache.TestExecutorCaffeineCacheFactory
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
 import org.neo4j.cypher.internal.compiler.StatsDivergenceCalculator
 import org.neo4j.cypher.internal.compiler.phases.Compatibility4_3
+import org.neo4j.cypher.internal.config.CypherConfiguration
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.options.CypherPlannerOption
 import org.neo4j.cypher.internal.options.CypherRuntimeOption
@@ -83,7 +83,9 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
       csvBufferSize = CSVResources.DEFAULT_BUFFER_SIZE,
       nonIndexedLabelWarningThreshold = 10000L,
       planSystemCommands = false,
-      useJavaCCParser = true
+      useJavaCCParser = true,
+      pipelinedBatchSizeSmall = 128,
+      pipelinedBatchSizeBig = 1024,
     )
 
   }

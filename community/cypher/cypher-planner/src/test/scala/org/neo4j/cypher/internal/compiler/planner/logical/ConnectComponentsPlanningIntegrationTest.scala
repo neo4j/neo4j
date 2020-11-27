@@ -723,7 +723,7 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
       .plan(query)
 
     val batchedPlan = builder
-      .setExecutionModel(PushBatchedExecution)
+      .setExecutionModel(PushBatchedExecution(128, 1024))
       .build()
       .plan(query)
 
@@ -759,7 +759,7 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
       .plan(query)
 
     val batchedPlan = builder
-      .setExecutionModel(PushBatchedExecution)
+      .setExecutionModel(PushBatchedExecution(128, 1024))
       .build()
       .plan(query)
 

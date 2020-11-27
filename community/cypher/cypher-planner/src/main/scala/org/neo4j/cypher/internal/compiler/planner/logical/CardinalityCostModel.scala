@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.ExecutionModel
 import org.neo4j.cypher.internal.compiler.PushBatchedExecution
-import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.BIG_CHUNK_SIZE
 import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.DEFAULT_COST_PER_ROW
 import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.EAGERNESS_MULTIPLIER
 import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.EXPAND_INTO_COST
@@ -90,7 +89,7 @@ case class CardinalityCostModel(executionModel: ExecutionModel) extends CostMode
                        semanticTable: SemanticTable,
                        cardinalities: Cardinalities,
                        providedOrders: ProvidedOrders): Cost =
-    calculateCost(plan, input.limitSelectivity, input.strictness, cardinalities, providedOrders, semanticTable)
+    calculateCost(plan, input.limitSelectivity, input.strictness, cardinalities, providedOrders, semanticTable, plan)
 
   /**
    * @param plan the plan
@@ -181,19 +180,21 @@ case class CardinalityCostModel(executionModel: ExecutionModel) extends CostMode
   /**
    * Recursively calculate the cost of a plan
    *
-   * @param plan the plan
+   * @param plan             the plan
    * @param limitSelectivity the selectivity of a LIMIT affecting this plan
+   * @param rootPlan         the whole plan currently calculating cost for.
    */
   private def calculateCost(plan: LogicalPlan,
                             limitSelectivity: Selectivity,
                             strictness: Option[StrictnessMode],
                             cardinalities: Cardinalities,
                             providedOrders: ProvidedOrders,
-                            semanticTable: SemanticTable): Cost = {
+                            semanticTable: SemanticTable,
+                            rootPlan: LogicalPlan): Cost = {
     val (lhsLimitSelectivity, rhsLimitSelectivity) = childrenLimitSelectivities(plan, limitSelectivity, cardinalities)
 
-    val lhsCost = plan.lhs.map(p => calculateCost(p, lhsLimitSelectivity, strictness, cardinalities, providedOrders, semanticTable)) getOrElse Cost.ZERO
-    val rhsCost = plan.rhs.map(p => calculateCost(p, rhsLimitSelectivity, strictness, cardinalities, providedOrders, semanticTable)) getOrElse Cost.ZERO
+    val lhsCost = plan.lhs.map(p => calculateCost(p, lhsLimitSelectivity, strictness, cardinalities, providedOrders, semanticTable, rootPlan)) getOrElse Cost.ZERO
+    val rhsCost = plan.rhs.map(p => calculateCost(p, rhsLimitSelectivity, strictness, cardinalities, providedOrders, semanticTable, rootPlan)) getOrElse Cost.ZERO
 
     val effectiveCardinalitiess = EffectiveCardinalities(
       cardinalityForPlan(plan, cardinalities) * lhsLimitSelectivity,
@@ -201,7 +202,7 @@ case class CardinalityCostModel(executionModel: ExecutionModel) extends CostMode
       plan.rhs.map(p => cardinalities.get(p.id) * rhsLimitSelectivity) getOrElse Cardinality.EMPTY
     )
 
-    val cost = combinedCostForPlan(plan, effectiveCardinalitiess, providedOrders, lhsCost, rhsCost, semanticTable)
+    val cost = combinedCostForPlan(plan, effectiveCardinalitiess, cardinalities, providedOrders, lhsCost, rhsCost, semanticTable, rootPlan)
 
     strictness match {
       case Some(LazyMode) if !LazyMode(plan) => cost * EAGERNESS_MULTIPLIER
@@ -237,15 +238,19 @@ case class CardinalityCostModel(executionModel: ExecutionModel) extends CostMode
   /**
    * Calculate the combined cost of a plan, including the costs of its children.
    *
-   * @param plan the plan
+   * @param plan                   the plan
    * @param effectiveCardinalities the effective cardinalities for this plan, the LHS and the RHS
+   * @param cardinalities          the cardinalities without applying any limit selectivities to them
+   * @param rootPlan               the whole plan currently calculating cost for.
    */
   private def combinedCostForPlan(plan: LogicalPlan,
                                   effectiveCardinalities: EffectiveCardinalities,
+                                  cardinalities: Cardinalities,
                                   providedOrders: ProvidedOrders,
                                   lhsCost: Cost,
                                   rhsCost: Cost,
-                                  semanticTable: SemanticTable): Cost = plan match {
+                                  semanticTable: SemanticTable,
+                                  rootPlan: LogicalPlan): Cost = plan match {
     case cp: CartesianProduct =>
       val lhsCardinality = Cardinality.max(Cardinality.SINGLE, effectiveCardinalities.lhs)
       // Ideally we would want to check leveragedOrders here. But that attribute will not be set properly at this point of planning,
@@ -253,9 +258,12 @@ case class CardinalityCostModel(executionModel: ExecutionModel) extends CostMode
       val providesOrder = !providedOrders(cp.id).isEmpty
 
       executionModel match {
-        case PushBatchedExecution if !providesOrder =>
+        case p:PushBatchedExecution if !providesOrder =>
+          // The rootPlan we use here to select the batch size will obviously not be the final plan for the whole query.
+          // So it could very well be that we select the small chunk size here for cost estimation purposes, but the cardinalities increase
+          // in the later course of the plan and it will actually be executed with the big chunk size.
+          val chunkSize = p.selectBatchSize(rootPlan, cardinalities)
           // The RHS is executed for each chunk of LHS rows
-          val chunkSize = BIG_CHUNK_SIZE
           val chunks = Math.ceil(lhsCardinality.amount / chunkSize).toInt
           lhsCost + Cardinality(chunks) * rhsCost
         case _ =>
@@ -298,8 +306,6 @@ object CardinalityCostModel {
   val PROPERTY_ACCESS_DB_HITS = 2
   val LABEL_CHECK_DB_HITS = 1
   val EXPAND_INTO_COST: CostPerRow = 6.4
-
-  val BIG_CHUNK_SIZE = 1024
 
   /**
    * The cost of evaluating an expression, per row.

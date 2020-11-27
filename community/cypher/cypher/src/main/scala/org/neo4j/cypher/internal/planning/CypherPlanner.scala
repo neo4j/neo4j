@@ -274,8 +274,8 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
     }
     val containsUpdates: Boolean = syntacticQuery.statement().containsUpdates
     val executionMode = inferredRuntime match {
-      case CypherRuntimeOption.pipelined if !containsUpdates => PushBatchedExecution
-      case CypherRuntimeOption.parallel if !containsUpdates => PushBatchedExecution
+      case CypherRuntimeOption.pipelined
+           | CypherRuntimeOption.parallel if !containsUpdates => PushBatchedExecution(config.pipelinedBatchSizeSmall, config.pipelinedBatchSizeBig)
       case _ => VolcanoModelExecution
     }
 
