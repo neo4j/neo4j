@@ -117,6 +117,23 @@ class SingleComponentPlannerTest extends CypherFunSuite with LogicalPlanningTest
     }, context.planningAttributes.solveds, hint)
   }
 
+  test("does not plan hashjoins and cartesian product if start and end node are the same") {
+    // given
+    val aNode = "a"
+    val pattern = PatternRelationship("r1", (aNode, aNode), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
+    val hint = UsingJoinHint(Seq(varFor("a")))(pos)
+    val qg = QueryGraph(patternRelationships = Set(pattern), patternNodes = Set(aNode, aNode), hints = Set(hint))
+    val context = newMockedLogicalPlanningContext(planContext = mock[PlanContext])
+    val aPlan = newMockedLogicalPlan(context.planningAttributes, "a")
+
+    // when
+    val logicalPlans = SingleComponentPlanner.planSinglePattern(qg, pattern, Set(aPlan), InterestingOrder.empty, context)
+
+    // then
+    val plan1 = Expand(aPlan, "a", SemanticDirection.OUTGOING, Seq.empty, "a", "r1", ExpandInto)
+    assertPlansMatch(logicalPlans.toSet, Set(plan1))
+  }
+
   test("plans hashjoins and cartesian product for queries with single pattern rel and a join hint on the end node") {
     // given
     val aNode = "a"
@@ -148,8 +165,7 @@ class SingleComponentPlannerTest extends CypherFunSuite with LogicalPlanningTest
   }
 
   private def assertPlansMatch(expected: Set[LogicalPlan], actualPlans: Set[LogicalPlan]) {
-    actualPlans.foreach(actual => expected should contain(actual))
-    actualPlans.size should be(expected.size)
+    actualPlans should equal(expected)
   }
 
   private def assertPlanSolvesHints(plans: Iterable[LogicalPlan], solveds: Solveds, hints: Hint*) {

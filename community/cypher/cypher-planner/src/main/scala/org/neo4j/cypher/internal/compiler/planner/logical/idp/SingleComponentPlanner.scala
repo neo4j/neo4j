@@ -165,6 +165,8 @@ object SingleComponentPlanner {
         val endJoinNodes = Set(end)
         val maybeStartPlan = leaves.find(leaf => solveds(leaf.id).asSinglePlannerQuery.queryGraph.patternNodes == startJoinNodes && !leaf.isInstanceOf[Argument])
         val maybeEndPlan = leaves.find(leaf => solveds(leaf.id).asSinglePlannerQuery.queryGraph.patternNodes == endJoinNodes && !leaf.isInstanceOf[Argument])
+          // We are not allowed to plan CP or joins with identical LHS and RHS
+          .filter(!maybeStartPlan.contains(_))
         val cartesianProduct = planSinglePatternCartesian(qg, pattern, start, maybeStartPlan, maybeEndPlan, interestingOrder, context)
         val joins = planSinglePatternJoins(qg, leftExpand, rightExpand, startJoinNodes, endJoinNodes, maybeStartPlan, maybeEndPlan, context)
         leftExpand ++ rightExpand ++ cartesianProduct ++ joins
