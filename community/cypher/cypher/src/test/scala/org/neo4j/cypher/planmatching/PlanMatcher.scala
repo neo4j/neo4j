@@ -84,7 +84,7 @@ trait PlanMatcher extends Matcher[InternalPlanDescription] {
 
   def containingArgument(argument: String*): PlanMatcher
 
-  def containingArgumentForProjection(projections: Map[String, String]): PlanMatcher = {
+  def containingArgumentForProjection(projections: (String, String)*)(implicit d: DummyImplicit): PlanMatcher = {
     val expectedArg = projections
       .map {
         case (k, v) => if (k == v) k else s"$v AS $k"
