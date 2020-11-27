@@ -30,29 +30,31 @@ import static org.neo4j.util.Preconditions.checkArgument;
  */
 final class SortedMergeJoin
 {
-    private long nextFromA = -1;
-    private long nextFromB = -1;
+    private static final int NO_ENTITY = -1;
+
+    private long nextFromA = NO_ENTITY;
+    private long nextFromB = NO_ENTITY;
     private Value[] valuesFromA;
     private Value[] valuesFromB;
     private int indexOrder;
 
     void initialize( IndexOrder indexOrder )
     {
-        this.indexOrder = indexOrder == IndexOrder.DESCENDING ? 1 : -1;
-        this.nextFromA = -1;
-        this.nextFromB = -1;
+        this.indexOrder = indexOrder == IndexOrder.DESCENDING ? 1 : NO_ENTITY;
+        this.nextFromA = NO_ENTITY;
+        this.nextFromB = NO_ENTITY;
         this.valuesFromA = null;
         this.valuesFromB = null;
     }
 
     boolean needsA()
     {
-        return nextFromA == -1;
+        return nextFromA == NO_ENTITY;
     }
 
     boolean needsB()
     {
-        return nextFromB == -1;
+        return nextFromB == NO_ENTITY;
     }
 
     void setA( long entityId, Value[] values )
@@ -85,21 +87,21 @@ final class SortedMergeJoin
             }
         }
 
-        if ( nextFromB == -1 || Integer.signum( c ) == indexOrder )
+        if ( nextFromB == NO_ENTITY || Integer.signum( c ) == indexOrder )
         {
-            if ( nextFromA == -1 )
+            if ( nextFromA == NO_ENTITY )
             {
                 return false;
             }
 
             sink.acceptSortedMergeJoin( nextFromA, valuesFromA );
-            nextFromA = -1;
+            nextFromA = NO_ENTITY;
             valuesFromA = null;
         }
         else
         {
             sink.acceptSortedMergeJoin( nextFromB, valuesFromB );
-            nextFromB = -1;
+            nextFromB = NO_ENTITY;
             valuesFromB = null;
         }
 

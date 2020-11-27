@@ -118,9 +118,12 @@ class DefaultRelationshipValueIndexCursor extends DefaultEntityValueIndexCursor 
         }
         for ( int propId : propertyIds )
         {
-            if ( !accessMode.allowsReadPropertyAllRelTypes( propId ) )
+            for ( int relType : descriptor.schema().getEntityTokenIds() )
             {
-                return false;
+                if ( !accessMode.allowsReadRelationshipProperty( () -> relType, propId ) )
+                {
+                    return false;
+                }
             }
         }
         return true;
