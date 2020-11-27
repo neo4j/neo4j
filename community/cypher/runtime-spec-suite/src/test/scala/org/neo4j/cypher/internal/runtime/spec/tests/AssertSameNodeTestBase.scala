@@ -284,6 +284,26 @@ abstract class AssertSameNodeTestBase[CONTEXT <: RuntimeContext](
     // then
     runtimeResult should beColumns("x").withNoRows()
   }
+
+  test("should assert same nodes on top of range seek and fail") {
+    val nodes = given {
+      uniqueIndex("Honey", "prop")
+      nodePropertyGraph(sizeHint, {
+        case i => Map("prop" -> i)
+      }, "Honey")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .assertSameNode("x")
+      .|.nodeIndexOperator(s"x:Honey(prop > ${sizeHint/2})")
+      .nodeIndexOperator(s"x:Honey(prop > ${sizeHint/2})")
+      .build()
+
+    // then
+    a [MergeConstraintConflictException] shouldBe thrownBy(consume(execute(logicalQuery, runtime)))
+  }
 }
 
 /**
