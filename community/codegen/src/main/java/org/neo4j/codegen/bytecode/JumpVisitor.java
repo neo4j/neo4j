@@ -265,7 +265,8 @@ class JumpVisitor implements ExpressionVisitor
     @Override
     public void instanceOf( TypeReference type, Expression expression )
     {
-        throw new IllegalArgumentException( "cast is not a boolean expression" );
+        eval.instanceOf( type, expression );
+        methodVisitor.visitJumpInsn( IFEQ, this.target );
     }
 
     @Override
