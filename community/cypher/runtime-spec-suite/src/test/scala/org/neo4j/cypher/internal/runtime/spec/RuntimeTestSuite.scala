@@ -302,6 +302,7 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
     def withSingleRow(values: Any*): RuntimeResultMatcher = withRows(singleRow(values: _*))
 
     def withRows(rows: Iterable[Array[_]], listInAnyOrder: Boolean = false): RuntimeResultMatcher = withRows(inAnyOrder(rows, listInAnyOrder))
+
     def withNoRows(): RuntimeResultMatcher = withRows(NoRowsMatcher)
 
     def withRows(rowsMatcher: RowsMatcher): RuntimeResultMatcher = {
@@ -315,14 +316,16 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
       val columns = left.runtimeResult.fieldNames().toIndexedSeq
       if (columns != expectedColumns) {
         MatchResult(matches = false, s"Expected result columns $expectedColumns, got $columns", "")
-      } else if (maybeStatisticts.isDefined) {
-        maybeStatisticts.get.apply(left.runtimeResult.queryStatistics())
       } else {
-        val rows = consume(left)
-        rowsMatcher.matches(columns, rows) match {
-          case RowsMatch => MatchResult(matches = true, "", "")
-          case RowsDontMatch(msg) => MatchResult(matches = false, msg, "")
-        }
+        maybeStatisticts.map(s => s.apply(left.runtimeResult.queryStatistics()))
+          .filter(_.matches == false)
+          .getOrElse {
+            val rows = consume(left)
+            rowsMatcher.matches(columns, rows) match {
+              case RowsMatch => MatchResult(matches = true, "", "")
+              case RowsDontMatch(msg) => MatchResult(matches = false, msg, "")
+            }
+          }
       }
     }
   }
