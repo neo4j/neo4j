@@ -41,7 +41,8 @@ abstract class SetPropertyTestBase[CONTEXT <: RuntimeContext](
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("n")
+      .produceResults("p")
+      .projection("n.prop as p")
       .setProperty("n", "prop", "1")
       .allNodeScan("n")
       .build(readOnly = false)
@@ -50,7 +51,29 @@ abstract class SetPropertyTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
     consume(runtimeResult)
     val property = Iterables.single(tx.getAllPropertyKeys)
-    runtimeResult should beColumns("n").withSingleRow(n.head).withStatistics(propertiesSet = 1)
+    runtimeResult should beColumns("p").withSingleRow(1).withStatistics(propertiesSet = 1)
+    property shouldBe "prop"
+  }
+
+  test("should remove node property") {
+    // given a single node
+    val n = given {
+      nodePropertyGraph(1, { case i: Int => Map("prop" -> i)})
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("p")
+      .projection("n.prop as p")
+      .setProperty("n", "prop", "null")
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    val property = Iterables.single(tx.getAllPropertyKeys)
+    runtimeResult should beColumns("p").withSingleRow(null).withStatistics(propertiesSet = 1)
     property shouldBe "prop"
   }
 
