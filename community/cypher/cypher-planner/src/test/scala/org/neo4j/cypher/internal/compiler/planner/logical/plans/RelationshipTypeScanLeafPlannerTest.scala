@@ -20,6 +20,8 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.plans
 
 import org.mockito.Mockito.when
+import org.neo4j.cypher.internal.ast.UsingJoinHint
+import org.neo4j.cypher.internal.ast.UsingScanHint
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.relationshipTypeScanLeafPlanner
@@ -144,6 +146,39 @@ class RelationshipTypeScanLeafPlannerTest extends CypherFunSuite with LogicalPla
 
     // then
     resultPlans shouldBe empty
+  }
+
+  test("should not plan type scan if hint on start node") {
+    // given
+    //(a:L)-[:R]->(b)
+    val context = planningContext()
+    val qg = pattern("r", "a", "b", OUTGOING, "R")
+      .addHints(Seq(UsingScanHint(varFor("a"), labelName("L"))(pos)))
+
+    // then
+    relationshipTypeScanLeafPlanner(Set.empty)(qg, InterestingOrder.empty, context) should be(empty)
+  }
+
+  test("should not plan type scan if hint on end node") {
+    // given
+    //(a:L)-[:R]->(b)
+    val context = planningContext()
+    val qg = pattern("r", "a", "b", OUTGOING, "R")
+      .addHints(Seq(UsingScanHint(varFor("b"), labelName("L"))(pos)))
+
+    // then
+    relationshipTypeScanLeafPlanner(Set.empty)(qg, InterestingOrder.empty, context) should be(empty)
+  }
+
+  test("should not plan type scan if join hint on node") {
+    // given
+    //(a:L)-[:R]->(b)
+    val context = planningContext()
+    val qg = pattern("r", "a", "b", OUTGOING, "R")
+      .addHints(Seq(UsingJoinHint(Seq(varFor("b")))(pos)))
+
+    // then
+    relationshipTypeScanLeafPlanner(Set.empty)(qg, InterestingOrder.empty, context) should be(empty)
   }
 
   private def pattern(name: String, from: String, to: String, direction: SemanticDirection, types: String*) =
