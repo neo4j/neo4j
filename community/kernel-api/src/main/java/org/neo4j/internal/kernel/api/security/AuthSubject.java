@@ -21,8 +21,6 @@ package org.neo4j.internal.kernel.api.security;
 
 public interface AuthSubject
 {
-    void logout();
-
     // TODO: Refine this API into something more polished
     AuthenticationResult getAuthenticationResult();
 
@@ -50,10 +48,6 @@ public interface AuthSubject
      */
     AuthSubject ANONYMOUS = new AuthSubject()
     {
-        @Override
-        public void logout()
-        {
-        }
 
         @Override
         public AuthenticationResult getAuthenticationResult()
@@ -89,11 +83,6 @@ public interface AuthSubject
         public String username()
         {
             return ""; // Should never clash with a valid username
-        }
-
-        @Override
-        public void logout()
-        {
         }
 
         @Override

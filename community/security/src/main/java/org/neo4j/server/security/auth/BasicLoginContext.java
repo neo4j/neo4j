@@ -68,13 +68,6 @@ public class BasicLoginContext implements LoginContext
         }
 
         @Override
-        public void logout()
-        {
-            user = null;
-            authenticationResult = FAILURE;
-        }
-
-        @Override
         public AuthenticationResult getAuthenticationResult()
         {
             return authenticationResult;
