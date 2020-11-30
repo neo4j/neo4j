@@ -84,6 +84,7 @@ trait PlanMatcher extends Matcher[InternalPlanDescription] {
 
   def containingArgument(argument: String*): PlanMatcher
 
+  // DummyImplicit used just to disambiguate `containingArgumentForProjection` after type erasure
   def containingArgumentForProjection(projections: (String, String)*)(implicit d: DummyImplicit): PlanMatcher = {
     val expectedArg = projections
       .map {
