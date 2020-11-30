@@ -21,9 +21,11 @@ package org.neo4j.cypher.internal.runtime.spec
 
 import org.neo4j.cypher.internal.LogicalQuery
 import org.neo4j.cypher.internal.ir.ProvidedOrder
-import org.neo4j.cypher.internal.logical.builder.{AbstractLogicalPlanBuilder, Resolver}
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder
+import org.neo4j.cypher.internal.logical.builder.Resolver
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.{Cardinalities, ProvidedOrders}
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.v4_0.expressions.Variable
 import org.neo4j.cypher.internal.v4_0.util.Cardinality
@@ -44,6 +46,9 @@ class LogicalQueryBuilder(tokenResolver: Resolver)
   override def newNode(node: Variable): Unit = {
     semanticTable = semanticTable.addNode(node)
   }
+
+  override def newVariable(variable: Variable): Unit =
+    semanticTable.addVariable(variable)
 
   override def newRelationship(relationship: Variable): Unit = {
     semanticTable = semanticTable.addRelationship(relationship)

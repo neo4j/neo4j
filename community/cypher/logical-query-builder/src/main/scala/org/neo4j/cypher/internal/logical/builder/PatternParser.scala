@@ -19,16 +19,19 @@
  */
 package org.neo4j.cypher.internal.logical.builder
 
-import org.neo4j.cypher.internal.ir.{PatternLength, SimplePatternLength, VarPatternLength}
+import org.neo4j.cypher.internal.ir.PatternLength
+import org.neo4j.cypher.internal.ir.SimplePatternLength
+import org.neo4j.cypher.internal.ir.VarPatternLength
 import org.neo4j.cypher.internal.logical.builder.PatternParser.Pattern
-import org.neo4j.cypher.internal.v4_0.expressions.{RelTypeName, SemanticDirection}
+import org.neo4j.cypher.internal.v4_0.expressions.RelTypeName
+import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v4_0.util.InputPosition.NONE
 
 class PatternParser
 {
   private val ID = "([a-zA-Z0-9` @]*)"
   private val REL_TYPES = "([a-zA-Z_|]*)"
-  private val regex = s"\\($ID\\)(<?)-\\[?$ID:?$REL_TYPES(\\*?)([0-9]*)\\.?\\.?([0-9]*)\\]?-(>?)\\($ID\\)".r
+  private val regex = s"\\($ID\\)(<?)-\\[?$ID:?$REL_TYPES(\\*?)([0-9]*)(\\.?\\.?)([0-9]*)\\]?-(>?)\\($ID\\)".r
   private var unnamedCount = 0
 
   private def nextUnnamed(): String = {
@@ -38,28 +41,31 @@ class PatternParser
 
   def parse(pattern: String): Pattern = {
     pattern match {
-      case regex(from, incoming, relName, relTypesStr, star, min, max, outgoing, to) =>
+      case regex(from, incoming, relName, relTypesStr, star, min, dots, max, outgoing, to) =>
         val dir = (incoming, outgoing) match {
           case ("<", "") => SemanticDirection.INCOMING
           case ("", ">") => SemanticDirection.OUTGOING
           case ("", "") => SemanticDirection.BOTH
+          case _ => throw new UnsupportedOperationException(s"Direction $incoming-$outgoing not supported")
         }
         val relTypes =
           if (relTypesStr.isEmpty) Seq.empty
           else relTypesStr.split("\\|").toSeq.map(x => RelTypeName(x)(NONE))
         val length =
-          (star, min, max) match {
-            case ("", "", "")  => SimplePatternLength
-            case ("*", "", "") => VarPatternLength(0, None)
-            case ("*", x, "")  => VarPatternLength(x.toInt, Some(x.toInt))
-            case ("*", "", _)  => VarPatternLength(0, Some(max.toInt))
-            case ("*", _, _)   => VarPatternLength(min.toInt, Some(max.toInt))
+          (star, min, dots, max) match {
+            case ("", "", "", "")  => SimplePatternLength
+            case ("*", "", "", "") => VarPatternLength(0, None)
+            case ("*", x, "..", "")  => VarPatternLength(x.toInt, None)
+            case ("*", x, "", "")  => VarPatternLength(x.toInt, Some(x.toInt))
+            case ("*", "", "..", _)  => VarPatternLength(0, Some(max.toInt))
+            case ("*", _, "..", _)   => VarPatternLength(min.toInt, Some(max.toInt))
+            case _ => throw new UnsupportedOperationException(s"$star, $min, $max is not a supported variable length identifier")
           }
         val relNameOrUnnamed =
           if (relName.isEmpty) {
             nextUnnamed()
           } else {
-           relName
+            VariableParser.unescaped(relName)
           }
         Pattern(VariableParser.unescaped(from), dir, relTypes, relNameOrUnnamed, VariableParser.unescaped(to), length)
       case _ => throw new IllegalArgumentException(s"'$pattern' cannot be parsed as a pattern")

@@ -20,15 +20,18 @@
 package org.neo4j.cypher.internal.compiler.helpers
 
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder
+import org.neo4j.cypher.internal.logical.builder.Resolver
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
-import org.neo4j.cypher.internal.v4_0.ast.semantics.{ExpressionTypeInfo, SemanticTable}
-import org.neo4j.cypher.internal.v4_0.expressions.{Expression, Variable}
+import org.neo4j.cypher.internal.v4_0.ast.semantics.ExpressionTypeInfo
+import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.v4_0.expressions.Expression
+import org.neo4j.cypher.internal.v4_0.expressions.Variable
 import org.neo4j.cypher.internal.v4_0.util.Cardinality
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
-import org.neo4j.cypher.internal.v4_0.util.symbols.{CTNode, CypherType}
+import org.neo4j.cypher.internal.v4_0.util.symbols.CypherType
 
-class LogicalPlanBuilder extends AbstractLogicalPlanBuilder[LogicalPlan, LogicalPlanBuilder](new LogicalPlanResolver) {
+class LogicalPlanBuilder(resolver: Resolver = new LogicalPlanResolver, wholePlan: Boolean = true) extends AbstractLogicalPlanBuilder[LogicalPlan, LogicalPlanBuilder](resolver, wholePlan) {
 
   class CardinalitiesWithDefault extends Cardinalities {
     override def get(id: Id): Cardinality =
@@ -45,6 +48,10 @@ class LogicalPlanBuilder extends AbstractLogicalPlanBuilder[LogicalPlan, Logical
 
   override def newRelationship(relationship: Variable): Unit = {
     semanticTable = semanticTable.addRelationship(relationship)
+  }
+
+  override def newVariable(variable: Variable): Unit = {
+    semanticTable = semanticTable.addVariable(variable)
   }
 
   def getSemanticTable: SemanticTable = semanticTable

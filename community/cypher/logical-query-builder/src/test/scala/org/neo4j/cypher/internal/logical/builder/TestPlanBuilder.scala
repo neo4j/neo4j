@@ -17,20 +17,29 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.helpers
+package org.neo4j.cypher.internal.logical.builder
 
-import org.neo4j.cypher.internal.logical.builder.Resolver
+import org.neo4j.cypher.internal.logical.plans.FieldSignature
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.ProcedureReadOnlyAccess
 import org.neo4j.cypher.internal.logical.plans.ProcedureSignature
 import org.neo4j.cypher.internal.logical.plans.QualifiedName
 import org.neo4j.cypher.internal.logical.plans.UserFunctionSignature
-import org.neo4j.cypher.internal.planner.spi.TokenContext
+import org.neo4j.cypher.internal.v4_0.expressions.Variable
+import org.neo4j.cypher.internal.v4_0.util.symbols.CTInteger
 
 import scala.collection.mutable.ArrayBuffer
 
-class LogicalPlanResolver extends Resolver with TokenContext {
+class TestPlanBuilder extends AbstractLogicalPlanBuilder[LogicalPlan, TestPlanBuilder](new TestResolver) {
+  override def newNode(node: Variable): Unit = {}
+  override def newRelationship(relationship: Variable): Unit = {}
+  override def newVariable(variable: Variable): Unit = {}
+  override def build(readOnly: Boolean): LogicalPlan = buildLogicalPlan()
+}
+
+class TestResolver extends Resolver {
   private val labels = new ArrayBuffer[String]()
   private val properties = new ArrayBuffer[String]()
-  private val relTypes = new ArrayBuffer[String]()
 
   override def getLabelId(label: String): Int = {
     val index = labels.indexOf(label)
@@ -52,29 +61,10 @@ class LogicalPlanResolver extends Resolver with TokenContext {
     }
   }
 
-  override def getRelTypeId(relType: String): Int = {
-    val index = relTypes.indexOf(relType)
-    if (index == -1) {
-      relTypes += relType
-      relTypes.size - 1
-    } else {
-      index
-    }
+  override def procedureSignature(name: QualifiedName): ProcedureSignature = name match {
+    case qn@QualifiedName(Seq("test"), "proc1") => ProcedureSignature(qn, IndexedSeq(), None, None, ProcedureReadOnlyAccess(Array()), id = 0)
+    case qn@QualifiedName(Seq("test"), "proc2") => ProcedureSignature(qn, IndexedSeq(FieldSignature("in1", CTInteger)), Some(IndexedSeq(FieldSignature("foo", CTInteger))), None, ProcedureReadOnlyAccess(Array()), id = 0)
   }
-
-  override def getLabelName(id: Int): String = if (id >= labels.size) throw new IllegalStateException(s"Label $id undefined") else labels(id)
-
-  override def getOptLabelId(labelName: String): Option[Int] = Some(getLabelId(labelName))
-
-  override def getPropertyKeyName(id: Int): String = if (id >= properties.size) throw new IllegalStateException(s"Property $id undefined") else properties(id)
-
-  override def getOptPropertyKeyId(propertyKeyName: String): Option[Int] = Some(getPropertyKeyId(propertyKeyName))
-
-  override def getRelTypeName(id: Int): String = if (id >= relTypes.size) throw new IllegalStateException(s"RelType $id undefined") else relTypes(id)
-
-  override def getOptRelTypeId(relType: String): Option[Int] = Some(getRelTypeId(relType))
-
-  override def procedureSignature(name: QualifiedName): ProcedureSignature = ???
 
   override def functionSignature(name: QualifiedName): Option[UserFunctionSignature] = ???
 }

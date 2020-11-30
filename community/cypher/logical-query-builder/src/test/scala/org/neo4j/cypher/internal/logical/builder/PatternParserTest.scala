@@ -19,12 +19,16 @@
  */
 package org.neo4j.cypher.internal.logical.builder
 
-import org.neo4j.cypher.internal.ir.{SimplePatternLength, VarPatternLength}
+import org.neo4j.cypher.internal.ir.SimplePatternLength
+import org.neo4j.cypher.internal.ir.VarPatternLength
 import org.neo4j.cypher.internal.logical.builder.PatternParser.Pattern
 import org.neo4j.cypher.internal.v4_0.expressions.RelTypeName
-import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection.{BOTH, INCOMING, OUTGOING}
+import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection.BOTH
+import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection.INCOMING
+import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.v4_0.util.InputPosition.NONE
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.{CypherFunSuite, TestName}
+import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v4_0.util.test_helpers.TestName
 
 class PatternParserTest extends CypherFunSuite with TestName
 {
@@ -80,5 +84,9 @@ class PatternParserTest extends CypherFunSuite with TestName
 
   test("(a)-[:R*..2]-(b)") {
     patternParser.parse(testName) should be(Pattern("a", BOTH, Seq(RelTypeName("R")(NONE)), "UNNAMED9", "b", VarPatternLength(0, Some(2))))
+  }
+
+  test("(a)-[:R*2..]-(b)") {
+    patternParser.parse(testName) should be(Pattern("a", BOTH, Seq(RelTypeName("R")(NONE)), "UNNAMED10", "b", VarPatternLength(2, None)))
   }
 }

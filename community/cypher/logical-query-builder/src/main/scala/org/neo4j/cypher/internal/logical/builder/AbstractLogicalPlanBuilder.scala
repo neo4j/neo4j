@@ -19,13 +19,22 @@
  */
 package org.neo4j.cypher.internal.logical.builder
 
-import org.neo4j.cypher.internal.ir.{CreateNode, SimplePatternLength, VarPatternLength}
-import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.{Predicate, pos}
+import org.neo4j.cypher.internal.ir.CreateNode
+import org.neo4j.cypher.internal.ir.SimplePatternLength
+import org.neo4j.cypher.internal.ir.VarPatternLength
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.Predicate
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.pos
 import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.util.InputPosition
-import org.neo4j.cypher.internal.v4_0.util.attribution.{Id, IdGen, SameId, SequentialIdGen}
+import org.neo4j.cypher.internal.v4_0.util.InputPosition.NONE
+import org.neo4j.cypher.internal.v4_0.util.LabelId
+import org.neo4j.cypher.internal.v4_0.util.PropertyKeyId
+import org.neo4j.cypher.internal.v4_0.util.attribution.Id
+import org.neo4j.cypher.internal.v4_0.util.attribution.IdGen
+import org.neo4j.cypher.internal.v4_0.util.attribution.SameId
+import org.neo4j.cypher.internal.v4_0.util.attribution.SequentialIdGen
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -48,7 +57,7 @@ trait Resolver {
 /**
   * Test help utility for hand-writing objects needing logical plans.
   */
-abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[T, IMPL]](protected val resolver: Resolver) {
+abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[T, IMPL]](protected val resolver: Resolver, val wholePlan: Boolean = true) {
 
   self: IMPL =>
 
@@ -128,6 +137,11 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
 
   def limit(count: Int): IMPL = {
     appendAtCurrentIndent(UnaryOperator(lp => Limit(lp, literalInt(count), DoNotIncludeTies)(_)))
+    self
+  }
+
+  def skip(count: Long): IMPL = {
+    appendAtCurrentIndent(UnaryOperator(lp => Skip(lp, literalInt(count))(_)))
     self
   }
 
@@ -381,10 +395,57 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
                         argumentIds: Set[String] = Set.empty,
                         unique: Boolean = false,
                         customQueryExpression: Option[QueryExpression[Expression]] = None): IMPL = {
-    val label = resolver.getLabelId(IndexSeek.labelFromIndexSeekString(indexSeekString))
-    val propIds = PartialFunction(resolver.getPropertyKeyId)
+
     val planBuilder = (idGen: IdGen) => {
-      val plan = IndexSeek(indexSeekString, getValue, indexOrder, paramExpr, argumentIds, Some(propIds), label, unique, customQueryExpression)(idGen)
+      val plan = indexSeek(indexSeekString, getValue, indexOrder, paramExpr, argumentIds, unique, customQueryExpression)(idGen)
+      plan
+    }
+    appendAtCurrentIndent(LeafOperator(planBuilder))
+  }
+
+  def indexSeek(indexSeekString: String,
+                getValue: GetValueFromIndexBehavior = DoNotGetValue,
+                indexOrder: IndexOrder = IndexOrderNone,
+                paramExpr: Option[Expression] = None,
+                argumentIds: Set[String] = Set.empty,
+                unique: Boolean = false,
+                customQueryExpression: Option[QueryExpression[Expression]] = None): IdGen => IndexLeafPlan = {
+    val label = resolver.getLabelId(IndexSeek.labelFromIndexSeekString(indexSeekString))
+    val propIds: PartialFunction[String, Int] = { case x => resolver.getPropertyKeyId(x) }
+    val planBuilder = (idGen: IdGen) => {
+      val plan = IndexSeek(indexSeekString, getValue, indexOrder, paramExpr, argumentIds, Some(propIds), label, unique,
+                           customQueryExpression)(idGen)
+      newNode(varFor(plan.idName))
+      plan
+    }
+    planBuilder
+  }
+
+  def pointDistanceIndexSeek(node: String,
+                             labelName: String,
+                             property: String,
+                             point: String,
+                             distance: Double,
+                             getValue: GetValueFromIndexBehavior = DoNotGetValue,
+                             indexOrder: IndexOrder = IndexOrderNone,
+                             inclusive: Boolean = false,
+                             argumentIds: Set[String] = Set.empty): IMPL = {
+    val label = resolver.getLabelId(labelName)
+
+    val propId = resolver.getPropertyKeyId(property)
+    val planBuilder = (idGen: IdGen) => {
+      val labelToken = LabelToken(labelName, LabelId(label))
+      val propToken = PropertyKeyToken(PropertyKeyName(property)(NONE), PropertyKeyId(propId))
+      val indexedProperty = IndexedProperty(propToken, getValue)
+      val e =
+        RangeQueryExpression(PointDistanceSeekRangeWrapper(
+          PointDistanceRange(function("point", Parser.parseExpression(point)), literalFloat(distance), inclusive))(NONE))
+      val plan = NodeIndexSeek(node,
+                               labelToken,
+                               Seq(indexedProperty),
+                               e,
+                               argumentIds,
+                               indexOrder)(idGen)
       newNode(varFor(plan.idName))
       plan
     }
@@ -407,6 +468,26 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
 
   def apply(): IMPL =
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) => Apply(lhs, rhs)(_)))
+
+  def antiSemiApply(): IMPL =
+    appendAtCurrentIndent(BinaryOperator((lhs, rhs) => AntiSemiApply(lhs, rhs)(_)))
+
+  def semiApply(): IMPL =
+    appendAtCurrentIndent(BinaryOperator((lhs, rhs) => SemiApply(lhs, rhs)(_)))
+
+  def conditionalApply(items: String*): IMPL =
+    appendAtCurrentIndent(BinaryOperator((lhs, rhs) => ConditionalApply(lhs, rhs, items)(_)))
+
+  def selectOrSemiApply(predicate: String): IMPL =
+    appendAtCurrentIndent(BinaryOperator((lhs, rhs) => SelectOrSemiApply(lhs, rhs, Parser.parseExpression(predicate))(_)))
+
+  def selectOrAntiSemiApply(predicate: String): IMPL =
+    appendAtCurrentIndent(BinaryOperator((lhs, rhs) => SelectOrAntiSemiApply(lhs, rhs, Parser.parseExpression(predicate))(_)))
+
+  def rollUpApply(collectionName: String,
+                  variableToCollect: String,
+                  nullableIdentifiers: Set[String] = Set.empty): IMPL =
+    appendAtCurrentIndent(BinaryOperator((lhs, rhs) => RollUpApply(lhs, rhs, collectionName, variableToCollect, nullableIdentifiers)(_)))
 
   def cartesianProduct(): IMPL =
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) => CartesianProduct(lhs, rhs)(_)))
@@ -447,6 +528,14 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
 
   def nodeHashJoin(nodes: String*): IMPL = {
     appendAtCurrentIndent(BinaryOperator((left, right) => NodeHashJoin(nodes.toSet, left, right)(_)))
+  }
+
+  def rightOuterHashJoin(nodes: String*): IMPL = {
+    appendAtCurrentIndent(BinaryOperator((left, right) => RightOuterHashJoin(nodes.toSet, left, right)(_)))
+  }
+
+  def leftOuterHashJoin(nodes: String*): IMPL = {
+    appendAtCurrentIndent(BinaryOperator((left, right) => LeftOuterHashJoin(nodes.toSet, left, right)(_)))
   }
 
   def valueHashJoin(predicate: String): IMPL = {
@@ -507,57 +596,76 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   def newRelationship(relationship: Variable): Unit
 
   /**
+   * Called everytime a new variable is introduced by some logical operator.
+   */
+  protected def newVariable(variable: Variable): Unit
+
+  /**
     * Returns the finalized output of the builder.
     */
   def build(readOnly: Boolean = true): T
 
   // HELPERS
 
-  private def appendAtCurrentIndent(operatorBuilder: OperatorBuilder): IMPL = {
+  protected def appendAtCurrentIndent(operatorBuilder: OperatorBuilder): IMPL = {
     if (tree == null) {
-      throw new IllegalStateException("Must call produceResult before adding other operators.")
+      if (wholePlan) {
+        throw new IllegalStateException("Must call produceResult before adding other operators.")
+      } else {
+        tree = new Tree(operatorBuilder)
+        looseEnds += tree
+      }
+    } else {
+      val newTree = new Tree(operatorBuilder)
+
+      def appendAtIndent(): Unit = {
+        val parent = looseEnds(indent)
+        parent.left = Some(newTree)
+        looseEnds(indent) = newTree
+      }
+
+      indent - (looseEnds.size - 1) match {
+        case 1 => // new rhs
+          val parent = looseEnds.last
+          parent.right = Some(newTree)
+          looseEnds += newTree
+
+        case 0 => // append to lhs
+          appendAtIndent()
+
+        case -1 => // end of rhs
+          appendAtIndent()
+          looseEnds.remove(looseEnds.size - 1)
+
+        case _ =>
+          throw new IllegalStateException("out of bounds")
+      }
+      indent = 0
     }
-
-    val newTree = new Tree(operatorBuilder)
-    def appendAtIndent(): Unit = {
-      val parent = looseEnds(indent)
-      parent.left = Some(newTree)
-      looseEnds(indent) = newTree
-    }
-
-    indent - (looseEnds.size - 1) match {
-      case 1 => // new rhs
-        val parent = looseEnds.last
-        parent.right = Some(newTree)
-        looseEnds += newTree
-
-      case 0 => // append to rhs
-        appendAtIndent()
-
-      case -1 => // end of rhs
-        appendAtIndent()
-        looseEnds.remove(looseEnds.size - 1)
-
-      case _ =>
-        throw new IllegalStateException("out of bounds")
-    }
-    indent = 0
     self
   }
 
   // AST construction
   protected def varFor(name: String): Variable = Variable(name)(pos)
-  protected def labelName(s: String): LabelName = LabelName(s)(pos)
-  protected def relTypeName(s: String): RelTypeName = RelTypeName(s)(pos)
-  protected def literalInt(value: Long): SignedDecimalIntegerLiteral =
+  private def labelName(s: String): LabelName = LabelName(s)(pos)
+  private def relTypeName(s: String): RelTypeName = RelTypeName(s)(pos)
+  private def literalInt(value: Long): SignedDecimalIntegerLiteral =
     SignedDecimalIntegerLiteral(value.toString)(pos)
-
+  private def literalFloat(value: Double): DecimalDoubleLiteral =
+    DecimalDoubleLiteral(value.toString)(pos)
+  private def literalMap(map: Map[String, Expression]) =
+    MapExpression(map.map {
+      case (key, value) => PropertyKeyName(key)(pos) -> value
+    }.toSeq)(pos)
+  def literalString(str: String): StringLiteral = StringLiteral(str)(pos)
+  def function(name: String, args: Expression*): FunctionInvocation =
+    FunctionInvocation(FunctionName(name)(pos), distinct = false, args.toIndexedSeq)(pos)
 }
 
 object AbstractLogicalPlanBuilder {
-  val pos = new InputPosition(0, 1, 0)
+  val pos: InputPosition = new InputPosition(0, 1, 0)
+  val NO_PREDICATE: Predicate = Predicate("", "")
 
-  val NO_PREDICATE = Predicate("", "")
   case class Predicate(entity: String, predicate: String) {
     def asVariablePredicate: Option[VariablePredicate] = {
       if (entity == "") {

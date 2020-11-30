@@ -22,7 +22,8 @@ package org.neo4j.cypher.internal.logical.builder
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.v4_0.expressions.Variable
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.{CypherFunSuite, TestName}
+import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v4_0.util.test_helpers.TestName
 
 class AbstractLogicalPlanBuilderTest extends CypherFunSuite with TestName
 {
@@ -54,5 +55,6 @@ class AbstractLogicalPlanBuilderTest extends CypherFunSuite with TestName
     override def newNode(node: Variable): Unit = {}
     override def newRelationship(relationship: Variable): Unit = {}
     override def build(readOnly: Boolean): LogicalPlan = buildLogicalPlan()
+    override def newVariable(variable: Variable): Unit = {}
   }
 }

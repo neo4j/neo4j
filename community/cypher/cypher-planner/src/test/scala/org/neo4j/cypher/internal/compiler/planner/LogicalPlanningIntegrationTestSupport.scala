@@ -17,21 +17,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.logical.builder
+package org.neo4j.cypher.internal.compiler.planner
 
-object VariableParser {
-
-  private val raw = "([a-zA-Z0-9]*)".r
-  private val escaped = "`(.*)`".r
-
-  def unescaped(varName: String): String = unapply(varName) match {
-    case Some(value) => value
-    case None => throw new IllegalArgumentException(s"'$varName' cannot be parsed as a variable name")
-  }
-
-  def unapply(varName: String): Option[String] = varName match {
-    case raw(n) => Some(n)
-    case escaped(n) => Some(n)
-    case _ => None
-  }
-}
+trait LogicalPlanningIntegrationTestSupport
+  extends StatisticsBackedLogicalPlanningSupport
+    with LogicalPlanTestOps

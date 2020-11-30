@@ -21,17 +21,29 @@ package org.neo4j.cypher.internal.compiler.planner
 
 import org.neo4j.cypher.internal.compiler.phases.CompilationPhases._
 import org.neo4j.cypher.internal.compiler.phases._
-import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.{CardinalityModel, QueryGraphCardinalityModel, QueryGraphSolverInput}
+import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CardinalityModel
+import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphCardinalityModel
+import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.compiler.planner.logical._
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.QueryGraphCardinalityModel
 import org.neo4j.cypher.internal.compiler.planner.logical.idp._
-import org.neo4j.cypher.internal.compiler.planner.logical.steps.{LogicalPlanProducer, devNullListener}
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.LogicalPlanProducer
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.devNullListener
 import org.neo4j.cypher.internal.compiler.test_helpers.ContextHelper
-import org.neo4j.cypher.internal.compiler.{CypherPlannerConfiguration, Neo4jCypherExceptionFactory, NotImplementedPlanContext, StatsDivergenceCalculator}
-import org.neo4j.cypher.internal.ir.{PeriodicCommit, ProvidedOrder, QueryGraph, SinglePlannerQuery}
+import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
+import org.neo4j.cypher.internal.compiler.Neo4jCypherExceptionFactory
+import org.neo4j.cypher.internal.compiler.NotImplementedPlanContext
+import org.neo4j.cypher.internal.compiler.StatsDivergenceCalculator
+import org.neo4j.cypher.internal.ir.PeriodicCommit
+import org.neo4j.cypher.internal.ir.ProvidedOrder
+import org.neo4j.cypher.internal.ir.QueryGraph
+import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.logical.plans._
-import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.{OrderCapability, ValueCapability}
-import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.{Cardinalities, ProvidedOrders, Solveds}
+import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.OrderCapability
+import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.ValueCapability
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
 import org.neo4j.cypher.internal.planner.spi._
 import org.neo4j.cypher.internal.v4_0.ast._
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
@@ -40,19 +52,24 @@ import org.neo4j.cypher.internal.v4_0.frontend.phases._
 import org.neo4j.cypher.internal.v4_0.parser.CypherParser
 import org.neo4j.cypher.internal.v4_0.rewriting.RewriterStepSequencer.newPlain
 import org.neo4j.cypher.internal.v4_0.rewriting.rewriters._
-import org.neo4j.cypher.internal.v4_0.rewriting.{RewriterStepSequencer, ValidatingRewriterStepSequencer}
+import org.neo4j.cypher.internal.v4_0.rewriting.RewriterStepSequencer
+import org.neo4j.cypher.internal.v4_0.rewriting.ValidatingRewriterStepSequencer
 import org.neo4j.cypher.internal.v4_0.util.attribution.Attribute
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.{CypherFunSuite, CypherTestSupport}
-import org.neo4j.cypher.internal.v4_0.util.{Cardinality, Cost, PropertyKeyId}
+import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherTestSupport
+import org.neo4j.cypher.internal.v4_0.util.Cardinality
+import org.neo4j.cypher.internal.v4_0.util.Cost
+import org.neo4j.cypher.internal.v4_0.util.PropertyKeyId
 import org.neo4j.internal.helpers.collection.Visitable
 import org.neo4j.kernel.impl.util.dbstructure.DbStructureVisitor
-import org.scalatest.matchers.{BeMatcher, MatchResult}
+import org.scalatest.matchers.BeMatcher
+import org.scalatest.matchers.MatchResult
+import org.scalatest.mockito.MockitoSugar
 
 import scala.language.reflectiveCalls
 import scala.reflect.ClassTag
 
-trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstructionTestSupport with LogicalPlanConstructionTestSupport {
-  self: CypherFunSuite =>
+object LogicalPlanningTestSupport2 extends MockitoSugar {
 
   val pushdownPropertyReads: Boolean = true
 
@@ -75,19 +92,43 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     nonIndexedLabelWarningThreshold = 10000,
     planSystemCommands = false
   )
-  val realConfig = RealLogicalPlanningConfiguration(cypherCompilerConfig)
 
   def createQueryGraphSolver(solverConfig: IDPSolverConfig = DefaultIDPSolverConfig): QueryGraphSolver = {
     new IDPQueryGraphSolver(SingleComponentPlanner(mock[IDPQueryGraphSolverMonitor], solverConfig), cartesianProductsOrValueJoins, mock[IDPQueryGraphSolverMonitor])
   }
 
-  def createInitState(queryString: String): BaseState = InitialState(queryString, None, IDPPlannerName)
-
-  def pipeLine(): Transformer[PlannerContext, BaseState, LogicalPlanState] = {
+  def pipeLine(pushdownPropertyReads: Boolean = pushdownPropertyReads,
+               innerVariableNamer: InnerVariableNamer = innerVariableNamer,
+  ): Transformer[PlannerContext, BaseState, LogicalPlanState] = {
     parsing(newPlain, innerVariableNamer, literalExtraction = Never) andThen
       prepareForCaching andThen
       planPipeLine(newPlain, pushdownPropertyReads)
   }
+
+}
+
+trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstructionTestSupport with LogicalPlanConstructionTestSupport {
+  self: CypherFunSuite =>
+
+  val parser = new CypherParser
+  val pushdownPropertyReads: Boolean = LogicalPlanningTestSupport2.pushdownPropertyReads
+  val innerVariableNamer: InnerVariableNamer = LogicalPlanningTestSupport2.innerVariableNamer
+  val rewriterSequencer: String => ValidatingRewriterStepSequencer = RewriterStepSequencer.newValidating
+  var astRewriter = new ASTRewriter(rewriterSequencer, literalExtraction = Never, getDegreeRewriting = true, innerVariableNamer = innerVariableNamer)
+  final var planner = QueryPlanner
+  var queryGraphSolver: QueryGraphSolver = createQueryGraphSolver()
+  var cypherCompilerConfig = LogicalPlanningTestSupport2.cypherCompilerConfig
+
+  val realConfig = RealLogicalPlanningConfiguration(LogicalPlanningTestSupport2.cypherCompilerConfig)
+
+  def createInitState(queryString: String): BaseState = InitialState(queryString, None, IDPPlannerName)
+
+  def createQueryGraphSolver(solverConfig: IDPSolverConfig = DefaultIDPSolverConfig): QueryGraphSolver =
+    LogicalPlanningTestSupport2.createQueryGraphSolver()
+
+  def pipeLine(): Transformer[PlannerContext, BaseState, LogicalPlanState] = LogicalPlanningTestSupport2.pipeLine(
+    pushdownPropertyReads, innerVariableNamer
+  )
 
   implicit class LogicalPlanningEnvironment[C <: LogicalPlanningConfiguration](config: C) {
     lazy val semanticTable: SemanticTable = config.updateSemanticTableWithTokens(SemanticTable())
