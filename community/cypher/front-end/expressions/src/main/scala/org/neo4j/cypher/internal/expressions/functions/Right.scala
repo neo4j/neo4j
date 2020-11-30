@@ -17,15 +17,14 @@
 package org.neo4j.cypher.internal.expressions.functions
 
 import org.neo4j.cypher.internal.expressions.FunctionTypeSignature
-import org.neo4j.cypher.internal.expressions.TypeSignatures
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTString
 
-case object Right extends Function with TypeSignatures {
+case object Right extends Function {
   def name = "right"
 
   override val signatures = Vector(
-    FunctionTypeSignature(functionName = name, names = Vector("original","length"), argumentTypes = Vector(CTString, CTInteger), outputType = CTString,
+    FunctionTypeSignature(function = this, names = Vector("original","length"), argumentTypes = Vector(CTString, CTInteger), outputType = CTString,
       description = "Returns a string containing the specified number of rightmost characters of the original string.", category = Category.STRING)
   )
 }

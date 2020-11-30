@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.QueryCache.ParameterTypeMap
 import org.neo4j.cypher.internal.cache.CaffeineCacheFactory
 import org.neo4j.cypher.internal.compiler.StatsDivergenceCalculator
 import org.neo4j.cypher.internal.config.CypherConfiguration
-import org.neo4j.cypher.internal.expressions.functions.FunctionInfo
+import org.neo4j.cypher.internal.expressions.FunctionTypeSignature
 import org.neo4j.cypher.internal.options.CypherExecutionMode
 import org.neo4j.cypher.internal.planning.CypherCacheMonitor
 import org.neo4j.cypher.internal.runtime.InputDataStream
@@ -322,15 +322,15 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
   }
 }
 
-case class FunctionWithInformation(f: FunctionInfo) extends FunctionInformation {
+case class FunctionWithInformation(f: FunctionTypeSignature) extends FunctionInformation {
 
-  override def getFunctionName: String = f.getFunctionName
+  override def getFunctionName: String = f.function.name
 
-  override def getDescription: String = f.getDescription
+  override def getDescription: String = f.description
 
-  override def getCategory: String = f.getCategory
+  override def getCategory: String = f.category
 
-  override def getSignature: String = f.getSignature
+  override def getSignature: String = f.getSignatureAsString
 
   override def isAggregationFunction: lang.Boolean = f.isAggregationFunction
 }

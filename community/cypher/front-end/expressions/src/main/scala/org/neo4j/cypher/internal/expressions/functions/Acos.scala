@@ -17,13 +17,12 @@
 package org.neo4j.cypher.internal.expressions.functions
 
 import org.neo4j.cypher.internal.expressions.TypeSignature
-import org.neo4j.cypher.internal.expressions.TypeSignatures
 import org.neo4j.cypher.internal.util.symbols.CTFloat
 
-case object Acos extends Function with TypeSignatures {
+case object Acos extends Function {
   def name = "acos"
 
   override val signatures = Vector(
-    TypeSignature(name, CTFloat, CTFloat, "Returns the arccosine of a number in radians.", Category.TRIGONOMETRIC)
+    TypeSignature(this, CTFloat, CTFloat, "Returns the arccosine of a number in radians.", Category.TRIGONOMETRIC)
   )
 }

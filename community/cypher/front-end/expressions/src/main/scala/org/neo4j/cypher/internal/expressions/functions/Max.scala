@@ -17,13 +17,12 @@
 package org.neo4j.cypher.internal.expressions.functions
 
 import org.neo4j.cypher.internal.expressions.TypeSignature
-import org.neo4j.cypher.internal.expressions.TypeSignatures
 import org.neo4j.cypher.internal.util.symbols.CTAny
 
-case object Max extends AggregatingFunction with TypeSignatures {
+case object Max extends AggregatingFunction {
   override def name = "max"
 
   override val signatures: Vector[TypeSignature] = Vector(
-    TypeSignature(name, CTAny, CTAny, "Returns the maximum value in a set of values.", Category.AGGREGATING)
+    TypeSignature(this, CTAny, CTAny, "Returns the maximum value in a set of values.", Category.AGGREGATING)
   )
 }

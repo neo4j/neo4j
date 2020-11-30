@@ -16,6 +16,8 @@
  */
 package org.neo4j.cypher.internal.expressions.functions
 
+import org.neo4j.cypher.internal.expressions.TypeSignature
+import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTBoolean
 import org.neo4j.cypher.internal.util.symbols.CTDate
 import org.neo4j.cypher.internal.util.symbols.CTDateTime
@@ -28,7 +30,7 @@ import org.neo4j.cypher.internal.util.symbols.CTPoint
 import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.cypher.internal.util.symbols.CTTime
 
-case object ToString extends Function with FunctionWithInfo {
+case object ToString extends Function {
   override def name = "toString"
 
   val validInputTypes = Seq(
@@ -45,10 +47,8 @@ case object ToString extends Function with FunctionWithInfo {
     CTPoint
   )
 
-  override def getSignatureAsString: String = name + "(input :: ANY?) :: (STRING?)"
-
-  override def getDescription: String =
-    "Converts an integer, float, boolean or temporal type (i.e. Date, Time, LocalTime, DateTime, LocalDateTime or Duration) value to a string."
-
-  override def getCategory: String = Category.STRING
+  override val signatures = Vector(
+    TypeSignature(this, CTAny, CTString,
+      "Converts an integer, float, boolean or temporal type (i.e. Date, Time, LocalTime, DateTime, LocalDateTime or Duration) value to a string.", Category.STRING)
+  )
 }

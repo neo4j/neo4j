@@ -17,13 +17,12 @@
 package org.neo4j.cypher.internal.expressions.functions
 
 import org.neo4j.cypher.internal.expressions.TypeSignature
-import org.neo4j.cypher.internal.expressions.TypeSignatures
 import org.neo4j.cypher.internal.util.symbols.CTFloat
 
-case object Pi extends Function with TypeSignatures {
+case object Pi extends Function {
   def name = "pi"
 
   override val signatures = Vector(
-    TypeSignature.noArg(name, CTFloat, "Returns the mathematical constant pi.", Category.TRIGONOMETRIC)
+    TypeSignature.noArg(this, CTFloat, "Returns the mathematical constant pi.", Category.TRIGONOMETRIC)
   )
 }

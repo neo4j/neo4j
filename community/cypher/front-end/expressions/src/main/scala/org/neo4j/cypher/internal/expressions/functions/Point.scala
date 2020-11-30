@@ -17,14 +17,13 @@
 package org.neo4j.cypher.internal.expressions.functions
 
 import org.neo4j.cypher.internal.expressions.TypeSignature
-import org.neo4j.cypher.internal.expressions.TypeSignatures
 import org.neo4j.cypher.internal.util.symbols.CTMap
 import org.neo4j.cypher.internal.util.symbols.CTPoint
 
-case object Point extends Function with TypeSignatures {
+case object Point extends Function {
   override def name = "point"
 
   override val signatures = Vector(
-    TypeSignature(name, CTMap, CTPoint, "Returns a 2D or 3D point object, given two or respectively three coordinate values in the Cartesian coordinate system or WGS 84 geographic coordinate system.", Category.SPATIAL)
+    TypeSignature(this, CTMap, CTPoint, "Returns a 2D or 3D point object, given two or respectively three coordinate values in the Cartesian coordinate system or WGS 84 geographic coordinate system.", Category.SPATIAL)
   )
 }

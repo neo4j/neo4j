@@ -17,13 +17,12 @@
 package org.neo4j.cypher.internal.expressions.functions
 
 import org.neo4j.cypher.internal.expressions.TypeSignature
-import org.neo4j.cypher.internal.expressions.TypeSignatures
 import org.neo4j.cypher.internal.util.symbols.CTFloat
 
-case object Tan extends Function with TypeSignatures {
+case object Tan extends Function {
   def name = "tan"
 
   override val signatures = Vector(
-    TypeSignature(name, CTFloat, CTFloat, "Returns the tangent of a number.", Category.TRIGONOMETRIC)
+    TypeSignature(this, CTFloat, CTFloat, "Returns the tangent of a number.", Category.TRIGONOMETRIC)
   )
 }

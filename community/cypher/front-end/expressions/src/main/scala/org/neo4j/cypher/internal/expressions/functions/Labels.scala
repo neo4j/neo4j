@@ -17,15 +17,14 @@
 package org.neo4j.cypher.internal.expressions.functions
 
 import org.neo4j.cypher.internal.expressions.TypeSignature
-import org.neo4j.cypher.internal.expressions.TypeSignatures
 import org.neo4j.cypher.internal.util.symbols.CTList
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTString
 
-case object Labels extends Function with TypeSignatures {
+case object Labels extends Function {
   override def name = "labels"
 
   override val signatures = Vector(
-    TypeSignature(name, CTNode, CTList(CTString), "Returns a list containing the string representations for all the labels of a node.", Category.LIST)
+    TypeSignature(this, CTNode, CTList(CTString), "Returns a list containing the string representations for all the labels of a node.", Category.LIST)
   )
 }

@@ -17,14 +17,13 @@
 package org.neo4j.cypher.internal.expressions.functions
 
 import org.neo4j.cypher.internal.expressions.TypeSignature
-import org.neo4j.cypher.internal.expressions.TypeSignatures
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTRelationship
 
-case object StartNode extends Function with TypeSignatures {
+case object StartNode extends Function {
   def name = "startNode"
 
   override val signatures = Vector(
-    TypeSignature(name, CTRelationship, CTNode, "Returns the start node of a relationship.", Category.SCALAR)
+    TypeSignature(this, CTRelationship, CTNode, "Returns the start node of a relationship.", Category.SCALAR)
   )
 }

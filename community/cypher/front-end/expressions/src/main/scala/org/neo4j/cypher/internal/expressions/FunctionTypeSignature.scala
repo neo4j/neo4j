@@ -16,6 +16,8 @@
  */
 package org.neo4j.cypher.internal.expressions
 
+import org.neo4j.cypher.internal.expressions.functions.Function
+import org.neo4j.cypher.internal.expressions.functions.FunctionWithName
 import org.neo4j.cypher.internal.util.symbols.CypherType
 
 trait TypeSignature {
@@ -25,26 +27,44 @@ trait TypeSignature {
   def outputType: CypherType
 
   def removeFirstArgumentType: TypeSignature
+
+  def getSignatureAsString: String
 }
 
-case class FunctionTypeSignature(functionName : String, outputType: CypherType, names: IndexedSeq[String], description: String, category: String, argumentTypes: IndexedSeq[CypherType], optionalTypes: IndexedSeq[CypherType] = Vector.empty, deprecated: Boolean = false) extends TypeSignature {
-  def getSignatureAsString: String =
-    functionName + "(" + names.zip(argumentTypes.map(_.toNeoTypeString) ++ optionalTypes.map(_.toNeoTypeString)).map { f =>
-      f._1 + " :: " + f._2
-    }.mkString(", ") + ") :: (" + outputType.toNeoTypeString + ")"
+case class FunctionTypeSignature(function : FunctionWithName,
+                                 outputType: CypherType,
+                                 names: IndexedSeq[String],
+                                 description: String,
+                                 category: String,
+                                 argumentTypes: IndexedSeq[CypherType],
+                                 optionalTypes: IndexedSeq[CypherType] = Vector.empty,
+                                 deprecated: Boolean = false,
+                                 overrideDefaultAsString: Option[String] = None) extends TypeSignature {
+  override def getSignatureAsString: String = {
+    overrideDefaultAsString.getOrElse {
+      function.name + "(" + names.zip(argumentTypes.map(_.toNeoTypeString) ++ optionalTypes.map(_.toNeoTypeString)).map { f =>
+        f._1 + " :: " + f._2
+      }.mkString(", ") + ") :: (" + outputType.toNeoTypeString + ")"
+    }
+  }
 
   override def removeFirstArgumentType: TypeSignature = this.copy(argumentTypes = this.argumentTypes.tail)
+
+  def isAggregationFunction: Boolean = function match {
+    case _: functions.AggregatingFunction => true
+    case _ => false
+  }
 }
 
 object TypeSignature {
-  def deprecated(functionName : String, argumentType: CypherType, outputType: CypherType, description: String, category: String) =
-    FunctionTypeSignature(functionName, outputType, Vector("input"), description, category, Vector(argumentType), deprecated = true)
+  def deprecated(function : Function, argumentType: CypherType, outputType: CypherType, description: String, category: String) =
+    FunctionTypeSignature(function, outputType, Vector("input"), description, category, Vector(argumentType), deprecated = true)
 
-  def apply(functionName : String, argumentType: CypherType, outputType: CypherType, description: String, category: String): FunctionTypeSignature =
-    FunctionTypeSignature(functionName, outputType, Vector("input"), description, category, Vector(argumentType))
+  def apply(function : Function, argumentType: CypherType, outputType: CypherType, description: String, category: String): FunctionTypeSignature =
+    FunctionTypeSignature(function, outputType, Vector("input"), description, category, Vector(argumentType))
 
-  def noArg(functionName : String, outputType: CypherType, description: String, category: String): FunctionTypeSignature =
-    FunctionTypeSignature(functionName, outputType, Vector("input"), description, category, Vector())
+  def noArg(function : Function, outputType: CypherType, description: String, category: String): FunctionTypeSignature =
+    FunctionTypeSignature(function, outputType, Vector("input"), description, category, Vector())
 
   def apply(argumentTypes: IndexedSeq[CypherType], outputType: CypherType) =
     ExpressionTypeSignature(argumentTypes, outputType)
@@ -52,4 +72,7 @@ object TypeSignature {
 
 case class ExpressionTypeSignature(argumentTypes: IndexedSeq[CypherType], outputType: CypherType) extends TypeSignature {
   override def removeFirstArgumentType: TypeSignature = this.copy(argumentTypes = this.argumentTypes.tail)
+
+  def getSignatureAsString: String =
+    argumentTypes.map(_.toNeoTypeString).mkString(", ") ++  ") :: (" + outputType.toNeoTypeString + ")"
 }

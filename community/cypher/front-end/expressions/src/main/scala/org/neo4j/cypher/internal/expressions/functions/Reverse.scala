@@ -17,16 +17,15 @@
 package org.neo4j.cypher.internal.expressions.functions
 
 import org.neo4j.cypher.internal.expressions.TypeSignature
-import org.neo4j.cypher.internal.expressions.TypeSignatures
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTList
 import org.neo4j.cypher.internal.util.symbols.CTString
 
-case object Reverse extends Function with TypeSignatures {
+case object Reverse extends Function {
   def name = "reverse"
 
   override val signatures = Vector(
-    TypeSignature(name, CTString, CTString, "Returns a string in which the order of all characters in the original string have been reversed.", Category.STRING),
-    TypeSignature(name, CTList(CTAny), CTList(CTAny), "Returns a list in which the order of all elements in the original list have been reversed.", Category.LIST)
+    TypeSignature(this, CTString, CTString, "Returns a string in which the order of all characters in the original string have been reversed.", Category.STRING),
+    TypeSignature(this, CTList(CTAny), CTList(CTAny), "Returns a list in which the order of all elements in the original list have been reversed.", Category.LIST)
   )
 }

@@ -17,20 +17,14 @@
 package org.neo4j.cypher.internal.expressions.functions
 
 import org.neo4j.cypher.internal.expressions.TypeSignature
-import org.neo4j.cypher.internal.expressions.TypeSignatures
 import org.neo4j.cypher.internal.util.symbols.CTBoolean
 import org.neo4j.cypher.internal.util.symbols.CTString
 
-case object ToBoolean extends Function with FunctionWithInfo with TypeSignatures {
+case object ToBoolean extends Function {
   def name = "toBoolean"
 
-  override def getSignatureAsString: String = name + "(input :: STRING?) :: (BOOLEAN?)"
-
-  override def getDescription: String = "Converts a string value to a boolean value."
-
-  override def getCategory: String = Category.SCALAR
 
   override def signatures = Vector(
-    TypeSignature(name, CTString, CTBoolean, getDescription, getCategory)
+    TypeSignature(this, CTString, CTBoolean, "Converts a string value to a boolean value.", Category.SCALAR)
   )
 }

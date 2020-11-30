@@ -17,21 +17,14 @@
 package org.neo4j.cypher.internal.expressions.functions
 
 import org.neo4j.cypher.internal.expressions.TypeSignature
-import org.neo4j.cypher.internal.expressions.TypeSignatures
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTBoolean
 
-case object Exists extends Function with FunctionWithInfo with TypeSignatures {
+case object Exists extends Function {
   def name = "exists"
-
-  override def getSignatureAsString: String = name + "(input :: ANY?) :: (BOOLEAN?)"
-
-  override def getDescription: String =
-    "Returns true if a match for the pattern exists in the graph, or if the specified property exists in the node, relationship or map."
-
-  override def getCategory: String = Category.PREDICATE
-
   override val signatures = Vector(
-    TypeSignature(name, CTAny, CTBoolean, getDescription, getCategory)
+    TypeSignature(this, CTAny, CTBoolean,
+      "Returns true if a match for the pattern exists in the graph, or if the specified property exists in the node, relationship or map.",
+      Category.PREDICATE)
   )
 }

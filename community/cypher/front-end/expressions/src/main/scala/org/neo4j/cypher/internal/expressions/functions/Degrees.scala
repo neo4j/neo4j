@@ -17,13 +17,12 @@
 package org.neo4j.cypher.internal.expressions.functions
 
 import org.neo4j.cypher.internal.expressions.TypeSignature
-import org.neo4j.cypher.internal.expressions.TypeSignatures
 import org.neo4j.cypher.internal.util.symbols.CTFloat
 
-case object Degrees extends Function with TypeSignatures {
+case object Degrees extends Function  {
   def name = "degrees"
 
   override val signatures = Vector(
-    TypeSignature(name, CTFloat, CTFloat, "Converts radians to degrees.", Category.TRIGONOMETRIC)
+    TypeSignature(this, CTFloat, CTFloat, "Converts radians to degrees.", Category.TRIGONOMETRIC)
   )
 }

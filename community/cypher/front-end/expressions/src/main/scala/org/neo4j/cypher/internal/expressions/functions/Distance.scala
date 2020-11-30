@@ -16,12 +16,15 @@
  */
 package org.neo4j.cypher.internal.expressions.functions
 
-case object Distance extends Function with FunctionWithInfo {
+import org.neo4j.cypher.internal.expressions.FunctionTypeSignature
+import org.neo4j.cypher.internal.util.symbols.CTFloat
+import org.neo4j.cypher.internal.util.symbols.CTPoint
+
+case object Distance extends Function {
   val name = "distance"
 
-  override def getSignatureAsString: String = name + "(from :: POINT?, to :: POINT?) :: (FLOAT?)"
-
-  override def getDescription: String = "Returns a floating point number representing the geodesic distance between any two points in the same CRS."
-
-  override def getCategory: String = Category.SPATIAL
+  override val signatures = Vector(
+    FunctionTypeSignature(function = this, names = Vector("from", "to"), argumentTypes = Vector(CTPoint, CTPoint), outputType = CTFloat,
+      description = "Returns a floating point number representing the geodesic distance between any two points in the same CRS.", category = Category.SPATIAL)
+  )
 }

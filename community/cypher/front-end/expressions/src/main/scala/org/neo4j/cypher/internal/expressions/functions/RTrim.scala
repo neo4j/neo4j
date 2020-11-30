@@ -17,13 +17,12 @@
 package org.neo4j.cypher.internal.expressions.functions
 
 import org.neo4j.cypher.internal.expressions.TypeSignature
-import org.neo4j.cypher.internal.expressions.TypeSignatures
 import org.neo4j.cypher.internal.util.symbols.CTString
 
-case object RTrim extends Function with TypeSignatures {
+case object RTrim extends Function {
   def name = "rtrim"
 
   override val signatures = Vector(
-    TypeSignature(name, CTString, CTString, "Returns the original string with trailing whitespace removed.", Category.STRING)
+    TypeSignature(this, CTString, CTString, "Returns the original string with trailing whitespace removed.", Category.STRING)
   )
 }

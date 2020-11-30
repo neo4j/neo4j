@@ -17,14 +17,13 @@
 package org.neo4j.cypher.internal.expressions.functions
 
 import org.neo4j.cypher.internal.expressions.TypeSignature
-import org.neo4j.cypher.internal.expressions.TypeSignatures
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 
-case object Count extends AggregatingFunction with TypeSignatures {
+case object Count extends AggregatingFunction {
   def name = "count"
 
   override val signatures = Vector(
-    TypeSignature(name, CTAny, CTInteger, "Returns the number of values or rows.", Category.AGGREGATING)
+    TypeSignature(this, CTAny, CTInteger, "Returns the number of values or rows.", Category.AGGREGATING)
   )
 }

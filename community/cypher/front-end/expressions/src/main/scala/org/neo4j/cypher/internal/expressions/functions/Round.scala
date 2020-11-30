@@ -18,19 +18,18 @@ package org.neo4j.cypher.internal.expressions.functions
 
 import org.neo4j.cypher.internal.expressions.FunctionTypeSignature
 import org.neo4j.cypher.internal.expressions.TypeSignature
-import org.neo4j.cypher.internal.expressions.TypeSignatures
 import org.neo4j.cypher.internal.util.symbols.CTFloat
 import org.neo4j.cypher.internal.util.symbols.CTNumber
 import org.neo4j.cypher.internal.util.symbols.CTString
 
-case object Round extends Function with TypeSignatures {
+case object Round extends Function {
   def name = "round"
 
   override val signatures = Vector(
-    TypeSignature(name, CTFloat, CTFloat, "Returns the value of a number rounded to the nearest integer.", category = Category.NUMERIC),
-    FunctionTypeSignature(functionName = name, names = Vector("value", "precision"), argumentTypes = Vector(CTFloat, CTNumber), outputType = CTFloat,
+    TypeSignature(this, CTFloat, CTFloat, "Returns the value of a number rounded to the nearest integer.", category = Category.NUMERIC),
+    FunctionTypeSignature(function = this, names = Vector("value", "precision"), argumentTypes = Vector(CTFloat, CTNumber), outputType = CTFloat,
       description = "Returns the value of a number rounded to the specified precision using rounding mode HALF_UP.", category = Category.NUMERIC),
-    FunctionTypeSignature(functionName = name, names = Vector("value", "precision", "mode"), argumentTypes = Vector(CTFloat, CTNumber, CTString),
+    FunctionTypeSignature(function = this, names = Vector("value", "precision", "mode"), argumentTypes = Vector(CTFloat, CTNumber, CTString),
       outputType = CTFloat, description = "Returns the value of a number rounded to the specified precision with the specified rounding mode.", category = Category.NUMERIC)
   )
 }

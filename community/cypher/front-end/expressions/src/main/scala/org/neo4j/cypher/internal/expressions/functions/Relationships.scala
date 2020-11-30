@@ -17,15 +17,14 @@
 package org.neo4j.cypher.internal.expressions.functions
 
 import org.neo4j.cypher.internal.expressions.TypeSignature
-import org.neo4j.cypher.internal.expressions.TypeSignatures
 import org.neo4j.cypher.internal.util.symbols.CTList
 import org.neo4j.cypher.internal.util.symbols.CTPath
 import org.neo4j.cypher.internal.util.symbols.CTRelationship
 
-case object Relationships extends Function with TypeSignatures {
+case object Relationships extends Function {
   def name = "relationships"
 
   override val signatures = Vector(
-    TypeSignature(name, CTPath, CTList(CTRelationship), "Returns a list containing all the relationships in a path.", Category.LIST)
+    TypeSignature(this, CTPath, CTList(CTRelationship), "Returns a list containing all the relationships in a path.", Category.LIST)
   )
 }

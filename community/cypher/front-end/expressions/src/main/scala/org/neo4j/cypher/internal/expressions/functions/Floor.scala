@@ -17,14 +17,13 @@
 package org.neo4j.cypher.internal.expressions.functions
 
 import org.neo4j.cypher.internal.expressions.TypeSignature
-import org.neo4j.cypher.internal.expressions.TypeSignatures
 import org.neo4j.cypher.internal.util.symbols.CTFloat
 
-case object Floor extends Function with TypeSignatures {
+case object Floor extends Function {
   def name = "floor"
 
   override val signatures = Vector(
-    TypeSignature(name, CTFloat, CTFloat,
+    TypeSignature(this, CTFloat, CTFloat,
       "Returns the largest floating point number that is less than or equal to a number and equal to a mathematical integer.", Category.NUMERIC)
   )
 }

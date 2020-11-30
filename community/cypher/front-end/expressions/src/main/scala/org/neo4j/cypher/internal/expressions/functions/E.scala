@@ -17,13 +17,12 @@
 package org.neo4j.cypher.internal.expressions.functions
 
 import org.neo4j.cypher.internal.expressions.TypeSignature
-import org.neo4j.cypher.internal.expressions.TypeSignatures
 import org.neo4j.cypher.internal.util.symbols.CTFloat
 
-case object E extends Function with TypeSignatures {
+case object E extends Function {
   def name = "e"
 
   override val signatures = Vector(
-    TypeSignature.noArg(name, CTFloat, "Returns the base of the natural logarithm, e.", Category.LOGARITHMIC)
+    TypeSignature.noArg(this, CTFloat, "Returns the base of the natural logarithm, e.", Category.LOGARITHMIC)
   )
 }

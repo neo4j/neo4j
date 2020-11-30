@@ -17,19 +17,18 @@
 package org.neo4j.cypher.internal.expressions.functions
 
 import org.neo4j.cypher.internal.expressions.TypeSignature
-import org.neo4j.cypher.internal.expressions.TypeSignatures
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTBoolean
 import org.neo4j.cypher.internal.util.symbols.CTList
 import org.neo4j.cypher.internal.util.symbols.CTMap
 import org.neo4j.cypher.internal.util.symbols.CTString
 
-case object IsEmpty extends Function with TypeSignatures {
+case object IsEmpty extends Function {
   def name = "isEmpty"
 
   override val signatures = Vector(
-    TypeSignature(name, CTList(CTAny), CTBoolean, "Checks whether a list is empty.", Category.PREDICATE),
-    TypeSignature(name, CTMap, CTBoolean, "Checks whether a map is empty.", Category.PREDICATE),
-    TypeSignature(name, CTString, CTBoolean, "Checks whether a string is empty.", Category.PREDICATE)
+    TypeSignature(this, CTList(CTAny), CTBoolean, "Checks whether a list is empty.", Category.PREDICATE),
+    TypeSignature(this, CTMap, CTBoolean, "Checks whether a map is empty.", Category.PREDICATE),
+    TypeSignature(this, CTString, CTBoolean, "Checks whether a string is empty.", Category.PREDICATE)
   )
 }

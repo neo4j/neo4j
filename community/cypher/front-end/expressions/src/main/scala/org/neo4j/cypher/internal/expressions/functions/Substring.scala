@@ -17,17 +17,16 @@
 package org.neo4j.cypher.internal.expressions.functions
 
 import org.neo4j.cypher.internal.expressions.FunctionTypeSignature
-import org.neo4j.cypher.internal.expressions.TypeSignatures
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTString
 
-case object Substring extends Function with TypeSignatures {
+case object Substring extends Function {
   def name = "substring"
 
   override val signatures = Vector(
-    FunctionTypeSignature(functionName = name, names = Vector("original","start"), argumentTypes = Vector(CTString, CTInteger),
+     FunctionTypeSignature(function = this, names = Vector("original","start"), argumentTypes = Vector(CTString, CTInteger),
       outputType = CTString, description =  "Returns a substring of the original string, beginning with a 0-based index start.", category = Category.STRING),
-    FunctionTypeSignature(functionName = name, names = Vector("original","start", "length"), argumentTypes = Vector(CTString, CTInteger, CTInteger),
+     FunctionTypeSignature(function = this, names = Vector("original","start", "length"), argumentTypes = Vector(CTString, CTInteger, CTInteger),
       outputType = CTString, description = "Returns a substring of length 'length' of the original string, beginning with a 0-based index start.", category = Category.STRING)
   )
 }

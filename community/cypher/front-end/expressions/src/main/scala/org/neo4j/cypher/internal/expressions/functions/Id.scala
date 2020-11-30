@@ -17,16 +17,15 @@
 package org.neo4j.cypher.internal.expressions.functions
 
 import org.neo4j.cypher.internal.expressions.TypeSignature
-import org.neo4j.cypher.internal.expressions.TypeSignatures
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTRelationship
 
-case object Id extends Function with TypeSignatures {
+case object Id extends Function {
   def name = "id"
 
   override val signatures = Vector(
-    TypeSignature(name, CTNode, CTInteger, "Returns the id of a node.", Category.SCALAR),
-    TypeSignature(name, CTRelationship, CTInteger, "Returns the id of a relationship.", Category.SCALAR)
+    TypeSignature(this, CTNode, CTInteger, "Returns the id of a node.", Category.SCALAR),
+    TypeSignature(this, CTRelationship, CTInteger, "Returns the id of a relationship.", Category.SCALAR)
   )
 }

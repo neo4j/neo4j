@@ -16,12 +16,14 @@
  */
 package org.neo4j.cypher.internal.expressions.functions
 
-case object Tail extends Function with FunctionWithInfo {
+import org.neo4j.cypher.internal.expressions.TypeSignature
+import org.neo4j.cypher.internal.util.symbols.CTAny
+import org.neo4j.cypher.internal.util.symbols.CTList
+
+case object Tail extends Function {
   def name = "tail"
-
-  override def getSignatureAsString: String = name + "(input :: LIST? OF ANY?) :: (LIST? OF ANY?)"
-
-  override def getDescription: String = "Returns all but the first element in a list."
-
-  override def getCategory: String = Category.LIST
+  override val signatures = Vector(
+    TypeSignature(this, CTList(CTAny),  CTList(CTAny),
+      description =  "Returns all but the first element in a list.", category = Category.LIST)
+  )
 }

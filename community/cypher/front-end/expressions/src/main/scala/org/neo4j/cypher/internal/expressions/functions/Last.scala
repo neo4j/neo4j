@@ -16,12 +16,14 @@
  */
 package org.neo4j.cypher.internal.expressions.functions
 
-case object Last extends Function with FunctionWithInfo {
+import org.neo4j.cypher.internal.expressions.FunctionTypeSignature
+import org.neo4j.cypher.internal.util.symbols.CTAny
+import org.neo4j.cypher.internal.util.symbols.CTList
+
+case object Last extends Function {
   def name = "last"
-
-  override def getSignatureAsString: String = name + "(list :: LIST? OF ANY?) :: (ANY?)"
-
-  override def getDescription: String = "Returns the last element in a list."
-
-  override def getCategory: String = Category.SCALAR
+  override val signatures = Vector(
+     FunctionTypeSignature(function = this, names = Vector("list"), argumentTypes = Vector(CTList(CTAny)), outputType = CTAny,
+      description = "Returns the last element in a list.", category = Category.SCALAR)
+  )
 }

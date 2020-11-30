@@ -17,19 +17,18 @@
 package org.neo4j.cypher.internal.expressions.functions
 
 import org.neo4j.cypher.internal.expressions.TypeSignature
-import org.neo4j.cypher.internal.expressions.TypeSignatures
 import org.neo4j.cypher.internal.util.symbols.CTList
 import org.neo4j.cypher.internal.util.symbols.CTMap
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTRelationship
 import org.neo4j.cypher.internal.util.symbols.CTString
 
-case object Keys extends Function with TypeSignatures {
+case object Keys extends Function {
   def name = "keys"
 
   override val signatures = Vector(
-    TypeSignature(name, CTNode, CTList(CTString), "Returns a list containing the string representations for all the property names of a node.", Category.LIST),
-    TypeSignature(name, CTRelationship, CTList(CTString), "Returns a list containing the string representations for all the property names of a relationship", Category.LIST),
-    TypeSignature(name, CTMap, CTList(CTString), "Returns a list containing the string representations for all the property names of a map.", Category.LIST)
+    TypeSignature(this, CTNode, CTList(CTString), "Returns a list containing the string representations for all the property names of a node.", Category.LIST),
+    TypeSignature(this, CTRelationship, CTList(CTString), "Returns a list containing the string representations for all the property names of a relationship", Category.LIST),
+    TypeSignature(this, CTMap, CTList(CTString), "Returns a list containing the string representations for all the property names of a map.", Category.LIST)
   )
 }

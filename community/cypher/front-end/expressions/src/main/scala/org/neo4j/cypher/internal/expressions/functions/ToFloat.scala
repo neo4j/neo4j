@@ -17,16 +17,15 @@
 package org.neo4j.cypher.internal.expressions.functions
 
 import org.neo4j.cypher.internal.expressions.TypeSignature
-import org.neo4j.cypher.internal.expressions.TypeSignatures
 import org.neo4j.cypher.internal.util.symbols.CTFloat
 import org.neo4j.cypher.internal.util.symbols.CTNumber
 import org.neo4j.cypher.internal.util.symbols.CTString
 
-case object ToFloat extends Function with TypeSignatures {
+case object ToFloat extends Function {
   override def name = "toFloat"
 
   override val signatures = Vector(
-    TypeSignature(name, CTString, CTFloat, "Converts a string value to a floating point value.", Category.SCALAR),
-    TypeSignature(name, CTNumber, CTFloat, "Converts an integer value to a floating point value.", Category.SCALAR)
+    TypeSignature(this, CTString, CTFloat, "Converts a string value to a floating point value.", Category.SCALAR),
+    TypeSignature(this, CTNumber, CTFloat, "Converts an integer value to a floating point value.", Category.SCALAR)
   )
 }

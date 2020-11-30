@@ -17,14 +17,13 @@
 package org.neo4j.cypher.internal.expressions.functions
 
 import org.neo4j.cypher.internal.expressions.FunctionTypeSignature
-import org.neo4j.cypher.internal.expressions.TypeSignatures
 import org.neo4j.cypher.internal.util.symbols.CTString
 
-case object Replace extends Function with TypeSignatures {
+case object Replace extends Function  {
   def name = "replace"
 
   override val signatures = Vector(
-    FunctionTypeSignature(functionName = name, names = Vector("original", "search", "replace"), argumentTypes = Vector(CTString, CTString, CTString),
+    FunctionTypeSignature(function = this, names = Vector("original", "search", "replace"), argumentTypes = Vector(CTString, CTString, CTString),
       outputType = CTString,
       description = "Returns a string in which all occurrences of a specified search string in the original string have been replaced by another (specified) replace string.", category = Category.STRING)
   )

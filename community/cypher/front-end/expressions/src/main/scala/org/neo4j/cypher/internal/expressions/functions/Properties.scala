@@ -17,17 +17,16 @@
 package org.neo4j.cypher.internal.expressions.functions
 
 import org.neo4j.cypher.internal.expressions.TypeSignature
-import org.neo4j.cypher.internal.expressions.TypeSignatures
 import org.neo4j.cypher.internal.util.symbols.CTMap
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTRelationship
 
-case object Properties extends Function with TypeSignatures {
+case object Properties extends Function {
   override def name = "properties"
 
   override val signatures = Vector(
-    TypeSignature(name, CTNode, CTMap, "Returns a map containing all the properties of a node.", Category.SCALAR),
-    TypeSignature(name, CTRelationship, CTMap, description = "Returns a map containing all the properties of a relationship.", Category.SCALAR),
-    TypeSignature(name, CTMap, CTMap, description = "Returns a map containing all the properties of a map.", Category.SCALAR)
+    TypeSignature(this, CTNode, CTMap, "Returns a map containing all the properties of a node.", Category.SCALAR),
+    TypeSignature(this, CTRelationship, CTMap, description = "Returns a map containing all the properties of a relationship.", Category.SCALAR),
+    TypeSignature(this, CTMap, CTMap, description = "Returns a map containing all the properties of a map.", Category.SCALAR)
   )
 }

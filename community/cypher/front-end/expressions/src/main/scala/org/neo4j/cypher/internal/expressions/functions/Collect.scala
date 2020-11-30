@@ -17,14 +17,13 @@
 package org.neo4j.cypher.internal.expressions.functions
 
 import org.neo4j.cypher.internal.expressions.TypeSignature
-import org.neo4j.cypher.internal.expressions.TypeSignatures
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTList
 
-case object Collect extends AggregatingFunction with TypeSignatures {
+case object Collect extends AggregatingFunction {
   def name = "collect"
 
   override val signatures: Vector[TypeSignature] = Vector(
-    TypeSignature(name, CTAny, CTList(CTAny), "Returns a list containing the values returned by an expression.", Category.AGGREGATING)
+    TypeSignature(this, CTAny, CTList(CTAny), "Returns a list containing the values returned by an expression.", Category.AGGREGATING)
   )
 }

@@ -17,17 +17,16 @@
 package org.neo4j.cypher.internal.expressions.functions
 
 import org.neo4j.cypher.internal.expressions.TypeSignature
-import org.neo4j.cypher.internal.expressions.TypeSignatures
 import org.neo4j.cypher.internal.util.symbols.CTDuration
 import org.neo4j.cypher.internal.util.symbols.CTFloat
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 
-case object Avg extends AggregatingFunction with TypeSignatures {
+case object Avg extends AggregatingFunction {
   def name = "avg"
 
   override val signatures = Vector(
-    TypeSignature(name, CTInteger, CTInteger, "Returns the average of a set of integer values.", Category.AGGREGATING),
-    TypeSignature(name, CTFloat, CTFloat, "Returns the average of a set of floating point values.", Category.AGGREGATING),
-    TypeSignature(name, CTDuration, CTDuration, "Returns the average of a set of duration values.", Category.AGGREGATING)
+    TypeSignature(this, CTInteger, CTInteger, "Returns the average of a set of integer values.", Category.AGGREGATING),
+    TypeSignature(this, CTFloat, CTFloat, "Returns the average of a set of floating point values.", Category.AGGREGATING),
+    TypeSignature(this, CTDuration, CTDuration, "Returns the average of a set of duration values.", Category.AGGREGATING)
   )
 }

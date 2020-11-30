@@ -115,32 +115,15 @@ object Function {
 
   lazy val lookup: Map[String, Function] = knownFunctions.map { f => (f.name.toLowerCase, f) }.toMap
 
-  lazy val functionInfo: List[FunctionInfo] = {
+  lazy val functionInfo: List[FunctionTypeSignature] = {
     lookup.values.flatMap {
-      case f: TypeSignatures =>
+      f: Function =>
         f.signatures.flatMap {
-          case signature: FunctionTypeSignature if !signature.deprecated =>
-            val info: FunctionInfo = new FunctionInfo(f) {
-              def getDescription: String = signature.description
-
-              def getCategory: String = signature.category
-
-              def getSignature: String = signature.getSignatureAsString
-            }
-            Seq(info)
-          case signature: FunctionTypeSignature if signature.deprecated =>
-            Seq()
+          case signature: FunctionTypeSignature if !signature.deprecated => Some(signature)
+          case signature: FunctionTypeSignature if signature.deprecated => None
           case problem =>
-            throw new IllegalStateException("Did not expect the following at this point: "+ problem)
+            throw new IllegalStateException("Did not expect the following at this point: " + problem)
         }
-      case func: FunctionWithInfo =>
-        Seq(new FunctionInfo(func) {
-          def getDescription: String = func.getDescription
-
-          def getCategory: String = func.getCategory
-
-          def getSignature: String = func.getSignatureAsString
-        })
     }.toList
   }
 }
@@ -162,7 +145,7 @@ abstract case class FunctionInfo(f: FunctionWithName) {
   override def toString: String = getFunctionName + " || " + getSignature + " || " + getDescription + " || " + isAggregationFunction
 }
 
-abstract class Function extends FunctionWithName {
+abstract class Function extends FunctionWithName with TypeSignatures {
   private val functionName = asFunctionName(InputPosition.NONE)
 
   def asFunctionName(implicit position: InputPosition): FunctionName = FunctionName(name)(position)
@@ -186,14 +169,6 @@ abstract class Function extends FunctionWithName {
 
 trait FunctionWithName {
   def name: String
-}
-
-trait FunctionWithInfo {
-  def getSignatureAsString: String
-
-  def getDescription: String
-
-  def getCategory: String
 }
 
 abstract class AggregatingFunction extends Function

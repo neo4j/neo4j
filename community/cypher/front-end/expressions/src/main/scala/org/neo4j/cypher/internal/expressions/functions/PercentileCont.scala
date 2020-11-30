@@ -17,14 +17,13 @@
 package org.neo4j.cypher.internal.expressions.functions
 
 import org.neo4j.cypher.internal.expressions.FunctionTypeSignature
-import org.neo4j.cypher.internal.expressions.TypeSignatures
 import org.neo4j.cypher.internal.util.symbols.CTFloat
 
-case object PercentileCont extends AggregatingFunction with TypeSignatures {
+case object PercentileCont extends AggregatingFunction {
   def name = "percentileCont"
 
   override val signatures = Vector(
-    FunctionTypeSignature(functionName = name, names = Vector("input", "percentile"), argumentTypes = Vector(CTFloat, CTFloat), outputType = CTFloat,
+    FunctionTypeSignature(function = this, names = Vector("input", "percentile"), argumentTypes = Vector(CTFloat, CTFloat), outputType = CTFloat,
       description = "Returns the percentile of a value over a group using linear interpolation.", category = Category.AGGREGATING)
   )
 }

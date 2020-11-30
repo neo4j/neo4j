@@ -17,13 +17,12 @@
 package org.neo4j.cypher.internal.expressions.functions
 
 import org.neo4j.cypher.internal.expressions.TypeSignature
-import org.neo4j.cypher.internal.expressions.TypeSignatures
 import org.neo4j.cypher.internal.util.symbols.CTString
 
-case object ToLower extends Function with TypeSignatures {
+case object ToLower extends Function  {
   def name = "toLower"
 
   override val signatures = Vector(
-    TypeSignature(name, CTString, CTString, "Returns the original string in lowercase.", Category.STRING)
+    TypeSignature(this, CTString, CTString, "Returns the original string in lowercase.", Category.STRING)
   )
 }
