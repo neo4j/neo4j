@@ -23,12 +23,14 @@ import org.neo4j.cypher.internal.logical.builder.Resolver
 import org.neo4j.cypher.internal.logical.plans.ProcedureSignature
 import org.neo4j.cypher.internal.logical.plans.QualifiedName
 import org.neo4j.cypher.internal.logical.plans.UserFunctionSignature
+import org.neo4j.cypher.internal.planner.spi.TokenContext
 
 import scala.collection.mutable.ArrayBuffer
 
-class LogicalPlanResolver extends Resolver {
+class LogicalPlanResolver extends Resolver with TokenContext {
   private val labels = new ArrayBuffer[String]()
   private val properties = new ArrayBuffer[String]()
+  private val relTypes = new ArrayBuffer[String]()
 
   override def getLabelId(label: String): Int = {
     val index = labels.indexOf(label)
@@ -49,6 +51,28 @@ class LogicalPlanResolver extends Resolver {
       index
     }
   }
+
+  override def getRelTypeId(relType: String): Int = {
+    val index = relTypes.indexOf(relType)
+    if (index == -1) {
+      relTypes += relType
+      relTypes.size - 1
+    } else {
+      index
+    }
+  }
+
+  override def getLabelName(id: Int): String = if (id >= labels.size) throw new IllegalStateException(s"Label $id undefined") else labels(id)
+
+  override def getOptLabelId(labelName: String): Option[Int] = Some(getLabelId(labelName))
+
+  override def getPropertyKeyName(id: Int): String = if (id >= properties.size) throw new IllegalStateException(s"Property $id undefined") else properties(id)
+
+  override def getOptPropertyKeyId(propertyKeyName: String): Option[Int] = Some(getPropertyKeyId(propertyKeyName))
+
+  override def getRelTypeName(id: Int): String = if (id >= relTypes.size) throw new IllegalStateException(s"RelType $id undefined") else relTypes(id)
+
+  override def getOptRelTypeId(relType: String): Option[Int] = Some(getRelTypeId(relType))
 
   override def procedureSignature(name: QualifiedName): ProcedureSignature = ???
 

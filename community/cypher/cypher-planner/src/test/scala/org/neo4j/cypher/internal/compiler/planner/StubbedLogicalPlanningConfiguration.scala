@@ -38,8 +38,54 @@ import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.Cost
 import org.neo4j.cypher.internal.util.LabelId
 
+case class IndexModifier(indexType: IndexType) {
+  def providesValues(): IndexModifier = {
+    indexType.withValues = true
+    this
+  }
+  def providesOrder(order: IndexOrderCapability): IndexModifier = {
+    indexType.withOrdering = order
+    this
+  }
+}
+
+trait FakeIndexAndConstraintManagement {
+  var indexes: Map[IndexDef, IndexType] = Map.empty
+
+  var constraints: Set[(String, Set[String])] = Set.empty
+
+  var procedureSignatures: Set[ProcedureSignature] = Set.empty
+
+  def indexOn(label: String, properties: String*): IndexModifier = {
+    val indexDef = indexOn(label, properties, isUnique = false, withValues = false, IndexOrderCapability.NONE)
+    IndexModifier(indexes(indexDef))
+  }
+
+  def uniqueIndexOn(label: String, properties: String*): IndexModifier = {
+    val indexDef = indexOn(label, properties, isUnique = true, withValues = false, IndexOrderCapability.NONE)
+    IndexModifier(indexes(indexDef))
+  }
+
+  def indexOn(label: String, properties: Seq[String], isUnique: Boolean, withValues: Boolean, providesOrder: IndexOrderCapability): IndexDef = {
+    val indexType = new IndexType(isUnique, withValues, providesOrder)
+    val indexDef = IndexDef(label, properties)
+    indexes += indexDef -> indexType
+    indexDef
+  }
+
+  def existenceOrNodeKeyConstraintOn(label: String, properties: Set[String]): Unit = {
+    constraints = constraints + (label -> properties)
+  }
+
+  def procedure(signature: ProcedureSignature): Unit = {
+    procedureSignatures += signature
+  }
+}
+
 class StubbedLogicalPlanningConfiguration(val parent: LogicalPlanningConfiguration)
-  extends LogicalPlanningConfiguration with LogicalPlanningConfigurationAdHocSemanticTable {
+  extends LogicalPlanningConfiguration
+  with LogicalPlanningConfigurationAdHocSemanticTable
+  with FakeIndexAndConstraintManagement {
 
   self =>
 
@@ -58,44 +104,7 @@ class StubbedLogicalPlanningConfiguration(val parent: LogicalPlanningConfigurati
     override def hasParameters(expr: Expression): Boolean = ???
   }
 
-  var indexes: Map[IndexDef, IndexType] = Map.empty
-
-  var constraints: Set[(String, Set[String])] = Set.empty
-
-  var procedureSignatures: Set[ProcedureSignature] = Set.empty
-
   lazy val labelsById: Map[Int, String] = indexes.keys.map(_.label).zipWithIndex.map(_.swap).toMap
-
-  case class IndexModifier(indexType: IndexType) {
-    def providesValues(): IndexModifier = {
-      indexType.withValues = true
-      this
-    }
-    def providesOrder(order: IndexOrderCapability): IndexModifier = {
-      indexType.withOrdering = order
-      this
-    }
-  }
-
-  def indexOn(label: String, properties: String*): IndexModifier = {
-    val indexType = new IndexType()
-    indexes += IndexDef(label, properties) -> indexType
-    IndexModifier(indexType)
-  }
-
-  def uniqueIndexOn(label: String, properties: String*): IndexModifier = {
-    val indexType = new IndexType(isUnique = true)
-    indexes += IndexDef(label, properties) -> indexType
-    IndexModifier(indexType)
-  }
-
-  def existenceOrNodeKeyConstraintOn(label: String, properties: Set[String]): Unit = {
-    constraints = constraints + (label -> properties)
-  }
-
-  def procedure(signature: ProcedureSignature): Unit = {
-    procedureSignatures += signature
-  }
 
   override def costModel(): PartialFunction[(LogicalPlan, QueryGraphSolverInput, Cardinalities), Cost] = cost.orElse(parent.costModel())
 

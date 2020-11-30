@@ -44,7 +44,11 @@ object LogicalPlanToPlanBuilderString {
   /**
    * Generates a string that plays nicely together with `AbstractLogicalPlanBuilder`.
    */
-  def apply(logicalPlan: LogicalPlan): String = {
+  def apply(logicalPlan: LogicalPlan): String = render(logicalPlan, None)
+
+  def apply(logicalPlan: LogicalPlan, extra: LogicalPlan => String): String = render(logicalPlan, Some(extra))
+
+  private def render(logicalPlan: LogicalPlan, extra: Option[LogicalPlan => String]) = {
     var childrenStack = LevelPlanItem(0, logicalPlan) :: Nil
     val sb = new StringBuilder()
 
@@ -59,13 +63,19 @@ object LogicalPlanToPlanBuilderString {
       sb += '('
       sb ++= par(plan)
       sb += ')'
-      sb ++= System.lineSeparator()
+      extra.foreach(e => sb ++= e.apply(plan))
 
       plan.lhs.foreach(lhs => childrenStack ::= LevelPlanItem(level, lhs))
       plan.rhs.foreach(rhs => childrenStack ::= LevelPlanItem(level + 1, rhs))
+
+      if (childrenStack.nonEmpty) sb ++= System.lineSeparator()
     }
 
-    sb ++= ".build()"
+    if (extra.isEmpty) {
+      sb ++= System.lineSeparator()
+      sb ++= ".build()"
+    }
+
 
     sb.toString()
   }
@@ -162,7 +172,8 @@ object LogicalPlanToPlanBuilderString {
       case Skip(_, count) =>
         integerString(count)
       case NodeByLabelScan(idName, label, argumentIds, indexOrder) =>
-        s""" "$idName", "${label.name}", ${objectName(indexOrder)}, ${wrapInQuotationsAndMkString(argumentIds)} """.trim
+        val args = Seq(idName, label.name).map(wrapInQuotations) ++ Seq(objectName(indexOrder)) ++ argumentIds.map(wrapInQuotations)
+        args.mkString(", ")
       case Optional(_, protectedSymbols) =>
         wrapInQuotationsAndMkString(protectedSymbols)
       case OptionalExpand(_, from, dir, _, to, relName, _, predicate, expandProperties) =>
