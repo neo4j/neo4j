@@ -35,7 +35,7 @@ case class DirectedRelationshipByIdSeek(idName: String,
                                         startNode: String,
                                         endNode: String,
                                         argumentIds: Set[String])(implicit idGen: IdGen)
-  extends LogicalLeafPlan(idGen) {
+  extends RelationshipLogicalLeafPlan(idGen) {
 
   val availableSymbols: Set[String] = argumentIds ++ Set(idName, startNode, endNode)
 

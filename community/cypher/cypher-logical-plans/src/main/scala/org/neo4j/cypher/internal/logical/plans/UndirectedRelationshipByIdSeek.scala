@@ -34,7 +34,7 @@ case class UndirectedRelationshipByIdSeek(idName: String,
                                           rightNode: String,
                                           argumentIds: Set[String])
                                          (implicit idGen: IdGen)
-  extends LogicalLeafPlan(idGen) {
+  extends RelationshipLogicalLeafPlan(idGen) {
 
   override val availableSymbols: Set[String] = argumentIds ++ Set(idName, leftNode, rightNode)
 

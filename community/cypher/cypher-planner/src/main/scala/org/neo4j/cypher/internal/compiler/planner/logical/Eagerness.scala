@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.logical.plans.Eager
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NodeLogicalLeafPlan
 import org.neo4j.cypher.internal.logical.plans.ProcedureCall
+import org.neo4j.cypher.internal.logical.plans.RelationshipLogicalLeafPlan
 import org.neo4j.cypher.internal.logical.plans.RemoveLabels
 import org.neo4j.cypher.internal.logical.plans.SetLabels
 import org.neo4j.cypher.internal.logical.plans.SetNodePropertiesFromMap
@@ -59,6 +60,7 @@ object Eagerness {
     // We will only consider this analysis for all other node iterators.
     val unstableLeaves = plan.leaves.collect {
       case n: NodeLogicalLeafPlan => n.idName
+      case r: RelationshipLogicalLeafPlan => r.idName
     }
 
     if (unstableLeaves.isEmpty)

@@ -23,10 +23,10 @@ import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.util.attribution.SameId
 
-case class DirectedRelationshipTypeScan(relName: String, startNode: String, relType: RelTypeName, endNode: String, argumentIds: Set[String])(implicit idGen: IdGen)
-  extends LogicalLeafPlan(idGen) {
+case class DirectedRelationshipTypeScan(idName: String, startNode: String, relType: RelTypeName, endNode: String, argumentIds: Set[String])(implicit idGen: IdGen)
+  extends RelationshipLogicalLeafPlan(idGen) {
 
-  override val availableSymbols: Set[String] = argumentIds ++ Set(relName, startNode, endNode)
+  override val availableSymbols: Set[String] = argumentIds ++ Set(idName, startNode, endNode)
 
   override def usedVariables: Set[String] = Set.empty
 
