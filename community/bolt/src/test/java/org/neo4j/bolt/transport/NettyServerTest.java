@@ -25,6 +25,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.nio.channels.ServerSocketChannel;
 
 import org.neo4j.configuration.Config;
@@ -32,7 +33,6 @@ import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.BoltConnectorInternalSettings;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.configuration.helpers.PortBindException;
-import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.internal.helpers.NamedThreadFactory;
 import org.neo4j.logging.internal.NullLogService;
 
@@ -62,7 +62,7 @@ class NettyServerTest
         var port = 16000;
         try ( ServerSocketChannel ignore = ServerSocketChannel.open().bind( new InetSocketAddress( "localhost", port ) ) )
         {
-            var address = new SocketAddress( "localhost", port );
+            SocketAddress address = new InetSocketAddress( "localhost", port );
 
             // When
             server = new NettyServer( newThreadFactory(), protocolOnAddress( address ), null, new ConnectorPortRegister(), NullLogService.getInstance(),
@@ -78,7 +78,7 @@ class NettyServerTest
     {
         // Given a setup with matching port numbers for internal and external bolt
         var port = 16000;
-        var address = new SocketAddress( "localhost", port );
+        var address = new InetSocketAddress( "localhost", port );
 
         // When
         server = new NettyServer( newThreadFactory(), protocolOnAddress( address ), protocolOnAddress( address ), new ConnectorPortRegister(),
@@ -93,8 +93,8 @@ class NettyServerTest
     {
         // Given a setup with matching port numbers for loopback and external bolt
         var port = 16000;
-        var address = new SocketAddress( "localhost", 0 );
-        var conflicting = new SocketAddress( "localhost", port );
+        var address = new InetSocketAddress( "localhost", 0 );
+        var conflicting = new InetSocketAddress( "localhost", port );
 
         // When
         server = new NettyServer( newThreadFactory(), protocolOnAddress( conflicting ), protocolOnAddress( address ), protocolOnAddress( conflicting ),
@@ -109,8 +109,8 @@ class NettyServerTest
     {
         // Given a setup with matching port numbers for internal and loopback bolt
         var port = 16000;
-        var address = new SocketAddress( "localhost", 0 );
-        var conflicting = new SocketAddress( "localhost", port );
+        var address = new InetSocketAddress( "localhost", 0 );
+        var conflicting = new InetSocketAddress( "localhost", port );
 
         // When
         server = new NettyServer( newThreadFactory(), protocolOnAddress( address ), protocolOnAddress( conflicting ), protocolOnAddress( conflicting ),
@@ -126,7 +126,7 @@ class NettyServerTest
         var connector = "bolt";
         var portRegister = new ConnectorPortRegister();
 
-        var address = new SocketAddress( "localhost", 0 );
+        var address = new InetSocketAddress( "localhost", 0 );
         server = new NettyServer( newThreadFactory(), protocolOnAddress( address ), null, portRegister, NullLogService.getInstance(), Config.defaults() );
 
         assertNull( portRegister.getLocalAddress( connector ) );
@@ -147,9 +147,9 @@ class NettyServerTest
     {
         var portRegister = new ConnectorPortRegister();
 
-        var external = new SocketAddress( "localhost", 0 );
-        var internal = new SocketAddress( "localhost", 0 );
-        var loopback = new SocketAddress( "localhost", 0 );
+        var external = new InetSocketAddress( "localhost", 0 );
+        var internal = new InetSocketAddress( "localhost", 0 );
+        var loopback = new InetSocketAddress( "localhost", 0 );
         server = new NettyServer( newThreadFactory(), protocolOnAddress( external ), protocolOnAddress( loopback ), protocolOnAddress( internal ),
                 portRegister, NullLogService.getInstance(), Config.defaults() );
 
@@ -164,10 +164,6 @@ class NettyServerTest
         var actualInternalAddress = portRegister.getLocalAddress( BoltConnector.INTERNAL_NAME );
         assertNotNull( actualInternalAddress );
         assertThat( actualInternalAddress.getPort() ).isGreaterThan( 0 );
-
-        var actualLoopbackAddress = portRegister.getLocalAddress( BoltConnectorInternalSettings.LOOPBACK_NAME );
-        assertNotNull( actualLoopbackAddress );
-        assertThat( actualLoopbackAddress.getPort() ).isGreaterThan( 0 );
 
         server.stop();
         server.shutdown();

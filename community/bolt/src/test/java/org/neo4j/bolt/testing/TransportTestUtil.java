@@ -41,6 +41,7 @@ import org.neo4j.bolt.packstream.Neo4jPackV2;
 import org.neo4j.bolt.runtime.AccessMode;
 import org.neo4j.bolt.testing.client.TransportConnection;
 import org.neo4j.bolt.v3.messaging.response.RecordMessage;
+import org.neo4j.bolt.v3.messaging.response.SuccessMessage;
 import org.neo4j.bolt.v4.messaging.BoltV4Messages;
 import org.neo4j.bolt.v4.messaging.RunMessage;
 import org.neo4j.bolt.v42.BoltProtocolV42;
@@ -57,6 +58,9 @@ import static org.neo4j.bolt.testing.MessageConditions.responseMessage;
 import static org.neo4j.bolt.testing.MessageConditions.serialize;
 import static org.neo4j.bolt.v4.messaging.MessageMetadataParser.DB_NAME_KEY;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+import static org.neo4j.values.storable.Values.booleanValue;
+import static org.neo4j.values.storable.Values.stringValue;
+import static org.neo4j.values.virtual.VirtualValues.fromList;
 
 public class TransportTestUtil
 {
@@ -324,6 +328,27 @@ public class TransportTestUtil
         };
     }
 
+    public final <T extends TransportConnection> Consumer<T> eventuallyReceivesSuccessAfterRecords()
+    {
+        return transportConnection ->
+        {
+            ResponseMessage nextMessage = null;
+
+            while ( nextMessage instanceof SuccessMessage )
+            {
+                try
+                {
+                    nextMessage = receiveOneResponseMessage( transportConnection );
+                }
+                catch ( Exception e )
+                {
+                    throw new RuntimeException( e );
+                }
+            }
+        };
+
+    }
+
     public static Condition<TransportConnection> eventuallyDisconnects()
     {
         return new Condition<>( connection ->
@@ -462,5 +487,20 @@ public class TransportTestUtil
         {
             return serialize( neo4jPack, messages );
         }
+    }
+
+    public static Condition<AnyValue> stringEquals( String expected )
+    {
+        return new Condition<>( value -> value.equals( stringValue( expected ) ), "string equals" );
+    }
+
+    public static Condition<AnyValue> anyValue( )
+    {
+        return new Condition<>( anyValue -> true, "any value" );
+    }
+
+    public static Condition<AnyValue> booleanEquals( boolean b )
+    {
+        return new Condition<>( value -> value.equals( booleanValue( b ) ), "boolean equals" );
     }
 }

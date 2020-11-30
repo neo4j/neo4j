@@ -24,11 +24,11 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
 import io.netty.handler.ssl.SslContext;
 
+import java.net.SocketAddress;
 import java.time.Duration;
 
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.transport.pipeline.UnauthenticatedChannelProtector;
-import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 import org.neo4j.logging.LogProvider;
 
@@ -49,10 +49,10 @@ public class SocketTransport implements NettyServer.ProtocolInitializer
     private final long maxMessageSize;
     private final ByteBufAllocator allocator;
 
-    public SocketTransport( String connector, SocketAddress address, SslContext sslCtx, boolean encryptionRequired,
-            LogProvider logging, TransportThrottleGroup throttleGroup,
-            BoltProtocolFactory boltProtocolFactory, NetworkConnectionTracker connectionTracker,
-            Duration channelTimeout, long maxMessageSize, ByteBufAllocator allocator )
+    public SocketTransport( String connector, SocketAddress address, SslContext sslCtx, boolean encryptionRequired, LogProvider logging,
+                            TransportThrottleGroup throttleGroup, BoltProtocolFactory boltProtocolFactory,
+                            NetworkConnectionTracker connectionTracker, Duration channelTimeout, long maxMessageSize,
+                            ByteBufAllocator allocator )
     {
         this.connector = connector;
         this.address = address;
@@ -106,4 +106,5 @@ public class SocketTransport implements NettyServer.ProtocolInitializer
         var protector = new UnauthenticatedChannelProtector( ch.pipeline(), channelTimeout, maxMessageSize );
         return new BoltChannel( connectionTracker.newConnectionId( connector ), connector, ch, protector );
     }
+
 }

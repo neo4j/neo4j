@@ -31,6 +31,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ThreadFactory;
 
+import io.netty.channel.epoll.EpollServerDomainSocketChannel;
+
 import org.neo4j.bolt.BoltServer;
 import org.neo4j.bolt.transport.configuration.EpollConfigurationProvider;
 import org.neo4j.bolt.transport.configuration.NioConfigurationProvider;
@@ -51,8 +53,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.neo4j.function.ThrowingAction.executeAll;
 
 /**
- * Simple wrapper around Netty boss and selector threads, which allows multiple ports and protocols to be handled
- * by the same set of common worker threads.
+ * Simple wrapper around Netty boss and selector threads, which allows multiple ports and protocols to be handled by the same set of common worker threads.
  */
 public class NettyServer extends LifecycleAdapter
 {
@@ -76,16 +77,16 @@ public class NettyServer extends LifecycleAdapter
     {
         ChannelInitializer<Channel> channelInitializer();
 
-        SocketAddress address();
+        java.net.SocketAddress address();
     }
 
     /**
-     * @param tf used to create IO threads to listen and handle network events
+     * @param tf                  used to create IO threads to listen and handle network events
      * @param externalInitializer function for bolt connector map to bootstrap configured protocol
-     * @param connectorRegister register to keep local address information on all configured connectors
+     * @param connectorRegister   register to keep local address information on all configured connectors
      */
     public NettyServer( ThreadFactory tf, ProtocolInitializer externalInitializer, ProtocolInitializer loopbackInitializer,
-            ConnectorPortRegister connectorRegister, LogService logService, Config config )
+                        ConnectorPortRegister connectorRegister, LogService logService, Config config )
     {
         this.externalInitializer = externalInitializer;
         this.config = config;
@@ -100,10 +101,10 @@ public class NettyServer extends LifecycleAdapter
     }
 
     /**
-     * @param tf used to create IO threads to listen and handle network events
+     * @param tf                  used to create IO threads to listen and handle network events
      * @param externalInitializer function for bolt connector map to bootstrap configured protocol
      * @param internalInitializer function for bolt connertion map to bootstrap configured internal protocol connections
-     * @param connectorRegister register to keep local address information on all configured connectors
+     * @param connectorRegister   register to keep local address information on all configured connectors
      */
     public NettyServer( ThreadFactory tf, ProtocolInitializer externalInitializer,
                         ProtocolInitializer internalInitializer, ProtocolInitializer loopbackInitializer,
@@ -132,46 +133,42 @@ public class NettyServer extends LifecycleAdapter
     {
         if ( externalInitializer != null )
         {
-                InetSocketAddress externalLocalAddress = configureInitializer( externalInitializer );
-                portRegister.register( BoltConnector.NAME, externalLocalAddress );
+            var externalLocalAddress = (InetSocketAddress) configureInitializer( externalInitializer );
+            portRegister.register( BoltConnector.NAME, externalLocalAddress );
 
-                var host = externalInitializer.address().getHostname();
-                var port = externalLocalAddress.getPort();
+            var host = externalLocalAddress.getHostName();
+            var port = externalLocalAddress.getPort();
 
-                userLog.info( "Bolt enabled on %s.", SocketAddress.format( host, port ) );
+            userLog.info( "Bolt enabled on %s.", SocketAddress.format( host, port ) );
         }
 
         if ( internalInitializer != null )
         {
-                var internalLocalAddress = configureInitializer( internalInitializer );
-                portRegister.register( BoltConnector.INTERNAL_NAME, internalLocalAddress );
+            var internalLocalAddress = (InetSocketAddress) configureInitializer( internalInitializer );
+            portRegister.register( BoltConnector.INTERNAL_NAME, internalLocalAddress );
 
-                var host = internalInitializer.address().getHostname();
-                var port = internalLocalAddress.getPort();
+            var host = internalLocalAddress.getHostName();
+            var port = internalLocalAddress.getPort();
 
-                userLog.info( "Bolt (Routing) enabled on %s.", SocketAddress.format( host, port ) );
+            userLog.info( "Bolt (Routing) enabled on %s.", SocketAddress.format( host, port ) );
         }
 
         if ( loopbackInitializer != null )
         {
             var loopbackLocalAddress = configureInitializer( loopbackInitializer );
-            portRegister.register( BoltConnectorInternalSettings.LOOPBACK_NAME, loopbackLocalAddress );
 
-            var host = loopbackInitializer.address().getHostname();
-            var port = loopbackLocalAddress.getPort();
-
-            userLog.info( "Bolt (loopback) enabled on %s.", SocketAddress.format( host, port ) );
+            userLog.info( "Bolt (loopback) enabled on file %s", loopbackLocalAddress );
         }
     }
 
-    private InetSocketAddress configureInitializer( ProtocolInitializer protocolInitializer ) throws Exception
+    private java.net.SocketAddress configureInitializer( ProtocolInitializer protocolInitializer ) throws Exception
     {
         try
         {
             var externalChannel = bind( configurationProvider, protocolInitializer );
             serverChannels.add( externalChannel );
 
-            return (InetSocketAddress) externalChannel.localAddress();
+            return externalChannel.localAddress();
         }
         catch ( Throwable e )
         {
@@ -199,7 +196,7 @@ public class NettyServer extends LifecycleAdapter
     private Channel bind( ServerConfigurationProvider configurationProvider, ProtocolInitializer protocolInitializer ) throws InterruptedException
     {
         var serverBootstrap = createServerBootstrap( configurationProvider, protocolInitializer );
-        var address = protocolInitializer.address().socketAddress();
+        var address = protocolInitializer.address();
         return serverBootstrap.bind( address ).sync().channel();
     }
 
@@ -207,7 +204,7 @@ public class NettyServer extends LifecycleAdapter
     {
         return new ServerBootstrap()
                 .group( eventLoopGroup )
-                .channel( configurationProvider.getChannelClass() )
+                .channel( configurationProvider.getChannelClass( protocolInitializer.address() ) )
                 .option( ChannelOption.SO_REUSEADDR, TRUE )
                 .childOption( ChannelOption.SO_KEEPALIVE, TRUE )
                 .childHandler( protocolInitializer.channelInitializer() );

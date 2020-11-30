@@ -19,6 +19,7 @@
  */
 package org.neo4j.configuration.connectors;
 
+import java.nio.file.Path;
 import java.time.Duration;
 
 import org.neo4j.annotations.service.ServiceProvider;
@@ -35,6 +36,7 @@ import static org.neo4j.configuration.SettingValueParsers.BOOL;
 import static org.neo4j.configuration.SettingValueParsers.BYTES;
 import static org.neo4j.configuration.SettingValueParsers.DURATION;
 import static org.neo4j.configuration.SettingValueParsers.INT;
+import static org.neo4j.configuration.SettingValueParsers.PATH;
 
 @ServiceProvider
 public final class BoltConnectorInternalSettings implements SettingsDeclaration
@@ -69,9 +71,10 @@ public final class BoltConnectorInternalSettings implements SettingsDeclaration
             newBuilder( "dbms.connector.bolt.unsupported_unauth_max_inbound_bytes", BYTES, ByteUnit.kibiBytes( 8 ) ).build();
 
     @Internal
-    @Description( "The port the loopback connector should bind to. Care should be taken to not expose this port beyond this machine." )
-    public static final Setting<Integer> loopback_listen_port =
-            newBuilder( "unsupported.dbms.loopback_port", INT, DEFAULT_LOOPBACK_CONNECTOR_PORT ).build();
+    @Description( "The absolute path of the file for use with the Unix Domain Socket based loopback interface. " +
+                  "This file must be specified and will be created at runtime" )
+    public static final Setting<Path> unsupported_loopback_listen_file =
+            newBuilder( "unsupported.dbms.loopback_file", PATH, null ).build();
 
     @Internal
     @Description( "Enable or disable the bolt loopback connector. " +

@@ -33,9 +33,9 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 
 public class SocketConnection implements TransportConnection
 {
-    private Socket socket;
-    private InputStream in;
-    private OutputStream out;
+    protected Socket socket;
+    protected InputStream in;
+    protected OutputStream out;
 
     public SocketConnection()
     {

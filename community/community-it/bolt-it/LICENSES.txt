@@ -49,6 +49,9 @@ Apache Software License, Version 2.0
   Jetty :: XML utilities
   jPowerShell
   jProcesses
+  junixsocket-common
+  junixsocket-core
+  junixsocket-native-common
   Lucene Common Analyzers
   Lucene Core
   Lucene Memory

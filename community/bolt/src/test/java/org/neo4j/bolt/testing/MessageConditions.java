@@ -191,6 +191,11 @@ public class MessageConditions
         };
     }
 
+    public static Consumer<ResponseMessage> msgRecord()
+    {
+        return message -> assertThat( message ).isInstanceOf( RecordMessage.class );
+    }
+
     /**
      * Validates both cases and fails only if neither of them succeed (Used because fabric returns a more specific error status in one case)
      */

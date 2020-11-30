@@ -31,6 +31,7 @@ public class StreamConditions
     {
     }
 
+    @SafeVarargs
     public static Condition<AnyValue[]> eqRecord( Condition<AnyValue>... expectedFieldValues )
     {
         return new Condition<>( item ->

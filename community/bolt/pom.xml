@@ -129,6 +129,10 @@
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j-random-values</artifactId>
             <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.kohlschutter.junixsocket</groupId>
+            <artifactId>junixsocket-core</artifactId>
             <scope>test</scope>
         </dependency>
 

@@ -24,11 +24,11 @@ import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
+import java.net.InetSocketAddress;
 import java.time.Duration;
 
 import org.neo4j.bolt.transport.pipeline.AuthenticationTimeoutHandler;
 import org.neo4j.bolt.transport.pipeline.AuthenticationTimeoutTracker;
-import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 import org.neo4j.kernel.api.net.TrackedNetworkConnection;
 import org.neo4j.logging.NullLogProvider;
@@ -99,9 +99,9 @@ class SocketTransportTest
 
     private static SocketTransport newSocketTransport( NetworkConnectionTracker connectionTracker, TransportThrottleGroup throttleGroup )
     {
-        return new SocketTransport( "bolt", new SocketAddress( "localhost", 7687 ), null, false,
-                NullLogProvider.getInstance(), throttleGroup,
-                mock( BoltProtocolFactory.class ), connectionTracker, Duration.ZERO,
-                -1, PooledByteBufAllocator.DEFAULT );
+        return new SocketTransport( "bolt", new InetSocketAddress( "localhost", 7687 ), null, false,
+                                    NullLogProvider.getInstance(), throttleGroup,
+                                    mock( BoltProtocolFactory.class ), connectionTracker, Duration.ZERO,
+                                    -1, PooledByteBufAllocator.DEFAULT );
     }
 }

@@ -22,8 +22,11 @@ package org.neo4j.bolt.transport.configuration;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.ServerChannel;
 import io.netty.channel.epoll.EpollEventLoopGroup;
+import io.netty.channel.epoll.EpollServerDomainSocketChannel;
 import io.netty.channel.epoll.EpollServerSocketChannel;
+import io.netty.channel.unix.DomainSocketAddress;
 
+import java.net.SocketAddress;
 import java.util.concurrent.ThreadFactory;
 
 public class EpollConfigurationProvider implements ServerConfigurationProvider
@@ -41,8 +44,15 @@ public class EpollConfigurationProvider implements ServerConfigurationProvider
     }
 
     @Override
-    public Class<? extends ServerChannel> getChannelClass()
+    public Class<? extends ServerChannel> getChannelClass( SocketAddress socketAddress )
     {
-        return EpollServerSocketChannel.class;
+        if ( socketAddress instanceof DomainSocketAddress )
+        {
+            return EpollServerDomainSocketChannel.class;
+        }
+        else
+        {
+            return EpollServerSocketChannel.class;
+        }
     }
 }

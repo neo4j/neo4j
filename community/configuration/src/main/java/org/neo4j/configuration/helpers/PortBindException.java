@@ -33,6 +33,12 @@ public class PortBindException extends BindException
         this( address, null, original );
     }
 
+    public PortBindException( java.net.SocketAddress address, Throwable original )
+    {
+        super( "An error occurred while trying to bind to the socket " + address );
+        initCause( original );
+    }
+
     public PortBindException( SocketAddress address1, SocketAddress address2, Throwable original )
     {
         super( createMessage( address1, address2 ) );

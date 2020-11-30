@@ -1,5 +1,5 @@
 /*
- * Copyright (c) "Neo4j"
+ * Copyright (c) 2002-2020 "Neo4j,"
  * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
@@ -17,17 +17,28 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.transport.configuration;
+package org.neo4j.bolt.testing.client;
 
-import io.netty.channel.EventLoopGroup;
-import io.netty.channel.ServerChannel;
+import org.newsclub.net.unix.AFUNIXSocket;
 
+import java.io.IOException;
 import java.net.SocketAddress;
-import java.util.concurrent.ThreadFactory;
 
-public interface ServerConfigurationProvider
+public class UnixDomainSocketConnection extends SocketConnection
 {
-    EventLoopGroup createEventLoopGroup( ThreadFactory threadFactory );
 
-    Class<? extends ServerChannel> getChannelClass( SocketAddress socketAddress );
+    public UnixDomainSocketConnection() throws IOException
+    {
+        super( AFUNIXSocket.newInstance() );
+    }
+
+    @Override
+    public TransportConnection connect( SocketAddress address ) throws Exception
+    {
+        socket.connect( address );
+
+        in = socket.getInputStream();
+        out = socket.getOutputStream();
+        return this;
+    }
 }

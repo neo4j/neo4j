@@ -20,11 +20,15 @@
 package org.neo4j.bolt;
 
 import io.netty.buffer.PooledByteBufAllocator;
+import io.netty.channel.unix.DomainSocketAddress;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslProvider;
 import io.netty.util.internal.PlatformDependent;
 import io.netty.util.internal.logging.InternalLoggerFactory;
 
+import java.io.File;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.time.Clock;
 import java.time.Duration;
 import javax.net.ssl.SSLException;
@@ -51,13 +55,11 @@ import org.neo4j.bolt.transport.SocketTransport;
 import org.neo4j.bolt.transport.TransportThrottleGroup;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.SslSystemSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.BoltConnectorInternalSettings;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
-import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.database.DatabaseIdRepository;
@@ -236,12 +238,12 @@ public class BoltServer extends LifecycleAdapter
 
         if ( config.isExplicitlySet( GraphDatabaseSettings.routing_listen_address ) )
         {
-            internalListenAddress = config.get( GraphDatabaseSettings.routing_listen_address );
+            internalListenAddress = config.get( GraphDatabaseSettings.routing_listen_address ).socketAddress();
         }
         else
         {
             // otherwise use same host as external connector but with default internal port
-            internalListenAddress = new SocketAddress( config.get( BoltConnector.listen_address ).getHostname(),
+            internalListenAddress = new InetSocketAddress( config.get( BoltConnector.listen_address ).getHostname(),
                                                        config.get( GraphDatabaseSettings.routing_listen_address ).getPort() );
         }
 
@@ -257,13 +259,21 @@ public class BoltServer extends LifecycleAdapter
     {
         if ( config.get( BoltConnectorInternalSettings.enable_loopback_auth ) )
         {
-            SocketAddress loopbackListenAddress = new SocketAddress( config.get( BoltConnectorInternalSettings.loopback_listen_port ) );
+            if ( config.get( BoltConnectorInternalSettings.unsupported_loopback_listen_file) == null )
+            {
+                throw new IllegalArgumentException( "A file has not been specified for use with the loopback interface." );
+            }
+
+            File unixSocketFile = new File( config.get( BoltConnectorInternalSettings.unsupported_loopback_listen_file).toString() );
+            unixSocketFile.delete(); // ensure the file does not exist before passing to netty to create it
+
+            DomainSocketAddress loopbackListenAddress = new DomainSocketAddress( unixSocketFile );
 
             Duration channelTimeout = config.get( BoltConnectorInternalSettings.unsupported_bolt_unauth_connection_timeout );
             long maxMessageSize = config.get( BoltConnectorInternalSettings.unsupported_bolt_unauth_connection_max_inbound_bytes );
 
             return new SocketTransport( BoltConnectorInternalSettings.LOOPBACK_NAME, loopbackListenAddress, null, false, logService.getInternalLogProvider(),
-                    throttleGroup, boltProtocolFactory, connectionTracker, channelTimeout, maxMessageSize, BoltServer.NETTY_BUF_ALLOCATOR );
+                                        throttleGroup, boltProtocolFactory, connectionTracker, channelTimeout, maxMessageSize, BoltServer.NETTY_BUF_ALLOCATOR );
         }
         else
         {
@@ -307,7 +317,7 @@ public class BoltServer extends LifecycleAdapter
             break;
         }
 
-        SocketAddress listenAddress = config.get( BoltConnector.listen_address );
+        SocketAddress listenAddress = config.get( BoltConnector.listen_address ).socketAddress();
         Duration channelTimeout = config.get( BoltConnectorInternalSettings.unsupported_bolt_unauth_connection_timeout );
         long maxMessageSize = config.get( BoltConnectorInternalSettings.unsupported_bolt_unauth_connection_max_inbound_bytes );
 
