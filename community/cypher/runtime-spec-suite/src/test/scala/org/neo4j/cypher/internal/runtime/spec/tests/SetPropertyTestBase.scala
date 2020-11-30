@@ -233,4 +233,28 @@ abstract class SetPropertyTestBase[CONTEXT <: RuntimeContext](
       .withStatistics(propertiesSet = Math.min(5, sizeHint) * 2)
     property shouldBe "prop"
   }
+
+  test("should set cached node property") {
+    // given a single node
+    val n = given {
+      nodeGraph(1)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("p")
+      .projection("cache[n.prop] as p")
+      .setProperty("n", "prop", "2")
+      .cacheProperties("n.prop")
+      .setProperty("n", "prop", "1")
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    val property = Iterables.single(tx.getAllPropertyKeys)
+    runtimeResult should beColumns("p").withSingleRow(2).withStatistics(propertiesSet = 2)
+    property shouldBe "prop"
+  }
 }
