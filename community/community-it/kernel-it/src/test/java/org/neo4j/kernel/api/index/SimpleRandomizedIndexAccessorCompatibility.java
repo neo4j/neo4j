@@ -36,7 +36,7 @@ import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexOrderCapability;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptor;
-import org.neo4j.storageengine.api.IndexEntryUpdate;
+import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueType;
 import org.neo4j.values.storable.Values;
@@ -67,11 +67,11 @@ public class SimpleRandomizedIndexAccessorCompatibility extends IndexAccessorCom
         // given
         ValueType[] types = randomSetOfSupportedTypes();
         List<Value> values = generateValuesFromType( types, new HashSet<>(), 30_000 );
-        List<IndexEntryUpdate<?>> updates = generateUpdatesFromValues( values, new MutableLong() );
+        List<ValueIndexEntryUpdate<?>> updates = generateUpdatesFromValues( values, new MutableLong() );
         updateAndCommit( updates );
 
         // when
-        for ( IndexEntryUpdate<?> update : updates )
+        for ( ValueIndexEntryUpdate<?> update : updates )
         {
             // then
             List<Long> hits = query( IndexQuery.exact( 0, update.values()[0] ) );
@@ -93,7 +93,7 @@ public class SimpleRandomizedIndexAccessorCompatibility extends IndexAccessorCom
         // A couple of rounds of updates followed by lots of range verifications
         for ( int i = 0; i < 5; i++ )
         {
-            List<IndexEntryUpdate<?>> updates = new ArrayList<>();
+            List<ValueIndexEntryUpdate<?>> updates = new ArrayList<>();
             if ( i == 0 )
             {
                 // The initial batch of data can simply be additions
@@ -207,12 +207,12 @@ public class SimpleRandomizedIndexAccessorCompatibility extends IndexAccessorCom
         return value;
     }
 
-    private List<IndexEntryUpdate<?>> generateUpdatesFromValues( List<Value> values, MutableLong nextId )
+    private List<ValueIndexEntryUpdate<?>> generateUpdatesFromValues( List<Value> values, MutableLong nextId )
     {
-        List<IndexEntryUpdate<?>> updates = new ArrayList<>();
+        List<ValueIndexEntryUpdate<?>> updates = new ArrayList<>();
         for ( Value value : values )
         {
-            IndexEntryUpdate<SchemaDescriptor> update = add( nextId.getAndIncrement(), descriptor.schema(), value );
+            ValueIndexEntryUpdate<SchemaDescriptor> update = add( nextId.getAndIncrement(), descriptor.schema(), value );
             updates.add( update );
         }
         return updates;

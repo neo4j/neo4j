@@ -22,7 +22,7 @@ package org.neo4j.kernel.api.impl.schema.populator;
 import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
 import org.neo4j.kernel.api.index.NonUniqueIndexSampler;
-import org.neo4j.storageengine.api.IndexEntryUpdate;
+import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 
 /**
  * A {@link LuceneIndexPopulatingUpdater} used for non-unique Lucene schema indexes.
@@ -38,14 +38,14 @@ public class NonUniqueLuceneIndexPopulatingUpdater extends LuceneIndexPopulating
     }
 
     @Override
-    protected void added( IndexEntryUpdate<?> update )
+    protected void added( ValueIndexEntryUpdate<?> update )
     {
         String encodedValue = LuceneDocumentStructure.encodedStringValuesForSampling( update.values() );
         sampler.include( encodedValue );
     }
 
     @Override
-    protected void changed( IndexEntryUpdate<?> update )
+    protected void changed( ValueIndexEntryUpdate<?> update )
     {
         String encodedValueBefore = LuceneDocumentStructure.encodedStringValuesForSampling( update.beforeValues() );
         sampler.exclude( encodedValueBefore );
@@ -55,7 +55,7 @@ public class NonUniqueLuceneIndexPopulatingUpdater extends LuceneIndexPopulating
     }
 
     @Override
-    protected void removed( IndexEntryUpdate<?> update )
+    protected void removed( ValueIndexEntryUpdate<?> update )
     {
         String removedValue = LuceneDocumentStructure.encodedStringValuesForSampling( update.values() );
         sampler.exclude( removedValue );

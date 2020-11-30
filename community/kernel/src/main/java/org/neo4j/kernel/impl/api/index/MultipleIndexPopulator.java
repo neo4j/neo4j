@@ -63,7 +63,6 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.memory.HeapEstimator;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
@@ -72,10 +71,8 @@ import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
-import org.neo4j.storageengine.api.UpdateMode;
 import org.neo4j.util.FeatureToggles;
 import org.neo4j.util.VisibleForTesting;
-import org.neo4j.values.storable.Value;
 
 import static java.lang.String.format;
 import static java.util.stream.Collectors.joining;
@@ -271,7 +268,7 @@ public class MultipleIndexPopulator
     void queueConcurrentUpdate( IndexEntryUpdate<?> update )
     {
         concurrentUpdateQueue.add( update );
-        concurrentUpdateQueueByteSize.addAndGet( roughSizeOfUpdate( update ) );
+        concurrentUpdateQueueByteSize.addAndGet( update.roughSizeOfUpdate() );
     }
 
     /**
@@ -532,7 +529,7 @@ public class MultipleIndexPopulator
                     // Since updates can be added concurrently with us draining the queue simply setting the value to 0
                     // after drained will not be 100% synchronized with the queue contents and could potentially cause a large
                     // drift over time. Therefore each update polled from the queue will subtract its size instead.
-                    updateByteSizeDrained += update != null ? roughSizeOfUpdate( update ) : 0;
+                    updateByteSizeDrained += update != null ? update.roughSizeOfUpdate() : 0;
                     storeScan.acceptUpdate( updater, update, currentlyIndexedNodeId );
                     if ( PRINT_DEBUG )
                     {
@@ -840,7 +837,7 @@ public class MultipleIndexPopulator
         boolean addToBatchFromScan( IndexEntryUpdate<?> update )
         {
             batchedUpdatesFromScan.add( update );
-            sizeOfBatchedUpdates += roughSizeOfUpdate( update );
+            sizeOfBatchedUpdates += update.roughSizeOfUpdate();
             return batchedUpdatesFromScan.size() >= BATCH_SIZE_SCAN || sizeOfBatchedUpdates >= BATCH_MAX_BYTE_SIZE_SCAN;
         }
 
@@ -877,32 +874,6 @@ public class MultipleIndexPopulator
         {
             return populator.progress( storeScanProgress );
         }
-    }
-
-    private static long roughSizeOfUpdate( IndexEntryUpdate<?> update )
-    {
-        return heapSizeOf( update.values() ) + (update.updateMode() == UpdateMode.CHANGED ? heapSizeOf( update.beforeValues() ) : 0);
-    }
-
-    private static long heapSizeOf( Value[] values )
-    {
-        long size = 0;
-        if ( values != null )
-        {
-            for ( Value value : values )
-            {
-                if ( value != null )
-                {
-                    size += heapSizeOf( value );
-                }
-            }
-        }
-        return size;
-    }
-
-    private static long heapSizeOf( Value value )
-    {
-        return HeapEstimator.sizeOf( value.asObject() );
     }
 
     private class EntityPopulationVisitor implements Visitor<EntityUpdates,

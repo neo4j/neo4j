@@ -34,6 +34,7 @@ import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
+import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 import org.neo4j.values.storable.Value;
 
 public class FulltextIndexPopulator extends LuceneIndexPopulator<DatabaseIndex<FulltextIndexReader>>
@@ -55,7 +56,8 @@ public class FulltextIndexPopulator extends LuceneIndexPopulator<DatabaseIndex<F
         {
             for ( IndexEntryUpdate<?> update : updates )
             {
-                writer.updateDocument( LuceneFulltextDocumentStructure.newTermForChangeOrRemove( update.getEntityId() ), updateAsDocument( update ) );
+                writer.updateDocument( LuceneFulltextDocumentStructure.newTermForChangeOrRemove( update.getEntityId() ),
+                        updateAsDocument( (ValueIndexEntryUpdate<?>) update ) );
             }
         }
         catch ( IOException e )
@@ -94,7 +96,7 @@ public class FulltextIndexPopulator extends LuceneIndexPopulator<DatabaseIndex<F
         return descriptor.getIndexConfig().asMap();
     }
 
-    private Document updateAsDocument( IndexEntryUpdate<?> update )
+    private Document updateAsDocument( ValueIndexEntryUpdate<?> update )
     {
         return LuceneFulltextDocumentStructure.documentRepresentingProperties( update.getEntityId(), propertyNames, update.values() );
     }
@@ -105,18 +107,19 @@ public class FulltextIndexPopulator extends LuceneIndexPopulator<DatabaseIndex<F
         public void process( IndexEntryUpdate<?> update )
         {
             assert update.indexKey().schema().equals( descriptor.schema() );
+            ValueIndexEntryUpdate<?> valueUpdate = asValueUpdate( update );
             try
             {
-                switch ( update.updateMode() )
+                switch ( valueUpdate.updateMode() )
                 {
                 case ADDED:
                 case CHANGED:
-                    long nodeId = update.getEntityId();
+                    long nodeId = valueUpdate.getEntityId();
                     luceneIndex.getIndexWriter().updateDocument( LuceneFulltextDocumentStructure.newTermForChangeOrRemove( nodeId ),
-                            LuceneFulltextDocumentStructure.documentRepresentingProperties( nodeId, propertyNames, update.values() ) );
+                            LuceneFulltextDocumentStructure.documentRepresentingProperties( nodeId, propertyNames, valueUpdate.values() ) );
                     break;
                 case REMOVED:
-                    luceneIndex.getIndexWriter().deleteDocuments( LuceneFulltextDocumentStructure.newTermForChangeOrRemove( update.getEntityId() ) );
+                    luceneIndex.getIndexWriter().deleteDocuments( LuceneFulltextDocumentStructure.newTermForChangeOrRemove( valueUpdate.getEntityId() ) );
                     break;
                 default:
                     throw new UnsupportedOperationException();

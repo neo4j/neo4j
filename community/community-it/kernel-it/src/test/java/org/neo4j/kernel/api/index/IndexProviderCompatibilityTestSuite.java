@@ -52,7 +52,7 @@ import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobMonitoringParams;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.storageengine.api.IndexEntryUpdate;
+import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 import org.neo4j.test.rule.PageCacheAndDependenciesRule;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
@@ -339,15 +339,15 @@ public abstract class IndexProviderCompatibilityTestSuite
             }
         }
 
-        List<IndexEntryUpdate<?>> updates( List<NodeAndValue> values )
+        List<ValueIndexEntryUpdate<?>> updates( List<NodeAndValue> values )
         {
             return updates( values, 0 );
         }
 
-        List<IndexEntryUpdate<?>> updates( List<NodeAndValue> values, long nodeIdOffset )
+        List<ValueIndexEntryUpdate<?>> updates( List<NodeAndValue> values, long nodeIdOffset )
         {
-            List<IndexEntryUpdate<?>> updates = new ArrayList<>();
-            values.forEach( entry -> updates.add( IndexEntryUpdate.add( nodeIdOffset + entry.nodeId, descriptor.schema(), entry.value ) ) );
+            List<ValueIndexEntryUpdate<?>> updates = new ArrayList<>();
+            values.forEach( entry -> updates.add( ValueIndexEntryUpdate.add( nodeIdOffset + entry.nodeId, descriptor.schema(), entry.value ) ) );
             return updates;
         }
 

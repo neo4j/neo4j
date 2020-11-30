@@ -28,8 +28,8 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.schema.SchemaIndex;
 import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
 import org.neo4j.kernel.api.index.UniqueIndexSampler;
-import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
+import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 import org.neo4j.values.storable.Value;
 
 /**
@@ -57,20 +57,20 @@ public class UniqueLuceneIndexPopulatingUpdater extends LuceneIndexPopulatingUpd
     }
 
     @Override
-    protected void added( IndexEntryUpdate<?> update )
+    protected void added( ValueIndexEntryUpdate<?> update )
     {
         sampler.increment( 1 );
         updatedValueTuples.add( update.values() );
     }
 
     @Override
-    protected void changed( IndexEntryUpdate<?> update )
+    protected void changed( ValueIndexEntryUpdate<?> update )
     {
         updatedValueTuples.add( update.values() );
     }
 
     @Override
-    protected void removed( IndexEntryUpdate<?> update )
+    protected void removed( ValueIndexEntryUpdate<?> update )
     {
         sampler.increment( -1 );
     }

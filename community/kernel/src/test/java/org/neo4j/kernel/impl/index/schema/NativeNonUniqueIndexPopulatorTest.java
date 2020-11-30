@@ -30,7 +30,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
-import org.neo4j.storageengine.api.IndexEntryUpdate;
+import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueType;
 
@@ -57,7 +57,7 @@ abstract class NativeNonUniqueIndexPopulatorTest<KEY extends NativeIndexKey<KEY>
 
     private static final IndexDescriptor nonUniqueDescriptor = TestIndexDescriptorFactory.forLabel( 42, 666 );
 
-    private static Value[] asValues( IndexEntryUpdate<IndexDescriptor>[] updates )
+    private static Value[] asValues( ValueIndexEntryUpdate<IndexDescriptor>[] updates )
     {
         Value[] values = new Value[updates.length];
         for ( int i = 0; i < updates.length; i++ )
@@ -91,7 +91,7 @@ abstract class NativeNonUniqueIndexPopulatorTest<KEY extends NativeIndexKey<KEY>
     {
         // given
         populator.create();
-        IndexEntryUpdate<IndexDescriptor>[] updates = valueCreatorUtil.someUpdatesWithDuplicateValues( random );
+        ValueIndexEntryUpdate<IndexDescriptor>[] updates = valueCreatorUtil.someUpdatesWithDuplicateValues( random );
 
         // when
         populator.add( asList( updates ), NULL );
@@ -107,11 +107,11 @@ abstract class NativeNonUniqueIndexPopulatorTest<KEY extends NativeIndexKey<KEY>
     {
         // given
         populator.create();
-        IndexEntryUpdate<IndexDescriptor>[] updates = valueCreatorUtil.someUpdatesWithDuplicateValues( random );
+        ValueIndexEntryUpdate<IndexDescriptor>[] updates = valueCreatorUtil.someUpdatesWithDuplicateValues( random );
         try ( IndexUpdater updater = populator.newPopulatingUpdater( null_property_accessor, NULL ) )
         {
             // when
-            for ( IndexEntryUpdate<IndexDescriptor> update : updates )
+            for ( ValueIndexEntryUpdate<IndexDescriptor> update : updates )
             {
                 updater.process( update );
             }
@@ -130,9 +130,9 @@ abstract class NativeNonUniqueIndexPopulatorTest<KEY extends NativeIndexKey<KEY>
         try
         {
             populator.create();
-            IndexEntryUpdate<IndexDescriptor>[] scanUpdates = valueCreatorUtil.someUpdates( random );
+            ValueIndexEntryUpdate<IndexDescriptor>[] scanUpdates = valueCreatorUtil.someUpdates( random );
             populator.add( asList( scanUpdates ), NULL );
-            Iterator<IndexEntryUpdate<IndexDescriptor>> generator = valueCreatorUtil.randomUpdateGenerator( random );
+            Iterator<ValueIndexEntryUpdate<IndexDescriptor>> generator = valueCreatorUtil.randomUpdateGenerator( random );
             Value[] updates = new Value[5];
             updates[0] = generator.next().values()[0];
             updates[1] = generator.next().values()[0];
@@ -144,7 +144,7 @@ abstract class NativeNonUniqueIndexPopulatorTest<KEY extends NativeIndexKey<KEY>
                 long nodeId = 1000;
                 for ( Value value : updates )
                 {
-                    IndexEntryUpdate<IndexDescriptor> update = valueCreatorUtil.add( nodeId++, value );
+                    ValueIndexEntryUpdate<IndexDescriptor> update = valueCreatorUtil.add( nodeId++, value );
                     updater.process( update );
                 }
             }

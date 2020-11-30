@@ -46,7 +46,7 @@ import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobMonitoringParams;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.storageengine.api.IndexEntryUpdate;
+import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 import org.neo4j.storageengine.api.schema.SimpleNodeValueClient;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
@@ -155,8 +155,8 @@ class GenericBlockBasedIndexPopulatorTest
         {
             // when
             Value duplicate = Values.of( "duplicate" );
-            IndexEntryUpdate<?> firstScanUpdate = IndexEntryUpdate.add( 1, INDEX_DESCRIPTOR, duplicate );
-            IndexEntryUpdate<?> secondScanUpdate = IndexEntryUpdate.add( 2, INDEX_DESCRIPTOR, duplicate );
+            ValueIndexEntryUpdate<?> firstScanUpdate = ValueIndexEntryUpdate.add( 1, INDEX_DESCRIPTOR, duplicate );
+            ValueIndexEntryUpdate<?> secondScanUpdate = ValueIndexEntryUpdate.add( 2, INDEX_DESCRIPTOR, duplicate );
             assertThrows( IndexEntryConflictException.class, () ->
             {
                 populator.add( singleton( firstScanUpdate ), NULL );
@@ -179,8 +179,8 @@ class GenericBlockBasedIndexPopulatorTest
         {
             // when
             Value duplicate = Values.of( "duplicate" );
-            IndexEntryUpdate<?> firstExternalUpdate = IndexEntryUpdate.add( 1, INDEX_DESCRIPTOR, duplicate );
-            IndexEntryUpdate<?> secondExternalUpdate = IndexEntryUpdate.add( 2, INDEX_DESCRIPTOR, duplicate );
+            ValueIndexEntryUpdate<?> firstExternalUpdate = ValueIndexEntryUpdate.add( 1, INDEX_DESCRIPTOR, duplicate );
+            ValueIndexEntryUpdate<?> secondExternalUpdate = ValueIndexEntryUpdate.add( 2, INDEX_DESCRIPTOR, duplicate );
             assertThrows( IndexEntryConflictException.class, () ->
             {
                 try ( IndexUpdater updater = populator.newPopulatingUpdater( NULL ) )
@@ -206,8 +206,8 @@ class GenericBlockBasedIndexPopulatorTest
         {
             // when
             Value duplicate = Values.of( "duplicate" );
-            IndexEntryUpdate<?> externalUpdate = IndexEntryUpdate.add( 1, INDEX_DESCRIPTOR, duplicate );
-            IndexEntryUpdate<?> scanUpdate = IndexEntryUpdate.add( 2, INDEX_DESCRIPTOR, duplicate );
+            ValueIndexEntryUpdate<?> externalUpdate = ValueIndexEntryUpdate.add( 1, INDEX_DESCRIPTOR, duplicate );
+            ValueIndexEntryUpdate<?> scanUpdate = ValueIndexEntryUpdate.add( 2, INDEX_DESCRIPTOR, duplicate );
             assertThrows( IndexEntryConflictException.class, () ->
             {
                 try ( IndexUpdater updater = populator.newPopulatingUpdater( NULL ) )
@@ -234,9 +234,9 @@ class GenericBlockBasedIndexPopulatorTest
             // when
             Value duplicate = Values.of( "duplicate" );
             Value unique = Values.of( "unique" );
-            IndexEntryUpdate<?> firstScanUpdate = IndexEntryUpdate.add( 1, INDEX_DESCRIPTOR, duplicate );
-            IndexEntryUpdate<?> secondScanUpdate = IndexEntryUpdate.add( 2, INDEX_DESCRIPTOR, duplicate );
-            IndexEntryUpdate<?> externalUpdate = IndexEntryUpdate.change( 1, INDEX_DESCRIPTOR, duplicate, unique );
+            ValueIndexEntryUpdate<?> firstScanUpdate = ValueIndexEntryUpdate.add( 1, INDEX_DESCRIPTOR, duplicate );
+            ValueIndexEntryUpdate<?> secondScanUpdate = ValueIndexEntryUpdate.add( 2, INDEX_DESCRIPTOR, duplicate );
+            ValueIndexEntryUpdate<?> externalUpdate = ValueIndexEntryUpdate.change( 1, INDEX_DESCRIPTOR, duplicate, unique );
             populator.add( singleton( firstScanUpdate ), NULL );
             try ( IndexUpdater updater = populator.newPopulatingUpdater( NULL ) )
             {
@@ -263,11 +263,11 @@ class GenericBlockBasedIndexPopulatorTest
         try
         {
             int maxKeyValueSize = populator.tree.keyValueSizeCap();
-            IndexEntryUpdate<IndexDescriptor> update =
+            ValueIndexEntryUpdate<IndexDescriptor> update =
                     add( 1, INDEX_DESCRIPTOR, LayoutTestUtil.generateStringValueResultingInSize( populator.layout, maxKeyValueSize ) );
 
             // when
-            Collection<IndexEntryUpdate<?>> updates = singleton( update );
+            Collection<ValueIndexEntryUpdate<?>> updates = singleton( update );
             populator.add( updates, NULL );
             populator.scanCompleted( nullInstance, populationWorkScheduler, NULL );
 
@@ -288,11 +288,11 @@ class GenericBlockBasedIndexPopulatorTest
         try
         {
             int maxKeyValueSize = populator.tree.keyValueSizeCap();
-            IndexEntryUpdate<IndexDescriptor> update =
+            ValueIndexEntryUpdate<IndexDescriptor> update =
                     add( 1, INDEX_DESCRIPTOR, BlockBasedIndexPopulatorTest.generateStringResultingInSize( populator.layout, maxKeyValueSize + 1 ) );
             IllegalArgumentException e = assertThrows( IllegalArgumentException.class, () ->
             {
-                Collection<IndexEntryUpdate<?>> updates = singleton( update );
+                Collection<ValueIndexEntryUpdate<?>> updates = singleton( update );
                 populator.add( updates, NULL );
                 populator.scanCompleted( nullInstance, populationWorkScheduler, NULL );
             } );

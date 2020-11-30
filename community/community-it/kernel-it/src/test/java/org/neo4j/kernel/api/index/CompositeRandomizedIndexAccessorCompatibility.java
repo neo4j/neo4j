@@ -37,7 +37,7 @@ import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexOrderCapability;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptor;
-import org.neo4j.storageengine.api.IndexEntryUpdate;
+import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 import org.neo4j.test.InMemoryTokens;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueCategory;
@@ -80,11 +80,11 @@ public class CompositeRandomizedIndexAccessorCompatibility extends IndexAccessor
         {
             // given
             ValueType[] types = randomSetOfSupportedTypes();
-            List<IndexEntryUpdate<?>> updates = new ArrayList<>();
+            List<ValueIndexEntryUpdate<?>> updates = new ArrayList<>();
             Set<ValueTuple> duplicateChecker = new HashSet<>();
             for ( long id = 0; id < 30_000; id++ )
             {
-                IndexEntryUpdate<SchemaDescriptor> update;
+                ValueIndexEntryUpdate<SchemaDescriptor> update;
                 do
                 {
                     update = add( id, descriptor.schema(),
@@ -100,7 +100,7 @@ public class CompositeRandomizedIndexAccessorCompatibility extends IndexAccessor
 
             // when
             TokenNameLookup tokens = new InMemoryTokens();
-            for ( IndexEntryUpdate<?> update : updates )
+            for ( ValueIndexEntryUpdate<?> update : updates )
             {
                 // then
                 List<Long> hits = query(
@@ -141,7 +141,7 @@ public class CompositeRandomizedIndexAccessorCompatibility extends IndexAccessor
 
             for ( int i = 0; i < 5; i++ )
             {
-                List<IndexEntryUpdate<?>> updates = new ArrayList<>();
+                List<ValueIndexEntryUpdate<?>> updates = new ArrayList<>();
                 if ( i == 0 )
                 {
                     // The initial batch of data can simply be additions
@@ -169,7 +169,7 @@ public class CompositeRandomizedIndexAccessorCompatibility extends IndexAccessor
                             ValueTuple newValue = generateUniqueRandomValue( types, uniqueValues );
                             uniqueValues.remove( existing.value );
                             sortedValues.add( new ValueAndId( newValue, existing.id ) );
-                            updates.add( IndexEntryUpdate.change( existing.id, descriptor.schema(), existing.value.getValues(), newValue.getValues() ) );
+                            updates.add( ValueIndexEntryUpdate.change( existing.id, descriptor.schema(), existing.value.getValues(), newValue.getValues() ) );
                         }
                         else
                         {   // remove
@@ -177,7 +177,7 @@ public class CompositeRandomizedIndexAccessorCompatibility extends IndexAccessor
                                     existing = random.among( sortedValues.toArray( new ValueAndId[0] ) );
                             sortedValues.remove( existing );
                             uniqueValues.remove( existing.value );
-                            updates.add( IndexEntryUpdate.remove( existing.id, descriptor.schema(), existing.value.getValues() ) );
+                            updates.add( ValueIndexEntryUpdate.remove( existing.id, descriptor.schema(), existing.value.getValues() ) );
                         }
                     }
                 }
@@ -272,9 +272,9 @@ public class CompositeRandomizedIndexAccessorCompatibility extends IndexAccessor
             return value;
         }
 
-        private List<IndexEntryUpdate<?>> generateUpdatesFromValues( List<ValueTuple> values, MutableLong nextId )
+        private List<ValueIndexEntryUpdate<?>> generateUpdatesFromValues( List<ValueTuple> values, MutableLong nextId )
         {
-            List<IndexEntryUpdate<?>> updates = new ArrayList<>();
+            List<ValueIndexEntryUpdate<?>> updates = new ArrayList<>();
             for ( ValueTuple value : values )
             {
                 updates.add( add( nextId.getAndIncrement(), descriptor.schema(), value.getValues() ) );

@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
+import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 
 class FusionIndexUpdater extends FusionIndexBase<IndexUpdater> implements IndexUpdater
 {
@@ -35,32 +36,33 @@ class FusionIndexUpdater extends FusionIndexBase<IndexUpdater> implements IndexU
     @Override
     public void process( IndexEntryUpdate<?> update ) throws IndexEntryConflictException
     {
-        switch ( update.updateMode() )
+        ValueIndexEntryUpdate<?> valueUpdate = asValueUpdate( update );
+        switch ( valueUpdate.updateMode() )
         {
         case ADDED:
-            instanceSelector.select( slotSelector.selectSlot( update.values(), CATEGORY_OF ) ).process( update );
+            instanceSelector.select( slotSelector.selectSlot( valueUpdate.values(), CATEGORY_OF ) ).process( valueUpdate );
             break;
         case CHANGED:
             // Hmm, here's a little conundrum. What if we change from a value that goes into native
             // to a value that goes into fallback, or vice versa? We also don't want to blindly pass
             // all CHANGED updates to both updaters since not all values will work in them.
-            IndexUpdater from = instanceSelector.select( slotSelector.selectSlot( update.beforeValues(), CATEGORY_OF ) );
-            IndexUpdater to = instanceSelector.select( slotSelector.selectSlot( update.values(), CATEGORY_OF ) );
+            IndexUpdater from = instanceSelector.select( slotSelector.selectSlot( valueUpdate.beforeValues(), CATEGORY_OF ) );
+            IndexUpdater to = instanceSelector.select( slotSelector.selectSlot( valueUpdate.values(), CATEGORY_OF ) );
             // There are two cases:
             // - both before/after go into the same updater --> pass update into that updater
             if ( from == to )
             {
-                from.process( update );
+                from.process( valueUpdate );
             }
             // - before go into one and after into the other --> REMOVED from one and ADDED into the other
             else
             {
-                from.process( IndexEntryUpdate.remove( update.getEntityId(), update.indexKey(), update.beforeValues() ) );
-                to.process( IndexEntryUpdate.add( update.getEntityId(), update.indexKey(), update.values() ) );
+                from.process( IndexEntryUpdate.remove( valueUpdate.getEntityId(), valueUpdate.indexKey(), valueUpdate.beforeValues() ) );
+                to.process( IndexEntryUpdate.add( valueUpdate.getEntityId(), valueUpdate.indexKey(), valueUpdate.values() ) );
             }
             break;
         case REMOVED:
-            instanceSelector.select( slotSelector.selectSlot( update.values(), CATEGORY_OF ) ).process( update );
+            instanceSelector.select( slotSelector.selectSlot( valueUpdate.values(), CATEGORY_OF ) ).process( valueUpdate );
             break;
         default:
             throw new IllegalArgumentException( "Unknown update mode" );

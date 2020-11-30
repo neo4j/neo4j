@@ -56,6 +56,7 @@ import org.neo4j.kernel.impl.index.schema.CollectingIndexUpdater;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
+import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.EphemeralFileSystemExtension;
@@ -249,7 +250,7 @@ class IndexCRUDIT
         @Override
         public void includeSample( IndexEntryUpdate<?> update )
         {
-            addValueToSample( update.getEntityId(), update.values()[0] );
+            addValueToSample( update.getEntityId(), ((ValueIndexEntryUpdate<?>) update).values()[0] );
         }
 
         @Override

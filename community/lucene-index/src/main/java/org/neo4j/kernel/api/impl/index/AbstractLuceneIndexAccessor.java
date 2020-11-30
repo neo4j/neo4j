@@ -42,6 +42,7 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
+import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 import org.neo4j.values.storable.Value;
 
 public abstract class AbstractLuceneIndexAccessor<READER extends IndexReader, INDEX extends DatabaseIndex<READER>> implements IndexAccessor
@@ -189,24 +190,25 @@ public abstract class AbstractLuceneIndexAccessor<READER extends IndexReader, IN
         {
             // we do not support adding partial entries
             assert update.indexKey().schema().equals( descriptor.schema() );
+            ValueIndexEntryUpdate<?> valueUpdate = asValueUpdate( update );
 
-            switch ( update.updateMode() )
+            switch ( valueUpdate.updateMode() )
             {
             case ADDED:
                 if ( idempotent )
                 {
-                    addIdempotent( update.getEntityId(), update.values() );
+                    addIdempotent( valueUpdate.getEntityId(), valueUpdate.values() );
                 }
                 else
                 {
-                    add( update.getEntityId(), update.values() );
+                    add( valueUpdate.getEntityId(), valueUpdate.values() );
                 }
                 break;
             case CHANGED:
-                change( update.getEntityId(), update.values() );
+                change( valueUpdate.getEntityId(), valueUpdate.values() );
                 break;
             case REMOVED:
-                remove( update.getEntityId() );
+                remove( valueUpdate.getEntityId() );
                 break;
             default:
                 throw new UnsupportedOperationException();

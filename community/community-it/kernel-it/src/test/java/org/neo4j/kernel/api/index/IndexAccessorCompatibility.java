@@ -40,7 +40,7 @@ import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
-import org.neo4j.storageengine.api.IndexEntryUpdate;
+import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 import org.neo4j.storageengine.api.schema.SimpleNodeValueClient;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
@@ -250,11 +250,11 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
      * Commit these updates to the index. Also store the values, which currently are stored for all types except geometry,
      * so therefore it's done explicitly here so that we can filter on them later.
      */
-    void updateAndCommit( Collection<IndexEntryUpdate<?>> updates ) throws IndexEntryConflictException
+    void updateAndCommit( Collection<ValueIndexEntryUpdate<?>> updates ) throws IndexEntryConflictException
     {
         try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
         {
-            for ( IndexEntryUpdate<?> update : updates )
+            for ( ValueIndexEntryUpdate<?> update : updates )
             {
                 updater.process( update );
                 switch ( update.updateMode() )

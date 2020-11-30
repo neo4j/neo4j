@@ -29,6 +29,7 @@ import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.ThreadTestUtils;
 
@@ -131,7 +132,7 @@ class ContractCheckingIndexProxyTest
         {
             try ( IndexUpdater updater = outer.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
             {
-                updater.process( null );
+                updater.process( (ValueIndexEntryUpdate<?>) null );
             }
         } );
     }
@@ -151,7 +152,7 @@ class ContractCheckingIndexProxyTest
         {
             try ( IndexUpdater updater = outer.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
             {
-                updater.process( null );
+                updater.process( (ValueIndexEntryUpdate<?>) null );
             }
         } );
     }
@@ -265,7 +266,7 @@ class ContractCheckingIndexProxyTest
         {
             try ( IndexUpdater updater = outer.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
             {
-                updater.process( null );
+                updater.process( (ValueIndexEntryUpdate<?>) null );
                 try
                 {
                     actionThread.start();

@@ -48,6 +48,7 @@ import org.neo4j.internal.schema.IndexOrderCapability;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
+import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 import org.neo4j.storageengine.api.schema.SimpleNodeValueClient;
 import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
@@ -183,7 +184,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
     public void shouldUpdateWithAllValues() throws Exception
     {
         // GIVEN
-        List<IndexEntryUpdate<?>> updates = updates( valueSet1 );
+        List<ValueIndexEntryUpdate<?>> updates = updates( valueSet1 );
         updateAndCommit( updates );
 
         // then
@@ -199,7 +200,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
     public void shouldScanAllValues() throws Exception
     {
         // GIVEN
-        List<IndexEntryUpdate<?>> updates = updates( valueSet1 );
+        List<ValueIndexEntryUpdate<?>> updates = updates( valueSet1 );
         updateAndCommit( updates );
         Long[] allNodes = valueSet1.stream().map( x -> x.nodeId ).toArray( Long[]::new );
 
@@ -372,7 +373,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
     {
         int count = random.nextInt( 5, 10 );
         List<Value> values = new ArrayList<>();
-        List<IndexEntryUpdate<?>> updates = new ArrayList<>();
+        List<ValueIndexEntryUpdate<?>> updates = new ArrayList<>();
         Set<Value> duplicateCheck = new HashSet<>();
         for ( int i = 0; i < count; i++ )
         {
@@ -921,7 +922,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
             Assume.assumeTrue( "Assume support for order " + order, indexOrders.supportsDesc() );
         }
 
-        List<IndexEntryUpdate<?>> additions = Arrays.stream( objects ).map( o -> add( 1, descriptor.schema(), o ) ).collect( Collectors.toList() );
+        List<ValueIndexEntryUpdate<?>> additions = Arrays.stream( objects ).map( o -> add( 1, descriptor.schema(), o ) ).collect( Collectors.toList() );
         Collections.shuffle( additions, random.random() );
         updateAndCommit( additions );
 
@@ -1194,7 +1195,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
 
         private void doTestShouldHandleLargeAmountOfDuplicates( Object value ) throws Exception
         {
-            List<IndexEntryUpdate<?>> updates = new ArrayList<>();
+            List<ValueIndexEntryUpdate<?>> updates = new ArrayList<>();
             List<Long> nodeIds = new ArrayList<>();
             for ( long i = 0; i < 1000; i++ )
             {

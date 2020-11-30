@@ -49,7 +49,7 @@ import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobMonitoringParams;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.storageengine.api.IndexEntryUpdate;
+import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
@@ -130,7 +130,7 @@ public abstract class NativeIndexTestUtil<KEY extends NativeIndexKey<KEY>,VALUE 
         valueCreatorUtil.copyValue( value, intoValue );
     }
 
-    void verifyUpdates( IndexEntryUpdate<IndexDescriptor>[] updates )
+    void verifyUpdates( ValueIndexEntryUpdate<IndexDescriptor>[] updates )
             throws IOException
     {
         Pair<KEY,VALUE>[] expectedHits = convertToHits( updates, layout );
@@ -202,11 +202,11 @@ public abstract class NativeIndexTestUtil<KEY extends NativeIndexKey<KEY>,VALUE 
         return Pair.of( intoKey, intoValue );
     }
 
-    private Pair<KEY,VALUE>[] convertToHits( IndexEntryUpdate<IndexDescriptor>[] updates,
+    private Pair<KEY,VALUE>[] convertToHits( ValueIndexEntryUpdate<IndexDescriptor>[] updates,
             Layout<KEY,VALUE> layout )
     {
         List<Pair<KEY,VALUE>> hits = new ArrayList<>( updates.length );
-        for ( IndexEntryUpdate<IndexDescriptor> u : updates )
+        for ( ValueIndexEntryUpdate<IndexDescriptor> u : updates )
         {
             KEY key = layout.newKey();
             key.initialize( u.getEntityId() );

@@ -28,6 +28,7 @@ import org.neo4j.kernel.api.index.NonUniqueIndexSampler;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
+import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 
 /**
  * A {@link LuceneIndexPopulator} used for non-unique Lucene schema indexes.
@@ -60,7 +61,7 @@ public class NonUniqueLuceneIndexPopulator extends LuceneIndexPopulator<SchemaIn
     @Override
     public void includeSample( IndexEntryUpdate<?> update )
     {
-        sampler.include( LuceneDocumentStructure.encodedStringValuesForSampling( update.values() ) );
+        sampler.include( LuceneDocumentStructure.encodedStringValuesForSampling( ((ValueIndexEntryUpdate<?>) update).values() ) );
     }
 
     @Override

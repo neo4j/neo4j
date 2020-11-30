@@ -43,6 +43,7 @@ import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.PhaseTracker;
 import org.neo4j.kernel.impl.index.schema.NodeValueIterator;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
+import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueTuple;
 import org.neo4j.values.storable.Values;
@@ -198,8 +199,8 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
             // WHEN
             try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
             {
-                List<IndexEntryUpdate<?>> updates = updates( valueSet2 );
-                for ( IndexEntryUpdate<?> update : updates )
+                List<ValueIndexEntryUpdate<?>> updates = updates( valueSet2 );
+                for ( ValueIndexEntryUpdate<?> update : updates )
                 {
                     updater.process( update );
                 }

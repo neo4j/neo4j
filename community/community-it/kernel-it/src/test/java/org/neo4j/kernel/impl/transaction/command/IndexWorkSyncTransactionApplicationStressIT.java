@@ -56,6 +56,7 @@ import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.UpdateMode;
+import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.RecordStorageEngineRule;
 import org.neo4j.test.rule.TestDirectory;
@@ -246,10 +247,11 @@ public class IndexWorkSyncTransactionApplicationStressIT
         @Override
         public void applyUpdates( Iterable<IndexEntryUpdate<IndexDescriptor>> updates, PageCursorTracer cursorTracer )
         {
-            updates.forEach( update ->
+            updates.forEach( rawUpdate ->
             {
                 // Only additions assumed
-                assert update.updateMode() == UpdateMode.ADDED;
+                assert rawUpdate.updateMode() == UpdateMode.ADDED;
+                ValueIndexEntryUpdate<?> update = (ValueIndexEntryUpdate<?>) rawUpdate;
                 index.computeIfAbsent( update.values()[0], value -> ConcurrentHashMap.newKeySet() ).add( update.getEntityId() );
             } );
         }

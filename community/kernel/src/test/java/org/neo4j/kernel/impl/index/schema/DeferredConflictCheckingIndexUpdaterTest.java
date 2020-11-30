@@ -30,7 +30,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
-import org.neo4j.storageengine.api.IndexEntryUpdate;
+import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 import org.neo4j.storageengine.api.UpdateMode;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
@@ -62,7 +62,7 @@ class DeferredConflictCheckingIndexUpdaterTest
         IndexReader reader = mock( IndexReader.class );
         doAnswer( new NodeIdsIndexReaderQueryAnswer( descriptor, 0 ) ).when( reader ).query( any(), any(), any(), any(), any() );
         long nodeId = 0;
-        List<IndexEntryUpdate<IndexDescriptor>> updates = new ArrayList<>();
+        List<ValueIndexEntryUpdate<IndexDescriptor>> updates = new ArrayList<>();
         updates.add( add( nodeId++, descriptor, tuple( 10, 11 ) ) );
         updates.add( change( nodeId++, descriptor, tuple( "abc", "def" ), tuple( "ghi", "klm" ) ) );
         updates.add( remove( nodeId++, descriptor, tuple( 1001L, 1002L ) ) );
@@ -71,7 +71,7 @@ class DeferredConflictCheckingIndexUpdaterTest
         try ( DeferredConflictCheckingIndexUpdater updater = new DeferredConflictCheckingIndexUpdater( actual, () -> reader, descriptor, NULL ) )
         {
             // when
-            for ( IndexEntryUpdate<IndexDescriptor> update : updates )
+            for ( ValueIndexEntryUpdate<IndexDescriptor> update : updates )
             {
                 updater.process( update );
                 verify( actual ).process( update );
@@ -79,7 +79,7 @@ class DeferredConflictCheckingIndexUpdaterTest
         }
 
         // then
-        for ( IndexEntryUpdate<IndexDescriptor> update : updates )
+        for ( ValueIndexEntryUpdate<IndexDescriptor> update : updates )
         {
             if ( update.updateMode() == UpdateMode.ADDED || update.updateMode() == UpdateMode.CHANGED )
             {

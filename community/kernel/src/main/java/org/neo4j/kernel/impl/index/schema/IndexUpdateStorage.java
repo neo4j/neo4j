@@ -29,6 +29,7 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.UpdateMode;
+import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 
 import static org.neo4j.kernel.impl.index.schema.NativeIndexUpdater.initializeKeyAndValueFromUpdate;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexUpdater.initializeKeyFromUpdate;
@@ -57,21 +58,22 @@ public class IndexUpdateStorage<KEY extends NativeIndexKey<KEY>, VALUE extends N
     @Override
     public void add( IndexEntryUpdate<?> update, PageCursor pageCursor ) throws IOException
     {
+        ValueIndexEntryUpdate<?> valueUpdate = (ValueIndexEntryUpdate<?>) update;
         int entrySize = TYPE_SIZE;
-        UpdateMode updateMode = update.updateMode();
+        UpdateMode updateMode = valueUpdate.updateMode();
         switch ( updateMode )
         {
         case ADDED:
-            initializeKeyAndValueFromUpdate( key1, value, update.getEntityId(), update.values() );
+            initializeKeyAndValueFromUpdate( key1, value, valueUpdate.getEntityId(), valueUpdate.values() );
             entrySize += BlockEntry.entrySize( layout, key1, value );
             break;
         case REMOVED:
-            initializeKeyFromUpdate( key1, update.getEntityId(), update.values() );
+            initializeKeyFromUpdate( key1, valueUpdate.getEntityId(), valueUpdate.values() );
             entrySize += BlockEntry.keySize( layout, key1 );
             break;
         case CHANGED:
-            initializeKeyFromUpdate( key1, update.getEntityId(), update.beforeValues() );
-            initializeKeyAndValueFromUpdate( key2, value, update.getEntityId(), update.values() );
+            initializeKeyFromUpdate( key1, valueUpdate.getEntityId(), valueUpdate.beforeValues() );
+            initializeKeyAndValueFromUpdate( key2, value, valueUpdate.getEntityId(), valueUpdate.values() );
             entrySize += BlockEntry.keySize( layout, key1 ) + BlockEntry.entrySize( layout, key2, value );
             break;
         default:

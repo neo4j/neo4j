@@ -24,6 +24,7 @@ import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
+import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 import org.neo4j.values.storable.Value;
 
 import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.NEUTRAL;
@@ -60,7 +61,8 @@ class NativeIndexUpdater<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIn
     public void process( IndexEntryUpdate<?> update ) throws IndexEntryConflictException
     {
         assertOpen();
-        processUpdate( treeKey, treeValue, update, writer, conflictDetectingValueMerger );
+        ValueIndexEntryUpdate<?> valueUpdate = asValueUpdate( update );
+        processUpdate( treeKey, treeValue, valueUpdate, writer, conflictDetectingValueMerger );
     }
 
     @Override
@@ -79,7 +81,7 @@ class NativeIndexUpdater<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIn
     }
 
     static <KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue> void processUpdate( KEY treeKey, VALUE treeValue,
-            IndexEntryUpdate<?> update, Writer<KEY,VALUE> writer, ConflictDetectingValueMerger<KEY,VALUE,Value[]> conflictDetectingValueMerger )
+            ValueIndexEntryUpdate<?> update, Writer<KEY,VALUE> writer, ConflictDetectingValueMerger<KEY,VALUE,Value[]> conflictDetectingValueMerger )
             throws IndexEntryConflictException
     {
         switch ( update.updateMode() )
@@ -99,7 +101,7 @@ class NativeIndexUpdater<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIn
     }
 
     private static <KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue> void processRemove( KEY treeKey,
-            IndexEntryUpdate<?> update, Writer<KEY,VALUE> writer )
+            ValueIndexEntryUpdate<?> update, Writer<KEY,VALUE> writer )
     {
         // todo Do we need to verify that we actually removed something at all?
         // todo Difference between online and recovery?
@@ -108,7 +110,7 @@ class NativeIndexUpdater<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIn
     }
 
     private static <KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue> void processChange( KEY treeKey, VALUE treeValue,
-            IndexEntryUpdate<?> update, Writer<KEY,VALUE> writer,
+            ValueIndexEntryUpdate<?> update, Writer<KEY,VALUE> writer,
             ConflictDetectingValueMerger<KEY,VALUE,Value[]> conflictDetectingValueMerger )
             throws IndexEntryConflictException
     {
@@ -123,8 +125,9 @@ class NativeIndexUpdater<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIn
         conflictDetectingValueMerger.checkConflict( update.values() );
     }
 
-    private static <KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue> void processAdd( KEY treeKey, VALUE treeValue, IndexEntryUpdate<?> update,
-            Writer<KEY,VALUE> writer, ConflictDetectingValueMerger<KEY,VALUE,Value[]> conflictDetectingValueMerger ) throws IndexEntryConflictException
+    private static <KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue> void processAdd( KEY treeKey, VALUE treeValue,
+            ValueIndexEntryUpdate<?> update, Writer<KEY,VALUE> writer, ConflictDetectingValueMerger<KEY,VALUE,Value[]> conflictDetectingValueMerger )
+            throws IndexEntryConflictException
     {
         initializeKeyAndValueFromUpdate( treeKey, treeValue, update.getEntityId(), update.values() );
         conflictDetectingValueMerger.controlConflictDetection( treeKey );

@@ -111,6 +111,7 @@ import org.neo4j.logging.log4j.Log4jLogProvider;
 import org.neo4j.storageengine.api.EntityTokenUpdate;
 import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
+import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 import org.neo4j.string.UTF8;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
@@ -483,7 +484,7 @@ public class FullCheckIntegrationTest
                     EntityUpdates updates = fixture.nodeAsUpdates( nodeId );
                     for ( IndexEntryUpdate<?> update : updates.forIndexKeys( singletonList( indexDescriptor ) ) )
                     {
-                        updater.process( IndexEntryUpdate.remove( nodeId, indexDescriptor, update.values() ) );
+                        updater.process( IndexEntryUpdate.remove( nodeId, indexDescriptor, ((ValueIndexEntryUpdate<?>) update).values() ) );
                     }
                 }
             }

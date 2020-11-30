@@ -81,6 +81,7 @@ import org.neo4j.storageengine.api.EntityTokenUpdate;
 import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
+import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
@@ -100,7 +101,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.common.Subject.ANONYMOUS;
 import static org.neo4j.common.Subject.AUTH_DISABLED;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
@@ -701,11 +701,11 @@ class IndexPopulationJobTest
         {
             for ( IndexEntryUpdate<?> update : updates )
             {
-                add( update );
+                add( (ValueIndexEntryUpdate<?>) update );
             }
         }
 
-        void add( IndexEntryUpdate<?> update )
+        void add( ValueIndexEntryUpdate<?> update )
         {
             if ( update.getEntityId() == 2 )
             {
@@ -722,14 +722,15 @@ class IndexPopulationJobTest
                 @Override
                 public void process( IndexEntryUpdate<?> update )
                 {
-                    switch ( update.updateMode() )
+                    ValueIndexEntryUpdate<?> valueUpdate = asValueUpdate( update );
+                    switch ( valueUpdate.updateMode() )
                     {
                         case ADDED:
                         case CHANGED:
-                            added.add( Pair.of( update.getEntityId(), update.values()[0].asObjectCopy() ) );
+                            added.add( Pair.of( valueUpdate.getEntityId(), valueUpdate.values()[0].asObjectCopy() ) );
                             break;
                         default:
-                            throw new IllegalArgumentException( update.updateMode().name() );
+                            throw new IllegalArgumentException( valueUpdate.updateMode().name() );
                     }
                 }
 
@@ -772,11 +773,11 @@ class IndexPopulationJobTest
         {
             for ( IndexEntryUpdate<?> update : updates )
             {
-                add( update );
+                add( (ValueIndexEntryUpdate<?>) update );
             }
         }
 
-        void add( IndexEntryUpdate<?> update )
+        void add( ValueIndexEntryUpdate<?> update )
         {
             if ( update.getEntityId() == 2 )
             {
@@ -793,17 +794,18 @@ class IndexPopulationJobTest
                 @Override
                 public void process( IndexEntryUpdate<?> update )
                 {
-                    switch ( update.updateMode() )
+                    ValueIndexEntryUpdate<?> valueUpdate = asValueUpdate( update );
+                    switch ( valueUpdate.updateMode() )
                     {
                         case ADDED:
                         case CHANGED:
-                            added.put( update.getEntityId(), update.values()[0].asObjectCopy() );
+                            added.put( valueUpdate.getEntityId(), valueUpdate.values()[0].asObjectCopy() );
                             break;
                         case REMOVED:
-                            removed.put( update.getEntityId(), update.values()[0].asObjectCopy() ); // on remove, value is the before value
+                            removed.put( valueUpdate.getEntityId(), valueUpdate.values()[0].asObjectCopy() ); // on remove, value is the before value
                             break;
                         default:
-                            throw new IllegalArgumentException( update.updateMode().name() );
+                            throw new IllegalArgumentException( valueUpdate.updateMode().name() );
                     }
                 }
 

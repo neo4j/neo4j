@@ -88,6 +88,7 @@ import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageReader;
+import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.values.storable.Values;
@@ -617,13 +618,14 @@ public class MultiIndexPopulationConcurrentUpdatesIT
                             for ( IndexEntryUpdate<?> indexUpdate :
                                     update.forIndexKeys( Collections.singleton( schema ) ) )
                             {
-                                switch ( indexUpdate.updateMode() )
+                                ValueIndexEntryUpdate<?> valueUpdate = (ValueIndexEntryUpdate<?>) indexUpdate;
+                                switch ( valueUpdate.updateMode() )
                                 {
                                 case CHANGED:
                                 case ADDED:
                                     node.addLabel(
                                             Label.label( labelsIdNameMap.get( schema.getLabelId() ) ) );
-                                    node.setProperty( NAME_PROPERTY, indexUpdate.values()[0].asObject() );
+                                    node.setProperty( NAME_PROPERTY, valueUpdate.values()[0].asObject() );
                                     break;
                                 case REMOVED:
                                     node.addLabel(
@@ -631,7 +633,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
                                     node.delete();
                                     break;
                                 default:
-                                    throw new IllegalArgumentException( indexUpdate.updateMode().name() );
+                                    throw new IllegalArgumentException( valueUpdate.updateMode().name() );
                                 }
                             }
                         }

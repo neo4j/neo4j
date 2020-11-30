@@ -31,6 +31,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
+import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 import org.neo4j.values.storable.ValueTuple;
 
 import static org.neo4j.internal.kernel.api.IndexQuery.exact;
@@ -79,10 +80,11 @@ public class DeferredConflictCheckingIndexUpdater implements IndexUpdater
     @Override
     public void process( IndexEntryUpdate<?> update ) throws IndexEntryConflictException
     {
-        actual.process( update );
-        if ( update.updateMode() != REMOVED )
+        ValueIndexEntryUpdate<?> valueUpdate = asValueUpdate( update );
+        actual.process( valueUpdate );
+        if ( valueUpdate.updateMode() != REMOVED )
         {
-            touchedTuples.add( ValueTuple.of( update.values() ) );
+            touchedTuples.add( ValueTuple.of( valueUpdate.values() ) );
         }
     }
 

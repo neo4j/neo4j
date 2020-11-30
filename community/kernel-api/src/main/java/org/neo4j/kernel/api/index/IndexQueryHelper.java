@@ -22,6 +22,7 @@ package org.neo4j.kernel.api.index;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
+import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -41,25 +42,25 @@ public final class IndexQueryHelper
         return IndexQuery.exact( propertyKeyId, value );
     }
 
-    public static IndexEntryUpdate<SchemaDescriptor> add(
+    public static ValueIndexEntryUpdate<SchemaDescriptor> add(
             long nodeId, SchemaDescriptor schema, Object... objects )
     {
         return IndexEntryUpdate.add( nodeId, schema, toValues( objects ) );
     }
 
-    public static IndexEntryUpdate<SchemaDescriptor> remove(
+    public static ValueIndexEntryUpdate<SchemaDescriptor> remove(
             long nodeId, SchemaDescriptor schema, Object... objects )
     {
         return IndexEntryUpdate.remove( nodeId, schema, toValues( objects ) );
     }
 
-    public static IndexEntryUpdate<SchemaDescriptor> change(
+    public static ValueIndexEntryUpdate<SchemaDescriptor> change(
             long nodeId, SchemaDescriptor schema, Object o1, Object o2 )
     {
         return IndexEntryUpdate.change( nodeId, schema, Values.of( o1 ), Values.of( o2 ) );
     }
 
-    public static IndexEntryUpdate<SchemaDescriptor> change(
+    public static ValueIndexEntryUpdate<SchemaDescriptor> change(
             long nodeId, SchemaDescriptor schema, Object[] o1, Object[] o2 )
     {
         return IndexEntryUpdate.change( nodeId, schema, toValues( o1 ), toValues( o2 ) );

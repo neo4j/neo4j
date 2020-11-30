@@ -55,6 +55,7 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.UpdateMode;
+import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 import org.neo4j.util.FeatureToggles;
 import org.neo4j.util.Preconditions;
 import org.neo4j.values.storable.Value;
@@ -197,7 +198,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
             BlockStorage<KEY,VALUE> blockStorage = scanUpdates.get().blockStorage;
             for ( IndexEntryUpdate<?> update : updates )
             {
-                storeUpdate( update, blockStorage );
+                storeUpdate( (ValueIndexEntryUpdate<?>) update, blockStorage );
             }
         }
     }
@@ -219,7 +220,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
         }
     }
 
-    private void storeUpdate( IndexEntryUpdate<?> update, BlockStorage<KEY,VALUE> blockStorage )
+    private void storeUpdate( ValueIndexEntryUpdate<?> update, BlockStorage<KEY,VALUE> blockStorage )
     {
         storeUpdate( update.getEntityId(), update.values(), blockStorage );
     }
@@ -457,9 +458,10 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
                 @Override
                 public void process( IndexEntryUpdate<?> update ) throws IndexEntryConflictException
                 {
-                    validateUpdate( update );
+                    ValueIndexEntryUpdate<?> valueUpdate = asValueUpdate( update );
+                    validateUpdate( valueUpdate );
                     numberOfIndexUpdatesSinceSample.incrementAndGet();
-                    super.process( update );
+                    super.process( valueUpdate );
                 }
             };
         }
@@ -472,10 +474,11 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
             public void process( IndexEntryUpdate<?> update )
             {
                 assertOpen();
+                ValueIndexEntryUpdate<?> valueUpdate = asValueUpdate( update );
                 try
                 {
-                    validateUpdate( update );
-                    externalUpdates.add( update );
+                    validateUpdate( valueUpdate );
+                    externalUpdates.add( valueUpdate );
                 }
                 catch ( IOException e )
                 {
@@ -499,7 +502,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
         };
     }
 
-    private void validateUpdate( IndexEntryUpdate<?> update )
+    private void validateUpdate( ValueIndexEntryUpdate<?> update )
     {
         if ( update.updateMode() != UpdateMode.REMOVED )
         {

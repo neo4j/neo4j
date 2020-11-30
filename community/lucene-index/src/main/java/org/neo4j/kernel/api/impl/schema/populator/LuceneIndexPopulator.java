@@ -32,6 +32,7 @@ import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
+import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 
 /**
  * An {@link IndexPopulator} used to create, populate and mark as online a Lucene schema index.
@@ -77,6 +78,7 @@ public abstract class LuceneIndexPopulator<INDEX extends DatabaseIndex<?>> imple
             // Lucene documents stored in a ThreadLocal and reused so we can't create an eager collection of documents here
             // That is why we create a lazy Iterator and then Iterable
             writer.addDocuments( updates.size(), () -> updates.stream()
+                    .map( u -> (ValueIndexEntryUpdate<?>) u )
                     .map( LuceneIndexPopulator::updateAsDocument )
                     .iterator() );
         }
@@ -131,7 +133,7 @@ public abstract class LuceneIndexPopulator<INDEX extends DatabaseIndex<?>> imple
         return true;
     }
 
-    private static Document updateAsDocument( IndexEntryUpdate<?> update )
+    private static Document updateAsDocument( ValueIndexEntryUpdate<?> update )
     {
         return LuceneDocumentStructure.documentRepresentingProperties( update.getEntityId(), update.values() );
     }

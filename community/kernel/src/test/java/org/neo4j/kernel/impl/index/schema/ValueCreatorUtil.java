@@ -35,7 +35,7 @@ import java.util.stream.Stream;
 import org.neo4j.internal.helpers.collection.PrefetchingIterator;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.storageengine.api.IndexEntryUpdate;
+import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
@@ -47,7 +47,7 @@ class ValueCreatorUtil<KEY extends NativeIndexKey<KEY>, VALUE extends NativeInde
     static final double FRACTION_DUPLICATE_UNIQUE = 0;
     static final double FRACTION_DUPLICATE_NON_UNIQUE = 0.1;
     private static final double FRACTION_EXTREME_VALUE = 0.25;
-    private static final Comparator<IndexEntryUpdate<IndexDescriptor>> UPDATE_COMPARATOR = ( u1, u2 ) ->
+    private static final Comparator<ValueIndexEntryUpdate<IndexDescriptor>> UPDATE_COMPARATOR = ( u1, u2 ) ->
             Values.COMPARATOR.compare( u1.values()[0], u2.values()[0] );
     private static final int N_VALUES = 10;
 
@@ -92,23 +92,23 @@ class ValueCreatorUtil<KEY extends NativeIndexKey<KEY>, VALUE extends NativeInde
         return indexDescriptor;
     }
 
-    IndexEntryUpdate<IndexDescriptor>[] someUpdates( RandomRule randomRule )
+    ValueIndexEntryUpdate<IndexDescriptor>[] someUpdates( RandomRule randomRule )
     {
         return someUpdates( randomRule, supportedTypes(), fractionDuplicates() );
     }
 
-    IndexEntryUpdate<IndexDescriptor>[] someUpdates( RandomRule random, ValueType[] types, boolean allowDuplicates )
+    ValueIndexEntryUpdate<IndexDescriptor>[] someUpdates( RandomRule random, ValueType[] types, boolean allowDuplicates )
     {
         double fractionDuplicates = allowDuplicates ? FRACTION_DUPLICATE_NON_UNIQUE : FRACTION_DUPLICATE_UNIQUE;
         return someUpdates( random, types, fractionDuplicates );
     }
 
-    private IndexEntryUpdate<IndexDescriptor>[] someUpdates( RandomRule random, ValueType[] types, double fractionDuplicates )
+    private ValueIndexEntryUpdate<IndexDescriptor>[] someUpdates( RandomRule random, ValueType[] types, double fractionDuplicates )
     {
         RandomValueGenerator valueGenerator = new RandomValueGenerator( random.randomValues(), types, fractionDuplicates );
         RandomUpdateGenerator randomUpdateGenerator = new RandomUpdateGenerator( valueGenerator );
         //noinspection unchecked
-        IndexEntryUpdate<IndexDescriptor>[] result = new IndexEntryUpdate[N_VALUES];
+        ValueIndexEntryUpdate<IndexDescriptor>[] result = new ValueIndexEntryUpdate[N_VALUES];
         for ( int i = 0; i < N_VALUES; i++ )
         {
             result[i] = randomUpdateGenerator.next();
@@ -116,7 +116,7 @@ class ValueCreatorUtil<KEY extends NativeIndexKey<KEY>, VALUE extends NativeInde
         return result;
     }
 
-    IndexEntryUpdate<IndexDescriptor>[] someUpdatesWithDuplicateValues( RandomRule randomRule )
+    ValueIndexEntryUpdate<IndexDescriptor>[] someUpdatesWithDuplicateValues( RandomRule randomRule )
     {
         Iterator<Value> valueIterator = new RandomValueGenerator( randomRule.randomValues(), supportedTypes(), fractionDuplicates() );
         Value[] someValues = new Value[N_VALUES];
@@ -127,21 +127,21 @@ class ValueCreatorUtil<KEY extends NativeIndexKey<KEY>, VALUE extends NativeInde
         return generateAddUpdatesFor( ArrayUtils.addAll( someValues, someValues ) );
     }
 
-    Iterator<IndexEntryUpdate<IndexDescriptor>> randomUpdateGenerator( RandomRule randomRule )
+    Iterator<ValueIndexEntryUpdate<IndexDescriptor>> randomUpdateGenerator( RandomRule randomRule )
     {
         return randomUpdateGenerator( randomRule, supportedTypes() );
     }
 
-    Iterator<IndexEntryUpdate<IndexDescriptor>> randomUpdateGenerator( RandomRule random, ValueType[] types )
+    Iterator<ValueIndexEntryUpdate<IndexDescriptor>> randomUpdateGenerator( RandomRule random, ValueType[] types )
     {
         Iterator<Value> valueIterator = new RandomValueGenerator( random.randomValues(), types, fractionDuplicates() );
         return new RandomUpdateGenerator( valueIterator );
     }
 
-    IndexEntryUpdate<IndexDescriptor>[] generateAddUpdatesFor( Value[] values )
+    ValueIndexEntryUpdate<IndexDescriptor>[] generateAddUpdatesFor( Value[] values )
     {
         //noinspection unchecked
-        IndexEntryUpdate<IndexDescriptor>[] indexEntryUpdates = new IndexEntryUpdate[values.length];
+        ValueIndexEntryUpdate<IndexDescriptor>[] indexEntryUpdates = new ValueIndexEntryUpdate[values.length];
         for ( int i = 0; i < indexEntryUpdates.length; i++ )
         {
             indexEntryUpdates[i] = add( i, values[i] );
@@ -149,7 +149,7 @@ class ValueCreatorUtil<KEY extends NativeIndexKey<KEY>, VALUE extends NativeInde
         return indexEntryUpdates;
     }
 
-    Value[] extractValuesFromUpdates( IndexEntryUpdate<IndexDescriptor>[] updates )
+    Value[] extractValuesFromUpdates( ValueIndexEntryUpdate<IndexDescriptor>[] updates )
     {
         Value[] values = new Value[updates.length];
         for ( int i = 0; i < updates.length; i++ )
@@ -163,12 +163,12 @@ class ValueCreatorUtil<KEY extends NativeIndexKey<KEY>, VALUE extends NativeInde
         return values;
     }
 
-    protected IndexEntryUpdate<IndexDescriptor> add( long nodeId, Value value )
+    protected ValueIndexEntryUpdate<IndexDescriptor> add( long nodeId, Value value )
     {
-        return IndexEntryUpdate.add( nodeId, indexDescriptor, value );
+        return ValueIndexEntryUpdate.add( nodeId, indexDescriptor, value );
     }
 
-    static int countUniqueValues( IndexEntryUpdate<IndexDescriptor>[] updates )
+    static int countUniqueValues( ValueIndexEntryUpdate<IndexDescriptor>[] updates )
     {
         return Stream.of( updates ).map( update -> update.values()[0] ).collect( Collectors.toSet() ).size();
     }
@@ -180,7 +180,7 @@ class ValueCreatorUtil<KEY extends NativeIndexKey<KEY>, VALUE extends NativeInde
         return set.size();
     }
 
-    void sort( IndexEntryUpdate<IndexDescriptor>[] updates )
+    void sort( ValueIndexEntryUpdate<IndexDescriptor>[] updates )
     {
         Arrays.sort( updates, UPDATE_COMPARATOR );
     }
@@ -248,7 +248,7 @@ class ValueCreatorUtil<KEY extends NativeIndexKey<KEY>, VALUE extends NativeInde
         }
     }
 
-    private class RandomUpdateGenerator extends PrefetchingIterator<IndexEntryUpdate<IndexDescriptor>>
+    private class RandomUpdateGenerator extends PrefetchingIterator<ValueIndexEntryUpdate<IndexDescriptor>>
     {
         private final Iterator<Value> valueIterator;
         private long currentEntityId;
@@ -259,7 +259,7 @@ class ValueCreatorUtil<KEY extends NativeIndexKey<KEY>, VALUE extends NativeInde
         }
 
         @Override
-        protected IndexEntryUpdate<IndexDescriptor> fetchNextOrNull()
+        protected ValueIndexEntryUpdate<IndexDescriptor> fetchNextOrNull()
         {
             Value value = valueIterator.next();
             return add( currentEntityId++, value );

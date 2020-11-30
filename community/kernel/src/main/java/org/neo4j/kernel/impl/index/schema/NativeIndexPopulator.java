@@ -37,6 +37,7 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.UniqueIndexSampler;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
+import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 import org.neo4j.util.Preconditions;
 import org.neo4j.values.storable.Value;
 
@@ -225,7 +226,7 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
         {
             for ( IndexEntryUpdate<?> indexEntryUpdate : indexEntryUpdates )
             {
-                NativeIndexUpdater.processUpdate( treeKey, treeValue, indexEntryUpdate, writer, conflictDetector );
+                NativeIndexUpdater.processUpdate( treeKey, treeValue, (ValueIndexEntryUpdate<?>) indexEntryUpdate, writer, conflictDetector );
             }
         }
         catch ( IOException e )

@@ -31,6 +31,7 @@ import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.UpdateMode;
+import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 
 /**
  * An {@link IndexUpdater} used while index population is in progress. Takes special care of node property additions
@@ -49,28 +50,29 @@ public abstract class LuceneIndexPopulatingUpdater implements IndexUpdater
     @Override
     public void process( IndexEntryUpdate<?> update )
     {
-        long nodeId = update.getEntityId();
+        ValueIndexEntryUpdate<?> valueUpdate = asValueUpdate( update );
+        long nodeId = valueUpdate.getEntityId();
 
         try
         {
-            switch ( update.updateMode() )
+            switch ( valueUpdate.updateMode() )
             {
             case ADDED:
-                added( update );
+                added( valueUpdate );
                 writer.updateDocument( LuceneDocumentStructure.newTermForChangeOrRemove( nodeId ),
-                        LuceneDocumentStructure.documentRepresentingProperties( nodeId, update.values() ) );
+                        LuceneDocumentStructure.documentRepresentingProperties( nodeId, valueUpdate.values() ) );
                 break;
             case CHANGED:
-                changed( update );
+                changed( valueUpdate );
                 writer.updateDocument( LuceneDocumentStructure.newTermForChangeOrRemove( nodeId ),
-                        LuceneDocumentStructure.documentRepresentingProperties( nodeId, update.values() ) );
+                        LuceneDocumentStructure.documentRepresentingProperties( nodeId, valueUpdate.values() ) );
                 break;
             case REMOVED:
-                removed( update );
+                removed( valueUpdate );
                 writer.deleteDocuments( LuceneDocumentStructure.newTermForChangeOrRemove( nodeId ) );
                 break;
             default:
-                throw new IllegalStateException( "Unknown update mode " + update.updateMode() + " for values " + Arrays.toString( update.values() ) );
+                throw new IllegalStateException( "Unknown update mode " + valueUpdate.updateMode() + " for values " + Arrays.toString( valueUpdate.values() ) );
             }
         }
         catch ( IOException e )
@@ -84,19 +86,19 @@ public abstract class LuceneIndexPopulatingUpdater implements IndexUpdater
      *
      * @param update the update being processed.
      */
-    protected abstract void added( IndexEntryUpdate<?> update );
+    protected abstract void added( ValueIndexEntryUpdate<?> update );
 
     /**
-     * Method is invoked when {@link IndexEntryUpdate} with {@link UpdateMode#CHANGED} is processed.
+     * Method is invoked when {@link ValueIndexEntryUpdate} with {@link UpdateMode#CHANGED} is processed.
      *
      * @param update the update being processed.
      */
-    protected abstract void changed( IndexEntryUpdate<?> update );
+    protected abstract void changed( ValueIndexEntryUpdate<?> update );
 
     /**
-     * Method is invoked when {@link IndexEntryUpdate} with {@link UpdateMode#REMOVED} is processed.
+     * Method is invoked when {@link ValueIndexEntryUpdate} with {@link UpdateMode#REMOVED} is processed.
      *
      * @param update the update being processed.
      */
-    protected abstract void removed( IndexEntryUpdate<?> update );
+    protected abstract void removed( ValueIndexEntryUpdate<?> update );
 }

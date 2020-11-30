@@ -47,6 +47,7 @@ import org.neo4j.internal.schema.IndexOrderCapability;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
+import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 import org.neo4j.storageengine.api.schema.SimpleNodeValueClient;
 import org.neo4j.test.InMemoryTokens;
 import org.neo4j.values.storable.ArrayValue;
@@ -647,11 +648,11 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     {
         // given
         ValueType[] types = randomSetOfSupportedTypes();
-        List<IndexEntryUpdate<?>> updates = new ArrayList<>();
+        List<ValueIndexEntryUpdate<?>> updates = new ArrayList<>();
         Set<ValueTuple> duplicateChecker = new HashSet<>();
         for ( long id = 0; id < 10_000; id++ )
         {
-            IndexEntryUpdate<SchemaDescriptor> update;
+            ValueIndexEntryUpdate<SchemaDescriptor> update;
             do
             {
                 update = add( id, descriptor.schema(),
@@ -665,7 +666,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
 
         // when
         InMemoryTokens tokenNameLookup = new InMemoryTokens();
-        for ( IndexEntryUpdate<?> update : updates )
+        for ( ValueIndexEntryUpdate<?> update : updates )
         {
             // then
             List<Long> hits = query( exact( 0, update.values()[0] ), exact( 1, update.values()[1] ) );
@@ -1452,12 +1453,12 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
         return Values.dateArray( localDates );
     }
 
-    private static IndexEntryUpdate<SchemaDescriptor> add( long nodeId, SchemaDescriptor schema, Object value1, Object value2 )
+    private static ValueIndexEntryUpdate<SchemaDescriptor> add( long nodeId, SchemaDescriptor schema, Object value1, Object value2 )
     {
         return add( nodeId, schema, Values.of( value1 ), Values.of( value2 ) );
     }
 
-    private static IndexEntryUpdate<SchemaDescriptor> add( long nodeId, SchemaDescriptor schema, Value value1, Value value2 )
+    private static ValueIndexEntryUpdate<SchemaDescriptor> add( long nodeId, SchemaDescriptor schema, Value value1, Value value2 )
     {
         return IndexEntryUpdate.add( nodeId, schema, value1, value2 );
     }

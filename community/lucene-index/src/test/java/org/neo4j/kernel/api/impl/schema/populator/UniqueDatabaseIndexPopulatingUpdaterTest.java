@@ -106,7 +106,7 @@ class UniqueDatabaseIndexPopulatingUpdaterTest
     }
 
     @Test
-    void addedNodePropertiesIncludedInSample()
+    void addedNodePropertiesIncludedInSample() throws IndexEntryConflictException
     {
         UniqueIndexSampler sampler = new UniqueIndexSampler();
         UniqueLuceneIndexPopulatingUpdater updater = newUpdater( sampler );
@@ -120,7 +120,7 @@ class UniqueDatabaseIndexPopulatingUpdaterTest
     }
 
     @Test
-    void changedNodePropertiesDoNotInfluenceSample()
+    void changedNodePropertiesDoNotInfluenceSample() throws IndexEntryConflictException
     {
         UniqueIndexSampler sampler = new UniqueIndexSampler();
         UniqueLuceneIndexPopulatingUpdater updater = newUpdater( sampler );
@@ -132,7 +132,7 @@ class UniqueDatabaseIndexPopulatingUpdaterTest
     }
 
     @Test
-    void removedNodePropertyIncludedInSample()
+    void removedNodePropertyIncludedInSample() throws IndexEntryConflictException
     {
         long initialValue = 10;
         UniqueIndexSampler sampler = new UniqueIndexSampler();
@@ -147,7 +147,7 @@ class UniqueDatabaseIndexPopulatingUpdaterTest
     }
 
     @Test
-    void nodePropertyUpdatesIncludedInSample()
+    void nodePropertyUpdatesIncludedInSample() throws IndexEntryConflictException
     {
         UniqueIndexSampler sampler = new UniqueIndexSampler();
         UniqueLuceneIndexPopulatingUpdater updater = newUpdater( sampler );

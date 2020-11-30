@@ -51,6 +51,7 @@ import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.StorageReader;
+import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 import org.neo4j.test.InMemoryTokens;
 import org.neo4j.test.scheduler.CallingThreadJobScheduler;
 import org.neo4j.test.scheduler.JobSchedulerAdapter;
@@ -103,7 +104,7 @@ public class BatchingMultipleIndexPopulatorTest
 
         batchingPopulator.applyConcurrentUpdateQueueBatched( 42 );
 
-        verify( updater, never() ).process( any() );
+        verify( updater, never() ).process( any( ValueIndexEntryUpdate.class ) );
         verify( populator, never() ).newPopulatingUpdater( any(), any() );
     }
 

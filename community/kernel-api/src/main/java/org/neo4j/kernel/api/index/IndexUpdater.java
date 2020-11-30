@@ -19,8 +19,10 @@
  */
 package org.neo4j.kernel.api.index;
 
+import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
+import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 
 /**
  * IndexUpdaters are responsible for updating indexes during the commit process. There is one new instance handling
@@ -33,6 +35,15 @@ import org.neo4j.storageengine.api.IndexEntryUpdate;
 public interface IndexUpdater extends AutoCloseable
 {
     void process( IndexEntryUpdate<?> update ) throws IndexEntryConflictException;
+
+    default <INDEX_KEY extends SchemaDescriptorSupplier> ValueIndexEntryUpdate<INDEX_KEY> asValueUpdate( IndexEntryUpdate<INDEX_KEY> update )
+    {
+        if ( update instanceof ValueIndexEntryUpdate )
+        {
+            return (ValueIndexEntryUpdate<INDEX_KEY>) update;
+        }
+        throw new UnsupportedOperationException( "Tried to process " + update + " with " + getClass().getSimpleName() + ", but this is not supported." );
+    }
 
     @Override
     void close() throws IndexEntryConflictException;

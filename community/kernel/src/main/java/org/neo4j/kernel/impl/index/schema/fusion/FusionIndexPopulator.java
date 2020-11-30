@@ -34,6 +34,7 @@ import org.neo4j.kernel.impl.api.index.PhaseTracker;
 import org.neo4j.kernel.impl.index.schema.IndexFiles;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
+import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 import org.neo4j.values.storable.Value;
 
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexSampler.combineSamples;
@@ -74,7 +75,7 @@ class FusionIndexPopulator extends FusionIndexBase<IndexPopulator> implements In
         LazyInstanceSelector<Collection<IndexEntryUpdate<?>>> batchSelector = new LazyInstanceSelector<>( slot -> new ArrayList<>() );
         for ( IndexEntryUpdate<?> update : updates )
         {
-            batchSelector.select( slotSelector.selectSlot( update.values(), CATEGORY_OF ) ).add( update );
+            batchSelector.select( slotSelector.selectSlot( ((ValueIndexEntryUpdate<?>) update).values(), CATEGORY_OF ) ).add( update );
         }
 
         // Manual loop due do multiple exception types
@@ -121,7 +122,7 @@ class FusionIndexPopulator extends FusionIndexBase<IndexPopulator> implements In
     @Override
     public void includeSample( IndexEntryUpdate<?> update )
     {
-        instanceSelector.select( slotSelector.selectSlot( update.values(), CATEGORY_OF ) ).includeSample( update );
+        instanceSelector.select( slotSelector.selectSlot( ((ValueIndexEntryUpdate<?>) update).values(), CATEGORY_OF ) ).includeSample( update );
     }
 
     @Override

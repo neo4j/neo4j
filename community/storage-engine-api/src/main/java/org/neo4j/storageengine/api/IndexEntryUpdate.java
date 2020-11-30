@@ -19,13 +19,9 @@
  */
 package org.neo4j.storageengine.api;
 
-import java.util.Arrays;
-
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.values.storable.Value;
-
-import static java.lang.String.format;
 
 /**
  * Subclasses of this represent events related to property changes due to property or label addition, deletion or
@@ -34,32 +30,16 @@ import static java.lang.String.format;
  *
  * @param <INDEX_KEY> {@link SchemaDescriptorSupplier} specifying the schema
  */
-public class IndexEntryUpdate<INDEX_KEY extends SchemaDescriptorSupplier>
+public abstract class IndexEntryUpdate<INDEX_KEY extends SchemaDescriptorSupplier>
 {
     private final long entityId;
     private final UpdateMode updateMode;
-    private final Value[] before;
-    private final Value[] values;
     private final INDEX_KEY indexKey;
 
-    private IndexEntryUpdate( long entityId, INDEX_KEY indexKey, UpdateMode updateMode, Value... values )
+    IndexEntryUpdate( long entityId, INDEX_KEY indexKey, UpdateMode updateMode )
     {
-        this( entityId, indexKey, updateMode, null, values );
-    }
-
-    private IndexEntryUpdate( long entityId, INDEX_KEY indexKey, UpdateMode updateMode, Value[] before,
-            Value[] values )
-    {
-        // we do not support partial index entries
-        assert indexKey.schema().getPropertyIds().length == values.length :
-                format( "IndexEntryUpdate values must be of same length as index compositeness. " +
-                        "Index on %s, but got values %s", indexKey.schema().toString(), Arrays.toString( values ) );
-        assert before == null || before.length == values.length;
-
         this.entityId = entityId;
         this.indexKey = indexKey;
-        this.before = before;
-        this.values = values;
         this.updateMode = updateMode;
     }
 
@@ -76,11 +56,6 @@ public class IndexEntryUpdate<INDEX_KEY extends SchemaDescriptorSupplier>
     public INDEX_KEY indexKey()
     {
         return indexKey;
-    }
-
-    public Value[] values()
-    {
-        return values;
     }
 
     @Override
@@ -105,15 +80,14 @@ public class IndexEntryUpdate<INDEX_KEY extends SchemaDescriptorSupplier>
         {
             return false;
         }
-        if ( !Arrays.equals( before, that.before ) )
+
+        boolean schemaEquals = indexKey != null ? indexKey.schema().equals( that.indexKey.schema() ) : that.indexKey == null;
+        if ( !schemaEquals )
         {
             return false;
         }
-        if ( !Arrays.equals( values, that.values ) )
-        {
-            return false;
-        }
-        return indexKey != null ? indexKey.schema().equals( that.indexKey.schema() ) : that.indexKey == null;
+
+        return valueEquals( that );
     }
 
     @Override
@@ -121,50 +95,79 @@ public class IndexEntryUpdate<INDEX_KEY extends SchemaDescriptorSupplier>
     {
         int result = (int) (entityId ^ (entityId >>> 32));
         result = 31 * result + (updateMode != null ? updateMode.hashCode() : 0);
-        result = 31 * result + Arrays.hashCode( before );
-        result = 31 * result + Arrays.hashCode( values );
         result = 31 * result + (indexKey != null ? indexKey.schema().hashCode() : 0);
+        result = 31 * result + valueHash();
         return result;
     }
 
     public String describe( TokenNameLookup tokenNameLookup )
     {
-        return String.format( "IndexEntryUpdate[id=%d, mode=%s, %s, beforeValues=%s, values=%s]", entityId, updateMode,
-                indexKey().schema().userDescription( tokenNameLookup ),
-                Arrays.toString( before ), Arrays.toString( values ) );
+        return String.format( getClass().getSimpleName() + "[id=%d, mode=%s, %s, %s]", entityId, updateMode,
+                indexKey().schema().userDescription( tokenNameLookup ), valueToString() );
     }
 
-    public static <INDEX_KEY extends SchemaDescriptorSupplier> IndexEntryUpdate<INDEX_KEY> add(
+    /**
+     * Returns rough estimate of memory usage of this instance in bytes.
+     */
+    public abstract long roughSizeOfUpdate();
+
+    /**
+     * Equality check for values in sub-class.
+     * Need to align with {@link #valueHash() value hash code}.
+     */
+    protected abstract boolean valueEquals( IndexEntryUpdate<?> that );
+
+    /**
+     * Hash code for values in sub-class.
+     * Need to align with {@link #valueEquals(IndexEntryUpdate) value equals}.
+     */
+    protected abstract int valueHash();
+
+    /**
+     * Return string representation of value state.
+     */
+    protected abstract String valueToString();
+
+    public static <INDEX_KEY extends SchemaDescriptorSupplier> ValueIndexEntryUpdate<INDEX_KEY> add(
             long entityId, INDEX_KEY indexKey, Value... values )
     {
-        return new IndexEntryUpdate<>( entityId, indexKey, UpdateMode.ADDED, values );
+        return new ValueIndexEntryUpdate<>( entityId, indexKey, UpdateMode.ADDED, values );
     }
 
-    public static <INDEX_KEY extends SchemaDescriptorSupplier> IndexEntryUpdate<INDEX_KEY> remove(
+    public static <INDEX_KEY extends SchemaDescriptorSupplier> ValueIndexEntryUpdate<INDEX_KEY> remove(
             long entityId, INDEX_KEY indexKey, Value... values )
     {
-        return new IndexEntryUpdate<>( entityId, indexKey, UpdateMode.REMOVED, values );
+        return new ValueIndexEntryUpdate<>( entityId, indexKey, UpdateMode.REMOVED, values );
     }
 
-    public static <INDEX_KEY extends SchemaDescriptorSupplier> IndexEntryUpdate<INDEX_KEY> change(
+    public static <INDEX_KEY extends SchemaDescriptorSupplier> ValueIndexEntryUpdate<INDEX_KEY> change(
             long entityId, INDEX_KEY indexKey, Value before, Value after )
     {
-        return new IndexEntryUpdate<>( entityId, indexKey, UpdateMode.CHANGED,
+        return new ValueIndexEntryUpdate<>( entityId, indexKey, UpdateMode.CHANGED,
                 new Value[]{before}, new Value[]{after} );
     }
 
-    public static <INDEX_KEY extends SchemaDescriptorSupplier> IndexEntryUpdate<INDEX_KEY> change(
+    public static <INDEX_KEY extends SchemaDescriptorSupplier> ValueIndexEntryUpdate<INDEX_KEY> change(
             long entityId, INDEX_KEY indexKey, Value[] before, Value[] after )
     {
-        return new IndexEntryUpdate<>( entityId, indexKey, UpdateMode.CHANGED, before, after );
+        return new ValueIndexEntryUpdate<>( entityId, indexKey, UpdateMode.CHANGED, before, after );
     }
 
-    public Value[] beforeValues()
+    public static <INDEX_KEY extends SchemaDescriptorSupplier> TokenIndexEntryUpdate<INDEX_KEY> add(
+            long entityId, INDEX_KEY indexKey, long[] values )
     {
-        if ( before == null )
-        {
-            throw new UnsupportedOperationException( "beforeValues is only valid for `UpdateMode.CHANGED" );
-        }
-        return before;
+        return new TokenIndexEntryUpdate<>( entityId, indexKey, UpdateMode.ADDED, values );
+    }
+
+    public static <INDEX_KEY extends SchemaDescriptorSupplier> TokenIndexEntryUpdate<INDEX_KEY> remove(
+            long entityId, INDEX_KEY indexKey, long[] values )
+    {
+        return new TokenIndexEntryUpdate<>( entityId, indexKey, UpdateMode.REMOVED, values );
+    }
+
+    public static <INDEX_KEY extends SchemaDescriptorSupplier> TokenIndexEntryUpdate<INDEX_KEY> change(
+            long entityId, INDEX_KEY indexKey, long[] before, long[] after )
+    {
+        return new TokenIndexEntryUpdate<>( entityId, indexKey, UpdateMode.CHANGED, before, after );
     }
 }

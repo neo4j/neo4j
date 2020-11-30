@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.NonUniqueIndexSampler;
@@ -48,7 +49,7 @@ class NonUniqueDatabaseIndexPopulatingUpdaterTest
     private static final SchemaDescriptor COMPOSITE_SCHEMA_DESCRIPTOR = SchemaDescriptor.forLabel( 1, 42, 43 );
 
     @Test
-    void addedNodePropertiesIncludedInSample()
+    void addedNodePropertiesIncludedInSample() throws IndexEntryConflictException
     {
         NonUniqueIndexSampler sampler = newSampler();
         NonUniqueLuceneIndexPopulatingUpdater updater = newUpdater( sampler );
@@ -62,7 +63,7 @@ class NonUniqueDatabaseIndexPopulatingUpdaterTest
     }
 
     @Test
-    void addedNodeCompositePropertiesIncludedInSample()
+    void addedNodeCompositePropertiesIncludedInSample() throws IndexEntryConflictException
     {
         NonUniqueIndexSampler sampler = newSampler();
         NonUniqueLuceneIndexPopulatingUpdater updater = newUpdater( sampler );
@@ -75,7 +76,7 @@ class NonUniqueDatabaseIndexPopulatingUpdaterTest
     }
 
     @Test
-    void changedNodePropertiesIncludedInSample()
+    void changedNodePropertiesIncludedInSample() throws IndexEntryConflictException
     {
         NonUniqueIndexSampler sampler = newSampler();
         NonUniqueLuceneIndexPopulatingUpdater updater = newUpdater( sampler );
@@ -91,7 +92,7 @@ class NonUniqueDatabaseIndexPopulatingUpdaterTest
     }
 
     @Test
-    void changedNodeCompositePropertiesIncludedInSample()
+    void changedNodeCompositePropertiesIncludedInSample() throws IndexEntryConflictException
     {
         NonUniqueIndexSampler sampler = newSampler();
         NonUniqueLuceneIndexPopulatingUpdater updater = newUpdater( sampler );
@@ -109,7 +110,7 @@ class NonUniqueDatabaseIndexPopulatingUpdaterTest
     }
 
     @Test
-    void removedNodePropertyIncludedInSample()
+    void removedNodePropertyIncludedInSample() throws IndexEntryConflictException
     {
         NonUniqueIndexSampler sampler = newSampler();
         NonUniqueLuceneIndexPopulatingUpdater updater = newUpdater( sampler );
@@ -127,7 +128,7 @@ class NonUniqueDatabaseIndexPopulatingUpdaterTest
     }
 
     @Test
-    void removedNodeCompositePropertyIncludedInSample()
+    void removedNodeCompositePropertyIncludedInSample() throws IndexEntryConflictException
     {
         NonUniqueIndexSampler sampler = newSampler();
         NonUniqueLuceneIndexPopulatingUpdater updater = newUpdater( sampler );
@@ -145,7 +146,7 @@ class NonUniqueDatabaseIndexPopulatingUpdaterTest
     }
 
     @Test
-    void nodePropertyUpdatesIncludedInSample()
+    void nodePropertyUpdatesIncludedInSample() throws IndexEntryConflictException
     {
         NonUniqueIndexSampler sampler = newSampler();
         NonUniqueLuceneIndexPopulatingUpdater updater = newUpdater( sampler );
@@ -168,7 +169,7 @@ class NonUniqueDatabaseIndexPopulatingUpdaterTest
     }
 
     @Test
-    void nodeCompositePropertyUpdatesIncludedInSample()
+    void nodeCompositePropertyUpdatesIncludedInSample() throws IndexEntryConflictException
     {
         NonUniqueIndexSampler sampler = newSampler();
         NonUniqueLuceneIndexPopulatingUpdater updater = newUpdater( sampler );
