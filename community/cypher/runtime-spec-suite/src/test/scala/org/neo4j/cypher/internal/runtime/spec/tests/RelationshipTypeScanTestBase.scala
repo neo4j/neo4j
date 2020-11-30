@@ -24,12 +24,13 @@ import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
+import org.neo4j.internal.index.label.RelationshipTypeScanStoreSettings.enable_relationship_type_scan_store
 
 abstract class RelationshipTypeScanTestBase[CONTEXT <: RuntimeContext](
                                                                edition: Edition[CONTEXT],
                                                                runtime: CypherRuntime[CONTEXT],
                                                                sizeHint: Int
-                                                             ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+                                                             ) extends RuntimeTestSuite[CONTEXT](edition.copyWith(enable_relationship_type_scan_store -> java.lang.Boolean.TRUE), runtime) {
 
   test("should support directed relationship scan") {
     // given
@@ -146,4 +147,100 @@ abstract class RelationshipTypeScanTestBase[CONTEXT <: RuntimeContext](
     val expected = for {r1 <- relationships; r2 <- relationships; r3 <- relationships} yield Seq.fill(8)(Array(r1, r2, r3))
     runtimeResult should beColumns("r1", "r2", "r3").withRows(expected.flatten)
   }
+
+  //TODO: These tests should live in ProfileRowsTestBase but lives here instead because they rely on typescans being enabled
+  test("should profile rows with directed relationship type scan") {
+    // given
+    val nodesPerLabel = 20
+    val (_, _, rs, _) = given {
+      bidirectionalBipartiteGraph(nodesPerLabel, "A", "B", "R", "R2")
+    }
+    val id = rs.head.getId
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nonFuseable()
+      .filter(s"id(r) = $id")
+      .relationshipTypeScan("(x)-[r:R]->(y)")
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(0).rows() shouldBe 1 // produce results
+    queryProfile.operatorProfile(1).rows() shouldBe 1 // nonFuseable
+    queryProfile.operatorProfile(2).rows() shouldBe 1 // filter
+    queryProfile.operatorProfile(3).rows() shouldBe nodesPerLabel * nodesPerLabel // relationship type scan
+  }
+
+  test("should profile rows undirected relationship type scan") {
+    // given
+    val nodesPerLabel = 20
+    val (_, _, rs, _) = given {
+      bidirectionalBipartiteGraph(nodesPerLabel, "A", "B", "R", "R2")
+    }
+    val id = rs.head.getId
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nonFuseable()
+      .filter(s"id(r) = $id")
+      .relationshipTypeScan("(x)-[r:R]-(y)")
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(0).rows() shouldBe 2 // produce results
+    queryProfile.operatorProfile(1).rows() shouldBe 2 // nonFuseable
+    queryProfile.operatorProfile(2).rows() shouldBe 2 // filter
+    queryProfile.operatorProfile(3).rows() shouldBe 2 * nodesPerLabel * nodesPerLabel // relationship type scan
+  }
+
+  //TODO: These tests should live in ProfileRowsTestBase but lives here instead because they rely on typescans being enabled
+  test("should profile dbHits of directed relationship type scan") {
+    // given
+    given { circleGraph(sizeHint) }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r", "x", "y")
+      .relationshipTypeScan("(x)-[r:R]->(y)")
+      .build()
+
+    val result = profile(logicalQuery, runtime)
+    consume(result)
+
+    // then
+    //TODO: Interpreted and slotted doesn't count relationshipById as a dbhit
+    //      is this a bug?
+    result.runtimeResult.queryProfile().operatorProfile(1).dbHits() should
+      (be (sizeHint + 1 + 1 /*costOfRelationshipTypeLookup*/) or be (2 * sizeHint + 1 + 0/*costOfRelationshipTypeLookup*/))
+  }
+
+  test("should profile dbHits of undirected relationship type scan") {
+    // given
+    given { circleGraph(sizeHint) }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r", "x", "y")
+      .relationshipTypeScan("(x)-[r:R]-(y)")
+      .build()
+
+    val result = profile(logicalQuery, runtime)
+    consume(result)
+
+    // then
+    //TODO: Interpreted and slotted doesn't count relationshipById as a dbhit
+    //      is this a bug?
+    result.runtimeResult.queryProfile().operatorProfile(1).dbHits() should
+      (be (sizeHint + 1 + 1 /*costOfRelationshipTypeLookup*/) or be (2 * sizeHint + 1 + 0/*costOfRelationshipTypeLookup*/))
+  }
+
+
 }
