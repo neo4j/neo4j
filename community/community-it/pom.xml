@@ -53,6 +53,7 @@
         <module>bolt-it</module>
         <module>community-it</module>
         <module>fabric-it</module>
+        <module>security-it</module>
     </modules>
 
     <profiles>

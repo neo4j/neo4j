@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.security;
+package org.neo4j.security;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -51,12 +51,12 @@ import org.neo4j.test.rule.TestDirectory;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
-import static org.neo4j.cypher.security.BasicSystemGraphRealmTestHelper.assertAuthenticationFails;
-import static org.neo4j.cypher.security.BasicSystemGraphRealmTestHelper.assertAuthenticationFailsWithTooManyAttempts;
-import static org.neo4j.cypher.security.BasicSystemGraphRealmTestHelper.assertAuthenticationSucceeds;
-import static org.neo4j.cypher.security.BasicSystemGraphRealmTestHelper.createUser;
 import static org.neo4j.kernel.api.security.AuthManager.INITIAL_PASSWORD;
 import static org.neo4j.kernel.api.security.AuthManager.INITIAL_USER_NAME;
+import static org.neo4j.security.BasicSystemGraphRealmTestHelper.assertAuthenticationFails;
+import static org.neo4j.security.BasicSystemGraphRealmTestHelper.assertAuthenticationFailsWithTooManyAttempts;
+import static org.neo4j.security.BasicSystemGraphRealmTestHelper.assertAuthenticationSucceeds;
+import static org.neo4j.security.BasicSystemGraphRealmTestHelper.createUser;
 
 @TestDirectoryExtension
 class BasicSystemGraphRealmIT
