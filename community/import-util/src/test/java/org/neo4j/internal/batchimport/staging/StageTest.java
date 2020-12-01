@@ -30,6 +30,7 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.internal.batchimport.Configuration.DEFAULT;
+import static org.neo4j.internal.batchimport.staging.ExecutionMonitor.INVISIBLE;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 
 class StageTest
@@ -88,7 +89,7 @@ class StageTest
             // we start off with two in each step
             step.processors( 1 );
         }
-        new ExecutionSupervisor( ExecutionMonitors.invisible() ).supervise( execution );
+        new ExecutionSupervisor( INVISIBLE ).supervise( execution );
 
         // THEN
         for ( Step<?> step : execution.steps() )

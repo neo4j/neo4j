@@ -21,9 +21,6 @@ package org.neo4j.internal.batchimport;
 
 import org.eclipse.collections.api.iterator.LongIterator;
 
-import org.neo4j.kernel.impl.store.RecordStore;
-import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
-
 import static java.lang.Long.max;
 import static java.lang.Long.min;
 import static org.neo4j.collection.PrimitiveLongCollections.range;
@@ -49,17 +46,6 @@ public interface RecordIdIterator
     static RecordIdIterator forwards( long lowIncluded, long highExcluded, Configuration config )
     {
         return new Forwards( lowIncluded, highExcluded, config );
-    }
-
-    static RecordIdIterator allIn( RecordStore<? extends AbstractBaseRecord> store, Configuration config )
-    {
-        return forwards( store.getNumberOfReservedLowIds(), store.getHighId(), config );
-    }
-
-    static RecordIdIterator allInReversed( RecordStore<? extends AbstractBaseRecord> store,
-            Configuration config )
-    {
-        return backwards( store.getNumberOfReservedLowIds(), store.getHighId(), config );
     }
 
     class Forwards implements RecordIdIterator

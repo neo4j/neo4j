@@ -17,22 +17,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.internal.batchimport.staging;
+package org.neo4j.internal.batchimport;
 
-import static org.neo4j.internal.batchimport.staging.HumanUnderstandableExecutionMonitor.NO_MONITOR;
+import org.neo4j.kernel.impl.store.RecordStore;
+import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 
-/**
- * Common {@link ExecutionMonitor} implementations.
- */
-public class ExecutionMonitors
+public class RecordIdIterators
 {
-    private ExecutionMonitors()
+    static RecordIdIterator allIn( RecordStore<? extends AbstractBaseRecord> store, Configuration config )
     {
-        throw new AssertionError( "No instances allowed" );
+        return RecordIdIterator.forwards( store.getNumberOfReservedLowIds(), store.getHighId(), config );
     }
 
-    public static ExecutionMonitor defaultVisible()
+    static RecordIdIterator allInReversed( RecordStore<? extends AbstractBaseRecord> store,
+            Configuration config )
     {
-        return new HumanUnderstandableExecutionMonitor( NO_MONITOR );
+        return RecordIdIterator.backwards( store.getNumberOfReservedLowIds(), store.getHighId(), config );
     }
 }

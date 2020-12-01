@@ -31,7 +31,7 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.index.schema.LabelScanStore;
 import org.neo4j.kernel.impl.store.NodeStore;
 
-import static org.neo4j.internal.batchimport.RecordIdIterator.allIn;
+import static org.neo4j.internal.batchimport.RecordIdIterators.allIn;
 
 /**
  * Counts nodes and their labels and also builds {@link LabelScanStore label index} while doing so.

@@ -52,7 +52,7 @@ import org.neo4j.internal.batchimport.input.IdType;
 import org.neo4j.internal.batchimport.input.Input;
 import org.neo4j.internal.batchimport.input.PropertySizeCalculator;
 import org.neo4j.internal.batchimport.input.ReadableGroups;
-import org.neo4j.internal.batchimport.staging.ExecutionMonitors;
+import org.neo4j.internal.batchimport.staging.ExecutionMonitor;
 import org.neo4j.internal.helpers.TimeUtil;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -304,7 +304,7 @@ class MultipleIndexPopulationStressIT
             DatabaseLayout layout = Neo4jLayout.of( directory.homePath() ).databaseLayout( DEFAULT_DATABASE_NAME );
             BatchImporter importer = new ParallelBatchImporter(
                     layout, fileSystemAbstraction, null, PageCacheTracer.NULL, DEFAULT, NullLogService.getInstance(),
-                    ExecutionMonitors.invisible(), EMPTY, config, recordFormats, NO_MONITOR, jobScheduler, Collector.EMPTY,
+                    ExecutionMonitor.INVISIBLE, EMPTY, config, recordFormats, NO_MONITOR, jobScheduler, Collector.EMPTY,
                     TransactionLogInitializer.getLogFilesInitializer(), INSTANCE );
             importer.doImport( input );
         }

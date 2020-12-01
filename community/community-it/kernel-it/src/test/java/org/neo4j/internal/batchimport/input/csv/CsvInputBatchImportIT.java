@@ -72,7 +72,7 @@ import org.neo4j.internal.batchimport.input.IdType;
 import org.neo4j.internal.batchimport.input.Input;
 import org.neo4j.internal.batchimport.input.InputEntity;
 import org.neo4j.internal.batchimport.input.InputEntityDecorators;
-import org.neo4j.internal.batchimport.staging.ExecutionMonitors;
+import org.neo4j.internal.batchimport.staging.ExecutionMonitor;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -144,7 +144,7 @@ class CsvInputBatchImportIT
         try ( JobScheduler scheduler = new ThreadPoolJobScheduler() )
         {
             BatchImporter importer = new ParallelBatchImporter(
-                    databaseLayout, fileSystem, null, PageCacheTracer.NULL, smallBatchSizeConfig(), NullLogService.getInstance(), ExecutionMonitors.invisible(),
+                    databaseLayout, fileSystem, null, PageCacheTracer.NULL, smallBatchSizeConfig(), NullLogService.getInstance(), ExecutionMonitor.INVISIBLE,
                     EMPTY, dbConfig, defaultFormat(), ImportLogic.NO_MONITOR, scheduler, Collector.EMPTY, TransactionLogInitializer.getLogFilesInitializer(),
                     INSTANCE );
             List<InputEntity> nodeData = randomNodeData();

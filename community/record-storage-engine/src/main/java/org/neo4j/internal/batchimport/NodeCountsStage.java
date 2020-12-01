@@ -30,6 +30,8 @@ import org.neo4j.internal.batchimport.stats.StatsProvider;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.NodeStore;
 
+import static org.neo4j.internal.batchimport.RecordIdIterators.allIn;
+
 /**
  * Reads all records from {@link NodeStore} and process the counts in them, populating {@link NodeLabelsCache}
  * for later use of {@link RelationshipCountsStage}.
@@ -43,7 +45,7 @@ public class NodeCountsStage extends Stage
             StatsProvider... additionalStatsProviders )
     {
         super( NAME, null, config, Step.RECYCLE_BATCHES );
-        add( new BatchFeedStep( control(), config, RecordIdIterator.allIn( nodeStore, config ), nodeStore.getRecordSize() ) );
+        add( new BatchFeedStep( control(), config, allIn( nodeStore, config ), nodeStore.getRecordSize() ) );
         add( new ReadRecordsStep<>( control(), config, false, nodeStore, pageCacheTracer ) );
         add( new RecordProcessorStep<>( control(), "COUNT", config,
                 () -> new NodeCountsProcessor( nodeStore, cache, highLabelId, countsUpdater, progressReporter ), true, 0, pageCacheTracer,

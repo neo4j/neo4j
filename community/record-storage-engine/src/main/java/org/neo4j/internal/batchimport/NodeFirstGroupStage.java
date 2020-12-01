@@ -30,7 +30,7 @@ import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 
-import static org.neo4j.internal.batchimport.RecordIdIterator.allIn;
+import static org.neo4j.internal.batchimport.RecordIdIterators.allIn;
 
 /**
  * Updates dense nodes with which will be the {@link NodeRecord#setNextRel(long) first group} to point to,

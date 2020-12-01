@@ -28,7 +28,7 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 
-import static org.neo4j.internal.batchimport.RecordIdIterator.allInReversed;
+import static org.neo4j.internal.batchimport.RecordIdIterators.allInReversed;
 
 /**
  * Scans {@link RelationshipGroupRecord} from store in reverse, this because during import the relationships

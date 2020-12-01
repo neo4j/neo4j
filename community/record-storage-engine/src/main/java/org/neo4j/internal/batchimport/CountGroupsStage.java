@@ -28,6 +28,8 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 
+import static org.neo4j.internal.batchimport.RecordIdIterators.allIn;
+
 /**
  * Stage for counting groups per node, populates {@link RelationshipGroupCache}. Steps:
  *
@@ -46,7 +48,7 @@ public class CountGroupsStage extends Stage
             RelationshipGroupCache groupCache, PageCacheTracer pageCacheTracer, StatsProvider... additionalStatsProviders )
     {
         super( NAME, null, config, Step.RECYCLE_BATCHES );
-        add( new BatchFeedStep( control(), config, RecordIdIterator.allIn( store, config ), store.getRecordSize() ) );
+        add( new BatchFeedStep( control(), config, allIn( store, config ), store.getRecordSize() ) );
         add( new ReadRecordsStep<>( control(), config, false, store, pageCacheTracer ) );
         add( new CountGroupsStep( control(), config, groupCache, pageCacheTracer, additionalStatsProviders ) );
     }

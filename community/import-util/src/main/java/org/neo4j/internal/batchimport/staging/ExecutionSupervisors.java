@@ -32,13 +32,13 @@ public class ExecutionSupervisors
     }
 
     /**
-     * Using an {@link ExecutionMonitors#invisible() invisible} monitor.
+     * Using an {@link ExecutionMonitor#INVISIBLE invisible} monitor.
      * @param stage {@link Stage} to supervise.
      * @see #superviseDynamicExecution(ExecutionMonitor, Stage)
      */
     public static void superviseDynamicExecution( Stage stage )
     {
-        superviseDynamicExecution( ExecutionMonitors.invisible(), stage );
+        superviseDynamicExecution( ExecutionMonitor.INVISIBLE, stage );
     }
 
     /**
