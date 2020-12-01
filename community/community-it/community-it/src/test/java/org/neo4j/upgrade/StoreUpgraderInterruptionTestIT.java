@@ -19,11 +19,6 @@
  */
 package org.neo4j.upgrade;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.Collection;
-import java.util.Collections;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -32,6 +27,12 @@ import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.Collection;
+import java.util.Collections;
+
 import org.neo4j.collection.Dependencies;
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.configuration.Config;
@@ -201,10 +202,10 @@ public class StoreUpgraderInterruptionTestIT
         startStopDatabase( neo4jLayout.homeDirectory() );
         assertConsistentStore( workingDatabaseLayout );
 
-        assertEquals( 21, idMigratorTracer.faults() );
-        assertEquals( 178, idMigratorTracer.hits() );
-        assertEquals( 199, idMigratorTracer.pins() );
-        assertEquals( 199, idMigratorTracer.unpins() );
+        assertEquals( 43, idMigratorTracer.faults() );
+        assertEquals( 91, idMigratorTracer.hits() );
+        assertEquals( 134, idMigratorTracer.pins() );
+        assertEquals( 134, idMigratorTracer.unpins() );
 
         assertEquals( 52, recordMigratorTracer.faults() );
         assertEquals( 208, recordMigratorTracer.hits() );

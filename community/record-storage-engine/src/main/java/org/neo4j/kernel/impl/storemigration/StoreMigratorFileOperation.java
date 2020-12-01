@@ -38,11 +38,14 @@ class StoreMigratorFileOperation
      * @throws IOException if any of the operations fail for any reason.
      */
     static void fileOperation( FileOperation operation, FileSystemAbstraction fs, DatabaseLayout fromLayout, DatabaseLayout toLayout,
-            Iterable<DatabaseFile> databaseFiles, boolean allowSkipNonExistentFiles, ExistingTargetStrategy existingTargetStrategy ) throws IOException
+            Iterable<DatabaseFile> databaseFiles, boolean allowSkipNonExistentFiles, boolean includeIdFile,
+            ExistingTargetStrategy existingTargetStrategy ) throws IOException
     {
         for ( DatabaseFile databaseStore : databaseFiles )
         {
-            File[] files = fromLayout.allFiles( databaseStore ).toArray( File[]::new );
+            File[] files = includeIdFile
+                           ? fromLayout.allFiles( databaseStore ).toArray( File[]::new )
+                           : new File[]{fromLayout.file( databaseStore )};
             perform( operation, fs, fromLayout, toLayout, allowSkipNonExistentFiles, existingTargetStrategy, files );
         }
     }

@@ -144,6 +144,7 @@ import static org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat.F
 import static org.neo4j.kernel.impl.storemigration.FileOperation.COPY;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.DELETE;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.MOVE;
+import static org.neo4j.kernel.impl.storemigration.IdGeneratorMigrator.requiresIdFilesMigration;
 import static org.neo4j.kernel.impl.storemigration.StoreMigratorFileOperation.fileOperation;
 import static org.neo4j.storageengine.api.LogVersionRepository.BASE_TX_LOG_BYTE_OFFSET;
 import static org.neo4j.storageengine.api.LogVersionRepository.BASE_TX_LOG_VERSION;
@@ -232,6 +233,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
             boolean requiresDynamicStoreMigration = !newFormat.dynamic().equals( oldFormat.dynamic() );
             boolean requiresPropertyMigration =
                     !newFormat.property().equals( oldFormat.property() ) || requiresDynamicStoreMigration;
+            boolean requiresIdFilesMigration = requiresIdFilesMigration( oldFormat, newFormat );
             if ( FormatFamily.isHigherFamilyFormat( newFormat, oldFormat ) ||
                     (FormatFamily.isSameFamily( oldFormat, newFormat ) && isDifferentCapabilities( oldFormat, newFormat )) )
             {
@@ -242,7 +244,8 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
 
             // update necessary neostore records
             LogPosition logPosition = readLastTxLogPosition( migrationLayout );
-            updateOrAddNeoStoreFieldsAsPartOfMigration( migrationLayout, directoryLayout, versionToMigrateTo, logPosition, cursorTracer );
+            updateOrAddNeoStoreFieldsAsPartOfMigration( migrationLayout, directoryLayout, versionToMigrateTo, logPosition, requiresIdFilesMigration,
+                    cursorTracer );
 
             if ( requiresSchemaStoreMigration( oldFormat, newFormat ) || requiresPropertyMigration )
             {
@@ -258,7 +261,8 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
                 List<DatabaseFile> databaseFiles = asList( DatabaseFile.PROPERTY_STORE, DatabaseFile.PROPERTY_ARRAY_STORE, DatabaseFile.PROPERTY_STRING_STORE,
                         DatabaseFile.PROPERTY_KEY_TOKEN_STORE, DatabaseFile.PROPERTY_KEY_TOKEN_NAMES_STORE, DatabaseFile.LABEL_TOKEN_STORE,
                         DatabaseFile.LABEL_TOKEN_NAMES_STORE, DatabaseFile.RELATIONSHIP_TYPE_TOKEN_STORE, DatabaseFile.RELATIONSHIP_TYPE_TOKEN_NAMES_STORE );
-                fileOperation( COPY, fileSystem, directoryLayout, migrationLayout, databaseFiles, true, ExistingTargetStrategy.SKIP );
+                fileOperation( COPY, fileSystem, directoryLayout, migrationLayout, databaseFiles, true, !requiresIdFilesMigration,
+                        ExistingTargetStrategy.SKIP );
                 migrateSchemaStore( directoryLayout, migrationLayout, oldFormat, newFormat, cursorTracer, memoryTracker );
             }
 
@@ -492,7 +496,8 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
                         DatabaseFile.SCHEMA_STORE ) );
             }
 
-            fileOperation( DELETE, fileSystem, migrationDirectoryStructure, migrationDirectoryStructure, storesToDeleteFromMigratedDirectory, true, null );
+            fileOperation( DELETE, fileSystem, migrationDirectoryStructure, migrationDirectoryStructure, storesToDeleteFromMigratedDirectory, true, true,
+                    null );
         }
     }
 
@@ -530,7 +535,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
         if ( newFormat.dynamic().equals( oldFormat.dynamic() ) )
         {
             fileOperation( COPY, fileSystem, sourceDirectoryStructure, migrationStrcuture,
-                    Arrays.asList( storesFilesToMigrate ), true, ExistingTargetStrategy.OVERWRITE );
+                    Arrays.asList( storesFilesToMigrate ), true, !requiresIdFilesMigration( oldFormat, newFormat ), ExistingTargetStrategy.OVERWRITE );
         }
         else
         {
@@ -639,7 +644,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
         // Move the migrated ones into the store directory
         fileOperation( MOVE, fileSystem, migrationLayout, directoryLayout,
                 Iterables.iterable( DatabaseFile.values() ), true, // allow to skip non existent source files
-                ExistingTargetStrategy.OVERWRITE );
+                true, ExistingTargetStrategy.OVERWRITE );
         RecordFormats oldFormat = selectForVersion( versionToUpgradeFrom );
         RecordFormats newFormat = selectForVersion( versionToUpgradeTo );
         if ( requiresCountsStoreMigration( oldFormat, newFormat ) )
@@ -651,13 +656,12 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
     }
 
     private void updateOrAddNeoStoreFieldsAsPartOfMigration( DatabaseLayout migrationStructure, DatabaseLayout sourceDirectoryStructure,
-            String versionToMigrateTo, LogPosition lastClosedTxLogPosition, PageCursorTracer cursorTracer ) throws IOException
+            String versionToMigrateTo, LogPosition lastClosedTxLogPosition, boolean requiresIdFilesMigration, PageCursorTracer cursorTracer ) throws IOException
     {
         final File storeDirNeoStore = sourceDirectoryStructure.metadataStore();
         final File migrationDirNeoStore = migrationStructure.metadataStore();
-        fileOperation( COPY, fileSystem, sourceDirectoryStructure,
-                migrationStructure, Iterables.iterable( DatabaseFile.METADATA_STORE ), true,
-                ExistingTargetStrategy.SKIP );
+        fileOperation( COPY, fileSystem, sourceDirectoryStructure, migrationStructure, Iterables.iterable( DatabaseFile.METADATA_STORE ), true,
+                !requiresIdFilesMigration, ExistingTargetStrategy.SKIP );
 
         MetaDataStore.setRecord( pageCache, migrationDirNeoStore, UPGRADE_TRANSACTION_ID,
                 MetaDataStore.getRecord( pageCache, storeDirNeoStore, LAST_TRANSACTION_ID, cursorTracer ), cursorTracer );
