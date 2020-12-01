@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
+import java.util.function.Consumer;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
@@ -384,7 +385,16 @@ public class NeoStores implements AutoCloseable
 
     public void start( PageCursorTracer cursorTracer ) throws IOException
     {
-        visitStores( store -> store.start( cursorTracer ) );
+        start( store -> {}, cursorTracer );
+    }
+
+    public void start( Consumer<CommonAbstractStore<?,?>> listener, PageCursorTracer cursorTracer ) throws IOException
+    {
+        visitStores( store ->
+        {
+            store.start( cursorTracer );
+            listener.accept( store );
+        } );
     }
 
     /**

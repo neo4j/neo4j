@@ -19,42 +19,39 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
-import org.apache.commons.lang3.tuple.Pair;
+import org.eclipse.collections.api.set.ImmutableSet;
 
 import java.io.IOException;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.LongSupplier;
 import java.util.stream.Stream;
 
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdGeneratorFactory;
+import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.id.ScanOnOpenReadOnlyIdGeneratorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseFile;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
-import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
-import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.migration.AbstractStoreMigrationParticipant;
 
-import static java.lang.Long.max;
 import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForVersion;
@@ -89,13 +86,13 @@ public class IdGeneratorMigrator extends AbstractStoreMigrationParticipant
         {
             try ( var cursorTracer = cacheTracer.createPageCursorTracer( ID_GENERATOR_MIGRATION_TAG ) )
             {
-                migrateIdFiles( directoryLayout, migrationLayout, oldFormat, newFormat, cursorTracer );
+                migrateIdFiles( directoryLayout, migrationLayout, oldFormat, newFormat, progress, cursorTracer );
             }
         }
     }
 
     private void migrateIdFiles( DatabaseLayout directoryLayout, DatabaseLayout migrationLayout, RecordFormats oldFormat, RecordFormats newFormat,
-            PageCursorTracer cursorTracer ) throws IOException
+            ProgressReporter progress, PageCursorTracer cursorTracer ) throws IOException
     {
         // The store .id files needs to be migrated. At this point some of them have been sort-of-migrated, i.e. merely ported
         // to the new format, but just got the highId and nothing else. Regardless we want to do a proper migration here,
@@ -114,39 +111,50 @@ public class IdGeneratorMigrator extends AbstractStoreMigrationParticipant
                                    : storesInDbDirectory;
             list.add( storeType );
         }
+        progress.start( storesInDbDirectory.size() + storesInMigrationDirectory.size() );
 
-        // The built id files will end up in this rebuiltIdGenerators
-        IdGeneratorFactory rebuiltIdGenerators = new DefaultIdGeneratorFactory( fileSystem, immediate() );
-        List<Pair<Path,Path>> renameList = new ArrayList<>();
-
-        // Build the ones from the legacy (the current, really) directory that haven't been migrated
-        try ( NeoStores stores = createStoreFactory( directoryLayout, oldFormat, new ScanOnOpenReadOnlyIdGeneratorFactory() ).openNeoStores(
-                storesInDbDirectory.toArray( StoreType[]::new ) ) )
+        // Rebuild the .id files from the legacy stores that haven't been upgraded, i.e. if they remained unchanged
+        // Make them end up in upgrade/<store>.id so that they won't overwrite the origin .id file before the upgrade is completed
+        IdGeneratorFactory rebuiltIdGeneratorsFromOldStore = new DefaultIdGeneratorFactory( fileSystem, immediate() )
         {
-            stores.start( cursorTracer );
-            buildIdFiles( migrationLayout, storesInDbDirectory, rebuiltIdGenerators, renameList, stores, cursorTracer );
-        }
+            @Override
+            public IdGenerator open( PageCache pageCache, Path filename, IdType idType, LongSupplier highIdScanner, long maxId, boolean readOnly,
+                    PageCursorTracer cursorTracer, ImmutableSet<OpenOption> openOptions )
+            {
+                Path redirectedFilename = migrationLayout.databaseDirectory().resolve( filename.getFileName().toString() );
+                return super.open( pageCache, redirectedFilename, idType, highIdScanner, maxId, readOnly, cursorTracer, openOptions );
+            }
+
+            @Override
+            public IdGenerator create( PageCache pageCache, Path fileName, IdType idType, long highId, boolean throwIfFileExists, long maxId, boolean readOnly,
+                    PageCursorTracer cursorTracer, ImmutableSet<OpenOption> openOptions )
+            {
+                throw new IllegalStateException( "The store file should exist and therefore all calls should be to open, not create" );
+            }
+        };
+        startAndTriggerRebuild( directoryLayout, oldFormat, rebuiltIdGeneratorsFromOldStore, storesInDbDirectory, progress, cursorTracer );
+
         // Build the ones from the migration directory, those stores that have been migrated
         // Before doing this we will have to create empty stores for those that are missing, otherwise some of the stores
         // that we need to open will complain because some of their "sub-stores" doesn't exist. They will be empty, it's fine...
         // and we will not read from them at all. They will just sit there and allow their parent store to be opened.
         // We'll remove them after we have built the id files
+        IdGeneratorFactory rebuiltIdGeneratorsFromNewStore = new DefaultIdGeneratorFactory( fileSystem, immediate() );
         Set<Path> placeHolderStoreFiles = createEmptyPlaceHolderStoreFiles( migrationLayout, newFormat );
-        try ( NeoStores stores = createStoreFactory( migrationLayout, newFormat, new ScanOnOpenReadOnlyIdGeneratorFactory() )
-                .openNeoStores( storesInMigrationDirectory.toArray( StoreType[]::new ) ) )
-        {
-            stores.start( cursorTracer );
-            buildIdFiles( migrationLayout, storesInMigrationDirectory, rebuiltIdGenerators, renameList, stores, cursorTracer );
-        }
+        startAndTriggerRebuild( migrationLayout, newFormat, rebuiltIdGeneratorsFromNewStore, storesInMigrationDirectory, progress, cursorTracer );
         for ( Path emptyPlaceHolderStoreFile : placeHolderStoreFiles )
         {
             fileSystem.deleteFile( emptyPlaceHolderStoreFile );
         }
-        // Renamed the built id files (they're called what they should be called, except with a '.new' in the end) by removing the suffix
-        for ( Pair<Path,Path> rename : renameList )
+    }
+
+    private void startAndTriggerRebuild( DatabaseLayout layout, RecordFormats format, IdGeneratorFactory idGeneratorFactory, List<StoreType> storeTypes,
+            ProgressReporter progress, PageCursorTracer cursorTracer ) throws IOException
+    {
+        try ( NeoStores stores = createStoreFactory( layout, format, idGeneratorFactory ).openNeoStores( storeTypes.toArray( StoreType[]::new ) ) )
         {
-            fileSystem.deleteFile( rename.getRight() );
-            fileSystem.renameFile( rename.getLeft(), rename.getRight() );
+            // full rebuild of ID files that doesn't yet exist will happen in here
+            stores.start( store -> progress.progress( 1 ), cursorTracer );
         }
     }
 
@@ -167,42 +175,7 @@ public class IdGeneratorMigrator extends AbstractStoreMigrationParticipant
         return createdStores;
     }
 
-    private void buildIdFiles( DatabaseLayout layout, List<StoreType> storeTypes, IdGeneratorFactory rebuiltIdGenerators,
-        List<Pair<Path,Path>> renameMap, NeoStores stores, PageCursorTracer cursorTracer ) throws IOException
-    {
-        for ( StoreType storeType : storeTypes )
-        {
-            RecordStore<AbstractBaseRecord> store = stores.getRecordStore( storeType );
-            long highId = store.getHighId();
-            Path actualIdFile = layout.idFile( storeType.getDatabaseFile() ).get();
-            Path idFile = actualIdFile.resolveSibling( actualIdFile.getFileName() + ".new" );
-            renameMap.add( Pair.of( idFile, actualIdFile ) );
-            boolean readOnly = config.get( GraphDatabaseSettings.read_only );
-            int numberOfReservedLowIds = store.getNumberOfReservedLowIds();
-            try ( PageCursor cursor = store.openPageCursorForReading( store.getNumberOfReservedLowIds(), cursorTracer );
-                    // about maxId: let's not concern ourselves with maxId here; if it's in the store it can be in the id generator
-                  IdGenerator idGenerator = rebuiltIdGenerators.create( pageCache, idFile, storeType.getIdType(), highId, true, Long.MAX_VALUE,
-                            readOnly, cursorTracer, immutable.empty() ) )
-            {
-                idGenerator.start( visitor ->
-                {
-                    AbstractBaseRecord record = store.newRecord();
-                    for ( long id = numberOfReservedLowIds; id < highId; id++ )
-                    {
-                        store.getRecordByCursor( id, record, RecordLoad.LENIENT_CHECK, cursor );
-                        if ( !record.inUse() )
-                        {
-                            visitor.accept( id );
-                            // it's enough with deleted - even if we don't mark the ids as free the next time we open the id generator they will be
-                        }
-                    }
-                    return max( highId, numberOfReservedLowIds ) - 1;
-                }, cursorTracer );
-            }
-        }
-    }
-
-    private boolean requiresIdFilesMigration( RecordFormats oldFormat, RecordFormats newFormat )
+    static boolean requiresIdFilesMigration( RecordFormats oldFormat, RecordFormats newFormat )
     {
         return !oldFormat.hasCapability( GBPTREE_ID_FILES ) && newFormat.hasCapability( GBPTREE_ID_FILES );
     }
@@ -219,7 +192,7 @@ public class IdGeneratorMigrator extends AbstractStoreMigrationParticipant
     {
         fileOperation( MOVE, fileSystem, migrationLayout, directoryLayout,
                 Iterables.iterable( DatabaseFile.values() ), true, // allow to skip non existent source files
-                ExistingTargetStrategy.OVERWRITE );
+                true, ExistingTargetStrategy.OVERWRITE );
     }
 
     @Override
