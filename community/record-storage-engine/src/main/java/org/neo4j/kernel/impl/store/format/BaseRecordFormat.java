@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.store.format;
 
+import java.util.Objects;
 import java.util.function.Function;
 
 import org.neo4j.internal.id.IdSequence;
@@ -91,16 +92,24 @@ public abstract class BaseRecordFormat<RECORD extends AbstractBaseRecord> implem
     }
 
     @Override
-    public boolean equals( Object obj )
+    public boolean equals( Object o )
     {
-        return obj != null && getClass().equals( obj.getClass() );
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+        BaseRecordFormat<?> that = (BaseRecordFormat<?>) o;
+        return recordHeaderSize == that.recordHeaderSize && pageAligned == that.pageAligned;
     }
 
     @Override
     public int hashCode()
     {
-        return getClass().hashCode();
-
+        return Objects.hash( recordHeaderSize, pageAligned );
     }
 
     @Override
