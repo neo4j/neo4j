@@ -79,7 +79,7 @@ class IdGeneratorMigratorTest
             nodeStoreStartId = neoStores.getNodeStore().getNumberOfReservedLowIds();
             stringStoreStartId = neoStores.getPropertyStore().getStringStore().getNumberOfReservedLowIds();
         }
-        // Pretend that the relationship store was migrated so that relationship id file should be migrated from there
+        // Pretend that the relationship store was copied so that relationship id file should be migrated from there
         try ( NeoStores neoStores = new StoreFactory( upgrade, defaults(), new DefaultIdGeneratorFactory( fs, immediate() ), pageCache, fs,
                 StandardV4_0.RECORD_FORMATS, nullLogProvider(), WRITE, READ ).openAllNeoStores( true ) )
         {
@@ -92,7 +92,7 @@ class IdGeneratorMigratorTest
         fs.deleteFile( upgrade.propertyStringStore() );
         fs.deleteFile( upgrade.idPropertyStringStore() );
         fs.deleteFile( db.relationshipStore() );
-        fs.deleteFile( db.idRelationshipStore() );
+        fs.deleteFile( upgrade.idRelationshipStore() );
 
         // when
         IdGeneratorMigrator migrator = new IdGeneratorMigrator( fs, pageCache, defaults() );

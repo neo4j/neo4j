@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.OpenOption;
+import java.util.function.Consumer;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -373,7 +374,16 @@ public class NeoStores implements AutoCloseable
 
     public void start() throws IOException
     {
-        visitStores( CommonAbstractStore::start );
+        start( store -> {} );
+    }
+
+    public void start( Consumer<CommonAbstractStore<?,?>> listener ) throws IOException
+    {
+        visitStores( store ->
+        {
+            store.start();
+            listener.accept( store );
+        } );
     }
 
     /**
