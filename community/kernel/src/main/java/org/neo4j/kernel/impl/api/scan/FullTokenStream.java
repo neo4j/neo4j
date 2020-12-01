@@ -23,7 +23,7 @@ import java.io.IOException;
 import java.util.List;
 
 import org.neo4j.internal.helpers.collection.Visitor;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.index.schema.FullStoreChangeStream;
@@ -49,15 +49,15 @@ public abstract class FullTokenStream implements FullStoreChangeStream, Visitor<
     }
 
     abstract StoreScan<IOException> getStoreScan( IndexStoreView indexStoreView, Visitor<List<EntityTokenUpdate>,IOException> tokenUpdateVisitor,
-            PageCursorTracer cursorTracer, MemoryTracker memoryTracker );
+            PageCacheTracer cacheTracer, MemoryTracker memoryTracker );
 
     @Override
-    public long applyTo( TokenScanWriter writer, PageCursorTracer cursorTracer, MemoryTracker memoryTracker ) throws IOException
+    public long applyTo( TokenScanWriter writer, PageCacheTracer cacheTracer, MemoryTracker memoryTracker ) throws IOException
     {
         // Keep the writer for using it in "visit"
         this.writer = writer;
-        StoreScan<IOException> scan = getStoreScan( indexStoreView, this, cursorTracer, memoryTracker );
-        scan.run();
+        StoreScan<IOException> scan = getStoreScan( indexStoreView, this, cacheTracer, memoryTracker );
+        scan.run( StoreScan.NO_EXTERNAL_UPDATES );
         return count;
     }
 

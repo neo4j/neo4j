@@ -19,153 +19,102 @@
  */
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
-import org.apache.commons.lang3.ArrayUtils;
-
+import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.IntPredicate;
 import java.util.function.LongFunction;
 
+import org.neo4j.collection.PrimitiveLongResourceCollections.AbstractPrimitiveLongBaseResourceIterator;
+import org.neo4j.configuration.Config;
+import org.neo4j.internal.batchimport.Configuration;
+import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.internal.kernel.api.PopulationProgress;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
-import org.neo4j.kernel.impl.api.index.MultipleIndexPopulator;
 import org.neo4j.kernel.impl.api.index.PhaseTracker;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.index.schema.LabelScanStore;
 import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStore;
 import org.neo4j.lock.Lock;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.storageengine.api.EntityTokenUpdate;
 import org.neo4j.storageengine.api.EntityUpdates;
-import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.StorageEntityScanCursor;
-import org.neo4j.storageengine.api.StoragePropertyCursor;
 import org.neo4j.storageengine.api.StorageReader;
-import org.neo4j.values.storable.Value;
 
+import static org.neo4j.internal.batchimport.staging.ExecutionMonitor.INVISIBLE;
+import static org.neo4j.internal.batchimport.staging.ExecutionSupervisors.superviseDynamicExecution;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
 
 /**
- * Scan store with the view given by iterator created by {@link #getEntityIdIterator()}. This might be a full scan of the store
+ * Scan store with the view given by iterator created by {@link #getEntityIdIterator(PageCursorTracer)}. This might be a full scan of the store
  * or a partial scan backed by {@link LabelScanStore} or {@link RelationshipTypeScanStore}.
- *
- * The {@link #entityCursor cursor} is placed on each record and then {@link #process(StorageEntityScanCursor) processed},
- * this is where we extract updates for indexes that we are populating.
  *
  * @param <CURSOR> the type of cursor used to read the records.
  * @param <FAILURE> on failure during processing.
  */
-public abstract class PropertyAwareEntityStoreScan<CURSOR extends StorageEntityScanCursor, FAILURE extends Exception> implements StoreScan<FAILURE>
+public abstract class PropertyAwareEntityStoreScan<CURSOR extends StorageEntityScanCursor<?>, FAILURE extends Exception>
+        implements StoreScan<FAILURE>
 {
-    final CURSOR entityCursor;
-    private final StoragePropertyCursor propertyCursor;
-    private final StorageReader storageReader;
-    private volatile boolean continueScanning;
-    private long count;
+    protected final StorageReader storageReader;
+    protected final EntityScanCursorBehaviour<CURSOR> cursorBehaviour;
+    private final boolean parallelWrite;
+    protected final PageCacheTracer cacheTracer;
+    private final AtomicBoolean continueScanning = new AtomicBoolean();
     private final long totalCount;
+    private final MemoryTracker memoryTracker;
+    protected final int[] entityTokenIdFilter;
     private final IntPredicate propertyKeyIdFilter;
     private final LongFunction<Lock> lockFunction;
+    private final Config dbConfig;
     private PhaseTracker phaseTracker;
+    protected final Visitor<List<EntityTokenUpdate>,FAILURE> tokenUpdateVisitor;
+    protected final Visitor<List<EntityUpdates>,FAILURE> propertyUpdateVisitor;
+    private volatile StoreScanStage<FAILURE,CURSOR> stage;
 
-    protected PropertyAwareEntityStoreScan( StorageReader storageReader, long totalEntityCount, IntPredicate propertyKeyIdFilter,
-            LongFunction<Lock> lockFunction, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
+    protected PropertyAwareEntityStoreScan( Config config, StorageReader storageReader, long totalEntityCount, int[] entityTokenIdFilter,
+            IntPredicate propertyKeyIdFilter, Visitor<List<EntityTokenUpdate>,FAILURE> tokenUpdateVisitor,
+            Visitor<List<EntityUpdates>,FAILURE> propertyUpdateVisitor, LongFunction<Lock> lockFunction,
+            EntityScanCursorBehaviour<CURSOR> cursorBehaviour, boolean parallelWrite, PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
     {
         this.storageReader = storageReader;
-        this.entityCursor = allocateCursor( storageReader, cursorTracer );
-        this.propertyCursor = storageReader.allocatePropertyCursor( cursorTracer, memoryTracker );
+        this.cursorBehaviour = cursorBehaviour;
+        this.parallelWrite = parallelWrite;
+        this.cacheTracer = cacheTracer;
+        this.entityTokenIdFilter = entityTokenIdFilter;
         this.propertyKeyIdFilter = propertyKeyIdFilter;
         this.lockFunction = lockFunction;
         this.totalCount = totalEntityCount;
+        this.memoryTracker = memoryTracker;
         this.phaseTracker = PhaseTracker.nullInstance;
-    }
-
-    protected abstract CURSOR allocateCursor( StorageReader storageReader, PageCursorTracer cursorTracer );
-
-    static boolean containsAnyEntityToken( int[] entityTokenFilter, long... entityTokens )
-    {
-        for ( long candidate : entityTokens )
-        {
-            if ( ArrayUtils.contains( entityTokenFilter, Math.toIntExact( candidate ) ) )
-            {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    boolean hasRelevantProperty( CURSOR cursor, EntityUpdates.Builder updates )
-    {
-        if ( !cursor.hasProperties() )
-        {
-            return false;
-        }
-        boolean hasRelevantProperty = false;
-        cursor.properties( propertyCursor );
-        while ( propertyCursor.next() )
-        {
-            int propertyKeyId = propertyCursor.propertyKey();
-            if ( propertyKeyIdFilter.test( propertyKeyId ) )
-            {
-                // This relationship has a property of interest to us
-                Value value = propertyCursor.propertyValue();
-                // No need to validate values before passing them to the updater since the index implementation
-                // is allowed to fail in which ever way it wants to. The result of failure will be the same as
-                // a failed validation, i.e. population FAILED.
-                updates.added( propertyKeyId, value );
-                hasRelevantProperty = true;
-            }
-        }
-        return hasRelevantProperty;
+        this.tokenUpdateVisitor = tokenUpdateVisitor;
+        this.propertyUpdateVisitor = propertyUpdateVisitor;
+        this.dbConfig = config;
     }
 
     @Override
-    public void run() throws FAILURE
+    public void run( ExternalUpdatesCheck externalUpdatesCheck ) throws FAILURE
     {
-        entityCursor.scan();
-        try ( EntityIdIterator entityIdIterator = getEntityIdIterator() )
+        try
         {
-            continueScanning = true;
-            while ( continueScanning && entityIdIterator.hasNext() )
-            {
-                phaseTracker.enterPhase( PhaseTracker.Phase.SCAN );
-                long id = entityIdIterator.next();
-                try ( Lock ignored = lockFunction.apply( id ) )
-                {
-                    count++;
-                    if ( process( entityCursor ) )
-                    {
-                        entityIdIterator.invalidateCache();
-                    }
-                }
-            }
+            continueScanning.set( true );
+            Configuration config = Configuration.DEFAULT;
+            stage = new StoreScanStage<>( dbConfig, config, this::getEntityIdIterator, externalUpdatesCheck, continueScanning, storageReader,
+                    entityTokenIdFilter, propertyKeyIdFilter, propertyUpdateVisitor, tokenUpdateVisitor, cursorBehaviour, lockFunction, parallelWrite,
+                    cacheTracer, memoryTracker );
+            superviseDynamicExecution( INVISIBLE, stage );
+            stage.reportTo( phaseTracker );
         }
         finally
         {
-            closeAllUnchecked( propertyCursor, entityCursor, storageReader );
+            closeAllUnchecked( storageReader );
         }
     }
-
-    @Override
-    public void acceptUpdate( MultipleIndexPopulator.MultipleIndexUpdater updater, IndexEntryUpdate<?> update,
-            long currentlyIndexedNodeId )
-    {
-        if ( update.getEntityId() <= currentlyIndexedNodeId )
-        {
-            updater.process( update );
-        }
-    }
-
-    /**
-     * Process the given {@code record}.
-     *
-     * @param cursor CURSOR with information to process.
-     * @return {@code true} if external updates have been applied such that the scan iterator needs to be 100% up to date with store,
-     * i.e. invalidate any caches if it has any.
-     * @throws FAILURE on failure.
-     */
-    protected abstract boolean process( CURSOR cursor ) throws FAILURE;
 
     @Override
     public void stop()
     {
-        continueScanning = false;
+        continueScanning.set( false );
     }
 
     @Override
@@ -173,7 +122,7 @@ public abstract class PropertyAwareEntityStoreScan<CURSOR extends StorageEntityS
     {
         if ( totalCount > 0 )
         {
-            return PopulationProgress.single( count, totalCount );
+            return PopulationProgress.single( stage.numberOfIteratedEntities(), totalCount );
         }
 
         // nothing to do 100% completed
@@ -186,47 +135,33 @@ public abstract class PropertyAwareEntityStoreScan<CURSOR extends StorageEntityS
         this.phaseTracker = phaseTracker;
     }
 
-    protected EntityIdIterator getEntityIdIterator()
+    protected EntityIdIterator getEntityIdIterator( PageCursorTracer cursorTracer )
     {
-        return new EntityIdIterator()
+        return new CursorEntityIdIterator<>( cursorBehaviour.allocateEntityScanCursor( cursorTracer ) );
+    }
+
+    static class CursorEntityIdIterator<CURSOR extends StorageEntityScanCursor<?>> extends AbstractPrimitiveLongBaseResourceIterator
+            implements EntityIdIterator
+    {
+        private final CURSOR entityCursor;
+
+        CursorEntityIdIterator( CURSOR entityCursor )
         {
-            private boolean hasSeenNext;
-            private boolean hasNext;
+            super( entityCursor::close );
+            this.entityCursor = entityCursor;
+            entityCursor.scan();
+        }
 
-            @Override
-            public void invalidateCache()
-            {
-                // Nothing to invalidate, we're reading directly from the store
-            }
+        @Override
+        public void invalidateCache()
+        {
+            // Nothing to invalidate, we're reading directly from the store
+        }
 
-            @Override
-            public long next()
-            {
-                if ( !hasNext() )
-                {
-                    throw new IllegalStateException();
-                }
-                hasSeenNext = false;
-                hasNext = false;
-                return entityCursor.entityReference();
-            }
-
-            @Override
-            public boolean hasNext()
-            {
-                if ( !hasSeenNext )
-                {
-                     hasNext = entityCursor.next();
-                     hasSeenNext = true;
-                }
-                return hasNext;
-            }
-
-            @Override
-            public void close()
-            {
-                // Nothing to close
-            }
-        };
+        @Override
+        protected boolean fetchNext()
+        {
+            return entityCursor.next() && next( entityCursor.entityReference() );
+        }
     }
 }

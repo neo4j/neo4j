@@ -485,7 +485,7 @@ public abstract class NativeTokenScanStore implements TokenScanStore, EntityToke
             final PageCursorTracer cursorTracer = cacheTracer.createPageCursorTracer( TOKEN_SCAN_REBUILD_TAG );
             try ( TokenScanWriter writer = newBulkAppendWriter( cursorTracer ) )
             {
-                numberOfEntities = fullStoreChangeStream.applyTo( writer, cursorTracer, memoryTracker );
+                numberOfEntities = fullStoreChangeStream.applyTo( writer, cacheTracer, memoryTracker );
             }
 
             index.checkpoint( IOLimiter.UNLIMITED, writeClean, cursorTracer );

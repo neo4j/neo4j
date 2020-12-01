@@ -23,8 +23,9 @@ import java.util.List;
 import java.util.function.IntPredicate;
 import javax.annotation.Nullable;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.internal.helpers.collection.Visitor;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.lock.LockService;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.EntityTokenUpdate;
@@ -32,7 +33,6 @@ import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
 
-import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.lock.LockType.SHARED;
 
 /**
@@ -41,48 +41,14 @@ import static org.neo4j.lock.LockType.SHARED;
  */
 public class RelationshipStoreScan<FAILURE extends Exception> extends PropertyAwareEntityStoreScan<StorageRelationshipScanCursor,FAILURE>
 {
-    private final Visitor<List<EntityTokenUpdate>,FAILURE> relationshipTypeUpdateVisitor;
-    final int[] relationshipTypeIds;
-    private final Visitor<List<EntityUpdates>,FAILURE> propertyUpdatesVisitor;
-
-    public RelationshipStoreScan( StorageReader storageReader, LockService locks,
+    public RelationshipStoreScan( Config config, StorageReader storageReader, LockService locks,
             @Nullable Visitor<List<EntityTokenUpdate>,FAILURE> relationshipTypeUpdateVisitor,
             @Nullable Visitor<List<EntityUpdates>,FAILURE> propertyUpdatesVisitor,
-            int[] relationshipTypeIds, IntPredicate propertyKeyIdFilter, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
+            int[] relationshipTypeIds, IntPredicate propertyKeyIdFilter, boolean parallelWrite,
+            PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
     {
-        super( storageReader, storageReader.relationshipsGetCount(), propertyKeyIdFilter,
-                id -> locks.acquireRelationshipLock( id, SHARED ), cursorTracer, memoryTracker );
-        this.relationshipTypeUpdateVisitor = relationshipTypeUpdateVisitor;
-        this.propertyUpdatesVisitor = propertyUpdatesVisitor;
-        this.relationshipTypeIds = relationshipTypeIds;
-    }
-
-    @Override
-    protected StorageRelationshipScanCursor allocateCursor( StorageReader storageReader, PageCursorTracer cursorTracer )
-    {
-        return storageReader.allocateRelationshipScanCursor( cursorTracer );
-    }
-
-    @Override
-    protected boolean process( StorageRelationshipScanCursor cursor ) throws FAILURE
-    {
-        int relType = cursor.type();
-
-        if ( relationshipTypeUpdateVisitor != null )
-        {
-            relationshipTypeUpdateVisitor.visit( List.of( EntityTokenUpdate.tokenChanges( cursor.entityReference(), EMPTY_LONG_ARRAY, new long[]{relType} ) ) );
-        }
-
-        if ( propertyUpdatesVisitor != null && containsAnyEntityToken( relationshipTypeIds, relType ) )
-        {
-            // Notify the property update visitor
-            EntityUpdates.Builder updates = EntityUpdates.forEntity( cursor.entityReference(), true ).withTokens( relType );
-
-            if ( hasRelevantProperty( cursor, updates ) )
-            {
-                return propertyUpdatesVisitor.visit( List.of( updates.build() ) );
-            }
-        }
-        return false;
+        super( config, storageReader, storageReader.relationshipsGetCount(), relationshipTypeIds, propertyKeyIdFilter, relationshipTypeUpdateVisitor,
+                propertyUpdatesVisitor, id -> locks.acquireRelationshipLock( id, SHARED ), new RelationshipCursorBehaviour( storageReader ), parallelWrite,
+                cacheTracer, memoryTracker );
     }
 }

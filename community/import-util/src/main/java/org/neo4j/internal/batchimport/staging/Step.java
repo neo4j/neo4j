@@ -72,6 +72,11 @@ public interface Step<T> extends Parallelizable, AutoCloseable, Panicable
      */
     StepStats stats();
 
+    default boolean isIdle()
+    {
+        return false;
+    }
+
     /**
      * Convenience method for getting a long value of a particular stat.
      *

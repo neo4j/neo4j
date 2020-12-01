@@ -193,6 +193,24 @@ class LoggingPhaseTrackerTest
                                 "Last 1 sec: SCAN[totalTime=1s]" );
     }
 
+    @Test
+    void shouldRegisterTimeManually()
+    {
+        // given
+        AssertableLogProvider logProvider = new AssertableLogProvider( true );
+        Log log = logProvider.getLog( IndexPopulationJob.class );
+        PhaseTracker phaseTracker = getPhaseTracker( 1, log );
+
+        // when
+        phaseTracker.registerTime( PhaseTracker.Phase.SCAN, 1234 );
+        phaseTracker.registerTime( PhaseTracker.Phase.BUILD, 56789 );
+        phaseTracker.stop();
+
+        // then
+        assertThat( logProvider ).forClass( IndexPopulationJob.class ).forLevel( INFO ).containsMessages(
+                "TIME/PHASE Final: SCAN[totalTime=1s234ms], BUILD[totalTime=56s789ms]" );
+    }
+
     private LoggingPhaseTracker getPhaseTracker()
     {
         return getPhaseTracker( NullLog.getInstance() );

@@ -23,10 +23,12 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.Label;
 import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
+import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.lock.LockService;
 import org.neo4j.storageengine.api.EntityTokenUpdate;
@@ -65,16 +67,13 @@ class NeoStoreIndexStoreViewTracingIT
         }
 
         var pageCacheTracer = new DefaultPageCacheTracer();
-        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( "tracePageCacheAccess" ) )
-        {
-            var indexStoreView = new NeoStoreIndexStoreView( lockService, storageEngine::newReader );
-            var storeScan = indexStoreView.visitNodes( EMPTY_INT_ARRAY, ALWAYS_TRUE_INT, null,
-                    (Visitor<List<EntityTokenUpdate>,Exception>) element -> false, true, cursorTracer, INSTANCE );
-            storeScan.run();
-        }
+        var indexStoreView = new NeoStoreIndexStoreView( lockService, storageEngine::newReader, Config.defaults() );
+        var storeScan = indexStoreView.visitNodes( EMPTY_INT_ARRAY, ALWAYS_TRUE_INT, null,
+                (Visitor<List<EntityTokenUpdate>,Exception>) element -> false, true, true, pageCacheTracer, INSTANCE );
+        storeScan.run( StoreScan.NO_EXTERNAL_UPDATES );
 
-        assertThat( pageCacheTracer.pins() ).isEqualTo( 2 );
-        assertThat( pageCacheTracer.unpins() ).isEqualTo( 2 );
-        assertThat( pageCacheTracer.hits() ).isEqualTo( 2 );
+        assertThat( pageCacheTracer.pins() ).isEqualTo( 4 );
+        assertThat( pageCacheTracer.unpins() ).isEqualTo( 4 );
+        assertThat( pageCacheTracer.hits() ).isEqualTo( 4 );
     }
 }

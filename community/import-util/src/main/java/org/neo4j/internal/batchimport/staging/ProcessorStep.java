@@ -225,7 +225,12 @@ public abstract class ProcessorStep<T> extends AbstractStep<T>
 
     private void updateCursorTracerName()
     {
-        this.cursorTracerName = IMPORT_STEP_TAG_PREFIX + name();
+        this.cursorTracerName = buildCursorTracerName();
+    }
+
+    protected String buildCursorTracerName()
+    {
+        return IMPORT_STEP_TAG_PREFIX + name();
     }
 
     private class Sender implements BatchSender

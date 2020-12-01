@@ -17,22 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.index;
+package org.neo4j.kernel.impl.transaction.state.storeview;
 
-import java.util.concurrent.atomic.AtomicLong;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.kernel.impl.api.index.StoreScan;
+import org.neo4j.storageengine.api.StorageEntityScanCursor;
 
-public class UniqueIndexSampler
+/**
+ * Injectable logic to a {@link StoreScan} to accommodate for different types of scans.
+ */
+interface EntityScanCursorBehaviour<CURSOR extends StorageEntityScanCursor<?>>
 {
-    private final AtomicLong count = new AtomicLong();
+    CURSOR allocateEntityScanCursor( PageCursorTracer cursorTracer );
 
-    public void increment( long count )
-    {
-        this.count.addAndGet( count );
-    }
-
-    public IndexSample result()
-    {
-        long count = this.count.get();
-        return new IndexSample( count, count, count );
-    }
+    long[] readTokens( CURSOR cursor );
 }

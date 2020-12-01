@@ -354,7 +354,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
             RelationshipTypeScanStore relationshipTypeScanStore, Config config )
     {
         LockService locks = LockService.NO_LOCK_SERVICE;
-        NeoStoreIndexStoreView neoStoreIndexStoreView = new NeoStoreIndexStoreView( locks, readerSupplier );
+        NeoStoreIndexStoreView neoStoreIndexStoreView = new NeoStoreIndexStoreView( locks, readerSupplier, Config.defaults() );
         return new DynamicIndexStoreViewWrapper( neoStoreIndexStoreView, labelScanStore, relationshipTypeScanStore, locks, readerSupplier, customAction,
                 config );
     }
@@ -514,14 +514,12 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         }
 
         @Override
-        public <FAILURE extends Exception> StoreScan<FAILURE> visitNodes( int[] labelIds,
-                IntPredicate propertyKeyIdFilter,
-                Visitor<List<EntityUpdates>,FAILURE> propertyUpdatesVisitor,
-                Visitor<List<EntityTokenUpdate>,FAILURE> labelUpdateVisitor,
-                boolean forceStoreScan, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
+        public <FAILURE extends Exception> StoreScan<FAILURE> visitNodes( int[] labelIds, IntPredicate propertyKeyIdFilter,
+                Visitor<List<EntityUpdates>,FAILURE> propertyUpdatesVisitor, Visitor<List<EntityTokenUpdate>,FAILURE> labelUpdateVisitor,
+                boolean forceStoreScan, boolean parallelWrite, PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
         {
             StoreScan<FAILURE> storeScan = super.visitNodes( labelIds, propertyKeyIdFilter, propertyUpdatesVisitor,
-                    labelUpdateVisitor, forceStoreScan, cursorTracer, memoryTracker );
+                    labelUpdateVisitor, forceStoreScan, parallelWrite, cacheTracer, memoryTracker );
             return new LabelViewNodeStoreWrapper<>( storageEngine.get(), locks, getLabelScanStore(),
                     element -> false, propertyUpdatesVisitor, labelIds, propertyKeyIdFilter,
                     (LabelViewNodeStoreScan<FAILURE>) storeScan, customAction );
@@ -539,15 +537,16 @@ public class MultiIndexPopulationConcurrentUpdatesIT
                 LabelViewNodeStoreScan<FAILURE> delegate,
                 Runnable customAction )
         {
-            super( storageReader, locks, labelScanStore, labelUpdateVisitor, propertyUpdatesVisitor, labelIds, propertyKeyIdFilter, NULL, INSTANCE );
+            super( Config.defaults(), storageReader, locks, labelScanStore, labelUpdateVisitor, propertyUpdatesVisitor, labelIds, propertyKeyIdFilter, false,
+                    PageCacheTracer.NULL, INSTANCE );
             this.delegate = delegate;
             this.customAction = customAction;
         }
 
         @Override
-        public EntityIdIterator getEntityIdIterator()
+        public EntityIdIterator getEntityIdIterator( PageCursorTracer cursorTracer )
         {
-            EntityIdIterator originalIterator = delegate.getEntityIdIterator();
+            EntityIdIterator originalIterator = delegate.getEntityIdIterator( cursorTracer );
             return new DelegatingEntityIdIterator( originalIterator, customAction );
         }
     }

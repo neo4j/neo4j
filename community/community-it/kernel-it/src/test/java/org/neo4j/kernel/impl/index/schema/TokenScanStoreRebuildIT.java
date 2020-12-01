@@ -35,6 +35,7 @@ import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.Inject;
 
+import static org.neo4j.internal.helpers.collection.Iterators.count;
 import static org.neo4j.logging.LogAssertions.assertThat;
 
 @DbmsExtension( configurationCallback = "configuration" )
@@ -59,8 +60,8 @@ class TokenScanStoreRebuildIT
     void shouldReportCorrectEntityCountsOnRebuild()
     {
         // given
-        int nbrOfNodes = 100;
-        int nbrOfRelationships = 1_000;
+        int nbrOfNodes = 30_000;
+        int nbrOfRelationships = 30_000;
         createSomeData( nbrOfNodes, nbrOfRelationships );
 
         // when
@@ -79,9 +80,15 @@ class TokenScanStoreRebuildIT
                 "No label index found, this might just be first use. Preparing to rebuild.",
                 "Rebuilding relationship type index, this may take a while",
                 "Rebuilding label index, this may take a while",
-                "Relationship type index rebuilt (roughly 1000 relationships)",
-                "Label index rebuilt (roughly 100 nodes)"
+                "Relationship type index rebuilt (roughly " + nbrOfRelationships + " relationships)",
+                "Label index rebuilt (roughly " + nbrOfNodes + " nodes)"
                 );
+        try ( Transaction tx = db.beginTx() )
+        {
+            assertThat( count( tx.findNodes( TestLabels.LABEL_ONE ) ) ).isEqualTo( nbrOfNodes );
+            assertThat( count( tx.findRelationships( TestRelType.LOOP ) ) ).isEqualTo( nbrOfNodes );
+            tx.commit();
+        }
     }
 
     private void createSomeData( int nbrOfNodes, int nbrOfRelationships )

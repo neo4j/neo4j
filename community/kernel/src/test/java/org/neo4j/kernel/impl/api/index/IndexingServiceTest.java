@@ -329,8 +329,9 @@ class IndexingServiceTest
         order.verify( populator, times( 1 ) ).add( any( Collection.class ), any( PageCursorTracer.class ) );
         order.verify( populator ).scanCompleted( any( PhaseTracker.class ), any( IndexPopulator.PopulationWorkScheduler.class ),
                 any( PageCursorTracer.class ) );
-        order.verify( populator, times( 1 ) ).add( any( Collection.class ), any( PageCursorTracer.class ) );
         order.verify( populator ).newPopulatingUpdater( propertyAccessor, NULL );
+        order.verify( populator ).includeSample( any() );
+        order.verify( updater ).process( any() );
         order.verify( updater ).close();
         order.verify( populator ).sample( NULL );
         order.verify( populator ).close( true, NULL );
@@ -1512,7 +1513,7 @@ class IndexingServiceTest
         void getsProcessedByStoreScanFrom( IndexStoreView mock )
         {
             when( mock.visitNodes( any(int[].class), any( IntPredicate.class ),
-                    any( Visitor.class ), isNull(), anyBoolean(), any( PageCursorTracer.class ), any() ) ).thenAnswer( this );
+                    any( Visitor.class ), isNull(), anyBoolean(), anyBoolean(), any( PageCacheTracer.class ), any() ) ).thenAnswer( this );
         }
 
         @Override
@@ -1525,7 +1526,7 @@ class IndexingServiceTest
                 private volatile boolean stop;
 
                 @Override
-                public void run() throws IndexPopulationFailedKernelException
+                public void run( ExternalUpdatesCheck externalUpdatesCheck ) throws IndexPopulationFailedKernelException
                 {
                     if ( stop || updates.length == 0 )
                     {
@@ -1538,12 +1539,6 @@ class IndexingServiceTest
                 public void stop()
                 {
                     stop = true;
-                }
-
-                @Override
-                public void acceptUpdate( MultipleIndexPopulator.MultipleIndexUpdater updater, IndexEntryUpdate<?> update, long currentlyIndexedNodeId )
-                {
-                    // no-op
                 }
 
                 @Override

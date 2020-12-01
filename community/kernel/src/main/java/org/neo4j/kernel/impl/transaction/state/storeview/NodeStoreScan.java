@@ -23,7 +23,9 @@ import java.util.List;
 import java.util.function.IntPredicate;
 import javax.annotation.Nullable;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.internal.helpers.collection.Visitor;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.lock.LockService;
 import org.neo4j.memory.MemoryTracker;
@@ -32,7 +34,6 @@ import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StorageReader;
 
-import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.lock.LockType.SHARED;
 
 /**
@@ -41,59 +42,23 @@ import static org.neo4j.lock.LockType.SHARED;
  */
 public class NodeStoreScan<FAILURE extends Exception> extends PropertyAwareEntityStoreScan<StorageNodeCursor,FAILURE>
 {
-    private final Visitor<List<EntityTokenUpdate>,FAILURE> labelUpdateVisitor;
-    private final Visitor<List<EntityUpdates>,FAILURE> propertyUpdatesVisitor;
-    protected final int[] labelIds;
+    private static final String TRACER_TAG = "NodeStoreScan_getNodeCount";
 
-    public NodeStoreScan( StorageReader storageReader, LockService locks,
+    public NodeStoreScan( Config config, StorageReader storageReader, LockService locks,
             @Nullable Visitor<List<EntityTokenUpdate>,FAILURE> labelUpdateVisitor,
             @Nullable Visitor<List<EntityUpdates>,FAILURE> propertyUpdatesVisitor,
-            int[] labelIds, IntPredicate propertyKeyIdFilter, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
+            int[] labelIds, IntPredicate propertyKeyIdFilter, boolean parallelWrite,
+            PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
     {
-        super( storageReader, nodeCount( storageReader, cursorTracer ), propertyKeyIdFilter,
-                id -> locks.acquireNodeLock( id, SHARED ), cursorTracer, memoryTracker );
-        this.labelUpdateVisitor = labelUpdateVisitor;
-        this.propertyUpdatesVisitor = propertyUpdatesVisitor;
-        this.labelIds = labelIds;
+        super( config, storageReader, getNodeCount( storageReader, cacheTracer ), labelIds, propertyKeyIdFilter, labelUpdateVisitor, propertyUpdatesVisitor,
+                id -> locks.acquireNodeLock( id, SHARED ), new NodeCursorBehaviour( storageReader ), parallelWrite, cacheTracer, memoryTracker );
     }
 
-    @Override
-    protected StorageNodeCursor allocateCursor( StorageReader storageReader, PageCursorTracer cursorTracer )
+    private static long getNodeCount( StorageReader storageReader, PageCacheTracer cacheTracer )
     {
-        return storageReader.allocateNodeCursor( cursorTracer );
-    }
-
-    @Override
-    public boolean process( StorageNodeCursor cursor ) throws FAILURE
-    {
-        long[] labels = cursor.labels();
-        if ( labels.length == 0 && labelIds.length != 0 )
+        try ( PageCursorTracer cursorTracer = cacheTracer.createPageCursorTracer( TRACER_TAG ) )
         {
-            // This node has no labels at all
-            return false;
+            return storageReader.nodesGetCount( cursorTracer );
         }
-
-        if ( labelUpdateVisitor != null )
-        {
-            // Notify the label update visitor
-            labelUpdateVisitor.visit( List.of( EntityTokenUpdate.tokenChanges( cursor.entityReference(), EMPTY_LONG_ARRAY, labels ) ) );
-        }
-
-        if ( propertyUpdatesVisitor != null && containsAnyEntityToken( labelIds, labels ) )
-        {
-            // Notify the property update visitor
-            EntityUpdates.Builder updates = EntityUpdates.forEntity( cursor.entityReference(), true ).withTokens( labels );
-
-            if ( hasRelevantProperty( cursor, updates ) )
-            {
-                return propertyUpdatesVisitor.visit( List.of( updates.build() ) );
-            }
-        }
-        return false;
-    }
-
-    private static long nodeCount( StorageReader reader, PageCursorTracer cursorTracer )
-    {
-        return reader.nodesGetCount( cursorTracer );
     }
 }

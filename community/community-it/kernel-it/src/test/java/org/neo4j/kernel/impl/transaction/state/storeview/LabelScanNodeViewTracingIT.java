@@ -23,10 +23,12 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.Label;
 import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
+import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.index.schema.LabelScanStore;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -50,6 +52,8 @@ class LabelScanNodeViewTracingIT
     private LockService lockService;
     @Inject
     private LabelScanStore labelScanStore;
+    @Inject
+    private JobScheduler jobScheduler;
 
     @Test
     void tracePageCacheAccess() throws Exception
@@ -69,12 +73,9 @@ class LabelScanNodeViewTracingIT
         var labelId = getLabelId( label );
 
         var cacheTracer = new DefaultPageCacheTracer();
-        try ( var cursorTracer = cacheTracer.createPageCursorTracer( "tracePageCacheAccess" ) )
-        {
-            var scan = new LabelViewNodeStoreScan<>( storageEngine.newReader(), lockService, labelScanStore,
-                    (Visitor<List<EntityTokenUpdate>,Exception>) element -> false, null, new int[]{labelId}, any -> false, cursorTracer, INSTANCE );
-            scan.run();
-        }
+        var scan = new LabelViewNodeStoreScan<>( Config.defaults(), storageEngine.newReader(), lockService, labelScanStore,
+                (Visitor<List<EntityTokenUpdate>,Exception>) element -> false, null, new int[]{labelId}, any -> false, false, cacheTracer, INSTANCE );
+        scan.run( StoreScan.NO_EXTERNAL_UPDATES );
 
         assertThat( cacheTracer.pins() ).isEqualTo( 3 );
         assertThat( cacheTracer.unpins() ).isEqualTo( 3 );

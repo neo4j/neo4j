@@ -30,7 +30,6 @@ import java.util.function.IntPredicate;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -50,8 +49,10 @@ import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.memory.HeapEstimator;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.scheduler.JobSchedulerExtension;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
+import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 import org.neo4j.test.InMemoryTokens;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
@@ -81,12 +82,15 @@ import static org.neo4j.common.Subject.AUTH_DISABLED;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.api.index.IndexQueryHelper.add;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+import static org.neo4j.values.storable.Values.intValue;
 
-@ExtendWith( RandomExtension.class )
+@ExtendWith( {RandomExtension.class, JobSchedulerExtension.class} )
 class MultipleIndexPopulatorTest
 {
     @Inject
     private RandomRule random;
+    @Inject
+    private JobScheduler jobScheduler;
 
     private final LabelSchemaDescriptor index1 = SchemaDescriptor.forLabel( 1, 1 );
     private IndexStoreView indexStoreView;
@@ -101,9 +105,8 @@ class MultipleIndexPopulatorTest
         indexStatisticsStore = mock( IndexStatisticsStore.class );
         indexStoreView = mock( IndexStoreView.class );
         when( indexStoreView.newPropertyAccessor( any( PageCursorTracer.class ), any() ) ).thenReturn( mock( NodePropertyAccessor.class ) );
-        when( indexStoreView.visitNodes( any(), any(), any(), any(), anyBoolean(), any(), any() ) ).thenReturn( mock( StoreScan.class ) );
+        when( indexStoreView.visitNodes( any(), any(), any(), any(), anyBoolean(), anyBoolean(), any(), any() ) ).thenReturn( mock( StoreScan.class ) );
         schemaState = mock( SchemaState.class );
-        JobScheduler jobScheduler = mock( JobScheduler.class );
         tokens = new InMemoryTokens();
         multipleIndexPopulator = new MultipleIndexPopulator( indexStoreView, NullLogProvider.getInstance(), EntityType.NODE, schemaState, indexStatisticsStore,
                 jobScheduler, tokens, PageCacheTracer.NULL, INSTANCE, "", AUTH_DISABLED, Config.defaults() );
@@ -219,7 +222,7 @@ class MultipleIndexPopulatorTest
 
         multipleIndexPopulator.stop( populationToCancel, NULL );
 
-        multipleIndexPopulator.createStoreScan( NULL );
+        multipleIndexPopulator.createStoreScan( PageCacheTracer.NULL );
 
         assertTrue( multipleIndexPopulator.hasPopulators() );
 
@@ -241,7 +244,7 @@ class MultipleIndexPopulatorTest
 
         multipleIndexPopulator.stop( populationToCancel, NULL );
 
-        multipleIndexPopulator.createStoreScan( NULL );
+        multipleIndexPopulator.createStoreScan( PageCacheTracer.NULL );
 
         assertTrue( multipleIndexPopulator.hasPopulators() );
 
@@ -260,10 +263,10 @@ class MultipleIndexPopulatorTest
         addPopulator( indexPopulator2, 2 );
 
         multipleIndexPopulator.create( NULL );
-        multipleIndexPopulator.createStoreScan( NULL );
+        multipleIndexPopulator.createStoreScan( PageCacheTracer.NULL );
 
-        verify( indexStoreView )
-            .visitNodes( any( int[].class ), any( IntPredicate.class ), any( Visitor.class ), isNull(), anyBoolean(), any( PageCursorTracer.class ), any() );
+        verify( indexStoreView ).visitNodes( any( int[].class ), any( IntPredicate.class ), any( Visitor.class ), isNull(), anyBoolean(), anyBoolean(),
+                any( PageCacheTracer.class ), any() );
     }
 
     @Test
@@ -388,7 +391,7 @@ class MultipleIndexPopulatorTest
 
         when( indexPopulator1.sample( any( PageCursorTracer.class ) ) ).thenThrow( getSampleError() );
 
-        multipleIndexPopulator.createStoreScan( NULL );
+        multipleIndexPopulator.createStoreScan( PageCacheTracer.NULL );
         multipleIndexPopulator.flipAfterStoreScan( false, NULL );
 
         verify( indexPopulator1 ).close( false, NULL );
@@ -496,7 +499,7 @@ class MultipleIndexPopulatorTest
         when( indexPopulator.sample( any( PageCursorTracer.class ) ) ).thenReturn( new IndexSample() );
 
         // when
-        multipleIndexPopulator.createStoreScan( NULL );
+        multipleIndexPopulator.createStoreScan( PageCacheTracer.NULL );
         multipleIndexPopulator.flipAfterStoreScan( true, NULL );
 
         // then
@@ -522,38 +525,13 @@ class MultipleIndexPopulatorTest
         IndexSample sample = new IndexSample( indexSize, uniqueValues, sampleSize, updates );
         when( indexPopulator.sample( any( PageCursorTracer.class ) ) ).thenReturn( sample );
 
-        multipleIndexPopulator.createStoreScan( NULL );
+        multipleIndexPopulator.createStoreScan( PageCacheTracer.NULL );
         multipleIndexPopulator.flipAfterStoreScan( false, NULL );
 
         verify( indexPopulator ).close( true, NULL );
 
         verify( indexStatisticsStore ).replaceStats( 1, sample );
         verify( schemaState ).clear();
-    }
-
-    @Test
-    void shouldFlushScanBatchesEarlierWhenHittingMaxBatchByteSize() throws FlipFailedKernelException
-    {
-        // given
-        IndexPopulator populator = createIndexPopulator();
-        IndexPopulation population = addPopulator( populator, 1 );
-        multipleIndexPopulator.create( NULL );
-        String largeString = random.nextAlphaNumericString( 100_000, 100_000 );
-        int roughlyNumUpdates = (int) (multipleIndexPopulator.batchMaxByteSizeScan / HeapEstimator.sizeOf( largeString ));
-        assertThat( roughlyNumUpdates ).isLessThan( GraphDatabaseInternalSettings.index_population_scan_batch_size.defaultValue() / 10 );
-        Value largeStringValue = Values.stringValue( largeString );
-        IndexDescriptor indexDescriptor = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 0, 1 ) ).withName( "name" ).materialise( 99 );
-        boolean full = false;
-
-        // when
-        for ( int i = 0; !full && i < roughlyNumUpdates * 2; i++ )
-        {
-            IndexEntryUpdate<IndexDescriptor> largeUpdate = IndexEntryUpdate.add( i, indexDescriptor, largeStringValue );
-            full = population.addToBatchFromScan( largeUpdate );
-        }
-
-        // then
-        assertThat( full ).isTrue();
     }
 
     @Test
@@ -564,10 +542,9 @@ class MultipleIndexPopulatorTest
         multipleIndexPopulator.create( NULL );
         String largeString = random.nextAlphaNumericString( 100_000, 100_000 );
         int roughlyNumUpdates = (int) (multipleIndexPopulator.batchMaxByteSizeScan / HeapEstimator.sizeOf( largeString ));
-        assertThat( roughlyNumUpdates ).isLessThan( multipleIndexPopulator.batchSizeScan / 10 );
         Value largeStringValue = Values.stringValue( largeString );
         IndexDescriptor indexDescriptor = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 0, 1 ) ).withName( "name" ).materialise( 99 );
-        multipleIndexPopulator.createStoreScan( NULL );
+        multipleIndexPopulator.createStoreScan( PageCacheTracer.NULL );
         boolean full = false;
 
         // when
@@ -575,11 +552,44 @@ class MultipleIndexPopulatorTest
         {
             IndexEntryUpdate<IndexDescriptor> largeUpdate = IndexEntryUpdate.add( i, indexDescriptor, largeStringValue );
             multipleIndexPopulator.queueConcurrentUpdate( largeUpdate );
-            full = multipleIndexPopulator.applyConcurrentUpdateQueueBatched( Long.MAX_VALUE );
+            full = multipleIndexPopulator.needToApplyExternalUpdates();
+            if ( full )
+            {
+                multipleIndexPopulator.applyExternalUpdates( Long.MAX_VALUE );
+            }
         }
 
         // then
         assertThat( full ).isTrue();
+    }
+
+    @Test
+    void updateForHigherNodeIgnoredWhenUsingFullNodeStoreScan() throws IndexEntryConflictException, FlipFailedKernelException
+    {
+        // given
+        createIndexPopulator();
+        multipleIndexPopulator.create( NULL );
+        IndexUpdater updater = mock( IndexUpdater.class );
+        IndexPopulator populator = createIndexPopulator( updater );
+        IndexUpdater indexUpdater = mock( IndexUpdater.class );
+        LabelSchemaDescriptor schema = SchemaDescriptor.forLabel( 1, 1 );
+        addPopulator( populator, 1 );
+
+        // when external updates comes in
+        ValueIndexEntryUpdate<LabelSchemaDescriptor> lowUpdate = IndexEntryUpdate.add( 10, schema, intValue( 99 ) );
+        ValueIndexEntryUpdate<LabelSchemaDescriptor> highUpdate = IndexEntryUpdate.add( 20, schema, intValue( 101 ) );
+        multipleIndexPopulator.queueConcurrentUpdate( lowUpdate );
+        multipleIndexPopulator.queueConcurrentUpdate( highUpdate );
+
+        // and we ask to apply them, given an entity in between the two
+        multipleIndexPopulator.applyExternalUpdates( 15 );
+
+        // then only the lower one should be applied, the higher one ignored
+        verify( populator, times( 1 ) ).newPopulatingUpdater( any(), any() );
+        verify( updater ).process( lowUpdate );
+        verify( updater, never() ).process( highUpdate );
+
+        verify( indexUpdater, never() ).process( any(IndexEntryUpdate.class) );
     }
 
     private static IndexEntryUpdate<?> createIndexEntryUpdate( LabelSchemaDescriptor schemaDescriptor )

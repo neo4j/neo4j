@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.index.schema;
 import java.io.IOException;
 import java.util.List;
 
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.EntityTokenUpdate;
 
@@ -31,13 +31,13 @@ import org.neo4j.storageengine.api.EntityTokenUpdate;
  */
 public interface FullStoreChangeStream
 {
-    FullStoreChangeStream EMPTY = ( writer, cursorTracer, memoryTracker ) -> 0;
+    FullStoreChangeStream EMPTY = ( writer, cacheTracer, memoryTracker ) -> 0;
 
-    long applyTo( TokenScanWriter writer, PageCursorTracer cursorTracer, MemoryTracker memoryTracker ) throws IOException;
+    long applyTo( TokenScanWriter writer, PageCacheTracer cacheTracer, MemoryTracker memoryTracker ) throws IOException;
 
     static FullStoreChangeStream asStream( final List<EntityTokenUpdate> existingData )
     {
-        return ( writer, cursorTracer, memoryTracker ) ->
+        return ( writer, cacheTracer, memoryTracker ) ->
         {
             long count = 0;
             for ( EntityTokenUpdate update : existingData )

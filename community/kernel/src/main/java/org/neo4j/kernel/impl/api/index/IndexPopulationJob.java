@@ -138,7 +138,7 @@ public class IndexPopulationJob implements Runnable
                 multiPopulator.resetIndexCounts( cursorTracer );
 
                 monitor.indexPopulationScanStarting();
-                indexAllEntities( cursorTracer );
+                indexAllEntities( pageCacheTracer );
                 monitor.indexPopulationScanComplete();
                 if ( stopped )
                 {
@@ -164,10 +164,10 @@ public class IndexPopulationJob implements Runnable
         }
     }
 
-    private void indexAllEntities( PageCursorTracer cursorTracer ) throws IndexPopulationFailedKernelException
+    private void indexAllEntities( PageCacheTracer cacheTracer ) throws IndexPopulationFailedKernelException
     {
-        storeScan = multiPopulator.createStoreScan( cursorTracer );
-        storeScan.run();
+        storeScan = multiPopulator.createStoreScan( cacheTracer );
+        storeScan.run( multiPopulator );
     }
 
     PopulationProgress getPopulationProgress( MultipleIndexPopulator.IndexPopulation indexPopulation )

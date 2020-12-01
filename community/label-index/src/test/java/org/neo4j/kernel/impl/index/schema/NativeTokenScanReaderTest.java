@@ -34,6 +34,7 @@ import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.kernel.api.index.IndexProgressor;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
@@ -257,6 +258,24 @@ class NativeTokenScanReaderTest
 
                     asArray( iterator ) );
         }
+    }
+
+    @Test
+    void shouldCloseOpenedPartsOnFailureToOpenPart() throws IOException
+    {
+        // GIVEN
+        GBPTree<TokenScanKey,TokenScanValue> index = mock( GBPTree.class );
+        Seeker<TokenScanKey,TokenScanValue> seeker1 = mock( Seeker.class );
+        Seeker<TokenScanKey,TokenScanValue> seeker2 = mock( Seeker.class );
+        when( index.seek( any(), any(), any() ) ).thenReturn( seeker1 ).thenReturn( seeker2 ).thenThrow( RuntimeException.class );
+
+        // WHEN
+        NativeTokenScanReader reader = new NativeTokenScanReader( index );
+        assertThatThrownBy( () -> reader.entitiesWithAnyOfTokens( new int[]{0, 1, 2, 3}, NULL ) ).isInstanceOf( RuntimeException.class );
+
+        // THEN
+        verify( seeker1 ).close();
+        verify( seeker2 ).close();
     }
 
     private static TokenScanValue value( long bits )

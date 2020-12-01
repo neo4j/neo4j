@@ -88,7 +88,6 @@ public class IndexPopulationMissConcurrentUpdateIT
     {
         builder.noOpSystemGraphInitializer().addExtension( index );
         builder.setConfig( GraphDatabaseSettings.default_schema_provider, ControlledSchemaIndexProvider.INDEX_PROVIDER.name() );
-        builder.setConfig( GraphDatabaseInternalSettings.index_population_scan_batch_size, 1 );
         builder.setConfig( GraphDatabaseInternalSettings.index_population_queue_threshold, 1 );
     }
 

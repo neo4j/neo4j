@@ -17,22 +17,30 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.index;
+package org.neo4j.kernel.impl.transaction.state.storeview;
 
-import java.util.concurrent.atomic.AtomicLong;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.storageengine.api.StorageNodeCursor;
+import org.neo4j.storageengine.api.StorageReader;
 
-public class UniqueIndexSampler
+public class NodeCursorBehaviour implements EntityScanCursorBehaviour<StorageNodeCursor>
 {
-    private final AtomicLong count = new AtomicLong();
+    private final StorageReader storageReader;
 
-    public void increment( long count )
+    NodeCursorBehaviour( StorageReader storageReader )
     {
-        this.count.addAndGet( count );
+        this.storageReader = storageReader;
     }
 
-    public IndexSample result()
+    @Override
+    public StorageNodeCursor allocateEntityScanCursor( PageCursorTracer cursorTracer )
     {
-        long count = this.count.get();
-        return new IndexSample( count, count, count );
+        return storageReader.allocateNodeCursor( cursorTracer );
+    }
+
+    @Override
+    public long[] readTokens( StorageNodeCursor cursor )
+    {
+        return cursor.labels();
     }
 }

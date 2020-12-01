@@ -24,11 +24,11 @@ import java.util.function.IntPredicate;
 
 import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.internal.kernel.api.PopulationProgress;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.EntityTokenUpdate;
 import org.neo4j.storageengine.api.EntityUpdates;
-import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 
 /** The indexing services view of the universe. */
@@ -45,14 +45,13 @@ public interface IndexStoreView
      * @param labelUpdateVisitor visitor which will see all generated {@link EntityTokenUpdate}.
      * @param forceStoreScan overrides decision about which source to scan from. If {@code true}
      * then store scan will be used, otherwise if {@code false} then the best suited will be used.
-     * @param cursorTracer underlying page cursor events tracer.
+     * @param parallelWrite whether or not the visitors can be called by multiple threads concurrently.
+     * @param cacheTracer underlying page cursor events tracer.
      * @return a {@link StoreScan} to start and to stop the scan.
      */
-    <FAILURE extends Exception> StoreScan<FAILURE> visitNodes(
-            int[] labelIds, IntPredicate propertyKeyIdFilter,
-            Visitor<List<EntityUpdates>, FAILURE> propertyUpdateVisitor,
-            Visitor<List<EntityTokenUpdate>, FAILURE> labelUpdateVisitor,
-            boolean forceStoreScan, PageCursorTracer cursorTracer, MemoryTracker memoryTracker );
+    <FAILURE extends Exception> StoreScan<FAILURE> visitNodes( int[] labelIds, IntPredicate propertyKeyIdFilter,
+            Visitor<List<EntityUpdates>,FAILURE> propertyUpdateVisitor, Visitor<List<EntityTokenUpdate>,FAILURE> labelUpdateVisitor, boolean forceStoreScan,
+            boolean parallelWrite, PageCacheTracer cacheTracer, MemoryTracker memoryTracker );
 
     /**
      * Retrieve all relationships in the database which has any of the the given relationship types AND
@@ -64,12 +63,13 @@ public interface IndexStoreView
      * @param relationshipTypeUpdateVisitor visitor which will see all generated {@link EntityTokenUpdate}.
      * @param forceStoreScan overrides decision about which source to scan from. If {@code true}
      * then store scan will be used, otherwise if {@code false} then the best suited will be used.
-     * @param cursorTracer underlying page cursor events tracer.
+     * @param parallelWrite whether or not the visitors can be called by multiple threads concurrently.
+     * @param cacheTracer underlying page cursor events tracer.
      * @return a {@link StoreScan} to start and to stop the scan.
      */
     <FAILURE extends Exception> StoreScan<FAILURE> visitRelationships( int[] relationshipTypeIds, IntPredicate propertyKeyIdFilter,
             Visitor<List<EntityUpdates>,FAILURE> propertyUpdateVisitor, Visitor<List<EntityTokenUpdate>,FAILURE> relationshipTypeUpdateVisitor,
-            boolean forceStoreScan, PageCursorTracer cursorTracer, MemoryTracker memoryTracker );
+            boolean forceStoreScan, boolean parallelWrite, PageCacheTracer cacheTracer, MemoryTracker memoryTracker );
 
     NodePropertyAccessor newPropertyAccessor( PageCursorTracer cursorTracer, MemoryTracker memoryTracker );
 
@@ -77,18 +77,12 @@ public interface IndexStoreView
     StoreScan EMPTY_SCAN = new StoreScan()
     {
         @Override
-        public void run()
+        public void run( ExternalUpdatesCheck externalUpdatesCheck )
         {
         }
 
         @Override
         public void stop()
-        {
-        }
-
-        @Override
-        public void acceptUpdate( MultipleIndexPopulator.MultipleIndexUpdater updater, IndexEntryUpdate update,
-                long currentlyIndexedNodeId )
         {
         }
 
@@ -109,7 +103,7 @@ public interface IndexStoreView
         @Override
         public <FAILURE extends Exception> StoreScan<FAILURE> visitNodes( int[] labelIds, IntPredicate propertyKeyIdFilter,
                 Visitor<List<EntityUpdates>,FAILURE> propertyUpdateVisitor, Visitor<List<EntityTokenUpdate>,FAILURE> labelUpdateVisitor, boolean forceStoreScan,
-                PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
+                boolean parallelWrite, PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
         {
             return EMPTY_SCAN;
         }
@@ -118,7 +112,7 @@ public interface IndexStoreView
         @Override
         public <FAILURE extends Exception> StoreScan<FAILURE> visitRelationships( int[] relationshipTypeIds, IntPredicate propertyKeyIdFilter,
                 Visitor<List<EntityUpdates>,FAILURE> propertyUpdateVisitor, Visitor<List<EntityTokenUpdate>,FAILURE> relationshipTypeUpdateVisitor,
-                boolean forceStoreScan, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
+                boolean forceStoreScan, boolean parallelWrite, PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
         {
             return EMPTY_SCAN;
         }

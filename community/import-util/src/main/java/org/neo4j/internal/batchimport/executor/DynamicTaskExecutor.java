@@ -213,7 +213,7 @@ public class DynamicTaskExecutor<LOCAL> implements TaskExecutor<LOCAL>
                 }
                 catch ( InterruptedException e )
                 {
-                    Thread.interrupted();
+                    Thread.currentThread().interrupt();
                     break;
                 }
 

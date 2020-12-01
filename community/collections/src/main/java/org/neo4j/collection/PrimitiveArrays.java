@@ -296,4 +296,13 @@ public final class PrimitiveArrays
         return true;
     }
 
+    public static long[] intsToLongs( int[] ints )
+    {
+        long[] longs = new long[ints.length];
+        for ( int i = 0; i < ints.length; i++ )
+        {
+            longs[i] = ints[i];
+        }
+        return longs;
+    }
 }

@@ -184,7 +184,7 @@ class IndexPopulationJobTest
 
         assertTrue( populator.created );
         assertEquals( Collections.singletonList( update ), populator.includedSamples );
-        assertEquals( 2, populator.adds.size() );
+        assertEquals( 1, populator.adds.size() );
         assertTrue( populator.resultSampled );
         assertTrue( populator.closeCall );
     }
@@ -207,7 +207,7 @@ class IndexPopulationJobTest
 
         assertTrue( populator.created );
         assertEquals( Collections.singletonList( update ), populator.includedSamples );
-        assertEquals( 2, populator.adds.size() );
+        assertEquals( 1, populator.adds.size() );
         assertTrue( populator.resultSampled );
         assertTrue( populator.closeCall );
 
@@ -237,7 +237,7 @@ class IndexPopulationJobTest
 
         assertTrue( populator.created );
         assertEquals( Collections.singletonList( update ), populator.includedSamples );
-        assertEquals( 2, populator.adds.size() );
+        assertEquals( 1, populator.adds.size() );
         assertTrue( populator.resultSampled );
         assertTrue( populator.closeCall );
     }
@@ -260,13 +260,13 @@ class IndexPopulationJobTest
 
         assertTrue( populator.created );
         assertEquals( Collections.singletonList( update ), populator.includedSamples );
-        assertEquals( 2, populator.adds.size() );
+        assertEquals( 1, populator.adds.size() );
         assertTrue( populator.resultSampled );
         assertTrue( populator.closeCall );
 
-        assertThat( pageCacheTracer.pins() ).isEqualTo( 17 );
-        assertThat( pageCacheTracer.unpins() ).isEqualTo( 17 );
-        assertThat( pageCacheTracer.hits() ).isEqualTo( 16 );
+        assertThat( pageCacheTracer.pins() ).isEqualTo( 18 );
+        assertThat( pageCacheTracer.unpins() ).isEqualTo( 18 );
+        assertThat( pageCacheTracer.hits() ).isEqualTo( 17 );
         assertThat( pageCacheTracer.faults() ).isEqualTo( 1 );
     }
 
@@ -311,7 +311,7 @@ class IndexPopulationJobTest
 
         assertTrue( populator.created );
         assertEquals( Arrays.asList( update1, update2 ), populator.includedSamples );
-        assertEquals( 2, populator.adds.size() );
+        assertEquals( 1, populator.adds.size() );
         assertTrue( populator.resultSampled );
         assertTrue( populator.closeCall );
     }
@@ -345,7 +345,7 @@ class IndexPopulationJobTest
 
         assertTrue( populator.created );
         assertEquals( Arrays.asList( update1, update2 ), populator.includedSamples );
-        assertEquals( 2, populator.adds.size() );
+        assertEquals( 1, populator.adds.size() );
         assertTrue( populator.resultSampled );
         assertTrue( populator.closeCall );
     }
@@ -435,7 +435,7 @@ class IndexPopulationJobTest
         ControlledStoreScan storeScan = new ControlledStoreScan();
         when( storeView.visitNodes( any(int[].class), any( IntPredicate.class ),
                 ArgumentMatchers.any(),
-                ArgumentMatchers.<Visitor<List<EntityTokenUpdate>,RuntimeException>>any(), anyBoolean(), any(), any() ) )
+                ArgumentMatchers.<Visitor<List<EntityTokenUpdate>,RuntimeException>>any(), anyBoolean(), anyBoolean(), any(), any() ) )
                 .thenReturn(storeScan );
         when( storeView.newPropertyAccessor( any( PageCursorTracer.class ), any() ) ).thenReturn( mock( NodePropertyAccessor.class ) );
 
@@ -613,23 +613,18 @@ class IndexPopulationJobTest
             @Override
             public <FAILURE extends Exception> StoreScan<FAILURE> visitNodes( int[] labelIds, IntPredicate propertyKeyIdFilter,
                     Visitor<List<EntityUpdates>,FAILURE> propertyUpdateVisitor, Visitor<List<EntityTokenUpdate>,FAILURE> labelUpdateVisitor,
-                    boolean forceStoreScan, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
+                    boolean forceStoreScan, boolean parallelWrite, PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
             {
                 return new StoreScan<>()
                 {
                     @Override
-                    public void run()
+                    public void run( ExternalUpdatesCheck externalUpdatesCheck )
                     {
                         throw new RuntimeException( "Just failing" );
                     }
 
                     @Override
                     public void stop()
-                    {
-                    }
-
-                    @Override
-                    public void acceptUpdate( MultipleIndexPopulator.MultipleIndexUpdater updater, IndexEntryUpdate<?> update, long currentlyIndexedNodeId )
                     {
                     }
 
@@ -658,7 +653,7 @@ class IndexPopulationJobTest
         private final DoubleLatch latch = new DoubleLatch();
 
         @Override
-        public void run()
+        public void run( ExternalUpdatesCheck externalUpdatesCheck )
         {
             latch.startAndWaitForAllToStartAndFinish();
         }
@@ -667,11 +662,6 @@ class IndexPopulationJobTest
         public void stop()
         {
             latch.finish();
-        }
-
-        @Override
-        public void acceptUpdate( MultipleIndexPopulator.MultipleIndexUpdater updater, IndexEntryUpdate<?> update, long currentlyIndexedNodeId )
-        {
         }
 
         @Override

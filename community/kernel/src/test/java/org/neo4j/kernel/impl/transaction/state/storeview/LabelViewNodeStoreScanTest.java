@@ -27,7 +27,9 @@ import java.util.function.IntPredicate;
 
 import org.neo4j.collection.PrimitiveLongResourceCollections;
 import org.neo4j.collection.PrimitiveLongResourceIterator;
+import org.neo4j.configuration.Config;
 import org.neo4j.internal.helpers.collection.Visitor;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.index.schema.LabelScanStore;
 import org.neo4j.kernel.impl.index.schema.TokenScanReader;
@@ -72,7 +74,7 @@ class LabelViewNodeStoreScanTest
         when( labelScanReader.entitiesWithAnyOfTokens( eq( labelIds ), any() ) ).thenReturn( labeledNodes );
 
         LabelViewNodeStoreScan<Exception> storeScan = getLabelScanViewStoreScan( labelIds );
-        PrimitiveLongResourceIterator idIterator = storeScan.getEntityIdIterator();
+        PrimitiveLongResourceIterator idIterator = storeScan.getEntityIdIterator( PageCursorTracer.NULL );
 
         assertThat( idIterator.next() ).isEqualTo( 1L );
         assertThat( idIterator.next() ).isEqualTo( 2L );
@@ -83,7 +85,7 @@ class LabelViewNodeStoreScanTest
 
     private LabelViewNodeStoreScan<Exception> getLabelScanViewStoreScan( int[] labelIds )
     {
-        return new LabelViewNodeStoreScan<>( cursors, LockService.NO_LOCK_SERVICE,
-                labelScanStore, labelUpdateVisitor, propertyUpdateVisitor, labelIds, propertyKeyIdFilter, PageCursorTracer.NULL, INSTANCE );
+        return new LabelViewNodeStoreScan<>( Config.defaults(), cursors, LockService.NO_LOCK_SERVICE,
+                labelScanStore, labelUpdateVisitor, propertyUpdateVisitor, labelIds, propertyKeyIdFilter, false, PageCacheTracer.NULL, INSTANCE );
     }
 }

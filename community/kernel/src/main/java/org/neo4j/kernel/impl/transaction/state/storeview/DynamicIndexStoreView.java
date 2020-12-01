@@ -28,6 +28,7 @@ import java.util.function.Supplier;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.helpers.collection.Visitor;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.index.StoreScan;
@@ -49,6 +50,9 @@ import org.neo4j.storageengine.api.StorageReader;
  */
 public class DynamicIndexStoreView implements IndexStoreView
 {
+    private static final String ALL_NODE_STORE_SCAN_TAG = "DynamicIndexStoreView_useAllNodeStoreScan";
+    private static final String ALL_RELATIONSHIP_SCAN_TAG = "DynamicIndexStoreView_useAllRelationshipStoreScan";
+
     private final NeoStoreIndexStoreView neoStoreIndexStoreView;
     private final LabelScanStore labelScanStore;
     private final RelationshipTypeScanStore relationshipTypeScanStore;
@@ -71,33 +75,31 @@ public class DynamicIndexStoreView implements IndexStoreView
     }
 
     @Override
-    public <FAILURE extends Exception> StoreScan<FAILURE> visitNodes( int[] labelIds,
-            IntPredicate propertyKeyIdFilter, Visitor<List<EntityUpdates>,FAILURE> propertyUpdatesVisitor,
-            Visitor<List<EntityTokenUpdate>,FAILURE> labelUpdateVisitor,
-            boolean forceStoreScan, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
+    public <FAILURE extends Exception> StoreScan<FAILURE> visitNodes( int[] labelIds, IntPredicate propertyKeyIdFilter,
+            Visitor<List<EntityUpdates>,FAILURE> propertyUpdatesVisitor, Visitor<List<EntityTokenUpdate>,FAILURE> labelUpdateVisitor, boolean forceStoreScan,
+            boolean parallelWrite, PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
     {
-        if ( forceStoreScan || useAllNodeStoreScan( labelIds, cursorTracer ) )
+        if ( forceStoreScan || useAllNodeStoreScan( labelIds, cacheTracer ) )
         {
-            return neoStoreIndexStoreView.visitNodes( labelIds, propertyKeyIdFilter, propertyUpdatesVisitor, labelUpdateVisitor,
-                    forceStoreScan, cursorTracer, memoryTracker );
+            return neoStoreIndexStoreView.visitNodes( labelIds, propertyKeyIdFilter, propertyUpdatesVisitor, labelUpdateVisitor, forceStoreScan, parallelWrite,
+                    cacheTracer, memoryTracker );
         }
-        return new LabelViewNodeStoreScan<>( storageEngine.get(), locks, labelScanStore, labelUpdateVisitor,
-                propertyUpdatesVisitor, labelIds, propertyKeyIdFilter, cursorTracer, memoryTracker );
+        return new LabelViewNodeStoreScan<>( config, storageEngine.get(), locks, labelScanStore, labelUpdateVisitor, propertyUpdatesVisitor, labelIds,
+                propertyKeyIdFilter, parallelWrite, cacheTracer, memoryTracker );
     }
 
     @Override
     public <FAILURE extends Exception> StoreScan<FAILURE> visitRelationships( int[] relationshipTypeIds, IntPredicate propertyKeyIdFilter,
-            Visitor<List<EntityUpdates>,FAILURE> propertyUpdateVisitor,
-            Visitor<List<EntityTokenUpdate>,FAILURE> relationshipTypeUpdateVisitor,
-            boolean forceStoreScan, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
+            Visitor<List<EntityUpdates>,FAILURE> propertyUpdateVisitor, Visitor<List<EntityTokenUpdate>,FAILURE> relationshipTypeUpdateVisitor,
+            boolean forceStoreScan, boolean parallelWrite, PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
     {
-        if ( forceStoreScan || useAllRelationshipStoreScan( relationshipTypeIds, cursorTracer ) )
+        if ( forceStoreScan || useAllRelationshipStoreScan( relationshipTypeIds, cacheTracer ) )
         {
             return neoStoreIndexStoreView.visitRelationships( relationshipTypeIds, propertyKeyIdFilter, propertyUpdateVisitor, relationshipTypeUpdateVisitor,
-                    forceStoreScan, cursorTracer, memoryTracker );
+                    forceStoreScan, parallelWrite, cacheTracer, memoryTracker );
         }
-        return new RelationshipTypeViewRelationshipStoreScan<>( storageEngine.get(), locks, relationshipTypeScanStore, relationshipTypeUpdateVisitor,
-                propertyUpdateVisitor, relationshipTypeIds, propertyKeyIdFilter, cursorTracer, memoryTracker );
+        return new RelationshipTypeViewRelationshipStoreScan<>( config, storageEngine.get(), locks, relationshipTypeScanStore, relationshipTypeUpdateVisitor,
+                propertyUpdateVisitor, relationshipTypeIds, propertyKeyIdFilter, parallelWrite, cacheTracer, memoryTracker );
     }
 
     @Override
@@ -106,9 +108,9 @@ public class DynamicIndexStoreView implements IndexStoreView
         return neoStoreIndexStoreView.isEmpty();
     }
 
-    private boolean useAllNodeStoreScan( int[] labelIds, PageCursorTracer cursorTracer )
+    private boolean useAllNodeStoreScan( int[] labelIds, PageCacheTracer cacheTracer )
     {
-        try
+        try ( PageCursorTracer cursorTracer = cacheTracer.createPageCursorTracer( ALL_NODE_STORE_SCAN_TAG ) )
         {
             return ArrayUtils.isEmpty( labelIds ) || isEmptyLabelScanStore( cursorTracer );
         }
@@ -119,9 +121,9 @@ public class DynamicIndexStoreView implements IndexStoreView
         }
     }
 
-    private boolean useAllRelationshipStoreScan( int[] relationshipTypeIds, PageCursorTracer cursorTracer )
+    private boolean useAllRelationshipStoreScan( int[] relationshipTypeIds, PageCacheTracer cacheTracer )
     {
-        try
+        try ( PageCursorTracer cursorTracer = cacheTracer.createPageCursorTracer( ALL_RELATIONSHIP_SCAN_TAG ) )
         {
             return !config.get( RelationshipTypeScanStoreSettings.enable_relationship_type_scan_store ) || ArrayUtils.isEmpty( relationshipTypeIds ) ||
                     isEmptyRelationshipTypeStoreScan( cursorTracer );

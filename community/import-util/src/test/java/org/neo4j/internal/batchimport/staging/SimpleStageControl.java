@@ -65,6 +65,19 @@ public class SimpleStageControl implements StageControl
     }
 
     @Override
+    public boolean isIdle()
+    {
+        for ( int i = 1; i < steps.length; i++ )
+        {
+            if ( !steps[i].isIdle() )
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    @Override
     public <T> T reuse( Supplier<T> fallback )
     {
         return fallback.get();

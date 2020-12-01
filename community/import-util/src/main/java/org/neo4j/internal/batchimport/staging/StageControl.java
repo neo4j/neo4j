@@ -33,5 +33,7 @@ public interface StageControl
 
     void recycle( Object batch );
 
+    boolean isIdle();
+
     <T> T reuse( Supplier<T> fallback );
 }

@@ -25,7 +25,7 @@ import java.io.IOException;
 import java.util.List;
 
 import org.neo4j.internal.helpers.collection.Visitor;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.index.schema.FullStoreChangeStream;
@@ -46,9 +46,8 @@ public class FullLabelStream extends FullTokenStream
 
     @Override
     StoreScan<IOException> getStoreScan( IndexStoreView indexStoreView, Visitor<List<EntityTokenUpdate>,IOException> tokenUpdateVisitor,
-            PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
+            PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
     {
-        return indexStoreView.visitNodes( ArrayUtils.EMPTY_INT_ARRAY, ALWAYS_TRUE_INT, null, tokenUpdateVisitor, true,
-                cursorTracer, memoryTracker );
+        return indexStoreView.visitNodes( ArrayUtils.EMPTY_INT_ARRAY, ALWAYS_TRUE_INT, null, tokenUpdateVisitor, true, false, cacheTracer, memoryTracker );
     }
 }

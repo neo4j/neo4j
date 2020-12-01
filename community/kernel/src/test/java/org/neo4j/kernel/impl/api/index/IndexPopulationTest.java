@@ -80,7 +80,7 @@ class IndexPopulationTest
         MultipleIndexPopulator.IndexPopulation indexPopulation =
                 multipleIndexPopulator.addPopulator( populator, dummyMeta(), flipper, t -> failedProxy, "userDescription" );
         multipleIndexPopulator.queueConcurrentUpdate( someUpdate() );
-        multipleIndexPopulator.createStoreScan( PageCursorTracer.NULL ).run();
+        multipleIndexPopulator.createStoreScan( PageCacheTracer.NULL ).run( StoreScan.NO_EXTERNAL_UPDATES );
 
         // when
         indexPopulation.flip( false, PageCursorTracer.NULL );
@@ -131,28 +131,19 @@ class IndexPopulationTest
             @Override
             public <FAILURE extends Exception> StoreScan<FAILURE> visitNodes( int[] labelIds, IntPredicate propertyKeyIdFilter,
                     Visitor<List<EntityUpdates>,FAILURE> propertyUpdateVisitor, Visitor<List<EntityTokenUpdate>,FAILURE> labelUpdateVisitor,
-                    boolean forceStoreScan, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
+                    boolean forceStoreScan, boolean parallelWrite, PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
             {
                 //noinspection unchecked
                 return new StoreScan()
                 {
                     @Override
-                    public void run()
+                    public void run( ExternalUpdatesCheck externalUpdatesCheck )
                     {
                     }
 
                     @Override
                     public void stop()
                     {
-                    }
-
-                    @Override
-                    public void acceptUpdate( MultipleIndexPopulator.MultipleIndexUpdater updater, IndexEntryUpdate update, long currentlyIndexedNodeId )
-                    {
-                        if ( update.getEntityId() <= currentlyIndexedNodeId )
-                        {
-                            updater.process( update );
-                        }
                     }
 
                     @Override

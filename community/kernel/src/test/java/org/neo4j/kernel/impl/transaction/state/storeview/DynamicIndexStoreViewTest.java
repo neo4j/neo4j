@@ -23,6 +23,7 @@ import org.eclipse.collections.api.list.primitive.MutableLongList;
 import org.eclipse.collections.impl.factory.primitive.LongLists;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
 import java.util.List;
@@ -33,6 +34,7 @@ import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.configuration.Config;
 import org.neo4j.function.Predicates;
 import org.neo4j.internal.helpers.collection.Visitor;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.index.schema.AllEntriesTokenScanReader;
@@ -50,6 +52,7 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static org.apache.commons.lang3.ArrayUtils.EMPTY_INT_ARRAY;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -57,7 +60,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.collection.PrimitiveLongResourceCollections.iterator;
-import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 class DynamicIndexStoreViewTest
@@ -75,8 +78,8 @@ class DynamicIndexStoreViewTest
     @BeforeEach
     void setUp()
     {
-        when( labelScanStore.allEntityTokenRanges( NULL )).thenReturn( nodeLabelRanges );
-        when( relationshipTypeScanStore.allEntityTokenRanges( NULL ) ).thenReturn( relationshipTypeRanges );
+        when( labelScanStore.allEntityTokenRanges( PageCursorTracer.NULL ) ).thenReturn( nodeLabelRanges );
+        when( relationshipTypeScanStore.allEntityTokenRanges( PageCursorTracer.NULL ) ).thenReturn( relationshipTypeRanges );
     }
 
     @Test
@@ -101,10 +104,12 @@ class DynamicIndexStoreViewTest
 
         DynamicIndexStoreView storeView = dynamicIndexStoreView();
         StoreScan<Exception> storeScan =
-                storeView.visitNodes( new int[]{2, 6}, propertyKeyIdFilter, propertyUpdateVisitor, tokenUpdateVisitor, false, NULL, INSTANCE );
-        storeScan.run();
+                storeView.visitNodes( new int[]{2, 6}, propertyKeyIdFilter, propertyUpdateVisitor, tokenUpdateVisitor, false, true, NULL, INSTANCE );
+        storeScan.run( StoreScan.NO_EXTERNAL_UPDATES );
 
-        verify( tokenUpdateVisitor, times( nodeIds.length ) ).visit( any() );
+        ArgumentCaptor<List<EntityTokenUpdate>> updatesCaptor = ArgumentCaptor.forClass( List.class );
+        verify( tokenUpdateVisitor, times( 1 ) ).visit( updatesCaptor.capture() );
+        assertThat( updatesCaptor.getValue().size() ).isEqualTo( nodeIds.length );
     }
 
     @Test
@@ -141,13 +146,17 @@ class DynamicIndexStoreViewTest
 
         DynamicIndexStoreView storeView = dynamicIndexStoreView();
         StoreScan<Exception> storeScan =
-                storeView.visitRelationships( targetTypeArray, propertyKeyIdFilter, propertyUpdateVisitor, tokenUpdateVisitor, false, NULL, INSTANCE );
-        storeScan.run();
+                storeView.visitRelationships( targetTypeArray, propertyKeyIdFilter, propertyUpdateVisitor, tokenUpdateVisitor, false, true, NULL, INSTANCE );
+        storeScan.run( StoreScan.NO_EXTERNAL_UPDATES );
 
         // Then make sure all the fitting relationships where included
-        verify( propertyUpdateVisitor, times( wantedPropertyUpdates ) ).visit( any() );
+        ArgumentCaptor<List<EntityUpdates>> propertyUpdatesCaptor = ArgumentCaptor.forClass( List.class );
+        verify( propertyUpdateVisitor, times( 1 ) ).visit( propertyUpdatesCaptor.capture() );
+        assertThat( propertyUpdatesCaptor.getValue().size() ).isEqualTo( wantedPropertyUpdates );
         // and that we didn't visit any more relationships than what we would get from scan store
-        verify( tokenUpdateVisitor, times( relationshipsWithTargetType.size() ) ).visit( any() );
+        ArgumentCaptor<List<EntityTokenUpdate>> tokenUpdatesCaptor = ArgumentCaptor.forClass( List.class );
+        verify( tokenUpdateVisitor, times( 1 ) ).visit( tokenUpdatesCaptor.capture() );
+        assertThat( tokenUpdatesCaptor.getValue().size() ).isEqualTo( relationshipsWithTargetType.size() );
     }
 
     @Test
@@ -159,18 +168,18 @@ class DynamicIndexStoreViewTest
         IntPredicate propertyKeyIdFilter = Predicates.ALWAYS_TRUE_INT;
         Visitor<List<EntityUpdates>,Exception> propertyUpdateVisitor = mock( Visitor.class );
         Visitor<List<EntityTokenUpdate>,Exception> relationshipTypeUpdateVisitor = mock( Visitor.class );
-        PageCursorTracer cursorTracer = NULL;
+        PageCacheTracer cacheTracer = NULL;
         int[] typeIds = {1};
         boolean forceStoreScan = false;
-        when( relationshipTypeScanStore.isEmpty( cursorTracer ) ).thenReturn( false );
+        when( relationshipTypeScanStore.isEmpty( PageCursorTracer.NULL ) ).thenReturn( false );
 
         // When
-        dynamicIndexStoreView.visitRelationships( typeIds, propertyKeyIdFilter, propertyUpdateVisitor, relationshipTypeUpdateVisitor, forceStoreScan,
-                cursorTracer, INSTANCE );
+        dynamicIndexStoreView.visitRelationships( typeIds, propertyKeyIdFilter, propertyUpdateVisitor, relationshipTypeUpdateVisitor, forceStoreScan, true,
+                cacheTracer, INSTANCE );
 
         // Then
         Mockito.verify( neoStoreIndexStoreView, Mockito.times( 0 ) ).visitRelationships( typeIds, propertyKeyIdFilter,
-                propertyUpdateVisitor, relationshipTypeUpdateVisitor, forceStoreScan, cursorTracer, INSTANCE );
+                propertyUpdateVisitor, relationshipTypeUpdateVisitor, forceStoreScan, true, cacheTracer, INSTANCE );
     }
 
     @Test
@@ -182,18 +191,18 @@ class DynamicIndexStoreViewTest
         IntPredicate propertyKeyIdFilter = Predicates.ALWAYS_TRUE_INT;
         Visitor<List<EntityUpdates>,Exception> propertyUpdateVisitor = mock( Visitor.class );
         Visitor<List<EntityTokenUpdate>,Exception> relationshipTypeUpdateVisitor = mock( Visitor.class );
-        PageCursorTracer cursorTracer = NULL;
+        PageCacheTracer cacheTracer = NULL;
         int[] typeIds = {1};
-        when( relationshipTypeScanStore.isEmpty( cursorTracer ) ).thenReturn( false );
+        when( relationshipTypeScanStore.isEmpty( PageCursorTracer.NULL ) ).thenReturn( false );
 
         // When
         boolean forceStoreScan = true;
-        dynamicIndexStoreView.visitRelationships( typeIds, propertyKeyIdFilter, propertyUpdateVisitor, relationshipTypeUpdateVisitor, forceStoreScan,
-                cursorTracer, INSTANCE );
+        dynamicIndexStoreView.visitRelationships( typeIds, propertyKeyIdFilter, propertyUpdateVisitor, relationshipTypeUpdateVisitor, forceStoreScan, true,
+                cacheTracer, INSTANCE );
 
         // Then
         Mockito.verify( neoStoreIndexStoreView, Mockito.times( 1 ) ).visitRelationships( typeIds, propertyKeyIdFilter,
-                propertyUpdateVisitor, relationshipTypeUpdateVisitor, forceStoreScan, cursorTracer, INSTANCE );
+                propertyUpdateVisitor, relationshipTypeUpdateVisitor, forceStoreScan, true, cacheTracer, INSTANCE );
     }
 
     @Test
@@ -205,18 +214,18 @@ class DynamicIndexStoreViewTest
         IntPredicate propertyKeyIdFilter = Predicates.ALWAYS_TRUE_INT;
         Visitor<List<EntityUpdates>,Exception> propertyUpdateVisitor = mock( Visitor.class );
         Visitor<List<EntityTokenUpdate>,Exception> relationshipTypeUpdateVisitor = mock( Visitor.class );
-        PageCursorTracer cursorTracer = NULL;
+        PageCacheTracer cacheTracer = NULL;
         boolean forceStoreScan = false;
-        when( relationshipTypeScanStore.isEmpty( cursorTracer ) ).thenReturn( false );
+        when( relationshipTypeScanStore.isEmpty( PageCursorTracer.NULL ) ).thenReturn( false );
 
         // When
         int[] typeIds = EMPTY_INT_ARRAY;
-        dynamicIndexStoreView.visitRelationships( typeIds, propertyKeyIdFilter, propertyUpdateVisitor, relationshipTypeUpdateVisitor, forceStoreScan,
-                cursorTracer, INSTANCE );
+        dynamicIndexStoreView.visitRelationships( typeIds, propertyKeyIdFilter, propertyUpdateVisitor, relationshipTypeUpdateVisitor, forceStoreScan, true,
+                cacheTracer, INSTANCE );
 
         // Then
         Mockito.verify( neoStoreIndexStoreView, Mockito.times( 1 ) ).visitRelationships( typeIds, propertyKeyIdFilter,
-                propertyUpdateVisitor, relationshipTypeUpdateVisitor, forceStoreScan, cursorTracer, INSTANCE );
+                propertyUpdateVisitor, relationshipTypeUpdateVisitor, forceStoreScan, true, cacheTracer, INSTANCE );
     }
 
     @Test
@@ -229,18 +238,18 @@ class DynamicIndexStoreViewTest
         IntPredicate propertyKeyIdFilter = Predicates.ALWAYS_TRUE_INT;
         Visitor<List<EntityUpdates>,Exception> propertyUpdateVisitor = mock( Visitor.class );
         Visitor<List<EntityTokenUpdate>,Exception> relationshipTypeUpdateVisitor = mock( Visitor.class );
-        PageCursorTracer cursorTracer = NULL;
+        PageCacheTracer cacheTracer = NULL;
         int[] typeIds = {1};
         boolean forceStoreScan = false;
-        when( relationshipTypeScanStore.isEmpty( cursorTracer ) ).thenReturn( false );
+        when( relationshipTypeScanStore.isEmpty( PageCursorTracer.NULL ) ).thenReturn( false );
 
         // When
-        dynamicIndexStoreView.visitRelationships( typeIds, propertyKeyIdFilter, propertyUpdateVisitor, relationshipTypeUpdateVisitor, forceStoreScan,
-                cursorTracer, INSTANCE );
+        dynamicIndexStoreView.visitRelationships( typeIds, propertyKeyIdFilter, propertyUpdateVisitor, relationshipTypeUpdateVisitor, forceStoreScan, true,
+                cacheTracer, INSTANCE );
 
         // Then
         Mockito.verify( neoStoreIndexStoreView, Mockito.times( 1 ) ).visitRelationships( typeIds, propertyKeyIdFilter,
-                propertyUpdateVisitor, relationshipTypeUpdateVisitor, forceStoreScan, cursorTracer, INSTANCE );
+                propertyUpdateVisitor, relationshipTypeUpdateVisitor, forceStoreScan, true, cacheTracer, INSTANCE );
     }
 
     @Test
@@ -252,26 +261,26 @@ class DynamicIndexStoreViewTest
         IntPredicate propertyKeyIdFilter = Predicates.ALWAYS_TRUE_INT;
         Visitor<List<EntityUpdates>,Exception> propertyUpdateVisitor = mock( Visitor.class );
         Visitor<List<EntityTokenUpdate>,Exception> relationshipTypeUpdateVisitor = mock( Visitor.class );
-        PageCursorTracer cursorTracer = NULL;
+        PageCacheTracer cacheTracer = NULL;
         int[] typeIds = {1};
         boolean forceStoreScan = false;
 
         // When
-        when( relationshipTypeScanStore.isEmpty( cursorTracer ) ).thenReturn( true );
-        dynamicIndexStoreView.visitRelationships( typeIds, propertyKeyIdFilter, propertyUpdateVisitor, relationshipTypeUpdateVisitor, forceStoreScan,
-                cursorTracer, INSTANCE );
+        when( relationshipTypeScanStore.isEmpty( PageCursorTracer.NULL ) ).thenReturn( true );
+        dynamicIndexStoreView.visitRelationships( typeIds, propertyKeyIdFilter, propertyUpdateVisitor, relationshipTypeUpdateVisitor, forceStoreScan, true,
+                cacheTracer, INSTANCE );
 
         // Then
         Mockito.verify( neoStoreIndexStoreView, Mockito.times( 1 ) ).visitRelationships( typeIds, propertyKeyIdFilter,
-                propertyUpdateVisitor, relationshipTypeUpdateVisitor, forceStoreScan, cursorTracer, INSTANCE );
+                propertyUpdateVisitor, relationshipTypeUpdateVisitor, forceStoreScan, true, cacheTracer, INSTANCE );
     }
 
     private DynamicIndexStoreView dynamicIndexStoreView()
     {
         LockService locks = LockService.NO_LOCK_SERVICE;
         Supplier<StorageReader> storageReaderSupplier = () -> cursors;
-        return new DynamicIndexStoreView( new NeoStoreIndexStoreView( locks, storageReaderSupplier ), labelScanStore, relationshipTypeScanStore,
-                locks, storageReaderSupplier, NullLogProvider.getInstance(), config );
+        return new DynamicIndexStoreView( new NeoStoreIndexStoreView( locks, storageReaderSupplier, Config.defaults() ), labelScanStore,
+                relationshipTypeScanStore, locks, storageReaderSupplier, NullLogProvider.getInstance(), config );
     }
 
     private DynamicIndexStoreView dynamicIndexStoreView( NeoStoreIndexStoreView neoStoreIndexStoreView )

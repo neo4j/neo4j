@@ -23,7 +23,9 @@ import java.util.List;
 import java.util.function.IntPredicate;
 import javax.annotation.Nullable;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.internal.helpers.collection.Visitor;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.index.schema.LabelScanStore;
 import org.neo4j.lock.LockService;
@@ -40,24 +42,22 @@ import org.neo4j.storageengine.api.StorageReader;
 public class LabelViewNodeStoreScan<FAILURE extends Exception> extends NodeStoreScan<FAILURE>
 {
     private final LabelScanStore labelScanStore;
-    private final PageCursorTracer cursorTracer;
 
-    public LabelViewNodeStoreScan( StorageReader storageReader, LockService locks,
+    public LabelViewNodeStoreScan( Config config, StorageReader storageReader, LockService locks,
             LabelScanStore labelScanStore,
             @Nullable Visitor<List<EntityTokenUpdate>,FAILURE> labelUpdateVisitor,
             @Nullable Visitor<List<EntityUpdates>,FAILURE> propertyUpdatesVisitor,
-            int[] labelIds,
-            IntPredicate propertyKeyIdFilter, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
+            int[] labelIds, IntPredicate propertyKeyIdFilter, boolean parallelWrite,
+            PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
     {
-        super( storageReader, locks, labelUpdateVisitor, propertyUpdatesVisitor, labelIds,
-                propertyKeyIdFilter, cursorTracer, memoryTracker );
+        super( config, storageReader, locks, labelUpdateVisitor, propertyUpdatesVisitor, labelIds,
+                propertyKeyIdFilter, parallelWrite, cacheTracer, memoryTracker );
         this.labelScanStore = labelScanStore;
-        this.cursorTracer = cursorTracer;
     }
 
     @Override
-    public EntityIdIterator getEntityIdIterator()
+    public EntityIdIterator getEntityIdIterator( PageCursorTracer cursorTracer )
     {
-        return new TokenScanViewIdIterator<>( labelScanStore.newReader(), labelIds, entityCursor, cursorTracer );
+        return new TokenScanViewIdIterator( labelScanStore.newReader(), entityTokenIdFilter, cursorTracer );
     }
 }

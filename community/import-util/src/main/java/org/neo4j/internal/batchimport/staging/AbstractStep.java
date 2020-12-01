@@ -186,6 +186,13 @@ public abstract class AbstractStep<T> implements Step<T>
     }
 
     @Override
+    public boolean isIdle()
+    {
+        // queuedBatches is increment on receiving a batch, decremented after completing a batch
+        return queuedBatches.get() == 0;
+    }
+
+    @Override
     public void endOfUpstream()
     {
         endOfUpstream = true;

@@ -23,9 +23,9 @@ import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.collection.RawIterator;
+import org.neo4j.graphdb.Label;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -58,16 +58,19 @@ import static org.neo4j.values.storable.Values.stringValue;
 
 class DbIndexesFailureMessageIT extends KernelIntegrationTest
 {
-    private final AtomicBoolean failNextIndexPopulation = new AtomicBoolean();
-
     @Test
     void listAllIndexesWithFailedIndex() throws Throwable
     {
         // Given
+        KernelTransaction dataTransaction = newTransaction( AUTH_DISABLED );
+        String labelName = "Fail";
+        String propertyKey = "foo";
+        int failedLabel = dataTransaction.tokenWrite().labelGetOrCreateForName( labelName );
+        int propertyKeyId1 = dataTransaction.tokenWrite().propertyKeyGetOrCreateForName( propertyKey );
+        this.transaction.createNode( Label.label( labelName ) ).setProperty( propertyKey, "some value" );
+        commit();
+
         KernelTransaction transaction = newTransaction( AUTH_DISABLED );
-        int failedLabel = transaction.tokenWrite().labelGetOrCreateForName( "Fail" );
-        int propertyKeyId1 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "foo" );
-        failNextIndexPopulation.set( true );
         LabelSchemaDescriptor schema = forLabel( failedLabel, propertyKeyId1 );
         IndexDescriptor index = transaction.schemaWrite().indexCreate( schema, "fail foo index" );
         commit();
@@ -95,8 +98,8 @@ class DbIndexesFailureMessageIT extends KernelIntegrationTest
         assertEquals( stringValue( "NONUNIQUE" ), result[4] );
         assertEquals( stringValue( "BTREE" ), result[5] );
         assertEquals( stringValue( "NODE" ), result[6] );
-        assertEquals( VirtualValues.list( stringValue( "Fail" ) ), result[7] );
-        assertEquals( VirtualValues.list( stringValue( "foo" ) ), result[8] );
+        assertEquals( VirtualValues.list( stringValue( labelName ) ), result[7] );
+        assertEquals( VirtualValues.list( stringValue( propertyKey ) ), result[8] );
         assertEquals( stringValue( NATIVE_BTREE10.providerName() ), result[9] );
         assertMapsEqual( index.getIndexConfig().asMap(), (MapValue)result[10] );
         assertThat( ((TextValue) result[11]).stringValue() ).contains( "java.lang.RuntimeException: Fail on update during population" );

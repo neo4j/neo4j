@@ -22,25 +22,22 @@ package org.neo4j.kernel.impl.transaction.state.storeview;
 import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.index.schema.TokenScanReader;
-import org.neo4j.storageengine.api.StorageEntityScanCursor;
 
 /**
  * Entity id iterator used during index population when we go over entity ids indexed in a token scan store.
  */
-class TokenScanViewIdIterator<CURSOR extends StorageEntityScanCursor> implements EntityIdIterator
+class TokenScanViewIdIterator implements EntityIdIterator
 {
     private final int[] tokenIds;
     private final TokenScanReader tokenScanReader;
-    private final CURSOR entityCursor;
     private final PageCursorTracer cursorTracer;
 
     private PrimitiveLongResourceIterator idIterator;
     private long lastReturnedId = -1;
 
-    TokenScanViewIdIterator( TokenScanReader tokenScanReader, int[] tokenIds, CURSOR entityCursor, PageCursorTracer cursorTracer )
+    TokenScanViewIdIterator( TokenScanReader tokenScanReader, int[] tokenIds, PageCursorTracer cursorTracer )
     {
         this.tokenScanReader = tokenScanReader;
-        this.entityCursor = entityCursor;
         this.cursorTracer = cursorTracer;
         this.idIterator = tokenScanReader.entitiesWithAnyOfTokens( tokenIds, cursorTracer );
         this.tokenIds = tokenIds;
@@ -62,8 +59,6 @@ class TokenScanViewIdIterator<CURSOR extends StorageEntityScanCursor> implements
     public long next()
     {
         long next = idIterator.next();
-        entityCursor.single( next );
-        entityCursor.next();
         lastReturnedId = next;
         return next;
     }

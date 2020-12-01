@@ -200,6 +200,23 @@ public class StageExecution implements StageControl, AutoCloseable
     }
 
     @Override
+    public boolean isIdle()
+    {
+        int i = 0;
+        for ( Step<?> step : steps() )
+        {
+            if ( i++ > 0 )
+            {
+                if ( !step.isIdle() )
+                {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    @Override
     public void close()
     {
         if ( shouldRecycle )

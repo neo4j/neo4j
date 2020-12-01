@@ -23,7 +23,9 @@ import java.util.List;
 import java.util.function.IntPredicate;
 import javax.annotation.Nullable;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.internal.helpers.collection.Visitor;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStore;
 import org.neo4j.lock.LockService;
@@ -35,23 +37,22 @@ import org.neo4j.storageengine.api.StorageReader;
 public class RelationshipTypeViewRelationshipStoreScan<FAILURE extends Exception> extends RelationshipStoreScan<FAILURE>
 {
     private final RelationshipTypeScanStore relationshipTypeScanStore;
-    private final PageCursorTracer cursorTracer;
 
-    public RelationshipTypeViewRelationshipStoreScan( StorageReader storageReader, LockService locks,
+    public RelationshipTypeViewRelationshipStoreScan( Config config, StorageReader storageReader, LockService locks,
             RelationshipTypeScanStore relationshipTypeScanStore,
             @Nullable Visitor<List<EntityTokenUpdate>,FAILURE> relationshipTypeUpdateVisitor,
             @Nullable Visitor<List<EntityUpdates>,FAILURE> propertyUpdatesVisitor,
-            int[] relationshipTypeIds, IntPredicate propertyKeyIdFilter, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
+            int[] relationshipTypeIds, IntPredicate propertyKeyIdFilter, boolean parallelWrite,
+            PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
     {
-        super( storageReader, locks, relationshipTypeUpdateVisitor, propertyUpdatesVisitor, relationshipTypeIds, propertyKeyIdFilter, cursorTracer,
-                memoryTracker );
+        super( config, storageReader, locks, relationshipTypeUpdateVisitor, propertyUpdatesVisitor, relationshipTypeIds, propertyKeyIdFilter, parallelWrite,
+                cacheTracer, memoryTracker );
         this.relationshipTypeScanStore = relationshipTypeScanStore;
-        this.cursorTracer = cursorTracer;
     }
 
     @Override
-    protected EntityIdIterator getEntityIdIterator()
+    protected EntityIdIterator getEntityIdIterator( PageCursorTracer cursorTracer )
     {
-        return new TokenScanViewIdIterator<>( relationshipTypeScanStore.newReader(), relationshipTypeIds, entityCursor, cursorTracer );
+        return new TokenScanViewIdIterator( relationshipTypeScanStore.newReader(), entityTokenIdFilter, cursorTracer );
     }
 }

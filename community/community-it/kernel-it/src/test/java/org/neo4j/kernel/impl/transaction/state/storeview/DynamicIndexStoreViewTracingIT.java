@@ -28,6 +28,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
+import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.index.schema.LabelScanStore;
 import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStore;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -72,15 +73,12 @@ class DynamicIndexStoreViewTracingIT
         }
 
         var pageCacheTracer = new DefaultPageCacheTracer();
-        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( "tracePageCacheAccess" ) )
-        {
-            var neoStoreStoreView = new NeoStoreIndexStoreView( lockService, storageEngine::newReader );
-            var indexStoreView = new DynamicIndexStoreView( neoStoreStoreView, labelScanStore, relationshipTypeScanStore,
-                    lockService, storageEngine::newReader, NullLogProvider.nullLogProvider(), Config.defaults() );
-            var storeScan = indexStoreView.visitNodes( new int[]{0, 1, 2}, ALWAYS_TRUE_INT, null,
-                    (Visitor<List<EntityTokenUpdate>,Exception>) element -> false, false, cursorTracer, INSTANCE );
-            storeScan.run();
-        }
+        var neoStoreStoreView = new NeoStoreIndexStoreView( lockService, storageEngine::newReader, Config.defaults() );
+        var indexStoreView = new DynamicIndexStoreView( neoStoreStoreView, labelScanStore, relationshipTypeScanStore,
+                lockService, storageEngine::newReader, NullLogProvider.nullLogProvider(), Config.defaults() );
+        var storeScan = indexStoreView.visitNodes( new int[]{0, 1, 2}, ALWAYS_TRUE_INT, null,
+                (Visitor<List<EntityTokenUpdate>,Exception>) element -> false, false, true, pageCacheTracer, INSTANCE );
+        storeScan.run( StoreScan.NO_EXTERNAL_UPDATES );
 
         assertThat( pageCacheTracer.pins() ).isEqualTo( 6 );
         assertThat( pageCacheTracer.unpins() ).isEqualTo( 6 );

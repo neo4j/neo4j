@@ -20,16 +20,12 @@
 package org.neo4j.kernel.impl.api.index;
 
 import org.neo4j.internal.kernel.api.PopulationProgress;
-import org.neo4j.storageengine.api.IndexEntryUpdate;
 
 public interface StoreScan<FAILURE extends Exception>
 {
-    void run() throws FAILURE;
+    void run( ExternalUpdatesCheck externalUpdatesCheck ) throws FAILURE;
 
     void stop();
-
-    void acceptUpdate( MultipleIndexPopulator.MultipleIndexUpdater updater, IndexEntryUpdate<?> update,
-            long currentlyIndexedNodeId );
 
     PopulationProgress getProgress();
 
@@ -41,4 +37,38 @@ public interface StoreScan<FAILURE extends Exception>
     default void setPhaseTracker( PhaseTracker phaseTracker )
     {   // no-op
     }
+
+    /**
+     * Interaction point from the store scan with the index population to synchronize store scan with applying external concurrent updates
+     * that happens while the store scan is running.
+     */
+    interface ExternalUpdatesCheck
+    {
+        /**
+         * Called by the thread running the store scan from within the scan now and then to check whether or not there are external
+         * updates to apply.
+         */
+        boolean needToApplyExternalUpdates();
+
+        /**
+         * Called after {@link #needToApplyExternalUpdates()} has returned {@code true} and preparations have been made so that external updates
+         * can be applied w/o concurrent scan updates.
+         * @param currentlyIndexedNodeId the highest entity id which has been processed by the store scan.
+         */
+        void applyExternalUpdates( long currentlyIndexedNodeId );
+    }
+
+    ExternalUpdatesCheck NO_EXTERNAL_UPDATES = new ExternalUpdatesCheck()
+    {
+        @Override
+        public boolean needToApplyExternalUpdates()
+        {
+            return false;
+        }
+
+        @Override
+        public void applyExternalUpdates( long currentlyIndexedNodeId )
+        {
+        }
+    };
 }

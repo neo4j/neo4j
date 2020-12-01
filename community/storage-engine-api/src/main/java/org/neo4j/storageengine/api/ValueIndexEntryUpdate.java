@@ -95,6 +95,12 @@ public class ValueIndexEntryUpdate<INDEX_KEY extends SchemaDescriptorSupplier> e
         return String.format( "beforeValues=%s, values=%s", Arrays.toString( before ), Arrays.toString( values ) );
     }
 
+    @Override
+    public String toString()
+    {
+        return "ValueIndexEntryUpdate{" + "entity=" + getEntityId() + ", before=" + Arrays.toString( before ) + ", values=" + Arrays.toString( values ) + '}';
+    }
+
     private static void validateValuesLength( SchemaDescriptorSupplier indexKey, Value[] before, Value[] values )
     {
         // we do not support partial index entries
@@ -103,6 +109,7 @@ public class ValueIndexEntryUpdate<INDEX_KEY extends SchemaDescriptorSupplier> e
                         "Index on %s, but got values %s", indexKey.schema().toString(), Arrays.toString( values ) );
         assert before == null || before.length == values.length;
     }
+
     private static long heapSizeOf( Value[] values )
     {
         long size = 0;

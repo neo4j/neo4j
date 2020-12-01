@@ -321,7 +321,8 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
             "Those threads execute individual subtasks provided by index population main threads, see unsupported.dbms.index_population.parallelism." +
             "Zero means one thread per cpu core." )
     public static final Setting<Integer> index_population_workers =
-            newBuilder( "unsupported.dbms.index_population.workers", INT, 8 ).addConstraint( min( 0 ) ).build();
+            newBuilder( "unsupported.dbms.index_population.workers", INT, Integer.max( 1, Runtime.getRuntime().availableProcessors() / 4 ) )
+                    .addConstraint( min( 0 ) ).build();
 
     @Internal
     @Description( "The default index provider used for managing full-text indexes. Only 'fulltext-1.0' is supported." )
@@ -641,18 +642,10 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
             newBuilder( "unsupported.dbms.index.population_queue_threshold", INT, 20_000 ).build();
 
     @Internal
-    public static Setting<Integer> index_population_scan_batch_size =
-            newBuilder( "unsupported.dbms.index.population_scan_batch_size", INT, 10_000 ).build();
-
-    @Internal
     public static Setting<Long> index_population_batch_max_byte_size =
             newBuilder( "unsupported.dbms.index.population_batch_max_byte_size", BYTES, mebiBytes( 10 ) )
                     .addConstraint( max( (long) Integer.MAX_VALUE ) )
                     .build();
-
-    @Internal
-    public static Setting<Duration> index_population_await_timeout =
-            newBuilder( "unsupported.dbms.index.population_await_timeout", DURATION, ofMinutes( 30 ) ).build();
 
     @Internal
     public static Setting<Duration> config_command_evaluation_timeout =

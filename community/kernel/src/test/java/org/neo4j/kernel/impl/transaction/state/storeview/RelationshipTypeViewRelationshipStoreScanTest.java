@@ -27,7 +27,10 @@ import java.util.function.IntPredicate;
 
 import org.neo4j.collection.PrimitiveLongResourceCollections;
 import org.neo4j.collection.PrimitiveLongResourceIterator;
+import org.neo4j.configuration.Config;
 import org.neo4j.internal.helpers.collection.Visitor;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStore;
 import org.neo4j.kernel.impl.index.schema.TokenScanReader;
 import org.neo4j.lock.LockService;
@@ -40,7 +43,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 class RelationshipTypeViewRelationshipStoreScanTest
@@ -72,7 +74,7 @@ class RelationshipTypeViewRelationshipStoreScanTest
         when( relationshipTypeScanReader.entitiesWithAnyOfTokens( eq( types ), any() ) ).thenReturn( relationshipsWithType );
 
         RelationshipTypeViewRelationshipStoreScan<Exception> storeScan = getRelationshipTypeScanViewStoreScan( types );
-        PrimitiveLongResourceIterator idIterator = storeScan.getEntityIdIterator();
+        PrimitiveLongResourceIterator idIterator = storeScan.getEntityIdIterator( PageCursorTracer.NULL );
 
         assertThat( idIterator.next() ).isEqualTo( 1L );
         assertThat( idIterator.next() ).isEqualTo( 2L );
@@ -83,7 +85,7 @@ class RelationshipTypeViewRelationshipStoreScanTest
 
     private RelationshipTypeViewRelationshipStoreScan<Exception> getRelationshipTypeScanViewStoreScan( int[] relationshipTypeIds )
     {
-        return new RelationshipTypeViewRelationshipStoreScan<>( cursors, LockService.NO_LOCK_SERVICE,
-                relationshipTypeScanStore, labelUpdateVisitor, propertyUpdateVisitor, relationshipTypeIds, propertyKeyIdFilter, NULL, INSTANCE );
+        return new RelationshipTypeViewRelationshipStoreScan<>( Config.defaults(), cursors, LockService.NO_LOCK_SERVICE, relationshipTypeScanStore,
+                labelUpdateVisitor, propertyUpdateVisitor, relationshipTypeIds, propertyKeyIdFilter, false, PageCacheTracer.NULL, INSTANCE );
     }
 }
