@@ -27,6 +27,8 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 
+import static java.lang.String.format;
+
 public class PropertyRecordFormat extends BaseRecordFormat<PropertyRecord>
 {
     public static final int DEFAULT_DATA_BLOCK_SIZE = 120;
@@ -91,7 +93,9 @@ public class PropertyRecordFormat extends BaseRecordFormat<PropertyRecord>
             int additionalBlocks = numberOfBlocksUsed - 1;
             if ( additionalBlocks * Long.BYTES > RECORD_SIZE - (cursor.getOffset() - offsetAtBeginning) )
             {
-                cursor.setCursorException( "PropertyRecord claims to have more property blocks than can fit in a record" );
+                cursor.setCursorException( format( "PropertyRecord[%d] claims to have more property blocks than can fit in a record. " +
+                                "additionalBlocks:%d, recordSize:%d, cursorOffset:%d, offsetAtBeginning:%d", record.getId(), additionalBlocks, RECORD_SIZE,
+                        cursor.getOffset(), offsetAtBeginning ) );
                 return;
             }
             while ( additionalBlocks-- > 0 )
