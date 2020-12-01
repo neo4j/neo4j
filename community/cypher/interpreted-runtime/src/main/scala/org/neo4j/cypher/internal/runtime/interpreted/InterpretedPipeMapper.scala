@@ -46,7 +46,6 @@ import org.neo4j.cypher.internal.logical.plans.DetachDeleteNode
 import org.neo4j.cypher.internal.logical.plans.DetachDeletePath
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.Distinct
-import org.neo4j.cypher.internal.logical.plans.DoNotIncludeTies
 import org.neo4j.cypher.internal.logical.plans.DropResult
 import org.neo4j.cypher.internal.logical.plans.Eager
 import org.neo4j.cypher.internal.logical.plans.EmptyResult
@@ -56,7 +55,6 @@ import org.neo4j.cypher.internal.logical.plans.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.ExpandInto
 import org.neo4j.cypher.internal.logical.plans.FindShortestPaths
 import org.neo4j.cypher.internal.logical.plans.ForeachApply
-import org.neo4j.cypher.internal.logical.plans.IncludeTies
 import org.neo4j.cypher.internal.logical.plans.Input
 import org.neo4j.cypher.internal.logical.plans.LeftOuterHashJoin
 import org.neo4j.cypher.internal.logical.plans.LetAntiSemiApply
@@ -86,6 +84,7 @@ import org.neo4j.cypher.internal.logical.plans.OrderedAggregation
 import org.neo4j.cypher.internal.logical.plans.OrderedDistinct
 import org.neo4j.cypher.internal.logical.plans.PartialSort
 import org.neo4j.cypher.internal.logical.plans.PartialTop
+import org.neo4j.cypher.internal.logical.plans.PartialTop1WithTies
 import org.neo4j.cypher.internal.logical.plans.ProcedureCall
 import org.neo4j.cypher.internal.logical.plans.ProduceResult
 import org.neo4j.cypher.internal.logical.plans.ProjectEndpoints
@@ -110,6 +109,7 @@ import org.neo4j.cypher.internal.logical.plans.SetRelationshipProperty
 import org.neo4j.cypher.internal.logical.plans.Skip
 import org.neo4j.cypher.internal.logical.plans.Sort
 import org.neo4j.cypher.internal.logical.plans.Top
+import org.neo4j.cypher.internal.logical.plans.Top1WithTies
 import org.neo4j.cypher.internal.logical.plans.TriadicSelection
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.Union
@@ -414,6 +414,9 @@ case class InterpretedPipeMapper(readOnly: Boolean,
       case Top(_, sortItems, SignedDecimalIntegerLiteral("1")) =>
         Top1Pipe(source, InterpretedExecutionContextOrdering.asComparator(sortItems.map(translateColumnOrder).toList))(id = id)
 
+      case Top1WithTies(_, sortItems) =>
+        Top1WithTiesPipe(source, InterpretedExecutionContextOrdering.asComparator(sortItems.map(translateColumnOrder).toList))(id = id)
+
       case Top(_, sortItems, limit) =>
         TopNPipe(source, buildExpression(limit),
           InterpretedExecutionContextOrdering.asComparator(sortItems.map(translateColumnOrder).toList))(id = id)
@@ -424,6 +427,10 @@ case class InterpretedPipeMapper(readOnly: Boolean,
         PartialTop1Pipe(source, InterpretedExecutionContextOrdering.asComparator(alreadySortedPrefix.map(translateColumnOrder).toList),
           InterpretedExecutionContextOrdering.asComparator(stillToSortSuffix.map(translateColumnOrder).toList))(id = id)
 
+      case PartialTop1WithTies(_, alreadySortedPrefix, stillToSortSuffix) =>
+        PartialTop1WithTiesPipe(source, InterpretedExecutionContextOrdering.asComparator(alreadySortedPrefix.map(translateColumnOrder).toList),
+          InterpretedExecutionContextOrdering.asComparator(stillToSortSuffix.map(translateColumnOrder).toList))(id = id)
+
       case PartialTop(_, alreadySortedPrefix, stillToSortSuffix, limit, skipSortingPrefixLength) =>
         PartialTopNPipe(source,
           buildExpression(limit),
@@ -431,18 +438,8 @@ case class InterpretedPipeMapper(readOnly: Boolean,
           InterpretedExecutionContextOrdering.asComparator(alreadySortedPrefix.map(translateColumnOrder).toList),
           InterpretedExecutionContextOrdering.asComparator(stillToSortSuffix.map(translateColumnOrder).toList))(id = id)
 
-      case Limit(_, count, DoNotIncludeTies) =>
+      case Limit(_, count) =>
         LimitPipe(source, buildExpression(count))(id = id)
-
-      case Limit(_, count, IncludeTies) =>
-        (source, count) match {
-          case (SortPipe(inner, comparator), SignedDecimalIntegerLiteral("1")) =>
-            Top1WithTiesPipe(inner, comparator)(id = id)
-          case (PartialSortPipe(inner, prefixComparator, suffixComparator, None), SignedDecimalIntegerLiteral("1")) =>
-            PartialTop1WithTiesPipe(inner, prefixComparator, suffixComparator)(id = id)
-
-          case _ => throw new InternalException("Including ties is only supported for very specific plans")
-        }
 
       case Aggregation(_, groupingExpressions, aggregatingExpressions) if aggregatingExpressions.isEmpty =>
         val projection = groupingExpressions.map {

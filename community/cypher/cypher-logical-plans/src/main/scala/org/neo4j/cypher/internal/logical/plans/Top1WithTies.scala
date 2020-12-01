@@ -19,20 +19,18 @@
  */
 package org.neo4j.cypher.internal.logical.plans
 
-import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.util.attribution.IdGen
 
-/*
- * Only produce the first 'count' rows from source but exhausts the source. Used for plan where the source has side effects that need to happen
- * regardless of the limit.
+/**
+ * Special case TOP for the case when we only want one element, and all others that have the same value (tied for first place)
  */
-case class ExhaustiveLimit(source: LogicalPlan, count: Expression)(implicit idGen: IdGen) extends LogicalPlan(idGen) with LazyLogicalPlan {
-  val lhs: Option[LogicalPlan] = Some(source)
-  val rhs: Option[LogicalPlan] = None
+case class Top1WithTies(source: LogicalPlan, sortItems: Seq[ColumnOrder])(implicit idGen: IdGen) extends LogicalPlan(idGen) with EagerLogicalPlan {
+  override def lhs: Option[LogicalPlan] = Some(source)
 
-  val availableSymbols: Set[String] = source.availableSymbols
+  override def rhs: Option[LogicalPlan] = None
+
+  override val availableSymbols: Set[String] = source.availableSymbols
 }
-
 
 
 

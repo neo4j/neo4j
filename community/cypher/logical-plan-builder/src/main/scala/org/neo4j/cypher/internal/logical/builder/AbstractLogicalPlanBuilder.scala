@@ -71,7 +71,6 @@ import org.neo4j.cypher.internal.logical.plans.DetachDeleteNode
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.Distinct
 import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
-import org.neo4j.cypher.internal.logical.plans.DoNotIncludeTies
 import org.neo4j.cypher.internal.logical.plans.DropResult
 import org.neo4j.cypher.internal.logical.plans.Eager
 import org.neo4j.cypher.internal.logical.plans.EmptyResult
@@ -295,7 +294,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     limit(literalInt(count))
 
   def limit(countExpr: Expression): IMPL = {
-    appendAtCurrentIndent(UnaryOperator(lp => Limit(lp, countExpr, DoNotIncludeTies)(_)))
+    appendAtCurrentIndent(UnaryOperator(lp => Limit(lp, countExpr)(_)))
     self
   }
 
@@ -303,7 +302,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     exhaustiveLimit(literalInt(count))
 
   def exhaustiveLimit(countExpr: Expression): IMPL = {
-    appendAtCurrentIndent(UnaryOperator(lp => ExhaustiveLimit(lp, countExpr, DoNotIncludeTies)(_)))
+    appendAtCurrentIndent(UnaryOperator(lp => ExhaustiveLimit(lp, countExpr)(_)))
     self
   }
 

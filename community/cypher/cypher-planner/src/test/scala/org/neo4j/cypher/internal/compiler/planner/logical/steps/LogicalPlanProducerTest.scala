@@ -49,7 +49,6 @@ import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.ir.ordering.RequiredOrderCandidate
 import org.neo4j.cypher.internal.logical.plans.Ascending
-import org.neo4j.cypher.internal.logical.plans.DoNotIncludeTies
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.ProcedureReadOnlyAccess
 import org.neo4j.cypher.internal.logical.plans.ProcedureReadWriteAccess
@@ -755,8 +754,8 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       val resultsAndNames = Seq(
         ("PartialSort", lpp.planPartialSort(plan(), Seq(Ascending("x")), Seq(Ascending("y")), initialOrder.asc(varFor("y")).columns, InterestingOrder.empty, context)),
         ("OrderedAggregation with grouping", lpp.planOrderedAggregation(plan(), x_vx, foo_vx, Seq(vx), x_vx, foo_vx, context)),
-        ("Limit for aggregation", lpp.planLimitForAggregation(plan(), DoNotIncludeTies, x_vx, foo_vx, InterestingOrder.empty, context).lhs.get), // Get the Limit under the Optional
-        ("Limit", lpp.planLimit(plan(), one, one, interesting_vx, DoNotIncludeTies, context)),
+        ("Limit for aggregation", lpp.planLimitForAggregation(plan(), x_vx, foo_vx, InterestingOrder.empty, context).lhs.get), // Get the Limit under the Optional
+        ("Limit", lpp.planLimit(plan(), one, one, interesting_vx, context)),
         ("Skip", lpp.planSkip(plan(), one, interesting_vx, context)),
         ("Collect with previous required order", lpp.planAggregation(plan(), Map.empty, foo_collect, Map.empty, foo_collect, Some(interesting_vx), context)),
         ("ProduceResult", lpp.planProduceResult(plan(), Seq("x"), Some(interesting_vx),context)),

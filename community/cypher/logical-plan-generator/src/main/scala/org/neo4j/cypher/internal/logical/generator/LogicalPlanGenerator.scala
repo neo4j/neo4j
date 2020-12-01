@@ -52,10 +52,8 @@ import org.neo4j.cypher.internal.logical.plans.CartesianProduct
 import org.neo4j.cypher.internal.logical.plans.Descending
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.Distinct
-import org.neo4j.cypher.internal.logical.plans.DoNotIncludeTies
 import org.neo4j.cypher.internal.logical.plans.Eager
 import org.neo4j.cypher.internal.logical.plans.Expand
-import org.neo4j.cypher.internal.logical.plans.IncludeTies
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
 import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
@@ -379,9 +377,8 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int],
   def limit(state: State): Gen[WithState[Limit]] = for {
     WithState(source, state) <- innerLogicalPlan(state)
     count <- Gen.chooseNum(0, Long.MaxValue, 1)
-    ties <- if (source.isInstanceOf[Sort] && count == 1) Gen.oneOf(DoNotIncludeTies, IncludeTies) else Gen.const(DoNotIncludeTies)
   } yield {
-    val plan = Limit(source, literalInt(count), ties)(state.idGen)
+    val plan = Limit(source, literalInt(count))(state.idGen)
     annotate(plan, state)
   }
 

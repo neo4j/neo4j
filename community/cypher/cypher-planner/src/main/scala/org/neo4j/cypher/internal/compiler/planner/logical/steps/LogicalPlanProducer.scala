@@ -103,7 +103,6 @@ import org.neo4j.cypher.internal.logical.plans.DetachDeleteNode
 import org.neo4j.cypher.internal.logical.plans.DetachDeletePath
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.Distinct
-import org.neo4j.cypher.internal.logical.plans.DoNotIncludeTies
 import org.neo4j.cypher.internal.logical.plans.Eager
 import org.neo4j.cypher.internal.logical.plans.EmptyResult
 import org.neo4j.cypher.internal.logical.plans.ErrorPlan
@@ -165,7 +164,8 @@ import org.neo4j.cypher.internal.logical.plans.SetRelationshipPropertiesFromMap
 import org.neo4j.cypher.internal.logical.plans.SetRelationshipProperty
 import org.neo4j.cypher.internal.logical.plans.Skip
 import org.neo4j.cypher.internal.logical.plans.Sort
-import org.neo4j.cypher.internal.logical.plans.Ties
+import org.neo4j.cypher.internal.logical.plans.Top
+import org.neo4j.cypher.internal.logical.plans.Top1WithTies
 import org.neo4j.cypher.internal.logical.plans.TriadicSelection
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.Union
@@ -881,11 +881,10 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
                 effectiveCount: Expression,
                 reportedCount: Expression,
                 interestingOrder: InterestingOrder,
-                ties: Ties = DoNotIncludeTies,
                 context: LogicalPlanningContext): LogicalPlan = {
     // `effectiveCount` is not allowed to be a PatternComprehension or PatternExpression
     val solved = solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.updateQueryProjection(_.updatePagination(_.withLimitExpression(reportedCount))))
-    val plan = annotate(Limit(inner, effectiveCount, ties), solved, providedOrders.get(inner.id).fromLeft, context)
+    val plan = annotate(Limit(inner, effectiveCount), solved, providedOrders.get(inner.id).fromLeft, context)
     if (interestingOrder.requiredOrderCandidate.nonEmpty) {
       markOrderAsLeveragedBackwardsUntilOrigin(plan)
     }
@@ -907,14 +906,13 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     val skippedRows = innerCardinality - skipCardinality
 
     val effectiveLimitExpr = Add(limitExpr, skipExpr)(limitExpr.position)
-    val limitPlan = planLimit(inner, effectiveLimitExpr, limitExpr, interestingOrder, DoNotIncludeTies, context)
+    val limitPlan = planLimit(inner, effectiveLimitExpr, limitExpr, interestingOrder, context)
     cardinalities.set(limitPlan.id, skippedRows + limitCardinality)
 
     planSkip(limitPlan, skipExpr, interestingOrder, context)
   }
 
   def planLimitForAggregation(inner: LogicalPlan,
-                              ties: Ties = DoNotIncludeTies,
                               reportedGrouping: Map[String, Expression],
                               reportedAggregation: Map[String, Expression],
                               interestingOrder: InterestingOrder,
@@ -923,7 +921,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
       AggregatingQueryProjection(groupingExpressions = reportedGrouping, aggregationExpressions = reportedAggregation)
     ).withInterestingOrder(interestingOrder))
     val providedOrder = providedOrders.get(inner.id).fromLeft
-    val limitPlan = Limit(inner, SignedDecimalIntegerLiteral("1")(InputPosition.NONE), ties)
+    val limitPlan = Limit(inner, SignedDecimalIntegerLiteral("1")(InputPosition.NONE))
     val annotatedLimitPlan = annotate(limitPlan, solved, providedOrder, context)
 
     // The limit leverages the order, not the following optional
@@ -940,6 +938,35 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
                context: LogicalPlanningContext): LogicalPlan = {
     val solved = solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.withInterestingOrder(interestingOrder))
     annotate(Sort(inner, sortColumns), solved, ProvidedOrder(orderColumns, ProvidedOrder.Self), context)
+  }
+
+  def planTop(inner: LogicalPlan,
+               limit: Expression,
+               sortColumns: Seq[ColumnOrder],
+               orderColumns: Seq[ProvidedOrder.Column],
+               interestingOrder: InterestingOrder,
+               context: LogicalPlanningContext): LogicalPlan = {
+    val solved = solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.withInterestingOrder(interestingOrder)
+      .updateQueryProjection(_.updatePagination(_.withLimitExpression(limit))))
+    val top = annotate(Top(inner, sortColumns, limit), solved, ProvidedOrder(orderColumns, ProvidedOrder.Self), context)
+    if (interestingOrder.requiredOrderCandidate.nonEmpty) {
+      markOrderAsLeveragedBackwardsUntilOrigin(top)
+    }
+    top
+  }
+
+  def planTop1WithTies(inner: LogicalPlan,
+              sortColumns: Seq[ColumnOrder],
+              orderColumns: Seq[ProvidedOrder.Column],
+              interestingOrder: InterestingOrder,
+              context: LogicalPlanningContext): LogicalPlan = {
+    val solved = solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.withInterestingOrder(interestingOrder)
+      .updateQueryProjection(_.updatePagination(_.withLimitExpression(SignedDecimalIntegerLiteral("1")(InputPosition.NONE)))))
+    val top = annotate(Top1WithTies(inner, sortColumns), solved, ProvidedOrder(orderColumns, ProvidedOrder.Self), context)
+    if (interestingOrder.requiredOrderCandidate.nonEmpty) {
+      markOrderAsLeveragedBackwardsUntilOrigin(top)
+    }
+    top
   }
 
   def planPartialSort(inner: LogicalPlan,

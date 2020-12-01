@@ -40,8 +40,6 @@ import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.ShortestPathPattern
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.Ascending
-import org.neo4j.cypher.internal.logical.plans.DoNotIncludeTies
-import org.neo4j.cypher.internal.logical.plans.IncludeTies
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.rewriting.rewriters.projectNamedPaths
 import org.neo4j.cypher.internal.util.FreshIdNameGenerator
@@ -151,7 +149,7 @@ case object planShortestPaths {
     // Filter using predicates
     val rhsFiltered = context.logicalPlanProducer.planSelection(rhsProjection, predicates, context)
 
-    // Plan Sort and Limit
+    // Plan Top
     val pos = shortestPath.expr.position
     val pathVariable = Variable(pathName)(pos)
     val lengthOfPath = FunctionInvocation(FunctionName(Length.name)(pos), pathVariable)(pos)
@@ -160,10 +158,12 @@ case object planShortestPaths {
     val rhsProjMap = Map(columnName -> lengthOfPath)
     val rhsProjected = lpp.planRegularProjection(rhsFiltered, rhsProjMap, rhsProjMap, context)
     val sortDescription = Seq(Ascending(columnName))
-    val sorted = lpp.planSort(rhsProjected, sortDescription, Seq.empty, InterestingOrder.empty, context)
-    val ties = if (shortestPath.single) DoNotIncludeTies else IncludeTies
-    val one = SignedDecimalIntegerLiteral("1")(pos)
-    val plan = lpp.planLimit(sorted, one, one, InterestingOrder.empty, ties, context)
+    val plan = if (shortestPath.single) {
+      lpp.planTop(rhsProjected, SignedDecimalIntegerLiteral("1")(pos), sortDescription, Seq.empty, InterestingOrder.empty, context)
+    } else {
+      lpp.planTop1WithTies(rhsProjected, sortDescription, Seq.empty, InterestingOrder.empty, context)
+    }
+
     // Even though we don't use ProvidedOrder or Interesting order, since we don't affect other parts of the planning here
     // we can still set leveragedOrder to true, correctly.
     context.planningAttributes.leveragedOrders.set(plan.id, true)

@@ -176,9 +176,9 @@ object LogicalPlanToPlanBuilderString {
         val nPredStr = variablePredicate(nodePredicate, "nodePredicate")
         val rPredStr = variablePredicate(relationshipPredicate, "relationshipPredicate")
         s""" "($from)$dirStrA[$typeStr*$lenStr]$dirStrB($to)"$nPredStr$rPredStr """.trim
-      case Limit(_, count, _) =>
+      case Limit(_, count) =>
         integerString(count)
-      case ExhaustiveLimit(_, count, _) =>
+      case ExhaustiveLimit(_, count) =>
         integerString(count)
       case Skip(_, count) =>
         integerString(count)

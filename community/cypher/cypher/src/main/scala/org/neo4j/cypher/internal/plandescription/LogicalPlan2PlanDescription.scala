@@ -463,7 +463,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         }
         PlanDescriptionImpl(id, modeText, children, Seq(expression), variables)
 
-      case Limit(_, count, _) =>
+      case Limit(_, count) =>
         PlanDescriptionImpl(id, "Limit", children, Seq(Details(asPrettyString(count))), variables)
 
       case CacheProperties(_, properties) =>

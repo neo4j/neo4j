@@ -41,7 +41,6 @@ import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.CartesianProduct
 import org.neo4j.cypher.internal.logical.plans.Distinct
-import org.neo4j.cypher.internal.logical.plans.DoNotIncludeTies
 import org.neo4j.cypher.internal.logical.plans.FieldSignature
 import org.neo4j.cypher.internal.logical.plans.Limit
 import org.neo4j.cypher.internal.logical.plans.ProcedureCall
@@ -188,7 +187,7 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
       // Then
       val sorted = Sort(inputPlan, Seq(Ascending("x")))
-      val limited = Limit(sorted, add(x, y), DoNotIncludeTies)
+      val limited = Limit(sorted, add(x, y))
       val skipped = Skip(limited, y)
       result should equal(skipped)
     }

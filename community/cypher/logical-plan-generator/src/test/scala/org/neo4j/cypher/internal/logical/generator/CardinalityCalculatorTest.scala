@@ -36,7 +36,6 @@ import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.CartesianProduct
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.Distinct
-import org.neo4j.cypher.internal.logical.plans.DoNotIncludeTies
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.Limit
@@ -47,13 +46,13 @@ import org.neo4j.cypher.internal.logical.plans.NodeCountFromCountStore
 import org.neo4j.cypher.internal.logical.plans.Optional
 import org.neo4j.cypher.internal.logical.plans.ProduceResult
 import org.neo4j.cypher.internal.logical.plans.Projection
-import org.neo4j.cypher.internal.logical.plans.SemiApply
 import org.neo4j.cypher.internal.logical.plans.Selection
+import org.neo4j.cypher.internal.logical.plans.SemiApply
 import org.neo4j.cypher.internal.logical.plans.Skip
 import org.neo4j.cypher.internal.logical.plans.Top
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByIdSeek
-import org.neo4j.cypher.internal.logical.plans.UnwindCollection
 import org.neo4j.cypher.internal.logical.plans.Union
+import org.neo4j.cypher.internal.logical.plans.UnwindCollection
 import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
@@ -322,7 +321,7 @@ class CardinalityCalculatorTest extends FunSuite with Matchers with AstConstruct
 
   test("Limit amount < node count") {
     val limitAmount = 100
-    val plan = Limit(Argument(), SignedDecimalIntegerLiteral(limitAmount.toString)(pos), DoNotIncludeTies)
+    val plan = Limit(Argument(), SignedDecimalIntegerLiteral(limitAmount.toString)(pos))
 
     val c = CardinalityCalculator.limitCardinality(plan, defaultState, new TestGraphStatistics, Map.empty)
     c should equal(Cardinality(limitAmount))
@@ -330,7 +329,7 @@ class CardinalityCalculatorTest extends FunSuite with Matchers with AstConstruct
 
   test("Limit amount > node count") {
     val limitAmount = 1000
-    val plan = Limit(Argument(), SignedDecimalIntegerLiteral(limitAmount.toString)(pos), DoNotIncludeTies)
+    val plan = Limit(Argument(), SignedDecimalIntegerLiteral(limitAmount.toString)(pos))
 
     val c = CardinalityCalculator.limitCardinality(plan, defaultState, new TestGraphStatistics, Map.empty)
     c should equal(defaultSourceCardinality)

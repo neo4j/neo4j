@@ -131,7 +131,7 @@ object CardinalityCalculator {
 
   implicit val limitCardinality: CardinalityCalculator[Limit] = {
     (plan, state, _, _) =>
-      val Limit(source, count: IntegerLiteral, _) = plan
+      val Limit(source, count: IntegerLiteral) = plan
       val sourceCardinality = state.cardinalities.get(source.id)
       Cardinality.min(sourceCardinality, Cardinality(count.value.toDouble))
   }

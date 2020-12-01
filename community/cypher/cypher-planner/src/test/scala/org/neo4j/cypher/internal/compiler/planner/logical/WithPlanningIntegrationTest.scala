@@ -40,7 +40,6 @@ import org.neo4j.cypher.internal.logical.plans.AllNodesScan
 import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.Distinct
-import org.neo4j.cypher.internal.logical.plans.DoNotIncludeTies
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.Limit
@@ -59,8 +58,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       Projection(
         Limit(
           AllNodesScan("a", Set.empty),
-          literalInt(1),
-          DoNotIncludeTies
+          literalInt(1)
         ),
         Map[String, Expression]("b" -> literalInt(1))
       )
@@ -74,11 +72,11 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       Expand(
         Limit(
           AllNodesScan("a", Set()),
-          literalInt(1), DoNotIncludeTies
+          literalInt(1)
         ),
         "a", OUTGOING, List(), "b", "r1", ExpandAll
       ),
-      literalInt(1), DoNotIncludeTies
+      literalInt(1)
     )
 
     result should equal(expected)
@@ -91,7 +89,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       Expand(
         Limit(
           AllNodesScan("a", Set()),
-          literalInt(1), DoNotIncludeTies
+          literalInt(1)
         ),
         "a", OUTGOING, List(), "b", "r1", ExpandAll
       )
@@ -105,7 +103,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     val expected = Expand(
       Limit(
         AllNodesScan("a", Set()),
-        literalInt(1), DoNotIncludeTies
+        literalInt(1)
       ),
       "a", OUTGOING, List(), "b", "r", ExpandAll
     )
@@ -121,7 +119,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
           AllNodesScan("a", Set()),
           "a", OUTGOING, List(), "b", "r", ExpandAll
         ),
-        literalInt(1), DoNotIncludeTies
+        literalInt(1)
       ),
       ProjectEndpoints(
         Argument(Set("r")),
@@ -140,7 +138,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
           AllNodesScan("a", Set()),
           "a", OUTGOING, List(), "b", "r", ExpandAll
         ),
-        literalInt(1), DoNotIncludeTies
+        literalInt(1)
       ),
       ProjectEndpoints(
         Argument(Set("a", "r")),
@@ -159,7 +157,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
           AllNodesScan("a", Set()),
           "a", OUTGOING, List(), "b", "r", ExpandAll
         ),
-        literalInt(1), DoNotIncludeTies
+        literalInt(1)
       ),
       ProjectEndpoints(
         Argument(Set("a", "b", "r")),
@@ -178,7 +176,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
           AllNodesScan("a", Set()),
           "a", OUTGOING, List(), "b", "r", ExpandAll
         ),
-        literalInt(1), DoNotIncludeTies
+        literalInt(1)
       ),
       ProjectEndpoints(
         Argument(Set("a", "r")),
@@ -197,7 +195,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
           AllNodesScan("a", Set()),
           "a", OUTGOING, List(), "b", "r", ExpandAll
         ),
-        literalInt(1), DoNotIncludeTies
+        literalInt(1)
       ),
       ProjectEndpoints(
         Argument(Set("a", "r")),
@@ -216,7 +214,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
           AllNodesScan("a", Set()),
           "a", OUTGOING, OUTGOING, List(), "b", "r", VarPatternLength(1, None), ExpandAll
         ),
-        literalInt(1), DoNotIncludeTies
+        literalInt(1)
       ),
       ProjectEndpoints(
         Argument(Set("a", "r")),
@@ -240,7 +238,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
         Limit(
         Projection(
         AllNodesScan("n1", _), _),
-         _, _)
+         _)
         ) => ()
     }
   }
@@ -261,7 +259,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
         Distinct(
         Projection(
         AllNodesScan("  n1@66", _), _),
-         _), _, _)
+         _), _)
         ) => ()
     }
   }
@@ -293,7 +291,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     result should beLike {
       case
         Selection(ands,
-        Limit(_,_,_)
+        Limit(_,_)
         ) if hasNestedPlanExpression(ands) => ()
     }
   }
@@ -307,7 +305,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     result should beLike {
       case
         Selection(ands,
-        Limit(_,_,_)
+        Limit(_,_)
         ) if hasNestedPlanExpression(ands)=> ()
     }
   }
@@ -321,7 +319,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     result should beLike {
       case
         Selection(ands,
-        Limit(_,_,_)
+        Limit(_,_)
         ) if containsHasDegreeGreaterThan(ands) => ()
     }
   }

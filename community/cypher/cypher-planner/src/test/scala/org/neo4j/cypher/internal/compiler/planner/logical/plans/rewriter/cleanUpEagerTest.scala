@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.ir.NoHeaders
-import org.neo4j.cypher.internal.logical.plans.DoNotIncludeTies
 import org.neo4j.cypher.internal.logical.plans.Eager
 import org.neo4j.cypher.internal.logical.plans.Limit
 import org.neo4j.cypher.internal.logical.plans.LoadCSV
@@ -103,10 +102,10 @@ class cleanUpEagerTest extends CypherFunSuite with LogicalPlanningTestSupport {
     rewrite(
       Projection(
         Limit(
-          Eager(leaf), literalInt(12), DoNotIncludeTies), Map.empty)) should equal(
+          Eager(leaf), literalInt(12)), Map.empty)) should equal(
       Projection(
         Eager(
-          Limit(leaf, literalInt(12), DoNotIncludeTies)), Map.empty))
+          Limit(leaf, literalInt(12))), Map.empty))
   }
 
   test("should not rewrite plan with eager below load csv") {

@@ -38,7 +38,6 @@ import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.ColumnOrder
 import org.neo4j.cypher.internal.logical.plans.Descending
-import org.neo4j.cypher.internal.logical.plans.DoNotIncludeTies
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
@@ -1356,8 +1355,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTestBase(queryGraphSolve
               IndexSeek("n:Awesome(prop > 0)", indexOrder = plannedOrder, getValue = GetValue),
               Map(s"$functionName(n.prop)" -> cachedNodeProp("n", "prop"))
             ),
-            literalInt(1),
-            DoNotIncludeTies
+            literalInt(1)
           )
         )
       )
@@ -1389,8 +1387,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTestBase(queryGraphSolve
               IndexSeek("n:Awesome(prop > 0)", indexOrder = plannedOrder, getValue = GetValue),
               Map(s"$functionName(n.prop)" -> cachedNodeProp("n", "prop"))
             ),
-            literalInt(1),
-            DoNotIncludeTies
+            literalInt(1)
           )
         )
       )
@@ -1414,8 +1411,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTestBase(queryGraphSolve
                 IndexSeek("n:Awesome(prop > 0)", indexOrder = plannedOrder, getValue = GetValue),
                 Map(s"$functionName(n.prop)" -> cachedNodeProp("n", "prop"))
               ),
-              literalInt(1),
-              DoNotIncludeTies
+              literalInt(1)
             )),
           Seq(inverseSortOrder(s"$functionName(n.prop)"))
         )
@@ -1435,11 +1431,9 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTestBase(queryGraphSolve
                 IndexSeek("n:Awesome(prop > 0)", indexOrder = plannedOrder, getValue = GetValue),
                 Map(s"$functionName(n.prop)" -> cachedNodeProp("n", "prop"))
               ),
-              literalInt(1),
-              DoNotIncludeTies
+              literalInt(1)
             )),
-          literalInt(2),
-          DoNotIncludeTies
+          literalInt(2)
         )
       )
     }
@@ -1461,8 +1455,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTestBase(queryGraphSolve
               IndexSeek("n:Awesome(prop > 0)", indexOrder = plannedOrder, getValue = GetValue),
               Map("agg" -> cachedNodeProp("n", "prop"))
             ),
-            literalInt(1),
-            DoNotIncludeTies
+            literalInt(1)
           )
         )
       )

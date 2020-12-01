@@ -25,14 +25,9 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
 /*
  * Only produce the first 'count' rows from source.
  */
-case class Limit(source: LogicalPlan, count: Expression, ties: Ties)(implicit idGen: IdGen) extends LogicalPlan(idGen) with LazyLogicalPlan {
+case class Limit(source: LogicalPlan, count: Expression)(implicit idGen: IdGen) extends LogicalPlan(idGen) with LazyLogicalPlan {
   val lhs = Some(source)
   val rhs = None
 
   val availableSymbols: Set[String] = source.availableSymbols
 }
-
-// Using a trait instead of a bool to make the code more readable
-sealed trait Ties
-case object IncludeTies extends Ties
-case object DoNotIncludeTies extends Ties

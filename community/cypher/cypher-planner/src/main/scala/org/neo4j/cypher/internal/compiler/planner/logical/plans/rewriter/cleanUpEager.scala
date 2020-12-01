@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.logical.plans.Limit
 import org.neo4j.cypher.internal.logical.plans.LoadCSV
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.UnwindCollection
+import org.neo4j.cypher.internal.logical.plans.UpdatingPlan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.attribution.Attributes
@@ -51,7 +52,9 @@ case class cleanUpEager(solveds: Solveds, attributes: Attributes[LogicalPlan]) e
       res
 
     // LIMIT E => E LIMIT
-    case limit@Limit(eager@Eager(source), _, _) =>
+    case limit@Limit(eager@Eager(source), _) if !source.treeExists {
+      case _: UpdatingPlan => true
+    } =>
       val res = eager.copy(source = limit.copy(source = source)(SameId(limit.id)))(attributes.copy(eager.id))
       solveds.copy(limit.id, res.id)
       res

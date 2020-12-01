@@ -29,7 +29,6 @@ import org.neo4j.cypher.internal.ir.RegularQueryProjection
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
-import org.neo4j.cypher.internal.logical.plans.DoNotIncludeTies
 import org.neo4j.cypher.internal.logical.plans.Limit
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.Skip
@@ -68,7 +67,7 @@ class SkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val result = skipAndLimit(startPlan, query, context)
 
     // then
-    result should equal(Limit(startPlan, x, DoNotIncludeTies))
+    result should equal(Limit(startPlan, x))
     context.planningAttributes.solveds.get(result.id).asSinglePlannerQuery.horizon should equal(
       RegularQueryProjection(Map.empty, QueryPagination(limit = Some(x)))
     )
@@ -85,7 +84,7 @@ class SkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val result = skipAndLimit(startPlan, query, context)
 
     // then
-    result should equal(Skip(Limit(startPlan, add(x, y), DoNotIncludeTies), y))
+    result should equal(Skip(Limit(startPlan, add(x, y)), y))
     context.planningAttributes.solveds.get(result.id).asSinglePlannerQuery.horizon should equal(
       RegularQueryProjection(Map.empty, QueryPagination(limit = Some(x), skip = Some(y)))
     )
