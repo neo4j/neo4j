@@ -178,6 +178,8 @@ object LogicalPlanToPlanBuilderString {
         s""" "($from)$dirStrA[$typeStr*$lenStr]$dirStrB($to)"$nPredStr$rPredStr """.trim
       case Limit(_, count, _) =>
         integerString(count)
+      case ExhaustiveLimit(_, count, _) =>
+        integerString(count)
       case Skip(_, count) =>
         integerString(count)
       case NodeByLabelScan(idName, label, argumentIds, indexOrder) =>

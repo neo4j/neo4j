@@ -76,6 +76,7 @@ import org.neo4j.cypher.internal.logical.plans.DropResult
 import org.neo4j.cypher.internal.logical.plans.Eager
 import org.neo4j.cypher.internal.logical.plans.EmptyResult
 import org.neo4j.cypher.internal.logical.plans.ErrorPlan
+import org.neo4j.cypher.internal.logical.plans.ExhaustiveLimit
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.ExpandInto
@@ -295,6 +296,14 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
 
   def limit(countExpr: Expression): IMPL = {
     appendAtCurrentIndent(UnaryOperator(lp => Limit(lp, countExpr, DoNotIncludeTies)(_)))
+    self
+  }
+
+  def exhaustiveLimit(count: Long): IMPL =
+    exhaustiveLimit(literalInt(count))
+
+  def exhaustiveLimit(countExpr: Expression): IMPL = {
+    appendAtCurrentIndent(UnaryOperator(lp => ExhaustiveLimit(lp, countExpr, DoNotIncludeTies)(_)))
     self
   }
 

@@ -197,6 +197,13 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
       .argument()
       .build())
 
+  testPlan("exhaustiveLimit",
+    new TestPlanBuilder()
+      .produceResults("x", "y")
+      .exhaustiveLimit(5)
+      .argument()
+      .build())
+
   testPlan("skip",
            new TestPlanBuilder()
              .produceResults("x", "y")
