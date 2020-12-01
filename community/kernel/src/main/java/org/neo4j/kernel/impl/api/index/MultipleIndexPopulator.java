@@ -846,27 +846,31 @@ public class MultipleIndexPopulator
         }
     }
 
-    private class EntityPopulationVisitor implements Visitor<EntityUpdates,
+    private class EntityPopulationVisitor implements Visitor<List<EntityUpdates>,
             IndexPopulationFailedKernelException>
     {
         @Override
-        public boolean visit( EntityUpdates updates )
+        public boolean visit( List<EntityUpdates> updates )
         {
             addFromScan( updates );
+            long lastEntityId = updates.get( updates.size() - 1 ).getEntityId();
             if ( printDebug )
             {
-                log.info( "Added scan updates for entity %d", updates.getEntityId() );
+                log.info( "Added scan updates for entities %d-%d", updates.get( 0 ).getEntityId(), lastEntityId );
             }
-            return applyConcurrentUpdateQueueBatched( updates.getEntityId() );
+            return applyConcurrentUpdateQueueBatched( lastEntityId );
         }
 
-        private void addFromScan( EntityUpdates updates )
+        private void addFromScan( List<EntityUpdates> updates )
         {
             // This is called from a full store node scan, meaning that all node properties are included in the
             // EntityUpdates object. Therefore no additional properties need to be loaded.
-            for ( IndexEntryUpdate<IndexPopulation> indexUpdate : updates.forIndexKeys( populations ) )
+            for ( EntityUpdates update : updates )
             {
-                indexUpdate.indexKey().onUpdateFromScan( indexUpdate );
+                for ( IndexEntryUpdate<IndexPopulation> indexUpdate : update.forIndexKeys( populations ) )
+                {
+                    indexUpdate.indexKey().onUpdateFromScan( indexUpdate );
+                }
             }
         }
     }

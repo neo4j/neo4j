@@ -21,6 +21,8 @@ package org.neo4j.kernel.impl.transaction.state.storeview;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+
 import org.neo4j.graphdb.Label;
 import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
@@ -70,7 +72,7 @@ class LabelScanNodeViewTracingIT
         try ( var cursorTracer = cacheTracer.createPageCursorTracer( "tracePageCacheAccess" ) )
         {
             var scan = new LabelViewNodeStoreScan<>( storageEngine.newReader(), lockService, labelScanStore,
-                    (Visitor<EntityTokenUpdate,Exception>) element -> false, null, new int[]{labelId}, any -> false, cursorTracer, INSTANCE );
+                    (Visitor<List<EntityTokenUpdate>,Exception>) element -> false, null, new int[]{labelId}, any -> false, cursorTracer, INSTANCE );
             scan.run();
         }
 

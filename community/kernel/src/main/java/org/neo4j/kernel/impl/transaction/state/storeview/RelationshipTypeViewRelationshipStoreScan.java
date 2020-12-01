@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
+import java.util.List;
 import java.util.function.IntPredicate;
 import javax.annotation.Nullable;
 
@@ -38,8 +39,8 @@ public class RelationshipTypeViewRelationshipStoreScan<FAILURE extends Exception
 
     public RelationshipTypeViewRelationshipStoreScan( StorageReader storageReader, LockService locks,
             RelationshipTypeScanStore relationshipTypeScanStore,
-            @Nullable Visitor<EntityTokenUpdate,FAILURE> relationshipTypeUpdateVisitor,
-            @Nullable Visitor<EntityUpdates,FAILURE> propertyUpdatesVisitor,
+            @Nullable Visitor<List<EntityTokenUpdate>,FAILURE> relationshipTypeUpdateVisitor,
+            @Nullable Visitor<List<EntityUpdates>,FAILURE> propertyUpdatesVisitor,
             int[] relationshipTypeIds, IntPredicate propertyKeyIdFilter, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
     {
         super( storageReader, locks, relationshipTypeUpdateVisitor, propertyUpdatesVisitor, relationshipTypeIds, propertyKeyIdFilter, cursorTracer,

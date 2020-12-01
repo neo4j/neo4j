@@ -154,7 +154,7 @@ class NeoStoreIndexStoreViewTest
         // given
         EntityUpdateCollectingVisitor visitor = new EntityUpdateCollectingVisitor();
         @SuppressWarnings( "unchecked" )
-        Visitor<EntityTokenUpdate,Exception> labelVisitor = mock( Visitor.class );
+        Visitor<List<EntityTokenUpdate>,Exception> labelVisitor = mock( Visitor.class );
         StoreScan<Exception> storeScan =
                 storeView.visitNodes( new int[]{labelId}, id -> id == propertyKeyId, visitor, labelVisitor, false, NULL, INSTANCE );
 
@@ -193,7 +193,7 @@ class NeoStoreIndexStoreViewTest
 
         EntityUpdateCollectingVisitor visitor = new EntityUpdateCollectingVisitor();
         @SuppressWarnings( "unchecked" )
-        Visitor<EntityTokenUpdate,Exception> labelVisitor = mock( Visitor.class );
+        Visitor<List<EntityTokenUpdate>,Exception> labelVisitor = mock( Visitor.class );
         StoreScan<Exception> storeScan = storeView.visitNodes( new int[]{labelId}, id -> id == propertyKeyId, visitor, labelVisitor, false, NULL, INSTANCE );
 
         // when
@@ -225,7 +225,7 @@ class NeoStoreIndexStoreViewTest
     {
         // given
         @SuppressWarnings( "unchecked" )
-        Visitor<EntityUpdates,Exception> visitor = mock( Visitor.class );
+        Visitor<List<EntityUpdates>,Exception> visitor = mock( Visitor.class );
         StoreScan<Exception> storeScan =
                 storeView.visitNodes( new int[]{labelId}, id -> id == propertyKeyId, visitor, null, false, NULL, INSTANCE );
 
@@ -250,7 +250,7 @@ class NeoStoreIndexStoreViewTest
     {
         // given
         @SuppressWarnings( "unchecked" )
-        Visitor<EntityUpdates,Exception> visitor = mock( Visitor.class );
+        Visitor<List<EntityUpdates>,Exception> visitor = mock( Visitor.class );
         StoreScan<Exception> storeScan = storeView.visitRelationships( new int[]{relTypeId}, id -> id == relPropertyKeyId, visitor, null,
                 true, NULL, INSTANCE );
 
@@ -452,14 +452,14 @@ class NeoStoreIndexStoreViewTest
         }
     }
 
-    private static class CountingVisitor implements Visitor<EntityUpdates,RuntimeException>
+    private static class CountingVisitor implements Visitor<List<EntityUpdates>,RuntimeException>
     {
         private final AtomicInteger counter = new AtomicInteger();
 
         @Override
-        public boolean visit( EntityUpdates element ) throws RuntimeException
+        public boolean visit( List<EntityUpdates> element ) throws RuntimeException
         {
-            counter.incrementAndGet();
+            counter.addAndGet( element.size() );
             return true;
         }
 
@@ -469,14 +469,14 @@ class NeoStoreIndexStoreViewTest
         }
     }
 
-    private static class CopyUpdateVisitor implements Visitor<EntityUpdates,RuntimeException>
+    private static class CopyUpdateVisitor implements Visitor<List<EntityUpdates>,RuntimeException>
     {
         private EntityUpdates propertyUpdates;
 
         @Override
-        public boolean visit( EntityUpdates element ) throws RuntimeException
+        public boolean visit( List<EntityUpdates> element ) throws RuntimeException
         {
-            propertyUpdates = element;
+            propertyUpdates = element.get( 0 );
             return true;
         }
 
@@ -486,14 +486,14 @@ class NeoStoreIndexStoreViewTest
         }
     }
 
-    static class EntityUpdateCollectingVisitor implements Visitor<EntityUpdates,Exception>
+    static class EntityUpdateCollectingVisitor implements Visitor<List<EntityUpdates>,Exception>
     {
         private final Set<EntityUpdates> updates = new HashSet<>();
 
         @Override
-        public boolean visit( EntityUpdates propertyUpdates )
+        public boolean visit( List<EntityUpdates> propertyUpdates )
         {
-            updates.add( propertyUpdates );
+            updates.addAll( propertyUpdates );
             return false;
         }
 
@@ -503,14 +503,14 @@ class NeoStoreIndexStoreViewTest
         }
     }
 
-    private static class CopyTokenUpdateVisitor<EXCEPTION extends Exception> implements Visitor<EntityTokenUpdate,EXCEPTION>
+    private static class CopyTokenUpdateVisitor<EXCEPTION extends Exception> implements Visitor<List<EntityTokenUpdate>,EXCEPTION>
     {
         private final Set<EntityTokenUpdate> updates = new HashSet<>();
 
         @Override
-        public boolean visit( EntityTokenUpdate element )
+        public boolean visit( List<EntityTokenUpdate> element )
         {
-            updates.add( element );
+            updates.addAll( element );
             return false;
         }
 

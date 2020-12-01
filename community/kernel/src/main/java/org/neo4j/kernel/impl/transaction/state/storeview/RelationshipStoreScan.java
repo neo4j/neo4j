@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
+import java.util.List;
 import java.util.function.IntPredicate;
 import javax.annotation.Nullable;
 
@@ -40,13 +41,13 @@ import static org.neo4j.lock.LockType.SHARED;
  */
 public class RelationshipStoreScan<FAILURE extends Exception> extends PropertyAwareEntityStoreScan<StorageRelationshipScanCursor,FAILURE>
 {
-    private final Visitor<EntityTokenUpdate,FAILURE> relationshipTypeUpdateVisitor;
+    private final Visitor<List<EntityTokenUpdate>,FAILURE> relationshipTypeUpdateVisitor;
     final int[] relationshipTypeIds;
-    private final Visitor<EntityUpdates,FAILURE> propertyUpdatesVisitor;
+    private final Visitor<List<EntityUpdates>,FAILURE> propertyUpdatesVisitor;
 
     public RelationshipStoreScan( StorageReader storageReader, LockService locks,
-            @Nullable Visitor<EntityTokenUpdate,FAILURE> relationshipTypeUpdateVisitor,
-            @Nullable Visitor<EntityUpdates,FAILURE> propertyUpdatesVisitor,
+            @Nullable Visitor<List<EntityTokenUpdate>,FAILURE> relationshipTypeUpdateVisitor,
+            @Nullable Visitor<List<EntityUpdates>,FAILURE> propertyUpdatesVisitor,
             int[] relationshipTypeIds, IntPredicate propertyKeyIdFilter, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
     {
         super( storageReader, storageReader.relationshipsGetCount(), propertyKeyIdFilter,
@@ -69,7 +70,7 @@ public class RelationshipStoreScan<FAILURE extends Exception> extends PropertyAw
 
         if ( relationshipTypeUpdateVisitor != null )
         {
-            relationshipTypeUpdateVisitor.visit( EntityTokenUpdate.tokenChanges( cursor.entityReference(), EMPTY_LONG_ARRAY, new long[]{relType} ) );
+            relationshipTypeUpdateVisitor.visit( List.of( EntityTokenUpdate.tokenChanges( cursor.entityReference(), EMPTY_LONG_ARRAY, new long[]{relType} ) ) );
         }
 
         if ( propertyUpdatesVisitor != null && containsAnyEntityToken( relationshipTypeIds, relType ) )
@@ -79,7 +80,7 @@ public class RelationshipStoreScan<FAILURE extends Exception> extends PropertyAw
 
             if ( hasRelevantProperty( cursor, updates ) )
             {
-                return propertyUpdatesVisitor.visit( updates.build() );
+                return propertyUpdatesVisitor.visit( List.of( updates.build() ) );
             }
         }
         return false;

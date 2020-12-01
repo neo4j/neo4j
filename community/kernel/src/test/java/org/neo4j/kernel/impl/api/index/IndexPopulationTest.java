@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api.index;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
 import java.util.function.IntPredicate;
 
 import org.neo4j.common.EntityType;
@@ -129,13 +130,12 @@ class IndexPopulationTest
         {
             @Override
             public <FAILURE extends Exception> StoreScan<FAILURE> visitNodes( int[] labelIds, IntPredicate propertyKeyIdFilter,
-                    Visitor<EntityUpdates,FAILURE> propertyUpdateVisitor, Visitor<EntityTokenUpdate,FAILURE> labelUpdateVisitor, boolean forceStoreScan,
-                    PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
+                    Visitor<List<EntityUpdates>,FAILURE> propertyUpdateVisitor, Visitor<List<EntityTokenUpdate>,FAILURE> labelUpdateVisitor,
+                    boolean forceStoreScan, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
             {
                 //noinspection unchecked
                 return new StoreScan()
                 {
-
                     @Override
                     public void run()
                     {

@@ -516,8 +516,8 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         @Override
         public <FAILURE extends Exception> StoreScan<FAILURE> visitNodes( int[] labelIds,
                 IntPredicate propertyKeyIdFilter,
-                Visitor<EntityUpdates,FAILURE> propertyUpdatesVisitor,
-                Visitor<EntityTokenUpdate,FAILURE> labelUpdateVisitor,
+                Visitor<List<EntityUpdates>,FAILURE> propertyUpdatesVisitor,
+                Visitor<List<EntityTokenUpdate>,FAILURE> labelUpdateVisitor,
                 boolean forceStoreScan, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
         {
             StoreScan<FAILURE> storeScan = super.visitNodes( labelIds, propertyKeyIdFilter, propertyUpdatesVisitor,
@@ -534,8 +534,8 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         private final Runnable customAction;
 
         LabelViewNodeStoreWrapper( StorageReader storageReader, LockService locks,
-                LabelScanStore labelScanStore, Visitor<EntityTokenUpdate,FAILURE> labelUpdateVisitor,
-                Visitor<EntityUpdates,FAILURE> propertyUpdatesVisitor, int[] labelIds, IntPredicate propertyKeyIdFilter,
+                LabelScanStore labelScanStore, Visitor<List<EntityTokenUpdate>,FAILURE> labelUpdateVisitor,
+                Visitor<List<EntityUpdates>,FAILURE> propertyUpdatesVisitor, int[] labelIds, IntPredicate propertyKeyIdFilter,
                 LabelViewNodeStoreScan<FAILURE> delegate,
                 Runnable customAction )
         {

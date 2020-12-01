@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
+import java.util.List;
 import java.util.function.IntPredicate;
 import javax.annotation.Nullable;
 
@@ -43,8 +44,8 @@ public class LabelViewNodeStoreScan<FAILURE extends Exception> extends NodeStore
 
     public LabelViewNodeStoreScan( StorageReader storageReader, LockService locks,
             LabelScanStore labelScanStore,
-            @Nullable Visitor<EntityTokenUpdate,FAILURE> labelUpdateVisitor,
-            @Nullable Visitor<EntityUpdates,FAILURE> propertyUpdatesVisitor,
+            @Nullable Visitor<List<EntityTokenUpdate>,FAILURE> labelUpdateVisitor,
+            @Nullable Visitor<List<EntityUpdates>,FAILURE> propertyUpdatesVisitor,
             int[] labelIds,
             IntPredicate propertyKeyIdFilter, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
     {

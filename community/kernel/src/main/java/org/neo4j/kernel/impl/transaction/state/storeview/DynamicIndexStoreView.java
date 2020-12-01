@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.transaction.state.storeview;
 import org.apache.commons.lang3.ArrayUtils;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.function.IntPredicate;
 import java.util.function.Supplier;
 
@@ -71,8 +72,8 @@ public class DynamicIndexStoreView implements IndexStoreView
 
     @Override
     public <FAILURE extends Exception> StoreScan<FAILURE> visitNodes( int[] labelIds,
-            IntPredicate propertyKeyIdFilter, Visitor<EntityUpdates,FAILURE> propertyUpdatesVisitor,
-            Visitor<EntityTokenUpdate,FAILURE> labelUpdateVisitor,
+            IntPredicate propertyKeyIdFilter, Visitor<List<EntityUpdates>,FAILURE> propertyUpdatesVisitor,
+            Visitor<List<EntityTokenUpdate>,FAILURE> labelUpdateVisitor,
             boolean forceStoreScan, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
     {
         if ( forceStoreScan || useAllNodeStoreScan( labelIds, cursorTracer ) )
@@ -86,8 +87,8 @@ public class DynamicIndexStoreView implements IndexStoreView
 
     @Override
     public <FAILURE extends Exception> StoreScan<FAILURE> visitRelationships( int[] relationshipTypeIds, IntPredicate propertyKeyIdFilter,
-            Visitor<EntityUpdates,FAILURE> propertyUpdateVisitor,
-            Visitor<EntityTokenUpdate,FAILURE> relationshipTypeUpdateVisitor,
+            Visitor<List<EntityUpdates>,FAILURE> propertyUpdateVisitor,
+            Visitor<List<EntityTokenUpdate>,FAILURE> relationshipTypeUpdateVisitor,
             boolean forceStoreScan, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
     {
         if ( forceStoreScan || useAllRelationshipStoreScan( relationshipTypeIds, cursorTracer ) )

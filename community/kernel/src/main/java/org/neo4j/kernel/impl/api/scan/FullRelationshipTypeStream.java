@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.api.scan;
 import org.apache.commons.lang3.ArrayUtils;
 
 import java.io.IOException;
+import java.util.List;
 
 import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
@@ -44,7 +45,7 @@ public class FullRelationshipTypeStream extends FullTokenStream
     }
 
     @Override
-    StoreScan<IOException> getStoreScan( IndexStoreView indexStoreView, Visitor<EntityTokenUpdate,IOException> tokenUpdateVisitor,
+    StoreScan<IOException> getStoreScan( IndexStoreView indexStoreView, Visitor<List<EntityTokenUpdate>,IOException> tokenUpdateVisitor,
             PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
     {
         return indexStoreView.visitRelationships( ArrayUtils.EMPTY_INT_ARRAY, ALWAYS_TRUE_INT, null, tokenUpdateVisitor, true, cursorTracer,

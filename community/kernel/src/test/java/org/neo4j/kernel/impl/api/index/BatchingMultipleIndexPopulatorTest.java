@@ -317,7 +317,7 @@ public class BatchingMultipleIndexPopulatorTest
         IndexStoreView storeView = mock( IndexStoreView.class );
         when( storeView.visitNodes( any(), any(), any(), any(), anyBoolean(), any(), any() ) ).thenAnswer( invocation ->
         {
-            Visitor<EntityUpdates,IndexPopulationFailedKernelException> visitorArg = invocation.getArgument( 2 );
+            Visitor<List<EntityUpdates>,IndexPopulationFailedKernelException> visitorArg = invocation.getArgument( 2 );
             return new IndexEntryUpdateScan( updates, visitorArg );
         } );
         when( storeView.newPropertyAccessor( any( PageCursorTracer.class ), any() ) ).thenReturn( mock( NodePropertyAccessor.class ) );
@@ -327,12 +327,12 @@ public class BatchingMultipleIndexPopulatorTest
     private static class IndexEntryUpdateScan implements StoreScan<IndexPopulationFailedKernelException>
     {
         final EntityUpdates[] updates;
-        final Visitor<EntityUpdates,IndexPopulationFailedKernelException> visitor;
+        final Visitor<List<EntityUpdates>,IndexPopulationFailedKernelException> visitor;
 
         boolean stop;
 
         IndexEntryUpdateScan( EntityUpdates[] updates,
-                Visitor<EntityUpdates,IndexPopulationFailedKernelException> visitor )
+                Visitor<List<EntityUpdates>,IndexPopulationFailedKernelException> visitor )
         {
             this.updates = updates;
             this.visitor = visitor;
@@ -341,14 +341,11 @@ public class BatchingMultipleIndexPopulatorTest
         @Override
         public void run() throws IndexPopulationFailedKernelException
         {
-            for ( EntityUpdates update : updates )
+            if ( stop )
             {
-                if ( stop )
-                {
-                    return;
-                }
-                visitor.visit( update );
+                return;
             }
+            visitor.visit( List.of( updates ) );
         }
 
         @Override

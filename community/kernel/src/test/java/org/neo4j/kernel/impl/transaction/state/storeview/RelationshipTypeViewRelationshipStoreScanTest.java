@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.transaction.state.storeview;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
 import java.util.function.IntPredicate;
 
 import org.neo4j.collection.PrimitiveLongResourceCollections;
@@ -48,8 +49,8 @@ class RelationshipTypeViewRelationshipStoreScanTest
     private final RelationshipTypeScanStore relationshipTypeScanStore = mock( RelationshipTypeScanStore.class );
     private final TokenScanReader relationshipTypeScanReader = mock( TokenScanReader.class );
     private final IntPredicate propertyKeyIdFilter = mock( IntPredicate.class );
-    private final Visitor<EntityTokenUpdate,Exception> labelUpdateVisitor = mock( Visitor.class );
-    private final Visitor<EntityUpdates,Exception> propertyUpdateVisitor = mock( Visitor.class );
+    private final Visitor<List<EntityTokenUpdate>,Exception> labelUpdateVisitor = mock( Visitor.class );
+    private final Visitor<List<EntityUpdates>,Exception> propertyUpdateVisitor = mock( Visitor.class );
 
     @BeforeEach
     void setUp()

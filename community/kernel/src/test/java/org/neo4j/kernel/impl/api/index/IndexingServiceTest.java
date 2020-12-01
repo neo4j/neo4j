@@ -1518,7 +1518,7 @@ class IndexingServiceTest
         @Override
         public StoreScan<IndexPopulationFailedKernelException> answer( InvocationOnMock invocation )
         {
-            final Visitor<EntityUpdates,IndexPopulationFailedKernelException> visitor =
+            final Visitor<List<EntityUpdates>,IndexPopulationFailedKernelException> visitor =
                     visitor( invocation.getArgument( 2 ) );
             return new StoreScan<>()
             {
@@ -1527,14 +1527,11 @@ class IndexingServiceTest
                 @Override
                 public void run() throws IndexPopulationFailedKernelException
                 {
-                    for ( EntityUpdates update : updates )
+                    if ( stop || updates.length == 0 )
                     {
-                        if ( stop )
-                        {
-                            return;
-                        }
-                        visitor.visit( update );
+                        return;
                     }
+                    visitor.visit( List.of( updates ) );
                 }
 
                 @Override
@@ -1558,7 +1555,7 @@ class IndexingServiceTest
         }
 
         @SuppressWarnings( {"unchecked", "rawtypes"} )
-        private static Visitor<EntityUpdates, IndexPopulationFailedKernelException> visitor( Object v )
+        private static Visitor<List<EntityUpdates>, IndexPopulationFailedKernelException> visitor( Object v )
         {
             return (Visitor) v;
         }

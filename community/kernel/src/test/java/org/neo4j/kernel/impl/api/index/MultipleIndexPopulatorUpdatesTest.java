@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.api.index;
 import org.junit.jupiter.api.Test;
 import org.mockito.Answers;
 
+import java.util.List;
 import java.util.function.IntPredicate;
 import java.util.function.Supplier;
 
@@ -147,8 +148,8 @@ class MultipleIndexPopulatorUpdatesTest
         @Override
         public <FAILURE extends Exception> StoreScan<FAILURE> visitNodes( int[] labelIds,
                 IntPredicate propertyKeyIdFilter,
-                Visitor<EntityUpdates,FAILURE> propertyUpdatesVisitor,
-                Visitor<EntityTokenUpdate,FAILURE> labelUpdateVisitor,
+                Visitor<List<EntityUpdates>,FAILURE> propertyUpdatesVisitor,
+                Visitor<List<EntityTokenUpdate>,FAILURE> labelUpdateVisitor,
                 boolean forceStoreScan, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
         {
 
@@ -167,8 +168,8 @@ class MultipleIndexPopulatorUpdatesTest
         private final Listener<StorageNodeCursor> processListener;
 
         ListenableNodeScanViewNodeStoreScan( StorageReader storageReader, LockService locks,
-                Visitor<EntityTokenUpdate,FAILURE> labelUpdateVisitor,
-                Visitor<EntityUpdates,FAILURE> propertyUpdatesVisitor, int[] labelIds,
+                Visitor<List<EntityTokenUpdate>,FAILURE> labelUpdateVisitor,
+                Visitor<List<EntityUpdates>,FAILURE> propertyUpdatesVisitor, int[] labelIds,
                 IntPredicate propertyKeyIdFilter, Listener<StorageNodeCursor> processListener, PageCursorTracer cursorTracer )
         {
             super( storageReader, locks, labelUpdateVisitor, propertyUpdatesVisitor,

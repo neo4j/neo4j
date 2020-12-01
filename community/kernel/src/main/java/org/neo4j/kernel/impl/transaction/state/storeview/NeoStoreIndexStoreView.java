@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
+import java.util.List;
 import java.util.function.IntPredicate;
 import java.util.function.Supplier;
 
@@ -50,8 +51,8 @@ public class NeoStoreIndexStoreView implements IndexStoreView
     @Override
     public <FAILURE extends Exception> StoreScan<FAILURE> visitNodes(
             final int[] labelIds, IntPredicate propertyKeyIdFilter,
-            final Visitor<EntityUpdates, FAILURE> propertyUpdatesVisitor,
-            final Visitor<EntityTokenUpdate, FAILURE> labelUpdateVisitor,
+            final Visitor<List<EntityUpdates>, FAILURE> propertyUpdatesVisitor,
+            final Visitor<List<EntityTokenUpdate>, FAILURE> labelUpdateVisitor,
             boolean forceStoreScan, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
     {
         return new NodeStoreScan<>( storageEngine.get(), locks, labelUpdateVisitor,
@@ -60,8 +61,8 @@ public class NeoStoreIndexStoreView implements IndexStoreView
 
     @Override
     public <FAILURE extends Exception> StoreScan<FAILURE> visitRelationships( final int[] relationshipTypeIds, IntPredicate propertyKeyIdFilter,
-            final Visitor<EntityUpdates,FAILURE> propertyUpdatesVisitor,
-            Visitor<EntityTokenUpdate,FAILURE> relationshipTypeUpdateVisitor,
+            final Visitor<List<EntityUpdates>,FAILURE> propertyUpdatesVisitor,
+            Visitor<List<EntityTokenUpdate>,FAILURE> relationshipTypeUpdateVisitor,
             boolean forceStoreScan, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
     {
         return new RelationshipStoreScan<>( storageEngine.get(), locks, relationshipTypeUpdateVisitor, propertyUpdatesVisitor, relationshipTypeIds,

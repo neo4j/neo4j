@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import java.util.List;
 import java.util.function.IntPredicate;
 
 import org.neo4j.internal.helpers.collection.Visitor;
@@ -49,8 +50,8 @@ public interface IndexStoreView
      */
     <FAILURE extends Exception> StoreScan<FAILURE> visitNodes(
             int[] labelIds, IntPredicate propertyKeyIdFilter,
-            Visitor<EntityUpdates, FAILURE> propertyUpdateVisitor,
-            Visitor<EntityTokenUpdate, FAILURE> labelUpdateVisitor,
+            Visitor<List<EntityUpdates>, FAILURE> propertyUpdateVisitor,
+            Visitor<List<EntityTokenUpdate>, FAILURE> labelUpdateVisitor,
             boolean forceStoreScan, PageCursorTracer cursorTracer, MemoryTracker memoryTracker );
 
     /**
@@ -67,7 +68,7 @@ public interface IndexStoreView
      * @return a {@link StoreScan} to start and to stop the scan.
      */
     <FAILURE extends Exception> StoreScan<FAILURE> visitRelationships( int[] relationshipTypeIds, IntPredicate propertyKeyIdFilter,
-            Visitor<EntityUpdates,FAILURE> propertyUpdateVisitor, Visitor<EntityTokenUpdate,FAILURE> relationshipTypeUpdateVisitor,
+            Visitor<List<EntityUpdates>,FAILURE> propertyUpdateVisitor, Visitor<List<EntityTokenUpdate>,FAILURE> relationshipTypeUpdateVisitor,
             boolean forceStoreScan, PageCursorTracer cursorTracer, MemoryTracker memoryTracker );
 
     NodePropertyAccessor newPropertyAccessor( PageCursorTracer cursorTracer, MemoryTracker memoryTracker );
@@ -106,9 +107,9 @@ public interface IndexStoreView
     {
         @SuppressWarnings( "unchecked" )
         @Override
-        public <FAILURE extends Exception> StoreScan<FAILURE> visitNodes( int[] labelIds,
-                IntPredicate propertyKeyIdFilter, Visitor<EntityUpdates,FAILURE> propertyUpdateVisitor,
-                Visitor<EntityTokenUpdate,FAILURE> labelUpdateVisitor, boolean forceStoreScan, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
+        public <FAILURE extends Exception> StoreScan<FAILURE> visitNodes( int[] labelIds, IntPredicate propertyKeyIdFilter,
+                Visitor<List<EntityUpdates>,FAILURE> propertyUpdateVisitor, Visitor<List<EntityTokenUpdate>,FAILURE> labelUpdateVisitor, boolean forceStoreScan,
+                PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
         {
             return EMPTY_SCAN;
         }
@@ -116,7 +117,7 @@ public interface IndexStoreView
         @SuppressWarnings( "unchecked" )
         @Override
         public <FAILURE extends Exception> StoreScan<FAILURE> visitRelationships( int[] relationshipTypeIds, IntPredicate propertyKeyIdFilter,
-                Visitor<EntityUpdates,FAILURE> propertyUpdateVisitor, Visitor<EntityTokenUpdate,FAILURE> relationshipTypeUpdateVisitor,
+                Visitor<List<EntityUpdates>,FAILURE> propertyUpdateVisitor, Visitor<List<EntityTokenUpdate>,FAILURE> relationshipTypeUpdateVisitor,
                 boolean forceStoreScan, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
         {
             return EMPTY_SCAN;

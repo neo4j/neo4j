@@ -25,6 +25,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
+import java.util.List;
 import java.util.function.IntPredicate;
 import java.util.function.Supplier;
 
@@ -64,8 +65,8 @@ class DynamicIndexStoreViewTest
     private final LabelScanStore labelScanStore = mock( LabelScanStore.class );
     private final RelationshipTypeScanStore relationshipTypeScanStore = mock( RelationshipTypeScanStore.class );
     private final StubStorageCursors cursors = new StubStorageCursors();
-    private final Visitor<EntityUpdates,Exception> propertyUpdateVisitor = mock( Visitor.class );
-    private final Visitor<EntityTokenUpdate,Exception> tokenUpdateVisitor = mock( Visitor.class );
+    private final Visitor<List<EntityUpdates>,Exception> propertyUpdateVisitor = mock( Visitor.class );
+    private final Visitor<List<EntityTokenUpdate>,Exception> tokenUpdateVisitor = mock( Visitor.class );
     private final IntPredicate propertyKeyIdFilter = mock( IntPredicate.class );
     private final AllEntriesTokenScanReader nodeLabelRanges = mock( AllEntriesTokenScanReader.class );
     private final AllEntriesTokenScanReader relationshipTypeRanges = mock( AllEntriesTokenScanReader.class );
@@ -156,8 +157,8 @@ class DynamicIndexStoreViewTest
         NeoStoreIndexStoreView neoStoreIndexStoreView = mock( NeoStoreIndexStoreView.class );
         DynamicIndexStoreView dynamicIndexStoreView = dynamicIndexStoreView( neoStoreIndexStoreView );
         IntPredicate propertyKeyIdFilter = Predicates.ALWAYS_TRUE_INT;
-        Visitor<EntityUpdates,Exception> propertyUpdateVisitor = mock( Visitor.class );
-        Visitor<EntityTokenUpdate,Exception> relationshipTypeUpdateVisitor = mock( Visitor.class );
+        Visitor<List<EntityUpdates>,Exception> propertyUpdateVisitor = mock( Visitor.class );
+        Visitor<List<EntityTokenUpdate>,Exception> relationshipTypeUpdateVisitor = mock( Visitor.class );
         PageCursorTracer cursorTracer = NULL;
         int[] typeIds = {1};
         boolean forceStoreScan = false;
@@ -179,8 +180,8 @@ class DynamicIndexStoreViewTest
         NeoStoreIndexStoreView neoStoreIndexStoreView = mock( NeoStoreIndexStoreView.class );
         DynamicIndexStoreView dynamicIndexStoreView = dynamicIndexStoreView( neoStoreIndexStoreView );
         IntPredicate propertyKeyIdFilter = Predicates.ALWAYS_TRUE_INT;
-        Visitor<EntityUpdates,Exception> propertyUpdateVisitor = mock( Visitor.class );
-        Visitor<EntityTokenUpdate,Exception> relationshipTypeUpdateVisitor = mock( Visitor.class );
+        Visitor<List<EntityUpdates>,Exception> propertyUpdateVisitor = mock( Visitor.class );
+        Visitor<List<EntityTokenUpdate>,Exception> relationshipTypeUpdateVisitor = mock( Visitor.class );
         PageCursorTracer cursorTracer = NULL;
         int[] typeIds = {1};
         when( relationshipTypeScanStore.isEmpty( cursorTracer ) ).thenReturn( false );
@@ -202,8 +203,8 @@ class DynamicIndexStoreViewTest
         NeoStoreIndexStoreView neoStoreIndexStoreView = mock( NeoStoreIndexStoreView.class );
         DynamicIndexStoreView dynamicIndexStoreView = dynamicIndexStoreView( neoStoreIndexStoreView );
         IntPredicate propertyKeyIdFilter = Predicates.ALWAYS_TRUE_INT;
-        Visitor<EntityUpdates,Exception> propertyUpdateVisitor = mock( Visitor.class );
-        Visitor<EntityTokenUpdate,Exception> relationshipTypeUpdateVisitor = mock( Visitor.class );
+        Visitor<List<EntityUpdates>,Exception> propertyUpdateVisitor = mock( Visitor.class );
+        Visitor<List<EntityTokenUpdate>,Exception> relationshipTypeUpdateVisitor = mock( Visitor.class );
         PageCursorTracer cursorTracer = NULL;
         boolean forceStoreScan = false;
         when( relationshipTypeScanStore.isEmpty( cursorTracer ) ).thenReturn( false );
@@ -226,8 +227,8 @@ class DynamicIndexStoreViewTest
         NeoStoreIndexStoreView neoStoreIndexStoreView = mock( NeoStoreIndexStoreView.class );
         DynamicIndexStoreView dynamicIndexStoreView = dynamicIndexStoreView( neoStoreIndexStoreView, config );
         IntPredicate propertyKeyIdFilter = Predicates.ALWAYS_TRUE_INT;
-        Visitor<EntityUpdates,Exception> propertyUpdateVisitor = mock( Visitor.class );
-        Visitor<EntityTokenUpdate,Exception> relationshipTypeUpdateVisitor = mock( Visitor.class );
+        Visitor<List<EntityUpdates>,Exception> propertyUpdateVisitor = mock( Visitor.class );
+        Visitor<List<EntityTokenUpdate>,Exception> relationshipTypeUpdateVisitor = mock( Visitor.class );
         PageCursorTracer cursorTracer = NULL;
         int[] typeIds = {1};
         boolean forceStoreScan = false;
@@ -249,8 +250,8 @@ class DynamicIndexStoreViewTest
         NeoStoreIndexStoreView neoStoreIndexStoreView = mock( NeoStoreIndexStoreView.class );
         DynamicIndexStoreView dynamicIndexStoreView = dynamicIndexStoreView( neoStoreIndexStoreView );
         IntPredicate propertyKeyIdFilter = Predicates.ALWAYS_TRUE_INT;
-        Visitor<EntityUpdates,Exception> propertyUpdateVisitor = mock( Visitor.class );
-        Visitor<EntityTokenUpdate,Exception> relationshipTypeUpdateVisitor = mock( Visitor.class );
+        Visitor<List<EntityUpdates>,Exception> propertyUpdateVisitor = mock( Visitor.class );
+        Visitor<List<EntityTokenUpdate>,Exception> relationshipTypeUpdateVisitor = mock( Visitor.class );
         PageCursorTracer cursorTracer = NULL;
         int[] typeIds = {1};
         boolean forceStoreScan = false;

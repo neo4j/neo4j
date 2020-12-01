@@ -435,7 +435,7 @@ class IndexPopulationJobTest
         ControlledStoreScan storeScan = new ControlledStoreScan();
         when( storeView.visitNodes( any(int[].class), any( IntPredicate.class ),
                 ArgumentMatchers.any(),
-                ArgumentMatchers.<Visitor<EntityTokenUpdate,RuntimeException>>any(), anyBoolean(), any(), any() ) )
+                ArgumentMatchers.<Visitor<List<EntityTokenUpdate>,RuntimeException>>any(), anyBoolean(), any(), any() ) )
                 .thenReturn(storeScan );
         when( storeView.newPropertyAccessor( any( PageCursorTracer.class ), any() ) ).thenReturn( mock( NodePropertyAccessor.class ) );
 
@@ -612,8 +612,8 @@ class IndexPopulationJobTest
         {
             @Override
             public <FAILURE extends Exception> StoreScan<FAILURE> visitNodes( int[] labelIds, IntPredicate propertyKeyIdFilter,
-                    Visitor<EntityUpdates,FAILURE> propertyUpdateVisitor, Visitor<EntityTokenUpdate,FAILURE> labelUpdateVisitor, boolean forceStoreScan,
-                    PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
+                    Visitor<List<EntityUpdates>,FAILURE> propertyUpdateVisitor, Visitor<List<EntityTokenUpdate>,FAILURE> labelUpdateVisitor,
+                    boolean forceStoreScan, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
             {
                 return new StoreScan<>()
                 {

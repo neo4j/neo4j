@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
+import java.util.List;
 import java.util.function.IntPredicate;
 import javax.annotation.Nullable;
 
@@ -40,13 +41,13 @@ import static org.neo4j.lock.LockType.SHARED;
  */
 public class NodeStoreScan<FAILURE extends Exception> extends PropertyAwareEntityStoreScan<StorageNodeCursor,FAILURE>
 {
-    private final Visitor<EntityTokenUpdate,FAILURE> labelUpdateVisitor;
-    private final Visitor<EntityUpdates,FAILURE> propertyUpdatesVisitor;
+    private final Visitor<List<EntityTokenUpdate>,FAILURE> labelUpdateVisitor;
+    private final Visitor<List<EntityUpdates>,FAILURE> propertyUpdatesVisitor;
     protected final int[] labelIds;
 
     public NodeStoreScan( StorageReader storageReader, LockService locks,
-            @Nullable Visitor<EntityTokenUpdate,FAILURE> labelUpdateVisitor,
-            @Nullable Visitor<EntityUpdates,FAILURE> propertyUpdatesVisitor,
+            @Nullable Visitor<List<EntityTokenUpdate>,FAILURE> labelUpdateVisitor,
+            @Nullable Visitor<List<EntityUpdates>,FAILURE> propertyUpdatesVisitor,
             int[] labelIds, IntPredicate propertyKeyIdFilter, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
     {
         super( storageReader, nodeCount( storageReader, cursorTracer ), propertyKeyIdFilter,
@@ -75,7 +76,7 @@ public class NodeStoreScan<FAILURE extends Exception> extends PropertyAwareEntit
         if ( labelUpdateVisitor != null )
         {
             // Notify the label update visitor
-            labelUpdateVisitor.visit( EntityTokenUpdate.tokenChanges( cursor.entityReference(), EMPTY_LONG_ARRAY, labels ) );
+            labelUpdateVisitor.visit( List.of( EntityTokenUpdate.tokenChanges( cursor.entityReference(), EMPTY_LONG_ARRAY, labels ) ) );
         }
 
         if ( propertyUpdatesVisitor != null && containsAnyEntityToken( labelIds, labels ) )
@@ -85,7 +86,7 @@ public class NodeStoreScan<FAILURE extends Exception> extends PropertyAwareEntit
 
             if ( hasRelevantProperty( cursor, updates ) )
             {
-                return propertyUpdatesVisitor.visit( updates.build() );
+                return propertyUpdatesVisitor.visit( List.of( updates.build() ) );
             }
         }
         return false;

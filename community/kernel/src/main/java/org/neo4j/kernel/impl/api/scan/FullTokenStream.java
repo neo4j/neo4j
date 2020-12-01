@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.api.scan;
 
 import java.io.IOException;
+import java.util.List;
 
 import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
@@ -36,7 +37,7 @@ import org.neo4j.storageengine.api.EntityTokenUpdate;
  * Connects the provided {@link TokenScanWriter writer} to the receiving end of a full store scan,
  * feeding {@link EntityTokenUpdate entity tokens} into the writer.
  */
-public abstract class FullTokenStream implements FullStoreChangeStream, Visitor<EntityTokenUpdate,IOException>
+public abstract class FullTokenStream implements FullStoreChangeStream, Visitor<List<EntityTokenUpdate>,IOException>
 {
     private final IndexStoreView indexStoreView;
     private TokenScanWriter writer;
@@ -47,7 +48,7 @@ public abstract class FullTokenStream implements FullStoreChangeStream, Visitor<
         this.indexStoreView = indexStoreView;
     }
 
-    abstract StoreScan<IOException> getStoreScan( IndexStoreView indexStoreView, Visitor<EntityTokenUpdate,IOException> tokenUpdateVisitor,
+    abstract StoreScan<IOException> getStoreScan( IndexStoreView indexStoreView, Visitor<List<EntityTokenUpdate>,IOException> tokenUpdateVisitor,
             PageCursorTracer cursorTracer, MemoryTracker memoryTracker );
 
     @Override
@@ -61,10 +62,13 @@ public abstract class FullTokenStream implements FullStoreChangeStream, Visitor<
     }
 
     @Override
-    public boolean visit( EntityTokenUpdate update ) throws IOException
+    public boolean visit( List<EntityTokenUpdate> updates ) throws IOException
     {
-        writer.write( update );
-        count++;
+        for ( EntityTokenUpdate update : updates )
+        {
+            writer.write( update );
+            count++;
+        }
         return false;
     }
 }
