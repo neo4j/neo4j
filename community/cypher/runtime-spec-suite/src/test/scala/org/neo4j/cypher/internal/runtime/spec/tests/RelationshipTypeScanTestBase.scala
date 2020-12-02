@@ -34,8 +34,9 @@ abstract class RelationshipTypeScanTestBase[CONTEXT <: RuntimeContext](
 
   test("should support directed relationship scan") {
     // given
+    val nNodes = Math.sqrt(sizeHint).ceil.toInt
     val (_, _, relationships, _) = given {
-      bidirectionalBipartiteGraph(sizeHint, "A", "B", "R", "S")
+      bidirectionalBipartiteGraph(nNodes, "A", "B", "R", "S")
     }
 
     // when
@@ -50,10 +51,30 @@ abstract class RelationshipTypeScanTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("r", "x", "y").withRows(relationships.map(r => Array(r, r.getStartNode, r.getEndNode)))
   }
 
+  test("should handle directed relationship scan for non-existing type") {
+    // given
+    val nNodes = Math.sqrt(sizeHint).ceil.toInt
+    given {
+      bidirectionalBipartiteGraph(nNodes, "A", "B", "R", "S")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r", "x", "y")
+      .relationshipTypeScan("(x)-[r:X]->(y)")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("r", "x", "y").withNoRows()
+  }
+
   test("should combine directed type scan and filter") {
     // given
-    val (_, _, relationships, _) = given {
-      bidirectionalBipartiteGraph(sizeHint, "A", "B", "R", "S")
+    val nNodes = Math.sqrt(sizeHint).ceil.toInt
+    given {
+      bidirectionalBipartiteGraph(nNodes, "A", "B", "R", "S")
     }
 
     // when
@@ -90,10 +111,29 @@ abstract class RelationshipTypeScanTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("r1", "r2", "r3").withRows(expected)
   }
 
+  test("should handle an argument in a directed scan") {
+    // given
+    val (_, relationships) = given { circleGraph(10, "L") }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("b", "r")
+      .apply()
+      .|.projection("a AS b")
+      .|.relationshipTypeScan("()-[r:R]->()", "a")
+      .input(variables = Seq("a"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(Array(1), Array(2), Array(3)))
+    val expected = for (i <- 1 to 3; r <- relationships) yield Array(i, r)
+    runtimeResult should beColumns("b", "r").withRows(expected)
+  }
+
   test("should support undirected relationship scan") {
     // given
+    val nNodes = Math.sqrt(sizeHint).ceil.toInt
     val (_, _, relationships, _) = given {
-      bidirectionalBipartiteGraph(sizeHint, "A", "B", "R", "S")
+      bidirectionalBipartiteGraph(nNodes, "A", "B", "R", "S")
     }
 
     // when
@@ -108,10 +148,30 @@ abstract class RelationshipTypeScanTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("r", "x", "y").withRows(relationships.flatMap(r => Seq(Array(r, r.getStartNode, r.getEndNode), Array(r, r.getEndNode, r.getStartNode))))
   }
 
+  test("should handle undirected relationship scan for non-existent type") {
+    // given
+    val nNodes = Math.sqrt(sizeHint).ceil.toInt
+    given {
+      bidirectionalBipartiteGraph(nNodes, "A", "B", "R", "S")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r", "x", "y")
+      .relationshipTypeScan("(x)-[r:X]-(y)")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("r", "x", "y").withNoRows()
+  }
+
   test("should combine undirected type scan and filter") {
     // given
-    val (_, _, relationships, _) = given {
-      bidirectionalBipartiteGraph(sizeHint, "A", "B", "R", "S")
+    val nNodes = Math.sqrt(sizeHint).ceil.toInt
+    given {
+      bidirectionalBipartiteGraph(nNodes, "A", "B", "R", "S")
     }
 
     // when
@@ -146,6 +206,24 @@ abstract class RelationshipTypeScanTestBase[CONTEXT <: RuntimeContext](
     // then
     val expected = for {r1 <- relationships; r2 <- relationships; r3 <- relationships} yield Seq.fill(8)(Array(r1, r2, r3))
     runtimeResult should beColumns("r1", "r2", "r3").withRows(expected.flatten)
+  }
+
+  test("should handle an argument in an undirected scan") {
+    // given
+    val (_, relationships) = given { circleGraph(10, "L") }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("b", "r")
+      .apply()
+      .|.projection("a AS b")
+      .|.relationshipTypeScan("()-[r:R]-()", "a")
+      .input(variables = Seq("a"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(Array(1), Array(2), Array(3)))
+    val expected = (for (i <- 1 to 3; r <- relationships) yield Seq(Array(i, r), Array(i, r))).flatten
+    runtimeResult should beColumns("b", "r").withRows(expected)
   }
 
   //TODO: These tests should live in ProfileRowsTestBase but lives here instead because they rely on typescans being enabled
