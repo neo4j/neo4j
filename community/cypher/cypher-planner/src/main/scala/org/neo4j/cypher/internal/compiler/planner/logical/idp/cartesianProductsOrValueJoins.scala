@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlanRestrictions
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.QueryPlannerConfiguration
 import org.neo4j.cypher.internal.compiler.planner.logical.QueryPlannerKit
+import org.neo4j.cypher.internal.compiler.planner.logical.SortPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.SortPlanner.SatisfiedForPlan
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.BestPlans
 import org.neo4j.cypher.internal.expressions.Equals
@@ -33,6 +34,7 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.NodeUniqueIndexSeek
 import org.neo4j.cypher.internal.util.Cardinality
+import org.neo4j.cypher.internal.util.Cardinality.NumericCardinality
 import org.neo4j.cypher.internal.util.CartesianOrdering
 import org.neo4j.cypher.internal.util.Cost
 import org.neo4j.exceptions.InternalException
@@ -164,7 +166,7 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
       pickTheBest(plans, kit, cartesianProducts)
     }
     else {
-      Set(planLotsOfCartesianProducts(plans, qg, context, kit, considerSelections = true))
+      Set(planLotsOfCartesianProducts(plans, qg, interestingOrder, context, kit, considerSelections = true))
     }
   }
 
@@ -202,6 +204,7 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
    */
   private[idp] def planLotsOfCartesianProducts(plans: Set[PlannedComponent],
                                                qg: QueryGraph,
+                                               interestingOrder: InterestingOrder,
                                                context: LogicalPlanningContext,
                                                kit: QueryPlannerKit,
                                                considerSelections: Boolean): PlannedComponent = {
@@ -220,17 +223,38 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
     val bestComponents: Seq[Component] = if(components.size < 2) {
       components
     } else {
-      components.map { c => (c, sortCriteria(c)) }.sortBy(_._2)(CartesianOrdering).map(_._1)
+      val maxCardinality = components
+        .map(c => context.planningAttributes.cardinalities(c.plan.id))
+        .filter(_ >= Cardinality.SINGLE)
+        .product(NumericCardinality)
+      val ordering: CartesianOrdering = context.executionModel.cartesianOrdering(maxCardinality)
+      components.map { c => (c, sortCriteria(c)) }.sortBy(_._2)(ordering).map(_._1)
     }
 
-    val bestSortedPlans = maybeSortedComponent.map {
+    val componentsWithSortedPlanFirst = maybeSortedComponent.map {
       // If we have a sorted component, that should go to the very left of the cartesian products to keep the sort order
       sortedComponent =>
         val c = Component(sortedComponent.queryGraph, sortedComponent.plan.bestResultFulfillingReq.get)
         c +: bestComponents.filterNot(comp => c.queryGraph == comp.queryGraph)
     }
 
-    def cross(allPlans: Seq[Component]): Component = allPlans.tail.foldLeft(allPlans.head) {
+    /**
+     * This build a right-deep tree of Cartesian Products.
+     *
+     * In Volcano, the shape of the tree does not affect cost, as shown below.
+     * C0 x (C1 x C2)              = (C0 x C1) x C2
+     * c0 + s0 * (c1 + s1 * c2)    = c0 + s0 * c1 + s0 * s1 * c2
+     * c0 + s0 * c1 + s0 * s1 * c2 = c0 + s0 * c1 + s0 * s1 * c2
+     *
+     * In Batched, we believe that a right-deep tree is cheaper or equally costly compared to other tree shapes.
+     * To show this in the general case, we would need to prove the following:
+     * C0 x (C1 x C2)                                 <=? (C0 x C1) x C2
+     * c0 + ⌈s0 / B⌉ * (c1 + ⌈s1 / B⌉ * c2)           <=? c0 + ⌈s0 / B⌉ * c1 + ⌈s0 * s1 / B⌉ * c2
+     * c0 + ⌈s0 / B⌉ * c1 + ⌈s0 / B⌉ * ⌈s1 / B⌉ * c2  <=? c0 + ⌈s0 / B⌉ * c1 + ⌈s0 * s1 / B⌉ * c2          | -c0 - ⌈s0 / B⌉ * c1
+     *                      ⌈s0 / B⌉ * ⌈s1 / B⌉ * c2  <=?                      ⌈s0 * s1 / B⌉ * c2          | /c2
+     *                      ⌈s0 / B⌉ * ⌈s1 / B⌉       <=?                      ⌈s0 * s1 / B⌉
+     */
+    def cross(allPlans: Seq[Component]): Component = allPlans.reduceRight[Component] {
       case (l, r) =>
         val cp = context.logicalPlanProducer.planCartesianProduct(l.plan, r.plan, context)
         val cpWithSelection = if (considerSelections) kit.select(cp, qg) else cp
@@ -238,7 +262,14 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
     }
 
     val bestPlan = cross(bestComponents)
-    val bestSortedPlan = bestSortedPlans.map(cross).map(_.plan)
+    val bestSortedPlan = {
+      // If there is a sort, there are 2 possible candidates for the best sorted plan.
+      // The first in where we put the sorted component left-most, so that we don't have to plan an extra sort.
+      val candidate1 = componentsWithSortedPlanFirst.map(cross).map(_.plan)
+      // The second is taking the cheapest order of cartesian products, and planning an extra sort afterwards.
+      val candidate2 = SortPlanner.maybeSortedPlan(bestPlan.plan, interestingOrder, context)
+      kit.pickBest(Set(candidate1, candidate2).flatten, s"best sorted plan for ${plans.map(_.queryGraph)}")
+    }
     PlannedComponent(bestPlan.queryGraph, BestResults(bestPlan.plan, bestSortedPlan))
   }
 

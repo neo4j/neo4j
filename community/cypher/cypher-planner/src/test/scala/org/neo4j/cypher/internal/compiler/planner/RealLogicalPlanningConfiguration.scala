@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
-import org.neo4j.cypher.internal.compiler.VolcanoModelExecution
+import org.neo4j.cypher.internal.compiler.ExecutionModel
 import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel
 import org.neo4j.cypher.internal.compiler.planner.logical.ExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CardinalityModel
@@ -47,7 +47,7 @@ case class RealLogicalPlanningConfiguration(cypherCompilerConfig: CypherPlannerC
   //noinspection ScalaUnnecessaryParentheses
   override def costModel(): PartialFunction[(LogicalPlan, QueryGraphSolverInput, SemanticTable, Cardinalities, ProvidedOrders), Cost] = {
     case (plan: LogicalPlan, input: QueryGraphSolverInput, semanticTable: SemanticTable, cardinalities: Cardinalities, providedOrders: ProvidedOrders) =>
-      CardinalityCostModel(VolcanoModelExecution).costFor(plan, input, semanticTable, cardinalities, providedOrders)
+      CardinalityCostModel(ExecutionModel.default).costFor(plan, input, semanticTable, cardinalities, providedOrders)
   }
 
   override def graphStatistics: GraphStatistics = HardcodedGraphStatistics

@@ -321,16 +321,12 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTestBase(queryGraphSolve
       } getLogicalPlanFor(s"MATCH (m:Awesome), (n:Awesome) WHERE n.prop > 'foo' RETURN m.prop ORDER BY m.prop $cypherToken",
         stripProduceResults = false)
 
-      plan._2 should equal(
-        new LogicalPlanBuilder()
-          .produceResults("`m.prop`")
-          .cartesianProduct()
-          .|.nodeIndexOperator("n:Awesome(prop > 'foo')")
-          .sort(Seq(sortOrder("m.prop")))
-          .projection("m.prop AS `m.prop`")
-          .nodeByLabelScan("m", "Awesome")
-          .build()
-      )
+      val so = sortOrder("m.prop")
+      withClue(plan._2) {
+        plan._2.treeCount {
+          case Sort(_, Seq(`so`)) => true
+        } shouldBe 1
+      }
     }
 
     test(s"$cypherToken-$orderCapability: Cannot order by index when ordering is on same property name, but different node with relationship") {
@@ -343,19 +339,12 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTestBase(queryGraphSolve
       } getLogicalPlanFor(s"MATCH (m:Awesome)-[r]-(x)-[p]-(y), (n:Awesome) WHERE n.prop > 'foo' RETURN m.prop ORDER BY m.prop $cypherToken",
         stripProduceResults = false)
 
-      plan._2 should equal(
-      new LogicalPlanBuilder()
-        .produceResults("`m.prop`")
-        .cartesianProduct()
-        .|.nodeIndexOperator("n:Awesome(prop > 'foo')")
-        .filter("NOT p = r")
-        .expand("(x)-[p]-(y)")
-        .expand("(m)-[r]-(x)")
-        .sort(Seq(sortOrder("m.prop")))
-        .projection("m.prop AS `m.prop`")
-        .nodeByLabelScan("m", "Awesome")
-        .build()
-      )
+      val so = sortOrder("m.prop")
+      withClue(plan._2) {
+        plan._2.treeCount {
+          case Sort(_, Seq(`so`)) => true
+        } shouldBe 1
+      }
     }
 
     test(s"$cypherToken-$orderCapability: Order by index backed property should plan with provided order (starts with scan)") {

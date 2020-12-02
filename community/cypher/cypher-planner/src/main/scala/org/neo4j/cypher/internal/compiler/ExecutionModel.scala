@@ -19,16 +19,33 @@
  */
 package org.neo4j.cypher.internal.compiler
 
+import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
+import org.neo4j.cypher.internal.util.Cardinality
+import org.neo4j.cypher.internal.util.CartesianOrdering
+import org.neo4j.cypher.internal.util.PushBatchedCartesianOrdering
+import org.neo4j.cypher.internal.util.VolcanoCartesianOrdering
 
 /**
  * The execution model of how a runtime executes a query.
  * This information can be used in planning.
  */
-sealed trait ExecutionModel
+sealed trait ExecutionModel {
+  /**
+   * @param maxCardinality the maximum cardinality when combining plans to a Cartesian Product with the returned ordering.
+   * @return an Ordering for plans to combine them with Cartesian Products.
+   */
+  def cartesianOrdering(maxCardinality: Cardinality): CartesianOrdering
+}
 
-case object VolcanoModelExecution extends ExecutionModel
+object ExecutionModel {
+  val default: ExecutionModel = PushBatchedExecution.default
+}
+
+case object VolcanoModelExecution extends ExecutionModel {
+  override def cartesianOrdering(maxCardinality: Cardinality): CartesianOrdering = VolcanoCartesianOrdering
+}
 
 case class PushBatchedExecution(smallBatchSize: Int, bigBatchSize: Int) extends ExecutionModel {
 
@@ -37,7 +54,19 @@ case class PushBatchedExecution(smallBatchSize: Int, bigBatchSize: Int) extends 
    */
   def selectBatchSize(logicalPlan: LogicalPlan, cardinalities: Cardinalities): Int = {
     val maxCardinality = logicalPlan.flatten.map(plan => cardinalities.get(plan.id)).max
+    selectBatchSize(maxCardinality)
+  }
+
+  private def selectBatchSize(maxCardinality: Cardinality): Int = {
     if (maxCardinality.amount.toLong > bigBatchSize) bigBatchSize else smallBatchSize
   }
+
+  override def cartesianOrdering(maxCardinality: Cardinality): CartesianOrdering = new PushBatchedCartesianOrdering(selectBatchSize(maxCardinality))
 }
 
+object PushBatchedExecution {
+  val default: PushBatchedExecution = PushBatchedExecution(
+    GraphDatabaseInternalSettings.cypher_pipelined_batch_size_small.defaultValue(),
+    GraphDatabaseInternalSettings.cypher_pipelined_batch_size_big.defaultValue()
+  )
+}

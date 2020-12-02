@@ -19,7 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
+import org.neo4j.cypher.internal.compiler.PushBatchedExecution
+import org.neo4j.cypher.internal.compiler.VolcanoModelExecution
 import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher.beLike
+import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.cartesianProductsOrValueJoins.COMPONENT_THRESHOLD_FOR_CARTESIAN_PRODUCT
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
@@ -32,7 +35,7 @@ import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class CartesianProductPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
+class CartesianProductPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 with LogicalPlanningIntegrationTestSupport {
 
   test("should build cartesian product with sorted plan left for many disconnected components") {
     val nodes = (0 until COMPONENT_THRESHOLD_FOR_CARTESIAN_PRODUCT).map(i => s"(n$i:Few)").mkString(",")
@@ -74,42 +77,143 @@ class CartesianProductPlanningIntegrationTest extends CypherFunSuite with Logica
     }
   }
 
-  test("should combine three plans so the cost is minimized") {
-    implicit val plan = new given {
-      labelCardinality = Map(
-        "A" -> 30.0,
-        "B" -> 20.0,
-        "C" -> 10.0
-      )
-    } getLogicalPlanFor "MATCH (a), (b), (c) WHERE a:A AND b:B AND c:C RETURN a, b, c"
+  test("should plan cartesian product of three plans so the cost is minimized") {
+    val builder = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setLabelCardinality("A", 30)
+      .setLabelCardinality("B", 20)
+      .setLabelCardinality("C", 10)
 
-    plan._2 should equal(
-      CartesianProduct(
-        NodeByLabelScan("a", labelName("A"), Set.empty, IndexOrderNone),
-        CartesianProduct(
-          NodeByLabelScan("c", labelName("C"), Set.empty, IndexOrderNone),
-          NodeByLabelScan("b", labelName("B"), Set.empty, IndexOrderNone)
-        )
-      )
-    )
+    val volcano = builder
+      .setExecutionModel(VolcanoModelExecution)
+      .build()
+
+    val batched = builder
+      .setExecutionModel(PushBatchedExecution.default)
+      .build()
+
+    val query =
+      """MATCH (a:A), (b:B), (c:C)
+        |RETURN a, b, c
+        |""".stripMargin
+    val volcanoPlan = volcano.plan(query)
+    val batchedPlan = batched.plan(query)
+
+
+    // Volcano:
+    // A x B = 30 + 30 * 20 = 630
+    // A x C = 30 + 30 * 10 = 330
+    // B x A = 20 + 20 * 30 = 620
+    // B x C = 20 + 20 * 10 = 220
+    // C x A = 10 + 10 * 30 = 310
+    // C x B = 10 + 10 * 20 = 210 // greedily pick the cheapest here
+
+    // A x (C x B) = 30 + 30 * 210 = 6330
+    // (C x B) x A = 210 + 200 * 30 = 6210 // winner
+
+    volcanoPlan shouldEqual volcano.planBuilder()
+      .produceResults("a", "b", "c")
+      .cartesianProduct()
+      .|.nodeByLabelScan("a", "A", IndexOrderNone)
+      .cartesianProduct()
+      .|.nodeByLabelScan("b", "B", IndexOrderNone)
+      .nodeByLabelScan("c", "C", IndexOrderNone)
+      .build()
+
+    // Batched:
+    // A x B = 30 + 20 = 50
+    // A x C = 30 + 10 = 40
+    // B x A = 20 + 30 = 50
+    // B x C = 20 + 10 = 30 // greedily pick the cheapest here
+    // C x A = 10 + 30 = 40
+    // C x B = 10 + 20 = 30 // or here
+
+    // A x (BC) = 30 + 30 = 60 // winner
+    // (BC) x A = 30 + 30 = 60 // or winner
+
+    batchedPlan should (equal(batched.planBuilder()
+      .produceResults("a", "b", "c")
+      .cartesianProduct()
+      .|.cartesianProduct()
+      .|.|.nodeByLabelScan("c", "C")
+      .|.nodeByLabelScan("b", "B")
+      .nodeByLabelScan("a", "A")
+      .build()
+    ) or equal(batched.planBuilder()
+      .produceResults("a", "b", "c")
+      .cartesianProduct()
+      .|.cartesianProduct()
+      .|.|.nodeByLabelScan("b", "B")
+      .|.nodeByLabelScan("c", "C")
+      .nodeByLabelScan("a", "A")
+      .build()
+    ) or equal(batched.planBuilder()
+      .produceResults("a", "b", "c")
+      .cartesianProduct()
+      .|.nodeByLabelScan("a", "A")
+      .cartesianProduct()
+      .|.nodeByLabelScan("c", "C")
+      .nodeByLabelScan("b", "B")
+      .build()
+    ) or equal(batched.planBuilder()
+      .produceResults("a", "b", "c")
+      .cartesianProduct()
+      .|.nodeByLabelScan("a", "A")
+      .cartesianProduct()
+      .|.nodeByLabelScan("b", "B")
+      .nodeByLabelScan("c", "C")
+      .build()
+    ))
   }
 
-  test("should combine two plans so the cost is minimized") {
-    implicit val plan = new given {
-      labelCardinality = Map(
-        "A" -> 30.0,
-        "B" -> 20.0
-      )
-    } getLogicalPlanFor "MATCH (a), (b) WHERE a:A AND b:B RETURN a, b"
+  test("should plan cartesian product of two plans so the cost is minimized") {
+    val builder = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setLabelCardinality("A", 30)
+      .setLabelCardinality("B", 20)
 
-    // A x B = 30 * 2 + 30 * (20 * 2) => 1260
-    // B x A = 20 * 2 + 20 * (30 * 2) => 1240
+    val volcano = builder
+      .setExecutionModel(VolcanoModelExecution)
+      .build()
 
-    plan._2 should equal(
-      CartesianProduct(
-        NodeByLabelScan("b", labelName("B"), Set.empty, IndexOrderNone),
-        NodeByLabelScan("a", labelName("A"), Set.empty, IndexOrderNone)
-      )
-    )
+    val batched = builder
+      .setExecutionModel(PushBatchedExecution.default)
+      .build()
+
+    val query =
+      """MATCH (a:A), (b:B)
+        |RETURN a, b
+        |""".stripMargin
+    val volcanoPlan = volcano.plan(query)
+    val batchedPlan = batched.plan(query)
+
+    // Volcano:
+    // A x B = 30 + 30 * 20 = 630
+    // B x A = 20 + 20 * 30 = 620 // winner
+
+    volcanoPlan shouldEqual volcano.planBuilder()
+      .produceResults("a", "b")
+      .cartesianProduct()
+      .|.nodeByLabelScan("a", "A")
+      .nodeByLabelScan("b", "B")
+      .build()
+
+    // Batched:
+    // A x B = 30 + 20 = 50
+    // B x A = 20 + 30 = 50
+
+    batchedPlan should (equal(batched.planBuilder()
+      .produceResults("a", "b")
+      .cartesianProduct()
+      .|.nodeByLabelScan("a", "A")
+      .nodeByLabelScan("b", "B")
+      .build()
+    ) or equal(batched.planBuilder()
+      .produceResults("a", "b")
+      .cartesianProduct()
+      .|.nodeByLabelScan("b", "B")
+      .nodeByLabelScan("a", "A")
+      .build()
+    ))
   }
 }

@@ -49,7 +49,7 @@ class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSu
                       semanticTable: SemanticTable,
                       cardinalities: Cardinalities,
                       providedOrders: ProvidedOrders,
-                      executionModel: ExecutionModel = VolcanoModelExecution): Cost = {
+                      executionModel: ExecutionModel = ExecutionModel.default): Cost = {
     CardinalityCostModel(executionModel).costFor(plan, input, semanticTable, cardinalities, providedOrders)
   }
 

@@ -20,15 +20,15 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.idp
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
-import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher.beLike
+import org.neo4j.cypher.internal.compiler.PushBatchedExecution
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.planner.logical.ExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
-import org.neo4j.cypher.internal.compiler.planner.logical.steps.BestPlans
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.LabelToken
+import org.neo4j.cypher.internal.expressions.PropertyKeyToken
 import org.neo4j.cypher.internal.ir.PlannerQueryPart
 import org.neo4j.cypher.internal.ir.Predicate
 import org.neo4j.cypher.internal.ir.QueryGraph
@@ -39,19 +39,22 @@ import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.ir.ordering.RequiredOrderCandidate
 import org.neo4j.cypher.internal.logical.plans.AllNodesScan
 import org.neo4j.cypher.internal.logical.plans.CartesianProduct
+import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
 import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
+import org.neo4j.cypher.internal.logical.plans.IndexedProperty
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexScan
+import org.neo4j.cypher.internal.logical.plans.NodeLogicalLeafPlan
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.LabelId
+import org.neo4j.cypher.internal.util.PropertyKeyId
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTNode
-import org.neo4j.cypher.internal.util.symbols.CTRelationship
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class CartesianProductsOrValueJoinsTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
@@ -73,7 +76,7 @@ class CartesianProductsOrValueJoinsTest extends CypherFunSuite with LogicalPlann
   }
 
   private def nodeIndexScan(n: String, label: String, cardinality: Double, planningAttributes: PlanningAttributes = PlanningAttributes.newAttributes): LogicalPlan = {
-    val plan = NodeIndexScan(n, LabelToken(label, LabelId(0)), Seq.empty, Set.empty, IndexOrderAscending)
+    val plan = NodeIndexScan(n, LabelToken(label, LabelId(0)), Seq(IndexedProperty(PropertyKeyToken("prop", PropertyKeyId(0)), DoNotGetValue)), Set.empty, IndexOrderAscending)
     setPlanningAttributes(QueryGraph(patternNodes = Set(n)), plan, cardinality, planningAttributes)
     plan
   }
@@ -136,19 +139,20 @@ class CartesianProductsOrValueJoinsTest extends CypherFunSuite with LogicalPlann
   }
 
   test("should plan cartesian product between lots of pattern nodes where one node ordered") {
-    val nodesWithCardinality = (0 until 3).map(i => (s"n$i", 10.0 - i)).toSet
+    val nodesWithCardinality = (0 until 3).map(i => (s"n$i", PushBatchedExecution.default.bigBatchSize * (3 - i))).toSet
     val orderedNode = "n3"
     val graph = QueryGraph()
 
     new given {
       qg = graph
     }.withLogicalPlanningContext { (cfg, context) =>
-      val kit = context.config.toKit(InterestingOrder.required(RequiredOrderCandidate.asc(varFor(orderedNode))), context)
-      val nodeIndexScanPlan = nodeIndexScan(orderedNode, "MANY", 1000.0, context.planningAttributes)
+      val interestingOrder = InterestingOrder.required(RequiredOrderCandidate.asc(varFor(orderedNode)))
+      val kit = context.config.toKit(interestingOrder, context)
+      val nodeIndexScanPlan = nodeIndexScan(orderedNode, "MANY", 10000.0, context.planningAttributes)
 
       val bestSortedPlanComponent = PlannedComponent(
         QueryGraph(patternNodes = Set(orderedNode)),
-        BestResults(nodeByLabelScan(orderedNode, "MANY", 1000.0,
+        BestResults(nodeByLabelScan(orderedNode, "MANY", 10000.0,
           context.planningAttributes),
           Some(nodeIndexScanPlan)
         ))
@@ -157,35 +161,13 @@ class CartesianProductsOrValueJoinsTest extends CypherFunSuite with LogicalPlann
         .map(plan => PlannedComponent(QueryGraph(patternNodes = plan.availableSymbols), BestResults(plan, None)))
       val plans: Set[PlannedComponent] = bestPlanComponents + bestSortedPlanComponent
 
-      val result = cartesianProductsOrValueJoins.planLotsOfCartesianProducts(plans, cfg.qg, context, kit, considerSelections = false)
+      val result = cartesianProductsOrValueJoins.planLotsOfCartesianProducts(plans, cfg.qg, interestingOrder, context, kit, considerSelections = false)
 
       // The cost of label scans is n2 < n1 < n0 < n3. Thus, this is the order we expect in the CartesianProducts.
-      result.plan.bestResult should beLike {
-         case CartesianProduct(
-                 CartesianProduct(
-                   CartesianProduct(
-                     NodeByLabelScan("n2", _, _, _),
-                     NodeByLabelScan("n1", _, _, _)
-                   ),
-                   NodeByLabelScan("n0", _, _, _)
-                 ),
-                 NodeByLabelScan("n3", _, _, _)
-         ) => ()
-      }
+      result.plan.bestResult.findByAllClass[NodeByLabelScan].map(_.idName) shouldEqual Seq("n2", "n1", "n0", "n3")
 
       // n3 needs to be on left, so that its sort order is kept. The rest should still be sorted by cost.
-      result.plan.bestResultFulfillingReq.get should beLike {
-        case CartesianProduct(
-          CartesianProduct(
-            CartesianProduct(
-              NodeIndexScan("n3", _, _, _, _),
-              NodeByLabelScan("n2", _, _, _)
-            ),
-            NodeByLabelScan("n1", _, _, _)
-          ),
-          NodeByLabelScan("n0", _, _, _)
-        ) => ()
-      }
+      result.plan.bestResultFulfillingReq.get.findByAllClass[NodeLogicalLeafPlan].map(_.idName) shouldEqual Seq("n3", "n2", "n1", "n0")
     }
   }
 

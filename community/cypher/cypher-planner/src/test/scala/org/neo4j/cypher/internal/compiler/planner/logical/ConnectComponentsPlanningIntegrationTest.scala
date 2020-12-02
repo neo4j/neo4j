@@ -31,16 +31,21 @@ import org.neo4j.cypher.internal.logical.plans.AllNodesScan
 import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.CartesianProduct
+import org.neo4j.cypher.internal.logical.plans.LeftOuterHashJoin
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexScan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.Optional
 import org.neo4j.cypher.internal.logical.plans.OptionalExpand
 import org.neo4j.cypher.internal.logical.plans.RangeQueryExpression
+import org.neo4j.cypher.internal.logical.plans.RightOuterHashJoin
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.SingleQueryExpression
 import org.neo4j.cypher.internal.logical.plans.Sort
 import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
 import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability.BOTH
+import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -52,7 +57,7 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
     super.plannerBuilder()
          .enableConnectComponentsPlanner()
 
-  test("should build cartesian product with sorted plan left for many disconnected components") {
+  test("should build cartesian product with sorted plan left for many disconnected components with cheap sorted component") {
     val nodes = (0 until COMPONENT_THRESHOLD_FOR_CARTESIAN_PRODUCT).map(i => s"(n$i:Few)").mkString(",")
     val orderedNode = s"n${COMPONENT_THRESHOLD_FOR_CARTESIAN_PRODUCT}"
 
@@ -76,30 +81,75 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
     }
   }
 
-  test("should build left deep tree of lots of disconnected components if no joins are possible ") {
+  test("should build cartesian product with Sort afterwards for many disconnected components with costly sorted component") {
+    val nodes = (0 until COMPONENT_THRESHOLD_FOR_CARTESIAN_PRODUCT).map(i => s"(n$i:Few)").mkString(",")
+    val orderedNode = s"n${COMPONENT_THRESHOLD_FOR_CARTESIAN_PRODUCT}"
+
+    val plan = plannerBuilder()
+      .setAllNodesCardinality(PushBatchedExecution.default.bigBatchSize * 2)
+      .setLabelCardinality("Few", 1)
+      .setLabelCardinality("Many", PushBatchedExecution.default.bigBatchSize * 2)
+      .addIndex("Many", Seq("prop"), 0.5, 0.01, providesOrder = BOTH)
+      .setExecutionModel(PushBatchedExecution.default) // In Volcano, the cartesian product does not get more expensive by having to provide order, so this test does not make sense there.
+      .build()
+      .plan(
+        s"""MATCH $nodes, ($orderedNode:Many)
+           |WHERE exists($orderedNode.prop)
+           |RETURN * ORDER BY $orderedNode.prop
+           |""".stripMargin)
+
+    // We want a Sort
+    plan.stripProduceResults shouldBe a[Sort]
+    // Sorted index should not be placed on the left of the cartesian products
+    plan.leftmostLeaf shouldNot beLike {
+      case NodeIndexScan(`orderedNode`, _, _, _, _) => ()
+    }
+  }
+
+  test("should build right deep tree of lots of disconnected components if no joins are possible ") {
     val c = 10
-    val labelsAndNumbers = (0 until c).map(i => (s"Label$i", i))
+    val labelsAndNumbers = (1 to c).map(i => (s"Label$i", i))
     val varsAndLabels = labelsAndNumbers.map { case (label, num) => (s"n$num", label) }
     val patterns = Random.shuffle(varsAndLabels.map { case (v, l) => s"($v:$l)" }).mkString(",")
 
-    val cfg = plannerBuilder()
-      .setAllNodesCardinality(1000)
-      .setLabelCardinalities(labelsAndNumbers.toMap.mapValues(_.toDouble))
+    val builder = plannerBuilder()
+      .setAllNodesCardinality(20000)
+      .setLabelCardinalities(labelsAndNumbers.toMap.mapValues(_.toDouble * 2000))
+
+    val volcano = builder.setExecutionModel(VolcanoModelExecution).build()
+    val batched = builder.setExecutionModel(PushBatchedExecution.default).build()
+    val query = s"MATCH $patterns RETURN n1"
+    val volcanoPlan = volcano.plan(query)
+    val batchedPlan = batched.plan(query)
+
+    val rightDeepPlan = builder.build().planBuilder()
+      .produceResults("n1")
+      .cartesianProduct()
+      .|.cartesianProduct()
+      .|.|.cartesianProduct()
+      .|.|.|.cartesianProduct()
+      .|.|.|.|.cartesianProduct()
+      .|.|.|.|.|.cartesianProduct()
+      .|.|.|.|.|.|.cartesianProduct()
+      .|.|.|.|.|.|.|.cartesianProduct()
+      .|.|.|.|.|.|.|.|.cartesianProduct()
+      .|.|.|.|.|.|.|.|.|.nodeByLabelScan("n10", "Label10")
+      .|.|.|.|.|.|.|.|.nodeByLabelScan("n9", "Label9")
+      .|.|.|.|.|.|.|.nodeByLabelScan("n8", "Label8")
+      .|.|.|.|.|.|.nodeByLabelScan("n7", "Label7")
+      .|.|.|.|.|.nodeByLabelScan("n6", "Label6")
+      .|.|.|.|.nodeByLabelScan("n5", "Label5")
+      .|.|.|.nodeByLabelScan("n4", "Label4")
+      .|.|.nodeByLabelScan("n3", "Label3")
+      .|.nodeByLabelScan("n2", "Label2")
+      .nodeByLabelScan("n1", "Label1")
       .build()
 
-    val plan = cfg.plan(s"MATCH $patterns RETURN n0")
-
-    val leftDeepPlan = varsAndLabels
-      .tail
-      .foldRight(cfg.planBuilder().produceResults(varsAndLabels.head._1)) { case ((v, label), builder) =>
-        builder
-          .cartesianProduct()
-          .|.nodeByLabelScan(v, label)
-      }
-      .nodeByLabelScan(varsAndLabels.head._1, varsAndLabels.head._2)
-      .build()
-
-    plan shouldEqual leftDeepPlan
+    // For Volcano the shape of the CP tree is not important.
+    // They all have the same cost, as long as the label scans appear in the right order from left to right in the tree.
+    volcanoPlan.findByAllClass[NodeByLabelScan].map(_.idName) shouldEqual varsAndLabels.map(_._1)
+    // For Batched, a right deep tree is always equally good or better than other tree shapes.
+    batchedPlan shouldEqual rightDeepPlan
   }
 
   test("should plan cartesian product for disconnected components") {
@@ -118,65 +168,117 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
   }
 
   test("should plan cartesian product of three plans so the cost is minimized") {
-    val cfg = plannerBuilder()
+    val builder = plannerBuilder()
       .setAllNodesCardinality(1000)
       .setLabelCardinality("A", 300)
       .setLabelCardinality("B", 200)
       .setLabelCardinality("C", 100)
-      .build()
 
-    val plan = cfg.plan(
+    val volcano = builder.setExecutionModel(VolcanoModelExecution).build()
+    val batched = builder.setExecutionModel(PushBatchedExecution.default).build()
+    val query =
       """MATCH (a:A), (b:B), (c:C)
         |RETURN a, b, c
-        |""".stripMargin)
+        |""".stripMargin
+    val volcanoPlan = volcano.plan(query)
+    val batchedPlan = batched.plan(query)
 
-    // C is cheapest so it should be furthest to the left, followed by B and A
-    // Both these variants have the same cost (cardinalities denoted with '):
-    // C x (B x A) = c + c'(b + b'a)
-    //             = c + c'b + c'b'a
-    // (C x B) x A = (c + c'b) + (c'b')a
-    //             = c + c'b + c'b'a
-    plan should (equal(cfg.planBuilder()
-                          .produceResults("a", "b", "c")
-                          .cartesianProduct()
-                          .|.cartesianProduct()
-                          .|.|.nodeByLabelScan("a", "A")
-                          .|.nodeByLabelScan("b", "B")
-                          .nodeByLabelScan("c", "C")
-                          .build()
-    ) or equal(cfg.planBuilder()
-                  .produceResults("a", "b", "c")
-                  .cartesianProduct()
-                  .|.nodeByLabelScan("a", "A")
-                  .cartesianProduct()
-                  .|.nodeByLabelScan("b", "B")
-                  .nodeByLabelScan("c", "C")
-                  .build()
+    // Volcano:
+    // A x B = 300 + 300 * 200 = 60300
+    // A x C = 300 + 300 * 100 = 30300
+    // B x A = 200 + 200 * 300 = 60200
+    // B x C = 200 + 200 * 100 = 20200
+    // C x A = 100 + 100 * 300 = 30100
+    // C x B = 100 + 100 * 200 = 20100
+
+    // A x (B x C) = 300 + 300 * 20200 = 6060300
+    // A x (C X B) = 300 + 300 * 20100 = 6030300
+    // B x (A x C) = 200 + 200 * 30300 = 6060200
+    // B x (C x A) = 200 + 200 * 30100 = 6020200
+    // C x (A x B) = 100 + 100 * 60300 = 6030100
+    // C x (B x A) = 100 + 100 * 60200 = 6020100 // winner
+    // (A x B) x C = 60300 + 60000 * 100 = 6060300
+    // (A x C) x B = 30300 + 30000 * 200 = 6030300
+    // (B x A) x C = 60200 + 60000 * 100 = 6060200
+    // (B x C) x A = 20200 + 20000 * 300 = 6020200
+    // (C x A) x B = 30100 + 30000 * 200 = 6030100
+    // (C x B) x A = 20100 + 20000 * 300 = 6020100 // winner
+    volcanoPlan should (equal(volcano.planBuilder()
+      .produceResults("a", "b", "c")
+      .cartesianProduct()
+      .|.cartesianProduct()
+      .|.|.nodeByLabelScan("a", "A")
+      .|.nodeByLabelScan("b", "B")
+      .nodeByLabelScan("c", "C")
+      .build()
+    ) or equal(volcano.planBuilder()
+      .produceResults("a", "b", "c")
+      .cartesianProduct()
+      .|.nodeByLabelScan("a", "A")
+      .cartesianProduct()
+      .|.nodeByLabelScan("b", "B")
+      .nodeByLabelScan("c", "C")
+      .build()
     ))
+
+    // Batched:
+    // A x B = 300 + 1 * 200 = 500
+    // A x C = 300 + 1 * 100 = 400
+    // B x A = 200 + 1 * 300 = 500
+    // B x C = 200 + 1 * 100 = 300
+    // C x A = 100 + 1 * 300 = 400
+    // C x B = 100 + 1 * 200 = 300
+
+    // A x (B x C) = 300 + 1 * 300 = 600 // all plans that look like _ x (_ x _) have the same cost
+    // A x (C x B) = 300 + 1 * 300 = 600
+    //...
+    // C x (B x A) = 100 + 1 * 500 = 600
+    // (A x B) x C = 500 + 59 * 100 = 59500 // all of these are more expensive
+    // ...
+    // (C x B) x A = 300 + 20 * 300 = 6200
+    batchedPlan.printLogicalPlanBuilderString()
+    batchedPlan.stripProduceResults should beLike {
+      case CartesianProduct(_: NodeByLabelScan, CartesianProduct(_: NodeByLabelScan, _: NodeByLabelScan)) => ()
+    }
   }
 
   test("should plan cartesian product of two plans so the cost is minimized") {
-    val cfg = plannerBuilder()
+    val builder = plannerBuilder()
       .setAllNodesCardinality(100)
       .setLabelCardinality("A", 30)
       .setLabelCardinality("B", 20)
-      .build()
 
-    val plan = cfg.plan(
+    val volcano = builder.setExecutionModel(VolcanoModelExecution).build()
+    val batched = builder.setExecutionModel(PushBatchedExecution.default).build()
+
+    val query =
       """MATCH (a:A), (b:B)
         |RETURN a, b
-        |""".stripMargin)
+        |""".stripMargin
 
-    // A x B = 30 * 2 + 30 * (20 * 2) => 1260
-    // B x A = 20 * 2 + 20 * (30 * 2) => 1240
+    val volcanoPlan = volcano.plan(query)
+    val batchedPlan = batched.plan(query)
 
-    plan shouldEqual (cfg.planBuilder()
-                         .produceResults("a", "b")
-                         .cartesianProduct()
-                         .|.nodeByLabelScan("a", "A")
-                         .nodeByLabelScan("b", "B")
-                         .build()
-      )
+    // Volcano:
+    // A x B = 30 + 30 * 20 = 630
+    // B x A = 20 + 20 * 30 = 620 // winner
+
+
+    volcanoPlan should equal(volcano.planBuilder()
+      .produceResults("a", "b")
+      .cartesianProduct()
+      .|.nodeByLabelScan("a", "A")
+      .nodeByLabelScan("b", "B")
+      .build()
+    )
+
+    // Batched:
+    // A x B = 30 + 1 * 20 => 50
+    // B x A = 20 + 1 * 20 => 50
+    batchedPlan.printLogicalPlanBuilderString()
+    batchedPlan.stripProduceResults should beLike {
+      case CartesianProduct(_: NodeByLabelScan, _: NodeByLabelScan) => ()
+    }
   }
 
   test("should plan nested index join of two components connected with predicates for two different nodes") {
@@ -414,28 +516,44 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
     plan.findByClass[OptionalExpand].lhs should contain(cfg.subPlanBuilder().nodeByLabelScan("n", "N").build())
   }
 
-  test("expensive optional match is solved after components are connected") {
-    val cfg = plannerBuilder()
+  test("expensive optional match is solved after components are connected for Volcano") {
+    val builder = plannerBuilder()
       .setAllNodesCardinality(100)
       .setAllRelationshipsCardinality(10000)
       .setLabelCardinality("N", 10)
       .setLabelCardinality("M", 50)
       .setRelationshipCardinality("(:N)-[]-()", 10000) // Cardinality is increased a lot by optional match
-      .build()
 
-    val plan = cfg.plan(
+    val volcano = builder.setExecutionModel(VolcanoModelExecution).build()
+    val batched = builder.setExecutionModel(PushBatchedExecution.default).build()
+
+    val query =
       """MATCH (n:N), (m:M)
         |OPTIONAL MATCH (n)-[r1]-(x)
         |RETURN n
-        |""".stripMargin)
+        |""".stripMargin
 
-    plan shouldEqual cfg.planBuilder()
-                        .produceResults("n")
-                        .optionalExpandAll("(n)-[r1]-(x)")
-                        .cartesianProduct()
-                        .|.nodeByLabelScan("m", "M")
-                        .nodeByLabelScan("n", "N")
-                        .build()
+    val volcanoPlan = volcano.plan(query)
+    val batchedPlan = batched.plan(query)
+
+    // In Volcano we want to connect the components beforedoing the expensive optional match
+    volcanoPlan shouldEqual volcano.planBuilder()
+      .produceResults("n")
+      .optionalExpandAll("(n)-[r1]-(x)")
+      .cartesianProduct()
+      .|.nodeByLabelScan("m", "M")
+      .nodeByLabelScan("n", "N")
+      .build()
+
+    // In Batched, doing the optional match on the RHS of the Cartesian Product means it only has to be executed
+    // (LHS batches * RHS rows) times, vs (LHS rows * RHS rows) times if it was executed after the Cartesian Product.
+    batchedPlan shouldEqual batched.planBuilder()
+      .produceResults("n")
+      .cartesianProduct()
+      .|.optionalExpandAll("(n)-[r1]-(x)")
+      .|.nodeByLabelScan("n", "N")
+      .nodeByLabelScan("m", "M")
+      .build()
   }
 
   test("expensive optional match is solved after cheap optional match") {
@@ -468,7 +586,7 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
   }
 
   test("cheap optional match is solved early even though it appears late in the query") {
-    val cfg = plannerBuilder()
+    val builder = plannerBuilder()
       .setAllNodesCardinality(10000)
       .setAllRelationshipsCardinality(1000)
       .setLabelCardinality("N", 10)
@@ -476,16 +594,22 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
       .setRelationshipCardinality("(:N)-[]->()", 10)
       .setRelationshipCardinality("()-[]->(:M)", 1000)
       .setRelationshipCardinality("(:N)-[]->(:M)", 10)
-      .build()
 
-    val plan = cfg.plan(
+    val volcano = builder.setExecutionModel(VolcanoModelExecution).build()
+    val batched = builder.setExecutionModel(PushBatchedExecution.default).build()
+
+
+    val query =
       """MATCH (n:N), (m:M)
         |OPTIONAL MATCH (n)-[r1]->(m)
         |OPTIONAL MATCH (n)-[r2]->(y)
         |RETURN n
-        |""".stripMargin)
+        |""".stripMargin
 
-    plan shouldEqual cfg.planBuilder()
+    val volcanoPlan = volcano.plan(query)
+    val batchedPlan = batched.plan(query)
+
+    volcanoPlan shouldEqual volcano.planBuilder()
                         .produceResults("n")
                         .optionalExpandInto("(n)-[r1]->(m)")
                         .cartesianProduct()
@@ -493,10 +617,30 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
                         .optionalExpandAll("(n)-[r2]->(y)")
                         .nodeByLabelScan("n", "N")
                         .build()
+
+    batchedPlan.printLogicalPlanBuilderString()
+    batchedPlan should (
+      equal(batched.planBuilder()
+        .produceResults("n")
+        .optionalExpandInto("(n)-[r1]->(m)")
+        .cartesianProduct()
+        .|.optionalExpandAll("(n)-[r2]->(y)")
+        .|.nodeByLabelScan("n", "N")
+        .nodeByLabelScan("m", "M")
+        .build())
+        or equal(batched.planBuilder()
+        .produceResults("n")
+        .optionalExpandInto("(n)-[r1]->(m)")
+        .cartesianProduct()
+        .|.nodeByLabelScan("m", "M")
+        .optionalExpandAll("(n)-[r2]->(y)")
+        .nodeByLabelScan("n", "N")
+        .build())
+      )
   }
 
   test("cheap optional match that requires 2 components to be connected should be solved before other components are connected") {
-    val cfg = plannerBuilder()
+    val builder = plannerBuilder()
       .setAllNodesCardinality(100)
       .setAllRelationshipsCardinality(100)
       .setLabelCardinality("N", 40)
@@ -504,15 +648,20 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
       .setLabelCardinality("O", 90)
       .setRelationshipCardinality("(:N)-[]-(:M)", 10)
       .setRelationshipCardinality("(:M)-[]-()", 10)
-      .build()
 
-    val plan = cfg.plan(
+    val volcano = builder.setExecutionModel(VolcanoModelExecution).build()
+    val batched = builder.setExecutionModel(PushBatchedExecution.default).build()
+
+    val query =
       """MATCH (n:N), (m:M), (o:O) WHERE n.prop = m.prop
         |OPTIONAL MATCH (n)-[r1]-(m)-[r2]-(x)
         |RETURN n
-        |""".stripMargin)
+        |""".stripMargin
 
-    plan shouldEqual cfg.planBuilder()
+    val volcanoPlan = volcano.plan(query)
+    val batchedPlan = batched.plan(query)
+
+    volcanoPlan shouldEqual volcano.planBuilder()
                         .produceResults("n")
                         .cartesianProduct()
                         .|.nodeByLabelScan("o", "O")
@@ -526,6 +675,39 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
                         .|.nodeByLabelScan("m", "M")
                         .nodeByLabelScan("n", "N")
                         .build()
+
+    // LHS and RHS can freely be switched in Batched, since both 200 and 90 rows are only 1 batch
+    batchedPlan should (equal (
+      batched.planBuilder()
+      .produceResults("n")
+      .cartesianProduct()
+      .|.apply()
+      .|.|.optional("n", "m")
+      .|.|.filter("not r1 = r2")
+      .|.|.expandInto("(n)-[r1]-(m)")
+      .|.|.expandAll("(m)-[r2]-(x)")
+      .|.|.argument("n", "m")
+      .|.valueHashJoin("n.prop = m.prop")
+      .|.|.nodeByLabelScan("m", "M")
+      .|.nodeByLabelScan("n", "N")
+      .nodeByLabelScan("o", "O")
+      .build()
+    ) or equal (
+      batched.planBuilder()
+        .produceResults("n")
+        .cartesianProduct()
+        .|.nodeByLabelScan("o", "O")
+        .apply()
+        .|.optional("n", "m")
+        .|.filter("not r1 = r2")
+        .|.expandInto("(n)-[r1]-(m)")
+        .|.expandAll("(m)-[r2]-(x)")
+        .|.argument("n", "m")
+        .valueHashJoin("n.prop = m.prop")
+        .|.nodeByLabelScan("m", "M")
+        .nodeByLabelScan("n", "N")
+        .build()
+    ))
   }
 
   test("when ordering by a variable introduced by an optional match, choose a plan that keeps the order from the optional match subplan") {
@@ -584,7 +766,7 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
   }
 
   test("when ordering by a variable introduced before the optional match, choose a plan that keeps the order through solving the optional match") {
-    val cfg = plannerBuilder()
+    val build = plannerBuilder()
       .setAllNodesCardinality(100)
       .setAllRelationshipsCardinality(100)
       .setLabelCardinality("N", 40)
@@ -592,29 +774,40 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
       .setLabelCardinality("O", 30)
       .setRelationshipCardinality("(:N)-[]-(:M)", 100)
       .setRelationshipCardinality("(:M)-[]-()", 100)
-      .build()
 
-    val plan = cfg.plan(
+    val volcano = build.setExecutionModel(VolcanoModelExecution).build()
+    val batched = build.setExecutionModel(PushBatchedExecution.default).build()
+
+    val query =
       """MATCH (n:N), (m:M), (o:O)
         |OPTIONAL MATCH (n)-[r1]-(m)-[r2]-(x)
         |RETURN n ORDER BY m.prop
-        |""".stripMargin)
+        |""".stripMargin
 
-    plan shouldEqual cfg.planBuilder()
-                        .produceResults("n")
-                        .cartesianProduct()
-                        .|.nodeByLabelScan("o", "O")
-                        .rightOuterHashJoin("n", "m")
-                        .|.cartesianProduct()
-                        .|.|.nodeByLabelScan("n", "N")
-                        .|.sort(Seq(Ascending("m.prop")))
-                        .|.projection("m.prop AS `m.prop`")
-                        .|.nodeByLabelScan("m", "M")
-                        .filter("not r1 = r2")
-                        .expandAll("(m)-[r1]-(n)")
-                        .expandAll("(x)-[r2]-(m)")
-                        .allNodeScan("x")
-                        .build()
+    val volcanoPlan = volcano.plan(query)
+    val batchedPlan = batched.plan(query)
+
+    def shouldPlanSortBeforeOptionalMatch(plan: LogicalPlan): Unit = {
+      sealed trait State
+      case object Init extends State
+      case object BeforeOptionalMatch extends State
+      case object SortBeforeOptionalMatch extends State
+      case object SortAfterOptionalMatch extends State
+
+      plan.treeFold[State](Init) {
+        case _: Sort => {
+          case BeforeOptionalMatch => TraverseChildren(SortBeforeOptionalMatch)
+          case _ => SkipChildren(SortAfterOptionalMatch)
+        }
+        case Apply(_, _: Optional) | _: LeftOuterHashJoin | _: RightOuterHashJoin => {
+          case Init => TraverseChildren(BeforeOptionalMatch)
+          case x => TraverseChildren(x)
+        }
+      } shouldBe SortBeforeOptionalMatch
+    }
+
+    shouldPlanSortBeforeOptionalMatch(volcanoPlan)
+    shouldPlanSortBeforeOptionalMatch(batchedPlan)
   }
 
   test("should connect many components and solve many optional matches") {
@@ -723,7 +916,7 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
       .plan(query)
 
     val batchedPlan = builder
-      .setExecutionModel(PushBatchedExecution(128, 1024))
+      .setExecutionModel(PushBatchedExecution.default)
       .build()
       .plan(query)
 
@@ -759,7 +952,7 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
       .plan(query)
 
     val batchedPlan = builder
-      .setExecutionModel(PushBatchedExecution(128, 1024))
+      .setExecutionModel(PushBatchedExecution.default)
       .build()
       .plan(query)
 

@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.test_helpers
 import java.time.Clock
 
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
+import org.neo4j.cypher.internal.compiler.ExecutionModel
 import org.neo4j.cypher.internal.compiler.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.compiler.NotImplementedPlanContext
 import org.neo4j.cypher.internal.compiler.UpdateStrategy
@@ -55,8 +56,10 @@ object ContextHelper extends MockitoSugar {
              debugOptions: CypherDebugOptions = CypherDebugOptions.default,
              clock: Clock = Clock.systemUTC(),
              logicalPlanIdGen: IdGen = new SequentialIdGen(),
-             params: MapValue = MapValue.EMPTY): PlannerContext = {
+             params: MapValue = MapValue.EMPTY,
+             executionModel: ExecutionModel = ExecutionModel.default
+            ): PlannerContext = {
     new PlannerContext(cypherExceptionFactory, tracer, notificationLogger, planContext,
-      monitors, metrics, config, queryGraphSolver, updateStrategy, debugOptions, clock, logicalPlanIdGen, new GeneratingNamer, params)
+      monitors, metrics, config, queryGraphSolver, updateStrategy, debugOptions, clock, logicalPlanIdGen, new GeneratingNamer, params, executionModel)
   }
 }

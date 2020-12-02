@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.csv.reader.Configuration.DEFAULT_LEGACY_STYLE_QUOTING
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.compiler.ExecutionModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CardinalityModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CostModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
@@ -33,7 +34,6 @@ import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
 import org.neo4j.cypher.internal.rewriting.rewriters.InnerVariableNamer
-import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.InternalNotificationLogger
 import org.neo4j.cypher.internal.util.Selectivity
 import org.neo4j.cypher.internal.util.attribution.IdGen
@@ -61,7 +61,8 @@ case class LogicalPlanningContext(planContext: PlanContext,
                                    * E.g. WITH n.prop1 AS prop RETURN min(prop), count(m.prop2) => Set(("n", "prop1"), ("m", "prop2"))
                                    */
                                   aggregatingProperties: Set[(String, String)] = Set.empty,
-                                  idGen: IdGen) {
+                                  idGen: IdGen,
+                                  executionModel: ExecutionModel) {
   def withStrictness(strictness: StrictnessMode): LogicalPlanningContext =
     copy(input = input.withPreferredStrictness(strictness))
 

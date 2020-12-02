@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.ExecutionModel
 import org.neo4j.cypher.internal.compiler.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.compiler.NotImplementedPlanContext
-import org.neo4j.cypher.internal.compiler.VolcanoModelExecution
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanResolver
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
@@ -64,7 +63,7 @@ object StatisticsBackedLogicalPlanningConfigurationBuilder {
   case class Options(
     debug: CypherDebugOptions = CypherDebugOptions(Set.empty),
     connectComponentsPlanner: Boolean = false,
-    executionModel: ExecutionModel = VolcanoModelExecution,
+    executionModel: ExecutionModel = ExecutionModel.default,
   )
 }
 
@@ -364,6 +363,7 @@ class StatisticsBackedLogicalPlanningConfiguration(
       config = cypherCompilerConfig,
       logicalPlanIdGen = idGen,
       debugOptions = options.debug,
+      executionModel = options.executionModel
     )
     val state = InitialState(queryString, None, IDPPlannerName)
     LogicalPlanningTestSupport2.pipeLine().transform(state, context)

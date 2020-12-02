@@ -26,7 +26,6 @@ import org.neo4j.cypher.internal.compiler.ExecutionModel
 import org.neo4j.cypher.internal.compiler.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.compiler.NotImplementedPlanContext
 import org.neo4j.cypher.internal.compiler.StatsDivergenceCalculator
-import org.neo4j.cypher.internal.compiler.VolcanoModelExecution
 import org.neo4j.cypher.internal.compiler.phases.CompilationPhases.ParsingConfig
 import org.neo4j.cypher.internal.compiler.phases.CompilationPhases.parsing
 import org.neo4j.cypher.internal.compiler.phases.CompilationPhases.planPipeLine
@@ -266,7 +265,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
                           queryGraphSolver: QueryGraphSolver = queryGraphSolver,
                           stripProduceResults: Boolean = true): (Option[PeriodicCommit], LogicalPlan, SemanticTable, PlanningAttributes) = {
       val exceptionFactory = Neo4jCypherExceptionFactory(queryString, Some(pos))
-      val metrics = metricsFactory.newMetrics(planContext.statistics, mock[ExpressionEvaluator], config, VolcanoModelExecution)
+      val metrics = metricsFactory.newMetrics(planContext.statistics, mock[ExpressionEvaluator], config, ExecutionModel.default)
       def context = ContextHelper.create(planContext = planContext,
         cypherExceptionFactory = exceptionFactory,
         queryGraphSolver = queryGraphSolver,
@@ -285,7 +284,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     }
 
     def withLogicalPlanningContext[T](f: (C, LogicalPlanningContext) => T): T = {
-      val metrics = metricsFactory.newMetrics(config.graphStatistics, mock[ExpressionEvaluator], cypherCompilerConfig, VolcanoModelExecution)
+      val metrics = metricsFactory.newMetrics(config.graphStatistics, mock[ExpressionEvaluator], cypherCompilerConfig, ExecutionModel.default)
       val planningAttributes = PlanningAttributes.newAttributes
       val logicalPlanProducer = LogicalPlanProducer(metrics.cardinality, planningAttributes, idGen)
       val ctx = LogicalPlanningContext(
@@ -299,14 +298,14 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         costComparisonListener = devNullListener,
         planningAttributes = planningAttributes,
         innerVariableNamer = innerVariableNamer,
-        idGen = idGen
-      )
+        idGen = idGen,
+        executionModel = ExecutionModel.default)
       f(config, ctx)
     }
 
 
     def withLogicalPlanningContextWithFakeAttributes[T](f: (C, LogicalPlanningContext) => T): T = {
-      val metrics = metricsFactory.newMetrics(config.graphStatistics, mock[ExpressionEvaluator], cypherCompilerConfig, VolcanoModelExecution)
+      val metrics = metricsFactory.newMetrics(config.graphStatistics, mock[ExpressionEvaluator], cypherCompilerConfig, ExecutionModel.default)
       val planningAttributes = newStubbedPlanningAttributes
       val logicalPlanProducer = LogicalPlanProducer(metrics.cardinality, planningAttributes, idGen)
       val ctx = LogicalPlanningContext(
@@ -320,8 +319,8 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         costComparisonListener = devNullListener,
         planningAttributes = planningAttributes,
         innerVariableNamer = innerVariableNamer,
-        idGen = idGen
-      )
+        idGen = idGen,
+        executionModel = ExecutionModel.default)
       f(config, ctx)
     }
   }

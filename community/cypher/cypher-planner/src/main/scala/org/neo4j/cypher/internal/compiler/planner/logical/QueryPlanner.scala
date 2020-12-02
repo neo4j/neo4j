@@ -82,7 +82,8 @@ case object QueryPlanner
       costComparisonListener = costComparisonListener,
       planningAttributes = planningAttributes,
       innerVariableNamer = context.innerVariableNamer,
-      idGen = context.logicalPlanIdGen
+      idGen = context.logicalPlanIdGen,
+      executionModel = context.executionModel
     )
 
     // Not using from.returnColumns, since they are the original ones given by the user,

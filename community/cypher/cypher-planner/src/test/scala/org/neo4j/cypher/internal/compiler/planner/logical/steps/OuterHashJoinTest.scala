@@ -23,7 +23,7 @@ import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.ast.Hint
 import org.neo4j.cypher.internal.ast.UsingJoinHint
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
-import org.neo4j.cypher.internal.compiler.VolcanoModelExecution
+import org.neo4j.cypher.internal.compiler.ExecutionModel
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.planner.logical.ExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
@@ -60,7 +60,7 @@ class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport w
 
     val factory = newMockedMetricsFactory
 
-    when(factory.newCostModel(config, VolcanoModelExecution)).thenReturn((plan: LogicalPlan, _: QueryGraphSolverInput, _: SemanticTable, _: Cardinalities, _: ProvidedOrders) => plan match {
+    when(factory.newCostModel(config, ExecutionModel.default)).thenReturn((plan: LogicalPlan, _: QueryGraphSolverInput, _: SemanticTable, _: Cardinalities, _: ProvidedOrders) => plan match {
       case AllNodesScan(`bNode`, _) => Cost(1) // Make sure we start the inner plan using b
       case _ => Cost(1000)
     })
@@ -69,7 +69,7 @@ class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport w
 
     val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext(),
-      metrics = factory.newMetrics(hardcodedStatistics, mock[ExpressionEvaluator], config, VolcanoModelExecution),
+      metrics = factory.newMetrics(hardcodedStatistics, mock[ExpressionEvaluator], config, ExecutionModel.default),
       strategy = newMockedStrategy(innerPlan))
     val left = newMockedLogicalPlanWithPatterns(context.planningAttributes, idNames = Set(aNode))
     val plans = outerHashJoin(optionalQg, left, InterestingOrder.empty, context).toSeq
@@ -91,7 +91,7 @@ class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport w
     )
 
     val factory = newMockedMetricsFactory
-    when(factory.newCostModel(config, VolcanoModelExecution)).thenReturn((plan: LogicalPlan, _: QueryGraphSolverInput, _: SemanticTable, _: Cardinalities, _: ProvidedOrders) => plan match {
+    when(factory.newCostModel(config, ExecutionModel.default)).thenReturn((plan: LogicalPlan, _: QueryGraphSolverInput, _: SemanticTable, _: Cardinalities, _: ProvidedOrders) => plan match {
       case AllNodesScan(`bNode`, _) => Cost(1) // Make sure we start the inner plan using b
       case _ => Cost(1000)
     })
@@ -100,7 +100,7 @@ class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport w
 
     val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext(),
-      metrics = factory.newMetrics(hardcodedStatistics, mock[ExpressionEvaluator], config, VolcanoModelExecution),
+      metrics = factory.newMetrics(hardcodedStatistics, mock[ExpressionEvaluator], config, ExecutionModel.default),
       strategy = newMockedStrategy(innerPlan))
     val left = newMockedLogicalPlanWithPatterns(context.planningAttributes, Set(aNode))
     val plans = outerHashJoin(optionalQg, left, InterestingOrder.empty, context).toSeq
@@ -125,7 +125,7 @@ class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport w
     )
 
     val factory = newMockedMetricsFactory
-    when(factory.newCostModel(config, VolcanoModelExecution)).thenReturn((plan: LogicalPlan, _: QueryGraphSolverInput, _: SemanticTable, _: Cardinalities, _: ProvidedOrders) => plan match {
+    when(factory.newCostModel(config, ExecutionModel.default)).thenReturn((plan: LogicalPlan, _: QueryGraphSolverInput, _: SemanticTable, _: Cardinalities, _: ProvidedOrders) => plan match {
       case AllNodesScan(`bNode`, _) => Cost(1) // Make sure we start the inner plan using b
       case _ => Cost(1000)
     })
@@ -135,7 +135,7 @@ class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport w
 
     val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext(),
-      metrics = factory.newMetrics(hardcodedStatistics, mock[ExpressionEvaluator], config, VolcanoModelExecution),
+      metrics = factory.newMetrics(hardcodedStatistics, mock[ExpressionEvaluator], config, ExecutionModel.default),
       strategy = newMockedStrategyWithSortedPlan(unorderedPlan, orderedPlan))
     val left = newMockedLogicalPlanWithPatterns(context.planningAttributes, idNames = Set(aNode))
     val io = InterestingOrder.required(RequiredOrderCandidate.asc(varFor(bNode)))

@@ -59,7 +59,8 @@ class PlannerContext(val cypherExceptionFactory: CypherExceptionFactory,
                      val clock: Clock,
                      val logicalPlanIdGen: IdGen,
                      val innerVariableNamer: InnerVariableNamer,
-                     val params: MapValue) extends BaseContext {
+                     val params: MapValue,
+                     val executionModel: ExecutionModel) extends BaseContext {
 
   override val errorHandler: Seq[SemanticErrorDef] => Unit =
     SyntaxExceptionCreator.throwOnError(cypherExceptionFactory)
@@ -97,6 +98,6 @@ object PlannerContextCreator extends ContextCreator[PlannerContext] {
       metricsFactory.newMetrics(planContext.statistics, evaluator, config, executionModel)
 
     new PlannerContext(exceptionFactory, tracer, notificationLogger, planContext,
-      monitors, metrics, config, queryGraphSolver, updateStrategy, debugOptions, clock, logicalPlanIdGen, innerVariableNamer, params)
+      monitors, metrics, config, queryGraphSolver, updateStrategy, debugOptions, clock, logicalPlanIdGen, innerVariableNamer, params, executionModel)
   }
 }

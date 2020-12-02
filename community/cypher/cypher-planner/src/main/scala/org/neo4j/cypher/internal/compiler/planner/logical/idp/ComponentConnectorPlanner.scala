@@ -70,7 +70,7 @@ case class ComponentConnectorPlanner(singleComponentPlanner: SingleComponentPlan
         // If there are no predicates left to be solved, that also means no joins are possible (because they would need to join on a predicate).
         // Also, the order of cartesian products does not need a search algorithm, since no Selections can be put in-between.
         // The best plan is a simple left-deep tree of cartesian products.
-        planLotsOfCartesianProducts(components, queryGraph, context, kit, considerSelections = false).plan
+        planLotsOfCartesianProducts(components, queryGraph, interestingOrder, context, kit, considerSelections = false).plan
       }
     } else {
       connectWithIDP(components, queryGraph, interestingOrder, context, kit)

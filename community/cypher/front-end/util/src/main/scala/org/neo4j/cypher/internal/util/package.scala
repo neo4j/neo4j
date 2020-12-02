@@ -19,4 +19,5 @@ package org.neo4j.cypher.internal
 package object util {
   type Rewriter = AnyRef => AnyRef
   type RewriterWithArgs = ((AnyRef, Seq[AnyRef])) => AnyRef
+  type CartesianOrdering = Ordering[(Cost, Cardinality)]
 }

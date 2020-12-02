@@ -80,6 +80,7 @@ class CypherQueryObfuscatorFactory {
       null,
       null,
       null,
+      null,
       null)
 
   private object PlanContextWithProceduresRegistry extends PlanContext {

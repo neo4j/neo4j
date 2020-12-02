@@ -34,7 +34,6 @@ import org.neo4j.cypher.internal.compiler.ExecutionModel
 import org.neo4j.cypher.internal.compiler.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.compiler.StatsDivergenceCalculator
 import org.neo4j.cypher.internal.compiler.TestSignatureResolvingPlanContext
-import org.neo4j.cypher.internal.compiler.VolcanoModelExecution
 import org.neo4j.cypher.internal.compiler.phases.CreatePlannerQuery
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.RewriteProcedureCalls
@@ -141,7 +140,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
   }
 
   def newSimpleMetrics(stats: GraphStatistics = newMockedGraphStatistics) =
-    newMetricsFactory.newMetrics(stats, newExpressionEvaluator, config, VolcanoModelExecution)
+    newMetricsFactory.newMetrics(stats, newExpressionEvaluator, config, ExecutionModel.default)
 
   def newMockedGraphStatistics = mock[GraphStatistics]
 
@@ -212,7 +211,8 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
                                       cardinality: Cardinality = Cardinality(1),
                                       strictness: Option[StrictnessMode] = None,
                                       notificationLogger: InternalNotificationLogger = devNullLogger,
-                                      useErrorsOverWarnings: Boolean = false): LogicalPlanningContext = {
+                                      useErrorsOverWarnings: Boolean = false
+                                     ): LogicalPlanningContext = {
     val planningAttributes = PlanningAttributes.newAttributes
     LogicalPlanningContext(planContext, LogicalPlanProducer(metrics.cardinality, planningAttributes, idGen), metrics, semanticTable,
       strategy, QueryGraphSolverInput(Map.empty, cardinality, strictness),
@@ -220,7 +220,8 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
       legacyCsvQuoteEscaping = config.legacyCsvQuoteEscaping, config = QueryPlannerConfiguration.default, costComparisonListener = devNullListener,
       planningAttributes = planningAttributes,
       innerVariableNamer = innerVariableNamer,
-      idGen = idGen)
+      idGen = idGen,
+      executionModel = ExecutionModel.default)
   }
 
   def newMockedLogicalPlanningContextWithFakeAttributes(planContext: PlanContext,
@@ -239,7 +240,8 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
       config = QueryPlannerConfiguration.default, costComparisonListener = devNullListener,
       planningAttributes = planningAttributes,
       innerVariableNamer = innerVariableNamer,
-      idGen = idGen)
+      idGen = idGen,
+      executionModel = ExecutionModel.default)
   }
 
   def newMockedStatistics: InstrumentedGraphStatistics = mock[InstrumentedGraphStatistics]
