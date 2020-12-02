@@ -19,6 +19,8 @@
  */
 package org.neo4j.internal.batchimport.input;
 
+import static java.lang.String.format;
+
 /**
  * Collects items and is {@link #close() closed} after any and all items have been collected.
  * The {@link Collector} is responsible for closing whatever closeable resource received from the importer.
@@ -76,6 +78,47 @@ public interface Collector extends AutoCloseable
         public boolean isCollectingBadRelationships()
         {
             return true;
+        }
+    };
+
+    Collector STRICT = new Collector()
+    {
+        @Override
+        public void collectExtraColumns( String source, long row, String value )
+        {
+            throw new IllegalStateException( format( "Bad extra column '%s' index:%d in '%s'", value, row, source ) );
+        }
+
+        @Override
+        public void close()
+        {
+        }
+
+        @Override
+        public long badEntries()
+        {
+            return 0;
+        }
+
+        @Override
+        public void collectBadRelationship( Object startId, String startIdGroup, String type, Object endId, String endIdGroup,
+                Object specificValue )
+        {
+            throw new IllegalStateException(
+                    format( "Bad relationship (%s:%s)-[%s]->(%s:%s) %s", startId, startIdGroup, type, endId, endIdGroup, specificValue ) );
+        }
+
+        @Override
+        public void collectDuplicateNode( Object id, long actualId, String group )
+        {
+            throw new IllegalStateException(
+                    format( "Bad duplicate node %s:%s id:%d", id, group, actualId ) );
+        }
+
+        @Override
+        public boolean isCollectingBadRelationships()
+        {
+            return false;
         }
     };
 }
