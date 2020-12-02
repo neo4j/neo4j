@@ -41,6 +41,8 @@ import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.SeekableArgs
+import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.NodeNameGenerator
 
 case class idSeekLeafPlanner(skipIDs: Set[String]) extends LeafPlanner with LeafPlanFromExpression {
 
@@ -60,11 +62,24 @@ case class idSeekLeafPlanner(skipIDs: Set[String]) extends LeafPlanner with Leaf
         if (skipIDs.contains(id)) None
         else {
           qg.patternRelationships.find(_.name == id) match {
+            case Some(relationship) if relationship.coveredIds.intersect(qg.argumentIds).isEmpty =>
+              val types = relationship.types.toList
+              val seekPlan = planRelationshipByIdSeek(relationship, relationship.nodes, idValues, Seq(predicate), qg.argumentIds, context)
+              Some(LeafPlansForVariable(id, Set(planRelTypeFilter(seekPlan, variable, types, context))))
+
+            // if start/end node variables are already bound, generate new variable names and plan a Selection after the seek
             case Some(relationship) =>
               val types = relationship.types.toList
-              val seekPlan = planRelationshipByIdSeek(relationship, idValues, Seq(predicate), qg.argumentIds, context)
-              Some(LeafPlansForVariable(id, Set(planRelTypeFilter(seekPlan, variable, types, context))))
-            case None               =>
+              val oldNodes = relationship.nodes
+              val newNodes = generateNewStartEndNodes(oldNodes, qg.argumentIds, variable.position)
+              val nodePredicates = buildNodePredicates(oldNodes, newNodes)
+
+              val seekPlan = planRelationshipByIdSeek(relationship, newNodes, idValues, Seq(predicate), qg.argumentIds, context)
+              val relTypeSelectionPlan = planRelTypeFilter(seekPlan, variable, types, context)
+              val nodesSelectionPlan = context.logicalPlanProducer.planHiddenSelection(nodePredicates, relTypeSelectionPlan, context)
+              Some(LeafPlansForVariable(id, Set(nodesSelectionPlan)))
+
+            case None =>
               val plan = context.logicalPlanProducer.planNodeByIdSeek(variable, idValues, Seq(predicate), qg.argumentIds, context)
               Some(LeafPlansForVariable(id, Set(plan)))
           }
@@ -76,11 +91,12 @@ case class idSeekLeafPlanner(skipIDs: Set[String]) extends LeafPlanner with Leaf
     queryGraph.selections.flatPredicates.flatMap(e => producePlanFor(e, queryGraph, interestingOrder, context).toSeq.flatMap(_.plans))
 
   private def planRelationshipByIdSeek(relationship: PatternRelationship,
+                                       nodes: (String, String),
                                        idValues: SeekableArgs,
                                        predicates: Seq[Expression],
                                        argumentIds: Set[String],
                                        context: LogicalPlanningContext): LogicalPlan = {
-    val (left, right) = relationship.nodes
+    val (left, right) = nodes
     val name = relationship.name
     relationship.dir match {
       case BOTH     => context.logicalPlanProducer.planUndirectedRelationshipByIdSeek(name, idValues, left, right, relationship, argumentIds, predicates, context)
@@ -112,4 +128,31 @@ case class idSeekLeafPlanner(skipIDs: Set[String]) extends LeafPlanner with Leaf
 
   private def typeOfRelExpr(idExpr: Variable) =
     FunctionInvocation(FunctionName("type")(idExpr.position), idExpr)(idExpr.position)
+
+  private def generateNewStartEndNodes(oldNodes: (String, String),
+                                       argumentIds: Set[String],
+                                       pos: InputPosition): (String, String) = {
+    val (left, right) = oldNodes
+    val newLeft = if (!argumentIds.contains(left)) left else NodeNameGenerator.name(pos.bumped())
+    val newRight = if (!argumentIds.contains(right)) right else NodeNameGenerator.name(pos.bumped().bumped())
+    (newLeft, newRight)
+  }
+
+  private def buildNodePredicates(oldNodes: (String, String), newNodes: (String, String)): Seq[Equals] = {
+    def pred(oldName: String, newName: String) = {
+      if (oldName == newName) Seq.empty
+      else {
+        val pos = InputPosition.NONE
+        Seq(Equals(
+          Variable(oldName)(pos),
+          Variable(newName)(pos)
+        )(pos))
+      }
+    }
+
+    val (oldLeft, oldRight) = oldNodes
+    val (newLeft, newRight) = newNodes
+
+    pred(oldLeft, newLeft) ++ pred(oldRight, newRight)
+  }
 }

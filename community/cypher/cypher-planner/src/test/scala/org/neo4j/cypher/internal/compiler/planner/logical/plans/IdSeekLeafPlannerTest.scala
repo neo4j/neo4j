@@ -23,6 +23,7 @@ import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.ast.ASTAnnotationMap
 import org.neo4j.cypher.internal.ast.semantics.ExpressionTypeInfo
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.planner.logical.ExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
@@ -43,6 +44,7 @@ import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.util.Cost
+import org.neo4j.cypher.internal.util.NodeNameGenerator
 import org.neo4j.cypher.internal.util.RelTypeId
 import org.neo4j.cypher.internal.util.symbols
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -275,7 +277,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     )
   }
 
-  test("simple undirected multi-typed relationship by id seek with  a collection of relationship ids") {
+  test("simple undirected multi-typed relationship by id seek with a collection of relationship ids") {
     // given
     val expr = in(id(varFor("r")), listOfInt(42))
     val from = "from"
@@ -321,5 +323,76 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
         ),
         UndirectedRelationshipByIdSeek("r", ManySeekableArgs(listOfInt(42)), from, end, Set.empty)
       )))
+  }
+
+  test("simple directed relationship by id seek with a collection of relationship ids, start node already bound") {
+    // given
+    val rel = varFor("r")
+    val expr = in(id(rel), listOf(Seq(42, 43, 43).map(literalUnsignedInt):_*))
+    val from = "from"
+    val end = "to"
+    val patternRel = PatternRelationship("r", (from, end), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
+    val qg = QueryGraph(
+      selections = Selections(Set(Predicate(Set("r"), expr))),
+      patternNodes = Set(from, end),
+      patternRelationships = Set(patternRel),
+      argumentIds = Set(from)
+    )
+
+    val factory = newMockedMetricsFactory
+    when(factory.newCostModel(config)).thenReturn((plan: LogicalPlan, _: QueryGraphSolverInput, _: SemanticTable, _: Cardinalities) => plan match {
+      case _: DirectedRelationshipByIdSeek => Cost(1)
+      case _                               => Cost(Double.MaxValue)
+    })
+    val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext(), metrics = factory.newMetrics(statistics, evaluator, config))
+    when(context.semanticTable.isRelationship(rel)).thenReturn(true)
+
+    // when
+    val resultPlans = idSeekLeafPlanner(Set.empty)(qg, InterestingOrder.empty, context)
+
+    // then
+    val newFrom = NodeNameGenerator.name(rel.position.bumped())
+    val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
+      .filter(s"from = `$newFrom`")
+      .directedRelationshipByIdSeek("r", newFrom, end, Set(from), 42, 43, 43)
+      .build()
+
+    resultPlans shouldEqual Seq(expectedPlan)
+  }
+
+  test("simple directed relationship by id seek with a collection of relationship ids, start and end nodes already bound") {
+    // given
+    val rel = varFor("r")
+    val expr = in(id(rel), listOf(Seq(42, 43, 43).map(literalUnsignedInt):_*))
+    val from = "from"
+    val end = "to"
+    val patternRel = PatternRelationship("r", (from, end), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
+    val qg = QueryGraph(
+      selections = Selections(Set(Predicate(Set("r"), expr))),
+      patternNodes = Set(from, end),
+      patternRelationships = Set(patternRel),
+      argumentIds = Set(from, end)
+    )
+
+    val factory = newMockedMetricsFactory
+    when(factory.newCostModel(config)).thenReturn((plan: LogicalPlan, _: QueryGraphSolverInput, _: SemanticTable, _: Cardinalities) => plan match {
+      case _: DirectedRelationshipByIdSeek => Cost(1)
+      case _                               => Cost(Double.MaxValue)
+    })
+    val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext(), metrics = factory.newMetrics(statistics, evaluator, config))
+    when(context.semanticTable.isRelationship(rel)).thenReturn(true)
+
+    // when
+    val resultPlans = idSeekLeafPlanner(Set.empty)(qg, InterestingOrder.empty, context)
+
+    // then
+    val newFrom = NodeNameGenerator.name(rel.position.bumped())
+    val newEnd = NodeNameGenerator.name(rel.position.bumped().bumped())
+    val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
+      .filter(s"$from = `$newFrom`", s"$end = `$newEnd``")
+      .directedRelationshipByIdSeek("r", newFrom, newEnd, Set(from, end), 42, 43, 43)
+      .build()
+
+    resultPlans shouldEqual Seq(expectedPlan)
   }
 }
