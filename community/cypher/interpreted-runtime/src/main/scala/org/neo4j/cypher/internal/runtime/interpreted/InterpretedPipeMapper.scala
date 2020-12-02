@@ -50,6 +50,7 @@ import org.neo4j.cypher.internal.logical.plans.DropResult
 import org.neo4j.cypher.internal.logical.plans.Eager
 import org.neo4j.cypher.internal.logical.plans.EmptyResult
 import org.neo4j.cypher.internal.logical.plans.ErrorPlan
+import org.neo4j.cypher.internal.logical.plans.ExhaustiveLimit
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.ExpandInto
@@ -152,6 +153,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.EagerAggregationPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.EagerPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.EmptyResultPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.ErrorPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExhaustiveLimitPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExpandAllPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExpandIntoPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.FilterPipe
@@ -440,6 +442,9 @@ case class InterpretedPipeMapper(readOnly: Boolean,
 
       case Limit(_, count) =>
         LimitPipe(source, buildExpression(count))(id = id)
+
+      case ExhaustiveLimit(_, count) =>
+        ExhaustiveLimitPipe(source, buildExpression(count))(id = id)
 
       case Aggregation(_, groupingExpressions, aggregatingExpressions) if aggregatingExpressions.isEmpty =>
         val projection = groupingExpressions.map {

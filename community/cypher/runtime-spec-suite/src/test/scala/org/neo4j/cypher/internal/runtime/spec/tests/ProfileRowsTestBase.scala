@@ -1696,6 +1696,117 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
   }
 }
 
+trait EagerLimitProfileRowsTestBase[CONTEXT <: RuntimeContext] {
+  self: ProfileRowsTestBase[CONTEXT] =>
+
+  test("should profile rows with exhaustive limit + expand") {
+    val nodeCount = sizeHint * 10
+    given {
+      circleGraph(nodeCount)
+    }
+
+    val limitSize = sizeHint * 2L
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .expand("(x)-->(y)")
+      .exhaustiveLimit(limitSize)
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(0).rows() shouldBe limitSize // produce results
+    queryProfile.operatorProfile(1).rows() shouldBe limitSize // expand
+    queryProfile.operatorProfile(2).rows() shouldBe limitSize // exhaustive limit
+    queryProfile.operatorProfile(3).rows() shouldBe nodeCount // all node scan
+  }
+
+  test("should profile rows with exhaustive limit + expand on RHS of Apply") {
+    val nodeCount = sizeHint * 10
+    given {
+      circleGraph(nodeCount)
+    }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .apply()
+      .|.exhaustiveLimit(1)
+      .|.expand("(x)--(y)")
+      .|.argument("x")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(0).rows() shouldBe nodeCount // produce results
+    queryProfile.operatorProfile(1).rows() shouldBe nodeCount // apply
+    queryProfile.operatorProfile(2).rows() shouldBe nodeCount // exhaustive limit
+    queryProfile.operatorProfile(3).rows() shouldBe 2 * nodeCount // expand
+    queryProfile.operatorProfile(4).rows() shouldBe nodeCount // argument
+    queryProfile.operatorProfile(5).rows() shouldBe nodeCount  // all node scan
+  }
+
+  test("should profile rows with exhaustive limit + expand on RHS of ConditionalApply non-nullable") {
+    val nodeCount = sizeHint
+    given {
+      circleGraph(nodeCount)
+    }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .conditionalApply("x")
+      .|.exhaustiveLimit(1)
+      .|.expand("(x)--(y)")
+      .|.argument("x")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(0).rows() shouldBe nodeCount // produce results
+    queryProfile.operatorProfile(1).rows() shouldBe nodeCount // conditionalApply
+    queryProfile.operatorProfile(2).rows() shouldBe nodeCount // exhaustive limit
+    queryProfile.operatorProfile(3).rows() shouldBe 2L*nodeCount // expand
+    queryProfile.operatorProfile(4).rows() shouldBe nodeCount // argument
+    queryProfile.operatorProfile(5).rows() shouldBe nodeCount  // all node scan for x
+  }
+
+  test("should profile rows with exhaustive limit (fused pipelines)") {
+    // given
+    val nodesPerLabel = 20
+    given {bipartiteGraph(nodesPerLabel, "A", "B", "R")}
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nonFuseable()
+      .expand("(x)-[r]->(y)")
+      .exhaustiveLimit(1)
+      .nodeByLabelScan("x", "A")
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(0).rows() shouldBe nodesPerLabel// produce results
+    queryProfile.operatorProfile(1).rows() shouldBe nodesPerLabel// nonFuseable
+    queryProfile.operatorProfile(2).rows() shouldBe nodesPerLabel // expand
+    queryProfile.operatorProfile(3).rows() shouldBe 1 // exhaustive limit
+    queryProfile.operatorProfile(4).rows() shouldBe nodesPerLabel // nodeByLabelScan
+  }
+}
+
 trait NonParallelProfileRowsTestBase[CONTEXT <: RuntimeContext] {
   self: ProfileRowsTestBase[CONTEXT] =>
 
