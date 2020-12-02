@@ -22,7 +22,7 @@
 
 Feature: ReturnAcceptance
 
-  Scenario: LIMIT 0 should stop side effects
+  Scenario: LIMIT 0 should not stop side effects
     Given an empty graph
     When executing query:
       """
@@ -32,7 +32,8 @@ Feature: ReturnAcceptance
       """
     Then the result should be, in any order:
       | n |
-    And no side effects
+    And the side effects should be:
+      | +nodes      | 1 |
 
   Scenario: Accessing a list with null should return null
     Given any graph
