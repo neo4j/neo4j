@@ -22,13 +22,10 @@ package org.neo4j.kernel.impl.storemigration;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.collections.impl.factory.Sets;
 
-import java.io.BufferedOutputStream;
 import java.io.Closeable;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -50,9 +47,7 @@ import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.batchimport.ImportLogic;
 import org.neo4j.internal.batchimport.InputIterable;
 import org.neo4j.internal.batchimport.InputIterator;
-import org.neo4j.internal.batchimport.input.BadCollector;
 import org.neo4j.internal.batchimport.input.Collector;
-import org.neo4j.internal.batchimport.input.Collectors;
 import org.neo4j.internal.batchimport.input.IdType;
 import org.neo4j.internal.batchimport.input.Input;
 import org.neo4j.internal.batchimport.input.Input.Estimates;
@@ -440,10 +435,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
     {
         prepareBatchImportMigration( sourceDirectoryStructure, migrationDirectoryStructure, oldFormat, newFormat );
 
-        Path badFile = sourceDirectoryStructure.file( BadCollector.BAD_FILE_NAME );
-        try ( NeoStores legacyStore = instantiateLegacyStore( oldFormat, sourceDirectoryStructure );
-              OutputStream badOutput = new BufferedOutputStream( Files.newOutputStream( badFile ) );
-              Collector badCollector = Collectors.badCollector( badOutput, 0 ) )
+        try ( NeoStores legacyStore = instantiateLegacyStore( oldFormat, sourceDirectoryStructure ) )
         {
             Configuration importConfig = new Configuration.Overridden( defaultConfiguration( sourceDirectoryStructure.databaseDirectory() ), config );
             AdditionalInitialIds additionalInitialIds =
@@ -453,7 +445,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
             BatchImporter importer = batchImporterFactory.instantiate(
                     migrationDirectoryStructure, fileSystem, pageCache, cacheTracer, importConfig, logService,
                     withDynamicProcessorAssignment( migrationBatchImporterMonitor( legacyStore, progressReporter,
-                            importConfig ), importConfig ), additionalInitialIds, config, newFormat, ImportLogic.NO_MONITOR, jobScheduler, badCollector,
+                            importConfig ), importConfig ), additionalInitialIds, config, newFormat, ImportLogic.NO_MONITOR, jobScheduler, Collector.STRICT,
                     LogFilesInitializer.NULL, memoryTracker );
             InputIterable nodes = () -> legacyNodesAsInput( legacyStore, requiresPropertyMigration, cacheTracer, memoryTracker );
             InputIterable relationships = () -> legacyRelationshipsAsInput( legacyStore, requiresPropertyMigration, cacheTracer, memoryTracker );
