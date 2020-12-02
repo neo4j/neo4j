@@ -91,7 +91,8 @@ public class DatabaseMigrator
         LogsUpgrader logsUpgrader = new LogsUpgrader(
                 fs, storageEngineFactory, databaseLayout, pageCache, legacyLogsLocator, config, dependencyResolver, pageCacheTracer, memoryTracker,
                 databaseHealth, forceUpgrade );
-        VisibleMigrationProgressMonitor progress = new VisibleMigrationProgressMonitor( logService.getUserLog( DatabaseMigrator.class ) );
+        Log userLog = logService.getUserLog( DatabaseMigrator.class );
+        VisibleMigrationProgressMonitor progress = new VisibleMigrationProgressMonitor( userLog );
         LogProvider logProvider = logService.getInternalLogProvider();
         StoreUpgrader storeUpgrader = new StoreUpgrader( versionCheck, progress, config, fs, logProvider, logsUpgrader, pageCacheTracer );
 
@@ -101,9 +102,8 @@ public class DatabaseMigrator
         storeParticipants.forEach( storeUpgrader::addParticipant );
 
         IndexProviderMap indexProviderMap = dependencyResolver.resolveDependency( IndexProviderMap.class );
-        Log userLog = logService.getUserLog( IndexConfigMigrator.class );
-        IndexConfigMigrator indexConfigMigrator = new IndexConfigMigrator(
-                fs, config, pageCache, logService, storageEngineFactory, indexProviderMap, userLog, pageCacheTracer, memoryTracker );
+        IndexConfigMigrator indexConfigMigrator = new IndexConfigMigrator( fs, config, pageCache, logService, storageEngineFactory, indexProviderMap,
+                logService.getUserLog( IndexConfigMigrator.class ), pageCacheTracer, memoryTracker );
         storeUpgrader.addParticipant( indexConfigMigrator );
 
         IndexProviderMigrator indexProviderMigrator = new IndexProviderMigrator(
@@ -113,6 +113,14 @@ public class DatabaseMigrator
         // Do individual index provider migration last because they may delete files that we need in earlier steps.
         indexProviderMap.accept( provider -> storeUpgrader.addParticipant( provider.storeMigrationParticipant( fs, pageCache, storageEngineFactory ) ) );
 
-        storeUpgrader.migrateIfNeeded( databaseLayout, forceUpgrade );
+        try
+        {
+            storeUpgrader.migrateIfNeeded( databaseLayout, forceUpgrade );
+        }
+        catch ( Exception e )
+        {
+            userLog.error( "Error upgrading database. Database left intact and will likely not be able to start: " + e.toString() );
+            throw e;
+        }
     }
 }
