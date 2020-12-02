@@ -23,20 +23,20 @@ import org.neo4j.cypher.internal.ast.Hint
 import org.neo4j.cypher.internal.ast.UsingJoinHint
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.BestResults
+import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.unnestOptional
 import org.neo4j.cypher.internal.ir.QueryGraph
-import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
 trait OptionalSolver {
-  def apply(qg: QueryGraph, lp: LogicalPlan, interestingOrder: InterestingOrder, context: LogicalPlanningContext): Iterator[LogicalPlan]
+  def apply(qg: QueryGraph, lp: LogicalPlan, interestingOrderConfig: InterestingOrderConfig, context: LogicalPlanningContext): Iterator[LogicalPlan]
 }
 
 case object applyOptional extends OptionalSolver {
-  override def apply(optionalQg: QueryGraph, lhs: LogicalPlan, interestingOrder: InterestingOrder, context: LogicalPlanningContext): Iterator[LogicalPlan] = {
+  override def apply(optionalQg: QueryGraph, lhs: LogicalPlan, interestingOrderConfig: InterestingOrderConfig, context: LogicalPlanningContext): Iterator[LogicalPlan] = {
     val innerContext: LogicalPlanningContext = context.withUpdatedCardinalityInformation(lhs)
-    val inner = context.strategy.plan(optionalQg, interestingOrder, innerContext)
+    val inner = context.strategy.plan(optionalQg, interestingOrderConfig, innerContext)
     inner.allResults.map { inner =>
       val rhs = context.logicalPlanProducer.planOptional(inner, lhs.availableSymbols, innerContext)
       val applied = context.logicalPlanProducer.planApply(lhs, rhs, context)
@@ -49,7 +49,7 @@ case object applyOptional extends OptionalSolver {
 }
 
 case object outerHashJoin extends OptionalSolver {
-  override def apply(optionalQg: QueryGraph, side1Plan: LogicalPlan, interestingOrder: InterestingOrder, context: LogicalPlanningContext): Iterator[LogicalPlan] = {
+  override def apply(optionalQg: QueryGraph, side1Plan: LogicalPlan, interestingOrderConfig: InterestingOrderConfig, context: LogicalPlanningContext): Iterator[LogicalPlan] = {
     val joinNodes = optionalQg.argumentIds
 
     if (joinNodes.nonEmpty &&
@@ -68,7 +68,7 @@ case object outerHashJoin extends OptionalSolver {
       }
       val rhsQG = optionalQg.withoutArguments().withoutHints(solvedHints.map(_.asInstanceOf[Hint]))
 
-      val BestResults(side2Plan, side2SortedPlan) = context.strategy.plan(rhsQG, interestingOrder, side2Context)
+      val BestResults(side2Plan, side2SortedPlan) = context.strategy.plan(rhsQG, interestingOrderConfig, side2Context)
 
       Iterator(
         leftOuterJoin(context, joinNodes, side1Plan, side2Plan, solvedHints),

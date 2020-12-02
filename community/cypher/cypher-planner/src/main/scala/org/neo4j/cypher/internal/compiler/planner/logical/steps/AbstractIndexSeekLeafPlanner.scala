@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlansForVariable
 import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlansForVariable.maybeLeafPlans
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
+import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.ResultOrdering
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.ResultOrdering.PropertyAndPredicateType
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.AsDistanceSeekable
@@ -56,7 +57,6 @@ import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.functions
 import org.neo4j.cypher.internal.frontend.helpers.SeqCombiner
 import org.neo4j.cypher.internal.ir.QueryGraph
-import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.logical.plans.AsDynamicPropertyNonSeekable
 import org.neo4j.cypher.internal.logical.plans.AsStringRangeNonSeekable
@@ -96,7 +96,10 @@ abstract class AbstractIndexSeekLeafPlanner(restrictions: LeafPlanRestrictions) 
 
   // Concrete methods ***********
 
-  override def producePlanFor(predicates: Set[Expression], qg: QueryGraph, interestingOrder: InterestingOrder, context: LogicalPlanningContext): Set[LeafPlansForVariable] = {
+  override def producePlanFor(predicates: Set[Expression],
+                              qg: QueryGraph,
+                              interestingOrderConfig: InterestingOrderConfig,
+                              context: LogicalPlanningContext): Set[LeafPlansForVariable] = {
     implicit val labelPredicateMap: Map[String, Set[HasLabels]] = qg.selections.labelPredicates
     implicit val semanticTable: SemanticTable = context.semanticTable
     if (labelPredicateMap.isEmpty)
@@ -108,7 +111,7 @@ abstract class AbstractIndexSeekLeafPlanner(restrictions: LeafPlanRestrictions) 
       val result = indexCompatibles.map(_.name).flatMap { name =>
         val labelPredicates = labelPredicateMap.getOrElse(name, Set.empty)
         val nodePredicates = indexCompatibles.filter(p => p.name == name)
-        maybeLeafPlans(name, producePlansForSpecificVariable(name, nodePredicates, labelPredicates, qg.hints, qg.argumentIds, context, interestingOrder))
+        maybeLeafPlans(name, producePlansForSpecificVariable(name, nodePredicates, labelPredicates, qg.hints, qg.argumentIds, context, interestingOrderConfig))
       }
 
       if (result.isEmpty) {
@@ -119,8 +122,8 @@ abstract class AbstractIndexSeekLeafPlanner(restrictions: LeafPlanRestrictions) 
     }
   }
 
-  override def apply(qg: QueryGraph, interestingOrder: InterestingOrder, context: LogicalPlanningContext): Seq[LogicalPlan] = {
-    producePlanFor(qg.selections.flatPredicates.toSet, qg, interestingOrder, context).toSeq.flatMap(_.plans)
+  override def apply(qg: QueryGraph, interestingOrderConfig: InterestingOrderConfig, context: LogicalPlanningContext): Seq[LogicalPlan] = {
+    producePlanFor(qg.selections.flatPredicates.toSet, qg, interestingOrderConfig, context).toSeq.flatMap(_.plans)
   }
 
   private def findNonSeekableIdentifiers(predicates: Seq[Expression], context: LogicalPlanningContext): Set[Variable] =
@@ -145,14 +148,14 @@ abstract class AbstractIndexSeekLeafPlanner(restrictions: LeafPlanRestrictions) 
                                               labelPredicates: Set[HasLabels],
                                               hints: Set[Hint], argumentIds: Set[String],
                                               context: LogicalPlanningContext,
-                                              interestingOrder: InterestingOrder): Set[LogicalPlan] = {
+                                              interestingOrderConfig: InterestingOrderConfig): Set[LogicalPlan] = {
     implicit val semanticTable: SemanticTable = context.semanticTable
     for {
       labelPredicate <- labelPredicates
       labelName <- labelPredicate.labels
       labelId: LabelId <- semanticTable.id(labelName).toSeq
       indexDescriptor: IndexDescriptor <- findIndexesForLabel(labelId, context)
-      predicatesForIndex <- predicatesForIndex(indexDescriptor, indexCompatiblePredicates, interestingOrder)
+      predicatesForIndex <- predicatesForIndex(indexDescriptor, indexCompatiblePredicates, interestingOrderConfig)
       if predicatesForIndex.predicatesInOrder.exists(x => isValidPredicate(x.indexCompatiblePredicate.variable, x.indexCompatiblePredicate.dependencies))
     } yield createLogicalPlan(idName, hints, argumentIds, labelPredicate, labelName, labelId, predicatesForIndex, indexDescriptor.isUnique, context, semanticTable)
   }
@@ -306,7 +309,7 @@ abstract class AbstractIndexSeekLeafPlanner(restrictions: LeafPlanRestrictions) 
   /**
    * Find and group all predicates, where one PredicatesForIndex contains one predicate for each indexed property, in the right order.
    */
-  private def predicatesForIndex(indexDescriptor: IndexDescriptor, predicates: Set[IndexCompatiblePredicate], interestingOrder: InterestingOrder)
+  private def predicatesForIndex(indexDescriptor: IndexDescriptor, predicates: Set[IndexCompatiblePredicate], interestingOrderConfig: InterestingOrderConfig)
                                 (implicit semanticTable: SemanticTable): Seq[PredicatesForIndex] = {
 
     // Group predicates by which property they include
@@ -325,12 +328,12 @@ abstract class AbstractIndexSeekLeafPlanner(restrictions: LeafPlanRestrictions) 
     val matchingPredicateCombinations = SeqCombiner.combine(predicatesByIndexedProperty)
 
     matchingPredicateCombinations
-      .map(matchingPredicates => matchPredicateWithIndexDescriptorAndInterestingOrder(matchingPredicates, indexDescriptor, interestingOrder))
+      .map(matchingPredicates => matchPredicateWithIndexDescriptorAndInterestingOrder(matchingPredicates, indexDescriptor, interestingOrderConfig))
   }
 
   private def matchPredicateWithIndexDescriptorAndInterestingOrder(matchingPredicates: Seq[IndexCompatiblePredicate],
                                                                    indexDescriptor: IndexDescriptor,
-                                                                   interestingOrder: InterestingOrder): PredicatesForIndex = {
+                                                                   interestingOrderConfig: InterestingOrderConfig): PredicatesForIndex = {
     val types = matchingPredicates.map(mp => mp.propertyType)
 
     // Ask the index for its value capabilities for the types of all properties.
@@ -349,7 +352,8 @@ abstract class AbstractIndexSeekLeafPlanner(restrictions: LeafPlanRestrictions) 
       PropertyAndPredicateType(Property(Variable(mp.name)(pos), mp.propertyKeyName)(pos), mp.exactPredicate == SingleExactPredicate)
     })
 
-    val (providedOrder, indexOrder) = ResultOrdering.providedOrderForIndexOperator(interestingOrder, indexPropertiesAndPredicateTypes, types, indexDescriptor.orderCapability)
+    val (providedOrder, indexOrder) =
+      ResultOrdering.providedOrderForIndexOperator(interestingOrderConfig.orderToSolve, indexPropertiesAndPredicateTypes, types, indexDescriptor.orderCapability)
 
     PredicatesForIndex(predicatesInOrder, providedOrder, indexOrder)
   }

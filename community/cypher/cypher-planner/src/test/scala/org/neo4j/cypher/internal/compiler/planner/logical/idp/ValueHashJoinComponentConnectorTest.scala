@@ -20,10 +20,10 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.idp
 
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
+import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.ir.Predicate
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.Selections
-import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -38,7 +38,7 @@ class ValueHashJoinComponentConnectorTest extends CypherFunSuite with LogicalPla
 
     val joinPred = equals(prop("n", "prop"), prop("m", "prop"))
     new given().withLogicalPlanningContext { (cfg, ctx) =>
-      val order = InterestingOrder.empty
+      val order = InterestingOrderConfig.empty
       val kit = ctx.config.toKit(order, ctx)
       val nQg = QueryGraph(patternNodes = Set("n"))
       val mQg = QueryGraph(patternNodes = Set("m"))
@@ -69,7 +69,7 @@ class ValueHashJoinComponentConnectorTest extends CypherFunSuite with LogicalPla
     val joinPred2 = equals(prop("m", "prop"), prop("o", "prop"))
     val joinPred3 = equals(prop("n", "prop"), prop("o", "prop"))
     new given().withLogicalPlanningContext { (cfg, ctx) =>
-      val order = InterestingOrder.empty
+      val order = InterestingOrderConfig.empty
       val kit = ctx.config.toKit(order, ctx)
       val nQg = QueryGraph(patternNodes = Set("n"))
       val mQg = QueryGraph(patternNodes = Set("m"))
@@ -120,7 +120,7 @@ class ValueHashJoinComponentConnectorTest extends CypherFunSuite with LogicalPla
     val registry: DefaultIdRegistry[QueryGraph] = IdRegistry[QueryGraph]
 
     new given().withLogicalPlanningContext { (cfg, ctx) =>
-      val order = InterestingOrder.empty
+      val order = InterestingOrderConfig.empty
       val kit = ctx.config.toKit(order, ctx)
       val nQg = QueryGraph(patternNodes = Set("n"))
       val mQg = QueryGraph(patternNodes = Set("m"))

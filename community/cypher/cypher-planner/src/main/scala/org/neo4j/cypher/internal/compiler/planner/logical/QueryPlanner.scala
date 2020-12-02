@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.compiler.phases.CompilationContains
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
+import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.BestPlans
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.SystemOutCostLogger
@@ -40,6 +41,7 @@ import org.neo4j.cypher.internal.ir.PlannerQueryPart
 import org.neo4j.cypher.internal.ir.QueryProjection
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.UnionQuery
+import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
@@ -190,19 +192,25 @@ case object planMatch extends MatchPlanner {
   // Extract the interesting InterestingOrder for this part of the query
   // If the required order has dependency on argument, then it should not solve the ordering here
   // If we have a mutating pattern that depends on the sorting variables, we cannot solve ordering here
-  private def interestingOrderForPart(query: SinglePlannerQuery, isRhs: Boolean) = {
-    val interestingOrder = query.interestingOrder
-    if (isRhs)
-      interestingOrder.asInteresting
-    else {
-      val orderCandidate = interestingOrder.requiredOrderCandidate.order
-      val orderingDependencies = orderCandidate.flatMap(_.projections).flatMap(_._2.dependencies) ++ orderCandidate.flatMap(_.expression.dependencies)
-      val mutatingDependencies = query.queryGraph.mutatingPatterns.flatMap(_.dependencies)
-      if (orderingDependencies.exists(dep => mutatingDependencies.contains(dep.name)))
-        interestingOrder.asInteresting
-      else
-        interestingOrder
+  private def interestingOrderForPart(query: SinglePlannerQuery, isRhs: Boolean): InterestingOrderConfig = {
+    if (isRhs) {
+      InterestingOrderConfig(query.interestingOrder.asInteresting)
     }
+    else {
+      val orderToReport = query.interestingOrder
+      val orderToSolve = query.findFirstRequiredOrder getOrElse orderToReport
+      val mutatingDependencies = query.queryGraph.mutatingPatterns.flatMap(_.dependencies)
+      if (hasDependencies(orderToReport, mutatingDependencies) || hasDependencies(orderToSolve, mutatingDependencies))
+        InterestingOrderConfig(orderToReport.asInteresting)
+      else
+        InterestingOrderConfig(orderToReport = orderToReport, orderToSolve = orderToSolve)
+    }
+  }
+
+  private def hasDependencies(interestingOrder: InterestingOrder, dependencies: Seq[String]): Boolean = {
+    val orderCandidate = interestingOrder.requiredOrderCandidate.order
+    val orderingDependencies = orderCandidate.flatMap(_.projections).flatMap(_._2.dependencies) ++ orderCandidate.flatMap(_.expression.dependencies)
+    orderingDependencies.exists(dep => dependencies.contains(dep.name))
   }
 
   private def limitSelectivityForPart(query: SinglePlannerQuery, context: LogicalPlanningContext): Option[Selectivity] = {

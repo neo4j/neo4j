@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.idp
 
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
+import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.ir.QueryGraph
-import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.CartesianProduct
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -35,7 +35,7 @@ class CartesianProductComponentConnectorTest extends CypherFunSuite with Logical
     val registry: DefaultIdRegistry[QueryGraph] = IdRegistry[QueryGraph]
 
     new given().withLogicalPlanningContext { (cfg, ctx) =>
-      val order = InterestingOrder.empty
+      val order = InterestingOrderConfig.empty
       val kit = ctx.config.toKit(order, ctx)
       val nQg = QueryGraph(patternNodes = Set("n"))
       val mQg = QueryGraph(patternNodes = Set("m"))

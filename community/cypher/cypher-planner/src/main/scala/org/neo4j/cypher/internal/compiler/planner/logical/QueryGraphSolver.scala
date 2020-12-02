@@ -19,16 +19,16 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
+import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.BestPlans
 import org.neo4j.cypher.internal.expressions.PatternComprehension
 import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters.asQueryGraph
-import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
 trait QueryGraphSolver {
-  def plan(queryGraph: QueryGraph, interestingOrder: InterestingOrder, context: LogicalPlanningContext): BestPlans
+  def plan(queryGraph: QueryGraph, interestingOrderConfig: InterestingOrderConfig, context: LogicalPlanningContext): BestPlans
   def planPatternExpression(planArguments: Set[String], expr: PatternExpression, context: LogicalPlanningContext): LogicalPlan
   def planPatternComprehension(planArguments: Set[String], expr: PatternComprehension, context: LogicalPlanningContext): LogicalPlan
 }
@@ -39,12 +39,12 @@ trait PatternExpressionSolving {
 
   def planPatternExpression(planArguments: Set[String], expr: PatternExpression, context: LogicalPlanningContext): LogicalPlan = {
     val qg = asQueryGraph(expr, planArguments, context.innerVariableNamer)
-    self.plan(qg, InterestingOrder.empty, context).result
+    self.plan(qg, InterestingOrderConfig.empty, context).result
   }
 
   def planPatternComprehension(planArguments: Set[String], expr: PatternComprehension, context: LogicalPlanningContext): LogicalPlan = {
     val qg = asQueryGraph(expr, planArguments, context.innerVariableNamer)
-    self.plan(qg, InterestingOrder.empty, context).result
+    self.plan(qg, InterestingOrderConfig.empty, context).result
   }
 }
 

@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
+import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.ir.QueryGraph
-import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
 /**
@@ -31,16 +31,16 @@ case class PlansPerAvailableSymbols(groupedPlans: Iterable[Seq[LogicalPlan]])
 trait LeafPlannerIterable {
   def candidates(qg: QueryGraph,
                  f: (LogicalPlan, QueryGraph) => LogicalPlan = (plan, _) => plan,
-                 interestingOrder: InterestingOrder,
+                 interestingOrderConfig: InterestingOrderConfig,
                  context: LogicalPlanningContext): Seq[LogicalPlan]
 }
 
 case class LeafPlannerList(leafPlanners: IndexedSeq[LeafPlanner]) extends LeafPlannerIterable {
   override def candidates(qg: QueryGraph,
                           f: (LogicalPlan, QueryGraph) => LogicalPlan = (plan, _) => plan,
-                          interestingOrder: InterestingOrder,
+                          interestingOrderConfig: InterestingOrderConfig,
                           context: LogicalPlanningContext): Seq[LogicalPlan] = {
-    leafPlanners.flatMap(_.apply(qg, interestingOrder, context)).map(f(_, qg))
+    leafPlanners.flatMap(_.apply(qg, interestingOrderConfig, context)).map(f(_, qg))
   }
 }
 
@@ -48,10 +48,10 @@ case class PriorityLeafPlannerList(priority: LeafPlannerIterable, fallback: Leaf
 
   override def candidates(qg: QueryGraph,
                           f: (LogicalPlan, QueryGraph) => LogicalPlan,
-                          interestingOrder: InterestingOrder,
+                          interestingOrderConfig: InterestingOrderConfig,
                           context: LogicalPlanningContext): Seq[LogicalPlan] = {
-    val priorityPlans = priority.candidates(qg, f, interestingOrder, context)
+    val priorityPlans = priority.candidates(qg, f, interestingOrderConfig, context)
     if (priorityPlans.nonEmpty) priorityPlans
-    else fallback.candidates(qg, f, interestingOrder, context)
+    else fallback.candidates(qg, f, interestingOrderConfig, context)
   }
 }

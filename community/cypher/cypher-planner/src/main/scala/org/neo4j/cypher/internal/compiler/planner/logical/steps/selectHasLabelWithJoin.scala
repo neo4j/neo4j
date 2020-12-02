@@ -20,13 +20,13 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
+import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.ResultOrdering
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.Selections.containsPatternPredicates
-import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
 case object selectHasLabelWithJoin extends SelectionCandidateGenerator {
@@ -34,11 +34,11 @@ case object selectHasLabelWithJoin extends SelectionCandidateGenerator {
   override def apply(input: LogicalPlan,
                      unsolvedPredicates: Set[Expression],
                      queryGraph: QueryGraph,
-                     interestingOrder: InterestingOrder,
+                     interestingOrderConfig: InterestingOrderConfig,
                      context: LogicalPlanningContext): Iterator[SelectionCandidate] = {
     unsolvedPredicates.iterator.filterNot(containsPatternPredicates).collect {
       case s@HasLabels(variable: Variable, Seq(labelName)) if queryGraph.patternNodes.contains(variable.name) =>
-        val providedOrder = ResultOrdering.providedOrderForLabelScan(interestingOrder, variable)
+        val providedOrder = ResultOrdering.providedOrderForLabelScan(interestingOrderConfig.orderToSolve, variable)
         val labelScan = context.logicalPlanProducer.planNodeByLabelScan(variable, labelName, Seq(s), None, queryGraph.argumentIds, providedOrder, context)
         val plan = context.logicalPlanProducer.planNodeHashJoin(Set(variable.name), input, labelScan, Set.empty, context)
         SelectionCandidate(plan, Set(s))

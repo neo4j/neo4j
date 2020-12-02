@@ -1205,15 +1205,9 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
     plan shouldBe a[Sort]
   }
 
-  test("Should choose larger index on the same variable, if sorting can be avoided, when sorting on 1 variable with DISTINCT.") {
-    val query =
-      """MATCH (a:A)-->(b)-->(c)
-        |WHERE exists(a.prop) AND exists(a.foo)
-        |RETURN DISTINCT a.prop
-        |ORDER BY a.prop""".stripMargin
-
+  private def chooseLargerIndexConfig(): StatisticsBackedLogicalPlanningConfiguration = {
     val nodeCount = 10000
-    val plan = plannerBuilder()
+    plannerBuilder()
       .setAllNodesCardinality(nodeCount)
       .setLabelCardinality("A", nodeCount)
       .setRelationshipCardinality("(:A)-[]->()", nodeCount * nodeCount)
@@ -1221,6 +1215,16 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
       .addIndex("A", Seq("prop"), 0.9, uniqueSelectivity = 0.9, providesOrder = IndexOrderCapability.BOTH)
       .addIndex("A", Seq("foo"), 0.8, uniqueSelectivity = 0.8) // Make it cheapest to start on a.foo.
       .build()
+  }
+
+  test("Should choose larger index on the same variable, if sorting can be avoided, when sorting on 1 variable with DISTINCT.") {
+    val query =
+      """MATCH (a:A)-->(b)-->(c)
+        |WHERE exists(a.prop) AND exists(a.foo)
+        |RETURN DISTINCT a.prop
+        |ORDER BY a.prop""".stripMargin
+
+    val plan = chooseLargerIndexConfig()
       .plan(query)
       .stripProduceResults
 
@@ -1233,6 +1237,96 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
 
     plan should beLike {
       case _: OrderedDistinct => ()
+    }
+  }
+
+  test("Should choose larger index on the same variable, if sorting can be avoided, when sorting after horizon.") {
+    val query =
+      """MATCH (a:A)
+        |WHERE exists(a.prop) AND exists(a.foo)
+        |WITH DISTINCT a
+        |MATCH (a)-->(b)-->(c)
+        |RETURN a, b, c
+        |ORDER BY a.prop""".stripMargin
+
+    val plan = chooseLargerIndexConfig()
+      .plan(query)
+      .stripProduceResults
+
+    withClue(plan) {
+      plan.treeCount {
+        case _: Sort => true
+        case _: PartialSort => true
+      } shouldBe 0
+    }
+  }
+
+  test("Should choose larger index on the same variable, if sorting can be avoided, when sorting after multiple horizons.") {
+    val query =
+      """MATCH (a:A)
+        |WHERE exists(a.prop) AND exists(a.foo)
+        |WITH DISTINCT a
+        |WITH a SKIP 1
+        |MATCH (a)-->(b)-->(c)
+        |RETURN a, b, c
+        |ORDER BY a.prop""".stripMargin
+
+    val plan = chooseLargerIndexConfig()
+      .plan(query)
+      .stripProduceResults
+
+    withClue(plan) {
+      plan.treeCount {
+        case _: Sort => true
+        case _: PartialSort => true
+      } shouldBe 0
+    }
+  }
+
+  test("Should choose larger index on the same variable, if sorting can be avoided, when sorting after multiple horizons with alias.") {
+    val query =
+      """MATCH (a:A)
+        |WHERE exists(a.prop) AND exists(a.foo)
+        |WITH DISTINCT a
+        |WITH a AS x SKIP 1
+        |MATCH (x)-->(b)-->(c)
+        |RETURN x, b, c
+        |ORDER BY x.prop""".stripMargin
+
+    val plan = chooseLargerIndexConfig()
+      .plan(query)
+      .stripProduceResults
+
+    withClue(plan) {
+      plan.treeCount {
+        case _: Sort => true
+        case _: PartialSort => true
+      } shouldBe 0
+    }
+  }
+
+  test("Should choose larger index on the same variable, if sorting can be avoided, when sorting after multiple horizons with alias and multiple components.") {
+    assume(queryGraphSolverSetup == QueryGraphSolverWithIDPConnectComponents, "This test requires the IDP connect components planner")
+    val query =
+      """MATCH (a:A), (x)
+        |WHERE exists(a.prop) AND exists(a.foo) AND
+        |      exists(x.prop) AND exists(x.prop) AND
+        |      x.prop = a.prop
+        |WITH DISTINCT a, x
+        |WITH x, a AS y SKIP 1
+        |MATCH (y)-->(b)-->(c)
+        |RETURN x, y, b, c
+        |ORDER BY y.prop""".stripMargin
+
+    val plan = chooseLargerIndexConfig()
+      .plan(query)
+      .stripProduceResults
+
+    withClue(plan) {
+      plan.treeCount {
+        case _: Sort => true
+        case _: PartialSort => true
+      } shouldBe 0
     }
   }
 
@@ -1556,6 +1650,29 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
     val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
       .orderedAggregation(Seq("a AS a"), Seq("count(*) AS c"), Seq("a"))
       .nodeByLabelScan("a", "A", indexOrder = IndexOrderAscending)
+      .build()
+
+    plan shouldEqual expectedPlan
+  }
+
+  test("should sort before widening expand when sorting after horizon") {
+    val query =
+      """MATCH (a)
+        |WITH a SKIP 0
+        |MATCH (a)-[r]->(b)
+        |RETURN a, b
+        |ORDER BY a.prop""".stripMargin
+
+    val plan = wideningExpandConfig()
+      .plan(query)
+      .stripProduceResults
+
+    val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
+      .expand("(a)-[r]->(b)")
+      .skip(0)
+      .sort(Seq(Ascending("a.prop")))
+      .projection("a.prop AS `a.prop`")
+      .allNodeScan("a")
       .build()
 
     plan shouldEqual expectedPlan

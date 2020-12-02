@@ -28,11 +28,11 @@ import org.neo4j.cypher.internal.compiler.planner.logical.idp.IDPQueryGraphSolve
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.SingleComponentPlanner.planSinglePattern
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.expandSolverStep.planSinglePatternSide
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.expandSolverStep.planSingleProjectEndpoints
+import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.BestPlans
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.leafPlanOptions
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.QueryGraph
-import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.exceptions.InternalException
@@ -49,16 +49,16 @@ import org.neo4j.time.Stopwatch
 case class SingleComponentPlanner(monitor: IDPQueryGraphSolverMonitor,
                                   solverConfig: SingleComponentIDPSolverConfig = DefaultIDPSolverConfig,
                                   leafPlanFinder: LeafPlanFinder = leafPlanOptions) extends SingleComponentPlannerTrait {
-  override def planComponent(qg: QueryGraph, context: LogicalPlanningContext, kit: QueryPlannerKit, interestingOrder: InterestingOrder): BestPlans = {
-    val bestPlansPerAvailableSymbol = leafPlanFinder(context.config, qg, interestingOrder, context)
+  override def planComponent(qg: QueryGraph, context: LogicalPlanningContext, kit: QueryPlannerKit, interestingOrderConfig: InterestingOrderConfig): BestPlans = {
+    val bestPlansPerAvailableSymbol = leafPlanFinder(context.config, qg, interestingOrderConfig, context)
 
     val bestPlans =
       if (qg.patternRelationships.nonEmpty) {
         val leaves = bestPlansPerAvailableSymbol.flatMap(bestPlans => bestPlans.bestResultFulfillingReq.toSeq :+ bestPlans.bestResult).toSet
 
-        val orderRequirement = extraRequirementForInterestingOrder(context, interestingOrder)
+        val orderRequirement = extraRequirementForInterestingOrder(context, interestingOrderConfig)
         val generators = solverConfig.solvers(qg).map(_ (qg))
-        val generator = IDPQueryGraphSolver.composeSolverSteps(qg, interestingOrder, kit, context, generators)
+        val generator = IDPQueryGraphSolver.composeSolverSteps(qg, interestingOrderConfig, kit, context, generators)
 
         val solver = new IDPSolver[PatternRelationship, LogicalPlan, LogicalPlanningContext](
           generator = generator,
@@ -71,7 +71,7 @@ case class SingleComponentPlanner(monitor: IDPQueryGraphSolverMonitor,
         )
 
         monitor.initTableFor(qg)
-        val seed = initTable(qg, kit, leaves, context, interestingOrder)
+        val seed = initTable(qg, kit, leaves, context, interestingOrderConfig)
         monitor.startIDPIterationFor(qg)
         val result = solver(seed, qg.patternRelationships.toSeq, context)
         monitor.endIDPIterationFor(qg, result.bestResult)
@@ -109,20 +109,24 @@ case class SingleComponentPlanner(monitor: IDPQueryGraphSolverMonitor,
   private def planFullyCoversQG(qg: QueryGraph, plan: LogicalPlan) =
     (qg.idsWithoutOptionalMatchesOrUpdates -- plan.availableSymbols -- qg.argumentIds).isEmpty
 
-  private def initTable(qg: QueryGraph, kit: QueryPlannerKit, leaves: Set[LogicalPlan], context: LogicalPlanningContext, interestingOrder: InterestingOrder): Seed[PatternRelationship, LogicalPlan] = {
+  private def initTable(qg: QueryGraph,
+                        kit: QueryPlannerKit,
+                        leaves: Set[LogicalPlan],
+                        context: LogicalPlanningContext,
+                        interestingOrderConfig: InterestingOrderConfig): Seed[PatternRelationship, LogicalPlan] = {
     for (pattern <- qg.patternRelationships)
       yield {
-        val plans = planSinglePattern(qg, pattern, leaves, interestingOrder, context).map(plan => kit.select(plan, qg))
+        val plans = planSinglePattern(qg, pattern, leaves, context).map(plan => kit.select(plan, qg))
         // From _all_ plans (even if they are sorted), put the best into the seed
         // with `false`. We don't want to compare just the ones that are unsorted
         // in isolation, because it could be that the best overall plan is sorted.
         val best = kit.pickBest(plans, s"best overall plan for $pattern").map(p => ((Set(pattern), /* ordered = */false), p))
 
         val result: Iterable[((Set[PatternRelationship], Boolean), LogicalPlan)] =
-          if (interestingOrder.isEmpty) {
+          if (interestingOrderConfig.orderToSolve.isEmpty) {
             best
           } else {
-            val ordered = plans.flatMap(plan => SortPlanner.planIfAsSortedAsPossible(plan, interestingOrder, context))
+            val ordered = plans.flatMap(plan => SortPlanner.planIfAsSortedAsPossible(plan, interestingOrderConfig, context))
             // Also add the best sorted plan into the seed with `true`.
             val bestWithSort = kit.pickBest(ordered, s"best sorted plan for $pattern").map(p => ((Set(pattern), /* ordered = */true), p))
             best ++ bestWithSort
@@ -137,7 +141,7 @@ case class SingleComponentPlanner(monitor: IDPQueryGraphSolverMonitor,
 }
 
 trait SingleComponentPlannerTrait {
-  def planComponent(qg: QueryGraph, context: LogicalPlanningContext, kit: QueryPlannerKit, interestingOrder: InterestingOrder): BestPlans
+  def planComponent(qg: QueryGraph, context: LogicalPlanningContext, kit: QueryPlannerKit, interestingOrderConfig: InterestingOrderConfig): BestPlans
 }
 
 
@@ -148,7 +152,6 @@ object SingleComponentPlanner {
   def planSinglePattern(qg: QueryGraph,
                         pattern: PatternRelationship,
                         leaves: Set[LogicalPlan],
-                        interestingOrder: InterestingOrder,
                         context: LogicalPlanningContext): Iterable[LogicalPlan] = {
     val solveds = context.planningAttributes.solveds
     leaves.flatMap {
@@ -167,7 +170,7 @@ object SingleComponentPlanner {
         val maybeEndPlan = leaves.find(leaf => solveds(leaf.id).asSinglePlannerQuery.queryGraph.patternNodes == endJoinNodes && !leaf.isInstanceOf[Argument])
           // We are not allowed to plan CP or joins with identical LHS and RHS
           .filter(!maybeStartPlan.contains(_))
-        val cartesianProduct = planSinglePatternCartesian(qg, pattern, start, maybeStartPlan, maybeEndPlan, interestingOrder, context)
+        val cartesianProduct = planSinglePatternCartesian(qg, pattern, start, maybeStartPlan, maybeEndPlan, context)
         val joins = planSinglePatternJoins(qg, leftExpand, rightExpand, startJoinNodes, endJoinNodes, maybeStartPlan, maybeEndPlan, context)
         leftExpand ++ rightExpand ++ cartesianProduct ++ joins
     }
@@ -178,7 +181,6 @@ object SingleComponentPlanner {
                                  start: String,
                                  maybeStartPlan: Option[LogicalPlan],
                                  maybeEndPlan: Option[LogicalPlan],
-                                 interestingOrder: InterestingOrder,
                                  context: LogicalPlanningContext): Option[LogicalPlan] = (maybeStartPlan, maybeEndPlan) match {
     case (Some(startPlan), Some(endPlan)) =>
       planSinglePatternSide(qg, pattern, context.logicalPlanProducer.planCartesianProduct(startPlan, endPlan, context), start, context)

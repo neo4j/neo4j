@@ -22,10 +22,10 @@ package org.neo4j.cypher.internal.compiler.planner.logical.steps
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.PlanSelector
+import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.Selections
-import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
 
@@ -35,13 +35,16 @@ case class Selector(pickBestFactory: CandidateSelectorFactory,
   /**
    * Given a plan, using SelectionCandidateGenerators, plan all selections currently possible in the order cheapest first and return the resulting plan.
    */
-  def apply(input: LogicalPlan, queryGraph: QueryGraph, interestingOrder: InterestingOrder, context: LogicalPlanningContext): LogicalPlan = {
+  override def apply(input: LogicalPlan,
+                     queryGraph: QueryGraph,
+                     interestingOrderConfig: InterestingOrderConfig,
+                     context: LogicalPlanningContext): LogicalPlan = {
     val pickBest = pickBestFactory(context)
 
     val unsolvedPredicates = unsolvedPreds(context.planningAttributes.solveds, queryGraph.selections, input)
 
     def selectIt(plan: LogicalPlan, stillUnsolvedPredicates: Set[Expression]): LogicalPlan = {
-      val candidates = candidateGenerators.flatMap(generator => generator(plan, stillUnsolvedPredicates, queryGraph, interestingOrder, context))
+      val candidates = candidateGenerators.flatMap(generator => generator(plan, stillUnsolvedPredicates, queryGraph, interestingOrderConfig, context))
 
       def stringifiedSolvedPredicates(e: Set[Expression]) = {
         val es = ExpressionStringifier(e => e.asCanonicalStringVal)
@@ -97,7 +100,7 @@ trait SelectionCandidateGenerator extends {
   def apply(input: LogicalPlan,
             unsolvedPredicates: Set[Expression],
             queryGraph: QueryGraph,
-            interestingOrder: InterestingOrder,
+            interestingOrderConfig: InterestingOrderConfig,
             context: LogicalPlanningContext): Iterator[SelectionCandidate]
 }
 

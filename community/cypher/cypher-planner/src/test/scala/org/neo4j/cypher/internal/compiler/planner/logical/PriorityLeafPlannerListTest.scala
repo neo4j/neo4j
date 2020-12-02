@@ -24,8 +24,8 @@ import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoInteractions
 import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
+import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.ir.QueryGraph
-import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -42,7 +42,7 @@ class PriorityLeafPlannerListTest extends CypherFunSuite with LogicalPlanningTes
     val list = PriorityLeafPlannerList(priority, fallback)
 
     // WHEN
-    val result = list.candidates(queryGraph, interestingOrder = InterestingOrder.empty, context = context)
+    val result = list.candidates(queryGraph, interestingOrderConfig = InterestingOrderConfig.empty, context = context)
 
     // THEN
     result should equal(candidates)
@@ -59,7 +59,7 @@ class PriorityLeafPlannerListTest extends CypherFunSuite with LogicalPlanningTes
     val list = PriorityLeafPlannerList(priority, fallback)
 
     // WHEN
-    val result = list.candidates(queryGraph, interestingOrder = InterestingOrder.empty, context = context)
+    val result = list.candidates(queryGraph, interestingOrderConfig = InterestingOrderConfig.empty, context = context)
 
     // THEN
     result should equal(candidates)

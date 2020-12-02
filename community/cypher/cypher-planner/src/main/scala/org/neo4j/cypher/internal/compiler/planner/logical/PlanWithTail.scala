@@ -23,6 +23,8 @@ import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.util.attribution.Attributes
 
+import scala.annotation.tailrec
+
 /*
 This class ties together disparate query graphs through their event horizons. It does so by using Apply,
 which in most cases is then rewritten away by LogicalPlan rewriting.
@@ -32,21 +34,28 @@ case class PlanWithTail(planEventHorizon: EventHorizonPlanner = PlanEventHorizon
                         planUpdates: UpdatesPlanner = PlanUpdates)
   extends TailPlanner {
 
-  override def apply(lhs: LogicalPlan, in: SinglePlannerQuery, context: LogicalPlanningContext): (LogicalPlan, LogicalPlanningContext) = {
+  override def apply(lhsPlans: Seq[LogicalPlan], in: SinglePlannerQuery, context: LogicalPlanningContext): (LogicalPlan, LogicalPlanningContext) = {
+    val plansAndContexts: Seq[(LogicalPlan, LogicalPlanningContext)] = lhsPlans.map(doPlan(_, in, context))
+    val updatedContext = plansAndContexts.head._2 // should be the same for all plans, let's use the first one
+    val pickBest = updatedContext.config.pickBestCandidate(updatedContext)
+    pickBest[(LogicalPlan, LogicalPlanningContext)](_._1, plansAndContexts, s"best finalized plan for ${in.queryGraph}").get
+  }
+
+  @tailrec
+  private def doPlan(lhs: LogicalPlan, in: SinglePlannerQuery, context: LogicalPlanningContext): (LogicalPlan, LogicalPlanningContext) = {
     in.tail match {
       case Some(plannerQuery) =>
-        val lhsContext = context.withUpdatedCardinalityInformation(lhs)
-        val partPlan = planPart(plannerQuery, lhsContext, rhsPart = true).result // always expecting a single plan currently
+        val partPlan = planPart(plannerQuery, context, rhsPart = true).result // always expecting a single plan currently
 
-        val planWithUpdates = planUpdates(plannerQuery, partPlan, firstPlannerQuery = false, lhsContext)
+        val planWithUpdates = planUpdates(plannerQuery, partPlan, firstPlannerQuery = false, context)
 
-        val applyPlan = lhsContext.logicalPlanProducer.planTailApply(lhs, planWithUpdates, context)
+        val applyPlan = context.logicalPlanProducer.planTailApply(lhs, planWithUpdates, context)
 
-        val applyContext = lhsContext.withUpdatedCardinalityInformation(applyPlan)
+        val applyContext = context.withUpdatedCardinalityInformation(applyPlan)
         val projectedPlan = planEventHorizon(plannerQuery, applyPlan, Some(in.interestingOrder), applyContext)
         val projectedContext = applyContext.withUpdatedCardinalityInformation(projectedPlan)
 
-        this.apply(projectedPlan, plannerQuery, projectedContext)
+        doPlan(projectedPlan, plannerQuery, projectedContext)
 
       case None =>
         val attributes = Attributes(context.idGen, context.planningAttributes.cardinalities, context.planningAttributes.providedOrders)

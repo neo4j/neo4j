@@ -22,13 +22,13 @@ package org.neo4j.cypher.internal.compiler.planner.logical.steps
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.QueryGraphProducer
+import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.Selections.containsPatternPredicates
-import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.ExpandAll
@@ -284,7 +284,7 @@ class TriadicSelectionFinderTest extends CypherFunSuite with LogicalPlanningTest
 
   private def testTriadic(in: LogicalPlan, qg: QueryGraph, context: LogicalPlanningContext): Seq[LogicalPlan] = {
     val unsolvedPredicates = qg.selections.flatPredicates.toSet
-    val candidates = triadicSelectionFinder(in, unsolvedPredicates, qg, InterestingOrder.empty, context).toSeq
+    val candidates = triadicSelectionFinder(in, unsolvedPredicates, qg, InterestingOrderConfig.empty, context).toSeq
     candidates.foreach {
       case SelectionCandidate(_, solvedPredicates) =>
         // All pattern predicates should be solved. This assumes that only triadic pattern predicates are used in the tests.

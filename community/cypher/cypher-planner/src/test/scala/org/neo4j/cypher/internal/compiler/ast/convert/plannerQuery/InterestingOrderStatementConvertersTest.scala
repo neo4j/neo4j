@@ -440,6 +440,55 @@ class InterestingOrderStatementConvertersTest extends CypherFunSuite with Logica
     result should equal(expectation)
   }
 
+  test("should not find required order when there is none, single query part") {
+    val q = buildSinglePlannerQuery("MATCH (n) RETURN n.prop")
+    q.findFirstRequiredOrder shouldBe empty
+  }
+
+  test("should not find required order when there is none, multiple query parts") {
+    val q = buildSinglePlannerQuery("MATCH (n) WITH DISTINCT n RETURN n.prop")
+    q.findFirstRequiredOrder shouldBe empty
+  }
+
+  test("should not find required order when it's not usable by the head query part") {
+    val q = buildSinglePlannerQuery("MATCH (n) WITH DISTINCT n MATCH (n)--(otherNode) RETURN otherNode.prop ORDER BY otherNode.prop")
+    q.findFirstRequiredOrder shouldBe empty
+  }
+
+  test("should find required order in head query part") {
+    val q = buildSinglePlannerQuery("MATCH (n) RETURN n.prop ORDER BY n.prop")
+    q.findFirstRequiredOrder shouldBe Some(
+      InterestingOrder.required(RequiredOrderCandidate.asc(varFor("n.prop"), Map("n.prop" -> prop("n", "prop"))))
+    )
+  }
+
+  test("should find required order in tail") {
+    val q = buildSinglePlannerQuery("MATCH (n) WITH DISTINCT n RETURN n.prop ORDER BY n.prop")
+    q.findFirstRequiredOrder shouldBe Some(
+      InterestingOrder.required(RequiredOrderCandidate.asc(prop("n", "prop"), Map("n" -> varFor("n"))))
+    )
+  }
+
+  test("should find required order in tail with aliasing") {
+    val q = buildSinglePlannerQuery("MATCH (n) WITH DISTINCT n AS x RETURN x.prop ORDER BY x.prop")
+    q.findFirstRequiredOrder shouldBe Some(
+      InterestingOrder.required(RequiredOrderCandidate.asc(prop("x", "prop"), Map("x" -> varFor("n"))))
+    )
+  }
+
+  test("should find required order in tail with multiple aliases") {
+    val q = buildSinglePlannerQuery {
+      """MATCH (n)
+        |WITH DISTINCT n AS x
+        |WITH x AS y SKIP 0
+        |RETURN y.prop
+        |ORDER BY y.prop""".stripMargin
+    }
+    q.findFirstRequiredOrder shouldBe Some(
+      InterestingOrder.required(RequiredOrderCandidate.asc(prop("x", "prop"), Map("x" -> varFor("n"))))
+    )
+  }
+
   private def interestingOrders(plannerQuery: SinglePlannerQuery): List[InterestingOrder] =
     plannerQuery.tail match {
       case None => List(plannerQuery.interestingOrder)

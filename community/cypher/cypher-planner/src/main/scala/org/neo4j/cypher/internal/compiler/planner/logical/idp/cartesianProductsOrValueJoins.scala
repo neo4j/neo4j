@@ -25,11 +25,11 @@ import org.neo4j.cypher.internal.compiler.planner.logical.QueryPlannerConfigurat
 import org.neo4j.cypher.internal.compiler.planner.logical.QueryPlannerKit
 import org.neo4j.cypher.internal.compiler.planner.logical.SortPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.SortPlanner.SatisfiedForPlan
+import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.BestPlans
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.ir.QueryGraph
-import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.NodeUniqueIndexSeek
@@ -48,7 +48,7 @@ import scala.annotation.tailrec
 trait JoinDisconnectedQueryGraphComponents {
   def connectComponentsAndSolveOptionalMatch(plans: Set[PlannedComponent],
                                              qg: QueryGraph,
-                                             interestingOrder: InterestingOrder,
+                                             interestingOrderConfig: InterestingOrderConfig,
                                              context: LogicalPlanningContext,
                                              kit: QueryPlannerKit,
                                              singleComponentPlanner: SingleComponentPlannerTrait): BestPlans
@@ -80,7 +80,7 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
 
   override def connectComponentsAndSolveOptionalMatch(plans: Set[PlannedComponent],
                                                       qg: QueryGraph,
-                                                      interestingOrder: InterestingOrder,
+                                                      interestingOrderConfig: InterestingOrderConfig,
                                                       context: LogicalPlanningContext,
                                                       kit: QueryPlannerKit,
                                                       singleComponentPlanner: SingleComponentPlannerTrait): BestPlans = {
@@ -95,17 +95,17 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
         applicablePlan match {
           case Some(t@PlannedComponent(solvedQg, p)) =>
             val candidates = context.config.optionalSolvers
-                                    .flatMap(solver => solver(firstOptionalMatch, p.bestResult, interestingOrder, context))
+                                    .flatMap(solver => solver(firstOptionalMatch, p.bestResult, interestingOrderConfig, context))
             val best = kit.pickBest(candidates, s"best plan solving optional match: $firstOptionalMatch").get
             recurse(plans - t + PlannedComponent(solvedQg, BestResults(best, None)), optionalMatches.tail)
 
           case None =>
             // If we couldn't find any optional match we can take on, produce the best cartesian product possible
-            recurse(connectComponentsStep(plans, qg, interestingOrder, context, kit, singleComponentPlanner), optionalMatches)
+            recurse(connectComponentsStep(plans, qg, interestingOrderConfig, context, kit, singleComponentPlanner), optionalMatches)
         }
       } else if (plans.size > 1) {
 
-        recurse(connectComponentsStep(plans, qg, interestingOrder, context, kit, singleComponentPlanner), optionalMatches)
+        recurse(connectComponentsStep(plans, qg, interestingOrderConfig, context, kit, singleComponentPlanner), optionalMatches)
       } else (plans, optionalMatches)
     }
 
@@ -125,7 +125,7 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
    */
   private def connectComponentsStep(plans: Set[PlannedComponent],
                                     qg: QueryGraph,
-                                    interestingOrder: InterestingOrder,
+                                    interestingOrderConfig: InterestingOrderConfig,
                                     context: LogicalPlanningContext,
                                     kit: QueryPlannerKit,
                                     singleComponentPlanner: SingleComponentPlannerTrait): Set[PlannedComponent] = {
@@ -144,14 +144,14 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
      */
     val joins =
       produceHashJoins(plans, qg, context, kit) ++
-        produceNIJVariations(plans, qg, interestingOrder, context, kit, singleComponentPlanner)
+        produceNIJVariations(plans, qg, interestingOrderConfig, context, kit, singleComponentPlanner)
 
     val (joinsSatisfyingOrder, joinsOther) = joins.partition{ case (comp, _) =>
       require(comp.plan.bestResultFulfillingReq.isEmpty, s"Expected only bestResult for component $comp")
       val plan = comp.plan.bestResult
       val asSortedAsPossible = SatisfiedForPlan(plan)
       val providedOrder = context.planningAttributes.providedOrders(plan.id)
-      interestingOrder.satisfiedBy(providedOrder) match {
+      interestingOrderConfig.orderToSolve.satisfiedBy(providedOrder) match {
         case asSortedAsPossible() => true
         case _ => false
       }
@@ -166,7 +166,7 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
       pickTheBest(plans, kit, cartesianProducts)
     }
     else {
-      Set(planLotsOfCartesianProducts(plans, qg, interestingOrder, context, kit, considerSelections = true))
+      Set(planLotsOfCartesianProducts(plans, qg, interestingOrderConfig, context, kit, considerSelections = true))
     }
   }
 
@@ -204,7 +204,7 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
    */
   private[idp] def planLotsOfCartesianProducts(plans: Set[PlannedComponent],
                                                qg: QueryGraph,
-                                               interestingOrder: InterestingOrder,
+                                               interestingOrderConfig: InterestingOrderConfig,
                                                context: LogicalPlanningContext,
                                                kit: QueryPlannerKit,
                                                considerSelections: Boolean): PlannedComponent = {
@@ -267,7 +267,7 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
       // The first in where we put the sorted component left-most, so that we don't have to plan an extra sort.
       val candidate1 = componentsWithSortedPlanFirst.map(cross).map(_.plan)
       // The second is taking the cheapest order of cartesian products, and planning an extra sort afterwards.
-      val candidate2 = SortPlanner.maybeSortedPlan(bestPlan.plan, interestingOrder, context)
+      val candidate2 = SortPlanner.maybeSortedPlan(bestPlan.plan, interestingOrderConfig, context)
       kit.pickBest(Set(candidate1, candidate2).flatten, s"best sorted plan for ${plans.map(_.queryGraph)}")
     }
     PlannedComponent(bestPlan.queryGraph, BestResults(bestPlan.plan, bestSortedPlan))
@@ -286,7 +286,7 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
   // about 100x faster than the old one, please change functionality here with one eye on performance.
   private def produceNIJVariations(plans: Set[PlannedComponent],
                                    qg: QueryGraph,
-                                   interestingOrder: InterestingOrder,
+                                   interestingOrderConfig: InterestingOrderConfig,
                                    context: LogicalPlanningContext,
                                    kit: QueryPlannerKit,
                                    singleComponentPlanner: SingleComponentPlannerTrait):
@@ -308,8 +308,8 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
         val qgB = planArray(b).queryGraph
 
         for (predicate <- this.predicatesDependendingOnBothSides(predicatesWithDependencies, allCoveredIds(a), allCoveredIds(b))) {
-          val nestedIndexJoinAB = planNIJIfApplicable(planA.bestResult, planB.bestResult, qgA, qgB, qg, interestingOrder, predicate, context, kit, singleComponentPlanner)
-          val nestedIndexJoinBA = planNIJIfApplicable(planB.bestResult, planA.bestResult, qgB, qgA, qg, interestingOrder, predicate, context, kit, singleComponentPlanner)
+          val nestedIndexJoinAB = planNIJIfApplicable(planA.bestResult, planB.bestResult, qgA, qgB, qg, interestingOrderConfig, predicate, context, kit, singleComponentPlanner)
+          val nestedIndexJoinBA = planNIJIfApplicable(planB.bestResult, planA.bestResult, qgB, qgA, qg, interestingOrderConfig, predicate, context, kit, singleComponentPlanner)
 
           nestedIndexJoinAB.foreach(x => result += ((x, planArray(a) -> planArray(b))))
           nestedIndexJoinBA.foreach(x => result += ((x, planArray(a) -> planArray(b))))
@@ -347,7 +347,7 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
                                   lhsQG: QueryGraph,
                                   rhsQG: QueryGraph,
                                   fullQG: QueryGraph,
-                                  interestingOrder: InterestingOrder,
+                                  interestingOrderConfig: InterestingOrderConfig,
                                   predicate: Expression,
                                   context: LogicalPlanningContext,
                                   kit: QueryPlannerKit,
@@ -361,7 +361,7 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
     if (notSingleComponent || containsOptionals) {
       Iterator.empty
     } else {
-      planNIJ(lhsPlan, rhsInputPlan, lhsQG, rhsQG, interestingOrder, predicate, context, kit, singleComponentPlanner).map {
+      planNIJ(lhsPlan, rhsInputPlan, lhsQG, rhsQG, interestingOrderConfig, predicate, context, kit, singleComponentPlanner).map {
         result =>
           val resultWithSelection = kit.select(result, fullQG)
           PlannedComponent(context.planningAttributes.solveds.get(resultWithSelection.id).asSinglePlannerQuery.lastQueryGraph, BestResults(resultWithSelection, None))
@@ -380,7 +380,7 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
               rhsInputPlan: LogicalPlan,
               lhsQG: QueryGraph,
               rhsQG: QueryGraph,
-              interestingOrder: InterestingOrder,
+              interestingOrderConfig: InterestingOrderConfig,
               predicate: Expression,
               context: LogicalPlanningContext,
               kit: QueryPlannerKit,
@@ -403,7 +403,7 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
         val rhsPlans = try {
           // planComponent throws if it can't find a solution, which is normally the expected behavior.
           // Here, however, restricting the leaf planners might lead to no solutions found and that is OK.
-          Some(singleComponentPlanner.planComponent(rhsQgWithLhsArguments, contextForRhs, kit, interestingOrder))
+          Some(singleComponentPlanner.planComponent(rhsQgWithLhsArguments, contextForRhs, kit, interestingOrderConfig))
         } catch {
           case _:InternalException =>
             None

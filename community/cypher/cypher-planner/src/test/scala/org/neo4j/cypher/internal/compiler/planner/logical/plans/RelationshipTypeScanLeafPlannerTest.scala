@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.ast.UsingJoinHint
 import org.neo4j.cypher.internal.ast.UsingScanHint
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
+import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.relationshipTypeScanLeafPlanner
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
@@ -33,7 +34,6 @@ import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.VarPatternLength
-import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -46,7 +46,7 @@ class RelationshipTypeScanLeafPlannerTest extends CypherFunSuite with LogicalPla
     val qg = pattern("r", "a", "b", OUTGOING, "R")
 
     // when
-    val resultPlans = relationshipTypeScanLeafPlanner(Set.empty)(qg, InterestingOrder.empty, context)
+    val resultPlans = relationshipTypeScanLeafPlanner(Set.empty)(qg, InterestingOrderConfig.empty, context)
 
     // then
     resultPlans should equal(Seq(
@@ -61,7 +61,7 @@ class RelationshipTypeScanLeafPlannerTest extends CypherFunSuite with LogicalPla
     val qg = pattern("r", "a", "b", INCOMING, "R")
 
     // when
-    val resultPlans = relationshipTypeScanLeafPlanner(Set.empty)(qg, InterestingOrder.empty, context)
+    val resultPlans = relationshipTypeScanLeafPlanner(Set.empty)(qg, InterestingOrderConfig.empty, context)
 
     // then
     resultPlans should equal(Seq(
@@ -76,7 +76,7 @@ class RelationshipTypeScanLeafPlannerTest extends CypherFunSuite with LogicalPla
     val qg = pattern("r", "a", "b", BOTH, "R")
 
     // when
-    val resultPlans = relationshipTypeScanLeafPlanner(Set.empty)(qg, InterestingOrder.empty, context)
+    val resultPlans = relationshipTypeScanLeafPlanner(Set.empty)(qg, InterestingOrderConfig.empty, context)
 
     // then
     resultPlans should equal(Seq(
@@ -91,7 +91,7 @@ class RelationshipTypeScanLeafPlannerTest extends CypherFunSuite with LogicalPla
     val qg = pattern("r", "a", "b", OUTGOING, "R1", "R2")
 
     // when
-    val resultPlans = relationshipTypeScanLeafPlanner(Set.empty)(qg, InterestingOrder.empty, context)
+    val resultPlans = relationshipTypeScanLeafPlanner(Set.empty)(qg, InterestingOrderConfig.empty, context)
 
     // then
     resultPlans shouldBe empty
@@ -104,7 +104,7 @@ class RelationshipTypeScanLeafPlannerTest extends CypherFunSuite with LogicalPla
     val qg = varPattern("r", "a", "b", OUTGOING, "R")
 
     // when
-    val resultPlans = relationshipTypeScanLeafPlanner(Set.empty)(qg, InterestingOrder.empty, context)
+    val resultPlans = relationshipTypeScanLeafPlanner(Set.empty)(qg, InterestingOrderConfig.empty, context)
 
     // then
     resultPlans shouldBe empty
@@ -117,9 +117,9 @@ class RelationshipTypeScanLeafPlannerTest extends CypherFunSuite with LogicalPla
     val qg = pattern("r", "a", "b", OUTGOING, "R")
 
     // then
-    relationshipTypeScanLeafPlanner(Set("r"))(qg, InterestingOrder.empty, context) should be(empty)
-    relationshipTypeScanLeafPlanner(Set("a"))(qg, InterestingOrder.empty, context) should be(empty)
-    relationshipTypeScanLeafPlanner(Set("b"))(qg, InterestingOrder.empty, context) should be(empty)
+    relationshipTypeScanLeafPlanner(Set("r"))(qg, InterestingOrderConfig.empty, context) should be(empty)
+    relationshipTypeScanLeafPlanner(Set("a"))(qg, InterestingOrderConfig.empty, context) should be(empty)
+    relationshipTypeScanLeafPlanner(Set("b"))(qg, InterestingOrderConfig.empty, context) should be(empty)
   }
 
   test("should not plan type scan when ids are in arguments") {
@@ -129,9 +129,9 @@ class RelationshipTypeScanLeafPlannerTest extends CypherFunSuite with LogicalPla
     val qg = pattern("r", "a", "b", OUTGOING, "R")
 
     // then
-    relationshipTypeScanLeafPlanner(Set.empty)(qg.withArgumentIds(Set("r")), InterestingOrder.empty, context) should be(empty)
-    relationshipTypeScanLeafPlanner(Set.empty)(qg.withArgumentIds(Set("a")), InterestingOrder.empty, context) should be(empty)
-    relationshipTypeScanLeafPlanner(Set.empty)(qg.withArgumentIds(Set("b")), InterestingOrder.empty, context) should be(empty)
+    relationshipTypeScanLeafPlanner(Set.empty)(qg.withArgumentIds(Set("r")), InterestingOrderConfig.empty, context) should be(empty)
+    relationshipTypeScanLeafPlanner(Set.empty)(qg.withArgumentIds(Set("a")), InterestingOrderConfig.empty, context) should be(empty)
+    relationshipTypeScanLeafPlanner(Set.empty)(qg.withArgumentIds(Set("b")), InterestingOrderConfig.empty, context) should be(empty)
   }
 
   test("should not plan type scan if no type index") {
@@ -142,7 +142,7 @@ class RelationshipTypeScanLeafPlannerTest extends CypherFunSuite with LogicalPla
     val qg = pattern("r", "a", "b", OUTGOING, "R")
 
     // when
-    val resultPlans = relationshipTypeScanLeafPlanner(Set.empty)(qg, InterestingOrder.empty, context)
+    val resultPlans = relationshipTypeScanLeafPlanner(Set.empty)(qg, InterestingOrderConfig.empty, context)
 
     // then
     resultPlans shouldBe empty
@@ -156,7 +156,7 @@ class RelationshipTypeScanLeafPlannerTest extends CypherFunSuite with LogicalPla
       .addHints(Seq(UsingScanHint(varFor("a"), labelName("L"))(pos)))
 
     // then
-    relationshipTypeScanLeafPlanner(Set.empty)(qg, InterestingOrder.empty, context) should be(empty)
+    relationshipTypeScanLeafPlanner(Set.empty)(qg, InterestingOrderConfig.empty, context) should be(empty)
   }
 
   test("should not plan type scan if hint on end node") {
@@ -167,7 +167,7 @@ class RelationshipTypeScanLeafPlannerTest extends CypherFunSuite with LogicalPla
       .addHints(Seq(UsingScanHint(varFor("b"), labelName("L"))(pos)))
 
     // then
-    relationshipTypeScanLeafPlanner(Set.empty)(qg, InterestingOrder.empty, context) should be(empty)
+    relationshipTypeScanLeafPlanner(Set.empty)(qg, InterestingOrderConfig.empty, context) should be(empty)
   }
 
   test("should not plan type scan if join hint on node") {
@@ -178,7 +178,7 @@ class RelationshipTypeScanLeafPlannerTest extends CypherFunSuite with LogicalPla
       .addHints(Seq(UsingJoinHint(Seq(varFor("b")))(pos)))
 
     // then
-    relationshipTypeScanLeafPlanner(Set.empty)(qg, InterestingOrder.empty, context) should be(empty)
+    relationshipTypeScanLeafPlanner(Set.empty)(qg, InterestingOrderConfig.empty, context) should be(empty)
   }
 
   private def pattern(name: String, from: String, to: String, direction: SemanticDirection, types: String*) =

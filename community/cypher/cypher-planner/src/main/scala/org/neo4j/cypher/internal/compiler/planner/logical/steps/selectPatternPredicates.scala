@@ -20,13 +20,13 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
+import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.expressions.ExistsSubClause
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.NodePatternExpression
 import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.Ors
-import org.neo4j.cypher.internal.expressions.PatternElement
 import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.RelationshipsPattern
@@ -35,10 +35,8 @@ import org.neo4j.cypher.internal.expressions.functions.Exists
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.Selections.containsPatternPredicates
 import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters.asQueryGraph
-import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.macros.AssertMacros
-import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.FreshIdNameGenerator
 
 case object selectPatternPredicates extends SelectionCandidateGenerator {
@@ -46,7 +44,7 @@ case object selectPatternPredicates extends SelectionCandidateGenerator {
   override def apply(lhs: LogicalPlan,
                      unsolvedPredicates: Set[Expression],
                      queryGraph: QueryGraph,
-                     interestingOrder: InterestingOrder,
+                     interestingOrderConfig: InterestingOrderConfig,
                      context: LogicalPlanningContext): Iterator[SelectionCandidate] = {
     for {
       pattern <- unsolvedPredicates.iterator.filter(containsPatternPredicates)
@@ -54,10 +52,10 @@ case object selectPatternPredicates extends SelectionCandidateGenerator {
     } yield {
         val plan = pattern match {
           case e:ExistsSubClause =>
-            val innerPlan = planInnerOfSubquery(lhs, context, interestingOrder, e)
+            val innerPlan = planInnerOfSubquery(lhs, context, interestingOrderConfig, e)
             context.logicalPlanProducer.planSemiApply(lhs, innerPlan, e, context)
           case p@Not(e: ExistsSubClause) =>
-            val innerPlan = planInnerOfSubquery(lhs, context, interestingOrder, e)
+            val innerPlan = planInnerOfSubquery(lhs, context, interestingOrderConfig, e)
             context.logicalPlanProducer.planAntiSemiApply(lhs, innerPlan, p, context)
           case p@Exists(patternExpression: PatternExpression) =>
             val rhs = rhsPlan(lhs, patternExpression, context)
@@ -73,7 +71,7 @@ case object selectPatternPredicates extends SelectionCandidateGenerator {
               case Not(Exists(_: PatternExpression)) => true
               case _ => false
             }
-            val (plan, solvedPredicates) = planPredicates(lhs, patternExpressions.toSet, expressions.toSet, None, interestingOrder, context)
+            val (plan, solvedPredicates) = planPredicates(lhs, patternExpressions.toSet, expressions.toSet, None, interestingOrderConfig, context)
             AssertMacros.checkOnlyWhenAssertionsAreEnabled(
               exprs.forall(solvedPredicates.contains),
               "planPredicates is supposed to solve all predicates in an OR clause."
@@ -84,7 +82,10 @@ case object selectPatternPredicates extends SelectionCandidateGenerator {
       }
   }
 
-  def planInnerOfSubquery(lhs: LogicalPlan, context: LogicalPlanningContext, interestingOrder: InterestingOrder, e: ExistsSubClause): LogicalPlan = {
+  def planInnerOfSubquery(lhs: LogicalPlan,
+                          context: LogicalPlanningContext,
+                          interestingOrderConfig: InterestingOrderConfig,
+                          e: ExistsSubClause): LogicalPlan = {
     // Creating a query graph by combining all extracted query graphs created by each entry of the patternElements
     val qg = e.patternElements.foldLeft(QueryGraph.empty) { (acc, patternElement) =>
       patternElement match {
@@ -114,14 +115,14 @@ case object selectPatternPredicates extends SelectionCandidateGenerator {
       }
     }
 
-    context.strategy.plan(new_qg, interestingOrder, context).result
+    context.strategy.plan(new_qg, interestingOrderConfig, context).result
   }
 
   def planPredicates(lhs: LogicalPlan,
                      patternExpressions: Set[Expression],
                      expressions: Set[Expression],
                      letExpression: Option[Expression],
-                     interestingOrder: InterestingOrder,
+                     interestingOrderConfig: InterestingOrderConfig,
                      context: LogicalPlanningContext): (LogicalPlan, Set[Expression]) = {
 
     def planSelect(predicate: Expression, source: LogicalPlan,
@@ -135,7 +136,7 @@ case object selectPatternPredicates extends SelectionCandidateGenerator {
         case Not(_) => createLetAntiSemiApply(lhs, source, innerExpression, expressions, letExpression, context)
         case _ => createLetSemiApply(lhs, source, innerExpression, expressions, letExpression, context)
       }
-      val (plan, solvedPredicates) = planPredicates(newLhs, tail.toSet, Set.empty, Some(newLetExpr), interestingOrder, context)
+      val (plan, solvedPredicates) = planPredicates(newLhs, tail.toSet, Set.empty, Some(newLetExpr), interestingOrderConfig, context)
       (plan, solvedPredicates ++ Set(predicate) ++ expressions)
     }
 
@@ -149,11 +150,11 @@ case object selectPatternPredicates extends SelectionCandidateGenerator {
         planSelect(p, rhs, context.logicalPlanProducer.planSelectOrAntiSemiApply)
 
       case (e@ExistsSubClause(_, _)) :: Nil =>
-        val innerPlan = planInnerOfSubquery(lhs, context, interestingOrder, e)
+        val innerPlan = planInnerOfSubquery(lhs, context, interestingOrderConfig, e)
         planSelect(e, innerPlan, context.logicalPlanProducer.planSelectOrSemiApply)
 
        case (p@Not(e@ExistsSubClause(_, _))) :: Nil =>
-        val innerPlan = planInnerOfSubquery(lhs, context, interestingOrder, e)
+        val innerPlan = planInnerOfSubquery(lhs, context, interestingOrderConfig, e)
         planSelect(p, innerPlan, context.logicalPlanProducer.planSelectOrAntiSemiApply)
 
       case (p@Exists(patternExpression: PatternExpression)) :: tail =>
@@ -165,11 +166,11 @@ case object selectPatternPredicates extends SelectionCandidateGenerator {
         planSemiApply(p, patternExpression, tail, rhs)
 
       case (e@ExistsSubClause(_, _)) :: tail =>
-       val innerPlan = planInnerOfSubquery(lhs, context, interestingOrder, e)
+       val innerPlan = planInnerOfSubquery(lhs, context, interestingOrderConfig, e)
        planSemiApply(e, e, tail, innerPlan)
 
       case (p@Not(e@ExistsSubClause(_, _))) :: tail =>
-        val innerPlan = planInnerOfSubquery(lhs, context, interestingOrder, e)
+        val innerPlan = planInnerOfSubquery(lhs, context, interestingOrderConfig, e)
         planSemiApply(p, e, tail, innerPlan)
 
       case _ =>

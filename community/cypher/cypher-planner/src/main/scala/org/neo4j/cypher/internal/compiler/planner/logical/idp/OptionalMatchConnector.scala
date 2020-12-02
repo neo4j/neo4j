@@ -21,14 +21,17 @@ package org.neo4j.cypher.internal.compiler.planner.logical.idp
 
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.QueryPlannerKit
+import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.ir.QueryGraph
-import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
 case object OptionalMatchConnector
   extends ComponentConnector {
 
-  def solverStep(goalBitAllocation: GoalBitAllocation, queryGraph: QueryGraph, interestingOrder: InterestingOrder, kit: QueryPlannerKit): ComponentConnectorSolverStep =
+  override def solverStep(goalBitAllocation: GoalBitAllocation,
+                          queryGraph: QueryGraph,
+                          interestingOrderConfig: InterestingOrderConfig,
+                          kit: QueryPlannerKit): ComponentConnectorSolverStep =
     (registry: IdRegistry[QueryGraph], goal: Goal, table: IDPCache[LogicalPlan], context: LogicalPlanningContext) => {
       val optionalsGoal = goalBitAllocation.optionalMatchesGoal(goal)
       for {
@@ -39,7 +42,7 @@ case object OptionalMatchConnector
         canPlan = optionalQg.argumentIds subsetOf leftPlan.availableSymbols
         if canPlan
         optionalSolver <- context.config.optionalSolvers
-        plan <- optionalSolver(optionalQg, leftPlan, interestingOrder, context)
+        plan <- optionalSolver(optionalQg, leftPlan, interestingOrderConfig, context)
       } yield plan
     }
 }

@@ -45,23 +45,19 @@ case class PlanSingleQuery(planPart: MatchPlanner = planMatch,
   override def apply(in: SinglePlannerQuery, context: LogicalPlanningContext): LogicalPlan = {
     val updatedContext = addAggregatedPropertiesToContext(in, context)
 
-    val (completePlan, ctx) =
-      countStorePlanner(in, updatedContext) match {
-        case Some(plan) =>
-          (plan, updatedContext.withUpdatedCardinalityInformation(plan))
-        case None =>
-          val matchPlans = planPart(in, updatedContext)
-
-          // We take all plans solving the MATCH part. This could be two, if we have a required order.
-          val finalizedPlans = matchPlans.allResults.map(planUpdatesInputAndHorizon(_, in, updatedContext))
-
-          // We cost compare and pick the best.
-          val projectedPlan = updatedContext.config.toKit(in.interestingOrder, updatedContext).pickBest(finalizedPlans.toIterable, s"best finalized plan for ${in.queryGraph} and ${in.horizon}").get
-          val projectedContext = updatedContext.withUpdatedCardinalityInformation(projectedPlan)
-          (projectedPlan, projectedContext)
+    val plans = countStorePlanner(in, updatedContext) match {
+      case Some(plan) =>
+        Seq(plan)
+      case None =>
+        val matchPlans = planPart(in, updatedContext)
+        // We take all plans solving the MATCH part. This could be two, if we have a required order.
+        val plansWithHorizon = matchPlans.allResults.map(planUpdatesInputAndHorizon(_, in, updatedContext))
+        // `distinct` to skip planning subsequent query parts twice if the best overall plan and the best sorted plan happen to be be the same.
+        plansWithHorizon.toSeq.distinct
       }
 
-    val (plan, _) = planWithTail(completePlan, in, ctx)
+    val contextForTail = updatedContext.withUpdatedCardinalityInformation(plans.head) // cardinality should be the same for all plans, let's use the first one
+    val (plan, _) = planWithTail(plans, in, contextForTail)
     plan
   }
 
@@ -131,7 +127,7 @@ trait EventHorizonPlanner {
 }
 
 trait TailPlanner {
-  def apply(lhs: LogicalPlan, in: SinglePlannerQuery, context: LogicalPlanningContext): (LogicalPlan, LogicalPlanningContext)
+  def apply(lhsPlans: Seq[LogicalPlan], in: SinglePlannerQuery, context: LogicalPlanningContext): (LogicalPlan, LogicalPlanningContext)
 }
 
 trait UpdatesPlanner {

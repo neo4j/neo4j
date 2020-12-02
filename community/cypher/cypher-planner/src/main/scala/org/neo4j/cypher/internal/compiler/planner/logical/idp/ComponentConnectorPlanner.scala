@@ -25,9 +25,9 @@ import org.neo4j.cypher.internal.compiler.planner.logical.idp.GoalBitAllocation.
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.IDPQueryGraphSolver.extraRequirementForInterestingOrder
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.IDPTable.SORTED_BIT
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.cartesianProductsOrValueJoins.planLotsOfCartesianProducts
+import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.BestPlans
 import org.neo4j.cypher.internal.ir.QueryGraph
-import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.macros.AssertMacros
 import org.neo4j.time.Stopwatch
@@ -54,7 +54,7 @@ case class ComponentConnectorPlanner(singleComponentPlanner: SingleComponentPlan
 
   override def connectComponentsAndSolveOptionalMatch(components: Set[PlannedComponent],
                                                       queryGraph: QueryGraph,
-                                                      interestingOrder: InterestingOrder,
+                                                      interestingOrderConfig: InterestingOrderConfig,
                                                       context: LogicalPlanningContext,
                                                       kit: QueryPlannerKit,
                                                       singleComponentPlanner: SingleComponentPlannerTrait): BestPlans = {
@@ -70,27 +70,27 @@ case class ComponentConnectorPlanner(singleComponentPlanner: SingleComponentPlan
         // If there are no predicates left to be solved, that also means no joins are possible (because they would need to join on a predicate).
         // Also, the order of cartesian products does not need a search algorithm, since no Selections can be put in-between.
         // The best plan is a simple left-deep tree of cartesian products.
-        planLotsOfCartesianProducts(components, queryGraph, interestingOrder, context, kit, considerSelections = false).plan
+        planLotsOfCartesianProducts(components, queryGraph, interestingOrderConfig, context, kit, considerSelections = false).plan
       }
     } else {
-      connectWithIDP(components, queryGraph, interestingOrder, context, kit)
+      connectWithIDP(components, queryGraph, interestingOrderConfig, context, kit)
     }
   }
 
   private def connectWithIDP(components: Set[PlannedComponent],
                              queryGraph: QueryGraph,
-                             interestingOrder: InterestingOrder,
+                             interestingOrderConfig: InterestingOrderConfig,
                              context: LogicalPlanningContext,
                              kit: QueryPlannerKit): BestPlans = {
-    val orderRequirement = extraRequirementForInterestingOrder(context, interestingOrder)
+    val orderRequirement = extraRequirementForInterestingOrder(context, interestingOrderConfig)
     val (goalBitAllocation, initialTodo) = GoalBitAllocation.create(components.map(_.queryGraph), queryGraph)
 
-    val joinSolverSteps = joinConnectors.map(_.solverStep(goalBitAllocation, queryGraph, interestingOrder, kit))
-    val composedJoinSolverStep = IDPQueryGraphSolver.composeSolverSteps(queryGraph, interestingOrder, kit, context, joinSolverSteps)
-    val cpSolverStep = cpConnector.solverStep(goalBitAllocation, queryGraph, interestingOrder, kit)
-    val composedCPSolverStep = IDPQueryGraphSolver.selectingAndSortingSolverStep(queryGraph, interestingOrder, kit, context, cpSolverStep)
-    val omSolverStep = omConnector.solverStep(goalBitAllocation, queryGraph, interestingOrder, kit)
-    val composedOmSolverStep = IDPQueryGraphSolver.selectingAndSortingSolverStep(queryGraph, interestingOrder, kit, context, omSolverStep)
+    val joinSolverSteps = joinConnectors.map(_.solverStep(goalBitAllocation, queryGraph, interestingOrderConfig, kit))
+    val composedJoinSolverStep = IDPQueryGraphSolver.composeSolverSteps(queryGraph, interestingOrderConfig, kit, context, joinSolverSteps)
+    val cpSolverStep = cpConnector.solverStep(goalBitAllocation, queryGraph, interestingOrderConfig, kit)
+    val composedCPSolverStep = IDPQueryGraphSolver.selectingAndSortingSolverStep(queryGraph, interestingOrderConfig, kit, context, cpSolverStep)
+    val omSolverStep = omConnector.solverStep(goalBitAllocation, queryGraph, interestingOrderConfig, kit)
+    val composedOmSolverStep = IDPQueryGraphSolver.selectingAndSortingSolverStep(queryGraph, interestingOrderConfig, kit, context, omSolverStep)
 
     // Only even generate CP plans if no joins are available, since joins will always be better.
     val generator = ((composedJoinSolverStep || composedCPSolverStep) ++ composedOmSolverStep)
@@ -119,7 +119,10 @@ case class ComponentConnectorPlanner(singleComponentPlanner: SingleComponentPlan
 }
 
 trait ComponentConnector {
-  def solverStep(goalBitAllocation: GoalBitAllocation, queryGraph: QueryGraph, interestingOrder: InterestingOrder, kit: QueryPlannerKit): ComponentConnectorSolverStep
+  def solverStep(goalBitAllocation: GoalBitAllocation,
+                 queryGraph: QueryGraph,
+                 interestingOrderConfig: InterestingOrderConfig,
+                 kit: QueryPlannerKit): ComponentConnectorSolverStep
 }
 
 object GoalBitAllocation {

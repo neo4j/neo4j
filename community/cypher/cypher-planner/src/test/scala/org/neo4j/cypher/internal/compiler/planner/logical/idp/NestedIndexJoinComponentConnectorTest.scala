@@ -21,9 +21,9 @@ package org.neo4j.cypher.internal.compiler.planner.logical.idp
 
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.planner.logical.PlanMatchHelp
+import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
-import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.CanGetValue
 import org.neo4j.cypher.internal.logical.plans.IndexSeek
@@ -55,7 +55,7 @@ class NestedIndexJoinComponentConnectorTest extends CypherFunSuite with LogicalP
       addTypeToSemanticTable(mProp, CTAny)
     }.withLogicalPlanningContext { (_, ctx) =>
 
-      val order = InterestingOrder.empty
+      val order = InterestingOrderConfig.empty
       val kit = ctx.config.toKit(order, ctx)
       val nQg = QueryGraph(patternNodes = Set("n")).addPredicates(labelNPred)
       val mQg = QueryGraph(patternNodes = Set("m")).addPredicates(labelMPred)
@@ -102,7 +102,7 @@ class NestedIndexJoinComponentConnectorTest extends CypherFunSuite with LogicalP
       addTypeToSemanticTable(pProp, CTAny)
     }.withLogicalPlanningContext { (_, ctx) =>
 
-      val order = InterestingOrder.empty
+      val order = InterestingOrderConfig.empty
       val kit = ctx.config.toKit(order, ctx)
       val nQg = QueryGraph(patternNodes = Set("n")).addPredicates(labelNPred)
       val mQg = QueryGraph(patternNodes = Set("m")).addPredicates(labelMPred)
@@ -151,7 +151,7 @@ class NestedIndexJoinComponentConnectorTest extends CypherFunSuite with LogicalP
       addTypeToSemanticTable(mProp, CTAny)
     }.withLogicalPlanningContext { (_, ctx) =>
 
-      val order = InterestingOrder.empty
+      val order = InterestingOrderConfig.empty
       val kit = ctx.config.toKit(order, ctx)
       val nQg = QueryGraph(patternNodes = Set("n")).addPredicates(labelNPred)
       val mQg = QueryGraph(patternNodes = Set("m"), optionalMatches = IndexedSeq(QueryGraph(patternNodes = Set("o")))).addPredicates(labelMPred)

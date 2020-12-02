@@ -21,14 +21,17 @@ package org.neo4j.cypher.internal.compiler.planner.logical.idp
 
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.QueryPlannerKit
+import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.ir.QueryGraph
-import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
 case object CartesianProductComponentConnector
   extends ComponentConnector {
 
-  override def solverStep(goalBitAllocation: GoalBitAllocation, queryGraph: QueryGraph, interestingOrder: InterestingOrder, kit: QueryPlannerKit): ComponentConnectorSolverStep =
+  override def solverStep(goalBitAllocation: GoalBitAllocation,
+                          queryGraph: QueryGraph,
+                          interestingOrderConfig: InterestingOrderConfig,
+                          kit: QueryPlannerKit): ComponentConnectorSolverStep =
     (_: IdRegistry[QueryGraph], goal: Goal, table: IDPCache[LogicalPlan], context: LogicalPlanningContext) => {
       for {
         (leftGoal, rightGoal) <- goal.coveringSplits

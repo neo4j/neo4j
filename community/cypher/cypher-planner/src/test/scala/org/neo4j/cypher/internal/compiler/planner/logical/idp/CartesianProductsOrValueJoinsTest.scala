@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.planner.logical.ExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
+import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.LabelToken
@@ -146,7 +147,7 @@ class CartesianProductsOrValueJoinsTest extends CypherFunSuite with LogicalPlann
     new given {
       qg = graph
     }.withLogicalPlanningContext { (cfg, context) =>
-      val interestingOrder = InterestingOrder.required(RequiredOrderCandidate.asc(varFor(orderedNode)))
+      val interestingOrder = InterestingOrderConfig(InterestingOrder.required(RequiredOrderCandidate.asc(varFor(orderedNode))))
       val kit = context.config.toKit(interestingOrder, context)
       val nodeIndexScanPlan = nodeIndexScan(orderedNode, "MANY", 10000.0, context.planningAttributes)
 
@@ -333,7 +334,7 @@ class CartesianProductsOrValueJoinsTest extends CypherFunSuite with LogicalPlann
       addTypeToSemanticTable(varFor("a"), CTNode)
       addTypeToSemanticTable(varFor("b"), CTNode)
     }.withLogicalPlanningContext { (cfg, context) =>
-      val kit = context.config.toKit(InterestingOrder.empty, context)
+      val kit = context.config.toKit(InterestingOrderConfig.empty, context)
 
       val givenPlans: Set[PlannedComponent] = Set(
         addComponent(PlannedComponent(
@@ -344,7 +345,7 @@ class CartesianProductsOrValueJoinsTest extends CypherFunSuite with LogicalPlann
           BestResults(AllNodesScan("b", Set.empty), None)), Cardinality(1), context.planningAttributes),
       )
 
-      cartesianProductsOrValueJoins.connectComponentsAndSolveOptionalMatch(givenPlans, cfg.qg, InterestingOrder.empty, context, kit, SingleComponentPlanner(mock[IDPQueryGraphSolverMonitor]))
+      cartesianProductsOrValueJoins.connectComponentsAndSolveOptionalMatch(givenPlans, cfg.qg, InterestingOrderConfig.empty, context, kit, SingleComponentPlanner(mock[IDPQueryGraphSolverMonitor]))
 
       rhsInputCardinalities shouldEqual Set(lhsCardinality)
     }
@@ -364,10 +365,10 @@ class CartesianProductsOrValueJoinsTest extends CypherFunSuite with LogicalPlann
       addTypeToSemanticTable(varFor("b"), CTNode)
       addTypeToSemanticTable(varFor("c"), CTNode)
     }.withLogicalPlanningContext { (cfg, context) =>
-      val kit = context.config.toKit(InterestingOrder.empty, context)
+      val kit = context.config.toKit(InterestingOrderConfig.empty, context)
 
       val singleComponents = input(context.planningAttributes)
-      val result = cartesianProductsOrValueJoins.connectComponentsAndSolveOptionalMatch(singleComponents, cfg.qg, InterestingOrder.empty, context, kit, SingleComponentPlanner(mock[IDPQueryGraphSolverMonitor]))
+      val result = cartesianProductsOrValueJoins.connectComponentsAndSolveOptionalMatch(singleComponents, cfg.qg, InterestingOrderConfig.empty, context, kit, SingleComponentPlanner(mock[IDPQueryGraphSolverMonitor]))
 
       assertion(result.result)
     }

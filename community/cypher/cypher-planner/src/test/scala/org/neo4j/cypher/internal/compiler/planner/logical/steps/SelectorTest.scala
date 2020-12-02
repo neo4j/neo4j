@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
+import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.PatternExpression
@@ -34,7 +35,6 @@ import org.neo4j.cypher.internal.ir.Predicate
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.ir.Selections
-import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
@@ -57,7 +57,7 @@ class SelectorTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val selector = Selector(pickBestPlanUsingHintsAndCost, selectCovered)
 
     // When
-    val result = selector(inner, qg, InterestingOrder.empty, context)
+    val result = selector(inner, qg, InterestingOrderConfig.empty, context)
 
     // Then
     result should equal(Selection(Seq(predicate), inner))
@@ -76,7 +76,7 @@ class SelectorTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val selector = Selector(pickBestPlanUsingHintsAndCost, selectCovered)
 
     // When
-    val result = selector(inner, qg, InterestingOrder.empty, context)
+    val result = selector(inner, qg, InterestingOrderConfig.empty, context)
 
     // Then
     result should equal(inner)
@@ -96,7 +96,7 @@ class SelectorTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val selector = Selector(pickBestPlanUsingHintsAndCost, selectCovered)
 
     // When
-    val result = selector(inner, qg, InterestingOrder.empty, context)
+    val result = selector(inner, qg, InterestingOrderConfig.empty, context)
 
     // Then
     result should equal(Selection(Seq(predicate1, predicate2), inner))
@@ -137,7 +137,7 @@ class SelectorTest extends CypherFunSuite with LogicalPlanningTestSupport {
     )
 
     // When
-    val result = selector(inner, qg, InterestingOrder.empty, verifyingContext)
+    val result = selector(inner, qg, InterestingOrderConfig.empty, verifyingContext)
 
     // Then
     result should equal(expectedPlan)
@@ -155,7 +155,7 @@ class SelectorTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val selector = Selector(pickBestPlanUsingHintsAndCost, selectCovered)
 
     // When
-    val result = selector(inner, qg, InterestingOrder.empty, context)
+    val result = selector(inner, qg, InterestingOrderConfig.empty, context)
 
     // Then
     result should equal(inner)
@@ -172,7 +172,7 @@ class SelectorTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val selector = Selector(pickBestPlanUsingHintsAndCost, selectCovered)
 
     // When
-    val result = selector(inner, qg, InterestingOrder.empty, context)
+    val result = selector(inner, qg, InterestingOrderConfig.empty, context)
 
     // Then
     result should equal(inner)
@@ -201,7 +201,7 @@ class SelectorTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val bPlan = newMockedLogicalPlan(context.planningAttributes, "b")
     val selector = Selector(pickBestPlanUsingHintsAndCost, selectPatternPredicates)
     // When
-    val result = selector(bPlan, qg, InterestingOrder.empty, context)
+    val result = selector(bPlan, qg, InterestingOrderConfig.empty, context)
 
     // Then
     result should equal(bPlan)

@@ -24,17 +24,20 @@ import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlanFromExpression
 import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlansForVariable
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
+import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.ResultOrdering
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.QueryGraph
-import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
 case class labelScanLeafPlanner(skipIDs: Set[String]) extends LeafPlanner with LeafPlanFromExpression {
 
-  override def producePlanFor(e: Expression, qg: QueryGraph, interestingOrder: InterestingOrder, context: LogicalPlanningContext): Option[LeafPlansForVariable] = {
+  override def producePlanFor(e: Expression,
+                              qg: QueryGraph,
+                              interestingOrderConfig: InterestingOrderConfig,
+                              context: LogicalPlanningContext): Option[LeafPlansForVariable] = {
     e match {
       case labelPredicate@HasLabels(variable@Variable(varName), labels) if !skipIDs.contains(varName)  =>
         if (qg.patternNodes(varName) && !qg.argumentIds(varName)) {
@@ -42,7 +45,7 @@ case class labelScanLeafPlanner(skipIDs: Set[String]) extends LeafPlanner with L
           val hint = qg.hints.collectFirst {
             case hint@UsingScanHint(`variable`, `labelName`) => hint
           }
-          val providedOrder = ResultOrdering.providedOrderForLabelScan(interestingOrder, variable)
+          val providedOrder = ResultOrdering.providedOrderForLabelScan(interestingOrderConfig.orderToSolve, variable)
           val plan = context.logicalPlanProducer.planNodeByLabelScan(variable, labelName, Seq(labelPredicate), hint, qg.argumentIds, providedOrder, context)
           Some(LeafPlansForVariable(varName, Set(plan)))
         } else
@@ -52,6 +55,6 @@ case class labelScanLeafPlanner(skipIDs: Set[String]) extends LeafPlanner with L
     }
   }
 
-  override def apply(qg: QueryGraph, interestingOrder: InterestingOrder, context: LogicalPlanningContext): Seq[LogicalPlan] =
-    qg.selections.flatPredicates.flatMap(e => producePlanFor(e, qg, interestingOrder, context).toSeq.flatMap(_.plans))
+  override def apply(qg: QueryGraph, interestingOrderConfig: InterestingOrderConfig, context: LogicalPlanningContext): Seq[LogicalPlan] =
+    qg.selections.flatPredicates.flatMap(e => producePlanFor(e, qg, interestingOrderConfig, context).toSeq.flatMap(_.plans))
 }

@@ -25,12 +25,12 @@ import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlanFromExpressions
 import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlansForVariable
+import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.expressions.LabelToken
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.ir.Selections
-import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.logical.plans.Distinct
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
@@ -62,7 +62,7 @@ class OrLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
     val queryGraph = QueryGraph.empty.withSelections(Selections.from(ors(e1, e2)))
 
-    orPlanner.apply(queryGraph, InterestingOrder.empty, context) should equal(Seq(expected))
+    orPlanner.apply(queryGraph, InterestingOrderConfig.empty, context) should equal(Seq(expected))
   }
 
   test("two predicates on different variables are not used") {
@@ -79,7 +79,7 @@ class OrLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
     val queryGraph = QueryGraph.empty.withSelections(Selections.from(ors(e1, e2)))
 
-    orPlanner.apply(queryGraph, InterestingOrder.empty, context) should equal(Seq.empty)
+    orPlanner.apply(queryGraph, InterestingOrderConfig.empty, context) should equal(Seq.empty)
   }
 
   test("two predicates, where one cannot be leaf-plan-solved, is not used") {
@@ -95,7 +95,7 @@ class OrLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
     val queryGraph = QueryGraph.empty.withSelections(Selections.from(ors(e1, e2)))
 
-    orPlanner.apply(queryGraph, InterestingOrder.empty, context) should equal(Seq.empty)
+    orPlanner.apply(queryGraph, InterestingOrderConfig.empty, context) should equal(Seq.empty)
   }
 
   test("two predicates that produce two plans each") {
@@ -123,7 +123,7 @@ class OrLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val expected3 = Distinct(source = Union(p3, p2), groupingExpressions = Map("x" -> varFor("x")))
     val expected4 = Distinct(source = Union(p3, p4), groupingExpressions = Map("x" -> varFor("x")))
 
-    orPlanner.apply(queryGraph, InterestingOrder.empty, context) should equal(Seq(expected1, expected2, expected3, expected4))
+    orPlanner.apply(queryGraph, InterestingOrderConfig.empty, context) should equal(Seq(expected1, expected2, expected3, expected4))
   }
 
   test("two predicates that produce two plans each mk 2") {
@@ -148,7 +148,7 @@ class OrLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val expected1 = Distinct(source = Union(p1, p2), groupingExpressions = Map("x" -> varFor("x")))
     val expected2 = Distinct(source = Union(p3, p2), groupingExpressions = Map("x" -> varFor("x")))
 
-    orPlanner.apply(queryGraph, InterestingOrder.empty, context) should equal(Seq(expected1, expected2))
+    orPlanner.apply(queryGraph, InterestingOrderConfig.empty, context) should equal(Seq(expected1, expected2))
   }
 
   test("test filtering of plans") {
@@ -194,7 +194,7 @@ class OrLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
     val queryGraph = QueryGraph.empty.withSelections(Selections.from(ors(e1,e2,e3,e4)))
 
-    val result = orPlanner.producePlansForExpressions(Seq(e1,e2,e3,e4), queryGraph, context, InterestingOrder.empty )
+    val result = orPlanner.producePlansForExpressions(Seq(e1,e2,e3,e4), queryGraph, context, InterestingOrderConfig.empty)
 
     withClue("Should drop indexscan and labelscan") {
       result(0) should have size 1

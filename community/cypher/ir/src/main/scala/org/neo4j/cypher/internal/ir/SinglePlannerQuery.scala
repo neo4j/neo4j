@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.ir
 import org.neo4j.cypher.internal.ast.Hint
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.ir.SinglePlannerQuery.reverseProjectedInterestingOrder
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.exceptions.InternalException
 
@@ -98,11 +99,7 @@ trait SinglePlannerQuery extends PlannerQueryPart {
         case Some(q) =>
           val (newTail, tailOrder) = f(q)
           if (plannerQuery.interestingOrder.isEmpty) {
-            val reverseProjected =
-              plannerQuery.horizon match {
-                case qp: QueryProjection => tailOrder.withReverseProjectedColumns(qp.projections, newTail.queryGraph.argumentIds)
-                case _ => tailOrder
-              }
+            val reverseProjected = reverseProjectedInterestingOrder(tailOrder, plannerQuery.horizon, newTail.queryGraph.argumentIds)
             (plannerQuery.copy(interestingOrder = reverseProjected, tail = Some(newTail)), reverseProjected)
           } else
             (plannerQuery.copy(tail = Some(newTail)), InterestingOrder.empty)
@@ -110,6 +107,19 @@ trait SinglePlannerQuery extends PlannerQueryPart {
     }
 
     f(this)._1
+  }
+
+  /**
+   * First interesting order with non-empty required order that is usable by the current query part.
+   */
+  def findFirstRequiredOrder: Option[InterestingOrder] = {
+    if (interestingOrder.requiredOrderCandidate.nonEmpty)
+      Some(interestingOrder)
+    else
+      tail
+        .flatMap(_.findFirstRequiredOrder)
+        .map(reverseProjectedInterestingOrder(_, horizon, queryGraph.argumentIds))
+        .filter(_.requiredOrderCandidate.nonEmpty)
   }
 
   def isCoveredByHints(other: SinglePlannerQuery): Boolean = allHints.forall(other.allHints.contains)
@@ -241,6 +251,13 @@ object SinglePlannerQuery {
   def coveredIdsForPatterns(patternNodeIds: Set[String], patternRels: Set[PatternRelationship]): Set[String] = {
     val patternRelIds = patternRels.flatMap(_.coveredIds)
     patternNodeIds ++ patternRelIds
+  }
+
+  def reverseProjectedInterestingOrder(order: InterestingOrder, horizon: QueryHorizon, argumentIds: Set[String]): InterestingOrder = {
+    horizon match {
+      case qp: QueryProjection => order.withReverseProjectedColumns(qp.projections, argumentIds)
+      case _ => order
+    }
   }
 }
 

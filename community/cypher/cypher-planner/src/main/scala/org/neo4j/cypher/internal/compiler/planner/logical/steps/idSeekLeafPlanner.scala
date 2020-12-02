@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlanFromExpression
 import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlansForVariable
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
+import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.AsIdSeekable
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.Expression
@@ -38,7 +39,6 @@ import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.QueryGraph
-import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.SeekableArgs
 import org.neo4j.cypher.internal.util.InputPosition
@@ -46,7 +46,10 @@ import org.neo4j.cypher.internal.util.NodeNameGenerator
 
 case class idSeekLeafPlanner(skipIDs: Set[String]) extends LeafPlanner with LeafPlanFromExpression {
 
-  override def producePlanFor(e: Expression, qg: QueryGraph, interestingOrder: InterestingOrder, context: LogicalPlanningContext): Option[LeafPlansForVariable] = {
+  override def producePlanFor(e: Expression,
+                              qg: QueryGraph,
+                              interestingOrderConfig: InterestingOrderConfig,
+                              context: LogicalPlanningContext): Option[LeafPlansForVariable] = {
     val arguments: Set[LogicalVariable] = qg.argumentIds.map(n => Variable(n)(null))
     val idSeekPredicates: Option[(Expression, LogicalVariable, SeekableArgs)] = e match {
       // MATCH (a)-[r]-(b) WHERE id(r) IN expr
@@ -87,8 +90,8 @@ case class idSeekLeafPlanner(skipIDs: Set[String]) extends LeafPlanner with Leaf
     }
   }
 
-  override def apply(queryGraph: QueryGraph, interestingOrder: InterestingOrder, context: LogicalPlanningContext): Seq[LogicalPlan] =
-    queryGraph.selections.flatPredicates.flatMap(e => producePlanFor(e, queryGraph, interestingOrder, context).toSeq.flatMap(_.plans))
+  override def apply(queryGraph: QueryGraph, interestingOrderConfig: InterestingOrderConfig, context: LogicalPlanningContext): Seq[LogicalPlan] =
+    queryGraph.selections.flatPredicates.flatMap(e => producePlanFor(e, queryGraph, interestingOrderConfig, context).toSeq.flatMap(_.plans))
 
   private def planRelationshipByIdSeek(relationship: PatternRelationship,
                                        nodes: (String, String),

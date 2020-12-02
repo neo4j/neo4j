@@ -20,9 +20,9 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
+import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.argumentLeafPlanner
 import org.neo4j.cypher.internal.ir.QueryGraph
-import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -36,7 +36,7 @@ class ArgumentLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
       patternNodes = Set("a", "b")
     )
 
-    argumentLeafPlanner(Set.empty)(qg, InterestingOrder.empty, context) shouldBe empty
+    argumentLeafPlanner(Set.empty)(qg, InterestingOrderConfig.empty, context) shouldBe empty
   }
 
   test("should return an empty candidate list pattern nodes is empty") {
@@ -47,7 +47,7 @@ class ArgumentLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
       patternNodes = Set()
     )
 
-    argumentLeafPlanner(Set.empty)(qg, InterestingOrder.empty, context) shouldBe empty
+    argumentLeafPlanner(Set.empty)(qg, InterestingOrderConfig.empty, context) shouldBe empty
   }
 
   test("should return a plan containing all the id in argument ids and in pattern nodes") {
@@ -58,7 +58,7 @@ class ArgumentLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
       patternNodes = Set("a", "b", "d")
     )
 
-    argumentLeafPlanner(Set.empty)(qg, InterestingOrder.empty, context) should equal(
+    argumentLeafPlanner(Set.empty)(qg, InterestingOrderConfig.empty, context) should equal(
       Seq(Argument(Set("a", "b","c")))
     )
   }
@@ -72,7 +72,7 @@ class ArgumentLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
     )
 
     // when
-    val resultPlans = argumentLeafPlanner(Set("n"))(queryGraph, InterestingOrder.empty, context)
+    val resultPlans = argumentLeafPlanner(Set("n"))(queryGraph, InterestingOrderConfig.empty, context)
 
     // then
     resultPlans should be(empty)
@@ -86,7 +86,7 @@ class ArgumentLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
       patternNodes = Set("a", "b", "d")
     )
 
-    argumentLeafPlanner(Set("b"))(qg, InterestingOrder.empty, context) should equal(
+    argumentLeafPlanner(Set("b"))(qg, InterestingOrderConfig.empty, context) should equal(
       Seq(Argument(Set("a", "b", "c")))
     )
   }

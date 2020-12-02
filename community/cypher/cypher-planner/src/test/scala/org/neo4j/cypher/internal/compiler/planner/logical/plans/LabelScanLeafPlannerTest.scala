@@ -22,11 +22,11 @@ package org.neo4j.cypher.internal.compiler.planner.logical.plans
 import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
+import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.labelScanLeafPlanner
 import org.neo4j.cypher.internal.ir.Predicate
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.Selections
-import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
 import org.neo4j.cypher.internal.util.LabelId
@@ -47,7 +47,7 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext(), semanticTable = semanticTable)
 
     // when
-    val resultPlans = labelScanLeafPlanner(Set.empty)(qg, InterestingOrder.empty, context)
+    val resultPlans = labelScanLeafPlanner(Set.empty)(qg, InterestingOrderConfig.empty, context)
 
     // then
     resultPlans should equal(Seq(
@@ -63,7 +63,7 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext(), semanticTable = semanticTable)
 
     // when
-    val resultPlans = labelScanLeafPlanner(Set.empty)(qg, InterestingOrder.empty, context)
+    val resultPlans = labelScanLeafPlanner(Set.empty)(qg, InterestingOrderConfig.empty, context)
 
     // then
     resultPlans should equal(Seq(
@@ -79,7 +79,7 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext(), semanticTable = semanticTable)
 
     // when
-    val resultPlans = labelScanLeafPlanner(Set("n"))(qg, InterestingOrder.empty, context)
+    val resultPlans = labelScanLeafPlanner(Set("n"))(qg, InterestingOrderConfig.empty, context)
 
     // then
     resultPlans should be(empty)

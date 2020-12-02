@@ -20,9 +20,9 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
+import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.allNodesLeafPlanner
 import org.neo4j.cypher.internal.ir.QueryGraph
-import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.AllNodesScan
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -36,7 +36,7 @@ class AllNodesLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
     val context = newMockedLogicalPlanningContext(planContext = planContext)
 
     // when
-    val resultPlans = allNodesLeafPlanner(Set.empty)(queryGraph, InterestingOrder.empty, context)
+    val resultPlans = allNodesLeafPlanner(Set.empty)(queryGraph, InterestingOrderConfig.empty, context)
 
     // then
     resultPlans should equal(Seq(AllNodesScan("n", Set.empty)))
@@ -50,7 +50,7 @@ class AllNodesLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
     val context = newMockedLogicalPlanningContext(planContext = planContext)
 
     // when
-    val resultPlans = allNodesLeafPlanner(Set("n"))(queryGraph, InterestingOrder.empty, context)
+    val resultPlans = allNodesLeafPlanner(Set("n"))(queryGraph, InterestingOrderConfig.empty, context)
 
     // then
     resultPlans should be(empty)

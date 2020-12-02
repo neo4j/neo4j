@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlannerList
 import org.neo4j.cypher.internal.compiler.planner.logical.QueryPlannerConfiguration
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.BestResults
+import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
@@ -82,7 +83,7 @@ class leafPlanOptionsTest extends CypherFunSuite with LogicalPlanningTestSupport
       val options = leafPlanOptions(
         queryPlanConfig(IndexedSeq(allNodesScanLeafPlanner)),
         QueryGraph(patternNodes = Set()),
-        InterestingOrder.empty,
+        InterestingOrderConfig.empty,
         ctx
       )
 
@@ -95,7 +96,7 @@ class leafPlanOptionsTest extends CypherFunSuite with LogicalPlanningTestSupport
       val options = leafPlanOptions(
         queryPlanConfig(IndexedSeq(allNodesScanLeafPlanner)),
         QueryGraph(patternNodes = Set("a")),
-        InterestingOrder.empty,
+        InterestingOrderConfig.empty,
         ctx
       )
 
@@ -108,7 +109,8 @@ class leafPlanOptionsTest extends CypherFunSuite with LogicalPlanningTestSupport
       val options = leafPlanOptions(
         queryPlanConfig(IndexedSeq(allNodesScanLeafPlanner)),
         QueryGraph(patternNodes = Set("a")),
-        InterestingOrder.required(RequiredOrderCandidate.asc(varFor("a"))),
+        InterestingOrderConfig(
+          InterestingOrder.required(RequiredOrderCandidate.asc(varFor("a")))),
         ctx
       )
 
@@ -121,7 +123,7 @@ class leafPlanOptionsTest extends CypherFunSuite with LogicalPlanningTestSupport
       val options = leafPlanOptions(
         queryPlanConfig(IndexedSeq(allNodesScanLeafPlanner, labelScanLeafPlanner)),
         QueryGraph(patternNodes = Set("a")),
-        InterestingOrder.empty,
+        InterestingOrderConfig.empty,
         ctx
       )
 
@@ -134,7 +136,8 @@ class leafPlanOptionsTest extends CypherFunSuite with LogicalPlanningTestSupport
       val options = leafPlanOptions(
         queryPlanConfig(IndexedSeq(allNodesScanLeafPlanner, labelScanLeafPlanner)),
         QueryGraph(patternNodes = Set("a")),
-        InterestingOrder.required(RequiredOrderCandidate.asc(varFor("a"))),
+        InterestingOrderConfig(
+          InterestingOrder.required(RequiredOrderCandidate.asc(varFor("a")))),
         ctx
       )
 
@@ -149,7 +152,7 @@ class leafPlanOptionsTest extends CypherFunSuite with LogicalPlanningTestSupport
       val options = leafPlanOptions(
         queryPlanConfig(IndexedSeq(allNodesScanLeafPlanner, labelScanLeafPlanner)),
         QueryGraph(patternNodes = Set("a", "b")),
-        InterestingOrder.empty,
+        InterestingOrderConfig.empty,
         ctx
       )
 
@@ -165,7 +168,8 @@ class leafPlanOptionsTest extends CypherFunSuite with LogicalPlanningTestSupport
       val options = leafPlanOptions(
         queryPlanConfig(IndexedSeq(allNodesScanLeafPlanner, labelScanLeafPlanner)),
         QueryGraph(patternNodes = Set("a", "b")),
-        InterestingOrder.required(RequiredOrderCandidate.asc(varFor("a"))),
+        InterestingOrderConfig(
+          InterestingOrder.required(RequiredOrderCandidate.asc(varFor("a")))),
         ctx
       )
 
@@ -194,7 +198,7 @@ class leafPlanOptionsTest extends CypherFunSuite with LogicalPlanningTestSupport
       val options = leafPlanOptions(
         queryPlanConfig,
         QueryGraph(patternNodes = Set("a")),
-        InterestingOrder.empty,
+        InterestingOrderConfig.empty,
         ctx
       )
 

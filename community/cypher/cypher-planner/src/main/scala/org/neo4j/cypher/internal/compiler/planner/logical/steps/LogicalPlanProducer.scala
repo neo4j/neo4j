@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CardinalityModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
+import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.skipAndLimit.planLimitOnTopOf
 import org.neo4j.cypher.internal.expressions.Add
 import org.neo4j.cypher.internal.expressions.CachedProperty
@@ -666,14 +667,17 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     annotate(Selection(coercePredicatesWithAnds(sortedPredicates), rewrittenSource), solved, providedOrders.get(source.id).fromLeft, context)
   }
 
-  def planHorizonSelection(source: LogicalPlan, predicates: Seq[Expression], interestingOrder: InterestingOrder, context: LogicalPlanningContext): LogicalPlan = {
+  def planHorizonSelection(source: LogicalPlan,
+                           predicates: Seq[Expression],
+                           interestingOrderConfig: InterestingOrderConfig,
+                           context: LogicalPlanningContext): LogicalPlan = {
     val solved = solveds.get(source.id).asSinglePlannerQuery.updateTailOrSelf(_.updateHorizon {
       case p: QueryProjection => p.addPredicates(predicates: _*)
       case _ => throw new IllegalArgumentException("You can only plan HorizonSelection after a projection")
     })
 
     // solve existential subquery predicates
-    val (solvedPredicates, existsPlan) = PatternExpressionSolver.ForExistentialSubquery.solve(source, predicates, interestingOrder, context)
+    val (solvedPredicates, existsPlan) = PatternExpressionSolver.ForExistentialSubquery.solve(source, predicates, interestingOrderConfig, context)
     val unsolvedPredicates = predicates.filterNot(solvedPredicates.contains(_))
 
     // solve remaining predicates

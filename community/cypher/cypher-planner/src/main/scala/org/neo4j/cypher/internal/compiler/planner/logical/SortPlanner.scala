@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
+import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.projection
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Variable
@@ -42,15 +43,15 @@ object SortPlanner {
    * If the interesting order is non-empty, and the given plan does not already satisfy the interesting order, try to plan a Sort/PartialSort
    * to satisfy the interesting order. If that is possible, return the new plan, otherwise None.
    */
-  def maybeSortedPlan(plan: LogicalPlan, interestingOrder: InterestingOrder, context: LogicalPlanningContext): Option[LogicalPlan] = {
-    if (interestingOrder.requiredOrderCandidate.nonEmpty) {
-      orderSatisfaction(interestingOrder, context, plan) match {
+  def maybeSortedPlan(plan: LogicalPlan, interestingOrderConfig: InterestingOrderConfig, context: LogicalPlanningContext): Option[LogicalPlan] = {
+    if (interestingOrderConfig.orderToSolve.requiredOrderCandidate.nonEmpty) {
+      orderSatisfaction(interestingOrderConfig, context, plan) match {
         case FullSatisfaction() =>
           Some(plan)
         case NoSatisfaction() =>
-          planSort(plan, Seq.empty, interestingOrder, context)
+          planSort(plan, Seq.empty, interestingOrderConfig, context)
         case Satisfaction(satisfiedPrefix, _) =>
-          planSort(plan, satisfiedPrefix, interestingOrder, context)
+          planSort(plan, satisfiedPrefix, interestingOrderConfig, context)
       }
     } else {
       None
@@ -65,28 +66,28 @@ object SortPlanner {
    * - No sorted columns: return None
    * - Partially sorted, but the non-sorted expressions aren't in scope yet: return plan
    */
-  def planIfAsSortedAsPossible(plan: LogicalPlan, interestingOrder: InterestingOrder, context: LogicalPlanningContext): Option[LogicalPlan] = {
+  def planIfAsSortedAsPossible(plan: LogicalPlan, interestingOrderConfig: InterestingOrderConfig, context: LogicalPlanningContext): Option[LogicalPlan] = {
     // This plan will be fully sorted if possible, but even otherwise it might be as sorted as currently possible.
-    val newPlan = maybeSortedPlan(plan, interestingOrder, context).getOrElse(plan)
+    val newPlan = maybeSortedPlan(plan, interestingOrderConfig, context).getOrElse(plan)
     val asSortedAsPossible = SatisfiedForPlan(plan)
-    orderSatisfaction(interestingOrder, context, newPlan) match {
+    orderSatisfaction(interestingOrderConfig, context, newPlan) match {
       case asSortedAsPossible() => Some(newPlan)
       case _ => None
     }
   }
 
-  def ensureSortedPlanWithSolved(plan: LogicalPlan, interestingOrder: InterestingOrder, context: LogicalPlanningContext): LogicalPlan =
-    maybeSortedPlan(plan, interestingOrder, context) match {
+  def ensureSortedPlanWithSolved(plan: LogicalPlan, interestingOrderConfig: InterestingOrderConfig, context: LogicalPlanningContext): LogicalPlan =
+    maybeSortedPlan(plan, interestingOrderConfig, context) match {
       case Some(sortedPlan) =>
-        if (sortedPlan == plan) context.logicalPlanProducer.updateSolvedForSortedItems(sortedPlan, interestingOrder, context)
+        if (sortedPlan == plan) context.logicalPlanProducer.updateSolvedForSortedItems(sortedPlan, interestingOrderConfig.orderToReport, context)
         else sortedPlan
-      case _ if interestingOrder.requiredOrderCandidate.nonEmpty =>
+      case _ if interestingOrderConfig.orderToSolve.requiredOrderCandidate.nonEmpty =>
         throw new AssertionError("Expected a sorted plan")
       case _ => plan
     }
 
-  def orderSatisfaction(interestingOrder: InterestingOrder, context: LogicalPlanningContext, plan: LogicalPlan): Satisfaction =
-    interestingOrder.satisfiedBy(context.planningAttributes.providedOrders.get(plan.id))
+  def orderSatisfaction(interestingOrderConfig: InterestingOrderConfig, context: LogicalPlanningContext, plan: LogicalPlan): Satisfaction =
+    interestingOrderConfig.orderToSolve.satisfiedBy(context.planningAttributes.providedOrders.get(plan.id))
 
   case class SatisfiedForPlan(plan: LogicalPlan) {
     def unapply(arg: Satisfaction): Boolean = {
@@ -108,7 +109,7 @@ object SortPlanner {
 
   private def planSort(plan: LogicalPlan,
                        satisfiedPrefix: Seq[InterestingOrder.ColumnOrder],
-                       interestingOrder: InterestingOrder,
+                       interestingOrderConfig: InterestingOrderConfig,
                        context: LogicalPlanningContext): Option[LogicalPlan] = {
 
     def idFrom(expression: Expression, projection: Map[String, Expression]): String = {
@@ -128,7 +129,7 @@ object SortPlanner {
                                           projections: Map[String, Expression],
                                           unaliasedProjections: Option[(String, Expression)])
 
-    val sortItems: Seq[SortColumnsWithProjections] = interestingOrder.requiredOrderCandidate.order.map {
+    val sortItems: Seq[SortColumnsWithProjections] = interestingOrderConfig.orderToSolve.requiredOrderCandidate.order.map {
       // Aliased sort expressions
       case InterestingOrder.Asc(v@Variable(key), projection) => SortColumnsWithProjections(Ascending(key), ProvidedOrder.Asc(v), projection, None)
       case InterestingOrder.Desc(v@Variable(key), projection) => SortColumnsWithProjections(Descending(key), ProvidedOrder.Desc(v), projection, None)
@@ -156,11 +157,11 @@ object SortPlanner {
     if (sortColumns.forall(column => projected2.availableSymbols.contains(column.id))) {
       if (satisfiedPrefix.isEmpty) {
         // Full sort required
-        Some(context.logicalPlanProducer.planSort(projected2, sortColumns, providedOrderColumns, interestingOrder, context))
+        Some(context.logicalPlanProducer.planSort(projected2, sortColumns, providedOrderColumns, interestingOrderConfig.orderToReport, context))
       } else {
         // Partial sort suffices
         val (prefixColumnOrders, suffixColumnOrders) = sortColumns.splitAt(satisfiedPrefix.length)
-        Some(context.logicalPlanProducer.planPartialSort(projected2, prefixColumnOrders, suffixColumnOrders, providedOrderColumns, interestingOrder, context))
+        Some(context.logicalPlanProducer.planPartialSort(projected2, prefixColumnOrders, suffixColumnOrders, providedOrderColumns, interestingOrderConfig.orderToReport, context))
       }
     } else {
       None

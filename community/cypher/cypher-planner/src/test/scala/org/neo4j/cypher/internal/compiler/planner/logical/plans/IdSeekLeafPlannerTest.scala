@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.planner.logical.ExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
+import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.idSeekLeafPlanner
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.SemanticDirection
@@ -36,7 +37,6 @@ import org.neo4j.cypher.internal.ir.Predicate
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.ir.SimplePatternLength
-import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.ManySeekableArgs
@@ -76,7 +76,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     when(context.semanticTable.isNode(varFor("n"))).thenReturn(true)
 
     // when
-    val resultPlans = idSeekLeafPlanner(Set.empty)(qg, InterestingOrder.empty, context)
+    val resultPlans = idSeekLeafPlanner(Set.empty)(qg, InterestingOrderConfig.empty, context)
 
     // then
     resultPlans should equal(
@@ -101,7 +101,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     when(context.semanticTable.isNode(varFor("n"))).thenReturn(true)
 
     // when
-    val resultPlans = idSeekLeafPlanner(Set("n"))(qg, InterestingOrder.empty, context)
+    val resultPlans = idSeekLeafPlanner(Set("n"))(qg, InterestingOrderConfig.empty, context)
 
     // then
     resultPlans should be(empty)
@@ -126,7 +126,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     when(context.semanticTable.isNode(varFor("n"))).thenReturn(true)
 
     // when
-    val resultPlans = idSeekLeafPlanner(Set.empty)(qg, InterestingOrder.empty, context)
+    val resultPlans = idSeekLeafPlanner(Set.empty)(qg, InterestingOrderConfig.empty, context)
 
     // then
     resultPlans should equal(
@@ -152,7 +152,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     when(context.semanticTable.isNode(varFor("n"))).thenReturn(true)
 
     // when
-    val resultPlans = idSeekLeafPlanner(Set.empty)(qg, InterestingOrder.empty, context)
+    val resultPlans = idSeekLeafPlanner(Set.empty)(qg, InterestingOrderConfig.empty, context)
 
     // then
     resultPlans should equal(Seq.empty)
@@ -176,7 +176,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     when(context.semanticTable.isNode(varFor("n"))).thenReturn(true)
 
     // when
-    val resultPlans = idSeekLeafPlanner(Set.empty)(qg, InterestingOrder.empty, context)
+    val resultPlans = idSeekLeafPlanner(Set.empty)(qg, InterestingOrderConfig.empty, context)
 
     // then
     resultPlans should equal(Seq.empty)
@@ -203,7 +203,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     when(context.semanticTable.isRelationship(varFor("r"))).thenReturn(true)
 
     // when
-    val resultPlans = idSeekLeafPlanner(Set.empty)(qg, InterestingOrder.empty, context)
+    val resultPlans = idSeekLeafPlanner(Set.empty)(qg, InterestingOrderConfig.empty, context)
 
     // then
     resultPlans should equal(
@@ -231,7 +231,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     when(context.semanticTable.isRelationship(varFor("r"))).thenReturn(true)
 
     // when
-    val resultPlans = idSeekLeafPlanner(Set.empty)(qg, InterestingOrder.empty, context)
+    val resultPlans = idSeekLeafPlanner(Set.empty)(qg, InterestingOrderConfig.empty, context)
 
     // then
     resultPlans should equal(
@@ -270,7 +270,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext(), metrics = factory.newMetrics(statistics, evaluator, config, ExecutionModel.default), semanticTable = semanticTable)
 
     // when
-    val resultPlans = idSeekLeafPlanner(Set.empty)(qg, InterestingOrder.empty, context)
+    val resultPlans = idSeekLeafPlanner(Set.empty)(qg, InterestingOrderConfig.empty, context)
 
     // then
     resultPlans should equal(
@@ -314,7 +314,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext(), metrics = factory.newMetrics(statistics, evaluator, config, ExecutionModel.default), semanticTable = semanticTable)
 
     // when
-    val resultPlans = idSeekLeafPlanner(Set.empty)(qg, InterestingOrder.empty, context)
+    val resultPlans = idSeekLeafPlanner(Set.empty)(qg, InterestingOrderConfig.empty, context)
 
     // then
     resultPlans should equal(
@@ -352,7 +352,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     when(context.semanticTable.isRelationship(rel)).thenReturn(true)
 
     // when
-    val resultPlans = idSeekLeafPlanner(Set.empty)(qg, InterestingOrder.empty, context)
+    val resultPlans = idSeekLeafPlanner(Set.empty)(qg, InterestingOrderConfig.empty, context)
 
     // then
     val newFrom = NodeNameGenerator.name(rel.position.bumped())
@@ -387,7 +387,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     when(context.semanticTable.isRelationship(rel)).thenReturn(true)
 
     // when
-    val resultPlans = idSeekLeafPlanner(Set.empty)(qg, InterestingOrder.empty, context)
+    val resultPlans = idSeekLeafPlanner(Set.empty)(qg, InterestingOrderConfig.empty, context)
 
     // then
     val newFrom = NodeNameGenerator.name(rel.position.bumped())

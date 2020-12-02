@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
+import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.patternExpressionRewriter
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.selectPatternPredicates.planPredicates
 import org.neo4j.cypher.internal.expressions.CaseExpression
@@ -43,7 +44,6 @@ import org.neo4j.cypher.internal.expressions.functions.Head
 import org.neo4j.cypher.internal.ir.HasMappableExpressions
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters.asQueryGraph
-import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.macros.AssertMacros
@@ -293,7 +293,7 @@ object PatternExpressionSolver {
       //  i) There is no way of expressing order within a pattern comprehension
       //  ii) It can lead to endless recursion in case the sort expression contains the subquery we are solving
       //      e.g. `n{.name, Thing_Has_Thing2:[ (n)-[:Has]->(thing2:Thing2)| n.name ]} ORDER BY n.name`
-      val innerPlan = context.strategy.plan(qg, InterestingOrder.empty, context).result
+      val innerPlan = context.strategy.plan(qg, InterestingOrderConfig.empty, context).result
       val collectionName = FreshIdNameGenerator.name(expr.position)
       val projectedPath = projectionCreator(expr)
       val projectedInner = projection(innerPlan, Map(collectionName -> projectedPath), Map(collectionName -> projectedPath), context)
@@ -346,14 +346,17 @@ object PatternExpressionSolver {
   }
 
   object ForExistentialSubquery {
-    def solve(source: LogicalPlan, expressions: Seq[Expression], interestingOrder: InterestingOrder, context: LogicalPlanningContext): (Seq[Expression], LogicalPlan) = {
+    def solve(source: LogicalPlan,
+              expressions: Seq[Expression],
+              interestingOrderConfig: InterestingOrderConfig,
+              context: LogicalPlanningContext): (Seq[Expression], LogicalPlan) = {
       expressions.foldLeft((Seq.empty[Expression], source)) {
           case ((solvedExprs, plan), e: ExistsSubClause) =>
-            val subQueryPlan = selectPatternPredicates.planInnerOfSubquery(plan, context, interestingOrder, e)
+            val subQueryPlan = selectPatternPredicates.planInnerOfSubquery(plan, context, interestingOrderConfig, e)
             val semiApplyPlan = context.logicalPlanProducer.planSemiApplyInHorizon(plan, subQueryPlan, e, context)
             (solvedExprs :+ e, semiApplyPlan)
           case ((solvedExprs, plan), not@Not(e: ExistsSubClause)) =>
-            val subQueryPlan = selectPatternPredicates.planInnerOfSubquery(plan, context, interestingOrder, e)
+            val subQueryPlan = selectPatternPredicates.planInnerOfSubquery(plan, context, interestingOrderConfig, e)
             val antiSemiApplyPlan = context.logicalPlanProducer.planAntiSemiApplyInHorizon(plan, subQueryPlan, not, context)
             (solvedExprs :+ not, antiSemiApplyPlan)
           case ((solvedExprs, plan), ors@Ors(exprs)) =>
@@ -366,7 +369,7 @@ object PatternExpressionSolver {
             }
             // Only plan if the OR contains an EXISTS.
             if (patternExpressions.nonEmpty) {
-              val (newPlan, solvedPredicates) = planPredicates(plan, patternExpressions.toSet, expressions.toSet, None, interestingOrder, context)
+              val (newPlan, solvedPredicates) = planPredicates(plan, patternExpressions.toSet, expressions.toSet, None, interestingOrderConfig, context)
               AssertMacros.checkOnlyWhenAssertionsAreEnabled(
                 exprs.forall(solvedPredicates.contains),
                 "planPredicates is supposed to solve all predicates in an OR clause."

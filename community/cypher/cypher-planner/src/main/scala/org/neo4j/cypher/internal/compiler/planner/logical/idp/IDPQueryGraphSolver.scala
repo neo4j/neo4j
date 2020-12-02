@@ -26,10 +26,10 @@ import org.neo4j.cypher.internal.compiler.planner.logical.QueryPlannerKit
 import org.neo4j.cypher.internal.compiler.planner.logical.SortPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.SortPlanner.SatisfiedForPlan
 import org.neo4j.cypher.internal.compiler.planner.logical.SortPlanner.orderSatisfaction
+import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.BestPlans
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.planShortestPaths
 import org.neo4j.cypher.internal.ir.QueryGraph
-import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
 trait IDPQueryGraphSolverMonitor extends IDPSolverMonitor {
@@ -46,38 +46,38 @@ object IDPQueryGraphSolver {
   val VERBOSE: Boolean = java.lang.Boolean.getBoolean("pickBestPlan.VERBOSE")
 
   def composeSolverSteps[Solvable](queryGraph: QueryGraph,
-                                   interestingOrder: InterestingOrder,
+                                   interestingOrderConfig: InterestingOrderConfig,
                                    kit: QueryPlannerKit,
                                    context: LogicalPlanningContext,
                                    generators: Seq[IDPSolverStep[Solvable, LogicalPlan, LogicalPlanningContext]]
                                   ): IDPSolverStep[Solvable, LogicalPlan, LogicalPlanningContext] = {
-    val combinedSolverSteps = generators.map(selectingAndSortingSolverStep(queryGraph, interestingOrder, kit, context, _))
+    val combinedSolverSteps = generators.map(selectingAndSortingSolverStep(queryGraph, interestingOrderConfig, kit, context, _))
     combinedSolverSteps.foldLeft(IDPSolverStep.empty[Solvable, LogicalPlan, LogicalPlanningContext])(_ ++ _)
   }
 
   def selectingAndSortingSolverStep[Solvable](queryGraph: QueryGraph,
-                                              interestingOrder: InterestingOrder,
+                                              interestingOrderConfig: InterestingOrderConfig,
                                               kit: QueryPlannerKit,
                                               context: LogicalPlanningContext,
                                               solverStep: IDPSolverStep[Solvable, LogicalPlan, LogicalPlanningContext]
                                              ): IDPSolverStep[Solvable, LogicalPlan, LogicalPlanningContext] = {
     val selectingSolverStep = solverStep.map(plan => kit.select(plan, queryGraph))
-    if (interestingOrder.isEmpty) {
+    if (interestingOrderConfig.orderToSolve.isEmpty) {
       selectingSolverStep
     } else {
-      val sortingSolverStep = selectingSolverStep.flatMap(plan => SortPlanner.maybeSortedPlan(plan, interestingOrder, context).filterNot(_ == plan))
+      val sortingSolverStep = selectingSolverStep.flatMap(plan => SortPlanner.maybeSortedPlan(plan, interestingOrderConfig, context).filterNot(_ == plan))
       selectingSolverStep ++ sortingSolverStep
     }
   }
 
-  def extraRequirementForInterestingOrder(context: LogicalPlanningContext, interestingOrder: InterestingOrder): ExtraRequirement[LogicalPlan] = {
-    if (interestingOrder.isEmpty) {
+  def extraRequirementForInterestingOrder(context: LogicalPlanningContext, interestingOrderConfig: InterestingOrderConfig): ExtraRequirement[LogicalPlan] = {
+    if (interestingOrderConfig.orderToSolve.isEmpty) {
       ExtraRequirement.empty
     } else {
       new ExtraRequirement[LogicalPlan]() {
         override def fulfils(plan: LogicalPlan): Boolean = {
           val asSortedAsPossible = SatisfiedForPlan(plan)
-          orderSatisfaction(interestingOrder, context, plan) match {
+          orderSatisfaction(interestingOrderConfig, context, plan) match {
             case asSortedAsPossible() => true
             case _ => false
           }
@@ -99,16 +99,16 @@ case class IDPQueryGraphSolver(singleComponentSolver: SingleComponentPlannerTrai
                                componentConnector: JoinDisconnectedQueryGraphComponents,
                                monitor: IDPQueryGraphSolverMonitor) extends QueryGraphSolver with PatternExpressionSolving {
 
-  override def plan(queryGraph: QueryGraph, interestingOrder: InterestingOrder, context: LogicalPlanningContext): BestPlans = {
-    val kit = kitWithShortestPathSupport(context.config.toKit(interestingOrder, context), context)
+  override def plan(queryGraph: QueryGraph, interestingOrderConfig: InterestingOrderConfig, context: LogicalPlanningContext): BestPlans = {
+    val kit = kitWithShortestPathSupport(context.config.toKit(interestingOrderConfig, context), context)
     val components = queryGraph.connectedComponents
     val plannedComponents =
       if (components.isEmpty)
         planEmptyComponent(queryGraph, context, kit)
       else
-        planComponents(components, interestingOrder, context, kit)
+        planComponents(components, interestingOrderConfig, context, kit)
 
-    connectComponentsAndSolveOptionalMatch(plannedComponents, queryGraph, interestingOrder, context, kit)
+    connectComponentsAndSolveOptionalMatch(plannedComponents, queryGraph, interestingOrderConfig, context, kit)
   }
 
   private def kitWithShortestPathSupport(kit: QueryPlannerKit, context: LogicalPlanningContext) =
@@ -122,9 +122,12 @@ case class IDPQueryGraphSolver(singleComponentSolver: SingleComponentPlannerTrai
       case (plan, _) => plan
     }
 
-  private def planComponents(components: Seq[QueryGraph], interestingOrder: InterestingOrder, context: LogicalPlanningContext, kit: QueryPlannerKit): Seq[PlannedComponent] =
+  private def planComponents(components: Seq[QueryGraph],
+                             interestingOrderConfig: InterestingOrderConfig,
+                             context: LogicalPlanningContext,
+                             kit: QueryPlannerKit): Seq[PlannedComponent] =
     components.map { qg =>
-      PlannedComponent(qg, singleComponentSolver.planComponent(qg, context, kit, interestingOrder))
+      PlannedComponent(qg, singleComponentSolver.planComponent(qg, context, kit, interestingOrderConfig))
     }
 
   private def planEmptyComponent(queryGraph: QueryGraph, context: LogicalPlanningContext, kit: QueryPlannerKit): Seq[PlannedComponent] = {
@@ -136,11 +139,11 @@ case class IDPQueryGraphSolver(singleComponentSolver: SingleComponentPlannerTrai
 
   private def connectComponentsAndSolveOptionalMatch(plannedComponents: Seq[PlannedComponent],
                                                      queryGraph: QueryGraph,
-                                                     interestingOrder: InterestingOrder,
+                                                     interestingOrderConfig: InterestingOrderConfig,
                                                      context: LogicalPlanningContext,
                                                      kit: QueryPlannerKit): BestPlans = {
     monitor.startConnectingComponents(queryGraph)
-    val bestPlans = componentConnector.connectComponentsAndSolveOptionalMatch(plannedComponents.toSet, queryGraph, interestingOrder, context, kit, singleComponentSolver)
+    val bestPlans = componentConnector.connectComponentsAndSolveOptionalMatch(plannedComponents.toSet, queryGraph, interestingOrderConfig, context, kit, singleComponentSolver)
     monitor.endConnectingComponents(queryGraph, bestPlans.result)
     bestPlans
   }

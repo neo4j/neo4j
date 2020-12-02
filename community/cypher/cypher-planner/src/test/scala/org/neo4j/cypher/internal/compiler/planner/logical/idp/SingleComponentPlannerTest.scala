@@ -28,7 +28,6 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.SimplePatternLength
-import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.CartesianProduct
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.ExpandAll
@@ -51,7 +50,7 @@ class SingleComponentPlannerTest extends CypherFunSuite with LogicalPlanningTest
     val bPlan = newMockedLogicalPlan(context.planningAttributes, "b")
 
     // when
-    val logicalPlans = SingleComponentPlanner.planSinglePattern(qg, pattern, Set(aPlan, bPlan), InterestingOrder.empty, context)
+    val logicalPlans = SingleComponentPlanner.planSinglePattern(qg, pattern, Set(aPlan, bPlan), context)
 
     // then
     val plan1 = Expand(aPlan, "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r1", ExpandAll)
@@ -73,7 +72,7 @@ class SingleComponentPlannerTest extends CypherFunSuite with LogicalPlanningTest
     val bPlan = newMockedLogicalPlan(context.planningAttributes, "b")
 
     // when
-    val logicalPlans = SingleComponentPlanner.planSinglePattern(qg, pattern, Set(aPlan, bPlan), InterestingOrder.empty, context)
+    val logicalPlans = SingleComponentPlanner.planSinglePattern(qg, pattern, Set(aPlan, bPlan), context)
 
     // then
 
@@ -99,7 +98,7 @@ class SingleComponentPlannerTest extends CypherFunSuite with LogicalPlanningTest
     val bPlan = newMockedLogicalPlan(context.planningAttributes, "b")
 
     // when
-    val logicalPlans = SingleComponentPlanner.planSinglePattern(qg, pattern, Set(aPlan, bPlan), InterestingOrder.empty, context)
+    val logicalPlans = SingleComponentPlanner.planSinglePattern(qg, pattern, Set(aPlan, bPlan), context)
 
     // then
     val plan1 = Expand(aPlan, "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r1", ExpandAll)
@@ -127,7 +126,7 @@ class SingleComponentPlannerTest extends CypherFunSuite with LogicalPlanningTest
     val aPlan = newMockedLogicalPlan(context.planningAttributes, "a")
 
     // when
-    val logicalPlans = SingleComponentPlanner.planSinglePattern(qg, pattern, Set(aPlan), InterestingOrder.empty, context)
+    val logicalPlans = SingleComponentPlanner.planSinglePattern(qg, pattern, Set(aPlan), context)
 
     // then
     val plan1 = Expand(aPlan, "a", SemanticDirection.OUTGOING, Seq.empty, "a", "r1", ExpandInto)
@@ -146,7 +145,7 @@ class SingleComponentPlannerTest extends CypherFunSuite with LogicalPlanningTest
     val bPlan = newMockedLogicalPlan(context.planningAttributes, "b")
 
     // when
-    val logicalPlans = SingleComponentPlanner.planSinglePattern(qg, pattern, Set(aPlan, bPlan), InterestingOrder.empty, context)
+    val logicalPlans = SingleComponentPlanner.planSinglePattern(qg, pattern, Set(aPlan, bPlan), context)
 
     // then
     val plan1 = Expand(aPlan, "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r1", ExpandAll)

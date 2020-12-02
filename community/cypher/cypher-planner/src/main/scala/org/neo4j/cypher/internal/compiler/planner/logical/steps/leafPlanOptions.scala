@@ -24,23 +24,23 @@ import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.QueryPlannerConfiguration
 import org.neo4j.cypher.internal.compiler.planner.logical.SortPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.BestResults
+import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.ir.QueryGraph
-import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 
 object leafPlanOptions extends LeafPlanFinder {
 
   override def apply(config: QueryPlannerConfiguration,
                      queryGraph: QueryGraph,
-                     interestingOrder: InterestingOrder,
+                     interestingOrderConfig: InterestingOrderConfig,
                      context: LogicalPlanningContext): Iterable[BestPlans] = {
-    val queryPlannerKit = config.toKit(interestingOrder, context)
+    val queryPlannerKit = config.toKit(interestingOrderConfig, context)
     val pickBest = config.pickBestCandidate(context)
 
     // `candidates` can return the same plan, multiple times, thus we call `distinct` to have to compare less plans in `pickBest`.
     // The reason for not using a Set at this point already, is that the order of `leafPlanners`
     // secretly prefers index seeks over index scans over label scans if they have the same cost.
     // Fixing this appropriately would be more intrusive.
-    val leafPlanCandidateLists = config.leafPlanners.candidates(queryGraph, interestingOrder = interestingOrder, context = context).distinct
+    val leafPlanCandidateLists = config.leafPlanners.candidates(queryGraph, interestingOrderConfig = interestingOrderConfig, context = context).distinct
     val leafPlanCandidateListsWithSelections = queryPlannerKit.select(leafPlanCandidateLists, queryGraph)
 
     val bestPlansPerAvailableSymbols = leafPlanCandidateListsWithSelections
@@ -49,8 +49,8 @@ object leafPlanOptions extends LeafPlanFinder {
       .map { bucket =>
       val bestPlan = pickBest(bucket, s"leaf plan with available symbols ${bucket.head.availableSymbols.map(s => s"'$s'").mkString(", ")}").get
 
-      if (interestingOrder.requiredOrderCandidate.nonEmpty) {
-        val sortedLeaves = bucket.flatMap(plan => SortPlanner.planIfAsSortedAsPossible(plan, interestingOrder, context))
+      if (interestingOrderConfig.orderToSolve.requiredOrderCandidate.nonEmpty) {
+        val sortedLeaves = bucket.flatMap(plan => SortPlanner.planIfAsSortedAsPossible(plan, interestingOrderConfig, context))
         val bestSortedPlan = pickBest(sortedLeaves, s"sorted leaf plan with available symbols ${bucket.head.availableSymbols.map(s => s"'$s'").mkString(", ")}")
         BestResults(bestPlan, bestSortedPlan)
       } else {

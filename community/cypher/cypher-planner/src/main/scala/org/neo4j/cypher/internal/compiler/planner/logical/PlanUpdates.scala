@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
+import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.mergeUniqueIndexSeekLeafPlanner
 import org.neo4j.cypher.internal.expressions.ContainerIndex
@@ -43,7 +44,6 @@ import org.neo4j.cypher.internal.ir.SetPropertyPattern
 import org.neo4j.cypher.internal.ir.SetRelationshipPropertiesFromMapPattern
 import org.neo4j.cypher.internal.ir.SetRelationshipPropertyPattern
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
-import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.exceptions.InternalException
 
@@ -55,8 +55,9 @@ case object PlanUpdates extends UpdatesPlanner {
   private def computePlan(plan: LogicalPlan, query: SinglePlannerQuery, firstPlannerQuery: Boolean, context: LogicalPlanningContext) = {
     var updatePlan = plan
     val iterator = query.queryGraph.mutatingPatterns.iterator
+    val orderForPlanning = InterestingOrderConfig(query.interestingOrder)
     while(iterator.hasNext) {
-      updatePlan = planUpdate(updatePlan, iterator.next(), firstPlannerQuery, query.interestingOrder, context)
+      updatePlan = planUpdate(updatePlan, iterator.next(), firstPlannerQuery, orderForPlanning, context)
     }
     updatePlan
   }
@@ -78,7 +79,11 @@ case object PlanUpdates extends UpdatesPlanner {
     }
   }
 
-  private def planUpdate(source: LogicalPlan, pattern: MutatingPattern, first: Boolean, interestingOrder: InterestingOrder, context: LogicalPlanningContext) = {
+  private def planUpdate(source: LogicalPlan,
+                         pattern: MutatingPattern,
+                         first: Boolean,
+                         interestingOrderConfig: InterestingOrderConfig,
+                         context: LogicalPlanningContext) = {
 
     def planAllUpdatesRecursively(query: SinglePlannerQuery, plan: LogicalPlan): LogicalPlan = {
       query.allPlannerQueries.foldLeft((plan, true)) {
@@ -102,11 +107,11 @@ case object PlanUpdates extends UpdatesPlanner {
 
       //MERGE ()
       case p: MergeNodePattern =>
-        planMerge(source, p.matchGraph, Seq(p.createNode), Seq.empty, p.onCreate, p.onMatch, first, interestingOrder, context, p)
+        planMerge(source, p.matchGraph, Seq(p.createNode), Seq.empty, p.onCreate, p.onMatch, first, interestingOrderConfig, context, p)
 
       //MERGE (a)-[:T]->(b)
       case p: MergeRelationshipPattern =>
-        planMerge(source, p.matchGraph, p.createNodes, p.createRelationships, p.onCreate, p.onMatch, first, interestingOrder, context, p)
+        planMerge(source, p.matchGraph, p.createNodes, p.createRelationships, p.onCreate, p.onMatch, first, interestingOrderConfig, context, p)
 
       //SET n:Foo:Bar
       case pattern: SetLabelPattern => context.logicalPlanProducer.planSetLabel(source, pattern, context)
@@ -197,7 +202,7 @@ case object PlanUpdates extends UpdatesPlanner {
                 onCreatePatterns: Seq[SetMutatingPattern],
                 onMatchPatterns: Seq[SetMutatingPattern],
                 first: Boolean,
-                interestingOrder: InterestingOrder,
+                interestingOrderConfig: InterestingOrderConfig,
                 context: LogicalPlanningContext,
                 solvedMutatingPattern: MutatingPattern): LogicalPlan = {
 
@@ -212,7 +217,7 @@ case object PlanUpdates extends UpdatesPlanner {
 
     val ids: Seq[String] = createNodePatterns.map(_.idName) ++ createRelationshipPatterns.map(_.idName)
 
-    val mergeMatch = mergeMatchPart(source, matchGraph, producer, createNodePatterns, createRelationshipPatterns, interestingOrder, innerContext, ids)
+    val mergeMatch = mergeMatchPart(source, matchGraph, producer, interestingOrderConfig, innerContext, ids)
 
     //            condApply
     //             /   \
@@ -220,7 +225,7 @@ case object PlanUpdates extends UpdatesPlanner {
     val condApply = if (onMatchPatterns.nonEmpty) {
       val qgWithAllNeededArguments = matchGraph.addArgumentIds(matchGraph.allCoveredIds.toIndexedSeq)
       val onMatch = onMatchPatterns.foldLeft[LogicalPlan](producer.planQueryArgument(qgWithAllNeededArguments, context)) {
-        case (src, current) => planUpdate(src, current, first, interestingOrder, context)
+        case (src, current) => planUpdate(src, current, first, interestingOrderConfig, context)
       }
       producer.planConditionalApply(mergeMatch, onMatch, ids, innerContext)
     } else mergeMatch
@@ -239,7 +244,7 @@ case object PlanUpdates extends UpdatesPlanner {
     }
 
     val onCreate = onCreatePatterns.foldLeft(mergeCreatePart) {
-      case (src, current) => planUpdate(src, current, first, interestingOrder, context)
+      case (src, current) => planUpdate(src, current, first, interestingOrderConfig, context)
     }
 
     val solved = context.planningAttributes.solveds.get(source.id).asSinglePlannerQuery.amendQueryGraph(u => u.addMutatingPatterns(solvedMutatingPattern))
@@ -251,12 +256,10 @@ case object PlanUpdates extends UpdatesPlanner {
   private def mergeMatchPart(source: LogicalPlan,
                              matchGraph: QueryGraph,
                              producer: LogicalPlanProducer,
-                             createNodePatterns: Seq[CreateNode],
-                             createRelationshipPatterns: Seq[CreateRelationship],
-                             interestingOrder: InterestingOrder,
+                             interestingOrderConfig: InterestingOrderConfig,
                              context: LogicalPlanningContext, ids: Seq[String]) = {
     def mergeRead(ctx: LogicalPlanningContext) = {
-      val mergeReadPart = ctx.strategy.plan(matchGraph, interestingOrder, ctx).result
+      val mergeReadPart = ctx.strategy.plan(matchGraph, interestingOrderConfig, ctx).result
       if (context.planningAttributes.solveds.get(mergeReadPart.id).asSinglePlannerQuery.queryGraph != matchGraph)
         throw new InternalException(s"The planner was unable to successfully plan the MERGE read:\n${context.planningAttributes.solveds.get(mergeReadPart.id).asSinglePlannerQuery.queryGraph}\n not equal to \n$matchGraph")
       producer.planOptional(mergeReadPart, matchGraph.argumentIds, ctx)

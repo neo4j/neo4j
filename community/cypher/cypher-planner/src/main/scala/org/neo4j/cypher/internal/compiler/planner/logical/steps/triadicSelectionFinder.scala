@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
+import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.HasLabels
@@ -35,7 +36,6 @@ import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.functions.Exists
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.Selections.containsPatternPredicates
-import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
@@ -47,16 +47,16 @@ object triadicSelectionFinder extends SelectionCandidateGenerator {
   override def apply(input: LogicalPlan,
                      unsolvedPredicates: Set[Expression],
                      queryGraph: QueryGraph,
-                     interestingOrder: InterestingOrder,
+                     interestingOrderConfig: InterestingOrderConfig,
                      context: LogicalPlanningContext): Iterator[SelectionCandidate] = {
     unsolvedPredicates.iterator.filter(containsPatternPredicates).collect {
       // WHERE NOT (a)-[:X]->(c)
       case predicate@Not(Exists(patternExpr: PatternExpression)) =>
-        findMatchingRelationshipPattern(positivePredicate = false, predicate, patternExpr, input, queryGraph, interestingOrder, context)
+        findMatchingRelationshipPattern(positivePredicate = false, predicate, patternExpr, input, queryGraph, context)
           .map(SelectionCandidate(_, Set(predicate)))
       // WHERE (a)-[:X]->(c)
       case predicate@Exists(patternExpr: PatternExpression) =>
-        findMatchingRelationshipPattern(positivePredicate = true, predicate, patternExpr, input, queryGraph, interestingOrder, context)
+        findMatchingRelationshipPattern(positivePredicate = true, predicate, patternExpr, input, queryGraph, context)
           .map(SelectionCandidate(_, Set(predicate)))
     }.flatten
   }
@@ -66,14 +66,13 @@ object triadicSelectionFinder extends SelectionCandidateGenerator {
                                               patternExpression: PatternExpression,
                                               in: LogicalPlan,
                                               qg: QueryGraph,
-                                              interestingOrder: InterestingOrder,
                                               context: LogicalPlanningContext): Seq[LogicalPlan] = in match {
 
     // MATCH (a)-[:X]->(b)-[:X]->(c) WHERE (predicate involving (a)-[:X]->(c))
-    case Selection(Ands(predicates),exp:Expand) => findMatchingOuterExpand(positivePredicate, triadicPredicate, patternExpression, predicates.toSeq, exp, qg, interestingOrder, context)
+    case Selection(Ands(predicates),exp:Expand) => findMatchingOuterExpand(positivePredicate, triadicPredicate, patternExpression, predicates.toSeq, exp, qg, context)
 
     // MATCH (a)-[:X]->(b)-[:Y]->(c) WHERE (predicate involving (a)-[:X]->(c))
-    case exp:Expand => findMatchingOuterExpand(positivePredicate, triadicPredicate, patternExpression, Seq.empty, exp, qg, interestingOrder, context)
+    case exp:Expand => findMatchingOuterExpand(positivePredicate, triadicPredicate, patternExpression, Seq.empty, exp, qg, context)
 
     case _ => Seq.empty
   }
@@ -84,7 +83,6 @@ object triadicSelectionFinder extends SelectionCandidateGenerator {
                                       incomingPredicates: Seq[Expression],
                                       expand: Expand,
                                       qg: QueryGraph,
-                                      interestingOrder: InterestingOrder,
                                       context: LogicalPlanningContext): Seq[LogicalPlan] = expand match {
     case exp2@Expand(exp1: Expand, _, _, _, _, _, ExpandAll) =>
       findMatchingInnerExpand(positivePredicate, triadicPredicate, patternExpression, incomingPredicates, Seq.empty, exp1, exp2, qg, context)

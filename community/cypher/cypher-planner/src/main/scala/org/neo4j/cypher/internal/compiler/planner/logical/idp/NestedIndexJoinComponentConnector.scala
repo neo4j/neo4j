@@ -23,15 +23,18 @@ import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.QueryPlannerKit
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.cartesianProductsOrValueJoins.planNIJ
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.cartesianProductsOrValueJoins.predicatesDependendingOnBothSides
+import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.ir.QueryGraph
-import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
 case class NestedIndexJoinComponentConnector(singleComponentPlanner: SingleComponentPlannerTrait)
   extends ComponentConnector {
 
-  def solverStep(goalBitAllocation: GoalBitAllocation, queryGraph: QueryGraph, interestingOrder: InterestingOrder, kit: QueryPlannerKit): ComponentConnectorSolverStep = {
+  override def solverStep(goalBitAllocation: GoalBitAllocation,
+                          queryGraph: QueryGraph,
+                          interestingOrderConfig: InterestingOrderConfig,
+                          kit: QueryPlannerKit): ComponentConnectorSolverStep = {
     val predicatesWithDependencies: Array[(Expression, Array[String])] =
       queryGraph.selections.flatPredicates
                 .map(pred => (pred, pred.dependencies.map(_.name).toArray))
@@ -63,7 +66,7 @@ case class NestedIndexJoinComponentConnector(singleComponentPlanner: SingleCompo
           leftCovered = leftQg.allCoveredIds
 
           predicate <- predicatesDependendingOnBothSides(predicatesWithDependencies, leftCovered, rightCovered)
-          plan <- planNIJ(leftPlan, rightPlan, leftQg, rightQg, interestingOrder, predicate, context, kit, singleComponentPlanner)
+          plan <- planNIJ(leftPlan, rightPlan, leftQg, rightQg, interestingOrderConfig, predicate, context, kit, singleComponentPlanner)
         } yield plan
       }
     }

@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.planner.logical.ExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.compiler.planner.logical.PlanMatchHelp
+import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.QueryGraph
@@ -72,7 +73,7 @@ class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport w
       metrics = factory.newMetrics(hardcodedStatistics, mock[ExpressionEvaluator], config, ExecutionModel.default),
       strategy = newMockedStrategy(innerPlan))
     val left = newMockedLogicalPlanWithPatterns(context.planningAttributes, idNames = Set(aNode))
-    val plans = outerHashJoin(optionalQg, left, InterestingOrder.empty, context).toSeq
+    val plans = outerHashJoin(optionalQg, left, InterestingOrderConfig.empty, context).toSeq
 
     plans should contain theSameElementsAs Seq(
       LeftOuterHashJoin(Set(aNode), left, innerPlan),
@@ -103,7 +104,7 @@ class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport w
       metrics = factory.newMetrics(hardcodedStatistics, mock[ExpressionEvaluator], config, ExecutionModel.default),
       strategy = newMockedStrategy(innerPlan))
     val left = newMockedLogicalPlanWithPatterns(context.planningAttributes, Set(aNode))
-    val plans = outerHashJoin(optionalQg, left, InterestingOrder.empty, context).toSeq
+    val plans = outerHashJoin(optionalQg, left, InterestingOrderConfig.empty, context).toSeq
 
     plans should contain theSameElementsAs Seq(
       LeftOuterHashJoin(Set(aNode), left, innerPlan),
@@ -138,7 +139,7 @@ class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport w
       metrics = factory.newMetrics(hardcodedStatistics, mock[ExpressionEvaluator], config, ExecutionModel.default),
       strategy = newMockedStrategyWithSortedPlan(unorderedPlan, orderedPlan))
     val left = newMockedLogicalPlanWithPatterns(context.planningAttributes, idNames = Set(aNode))
-    val io = InterestingOrder.required(RequiredOrderCandidate.asc(varFor(bNode)))
+    val io = InterestingOrderConfig(InterestingOrder.required(RequiredOrderCandidate.asc(varFor(bNode))))
     val plans = outerHashJoin(optionalQg, left, io, context).toSeq
 
     plans should contain theSameElementsAs Seq(
