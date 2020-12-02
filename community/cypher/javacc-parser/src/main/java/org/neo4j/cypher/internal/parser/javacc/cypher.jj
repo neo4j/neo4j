@@ -1915,7 +1915,7 @@ EXPRESSION PatternComprehension() :
   EXPRESSION projection = null;
 }
 {
-  t=<LBRACKET> ( v=Variable() <EQ> )? p=EveryPathPattern() ( where=Where() )? <BAR> projection=Expression() <RBRACKET>
+  t=<LBRACKET> ( v=Variable() <EQ> )? p=EveryPathPatternNonEmpty() ( where=Where() )? <BAR> projection=Expression() <RBRACKET>
   { return astFactory.patternComprehension(pos(t), v, p, where, projection); }
 }
 

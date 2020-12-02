@@ -139,6 +139,10 @@ class Neo4jASTFactorySimpleTest extends ParsingTestBase with FunSuiteLike with T
     assertSameAST(testName)
   }
 
+  test("RETURN [p = (x) | p]") {
+    assertSameAST(testName)
+  }
+
   // extra spaces tests
 
   private def assertSameASTWithExtraSpaces(query: String) = {
