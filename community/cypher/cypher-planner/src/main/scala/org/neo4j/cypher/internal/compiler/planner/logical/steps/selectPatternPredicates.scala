@@ -104,10 +104,10 @@ case object selectPatternPredicates extends SelectionCandidateGenerator {
     val new_qg = e.optionalWhereExpression.foldLeft(qg) {
       case (acc: QueryGraph, patternExpr: Expression) => {
         val outerVariableNames = e.outerScope.map(id => id.name)
-        val usedVariables: Seq[String] = patternExpr.arguments.flatMap(exp => exp.treeFold(Set.empty[String]) {
-          case v: Variable => acc => TraverseChildren(acc + v.name)
-          case _ => acc => TraverseChildren(acc)
-        }).distinct
+        val usedVariables: Seq[String] = patternExpr.arguments
+          .findByAllClass[Variable]
+          .map(_.name)
+          .distinct
 
         acc.addPredicates(outerVariableNames, patternExpr)
           .addArgumentIds(usedVariables.filter(v => outerVariableNames.contains(v)))
