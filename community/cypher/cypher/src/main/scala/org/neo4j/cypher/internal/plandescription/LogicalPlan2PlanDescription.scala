@@ -89,6 +89,7 @@ import org.neo4j.cypher.internal.logical.plans.DropUniquePropertyConstraint
 import org.neo4j.cypher.internal.logical.plans.Eager
 import org.neo4j.cypher.internal.logical.plans.EmptyResult
 import org.neo4j.cypher.internal.logical.plans.ErrorPlan
+import org.neo4j.cypher.internal.logical.plans.ExhaustiveLimit
 import org.neo4j.cypher.internal.logical.plans.ExistenceQueryExpression
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.ExpandAll
@@ -128,6 +129,7 @@ import org.neo4j.cypher.internal.logical.plans.OrderedAggregation
 import org.neo4j.cypher.internal.logical.plans.OrderedDistinct
 import org.neo4j.cypher.internal.logical.plans.PartialSort
 import org.neo4j.cypher.internal.logical.plans.PartialTop
+import org.neo4j.cypher.internal.logical.plans.PartialTop1WithTies
 import org.neo4j.cypher.internal.logical.plans.PointDistanceRange
 import org.neo4j.cypher.internal.logical.plans.PointDistanceSeekRangeWrapper
 import org.neo4j.cypher.internal.logical.plans.PrefixSeekRangeWrapper
@@ -166,6 +168,7 @@ import org.neo4j.cypher.internal.logical.plans.Skip
 import org.neo4j.cypher.internal.logical.plans.Sort
 import org.neo4j.cypher.internal.logical.plans.SystemProcedureCall
 import org.neo4j.cypher.internal.logical.plans.Top
+import org.neo4j.cypher.internal.logical.plans.Top1WithTies
 import org.neo4j.cypher.internal.logical.plans.TriadicBuild
 import org.neo4j.cypher.internal.logical.plans.TriadicFilter
 import org.neo4j.cypher.internal.logical.plans.TriadicSelection
@@ -466,6 +469,9 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
       case Limit(_, count) =>
         PlanDescriptionImpl(id, "Limit", children, Seq(Details(asPrettyString(count))), variables)
 
+      case ExhaustiveLimit(_, count) =>
+        PlanDescriptionImpl(id, "ExhaustiveLimit", children, Seq(Details(asPrettyString(count))), variables)
+
       case CacheProperties(_, properties) =>
         PlanDescriptionImpl(id, "CacheProperties", children, Seq(Details(properties.toSeq.map(asPrettyString(_)))), variables)
 
@@ -595,9 +601,17 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         val details = pretty"${orderInfo(orderBy)} LIMIT ${asPrettyString(limit)}"
         PlanDescriptionImpl(id, "Top", children, Seq(Details(details)), variables)
 
+      case Top1WithTies(_, orderBy) =>
+        val details = pretty"${orderInfo(orderBy)}"
+        PlanDescriptionImpl(id, "Top1WithTies", children, Seq(Details(details)), variables)
+
       case PartialTop(_, alreadySortedPrefix, stillToSortSuffix, limit, _) =>
         val details = pretty"${orderInfo(alreadySortedPrefix ++ stillToSortSuffix)} LIMIT ${asPrettyString(limit)}"
         PlanDescriptionImpl(id, "PartialTop", children, Seq(Details(details)), variables)
+
+      case PartialTop1WithTies(_, alreadySortedPrefix, stillToSortSuffix) =>
+        val details = pretty"${orderInfo(alreadySortedPrefix ++ stillToSortSuffix)}"
+        PlanDescriptionImpl(id, "PartialTop1WithTies", children, Seq(Details(details)), variables)
 
       case UnwindCollection(_, variable, expression) =>
         val details = Details(projectedExpressionInfo(Map(variable -> expression)).mkPrettyString(SEPARATOR))
