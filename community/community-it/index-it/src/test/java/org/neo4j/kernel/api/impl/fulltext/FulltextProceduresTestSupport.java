@@ -111,30 +111,35 @@ class FulltextProceduresTestSupport
     {
         try ( Transaction tx = db.beginTx() )
         {
-            String queryCall = queryNodes ? QUERY_NODES : QUERY_RELS;
-            Result result = tx.execute( format( queryCall, index, query ) );
-            int num = 0;
-            Double score = Double.MAX_VALUE;
-            while ( result.hasNext() )
-            {
-                Map<String, Object> entry = result.next();
-                Long nextId = ((Entity) entry.get( queryNodes ? NODE : RELATIONSHIP )).getId();
-                Double nextScore = (Double) entry.get( SCORE );
-                assertThat( nextScore ).isLessThanOrEqualTo( score );
-                score = nextScore;
-                if ( num < ids.length )
-                {
-                    assertEquals( format( "Result returned id %d, expected %d", nextId, ids[num] ), ids[num], nextId.longValue() );
-                }
-                else
-                {
-                    fail( format( "Result returned id %d, which is beyond the number of ids (%d) that were expected.", nextId, ids.length ) );
-                }
-                num++;
-            }
-            assertEquals( "Number of results differ from expected", ids.length, num );
+            assertQueryFindsIds( tx, queryNodes, index, query, ids );
             tx.commit();
         }
+    }
+
+    static void assertQueryFindsIds( Transaction tx, boolean queryNodes, String index, String query, long... ids )
+    {
+        String queryCall = queryNodes ? QUERY_NODES : QUERY_RELS;
+        Result result = tx.execute( format( queryCall, index, query ) );
+        int num = 0;
+        Double score = Double.MAX_VALUE;
+        while ( result.hasNext() )
+        {
+            Map<String, Object> entry = result.next();
+            Long nextId = ((Entity) entry.get( queryNodes ? NODE : RELATIONSHIP )).getId();
+            Double nextScore = (Double) entry.get( SCORE );
+            assertThat( nextScore ).isLessThanOrEqualTo( score );
+            score = nextScore;
+            if ( num < ids.length )
+            {
+                assertEquals( format( "Result returned id %d, expected %d", nextId, ids[num] ), ids[num], nextId.longValue() );
+            }
+            else
+            {
+                fail( format( "Result returned id %d, which is beyond the number of ids (%d) that were expected.", nextId, ids.length ) );
+            }
+            num++;
+        }
+        assertEquals( "Number of results differ from expected", ids.length, num );
     }
 
     static void assertQueryFindsIds( GraphDatabaseService db, boolean queryNodes, String index, String query, LongHashSet ids )
