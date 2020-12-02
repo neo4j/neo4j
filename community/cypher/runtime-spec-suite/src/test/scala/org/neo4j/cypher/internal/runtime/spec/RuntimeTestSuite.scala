@@ -264,6 +264,8 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
 
   def tx: InternalTransaction = runtimeTestSupport.tx
 
+  def newTx(): InternalTransaction = runtimeTestSupport.startNewTx()
+
   /**
    * Call this to ensure that everything is commited and a new TX is opened. Be sure to not
    * use data from the previous tx afterwards. If you need to, get them again from the new
@@ -363,6 +365,11 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
     val seq = left.awaitAll()
     left.runtimeResult.close()
     seq
+  }
+
+  def request(numberOfRows: Long, left: RecordingRuntimeResult): Unit = {
+    left.runtimeResult.request(numberOfRows)
+    left.runtimeResult.await()
   }
 
   def consumeNonRecording(left: NonRecordingRuntimeResult): Long = {

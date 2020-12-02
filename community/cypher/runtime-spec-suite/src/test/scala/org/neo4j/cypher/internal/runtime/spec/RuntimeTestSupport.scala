@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.runtime.spec
 
 import org.neo4j.common.DependencyResolver
-import org.neo4j.cypher.internal.config.CypherConfiguration
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.ExecutionPlan
 import org.neo4j.cypher.internal.LogicalQuery
@@ -29,6 +28,7 @@ import org.neo4j.cypher.internal.PreParser
 import org.neo4j.cypher.internal.ResourceManagerFactory
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.RuntimeContextManager
+import org.neo4j.cypher.internal.config.CypherConfiguration
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.internal.options.CypherDebugOptions
 import org.neo4j.cypher.internal.options.CypherVersion
@@ -113,6 +113,10 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
   def stopTx(): Unit = {
     _txContext.close()
     _tx.close()
+  }
+
+  def startNewTx(): InternalTransaction = {
+    cypherGraphDb.beginTransaction(Type.EXPLICIT, LoginContext.AUTH_DISABLED)
   }
 
   def tx: InternalTransaction = _tx

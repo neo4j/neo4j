@@ -320,6 +320,7 @@ object LogicalPlanToPlanBuilderString {
         s"${triadicSelectionId.value.x}, $positivePredicate, ${wrapInQuotationsAndMkString(Seq(sourceId, targetId))}"
       case AssertSameNode(idName, _, _) =>
         wrapInQuotations(idName)
+      case LockNodes(_, nodesToLock) => wrapInQuotationsAndMkString(nodesToLock)
     }
     val plansWithContent2: PartialFunction[LogicalPlan, String] = {
       case MultiNodeIndexSeek(indexSeekLeafPlans: Seq[IndexSeekLeafPlan]) =>
