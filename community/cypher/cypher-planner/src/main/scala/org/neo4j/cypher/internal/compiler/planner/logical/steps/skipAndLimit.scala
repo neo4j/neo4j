@@ -23,9 +23,17 @@ import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.PlanTransformer
 import org.neo4j.cypher.internal.ir.QueryProjection
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
+import org.neo4j.cypher.internal.logical.plans.EagerLogicalPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.UpdatingPlan
+import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 
 object skipAndLimit extends PlanTransformer {
+
+  def shouldPlanExhaustiveLimit(plan: LogicalPlan) = plan.treeFold(false) {
+    case _: UpdatingPlan => _ => SkipChildren(true)
+    case _: EagerLogicalPlan => acc => SkipChildren(acc)
+  }
 
   def apply(plan: LogicalPlan, query: SinglePlannerQuery, context: LogicalPlanningContext): LogicalPlan = {
     query.horizon match {
@@ -33,10 +41,13 @@ object skipAndLimit extends PlanTransformer {
         val queryPagination = p.queryPagination
         (queryPagination.skip, queryPagination.limit) match {
           case (Some(skipExpr), Some(limitExpr)) =>
-            context.logicalPlanProducer.planSkipAndLimit(plan, skipExpr, limitExpr, query.interestingOrder, context)
+            context.logicalPlanProducer.planSkipAndLimit(plan, skipExpr, limitExpr, query.interestingOrder, context, shouldPlanExhaustiveLimit(plan))
 
           case (Some(skipExpr), _) =>
             context.logicalPlanProducer.planSkip(plan, skipExpr, query.interestingOrder, context)
+
+          case (_, Some(limitExpr)) if shouldPlanExhaustiveLimit(plan) =>
+            context.logicalPlanProducer.planExhaustiveLimit(plan, limitExpr, limitExpr, query.interestingOrder, context = context)
 
           case (_, Some(limitExpr)) =>
             context.logicalPlanProducer.planLimit(plan, limitExpr, limitExpr, query.interestingOrder, context = context)

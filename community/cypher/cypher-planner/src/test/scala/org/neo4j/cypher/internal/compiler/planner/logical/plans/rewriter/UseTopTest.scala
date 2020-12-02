@@ -21,8 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.logical.plans.Ascending
-import org.neo4j.cypher.internal.logical.plans.DoNotIncludeTies
-import org.neo4j.cypher.internal.logical.plans.IncludeTies
+import org.neo4j.cypher.internal.logical.plans.ExhaustiveLimit
 import org.neo4j.cypher.internal.logical.plans.Limit
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.PartialSort
@@ -41,25 +40,25 @@ class UseTopTest extends CypherFunSuite with LogicalPlanningTestSupport {
   private val lit10 = literalInt(10)
 
   test("should use Top when possible") {
-    val limit = Limit(sort, lit10, DoNotIncludeTies)
+    val limit = Limit(sort, lit10)
 
     rewrite(limit) should equal(Top(leaf, sortDescriptionX, lit10))
   }
 
-  test("should not use Top when including ties") {
-    val original = Limit(sort, lit10, IncludeTies)
+  test("should use Top with exhaustive limit") {
+    val exhaustiveLimit = ExhaustiveLimit(sort, lit10)
 
-    rewrite(original) should equal(original)
+    rewrite(exhaustiveLimit) should equal(Top(leaf, sortDescriptionX, lit10))
   }
 
   test("should use PartialTop when possible") {
-    val limit = Limit(partialSort, lit10, DoNotIncludeTies)
+    val limit = Limit(partialSort, lit10)
 
     rewrite(limit) should equal(PartialTop(leaf, sortDescriptionX, sortDescriptionY, lit10))
   }
 
-  test("should not use PartialTop when including ties") {
-    val original = Limit(partialSort, lit10, IncludeTies)
+  test("should not use PartialTop with exhaustive limit") {
+    val original = ExhaustiveLimit(partialSort, lit10)
 
     rewrite(original) should equal(original)
   }

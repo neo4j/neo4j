@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 
-import org.neo4j.cypher.internal.logical.plans.DoNotIncludeTies
+import org.neo4j.cypher.internal.logical.plans.ExhaustiveLimit
 import org.neo4j.cypher.internal.logical.plans.Limit
 import org.neo4j.cypher.internal.logical.plans.PartialSort
 import org.neo4j.cypher.internal.logical.plans.PartialTop
@@ -35,9 +35,13 @@ import org.neo4j.cypher.internal.util.bottomUp
 case object useTop extends Rewriter {
 
   private val instance: Rewriter = bottomUp(Rewriter.lift {
-    case o @ Limit(Sort(src, sortDescriptions), limit, DoNotIncludeTies) =>
+    case o @ Limit(Sort(src, sortDescriptions), limit) =>
       Top(src, sortDescriptions, limit)(SameId(o.id))
-    case o @ Limit(PartialSort(src, alreadySortedPrefix, stillToSortSuffix, skipSortingPrefixLength), limit, DoNotIncludeTies) =>
+    //NOTE: it is only safe to rewrite ExhaustiveLimit + Sort not ExhaustiveLimit + PartialSort
+    //      since we can't guarantee that src will be exhausted in that case
+    case o @ ExhaustiveLimit(Sort(src, sortDescriptions), limit) =>
+      Top(src, sortDescriptions, limit)(SameId(o.id))
+    case o @ Limit(PartialSort(src, alreadySortedPrefix, stillToSortSuffix, skipSortingPrefixLength), limit) =>
       PartialTop(src, alreadySortedPrefix, stillToSortSuffix, limit, skipSortingPrefixLength)(SameId(o.id))
   })
 

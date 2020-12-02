@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CardinalityModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.skipAndLimit.shouldPlanExhaustiveLimit
 import org.neo4j.cypher.internal.expressions.Add
 import org.neo4j.cypher.internal.expressions.CachedProperty
 import org.neo4j.cypher.internal.expressions.Equals
@@ -106,6 +107,7 @@ import org.neo4j.cypher.internal.logical.plans.Distinct
 import org.neo4j.cypher.internal.logical.plans.Eager
 import org.neo4j.cypher.internal.logical.plans.EmptyResult
 import org.neo4j.cypher.internal.logical.plans.ErrorPlan
+import org.neo4j.cypher.internal.logical.plans.ExhaustiveLimit
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.ExpansionMode
 import org.neo4j.cypher.internal.logical.plans.FindShortestPaths
@@ -891,12 +893,27 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     plan
   }
 
+  def planExhaustiveLimit(inner: LogicalPlan,
+                effectiveCount: Expression,
+                reportedCount: Expression,
+                interestingOrder: InterestingOrder,
+                context: LogicalPlanningContext): LogicalPlan = {
+    // `effectiveCount` is not allowed to be a PatternComprehension or PatternExpression
+    val solved = solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.updateQueryProjection(_.updatePagination(_.withLimitExpression(reportedCount))))
+    val plan = annotate(ExhaustiveLimit(inner, effectiveCount), solved, providedOrders.get(inner.id).fromLeft, context)
+    if (interestingOrder.requiredOrderCandidate.nonEmpty) {
+      markOrderAsLeveragedBackwardsUntilOrigin(plan)
+    }
+    plan
+  }
+
   // In case we have SKIP n LIMIT m, we want to limit by (n + m), since we plan the Limit before the Skip.
   def planSkipAndLimit(inner: LogicalPlan,
                        skipExpr: Expression,
                        limitExpr: Expression,
                        interestingOrder: InterestingOrder,
-                       context: LogicalPlanningContext): LogicalPlan = {
+                       context: LogicalPlanningContext,
+                       useExhaustiveLimit: Boolean): LogicalPlan = {
     val solvedSkip = solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.updateQueryProjection(_.updatePagination(_.withSkipExpression(skipExpr))))
     val solvedSkipAndLimit = solvedSkip.updateTailOrSelf(_.updateQueryProjection(_.updatePagination(_.withLimitExpression(limitExpr))))
 
@@ -906,7 +923,8 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     val skippedRows = innerCardinality - skipCardinality
 
     val effectiveLimitExpr = Add(limitExpr, skipExpr)(limitExpr.position)
-    val limitPlan = planLimit(inner, effectiveLimitExpr, limitExpr, interestingOrder, context)
+    val limitPlan = if (useExhaustiveLimit) planExhaustiveLimit(inner, effectiveLimitExpr, limitExpr, interestingOrder, context)
+                    else planLimit(inner, effectiveLimitExpr, limitExpr, interestingOrder, context)
     cardinalities.set(limitPlan.id, skippedRows + limitCardinality)
 
     planSkip(limitPlan, skipExpr, interestingOrder, context)
@@ -921,7 +939,8 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
       AggregatingQueryProjection(groupingExpressions = reportedGrouping, aggregationExpressions = reportedAggregation)
     ).withInterestingOrder(interestingOrder))
     val providedOrder = providedOrders.get(inner.id).fromLeft
-    val limitPlan = Limit(inner, SignedDecimalIntegerLiteral("1")(InputPosition.NONE))
+    val limitPlan = if (shouldPlanExhaustiveLimit(inner)) ExhaustiveLimit(inner, SignedDecimalIntegerLiteral("1")(InputPosition.NONE))
+                    else Limit(inner, SignedDecimalIntegerLiteral("1")(InputPosition.NONE))
     val annotatedLimitPlan = annotate(limitPlan, solved, providedOrder, context)
 
     // The limit leverages the order, not the following optional
