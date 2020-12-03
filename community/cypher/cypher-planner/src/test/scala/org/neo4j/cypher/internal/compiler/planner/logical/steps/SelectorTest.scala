@@ -123,7 +123,9 @@ class SelectorTest extends CypherFunSuite with LogicalPlanningTestSupport {
         override def report[X](projector: X => LogicalPlan,
                                input: Iterable[X],
                                inputOrdering: Ordering[X],
-                               context: LogicalPlanningContext): Unit = {
+                               context: LogicalPlanningContext,
+                               resolved: => String,
+                               resolvedPerPlan: LogicalPlan => String): Unit = {
           val plans = input.map(projector).toSet
           plans should equal(Set(
             expectedPlan,

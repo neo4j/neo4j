@@ -47,11 +47,11 @@ object leafPlanOptions extends LeafPlanFinder {
       .groupBy(_.availableSymbols)
       .values
       .map { bucket =>
-      val bestPlan = pickBest(bucket).get
+      val bestPlan = pickBest(bucket, s"leaf plan with available symbols ${bucket.head.availableSymbols.map(s => s"'$s'").mkString(", ")}").get
 
       if (interestingOrder.requiredOrderCandidate.nonEmpty) {
         val sortedLeaves = bucket.flatMap(plan => SortPlanner.planIfAsSortedAsPossible(plan, interestingOrder, context))
-        val bestSortedPlan = pickBest(sortedLeaves)
+        val bestSortedPlan = pickBest(sortedLeaves, s"sorted leaf plan with available symbols ${bucket.head.availableSymbols.map(s => s"'$s'").mkString(", ")}")
         BestResults(bestPlan, bestSortedPlan)
       } else {
         BestResults(bestPlan, None)

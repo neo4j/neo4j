@@ -56,7 +56,7 @@ case class PlanSingleQuery(planPart: MatchPlanner = planMatch,
           val finalizedPlans = matchPlans.allResults.map(planUpdatesInputAndHorizon(_, in, updatedContext))
 
           // We cost compare and pick the best.
-          val projectedPlan = updatedContext.config.toKit(in.interestingOrder, updatedContext).pickBest(finalizedPlans.toIterable).get
+          val projectedPlan = updatedContext.config.toKit(in.interestingOrder, updatedContext).pickBest(finalizedPlans.toIterable, s"best finalized plan for ${in.queryGraph} and ${in.horizon}").get
           val projectedContext = updatedContext.withUpdatedCardinalityInformation(projectedPlan)
           (projectedPlan, projectedContext)
       }

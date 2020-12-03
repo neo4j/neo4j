@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
+import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.PlanSelector
 import org.neo4j.cypher.internal.expressions.Expression
@@ -42,6 +43,11 @@ case class Selector(pickBestFactory: CandidateSelectorFactory,
     def selectIt(plan: LogicalPlan, stillUnsolvedPredicates: Set[Expression]): LogicalPlan = {
       val candidates = candidateGenerators.flatMap(generator => generator(plan, stillUnsolvedPredicates, queryGraph, interestingOrder, context))
 
+      def stringifiedSolvedPredicates(e: Set[Expression]) = {
+        val es = ExpressionStringifier(e => e.asCanonicalStringVal)
+        e.map(es(_)).mkString(", ")
+      }
+
       candidates match {
         case Seq() => plan
         case Seq(candidate) => candidate.plan
@@ -50,10 +56,17 @@ case class Selector(pickBestFactory: CandidateSelectorFactory,
           val candidatesWithAllSelectionsApplied = candidates.map {
             case SelectionCandidate(plan, solvedPredicates) => selectIt(plan, stillUnsolvedPredicates -- solvedPredicates)
           }
-          pickBest(candidatesWithAllSelectionsApplied).get
+          pickBest(candidatesWithAllSelectionsApplied, s"best selection candidate for ${stringifiedSolvedPredicates(stillUnsolvedPredicates)}").get
         case _ =>
           // If we have more than 2 candidates we pick the cheapest first greedily and then recurse.
-          pickBest[SelectionCandidate](_.plan, candidates) match {
+          pickBest.applyWithResolvedPerPlan[SelectionCandidate](
+            _.plan,
+            candidates,
+            s"greedily cheapest selection candidate for ${stringifiedSolvedPredicates(stillUnsolvedPredicates)}",
+            plan => "Solved predicates: " + stringifiedSolvedPredicates(candidates.collectFirst {
+              case SelectionCandidate(`plan`, solvedPredicates) => solvedPredicates
+            }.get
+            )) match {
             case Some(SelectionCandidate(plan, solvedPredicates)) => selectIt(plan, stillUnsolvedPredicates -- solvedPredicates)
             case None => plan
           }

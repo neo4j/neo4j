@@ -23,6 +23,7 @@ import org.mockito.Mockito.spy
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoMoreInteractions
 import org.neo4j.cypher.internal.compiler.planner.logical.ProjectingSelector
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.time.FakeClock
 import org.neo4j.time.Stopwatch
@@ -245,7 +246,7 @@ class IDPSolverTest extends CypherFunSuite {
    * That means upper case wins over lower case.
    */
   private object firstLongest extends ProjectingSelector[String] {
-    override def apply[X](projector: X => String, input: Iterable[X]): Option[X] = {
+    override def applyWithResolvedPerPlan[X](projector: X => String, input: Iterable[X], resolved: => String, resolvedPerPlan: LogicalPlan => String): Option[X] = {
       val elements = input.toList.sortBy(x => projector(x))
       if (elements.nonEmpty) Some(elements.maxBy(x => projector(x).length)) else None
     }

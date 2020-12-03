@@ -94,7 +94,7 @@ class IDPSolver[Solvable, Result, Context](generator: IDPSolverStep[Solvable, Re
     val table = tableFactory(registry, seed)
 
     // utility functions
-    val goalSelector: Selector[(Goal, Result)] = projectingSelector.apply[(Goal, Result)](_._2, _)
+    def goalSelector(resolved: => String): Selector[(Goal, Result)] = projectingSelector.apply[(Goal, Result)](_._2, _, resolved)
 
     def generateBestCandidates(maxBlockSize: Int): Int = {
       var largestFinishedIteration = 0
@@ -111,13 +111,13 @@ class IDPSolver[Solvable, Result, Context](generator: IDPSolverStep[Solvable, Re
           if (!table.contains(goal, sorted = false)) {
             val candidates = LazyIterable(generator(registry, goal, table, context))
             val (extraCandidates, baseCandidates) = candidates.partition(extraRequirement.fulfils)
-            val bestExtraCandidate = projectingSelector(extraCandidates)
+            val bestExtraCandidate = projectingSelector(extraCandidates, s"best sorted plan for ${goal.bitSet}@${registry.explode(goal.bitSet)}")
 
             // We don't want to compare just the ones that do not fulfil the requirement
             // in isolation, because it could be that the best overall candidate fulfils the requirement.
             // bestExtraCandidate has already been determined to be cheaper than any other extraCandidate,
             // therefore it is enough to cost estimate the bestExtraCandidate against all baseCandidates.
-            projectingSelector(baseCandidates ++ bestExtraCandidate.toIterable).foreach { candidate =>
+            projectingSelector(baseCandidates ++ bestExtraCandidate.toIterable, s"best overall plan for ${goal.bitSet}@${registry.explode(goal.bitSet)}").foreach { candidate =>
               foundNoCandidate = false
               table.put(goal, sorted = false, candidate)
             }
@@ -141,7 +141,7 @@ class IDPSolver[Solvable, Result, Context](generator: IDPSolverStep[Solvable, Re
       val blockCandidates: Iterable[(Goal, Result)] = LazyIterable(table.unsortedPlansOfSize(blockSize)).toIndexedSeq
       // Select the best of those. These candidates solve different things.
       // The best of the candidates is likely to appear in larger plans, so it is a good idea to compact that one.
-      val bestInBlock: Option[(Goal, Result)] = goalSelector(blockCandidates)
+      val bestInBlock: Option[(Goal, Result)] = goalSelector(s"Best candidate for block size $blockSize")(blockCandidates)
       val (goal, _) = bestInBlock.getOrElse {
         throw new InternalException(
           s"""Found no solution for block with size $blockSize,

@@ -32,7 +32,7 @@ object pickBestPlanUsingHintsAndCost extends CandidateSelectorFactory {
 
   override def apply(context: LogicalPlanningContext): CandidateSelector =
     new CandidateSelector {
-      override def apply[X](projector: X => LogicalPlan, input: Iterable[X]): Option[X] = {
+      override def applyWithResolvedPerPlan[X](projector: X => LogicalPlan, input: Iterable[X], resolved: => String, resolvedPerPlan: LogicalPlan => String): Option[X] = {
 
         val inputOrdering = new Ordering[X] {
           override def compare(x: X, y: X): Int = {
@@ -42,7 +42,7 @@ object pickBestPlanUsingHintsAndCost extends CandidateSelectorFactory {
           }
         }
 
-        context.costComparisonListener.report(projector, input, inputOrdering, context)
+        context.costComparisonListener.report(projector, input, inputOrdering, context, resolved, resolvedPerPlan)
 
         if (input.isEmpty) None else Some(input.min(inputOrdering))
       }

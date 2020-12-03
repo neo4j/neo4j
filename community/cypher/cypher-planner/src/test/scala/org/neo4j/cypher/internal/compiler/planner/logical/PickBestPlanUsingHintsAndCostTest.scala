@@ -102,8 +102,8 @@ class PickBestPlanUsingHintsAndCostTest extends CypherFunSuite with LogicalPlann
       innerVariableNamer = innerVariableNamer,
       idGen = idGen
     )
-    pickBestPlanUsingHintsAndCost(context)(candidates).get shouldBe theSameInstanceAs(winner)
-    pickBestPlanUsingHintsAndCost(context)(candidates.reverse).get shouldBe theSameInstanceAs(winner)
+    pickBestPlanUsingHintsAndCost(context)(candidates, "").get shouldBe theSameInstanceAs(winner)
+    pickBestPlanUsingHintsAndCost(context)(candidates.reverse, "").get shouldBe theSameInstanceAs(winner)
   }
 }
 

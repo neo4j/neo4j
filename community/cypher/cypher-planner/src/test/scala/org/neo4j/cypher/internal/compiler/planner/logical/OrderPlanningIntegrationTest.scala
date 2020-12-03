@@ -83,7 +83,6 @@ class OrderPlanningIntegrationTestBase(queryGraphSolverSetup: QueryGraphSolverSe
 
   test("ORDER BY previously unprojected column in WITH and return that column") {
     val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH a ORDER BY a.age RETURN a.name, a.age")._2
-
     val labelScan = NodeByLabelScan("a", labelName("A"), Set.empty, IndexOrderNone)
     val ageProperty = cachedNodeProp("a", "age")
     val nameProperty = prop("a", "name")

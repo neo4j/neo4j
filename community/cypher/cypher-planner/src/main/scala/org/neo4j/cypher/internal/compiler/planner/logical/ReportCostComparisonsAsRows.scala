@@ -82,7 +82,9 @@ class ReportCostComparisonsAsRows extends CostComparisonListener {
   override def report[X](projector: X => LogicalPlan,
                          input: Iterable[X],
                          inputOrdering: Ordering[X],
-                         context: LogicalPlanningContext): Unit = if (input.size > 1) {
+                         context: LogicalPlanningContext,
+                         resolved: => String,
+                         resolvedPerPlan: LogicalPlan => String = _ => ""): Unit = if (input.size > 1) {
 
     def stringTo(level: Int, plan: LogicalPlan): String = {
       def indent(level: Int, in: String): String = level match {

@@ -31,14 +31,20 @@ trait CostComparisonListener {
   def report[X](projector: X => LogicalPlan,
                 input: Iterable[X],
                 inputOrdering: Ordering[X],
-                context: LogicalPlanningContext): Unit
+                context: LogicalPlanningContext,
+                resolved: => String,
+                resolvedPerPlan: LogicalPlan => String = _ => ""
+               ): Unit
 }
 
 object devNullListener extends CostComparisonListener {
   override def report[X](projector: X => LogicalPlan,
                          input: Iterable[X],
                          inputOrdering: Ordering[X],
-                         context: LogicalPlanningContext): Unit = {}
+                         context: LogicalPlanningContext,
+                         resolved: => String,
+                         resolvedPerPlan: LogicalPlan => String = _ => ""
+                        ): Unit = {}
 }
 
 object SystemOutCostLogger extends CostComparisonListener {
@@ -46,6 +52,7 @@ object SystemOutCostLogger extends CostComparisonListener {
   private val comparisonId = new AtomicLong()
   private val prefix = "\t"
   private def blue(str: String) = AnsiColor.BLUE + str + AnsiColor.RESET
+  private def cyan(str: String) = AnsiColor.CYAN + str + AnsiColor.RESET
   private def green(str: String) = AnsiColor.GREEN + str + AnsiColor.RESET
   private def magenta(str: String) = AnsiColor.MAGENTA + str + AnsiColor.RESET
   private def magenta_bold(str: String) = AnsiColor.MAGENTA + AnsiColor.BOLD + AnsiColor.UNDERLINED + str + AnsiColor.RESET
@@ -57,7 +64,10 @@ object SystemOutCostLogger extends CostComparisonListener {
   def report[X](projector: X => LogicalPlan,
                 input: Iterable[X],
                 inputOrdering: Ordering[X],
-                context: LogicalPlanningContext): Unit = {
+                context: LogicalPlanningContext,
+                resolved: => String,
+                resolvedPerPlan: LogicalPlan => String = _ => ""
+               ): Unit = {
 
     def costString(plan: LogicalPlan) = {
       val cost = context.cost.costFor(plan, context.input, context.semanticTable, context.planningAttributes.cardinalities).gummyBears
@@ -69,10 +79,12 @@ object SystemOutCostLogger extends CostComparisonListener {
 
     if (plansInOrder.size > 1) {
       val id = comparisonId.getAndIncrement()
-      println(s"$id: Get best of:")
+      println(cyan(s"$id: Resolving $resolved"))
+      println(s"Get best of:")
       for ((plan, index) <- plansInOrder.zipWithIndex) {
         val winner = if (index == 0) green(" [winner]") else ""
-        val header = blue(s"$index: Plan #${plan.debugId}") + winner
+        val resolvedStr = cyan(s" ${resolvedPerPlan(plan)}")
+        val header = blue(s"$index: Plan #${plan.debugId}") + winner + resolvedStr
         val planWithCosts = LogicalPlanToPlanBuilderString(plan, extra = costString)
         val hints = s"(hints: ${context.planningAttributes.solveds.get(plan.id).numHints})"
 

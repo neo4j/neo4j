@@ -116,7 +116,7 @@ case class SingleComponentPlanner(monitor: IDPQueryGraphSolverMonitor,
         // From _all_ plans (even if they are sorted), put the best into the seed
         // with `false`. We don't want to compare just the ones that are unsorted
         // in isolation, because it could be that the best overall plan is sorted.
-        val best = kit.pickBest(plans).map(p => ((Set(pattern), /* ordered = */false), p))
+        val best = kit.pickBest(plans, s"best overall plan for $pattern").map(p => ((Set(pattern), /* ordered = */false), p))
 
         val result: Iterable[((Set[PatternRelationship], Boolean), LogicalPlan)] =
           if (interestingOrder.isEmpty) {
@@ -124,7 +124,7 @@ case class SingleComponentPlanner(monitor: IDPQueryGraphSolverMonitor,
           } else {
             val ordered = plans.flatMap(plan => SortPlanner.planIfAsSortedAsPossible(plan, interestingOrder, context))
             // Also add the best sorted plan into the seed with `true`.
-            val bestWithSort = kit.pickBest(ordered).map(p => ((Set(pattern), /* ordered = */true), p))
+            val bestWithSort = kit.pickBest(ordered, s"best sorted plan for $pattern").map(p => ((Set(pattern), /* ordered = */true), p))
             best ++ bestWithSort
           }
 

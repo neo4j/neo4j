@@ -20,14 +20,18 @@
 package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.BestResults
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
 trait ProjectingSelector[P] {
-  def apply(plans: Iterable[P]): Option[P] = apply[P](identity, plans)
-  def apply[X](projector: X => P, input: Iterable[X]): Option[X]
+  def apply(plans: Iterable[P], resolved: => String): Option[P] = applyWithResolvedPerPlan[P](identity, plans, resolved, _ => "")
+  def applyWithResolvedPerPlan(plans: Iterable[P], resolved: => String, resolvedPerPlan: LogicalPlan => String): Option[P] = applyWithResolvedPerPlan[P](identity, plans, resolved, resolvedPerPlan)
+  def apply[X](projector: X => P, input: Iterable[X], resolved: => String): Option[X] = applyWithResolvedPerPlan[X](projector, input, resolved, _ => "")
 
-  def ofBestResults(plans: Iterable[BestResults[P]]): Option[BestResults[P]] = {
-    val best = apply(plans.map(_.bestResult))
-    val bestFulfillingReq = apply(plans.flatMap(_.bestResultFulfillingReq))
+  def applyWithResolvedPerPlan[X](projector: X => P, input: Iterable[X], resolved: => String, resolvedPerPlan: LogicalPlan => String): Option[X]
+
+  def ofBestResults(plans: Iterable[BestResults[P]], resolved: => String, resolvedPerPan: LogicalPlan => String): Option[BestResults[P]] = {
+    val best = applyWithResolvedPerPlan(plans.map(_.bestResult), s"overall $resolved", resolvedPerPan)
+    val bestFulfillingReq = applyWithResolvedPerPlan(plans.flatMap(_.bestResultFulfillingReq), s"sorted $resolved", resolvedPerPan)
     best.map(BestResults(_, bestFulfillingReq))
   }
 }

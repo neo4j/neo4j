@@ -60,7 +60,7 @@ class leafPlanOptionsTest extends CypherFunSuite with LogicalPlanningTestSupport
 
         // cost(AllNodesScan) < cost(NodeByLabelScan)
         // cost(Sort(AllNodesScan)) > cost(NodeByLabelScan)
-        override def apply[X](projector: X => LogicalPlan, input: Iterable[X]): Option[X] = {
+        override def applyWithResolvedPerPlan[X](projector: X => LogicalPlan, input: Iterable[X], resolved: => String, resolvedPerPlan: LogicalPlan => String): Option[X] = {
           val logicalPlans = input.map(i => (i, projector(i))).toSeq
               .sortBy{
                 case (_, _: AllNodesScan) => 10
@@ -182,7 +182,7 @@ class leafPlanOptionsTest extends CypherFunSuite with LogicalPlanningTestSupport
     val queryPlanConfig = QueryPlannerConfiguration(
       pickBestCandidate = _ =>
         new CandidateSelector {
-          override def apply[X](projector: X => LogicalPlan, input: Iterable[X]): Option[X] = input.headOption
+          override def applyWithResolvedPerPlan[X](projector: X => LogicalPlan, input: Iterable[X], resolved: => String, resolvedPerPlan: LogicalPlan => String): Option[X] = input.headOption
         },
       applySelections = (_, _, _, _) => plan,
       optionalSolvers = Seq.empty,
