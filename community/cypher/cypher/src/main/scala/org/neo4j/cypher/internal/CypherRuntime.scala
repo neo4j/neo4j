@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal
 import java.io.File
 import java.time.Clock
 
+import org.neo4j.configuration.Config
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.RuntimeUnsupportedNotification
 import org.neo4j.cypher.internal.config.CypherConfiguration
@@ -212,6 +213,9 @@ object CypherRuntimeConfiguration {
       memoryTrackingController = config.memoryTrackingController,
       enableMonitors = config.enableMonitors,
     )
+
+  def defaultConfiguration: CypherRuntimeConfiguration =
+    fromCypherConfiguration(CypherConfiguration.fromConfig(Config.defaults()))
 }
 
 case class CypherRuntimeConfiguration(pipelinedBatchSizeSmall: Int,
