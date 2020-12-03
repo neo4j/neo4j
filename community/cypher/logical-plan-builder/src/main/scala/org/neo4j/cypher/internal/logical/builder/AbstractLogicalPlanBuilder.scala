@@ -162,7 +162,6 @@ import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.util.attribution.SameId
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
-import org.neo4j.cypher.internal.util.symbols.RelationshipType
 import org.neo4j.cypher.internal.util.topDown
 
 import scala.collection.mutable.ArrayBuffer
@@ -796,6 +795,14 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   }
 
   def create(nodes :Seq[CreateNode], relationships: Seq[CreateRelationship]): IMPL = {
+    nodes.foreach(node => {
+      newNode(varFor(VariableParser.unescaped(node.idName)))
+    })
+    relationships.foreach(relationship => {
+      newRelationship(varFor(VariableParser.unescaped(relationship.idName)))
+      newNode(varFor(VariableParser.unescaped(relationship.startNode)))
+      newNode(varFor(VariableParser.unescaped(relationship.endNode)))
+    })
     appendAtCurrentIndent(UnaryOperator(source => Create(source, nodes, relationships)(_)))
   }
 
