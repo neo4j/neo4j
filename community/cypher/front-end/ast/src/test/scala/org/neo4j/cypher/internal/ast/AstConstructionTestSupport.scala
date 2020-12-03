@@ -40,6 +40,7 @@ import org.neo4j.cypher.internal.expressions.GreaterThan
 import org.neo4j.cypher.internal.expressions.GreaterThanOrEqual
 import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.HasLabelsOrTypes
+import org.neo4j.cypher.internal.expressions.HasTypes
 import org.neo4j.cypher.internal.expressions.In
 import org.neo4j.cypher.internal.expressions.IsNotNull
 import org.neo4j.cypher.internal.expressions.IsNull
@@ -120,6 +121,9 @@ trait AstConstructionTestSupport extends CypherTestSupport {
 
   def hasLabels(v: String, label: String): HasLabels =
     hasLabels(varFor(v), label)
+
+  def hasTypes(v: String, types: String*): HasTypes =
+    HasTypes(varFor(v), types.map(relTypeName))(pos)
 
   def hasLabels(v: LogicalVariable, labels: String*): HasLabels =
     HasLabels(v, labels.map(labelName))(pos)

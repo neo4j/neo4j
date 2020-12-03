@@ -32,6 +32,8 @@ import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CostModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.HasLabels
+import org.neo4j.cypher.internal.expressions.HasLabelsOrTypes
+import org.neo4j.cypher.internal.expressions.HasTypes
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.ir.LazyMode
 import org.neo4j.cypher.internal.ir.StrictnessMode
@@ -313,7 +315,9 @@ object CardinalityCostModel {
   def costPerRowFor(expression: Expression, semanticTable: SemanticTable): CostPerRow = {
     val noOfStoreAccesses = expression.treeFold(0) {
       case x: Property if semanticTable.isNodeNoFail(x.map) || semanticTable.isRelationshipNoFail(x.map) => count => TraverseChildren(count + PROPERTY_ACCESS_DB_HITS)
-      case _: HasLabels => count => TraverseChildren(count + LABEL_CHECK_DB_HITS)
+      case _: HasLabels |
+           _: HasTypes |
+           _: HasLabelsOrTypes => count => TraverseChildren(count + LABEL_CHECK_DB_HITS)
       case _ => count => TraverseChildren(count)
     }
     if (noOfStoreAccesses > 0)
