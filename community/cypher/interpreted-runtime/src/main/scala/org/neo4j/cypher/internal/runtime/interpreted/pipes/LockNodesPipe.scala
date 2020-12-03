@@ -23,23 +23,27 @@ import org.neo4j.cypher.internal.runtime.CastSupport
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.IsNoValue
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.LockNodesPipe.getNodes
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.VirtualNodeValue
 
 case class LockNodesPipe(src: Pipe, variablesToLock: Set[String])(val id: Id = Id.INVALID_ID)
-  extends PipeWithSource(src)  {
+  extends PipeWithSource(src) {
 
   protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] =
     input.map { ctx =>
-      val nodesToLock: Set[Long] = variablesToLock.flatMap { varName =>
-        ctx.getByName(varName) match {
-          case n: VirtualNodeValue => Some(n.id())
-          case IsNoValue() => None
-          case x: AnyValue => throw CastSupport.typeError[VirtualNodeValue](x)
-        }
-      }
-      state.query.lockNodes(nodesToLock.toSeq: _*)
+      val nodesToLock = getNodes(ctx, variablesToLock.toArray)
+      state.query.lockNodes(nodesToLock: _*)
       ctx
     }
+}
+
+object LockNodesPipe {
+  def getNodes(ctx: CypherRow, varNames: Array[String]): Array[Long] =
+    varNames.flatMap(varName => ctx.getByName(varName) match {
+      case n: VirtualNodeValue => Some(n.id())
+      case IsNoValue() => None
+      case x: AnyValue => throw CastSupport.typeError[VirtualNodeValue](x)
+    })
 }
