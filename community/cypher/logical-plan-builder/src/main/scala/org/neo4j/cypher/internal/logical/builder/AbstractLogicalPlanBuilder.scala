@@ -344,6 +344,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     }
     self
   }
+
   def shortestPath(pattern: String,
                    pathName: Option[String] = None,
                    all: Boolean = false,
@@ -353,26 +354,27 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     val p = patternParser.parse(pattern)
     newRelationship(varFor(p.relName))
 
-    p.length match {
-      case SimplePatternLength => throw new IllegalArgumentException("Shortest path must have a variable length pattern")
-      case VarPatternLength(min, max) =>
-        appendAtCurrentIndent(UnaryOperator(lp => FindShortestPaths(lp,
-          ShortestPathPattern(pathName, PatternRelationship(p.relName, (p.from, p.to), p.dir, p.relTypes, p.length), !all)
-          (ShortestPaths(RelationshipChain(
-            NodePattern(Some(varFor(p.from)), Seq.empty, None)(pos), // labels and properties are not used at runtime
-            RelationshipPattern(Some(varFor(p.relName)),
-              p.relTypes,
-              Some(Some(Range(Some(UnsignedDecimalIntegerLiteral(min.toString)(pos)), max.map(i => UnsignedDecimalIntegerLiteral(i.toString)(pos)))(pos))),
-              None, // properties are not used at runtime
-              p.dir
-            )(pos),
-            NodePattern(Some(varFor(p.to)), Seq.empty, None)(pos) // labels and properties are not used at runtime
-          )(pos), !all)(pos)),
-          predicates.map(Parser.parseExpression),
-          withFallback,
-          disallowSameNode
-        )(_)))
+    val length = p.length match {
+      case SimplePatternLength => None
+      case VarPatternLength(min, max) => Some(Some(Range(Some(UnsignedDecimalIntegerLiteral(min.toString)(pos)), max.map(i => UnsignedDecimalIntegerLiteral(i.toString)(pos)))(pos)))
     }
+
+    appendAtCurrentIndent(UnaryOperator(lp => FindShortestPaths(lp,
+      ShortestPathPattern(pathName, PatternRelationship(p.relName, (p.from, p.to), p.dir, p.relTypes, p.length), !all)
+      (ShortestPaths(RelationshipChain(
+        NodePattern(Some(varFor(p.from)), Seq.empty, None)(pos), // labels and properties are not used at runtime
+        RelationshipPattern(Some(varFor(p.relName)),
+          p.relTypes,
+          length,
+          None, // properties are not used at runtime
+          p.dir
+        )(pos),
+        NodePattern(Some(varFor(p.to)), Seq.empty, None)(pos) // labels and properties are not used at runtime
+      )(pos), !all)(pos)),
+      predicates.map(Parser.parseExpression),
+      withFallback,
+      disallowSameNode
+    )(_)))
   }
 
   def pruningVarExpand(pattern: String,

@@ -39,6 +39,23 @@ final case class PatternRelationship(name: String, nodes: (String, String), dir:
     case SemanticDirection.INCOMING => (right, left)
     case _ => (left, right)
   }
+
+  override def toString: String = {
+    val lArrow = if (dir == SemanticDirection.INCOMING) "<" else ""
+    val rArrow = if (dir == SemanticDirection.OUTGOING) ">" else ""
+    val typesStr = if (types.isEmpty) {
+      ""
+    } else {
+      types.map(_.name).mkString(":", "|", "")
+    }
+    val lengthStr = length match {
+      case SimplePatternLength => ""
+      case VarPatternLength(1, None) => "*"
+      case VarPatternLength(x, None) => s"*$x.."
+      case VarPatternLength(min, Some(max)) => s"*$min..$max"
+    }
+    s"(${nodes._1})$lArrow-[$name$typesStr$lengthStr]-$rArrow(${nodes._2})"
+  }
 }
 
 object PatternRelationship {

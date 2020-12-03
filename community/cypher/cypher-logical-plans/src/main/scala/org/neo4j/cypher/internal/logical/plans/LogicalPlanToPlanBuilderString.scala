@@ -161,15 +161,15 @@ object LogicalPlanToPlanBuilderString {
         shortestPath match {
           case ShortestPathPattern(maybePathName, PatternRelationship(relName, (from, to), dir, types, length), single) =>
             val lenStr = length match {
-              case VarPatternLength(min, max) => s"$min..${max.getOrElse("")}"
-              case _ => throw new IllegalStateException("Shortest path should have a variable length pattern")
+              case VarPatternLength(min, max) => s"*$min..${max.getOrElse("")}"
+              case SimplePatternLength => ""
             }
             val (dirStrA, dirStrB) = arrows(dir)
             val typeStr = relTypeStr(types)
             val pNameStr = maybePathName.map(p => s", pathName = Some(${wrapInQuotations(p)})").getOrElse("")
             val allStr = if (single) "" else ", all = true"
             val predStr = if(predicates.isEmpty) "" else ", predicates = Seq(" + wrapInQuotationsAndMkString(predicates.map(expressionStringifier(_))) +")"
-            s""" "($from)$dirStrA[$relName$typeStr*$lenStr]$dirStrB($to)"$pNameStr$allStr$predStr$fbStr$dsnStr """.trim
+            s""" "($from)$dirStrA[$relName$typeStr$lenStr]$dirStrB($to)"$pNameStr$allStr$predStr$fbStr$dsnStr """.trim
         }
       case PruningVarExpand(_, from, dir, types, to, minLength, maxLength, nodePredicate, relationshipPredicate) =>
         val (dirStrA, dirStrB) = arrows(dir)
@@ -425,7 +425,8 @@ object LogicalPlanToPlanBuilderString {
     val idsStr = ids match {
       case SingleSeekableArg(expr) => expressionStringifier(expr)
       case ManySeekableArgs(ListLiteral(expressions)) => expressions.map(expressionStringifier(_)).mkString(", ")
-      case _ => throw new UnsupportedOperationException(s"Id string cannot be constructed from $ids.")
+      // This will not be working code, but can still be useful during debugging.
+      case ManySeekableArgs(expr) => expressionStringifier(expr)
     }
     idsStr
   }

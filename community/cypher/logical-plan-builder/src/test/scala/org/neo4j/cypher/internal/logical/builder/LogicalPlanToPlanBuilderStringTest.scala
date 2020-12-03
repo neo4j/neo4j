@@ -132,6 +132,7 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
   testPlan("shortestPath",
     new TestPlanBuilder()
       .produceResults("x")
+      .shortestPath("(x)<-[r]-(y)")
       .shortestPath("(x)-[r*0..0]->(y)", pathName = Some("path"))
       .shortestPath("(x)<-[r*0..1]-(y)")
       .shortestPath("(x)-[r*2..5]-(y)", all = true)

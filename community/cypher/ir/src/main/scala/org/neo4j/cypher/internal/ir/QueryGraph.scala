@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.Property
-import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters.PredicateConverter
 
 import scala.collection.GenSet
@@ -374,34 +373,6 @@ case class QueryGraph(// !!! If you change anything here, make sure to update th
     val builder = new StringBuilder("QueryGraph {")
     val stringifier = ExpressionStringifier(_.asCanonicalStringVal)
 
-    def prettyPattern(p: PatternRelationship): String = {
-      val lArrow = if (p.dir == SemanticDirection.INCOMING) "<" else ""
-      val rArrow = if (p.dir == SemanticDirection.OUTGOING) ">" else ""
-      val types = if (p.types.isEmpty)
-        ""
-      else
-        p.types.map(l => l.name).mkString(":", ":", "")
-
-
-      val name = p.name
-      val length = p.length match {
-        case SimplePatternLength => ""
-        case VarPatternLength(1, None) => "*"
-        case VarPatternLength(x, None) => s"*$x.."
-        case VarPatternLength(min, Some(max)) => s"*$min..$max"
-      }
-
-      val relInfo = s"$name$types$length"
-
-      val left = s"(${p.nodes._1})-$lArrow-"
-      val right = s"-$rArrow-(${p.nodes._2})"
-
-      if (relInfo.isEmpty)
-        left + right
-      else
-        s"$left[$relInfo]$right"
-    }
-
     def addSetIfNonEmptyS(s: Iterable[String], name: String): Unit  = addSetIfNonEmpty(s, name, (x:String) => x)
     def addSetIfNonEmpty[T](s: Iterable[T], name: String, f: T => String): Unit = {
       if (s.nonEmpty) {
@@ -418,7 +389,7 @@ case class QueryGraph(// !!! If you change anything here, make sure to update th
     }
 
     addSetIfNonEmptyS(patternNodes, "Nodes")
-    addSetIfNonEmpty(patternRelationships, "Rels", prettyPattern)
+    addSetIfNonEmpty(patternRelationships, "Rels", (_: PatternRelationship).toString)
     addSetIfNonEmptyS(argumentIds, "Arguments")
     addSetIfNonEmpty(selections.flatPredicates, "Predicates", (e: Expression) => stringifier.apply(e))
     addSetIfNonEmpty(shortestPathPatterns, "Shortest paths", (_: ShortestPathPattern).toString)
