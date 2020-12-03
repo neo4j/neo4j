@@ -17,16 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.security.systemgraph;
+package org.neo4j.dbms.database;
 
-import org.neo4j.dbms.database.SystemGraphComponent;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.logging.Log;
 
-import static org.neo4j.server.security.systemgraph.ComponentVersion.Neo4jVersions.UNKNOWN_VERSION;
+import static org.neo4j.dbms.database.ComponentVersion.Neo4jVersions.UNKNOWN_VERSION;
 
 /**
  * Version of a system graph component.
@@ -71,16 +70,17 @@ public abstract class KnownSystemComponentVersion
     protected int getVersion( Transaction tx )
     {
         int result = UNKNOWN_VERSION;
-        ResourceIterator<Node> nodes = tx.findNodes( versionLabel );
-        if ( nodes.hasNext() )
+        try ( ResourceIterator<Node> nodes = tx.findNodes( versionLabel ) )
         {
-            Node versionNode = nodes.next();
-            if ( versionNode.hasProperty( componentVersionProperty ) )
+            if ( nodes.hasNext() )
             {
-                result = (Integer) versionNode.getProperty( componentVersionProperty );
+                Node versionNode = nodes.next();
+                if ( versionNode.hasProperty( componentVersionProperty ) )
+                {
+                    result = (Integer) versionNode.getProperty( componentVersionProperty );
+                }
             }
         }
-        nodes.close();
         return result;
     }
 

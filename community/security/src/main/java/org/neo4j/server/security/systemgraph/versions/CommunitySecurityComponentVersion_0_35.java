@@ -24,12 +24,12 @@ import org.neo4j.kernel.impl.security.User;
 import org.neo4j.logging.Log;
 import org.neo4j.server.security.auth.ListSnapshot;
 import org.neo4j.server.security.auth.UserRepository;
-import org.neo4j.server.security.systemgraph.ComponentVersion;
 import org.neo4j.util.Preconditions;
 
 import static java.lang.String.format;
-import static org.neo4j.server.security.systemgraph.ComponentVersion.LATEST_COMMUNITY_SECURITY_COMPONENT_VERSION;
-import static org.neo4j.server.security.systemgraph.ComponentVersion.Neo4jVersions.UNKNOWN_VERSION;
+import static org.neo4j.server.security.systemgraph.UserSecurityGraphComponentVersion.COMMUNITY_SECURITY_35;
+import static org.neo4j.server.security.systemgraph.UserSecurityGraphComponentVersion.LATEST_COMMUNITY_SECURITY_COMPONENT_VERSION;
+import static org.neo4j.dbms.database.ComponentVersion.Neo4jVersions.UNKNOWN_VERSION;
 import static org.neo4j.server.security.systemgraph.SystemGraphRealmHelper.IS_SUSPENDED;
 
 /**
@@ -41,7 +41,7 @@ public class CommunitySecurityComponentVersion_0_35 extends KnownCommunitySecuri
 
     public CommunitySecurityComponentVersion_0_35( Log log, UserRepository userRepository )
     {
-        super( ComponentVersion.COMMUNITY_SECURITY_35, log );
+        super( COMMUNITY_SECURITY_35, log );
         this.userRepository = userRepository;
     }
 

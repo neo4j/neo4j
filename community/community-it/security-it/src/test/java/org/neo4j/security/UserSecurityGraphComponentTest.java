@@ -59,14 +59,14 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
-import static org.neo4j.dbms.database.AbstractSystemGraphComponent.SECURITY_USER_COMPONENT;
+import static org.neo4j.dbms.database.ComponentVersion.Neo4jVersions.VERSION_35;
+import static org.neo4j.dbms.database.ComponentVersion.Neo4jVersions.VERSION_40;
+import static org.neo4j.dbms.database.ComponentVersion.Neo4jVersions.VERSION_41;
+import static org.neo4j.dbms.database.ComponentVersion.SECURITY_USER_COMPONENT;
 import static org.neo4j.dbms.database.SystemGraphComponent.Status.CURRENT;
 import static org.neo4j.dbms.database.SystemGraphComponent.Status.REQUIRES_UPGRADE;
 import static org.neo4j.dbms.database.SystemGraphComponent.Status.UNSUPPORTED_BUT_CAN_UPGRADE;
 import static org.neo4j.server.security.auth.SecurityTestUtils.credentialFor;
-import static org.neo4j.server.security.systemgraph.ComponentVersion.Neo4jVersions.VERSION_35;
-import static org.neo4j.server.security.systemgraph.ComponentVersion.Neo4jVersions.VERSION_40;
-import static org.neo4j.server.security.systemgraph.ComponentVersion.Neo4jVersions.VERSION_41;
 
 @TestDirectoryExtension
 @TestInstance( PER_CLASS )
@@ -129,7 +129,7 @@ class UserSecurityGraphComponentTest
         HashMap<String,SystemGraphComponent.Status> statuses = new HashMap<>();
         inTx( tx ->
         {
-            systemGraphComponents.forEach( component -> statuses.put( component.component(), component.detect( tx ) ) );
+            systemGraphComponents.forEach( component -> statuses.put( component.componentName(), component.detect( tx ) ) );
             statuses.put( "dbms-status", systemGraphComponents.detect( tx ) );
         } );
         assertThat( "Expecting four components", statuses.size(), is( 3 ) );
@@ -181,7 +181,7 @@ class UserSecurityGraphComponentTest
         HashMap<String,SystemGraphComponent.Status> statuses = new HashMap<>();
         inTx( tx ->
         {
-            systemGraphComponents.forEach( component -> statuses.put( component.component(), component.detect( tx ) ) );
+            systemGraphComponents.forEach( component -> statuses.put( component.componentName(), component.detect( tx ) ) );
             statuses.put( "dbms-status", systemGraphComponents.detect( tx ) );
         } );
         for ( var entry : expected.entrySet() )

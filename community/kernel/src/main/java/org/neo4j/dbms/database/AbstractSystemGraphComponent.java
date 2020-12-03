@@ -34,9 +34,6 @@ import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME
  */
 public abstract class AbstractSystemGraphComponent implements SystemGraphComponent
 {
-    public static final String SECURITY_USER_COMPONENT = "security-users";
-    public static final String SECURITY_PRIVILEGE_COMPONENT = "security-privileges";
-
     protected final Config config;
 
     public AbstractSystemGraphComponent( Config config )
@@ -108,7 +105,7 @@ public abstract class AbstractSystemGraphComponent implements SystemGraphCompone
         }
         else
         {
-            throw new IllegalStateException( String.format( "Unsupported component state for '%s': %s", component(), status.description() ) );
+            throw new IllegalStateException( String.format( "Unsupported component state for '%s': %s", componentName(), status.description() ) );
         }
         assertSystemGraphIntegrity( system );
     }

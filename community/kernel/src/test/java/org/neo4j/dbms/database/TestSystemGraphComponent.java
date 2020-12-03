@@ -38,7 +38,7 @@ public class TestSystemGraphComponent implements SystemGraphComponent
     }
 
     @Override
-    public String component()
+    public String componentName()
     {
         return component;
     }

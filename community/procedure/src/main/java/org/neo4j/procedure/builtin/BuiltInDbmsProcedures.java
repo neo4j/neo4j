@@ -323,7 +323,7 @@ public class BuiltInDbmsProcedures
                                       }
                                       catch ( Exception e )
                                       {
-                                          failed.add( String.format( "[%s] %s", component.component(), e.getMessage() ) );
+                                          failed.add( String.format( "[%s] %s", component.componentName(), e.getMessage() ) );
                                       }
                                   }
                               } );

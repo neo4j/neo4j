@@ -21,6 +21,7 @@ package org.neo4j.server.security.systemgraph;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.AbstractSystemGraphComponent;
+import org.neo4j.dbms.database.KnownSystemComponentVersions;
 import org.neo4j.dbms.database.SystemGraphComponent;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
@@ -32,7 +33,8 @@ import org.neo4j.server.security.systemgraph.versions.CommunitySecurityComponent
 import org.neo4j.server.security.systemgraph.versions.KnownCommunitySecurityComponentVersion;
 import org.neo4j.server.security.systemgraph.versions.NoCommunitySecurityComponentVersion;
 
-import static org.neo4j.server.security.systemgraph.ComponentVersion.Neo4jVersions.UNKNOWN_VERSION;
+import static org.neo4j.dbms.database.ComponentVersion.Neo4jVersions.UNKNOWN_VERSION;
+import static org.neo4j.dbms.database.ComponentVersion.SECURITY_USER_COMPONENT;
 import static org.neo4j.server.security.systemgraph.versions.KnownCommunitySecurityComponentVersion.USER_LABEL;
 
 /**
@@ -56,7 +58,7 @@ public class UserSecurityGraphComponent extends AbstractSystemGraphComponent
     }
 
     @Override
-    public String component()
+    public String componentName()
     {
         return SECURITY_USER_COMPONENT;
     }
@@ -64,17 +66,17 @@ public class UserSecurityGraphComponent extends AbstractSystemGraphComponent
     @Override
     public Status detect( Transaction tx )
     {
-        return knownUserSecurityComponentVersions.detectCurrentSecurityGraphVersion( tx ).getStatus();
+        return knownUserSecurityComponentVersions.detectCurrentComponentVersion( tx ).getStatus();
     }
 
     @Override
     public void initializeSystemGraphModel( Transaction tx ) throws Exception
     {
-        KnownCommunitySecurityComponentVersion componentBeforeInit = knownUserSecurityComponentVersions.detectCurrentSecurityGraphVersion( tx );
+        KnownCommunitySecurityComponentVersion componentBeforeInit = knownUserSecurityComponentVersions.detectCurrentComponentVersion( tx );
         log.info( "Initializing system graph model for component '%s' with version %d and status %s",
                 SECURITY_USER_COMPONENT, componentBeforeInit.version, componentBeforeInit.getStatus() );
         initializeLatestSystemGraph( tx );
-        KnownCommunitySecurityComponentVersion componentAfterInit = knownUserSecurityComponentVersions.detectCurrentSecurityGraphVersion( tx );
+        KnownCommunitySecurityComponentVersion componentAfterInit = knownUserSecurityComponentVersions.detectCurrentComponentVersion( tx );
         log.info( "After initialization of system graph model component '%s' have version %d and status %s",
                 SECURITY_USER_COMPONENT, componentAfterInit.version, componentAfterInit.getStatus() );
     }
@@ -87,7 +89,7 @@ public class UserSecurityGraphComponent extends AbstractSystemGraphComponent
 
     private void initializeLatestSystemGraph( Transaction tx ) throws Exception
     {
-        KnownCommunitySecurityComponentVersion latest = knownUserSecurityComponentVersions.latestSecurityGraphVersion();
+        KnownCommunitySecurityComponentVersion latest = knownUserSecurityComponentVersions.latestComponentVersion();
         log.debug( "Latest version of component '%s' is %s", SECURITY_USER_COMPONENT, latest.version );
         latest.setupUsers( tx );
         latest.setVersionProperty( tx, latest.version );
@@ -98,7 +100,7 @@ public class UserSecurityGraphComponent extends AbstractSystemGraphComponent
     {
         try ( Transaction tx = system.beginTx() )
         {
-            KnownCommunitySecurityComponentVersion component = knownUserSecurityComponentVersions.detectCurrentSecurityGraphVersion( tx );
+            KnownCommunitySecurityComponentVersion component = knownUserSecurityComponentVersions.detectCurrentComponentVersion( tx );
             log.info( "Performing postInitialization step for component '%s' with version %d and status %s",
                 SECURITY_USER_COMPONENT, component.version, component.getStatus() );
 
@@ -118,7 +120,7 @@ public class UserSecurityGraphComponent extends AbstractSystemGraphComponent
     {
         SystemGraphComponent.executeWithFullAccess( system, tx ->
         {
-            KnownCommunitySecurityComponentVersion currentVersion = knownUserSecurityComponentVersions.detectCurrentSecurityGraphVersion( tx );
+            KnownCommunitySecurityComponentVersion currentVersion = knownUserSecurityComponentVersions.detectCurrentComponentVersion( tx );
             log.debug( "Trying to upgrade component '%s' with version %d and status %s to latest version",
                     SECURITY_USER_COMPONENT, currentVersion.version, currentVersion.getStatus() );
             if ( currentVersion.version == UNKNOWN_VERSION )
@@ -131,7 +133,7 @@ public class UserSecurityGraphComponent extends AbstractSystemGraphComponent
                 if ( currentVersion.migrationSupported() )
                 {
                     log.info( "Upgrading security graph to latest version" );
-                    currentVersion.upgradeSecurityGraph( tx, knownUserSecurityComponentVersions.latestSecurityGraphVersion() );
+                    currentVersion.upgradeSecurityGraph( tx, knownUserSecurityComponentVersions.latestComponentVersion() );
                 }
                 else
                 {
@@ -143,6 +145,6 @@ public class UserSecurityGraphComponent extends AbstractSystemGraphComponent
 
     public KnownCommunitySecurityComponentVersion findSecurityGraphComponentVersion( String substring )
     {
-        return knownUserSecurityComponentVersions.findSecurityGraphVersion( substring );
+        return knownUserSecurityComponentVersions.findComponentVersion( substring );
     }
 }

@@ -40,7 +40,7 @@ public class DbmsRuntimeSystemGraphComponent extends AbstractSystemGraphComponen
     }
 
     @Override
-    public String component()
+    public String componentName()
     {
         return COMPONENT_NAME;
     }

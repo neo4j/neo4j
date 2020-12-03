@@ -21,10 +21,15 @@ package org.neo4j.dbms.database;
 
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.coreapi.TransactionImpl;
+
+import static org.neo4j.dbms.database.ComponentVersion.Neo4jVersions.UNKNOWN_VERSION;
 
 /**
  * The system database is used to store information of interest to many parts of the DBMS. Each sub-graph can be thought of as being of primary interest to (or
@@ -40,6 +45,66 @@ import org.neo4j.kernel.impl.coreapi.TransactionImpl;
  */
 public interface SystemGraphComponent
 {
+    Label VERSION_LABEL = Label.label( "Version" );
+
+    /**
+     * This string should be a unique identifier for the component. It will be used in two places:
+     * <ol>
+     *     <li>A key in a map of components for managing upgrades of the entire DBMS</li>
+     *     <li>A property key for the <code>Version</code> node used to store versioning information for this component</li>
+     * </ol>
+     */
+    String componentName();
+
+    /**
+     * Return the current status of this component. This involves reading the current contents of the system database and detecting whether the sub-graph
+     * managed by this component is missing, old or up-to-date. Older sub-graphs could be supported for upgrade, or unsupported (in which case the server cannot
+     * be started).
+     */
+    Status detect( Transaction tx );
+
+    /**
+     * If the component-specific sub-graph of the system database is not initialized yet (empty), this method should populate it with the default contents for
+     * the current version of the component.
+     *
+     * @throws Exception on any possible error raised by the initialization process
+     */
+    void initializeSystemGraph( GraphDatabaseService system ) throws Exception;
+
+    /**
+     * If the component-specific sub-graph of the system database is an older, but still supported, version, this method should upgrade it to the latest
+     * supported version.
+     *
+     * @throws Exception on any possible error raised by the upgrade process
+     */
+    void upgradeToCurrent( GraphDatabaseService system ) throws Exception;
+
+    static void executeWithFullAccess( GraphDatabaseService system, ThrowingConsumer<Transaction,Exception> consumer ) throws Exception
+    {
+        try ( TransactionImpl tx = (TransactionImpl) system.beginTx();
+              KernelTransaction.Revertable ignore = tx.kernelTransaction().overrideWith( SecurityContext.AUTH_DISABLED ) )
+        {
+            consumer.accept( tx );
+            tx.commit();
+        }
+    }
+
+    default int getVersion( Transaction tx, String componentVersionProperty )
+    {
+        int result = UNKNOWN_VERSION;
+        ResourceIterator<Node> nodes = tx.findNodes( VERSION_LABEL );
+        if ( nodes.hasNext() )
+        {
+            Node versionNode = nodes.next();
+            if ( versionNode.hasProperty( componentVersionProperty ) )
+            {
+                result = (Integer) versionNode.getProperty( componentVersionProperty );
+            }
+        }
+        nodes.close();
+        return result;
+    }
+
     enum Status
     {
         UNINITIALIZED( "No sub-graph detected for this component", "requires initialization" ),
@@ -89,48 +154,6 @@ public interface SystemGraphComponent
         public String resolution()
         {
             return resolution;
-        }
-    }
-
-    /**
-     * This string should be a unique identifier for the component. It will be used in two places:
-     * <ol>
-     *     <li>A key in a map of components for managing upgrades of the entire DBMS</li>
-     *     <li>A property key for the <code>Version</code> node used to store versioning information for this component</li>
-     * </ol>
-     */
-    String component();
-
-    /**
-     * Return the current status of this component. This involves reading the current contents of the system database and detecting whether the sub-graph
-     * managed by this component is missing, old or up-to-date. Older sub-graphs could be supported for upgrade, or unsupported (in which case the server cannot
-     * be started).
-     */
-    Status detect( Transaction tx );
-
-    /**
-     * If the component-specific sub-graph of the system database is not initialized yet (empty), this method should populate it with the default contents for
-     * the current version of the component.
-     *
-     * @throws Exception on any possible error raised by the initialization process
-     */
-    void initializeSystemGraph( GraphDatabaseService system ) throws Exception;
-
-    /**
-     * If the component-specific sub-graph of the system database is an older, but still supported, version, this method should upgrade it to the latest
-     * supported version.
-     *
-     * @throws Exception on any possible error raised by the upgrade process
-     */
-    void upgradeToCurrent( GraphDatabaseService system ) throws Exception;
-
-    static void executeWithFullAccess( GraphDatabaseService system, ThrowingConsumer<Transaction,Exception> consumer ) throws Exception
-    {
-        try ( TransactionImpl tx = (TransactionImpl) system.beginTx();
-              KernelTransaction.Revertable ignore = tx.kernelTransaction().overrideWith( SecurityContext.AUTH_DISABLED ) )
-        {
-            consumer.accept( tx );
-            tx.commit();
         }
     }
 }

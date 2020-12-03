@@ -59,7 +59,7 @@ public class DefaultSystemGraphComponent extends AbstractSystemGraphComponent
     }
 
     @Override
-    public String component()
+    public String componentName()
     {
         return "multi-database";
     }

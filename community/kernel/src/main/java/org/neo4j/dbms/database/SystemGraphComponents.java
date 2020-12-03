@@ -39,15 +39,15 @@ import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME
  * The core design is that each component is able to detect the version of their own sub-graph and from that decide if they can support it or not, and how to
  * upgrade from one version to another.
  */
-public class SystemGraphComponents implements SystemGraphComponent
+public class SystemGraphComponents
 {
     private final HashMap<String,SystemGraphComponent> componentMap = new HashMap<>();
     private final ArrayList<SystemGraphComponent> components = new ArrayList<>();
 
     public void register( SystemGraphComponent initializer )
     {
-        deregister( initializer.component() );
-        componentMap.put( initializer.component(), initializer );
+        deregister( initializer.componentName() );
+        componentMap.put( initializer.componentName(), initializer );
         components.add( initializer );
     }
 
@@ -66,19 +66,16 @@ public class SystemGraphComponents implements SystemGraphComponent
         components.forEach( process );
     }
 
-    @Override
     public String component()
     {
         return "system-graph";
     }
 
-    @Override
     public SystemGraphComponent.Status detect( Transaction tx )
     {
         return components.stream().map( c -> c.detect( tx ) ).reduce( SystemGraphComponent.Status::with ).orElse( SystemGraphComponent.Status.CURRENT );
     }
 
-    @Override
     public void initializeSystemGraph( GraphDatabaseService system )
     {
         Preconditions.checkState( system.databaseName().equals( SYSTEM_DATABASE_NAME ),
@@ -103,7 +100,6 @@ public class SystemGraphComponents implements SystemGraphComponent
         }
     }
 
-    @Override
     public void upgradeToCurrent( GraphDatabaseService system ) throws Exception
     {
         Exception failure = null;
@@ -130,12 +126,13 @@ public class SystemGraphComponents implements SystemGraphComponent
         List<SystemGraphComponent> componentsToUpgrade = new ArrayList<>();
         SystemGraphComponent.executeWithFullAccess( system, tx -> components.stream().filter( c ->
         {
-                        Status status = c.detect( tx );
-            return status == Status.UNSUPPORTED_BUT_CAN_UPGRADE || status == Status.REQUIRES_UPGRADE
-                    // New components are not currently initialised in cluster deployment when new binaries are booted on top of an existing database.
-                    // This is a known shortcoming of the lifecycle and a state transfer from UNINITIALIZED to CURRENT must be supported
-                    // as a workaround until it is fixed.
-                    || status == Status.UNINITIALIZED;
+            SystemGraphComponent.Status status = c.detect( tx );
+            return status == SystemGraphComponent.Status.UNSUPPORTED_BUT_CAN_UPGRADE ||
+                   status == SystemGraphComponent.Status.REQUIRES_UPGRADE ||
+                   // New components are not currently initialised in cluster deployment when new binaries are booted on top of an existing database.
+                   // This is a known shortcoming of the lifecycle and a state transfer from UNINITIALIZED to CURRENT must be supported
+                   // as a workaround until it is fixed.
+                   status == SystemGraphComponent.Status.UNINITIALIZED;
         } ).forEach( componentsToUpgrade::add ) );
         return componentsToUpgrade;
     }

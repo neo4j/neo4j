@@ -21,13 +21,14 @@ package org.neo4j.server.security.systemgraph.versions;
 
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.logging.NullLog;
-import org.neo4j.server.security.systemgraph.ComponentVersion;
+
+import static org.neo4j.server.security.systemgraph.UserSecurityGraphComponentVersion.COMMUNITY_SECURITY_UNKNOWN_VERSION;
 
 public class NoCommunitySecurityComponentVersion extends KnownCommunitySecurityComponentVersion
 {
     public NoCommunitySecurityComponentVersion()
     {
-        super( ComponentVersion.COMMUNITY_SECURITY_UNKNOWN_VERSION, NullLog.getInstance() );
+        super( COMMUNITY_SECURITY_UNKNOWN_VERSION, NullLog.getInstance() );
     }
 
     @Override

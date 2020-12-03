@@ -32,18 +32,18 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.security.Credential;
 import org.neo4j.kernel.impl.security.User;
 import org.neo4j.logging.Log;
-import org.neo4j.server.security.systemgraph.ComponentVersion;
-import org.neo4j.server.security.systemgraph.KnownSystemComponentVersion;
+import org.neo4j.dbms.database.ComponentVersion;
+import org.neo4j.dbms.database.KnownSystemComponentVersion;
 import org.neo4j.string.UTF8;
 
 import static org.neo4j.kernel.api.security.AuthManager.INITIAL_PASSWORD;
 import static org.neo4j.kernel.api.security.AuthManager.INITIAL_USER_NAME;
-import static org.neo4j.server.security.systemgraph.ComponentVersion.Neo4jVersions.UNKNOWN_VERSION;
+import static org.neo4j.dbms.database.ComponentVersion.Neo4jVersions.UNKNOWN_VERSION;
 
 public abstract class KnownCommunitySecurityComponentVersion extends KnownSystemComponentVersion
 {
     public static final Label USER_LABEL = Label.label( "User" );
-    private SecureHasher secureHasher = new SecureHasher();
+    private final SecureHasher secureHasher = new SecureHasher();
 
     KnownCommunitySecurityComponentVersion( ComponentVersion componentVersion, Log log )
     {

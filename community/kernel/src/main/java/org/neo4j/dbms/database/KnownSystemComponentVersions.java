@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.security.systemgraph;
+package org.neo4j.dbms.database;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -28,12 +28,12 @@ import org.neo4j.graphdb.Transaction;
 
 public class KnownSystemComponentVersions<T extends KnownSystemComponentVersion>
 {
-    public final T noSecurityGraph;
+    public final T noComponentVersion;
     private final ArrayList<T> knownComponentVersions = new ArrayList<>();
 
-    public KnownSystemComponentVersions( T noSecurityGraph )
+    public KnownSystemComponentVersions( T noComponentVersion )
     {
-        this.noSecurityGraph = noSecurityGraph;
+        this.noComponentVersion = noComponentVersion;
     }
 
     public void add( T version )
@@ -41,7 +41,7 @@ public class KnownSystemComponentVersions<T extends KnownSystemComponentVersion>
         knownComponentVersions.add( version );
     }
 
-    public T detectCurrentSecurityGraphVersion( Transaction tx )
+    public T detectCurrentComponentVersion( Transaction tx )
     {
         List<T> sortedVersions = new ArrayList<>( knownComponentVersions );
         sortedVersions.sort( Comparator.comparingInt( v -> v.version ) );
@@ -53,12 +53,12 @@ public class KnownSystemComponentVersions<T extends KnownSystemComponentVersion>
                 return version;
             }
         }
-        return noSecurityGraph;
+        return noComponentVersion;
     }
 
-    public T latestSecurityGraphVersion()
+    public T latestComponentVersion()
     {
-        T latest = noSecurityGraph;
+        T latest = noComponentVersion;
         for ( T version : knownComponentVersions )
         {
             if ( version.version > latest.version )
@@ -69,7 +69,7 @@ public class KnownSystemComponentVersions<T extends KnownSystemComponentVersion>
         return latest;
     }
 
-    public T findSecurityGraphVersion( String substring )
+    public T findComponentVersion( String substring )
     {
         for ( T version : knownComponentVersions )
         {
@@ -78,6 +78,6 @@ public class KnownSystemComponentVersions<T extends KnownSystemComponentVersion>
                 return version;
             }
         }
-        return noSecurityGraph;
+        return noComponentVersion;
     }
 }
