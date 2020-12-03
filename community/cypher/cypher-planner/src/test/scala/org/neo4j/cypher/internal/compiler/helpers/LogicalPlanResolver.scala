@@ -27,10 +27,28 @@ import org.neo4j.cypher.internal.planner.spi.TokenContext
 
 import scala.collection.mutable.ArrayBuffer
 
-class LogicalPlanResolver extends Resolver with TokenContext {
-  private val labels = new ArrayBuffer[String]()
-  private val properties = new ArrayBuffer[String]()
-  private val relTypes = new ArrayBuffer[String]()
+case class TokenContainer(
+                           labels: Seq[String] = Seq.empty,
+                           properties: Seq[String] = Seq.empty,
+                           relTypes: Seq[String] = Seq.empty,
+                         ) {
+
+  def addLabel(label: String): TokenContainer = this.copy(labels = labels :+ label)
+  def addRelType(relType: String): TokenContainer = this.copy(relTypes = relTypes :+ relType)
+  def addProperty(property: String): TokenContainer = this.copy(properties = properties :+ property)
+
+  def getResolver: LogicalPlanResolver = new LogicalPlanResolver(
+    labels.to[ArrayBuffer],
+    properties.to[ArrayBuffer],
+    relTypes.to[ArrayBuffer]
+  )
+}
+
+class LogicalPlanResolver(
+                           labels: ArrayBuffer[String] = new ArrayBuffer[String](),
+                           properties: ArrayBuffer[String] = new ArrayBuffer[String](),
+                           relTypes: ArrayBuffer[String] = new ArrayBuffer[String]()
+                         ) extends Resolver with TokenContext {
 
   override def getLabelId(label: String): Int = {
     val index = labels.indexOf(label)

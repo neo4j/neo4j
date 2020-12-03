@@ -25,8 +25,13 @@ import org.neo4j.cypher.internal.compiler.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.compiler.NotImplementedPlanContext
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanResolver
+import org.neo4j.cypher.internal.compiler.helpers.TokenContainer
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.cypherCompilerConfig
+import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.Cardinalities
+import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.IndexDefinition
+import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.Options
+import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.RelDef
 import org.neo4j.cypher.internal.compiler.planner.logical.SimpleMetricsFactory
 import org.neo4j.cypher.internal.compiler.planner.logical.simpleExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.test_helpers.ContextHelper
@@ -53,109 +58,28 @@ import org.neo4j.cypher.internal.util.PropertyKeyId
 import org.neo4j.cypher.internal.util.RelTypeId
 import org.neo4j.cypher.internal.util.Selectivity
 
-import scala.collection.mutable
-
 trait StatisticsBackedLogicalPlanningSupport {
-  protected def plannerBuilder() = new StatisticsBackedLogicalPlanningConfigurationBuilder()
+
+  /**
+   * @return an immutable builder to construct [[StatisticsBackedLogicalPlanningConfiguration]]s.
+   */
+  protected def plannerBuilder(): StatisticsBackedLogicalPlanningConfigurationBuilder = StatisticsBackedLogicalPlanningConfigurationBuilder.newBuilder()
 }
 
 object StatisticsBackedLogicalPlanningConfigurationBuilder {
+
+  def newBuilder(): StatisticsBackedLogicalPlanningConfigurationBuilder = StatisticsBackedLogicalPlanningConfigurationBuilder()
+
   case class Options(
-    debug: CypherDebugOptions = CypherDebugOptions(Set.empty),
-    connectComponentsPlanner: Boolean = false,
-    executionModel: ExecutionModel = ExecutionModel.default,
-  )
-}
-
-class StatisticsBackedLogicalPlanningConfigurationBuilder() {
-
-  private val tokens = new LogicalPlanResolver()
-  private object indexes extends FakeIndexAndConstraintManagement {
-    def getIndexes: Map[IndexDef, IndexType] = indexes
-    def getConstraints: Set[(String, Set[String])] = constraints
-    def getProcedureSignatures: Set[ProcedureSignature] = procedureSignatures
-  }
-  private object cardinalities {
-    var allNodes: Option[Double] = None
-    val labels: mutable.Map[String, Double] = mutable.Map[String, Double]()
-    val relationships: mutable.Map[RelDef, Double] = mutable.Map[RelDef, Double]()
-  }
-  private object selectivities {
-    val uniqueValue: mutable.Map[IndexDef, Double] = mutable.Map[IndexDef, Double]()
-    val propExists: mutable.Map[IndexDef, Double] = mutable.Map[IndexDef, Double]()
-  }
-  private var options = StatisticsBackedLogicalPlanningConfigurationBuilder.Options()
-
-  def addLabel(label: String): this.type = {
-    tokens.getLabelId(label)
-    this
-  }
-
-  def addRelType(relType: String): this.type = {
-    tokens.getRelTypeId(relType)
-    this
-  }
-
-  def addProperty(prop: String): this.type = {
-    tokens.getPropertyKeyId(prop)
-    this
-  }
-
-  def setAllNodesCardinality(c: Double): this.type = {
-    cardinalities.allNodes = Some(c)
-    this
-  }
-
-  def setLabelCardinality(label: String, c: Double): this.type = {
-    addLabel(label)
-    cardinalities.labels(label) = c
-    this
-  }
-
-  def setLabelCardinalities(labelCardinalities: Map[String, Double]): this.type = {
-    for {(label, c) <- labelCardinalities} setLabelCardinality(label, c)
-    this
-  }
-
-  def setAllRelationshipsCardinality(cardinality: Double): this.type = {
-    setRelationshipCardinality(None, None, None, cardinality)
-  }
-
-  def setRelationshipCardinality(relDef: String, cardinality: Double): this.type = {
-    RelDef.fromString(relDef)
-          .foreach(rd => setRelationshipCardinality(rd.fromLabel, rd.relType, rd.toLabel, cardinality))
-    this
-  }
-
-  def setRelationshipCardinality(from: Option[String] = None, rel: Option[String] = None, to: Option[String] = None, cardinality: Double): this.type = {
-    from.foreach(addLabel)
-    rel.foreach(addRelType)
-    to.foreach(addLabel)
-    cardinalities.relationships(RelDef(from, rel, to)) = cardinality
-    this
-  }
-
-  def addIndex(
-    label: String,
-    properties: Seq[String],
-    existsSelectivity: Double,
-    uniqueSelectivity: Double,
-    isUnique: Boolean = false,
-    withValues: Boolean = false,
-    providesOrder: IndexOrderCapability = IndexOrderCapability.NONE): this.type = {
-    addLabel(label)
-    properties.foreach(addProperty)
-    val indexDef = indexes.indexOn(label, properties, isUnique, withValues, providesOrder)
-    selectivities.propExists(indexDef) = existsSelectivity
-    selectivities.uniqueValue(indexDef) = uniqueSelectivity
-    this
-  }
-
-  def addProcedure(signature: ProcedureSignature): this.type = {
-    indexes.procedure(signature)
-    this
-  }
-
+                      debug: CypherDebugOptions = CypherDebugOptions(Set.empty),
+                      connectComponentsPlanner: Boolean = false,
+                      executionModel: ExecutionModel = ExecutionModel.default,
+                    )
+  case class Cardinalities(
+                            allNodes: Option[Double] = None,
+                            labels: Map[String, Double] = Map[String, Double](),
+                            relationships: Map[RelDef, Double] = Map[RelDef, Double]()
+                          )
   object RelDef {
 
     private implicit class RegexHelper(val sc: StringContext) {
@@ -190,29 +114,123 @@ class StatisticsBackedLogicalPlanningConfigurationBuilder() {
     }
   }
 
+  case class IndexDefinition(
+                       label: String,
+                       propertyKeys: Seq[String],
+                       uniqueValueSelectivity: Double,
+                       propExistsSelectivity: Double,
+                       isUnique: Boolean = false,
+                       withValues: Boolean = false,
+                       withOrdering: IndexOrderCapability = IndexOrderCapability.NONE
+                     )
+}
+
+case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
+                                                                        options: Options = Options(),
+                                                                        cardinalities: Cardinalities = Cardinalities(),
+                                                                        tokens: TokenContainer = TokenContainer(),
+                                                                        indexes: Seq[IndexDefinition] = Seq.empty,
+                                                                        procedures: Set[ProcedureSignature] = Set.empty
+                                                                      ) {
+
+  def addLabel(label: String): StatisticsBackedLogicalPlanningConfigurationBuilder = {
+    this.copy(tokens = tokens.addLabel(label))
+  }
+
+  def addRelType(relType: String): StatisticsBackedLogicalPlanningConfigurationBuilder = {
+    this.copy(tokens = tokens.addRelType(relType))
+  }
+
+  def addProperty(prop: String): StatisticsBackedLogicalPlanningConfigurationBuilder = {
+    this.copy(tokens = tokens.addProperty(prop))
+  }
+
+  def setAllNodesCardinality(c: Double): StatisticsBackedLogicalPlanningConfigurationBuilder = {
+    this.copy(cardinalities = cardinalities.copy(allNodes = Some(c)))
+  }
+
+  def setLabelCardinality(label: String, c: Double): StatisticsBackedLogicalPlanningConfigurationBuilder = {
+    addLabel(label)
+      .copy(cardinalities = cardinalities.copy(labels = cardinalities.labels + (label -> c)))
+  }
+
+  def setLabelCardinalities(labelCardinalities: Map[String, Double]): StatisticsBackedLogicalPlanningConfigurationBuilder = {
+    labelCardinalities.foldLeft(this) {
+      case (builder, (label, c)) => builder.setLabelCardinality(label, c)
+    }
+  }
+
+  def setAllRelationshipsCardinality(cardinality: Double): StatisticsBackedLogicalPlanningConfigurationBuilder = {
+    setRelationshipCardinality(None, None, None, cardinality)
+  }
+
+  def setRelationshipCardinality(relDef: String, cardinality: Double): StatisticsBackedLogicalPlanningConfigurationBuilder = {
+    RelDef.fromString(relDef).foldLeft(this) {
+      case (builder, rd) => builder.setRelationshipCardinality(rd.fromLabel, rd.relType, rd.toLabel, cardinality)
+    }
+  }
+
+  def setRelationshipCardinality(from: Option[String] = None, rel: Option[String] = None, to: Option[String] = None, cardinality: Double): StatisticsBackedLogicalPlanningConfigurationBuilder = {
+    val withFromLabel = from.foldLeft(this) {
+      case (builder, label) => builder.addLabel(label)
+    }
+
+    val withRelType = rel.foldLeft(withFromLabel) {
+      case (builder, rel) => builder.addRelType(rel)
+    }
+
+    val withToLabel = rel.foldLeft(withRelType) {
+      case (builder, label) => builder.addLabel(label)
+    }
+
+    withToLabel.copy(cardinalities = cardinalities.copy(relationships = cardinalities.relationships + (RelDef(from, rel, to) -> cardinality)))
+  }
+
+  def addIndex(
+    label: String,
+    properties: Seq[String],
+    existsSelectivity: Double,
+    uniqueSelectivity: Double,
+    isUnique: Boolean = false,
+    withValues: Boolean = false,
+    providesOrder: IndexOrderCapability = IndexOrderCapability.NONE): StatisticsBackedLogicalPlanningConfigurationBuilder = {
+
+    val withLabel = addLabel(label)
+    val withProperties = properties.foldLeft(withLabel) {
+      case (builder, prop) => builder.addProperty(prop)
+    }
+    val indexDef = IndexDefinition(label, properties, uniqueSelectivity, existsSelectivity, isUnique, withValues, providesOrder)
+    withProperties
+      .copy(indexes = indexes :+ indexDef)
+  }
+
+  def addProcedure(signature: ProcedureSignature): StatisticsBackedLogicalPlanningConfigurationBuilder = {
+    this.copy(procedures = this.procedures + signature)
+  }
+
   private def fail(message: String): Nothing =
     throw new IllegalStateException(message)
 
 
-  def enableDebugOption(option: CypherDebugOption, enable: Boolean = true): this.type = {
-    options = options.copy(
+  def enableDebugOption(option: CypherDebugOption, enable: Boolean = true): StatisticsBackedLogicalPlanningConfigurationBuilder = {
+    this.copy(options = options.copy(
       debug = if (enable)
         options.debug.copy(options.debug.enabledOptions + option)
       else
         options.debug.copy(options.debug.enabledOptions - option))
-    this
+    )
   }
 
-  def enablePrintCostComparisons(enable: Boolean = true): this.type = enableDebugOption(CypherDebugOption.printCostComparisons, enable)
-
-  def enableConnectComponentsPlanner(enable: Boolean = true): this.type = {
-    options = options.copy(connectComponentsPlanner = enable)
-    this
+  def enablePrintCostComparisons(enable: Boolean = true): StatisticsBackedLogicalPlanningConfigurationBuilder = {
+    enableDebugOption(CypherDebugOption.printCostComparisons, enable)
   }
 
-  def setExecutionModel(executionModel: ExecutionModel): this.type = {
-    options = options.copy(executionModel = executionModel)
-    this
+  def enableConnectComponentsPlanner(enable: Boolean = true): StatisticsBackedLogicalPlanningConfigurationBuilder = {
+    this.copy(options = options.copy(connectComponentsPlanner = enable))
+  }
+
+  def setExecutionModel(executionModel: ExecutionModel): StatisticsBackedLogicalPlanningConfigurationBuilder = {
+    this.copy(options = options.copy(executionModel = executionModel))
   }
 
   def build(): StatisticsBackedLogicalPlanningConfiguration = {
@@ -228,12 +246,14 @@ class StatisticsBackedLogicalPlanningConfigurationBuilder() {
       )
     )
 
+    val resolver = tokens.getResolver
+
     val graphStatistics = new GraphStatistics {
       override def nodesAllCardinality(): Cardinality = cardinalities.allNodes.get
 
       override def nodesWithLabelCardinality(labelId: Option[LabelId]): Cardinality = {
         labelId.map(_.id)
-               .map(tokens.getLabelName)
+               .map(resolver.getLabelName)
                .map(label => cardinalities.labels.getOrElse(label, fail(s"No cardinality set for label $label")))
                .map(Cardinality.apply)
                .getOrElse(Cardinality.EMPTY)
@@ -241,23 +261,25 @@ class StatisticsBackedLogicalPlanningConfigurationBuilder() {
 
       override def patternStepCardinality(fromLabelId: Option[LabelId], relTypeId: Option[RelTypeId], toLabelId: Option[LabelId]): Cardinality = {
         val relDef = RelDef(
-          fromLabel = fromLabelId.map(_.id).map(tokens.getLabelName),
-          relType = relTypeId.map(_.id).map(tokens.getRelTypeName),
-          toLabel = toLabelId.map(_.id).map(tokens.getLabelName),
+          fromLabel = fromLabelId.map(_.id).map(resolver.getLabelName),
+          relType = relTypeId.map(_.id).map(resolver.getRelTypeName),
+          toLabel = toLabelId.map(_.id).map(resolver.getLabelName),
         )
         cardinalities.relationships.getOrElse(relDef, fail(s"No cardinality set for relationship $relDef"))
       }
 
       override def uniqueValueSelectivity(index: IndexDescriptor): Option[Selectivity] = {
-        selectivities.uniqueValue
-                     .get(IndexDef(label = tokens.getLabelName(index.label), propertyKeys = index.properties.map(_.id).map(tokens.getPropertyKeyName)))
-                     .flatMap(Selectivity.of)
+        indexes.find { indexDef =>
+          indexDef.label == resolver.getLabelName(index.label) &&
+            indexDef.propertyKeys == index.properties.map(_.id).map(resolver.getPropertyKeyName)
+        }.flatMap(indexDef => Selectivity.of(indexDef.uniqueValueSelectivity))
       }
 
       override def indexPropertyExistsSelectivity(index: IndexDescriptor): Option[Selectivity] = {
-        selectivities.propExists
-                     .get(IndexDef(label = tokens.getLabelName(index.label), propertyKeys = index.properties.map(_.id).map(tokens.getPropertyKeyName)))
-                     .flatMap(Selectivity.of)
+        indexes.find { indexDef =>
+          indexDef.label == resolver.getLabelName(index.label) &&
+            indexDef.propertyKeys == index.properties.map(_.id).map(resolver.getPropertyKeyName)
+        }.flatMap(indexDef => Selectivity.of(indexDef.propExistsSelectivity))
       }
     }
 
@@ -266,72 +288,81 @@ class StatisticsBackedLogicalPlanningConfigurationBuilder() {
         InstrumentedGraphStatistics(graphStatistics, new MutableGraphStatisticsSnapshot())
 
       override def indexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
-        val labelName = tokens.getLabelName(labelId)
-        indexes.getIndexes.collect {
-          case (indexDef, indexType) if labelName == indexDef.label =>
-            newIndexDescriptor(indexDef, indexType)
+        val labelName = resolver.getLabelName(labelId)
+        indexes.collect {
+          case indexDef if labelName == indexDef.label =>
+            newIndexDescriptor(indexDef)
         }
       }.iterator
 
       override def uniqueIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
-        val labelName = tokens.getLabelName(labelId)
-        indexes.getIndexes.collect {
-          case (indexDef, indexType) if labelName == indexDef.label && indexType.isUnique =>
-            newIndexDescriptor(indexDef, indexType)
+        val labelName = resolver.getLabelName(labelId)
+        indexes.collect {
+          case indexDef if labelName == indexDef.label && indexDef.isUnique =>
+            newIndexDescriptor(indexDef)
         }
       }.iterator
 
       override def getPropertiesWithExistenceConstraint(labelName: String): Set[String] = {
-        indexes.getConstraints.collect { case (`labelName`, properties) => properties }.flatten
+        // Existence and node-key constraints are not yet supported by this class.
+        Set.empty
       }
 
       override def procedureSignature(name: QualifiedName): ProcedureSignature = {
-        indexes.getProcedureSignatures.find(_.name == name).getOrElse(fail(s"No procedure signature for $name"))
+        procedures.find(_.name == name).getOrElse(fail(s"No procedure signature for $name"))
       }
 
       override def indexExistsForLabel(labelId: Int): Boolean = {
-        val labelName = tokens.getLabelName(labelId)
-        indexes.getIndexes.keys.exists(_.label == labelName)
+        val labelName = resolver.getLabelName(labelId)
+        indexes.exists {
+          case indexDef if labelName == indexDef.label => true
+          case _ => false
+        }
       }
 
-      override def indexExistsForLabelAndProperties(labelName: String, propertyKey: Seq[String]): Boolean =
-        indexes.getIndexes.contains(IndexDef(labelName, propertyKey))
+      override def indexExistsForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Boolean = {
+        indexes.exists {
+          case indexDef if indexDef.label == labelName && indexDef.propertyKeys == propertyKeys => true
+          case _ => false
+        }
+      }
 
       override def indexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = {
-        val indexDef = IndexDef(labelName, propertyKeys)
-        indexes.getIndexes.get(indexDef).map(indexType => newIndexDescriptor(indexDef, indexType))
+        indexes.collectFirst {
+          case indexDef if indexDef.label == labelName && indexDef.propertyKeys == propertyKeys => newIndexDescriptor(indexDef)
+        }
       }
 
       override def getOptPropertyKeyId(propertyKeyName: String): Option[Int] = {
-        tokens.getOptPropertyKeyId(propertyKeyName)
+        resolver.getOptPropertyKeyId(propertyKeyName)
       }
 
       override def getOptLabelId(labelName: String): Option[Int] =
-        tokens.getOptLabelId(labelName)
+        resolver.getOptLabelId(labelName)
 
       override def getOptRelTypeId(relType: String): Option[Int] =
-        tokens.getOptRelTypeId(relType)
+        resolver.getOptRelTypeId(relType)
 
-      private def newIndexDescriptor(indexDef: IndexDef, indexType: IndexType): IndexDescriptor = {
+      private def newIndexDescriptor(indexDef: IndexDefinition): IndexDescriptor = {
         // Our fake index either can always or never return property values
-        val canGetValue = if (indexType.withValues) CanGetValue else DoNotGetValue
+        val canGetValue = if (indexDef.withValues) CanGetValue else DoNotGetValue
         val valueCapability: ValueCapability = _ => indexDef.propertyKeys.map(_ => canGetValue)
-        val orderCapability: OrderCapability = _ => indexType.withOrdering
+        val orderCapability: OrderCapability = _ => indexDef.withOrdering
 
-        val props = indexDef.propertyKeys.map(p => PropertyKeyId(tokens.getPropertyKeyId(p)))
-        val label = LabelId(tokens.getLabelId(indexDef.label))
+        val props = indexDef.propertyKeys.map(p => PropertyKeyId(resolver.getPropertyKeyId(p)))
+        val label = LabelId(resolver.getLabelId(indexDef.label))
 
         IndexDescriptor(
           label,
           props,
           valueCapability = valueCapability,
           orderCapability = orderCapability,
-          isUnique = indexType.isUnique
+          isUnique = indexDef.isUnique
         )
       }
     }
     new StatisticsBackedLogicalPlanningConfiguration(
-      tokens,
+      resolver,
       planContext,
       options,
     )
