@@ -116,6 +116,11 @@
                                     <pattern>org.apache.logging.log4j</pattern>
                                     <shadedPattern>org.neo4j.logging.shaded.log4j</shadedPattern>
                                 </relocation>
+                                <relocation>
+                                    <!-- workaround for also relocating log4j multi-release jars -->
+                                    <pattern>META-INF.versions.9.org.apache.logging.log4j</pattern>
+                                    <shadedPattern>META-INF.versions.9.org.neo4j.logging.shaded.log4j</shadedPattern>
+                                </relocation>
                             </relocations>
                             <transformers>
                                 <!-- workaround for https://issues.apache.org/jira/browse/LOG4J2-673 -->
@@ -123,6 +128,11 @@
                                         implementation="com.github.edwgiz.maven_shade_plugin.log4j2_cache_transformer.PluginsCacheFileTransformer">
                                 </transformer>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <manifestEntries>
+                                        <Multi-Release>true</Multi-Release>
+                                    </manifestEntries>
+                                </transformer>
                             </transformers>
                             <filters>
                                 <filter>
