@@ -55,6 +55,7 @@ import org.neo4j.internal.kernel.api.CursorFactory
 import org.neo4j.internal.kernel.api.security.LoginContext
 import org.neo4j.kernel.api.KernelTransaction.Type
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
+import org.neo4j.kernel.impl.locking.Locks
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory
 import org.neo4j.kernel.impl.query.NonRecordingQuerySubscriber
 import org.neo4j.kernel.impl.query.QuerySubscriber
@@ -121,6 +122,8 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
 
   def tx: InternalTransaction = _tx
   def txContext: TransactionalContext = _txContext
+
+  def locks = cypherGraphDb.getDependencyResolver.resolveDependency(classOf[Locks])
 
   override def buildPlan(logicalQuery: LogicalQuery,
                          runtime: CypherRuntime[CONTEXT]): ExecutionPlan = {

@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.runtime.spec
 
 import java.io.File
 import java.io.PrintWriter
+import java.util
 
 import org.neo4j.configuration.Config
 import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
@@ -56,6 +57,8 @@ import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.kernel.impl.query.RecordingQuerySubscriber
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.kernel.internal.GraphDatabaseAPI
+import org.neo4j.lock.LockType
+import org.neo4j.lock.ResourceType
 import org.neo4j.logging.AssertableLogProvider
 import org.neo4j.logging.LogProvider
 import org.neo4j.values.AnyValue
@@ -287,6 +290,7 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
 
     private var rowsMatcher: RowsMatcher = AnyRowsMatcher
     private var maybeStatisticts: Option[QueryStatisticsMatcher] = None
+    private var maybeLockedNodes: Option[LockNodesMatcher] = None
 
     def withNoUpdates(): RuntimeResultMatcher = withStatistics()
 
@@ -298,6 +302,11 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
                        labelsRemoved: Int = 0,
                        propertiesSet: Int = 0): RuntimeResultMatcher = {
       maybeStatisticts = Some(new QueryStatisticsMatcher(nodesCreated, nodesDeleted, relationshipsCreated, relationshipsDeleted, labelsAdded, labelsRemoved, propertiesSet))
+      this
+    }
+
+    def withLockedNodes(nodeIds: Seq[Long]) = {
+      maybeLockedNodes = Some(new LockNodesMatcher(nodeIds))
       this
     }
 
@@ -319,16 +328,39 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
       if (columns != expectedColumns) {
         MatchResult(matches = false, s"Expected result columns $expectedColumns, got $columns", "")
       } else {
-        maybeStatisticts.map(s => s.apply(left.runtimeResult.queryStatistics()))
+        maybeStatisticts
+          .map(s => s.apply(left.runtimeResult.queryStatistics()))
           .filter(_.matches == false)
           .getOrElse {
             val rows = consume(left)
-            rowsMatcher.matches(columns, rows) match {
-              case RowsMatch => MatchResult(matches = true, "", "")
-              case RowsDontMatch(msg) => MatchResult(matches = false, msg, "")
-            }
+            maybeLockedNodes
+              .map(_.apply(()))
+              .filter(_.matches == false)
+              .getOrElse {
+                rowsMatcher.matches(columns, rows) match {
+                  case RowsMatch => MatchResult(matches = true, "", "")
+                  case RowsDontMatch(msg) => MatchResult(matches = false, msg, "")
+                }
+              }
           }
       }
+    }
+  }
+
+  class LockNodesMatcher(expectedLocked: Seq[Long]) extends Matcher[Unit] {
+     override def apply(left: Unit): MatchResult = {
+      val locksList = new util.ArrayList[Long]
+      runtimeTestSupport.locks.accept(
+        (_: LockType, _: ResourceType, _: Long, resourceId: Long, _: String, _: Long, _: Long) =>
+          locksList.add(resourceId)
+      )
+
+      val actualLocked = locksList.asScala.toSeq
+      MatchResult(
+        matches = actualLocked == expectedLocked,
+        rawFailureMessage = s"expected nodesLocked=$expectedLocked but was $actualLocked",
+        rawNegatedFailureMessage = ""
+      )
     }
   }
 

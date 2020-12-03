@@ -20,12 +20,10 @@
 package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.cypher.internal.CypherRuntime
-import org.neo4j.cypher.internal.InterpretedRuntime
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
-import org.neo4j.values.storable.Values
 
 abstract class LockNodesTestBase[CONTEXT <: RuntimeContext](
                                                              edition: Edition[CONTEXT],
@@ -34,7 +32,7 @@ abstract class LockNodesTestBase[CONTEXT <: RuntimeContext](
                                                            ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("should lock nodes") {
-    assume(runtime != InterpretedRuntime)
+    // given
     val nodes = given {
       nodeGraph(sizeHint)
     }
@@ -45,30 +43,15 @@ abstract class LockNodesTestBase[CONTEXT <: RuntimeContext](
       .allNodeScan("x")
       .build()
 
-    val logicalProcedureQuery = new LogicalQueryBuilder(this)
-      .produceResults("resourceId")
-      .procedureCall("db.listLocks() YIELD resourceId")
-      .argument()
-      .build()
-
-    // request one row and lock the node
+    // then
     val runtimeResult = execute(logicalQuery, runtime)
-    request(1, runtimeResult)
-
-    val procedureResult = execute(logicalProcedureQuery, runtime)
-    procedureResult shouldNot beColumns("resourceId").withNoRows()
-
-    consume(runtimeResult)
-    val procedureResult1 = execute(logicalProcedureQuery, runtime)
-    procedureResult1 should beColumns("resourceId").withRows(nodes.map(node => Array(Values.longValue(node.getId))))
-    restartTx()
-
-    val procedureResult2 = execute(logicalProcedureQuery, runtime)
-    procedureResult2 should beColumns("resourceId").withNoRows()
+    runtimeResult should beColumns("x")
+      .withRows(nodes.map(Array(_)))
+      .withLockedNodes(nodes.map(_.getId))
   }
 
   test("should lock nodes - with refslots") {
-    assume(runtime != InterpretedRuntime)
+    // given
     val nodes = given {
       nodeGraph(sizeHint)
     }
@@ -80,30 +63,15 @@ abstract class LockNodesTestBase[CONTEXT <: RuntimeContext](
       .allNodeScan("x")
       .build()
 
-    val logicalProcedureQuery = new LogicalQueryBuilder(this)
-      .produceResults("resourceId")
-      .procedureCall("db.listLocks() YIELD resourceId")
-      .argument()
-      .build()
-
-    // request one row and lock the node
+    // then
     val runtimeResult = execute(logicalQuery, runtime)
-    request(1, runtimeResult)
-
-    val procedureResult = execute(logicalProcedureQuery, runtime)
-    procedureResult shouldNot beColumns("resourceId").withNoRows()
-
-    consume(runtimeResult)
-    val procedureResult1 = execute(logicalProcedureQuery, runtime)
-    procedureResult1 should beColumns("resourceId").withRows(nodes.map(node => Array(Values.longValue(node.getId))))
-    restartTx()
-
-    val procedureResult2 = execute(logicalProcedureQuery, runtime)
-    procedureResult2 should beColumns("resourceId").withNoRows()
+    runtimeResult should beColumns("xRef")
+      .withRows(nodes.map(Array(_)))
+      .withLockedNodes(nodes.map(_.getId))
   }
 
   test("should ignore to lock null nodes") {
-    assume(runtime != InterpretedRuntime)
+    // given
     val nodes = given {
       nodeGraph(sizeHint)
     }
@@ -115,25 +83,10 @@ abstract class LockNodesTestBase[CONTEXT <: RuntimeContext](
       .allNodeScan("x")
       .build()
 
-    val logicalProcedureQuery = new LogicalQueryBuilder(this)
-      .produceResults("resourceId")
-      .procedureCall("db.listLocks() YIELD resourceId")
-      .argument()
-      .build()
-
-    // request one row and lock the node
+    // then
     val runtimeResult = execute(logicalQuery, runtime)
-    request(1, runtimeResult)
-
-    val procedureResult = execute(logicalProcedureQuery, runtime)
-    procedureResult shouldNot beColumns("resourceId").withNoRows()
-
-    consume(runtimeResult)
-    val procedureResult1 = execute(logicalProcedureQuery, runtime)
-    procedureResult1 should beColumns("resourceId").withRows(nodes.map(node => Array(Values.longValue(node.getId))))
-    restartTx()
-
-    val procedureResult2 = execute(logicalProcedureQuery, runtime)
-    procedureResult2 should beColumns("resourceId").withNoRows()
+    runtimeResult should beColumns("x")
+      .withRows(Array(null) +: nodes.map(Array(_)))
+      .withLockedNodes(nodes.map(_.getId))
   }
 }
