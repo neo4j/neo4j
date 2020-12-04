@@ -291,6 +291,29 @@ abstract class ProcedureCallTestBase[CONTEXT <: RuntimeContext](
     queryProfile.operatorProfile(5).rows() shouldBe (nodesPerLabel * 2L) // argument
     queryProfile.operatorProfile(6).rows() shouldBe (nodesPerLabel * 2L) // all node scan
   }
+
+  test("cartesian product on top of multiple apply and procedure call") {
+    // given
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("two", "x")
+      .cartesianProduct()
+      .|.apply()
+      .|.|.argument("x")
+      .|.apply()
+      .|.|.argument("x")
+      .|.procedureCall("cardinalityIncreasingProc(3) YIELD i AS x")
+      .|.argument("two")
+      .input(variables = Seq("two"))
+      .build()
+
+
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(Array(1), Array(2)))
+
+    // then
+    runtimeResult should beColumns("two", "x").withRows(Seq(Array(1,1), Array(1,2), Array(1,3), Array(2,1), Array(2,2), Array(2,3)))
+  }
 }
 
 trait WriteProcedureCallTestBase[CONTEXT <: RuntimeContext] {
