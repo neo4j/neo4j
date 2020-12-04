@@ -96,9 +96,18 @@ case object selectPatternPredicates extends CandidateGenerator[LogicalPlan] {
       }
     }
 
-    // Adding the predicates to new query graph
+    // Adding the predicates and known outer variables to new query graph
     val new_qg = e.optionalWhereExpression.foldLeft(qg) {
-      case (acc, p) => acc.addPredicates(e.outerScope.map(id => id.name), p)
+      case (acc: QueryGraph, patternExpr: Expression) => {
+        val outerVariableNames = e.outerScope.map(id => id.name)
+        val usedVariables: Seq[String] = patternExpr.arguments
+          .findByAllClass[Variable]
+          .map(_.name)
+          .distinct
+
+        acc.addPredicates(outerVariableNames, patternExpr)
+          .addArgumentIds(usedVariables.filter(v => outerVariableNames.contains(v)))
+      }
     }
 
     val innerContext = createPlannerContext(context, namedMap)
