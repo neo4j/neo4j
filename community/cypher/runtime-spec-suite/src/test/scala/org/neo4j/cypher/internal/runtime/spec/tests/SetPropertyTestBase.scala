@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RecordingRuntimeResult
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
+import org.neo4j.graphdb.RelationshipType
 import org.neo4j.internal.helpers.collection.Iterables
 
 abstract class SetPropertyTestBase[CONTEXT <: RuntimeContext](
@@ -255,6 +256,192 @@ abstract class SetPropertyTestBase[CONTEXT <: RuntimeContext](
     consume(runtimeResult)
     val property = Iterables.single(tx.getAllPropertyKeys)
     runtimeResult should beColumns("p").withSingleRow(2).withStatistics(propertiesSet = 2)
+    property shouldBe "prop"
+  }
+
+  test("should set node property from null value") {
+    // given a single node
+    val n = given {
+      nodeGraph(1)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("p")
+      .projection("n.prop as p")
+      .setProperty("n", "prop", "null")
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    val property = Iterables.single(tx.getAllPropertyKeys)
+    runtimeResult should beColumns("p").withSingleRow(null).withNoUpdates()
+    property shouldBe "prop"
+  }
+
+  test("should set node property on null node") {
+    // given a single node
+    val n = given {
+      nodeGraph(1)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("p")
+      .projection("n.prop as p")
+      .setProperty("n", "prop", "3")
+      .input(nodes = Seq("n"))
+      .build(readOnly = false)
+
+    val input = inputValues(Array(n.head), Array(null))
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime, input)
+    consume(runtimeResult)
+    val property = Iterables.single(tx.getAllPropertyKeys)
+    runtimeResult should beColumns("p").withRows(singleColumn(Seq(3, null))).withStatistics(propertiesSet = 1)
+    property shouldBe "prop"
+  }
+
+  test("should set node property from expression that requires null check") {
+    // given a single node
+    val n = given {
+      nodeGraph(1)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("p")
+      .projection("n.prop as p")
+      .setProperty("n", "prop", "sin(null)")
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    val property = Iterables.single(tx.getAllPropertyKeys)
+    runtimeResult should beColumns("p").withSingleRow(null).withNoUpdates()
+    property shouldBe "prop"
+  }
+
+  test("should count node property updates even if values are not changed") {
+    // given single node
+    val n = given {
+      nodePropertyGraph(1, { case i => Map("prop" -> 100)})
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("p")
+      .projection("n.prop as p")
+      .setProperty("n", "prop", "100")
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    val property = Iterables.single(tx.getAllPropertyKeys)
+    runtimeResult should beColumns("p").withRows(n.map(_ => Array(100))).withStatistics(propertiesSet = 1)
+    property shouldBe "prop"
+  }
+
+  test("should set relationship property from null value") {
+    // given a single relationship
+    val r = given {
+      val nodes = nodeGraph(2)
+      nodes.head.createRelationshipTo(nodes(1), RelationshipType.withName("R"))
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("p")
+      .projection("r.prop as p")
+      .setProperty("r", "prop", "null")
+      .directedRelationshipByIdSeek("r", "x", "y", Set.empty, r.getId)
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    val property = Iterables.single(tx.getAllPropertyKeys)
+    runtimeResult should beColumns("p").withSingleRow(null).withNoUpdates()
+    property shouldBe "prop"
+  }
+
+  test("should set relationship property on null node") {
+    // given a single relationship
+    val r = given {
+      val nodes = nodeGraph(2)
+      nodes.head.createRelationshipTo(nodes(1), RelationshipType.withName("R"))
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("p")
+      .projection("r.prop as p")
+      .setProperty("r", "prop", "3")
+      .input(relationships = Seq("r"))
+      .build(readOnly = false)
+
+    val input = inputValues(Array(r), Array(null))
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime, input)
+    consume(runtimeResult)
+    val property = Iterables.single(tx.getAllPropertyKeys)
+    runtimeResult should beColumns("p").withRows(singleColumn(Seq(3, null))).withStatistics(propertiesSet = 1)
+    property shouldBe "prop"
+  }
+
+  test("should set relationship property from expression that requires null check") {
+    // given a single relationship
+    val r = given {
+      val nodes = nodeGraph(2)
+      nodes.head.createRelationshipTo(nodes(1), RelationshipType.withName("R"))
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("p")
+      .projection("r.prop as p")
+      .setProperty("r", "prop", "sin(null)")
+      .directedRelationshipByIdSeek("r", "x", "y", Set.empty, r.getId)
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    val property = Iterables.single(tx.getAllPropertyKeys)
+    runtimeResult should beColumns("p").withSingleRow(null).withNoUpdates()
+    property shouldBe "prop"
+  }
+
+  test("should count updates even if value is not changed") {
+    // given a single relationship
+    val r = given {
+      val nodes = nodeGraph(2)
+      val r = nodes.head.createRelationshipTo(nodes(1), RelationshipType.withName("R"))
+      r.setProperty("prop", "100")
+      r
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("p")
+      .projection("r.prop as p")
+      .setProperty("r", "prop", "100")
+      .directedRelationshipByIdSeek("r", "x", "y", Set.empty, r.getId)
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    val property = Iterables.single(tx.getAllPropertyKeys)
+    runtimeResult should beColumns("p").withSingleRow(100).withStatistics(propertiesSet = 1)
     property shouldBe "prop"
   }
 }
