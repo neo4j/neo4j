@@ -26,9 +26,7 @@ import org.eclipse.collections.impl.factory.primitive.IntSets;
 import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
 
 import java.util.Iterator;
-import java.util.Set;
 
-import org.neo4j.collection.trackable.HeapTrackingCollections;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.kernel.impl.api.state.RelationshipChangesForNode.DiffStrategy;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactory;
@@ -146,8 +144,6 @@ class NodeStateImpl extends EntityStateImpl implements NodeState
     private RelationshipChangesForNode relationshipsAdded;
     private RelationshipChangesForNode relationshipsRemoved;
 
-    private Set<MutableLongDiffSets> indexDiffs;
-
     static NodeStateImpl createNodeState( long id, CollectionsFactory collectionsFactory, MemoryTracker memoryTracker )
     {
         memoryTracker.allocateHeap( SHALLOW_SIZE );
@@ -217,10 +213,6 @@ class NodeStateImpl extends EntityStateImpl implements NodeState
         {
             labelDiffSets = null;
         }
-        if ( indexDiffs != null )
-        {
-            indexDiffs.clear();
-        }
     }
 
     @Override
@@ -245,41 +237,6 @@ class NodeStateImpl extends EntityStateImpl implements NodeState
     private boolean hasRemovedRelationships()
     {
         return relationshipsRemoved != null;
-    }
-
-    void addIndexDiff( MutableLongDiffSets diff )
-    {
-        if ( indexDiffs == null )
-        {
-            indexDiffs = HeapTrackingCollections.newIdentityHashingSet( memoryTracker );
-        }
-        indexDiffs.add( diff );
-    }
-
-    void removeIndexDiff( MutableLongDiffSets diff )
-    {
-        if ( indexDiffs != null )
-        {
-            indexDiffs.remove( diff );
-        }
-    }
-
-    void clearIndexDiffs( long nodeId )
-    {
-        if ( indexDiffs != null )
-        {
-            for ( MutableLongDiffSets diff : indexDiffs )
-            {
-                if ( diff.getAdded().contains( nodeId ) )
-                {
-                    diff.remove( nodeId );
-                }
-                else if ( diff.getRemoved().contains( nodeId ) )
-                {
-                    diff.add( nodeId );
-                }
-            }
-        }
     }
 
     @Override

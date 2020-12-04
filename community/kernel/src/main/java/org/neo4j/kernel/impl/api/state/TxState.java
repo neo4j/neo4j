@@ -304,7 +304,6 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
             {
                 final LongDiffSets diff = nodeState.labelDiffSets();
                 diff.getAdded().each( label -> getOrCreateLabelStateNodeDiffSets( label ).remove( nodeId ) );
-                nodeState.clearIndexDiffs( nodeId );
                 nodeState.clear();
             }
         }
@@ -769,33 +768,16 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     public void indexDoUpdateEntry( SchemaDescriptor descriptor, long nodeId,
             ValueTuple propertiesBefore, ValueTuple propertiesAfter )
     {
-        NodeStateImpl nodeState = getOrCreateNodeState( nodeId );
         Map<ValueTuple, MutableLongDiffSets> updates = getOrCreateIndexUpdatesByDescriptor( descriptor );
         if ( propertiesBefore != null )
         {
             MutableLongDiffSets before = getOrCreateIndexUpdatesForSeek( updates, propertiesBefore );
             before.remove( nodeId );
-            if ( before.getRemoved().contains( nodeId ) )
-            {
-                nodeState.addIndexDiff( before );
-            }
-            else
-            {
-                nodeState.removeIndexDiff( before );
-            }
         }
         if ( propertiesAfter != null )
         {
             MutableLongDiffSets after = getOrCreateIndexUpdatesForSeek( updates, propertiesAfter );
             after.add( nodeId );
-            if ( after.getAdded().contains( nodeId ) )
-            {
-                nodeState.addIndexDiff( after );
-            }
-            else
-            {
-                nodeState.removeIndexDiff( after );
-            }
         }
     }
 
