@@ -219,4 +219,27 @@ abstract class UnwindTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("a", "b", "c").withRows(expected)
     System.out.flush()
   }
+
+  test("cartesian product on top of multiple apply and unwind") {
+    // given
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("two", "x")
+      .cartesianProduct()
+      .|.apply()
+      .|.|.argument("x")
+      .|.apply()
+      .|.|.argument("x")
+      .|.unwind("[1,2,3] AS x")
+      .|.argument("two")
+      .input(variables = Seq("two"))
+      .build()
+
+
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(Array(1), Array(2)))
+
+    // then
+    runtimeResult should beColumns("two", "x").withRows(Seq(Array(1,1), Array(1,2), Array(1,3), Array(2,1), Array(2,2), Array(2,3)))
+  }
 }
