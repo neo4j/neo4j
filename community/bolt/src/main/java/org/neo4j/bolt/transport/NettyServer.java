@@ -25,13 +25,15 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.epoll.Epoll;
+import io.netty.channel.unix.DomainSocketAddress;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ThreadFactory;
-
-import io.netty.channel.epoll.EpollServerDomainSocketChannel;
 
 import org.neo4j.bolt.BoltServer;
 import org.neo4j.bolt.transport.configuration.EpollConfigurationProvider;
@@ -191,6 +193,17 @@ public class NettyServer extends LifecycleAdapter
     public void shutdown()
     {
         shutdownEventLoopGroup();
+        if ( loopbackInitializer != null )
+        {
+            try
+            {
+                Files.deleteIfExists( Path.of( ( (DomainSocketAddress) loopbackInitializer.address()).path() ) );
+            }
+            catch ( IOException e )
+            {
+                internalLog.warn( "Failed to delete loopback domain socket file", e );
+            }
+        }
     }
 
     private Channel bind( ServerConfigurationProvider configurationProvider, ProtocolInitializer protocolInitializer ) throws InterruptedException

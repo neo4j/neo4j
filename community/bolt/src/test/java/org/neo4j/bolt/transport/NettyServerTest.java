@@ -62,7 +62,7 @@ class NettyServerTest
         var port = 16000;
         try ( ServerSocketChannel ignore = ServerSocketChannel.open().bind( new InetSocketAddress( "localhost", port ) ) )
         {
-            SocketAddress address = new InetSocketAddress( "localhost", port );
+            var address = new InetSocketAddress( "localhost", port );
 
             // When
             server = new NettyServer( newThreadFactory(), protocolOnAddress( address ), null, new ConnectorPortRegister(), NullLogService.getInstance(),

@@ -261,11 +261,15 @@ public class BoltServer extends LifecycleAdapter
         {
             if ( config.get( BoltConnectorInternalSettings.unsupported_loopback_listen_file) == null )
             {
-                throw new IllegalArgumentException( "A file has not been specified for use with the loopback interface." );
+                throw new IllegalArgumentException( "A file has not been specified for use with the loopback domain socket." );
             }
 
             File unixSocketFile = new File( config.get( BoltConnectorInternalSettings.unsupported_loopback_listen_file).toString() );
-            unixSocketFile.delete(); // ensure the file does not exist before passing to netty to create it
+
+            if ( unixSocketFile.exists() ) // Check if the file does not exist before passing to netty to create it
+            {
+                throw new IllegalArgumentException( "Loopback listen file: " + unixSocketFile + " already exists." );
+            }
 
             DomainSocketAddress loopbackListenAddress = new DomainSocketAddress( unixSocketFile );
 

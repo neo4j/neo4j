@@ -72,7 +72,7 @@ public final class BoltConnectorInternalSettings implements SettingsDeclaration
 
     @Internal
     @Description( "The absolute path of the file for use with the Unix Domain Socket based loopback interface. " +
-                  "This file must be specified and will be created at runtime" )
+                  "This file must be specified and will be created at runtime and deleted on shutdown" )
     public static final Setting<Path> unsupported_loopback_listen_file =
             newBuilder( "unsupported.dbms.loopback_file", PATH, null ).build();
 
