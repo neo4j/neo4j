@@ -38,8 +38,8 @@ import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters.asQueryGraph
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.macros.AssertMacros
+import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.FreshIdNameGenerator
-import org.neo4j.cypher.internal.util.UnNamedNameGenerator
 
 case object selectPatternPredicates extends SelectionCandidateGenerator {
 
@@ -86,7 +86,6 @@ case object selectPatternPredicates extends SelectionCandidateGenerator {
 
   def planInnerOfSubquery(lhs: LogicalPlan, context: LogicalPlanningContext, interestingOrder: InterestingOrder, e: ExistsSubClause): LogicalPlan = {
     // Creating a query graph by combining all extracted query graphs created by each entry of the patternElements
-    val emptyTuple = (Map.empty[PatternElement, Variable], QueryGraph.empty)
     val qg = e.patternElements.foldLeft(QueryGraph.empty) { (acc, patternElement) =>
       patternElement match {
         case elem: RelationshipChain =>
@@ -101,9 +100,18 @@ case object selectPatternPredicates extends SelectionCandidateGenerator {
       }
     }
 
-    // Adding the predicates to new query graph
+    // Adding the predicates and known outer variables to new query graph
     val new_qg = e.optionalWhereExpression.foldLeft(qg) {
-      case (acc, p) => acc.addPredicates(e.outerScope.map(id => id.name), p)
+      case (acc: QueryGraph, patternExpr: Expression) => {
+        val outerVariableNames = e.outerScope.map(id => id.name)
+        val usedVariables: Seq[String] = patternExpr.arguments
+          .findByAllClass[Variable]
+          .map(_.name)
+          .distinct
+
+        acc.addPredicates(outerVariableNames, patternExpr)
+          .addArgumentIds(usedVariables.filter(v => outerVariableNames.contains(v)))
+      }
     }
 
     context.strategy.plan(new_qg, interestingOrder, context).result
