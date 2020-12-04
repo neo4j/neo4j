@@ -26,9 +26,7 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
-import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
-import org.neo4j.cypher.internal.runtime.QueryStatistics
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RecordingRuntimeResult
@@ -100,6 +98,26 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
     val node = Iterables.single(tx.getAllNodes)
     runtimeResult should beColumns("n").withSingleRow(node).withStatistics(nodesCreated = 1, labelsAdded = 1, propertiesSet = 1)
     node.getAllProperties.asScala should equal(Map("p1" -> 1))
+  }
+
+  test("should create two nodes with dependency") {
+    // given an empty data base
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("mprop", "nprop")
+      .projection("m.prop AS mprop", "n.prop AS nprop")
+      .create(
+        createNodeWithProperties("m", Seq("A"), mapOf("prop" -> literal(1))),
+        createNodeWithProperties("n", Seq("A"), mapOf("prop" -> add(prop("m", "prop"), literalInt(1))))
+      )
+      .argument()
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    runtimeResult should beColumns("mprop", "nprop").withSingleRow(1, 2).withStatistics(nodesCreated = 2, labelsAdded = 2, propertiesSet = 2)
   }
 
   test("should create many node with labels") {
@@ -276,6 +294,28 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("r").withSingleRow(relationship).withStatistics(nodesCreated = 2, labelsAdded = 2, relationshipsCreated = 1, propertiesSet = 1)
     relationship.getType.name() should equal("R")
     relationship.getAllProperties.asScala should equal(Map("p1" -> 1 ))
+  }
+
+  test("should create two relationships with dependency") {
+    // given an empty data base
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r1prop", "r2prop")
+      .projection("r1.prop AS r1prop", "r2.prop AS r2prop")
+      .create(nodes = Seq(createNode("n", "A"), createNode("m", "B")),
+          relationships = Seq(
+            createRelationship("r1", "n", "R", "m", OUTGOING, Some(mapOf("prop" -> literal(1)))),
+            createRelationship("r2", "n", "R", "m", OUTGOING, Some(mapOf("prop" -> add(prop("r1", "prop"), literalInt(1)))))
+          )
+      )
+      .argument()
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    runtimeResult should beColumns("r1prop", "r2prop").withSingleRow(1, 2).withStatistics(nodesCreated = 2, labelsAdded = 2, relationshipsCreated = 2, propertiesSet = 2)
   }
 
   test("should create many relationship on the RHS of an Apply") {
