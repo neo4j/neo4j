@@ -27,15 +27,14 @@ import org.apache.lucene.index.LogByteSizeMergePolicy;
 import org.apache.lucene.index.SnapshotDeletionPolicy;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.graphdb.config.Setting;
 
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.lucene_merge_factor;
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.lucene_min_merge;
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.lucene_nocfs_ratio;
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.lucene_population_max_buffered_docs;
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.lucene_population_ram_buffer_size;
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.lucene_standard_ram_buffer_size;
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.lucene_writer_max_buffered_docs;
+import static org.neo4j.kernel.api.impl.index.LuceneSettings.lucene_merge_factor;
+import static org.neo4j.kernel.api.impl.index.LuceneSettings.lucene_min_merge;
+import static org.neo4j.kernel.api.impl.index.LuceneSettings.lucene_nocfs_ratio;
+import static org.neo4j.kernel.api.impl.index.LuceneSettings.lucene_population_max_buffered_docs;
+import static org.neo4j.kernel.api.impl.index.LuceneSettings.lucene_population_ram_buffer_size;
+import static org.neo4j.kernel.api.impl.index.LuceneSettings.lucene_standard_ram_buffer_size;
+import static org.neo4j.kernel.api.impl.index.LuceneSettings.lucene_writer_max_buffered_docs;
 
 /**
  * Helper factory for standard lucene index writer configuration.
@@ -61,7 +60,7 @@ public final class IndexWriterConfigs
         writerConfig.setMaxBufferedDocs( config.get( lucene_writer_max_buffered_docs ) );
         writerConfig.setIndexDeletionPolicy( new SnapshotDeletionPolicy( new KeepOnlyLastCommitDeletionPolicy() ) );
         writerConfig.setUseCompoundFile( true );
-        writerConfig.setRAMBufferSizeMB( getConfigWithDefault( config, lucene_standard_ram_buffer_size, IndexWriterConfig.DEFAULT_RAM_BUFFER_SIZE_MB ) );
+        writerConfig.setRAMBufferSizeMB( config.get( lucene_standard_ram_buffer_size ) );
 
         LogByteSizeMergePolicy mergePolicy = new LogByteSizeMergePolicy();
         mergePolicy.setNoCFSRatio( config.get( lucene_nocfs_ratio ) );
@@ -80,7 +79,7 @@ public final class IndexWriterConfigs
     public static IndexWriterConfig population( Config config, Analyzer analyzer )
     {
         IndexWriterConfig writerConfig = standard( config, analyzer );
-        writerConfig.setMaxBufferedDocs( getConfigWithDefault( config, lucene_population_max_buffered_docs, IndexWriterConfig.DISABLE_AUTO_FLUSH ) );
+        writerConfig.setMaxBufferedDocs( config.get( lucene_population_max_buffered_docs ) );
         writerConfig.setRAMBufferSizeMB( config.get( lucene_population_ram_buffer_size ) );
         return writerConfig;
     }
@@ -91,11 +90,5 @@ public final class IndexWriterConfigs
         // Index transaction state is never directly persisted, so never commit it on close.
         writerConfig.setCommitOnClose( false );
         return writerConfig;
-    }
-
-    public static <T> T getConfigWithDefault( Config config, Setting<T> setting, T defaultValue )
-    {
-        T value = config.get( setting );
-        return value != null ? value : defaultValue;
     }
 }
