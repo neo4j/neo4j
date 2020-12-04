@@ -32,11 +32,11 @@ import java.util.List;
 import java.util.concurrent.ThreadFactory;
 
 import org.neo4j.bolt.BoltServer;
-import org.neo4j.bolt.BoltSettings;
 import org.neo4j.bolt.transport.configuration.EpollConfigurationProvider;
 import org.neo4j.bolt.transport.configuration.NioConfigurationProvider;
 import org.neo4j.bolt.transport.configuration.ServerConfigurationProvider;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.configuration.helpers.PortBindException;
@@ -200,7 +200,7 @@ public class NettyServer extends LifecycleAdapter
 
     private static ServerConfigurationProvider createConfigurationProvider( Config config )
     {
-        var useEpoll = config.get( BoltSettings.netty_server_use_epoll ) && Epoll.isAvailable();
+        var useEpoll = config.get( GraphDatabaseInternalSettings.netty_server_use_epoll ) && Epoll.isAvailable();
         return useEpoll ? EpollConfigurationProvider.INSTANCE : NioConfigurationProvider.INSTANCE;
     }
 
@@ -236,8 +236,8 @@ public class NettyServer extends LifecycleAdapter
             try
             {
                 internalLog.debug( "Shutting down event loop group" );
-                eventLoopGroup.shutdownGracefully( config.get( BoltSettings.netty_server_shutdown_quiet_period ),
-                        config.get( BoltSettings.netty_server_shutdown_timeout ).toSeconds(), SECONDS ).syncUninterruptibly();
+                eventLoopGroup.shutdownGracefully( config.get( GraphDatabaseInternalSettings.netty_server_shutdown_quiet_period ),
+                        config.get( GraphDatabaseInternalSettings.netty_server_shutdown_timeout ).toSeconds(), SECONDS ).syncUninterruptibly();
                 internalLog.debug( "Event loop group shut down" );
             }
             catch ( Throwable t )

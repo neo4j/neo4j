@@ -466,6 +466,21 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
                     .build();
 
     @Internal
+    public static final Setting<Boolean> netty_server_use_epoll = newBuilder( "unsupported.dbms.bolt.netty_server_use_epoll", BOOL, true ).build();
+
+    @Internal
+    public static final Setting<Integer> netty_server_shutdown_quiet_period =
+            newBuilder( "unsupported.dbms.bolt.netty_server_shutdown_quiet_period", INT, 5 ).build();
+
+    @Internal
+    public static final Setting<Duration> netty_server_shutdown_timeout =
+            newBuilder( "unsupported.dbms.bolt.netty_server_shutdown_timeout", DURATION, ofSeconds( 15 ) ).build();
+
+    @Internal
+    public static final Setting<Boolean> netty_message_merge_cumulator =
+            newBuilder( "unsupported.dbms.bolt.netty_message_merge_cumulator", BOOL, false ).build();
+
+    @Internal
     @Description( "Create an archive of an index before re-creating it if failing to load on startup." )
     public static final Setting<Boolean> archive_failed_index =
             newBuilder( "unsupported.dbms.index.archive_failed", BOOL, false ).build();
@@ -548,7 +563,8 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
     public static final Setting<Boolean> log_recover_index_samples = newBuilder( "unsupported.dbms.index.sampling.log_recovered_samples", BOOL, false ).build();
 
     @Internal
-    public static final Setting<Boolean> async_recover_index_samples = newBuilder( "unsupported.dbms.index.sampling.async_recovery", BOOL, true ).build();
+    public static final Setting<Boolean> async_recover_index_samples = newBuilder( "unsupported.dbms.index.sampling.async_recovery", BOOL, true )
+            .immutable().build();
 
     @Internal
     public static final Setting<Boolean> async_recover_index_samples_wait =

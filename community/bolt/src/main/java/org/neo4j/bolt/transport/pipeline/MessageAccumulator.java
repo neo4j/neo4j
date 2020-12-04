@@ -26,8 +26,8 @@ import io.netty.handler.codec.DecoderException;
 
 import java.util.List;
 
-import org.neo4j.bolt.BoltSettings;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 
 public class MessageAccumulator extends ByteToMessageDecoder
 {
@@ -35,7 +35,7 @@ public class MessageAccumulator extends ByteToMessageDecoder
 
     public MessageAccumulator( Config config )
     {
-        if ( config.get( BoltSettings.netty_message_merge_cumulator ) )
+        if ( config.get( GraphDatabaseInternalSettings.netty_message_merge_cumulator ) )
         {
             setCumulator( MERGE_CUMULATOR );
         }
