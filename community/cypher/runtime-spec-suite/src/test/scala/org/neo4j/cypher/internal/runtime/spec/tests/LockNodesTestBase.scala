@@ -89,4 +89,47 @@ abstract class LockNodesTestBase[CONTEXT <: RuntimeContext](
       .withRows(Array(null) +: nodes.map(Array(_)))
       .withLockedNodes(nodes.map(_.getId))
   }
+
+  test("should lock nodes under an apply") {
+    // given
+    val nodes = given {
+      nodeGraph(sizeHint)
+    }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .apply()
+      .|.lockNodes("x")
+      .|.argument("x")
+      .allNodeScan("x")
+      .build()
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime)
+    runtimeResult should beColumns("x")
+      .withRows(nodes.map(Array(_)))
+      .withLockedNodes(nodes.map(_.getId))
+  }
+
+  test("should lock nodes on top of limit under an apply") {
+    // given
+    val nodes = given {
+      nodeGraph(sizeHint)
+    }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .apply()
+      .|.lockNodes("x")
+      .|.limit(1)
+      .|.allNodeScan("x")
+      .input(variables = Seq("v"))
+      .build()
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(Array(null)))
+    runtimeResult should beColumns("x")
+      .withRows(nodes.take(1).map(Array(_)))
+      .withLockedNodes(nodes.take(1).map(_.getId))
+  }
 }
