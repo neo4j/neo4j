@@ -1,0 +1,74 @@
+Neo4j
+Copyright © 2002-2018 Neo4j Sweden AB (referred to in this notice as "Neo4j")
+[http://neo4j.com]
+
+This product includes software ("Software") developed by Neo4j.
+
+The copyright in the bundled Neo4j graph database (including the
+Software) is owned by Neo4j. The Software developed and owned
+by Neo4j is licensed under the GNU GENERAL PUBLIC LICENSE Version 3
+(http://www.fsf.org/licensing/licenses/gpl-3.0.html) ("GPL")
+to all third parties and that license, as required by the GPL, is
+included in the LICENSE.txt file.
+
+However, if you have executed an End User Software License and Services
+Agreement or an OEM Software License and Support Services Agreement, or
+another commercial license agreement with Neo4j or one of its
+affiliates (each, a "Commercial Agreement"), the terms of the license in
+such Commercial Agreement will supersede the GPL and you may use the
+software solely pursuant to the terms of the relevant Commercial
+Agreement.
+
+Full license texts are found in LICENSES.txt.
+
+
+Third-party licenses
+--------------------
+
+Apache Software License, Version 2.0
+  Apache Commons IO
+  Apache Commons Lang
+  jansi
+  Java Agent for Memory Measurements
+  Java Concurrency Tools Core Library
+  magnolia
+  mercator
+  Neo4j Java Driver
+  parboiled-core
+  parboiled-scala
+  Scala Compiler
+
+BSD - Scala License
+  Scala Library
+
+BSD License
+  JLine
+
+Creative Commons 0
+  reactive-streams
+
+Eclipse Distribution License - v 1.0
+  Eclipse Collections API
+  Eclipse Collections Main Library
+
+Eclipse Public License - v 1.0
+  Eclipse Collections API
+  Eclipse Collections Main Library
+
+GNU Lesser General Public License, Version 2.1
+  Java Native Access
+
+MIT License
+  argparse4j
+
+Dependencies with multiple licenses
+-----------------------------------
+
+Eclipse Collections API
+  Eclipse Distribution License - v 1.0
+  Eclipse Public License - v 1.0
+
+Eclipse Collections Main Library
+  Eclipse Distribution License - v 1.0
+  Eclipse Public License - v 1.0
+

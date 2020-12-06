@@ -1,0 +1,96 @@
+#!/bin/bash
+
+set -euo pipefail
+[[ "${TRACE:-}" ]] && set -x
+
+check_java() {
+  _find_java_cmd
+
+  version_command=("${JAVA_CMD}" "-version")
+  [[ -n "${JAVA_MEMORY_OPTS:-}" ]] && version_command+=("${JAVA_MEMORY_OPTS[@]}")
+
+  JAVA_VERSION=$("${version_command[@]}" 2>&1 | awk -F '"' '/version/ {print $2}')
+  if [[ $JAVA_VERSION = "1."* ]]; then
+    if [[ "${JAVA_VERSION}" < "1.8" ]]; then
+      echo "ERROR! Java version ${JAVA_VERSION} is not supported. "
+      _show_java_help
+      exit 1
+    fi
+  fi
+}
+
+_find_java_cmd() {
+  [[ "${JAVA_CMD:-}" ]] && return
+  detect_os
+  _find_java_home
+
+  if [[ "${JAVA_HOME:-}" ]] ; then
+    JAVA_CMD="${JAVA_HOME}/bin/java"
+    if [[ ! -f "${JAVA_CMD}" ]]; then
+      echo "ERROR: JAVA_HOME is incorrectly defined as ${JAVA_HOME} (the executable ${JAVA_CMD} does not exist)"
+      exit 1
+    fi
+  else
+    if [ "${DIST_OS}" != "macosx" ] ; then
+      # Don't use default java on Darwin because it displays a misleading dialog box
+      JAVA_CMD="$(which java || true)"
+    fi
+  fi
+
+  if [[ ! "${JAVA_CMD:-}" ]]; then
+    echo "ERROR: Unable to find Java executable."
+    _show_java_help
+    exit 1
+  fi
+}
+
+detect_os() {
+  if uname -s | grep -q Darwin; then
+    DIST_OS="macosx"
+  elif [[ -e /etc/gentoo-release ]]; then
+    DIST_OS="gentoo"
+  else
+    DIST_OS="other"
+  fi
+}
+
+_find_java_home() {
+  [[ "${JAVA_HOME:-}" ]] && return
+
+  case "${DIST_OS}" in
+    "macosx")
+      JAVA_HOME="$(/usr/libexec/java_home -v 1.8+)"
+      ;;
+    "gentoo")
+      JAVA_HOME="$(java-config --jre-home)"
+      ;;
+  esac
+}
+
+_show_java_help() {
+  echo "* Please use Oracle(R) Java(TM) >=8 or OpenJDK(TM) >=8."
+}
+
+build_classpath() {
+  APP_HOME="$(cd "$(dirname "$0")" && pwd)"
+  # First try in sub directory
+  JARPATH="$(find "${APP_HOME}" -name "cypher-shell.jar" )"
+
+  # Then try installation directory (prefix/bin and prefix/share/cypher-shell/lib)
+  if [[ -z "${JARPATH}" ]]; then
+    APP_HOME="${APP_HOME}/../share/cypher-shell"
+    JARPATH="$(find "${APP_HOME}" -name "cypher-shell.jar" )"
+  fi
+}
+
+check_java
+build_classpath
+
+if [ -z "${JARPATH}" ]; then
+  echo "Unable to locate cypher-shell library files" >&2
+  exit 1
+fi
+
+exec "$JAVA_CMD" ${JAVA_OPTS:-} \
+  -jar "$JARPATH" \
+  "$@"
