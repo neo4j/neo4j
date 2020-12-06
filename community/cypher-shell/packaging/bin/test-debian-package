@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+set -eu
+# test-rpm-package:
+# Test Neo4j Cypher Shell Debian package
+
+if [ $# -ne 2 ]
+then
+  echo "Usage: ${0} <deb-file> <workspace>"
+  exit 1
+fi
+
+deb=${1}
+deb_filename=$(basename $deb)
+workspace=${2}
+
+echo "Test Cypher Shell Debian package $deb"
+
+mkdir -p ${workspace}
+cp ${deb} ${workspace}/${deb_filename}
+DEBFILE=${deb_filename} envsubst '${DEBFILE}' < test/debian/Dockerfile > ${workspace}/Dockerfile
+docker_image_tag="temp_test_deb_image_$(cat /dev/urandom | env LC_CTYPE=C tr -dc 'a-z0-9' | fold -w 16 | head -n 1)"
+
+cd ${workspace}
+
+function cleanup {
+  echo "Removing temporary docker image ${docker_image_tag}"
+  docker image rm -f ${docker_image_tag} || true
+}
+
+# Always remove docker image
+trap cleanup EXIT
+
+docker build . -t ${docker_image_tag}
+docker run --rm ${docker_image_tag} --version

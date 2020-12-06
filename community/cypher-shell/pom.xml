@@ -1,0 +1,35 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                      http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.neo4j</groupId>
+        <artifactId>parent</artifactId>
+        <version>3.5.26-SNAPSHOT</version>
+        <relativePath>../..</relativePath>
+    </parent>
+
+    <artifactId>cypher-shell-parent</artifactId>
+    <version>3.5.26-SNAPSHOT</version>
+    <packaging>pom</packaging>
+    <name>Neo4j - Cypher Shell Parent</name>
+    <description>Cypher Shell parent project</description>
+    <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
+
+    <properties>
+        <licensing.prepend.text>licensing/notice-gpl-prefix.txt</licensing.prepend.text>
+        <license-text.header>headers/GPL-3-header.txt</license-text.header>
+    </properties>
+
+    <scm>
+        <connection>scm:git:git://github.com/neo4j/neo4j.git</connection>
+        <developerConnection>scm:git:git@github.com:neo4j/neo4j.git</developerConnection>
+        <url>https://github.com/neo4j/neo4j</url>
+    </scm>
+
+    <modules>
+        <module>cypher-shell</module>
+        <module>integration-test</module>
+    </modules>
+</project>

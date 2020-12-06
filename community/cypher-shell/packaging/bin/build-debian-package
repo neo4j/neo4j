@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+set -eu
+# build-debian-packages:
+# Build Debian packages for Neo4j Cypher Shell from tarball
+
+if [ $# -ne 3 ]
+then
+  echo "Usage: ${0} <workspace> <zipfile> <distribution>"
+  exit 1
+fi
+
+# Read in shared functions
+. "$(dirname ${0})/shared.sh"
+
+package_directory=${1}
+zipfile=${2}
+distribution=${3}
+
+echo "Building Cypher Shell Debian package"
+echo "Package directory: ${package_directory}"
+echo "Zip file: ${zipfile}"
+echo "Distribution: ${distribution}"
+
+# Get version(s)
+parse_version_from_zipfile "${zipfile}"
+
+echo "Deb version: ${deb_version_full}"
+
+# Extract zip distribution
+unzip ${zipfile} -d ${package_directory}
+
+# Copy files
+cp -r src/debian "${package_directory}"
+cp src/common/manpages/cypher-shell.1 ${package_directory}/cypher-shell.1
+
+# Update changelog, control and files with package name etc
+VERSION=${deb_version_full} DISTRIBUTION=${distribution} DATE=`date -R` envsubst '${VERSION} ${DISTRIBUTION} ${DATE}' < src/debian/changelog > ${package_directory}/debian/changelog
+
+# build package and metadata files
+cd ${package_directory} && debuild -A -uc -us --lintian-opts --profile debian

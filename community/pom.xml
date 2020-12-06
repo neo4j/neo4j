@@ -99,6 +99,7 @@ the relevant Commercial Agreement.
       </activation>
       <modules>
         <module>cypher</module>
+        <module>cypher-shell</module>
       </modules>
     </profile>
   </profiles>

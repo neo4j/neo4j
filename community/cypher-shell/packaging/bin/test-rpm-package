@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+set -eu
+# test-rpm-package:
+# Test Neo4j Cypher Shell RPM package
+
+if [ $# -ne 2 ]
+then
+  echo "Usage: ${0} <rpm> <workspace>"
+  exit 1
+fi
+
+rpm=${1}
+rpm_filename=$(basename "$rpm")
+workspace=${2}
+
+echo "Test Cypher Shell RPM package $rpm"
+
+mkdir -p ${workspace}
+cp ${rpm} ${workspace}/${rpm_filename}
+RPMFILE=${rpm_filename} envsubst '${RPMFILE}' < test/rpm/Dockerfile > ${workspace}/Dockerfile
+docker_image_tag="temp_rpm_test_image_$(cat /dev/urandom | env LC_CTYPE=C tr -dc 'a-z0-9' | fold -w 16 | head -n 1)"
+
+cd ${workspace}
+
+function cleanup {
+  echo "Removing temporary docker image ${docker_image_tag}"
+  docker image rm -f ${docker_image_tag} || true
+}
+
+# Always remove docker image
+trap cleanup EXIT
+
+docker build . -t ${docker_image_tag}
+docker run --rm ${docker_image_tag} --version
