@@ -1,0 +1,5 @@
+cypher-shell (${VERSION})  ${DISTRIBUTION}; urgency=low
+
+  * See https://github.com/neo4j/cypher-shell/releases for more details.
+
+ -- Neo Technology <debian@neotechnology.com>  ${DATE}
