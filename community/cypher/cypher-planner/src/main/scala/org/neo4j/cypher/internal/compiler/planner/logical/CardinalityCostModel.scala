@@ -36,6 +36,7 @@ import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.CartesianProduct
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.EagerLogicalPlan
+import org.neo4j.cypher.internal.logical.plans.ExhaustiveLimit
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.ExpandInto
 import org.neo4j.cypher.internal.logical.plans.FindShortestPaths
@@ -123,6 +124,7 @@ object CardinalityCostModel extends CostModel {
          _: AggregatingPlan |
          _: AbstractLetSemiApply |
          _: Limit |
+         _: ExhaustiveLimit |
          _: Optional |
          _: Argument |
          _: LeftOuterHashJoin |

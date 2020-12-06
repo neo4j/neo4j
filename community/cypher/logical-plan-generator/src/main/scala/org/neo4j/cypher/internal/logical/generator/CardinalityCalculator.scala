@@ -136,6 +136,13 @@ object CardinalityCalculator {
       Cardinality.min(sourceCardinality, Cardinality(count.value.toDouble))
   }
 
+  implicit val exhaustiveLimitCardinality: CardinalityCalculator[ExhaustiveLimit] = {
+    (plan, state, _, _) =>
+      val ExhaustiveLimit(source, count: IntegerLiteral) = plan
+      val sourceCardinality = state.cardinalities.get(source.id)
+      Cardinality.min(sourceCardinality, Cardinality(count.value.toDouble))
+  }
+
   implicit val projectionCardinality: CardinalityCalculator[Projection] =
     (plan, state, _, _) => state.cardinalities.get(plan.source.id)
 
