@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.logical.plans
 
-import java.util.UUID
-
 import org.neo4j.cypher.internal.ast.ActionResource
 import org.neo4j.cypher.internal.ast.AdminAction
 import org.neo4j.cypher.internal.ast.DatabaseScope
@@ -31,7 +29,6 @@ import org.neo4j.cypher.internal.ast.PrivilegeQualifier
 import org.neo4j.cypher.internal.ast.Return
 import org.neo4j.cypher.internal.ast.ShowPrivilegeScope
 import org.neo4j.cypher.internal.ast.WaitUntilComplete
-import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.ast.Yield
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Parameter
