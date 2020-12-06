@@ -1,0 +1,3 @@
+RETURN 42 AS result;
+THIS IS NOT CYPHER;
+RETURN 1337 AS result;
