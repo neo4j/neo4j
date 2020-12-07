@@ -136,7 +136,7 @@ class StoreInfoCommandTest
         CommandLine.populateCommand( command, fooDbDirectory.toAbsolutePath().toString() );
         command.execute();
 
-        verify( out ).print( Mockito.<String>argThat( result ->
+        verify( out ).println( Mockito.<String>argThat( result ->
             result.contains( String.format( "Store format version:         %s", currentFormat.storeVersion() ) ) &&
             result.contains( String.format( "Store format introduced in:   %s", currentFormat.introductionVersion() ) )
         ) );
@@ -149,7 +149,7 @@ class StoreInfoCommandTest
         CommandLine.populateCommand( command, fooDbDirectory.toAbsolutePath().toString() );
         command.execute();
 
-        verify( out ).print( Mockito.<String>argThat( result ->
+        verify( out ).println( Mockito.<String>argThat( result ->
             result.contains( "Store format version:         v0.A.9" ) &&
             result.contains( "Store format introduced in:   3.4.0" ) &&
             result.contains( "Store format superseded in:   4.0.0" )
@@ -210,7 +210,7 @@ class StoreInfoCommandTest
             command.execute();
         }
 
-        verify( out ).print( expected );
+        verify( out ).println( expected );
     }
 
     @Test
@@ -241,7 +241,7 @@ class StoreInfoCommandTest
         command.execute();
 
         // then
-        verify( out ).print( expected );
+        verify( out ).println( expected );
     }
 
     @Test
@@ -257,7 +257,55 @@ class StoreInfoCommandTest
         command.execute();
 
         // then
-        verify( out ).print( expectedFoo );
+        verify( out ).println( expectedFoo );
+    }
+
+    @Test
+    void prettyMultiStoreInfoResultHasTrailingLineSeparator() throws IOException
+    {
+        // given
+        var currentFormat = RecordFormatSelector.defaultFormat();
+
+        var barDbDirectory = homeDir.resolve( "data/databases/bar" );
+        var barDbLayout = DatabaseLayout.ofFlat( barDbDirectory );
+        fileSystem.mkdirs( barDbDirectory );
+
+        prepareNeoStoreFile( currentFormat.storeVersion(), fooDbLayout );
+        prepareNeoStoreFile( currentFormat.storeVersion(), barDbLayout );
+        var databasesRoot = homeDir.resolve( "data/databases" );
+
+        var expectedBar = expectedPrettyResult( "bar", false, currentFormat.storeVersion(), currentFormat.introductionVersion(), null );
+
+        var expectedFoo = expectedPrettyResult( "foo", false, currentFormat.storeVersion(), currentFormat.introductionVersion(), null );
+
+        var expectedMulti = expectedBar +
+                       System.lineSeparator() +
+                       System.lineSeparator() +
+                       expectedFoo;
+
+        // when
+        CommandLine.populateCommand( command, args( databasesRoot, true, false ) );
+        command.execute();
+
+        // then
+        verify( out ).println( expectedMulti );
+    }
+
+    @Test
+    void prettySingleStoreInfoResultHasTrailingLineSeparator() throws IOException
+    {
+        // given
+        var currentFormat = RecordFormatSelector.defaultFormat();
+
+        prepareNeoStoreFile( currentFormat.storeVersion(), fooDbLayout );
+        var expectedFoo = expectedPrettyResult( "foo", false, currentFormat.storeVersion(), currentFormat.introductionVersion(), null );
+
+        // when
+        CommandLine.populateCommand( command, args( fooDbDirectory, false, false ) );
+        command.execute();
+
+        // then
+        verify( out ).println( expectedFoo );
     }
 
     private String expectedPrettyResult( String databaseName, boolean inUse, String version, String introduced, String superseded )

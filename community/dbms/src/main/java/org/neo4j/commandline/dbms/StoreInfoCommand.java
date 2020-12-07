@@ -94,11 +94,11 @@ public class StoreInfoCommand extends AbstractCommand
                         .filter( dbPath -> Validators.isExistingDatabase( fs, DatabaseLayout.ofFlat( dbPath ) ) )
                         .map( dbPath -> printInfo( fs, dbPath, pageCache, storageEngineFactory, config, structured, true ) )
                         .collect( collector );
-                ctx.out().print( result );
+                ctx.out().println( result );
             }
             else
             {
-                ctx.out().print( printInfo( fs, path, pageCache, storageEngineFactory, config, structured, false ) );
+                ctx.out().println( printInfo( fs, path, pageCache, storageEngineFactory, config, structured, false ) );
             }
         }
         catch ( CommandFailedException e )
