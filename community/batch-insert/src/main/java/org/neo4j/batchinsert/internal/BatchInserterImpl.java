@@ -53,7 +53,6 @@ import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.IndexType;
-import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.counts.GBPTreeCountsStore;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.IteratorWrapper;
@@ -601,7 +600,7 @@ public class BatchInserterImpl implements BatchInserter
     {
         fileSystem.deleteFile( databaseLayout.countStore() );
         try ( GBPTreeCountsStore countsStore = new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), fileSystem, immediate(),
-                new CountsComputer( neoStores, pageCache, databaseLayout ), false, GBPTreeCountsStore.NO_MONITOR ) )
+                new CountsComputer( neoStores, pageCache, databaseLayout, logService.getInternalLog( getClass() ) ), false, GBPTreeCountsStore.NO_MONITOR ) )
         {
             countsStore.start();
             countsStore.checkpoint( IOLimiter.UNLIMITED );

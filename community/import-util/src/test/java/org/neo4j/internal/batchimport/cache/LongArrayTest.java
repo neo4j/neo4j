@@ -35,6 +35,7 @@ import java.util.stream.Stream;
 
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.logging.NullLog;
 
 import static java.lang.System.currentTimeMillis;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -117,8 +118,9 @@ class LongArrayTest extends NumberArrayPageCacheTestSupport
     {
         PageCache pageCache = fixture.pageCache;
         File dir = fixture.directory;
-        NumberArrayFactory autoWithPageCacheFallback = NumberArrayFactory.auto( pageCache, dir, true, NumberArrayFactory.NO_MONITOR );
-        NumberArrayFactory pageCacheArrayFactory = new PageCachedNumberArrayFactory( pageCache, dir );
+        NullLog log = NullLog.getInstance();
+        NumberArrayFactory autoWithPageCacheFallback = NumberArrayFactory.auto( pageCache, dir, true, NumberArrayFactory.NO_MONITOR, log );
+        NumberArrayFactory pageCacheArrayFactory = new PageCachedNumberArrayFactory( pageCache, dir, log );
         return Iterators.iterator( NumberArrayFactory.HEAP, NumberArrayFactory.OFF_HEAP, autoWithPageCacheFallback, pageCacheArrayFactory );
     }
 

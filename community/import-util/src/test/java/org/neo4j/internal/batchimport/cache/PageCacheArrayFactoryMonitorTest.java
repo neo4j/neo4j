@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test;
 import java.io.File;
 
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.logging.NullLog;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -34,7 +35,8 @@ import static org.mockito.Mockito.mock;
 
 class PageCacheArrayFactoryMonitorTest
 {
-    private final PageCachedNumberArrayFactory factory = new PageCachedNumberArrayFactory( mock( PageCache.class ), new File( "storeDir" ) );
+    private final PageCachedNumberArrayFactory factory = new PageCachedNumberArrayFactory( mock( PageCache.class ), new File( "storeDir" ),
+            NullLog.getInstance() );
     private final PageCacheArrayFactoryMonitor monitor = new PageCacheArrayFactoryMonitor();
 
     @Test

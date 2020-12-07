@@ -26,6 +26,7 @@ import java.util.Objects;
 
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.logging.Log;
 
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.DELETE_ON_CLOSE;
@@ -38,10 +39,12 @@ public class PageCachedNumberArrayFactory extends NumberArrayFactory.Adapter
 {
     private final PageCache pageCache;
     private final File storeDir;
+    private final Log log;
 
-    public PageCachedNumberArrayFactory( PageCache pageCache, File storeDir )
+    public PageCachedNumberArrayFactory( PageCache pageCache, File storeDir, Log log )
     {
         Objects.requireNonNull( pageCache );
+        this.log = log;
         this.pageCache = pageCache;
         this.storeDir = storeDir;
     }
@@ -53,6 +56,7 @@ public class PageCachedNumberArrayFactory extends NumberArrayFactory.Adapter
         {
             File tempFile = File.createTempFile( "intArray", ".tmp", storeDir );
             PagedFile pagedFile = pageCache.map( tempFile, pageCache.pageSize(), DELETE_ON_CLOSE, CREATE );
+            log.info( "Using page-cache backed caching, this may affect performance negatively. IntArray length:" + length );
             return new PageCacheIntArray( pagedFile, length, defaultValue, base );
         }
         catch ( IOException e )
@@ -68,6 +72,7 @@ public class PageCachedNumberArrayFactory extends NumberArrayFactory.Adapter
         {
             File tempFile = File.createTempFile( "longArray", ".tmp", storeDir );
             PagedFile pagedFile = pageCache.map( tempFile, pageCache.pageSize(), DELETE_ON_CLOSE, CREATE );
+            log.info( "Using page-cache backed caching, this may affect performance negatively. LongArray length:" + length );
             return new PageCacheLongArray( pagedFile, length, defaultValue, base );
         }
         catch ( IOException e )
@@ -83,6 +88,7 @@ public class PageCachedNumberArrayFactory extends NumberArrayFactory.Adapter
         {
             File tempFile = File.createTempFile( "byteArray", ".tmp", storeDir );
             PagedFile pagedFile = pageCache.map( tempFile, pageCache.pageSize(), DELETE_ON_CLOSE, CREATE );
+            log.info( "Using page-cache backed caching, this may affect performance negatively. ByteArray length:" + length );
             return new PageCacheByteArray( pagedFile, length, defaultValue, base );
         }
         catch ( IOException e )
