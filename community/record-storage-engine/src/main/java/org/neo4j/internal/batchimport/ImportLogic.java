@@ -202,7 +202,7 @@ public class ImportLogic implements Closeable
         this.input = input;
         PageCacheArrayFactoryMonitor numberArrayFactoryMonitor = new PageCacheArrayFactoryMonitor();
         numberArrayFactory = auto( neoStore.getPageCache(), pageCacheTracer, databaseDirectory, config.allowCacheAllocationOnHeap(),
-                numberArrayFactoryMonitor );
+                numberArrayFactoryMonitor, log );
         // Some temporary caches and indexes in the import
         idMapper = instantiateIdMapper( input );
         nodeRelationshipCache = new NodeRelationshipCache( numberArrayFactory, dbConfig.get( GraphDatabaseSettings.dense_node_threshold ), memoryTracker );
