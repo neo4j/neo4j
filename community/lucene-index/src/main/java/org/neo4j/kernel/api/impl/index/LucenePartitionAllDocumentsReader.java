@@ -21,8 +21,7 @@ package org.neo4j.kernel.api.impl.index;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.MultiBits;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.FilteredDocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
@@ -111,22 +110,12 @@ public class LucenePartitionAllDocumentsReader implements BoundedIterable<Docume
 
         return new FilteredDocIdSetIterator( allDocs )
         {
-            final Iterator<LeafReaderContext> leaves = reader.leaves().iterator();
-            Bits currentLiveDocs;
-            int currentMaxDoc = -1;
+            private final Bits liveDocs = MultiBits.getLiveDocs( reader );
 
             @Override
             protected boolean match( int doc )
             {
-                if ( doc >= currentMaxDoc && leaves.hasNext() )
-                {
-                    LeafReaderContext leaf = leaves.next();
-                    LeafReader reader = leaf.reader();
-                    currentLiveDocs = reader.getLiveDocs();
-                    currentMaxDoc = reader.maxDoc();
-                }
-                // currentLiveDocs is allowed to be null, which means that this leaf has no deletions i.e. all docs are live
-                return currentLiveDocs == null || currentLiveDocs.get( doc );
+                return liveDocs.get( doc );
             }
         };
     }
