@@ -18,6 +18,7 @@ package org.neo4j.cypher.internal.rewriting.rewriters
 
 import org.neo4j.cypher.internal.ast.AliasedReturnItem
 import org.neo4j.cypher.internal.ast.ProjectionClause
+import org.neo4j.cypher.internal.ast.SubQuery
 import org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.expressions.AnonymousPatternPart
 import org.neo4j.cypher.internal.expressions.EveryPath
@@ -120,7 +121,6 @@ case object projectNamedPaths extends Rewriter {
     //
     // plan rewriter for pushing projections up the tree
 
-    // TODO: Project for use in WHERE
     // TODO: Pull out common subexpressions for path expr using WITH *, ... and run expand star again
     // TODO: Plan level rewriting to delay computation of unused projections
 
@@ -130,6 +130,10 @@ case object projectNamedPaths extends Rewriter {
           (acc, expr) => acc.withVariableRewritesForExpression(expr)
         }
         TraverseChildrenNewAccForSiblings(projectedAcc, _.withoutNamedPaths)
+
+    case _: SubQuery =>
+      acc =>
+        TraverseChildrenNewAccForSiblings(acc, insideAcc => insideAcc.copy(paths = acc.paths))
 
     case NamedPatternPart(_, _: ShortestPaths) =>
       acc => TraverseChildren(acc)
