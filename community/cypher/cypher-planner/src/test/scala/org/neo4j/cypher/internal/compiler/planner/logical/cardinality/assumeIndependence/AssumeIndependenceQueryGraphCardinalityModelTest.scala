@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence
 
-import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults.DEFAULT_EQUALITY_SELECTIVITY
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.ABCDECardinalityData
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence.PatternRelationshipMultiplierCalculator.uniquenessSelectivityForNRels
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -307,7 +306,28 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends CypherFunSuite wi
     // r4 has a different relType so it does not need to be checked for rel-uniqueness against the other rels
     expectCardinality(A * A * B * B * C * A_T1_A_sel * A_T1_B_sel * B_T1_B_sel * B_T2_C_sel * uniquenessSelectivityForNRels(3).factor)
   }
-    private val varLength0_0 = N * Asel * Bsel
+
+  test("MATCH (a:A) CALL { WITH a MATCH (b:B) RETURN b }") {
+    expectCardinality(A * B)
+  }
+
+  test("MATCH (a:A) CALL { MATCH (b:B) RETURN b }") {
+    expectCardinality(A * B)
+  }
+
+  test("MATCH (a:A) CALL { WITH a MATCH (a)-[:T1]->(b:B) RETURN b }") {
+    expectCardinality(A_T1_B)
+  }
+
+  test("MATCH (a:A) CALL { WITH a MATCH (a) WHERE a.prop = 42 RETURN 42 AS ft }") {
+    expectCardinality(A * Aprop)
+  }
+
+  test("MATCH (a:A) CALL { MATCH (a) WHERE a.prop = 42 RETURN 42 AS ft }") {
+    expectCardinality(A * N * DEFAULT_EQUALITY_SELECTIVITY)
+  }
+
+  private val varLength0_0 = N * Asel * Bsel
   test("varlength 0..0 should be equal to non-varlength") {
     queryShouldHaveCardinality("MATCH (:A:B)", varLength0_0)
     queryShouldHaveCardinality("MATCH (a:A)-[r:T1*0..0]->(b:B)", varLength0_0)

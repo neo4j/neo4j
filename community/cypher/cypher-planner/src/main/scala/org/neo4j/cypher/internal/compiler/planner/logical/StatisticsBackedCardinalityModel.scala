@@ -115,9 +115,18 @@ class StatisticsBackedCardinalityModel(queryGraphCardinalityModel: QueryGraphCar
     case _: PassthroughAllHorizon =>
       input
 
-    case CallSubqueryHorizon(subquery, _) =>
-      val subQueryCardinality = apply(subquery, QueryGraphSolverInput.empty, semanticTable)
-      input.withCardinality(input.inboundCardinality * subQueryCardinality)
+    case CallSubqueryHorizon(subquery, correlated) =>
+      if (correlated) {
+        // Cardinality of the subquery with current input is the result
+        val subqueryInput = input
+        val subQueryCardinality = apply(subquery, subqueryInput, semanticTable)
+        input.withCardinality(subQueryCardinality)
+      }  else {
+        // Cardinality of the subquery with empty input times current cardinality is the result
+        val subqueryInput = QueryGraphSolverInput.empty
+        val subQueryCardinality = apply(subquery, subqueryInput, semanticTable)
+        input.withCardinality(input.inboundCardinality * subQueryCardinality)
+      }
   }
 
   private def queryProjectionCardinalityBeforeLimit(in: Cardinality, projection: QueryProjection): Cardinality = projection match {
