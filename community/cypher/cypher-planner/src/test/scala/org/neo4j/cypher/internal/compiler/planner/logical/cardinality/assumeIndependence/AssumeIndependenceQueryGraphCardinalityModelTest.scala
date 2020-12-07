@@ -342,6 +342,26 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends CypherFunSuite wi
     expectCardinality(A * N * DEFAULT_EQUALITY_SELECTIVITY)
   }
 
+  test("MATCH (a:A) CALL { WITH a MATCH (b:B) RETURN b AS x UNION ALL WITH a MATCH (c:C) RETURN c AS x}") {
+    expectCardinality(A * (B + C))
+    expectPlanCardinality({
+      case NodeByLabelScan("b", _, _, _) => true
+    }, A * B)
+    expectPlanCardinality({
+      case NodeByLabelScan("c", _, _, _) => true
+    }, A * C)
+  }
+
+  test("MATCH (a:A) CALL { MATCH (b:B) RETURN b AS x UNION ALL MATCH (c:C) RETURN c AS x}") {
+    expectCardinality(A * (B + C))
+    expectPlanCardinality({
+      case NodeByLabelScan("b", _, _, _) => true
+    }, B)
+    expectPlanCardinality({
+      case NodeByLabelScan("c", _, _, _) => true
+    }, C)
+  }
+
   private val varLength0_0 = N * Asel * Bsel
   test("varlength 0..0 should be equal to non-varlength") {
     queryShouldHaveCardinality("MATCH (:A:B)", varLength0_0)

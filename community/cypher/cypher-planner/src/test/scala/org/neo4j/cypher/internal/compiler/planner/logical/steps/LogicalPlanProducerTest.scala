@@ -758,7 +758,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
         ("Limit", lpp.planLimit(plan(), one, one, interesting_vx, context)),
         ("Skip", lpp.planSkip(plan(), one, interesting_vx, context)),
         ("Collect with previous required order", lpp.planAggregation(plan(), Map.empty, foo_collect, Map.empty, foo_collect, Some(interesting_vx), context)),
-        ("ProduceResult", lpp.planProduceResult(plan(), Seq("x"), Some(interesting_vx),context)),
+        ("ProduceResult", lpp.planProduceResult(plan(), Seq("x"), Some(interesting_vx))),
       )
 
       // then
@@ -784,7 +784,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       val p3 = lpp.planRightOuterHashJoin(Set("x"), leaf2, p2, Set.empty, context)
 
       // when
-      val result = lpp.planProduceResult(p3, Seq("x"), Some(InterestingOrder.required(RequiredOrderCandidate.asc(varFor("x")))), context)
+      val result = lpp.planProduceResult(p3, Seq("x"), Some(InterestingOrder.required(RequiredOrderCandidate.asc(varFor("x")))))
 
       // then
       context.planningAttributes.leveragedOrders.get(result.id) should be(true)

@@ -42,7 +42,7 @@ case class PlanSingleQuery(planPart: MatchPlanner = planMatch,
                            planUpdates:UpdatesPlanner = PlanUpdates)
   extends SingleQueryPlanner {
 
-  override def apply(in: SinglePlannerQuery, context: LogicalPlanningContext): (LogicalPlan, LogicalPlanningContext) = {
+  override def apply(in: SinglePlannerQuery, context: LogicalPlanningContext): LogicalPlan = {
     val updatedContext = addAggregatedPropertiesToContext(in, context)
 
     val (completePlan, ctx) =
@@ -61,7 +61,8 @@ case class PlanSingleQuery(planPart: MatchPlanner = planMatch,
           (projectedPlan, projectedContext)
       }
 
-    planWithTail(completePlan, in, ctx)
+    val (plan, _) = planWithTail(completePlan, in, ctx)
+    plan
   }
 
   /**

@@ -75,9 +75,6 @@ case class LogicalPlanningContext(planContext: PlanContext,
   def withUpdatedCardinalityInformation(plan: LogicalPlan): LogicalPlanningContext =
     copy(input = input.recurse(plan, planningAttributes.solveds, planningAttributes.cardinalities))
 
-  def withUpdatedSemanticTable(semanticTable: SemanticTable): LogicalPlanningContext =
-    if(semanticTable == this.semanticTable) this else copy(semanticTable = semanticTable)
-
   def withAddedLeafPlanUpdater(newUpdater: LeafPlanUpdater): LogicalPlanningContext = {
     copy(leafPlanUpdater = ChainedUpdater(leafPlanUpdater, newUpdater))
   }

@@ -1338,7 +1338,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
   /**
    * @param lastInterestingOrders the interesting order of the last part of the whole query, or `None` for UNION queries.
    */
-  def planProduceResult(inner: LogicalPlan, columns: Seq[String], lastInterestingOrders: Option[InterestingOrder], context: LogicalPlanningContext): LogicalPlan = {
+  def planProduceResult(inner: LogicalPlan, columns: Seq[String], lastInterestingOrders: Option[InterestingOrder]): LogicalPlan = {
     val produceResult = ProduceResult(inner, columns)
     solveds.copy(inner.id, produceResult.id)
     // Do not calculate cardinality for ProduceResult. Since the passed context does not have accurate label information

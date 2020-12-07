@@ -90,14 +90,14 @@ case object QueryPlanner
     // whereas the one in the statement might have been rewritten and contain the variables
     // that will actually be available to ProduceResults
     val produceResultColumns = from.statement().returnColumns.map(_.name)
-    val (perCommit, logicalPlan, newLogicalPlanningContext) = plan(from.query, logicalPlanningContext, produceResultColumns)
+    val logicalPlan = plan(from.query, logicalPlanningContext, produceResultColumns)
 
     costComparisonListener match {
       case debug: ReportCostComparisonsAsRows => debug.addPlan(from)
       case _ => from.copy(
-        maybePeriodicCommit = Some(perCommit),
+        maybePeriodicCommit = Some(from.query.periodicCommit),
         maybeLogicalPlan = Some(logicalPlan),
-        maybeSemanticTable = Some(newLogicalPlanningContext.semanticTable))
+        maybeSemanticTable = Some(logicalPlanningContext.semanticTable))
     }
   }
 
@@ -107,17 +107,17 @@ case object QueryPlanner
     context.metrics
   }
 
-  def plan(query: PlannerQuery, context: LogicalPlanningContext, produceResultColumns: Seq[String]): (Option[PeriodicCommit], LogicalPlan, LogicalPlanningContext) = {
-    val (plan, newContext) = plannerQueryPartPlanner.plan(query.query, context)
+  def plan(query: PlannerQuery, context: LogicalPlanningContext, produceResultColumns: Seq[String]): LogicalPlan = {
+    val plan = plannerQueryPartPlanner.plan(query.query, context)
 
     val lastInterestingOrder = query.query match {
       case spq: SinglePlannerQuery => Some(spq.last.interestingOrder)
       case _ => None
     }
 
-    val planWithProduceResults = newContext.logicalPlanProducer.planProduceResult(plan, produceResultColumns, lastInterestingOrder, newContext)
-    verifyBestPlan(plan = planWithProduceResults, expected = query.query, context = newContext)
-    (query.periodicCommit, planWithProduceResults, newContext)
+    val planWithProduceResults = context.logicalPlanProducer.planProduceResult(plan, produceResultColumns, lastInterestingOrder)
+    verifyBestPlan(plan = planWithProduceResults, expected = query.query, context = context)
+    planWithProduceResults
   }
 }
 
@@ -135,7 +135,7 @@ case object plannerQueryPartPlanner {
    * @param distinctifyUnions if `true`, a distinct will be inserted for distinct UNIONs.
    * @return the plan
    */
-  def plan(plannerQueryPart: PlannerQueryPart, context: LogicalPlanningContext, distinctifyUnions: Boolean = true): (LogicalPlan, LogicalPlanningContext) =
+  def plan(plannerQueryPart: PlannerQueryPart, context: LogicalPlanningContext, distinctifyUnions: Boolean = true): LogicalPlan =
     plannerQueryPart match {
       case pq:SinglePlannerQuery =>
         planSingleQuery(pq, context)
@@ -143,17 +143,17 @@ case object plannerQueryPartPlanner {
         val projectionsForPart = unionMappings.map(um => um.unionVariable.name -> um.variableInPart).toMap
         val projectionsForQuery = unionMappings.map(um => um.unionVariable.name -> um.variableInQuery).toMap
 
-        val (partPlan, partContext) = plan(part, context, distinctifyUnions = false) // Only one distinct at the top level
-        val partPlanWithProjection = partContext.logicalPlanProducer.planProjectionForUnionMapping(partPlan, projectionsForPart, partContext)
+        val partPlan = plan(part, context, distinctifyUnions = false) // Only one distinct at the top level
+        val partPlanWithProjection = context.logicalPlanProducer.planProjectionForUnionMapping(partPlan, projectionsForPart, context)
 
-        val (queryPlan, finalContext) = planSingleQuery(query, partContext)
-        val queryPlanWithProjection = finalContext.logicalPlanProducer.planRegularProjection(queryPlan, projectionsForQuery, Map.empty, finalContext)
+        val queryPlan = planSingleQuery(query, context)
+        val queryPlanWithProjection = context.logicalPlanProducer.planRegularProjection(queryPlan, projectionsForQuery, Map.empty, context)
 
-        val unionPlan = finalContext.logicalPlanProducer.planUnion(partPlanWithProjection, queryPlanWithProjection, unionMappings, finalContext)
+        val unionPlan = context.logicalPlanProducer.planUnion(partPlanWithProjection, queryPlanWithProjection, unionMappings, context)
         if (distinct && distinctifyUnions)
-          (finalContext.logicalPlanProducer.planDistinctForUnion(unionPlan, finalContext), finalContext)
+          context.logicalPlanProducer.planDistinctForUnion(unionPlan, context)
         else
-          (unionPlan, finalContext)
+          unionPlan
     }
 }
 
@@ -207,5 +207,5 @@ case object planMatch extends MatchPlanner {
 }
 
 trait SingleQueryPlanner {
-  def apply(in: SinglePlannerQuery, context: LogicalPlanningContext): (LogicalPlan, LogicalPlanningContext)
+  def apply(in: SinglePlannerQuery, context: LogicalPlanningContext): LogicalPlan
 }
