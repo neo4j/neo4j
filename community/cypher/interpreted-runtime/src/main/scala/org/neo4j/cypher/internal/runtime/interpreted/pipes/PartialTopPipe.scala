@@ -30,7 +30,6 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.PartialSortPipe.NO_MO
 import org.neo4j.cypher.internal.util.attribution.Id
 
 import scala.collection.JavaConverters.asScalaIteratorConverter
-import scala.collection.mutable
 
 case class PartialTopNPipe(source: Pipe,
                            countExpression: Expression,
@@ -133,55 +132,5 @@ case class PartialTop1Pipe(source: Pipe, prefixComparator: Comparator[ReadableRo
       }
       ClosingIterator.single(result)
     }
-  }
-}
-
-/*
- * Special case for when we only want one element, and all others that have the same value (tied for first place)
- */
-case class PartialTop1WithTiesPipe(source: Pipe, prefixComparator: Comparator[ReadableRow], suffixComparator: Comparator[ReadableRow])
-                                  (val id: Id = Id.INVALID_ID) extends PipeWithSource(source) {
-
-  protected override def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
-    if (input.isEmpty) {
-      ClosingIterator.empty
-    } else {
-      val first = input.next()
-      var current = first
-      var best = first
-      val matchingRows = init(best)
-
-      while (current != null) {
-        if (input.hasNext) {
-          current = input.next()
-
-          if (prefixComparator.compare(first, current) != 0) {
-            // We can stop looking
-            current = null
-          } else {
-            val comparison = suffixComparator.compare(current, best)
-            if (comparison < 0) { // Found a new best
-              best = current
-              matchingRows.clear()
-              matchingRows += current
-            }
-
-            if (comparison == 0) { // Found a tie
-              matchingRows += current
-            }
-          }
-        } else {
-          current = null
-        }
-      }
-      ClosingIterator(matchingRows.result().iterator)
-    }
-  }
-
-  @inline
-  private def init(first: CypherRow): mutable.Builder[CypherRow, Vector[CypherRow]] = {
-    val builder = Vector.newBuilder[CypherRow]
-    builder += first
-    builder
   }
 }

@@ -129,7 +129,6 @@ import org.neo4j.cypher.internal.logical.plans.OrderedAggregation
 import org.neo4j.cypher.internal.logical.plans.OrderedDistinct
 import org.neo4j.cypher.internal.logical.plans.PartialSort
 import org.neo4j.cypher.internal.logical.plans.PartialTop
-import org.neo4j.cypher.internal.logical.plans.PartialTop1WithTies
 import org.neo4j.cypher.internal.logical.plans.PointDistanceRange
 import org.neo4j.cypher.internal.logical.plans.PointDistanceSeekRangeWrapper
 import org.neo4j.cypher.internal.logical.plans.PrefixSeekRangeWrapper
@@ -608,10 +607,6 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
       case PartialTop(_, alreadySortedPrefix, stillToSortSuffix, limit, _) =>
         val details = pretty"${orderInfo(alreadySortedPrefix ++ stillToSortSuffix)} LIMIT ${asPrettyString(limit)}"
         PlanDescriptionImpl(id, "PartialTop", children, Seq(Details(details)), variables)
-
-      case PartialTop1WithTies(_, alreadySortedPrefix, stillToSortSuffix) =>
-        val details = pretty"${orderInfo(alreadySortedPrefix ++ stillToSortSuffix)}"
-        PlanDescriptionImpl(id, "PartialTop1WithTies", children, Seq(Details(details)), variables)
 
       case UnwindCollection(_, variable, expression) =>
         val details = Details(projectedExpressionInfo(Map(variable -> expression)).mkPrettyString(SEPARATOR))
