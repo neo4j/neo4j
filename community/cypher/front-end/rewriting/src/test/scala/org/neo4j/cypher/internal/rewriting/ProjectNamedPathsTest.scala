@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.Return
 import org.neo4j.cypher.internal.ast.ReturnItems
 import org.neo4j.cypher.internal.ast.SingleQuery
+import org.neo4j.cypher.internal.ast.SubQuery
 import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.ast.With
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
@@ -47,8 +48,9 @@ import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
 import org.neo4j.cypher.internal.util.devNullLogger
 import org.neo4j.cypher.internal.util.inSequence
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.TestName
 
-class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport {
+class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport with TestName {
 
   private def projectionInlinedAst(queryText: String) = ast(queryText).endoRewrite(projectNamedPaths)
 
@@ -60,10 +62,12 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
     normalized.endoRewrite(inSequence(expandStar(checkResult.state)))
   }
 
-  private def parseReturnedExpr(queryText: String) =
-    projectionInlinedAst(queryText) match {
-      case Query(_, SingleQuery(Seq(_, Return(_, ReturnItems(_, Seq(AliasedReturnItem(expr, Variable("p")))), _, _, _, _)))) => expr
-    }
+  private def parseReturnedExpr(queryText: String) = {
+    val query = projectionInlinedAst(queryText).asInstanceOf[Query]
+    query.part.asInstanceOf[SingleQuery].clauses.last.asInstanceOf[Return].returnItems.items.collectFirst {
+      case AliasedReturnItem(expr, Variable("p")) => expr
+    }.get
+  }
 
   test("MATCH p = (a) RETURN p" ) {
     val returns = parseReturnedExpr("MATCH p = (a) RETURN p")
@@ -73,6 +77,48 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
     )_
 
     returns should equal(expected: PathExpression)
+  }
+
+  test("MATCH p = (a) CALL {RETURN 1} RETURN p" ) {
+      val returns = parseReturnedExpr(testName)
+
+      val expected = PathExpression(
+        NodePathStep(varFor("a"), NilPathStep)
+      )_
+
+      returns should equal(expected: PathExpression)
+  }
+
+  test("CALL {MATCH p = (a) RETURN p} RETURN p" ) {
+    val rewritten = projectionInlinedAst(testName)
+
+    val a = varFor("a")
+    val p = varFor("p")
+    val CALL = {
+      val MATCH = Match(optional = false,
+        Pattern(List(
+          EveryPath(
+            NodePattern(Some(a), List(), None)(pos))
+        ))(pos), List(), None)(pos)
+
+      val RETURN =
+        Return(distinct = false,
+          ReturnItems(includeExisting = false, Seq(
+            AliasedReturnItem(PathExpression(NodePathStep(a, NilPathStep))(pos), p)(pos)
+          ))(pos), None, None, None)(pos)
+
+      SubQuery(SingleQuery(List(MATCH, RETURN))(pos))(pos)
+    }
+
+    val RETURN =
+      Return(distinct = false,
+        ReturnItems(includeExisting = false, Seq(
+          AliasedReturnItem(p, p)(pos)
+        ))(pos), None, None, None)(pos)
+
+    val expected: Query = Query(None, SingleQuery(List(CALL, RETURN))(pos))(pos)
+
+    rewritten should equal(expected)
   }
 
   test("MATCH p = (a) WITH p RETURN p" ) {
