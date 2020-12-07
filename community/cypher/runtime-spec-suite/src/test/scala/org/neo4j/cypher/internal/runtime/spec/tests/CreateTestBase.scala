@@ -64,6 +64,25 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
     node.getLabels.asScala.map(_.name()).toList should equal(List("A", "B", "C"))
   }
 
+  test("should create node with labels and empty results") {
+    // given an empty data base
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .emptyResult()
+      .create(createNode("n", "A", "B", "C"))
+      .argument()
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    val node = Iterables.single(tx.getAllNodes)
+    runtimeResult should beColumns("n").withNoRows().withStatistics(nodesCreated = 1, labelsAdded = 3)
+    node.getLabels.asScala.map(_.name()).toList should equal(List("A", "B", "C"))
+  }
+
   test("should create node with properties") {
     // given an empty data base
 
