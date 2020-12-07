@@ -27,7 +27,8 @@ import org.neo4j.cypher.internal.util.attribution.SameId
  * Produce one row for every node in the graph labelled 'label'. This row contains the node (assigned to 'idName')
  * and the contents of argument.
  */
-case class NodeByLabelScan(idName: String, label: LabelName,
+case class NodeByLabelScan(idName: String,
+                           label: LabelName,
                            argumentIds: Set[String],
                            indexOrder: IndexOrder)(implicit idGen: IdGen) extends NodeLogicalLeafPlan(idGen) {
 

@@ -104,7 +104,8 @@ case object PlanEventHorizon extends EventHorizonPlanner {
         SortPlanner.ensureSortedPlanWithSolved(projected, query.interestingOrder, context)
 
       case CallSubqueryHorizon(callSubquery, correlated) =>
-        val (subPlan, _) =  plannerQueryPartPlanner.plan(callSubquery, context)
+        val subqueryContext = context.withUpdatedCardinalityInformation(plan)
+        val (subPlan, _) =  plannerQueryPartPlanner.plan(callSubquery, subqueryContext)
         context.logicalPlanProducer.planSubquery(plan, subPlan, context, correlated)
 
       case _ =>

@@ -22,6 +22,8 @@ package org.neo4j.cypher.internal.compiler.planner.logical.cardinality
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfiguration
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningSupport
 import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.ProduceResult
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.Selectivity
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -46,9 +48,22 @@ trait CardinalityModelIntegrationTest extends StatisticsBackedLogicalPlanningSup
   def or(numbers: Double*): Double = combiner.orTogetherSelectivities(numbers.map(Selectivity.of(_).getOrElse(Selectivity.ONE))).get.factor
 
   def queryShouldHaveCardinality(config: StatisticsBackedLogicalPlanningConfiguration, query: String, expectedCardinality: Double): Unit = {
+    planShouldHaveCardinality(
+      config,
+      query,
+      {
+        case _: ProduceResult => true
+      },
+      expectedCardinality)
+  }
+
+  def planShouldHaveCardinality(config: StatisticsBackedLogicalPlanningConfiguration, query: String, findPlanId: PartialFunction[LogicalPlan, Boolean], expectedCardinality: Double): Unit = {
     val planState = config.planState(s"$query RETURN 1 AS result")
 
-    val actualCardinality = planState.planningAttributes.cardinalities.get(planState.logicalPlan.id)
+    val planId = planState.logicalPlan.flatten.collectFirst {
+      case lp if findPlanId.applyOrElse(lp, (_: LogicalPlan) => false) => lp.id
+    }.get
+    val actualCardinality = planState.planningAttributes.cardinalities.get(planId)
 
     // used to handle double rounding errors in assertion
     import org.neo4j.cypher.internal.compiler.planner.logical.CardinalitySupport.Eq
@@ -57,5 +72,9 @@ trait CardinalityModelIntegrationTest extends StatisticsBackedLogicalPlanningSup
 
   def queryShouldHaveCardinality(query: String, expectedCardinality: Double): Unit = {
     queryShouldHaveCardinality(plannerBuilder().build(), query, expectedCardinality)
+  }
+
+  def planShouldHaveCardinality(query: String, findPlanId: PartialFunction[LogicalPlan, Boolean], expectedCardinality: Double): Unit = {
+    planShouldHaveCardinality(plannerBuilder().build(), query, findPlanId, expectedCardinality)
   }
 }

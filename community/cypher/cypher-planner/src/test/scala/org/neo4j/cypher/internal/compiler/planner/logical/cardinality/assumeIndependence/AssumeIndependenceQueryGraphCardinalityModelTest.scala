@@ -21,6 +21,8 @@ package org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeInd
 
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.ABCDECardinalityData
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence.PatternRelationshipMultiplierCalculator.uniquenessSelectivityForNRels
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.TestName
 
@@ -309,10 +311,23 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends CypherFunSuite wi
 
   test("MATCH (a:A) CALL { WITH a MATCH (b:B) RETURN b }") {
     expectCardinality(A * B)
+    expectPlanCardinality({
+      case NodeByLabelScan("b", _, _, _) => true
+    }, A * B)
   }
 
   test("MATCH (a:A) CALL { MATCH (b:B) RETURN b }") {
     expectCardinality(A * B)
+    expectPlanCardinality({
+      case NodeByLabelScan("b", _, _, _) => true
+    }, B)
+  }
+
+  test("MATCH (a:A) CALL { MATCH (b:B) RETURN b } MATCH (c:C)") {
+    expectCardinality(A * B * C)
+    expectPlanCardinality({
+      case NodeByLabelScan("c", _, _, _) => true
+    }, A * B * C)
   }
 
   test("MATCH (a:A) CALL { WITH a MATCH (a)-[:T1]->(b:B) RETURN b }") {
@@ -370,4 +385,7 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends CypherFunSuite wi
 
   private def expectCardinality(expected: Double): Unit =
     queryShouldHaveCardinality(testName, expected)
+
+  private def expectPlanCardinality(findPlanId: PartialFunction[LogicalPlan, Boolean], expected: Double): Unit =
+    planShouldHaveCardinality(testName, findPlanId, expected)
 }
