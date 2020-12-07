@@ -528,8 +528,8 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
         awaitIndexesOnline();
 
         // then
-        assertQueryFindsIds( db, true, "node", "integration", node1.getId(), node2.getId() );
-        assertQueryFindsIds( db, true, "node", "test", node1.getId(), node2.getId() );
+        assertQueryFindsIdsInOrder( db, true, "node", "integration", node1.getId(), node2.getId() );
+        assertQueryFindsIdsInOrder( db, true, "node", "test", node1.getId(), node2.getId() );
         assertQueryFindsIds( db, true, "node", "related", newSetWith( node2.getId() ) );
         assertQueryFindsIds( db, false, "rel", "relate", newSetWith( relationship.getId() ) );
     }
@@ -1041,7 +1041,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
             tx.commit();
         }
 
-        assertQueryFindsIds( db, true, "nodes", "bla", nodeId );
+        assertQueryFindsIdsInOrder( db, true, "nodes", "bla", nodeId );
     }
 
     @Test
@@ -1071,7 +1071,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
             tx.commit();
         }
 
-        assertQueryFindsIds( db, true, "nodes", "foo", nodeId );
+        assertQueryFindsIdsInOrder( db, true, "nodes", "foo", nodeId );
         try ( Transaction tx = db.beginTx() )
         {
             Result result = tx.execute( format( QUERY_NODES, "nodes", "bar" ) );
@@ -1108,8 +1108,8 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
             tx.commit();
         }
 
-        assertQueryFindsIds( db, true, "nodes", "foo", nodeId );
-        assertQueryFindsIds( db, true, "nodes", "bar", nodeId );
+        assertQueryFindsIdsInOrder( db, true, "nodes", "foo", nodeId );
+        assertQueryFindsIdsInOrder( db, true, "nodes", "bar", nodeId );
     }
 
     @Test
@@ -1141,7 +1141,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
 
         awaitIndexesOnline();
 
-        assertQueryFindsIds( db, true, "books", "impellit scriptum offerendum", nodeId );
+        assertQueryFindsIdsInOrder( db, true, "books", "impellit scriptum offerendum", nodeId );
     }
 
     @Test
@@ -1173,7 +1173,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
 
         awaitIndexesOnline();
 
-        assertQueryFindsIds( db, true, "books", "impellit scriptum offerendum", nodeId );
+        assertQueryFindsIdsInOrder( db, true, "books", "impellit scriptum offerendum", nodeId );
     }
 
     @Test
@@ -1221,7 +1221,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
             nodeId = node.getId();
             tx.commit();
         }
-        assertQueryFindsIds( db, true, "nodes", "e:value", nodeId );
+        assertQueryFindsIdsInOrder( db, true, "nodes", "e:value", nodeId );
     }
 
     @Test
@@ -1396,7 +1396,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
             tx.getNodeById( nodeId ).setProperty( PROP, "value" );
             tx.commit();
         }
-        assertQueryFindsIds( db, true, "nodes", "prop:value", nodeId );
+        assertQueryFindsIdsInOrder( db, true, "nodes", "prop:value", nodeId );
     }
 
     @Test
@@ -1422,7 +1422,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
             rel.setProperty( PROP, "value" );
             tx.commit();
         }
-        assertQueryFindsIds( db, false, "rels", "prop:value", relId );
+        assertQueryFindsIdsInOrder( db, false, "rels", "prop:value", relId );
     }
 
     @Test
@@ -1448,7 +1448,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
             node.addLabel( LABEL );
             tx.commit();
         }
-        assertQueryFindsIds( db, true, "nodes", "value", nodeId );
+        assertQueryFindsIdsInOrder( db, true, "nodes", "value", nodeId );
     }
 
     @Test
@@ -1473,8 +1473,8 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
             tx.getNodeById( nodeId ).setProperty( PROP, "secundo" );
             tx.commit();
         }
-        assertQueryFindsIds( db, true, "nodes", "primo" );
-        assertQueryFindsIds( db, true, "nodes", "secundo", nodeId );
+        assertQueryFindsIdsInOrder( db, true, "nodes", "primo" );
+        assertQueryFindsIdsInOrder( db, true, "nodes", "secundo", nodeId );
     }
 
     @Test
@@ -1500,8 +1500,8 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
             tx.getRelationshipById( relId ).setProperty( PROP, "secundo" );
             tx.commit();
         }
-        assertQueryFindsIds( db, false, "rels", "primo" );
-        assertQueryFindsIds( db, false, "rels", "secundo", relId );
+        assertQueryFindsIdsInOrder( db, false, "rels", "primo" );
+        assertQueryFindsIdsInOrder( db, false, "rels", "secundo", relId );
     }
 
     @Test
@@ -1526,7 +1526,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
             tx.getNodeById( nodeId ).removeProperty( PROP );
             tx.commit();
         }
-        assertQueryFindsIds( db, true, "nodes", "value" );
+        assertQueryFindsIdsInOrder( db, true, "nodes", "value" );
     }
 
     @Test
@@ -1552,7 +1552,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
             tx.getRelationshipById( relId ).removeProperty( PROP );
             tx.commit();
         }
-        assertQueryFindsIds( db, false, "rels", "value" );
+        assertQueryFindsIdsInOrder( db, false, "rels", "value" );
     }
 
     @Test
@@ -1576,7 +1576,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
             tx.getNodeById( nodeId ).removeLabel( LABEL );
             tx.commit();
         }
-        assertQueryFindsIds( db, true, "nodes", "nodes" );
+        assertQueryFindsIdsInOrder( db, true, "nodes", "nodes" );
     }
 
     @Test
@@ -1596,24 +1596,24 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
             nodeId = node.getId();
             tx.commit();
         }
-        assertQueryFindsIds( db, true, "nodes", "primo", nodeId );
-        assertQueryFindsIds( db, true, "nodes", "secundo" );
+        assertQueryFindsIdsInOrder( db, true, "nodes", "primo", nodeId );
+        assertQueryFindsIdsInOrder( db, true, "nodes", "secundo" );
         try ( Transaction tx = db.beginTx() )
         {
             Node node = tx.getNodeById( nodeId );
             node.setProperty( PROP, "secundo" );
             tx.commit();
         }
-        assertQueryFindsIds( db, true, "nodes", "primo" );
-        assertQueryFindsIds( db, true, "nodes", "secundo", nodeId );
+        assertQueryFindsIdsInOrder( db, true, "nodes", "primo" );
+        assertQueryFindsIdsInOrder( db, true, "nodes", "secundo", nodeId );
         try ( Transaction tx = db.beginTx() )
         {
             Node node = tx.getNodeById( nodeId );
             node.setProperty( PROP, "primo" );
             tx.commit();
         }
-        assertQueryFindsIds( db, true, "nodes", "primo", nodeId );
-        assertQueryFindsIds( db, true, "nodes", "secundo" );
+        assertQueryFindsIdsInOrder( db, true, "nodes", "primo", nodeId );
+        assertQueryFindsIdsInOrder( db, true, "nodes", "secundo" );
     }
 
     @Test
@@ -1634,24 +1634,24 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
             relId = rel.getId();
             tx.commit();
         }
-        assertQueryFindsIds( db, false, "rels", "primo", relId );
-        assertQueryFindsIds( db, false, "rels", "secundo" );
+        assertQueryFindsIdsInOrder( db, false, "rels", "primo", relId );
+        assertQueryFindsIdsInOrder( db, false, "rels", "secundo" );
         try ( Transaction tx = db.beginTx() )
         {
             Relationship rel = tx.getRelationshipById( relId );
             rel.setProperty( PROP, "secundo" );
             tx.commit();
         }
-        assertQueryFindsIds( db, false, "rels", "primo" );
-        assertQueryFindsIds( db, false, "rels", "secundo", relId );
+        assertQueryFindsIdsInOrder( db, false, "rels", "primo" );
+        assertQueryFindsIdsInOrder( db, false, "rels", "secundo", relId );
         try ( Transaction tx = db.beginTx() )
         {
             Relationship rel = tx.getRelationshipById( relId );
             rel.setProperty( PROP, "primo" );
             tx.commit();
         }
-        assertQueryFindsIds( db, false, "rels", "primo", relId );
-        assertQueryFindsIds( db, false, "rels", "secundo" );
+        assertQueryFindsIdsInOrder( db, false, "rels", "primo", relId );
+        assertQueryFindsIdsInOrder( db, false, "rels", "secundo" );
     }
 
     @Test
@@ -1671,21 +1671,21 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
             nodeId = node.getId();
             tx.commit();
         }
-        assertQueryFindsIds( db, true, "nodes", "primo", nodeId );
+        assertQueryFindsIdsInOrder( db, true, "nodes", "primo", nodeId );
         try ( Transaction tx = db.beginTx() )
         {
             Node node = tx.getNodeById( nodeId );
             node.removeProperty( PROP );
             tx.commit();
         }
-        assertQueryFindsIds( db, true, "nodes", "primo" );
+        assertQueryFindsIdsInOrder( db, true, "nodes", "primo" );
         try ( Transaction tx = db.beginTx() )
         {
             Node node = tx.getNodeById( nodeId );
             node.setProperty( PROP, "primo" );
             tx.commit();
         }
-        assertQueryFindsIds( db, true, "nodes", "primo", nodeId );
+        assertQueryFindsIdsInOrder( db, true, "nodes", "primo", nodeId );
     }
 
     @Test
@@ -1706,21 +1706,21 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
             relId = rel.getId();
             tx.commit();
         }
-        assertQueryFindsIds( db, false, "rels", "primo", relId );
+        assertQueryFindsIdsInOrder( db, false, "rels", "primo", relId );
         try ( Transaction tx = db.beginTx() )
         {
             Relationship rel = tx.getRelationshipById( relId );
             rel.removeProperty( PROP );
             tx.commit();
         }
-        assertQueryFindsIds( db, false, "rels", "primo" );
+        assertQueryFindsIdsInOrder( db, false, "rels", "primo" );
         try ( Transaction tx = db.beginTx() )
         {
             Relationship rel = tx.getRelationshipById( relId );
             rel.setProperty( PROP, "primo" );
             tx.commit();
         }
-        assertQueryFindsIds( db, false, "rels", "primo", relId );
+        assertQueryFindsIdsInOrder( db, false, "rels", "primo", relId );
     }
 
     @Test
@@ -1746,14 +1746,14 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
             node.removeLabel( LABEL );
             tx.commit();
         }
-        assertQueryFindsIds( db, true, "nodes", "primo" );
+        assertQueryFindsIdsInOrder( db, true, "nodes", "primo" );
         try ( Transaction tx = db.beginTx() )
         {
             Node node = tx.getNodeById( nodeId );
             node.addLabel( LABEL );
             tx.commit();
         }
-        assertQueryFindsIds( db, true, "nodes", "primo", nodeId );
+        assertQueryFindsIdsInOrder( db, true, "nodes", "primo", nodeId );
     }
 
     @Test
@@ -1789,7 +1789,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
             thirdId = node.getId();
             tx.commit();
         }
-        assertQueryFindsIds( db, true, "nodes", "dude", thirdId, secondId, firstId );
+        assertQueryFindsIdsInOrder( db, true, "nodes", "dude", thirdId, secondId, firstId );
     }
 
     @Test
@@ -1864,15 +1864,15 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
             node.createRelationshipTo( node, REL ).setProperty( PROP, "value" );
         }
 
-        assertQueryFindsIds( db, true, "nodes", "value" );
-        assertQueryFindsIds( db, false, "rels", "value" );
+        assertQueryFindsIdsInOrder( db, true, "nodes", "value" );
+        assertQueryFindsIdsInOrder( db, false, "rels", "value" );
         try ( Transaction transaction = db.beginTx() )
         {
             transaction.execute( AWAIT_REFRESH ).close();
             transaction.commit();
         }
-        assertQueryFindsIds( db, true, "nodes", "value" );
-        assertQueryFindsIds( db, false, "rels", "value" );
+        assertQueryFindsIdsInOrder( db, true, "nodes", "value" );
+        assertQueryFindsIdsInOrder( db, false, "rels", "value" );
     }
 
     @Test
@@ -2623,13 +2623,13 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
 
         try ( Transaction tx = db.beginTx() )
         {
-            assertQueryFindsIds( db, false, "rels", "blabla", relId );
+            assertQueryFindsIdsInOrder( db, false, "rels", "blabla", relId );
             tx.execute( "match (n) where id(n) = " + nodeId + " detach delete n" ).close();
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
-            assertQueryFindsIds( db, false, "rels", "blabla" );
+            assertQueryFindsIdsInOrder( db, false, "rels", "blabla" );
             tx.commit();
         }
 
@@ -2689,13 +2689,13 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
 
         try ( Transaction tx = db.beginTx() )
         {
-            assertQueryFindsIds( db, false, "rels", "blabla", relId );
+            assertQueryFindsIdsInOrder( db, false, "rels", "blabla", relId );
             tx.execute( "match (n) where id(n) = " + nodeId + " detach delete n" ).close();
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
-            assertQueryFindsIds( db, false, "rels", "blabla" );
+            assertQueryFindsIdsInOrder( db, false, "rels", "blabla" );
             tx.commit();
         }
 
@@ -2727,14 +2727,14 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
 
         try ( Transaction tx = db.beginTx() )
         {
-            assertQueryFindsIds( db, false, "rels", "blabla", relId );
+            assertQueryFindsIdsInOrder( db, false, "rels", "blabla", relId );
             Relationship rel = tx.getRelationshipById( relId );
             rel.removeProperty( PROP );
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
-            assertQueryFindsIds( db, false, "rels", "blabla" );
+            assertQueryFindsIdsInOrder( db, false, "rels", "blabla" );
             tx.commit();
         }
 
@@ -2768,14 +2768,14 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
 
         try ( Transaction tx = db.beginTx() )
         {
-            assertQueryFindsIds( db, false, "rels", "blabla", relId );
+            assertQueryFindsIdsInOrder( db, false, "rels", "blabla", relId );
             Relationship rel = tx.getRelationshipById( relId );
             rel.removeProperty( PROP );
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
-            assertQueryFindsIds( db, false, "rels", "blabla" );
+            assertQueryFindsIdsInOrder( db, false, "rels", "blabla" );
             tx.commit();
         }
 

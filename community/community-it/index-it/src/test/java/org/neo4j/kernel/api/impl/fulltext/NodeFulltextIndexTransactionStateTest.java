@@ -43,20 +43,14 @@ class NodeFulltextIndexTransactionStateTest extends FulltextIndexTransactionStat
     }
 
     @Override
-    void assertQueryFindsIds( Transaction tx, String query, long... ids )
+    void assertQueryFindsIdsInOrder( Transaction tx, String query, long... ids )
     {
-        assertQueryFindsIds( tx, true, "nodes", query, ids );
+        assertQueryFindsIdsInOrder( tx, true, NODE_INDEX_NAME, query, ids );
     }
 
     @Override
     void deleteEntity( Transaction tx, long entityId )
     {
         tx.getNodeById( entityId ).delete();
-    }
-
-    @Override
-    Result queryIndex( Transaction tx, String propertyValue )
-    {
-        return tx.execute( format( QUERY_NODES, "nodes", propertyValue ) );
     }
 }

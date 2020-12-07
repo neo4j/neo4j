@@ -19,12 +19,10 @@
  */
 package org.neo4j.kernel.api.impl.fulltext;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Tests testing affect of TX state on index query results.
@@ -34,10 +32,15 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 abstract class FulltextIndexTransactionStateTest extends FulltextProceduresTestSupport
 {
+    @BeforeEach
+    void setUp()
+    {
+        createIndex();
+    }
+
     @Test
     void queryResultFromTransactionStateMustSortTogetherWithResultFromBaseIndex()
     {
-        createIndex();
         long firstId;
         long secondId;
         long thirdId;
@@ -51,7 +54,7 @@ abstract class FulltextIndexTransactionStateTest extends FulltextProceduresTestS
         try ( Transaction tx = db.beginTx() )
         {
             secondId = createEntityWithProperty( tx, "God of War III Remastered" );
-            assertQueryFindsIds( tx, "god of war", firstId, secondId, thirdId );
+            assertQueryFindsIdsInOrder( tx, "god of war", firstId, secondId, thirdId );
             tx.commit();
         }
     }
@@ -59,12 +62,10 @@ abstract class FulltextIndexTransactionStateTest extends FulltextProceduresTestS
     @Test
     void queryResultsMustIncludeEntitiesAddedInTheSameTransaction()
     {
-        createIndex();
-
         try ( Transaction tx = db.beginTx() )
         {
             long id = createEntityWithProperty( tx, "value" );
-            assertQueryFindsIds( tx, "value", id );
+            assertQueryFindsIdsInOrder( tx, "value", id );
             tx.commit();
         }
     }
@@ -72,7 +73,6 @@ abstract class FulltextIndexTransactionStateTest extends FulltextProceduresTestS
     @Test
     void queryResultsMustNotIncludeEntitiesDeletedInTheSameTransaction()
     {
-        createIndex();
         long entityIdA;
         long entityIdB;
         try ( Transaction tx = db.beginTx() )
@@ -83,23 +83,13 @@ abstract class FulltextIndexTransactionStateTest extends FulltextProceduresTestS
         }
         try ( Transaction tx = db.beginTx() )
         {
-            try ( Result result = queryIndex( tx, "value" ) )
-            {
-                assertThat( result.stream().count() ).isEqualTo( 2L );
-            }
+            assertQueryFindsIdsInOrder( tx, "value", entityIdA, entityIdB );
 
             deleteEntity( tx, entityIdA );
-
-            try ( Result result = queryIndex( tx, "value" ) )
-            {
-                assertThat( result.stream().count() ).isEqualTo( 1L );
-            }
+            assertQueryFindsIdsInOrder( tx, "value", entityIdB );
 
             deleteEntity( tx, entityIdB );
-            try ( Result result = queryIndex( tx, "value" ) )
-            {
-                assertThat( result.stream().count() ).isEqualTo( 0L );
-            }
+            assertQueryFindsIdsInOrder( tx, "value" );
             tx.commit();
         }
     }
@@ -118,9 +108,7 @@ abstract class FulltextIndexTransactionStateTest extends FulltextProceduresTestS
 
     abstract long createEntityWithProperty( Transaction tx, String propertyValue );
 
-    abstract void assertQueryFindsIds( Transaction tx, String query, long... ids );
+    abstract void assertQueryFindsIdsInOrder( Transaction tx, String query, long... ids );
 
     abstract void deleteEntity( Transaction tx, long entityId );
-
-    abstract Result queryIndex( Transaction tx, String propertyValue );
 }

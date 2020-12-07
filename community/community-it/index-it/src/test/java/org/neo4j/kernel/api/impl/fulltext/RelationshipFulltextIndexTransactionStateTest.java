@@ -21,11 +21,7 @@ package org.neo4j.kernel.api.impl.fulltext;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
-
-import static java.lang.String.format;
-import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.QUERY_RELS;
 
 class RelationshipFulltextIndexTransactionStateTest extends FulltextIndexTransactionStateTest
 {
@@ -45,20 +41,14 @@ class RelationshipFulltextIndexTransactionStateTest extends FulltextIndexTransac
     }
 
     @Override
-    void assertQueryFindsIds( Transaction tx, String query, long... ids )
+    void assertQueryFindsIdsInOrder( Transaction tx, String query, long... ids )
     {
-        assertQueryFindsIds( tx, false, "rels", query, ids );
+        assertQueryFindsIdsInOrder( tx, false, REL_INDEX_NAME, query, ids );
     }
 
     @Override
     void deleteEntity( Transaction tx, long entityId )
     {
         tx.getRelationshipById( entityId ).delete();
-    }
-
-    @Override
-    Result queryIndex( Transaction tx, String propertyValue )
-    {
-        return tx.execute( format( QUERY_RELS, "rels", propertyValue ) );
     }
 }

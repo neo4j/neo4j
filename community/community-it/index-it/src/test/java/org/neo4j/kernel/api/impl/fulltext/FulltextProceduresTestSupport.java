@@ -73,6 +73,8 @@ class FulltextProceduresTestSupport
     static final String PROP = "prop";
     static final String EVENTUALLY_CONSISTENT = ", {eventually_consistent: 'true'}";
     static final String EVENTUALLY_CONSISTENT_PREFIXED = ", {`fulltext.eventually_consistent`: 'true'}";
+    static final String NODE_INDEX_NAME = "nodes";
+    static final String REL_INDEX_NAME = "rels";
 
     @Inject
     GraphDatabaseAPI db;
@@ -107,16 +109,16 @@ class FulltextProceduresTestSupport
         }
     }
 
-    static void assertQueryFindsIds( GraphDatabaseService db, boolean queryNodes, String index, String query, long... ids )
+    static void assertQueryFindsIdsInOrder( GraphDatabaseService db, boolean queryNodes, String index, String query, long... ids )
     {
         try ( Transaction tx = db.beginTx() )
         {
-            assertQueryFindsIds( tx, queryNodes, index, query, ids );
+            assertQueryFindsIdsInOrder( tx, queryNodes, index, query, ids );
             tx.commit();
         }
     }
 
-    static void assertQueryFindsIds( Transaction tx, boolean queryNodes, String index, String query, long... ids )
+    static void assertQueryFindsIdsInOrder( Transaction tx, boolean queryNodes, String index, String query, long... ids )
     {
         String queryCall = queryNodes ? QUERY_NODES : QUERY_RELS;
         Result result = tx.execute( format( queryCall, index, query ) );
@@ -238,11 +240,11 @@ class FulltextProceduresTestSupport
 
     void createSimpleRelationshipIndex( Transaction tx )
     {
-        tx.execute( format( RELATIONSHIP_CREATE, "rels", asStrList( REL.name() ), asStrList( PROP ) ) ).close();
+        tx.execute( format( RELATIONSHIP_CREATE, REL_INDEX_NAME, asStrList( REL.name() ), asStrList( PROP ) ) ).close();
     }
 
     void createSimpleNodesIndex( Transaction tx )
     {
-        tx.execute( format( NODE_CREATE, "nodes", asStrList( LABEL.name() ), asStrList( PROP ) ) ).close();
+        tx.execute( format( NODE_CREATE, NODE_INDEX_NAME, asStrList( LABEL.name() ), asStrList( PROP ) ) ).close();
     }
 }
