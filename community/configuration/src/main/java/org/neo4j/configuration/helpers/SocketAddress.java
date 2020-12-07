@@ -52,7 +52,7 @@ public class SocketAddress
 
     public SocketAddress( String hostname, int port )
     {
-        if ( hostname != null && ( hostname.contains( "[" ) || hostname.contains( "]" ) ) )
+        if ( hostname != null && (hostname.contains( "[" ) || hostname.contains( "]" )) )
         {
             throw new IllegalArgumentException( "hostname cannot contain '[' or ']'" );
         }
