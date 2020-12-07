@@ -232,4 +232,93 @@ abstract class SetNodePropertyTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("p").withSingleRow(2).withStatistics(propertiesSet = 2)
     property shouldBe "prop"
   }
+  test("should set node property from null value") {
+    // given a single node
+    val n = given {
+      nodeGraph(1)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("p")
+      .projection("n.prop as p")
+      .setNodeProperty("n", "prop", "null")
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    val property = Iterables.single(tx.getAllPropertyKeys)
+    runtimeResult should beColumns("p").withSingleRow(null).withNoUpdates()
+    property shouldBe "prop"
+  }
+
+  test("should set node property on null node") {
+    // given a single node
+    val n = given {
+      nodeGraph(1)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("p")
+      .projection("n.prop as p")
+      .setNodeProperty("n", "prop", "3")
+      .input(nodes = Seq("n"))
+      .build(readOnly = false)
+
+    val input = inputValues(Array(n.head), Array(null))
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime, input)
+    consume(runtimeResult)
+    val property = Iterables.single(tx.getAllPropertyKeys)
+    runtimeResult should beColumns("p").withRows(singleColumn(Seq(3, null))).withStatistics(propertiesSet = 1)
+    property shouldBe "prop"
+  }
+
+  test("should set node property from expression that requires null check") {
+    // given a single node
+    val n = given {
+      nodeGraph(1)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("p")
+      .projection("n.prop as p")
+      .setNodeProperty("n", "prop", "sin(null)")
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    val property = Iterables.single(tx.getAllPropertyKeys)
+    runtimeResult should beColumns("p").withSingleRow(null).withNoUpdates()
+    property shouldBe "prop"
+  }
+
+  test("should count node property updates even if values are not changed") {
+    // given single node
+    val n = given {
+      nodePropertyGraph(1, { case i => Map("prop" -> 100)})
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("p")
+      .projection("n.prop as p")
+      .setNodeProperty("n", "prop", "100")
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    val property = Iterables.single(tx.getAllPropertyKeys)
+    runtimeResult should beColumns("p").withRows(n.map(_ => Array(100))).withStatistics(propertiesSet = 1)
+    property shouldBe "prop"
+  }
 }
