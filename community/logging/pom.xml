@@ -50,6 +50,14 @@
     </licenses>
 
     <dependencies>
+        <!-- WARNING -->
+        <!-- Be very careful when adding dependencies in this class -->
+        <!-- A bug in the Maven Shade Plugin may cause an infinite loop (livelock) while creating the dependency reduced pom on parallel builds -->
+        <!-- It seems to happen if the added dependencies are already transitive dependencies -->
+        <!-- Likely fixed by https://github.com/apache/maven-shade-plugin/pull/16 -->
+        <!-- Please verify that added dependencies does not break this by doing a full parallel maven build on the root project -->
+        <!-- Example "mvn clean install -T -DskipTests" -->
+        <!-- WARNING -->
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j-io</artifactId>
@@ -58,12 +66,6 @@
         <dependency>
             <groupId>org.codehaus.jettison</groupId>
             <artifactId>jettison</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.neo4j</groupId>
-            <artifactId>test-utils</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.neo4j</groupId>
@@ -77,23 +79,7 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.assertj</groupId>
-            <artifactId>assertj-core</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-core</artifactId>
-        </dependency>
-        <dependency>
             <groupId>com.google.code.findbugs</groupId>
-            <artifactId>annotations</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.neo4j</groupId>
             <artifactId>annotations</artifactId>
         </dependency>
         <dependency>
