@@ -34,7 +34,7 @@ import org.neo4j.cypher.internal.compiler.helpers.PredicateHelper
 import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.LabelInfo
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
-import org.neo4j.cypher.internal.compiler.planner.logical.steps.skipAndLimit.shouldPlanExhaustiveLimit
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.skipAndLimit.planLimitOnTopOf
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Expression.SemanticContext.Results
 import org.neo4j.cypher.internal.expressions.LabelName
@@ -54,12 +54,10 @@ import org.neo4j.cypher.internal.logical.plans.Descending
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.Distinct
 import org.neo4j.cypher.internal.logical.plans.Eager
-import org.neo4j.cypher.internal.logical.plans.ExhaustiveLimit
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
 import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
-import org.neo4j.cypher.internal.logical.plans.Limit
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.ManySeekableArgs
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
@@ -380,11 +378,7 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int],
     WithState(source, state) <- innerLogicalPlan(state)
     count <- Gen.chooseNum(0, Long.MaxValue, 1)
   } yield {
-    if (shouldPlanExhaustiveLimit(source)) {
-      annotate(ExhaustiveLimit(source, literalInt(count))(state.idGen), state)
-    } else {
-      annotate(Limit(source, literalInt(count))(state.idGen), state)
-    }
+    annotate(planLimitOnTopOf(source, literalInt(count))(state.idGen), state)
   }
 
   def projection(state: State): Gen[WithState[Projection]] = for {

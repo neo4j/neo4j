@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CardinalityModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
-import org.neo4j.cypher.internal.compiler.planner.logical.steps.skipAndLimit.shouldPlanExhaustiveLimit
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.skipAndLimit.planLimitOnTopOf
 import org.neo4j.cypher.internal.expressions.Add
 import org.neo4j.cypher.internal.expressions.CachedProperty
 import org.neo4j.cypher.internal.expressions.Equals
@@ -939,8 +939,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
       AggregatingQueryProjection(groupingExpressions = reportedGrouping, aggregationExpressions = reportedAggregation)
     ).withInterestingOrder(interestingOrder))
     val providedOrder = providedOrders.get(inner.id).fromLeft
-    val limitPlan = if (shouldPlanExhaustiveLimit(inner)) ExhaustiveLimit(inner, SignedDecimalIntegerLiteral("1")(InputPosition.NONE))
-                    else Limit(inner, SignedDecimalIntegerLiteral("1")(InputPosition.NONE))
+    val limitPlan = planLimitOnTopOf(inner, SignedDecimalIntegerLiteral("1")(InputPosition.NONE))
     val annotatedLimitPlan = annotate(limitPlan, solved, providedOrder, context)
 
     // The limit leverages the order, not the following optional

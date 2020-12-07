@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.skipAndLimit.planLimitOnTopOf
 import org.neo4j.cypher.internal.expressions.Add
 import org.neo4j.cypher.internal.expressions.ContainerIndex
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
@@ -43,17 +44,17 @@ case class limitNestedPlanExpressions(logicalPlanIdGen: IdGen) extends Rewriter 
   private val instance: Rewriter = bottomUp(Rewriter.lift {
     case fi@FunctionInvocation(Namespace(List()), FunctionName(Head.name), _, IndexedSeq(npe@NestedPlanCollectExpression(plan, _, _))) if !plan.isInstanceOf[Limit] =>
       fi.copy(args = IndexedSeq(npe.copy(
-        Limit(plan, SignedDecimalIntegerLiteral("1")(npe.position))(logicalPlanIdGen)
+        planLimitOnTopOf(plan, SignedDecimalIntegerLiteral("1")(npe.position))(logicalPlanIdGen)
       )(npe.position)))(fi.position)
 
     case ci@ContainerIndex(npe@NestedPlanCollectExpression(plan, _, _), index) if !plan.isInstanceOf[Limit] =>
       ci.copy(expr = npe.copy(
-        Limit(plan, Add(SignedDecimalIntegerLiteral("1")(npe.position), index)(npe.position))(logicalPlanIdGen)
+        planLimitOnTopOf(plan, Add(SignedDecimalIntegerLiteral("1")(npe.position), index)(npe.position))(logicalPlanIdGen)
       )(npe.position))(ci.position)
 
     case ls@ListSlice(npe@NestedPlanCollectExpression(plan, _, _), _, Some(to)) if !plan.isInstanceOf[Limit] =>
       ls.copy(list = npe.copy(
-        Limit(plan, Add(SignedDecimalIntegerLiteral("1")(npe.position), to)(npe.position))(logicalPlanIdGen)
+        planLimitOnTopOf(plan, Add(SignedDecimalIntegerLiteral("1")(npe.position), to)(npe.position))(logicalPlanIdGen)
       )(npe.position))(ls.position)
   })
 }

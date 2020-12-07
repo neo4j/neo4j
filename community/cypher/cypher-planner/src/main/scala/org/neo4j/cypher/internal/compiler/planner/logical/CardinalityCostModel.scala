@@ -204,6 +204,7 @@ object CardinalityCostModel extends CostModel {
       val sqrt = Selectivity.of(math.sqrt(incomingLimitSelectivity.factor)).getOrElse(Selectivity.ONE)
       (sqrt, sqrt)
 
+    //NOTE: we don't match on ExhaustiveLimit here since that doesn't affect the cardinality of earlier plans
     case limit: Limit =>
       val sourceCardinality = cardinalities.get(limit.source.id)
       val limitCardinality = cardinalities.get(limit.id)

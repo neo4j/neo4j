@@ -21,19 +21,27 @@ package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.PlanTransformer
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.ir.QueryProjection
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.logical.plans.EagerLogicalPlan
+import org.neo4j.cypher.internal.logical.plans.ExhaustiveLimit
+import org.neo4j.cypher.internal.logical.plans.Limit
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.UpdatingPlan
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
+import org.neo4j.cypher.internal.util.attribution.IdGen
 
 object skipAndLimit extends PlanTransformer {
 
-  def shouldPlanExhaustiveLimit(plan: LogicalPlan) = plan.treeFold(false) {
+  def shouldPlanExhaustiveLimit(plan: LogicalPlan): Boolean = plan.treeFold(false) {
     case _: UpdatingPlan => _ => SkipChildren(true)
     case _: EagerLogicalPlan => acc => SkipChildren(acc)
   }
+
+  def planLimitOnTopOf(plan: LogicalPlan, count: Expression)(implicit idGen: IdGen): LogicalPlan =
+    if (shouldPlanExhaustiveLimit(plan)) ExhaustiveLimit(plan, count)(idGen)
+    else Limit(plan, count)(idGen)
 
   def apply(plan: LogicalPlan, query: SinglePlannerQuery, context: LogicalPlanningContext): LogicalPlan = {
     query.horizon match {
