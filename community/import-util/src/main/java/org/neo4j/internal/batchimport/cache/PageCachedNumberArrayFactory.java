@@ -27,6 +27,7 @@ import java.nio.file.Path;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.logging.Log;
 import org.neo4j.memory.MemoryTracker;
 
 import static java.nio.file.StandardOpenOption.CREATE;
@@ -43,10 +44,12 @@ public class PageCachedNumberArrayFactory extends NumberArrayFactory.Adapter
     private final PageCache pageCache;
     private final Path storeDir;
     private final PageCacheTracer pageCacheTracer;
+    private final Log log;
 
-    public PageCachedNumberArrayFactory( PageCache pageCache, PageCacheTracer pageCacheTracer, Path storeDir )
+    public PageCachedNumberArrayFactory( PageCache pageCache, PageCacheTracer pageCacheTracer, Path storeDir, Log log )
     {
         this.pageCache = requireNonNull( pageCache );
+        this.log = log;
         this.pageCacheTracer = requireNonNull( pageCacheTracer );
         this.storeDir = requireNonNull( storeDir );
     }
@@ -58,6 +61,7 @@ public class PageCachedNumberArrayFactory extends NumberArrayFactory.Adapter
         {
             Path tempFile = Files.createTempFile( storeDir, "intArray", ".tmp" );
             PagedFile pagedFile = pageCache.map( tempFile, pageCache.pageSize(), immutable.of( DELETE_ON_CLOSE, CREATE ) );
+            log.info( "Using page-cache backed caching, this may affect performance negatively. IntArray length:" + length );
             return new PageCacheIntArray( pagedFile, pageCacheTracer, length, defaultValue, base );
         }
         catch ( IOException e )
@@ -73,6 +77,7 @@ public class PageCachedNumberArrayFactory extends NumberArrayFactory.Adapter
         {
             Path tempFile = Files.createTempFile( storeDir, "longArray", ".tmp" );
             PagedFile pagedFile = pageCache.map( tempFile, pageCache.pageSize(), immutable.of( DELETE_ON_CLOSE, CREATE ) );
+            log.info( "Using page-cache backed caching, this may affect performance negatively. LongArray length:" + length );
             return new PageCacheLongArray( pagedFile, pageCacheTracer, length, defaultValue, base );
         }
         catch ( IOException e )
@@ -88,6 +93,7 @@ public class PageCachedNumberArrayFactory extends NumberArrayFactory.Adapter
         {
             Path tempFile = Files.createTempFile( storeDir, "byteArray", ".tmp" );
             PagedFile pagedFile = pageCache.map( tempFile, pageCache.pageSize(), immutable.of( DELETE_ON_CLOSE, CREATE ) );
+            log.info( "Using page-cache backed caching, this may affect performance negatively. ByteArray length:" + length );
             return new PageCacheByteArray( pagedFile, pageCacheTracer, length, defaultValue, base );
         }
         catch ( IOException e )

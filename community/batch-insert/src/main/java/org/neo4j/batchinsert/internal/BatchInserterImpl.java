@@ -630,7 +630,8 @@ public class BatchInserterImpl implements BatchInserter
     {
         Path countsStoreFile = databaseLayout.countStore();
         fileSystem.deleteFile( countsStoreFile );
-        CountsComputer initialCountsBuilder = new CountsComputer( neoStores, pageCache, cacheTracer, databaseLayout, memoryTracker );
+        CountsComputer initialCountsBuilder =
+                new CountsComputer( neoStores, pageCache, cacheTracer, databaseLayout, memoryTracker, logService.getInternalLog( getClass() ) );
         try ( GBPTreeCountsStore countsStore = new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), fileSystem, immediate(),
                 initialCountsBuilder, false, cacheTracer, GBPTreeCountsStore.NO_MONITOR ) )
         {

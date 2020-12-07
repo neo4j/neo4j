@@ -31,6 +31,7 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.logging.Log;
 import org.neo4j.memory.MemoryTracker;
 
 import static org.neo4j.internal.batchimport.cache.NumberArrayFactory.NO_MONITOR;
@@ -50,13 +51,13 @@ public class CountsComputer implements CountsBuilder
     private final MemoryTracker memoryTracker;
 
     public CountsComputer( NeoStores stores, PageCache pageCache, PageCacheTracer pageCacheTracer, DatabaseLayout databaseLayout,
-            MemoryTracker memoryTracker )
+            MemoryTracker memoryTracker, Log log )
     {
         this( stores.getMetaDataStore().getLastCommittedTransactionId(),
                 stores.getNodeStore(), stores.getRelationshipStore(),
                 (int) stores.getLabelTokenStore().getHighId(),
                 (int) stores.getRelationshipTypeTokenStore().getHighId(),
-                NumberArrayFactory.auto( pageCache, pageCacheTracer, databaseLayout.databaseDirectory(), true, NO_MONITOR ),
+                NumberArrayFactory.auto( pageCache, pageCacheTracer, databaseLayout.databaseDirectory(), true, NO_MONITOR, log ),
                 databaseLayout, pageCacheTracer, memoryTracker );
     }
 

@@ -31,6 +31,7 @@ import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.unsafe.NativeMemoryAllocationRefusedError;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.logging.Log;
 import org.neo4j.memory.MemoryTracker;
 
 import static java.lang.Math.toIntExact;
@@ -144,9 +145,9 @@ public interface NumberArrayFactory
      * and lastly falls back to allocating inside the given {@code pageCache}.
      */
     static NumberArrayFactory auto( PageCache pageCache, PageCacheTracer pageCacheTracer,
-            Path dir, boolean allowHeapAllocation, Monitor monitor )
+            Path dir, boolean allowHeapAllocation, Monitor monitor, Log log )
     {
-        PageCachedNumberArrayFactory pagedArrayFactory = new PageCachedNumberArrayFactory( pageCache, pageCacheTracer, dir );
+        PageCachedNumberArrayFactory pagedArrayFactory = new PageCachedNumberArrayFactory( pageCache, pageCacheTracer, dir, log );
         ChunkedNumberArrayFactory chunkedArrayFactory = new ChunkedNumberArrayFactory( monitor,
                 allocationAlternatives( allowHeapAllocation, pagedArrayFactory ) );
         return new Auto( monitor, allocationAlternatives( allowHeapAllocation, chunkedArrayFactory ) );
