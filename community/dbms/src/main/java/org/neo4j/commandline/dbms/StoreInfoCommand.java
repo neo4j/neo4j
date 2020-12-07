@@ -35,6 +35,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -79,11 +80,12 @@ public class StoreInfoCommand extends AbstractCommand
     {
         var storageEngineFactory = StorageEngineFactory.selectStorageEngine();
         var config = CommandHelpers.buildConfig( ctx );
+        var neo4jLayout = Neo4jLayout.of( config );
         try ( var fs = ctx.fs();
               var jobScheduler = createInitialisedScheduler();
               var pageCache = StandalonePageCacheFactory.createPageCache( fs, jobScheduler, PageCacheTracer.NULL ) )
         {
-            validatePath( fs, all, path );
+            validatePath( fs, all, path, neo4jLayout );
             if ( all )
             {
                 var collector = structured ?
@@ -91,14 +93,16 @@ public class StoreInfoCommand extends AbstractCommand
                                 Collectors.joining( System.lineSeparator() + System.lineSeparator() );
                 var result = Arrays.stream( fs.listFiles( path ) )
                         .sorted( comparing( Path::getFileName ) )
-                        .filter( dbPath -> Validators.isExistingDatabase( fs, DatabaseLayout.ofFlat( dbPath ) ) )
-                        .map( dbPath -> printInfo( fs, dbPath, pageCache, storageEngineFactory, config, structured, true ) )
+                        .map( dbPath -> neo4jLayout.databaseLayout( dbPath.getFileName().toString() ) )
+                        .filter( dbLayout -> Validators.isExistingDatabase( fs, dbLayout ) )
+                        .map( dbLayout -> printInfo( fs, dbLayout, pageCache, storageEngineFactory, config, structured, true ) )
                         .collect( collector );
                 ctx.out().println( result );
             }
             else
             {
-                ctx.out().println( printInfo( fs, path, pageCache, storageEngineFactory, config, structured, false ) );
+                var databaseLayout = neo4jLayout.databaseLayout( path.getFileName().toString() );
+                ctx.out().println( printInfo( fs, databaseLayout, pageCache, storageEngineFactory, config, structured, false ) );
             }
         }
         catch ( CommandFailedException e )
@@ -111,14 +115,16 @@ public class StoreInfoCommand extends AbstractCommand
         }
     }
 
-    private static void validatePath( FileSystemAbstraction fs, boolean all, Path storePath )
+    private static void validatePath( FileSystemAbstraction fs, boolean all, Path storePath, Neo4jLayout neo4jLayout )
     {
         if ( !fs.isDirectory( storePath ) )
         {
             throw new IllegalArgumentException( format( "Provided path %s must point to a directory.", storePath.toAbsolutePath() ) );
         }
 
-        var pathIsDatabase = Validators.isExistingDatabase( fs, DatabaseLayout.ofFlat( storePath ) );
+        var dirName = storePath.getFileName().toString();
+        var databaseLayout = neo4jLayout.databaseLayout( dirName );
+        var pathIsDatabase = Validators.isExistingDatabase( fs, databaseLayout );
         if ( all && pathIsDatabase )
         {
             throw new IllegalArgumentException( format( "You used the --all option but directory %s contains the store files of a single database, " +
@@ -131,10 +137,9 @@ public class StoreInfoCommand extends AbstractCommand
         }
     }
 
-    private static String printInfo( FileSystemAbstraction fs, Path dbPath, PageCache pageCache, StorageEngineFactory storageEngineFactory,
+    private static String printInfo( FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache, StorageEngineFactory storageEngineFactory,
             Config config, boolean structured, boolean failSilently )
     {
-        var databaseLayout = DatabaseLayout.ofFlat( dbPath );
         var memoryTracker = EmptyMemoryTracker.INSTANCE;
         try ( var ignored = LockChecker.checkDatabaseLock( databaseLayout ) )
         {
@@ -142,7 +147,7 @@ public class StoreInfoCommand extends AbstractCommand
                     NullLogService.getInstance(), PageCacheTracer.NULL );
             var storeVersion = storeVersionCheck.storeVersion( PageCursorTracer.NULL )
                     .orElseThrow( () ->
-                            new CommandFailedException( format( "Could not find version metadata in store '%s'", dbPath ) ) );
+                            new CommandFailedException( format( "Could not find version metadata in store '%s'", databaseLayout.databaseDirectory() ) ) );
 
             var versionInformation = storageEngineFactory.versionInformation( storeVersion );
 
