@@ -36,6 +36,7 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.logging.NullLog;
 import org.neo4j.test.rule.RandomRule;
 
 import static java.lang.Integer.max;
@@ -115,14 +116,15 @@ class NumberArrayTest extends NumberArrayPageCacheTestSupport
     {
         PageCache pageCache = fixture.pageCache;
         File dir = fixture.directory;
+        NullLog log = NullLog.getInstance();
         Collection<NumberArrayTestData> list = new ArrayList<>();
         Map<String,NumberArrayFactory> factories = new HashMap<>();
         factories.put( "HEAP", NumberArrayFactory.HEAP );
         factories.put( "OFF_HEAP", NumberArrayFactory.OFF_HEAP );
         factories.put( "AUTO_WITHOUT_PAGECACHE", NumberArrayFactory.AUTO_WITHOUT_PAGECACHE );
         factories.put( "CHUNKED_FIXED_SIZE", NumberArrayFactory.CHUNKED_FIXED_SIZE );
-        factories.put( "autoWithPageCacheFallback", NumberArrayFactory.auto( pageCache, NULL, dir, true, NumberArrayFactory.NO_MONITOR ) );
-        factories.put( "PageCachedNumberArrayFactory", new PageCachedNumberArrayFactory( pageCache, NULL, dir ) );
+        factories.put( "autoWithPageCacheFallback", NumberArrayFactory.auto( pageCache, NULL, dir, true, NumberArrayFactory.NO_MONITOR, log ) );
+        factories.put( "PageCachedNumberArrayFactory", new PageCachedNumberArrayFactory( pageCache, NULL, dir, log ) );
         for ( Map.Entry<String,NumberArrayFactory> entry : factories.entrySet() )
         {
             String name = entry.getKey() + " => ";

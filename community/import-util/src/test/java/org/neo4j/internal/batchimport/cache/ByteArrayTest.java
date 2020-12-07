@@ -31,6 +31,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Stream;
 
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.logging.NullLog;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -48,8 +49,9 @@ public class ByteArrayTest extends NumberArrayPageCacheTestSupport
         fixture = prepareDirectoryAndPageCache( ByteArrayTest.class );
         PageCache pageCache = fixture.pageCache;
         File dir = fixture.directory;
-        NumberArrayFactory autoWithPageCacheFallback = NumberArrayFactory.auto( pageCache, NULL, dir, true, NumberArrayFactory.NO_MONITOR );
-        NumberArrayFactory pageCacheArrayFactory = new PageCachedNumberArrayFactory( pageCache, NULL, dir );
+        NullLog log = NullLog.getInstance();
+        NumberArrayFactory autoWithPageCacheFallback = NumberArrayFactory.auto( pageCache, NULL, dir, true, NumberArrayFactory.NO_MONITOR, log );
+        NumberArrayFactory pageCacheArrayFactory = new PageCachedNumberArrayFactory( pageCache, NULL, dir, log );
         int chunkSize = LENGTH / ChunkedNumberArrayFactory.MAGIC_CHUNK_COUNT;
         return Stream.of(
                 Arguments.of( NumberArrayFactory.HEAP.newByteArray( LENGTH, DEFAULT, INSTANCE ) ),

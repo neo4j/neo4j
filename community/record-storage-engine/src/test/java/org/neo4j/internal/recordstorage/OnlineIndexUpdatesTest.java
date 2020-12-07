@@ -53,6 +53,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.StandardConstraintRuleAccessor;
@@ -112,8 +113,8 @@ class OnlineIndexUpdatesTest
                         nullLogProvider, NULL );
 
         neoStores = storeFactory.openAllNeoStores( true );
-        GBPTreeCountsStore counts = new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), fileSystem,
-                immediate(), new CountsComputer( neoStores, pageCache, NULL, databaseLayout, INSTANCE ), false, NULL, GBPTreeCountsStore.NO_MONITOR );
+        GBPTreeCountsStore counts = new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), fileSystem, immediate(),
+                new CountsComputer( neoStores, pageCache, NULL, databaseLayout, INSTANCE, NullLog.getInstance() ), false, NULL, GBPTreeCountsStore.NO_MONITOR );
         life.add( wrapInLifecycle( counts ) );
         nodeStore = neoStores.getNodeStore();
         relationshipStore = neoStores.getRelationshipStore();

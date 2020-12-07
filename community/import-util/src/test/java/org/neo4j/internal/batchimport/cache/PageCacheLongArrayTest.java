@@ -26,6 +26,7 @@ import java.io.File;
 
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.logging.NullLog;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
@@ -67,7 +68,7 @@ class PageCacheLongArrayTest
     void verifyChunkingArrayWithPageCacheLongArray()
     {
         File directory = testDirectory.homeDir();
-        NumberArrayFactory numberArrayFactory = NumberArrayFactory.auto( pageCache, NULL, directory, false, NO_MONITOR );
+        NumberArrayFactory numberArrayFactory = NumberArrayFactory.auto( pageCache, NULL, directory, false, NO_MONITOR, NullLog.getInstance() );
         try ( LongArray array = numberArrayFactory.newDynamicLongArray( COUNT / 1_000, 0, INSTANCE ) )
         {
             verifyBehaviour( array );

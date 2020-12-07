@@ -242,7 +242,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
                 public void initialize( CountsAccessor.Updater updater, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
                 {
                     log.warn( "Missing counts store, rebuilding it." );
-                    new CountsComputer( neoStores, pageCache, pageCacheTracer, layout, memoryTracker ).initialize( updater, cursorTracer, memoryTracker );
+                    new CountsComputer( neoStores, pageCache, pageCacheTracer, layout, memoryTracker, log ).initialize( updater, cursorTracer, memoryTracker );
                     log.warn( "Counts store rebuild completed." );
                 }
 
