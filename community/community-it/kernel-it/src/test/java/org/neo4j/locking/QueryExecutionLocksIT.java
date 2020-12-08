@@ -386,13 +386,6 @@ class QueryExecutionLocksIT
         }
 
         @Override
-        public void acquireExclusiveLabelLock( long... ids )
-        {
-            record( true, true, ResourceTypes.LABEL, ids );
-            delegate.acquireExclusiveLabelLock( ids );
-        }
-
-        @Override
         public void releaseExclusiveNodeLock( long... ids )
         {
             record( true, false, ResourceTypes.NODE, ids );
@@ -404,13 +397,6 @@ class QueryExecutionLocksIT
         {
             record( true, false, ResourceTypes.RELATIONSHIP, ids );
             delegate.releaseExclusiveRelationshipLock( ids );
-        }
-
-        @Override
-        public void releaseExclusiveLabelLock( long... ids )
-        {
-            record( true, false, ResourceTypes.LABEL, ids );
-            delegate.releaseExclusiveLabelLock( ids );
         }
 
         @Override
@@ -515,9 +501,9 @@ class QueryExecutionLocksIT
         }
 
         @Override
-        public long commit( Monitor monitor ) throws TransactionFailureException
+        public long commit( KernelTransactionMonitor kernelTransactionMonitor ) throws TransactionFailureException
         {
-            return internal.commit( monitor );
+            return internal.commit( kernelTransactionMonitor );
         }
 
         @Override

@@ -110,8 +110,6 @@ class RelationshipGroupDegreesStoreFactoryTest
             assertThatThrownBy( () -> store.degree( 0, OUTGOING, PageCursorTracer.NULL ) )
                     .hasMessageContaining( "This store does not support any operations" );
             //Then (write)
-            assertThatThrownBy( store::unsafeApply )
-                    .hasMessageContaining( "This store does not support any operations" );
             assertThatThrownBy( () -> store.apply(1, PageCursorTracer.NULL ).increment( 0, OUTGOING, 3 ) )
                     .hasMessageContaining( "This store does not support any operations" );
         }

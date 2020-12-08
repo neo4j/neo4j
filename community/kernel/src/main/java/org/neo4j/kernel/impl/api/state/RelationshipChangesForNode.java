@@ -25,7 +25,6 @@ import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
 import org.eclipse.collections.api.set.primitive.IntSet;
 import org.eclipse.collections.api.set.primitive.LongSet;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
-import org.eclipse.collections.impl.factory.primitive.IntSets;
 import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
 
 import java.util.ArrayList;
@@ -85,8 +84,7 @@ public class RelationshipChangesForNode
 
     private final DiffStrategy diffStrategy;
     private final MemoryTracker memoryTracker;
-
-    private MutableIntObjectMap<RelationshipSetsByDirection> byType;
+    private final MutableIntObjectMap<RelationshipSetsByDirection> byType;
 
     static RelationshipChangesForNode createRelationshipChangesForNode( DiffStrategy diffStrategy, MemoryTracker memoryTracker )
     {
@@ -98,35 +96,29 @@ public class RelationshipChangesForNode
     {
         this.diffStrategy = diffStrategy;
         this.memoryTracker = memoryTracker;
+        this.byType = HeapTrackingCollections.newIntObjectHashMap( memoryTracker );
     }
 
     public void addRelationship( long relId, int typeId, RelationshipDirection direction )
     {
-        if ( byType == null )
-        {
-            byType = HeapTrackingCollections.newIntObjectHashMap( memoryTracker );
-        }
         byType.getIfAbsentPutWithKey( typeId, RelationshipSetsByDirection::new ).getOrCreateIds( direction ).add( relId );
     }
 
     public boolean removeRelationship( long relId, int typeId, RelationshipDirection direction )
     {
-        if ( byType != null )
+        RelationshipSetsByDirection byDirection = byType.get( typeId );
+        if ( byDirection != null )
         {
-            RelationshipSetsByDirection byDirection = byType.get( typeId );
-            if ( byDirection != null )
+            MutableLongSet ids = byDirection.getIds( direction );
+            if ( ids != null )
             {
-                MutableLongSet ids = byDirection.getIds( direction );
-                if ( ids != null )
+                if ( ids.remove( relId ) )
                 {
-                    if ( ids.remove( relId ) )
+                    if ( ids.isEmpty() )
                     {
-                        if ( ids.isEmpty() )
-                        {
-                            byDirection.deleteIds( direction );
-                        }
-                        return true;
+                        byDirection.deleteIds( direction );
                     }
+                    return true;
                 }
             }
         }
@@ -140,16 +132,13 @@ public class RelationshipChangesForNode
 
     private int degreeDiff( int type, RelationshipDirection direction )
     {
-        if ( byType != null )
+        RelationshipSetsByDirection byDirection = byType.get( type );
+        if ( byDirection != null )
         {
-            RelationshipSetsByDirection byDirection = byType.get( type );
-            if ( byDirection != null )
+            MutableLongSet ids = byDirection.getIds( direction );
+            if ( ids != null )
             {
-                MutableLongSet ids = byDirection.getIds( direction );
-                if ( ids != null )
-                {
-                    return ids.size();
-                }
+                return ids.size();
             }
         }
         return 0;
@@ -157,16 +146,12 @@ public class RelationshipChangesForNode
 
     public void clear()
     {
-        if ( byType != null )
-        {
-            byType.clear();
-        }
+        byType.clear();
     }
 
     public LongIterator getRelationships()
     {
-        return byType == null ? ImmutableEmptyLongIterator.INSTANCE
-                              : aggregatedIds( RelationshipDirection.INCOMING, RelationshipDirection.OUTGOING, RelationshipDirection.LOOP );
+        return aggregatedIds( RelationshipDirection.INCOMING, RelationshipDirection.OUTGOING, RelationshipDirection.LOOP );
     }
 
     private LongIterator nonEmptyConcat( LongIterator... primitiveIds )
@@ -176,11 +161,6 @@ public class RelationshipChangesForNode
 
     public LongIterator getRelationships( Direction direction )
     {
-        if ( byType == null )
-        {
-            return ImmutableEmptyLongIterator.INSTANCE;
-        }
-
         switch ( direction )
         {
         case INCOMING:
@@ -218,10 +198,6 @@ public class RelationshipChangesForNode
 
     public LongIterator getRelationships( Direction direction, int type )
     {
-        if ( byType == null )
-        {
-            return ImmutableEmptyLongIterator.INSTANCE;
-        }
         RelationshipSetsByDirection typeSets = byType.get( type );
         if ( typeSets == null )
         {
@@ -256,20 +232,17 @@ public class RelationshipChangesForNode
 
     public boolean hasRelationships( int type )
     {
-        if ( byType != null )
+        RelationshipSetsByDirection byDirection = byType.get( type );
+        if ( byDirection != null )
         {
-            RelationshipSetsByDirection byDirection = byType.get( type );
-            if ( byDirection != null )
-            {
-                return !byDirection.isEmpty();
-            }
+            return !byDirection.isEmpty();
         }
         return false;
     }
 
     public IntSet relationshipTypes()
     {
-        return byType == null ? IntSets.immutable.empty() : byType.keySet();
+        return byType.keySet();
     }
 
     private static LongIterator primitiveIds( LongSet relationships )
@@ -279,20 +252,17 @@ public class RelationshipChangesForNode
 
     <E extends Exception> void visitIds( ThrowingLongConsumer<E> visitor ) throws E
     {
-        if ( byType != null )
+        for ( RelationshipSetsByDirection typeSets : byType )
         {
-            for ( RelationshipSetsByDirection typeSets : byType )
+            if ( typeSets.ids != null )
             {
-                if ( typeSets.ids != null )
+                for ( MutableLongSet ids : typeSets.ids )
                 {
-                    for ( MutableLongSet ids : typeSets.ids )
+                    if ( ids != null )
                     {
-                        if ( ids != null )
+                        for ( MutableLongIterator idIterator = ids.longIterator(); idIterator.hasNext(); )
                         {
-                            for ( MutableLongIterator idIterator = ids.longIterator(); idIterator.hasNext(); )
-                            {
-                                visitor.accept( idIterator.next() );
-                            }
+                            visitor.accept( idIterator.next() );
                         }
                     }
                 }
@@ -302,14 +272,11 @@ public class RelationshipChangesForNode
 
     void visitIdsSplit( Predicate<RelationshipModifications.NodeRelationshipTypeIds> idsByType, RelationshipModifications.IdDataDecorator idDataDecorator )
     {
-        if ( byType != null )
+        for ( RelationshipSetsByDirection typeSets : byType )
         {
-            for ( RelationshipSetsByDirection typeSets : byType )
+            if ( idsByType.test( new IdsByType( typeSets, idDataDecorator ) ) )
             {
-                if ( idsByType.test( new IdsByType( typeSets, idDataDecorator ) ) )
-                {
-                    break;
-                }
+                break;
             }
         }
     }
@@ -317,14 +284,11 @@ public class RelationshipChangesForNode
     int totalCount()
     {
         int count = 0;
-        if ( byType != null )
+        for ( RelationshipSetsByDirection byDirection : byType )
         {
-            for ( RelationshipSetsByDirection byDirection : byType )
-            {
-                count += count( byDirection, RelationshipDirection.OUTGOING );
-                count += count( byDirection, RelationshipDirection.INCOMING );
-                count += count( byDirection, RelationshipDirection.LOOP );
-            }
+            count += count( byDirection, RelationshipDirection.OUTGOING );
+            count += count( byDirection, RelationshipDirection.INCOMING );
+            count += count( byDirection, RelationshipDirection.LOOP );
         }
         return count;
     }

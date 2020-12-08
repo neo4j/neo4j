@@ -30,8 +30,6 @@ public interface RelationshipGroupDegreesStore extends AutoCloseable
 {
     Updater apply( long txId, PageCursorTracer cursorTracer );
 
-    Updater unsafeApply() throws IOException;
-
     long degree( long groupId, RelationshipDirection direction, PageCursorTracer cursorTracer );
 
     void start( PageCursorTracer cursorTracer, MemoryTracker memoryTracker ) throws IOException;

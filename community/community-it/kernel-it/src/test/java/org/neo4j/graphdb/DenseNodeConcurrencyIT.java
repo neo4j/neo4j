@@ -217,7 +217,7 @@ class DenseNodeConcurrencyIT
                         }
                         tx.commit();
                         creations++;
-                        Thread.sleep( 1 );
+                        Thread.sleep( 1 ); // Provoke race, since we do not have fair locking, this will give a small windows to grab exclusive
                     }
                 }
             }
@@ -241,7 +241,7 @@ class DenseNodeConcurrencyIT
                             random.among( relationships ).delete();
                         }
                         tx.commit();
-                        Thread.sleep( 1 );
+                        Thread.sleep( 1 ); // Provoke race, since we do not have fair locking, this will give a small windows to grab exclusive
                     }
                 }
             }

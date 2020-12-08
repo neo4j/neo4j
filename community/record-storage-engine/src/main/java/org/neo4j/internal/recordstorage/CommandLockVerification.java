@@ -45,9 +45,7 @@ import static org.neo4j.lock.ResourceTypes.RELATIONSHIP_GROUP;
  */
 public interface CommandLockVerification
 {
-    CommandLockVerification IGNORE = commands ->
-    {
-    };
+    CommandLockVerification IGNORE = commands -> {};
 
     void verifySufficientlyLocked( Collection<StorageCommand> commands );
 
@@ -56,8 +54,6 @@ public interface CommandLockVerification
         private final ResourceLocker locks;
         private final ReadableTransactionState txState;
         private final StoreLoader loader;
-
-        private Collection<StorageCommand> ctxCommands;
 
         RealChecker( ResourceLocker locks, ReadableTransactionState txState, NeoStores neoStores )
         {
@@ -69,7 +65,6 @@ public interface CommandLockVerification
         @Override
         public void verifySufficientlyLocked( Collection<StorageCommand> commands )
         {
-            ctxCommands = commands;
             commands.forEach( this::verifySufficientlyLocked );
         }
 

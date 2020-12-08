@@ -96,12 +96,6 @@ public final class RelationshipGroupDegreesStoreFactory
         }
 
         @Override
-        public Updater unsafeApply()
-        {
-            throw fail();
-        }
-
-        @Override
         public long degree( long groupId, RelationshipDirection direction, PageCursorTracer cursorTracer )
         {
             throw fail();

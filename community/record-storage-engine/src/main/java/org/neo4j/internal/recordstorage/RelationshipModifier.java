@@ -130,7 +130,7 @@ public class RelationshipModifier
             {
                 locks.acquireShared( lockTracer, RELATIONSHIP_GROUP, nodeId ); //stabilize first in chains, in case they are deleted or needed for chain degrees
                 // Creations
-                NodeContext nodeContext = new NodeContext( nodeProxy, memoryTracker );
+                NodeContext nodeContext = NodeContext.createNodeContext( nodeProxy, memoryTracker );
                 contexts.put( nodeId, nodeContext );
                 if ( byNode.hasCreations() )
                 {
@@ -323,7 +323,7 @@ public class RelationshipModifier
                         context.setEntryPoint( DIR_IN, findAndLockEntrypointForDense(
                                 byType.in(), context.entryPoint( DIR_IN ), relRecords, locks, lockTracer, group, DirectionWrapper.INCOMING, nodeId ) );
                         context.setEntryPoint( DIR_LOOP, findAndLockEntrypointForDense(
-                                byType.loop(), context.entryPoint( DIR_LOOP ), relRecords, locks, lockTracer, group, DirectionWrapper.BOTH, nodeId ) );
+                                byType.loop(), context.entryPoint( DIR_LOOP ), relRecords, locks, lockTracer, group, DirectionWrapper.LOOP, nodeId ) );
                         context.markEntryPointsAsChanged();
                     } );
                 }

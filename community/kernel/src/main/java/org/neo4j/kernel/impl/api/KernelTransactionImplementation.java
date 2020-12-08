@@ -212,7 +212,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
      * instances are pooled.
      */
     private final Lock terminationReleaseLock = new ReentrantLock();
-    private Monitor monitor;
+    private KernelTransactionMonitor kernelTransactionMonitor;
 
     public KernelTransactionImplementation( Config config,
             DatabaseTransactionEventListeners eventListeners, ConstraintIndexCreator constraintIndexCreator, GlobalProcedures globalProcedures,
@@ -280,7 +280,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     public KernelTransactionImplementation initialize( long lastCommittedTx, long lastTimeStamp, Locks.Client lockClient, Type type,
             SecurityContext frozenSecurityContext, long transactionTimeout, long userTransactionId, ClientConnectionInfo clientInfo )
     {
-        this.monitor = KernelTransaction.NO_MONITOR;
+        this.kernelTransactionMonitor = KernelTransaction.NO_MONITOR;
         this.type = type;
         this.lockClient = lockClient;
         this.userTransactionId = userTransactionId;
@@ -604,10 +604,10 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     }
 
     @Override
-    public long commit( Monitor monitor ) throws TransactionFailureException
+    public long commit( KernelTransactionMonitor kernelTransactionMonitor ) throws TransactionFailureException
     {
         success();
-        this.monitor = monitor;
+        this.kernelTransactionMonitor = kernelTransactionMonitor;
         return closeTransaction();
     }
 
@@ -764,7 +764,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                     success = true;
                     TransactionToApply batch = new TransactionToApply( transactionRepresentation,
                             versionContextSupplier.getVersionContext(), pageCursorTracer );
-                    monitor.beforeApplyToStore();
+                    kernelTransactionMonitor.beforeApplyToStore();
                     txId = commitProcess.commit( batch, commitEvent, INTERNAL );
                     commitTime = timeCommitted;
                 }

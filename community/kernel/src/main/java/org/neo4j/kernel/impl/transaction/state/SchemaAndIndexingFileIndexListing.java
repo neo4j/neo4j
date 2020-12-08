@@ -81,11 +81,6 @@ public class SchemaAndIndexingFileIndexListing
         return snapshot;
     }
 
-//    Resource gatherRelationshipGroupDegreesFiles( List<StoreFileMetadata> targetFiles )
-//    {
-//        return sna;
-//    }
-
     private void getSnapshotFilesMetadata( ResourceIterator<Path> snapshot, Collection<StoreFileMetadata> targetFiles )
     {
         snapshot.stream().map( toStoreFileMetadata ).forEach( targetFiles::add );

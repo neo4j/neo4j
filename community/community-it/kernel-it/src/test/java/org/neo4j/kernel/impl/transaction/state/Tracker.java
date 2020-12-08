@@ -54,7 +54,6 @@ class Tracker extends NoOpClient implements RecordAccessSet, RelationshipGroupDe
     private final RecordAccessSet delegate;
     private final TrackingRecordAccess<RelationshipRecord,Void> relRecords;
     private final Set<Long> relationshipLocksAcquired = new HashSet<>();
-    private final Set<Long> changedRelationships = new HashSet<>();
 
     Tracker( NeoStores neoStores, IdGeneratorFactory idGeneratorFactory )
     {
@@ -75,7 +74,6 @@ class Tracker extends NoOpClient implements RecordAccessSet, RelationshipGroupDe
     void changingRelationship( long relId )
     {   // Called by tracking record proxies
         assertTrue( relationshipLocksAcquired.contains( relId ), "Tried to change relationship " + relId + " without this transaction having it locked" );
-        changedRelationships.add( relId );
     }
 
     @Override

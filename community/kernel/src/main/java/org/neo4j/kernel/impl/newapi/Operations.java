@@ -113,6 +113,7 @@ import org.neo4j.values.storable.Values;
 import static java.lang.String.format;
 import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.common.EntityType.RELATIONSHIP;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.additional_lock_verification;
 import static org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException.Phase.VALIDATION;
 import static org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException.OperationContext.CONSTRAINT_CREATION;
 import static org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException.OperationContext.INDEX_CREATION;
@@ -150,6 +151,7 @@ public class Operations implements Write, SchemaWrite
     private final Config config;
     private final PageCursorTracer cursorTracer;
     private final MemoryTracker memoryTracker;
+    private final boolean additionLockVerification;
     private DefaultNodeCursor nodeCursor;
     private DefaultNodeCursor restrictedNodeCursor;
     private DefaultPropertyCursor propertyCursor;
@@ -174,6 +176,7 @@ public class Operations implements Write, SchemaWrite
         this.config = config;
         this.cursorTracer = cursorTracer;
         this.memoryTracker = memoryTracker;
+        additionLockVerification = config.get( additional_lock_verification );
     }
 
     public void initialize()
@@ -258,7 +261,11 @@ public class Operations implements Write, SchemaWrite
             {
                 while ( rels.next() )
                 {
-                    relationshipDelete( rels.relationshipReference() );
+                    boolean deleted = relationshipDelete( rels.relationshipReference() );
+                    if ( additionLockVerification && !deleted )
+                    {
+                        throw new RuntimeException( "Relationship chain modified even when node delete lock was held: " + rels );
+                    }
                     deletedRelationships++;
                 }
             }
@@ -323,8 +330,8 @@ public class Operations implements Write, SchemaWrite
             throws EntityNotFoundException, ConstraintValidationException
     {
         sharedSchemaLock( ResourceTypes.LABEL, nodeLabel );
-        acquireExclusiveDegreesLock( node );
         acquireExclusiveNodeLock( node );
+        acquireExclusiveDegreesLock( node );
 
         singleNode( node );
 
@@ -584,8 +591,8 @@ public class Operations implements Write, SchemaWrite
     @Override
     public boolean nodeRemoveLabel( long node, int labelId ) throws EntityNotFoundException
     {
-        acquireExclusiveDegreesLock( node );
         acquireExclusiveNodeLock( node );
+        acquireExclusiveDegreesLock( node );
         ktx.assertOpen();
 
         singleNode( node );

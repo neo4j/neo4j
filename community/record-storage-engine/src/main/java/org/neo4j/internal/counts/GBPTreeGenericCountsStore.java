@@ -198,21 +198,6 @@ public class GBPTreeGenericCountsStore implements AutoCloseable, ConsistencyChec
         return new CountUpdater( new MapWriter( key -> readCountFromTree( key, cursorTracer ), changes, idSequence, txId ), lock );
     }
 
-    protected CountUpdater unsafeUpdater() throws IOException
-    {
-        Preconditions.checkState( !readOnly, "This counts store is read-only" );
-        Lock lock = lock( this.lock.readLock() );
-        Writer<CountsKey,CountsValue> treeWriter = tree.writer( PageCursorTracer.NULL );
-        return new CountUpdater( new TreeWriter( treeWriter, null, -1 )
-        {
-            @Override
-            public void close()
-            {
-                closeAllUnchecked( treeWriter );
-            }
-        }, lock );
-    }
-
     public void checkpoint( IOLimiter ioLimiter, PageCursorTracer cursorTracer ) throws IOException
     {
         if ( readOnly )
@@ -235,8 +220,7 @@ public class GBPTreeGenericCountsStore implements AutoCloseable, ConsistencyChec
 
             // Take the changes and instantiate a new map for other updates to apply to after we release this lock
             changesToWrite = changes;
-            changes = changes.fork();
-            changesToWrite.freeze();
+            changes = changes.freezeAndFork();
         }
         finally
         {

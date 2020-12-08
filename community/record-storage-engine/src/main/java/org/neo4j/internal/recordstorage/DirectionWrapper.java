@@ -79,7 +79,7 @@ public enum DirectionWrapper
             group.setHasExternalDegreesIn( true );
         }
     },
-    BOTH( RelationshipDirection.LOOP )
+    LOOP( RelationshipDirection.LOOP )
     {
         @Override
         public long getNextRel( RelationshipGroupRecord group )
@@ -133,14 +133,14 @@ public enum DirectionWrapper
         assert isOut || isIn;
         if ( isOut && isIn )
         {
-            return BOTH;
+            return LOOP;
         }
         return isOut ? OUTGOING : INCOMING;
     }
 
     public static DirectionWrapper from( Direction direction )
     {
-        return direction == Direction.INCOMING ? INCOMING : direction == Direction.OUTGOING ? OUTGOING : BOTH;
+        return direction == Direction.INCOMING ? INCOMING : direction == Direction.OUTGOING ? OUTGOING : LOOP;
     }
 
 }

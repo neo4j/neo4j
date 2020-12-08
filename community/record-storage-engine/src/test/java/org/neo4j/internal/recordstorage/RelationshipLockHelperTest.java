@@ -41,7 +41,7 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-import org.neo4j.internal.recordstorage.RelationshipLockHelper.SortedSeekableList;
+import org.neo4j.internal.recordstorage.RelationshipLockHelper.SortedLockList;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.lock.LockTracer;
@@ -67,7 +67,7 @@ class RelationshipLockHelperTest
     void shouldKeepListSorted()
     {
         MutableLongList shuffle = LongLists.mutable.empty();
-        SortedSeekableList sortedListIterator = new SortedSeekableList( 0 );
+        SortedLockList sortedListIterator = new SortedLockList( 0 );
         for ( int i = 0; i < 1000; i++ )
         {
             int value = random.nextInt( 1000 );
@@ -89,7 +89,7 @@ class RelationshipLockHelperTest
     void canIterateWhileAddingAndRemoving()
     {
         MutableLongList shuffle = LongLists.mutable.empty();
-        SortedSeekableList sortedListIterator = new SortedSeekableList( 0 );
+        SortedLockList sortedListIterator = new SortedLockList( 0 );
         int maxValue = 1000;
         for ( int i = 0; i < 1000; i++ )
         {
@@ -101,7 +101,7 @@ class RelationshipLockHelperTest
 
         while ( sortedListIterator.next() )
         {
-            long value = sortedListIterator.get();
+            long value = sortedListIterator.currentHighestLockedId();
             long toAdd = random.nextInt( maxValue );
             sortedListIterator.add( toAdd );
 
@@ -132,7 +132,7 @@ class RelationshipLockHelperTest
     void canTraverseUniques()
     {
         //Given
-        SortedSeekableList sortedListIterator = new SortedSeekableList( 0 );
+        SortedLockList sortedListIterator = new SortedLockList( 0 );
         MutableSortedSet<Long> uniques = SortedSets.mutable.of();
         for ( long i = 0; i < 100; i++ )
         {
@@ -147,7 +147,7 @@ class RelationshipLockHelperTest
         uniques.forEach( unique ->
         {
             assertThat( sortedListIterator.nextUnique() ).isTrue();
-            assertThat( sortedListIterator.get() ).isEqualTo( unique );
+            assertThat( sortedListIterator.currentHighestLockedId() ).isEqualTo( unique );
         } );
 
         assertThat( sortedListIterator.nextUnique() ).isFalse();
@@ -156,7 +156,7 @@ class RelationshipLockHelperTest
         SortedSets.immutable.ofAll( Collections.reverseOrder(), uniques).forEach( unique ->
         {
             assertThat( sortedListIterator.prevUnique() ).isTrue();
-            assertThat( sortedListIterator.get() ).isEqualTo( unique );
+            assertThat( sortedListIterator.currentHighestLockedId() ).isEqualTo( unique );
         } );
     }
 

@@ -44,7 +44,7 @@ public enum RelationshipDirection
     LOOP,
     ERROR;
 
-    public static RelationshipDirection[] DIRECTIONS = values();
+    public static final RelationshipDirection[] DIRECTIONS = values();
 
     public static RelationshipDirection ofOrdinal( int ordinal )
     {

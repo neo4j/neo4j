@@ -25,16 +25,17 @@ import org.eclipse.collections.impl.factory.primitive.LongLists;
 
 import java.util.Arrays;
 import java.util.function.BooleanSupplier;
-import java.util.function.Consumer;
 
 import org.neo4j.collection.trackable.HeapTrackingCollections;
 import org.neo4j.collection.trackable.HeapTrackingLongObjectHashMap;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceLocker;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.txstate.RelationshipModifications;
+import org.neo4j.util.VisibleForTesting;
 
 import static org.neo4j.internal.recordstorage.RelationshipConnection.END_NEXT;
 import static org.neo4j.internal.recordstorage.RelationshipConnection.END_PREV;
@@ -45,9 +46,21 @@ import static org.neo4j.kernel.impl.store.record.Record.isNull;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.ALWAYS;
 import static org.neo4j.lock.LockTracer.NONE;
 import static org.neo4j.lock.ResourceTypes.RELATIONSHIP;
+import static org.neo4j.memory.HeapEstimator.sizeOfLongArray;
 
-class RelationshipLockHelper
+final class RelationshipLockHelper
 {
+    private RelationshipLockHelper()
+    {
+    }
+
+    /**
+     * Lock all the {@code idsToLock} exclusively, including neighbours, in order.
+     *
+     * @param idsToLock ids to lock in batch
+     * @param optionalFirstInChain id of the relationship first in chain, we need to lock it in order to update degree
+     *                             stored there. Will be {@link Record#NULL_REFERENCE} for external degrees.
+     */
     static void lockRelationshipsInOrder( RelationshipModifications.RelationshipBatch idsToLock, long optionalFirstInChain,
             RecordAccess<RelationshipRecord,Void> relRecords, ResourceLocker locks, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
     {
@@ -61,6 +74,7 @@ class RelationshipLockHelper
             lockMultipleRelationships( idsToLock, optionalFirstInChain, relRecords, locks, cursorTracer, memoryTracker );
         }
     }
+
     static RecordAccess.RecordProxy<RelationshipRecord,Void> findAndLockEntrypoint( long firstInChain, long nodeId,
             RecordAccess<RelationshipRecord,Void> relRecords, ResourceLocker locks, LockTracer lockTracer, PageCursorTracer cursorTracer )
     {
@@ -110,7 +124,7 @@ class RelationshipLockHelper
 
             if ( rBefore == null )
             {
-                //Group is minimum read locked, so no need to re-read
+                // Group is minimum read locked, so no need to re-read
                 locks.acquireExclusive( lockTracer, RELATIONSHIP, firstInChain );
                 RecordAccess.RecordProxy<RelationshipRecord,Void> firstProxy = relRecords.getOrLoad( firstInChain, null, ALWAYS, cursorTracer );
                 long secondRel = firstProxy.forReadingLinkage().getNextRel( nodeId );
@@ -124,7 +138,7 @@ class RelationshipLockHelper
         return rBefore;
     }
 
-    private static void lockMultipleRelationships( RelationshipModifications.RelationshipBatch ids, long firstInChain,
+    private static void lockMultipleRelationships( RelationshipModifications.RelationshipBatch ids, long optionalFirstInChain,
             RecordAccess<RelationshipRecord,Void> relRecords, ResourceLocker locks, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
     {
         /*
@@ -135,125 +149,99 @@ class RelationshipLockHelper
          *      Changes means we need to rewind and unlock, to get the new changes in correct order
          */
 
-        int upperLimitOfLocks = ids.size() * 5 + 1;
-        try ( HeapTrackingLongObjectHashMap<RelationshipRecord> optimistic = HeapTrackingCollections.newLongObjectMap( memoryTracker ) )
+        int upperLimitOfLocks = ids.size() * 5 /* self and 4 neighbours */ + 1 /*first in chain*/;
+        try ( MemoryTracker scopedMemoryTracker = memoryTracker.getScopedMemoryTracker() )
         {
-            memoryTracker.allocateHeap( upperLimitOfLocks );
+            HeapTrackingLongObjectHashMap<RelationshipRecord> optimistic = HeapTrackingCollections.newLongObjectMap( scopedMemoryTracker );
+            scopedMemoryTracker.allocateHeap( sizeOfLongArray( upperLimitOfLocks ) );
 
-            SortedSeekableList relIds = new SortedSeekableList( upperLimitOfLocks );
+            SortedLockList lockList = new SortedLockList( upperLimitOfLocks );
+            lockList.add( optionalFirstInChain );
             ids.forEach( ( id, type, startNode, endNode ) ->
             {
                 RelationshipRecord relationship = relRecords.getOrLoad( id, null, cursorTracer ).forReadingLinkage();
                 optimistic.put( id, relationship );
-                addAllValid( relIds::add, relationship );
+                lockList.add( relationship.getId() );
+                lockList.add( START_NEXT.get( relationship ) );
+                lockList.add( START_PREV.get( relationship ) );
+                lockList.add( END_NEXT.get( relationship ) );
+                lockList.add( END_PREV.get( relationship ) );
             } );
-            if ( !isNull( firstInChain ) )
+
+            while ( lockList.nextUnique() )
             {
-                relIds.add( firstInChain );
-            }
-            while ( relIds.nextUnique() )
-            {
-                long id = relIds.get();
+                long id = lockList.currentHighestLockedId();
 
                 locks.acquireExclusive( NONE, RELATIONSHIP, id );
                 RelationshipRecord old = optimistic.get( id );
                 if ( old != null )
                 {
-                    RelationshipRecord actual = relRecords.getOrLoad( old.getId(), null, cursorTracer ).forReadingLinkage();
+                    RelationshipRecord actual = relRecords.getOrLoad( id, null, cursorTracer ).forReadingLinkage();
                     if ( recordHasLinkageChanges( old, actual ) )
                     {
-                        rewindAndUnlockChanged( locks, relIds, old, actual );
+                        rewindAndUnlockChanged( locks, lockList, old, actual );
                         optimistic.put( id, actual );
                     }
                 }
             }
         }
-        finally
-        {
-            memoryTracker.releaseHeap( upperLimitOfLocks );
-        }
     }
 
-    private static void rewindAndUnlockChanged( ResourceLocker locks, SortedSeekableList iterator, RelationshipRecord old, RelationshipRecord actual )
+    private static void rewindAndUnlockChanged( ResourceLocker locks, SortedLockList lockList, RelationshipRecord old, RelationshipRecord actual )
     {
-        rewindAndUnlockChanged( locks, START_NEXT, iterator, old, actual );
-        rewindAndUnlockChanged( locks, START_PREV, iterator, old, actual );
-        rewindAndUnlockChanged( locks, END_NEXT, iterator, old, actual );
-        rewindAndUnlockChanged( locks, END_PREV, iterator, old, actual );
+        rewindAndUnlockChanged( locks, START_NEXT, lockList, old, actual );
+        rewindAndUnlockChanged( locks, START_PREV, lockList, old, actual );
+        rewindAndUnlockChanged( locks, END_NEXT, lockList, old, actual );
+        rewindAndUnlockChanged( locks, END_PREV, lockList, old, actual );
     }
 
-    private static void rewindAndUnlockChanged( ResourceLocker locks, RelationshipConnection connection, SortedSeekableList iterator, RelationshipRecord old,
+    private static void rewindAndUnlockChanged( ResourceLocker locks, RelationshipConnection connection, SortedLockList lockList, RelationshipRecord old,
             RelationshipRecord actual )
     {
-        long actualId = connection.otherSide().get( actual );
-        long oldId = connection.otherSide().get( old );
-        if ( oldId != actualId )
-        {
-            //We have a change
-            if ( !isNull( oldId ) )
-            {
-                //We need to unlock the old value, if it was locked and no other relationship depends on it!
-                long curr = iterator.validPosition() ? iterator.get() : NULL_REFERENCE.longValue();
-                boolean independent = iterator.remove( oldId );
-                if ( oldId <= curr )
-                {
-                    //it is locked
-                    if ( independent )
-                    {
-                        locks.releaseExclusive( RELATIONSHIP, oldId );
-                    }
+        long actualConnectionId = connection.get( actual );
+        long oldConnectionId = connection.get( old );
 
+        // Verify that nothing changed between the reads, and rewind if something did
+        if ( oldConnectionId != actualConnectionId )
+        {
+            // If the old record has a lower id, it is already locked and we need to unlock
+            if ( !isNull( oldConnectionId ) )
+            {
+                long currentHighestLockedId = lockList.validPosition() ? lockList.currentHighestLockedId() : NULL_REFERENCE.longValue();
+                boolean lastOccurrence = lockList.remove( oldConnectionId );
+                if ( lastOccurrence && oldConnectionId <= currentHighestLockedId )
+                {
+                    locks.releaseExclusive( RELATIONSHIP, oldConnectionId );
                 }
             }
-            if ( !isNull( actualId ) )
+
+            // If the new record is not already present and has a lower id, we need to lock that as well
+            if ( !isNull( actualConnectionId ) )
             {
-                if ( iterator.add( actualId ) && iterator.validPosition() )
+                boolean firstOccurrence = lockList.add( actualConnectionId );
+                if ( firstOccurrence && lockList.validPosition() )
                 {
-                    //we only need to do something if it did not already exist
-                    long curr = iterator.get();
-                    if ( actualId < curr )
+                    long currentHighestLockedId = lockList.currentHighestLockedId();
+                    if ( actualConnectionId < currentHighestLockedId )
                     {
-                        //if the new id is lower than what is already locked, and it is not immediately lockable, we'll rewind
-                        if ( !locks.tryExclusiveLock( RELATIONSHIP, actualId ) )
+                        // Try to grab the exclusive lock, if that fails, we need to rewind
+                        if ( !locks.tryExclusiveLock( RELATIONSHIP, actualConnectionId ) )
                         {
                             do
                             {
-                                curr = iterator.get();
-                                locks.releaseExclusive( RELATIONSHIP, curr );
+                                currentHighestLockedId = lockList.currentHighestLockedId();
+                                locks.releaseExclusive( RELATIONSHIP, currentHighestLockedId );
                             }
-                            while ( iterator.prevUnique() && iterator.get() > actualId );
-                            iterator.prevUnique(); //step past it to lock it on the next round
+                            while ( lockList.prevUnique() && lockList.currentHighestLockedId() > actualConnectionId );
+                            lockList.prevUnique(); // Step past it to lock it on the next round
                         }
-                    }
-                    else if ( actualId == curr )
-                    {
-                        //we inserted it where we stand, if it is not independent it is already locked, otherwise lock it!
-                        locks.acquireExclusive( NONE, RELATIONSHIP, actualId );
                     }
                 }
             }
         }
     }
 
-    private static void addAllValid( Consumer<Long> ids, RelationshipRecord relationship )
-    {
-        ids.accept( relationship.getId() );
-        addIfValid( START_NEXT, ids, relationship  );
-        addIfValid( START_PREV, ids, relationship  );
-        addIfValid( END_NEXT, ids, relationship  );
-        addIfValid( END_PREV, ids, relationship  );
-    }
-
-    private static void addIfValid( RelationshipConnection connection, Consumer<Long> ids, RelationshipRecord relationship )
-    {
-        long id = connection.otherSide().get( relationship );
-        if ( !isNull( id ) )
-        {
-            ids.accept( id );
-        }
-    }
-
-    private static void lockSingleRelationship( long relId, long firstInChain, RecordAccess<RelationshipRecord,Void> relRecords, ResourceLocker locks,
+    private static void lockSingleRelationship( long relId, long optionalFirstInChain, RecordAccess<RelationshipRecord,Void> relRecords, ResourceLocker locks,
             PageCursorTracer cursorTracer )
     {
         boolean retry;
@@ -263,12 +251,12 @@ class RelationshipLockHelper
         do
         {
             retry = false;
-            neighbours[0] = firstInChain;
+            neighbours[0] = optionalFirstInChain;
             neighbours[1] = relId;
-            neighbours[2] = START_NEXT.otherSide().get( optimistic );
-            neighbours[3] = START_PREV.otherSide().get( optimistic );
-            neighbours[4] = END_NEXT.otherSide().get( optimistic );
-            neighbours[5] = END_PREV.otherSide().get( optimistic );
+            neighbours[2] = START_NEXT.get( optimistic );
+            neighbours[3] = START_PREV.get( optimistic );
+            neighbours[4] = END_NEXT.get( optimistic );
+            neighbours[5] = END_PREV.get( optimistic );
             Arrays.sort( neighbours );
             lockRelationshipsExclusively( locks, neighbours );
 
@@ -286,13 +274,13 @@ class RelationshipLockHelper
 
     private static boolean recordHasLinkageChanges( RelationshipRecord old, RelationshipRecord actual )
     {
-        return connectionNeedsRelock( START_NEXT, old, actual ) || connectionNeedsRelock( START_PREV, old, actual) ||
-                connectionNeedsRelock( END_NEXT, old, actual ) || connectionNeedsRelock( END_PREV, old, actual);
+        return connectionHasChanged( START_NEXT, old, actual ) || connectionHasChanged( START_PREV, old, actual ) ||
+                connectionHasChanged( END_NEXT, old, actual ) || connectionHasChanged( END_PREV, old, actual );
     }
 
-    private static boolean connectionNeedsRelock( RelationshipConnection connection, RelationshipRecord old, RelationshipRecord actual )
+    private static boolean connectionHasChanged( RelationshipConnection connection, RelationshipRecord old, RelationshipRecord actual )
     {
-        return connection.otherSide().get( old ) != connection.otherSide().get( actual );
+        return connection.get( old ) != connection.get( actual );
     }
 
     private static void lockRelationshipsExclusively( ResourceLocker locker, long[] ids )
@@ -320,12 +308,12 @@ class RelationshipLockHelper
     /**
      * An internal class used to keep a list sorted, while seeking in it
      */
-    static class SortedSeekableList
+    static class SortedLockList
     {
         private final MutableLongList list;
         private int index = -1;
 
-        SortedSeekableList( int initialCapacity )
+        SortedLockList( int initialCapacity )
         {
             this.list = LongLists.mutable.withInitialCapacity( initialCapacity );
         }
@@ -383,7 +371,7 @@ class RelationshipLockHelper
             return true;
         }
 
-        long get()
+        long currentHighestLockedId()
         {
             return list.get( index );
         }
@@ -424,10 +412,10 @@ class RelationshipLockHelper
             {
                 return traverser.getAsBoolean();
             }
-            long old = get();
+            long old = currentHighestLockedId();
             while ( traverser.getAsBoolean() )
             {
-                if ( get() != old )
+                if ( currentHighestLockedId() != old )
                 {
                     return true;
                 }
@@ -440,6 +428,7 @@ class RelationshipLockHelper
             return index >= 0 && index < list.size();
         }
 
+        @VisibleForTesting
         LongList underlyingList()
         {
             return list;

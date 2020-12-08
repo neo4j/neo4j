@@ -148,9 +148,9 @@ public class TransactionImpl extends EntityValidationTransactionImpl
         commit( KernelTransaction.NO_MONITOR );
     }
 
-    public void commit( KernelTransaction.Monitor monitor )
+    public void commit( KernelTransaction.KernelTransactionMonitor kernelTransactionMonitor )
     {
-        safeTerminalOperation( transaction -> kernelTransaction().commit( monitor ) );
+        safeTerminalOperation( transaction -> kernelTransaction().commit( kernelTransactionMonitor ) );
     }
 
     @Override

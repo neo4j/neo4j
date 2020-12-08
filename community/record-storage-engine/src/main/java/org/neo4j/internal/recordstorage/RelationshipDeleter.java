@@ -71,19 +71,19 @@ class RelationshipDeleter
         {
             RelationshipRecord record = recordChanges.getRelRecords().getOrLoad( id, null, cursorTracer ).forChangingLinkage();
             propertyChainDeleter.deletePropertyChain( record, recordChanges.getPropertyRecords() );
-            disconnectRelationship( record, recordChanges );
+            disconnectRelationship( record, recordChanges.getRelRecords() );
             updateNodesForDeletedRelationship( record, recordChanges, groupDegreesUpdater, nodeDataLookup, locks );
             record.setInUse( false );
             record.setType( -1 );
         } );
     }
 
-    private void disconnectRelationship( RelationshipRecord rel, RecordAccessSet recordChangeSet )
+    private void disconnectRelationship( RelationshipRecord rel, RecordAccess<RelationshipRecord, Void> relChanges )
     {
-        disconnect( rel, START_NEXT, recordChangeSet.getRelRecords() );
-        disconnect( rel, START_PREV, recordChangeSet.getRelRecords() );
-        disconnect( rel, END_NEXT, recordChangeSet.getRelRecords() );
-        disconnect( rel, END_PREV, recordChangeSet.getRelRecords() );
+        disconnect( rel, START_NEXT, relChanges );
+        disconnect( rel, START_PREV, relChanges );
+        disconnect( rel, END_NEXT, relChanges );
+        disconnect( rel, END_PREV, relChanges );
     }
 
     private void disconnect( RelationshipRecord rel, RelationshipConnection pointer, RecordAccess<RelationshipRecord,Void> relChanges )

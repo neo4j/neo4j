@@ -45,12 +45,6 @@ class RelationshipGroupDegreesStoreImpl extends GBPTreeGenericCountsStore implem
         return updater != null ? new DegreeUpdater( updater ) : NO_OP_UPDATER;
     }
 
-    public Updater unsafeApply() throws IOException
-    {
-        CountUpdater updater = unsafeUpdater();
-        return new DegreeUpdater( updater );
-    }
-
     public long degree( long groupId, RelationshipDirection direction, PageCursorTracer cursorTracer )
     {
         return read( degreeKey( groupId, direction ), cursorTracer );

@@ -47,12 +47,17 @@ class NodeContext
     long groupStartingId;
     long groupStartingPrevId = NULL_REFERENCE.longValue();
 
-    NodeContext( RecordProxy<NodeRecord,Void> node, MemoryTracker memoryTracker )
+    static NodeContext createNodeContext( RecordProxy<NodeRecord,Void> node, MemoryTracker memoryTracker )
+    {
+        memoryTracker.allocateHeap( SHALLOW_SIZE );
+        return new NodeContext( node, memoryTracker );
+    }
+
+    private NodeContext( RecordProxy<NodeRecord,Void> node, MemoryTracker memoryTracker )
     {
         this.node = node;
         this.groupStartingId = node.forReadingLinkage().getNextRel();
         this.memoryTracker = memoryTracker;
-        memoryTracker.allocateHeap( SHALLOW_SIZE );
     }
 
     DenseContext denseContext( int type )

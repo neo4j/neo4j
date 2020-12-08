@@ -34,23 +34,22 @@ import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
  */
 public class MapWriter implements CountUpdater.CountWriter
 {
-    private final ToLongFunction<CountsKey> storeLookup;
     private final CountsChanges changes;
     private final OutOfOrderSequence idSequence;
     private final long txId;
+    private final Function<CountsKey,AtomicLong> defaultToStoredCount;
 
     MapWriter( ToLongFunction<CountsKey> storeLookup, CountsChanges changes, OutOfOrderSequence idSequence, long txId )
     {
-        this.storeLookup = storeLookup;
         this.changes = changes;
         this.idSequence = idSequence;
         this.txId = txId;
+        defaultToStoredCount = k -> new AtomicLong( storeLookup.applyAsLong( k ) );
     }
 
     @Override
     public void write( CountsKey key, long delta )
     {
-        Function<CountsKey,AtomicLong> defaultToStoredCount = k -> new AtomicLong( storeLookup.applyAsLong( k ) );
         changes.add( key, delta, defaultToStoredCount );
     }
 

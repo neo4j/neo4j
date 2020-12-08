@@ -284,6 +284,7 @@ public class TransactionRecordState implements RecordState
                 "instead, with %d skipped", noOfCommands, commands.size(), skippedCommands );
         if ( groupDegreesUpdater.degrees != null )
         {
+            memoryTracker.allocateHeap( groupDegreesUpdater.degrees.size() * Command.GroupDegreeCommand.SHALLOW_SIZE );
             groupDegreesUpdater.degrees.forEachKeyValue( ( key, delta ) ->
             {
                 if ( delta.longValue() != 0 )
@@ -291,7 +292,6 @@ public class TransactionRecordState implements RecordState
                     long groupId = Command.GroupDegreeCommand.groupIdFromCombinedKey( key );
                     RelationshipDirection direction = Command.GroupDegreeCommand.directionFromCombinedKey( key );
                     commands.add( new Command.GroupDegreeCommand( groupId, direction, delta.longValue() ) );
-                    memoryTracker.allocateHeap( Command.GroupDegreeCommand.SHALLOW_SIZE );
                 }
             } );
         }

@@ -32,7 +32,6 @@ import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TreeMap;
 import java.util.function.Consumer;
-import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
 import org.neo4j.collection.trackable.HeapTrackingArrayList;
@@ -71,9 +70,7 @@ import static org.neo4j.kernel.impl.api.state.TokenState.createTokenState;
 import static org.neo4j.kernel.impl.util.diffsets.TrackableDiffSets.newMutableDiffSets;
 import static org.neo4j.kernel.impl.util.diffsets.TrackableDiffSets.newMutableLongDiffSets;
 import static org.neo4j.kernel.impl.util.diffsets.TrackableDiffSets.newRemovalsCountingDiffSets;
-import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 import static org.neo4j.storageengine.api.txstate.RelationshipModifications.idsAsBatch;
-import static org.neo4j.storageengine.api.txstate.RelationshipModifications.noAdditionalDataDecorator;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 
 /**
@@ -151,11 +148,12 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
                     }
                     if ( nodeState.hasAddedRelationships() || nodeState.hasRemovedRelationships() )
                     {
-                        sortedNodeRelState.add( new StateNodeRelationshipIds( nodeState, this::relationshipVisit, memoryTracker ) );
+                        sortedNodeRelState.add( StateNodeRelationshipIds.createStateNodeRelationshipIds( nodeState, this::relationshipVisit, memoryTracker ) );
                     }
                 } );
                 sortedNodeRelState.sort( Comparator.comparingLong( NodeRelationshipIds::nodeId ) );
 
+                // Visit relationships, this will grab all the locks needed to do the updates
                 visitor.visitRelationshipModifications( new RelationshipModifications()
                 {
                     @Override
@@ -234,73 +232,6 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         if ( createdRelationshipTypeTokens != null )
         {
             createdRelationshipTypeTokens.forEachKeyValue( ( id, token ) -> visitor.visitCreatedRelationshipTypeToken( id, token.name, token.internal ) );
-        }
-    }
-
-    private static class StateNodeRelationshipIds implements NodeRelationshipIds
-    {
-        private static final long SHALLOW_SIZE = shallowSizeOfInstance( StateNodeRelationshipIds.class );
-        private final NodeStateImpl nodeState;
-        private final boolean hasCreations;
-        private final boolean hasDeletions;
-        private final RelationshipModifications.IdDataDecorator relationshipVisit;
-
-        StateNodeRelationshipIds( NodeStateImpl nodeState, RelationshipModifications.IdDataDecorator relationshipVisit, MemoryTracker memoryTracker )
-        {
-            this.nodeState = nodeState;
-            this.hasCreations = nodeState.hasAddedRelationships();
-            this.hasDeletions = nodeState.hasRemovedRelationships();
-            this.relationshipVisit = relationshipVisit;
-            memoryTracker.allocateHeap( SHALLOW_SIZE );
-        }
-        @Override
-        public long nodeId()
-        {
-            return nodeState.id;
-        }
-
-        @Override
-        public boolean hasCreations()
-        {
-            return hasCreations;
-        }
-
-        @Override
-        public boolean hasCreations( int type )
-        {
-            return hasCreations && nodeState.hasAddedRelationships( type );
-        }
-
-        @Override
-        public boolean hasDeletions()
-        {
-            return hasDeletions;
-        }
-
-        @Override
-        public RelationshipModifications.RelationshipBatch creations()
-        {
-            return nodeState.additionsAsRelationshipBatch( relationshipVisit );
-        }
-
-        @Override
-        public RelationshipModifications.RelationshipBatch deletions()
-        {
-            return nodeState.removalsAsRelationshipBatch( noAdditionalDataDecorator() );
-        }
-
-        @Override
-        public void forEachCreationSplitInterruptible(
-                Predicate<RelationshipModifications.NodeRelationshipTypeIds> nodeRelationshipTypeIds )
-        {
-            nodeState.visitAddedIdsSplit( nodeRelationshipTypeIds, relationshipVisit );
-        }
-
-        @Override
-        public void forEachDeletionSplitInterruptible(
-                Predicate<RelationshipModifications.NodeRelationshipTypeIds> nodeRelationshipTypeIds )
-        {
-            nodeState.visitRemovedIdsSplit( nodeRelationshipTypeIds );
         }
     }
 

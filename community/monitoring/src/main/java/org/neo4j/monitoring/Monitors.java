@@ -31,7 +31,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import org.neo4j.annotations.api.IgnoreApiCheck;
@@ -68,6 +67,9 @@ public class Monitors
         this( null, IGNORE );
     }
 
+    /**
+     * @param failureHandler will be called if an exception is thrown from one of the listeners.
+     */
     public Monitors( FailureHandler failureHandler )
     {
         this( null, failureHandler );

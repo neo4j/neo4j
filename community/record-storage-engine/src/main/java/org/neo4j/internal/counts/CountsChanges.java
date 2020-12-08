@@ -46,9 +46,9 @@ class CountsChanges
         this.previousChanges = previousChanges;
     }
 
-    CountsChanges fork()
+    CountsChanges freezeAndFork()
     {
-        this.frozen = true;
+        frozen = true;
         return new CountsChanges( changes );
     }
 
@@ -113,10 +113,5 @@ class CountsChanges
             }
         }
         return ABSENT;
-    }
-
-    void freeze()
-    {
-        frozen = true;
     }
 }

@@ -28,13 +28,9 @@ public interface Locks
 
     void acquireExclusiveRelationshipLock( long... ids );
 
-    void acquireExclusiveLabelLock( long... ids );
-
     void releaseExclusiveNodeLock( long... ids );
 
     void releaseExclusiveRelationshipLock( long... ids );
-
-    void releaseExclusiveLabelLock( long... ids );
 
     void acquireSharedNodeLock( long... ids );
 

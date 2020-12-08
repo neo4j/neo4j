@@ -147,8 +147,6 @@ public class RelationshipCreator
         assert firstNode.getNextRel() != rel.getId() || firstNode.isDense();
         assert secondNode.getNextRel() != rel.getId() || secondNode.isDense();
 
-        boolean loop = firstNode.getId() == secondNode.getId();
-
         if ( !firstNode.isDense() )
         {
             rel.setFirstNextRel( firstNode.getNextRel() );
@@ -158,6 +156,7 @@ public class RelationshipCreator
             rel.setSecondNextRel( secondNode.getNextRel() );
         }
 
+        boolean loop = firstNode.getId() == secondNode.getId();
         if ( !firstNode.isDense() )
         {
             connectSparse( firstNode.getId(), firstNode.getNextRel(), rel, relRecords );
@@ -238,20 +237,20 @@ public class RelationshipCreator
         long nodeId = node.getId();
         RelationshipGroupRecord group = groupProxy.forReadingLinkage();
         long firstRelId = direction.getNextRel( group );
-        RecordProxy<RelationshipRecord,Void> rBefore = null;
-        RecordProxy<RelationshipRecord,Void> rAfter = null;
+        RecordProxy<RelationshipRecord,Void> relationshipBefore = null;
+        RecordProxy<RelationshipRecord,Void> relationshipAfter = null;
         if ( entrypoint != null )
         {
-            rBefore = entrypoint;
+            relationshipBefore = entrypoint;
             long next = entrypoint.forReadingLinkage().getNextRel( nodeId );
             if ( !isNull( next ) )
             {
-                rAfter = relRecords.getOrLoad( next, null, cursorTracer );
+                relationshipAfter = relRecords.getOrLoad( next, null, cursorTracer );
             }
         }
 
         // Here everything is known and locked, do the insertion
-        if ( rBefore == null )
+        if ( relationshipBefore == null )
         {
             // first, i.e. there's no relationship at all for this type and direction or we failed to get a lock in the chain
             if ( !isNull( firstRelId ) )
@@ -273,17 +272,17 @@ public class RelationshipCreator
             createdRelationship.setFirstInChain( true, nodeId );
             firstRelId = createdRelationship.getId();
         }
-        else if ( rAfter != null )
+        else if ( relationshipAfter != null )
         {
             // between
             createdRelationship.setFirstInChain( false, nodeId );
             // Link before <-> created
-            RelationshipRecord before = rBefore.forChangingLinkage();
+            RelationshipRecord before = relationshipBefore.forChangingLinkage();
             before.setNextRel( createdRelationship.getId(), nodeId );
             createdRelationship.setPrevRel( before.getId(), nodeId );
 
             // Link created <-> after
-            RelationshipRecord after = rAfter.forChangingLinkage();
+            RelationshipRecord after = relationshipAfter.forChangingLinkage();
             createdRelationship.setNextRel( after.getId(), nodeId );
             after.setPrevRel( createdRelationship.getId(), nodeId );
         }
@@ -291,7 +290,7 @@ public class RelationshipCreator
         {
             // last
             createdRelationship.setFirstInChain( false, nodeId );
-            RelationshipRecord lastRelationship = rBefore.forChangingLinkage();
+            RelationshipRecord lastRelationship = relationshipBefore.forChangingLinkage();
             lastRelationship.setNextRel( createdRelationship.getId(), nodeId );
             createdRelationship.setPrevRel( lastRelationship.getId(), nodeId );
         }

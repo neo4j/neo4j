@@ -68,7 +68,7 @@ class MappedNodeDataLookup implements RelationshipCreator.NodeDataLookup
     {
         // (Temporarily?) we can create groups lazily here
         NodeContext nodeContext = contexts.getIfAbsentPutWithKey( nodeId,
-                n -> new NodeContext( recordChanges.getNodeRecords().getOrLoad( n, null, cursorTracer ), memoryTracker ) );
+                n -> NodeContext.createNodeContext( recordChanges.getNodeRecords().getOrLoad( n, null, cursorTracer ), memoryTracker ) );
         NodeContext.DenseContext context = nodeContext.denseContext( type );
         RecordProxy<RelationshipGroupRecord,Integer> group = context.group();
         if ( group == null )
@@ -90,7 +90,7 @@ class MappedNodeDataLookup implements RelationshipCreator.NodeDataLookup
         RecordProxy<RelationshipGroupRecord,Integer> groupProxy = recordChanges.getRelGroupRecords().getOrLoad( groupId, null, cursorTracer );
         RelationshipGroupRecord group = groupProxy.forReadingData();
         NodeContext nodeContext = contexts.getIfAbsentPutWithKey( group.getOwningNode(),
-                n -> new NodeContext( recordChanges.getNodeRecords().getOrLoad( n, null, cursorTracer ), memoryTracker ) );
+                n -> NodeContext.createNodeContext( recordChanges.getNodeRecords().getOrLoad( n, null, cursorTracer ), memoryTracker ) );
         NodeContext.DenseContext context = nodeContext.denseContext( group.getType() );
         context.setGroup( groupProxy );
         return groupProxy;

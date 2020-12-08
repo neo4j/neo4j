@@ -1042,7 +1042,7 @@ class OperationsTest
         when( sctx.mode() ).thenReturn( AccessMode.Static.FULL );
         Operations operations = new Operations( mock( AllStoreHolder.class ), mock( StorageReader.class ), mock( IndexTxStateUpdater.class ),
                 commandCreationContext, ktx, mock( KernelToken.class ), mock( DefaultPooledCursors.class ), mock( ConstraintIndexCreator.class ),
-                mock( ConstraintSemantics.class ), mock( IndexingProvidersService.class ), mock( Config.class ), NULL, INSTANCE );
+                mock( ConstraintSemantics.class ), mock( IndexingProvidersService.class ), Config.defaults(), NULL, INSTANCE );
 
         // when
         operations.nodeCreate();
@@ -1071,7 +1071,7 @@ class OperationsTest
         when( sctx.mode()).thenReturn( AccessMode.Static.FULL );
         Operations operations = new Operations( mock( AllStoreHolder.class ), mock( StorageReader.class ), mock( IndexTxStateUpdater.class ),
                 commandCreationContext, ktx, mock( KernelToken.class ), cursors, mock( ConstraintIndexCreator.class ),
-                mock( ConstraintSemantics.class ), mock( IndexingProvidersService.class ), mock( Config.class ), NULL, INSTANCE );
+                mock( ConstraintSemantics.class ), mock( IndexingProvidersService.class ), Config.defaults(), NULL, INSTANCE );
         operations.initialize();
 
         // when
@@ -1102,7 +1102,7 @@ class OperationsTest
         Operations operations = new Operations( allStoreHolder, mock( StorageReader.class ), mock( IndexTxStateUpdater.class ),
                                                 commandCreationContext, ktx, mock( KernelToken.class ), mock( DefaultPooledCursors.class ),
                                                 mock( ConstraintIndexCreator.class ),
-                                                mock( ConstraintSemantics.class ), mock( IndexingProvidersService.class ), mock( Config.class ), NULL,
+                                                mock( ConstraintSemantics.class ), mock( IndexingProvidersService.class ), Config.defaults(), NULL,
                                                 INSTANCE );
 
         // when
