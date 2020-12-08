@@ -56,9 +56,10 @@ class KeySearch
      * @param cursor {@link PageCursor} pinned to page with node (internal or leaf does not matter)
      * @param bTreeNode {@link TreeNode} that knows how to operate on KEY and VALUE
      * @param type {@link TreeNode.Type} of this tree node being searched
-     *@param key KEY to search for
+     * @param key KEY to search for
      * @param readKey KEY to use as temporary storage during calculation.
-     * @param keyCount number of keys in node when starting search    @return search result where least significant 31 bits are first position i for which
+     * @param keyCount number of keys in node when starting search
+     * @return search result where least significant 31 bits are first position i for which
      * bTreeNode.keyComparator().compare( key, bTreeNode.keyAt( i ) <= 0, or keyCount if no such key exists.
      * highest bit (sign bit) says whether or not the exact key was found in the node, if so set to 1, otherwise 0.
      * To extract position from the returned search result, then use {@link #positionOf(int)}.

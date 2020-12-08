@@ -45,7 +45,7 @@ import static org.neo4j.index.internal.gbptree.TreeNode.Type.LEAF;
  * Seek can be performed forwards or backwards, returning hits in ascending or descending order respectively
  * (as defined by {@link Layout#compare(Object, Object)}). Direction is decided on relation between
  * {@link #fromInclusive} and {@link #toExclusive}. Backwards seek is expected to be slower than forwards seek
- * because extra care needs to be taken to make sure no keys are skipped when keys are move to the right in the tree.
+ * because extra care needs to be taken to make sure no keys are skipped when keys are moved to the right in the tree.
  * See detailed documentation about difficult cases below.
  * <pre>
  * If fromInclusive <= toExclusive, then seek forwards, otherwise seek backwards
@@ -135,7 +135,7 @@ import static org.neo4j.index.internal.gbptree.TreeNode.Type.LEAF;
  * 1:[K0 K1 __ __]<->3:[K2 K3 K4 __]<->2:[K5 K6 __ __]
  * </pre>
  * To guard for this, seeker 'scout' next sibling before moving there and read first key that he expect to see, K3
- * in this case. By using a linked cursor to 'scout' we create a consistent read over the node gap. If there us
+ * in this case. By using a linked cursor to 'scout' we create a consistent read over the node gap. If there is
  * suddenly another key when he goes there he knows that he could have missed some keys and he needs to go back until
  * he find the place where he left off, K4.
  */

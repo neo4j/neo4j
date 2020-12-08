@@ -1407,7 +1407,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
     /**
      * Bump unstable generation, increasing the gap between stable and unstable generation. All pointers and tree nodes
      * with generation in this gap are considered to be 'crashed' and will be cleaned up by {@link CleanupJob}
-     * created in {@link #createCleanupJob(RecoveryCleanupWorkCollector, boolean)}.
+     * created in {@link #createCleanupJob(RecoveryCleanupWorkCollector, boolean, String)}.
      */
     private void bumpUnstableGeneration()
     {

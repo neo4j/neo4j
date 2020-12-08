@@ -369,7 +369,7 @@ abstract class TreeNode<KEY,VALUE>
     /**
      * Calculate where split should be done and move entries between leaves participating in split.
      *
-     * Keys and values from left are divide between left and right and the new key and value is inserted where it belongs.
+     * Keys and values from left are divided between left and right and the new key and value is inserted where it belongs.
      *
      * Key count is updated.
      */
