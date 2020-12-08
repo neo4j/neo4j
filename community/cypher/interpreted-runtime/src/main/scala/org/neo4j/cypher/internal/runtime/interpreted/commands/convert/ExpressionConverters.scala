@@ -156,10 +156,7 @@ class ExpressionConverters(converters: ExpressionConverter*) {
         throw new IllegalArgumentException(s"Unknown pattern part found in expression: $x")
     }
 
-    val projector = project(e.step)
-    val dependencies = e.step.dependencies.map(_.name)
-
-    ProjectedPath(dependencies, projector)
+    ProjectedPath(project(e.step))
   }
 }
 

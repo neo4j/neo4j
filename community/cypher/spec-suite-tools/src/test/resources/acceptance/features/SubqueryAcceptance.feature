@@ -356,7 +356,6 @@ Feature: SubqueryAcceptance
     And no side effects
 
   Scenario: Map projections in uncorrelated single subquery are OK
-    Given an empty graph
     When executing query:
       """
       CALL {
@@ -370,7 +369,6 @@ Feature: SubqueryAcceptance
     And no side effects
 
   Scenario: Map projections in uncorrelated union subquery are OK
-    Given an empty graph
     When executing query:
       """
       CALL {
@@ -387,7 +385,6 @@ Feature: SubqueryAcceptance
     And no side effects
 
   Scenario: Map projections in correlated single subquery are OK
-    Given an empty graph
     When executing query:
       """
       MATCH (n)
@@ -403,7 +400,6 @@ Feature: SubqueryAcceptance
     And no side effects
 
   Scenario: Map projections in correlated union subquery are OK
-    Given an empty graph
     When executing query:
       """
       MATCH (n)
@@ -420,4 +416,49 @@ Feature: SubqueryAcceptance
       """
     Then the result should be, in any order:
       | m |
+    And no side effects
+
+    Scenario: Importing path expressions into subqueries
+      And having executed:
+      """
+      CREATE (:N), (:N)
+      """
+      When executing query:
+      """
+      MATCH p = (n)
+      CALL {
+        WITH p
+        RETURN length(p) AS l
+      }
+      RETURN p, l
+      """
+      Then the result should be, in any order:
+        | p      | l |
+        | <(:N)> | 0 |
+        | <(:N)> | 0 |
+      And no side effects
+
+  Scenario: Importing path expressions into union subqueries
+    And having executed:
+      """
+      CREATE (:N), (:N)
+      """
+    When executing query:
+      """
+      MATCH p = (n)
+      CALL {
+        WITH p
+        RETURN length(p) AS l
+        UNION ALL
+        WITH p
+        RETURN length(p) AS l
+      }
+      RETURN p, l
+      """
+    Then the result should be, in any order:
+      | p      | l |
+      | <(:N)> | 0 |
+      | <(:N)> | 0 |
+      | <(:N)> | 0 |
+      | <(:N)> | 0 |
     And no side effects

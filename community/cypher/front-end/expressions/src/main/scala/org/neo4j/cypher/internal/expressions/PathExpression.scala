@@ -40,15 +40,15 @@ sealed trait PathStep extends Product with Foldable with Rewritable {
 }
 
 final case class NodePathStep(node: LogicalVariable, next: PathStep) extends PathStep {
-  val dependencies = next.dependencies + node
+  val dependencies: Set[LogicalVariable] = next.dependencies + node
 }
 
 final case class SingleRelationshipPathStep(rel: LogicalVariable, direction: SemanticDirection, toNode: Option[LogicalVariable], next: PathStep) extends PathStep {
-  val dependencies = next.dependencies + rel
+  val dependencies: Set[LogicalVariable] = next.dependencies ++ toNode + rel
 }
 
 final case class MultiRelationshipPathStep(rel: LogicalVariable, direction: SemanticDirection, toNode: Option[LogicalVariable], next: PathStep) extends PathStep {
-  val dependencies = next.dependencies + rel
+  val dependencies: Set[LogicalVariable] = next.dependencies ++ toNode + rel
 }
 
 case object NilPathStep extends PathStep {

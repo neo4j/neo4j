@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.ast.Return
 import org.neo4j.cypher.internal.ast.ReturnItems
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.SubQuery
+import org.neo4j.cypher.internal.ast.UnionDistinct
 import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.ast.With
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
@@ -89,6 +90,36 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
       returns should equal(expected: PathExpression)
   }
 
+  test("MATCH p = (a) CALL {WITH a RETURN 1} RETURN p" ) {
+      val returns = parseReturnedExpr(testName)
+
+      val expected = PathExpression(
+        NodePathStep(varFor("a"), NilPathStep)
+      )_
+
+      returns should equal(expected: PathExpression)
+  }
+
+  test("MATCH p = (a) CALL {RETURN 1 AS one UNION RETURN 2 as one} RETURN p" ) {
+      val returns = parseReturnedExpr(testName)
+
+      val expected = PathExpression(
+        NodePathStep(varFor("a"), NilPathStep)
+      )_
+
+      returns should equal(expected: PathExpression)
+  }
+
+  test("MATCH p = (a) CALL {WITH a RETURN 1 AS one UNION WITH a RETURN 2 as one} RETURN p" ) {
+      val returns = parseReturnedExpr(testName)
+
+      val expected = PathExpression(
+        NodePathStep(varFor("a"), NilPathStep)
+      )_
+
+      returns should equal(expected: PathExpression)
+  }
+
   test("CALL {MATCH p = (a) RETURN p} RETURN p" ) {
     val rewritten = projectionInlinedAst(testName)
 
@@ -117,6 +148,410 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
         ))(pos), None, None, None)(pos)
 
     val expected: Query = Query(None, SingleQuery(List(CALL, RETURN))(pos))(pos)
+
+    rewritten should equal(expected)
+  }
+
+  test("MATCH p = (a) CALL {WITH p RETURN 1 AS one} RETURN p") {
+    val rewritten = projectionInlinedAst(testName)
+
+    val p = varFor("p")
+    val a = varFor("a")
+    val one = varFor("one")
+
+    val MATCH = Match(optional = false,
+      Pattern(List(
+        EveryPath(
+            NodePattern(Some(a), List(), None)(pos)
+          )
+      ))(pos), List(), None)(pos)
+
+    val CALL = {
+      val WITH1 =
+        With(distinct = false,
+          ReturnItems(includeExisting = false, Seq(
+            AliasedReturnItem(a, a)(pos),
+          ))(pos), None, None, None, None)(pos)
+
+      val WITH2 =
+        With(distinct = false,
+          ReturnItems(includeExisting = false, Seq(
+            AliasedReturnItem(PathExpression(NodePathStep(a, NilPathStep))(pos), p)(pos),
+          ))(pos), None, None, None, None)(pos)
+
+      val RETURN =
+        Return(distinct = false,
+          ReturnItems(includeExisting = false, Seq(
+            AliasedReturnItem(literalInt(1), one)(pos)
+          ))(pos), None, None, None)(pos)
+
+      SubQuery(SingleQuery(List(WITH1, WITH2, RETURN))(pos))(pos)
+    }
+
+    val RETURN =
+      Return(distinct = false,
+        ReturnItems(includeExisting = false, Seq(
+          AliasedReturnItem(PathExpression(NodePathStep(a, NilPathStep))(pos), p)(pos),
+        ))(pos), None, None, None)(pos)
+
+    val expected: Query = Query(None, SingleQuery(List(MATCH, CALL, RETURN))(pos))(pos)
+
+    rewritten should equal(expected)
+  }
+
+  // We can assume that nameAllPatternParts has already run.
+  test("MATCH p = (a)-[r]->(b) CALL {WITH p RETURN 1 AS one} RETURN p") {
+    val rewritten = projectionInlinedAst(testName)
+
+    val p = varFor("p")
+    val a = varFor("a")
+    val r = varFor("r")
+    val b = varFor("b")
+    val one = varFor("one")
+
+    val MATCH = Match(optional = false,
+      Pattern(List(
+        EveryPath(
+          RelationshipChain(
+            NodePattern(Some(a), List(), None)(pos),
+            RelationshipPattern(Some(r), Seq.empty, None, None, SemanticDirection.OUTGOING)(pos),
+            NodePattern(Some(b), List(), None)(pos)
+          )(pos))
+      ))(pos), List(), None)(pos)
+
+    val CALL = {
+      val WITH1 =
+        With(distinct = false,
+          ReturnItems(includeExisting = false, Seq(
+            AliasedReturnItem(b, b)(pos),
+            AliasedReturnItem(r, r)(pos),
+            AliasedReturnItem(a, a)(pos),
+          ))(pos), None, None, None, None)(pos)
+
+      val WITH2 =
+        With(distinct = false,
+          ReturnItems(includeExisting = false, Seq(
+            AliasedReturnItem(PathExpression(NodePathStep(a, SingleRelationshipPathStep(r, SemanticDirection.OUTGOING, Some(b), NilPathStep)))(pos), p)(pos),
+          ))(pos), None, None, None, None)(pos)
+
+      val RETURN =
+        Return(distinct = false,
+          ReturnItems(includeExisting = false, Seq(
+            AliasedReturnItem(literalInt(1), one)(pos)
+          ))(pos), None, None, None)(pos)
+
+      SubQuery(SingleQuery(List(WITH1, WITH2, RETURN))(pos))(pos)
+    }
+
+    val RETURN =
+      Return(distinct = false,
+        ReturnItems(includeExisting = false, Seq(
+          AliasedReturnItem(PathExpression(NodePathStep(a, SingleRelationshipPathStep(r, SemanticDirection.OUTGOING, Some(b), NilPathStep)))(pos), p)(pos),
+        ))(pos), None, None, None)(pos)
+
+    val expected: Query = Query(None, SingleQuery(List(MATCH, CALL, RETURN))(pos))(pos)
+
+    rewritten should equal(expected)
+  }
+
+  test("MATCH p = (a)-[r]->(b), q = (b)-[s]->(c) CALL {WITH p, q RETURN 1 AS one} RETURN p") {
+    val rewritten = projectionInlinedAst(testName)
+
+    val p = varFor("p")
+    val q = varFor("q")
+    val a = varFor("a")
+    val r = varFor("r")
+    val b = varFor("b")
+    val s = varFor("s")
+    val c = varFor("c")
+    val one = varFor("one")
+
+    val MATCH = Match(optional = false,
+      Pattern(List(
+        EveryPath(
+          RelationshipChain(
+            NodePattern(Some(a), List(), None)(pos),
+            RelationshipPattern(Some(r), Seq.empty, None, None, SemanticDirection.OUTGOING)(pos),
+            NodePattern(Some(b), List(), None)(pos)
+          )(pos)),
+        EveryPath(
+          RelationshipChain(
+            NodePattern(Some(b), List(), None)(pos),
+            RelationshipPattern(Some(s), Seq.empty, None, None, SemanticDirection.OUTGOING)(pos),
+            NodePattern(Some(c), List(), None)(pos)
+          )(pos))
+      ))(pos), List(), None)(pos)
+
+    val CALL = {
+      val WITH1 =
+        With(distinct = false,
+          ReturnItems(includeExisting = false, Seq(
+            AliasedReturnItem(b, b)(pos),
+            AliasedReturnItem(r, r)(pos),
+            AliasedReturnItem(a, a)(pos),
+            AliasedReturnItem(c, c)(pos),
+            AliasedReturnItem(s, s)(pos),
+          ))(pos), None, None, None, None)(pos)
+
+      val WITH2 =
+        With(distinct = false,
+          ReturnItems(includeExisting = false, Seq(
+            AliasedReturnItem(PathExpression(NodePathStep(a, SingleRelationshipPathStep(r, SemanticDirection.OUTGOING, Some(b), NilPathStep)))(pos), p)(pos),
+            AliasedReturnItem(PathExpression(NodePathStep(b, SingleRelationshipPathStep(s, SemanticDirection.OUTGOING, Some(c), NilPathStep)))(pos), q)(pos),
+          ))(pos), None, None, None, None)(pos)
+
+      val RETURN =
+        Return(distinct = false,
+          ReturnItems(includeExisting = false, Seq(
+            AliasedReturnItem(literalInt(1), one)(pos)
+          ))(pos), None, None, None)(pos)
+
+      SubQuery(SingleQuery(List(WITH1, WITH2, RETURN))(pos))(pos)
+    }
+
+    val RETURN =
+      Return(distinct = false,
+        ReturnItems(includeExisting = false, Seq(
+          AliasedReturnItem(PathExpression(NodePathStep(a, SingleRelationshipPathStep(r, SemanticDirection.OUTGOING, Some(b), NilPathStep)))(pos), p)(pos),
+        ))(pos), None, None, None)(pos)
+
+    val expected: Query = Query(None, SingleQuery(List(MATCH, CALL, RETURN))(pos))(pos)
+
+    rewritten should equal(expected)
+  }
+
+  test("MATCH p = (a)-[r]->(b)<-[s]-(c) CALL {WITH p RETURN 1 AS one} RETURN p") {
+    val rewritten = projectionInlinedAst(testName)
+
+    val p = varFor("p")
+    val a = varFor("a")
+    val r = varFor("r")
+    val b = varFor("b")
+    val s = varFor("s")
+    val c = varFor("c")
+    val one = varFor("one")
+
+    val MATCH = Match(optional = false,
+      Pattern(List(
+        EveryPath(
+          RelationshipChain(
+            RelationshipChain(
+              NodePattern(Some(a), List(), None)(pos),
+              RelationshipPattern(Some(r), Seq.empty, None, None, SemanticDirection.OUTGOING)(pos),
+              NodePattern(Some(b), List(), None)(pos)
+            )(pos),
+            RelationshipPattern(Some(s), Seq.empty, None, None, SemanticDirection.INCOMING)(pos),
+            NodePattern(Some(c), List(), None)(pos)
+          )(pos)))
+      )(pos), List(), None)(pos)
+
+    val CALL = {
+      val WITH1 =
+        With(distinct = false,
+          ReturnItems(includeExisting = false, Seq(
+            AliasedReturnItem(a, a)(pos),
+            AliasedReturnItem(s, s)(pos),
+            AliasedReturnItem(b, b)(pos),
+            AliasedReturnItem(c, c)(pos),
+            AliasedReturnItem(r, r)(pos),
+          ))(pos), None, None, None, None)(pos)
+
+      val WITH2 =
+        With(distinct = false,
+          ReturnItems(includeExisting = false, Seq(
+            AliasedReturnItem(PathExpression(
+              NodePathStep(a,
+              SingleRelationshipPathStep(r, SemanticDirection.OUTGOING, Some(b),
+              SingleRelationshipPathStep(s, SemanticDirection.INCOMING, Some(c), NilPathStep))))(pos), p)(pos)
+          ))(pos), None, None, None, None)(pos)
+
+      val RETURN =
+        Return(distinct = false,
+          ReturnItems(includeExisting = false, Seq(
+            AliasedReturnItem(literalInt(1), one)(pos)
+          ))(pos), None, None, None)(pos)
+
+      SubQuery(SingleQuery(List(WITH1, WITH2, RETURN))(pos))(pos)
+    }
+
+    val RETURN =
+      Return(distinct = false,
+        ReturnItems(includeExisting = false, Seq(
+          AliasedReturnItem(PathExpression(
+            NodePathStep(a,
+            SingleRelationshipPathStep(r, SemanticDirection.OUTGOING, Some(b),
+            SingleRelationshipPathStep(s, SemanticDirection.INCOMING, Some(c), NilPathStep))))(pos), p)(pos),
+        ))(pos), None, None, None)(pos)
+
+    val expected: Query = Query(None, SingleQuery(List(MATCH, CALL, RETURN))(pos))(pos)
+
+    rewritten should equal(expected)
+  }
+
+  test("MATCH p = (a) CALL {WITH p, a RETURN 1 AS one} RETURN p") {
+    val rewritten = projectionInlinedAst(testName)
+
+    val p = varFor("p")
+    val a = varFor("a")
+    val one = varFor("one")
+
+    val MATCH = Match(optional = false,
+      Pattern(List(
+        EveryPath(
+          NodePattern(Some(a), List(), None)(pos)
+        )
+      ))(pos), List(), None)(pos)
+
+    val CALL = {
+      val WITH1 =
+        With(distinct = false,
+          ReturnItems(includeExisting = false, Seq(
+            AliasedReturnItem(a, a)(pos),
+          ))(pos), None, None, None, None)(pos)
+
+      val WITH2 =
+        With(distinct = false,
+          ReturnItems(includeExisting = false, Seq(
+            AliasedReturnItem(PathExpression(NodePathStep(a, NilPathStep))(pos), p)(pos),
+            AliasedReturnItem(a, a)(pos),
+          ))(pos), None, None, None, None)(pos)
+
+      val RETURN =
+        Return(distinct = false,
+          ReturnItems(includeExisting = false, Seq(
+            AliasedReturnItem(literalInt(1), one)(pos)
+          ))(pos), None, None, None)(pos)
+
+      SubQuery(SingleQuery(List(WITH1, WITH2, RETURN))(pos))(pos)
+    }
+
+    val RETURN =
+      Return(distinct = false,
+        ReturnItems(includeExisting = false, Seq(
+          AliasedReturnItem(PathExpression(NodePathStep(a, NilPathStep))(pos), p)(pos),
+        ))(pos), None, None, None)(pos)
+
+    val expected: Query = Query(None, SingleQuery(List(MATCH, CALL, RETURN))(pos))(pos)
+
+    rewritten should equal(expected)
+  }
+
+  test("MATCH p = (a), (b) CALL {WITH p, b RETURN 1 AS one} RETURN p") {
+    val rewritten = projectionInlinedAst(testName)
+
+    val p = varFor("p")
+    val a = varFor("a")
+    val b = varFor("b")
+    val one = varFor("one")
+
+    val MATCH = Match(optional = false,
+      Pattern(List(
+        EveryPath(NodePattern(Some(a), List(), None)(pos)),
+        EveryPath(NodePattern(Some(b), List(), None)(pos)),
+      ))(pos), List(), None)(pos)
+
+    val CALL = {
+      val WITH1 =
+        With(distinct = false,
+          ReturnItems(includeExisting = false, Seq(
+            AliasedReturnItem(a, a)(pos),
+            AliasedReturnItem(b, b)(pos),
+          ))(pos), None, None, None, None)(pos)
+
+      val WITH2 =
+        With(distinct = false,
+          ReturnItems(includeExisting = false, Seq(
+            AliasedReturnItem(PathExpression(NodePathStep(a, NilPathStep))(pos), p)(pos),
+            AliasedReturnItem(b, b)(pos),
+          ))(pos), None, None, None, None)(pos)
+
+      val RETURN =
+        Return(distinct = false,
+          ReturnItems(includeExisting = false, Seq(
+            AliasedReturnItem(literalInt(1), one)(pos)
+          ))(pos), None, None, None)(pos)
+
+      SubQuery(SingleQuery(List(WITH1, WITH2, RETURN))(pos))(pos)
+    }
+
+    val RETURN =
+      Return(distinct = false,
+        ReturnItems(includeExisting = false, Seq(
+          AliasedReturnItem(PathExpression(NodePathStep(a, NilPathStep))(pos), p)(pos),
+        ))(pos), None, None, None)(pos)
+
+    val expected: Query = Query(None, SingleQuery(List(MATCH, CALL, RETURN))(pos))(pos)
+
+    rewritten should equal(expected)
+  }
+
+  test("MATCH p = (a) CALL {WITH p RETURN 1 AS one UNION WITH p RETURN 2 AS one} RETURN p") {
+    val rewritten = projectionInlinedAst(testName)
+
+    val p = varFor("p")
+    val a = varFor("a")
+    val one = varFor("one")
+
+    val MATCH = Match(optional = false,
+      Pattern(List(
+        EveryPath(
+          NodePattern(Some(a), List(), None)(pos)
+        )
+      ))(pos), List(), None)(pos)
+
+    val CALL = {
+      val LEFT = {
+        val WITH1 =
+          With(distinct = false,
+            ReturnItems(includeExisting = false, Seq(
+              AliasedReturnItem(a, a)(pos),
+            ))(pos), None, None, None, None)(pos)
+
+        val WITH2 =
+          With(distinct = false,
+            ReturnItems(includeExisting = false, Seq(
+              AliasedReturnItem(PathExpression(NodePathStep(a, NilPathStep))(pos), p)(pos),
+            ))(pos), None, None, None, None)(pos)
+
+        val RETURN =
+          Return(distinct = false,
+            ReturnItems(includeExisting = false, Seq(
+              AliasedReturnItem(literalInt(1), one)(pos)
+            ))(pos), None, None, None)(pos)
+
+        SingleQuery(List(WITH1, WITH2, RETURN))(pos)
+      }
+      val RIGHT = {
+        val WITH1 =
+          With(distinct = false,
+            ReturnItems(includeExisting = false, Seq(
+              AliasedReturnItem(a, a)(pos),
+            ))(pos), None, None, None, None)(pos)
+
+        val WITH2 =
+          With(distinct = false,
+            ReturnItems(includeExisting = false, Seq(
+              AliasedReturnItem(PathExpression(NodePathStep(a, NilPathStep))(pos), p)(pos),
+            ))(pos), None, None, None, None)(pos)
+
+        val RETURN =
+          Return(distinct = false,
+            ReturnItems(includeExisting = false, Seq(
+              AliasedReturnItem(literalInt(2), one)(pos)
+            ))(pos), None, None, None)(pos)
+
+        SingleQuery(List(WITH1, WITH2, RETURN))(pos)
+      }
+      SubQuery(UnionDistinct(LEFT, RIGHT)(pos))(pos)
+    }
+
+    val RETURN =
+      Return(distinct = false,
+        ReturnItems(includeExisting = false, Seq(
+          AliasedReturnItem(PathExpression(NodePathStep(a, NilPathStep))(pos), p)(pos),
+        ))(pos), None, None, None)(pos)
+
+    val expected: Query = Query(None, SingleQuery(List(MATCH, CALL, RETURN))(pos))(pos)
 
     rewritten should equal(expected)
   }
