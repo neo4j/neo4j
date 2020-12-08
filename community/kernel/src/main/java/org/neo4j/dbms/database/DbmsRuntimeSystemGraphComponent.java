@@ -75,7 +75,7 @@ public class DbmsRuntimeSystemGraphComponent extends AbstractSystemGraphComponen
         }
 
         tx.createNode( DbmsRuntimeRepository.DBMS_RUNTIME_LABEL )
-          .setProperty( DbmsRuntimeRepository.VERSION_PROPERTY, dbmsRuntimeVersion.getVersionNumber() );
+          .setProperty( DbmsRuntimeRepository.VERSION_PROPERTY, dbmsRuntimeVersion.getVersion() );
     }
 
     @Override
@@ -91,7 +91,7 @@ public class DbmsRuntimeSystemGraphComponent extends AbstractSystemGraphComponen
                          .findFirst()
                          .orElseGet( () -> tx.createNode( DbmsRuntimeRepository.DBMS_RUNTIME_LABEL ) );
 
-            node.setProperty( DbmsRuntimeRepository.VERSION_PROPERTY, DbmsRuntimeRepository.LATEST_VERSION.getVersionNumber() );
+            node.setProperty( DbmsRuntimeRepository.VERSION_PROPERTY, DbmsRuntimeRepository.LATEST_VERSION.getVersion() );
         } );
     }
 

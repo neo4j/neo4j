@@ -19,30 +19,66 @@
  */
 package org.neo4j.dbms.database;
 
-public enum DbmsRuntimeVersion
+public enum DbmsRuntimeVersion implements ComponentVersion
 {
-    V4_1( 1 ),
-    V4_2( 2 );
+    V4_1( 1, DBMS_RUNTIME_COMPONENT),
+    V4_2( 2, DBMS_RUNTIME_COMPONENT);
 
-    private final int versionNumber;
+    public static final DbmsRuntimeVersion LATEST_DBMS_RUNTIME_COMPONENT_VERSION = V4_2;
 
-    DbmsRuntimeVersion( int versionNumber )
+    DbmsRuntimeVersion(int version, String componentName)
     {
-        this.versionNumber = versionNumber;
+        this.version = version;
+        this.componentName = componentName;
     }
 
-    public int getVersionNumber()
+    private final String componentName;
+    private final int version;
+
+    @Override
+    public int getVersion()
     {
-        return versionNumber;
+        return version;
+    }
+
+    //TODO: remove once description is not mandatory
+    @Override
+    public String getDescription()
+    {
+        return null;
+    }
+
+    @Override
+    public String getComponentName()
+    {
+        return componentName;
+    }
+
+    @Override
+    public boolean isCurrent()
+    {
+        return version == LATEST_DBMS_RUNTIME_COMPONENT_VERSION.version;
+    }
+
+    @Override
+    public boolean migrationSupported()
+    {
+        return true;
+    }
+
+    @Override
+    public boolean runtimeSupported()
+    {
+        return true;
     }
 
     public static DbmsRuntimeVersion fromVersionNumber( int versionNumber )
     {
-        for ( DbmsRuntimeVersion version : DbmsRuntimeVersion.values() )
+        for ( DbmsRuntimeVersion componentVersion : DbmsRuntimeVersion.values() )
         {
-            if ( version.versionNumber == versionNumber )
+            if ( componentVersion.version == versionNumber )
             {
-                return version;
+                return componentVersion;
             }
         }
         throw new IllegalArgumentException( "Unrecognised DBMS runtime version number: " + versionNumber );
