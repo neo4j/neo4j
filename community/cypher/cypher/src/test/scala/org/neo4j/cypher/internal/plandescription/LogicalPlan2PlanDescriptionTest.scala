@@ -140,7 +140,6 @@ import org.neo4j.cypher.internal.logical.plans.DropIndexOnName
 import org.neo4j.cypher.internal.logical.plans.DropNodeKeyConstraint
 import org.neo4j.cypher.internal.logical.plans.DropNodePropertyExistenceConstraint
 import org.neo4j.cypher.internal.logical.plans.DropRelationshipPropertyExistenceConstraint
-import org.neo4j.cypher.internal.logical.plans.DropResult
 import org.neo4j.cypher.internal.logical.plans.DropRole
 import org.neo4j.cypher.internal.logical.plans.DropUniquePropertyConstraint
 import org.neo4j.cypher.internal.logical.plans.DropUser
@@ -868,11 +867,6 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   test("EmptyResult") {
     assertGood(attach(EmptyResult(lhsLP), 34.5),
       planDescription(id, "EmptyResult", SingleChild(lhsPD), Seq.empty, Set("a")))
-  }
-
-  test("DropResult") {
-    assertGood(attach(DropResult(lhsLP), 34.5),
-      planDescription(id, "DropResult", SingleChild(lhsPD), Seq.empty, Set("a")))
   }
 
   test("ErrorPlan") {

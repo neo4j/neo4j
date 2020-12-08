@@ -432,13 +432,6 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
       .argument()
       .build())
 
-  testPlan("dropResult",
-    new TestPlanBuilder()
-      .produceResults("x", "y")
-      .dropResult()
-      .argument()
-      .build())
-
   testPlan("errorPlan",
     new TestPlanBuilder()
       .produceResults("x", "y")

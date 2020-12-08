@@ -22,19 +22,32 @@ package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 import org.neo4j.cypher.internal.compiler.planner.FakePlan
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.expressions.DummyExpression
-import org.neo4j.cypher.internal.logical.plans.DropResult
+import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
+import org.neo4j.cypher.internal.ir.CreateNode
+import org.neo4j.cypher.internal.logical.plans.Create
+import org.neo4j.cypher.internal.logical.plans.ExhaustiveLimit
+import org.neo4j.cypher.internal.logical.plans.Limit
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.Selection
+import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class SimplifySelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport {
-  test("should rewrite Selection(false, source) to DropResult(source)") {
+  test("should rewrite Selection(false, source) to Limit(source, 0)") {
     val source: LogicalPlan = FakePlan(Set.empty)
     val selection = Selection(Seq(falseLiteral), source)
 
     selection.endoRewrite(simplifySelections) should equal(
-      DropResult( source))
+      Limit( source, SignedDecimalIntegerLiteral("0")(InputPosition.NONE)))
+  }
+
+  test("should rewrite Selection(false, Create) to ExhaustiveLimit(Create, 0)") {
+    val source = Create(FakePlan(Set.empty), Seq(CreateNode("n", Seq.empty, None)), Seq.empty)
+    val selection = Selection(Seq(falseLiteral), source)
+
+    selection.endoRewrite(simplifySelections) should equal(
+      ExhaustiveLimit(source, SignedDecimalIntegerLiteral("0")(InputPosition.NONE)))
   }
 
   test("should rewrite Selection(true, source) to source") {

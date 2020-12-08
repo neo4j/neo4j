@@ -73,7 +73,6 @@ import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.Distinct
 import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
-import org.neo4j.cypher.internal.logical.plans.DropResult
 import org.neo4j.cypher.internal.logical.plans.Eager
 import org.neo4j.cypher.internal.logical.plans.EmptyResult
 import org.neo4j.cypher.internal.logical.plans.ErrorPlan
@@ -869,10 +868,6 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
 
   def filterExpression(predicateExpressions: Expression*): IMPL = {
     appendAtCurrentIndent(UnaryOperator(lp => Selection(predicateExpressions, lp)(_)))
-  }
-
-  def dropResult(): IMPL = {
-    appendAtCurrentIndent(UnaryOperator(lp => DropResult(lp)(_)))
   }
 
   def errorPlan(e: Exception): IMPL = {

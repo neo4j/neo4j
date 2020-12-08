@@ -42,7 +42,7 @@ abstract class DropResultTestBase[CONTEXT <: RuntimeContext](
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n")
-      .dropResult()
+      .limit(0)
       .allNodeScan("n")
       .build()
 
@@ -58,7 +58,7 @@ abstract class DropResultTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n")
       .apply()
-      .|.dropResult()
+      .|.limit(0)
       .|.argument("n")
       .allNodeScan("n")
       .build()
@@ -75,7 +75,7 @@ abstract class DropResultTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("c")
       .aggregation(Seq.empty, Seq("count(n) as c"))
-      .dropResult()
+      .limit(0)
       .allNodeScan("n")
       .build()
 
@@ -91,7 +91,7 @@ abstract class DropResultTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n")
       .antiSemiApply()
-      .|.dropResult()
+      .|.limit(0)
       .|.argument("n")
       .allNodeScan("n")
       .build()
@@ -106,7 +106,7 @@ abstract class DropResultTestBase[CONTEXT <: RuntimeContext](
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .dropResult()
+      .limit(0)
       .apply()
       .|.expandAll("(x)-->(y)")
       .|.argument()
@@ -117,14 +117,14 @@ abstract class DropResultTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x").withNoRows()
   }
 
-  test("should support reduce -> dropResult on the RHS of apply") {
+  test("should support reduce -> limit 0on the RHS of apply") {
     val nodesPerLabel = 100
     given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
       .apply()
-      .|.dropResult()
+      .|.limit(0)
       .|.sort(Seq(Ascending("y")))
       .|.expandAll("(x)-->(y)")
       .|.argument()
@@ -135,7 +135,7 @@ abstract class DropResultTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x", "y").withNoRows()
   }
 
-  test("should support dropResult -> reduce on the RHS of apply") {
+  test("should support limit 0-> reduce on the RHS of apply") {
     val nodesPerLabel = 100
     given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
 
@@ -143,7 +143,7 @@ abstract class DropResultTestBase[CONTEXT <: RuntimeContext](
       .produceResults("x", "y")
       .apply()
       .|.sort(Seq(Ascending("y")))
-      .|.dropResult()
+      .|.limit(0)
       .|.expandAll("(x)-->(y)")
       .|.argument()
       .nodeByLabelScan("x", "A", IndexOrderNone)
@@ -153,19 +153,19 @@ abstract class DropResultTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x", "y").withNoRows()
   }
 
-  test("should support chained dropResult") {
+  test("should support chained limit"0) {
     val nodesPerLabel = 100
     given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("a2")
-      .dropResult()
+      .limit(0)
       .expandAll("(b2)<--(a2)")
-      .dropResult()
+      .limit(0)
       .expandAll("(a1)-->(b2)")
-      .dropResult()
+      .limit(0)
       .expandAll("(b1)<--(a1)")
-      .dropResult()
+      .limit(0)
       .expandAll("(x)-->(b1)")
       .nodeByLabelScan("x", "A", IndexOrderNone)
       .build()
@@ -174,7 +174,7 @@ abstract class DropResultTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("a2").withNoRows()
   }
 
-  test("should support optional expand(into) + dropResult under apply") {
+  test("should support optional expand(into) + limit 0under apply") {
     given {
       val (aNodes, bNodes) = bipartiteGraph(3, "A", "B", "R")
       for {a <- aNodes
@@ -186,7 +186,7 @@ abstract class DropResultTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("a1")
       .apply()
-      .|.dropResult()
+      .|.limit(0)
       .|.optionalExpandInto("(a1)-->(b)")
       .|.nonFuseable()
       .|.nodeByLabelScan("b", "B", IndexOrderNone)
@@ -197,7 +197,7 @@ abstract class DropResultTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("a1").withNoRows()
   }
 
-  test("should support unwind + dropResult under apply") {
+  test("should support unwind + limit 0under apply") {
     given {
       nodeGraph(sizeHint, "A")
     }
@@ -205,7 +205,7 @@ abstract class DropResultTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("a1")
       .apply()
-      .|.dropResult()
+      .|.limit(0)
       .|.unwind("[1, 2, 3, 4, 5] AS a2")
       .|.argument()
       .allNodeScan("a1")
@@ -215,7 +215,7 @@ abstract class DropResultTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("a1").withNoRows()
   }
 
-  test("should support chained dropResult on RHS of Apply") {
+  test("should support chained limit 0on RHS of Apply") {
     given {
       bipartiteGraph(10, "A", "B", "R")
     }
@@ -223,8 +223,8 @@ abstract class DropResultTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("a")
       .apply()
-      .|.dropResult()
-      .|.dropResult()
+      .|.limit(0)
+      .|.limit(0)
       .|.expandAll("(a)-->(b)")
       .|.argument()
       .nodeByLabelScan("a", "A", IndexOrderNone)
@@ -239,7 +239,7 @@ abstract class DropResultTestBase[CONTEXT <: RuntimeContext](
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .dropResult()
+      .limit(0)
       .input(variables = Seq("x"))
       .build()
 
@@ -256,7 +256,7 @@ abstract class DropResultTestBase[CONTEXT <: RuntimeContext](
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("sum")
-      .dropResult()
+      .limit(0)
       .aggregation(Seq.empty, Seq("sum(x) as sum"))
       .input(variables = Seq("x"))
       .build()
@@ -278,7 +278,7 @@ abstract class DropResultTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .antiSemiApply()
-      .|.dropResult()
+      .|.limit(0)
       .|.cartesianProduct()
       .|.|.argument("x")
       .|.argument("x")

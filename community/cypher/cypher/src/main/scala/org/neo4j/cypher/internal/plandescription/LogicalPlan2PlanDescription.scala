@@ -85,7 +85,6 @@ import org.neo4j.cypher.internal.logical.plans.DropIndexOnName
 import org.neo4j.cypher.internal.logical.plans.DropNodeKeyConstraint
 import org.neo4j.cypher.internal.logical.plans.DropNodePropertyExistenceConstraint
 import org.neo4j.cypher.internal.logical.plans.DropRelationshipPropertyExistenceConstraint
-import org.neo4j.cypher.internal.logical.plans.DropResult
 import org.neo4j.cypher.internal.logical.plans.DropUniquePropertyConstraint
 import org.neo4j.cypher.internal.logical.plans.Eager
 import org.neo4j.cypher.internal.logical.plans.EmptyResult
@@ -452,9 +451,6 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
 
       case _: EmptyResult =>
         PlanDescriptionImpl(id, "EmptyResult", children, Seq.empty, variables)
-
-      case _: DropResult =>
-        PlanDescriptionImpl(id, "DropResult", children, Seq.empty, variables)
 
       case NodeCountFromCountStore(idName, labelName, _) =>
         val info = nodeCountFromCountStoreInfo(idName, labelName)

@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.util.symbols.CypherType
 
 sealed trait IndexBehaviour
 case object SlowContains extends IndexBehaviour
-case object SkipAndLimit extends IndexBehaviour
+case object  SkipAndLimit extends IndexBehaviour
 case object EventuallyConsistent extends IndexBehaviour
 
 sealed trait IndexOrderCapability {
