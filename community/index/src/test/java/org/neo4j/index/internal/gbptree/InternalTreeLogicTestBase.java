@@ -40,6 +40,7 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
 
+import static java.lang.String.format;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -1648,6 +1649,106 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE>
         assertThat( e.getMessage() ).contains( PointerChecking.WRITER_TRAVERSE_OLD_STATE_MESSAGE );
     }
 
+    @ParameterizedTest
+    @MethodSource( "generators" )
+    void mustThrowIfLeafToUpdateIsNotTreeNode( String name, GenerationManager generationManager, boolean isCheckpointing ) throws Exception
+    {
+        // GIVEN
+        // root with two children
+        initialize();
+        long someHighMultiplier = 1000;
+        for ( int i = 1; numberOfRootSplits < 1; i++ )
+        {
+            long seed = i * someHighMultiplier;
+            insert( key( seed ), value( seed ) );
+        }
+        generationManager.checkpoint();
+
+        // Set type of the left child to something other than tree node
+        long leftmostChild = setTypeInvalidOnLeftChildOfRoot( readCursor );
+
+        // WHEN
+        // insert in leftmostChild that has invalid type
+        KEY key = key( 0 );
+        var e = assertThrows( TreeInconsistencyException.class, () -> { insert( key, value( 0 ) ); } );
+        // THEN
+        assertThat( e.getMessage() ).contains(
+                format( "Index update aborted due to finding tree node that doesn't have correct type (pageId: %d, type: %d)," +
+                        " when moving cursor towards " + key + ". This is most likely caused by an inconsistency in the index.",
+                        leftmostChild, 0 ) );
+    }
+
+    @ParameterizedTest
+    @MethodSource( "generators" )
+    void mustThrowIfFoundNonTreeNodeWhenMovingToLeaf( String name, GenerationManager generationManager, boolean isCheckpointing ) throws Exception
+    {
+        // GIVEN
+        // root with children on two levels
+        initialize();
+        long someHighMultiplier = 1000;
+        for ( int i = 1; numberOfRootSplits < 2; i++ )
+        {
+            long seed = i * someHighMultiplier;
+            insert( key( seed ), value( seed ) );
+        }
+        generationManager.checkpoint();
+
+        // Set type of the left child (internal node on level 1) to something other than tree node.
+        long leftmostInternal = setTypeInvalidOnLeftChildOfRoot( cursor );
+
+        // WHEN
+        // insert in leftmost child (on level 2) that will pass leftmostInternal (that has invalid type)
+        KEY key = key( 0 );
+        var e = assertThrows( TreeInconsistencyException.class, () -> { insert( key, value( 0 ) ); } );
+        // THEN
+        assertThat( e.getMessage() ).contains(
+                format( "Index update aborted due to finding tree node that doesn't have correct type (pageId: %d, type: %d)," +
+                        " when moving cursor towards " + key + ". This is most likely caused by an inconsistency in the index.",
+                        leftmostInternal, 0 ) );
+    }
+
+    @ParameterizedTest
+    @MethodSource( "generators" )
+    void mustThrowIfEndOnNonLeafWhenMovingToLeaf( String name, GenerationManager generationManager, boolean isCheckpointing ) throws Exception
+    {
+        // GIVEN
+        // root with two children
+        initialize();
+        long someHighMultiplier = 1000;
+        for ( int i = 1; numberOfRootSplits < 1; i++ )
+        {
+            long seed = i * someHighMultiplier;
+            insert( key( seed ), value( seed ) );
+        }
+        generationManager.checkpoint();
+
+        // Set type of the left child to something invalid (not leaf or internal)
+        root.goTo( cursor );
+        long leftmostChild = childAt( cursor, 0, stableGeneration, unstableGeneration );
+        goTo( cursor, leftmostChild );
+        cursor.putByte( TreeNode.BYTE_POS_TYPE, (byte)2 );
+        root.goTo( cursor );
+
+        // WHEN
+        // insert that should take us to leftmostChild that is not a leaf
+        KEY key = key( 0 );
+        var e = assertThrows( TreeInconsistencyException.class, () -> { insert( key, value( 0 ) ); } );
+        // THEN
+        assertThat( e.getMessage() ).contains("Index update aborted due to ending up on a tree node which isn't a leaf after moving cursor towards " +
+                                              key + ", cursor is at pageId " + cursor.getCurrentPageId() + ". This is most likely caused by an inconsistency " +
+                                              "in the index.");
+    }
+
+    private long setTypeInvalidOnLeftChildOfRoot( PageCursor cursor ) throws IOException
+    {
+        root.goTo( cursor );
+        long leftChild = childAt( cursor, 0, stableGeneration, unstableGeneration );
+        goTo( cursor, leftChild );
+        cursor.putByte( TreeNode.BYTE_POS_NODE_TYPE, (byte) 0 );
+        root.goTo( cursor );
+        return leftChild;
+    }
+
     private void consistencyCheck() throws IOException
     {
         long currentPageId = readCursor.getCurrentPageId();
@@ -2086,19 +2187,19 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE>
 
     private void assertNotEqualsKey( KEY key1, KEY key2 )
     {
-        assertNotEquals( 0, layout.compare( key1, key2 ), String.format(
+        assertNotEquals( 0, layout.compare( key1, key2 ), format(
             "expected no not equal, key1=%s, key2=%s", key1.toString(), key2.toString() ) );
     }
 
     private void assertEqualsKey( KEY expected, KEY actual )
     {
         assertEquals( 0,
-            layout.compare( expected, actual ), String.format( "expected equal, expected=%s, actual=%s", expected, actual ) );
+            layout.compare( expected, actual ), format( "expected equal, expected=%s, actual=%s", expected, actual ) );
     }
 
     private void assertEqualsValue( VALUE expected, VALUE actual )
     {
         assertEquals( 0,
-            layout.compareValue( expected, actual ), String.format( "expected equal, expected=%s, actual=%s", expected, actual ) );
+            layout.compareValue( expected, actual ), format( "expected equal, expected=%s, actual=%s", expected, actual ) );
     }
 }

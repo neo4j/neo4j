@@ -261,6 +261,7 @@ class InternalTreeLogic<KEY,VALUE>
      * @param unstableGeneration unstable generation.
      * @param cursorTracer underlying page cursor tracer.
      * @throws IOException on {@link PageCursor} error.
+     * @throws TreeInconsistencyException on seeing tree nodes of unexpected type
      */
     private void moveToCorrectLeaf( PageCursor cursor, KEY key, long stableGeneration, long unstableGeneration, PageCursorTracer cursorTracer )
             throws IOException
@@ -277,6 +278,8 @@ class InternalTreeLogic<KEY,VALUE>
 
         while ( TreeNode.isInternal( cursor ) )
         {
+            ensureNodeIsTreeNode( cursor, key );
+
             // We still need to go down further, but we're on the right path
             int keyCount = TreeNode.keyCount( cursor );
             int searchResult = search( cursor, INTERNAL, key, readKey, keyCount, cursorTracer );
@@ -327,8 +330,28 @@ class InternalTreeLogic<KEY,VALUE>
             assert assertNoSuccessor( cursor, stableGeneration, unstableGeneration );
         }
 
-        assert TreeNode.isLeaf( cursor ) : "Ended up on a tree node which isn't a leaf after moving cursor towards " +
-                key + ", cursor is at " + cursor.getCurrentPageId();
+        ensureNodeIsTreeNode( cursor, key );
+        ensureTreeNodeIsLeaf( cursor, key );
+    }
+
+    private void ensureNodeIsTreeNode( PageCursor cursor, KEY key )
+    {
+        if ( TreeNode.nodeType( cursor ) != TreeNode.NODE_TYPE_TREE_NODE )
+        {
+            throw new TreeInconsistencyException(
+                    "Index update aborted due to finding tree node that doesn't have correct type (pageId: %d, type: %d), when moving cursor towards " + key +
+                    ". This is most likely caused by an inconsistency in the index. ", cursor.getCurrentPageId(), TreeNode.nodeType( cursor ) );
+        }
+    }
+
+    private void ensureTreeNodeIsLeaf( PageCursor cursor, KEY key )
+    {
+        if ( !TreeNode.isLeaf( cursor ) )
+        {
+            throw new TreeInconsistencyException(
+                    "Index update aborted due to ending up on a tree node which isn't a leaf after moving cursor towards " +
+                    key + ", cursor is at pageId " + cursor.getCurrentPageId() + ". This is most likely caused by an inconsistency in the index." );
+        }
     }
 
     /**
