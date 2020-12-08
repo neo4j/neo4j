@@ -673,14 +673,6 @@ class InternalTreeLogic<KEY,VALUE>
         // [key3][key4][key5]
         //
 
-        // CONCURRENCY
-        // To have readers see correct state at all times, the order of updates must be:
-        // 1. Acquire new page id R
-        // 2. Copy "right-hand" keys/values to R and set key count
-        // 3. Set L's right sibling to R
-        // 4. Set key count of L to new "left-hand" key count
-        // 5. Write new key/values into L
-
         // Position where newKey / newValue is to be inserted
         int pos = positionOf( search( cursor, LEAF, newKey, readKey, keyCount, cursorTracer ) );
 
