@@ -50,10 +50,7 @@ class PathExpressionConversionTest extends CypherFunSuite {
     val expr = PathExpression(NodePathStep(Variable("a")_, NilPathStep))_
 
     converters.toCommandProjectedPath(expr) should equal(
-      ProjectedPath(
-        Set("a"),
-        singleNodeProjector("a", nilProjector)
-      )
+      ProjectedPath(singleNodeProjector("a", nilProjector))
     )
   }
 
@@ -61,12 +58,9 @@ class PathExpressionConversionTest extends CypherFunSuite {
     val expr = PathExpression(NodePathStep(Variable("b")_, SingleRelationshipPathStep(Variable("r")_, SemanticDirection.INCOMING, Some(Variable("a")_), NilPathStep)))_
 
     converters.toCommandProjectedPath(expr) should equal(
-      ProjectedPath(
-        Set("r", "b"),
-        singleNodeProjector("b",
-          singleRelationshipWithKnownTargetProjector("r", "a", nilProjector)
-        )
-      )
+      ProjectedPath(singleNodeProjector("b",
+        singleRelationshipWithKnownTargetProjector("r", "a", nilProjector)
+      ))
     )
   }
 
@@ -74,12 +68,9 @@ class PathExpressionConversionTest extends CypherFunSuite {
     val expr = PathExpression(NodePathStep(Variable("a")_, SingleRelationshipPathStep(Variable("r")_, SemanticDirection.OUTGOING, Some(Variable("b")_), NilPathStep)))_
 
     converters.toCommandProjectedPath(expr) should equal(
-      ProjectedPath(
-        Set("r", "a"),
-        singleNodeProjector("a",
-          singleRelationshipWithKnownTargetProjector("r", "b", nilProjector)
-        )
-      )
+      ProjectedPath(singleNodeProjector("a",
+        singleRelationshipWithKnownTargetProjector("r", "b", nilProjector)
+      ))
     )
   }
 
@@ -87,12 +78,9 @@ class PathExpressionConversionTest extends CypherFunSuite {
     val expr = PathExpression(NodePathStep(Variable("b")_, MultiRelationshipPathStep(Variable("r")_, SemanticDirection.INCOMING, Some(Variable("a")_), NilPathStep)))_
 
     converters.toCommandProjectedPath(expr) should equal(
-      ProjectedPath(
-        Set("r", "b"),
-        singleNodeProjector("b",
-          multiIncomingRelationshipProjector("r", nilProjector)
-        )
-      )
+      ProjectedPath(singleNodeProjector("b",
+        multiIncomingRelationshipProjector("r", nilProjector)
+      ))
     )
   }
 
@@ -100,12 +88,9 @@ class PathExpressionConversionTest extends CypherFunSuite {
     val expr = PathExpression(NodePathStep(Variable("a")_, MultiRelationshipPathStep(Variable("r")_, SemanticDirection.OUTGOING, Some(Variable("b")_), NilPathStep)))_
 
     converters.toCommandProjectedPath(expr) should equal(
-      ProjectedPath(
-        Set("r", "a"),
-        singleNodeProjector("a",
-          multiOutgoingRelationshipProjector("r", nilProjector)
-        )
-      )
+      ProjectedPath(singleNodeProjector("a",
+        multiOutgoingRelationshipProjector("r", nilProjector)
+      ))
     )
   }
 
@@ -118,14 +103,11 @@ class PathExpressionConversionTest extends CypherFunSuite {
           ))))_
 
     converters.toCommandProjectedPath(expr) should equal(
-      ProjectedPath(
-        Set("a", "r1", "r2"),
-        singleNodeProjector("a",
-          multiOutgoingRelationshipProjector("r1",
-            singleRelationshipWithKnownTargetProjector("r2", "c", nilProjector)
-          )
+      ProjectedPath(singleNodeProjector("a",
+        multiOutgoingRelationshipProjector("r1",
+          singleRelationshipWithKnownTargetProjector("r2", "c", nilProjector)
         )
-      )
+      ))
     )
   }
 
@@ -138,14 +120,11 @@ class PathExpressionConversionTest extends CypherFunSuite {
           ))))_
 
     converters.toCommandProjectedPath(expr) should equal(
-      ProjectedPath(
-        Set("a", "r1", "r2"),
-        singleNodeProjector("a",
-          multiOutgoingRelationshipProjector("r1",
-            singleRelationshipWithKnownTargetProjector("r2", "c", nilProjector)
-          )
+      ProjectedPath(singleNodeProjector("a",
+        multiOutgoingRelationshipProjector("r1",
+          singleRelationshipWithKnownTargetProjector("r2", "c", nilProjector)
         )
-      )
+      ))
     )
   }
 }
