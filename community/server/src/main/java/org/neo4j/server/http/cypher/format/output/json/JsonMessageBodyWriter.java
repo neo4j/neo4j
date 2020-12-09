@@ -35,9 +35,12 @@ import org.neo4j.server.http.cypher.format.api.OutputEventSource;
 import org.neo4j.server.http.cypher.format.common.Neo4jJsonCodec;
 
 @Provider
-@Produces( MediaType.APPLICATION_JSON )
+@Produces( JsonMessageBodyWriter.JSON_MIME_TYPE_WITH_QUALITY )
 public class JsonMessageBodyWriter implements MessageBodyWriter<OutputEventSource>
 {
+    // ensures this MessageBodyWriter is the default when no accept header is provided by giving it a higher qs score
+    public static final String JSON_MIME_TYPE_WITH_QUALITY = MediaType.APPLICATION_JSON + ";qs=0.9";
+
     @Override
     public boolean isWriteable( Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType )
     {
