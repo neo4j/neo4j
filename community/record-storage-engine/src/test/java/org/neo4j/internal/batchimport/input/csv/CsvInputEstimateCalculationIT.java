@@ -57,8 +57,6 @@ import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
-import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
-import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyValueRecordSizeCalculator;
 import org.neo4j.kernel.impl.store.StoreFactory;
@@ -168,9 +166,8 @@ class CsvInputEstimateCalculationIT
                     LogFilesInitializer.NULL, EmptyMemoryTracker.INSTANCE ).doImport( input );
 
             // then compare estimates with actual disk sizes
-            VersionContextSupplier contextSupplier = EmptyVersionContextSupplier.EMPTY;
             SingleFilePageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory( fs );
-            try ( PageCache pageCache = new MuninnPageCache( swapperFactory, 1000, PageCacheTracer.NULL, contextSupplier, jobScheduler );
+            try ( PageCache pageCache = new MuninnPageCache( swapperFactory, jobScheduler, MuninnPageCache.config( 1000 ) );
                   NeoStores stores = new StoreFactory( databaseLayout, config, new DefaultIdGeneratorFactory( fs, immediate() ), pageCache, fs,
                           NullLogProvider.getInstance(), PageCacheTracer.NULL ).openAllNeoStores() )
             {

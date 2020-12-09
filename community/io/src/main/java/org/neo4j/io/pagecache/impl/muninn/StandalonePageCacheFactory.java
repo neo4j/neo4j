@@ -25,14 +25,11 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
-import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.time.Clocks;
 
 import static org.neo4j.io.ByteUnit.MebiByte;
-import static org.neo4j.io.pagecache.buffer.IOBufferFactory.DISABLED_BUFFER_FACTORY;
+import static org.neo4j.io.pagecache.impl.muninn.MuninnPageCache.config;
 
 /*
  * This class is an helper to allow to construct properly a page cache in the few places we need it without all
@@ -71,10 +68,8 @@ public final class StandalonePageCacheFactory
 
     private static PageCache createPageCache( PageSwapperFactory factory, JobScheduler jobScheduler, PageCacheTracer cacheTracer, int pageSize )
     {
-        VersionContextSupplier versionContextSupplier = EmptyVersionContextSupplier.EMPTY;
         long expectedMemory = Math.max( MebiByte.toBytes( 8 ), 10 * pageSize );
         MemoryAllocator memoryAllocator = MemoryAllocator.createAllocator( expectedMemory, EmptyMemoryTracker.INSTANCE );
-        return new MuninnPageCache( factory, memoryAllocator, pageSize, cacheTracer, versionContextSupplier, jobScheduler, Clocks.nanoClock(),
-                EmptyMemoryTracker.INSTANCE, DISABLED_BUFFER_FACTORY );
+        return new MuninnPageCache( factory, jobScheduler, config( memoryAllocator ).pageCacheTracer( cacheTracer ).pageSize( pageSize ) );
     }
 }

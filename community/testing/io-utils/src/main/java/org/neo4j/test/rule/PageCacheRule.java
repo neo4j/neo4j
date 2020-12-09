@@ -31,13 +31,10 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.mem.MemoryAllocator;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageSwapperFactory;
-import org.neo4j.io.pagecache.buffer.IOBufferFactory;
 import org.neo4j.io.pagecache.checking.AccessCheckingPageCache;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
-import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.memory.LocalMemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
@@ -100,27 +97,20 @@ public class PageCacheRule extends ExternalResource
     public PageCache getPageCache( PageSwapperFactory factory, PageCacheConfig overriddenConfig )
     {
         closeExistingPageCache();
-        Integer pageSize = selectConfig( baseConfig.pageSize, overriddenConfig.pageSize, null );
-        PageCacheTracer cacheTracer = selectConfig( baseConfig.tracer, overriddenConfig.tracer, PageCacheTracer.NULL );
-
-        VersionContextSupplier contextSupplier = EmptyVersionContextSupplier.EMPTY;
         var memoryTracker = new LocalMemoryTracker();
         MemoryAllocator mman = MemoryAllocator.createAllocator( parse( selectConfig( baseConfig.memory, overriddenConfig.memory, "8 MiB" ) ),
                 memoryTracker );
-        var bufferFactory = IOBufferFactory.DISABLED_BUFFER_FACTORY;
-        initializeJobScheduler();
         if ( clock == null )
         {
             clock = Clocks.nanoClock();
         }
-        if ( pageSize != null )
-        {
-            pageCache = new MuninnPageCache( factory, mman, pageSize, cacheTracer, contextSupplier, jobScheduler, clock, memoryTracker, bufferFactory );
-        }
-        else
-        {
-            pageCache = new MuninnPageCache( factory, mman, cacheTracer, contextSupplier, jobScheduler, clock, memoryTracker, bufferFactory );
-        }
+        MuninnPageCache.Configuration configuration = MuninnPageCache.config( mman ).memoryTracker( memoryTracker ).clock( clock );
+        Integer pageSize = selectConfig( baseConfig.pageSize, overriddenConfig.pageSize, null );
+        configuration = pageSize == null ? configuration : configuration.pageSize( pageSize );
+        PageCacheTracer cacheTracer = selectConfig( baseConfig.tracer, overriddenConfig.tracer, PageCacheTracer.NULL );
+        configuration = configuration.pageCacheTracer( cacheTracer );
+        initializeJobScheduler();
+        pageCache = new MuninnPageCache( factory, jobScheduler, configuration );
         pageCachePostConstruct( overriddenConfig );
         return pageCache;
     }

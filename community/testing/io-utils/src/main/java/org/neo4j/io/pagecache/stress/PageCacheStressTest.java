@@ -28,11 +28,11 @@ import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.io.pagecache.impl.muninn.MuninnPageCache.config;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 
 /**
@@ -83,8 +83,7 @@ public class PageCacheStressTest
               JobScheduler jobScheduler = new ThreadPoolJobScheduler() )
         {
             PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory( fs );
-            try ( PageCache pageCacheUnderTest = new MuninnPageCache(
-                    swapperFactory, numberOfCachePages, tracer, EmptyVersionContextSupplier.EMPTY, jobScheduler ) )
+            try ( PageCache pageCacheUnderTest = new MuninnPageCache( swapperFactory, jobScheduler, config( numberOfCachePages ).pageCacheTracer( tracer ) ) )
             {
                 PageCacheStresser pageCacheStresser = new PageCacheStresser( numberOfPages, numberOfThreads, workingDirectory );
                 pageCacheStresser.stress( pageCacheUnderTest, tracer, condition );

@@ -28,12 +28,10 @@ import java.nio.file.Path;
 
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.mem.MemoryAllocator;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
 
@@ -42,9 +40,8 @@ import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_MONITOR;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.ignore;
 import static org.neo4j.internal.helpers.Numbers.isPowerOfTwo;
-import static org.neo4j.io.pagecache.buffer.IOBufferFactory.DISABLED_BUFFER_FACTORY;
-import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
-import static org.neo4j.time.Clocks.nanoClock;
+import static org.neo4j.io.mem.MemoryAllocator.createAllocator;
+import static org.neo4j.io.pagecache.impl.muninn.MuninnPageCache.config;
 
 public class GBPTreeBootstrapper implements Closeable
 {
@@ -135,12 +132,8 @@ public class GBPTreeBootstrapper implements Closeable
         }
         closePageCache();
         var swapper = new SingleFilePageSwapperFactory( fs );
-        var memoryTracker = EmptyMemoryTracker.INSTANCE;
         long expectedMemory = Math.max( MuninnPageCache.memoryRequiredForPages( 100 ), 3 * pageSize );
-        var allocator = MemoryAllocator.createAllocator( expectedMemory, memoryTracker );
-        var contextSupplier = EmptyVersionContextSupplier.EMPTY;
-        pageCache = new MuninnPageCache( swapper, allocator, pageSize, NULL, contextSupplier, jobScheduler, nanoClock(), memoryTracker,
-                DISABLED_BUFFER_FACTORY );
+        pageCache = new MuninnPageCache( swapper, jobScheduler, config( createAllocator( expectedMemory, EmptyMemoryTracker.INSTANCE ) ).pageSize( pageSize ) );
     }
 
     private void closePageCache()

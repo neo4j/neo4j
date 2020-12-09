@@ -30,8 +30,6 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
@@ -43,6 +41,7 @@ import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
 import static org.neo4j.index.internal.gbptree.SimpleLongLayout.longLayout;
+import static org.neo4j.io.pagecache.impl.muninn.MuninnPageCache.config;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 /**
@@ -105,7 +104,7 @@ class GBPTreePartialCreateFuzzIT
               JobScheduler jobScheduler = new ThreadPoolJobScheduler() )
         {
             SingleFilePageSwapperFactory swapper = new SingleFilePageSwapperFactory( fs );
-            try ( PageCache pageCache = new MuninnPageCache( swapper, 10, PageCacheTracer.NULL, EmptyVersionContextSupplier.EMPTY, jobScheduler ) )
+            try ( PageCache pageCache = new MuninnPageCache( swapper, jobScheduler, config( 10 ) ) )
             {
                 fs.deleteFile( file );
                 new GBPTreeBuilder<>( pageCache, file, longLayout().build() ).build().close();

@@ -79,7 +79,6 @@ import static org.neo4j.internal.helpers.collection.Iterables.asList;
 import static org.neo4j.internal.helpers.collection.Iterables.count;
 import static org.neo4j.internal.helpers.collection.Iterables.map;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
-import static org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @ImpermanentDbmsExtension
@@ -219,7 +218,7 @@ class LabelsAcceptanceTest
         JobScheduler scheduler = JobSchedulerFactory.createScheduler();
         try ( EphemeralFileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
                 Lifespan lifespan = new Lifespan( scheduler );
-                PageCache pageCache = new MuninnPageCache( swapper( fileSystem ), 1_000, PageCacheTracer.NULL, EMPTY, scheduler ) )
+                PageCache pageCache = new MuninnPageCache( swapper( fileSystem ), scheduler, MuninnPageCache.config( 1_000 ) ) )
         {
             // Given
             Dependencies dependencies = new Dependencies();

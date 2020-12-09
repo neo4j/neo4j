@@ -96,7 +96,13 @@ public class ConfiguringPageCacheFactory
         var memoryTracker = memoryPool.getPoolMemoryTracker();
         MemoryAllocator memoryAllocator = buildMemoryAllocator( pageCacheMaxMemory, memoryTracker );
         var bufferFactory = new ConfigurableIOBufferFactory( config, memoryTracker );
-        return new MuninnPageCache( swapperFactory, memoryAllocator, pageCacheTracer, versionContextSupplier, scheduler, clock, memoryTracker, bufferFactory );
+        MuninnPageCache.Configuration configuration = MuninnPageCache.config( memoryAllocator )
+                .memoryTracker( memoryTracker )
+                .bufferFactory( bufferFactory )
+                .clock( clock )
+                .pageCacheTracer( pageCacheTracer )
+                .versionContextSupplier( versionContextSupplier );
+        return new MuninnPageCache( swapperFactory, scheduler, configuration );
     }
 
     private MemoryAllocator buildMemoryAllocator( long pageCacheMaxMemory, MemoryTracker memoryTracker )

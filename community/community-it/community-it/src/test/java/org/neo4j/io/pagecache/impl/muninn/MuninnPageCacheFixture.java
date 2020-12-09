@@ -31,7 +31,6 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.memory.LocalMemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.time.Clocks;
 
 public class MuninnPageCacheFixture extends PageCacheTestSupport.Fixture<MuninnPageCache>
 {
@@ -45,8 +44,11 @@ public class MuninnPageCacheFixture extends PageCacheTestSupport.Fixture<MuninnP
         long memory = MuninnPageCache.memoryRequiredForPages( maxPages );
         var memoryTracker = new LocalMemoryTracker();
         allocator = MemoryAllocator.createAllocator( memory, memoryTracker );
-        var usedBufferFactory = selectBufferFactory( bufferFactory, memoryTracker );
-        return new MuninnPageCache( swapperFactory, allocator, tracer, contextSupplier, jobScheduler, Clocks.nanoClock(), memoryTracker, usedBufferFactory );
+        MuninnPageCache.Configuration configuration = MuninnPageCache.config( allocator )
+                .pageCacheTracer( tracer )
+                .versionContextSupplier( contextSupplier )
+                .bufferFactory( selectBufferFactory( bufferFactory, memoryTracker ) );
+        return new MuninnPageCache( swapperFactory, jobScheduler, configuration );
     }
 
     private static IOBufferFactory selectBufferFactory( IOBufferFactory bufferFactory, LocalMemoryTracker memoryTracker )

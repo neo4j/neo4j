@@ -39,8 +39,6 @@ import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.scheduler.JobScheduler;
@@ -126,7 +124,7 @@ class MuninnPageCursorTest
 
     private PageCache startPageCache( PageSwapperFactory pageSwapperFactory )
     {
-        return new MuninnPageCache( pageSwapperFactory, 1_000, PageCacheTracer.NULL, EmptyVersionContextSupplier.EMPTY, jobScheduler );
+        return new MuninnPageCache( pageSwapperFactory, jobScheduler, MuninnPageCache.config( 1_000 ) );
     }
 
     private void createSomeData( Path file ) throws IOException

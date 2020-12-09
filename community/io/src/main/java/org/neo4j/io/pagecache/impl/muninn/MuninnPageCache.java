@@ -41,7 +41,6 @@ import org.neo4j.io.mem.MemoryAllocator;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCacheOpenOptions;
-import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.buffer.IOBufferFactory;
@@ -50,21 +49,20 @@ import org.neo4j.io.pagecache.tracing.FlushEventOpportunity;
 import org.neo4j.io.pagecache.tracing.MajorFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageFaultEvent;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
-import org.neo4j.scheduler.JobMonitoringParams;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.SystemNanoClock;
 
 import static java.lang.String.format;
-import static org.neo4j.common.Subject.SYSTEM;
 import static org.neo4j.internal.helpers.Numbers.isPowerOfTwo;
-import static org.neo4j.scheduler.Group.FILE_IO_HELPER;
 import static org.neo4j.io.pagecache.buffer.IOBufferFactory.DISABLED_BUFFER_FACTORY;
+import static org.neo4j.scheduler.Group.FILE_IO_HELPER;
 import static org.neo4j.scheduler.JobMonitoringParams.systemJob;
 import static org.neo4j.util.FeatureToggles.flag;
 import static org.neo4j.util.FeatureToggles.getInteger;
@@ -220,71 +218,131 @@ public class MuninnPageCache implements PageCache
         return pageCount * MEMORY_USE_PER_PAGE;
     }
 
-    /**
-     * Create page cache.
-     * @param swapperFactory page cache swapper factory
-     * @param maxPages maximum number of pages
-     * @param pageCacheTracer global page cache tracer
-     * @param versionContextSupplier supplier of thread local (transaction local) version context that will provide access to thread local version context
-     */
-    public MuninnPageCache( PageSwapperFactory swapperFactory, int maxPages, PageCacheTracer pageCacheTracer, VersionContextSupplier versionContextSupplier,
-            JobScheduler jobScheduler )
+    public static class Configuration
     {
-        this( swapperFactory,
-                // Cast to long prevents overflow:
-                MemoryAllocator.createAllocator( memoryRequiredForPages( maxPages ), EmptyMemoryTracker.INSTANCE ),
-                PAGE_SIZE,
-                pageCacheTracer, versionContextSupplier,
-                jobScheduler,
-                Clocks.nanoClock(),
-                EmptyMemoryTracker.INSTANCE, DISABLED_BUFFER_FACTORY );
+        private final MemoryAllocator memoryAllocator;
+        private final SystemNanoClock clock;
+        private final MemoryTracker memoryTracker;
+        private final PageCacheTracer pageCacheTracer;
+        private final VersionContextSupplier versionContextSupplier;
+        private final int pageSize;
+        private final IOBufferFactory bufferFactory;
+
+        private Configuration( MemoryAllocator memoryAllocator, SystemNanoClock clock, MemoryTracker memoryTracker, PageCacheTracer pageCacheTracer,
+                VersionContextSupplier versionContextSupplier, int pageSize, IOBufferFactory bufferFactory )
+        {
+            this.memoryAllocator = memoryAllocator;
+            this.clock = clock;
+            this.memoryTracker = memoryTracker;
+            this.pageCacheTracer = pageCacheTracer;
+            this.versionContextSupplier = versionContextSupplier;
+            this.pageSize = pageSize;
+            this.bufferFactory = bufferFactory;
+        }
+
+        /**
+         * @param memoryAllocator the source of native memory the page cache should use
+         */
+        public Configuration memoryAllocator( MemoryAllocator memoryAllocator )
+        {
+            return new Configuration( memoryAllocator, clock, memoryTracker, pageCacheTracer, versionContextSupplier, pageSize, bufferFactory );
+        }
+
+        /**
+         * @param clock {@link SystemNanoClock} to use for internal time keeping
+         */
+        public Configuration clock( SystemNanoClock clock )
+        {
+            return new Configuration( memoryAllocator, clock, memoryTracker, pageCacheTracer, versionContextSupplier, pageSize, bufferFactory );
+        }
+
+        /**
+         * @param memoryTracker underlying buffers allocation memory tracker
+         */
+        public Configuration memoryTracker( MemoryTracker memoryTracker )
+        {
+            return new Configuration( memoryAllocator, clock, memoryTracker, pageCacheTracer, versionContextSupplier, pageSize, bufferFactory );
+        }
+
+        /**
+         * @param pageCacheTracer global page cache tracer
+         */
+        public Configuration pageCacheTracer( PageCacheTracer pageCacheTracer )
+        {
+            return new Configuration( memoryAllocator, clock, memoryTracker, pageCacheTracer, versionContextSupplier, pageSize, bufferFactory );
+        }
+
+        /**
+         * @param versionContextSupplier supplier of thread local (transaction local) version context that will provide access to thread local version context
+         */
+        public Configuration versionContextSupplier( VersionContextSupplier versionContextSupplier )
+        {
+            return new Configuration( memoryAllocator, clock, memoryTracker, pageCacheTracer, versionContextSupplier, pageSize, bufferFactory );
+        }
+
+        /**
+         * @param pageSize page size. Only ever use this in tests!
+         */
+        public Configuration pageSize( int pageSize )
+        {
+            return new Configuration( memoryAllocator, clock, memoryTracker, pageCacheTracer, versionContextSupplier, pageSize, bufferFactory );
+        }
+
+        /**
+         * @param bufferFactory temporal flush buffer factories
+         */
+        public Configuration bufferFactory( IOBufferFactory bufferFactory )
+        {
+            return new Configuration( memoryAllocator, clock, memoryTracker, pageCacheTracer, versionContextSupplier, pageSize, bufferFactory );
+        }
+    }
+
+    /**
+     * @param maxPages max number of pages cached in this page cache.
+     * @return a new {@link Configuration} instance with default values and a {@link MemoryAllocator} for the given {@code maxPages}.
+     */
+    public static Configuration config( int maxPages )
+    {
+        return config( MemoryAllocator.createAllocator( memoryRequiredForPages( maxPages ), EmptyMemoryTracker.INSTANCE ) );
+    }
+
+    /**
+     * @param memoryAllocator memory allocator for the page cache.
+     * @return a new {@link Configuration} instance with default values and the given {@link MemoryAllocator}.
+     */
+    public static Configuration config( MemoryAllocator memoryAllocator )
+    {
+        return new Configuration( memoryAllocator, Clocks.nanoClock(), EmptyMemoryTracker.INSTANCE, PageCacheTracer.NULL, EmptyVersionContextSupplier.EMPTY,
+                PAGE_SIZE, DISABLED_BUFFER_FACTORY );
     }
 
     /**
      * Create page cache.
      * @param swapperFactory page cache swapper factory
-     * @param memoryAllocator the source of native memory the page cache should use
-     * @param pageCacheTracer global page cache tracer
-     * @param versionContextSupplier supplier of thread local (transaction local) version context that will provide access to thread local version context
-     * @param memoryTracker underlying buffers allocation memory tracker
-     * @param bufferFactory temporal flush buffer factories
+     * @param jobScheduler {@link JobScheduler} for scheduling of internal jobs
+     * @param configuration additional configuration for the page cache
      */
-    public MuninnPageCache( PageSwapperFactory swapperFactory, MemoryAllocator memoryAllocator, PageCacheTracer pageCacheTracer,
-            VersionContextSupplier versionContextSupplier, JobScheduler jobScheduler, SystemNanoClock clock, MemoryTracker memoryTracker,
-            IOBufferFactory bufferFactory )
-    {
-        this( swapperFactory, memoryAllocator, PAGE_SIZE, pageCacheTracer, versionContextSupplier, jobScheduler, clock, memoryTracker, bufferFactory );
-    }
-
-    /**
-     * Constructor variant that allows setting a non-standard cache page size.
-     * Only ever use this for testing.
-     */
-    @SuppressWarnings( "DeprecatedIsStillUsed" )
-    @Deprecated
-    public MuninnPageCache( PageSwapperFactory swapperFactory, MemoryAllocator memoryAllocator, int cachePageSize, PageCacheTracer pageCacheTracer,
-            VersionContextSupplier versionContextSupplier, JobScheduler jobScheduler, SystemNanoClock clock, MemoryTracker memoryTracker,
-            IOBufferFactory bufferFactory )
+    public MuninnPageCache( PageSwapperFactory swapperFactory, JobScheduler jobScheduler, Configuration configuration  )
     {
         verifyHacks();
-        verifyCachePageSizeIsPowerOfTwo( cachePageSize );
-        int maxPages = calculatePageCount( memoryAllocator, cachePageSize );
+        verifyCachePageSizeIsPowerOfTwo( configuration.pageSize );
+        int maxPages = calculatePageCount( configuration.memoryAllocator, configuration.pageSize );
 
         // Expose the total number of pages
-        pageCacheTracer.maxPages( maxPages );
+        configuration.pageCacheTracer.maxPages( maxPages );
 
         this.pageCacheId = pageCacheIdCounter.incrementAndGet();
         this.swapperFactory = swapperFactory;
-        this.cachePageSize = cachePageSize;
+        this.cachePageSize = configuration.pageSize;
         this.keepFree = Math.min( pagesToKeepFree, maxPages / 2 );
-        this.pageCacheTracer = pageCacheTracer;
-        this.versionContextSupplier = versionContextSupplier;
+        this.pageCacheTracer = configuration.pageCacheTracer;
+        this.versionContextSupplier = configuration.versionContextSupplier;
         this.printExceptionsOnClose = true;
-        this.bufferFactory = bufferFactory;
-        this.victimPage = VictimPageReference.getVictimPage( cachePageSize, memoryTracker );
-        this.pages = new PageList( maxPages, cachePageSize, memoryAllocator, new SwapperSet(), victimPage, UnsafeUtil.pageSize() );
+        this.bufferFactory = configuration.bufferFactory;
+        this.victimPage = VictimPageReference.getVictimPage( cachePageSize, configuration.memoryTracker );
+        this.pages = new PageList( maxPages, cachePageSize, configuration.memoryAllocator, new SwapperSet(), victimPage, UnsafeUtil.pageSize() );
         this.scheduler = jobScheduler;
-        this.clock = clock;
+        this.clock = configuration.clock;
 
         setFreelistHead( new AtomicInteger() );
     }
