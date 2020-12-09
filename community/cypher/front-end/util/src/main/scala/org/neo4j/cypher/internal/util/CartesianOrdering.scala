@@ -74,7 +74,7 @@ object VolcanoCartesianOrdering extends CartesianOrdering {
  * c0 + ⌈s0 / B⌉ * c2 - c2        >      ⌈s2 / B⌉ * c0                      | +c2
  * c0 + ⌈s0 / B⌉ * c2             > c2 + ⌈s2 / B⌉ * c0
  */
-class PushBatchedCartesianOrdering(batchSize: Int) extends CartesianOrdering {
+class BatchedCartesianOrdering(batchSize: Int) extends CartesianOrdering {
   override def compare(side0: (Cost, Cardinality), side1: (Cost, Cardinality)): Int = {
     costFor(side0, side1).compare(costFor(side1, side0))
   }

@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
-import org.neo4j.cypher.internal.compiler.PushBatchedExecution
-import org.neo4j.cypher.internal.compiler.VolcanoModelExecution
+import org.neo4j.cypher.internal.compiler.ExecutionModel.Batched
+import org.neo4j.cypher.internal.compiler.ExecutionModel.Volcano
 import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher.beLike
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
@@ -85,11 +85,11 @@ class CartesianProductPlanningIntegrationTest extends CypherFunSuite with Logica
       .setLabelCardinality("C", 10)
 
     val volcano = builder
-      .setExecutionModel(VolcanoModelExecution)
+      .setExecutionModel(Volcano)
       .build()
 
     val batched = builder
-      .setExecutionModel(PushBatchedExecution.default)
+      .setExecutionModel(Batched.default)
       .build()
 
     val query =
@@ -173,11 +173,11 @@ class CartesianProductPlanningIntegrationTest extends CypherFunSuite with Logica
       .setLabelCardinality("B", 20)
 
     val volcano = builder
-      .setExecutionModel(VolcanoModelExecution)
+      .setExecutionModel(Volcano)
       .build()
 
     val batched = builder
-      .setExecutionModel(PushBatchedExecution.default)
+      .setExecutionModel(Batched.default)
       .build()
 
     val query =

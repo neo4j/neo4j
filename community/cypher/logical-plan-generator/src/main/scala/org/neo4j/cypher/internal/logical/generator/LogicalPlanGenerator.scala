@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.ast.semantics.SemanticState.ScopeLocation
 import org.neo4j.cypher.internal.ast.semantics.SemanticState.ScopeZipper
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
-import org.neo4j.cypher.internal.compiler.VolcanoModelExecution
+import org.neo4j.cypher.internal.compiler.ExecutionModel.Volcano
 import org.neo4j.cypher.internal.compiler.helpers.PredicateHelper
 import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.LabelInfo
@@ -233,7 +233,7 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int],
       val po = new ProvidedOrders with Default[LogicalPlan, ProvidedOrder] {
         override protected def defaultValue: ProvidedOrder = ProvidedOrder.empty
       }
-      CardinalityCostModel(VolcanoModelExecution)
+      CardinalityCostModel(Volcano)
         .costFor(plan, QueryGraphSolverInput.empty, state.semanticTable, state.cardinalities, po) <= costLimit
   }
 

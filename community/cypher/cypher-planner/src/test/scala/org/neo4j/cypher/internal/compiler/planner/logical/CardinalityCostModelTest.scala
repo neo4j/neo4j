@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.ExecutionModel
-import org.neo4j.cypher.internal.compiler.PushBatchedExecution
-import org.neo4j.cypher.internal.compiler.VolcanoModelExecution
+import org.neo4j.cypher.internal.compiler.ExecutionModel.Batched
+import org.neo4j.cypher.internal.compiler.ExecutionModel.Volcano
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.DEFAULT_COST_PER_ROW
@@ -192,8 +192,8 @@ class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSu
       .argument("a").withCardinality(1)
       .build()
 
-    costFor(plan, QueryGraphSolverInput.empty, builder.getSemanticTable, builder.cardinalities, builder.providedOrders, VolcanoModelExecution) should equal(
-      costFor(plan, QueryGraphSolverInput.empty, builder.getSemanticTable, builder.cardinalities, builder.providedOrders, PushBatchedExecution(SMALL_CHUNK_SIZE, BIG_CHUNK_SIZE))
+    costFor(plan, QueryGraphSolverInput.empty, builder.getSemanticTable, builder.cardinalities, builder.providedOrders, Volcano) should equal(
+      costFor(plan, QueryGraphSolverInput.empty, builder.getSemanticTable, builder.cardinalities, builder.providedOrders, Batched(SMALL_CHUNK_SIZE, BIG_CHUNK_SIZE))
     )
   }
 
@@ -208,9 +208,9 @@ class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSu
 
     val argCost = Cardinality(cardinality) * DEFAULT_COST_PER_ROW
 
-    costFor(plan, QueryGraphSolverInput.empty, builder.getSemanticTable, builder.cardinalities, builder.providedOrders, VolcanoModelExecution)should
+    costFor(plan, QueryGraphSolverInput.empty, builder.getSemanticTable, builder.cardinalities, builder.providedOrders, Volcano)should
       equal(argCost + argCost * cardinality)
-    costFor(plan, QueryGraphSolverInput.empty, builder.getSemanticTable, builder.cardinalities, builder.providedOrders, PushBatchedExecution(SMALL_CHUNK_SIZE, BIG_CHUNK_SIZE)) should
+    costFor(plan, QueryGraphSolverInput.empty, builder.getSemanticTable, builder.cardinalities, builder.providedOrders, Batched(SMALL_CHUNK_SIZE, BIG_CHUNK_SIZE)) should
       equal(argCost + argCost * Math.ceil(cardinality / BIG_CHUNK_SIZE))
   }
 
@@ -227,9 +227,9 @@ class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSu
     val argLeftCost = Cardinality(cardinalityLeft) * DEFAULT_COST_PER_ROW
     val argRightCost = Cardinality(cardinalityRight) * DEFAULT_COST_PER_ROW
 
-    costFor(plan, QueryGraphSolverInput.empty, builder.getSemanticTable, builder.cardinalities, builder.providedOrders, VolcanoModelExecution) should
+    costFor(plan, QueryGraphSolverInput.empty, builder.getSemanticTable, builder.cardinalities, builder.providedOrders, Volcano) should
       equal(argLeftCost + argRightCost * cardinalityLeft)
-    costFor(plan, QueryGraphSolverInput.empty, builder.getSemanticTable, builder.cardinalities, builder.providedOrders, PushBatchedExecution(SMALL_CHUNK_SIZE, BIG_CHUNK_SIZE)) should
+    costFor(plan, QueryGraphSolverInput.empty, builder.getSemanticTable, builder.cardinalities, builder.providedOrders, Batched(SMALL_CHUNK_SIZE, BIG_CHUNK_SIZE)) should
       equal(argLeftCost + argRightCost * Math.ceil(cardinalityLeft / SMALL_CHUNK_SIZE))
   }
 
@@ -245,7 +245,7 @@ class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSu
 
     val argCost = Cardinality(cardinalityLeaves) * DEFAULT_COST_PER_ROW
 
-    costFor(plan, QueryGraphSolverInput.empty, builder.getSemanticTable, builder.cardinalities, builder.providedOrders, PushBatchedExecution(SMALL_CHUNK_SIZE, BIG_CHUNK_SIZE)) should
+    costFor(plan, QueryGraphSolverInput.empty, builder.getSemanticTable, builder.cardinalities, builder.providedOrders, Batched(SMALL_CHUNK_SIZE, BIG_CHUNK_SIZE)) should
       equal(argCost + argCost * Math.ceil(cardinalityLeaves / BIG_CHUNK_SIZE))
   }
 
@@ -263,7 +263,7 @@ class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSu
     val argCost = Cardinality(cardinalityEarlier) * DEFAULT_COST_PER_ROW
     val unwindCost = Cardinality(cardinalityEarlier) * DEFAULT_COST_PER_ROW // cost of unwind is determined on the amount of incoming rows
 
-    costFor(plan, QueryGraphSolverInput.empty, builder.getSemanticTable, builder.cardinalities, builder.providedOrders, PushBatchedExecution(SMALL_CHUNK_SIZE, BIG_CHUNK_SIZE)) should
+    costFor(plan, QueryGraphSolverInput.empty, builder.getSemanticTable, builder.cardinalities, builder.providedOrders, Batched(SMALL_CHUNK_SIZE, BIG_CHUNK_SIZE)) should
       equal(unwindCost + argCost + argCost * Math.ceil(cardinalityEarlier / BIG_CHUNK_SIZE))
   }
 
@@ -276,8 +276,8 @@ class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSu
       .argument("a").withCardinality(100).withProvidedOrder(ProvidedOrder.asc(varFor("a")))
       .build()
 
-    costFor(plan, QueryGraphSolverInput.empty, builder.getSemanticTable, builder.cardinalities, builder.providedOrders, VolcanoModelExecution) should equal(
-      costFor(plan, QueryGraphSolverInput.empty, builder.getSemanticTable, builder.cardinalities, builder.providedOrders, PushBatchedExecution(SMALL_CHUNK_SIZE, BIG_CHUNK_SIZE))
+    costFor(plan, QueryGraphSolverInput.empty, builder.getSemanticTable, builder.cardinalities, builder.providedOrders, Volcano) should equal(
+      costFor(plan, QueryGraphSolverInput.empty, builder.getSemanticTable, builder.cardinalities, builder.providedOrders, Batched(SMALL_CHUNK_SIZE, BIG_CHUNK_SIZE))
     )
   }
 }

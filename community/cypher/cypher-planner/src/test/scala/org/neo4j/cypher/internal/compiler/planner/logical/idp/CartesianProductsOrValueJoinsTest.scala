@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.idp
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
-import org.neo4j.cypher.internal.compiler.PushBatchedExecution
+import org.neo4j.cypher.internal.compiler.ExecutionModel.Batched
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.planner.logical.ExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics
@@ -139,7 +139,7 @@ class CartesianProductsOrValueJoinsTest extends CypherFunSuite with LogicalPlann
   }
 
   test("should plan cartesian product between lots of pattern nodes where one node ordered") {
-    val nodesWithCardinality = (0 until 3).map(i => (s"n$i", PushBatchedExecution.default.bigBatchSize * (3 - i))).toSet
+    val nodesWithCardinality = (0 until 3).map(i => (s"n$i", Batched.default.bigBatchSize * (3 - i))).toSet
     val orderedNode = "n3"
     val graph = QueryGraph()
 

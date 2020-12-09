@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.ExecutionModel
-import org.neo4j.cypher.internal.compiler.PushBatchedExecution
+import org.neo4j.cypher.internal.compiler.ExecutionModel.Batched
 import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.DEFAULT_COST_PER_ROW
 import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.EAGERNESS_MULTIPLIER
 import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.EXPAND_INTO_COST
@@ -258,7 +258,7 @@ case class CardinalityCostModel(executionModel: ExecutionModel) extends CostMode
       val providesOrder = !providedOrders(cp.id).isEmpty
 
       executionModel match {
-        case p:PushBatchedExecution if !providesOrder =>
+        case p:Batched if !providesOrder =>
           // The rootPlan we use here to select the batch size will obviously not be the final plan for the whole query.
           // So it could very well be that we select the small chunk size here for cost estimation purposes, but the cardinalities increase
           // in the later course of the plan and it will actually be executed with the big chunk size.

@@ -22,9 +22,9 @@ package org.neo4j.cypher.internal.compiler
 import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
+import org.neo4j.cypher.internal.util.BatchedCartesianOrdering
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.CartesianOrdering
-import org.neo4j.cypher.internal.util.PushBatchedCartesianOrdering
 import org.neo4j.cypher.internal.util.VolcanoCartesianOrdering
 
 /**
@@ -40,33 +40,33 @@ sealed trait ExecutionModel {
 }
 
 object ExecutionModel {
-  val default: ExecutionModel = PushBatchedExecution.default
-}
+  val default: ExecutionModel = Batched.default
 
-case object VolcanoModelExecution extends ExecutionModel {
-  override def cartesianOrdering(maxCardinality: Cardinality): CartesianOrdering = VolcanoCartesianOrdering
-}
-
-case class PushBatchedExecution(smallBatchSize: Int, bigBatchSize: Int) extends ExecutionModel {
-
-  /**
-   * Select the batch size for executing a logical plan.
-   */
-  def selectBatchSize(logicalPlan: LogicalPlan, cardinalities: Cardinalities): Int = {
-    val maxCardinality = logicalPlan.flatten.map(plan => cardinalities.get(plan.id)).max
-    selectBatchSize(maxCardinality)
+  case object Volcano extends ExecutionModel {
+    override def cartesianOrdering(maxCardinality: Cardinality): CartesianOrdering = VolcanoCartesianOrdering
   }
 
-  private def selectBatchSize(maxCardinality: Cardinality): Int = {
-    if (maxCardinality.amount.toLong > bigBatchSize) bigBatchSize else smallBatchSize
+  case class Batched(smallBatchSize: Int, bigBatchSize: Int) extends ExecutionModel {
+
+    /**
+     * Select the batch size for executing a logical plan.
+     */
+    def selectBatchSize(logicalPlan: LogicalPlan, cardinalities: Cardinalities): Int = {
+      val maxCardinality = logicalPlan.flatten.map(plan => cardinalities.get(plan.id)).max
+      selectBatchSize(maxCardinality)
+    }
+
+    private def selectBatchSize(maxCardinality: Cardinality): Int = {
+      if (maxCardinality.amount.toLong > bigBatchSize) bigBatchSize else smallBatchSize
+    }
+
+    override def cartesianOrdering(maxCardinality: Cardinality): CartesianOrdering = new BatchedCartesianOrdering(selectBatchSize(maxCardinality))
   }
 
-  override def cartesianOrdering(maxCardinality: Cardinality): CartesianOrdering = new PushBatchedCartesianOrdering(selectBatchSize(maxCardinality))
-}
-
-object PushBatchedExecution {
-  val default: PushBatchedExecution = PushBatchedExecution(
-    GraphDatabaseInternalSettings.cypher_pipelined_batch_size_small.defaultValue(),
-    GraphDatabaseInternalSettings.cypher_pipelined_batch_size_big.defaultValue()
-  )
+  object Batched {
+    val default: Batched = Batched(
+      GraphDatabaseInternalSettings.cypher_pipelined_batch_size_small.defaultValue(),
+      GraphDatabaseInternalSettings.cypher_pipelined_batch_size_big.defaultValue()
+    )
+  }
 }

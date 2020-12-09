@@ -43,10 +43,10 @@ import org.neo4j.cypher.internal.cache.LFUCache
 import org.neo4j.cypher.internal.compiler
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
 import org.neo4j.cypher.internal.compiler.CypherPlannerFactory
+import org.neo4j.cypher.internal.compiler.ExecutionModel.Batched
+import org.neo4j.cypher.internal.compiler.ExecutionModel.Volcano
 import org.neo4j.cypher.internal.compiler.MissingParametersNotification
-import org.neo4j.cypher.internal.compiler.PushBatchedExecution
 import org.neo4j.cypher.internal.compiler.UpdateStrategy
-import org.neo4j.cypher.internal.compiler.VolcanoModelExecution
 import org.neo4j.cypher.internal.compiler.defaultUpdateStrategy
 import org.neo4j.cypher.internal.compiler.eagerUpdateStrategy
 import org.neo4j.cypher.internal.compiler.phases.CypherCompatibilityVersion
@@ -275,8 +275,8 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
     val containsUpdates: Boolean = syntacticQuery.statement().containsUpdates
     val executionModel = inferredRuntime match {
       case CypherRuntimeOption.pipelined
-           | CypherRuntimeOption.parallel if !containsUpdates => PushBatchedExecution(config.pipelinedBatchSizeSmall, config.pipelinedBatchSizeBig)
-      case _ => VolcanoModelExecution
+           | CypherRuntimeOption.parallel if !containsUpdates => Batched(config.pipelinedBatchSizeSmall, config.pipelinedBatchSizeBig)
+      case _ => Volcano
     }
 
     // Context used to create logical plans

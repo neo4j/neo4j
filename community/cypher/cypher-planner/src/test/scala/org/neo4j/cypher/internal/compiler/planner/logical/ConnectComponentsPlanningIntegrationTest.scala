@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
-import org.neo4j.cypher.internal.compiler.PushBatchedExecution
-import org.neo4j.cypher.internal.compiler.VolcanoModelExecution
+import org.neo4j.cypher.internal.compiler.ExecutionModel.Batched
+import org.neo4j.cypher.internal.compiler.ExecutionModel.Volcano
 import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher.beLike
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder
@@ -86,11 +86,11 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
     val orderedNode = s"n${COMPONENT_THRESHOLD_FOR_CARTESIAN_PRODUCT}"
 
     val plan = plannerBuilder()
-      .setAllNodesCardinality(PushBatchedExecution.default.bigBatchSize * 2)
+      .setAllNodesCardinality(Batched.default.bigBatchSize * 2)
       .setLabelCardinality("Few", 1)
-      .setLabelCardinality("Many", PushBatchedExecution.default.bigBatchSize * 2)
+      .setLabelCardinality("Many", Batched.default.bigBatchSize * 2)
       .addIndex("Many", Seq("prop"), 0.5, 0.01, providesOrder = BOTH)
-      .setExecutionModel(PushBatchedExecution.default) // In Volcano, the cartesian product does not get more expensive by having to provide order, so this test does not make sense there.
+      .setExecutionModel(Batched.default) // In Volcano, the cartesian product does not get more expensive by having to provide order, so this test does not make sense there.
       .build()
       .plan(
         s"""MATCH $nodes, ($orderedNode:Many)
@@ -116,8 +116,8 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
       .setAllNodesCardinality(20000)
       .setLabelCardinalities(labelsAndNumbers.toMap.mapValues(_.toDouble * 2000))
 
-    val volcano = builder.setExecutionModel(VolcanoModelExecution).build()
-    val batched = builder.setExecutionModel(PushBatchedExecution.default).build()
+    val volcano = builder.setExecutionModel(Volcano).build()
+    val batched = builder.setExecutionModel(Batched.default).build()
     val query = s"MATCH $patterns RETURN n1"
     val volcanoPlan = volcano.plan(query)
     val batchedPlan = batched.plan(query)
@@ -174,8 +174,8 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
       .setLabelCardinality("B", 200)
       .setLabelCardinality("C", 100)
 
-    val volcano = builder.setExecutionModel(VolcanoModelExecution).build()
-    val batched = builder.setExecutionModel(PushBatchedExecution.default).build()
+    val volcano = builder.setExecutionModel(Volcano).build()
+    val batched = builder.setExecutionModel(Batched.default).build()
     val query =
       """MATCH (a:A), (b:B), (c:C)
         |RETURN a, b, c
@@ -248,8 +248,8 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
       .setLabelCardinality("A", 30)
       .setLabelCardinality("B", 20)
 
-    val volcano = builder.setExecutionModel(VolcanoModelExecution).build()
-    val batched = builder.setExecutionModel(PushBatchedExecution.default).build()
+    val volcano = builder.setExecutionModel(Volcano).build()
+    val batched = builder.setExecutionModel(Batched.default).build()
 
     val query =
       """MATCH (a:A), (b:B)
@@ -524,8 +524,8 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
       .setLabelCardinality("M", 50)
       .setRelationshipCardinality("(:N)-[]-()", 10000) // Cardinality is increased a lot by optional match
 
-    val volcano = builder.setExecutionModel(VolcanoModelExecution).build()
-    val batched = builder.setExecutionModel(PushBatchedExecution.default).build()
+    val volcano = builder.setExecutionModel(Volcano).build()
+    val batched = builder.setExecutionModel(Batched.default).build()
 
     val query =
       """MATCH (n:N), (m:M)
@@ -595,8 +595,8 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
       .setRelationshipCardinality("()-[]->(:M)", 1000)
       .setRelationshipCardinality("(:N)-[]->(:M)", 10)
 
-    val volcano = builder.setExecutionModel(VolcanoModelExecution).build()
-    val batched = builder.setExecutionModel(PushBatchedExecution.default).build()
+    val volcano = builder.setExecutionModel(Volcano).build()
+    val batched = builder.setExecutionModel(Batched.default).build()
 
 
     val query =
@@ -649,8 +649,8 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
       .setRelationshipCardinality("(:N)-[]-(:M)", 10)
       .setRelationshipCardinality("(:M)-[]-()", 10)
 
-    val volcano = builder.setExecutionModel(VolcanoModelExecution).build()
-    val batched = builder.setExecutionModel(PushBatchedExecution.default).build()
+    val volcano = builder.setExecutionModel(Volcano).build()
+    val batched = builder.setExecutionModel(Batched.default).build()
 
     val query =
       """MATCH (n:N), (m:M), (o:O) WHERE n.prop = m.prop
@@ -775,8 +775,8 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
       .setRelationshipCardinality("(:N)-[]-(:M)", 100)
       .setRelationshipCardinality("(:M)-[]-()", 100)
 
-    val volcano = build.setExecutionModel(VolcanoModelExecution).build()
-    val batched = build.setExecutionModel(PushBatchedExecution.default).build()
+    val volcano = build.setExecutionModel(Volcano).build()
+    val batched = build.setExecutionModel(Batched.default).build()
 
     val query =
       """MATCH (n:N), (m:M), (o:O)
@@ -911,12 +911,12 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
         |RETURN count(*)
         |""".stripMargin
     val volcanoPlan = builder
-      .setExecutionModel(VolcanoModelExecution)
+      .setExecutionModel(Volcano)
       .build()
       .plan(query)
 
     val batchedPlan = builder
-      .setExecutionModel(PushBatchedExecution.default)
+      .setExecutionModel(Batched.default)
       .build()
       .plan(query)
 
@@ -947,12 +947,12 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
         |RETURN * ORDER BY p1.name
         |""".stripMargin
     val volcanoPlan = builder
-      .setExecutionModel(VolcanoModelExecution)
+      .setExecutionModel(Volcano)
       .build()
       .plan(query)
 
     val batchedPlan = builder
-      .setExecutionModel(PushBatchedExecution.default)
+      .setExecutionModel(Batched.default)
       .build()
       .plan(query)
 
