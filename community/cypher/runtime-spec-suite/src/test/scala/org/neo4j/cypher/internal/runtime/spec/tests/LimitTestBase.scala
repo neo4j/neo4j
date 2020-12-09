@@ -177,6 +177,23 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
     runtimeResult should beColumns("x").withRows(singleColumn(aNodes.flatMap(n => List().padTo(10, n))))
   }
 
+  test("should support apply-limit 0") {
+    given {
+      nodeGraph(sizeHint)
+    }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .apply()
+      .|.limit(0)
+      .|.argument("n")
+      .allNodeScan("n")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+    runtimeResult should beColumns("n").withNoRows()
+  }
+
   test("should support limit on top of apply") {
     // given
     val nodesPerLabel = 50
@@ -197,6 +214,23 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
     val runtimeResult = execute(logicalQuery, runtime)
 
     runtimeResult should beColumns("x").withRows(rowCount(limit))
+  }
+
+  test("should support limit 0 on top of apply") {
+    val nodesPerLabel = 50
+    given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .limit(0)
+      .apply()
+      .|.expandAll("(x)-->(y)")
+      .|.argument()
+      .nodeByLabelScan("x", "A", IndexOrderNone)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+    runtimeResult should beColumns("x").withNoRows()
   }
 
   test("should support reduce -> limit on the RHS of apply") {
@@ -376,6 +410,22 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
     runtimeResult should beColumns("sum").withSingleRow(110)
 
     input.hasMore should be(true)
+  }
+
+  test("limit 0 followed by aggregation") {
+    given {
+      nodeGraph(sizeHint)
+    }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("c")
+      .aggregation(Seq.empty, Seq("count(n) as c"))
+      .limit(0)
+      .allNodeScan("n")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+    runtimeResult should beColumns("c").withSingleRow(0)
   }
 
   test("should support allnodes + limit under apply") {
@@ -1081,5 +1131,140 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
     withClue(s"Top Limit = $topLimit , RHS Limit = $rhsLimit") {
       runtimeResult should beColumns("a").withRows(rowCount(topLimit))
     }
+  }
+
+  test("should let through all LHS rows of antiSemiApply") {
+    val nodes = given {
+      nodeGraph(sizeHint)
+    }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .antiSemiApply()
+      .|.limit(0)
+      .|.argument("n")
+      .allNodeScan("n")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+    runtimeResult should beColumns("n").withRows(nodes.map(Array[Any](_)))
+  }
+
+
+  test("should support reduce -> limit 0 on the RHS of apply") {
+    val nodesPerLabel = 100
+    given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .apply()
+      .|.limit(0)
+      .|.sort(Seq(Ascending("y")))
+      .|.expandAll("(x)-->(y)")
+      .|.argument()
+      .nodeByLabelScan("x", "A", IndexOrderNone)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+    runtimeResult should beColumns("x", "y").withNoRows()
+  }
+
+  test("should support limit 0-> reduce on the RHS of apply") {
+    val nodesPerLabel = 100
+    given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .apply()
+      .|.sort(Seq(Ascending("y")))
+      .|.limit(0)
+      .|.expandAll("(x)-->(y)")
+      .|.argument()
+      .nodeByLabelScan("x", "A", IndexOrderNone)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+    runtimeResult should beColumns("x", "y").withNoRows()
+  }
+
+  test("should support chained limit 0") {
+    val nodesPerLabel = 100
+    given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a2")
+      .limit(0)
+      .expandAll("(b2)<--(a2)")
+      .limit(0)
+      .expandAll("(a1)-->(b2)")
+      .limit(0)
+      .expandAll("(b1)<--(a1)")
+      .limit(0)
+      .expandAll("(x)-->(b1)")
+      .nodeByLabelScan("x", "A", IndexOrderNone)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+    runtimeResult should beColumns("a2").withNoRows()
+  }
+
+  test("should support optional expand(into) + limit 0 under apply") {
+    given {
+      val (aNodes, bNodes) = bipartiteGraph(3, "A", "B", "R")
+      for {a <- aNodes
+           b <- bNodes} {
+        a.createRelationshipTo(b, withName("R"))
+      }
+    }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a1")
+      .apply()
+      .|.limit(0)
+      .|.optionalExpandInto("(a1)-->(b)")
+      .|.nonFuseable()
+      .|.nodeByLabelScan("b", "B", IndexOrderNone)
+      .nodeByLabelScan("a1", "A", IndexOrderNone)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+    runtimeResult should beColumns("a1").withNoRows()
+  }
+
+  test("should support unwind + limit 0 under apply") {
+    given {
+      nodeGraph(sizeHint, "A")
+    }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a1")
+      .apply()
+      .|.limit(0)
+      .|.unwind("[1, 2, 3, 4, 5] AS a2")
+      .|.argument()
+      .allNodeScan("a1")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+    runtimeResult should beColumns("a1").withNoRows()
+  }
+
+  test("should support chained limit 0 on RHS of Apply") {
+    given {
+      bipartiteGraph(10, "A", "B", "R")
+    }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a")
+      .apply()
+      .|.limit(0)
+      .|.limit(0)
+      .|.expandAll("(a)-->(b)")
+      .|.argument()
+      .nodeByLabelScan("a", "A", IndexOrderNone)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+    runtimeResult should beColumns("a").withNoRows()
   }
 }

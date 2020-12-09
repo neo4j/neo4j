@@ -39,9 +39,8 @@ import org.neo4j.cypher.internal.runtime.spec.tests.ConditionalApplyTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.CreateTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.DirectedRelationshipByIdSeekTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.DistinctTestBase
-import org.neo4j.cypher.internal.runtime.spec.tests.DropResultTestBase
-import org.neo4j.cypher.internal.runtime.spec.tests.EmptyResultTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.EagerLimitProfileRowsTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.EmptyResultTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.EsotericAssertSameNodeTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.ExhaustiveLimitTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.ExpandAllTestBase
@@ -224,7 +223,6 @@ class InterpretedLetSelectOrAntiSemiApplyTest extends LetSelectOrAntiSemiApplyTe
 class InterpretedNestedPlanExpressionTest extends NestedPlanExpressionTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedRollupApplyTest extends RollupApplyTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedRelationshipTypeScanTest extends RelationshipTypeScanTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
-class InterpretedDropResultTest extends DropResultTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedEmptyResultTest extends EmptyResultTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedTriadicSelectionTest extends TriadicSelectionTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedAssertSameNodeTest extends AssertSameNodeTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT) with EsotericAssertSameNodeTestBase[CommunityRuntimeContext]
