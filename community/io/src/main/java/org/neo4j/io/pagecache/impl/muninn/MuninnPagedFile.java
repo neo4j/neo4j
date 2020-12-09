@@ -123,15 +123,15 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
      * @throws IOException If the {@link PageSwapper} could not be created.
      */
     MuninnPagedFile( Path path, MuninnPageCache pageCache, int filePageSize, PageSwapperFactory swapperFactory, PageCacheTracer pageCacheTracer,
-            VersionContextSupplier versionContextSupplier, boolean createIfNotExists, boolean truncateExisting, boolean useDirectIo, String databaseName )
-            throws IOException
+            VersionContextSupplier versionContextSupplier, boolean createIfNotExists, boolean truncateExisting, boolean useDirectIo, String databaseName,
+            int faultLockStriping ) throws IOException
     {
         super( pageCache.pages );
         this.pageCache = pageCache;
         this.filePageSize = filePageSize;
         this.cursorFactory = new CursorFactory( this, versionContextSupplier );
         this.pageCacheTracer = pageCacheTracer;
-        this.pageFaultLatches = new LatchMap();
+        this.pageFaultLatches = new LatchMap( faultLockStriping );
         this.bufferFactory = pageCache.getBufferFactory();
         this.databaseName = databaseName;
 

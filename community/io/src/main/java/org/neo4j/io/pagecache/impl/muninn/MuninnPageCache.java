@@ -170,6 +170,7 @@ public class MuninnPageCache implements PageCache
     private final PageCacheTracer pageCacheTracer;
     private final VersionContextSupplier versionContextSupplier;
     private final IOBufferFactory bufferFactory;
+    private final int faultLockStriping;
     final PageList pages;
     // All PageCursors are initialised with their pointers pointing to the victim page. This way, we don't have to throw
     // exceptions on bounds checking failures; we can instead return the victim page pointer, and permit the page
@@ -227,9 +228,10 @@ public class MuninnPageCache implements PageCache
         private final VersionContextSupplier versionContextSupplier;
         private final int pageSize;
         private final IOBufferFactory bufferFactory;
+        private final int faultLockStriping;
 
         private Configuration( MemoryAllocator memoryAllocator, SystemNanoClock clock, MemoryTracker memoryTracker, PageCacheTracer pageCacheTracer,
-                VersionContextSupplier versionContextSupplier, int pageSize, IOBufferFactory bufferFactory )
+                VersionContextSupplier versionContextSupplier, int pageSize, IOBufferFactory bufferFactory, int faultLockStriping )
         {
             this.memoryAllocator = memoryAllocator;
             this.clock = clock;
@@ -238,6 +240,7 @@ public class MuninnPageCache implements PageCache
             this.versionContextSupplier = versionContextSupplier;
             this.pageSize = pageSize;
             this.bufferFactory = bufferFactory;
+            this.faultLockStriping = faultLockStriping;
         }
 
         /**
@@ -245,7 +248,8 @@ public class MuninnPageCache implements PageCache
          */
         public Configuration memoryAllocator( MemoryAllocator memoryAllocator )
         {
-            return new Configuration( memoryAllocator, clock, memoryTracker, pageCacheTracer, versionContextSupplier, pageSize, bufferFactory );
+            return new Configuration( memoryAllocator, clock, memoryTracker, pageCacheTracer, versionContextSupplier, pageSize, bufferFactory,
+                    faultLockStriping );
         }
 
         /**
@@ -253,7 +257,8 @@ public class MuninnPageCache implements PageCache
          */
         public Configuration clock( SystemNanoClock clock )
         {
-            return new Configuration( memoryAllocator, clock, memoryTracker, pageCacheTracer, versionContextSupplier, pageSize, bufferFactory );
+            return new Configuration( memoryAllocator, clock, memoryTracker, pageCacheTracer, versionContextSupplier, pageSize, bufferFactory,
+                    faultLockStriping );
         }
 
         /**
@@ -261,7 +266,8 @@ public class MuninnPageCache implements PageCache
          */
         public Configuration memoryTracker( MemoryTracker memoryTracker )
         {
-            return new Configuration( memoryAllocator, clock, memoryTracker, pageCacheTracer, versionContextSupplier, pageSize, bufferFactory );
+            return new Configuration( memoryAllocator, clock, memoryTracker, pageCacheTracer, versionContextSupplier, pageSize, bufferFactory,
+                    faultLockStriping );
         }
 
         /**
@@ -269,7 +275,8 @@ public class MuninnPageCache implements PageCache
          */
         public Configuration pageCacheTracer( PageCacheTracer pageCacheTracer )
         {
-            return new Configuration( memoryAllocator, clock, memoryTracker, pageCacheTracer, versionContextSupplier, pageSize, bufferFactory );
+            return new Configuration( memoryAllocator, clock, memoryTracker, pageCacheTracer, versionContextSupplier, pageSize, bufferFactory,
+                    faultLockStriping );
         }
 
         /**
@@ -277,7 +284,8 @@ public class MuninnPageCache implements PageCache
          */
         public Configuration versionContextSupplier( VersionContextSupplier versionContextSupplier )
         {
-            return new Configuration( memoryAllocator, clock, memoryTracker, pageCacheTracer, versionContextSupplier, pageSize, bufferFactory );
+            return new Configuration( memoryAllocator, clock, memoryTracker, pageCacheTracer, versionContextSupplier, pageSize, bufferFactory,
+                    faultLockStriping );
         }
 
         /**
@@ -285,7 +293,8 @@ public class MuninnPageCache implements PageCache
          */
         public Configuration pageSize( int pageSize )
         {
-            return new Configuration( memoryAllocator, clock, memoryTracker, pageCacheTracer, versionContextSupplier, pageSize, bufferFactory );
+            return new Configuration( memoryAllocator, clock, memoryTracker, pageCacheTracer, versionContextSupplier, pageSize, bufferFactory,
+                    faultLockStriping );
         }
 
         /**
@@ -293,7 +302,17 @@ public class MuninnPageCache implements PageCache
          */
         public Configuration bufferFactory( IOBufferFactory bufferFactory )
         {
-            return new Configuration( memoryAllocator, clock, memoryTracker, pageCacheTracer, versionContextSupplier, pageSize, bufferFactory );
+            return new Configuration( memoryAllocator, clock, memoryTracker, pageCacheTracer, versionContextSupplier, pageSize, bufferFactory,
+                    faultLockStriping );
+        }
+
+        /**
+         * @param faultLockStriping size of the latch map for each paged file used for fault lock striping.
+         */
+        public Configuration faultLockStriping( int faultLockStriping )
+        {
+            return new Configuration( memoryAllocator, clock, memoryTracker, pageCacheTracer, versionContextSupplier, pageSize, bufferFactory,
+                    faultLockStriping );
         }
     }
 
@@ -313,7 +332,7 @@ public class MuninnPageCache implements PageCache
     public static Configuration config( MemoryAllocator memoryAllocator )
     {
         return new Configuration( memoryAllocator, Clocks.nanoClock(), EmptyMemoryTracker.INSTANCE, PageCacheTracer.NULL, EmptyVersionContextSupplier.EMPTY,
-                PAGE_SIZE, DISABLED_BUFFER_FACTORY );
+                PAGE_SIZE, DISABLED_BUFFER_FACTORY, LatchMap.faultLockStriping );
     }
 
     /**
@@ -343,6 +362,7 @@ public class MuninnPageCache implements PageCache
         this.pages = new PageList( maxPages, cachePageSize, configuration.memoryAllocator, new SwapperSet(), victimPage, UnsafeUtil.pageSize() );
         this.scheduler = jobScheduler;
         this.clock = configuration.clock;
+        this.faultLockStriping = configuration.faultLockStriping;
 
         setFreelistHead( new AtomicInteger() );
     }
@@ -467,7 +487,8 @@ public class MuninnPageCache implements PageCache
                 pageCacheTracer, versionContextSupplier,
                 createIfNotExists,
                 truncateExisting, useDirectIO,
-                databaseName );
+                databaseName,
+                faultLockStriping );
         pagedFile.incrementRefCount();
         pagedFile.setDeleteOnClose( deleteOnClose );
         current = new FileMapping( path, pagedFile );

@@ -21,6 +21,7 @@ package org.neo4j.io.pagecache.impl.muninn;
 
 import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.util.FeatureToggles;
+import org.neo4j.util.Preconditions;
 import org.neo4j.util.concurrent.BinaryLatch;
 
 /**
@@ -44,16 +45,19 @@ final class LatchMap
         }
     }
 
-    private static final int faultLockStriping = FeatureToggles.getInteger( LatchMap.class, "faultLockStriping", 128 );
-    private static final long faultLockMask = faultLockStriping - 1;
+    static final int DEFAULT_FAULT_LOCK_STRIPING = 128;
+    static final int faultLockStriping = FeatureToggles.getInteger( LatchMap.class, "faultLockStriping", DEFAULT_FAULT_LOCK_STRIPING );
     private static final int latchesArrayBase = UnsafeUtil.arrayBaseOffset( Latch[].class );
     private static final int latchesArrayScale = UnsafeUtil.arrayIndexScale( Latch[].class );
 
     private final Latch[] latches;
+    private final long faultLockMask;
 
-    LatchMap()
+    LatchMap( int size )
     {
-        latches = new Latch[faultLockStriping];
+        Preconditions.checkArgument( Integer.bitCount( size ) == 1, "Fault lock stripe count must be a power of 2, was %d", size );
+        latches = new Latch[size];
+        faultLockMask = size - 1;
     }
 
     private long offset( int index )

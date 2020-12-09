@@ -20,7 +20,11 @@
 package org.neo4j.io.pagecache.impl.muninn;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -31,22 +35,25 @@ import org.neo4j.test.ThreadTestUtils;
 import org.neo4j.util.concurrent.BinaryLatch;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class LatchMapTest
 {
-    private LatchMap latches = new LatchMap();
-
-    @Test
-    void takeOrAwaitLatchMustReturnLatchIfAvailable()
+    @ValueSource( ints = {LatchMap.DEFAULT_FAULT_LOCK_STRIPING, 1 << 10, 1 << 11} )
+    @ParameterizedTest
+    void takeOrAwaitLatchMustReturnLatchIfAvailable( int size )
     {
+        LatchMap latches = new LatchMap( size );
         BinaryLatch latch = latches.takeOrAwaitLatch( 0 );
         assertThat( latch ).isNotNull();
         latch.release();
     }
 
-    @Test
-    void takeOrAwaitLatchMustAwaitExistingLatchAndReturnNull() throws Exception
+    @ValueSource( ints = {LatchMap.DEFAULT_FAULT_LOCK_STRIPING, 1 << 10, 1 << 11} )
+    @ParameterizedTest
+    void takeOrAwaitLatchMustAwaitExistingLatchAndReturnNull( int size ) throws Exception
     {
+        LatchMap latches = new LatchMap( size );
         AtomicReference<Thread> threadRef = new AtomicReference<>();
         BinaryLatch latch = latches.takeOrAwaitLatch( 42 );
         assertThat( latch ).isNotNull();
@@ -78,9 +85,11 @@ class LatchMapTest
         }
     }
 
-    @Test
-    void takeOrAwaitLatchMustNotLetUnrelatedLatchesConflictTooMuch() throws Exception
+    @ValueSource( ints = {LatchMap.DEFAULT_FAULT_LOCK_STRIPING, 1 << 10, 1 << 11} )
+    @ParameterizedTest
+    void takeOrAwaitLatchMustNotLetUnrelatedLatchesConflictTooMuch( int size ) throws Exception
     {
+        LatchMap latches = new LatchMap( size );
         BinaryLatch latch = latches.takeOrAwaitLatch( 42 );
         assertThat( latch ).isNotNull();
         ExecutorService executor = null;
@@ -100,10 +109,33 @@ class LatchMapTest
         }
     }
 
-    @Test
-    void latchMustBeAvailableAfterRelease()
+    @ValueSource( ints = {LatchMap.DEFAULT_FAULT_LOCK_STRIPING, 1 << 10, 1 << 11} )
+    @ParameterizedTest
+    void latchMustBeAvailableAfterRelease( int size )
     {
+        LatchMap latches = new LatchMap( size );
         latches.takeOrAwaitLatch( 42 ).release();
         latches.takeOrAwaitLatch( 42 ).release();
+    }
+
+    @Test
+    void shouldFailOnSizeNotPowerOfTwo()
+    {
+        assertThatThrownBy( () -> new LatchMap( 123 ) ).isInstanceOf( IllegalArgumentException.class );
+    }
+
+    @Test
+    void largerLatchMapShouldAllowMoreLatches()
+    {
+        // given
+        LatchMap latches = new LatchMap( 512 );
+
+        // then
+        List<LatchMap.Latch> latchList = new ArrayList<>();
+        for ( int i = 0; i < 256; i++ )
+        {
+            latchList.add( latches.takeOrAwaitLatch( i ) ); // should not contend
+        }
+        latchList.forEach( LatchMap.Latch::release );
     }
 }
