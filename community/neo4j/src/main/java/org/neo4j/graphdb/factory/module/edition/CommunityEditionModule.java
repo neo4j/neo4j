@@ -245,12 +245,18 @@ public class CommunityEditionModule extends StandaloneEditionModule
         DependencyResolver globalDependencies = globalModule.getGlobalDependencies();
         Supplier<GraphDatabaseService> systemSupplier = systemSupplier( globalDependencies );
         var systemGraphComponents = globalModule.getSystemGraphComponents();
-        var systemGraphComponent = new DefaultSystemGraphComponent( globalModule.getGlobalConfig() );
-        systemGraphComponents.register( systemGraphComponent );
         SystemGraphInitializer initializer =
                 CommunityEditionModule.tryResolveOrCreate( SystemGraphInitializer.class, globalModule.getExternalDependencyResolver(),
                         () -> new DefaultSystemGraphInitializer( systemSupplier, systemGraphComponents ) );
         return globalModule.getGlobalDependencies().satisfyDependency( initializer );
+    }
+
+    @Override
+    public void registerSystemGraphComponents( SystemGraphComponents systemGraphComponents, GlobalModule globalModule,
+                                               DatabaseManager<?> databaseManager )
+    {
+        var systemGraphComponent = new DefaultSystemGraphComponent( globalModule.getGlobalConfig() );
+        systemGraphComponents.register( systemGraphComponent );
     }
 
     protected Supplier<GraphDatabaseService> systemSupplier( DependencyResolver dependencies )
