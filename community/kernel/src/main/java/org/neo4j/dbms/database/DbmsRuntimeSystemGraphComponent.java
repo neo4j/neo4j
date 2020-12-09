@@ -19,63 +19,49 @@
  */
 package org.neo4j.dbms.database;
 
-import java.util.Optional;
-
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.util.Preconditions;
 
-public class DbmsRuntimeSystemGraphComponent extends AbstractSystemGraphComponent
+import static org.neo4j.dbms.database.ComponentVersion.DBMS_RUNTIME_COMPONENT;
+import static org.neo4j.dbms.database.ComponentVersion.Neo4jVersions.UNKNOWN_VERSION;
+
+public class DbmsRuntimeSystemGraphComponent extends AbstractVersionComponent<DbmsRuntimeVersion>
 {
-    private static final Label versionLabel = Label.label( "Version" );
-    public static final String COMPONENT_NAME = "dbms-runtime";
+    public static final Label OLD_COMPONENT_LABEL = Label.label( "DbmsRuntime" );
+    public static final String OLD_PROPERTY_NAME = "version";
 
     public DbmsRuntimeSystemGraphComponent( Config config )
     {
-        super( config );
+        super( DBMS_RUNTIME_COMPONENT, DbmsRuntimeVersion.LATEST_DBMS_RUNTIME_COMPONENT_VERSION, config, DbmsRuntimeVersion::fromVersionNumber );
     }
 
     @Override
-    public String componentName()
+    DbmsRuntimeVersion getFallbackVersion()
     {
-        return COMPONENT_NAME;
+        return DbmsRuntimeVersion.V4_1;
     }
 
     @Override
-    public Status detect( Transaction tx )
+    public int getVersion( Transaction tx, String componentName )
     {
-        Optional<DbmsRuntimeVersion> version = tx.findNodes( DbmsRuntimeRepository.DBMS_RUNTIME_LABEL ).stream()
-                                                 .map( node -> (int) node.getProperty( DbmsRuntimeRepository.VERSION_PROPERTY ) )
-                                                 .map( DbmsRuntimeVersion::fromVersionNumber )
-                                                 .findFirst();
-        if ( version.isEmpty() )
+        int result = UNKNOWN_VERSION;
+        try ( ResourceIterator<Node> nodes = tx.findNodes( VERSION_LABEL ) )
         {
-            return Status.UNINITIALIZED;
+            if ( nodes.hasNext() )
+            {
+                Node versionNode = nodes.next();
+                if ( versionNode.hasProperty( OLD_PROPERTY_NAME ) )
+                {
+                    result = (Integer) versionNode.getProperty( OLD_PROPERTY_NAME );
+                }
+            }
         }
-
-        if ( version.get() != DbmsRuntimeRepository.LATEST_VERSION )
-        {
-            return Status.REQUIRES_UPGRADE;
-        }
-
-        return Status.CURRENT;
-    }
-
-    @Override
-    protected void initializeSystemGraphModel( Transaction tx )
-    {
-        DbmsRuntimeVersion dbmsRuntimeVersion = DbmsRuntimeRepository.LATEST_VERSION;
-        if ( !config.get( GraphDatabaseSettings.allow_single_automatic_upgrade ) && is41Database( tx ) )
-        {
-            dbmsRuntimeVersion = DbmsRuntimeVersion.V4_1;
-        }
-
-        tx.createNode( DbmsRuntimeRepository.DBMS_RUNTIME_LABEL )
-          .setProperty( DbmsRuntimeRepository.VERSION_PROPERTY, dbmsRuntimeVersion.getVersion() );
+        return result != UNKNOWN_VERSION ? result : super.getVersion( tx, componentName );
     }
 
     @Override
@@ -83,35 +69,32 @@ public class DbmsRuntimeSystemGraphComponent extends AbstractSystemGraphComponen
     {
         SystemGraphComponent.executeWithFullAccess( systemDb, tx ->
         {
-            // New components are not currently initialised in cluster deployment when new binaries are booted on top of an existing database.
-            // This is a known shortcoming of the lifecycle and a state transfer from UNINITIALIZED to CURRENT must be supported
-            // as a workaround until it is fixed.
-            var node = tx.findNodes( DbmsRuntimeRepository.DBMS_RUNTIME_LABEL )
-                         .stream()
-                         .findFirst()
-                         .orElseGet( () -> tx.createNode( DbmsRuntimeRepository.DBMS_RUNTIME_LABEL ) );
-
-            node.setProperty( DbmsRuntimeRepository.VERSION_PROPERTY, DbmsRuntimeRepository.LATEST_VERSION.getVersion() );
+            tx.findNodes( OLD_COMPONENT_LABEL ).forEachRemaining( Node::delete );
+            setToLatestVersion( tx );
         } );
     }
 
-    private boolean is41Database( Transaction tx )
+    @Override
+    DbmsRuntimeVersion fetchStateFromSystemDatabase( GraphDatabaseService system )
     {
-        // This detection is a bit hacky and relies on node (:Version)
-        // introduced by the security module in 4.1.
-        // The hacky part is that this System Graph Component
-        // must be initialised before the Security System Graph Component
-        // in order to be able distinguish between an older database
-        // and a freshly initialised one.
-
-        boolean result = false;
-        ResourceIterator<Node> nodes = tx.findNodes( versionLabel );
-        if ( nodes.hasNext() )
+        DbmsRuntimeVersion result = null;
+        try ( var tx = system.beginTx();
+            var nodes = tx.findNodes( OLD_COMPONENT_LABEL ) )
         {
-            result = true;
+            if ( nodes.hasNext() )
+            {
+                Node versionNode = nodes.next();
+                if ( versionNode.hasProperty( OLD_PROPERTY_NAME ) )
+                {
+                    result = convertFunction.apply( (int) versionNode.getProperty( OLD_PROPERTY_NAME ) );
+                }
+                Preconditions.checkState( !nodes.hasNext(), "More than one version node in system database" );
+            }
         }
-        nodes.close();
-
+        if ( result == null )
+        {
+            result = super.fetchStateFromSystemDatabase( system );
+        }
         return result;
     }
 }

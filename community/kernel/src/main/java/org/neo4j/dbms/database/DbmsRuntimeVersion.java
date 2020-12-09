@@ -21,18 +21,29 @@ package org.neo4j.dbms.database;
 
 public enum DbmsRuntimeVersion implements ComponentVersion
 {
-    V4_1( 1, DBMS_RUNTIME_COMPONENT),
-    V4_2( 2, DBMS_RUNTIME_COMPONENT);
+    V4_1( 1, DBMS_RUNTIME_COMPONENT, Neo4jVersions.VERSION_41 ),
 
-    public static final DbmsRuntimeVersion LATEST_DBMS_RUNTIME_COMPONENT_VERSION = V4_2;
+    /**
+     * Introduced new transaction log version
+     */
+    V4_2( 2, DBMS_RUNTIME_COMPONENT, Neo4jVersions.VERSION_42 ),
 
-    DbmsRuntimeVersion(int version, String componentName)
+    /**
+     * Switch to use the Version node
+     */
+    V4_3( 3, DBMS_RUNTIME_COMPONENT, Neo4jVersions.VERSION_43D2 );
+
+    public static final DbmsRuntimeVersion LATEST_DBMS_RUNTIME_COMPONENT_VERSION = V4_3;
+
+    DbmsRuntimeVersion( int version, String componentName, String description )
     {
         this.version = version;
         this.componentName = componentName;
+        this.description = description;
     }
 
     private final String componentName;
+    private final String description;
     private final int version;
 
     @Override
@@ -41,11 +52,10 @@ public enum DbmsRuntimeVersion implements ComponentVersion
         return version;
     }
 
-    //TODO: remove once description is not mandatory
     @Override
     public String getDescription()
     {
-        return null;
+        return description;
     }
 
     @Override

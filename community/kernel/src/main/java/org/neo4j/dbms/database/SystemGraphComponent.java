@@ -69,7 +69,7 @@ public interface SystemGraphComponent
      *
      * @throws Exception on any possible error raised by the initialization process
      */
-    void initializeSystemGraph( GraphDatabaseService system ) throws Exception;
+    void initializeSystemGraph( GraphDatabaseService system, boolean firstInitialization ) throws Exception;
 
     /**
      * If the component-specific sub-graph of the system database is an older, but still supported, version, this method should upgrade it to the latest

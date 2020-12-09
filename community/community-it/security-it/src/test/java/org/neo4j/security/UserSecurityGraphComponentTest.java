@@ -35,7 +35,6 @@ import java.util.stream.Stream;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.api.DatabaseManagementService;
-import org.neo4j.dbms.database.DbmsRuntimeSystemGraphComponent;
 import org.neo4j.dbms.database.DefaultSystemGraphComponent;
 import org.neo4j.dbms.database.SystemGraphComponent;
 import org.neo4j.dbms.database.SystemGraphComponents;
@@ -59,6 +58,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
+import static org.neo4j.dbms.database.ComponentVersion.DBMS_RUNTIME_COMPONENT;
 import static org.neo4j.dbms.database.ComponentVersion.Neo4jVersions.VERSION_35;
 import static org.neo4j.dbms.database.ComponentVersion.Neo4jVersions.VERSION_40;
 import static org.neo4j.dbms.database.ComponentVersion.Neo4jVersions.VERSION_41;
@@ -102,7 +102,7 @@ class UserSecurityGraphComponentTest
         systemGraphComponents.register( userSecurityGraphComponent );
 
         // remove DBMS runtime component as it is not a subject of this test
-        systemGraphComponents.deregister( DbmsRuntimeSystemGraphComponent.COMPONENT_NAME );
+        systemGraphComponents.deregister( DBMS_RUNTIME_COMPONENT );
     }
 
     @BeforeEach
@@ -193,7 +193,7 @@ class UserSecurityGraphComponentTest
     private void initializeLatestSystem() throws Exception
     {
         var systemGraphComponent = new DefaultSystemGraphComponent( Config.defaults() );
-        systemGraphComponent.initializeSystemGraph( system );
+        systemGraphComponent.initializeSystemGraph( system, true );
     }
 
     private void initUserSecurityComponent( String version ) throws Exception

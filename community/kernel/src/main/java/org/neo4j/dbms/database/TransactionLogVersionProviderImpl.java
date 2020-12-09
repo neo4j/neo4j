@@ -35,7 +35,8 @@ public class TransactionLogVersionProviderImpl implements TransactionLogVersionP
     {
         DbmsRuntimeVersion dbmsRuntimeVersion = dbmsRuntimeRepository.getVersion();
 
-        if ( dbmsRuntimeVersion == DbmsRuntimeVersion.V4_2 )
+        // TODO change to check for >= when versions are comparable
+        if ( dbmsRuntimeVersion == DbmsRuntimeVersion.V4_2 || dbmsRuntimeVersion == DbmsRuntimeVersion.V4_3 )
         {
             return LogEntryParserSetVersion.LogEntryV4_2;
         }

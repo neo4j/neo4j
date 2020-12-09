@@ -50,7 +50,7 @@ public class TestSystemGraphComponent implements SystemGraphComponent
     }
 
     @Override
-    public void initializeSystemGraph( GraphDatabaseService system ) throws Exception
+    public void initializeSystemGraph( GraphDatabaseService system, boolean firstInitialization ) throws Exception
     {
         if ( status == Status.UNINITIALIZED )
         {

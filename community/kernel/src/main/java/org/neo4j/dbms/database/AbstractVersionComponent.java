@@ -78,7 +78,7 @@ public abstract class AbstractVersionComponent<T extends ComponentVersion> exten
     }
 
     @Override
-    public void initializeSystemGraph( GraphDatabaseService system ) throws Exception
+    public void initializeSystemGraph( GraphDatabaseService system, boolean firstInitialization ) throws Exception
     {
         boolean mayUpgrade = config.get( GraphDatabaseSettings.allow_single_automatic_upgrade );
 
@@ -97,7 +97,7 @@ public abstract class AbstractVersionComponent<T extends ComponentVersion> exten
         case CURRENT:
             break;
         case UNINITIALIZED:
-            if ( mayUpgrade )
+            if ( mayUpgrade || firstInitialization )
             {
                 initializeSystemGraphModel( system );
             }
@@ -116,15 +116,17 @@ public abstract class AbstractVersionComponent<T extends ComponentVersion> exten
     @Override
     protected void initializeSystemGraphModel( GraphDatabaseService system ) throws Exception
     {
-        SystemGraphComponent.executeWithFullAccess( system, tx ->
-        {
-            var node = tx.findNodes( VERSION_LABEL )
-                         .stream()
-                         .findFirst()
-                         .orElseGet( () -> tx.createNode( VERSION_LABEL ) );
+        SystemGraphComponent.executeWithFullAccess( system, this::setToLatestVersion );
+    }
 
-            node.setProperty( componentName, latestVersion.getVersion() );
-        } );
+    void setToLatestVersion( Transaction tx )
+    {
+        var node = tx.findNodes( VERSION_LABEL )
+                     .stream()
+                     .findFirst()
+                     .orElseGet( () -> tx.createNode( VERSION_LABEL ) );
+
+        node.setProperty( componentName, latestVersion.getVersion() );
     }
 
     @Override
@@ -133,7 +135,7 @@ public abstract class AbstractVersionComponent<T extends ComponentVersion> exten
         initializeSystemGraphModel( system );
     }
 
-    protected T fetchStateFromSystemDatabase( GraphDatabaseService system )
+    T fetchStateFromSystemDatabase( GraphDatabaseService system )
     {
         T result = getFallbackVersion();
         try ( var tx = system.beginTx();

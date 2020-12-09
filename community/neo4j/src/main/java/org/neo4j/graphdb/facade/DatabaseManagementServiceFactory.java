@@ -151,7 +151,8 @@ public class DatabaseManagementServiceFactory
         SecurityProvider securityProvider = edition.getSecurityProvider();
         globalDependencies.satisfyDependencies( securityProvider.authManager() );
 
-        var dbmsRuntimeRepository = edition.createAndRegisterDbmsRuntimeRepository( globalModule, databaseManager, globalDependencies );
+        var dbmsRuntimeRepository =
+                edition.createAndRegisterDbmsRuntimeRepository( globalModule, databaseManager, globalDependencies, dbmsRuntimeSystemGraphComponent );
         globalDependencies.satisfyDependency( dbmsRuntimeRepository );
 
         globalLife.add( new DefaultDatabaseInitializer( databaseManager ) );

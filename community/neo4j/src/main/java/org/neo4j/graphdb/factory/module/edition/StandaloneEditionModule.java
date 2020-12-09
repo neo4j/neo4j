@@ -27,6 +27,7 @@ import org.neo4j.dbms.DatabaseStateService;
 import org.neo4j.dbms.CommunityDatabaseStateService;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.dbms.database.DbmsRuntimeRepository;
+import org.neo4j.dbms.database.DbmsRuntimeSystemGraphComponent;
 import org.neo4j.dbms.database.DefaultDatabaseManager;
 import org.neo4j.dbms.database.StandaloneDbmsRuntimeRepository;
 import org.neo4j.dbms.database.StandaloneDatabaseContext;
@@ -96,11 +97,10 @@ public abstract class StandaloneEditionModule extends AbstractEditionModule
     }
 
     @Override
-    public DbmsRuntimeRepository createAndRegisterDbmsRuntimeRepository( GlobalModule globalModule,
-            DatabaseManager<?> databaseManager,
-            Dependencies dependencies )
+    public DbmsRuntimeRepository createAndRegisterDbmsRuntimeRepository( GlobalModule globalModule, DatabaseManager<?> databaseManager,
+            Dependencies dependencies, DbmsRuntimeSystemGraphComponent dbmsRuntimeSystemGraphComponent )
     {
-        var dbmsRuntimeRepository = new StandaloneDbmsRuntimeRepository( databaseManager );
+        var dbmsRuntimeRepository = new StandaloneDbmsRuntimeRepository( databaseManager, dbmsRuntimeSystemGraphComponent );
         globalModule.getTransactionEventListeners().registerTransactionEventListener( SYSTEM_DATABASE_NAME, dbmsRuntimeRepository );
         return dbmsRuntimeRepository;
     }

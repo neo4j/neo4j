@@ -20,52 +20,31 @@
 package org.neo4j.dbms.database;
 
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Label;
-import org.neo4j.util.Preconditions;
 import org.neo4j.util.VisibleForTesting;
 
 import static org.neo4j.kernel.database.DatabaseIdRepository.NAMED_SYSTEM_DATABASE_ID;
 
 public abstract class DbmsRuntimeRepository
 {
-    public static final DbmsRuntimeVersion LATEST_VERSION = DbmsRuntimeVersion.V4_2;
+    public static final DbmsRuntimeVersion LATEST_VERSION = DbmsRuntimeVersion.V4_3;
     public static final DbmsRuntimeVersion PREVIOUS_VERSION = DbmsRuntimeVersion.V4_1;
 
-    public static final Label DBMS_RUNTIME_LABEL = Label.label( "DbmsRuntime" );
-    public static final String VERSION_PROPERTY = "version";
-
     private final DatabaseManager<?> databaseManager;
+    final DbmsRuntimeSystemGraphComponent component;
 
     private volatile DbmsRuntimeVersion currentVersion;
 
-    protected DbmsRuntimeRepository( DatabaseManager<?> databaseManager )
+    protected DbmsRuntimeRepository( DatabaseManager<?> databaseManager, DbmsRuntimeSystemGraphComponent component )
     {
         this.databaseManager = databaseManager;
+        this.component = component;
     }
 
     protected void fetchStateFromSystemDatabase()
     {
         var systemDatabase = getSystemDb();
-
-        try ( var tx = systemDatabase.beginTx();
-                var nodes = tx.findNodes( DBMS_RUNTIME_LABEL ) )
-        {
-            if ( nodes.hasNext() )
-            {
-                currentVersion = DbmsRuntimeVersion.fromVersionNumber( (int) nodes.next().getProperty( VERSION_PROPERTY ) );
-                Preconditions.checkState( !nodes.hasNext(), "More than one dbms-runtime node in system database" );
-            }
-            else
-            {
-                currentVersion = getFallbackVersion();
-            }
-        }
+        currentVersion = component.fetchStateFromSystemDatabase( systemDatabase );
     }
-
-    /**
-     * A fallback DBMS runtime version used when there is nothing in System database.
-     */
-    protected abstract DbmsRuntimeVersion getFallbackVersion();
 
     protected GraphDatabaseService getSystemDb()
     {

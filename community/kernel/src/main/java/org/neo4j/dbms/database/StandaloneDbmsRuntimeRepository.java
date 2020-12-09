@@ -28,23 +28,17 @@ import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.graphdb.event.TransactionEventListener;
 import org.neo4j.internal.helpers.collection.Iterables;
 
+import static org.neo4j.dbms.database.SystemGraphComponent.VERSION_LABEL;
+
 /**
  * A version of {@link} DbmsRuntimeRepository for standalone editions.
  */
 public class StandaloneDbmsRuntimeRepository extends DbmsRuntimeRepository implements TransactionEventListener<Object>
 {
 
-    public StandaloneDbmsRuntimeRepository( DatabaseManager<?> databaseManager )
+    public StandaloneDbmsRuntimeRepository( DatabaseManager<?> databaseManager, DbmsRuntimeSystemGraphComponent component )
     {
-        super( databaseManager );
-    }
-
-    @Override
-    protected DbmsRuntimeVersion getFallbackVersion()
-    {
-        // there always must be something in the System DB in a properly initialised standalone DBMS,
-        // but many test don't initialise System DB
-        return LATEST_VERSION;
+        super( databaseManager, component );
     }
 
     @Override
@@ -73,8 +67,8 @@ public class StandaloneDbmsRuntimeRepository extends DbmsRuntimeRepository imple
         {
             nodesWithChangedProperties.stream()
                                       .map( tx::getNodeById )
-                                      .filter( node -> node.hasLabel( DBMS_RUNTIME_LABEL ) )
-                                      .map( dbmRuntime -> (int) dbmRuntime.getProperty( VERSION_PROPERTY ) )
+                                      .filter( node -> node.hasLabel( VERSION_LABEL ) && node.hasProperty( component.componentName() ) )
+                                      .map( dbmRuntime -> (int) dbmRuntime.getProperty( component.componentName() ) )
                                       .map( DbmsRuntimeVersion::fromVersionNumber )
                                       .forEach( this::setVersion );
         }

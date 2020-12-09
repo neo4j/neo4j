@@ -17,21 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel;
+package org.neo4j.dbms.database;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import org.neo4j.dbms.database.DatabaseContext;
-import org.neo4j.dbms.database.DatabaseManager;
-import org.neo4j.dbms.database.DbmsRuntimeRepository;
-import org.neo4j.dbms.database.DbmsRuntimeVersion;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.neo4j.dbms.database.SystemGraphComponent.VERSION_LABEL;
 import static org.neo4j.kernel.database.DatabaseIdRepository.NAMED_SYSTEM_DATABASE_ID;
 
 @TestDirectoryExtension
@@ -56,7 +53,7 @@ class DbmsRuntimeVersionTest
     void testBasicVersionLifecycle()
     {
         // the system DB will be initialised with the default version for this binary
-        assertSame( DbmsRuntimeVersion.V4_2, dbmsRuntimeRepository.getVersion() );
+        assertSame( DbmsRuntimeVersion.LATEST_DBMS_RUNTIME_COMPONENT_VERSION, dbmsRuntimeRepository.getVersion() );
 
         // BTW this should never be manipulated directly outside tests
         setRuntimeVersion( DbmsRuntimeVersion.V4_1 );
@@ -64,16 +61,16 @@ class DbmsRuntimeVersionTest
 
         systemDb.executeTransactionally( "CALL dbms.upgrade()" );
 
-        assertSame( DbmsRuntimeVersion.V4_2, dbmsRuntimeRepository.getVersion() );
+        assertSame( DbmsRuntimeVersion.LATEST_DBMS_RUNTIME_COMPONENT_VERSION, dbmsRuntimeRepository.getVersion() );
     }
 
     private void setRuntimeVersion( DbmsRuntimeVersion runtimeVersion )
     {
         try ( var tx = systemDb.beginTx() )
         {
-            tx.findNodes( DbmsRuntimeRepository.DBMS_RUNTIME_LABEL )
+            tx.findNodes( VERSION_LABEL )
               .stream()
-              .forEach( dbmsRuntimeNode -> dbmsRuntimeNode.setProperty( DbmsRuntimeRepository.VERSION_PROPERTY, runtimeVersion.getVersion() ) );
+              .forEach( dbmsRuntimeNode -> dbmsRuntimeNode.setProperty( ComponentVersion.DBMS_RUNTIME_COMPONENT, runtimeVersion.getVersion() ) );
 
             tx.commit();
         }

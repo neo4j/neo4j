@@ -27,7 +27,7 @@ public interface ComponentVersion
 {
     String SECURITY_USER_COMPONENT = "security-users";
     String SECURITY_PRIVILEGE_COMPONENT = "security-privileges";
-    String DBMS_RUNTIME_COMPONENT = "dbms-runtime-component";
+    String DBMS_RUNTIME_COMPONENT = "dbms-runtime";
 
     /**
      * Get the version of the component. Component versions are expected to be ordered and the oldest version is 0.
@@ -59,6 +59,7 @@ public interface ComponentVersion
         public static final String VERSION_42D4 = "Neo4j 4.2.0-Drop04";
         public static final String VERSION_42D6 = "Neo4j 4.2.0-Drop06";
         public static final String VERSION_42D7 = "Neo4j 4.2.0-Drop07";
+        public static final String VERSION_42 = "Neo4j 4.2.0";
         public static final String VERSION_42P1 = "Neo4j 4.2.1";
         public static final String VERSION_43D1 = "Neo4j 4.3.0-Drop01";
         public static final String VERSION_43D2 = "Neo4j 4.3.0-Drop02";

@@ -30,6 +30,7 @@ import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.util.Preconditions;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
+import static org.neo4j.dbms.database.SystemGraphComponent.VERSION_LABEL;
 
 /**
  * Central collection for managing multiple versioned system graph initializers. There could be several components in the DBMS that each have a requirement on
@@ -81,12 +82,18 @@ public class SystemGraphComponents
         Preconditions.checkState( system.databaseName().equals( SYSTEM_DATABASE_NAME ),
                 "Cannot initialize system graph on database '" + system.databaseName() + "'" );
 
+        boolean newlyCreated;
+        try ( Transaction tx = system.beginTx() )
+        {
+            newlyCreated = !tx.findNodes( VERSION_LABEL ).hasNext();
+        }
+
         Exception failure = null;
         for ( SystemGraphComponent component : components )
         {
             try
             {
-                component.initializeSystemGraph( system );
+                component.initializeSystemGraph( system, newlyCreated );
             }
             catch ( Exception e )
             {
