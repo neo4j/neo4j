@@ -19,7 +19,6 @@
  */
 package org.neo4j.fabric.pipeline
 
-import org.neo4j.cypher.internal.config.CypherConfiguration
 import org.neo4j.cypher.internal.NotificationWrapping
 import org.neo4j.cypher.internal.PreParsedQuery
 import org.neo4j.cypher.internal.PreParser
@@ -36,6 +35,7 @@ import org.neo4j.cypher.internal.compiler.phases.Compatibility3_5
 import org.neo4j.cypher.internal.compiler.phases.Compatibility4_2
 import org.neo4j.cypher.internal.compiler.phases.Compatibility4_3
 import org.neo4j.cypher.internal.compiler.phases.CompilationPhases
+import org.neo4j.cypher.internal.config.CypherConfiguration
 import org.neo4j.cypher.internal.frontend.phases.BaseContext
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
@@ -148,7 +148,7 @@ case class FabricFrontEnd(
         CompilationPhases.fabricFinalize(parsingConfig)
 
       def process(statement: Statement): BaseState = {
-        val localQueryString = QueryRenderer.pretty(statement)
+        val localQueryString = QueryRenderer.render(statement)
         val plannerName = PlannerNameFor(query.options.queryOptions.planner.name)
         transformer.transform(InitialState(localQueryString, None, plannerName).withStatement(statement), context)
       }

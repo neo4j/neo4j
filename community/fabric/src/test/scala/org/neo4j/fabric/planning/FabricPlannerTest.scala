@@ -35,6 +35,7 @@ import org.neo4j.cypher.internal.ast.PeriodicCommitHint
 import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.UnresolvedCall
+import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.SensitiveParameter
 import org.neo4j.cypher.internal.options.CypherConnectComponentsPlannerOption
 import org.neo4j.cypher.internal.options.CypherDebugOption
@@ -354,6 +355,53 @@ class FabricPlannerTest
 
   }
 
+  "asLocal: " - {
+
+    "Variable with literal name" in {
+      val inst = instance(
+        """MATCH (n)
+          |WITH n AS `true`
+          |RETURN `true`"""
+          .stripMargin)
+
+      val exec = inst.plan.query.as[Fragment.Exec]
+
+      val local = inst.asLocal(exec).query
+
+      local.state.statement().shouldEqual(
+        Query(None,
+          singleQuery(
+            match_(NodePattern(Some(varFor("n")), Seq.empty, None)(pos)),
+            with_(varFor("n").as("true")),
+            returnVars("true")
+          ))(pos)
+      )
+      local.state.queryText should endWith("RETURN `true` AS `true`")
+    }
+
+    "Literal with variable with same name in scope" in {
+      val inst = instance(
+        """MATCH (n)
+          |WITH n AS `true`
+          |RETURN true"""
+          .stripMargin)
+
+      val exec = inst.plan.query.as[Fragment.Exec]
+
+      val local = inst.asLocal(exec).query
+
+      local.state.statement().shouldEqual(
+        Query(None,
+          singleQuery(
+            match_(NodePattern(Some(varFor("n")), Seq.empty, None)(pos)),
+            with_(varFor("n").as("true")),
+            returnLit(true -> "true")
+          ))(pos)
+      )
+      local.state.queryText should endWith("RETURN true AS `true`")
+    }
+  }
+
   "Read/Write: " - {
 
     "read" in {
@@ -597,6 +645,27 @@ class FabricPlannerTest
 
       newPlanner.instance(q, params, defaultGraphName).plan
       newPlanner.instance(q, params, defaultGraphName).plan
+
+      newPlanner.queryCache.getMisses.shouldEqual(2)
+      newPlanner.queryCache.getHits.shouldEqual(0)
+    }
+
+    "cache miss on literal vs variable with same name" in {
+      val newPlanner = FabricPlanner(config, cypherConfig, monitors, cacheFactory, signatures)
+
+      val q1 =
+        """MATCH (n)
+          |WITH n AS `true`
+          |RETURN `true`
+          |""".stripMargin
+      val q2 =
+        """MATCH (n)
+          |WITH n AS `true`
+          |RETURN true
+          |""".stripMargin
+
+      newPlanner.instance(q1, params, defaultGraphName).plan
+      newPlanner.instance(q2, params, defaultGraphName).plan
 
       newPlanner.queryCache.getMisses.shouldEqual(2)
       newPlanner.queryCache.getHits.shouldEqual(0)

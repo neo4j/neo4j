@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.UnresolvedCall
 import org.neo4j.cypher.internal.ast.With
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
+import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.logical.plans.ResolvedCall
 import org.neo4j.cypher.internal.logical.plans.ResolvedFunctionInvocation
 import org.neo4j.cypher.internal.util.InputPosition
@@ -374,6 +375,30 @@ class FabricFragmenterTest
       frag.as[Fragment.Segment].input.as[Fragment.Segment].input.outputColumns
         .shouldEqual(Seq("x"))
     }
+
+    "Variable with literal name" in {
+      fragment(
+        """MATCH (n)
+          |WITH n AS `true`
+          |RETURN `true`
+          |""".stripMargin
+      ).shouldEqual(
+        init(defaultUse)
+          .leaf(Seq(match_(NodePattern(Some(varFor("n")), Seq.empty, None)(pos)), with_(varFor("n").as("true")), returnVars("true")), Seq("true"))
+      )
+    }
+
+    "Literal with variable with same name in scope" in {
+      fragment(
+        """MATCH (n)
+          |WITH n AS `true`
+          |RETURN true
+          |""".stripMargin
+      ).shouldEqual(
+        init(defaultUse)
+          .leaf(Seq(match_(NodePattern(Some(varFor("n")), Seq.empty, None)(pos)), with_(varFor("n").as("true")), returnLit(true -> "true")), Seq("true"))
+      )
+    }
   }
 
   "Procedures:" - {
@@ -499,17 +524,11 @@ class FabricFragmenterTest
     }
   }
 
-  private def withLit(num: Int, varName: String): With =
+  private def withLit(num: Any, varName: String): With =
     with_(literal(num).as(varName))
 
   private def withVar(varName: String): With =
     with_(varFor(varName).as(varName))
-
-  private def returnLit(items: (Int, String)*) =
-    return_(items.map(i => literal(i._1).as(i._2)): _*)
-
-  private def returnVars(vars: String*) =
-    return_(vars.map(v => varFor(v).aliased): _*)
 
   private def returnAliased(vars: (String, String)*) =
     return_(vars.map(v => varFor(v._1).as(v._2)): _*)

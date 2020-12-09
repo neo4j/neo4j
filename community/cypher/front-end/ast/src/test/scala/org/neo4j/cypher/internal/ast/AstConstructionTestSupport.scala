@@ -204,7 +204,15 @@ trait AstConstructionTestSupport extends CypherTestSupport {
     case i: Short => literalInt(i)
     case i: Int => literalInt(i)
     case l: Long => SignedDecimalIntegerLiteral(l.toString)(pos)
+    case true => trueLiteral
+    case false => falseLiteral
   }
+
+  def returnLit(items: (Any, String)*) =
+    return_(items.map(i => literal(i._1).as(i._2)): _*)
+
+  def returnVars(vars: String*) =
+    return_(vars.map(v => varFor(v).aliased): _*)
 
   def function(name: String, args: Expression*): FunctionInvocation =
     FunctionInvocation(FunctionName(name)(pos), distinct = false, args.toIndexedSeq)(pos)

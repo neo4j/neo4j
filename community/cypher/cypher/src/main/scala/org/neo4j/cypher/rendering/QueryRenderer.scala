@@ -84,7 +84,4 @@ object QueryRenderer {
 
   def pretty(expression: Expression): String =
     renderPretty.expr.apply(expression)
-
-  def pretty(statement: Statement): String =
-    renderPretty.asString(statement)
 }
