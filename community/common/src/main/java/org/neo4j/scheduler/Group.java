@@ -19,6 +19,7 @@
  */
 package org.neo4j.scheduler;
 
+import java.util.OptionalInt;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -33,7 +34,7 @@ public enum Group
     /* Page cache background eviction. */
     PAGE_CACHE_EVICTION( "PageCacheEviction" ),
     /* Page cache background eviction. */
-    PAGE_CACHE_PRE_FETCHER( "PageCachePreFetcher", ExecutorServiceFactory.cachedWithDiscard() ),
+    PAGE_CACHE_PRE_FETCHER( "PageCachePreFetcher", ExecutorServiceFactory.cachedWithDiscard(), 4 ),
     /** Watch out for, and report, external manipulation of store files. */
     FILE_WATCHER( "FileWatcher", ExecutorServiceFactory.unschedulable() ),
     /** Monitor and report system-wide pauses, in case they lead to service interruption. */
@@ -117,13 +118,20 @@ public enum Group
 
     private final String name;
     private final ExecutorServiceFactory executorServiceFactory;
+    private final Integer defaultParallelism;
     private final AtomicInteger threadCounter;
 
-    Group( String name, ExecutorServiceFactory executorServiceFactory )
+    Group( String name, ExecutorServiceFactory executorServiceFactory, Integer defaultParallelism )
     {
         this.name = name;
         this.executorServiceFactory = executorServiceFactory;
-        threadCounter = new AtomicInteger();
+        this.defaultParallelism = defaultParallelism;
+        this.threadCounter = new AtomicInteger();
+    }
+
+    Group( String name, ExecutorServiceFactory executorServiceFactory )
+    {
+        this( name, executorServiceFactory, null );
     }
 
     Group( String name )
@@ -152,5 +160,10 @@ public enum Group
     public ExecutorService buildExecutorService( SchedulerThreadFactory factory, int parallelism )
     {
         return executorServiceFactory.build( this, factory, parallelism );
+    }
+
+    public OptionalInt defaultParallelism()
+    {
+        return defaultParallelism == null ? OptionalInt.empty() : OptionalInt.of( defaultParallelism );
     }
 }
