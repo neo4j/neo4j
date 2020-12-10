@@ -184,6 +184,8 @@ class RelationshipChecker implements Checker
                     if ( propertyChainIsOk )
                     {
                         schemaComplianceChecker.checkContainsMandatoryProperties( relationshipCursor, typeHolder, propertyValues, reporter::forRelationship );
+                        // Here only the very small indexes (or indexes that we can't read the values from, like fulltext indexes)
+                        // gets checked this way, larger indexes will be checked in IndexChecker
                         if ( context.consistencyFlags.isCheckIndexes() )
                         {
                             schemaComplianceChecker.checkCorrectlyIndexed( relationshipCursor, typeHolder, propertyValues, reporter::forRelationship );

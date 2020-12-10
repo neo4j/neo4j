@@ -107,7 +107,7 @@ public class FulltextIndexAccessor extends AbstractLuceneIndexAccessor<FulltextI
             try
             {
                 Document document = documentRepresentingProperties( entityId, propertyNames, values );
-                writer.updateDocument( newTermForChangeOrRemove( entityId ), document );
+                writer.updateOrDeleteDocument( newTermForChangeOrRemove( entityId ), document );
             }
             catch ( IOException e )
             {
@@ -121,7 +121,7 @@ public class FulltextIndexAccessor extends AbstractLuceneIndexAccessor<FulltextI
             try
             {
                 Document document = documentRepresentingProperties( entityId, propertyNames, values );
-                writer.addDocument( document );
+                writer.nullableAddDocument( document );
             }
             catch ( IOException e )
             {
@@ -136,7 +136,9 @@ public class FulltextIndexAccessor extends AbstractLuceneIndexAccessor<FulltextI
             {
                 Term term = newTermForChangeOrRemove( entityId );
                 Document document = documentRepresentingProperties( entityId, propertyNames, values );
-                writer.updateDocument( term, document );
+                // If the property types have changed away from TEXT we may no longer
+                // have any properties that should be indexed and the old document should be removed.
+                writer.updateOrDeleteDocument( term, document );
             }
             catch ( IOException e )
             {

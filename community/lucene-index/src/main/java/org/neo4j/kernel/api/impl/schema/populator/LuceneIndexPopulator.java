@@ -24,6 +24,7 @@ import org.apache.lucene.document.Document;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Collection;
+import java.util.Objects;
 
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
@@ -80,6 +81,7 @@ public abstract class LuceneIndexPopulator<INDEX extends DatabaseIndex<?>> imple
             writer.addDocuments( updates.size(), () -> updates.stream()
                     .map( u -> (ValueIndexEntryUpdate<?>) u )
                     .map( LuceneIndexPopulator::updateAsDocument )
+                    .filter( Objects::nonNull )
                     .iterator() );
         }
         catch ( IOException e )

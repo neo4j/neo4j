@@ -40,4 +40,34 @@ public interface LuceneIndexWriter
     void deleteDocuments( Term term ) throws IOException;
 
     void deleteDocuments( Query query ) throws IOException;
+
+    /**
+     * addDocument variant that can handle adds where the document to add has become empty
+     * (this can happen if properties doesn't have a value type we support).
+     */
+    default void nullableAddDocument( Document document ) throws IOException
+    {
+        if ( document != null )
+        {
+            addDocument( document );
+        }
+    }
+
+    /**
+     * updateDocument variant that handle updates where the document to update with has become empty and should be removed
+     * (this can happen if properties doesn't have a value type we support).
+     *
+     * @param document The updated document or null if any existing version of it should be removed.
+     */
+    default void updateOrDeleteDocument( Term term, Document document ) throws IOException
+    {
+        if ( document != null )
+        {
+            updateDocument( term, document );
+        }
+        else
+        {
+            deleteDocuments( term );
+        }
+    }
 }

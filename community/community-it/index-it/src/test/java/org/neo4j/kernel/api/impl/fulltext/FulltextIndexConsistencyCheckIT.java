@@ -23,6 +23,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -30,7 +31,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -73,6 +73,8 @@ import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
+import org.neo4j.test.extension.RandomExtension;
+import org.neo4j.test.rule.RandomRule;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Values;
 
@@ -89,12 +91,15 @@ import static org.neo4j.kernel.impl.index.schema.FailingGenericNativeIndexProvid
 import static org.neo4j.test.TestDatabaseManagementServiceBuilder.INDEX_PROVIDERS_FILTER;
 
 @Neo4jLayoutExtension
+@ExtendWith( RandomExtension.class )
 class FulltextIndexConsistencyCheckIT
 {
     @Inject
     private FileSystemAbstraction fs;
     @Inject
     private DatabaseLayout databaseLayout;
+    @Inject
+    private RandomRule random;
 
     private DatabaseManagementServiceBuilder builder;
     private GraphDatabaseService database;
@@ -412,7 +417,7 @@ class FulltextIndexConsistencyCheckIT
     }
 
     @Test
-    void mustBeAbleToConsistencyCheckRelationshipIndexThatIsMissingRelationshipsBecauseTheirPropertyValuesaAreNotStrings() throws Exception
+    void mustBeAbleToConsistencyCheckRelationshipIndexThatIsMissingRelationshipsBecauseTheirPropertyValuesAreNotStrings() throws Exception
     {
         GraphDatabaseService db = createDatabase();
         try ( Transaction tx = db.beginTx() )
@@ -438,23 +443,23 @@ class FulltextIndexConsistencyCheckIT
         Label[] labels = IntStream.range( 1, 7 ).mapToObj( i -> Label.label( "LABEL" + i ) ).toArray( Label[]::new );
         RelationshipType[] relTypes = IntStream.range( 1, 5 ).mapToObj( i -> RelationshipType.withName( "REL" + i ) ).toArray( RelationshipType[]::new );
         String[] propertyKeys = IntStream.range( 1, 7 ).mapToObj( i -> "PROP" + i ).toArray( String[]::new );
-        RandomValues randomValues = RandomValues.create();
+        RandomValues randomValues = random.randomValues();
 
         try ( Transaction tx = db.beginTx() )
         {
-            ThreadLocalRandom rng = ThreadLocalRandom.current();
             int nodeCount = 1000;
             List<Node> nodes = new ArrayList<>( nodeCount );
             for ( int i = 0; i < nodeCount; i++ )
             {
-                Label[] nodeLabels = rng.ints( rng.nextInt( labels.length ), 0, labels.length ).distinct().mapToObj( x -> labels[x] ).toArray( Label[]::new );
+                Label[] nodeLabels =
+                        random.ints( random.nextInt( labels.length ), 0, labels.length ).distinct().mapToObj( x -> labels[x] ).toArray( Label[]::new );
                 Node node = tx.createNode( nodeLabels );
-                Stream.of( propertyKeys ).forEach( p -> node.setProperty( p, rng.nextBoolean() ? p : randomValues.nextValue().asObject() ) );
+                Stream.of( propertyKeys ).forEach( p -> node.setProperty( p, random.nextBoolean() ? p : randomValues.nextValue().asObject() ) );
                 nodes.add( node );
                 int localRelCount = Math.min( nodes.size(), 5 );
-                rng.ints( localRelCount, 0, localRelCount ).distinct().mapToObj(
-                        x -> node.createRelationshipTo( nodes.get( x ), relTypes[rng.nextInt( relTypes.length )] ) ).forEach(
-                        r -> Stream.of( propertyKeys ).forEach( p -> r.setProperty( p, rng.nextBoolean() ? p : randomValues.nextValue().asObject() ) ) );
+                random.ints( localRelCount, 0, localRelCount ).distinct().mapToObj(
+                        x -> node.createRelationshipTo( nodes.get( x ), relTypes[random.nextInt( relTypes.length )] ) ).forEach(
+                        r -> Stream.of( propertyKeys ).forEach( p -> r.setProperty( p, random.nextBoolean() ? p : randomValues.nextValue().asObject() ) ) );
             }
             tx.commit();
         }

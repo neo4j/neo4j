@@ -188,7 +188,6 @@ public abstract class AbstractLuceneIndexAccessor<READER extends IndexReader, IN
         @Override
         public void process( IndexEntryUpdate<?> update )
         {
-            // we do not support adding partial entries
             assert update.indexKey().schema().equals( descriptor.schema() );
             ValueIndexEntryUpdate<?> valueUpdate = asValueUpdate( update );
 

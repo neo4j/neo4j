@@ -30,11 +30,11 @@ import java.util.Arrays;
 import java.util.Iterator;
 
 import org.neo4j.common.EntityType;
-import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
+import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.internal.schema.FulltextSchemaDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
@@ -191,7 +191,7 @@ class FulltextIndexTransactionStateVisitor extends TxStateVisitor.Adapter
         {
             try
             {
-                writer.addDocument( documentRepresentingProperties( id, propertyNames, propertyValues ) );
+                writer.nullableAddDocument( documentRepresentingProperties( id, propertyNames, propertyValues ) );
             }
             catch ( IOException e )
             {

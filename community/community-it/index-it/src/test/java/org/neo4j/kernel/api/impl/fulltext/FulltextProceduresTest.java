@@ -869,10 +869,9 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
     @Test
     void fulltextIndexMustIgnoreNonStringPropertiesForUpdate()
     {
-        Label label = LABEL;
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( NODE_CREATE, "nodes", asStrList( label.name() ), asStrList( PROP ) ) ).close();
+            createSimpleNodesIndex( tx );
             createSimpleRelationshipIndex( tx );
             tx.commit();
         }
@@ -885,7 +884,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
         {
             for ( Value value : values )
             {
-                Node node = tx.createNode( label );
+                Node node = tx.createNode( LABEL );
                 Object propertyValue = value.asObject();
                 node.setProperty( PROP, propertyValue );
                 node.createRelationshipTo( node, REL ).setProperty( PROP, propertyValue );
@@ -893,35 +892,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
             tx.commit();
         }
 
-        for ( Value value : values )
-        {
-            try ( Transaction tx = db.beginTx() )
-            {
-                String fulltextQuery = quoteValueForQuery( value );
-                String cypherQuery = format( QUERY_NODES, "nodes", fulltextQuery );
-                Result nodes;
-                try
-                {
-                    nodes = tx.execute( cypherQuery );
-                }
-                catch ( QueryExecutionException e )
-                {
-                    throw new AssertionError( "Failed to execute query: " + cypherQuery + " based on value " + value.prettyPrint(), e );
-                }
-                if ( nodes.hasNext() )
-                {
-                    fail( "did not expect to find any nodes, but found at least: " + nodes.next() );
-                }
-                nodes.close();
-                Result relationships = tx.execute( format( QUERY_RELS, "rels", fulltextQuery ) );
-                if ( relationships.hasNext() )
-                {
-                    fail( "did not expect to find any relationships, but found at least: " + relationships.next() );
-                }
-                relationships.close();
-                tx.commit();
-            }
-        }
+        assertNodeAndRelationshipIndexEmpty();
     }
 
     @Test
@@ -949,35 +920,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
 
         awaitIndexesOnline();
 
-        for ( Value value : values )
-        {
-            try ( Transaction tx = db.beginTx() )
-            {
-                String fulltextQuery = quoteValueForQuery( value );
-                String cypherQuery = format( QUERY_NODES, "nodes", fulltextQuery );
-                Result nodes;
-                try
-                {
-                    nodes = tx.execute( cypherQuery );
-                }
-                catch ( QueryExecutionException e )
-                {
-                    throw new AssertionError( "Failed to execute query: " + cypherQuery + " based on value " + value.prettyPrint(), e );
-                }
-                if ( nodes.hasNext() )
-                {
-                    fail( "did not expect to find any nodes, but found at least: " + nodes.next() );
-                }
-                nodes.close();
-                Result relationships = tx.execute( format( QUERY_RELS, "rels", fulltextQuery ) );
-                if ( relationships.hasNext() )
-                {
-                    fail( "did not expect to find any relationships, but found at least: " + relationships.next() );
-                }
-                relationships.close();
-                tx.commit();
-            }
-        }
+        assertNodeAndRelationshipIndexEmpty();
     }
 
     @Test
@@ -986,16 +929,24 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
         try ( Transaction tx = db.beginTx() )
         {
             createSimpleNodesIndex( tx );
+            createSimpleRelationshipIndex( tx );
             tx.commit();
         }
         long nodeId;
+        long relId;
         try ( Transaction tx = db.beginTx() )
         {
             Node node = tx.createNode( LABEL );
             nodeId = node.getId();
             node.setProperty( PROP, "bla bla" );
+            Relationship rel = node.createRelationshipTo( node, REL );
+            relId = rel.getId();
+            rel.setProperty( PROP, "bla bla" );
             tx.commit();
         }
+
+        assertQueryFindsIdsInOrder( db, true, NODE_INDEX_NAME, "bla bla", nodeId );
+        assertQueryFindsIdsInOrder( db, false, REL_INDEX_NAME, "bla bla", relId );
 
         awaitIndexesOnline();
 
@@ -1003,14 +954,23 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
         {
             Node node = tx.getNodeById( nodeId );
             node.setProperty( PROP, 42 );
+            Relationship rel = tx.getRelationshipById( relId );
+            rel.setProperty( PROP, 42 );
             tx.commit();
         }
 
+        assertNodeAndRelationshipIndexEmpty();
+    }
+
+    private void assertNodeAndRelationshipIndexEmpty()
+    {
         try ( Transaction tx = db.beginTx() )
         {
-            Result result = tx.execute( format( QUERY_NODES, "nodes", "bla" ) );
-            assertFalse( result.hasNext() );
-            result.close();
+            // Get all from the index and check that it is empty.
+            Result nodes = tx.execute( format( QUERY_NODES, NODE_INDEX_NAME, "*:*" ) );
+            assertFalse( nodes.hasNext() );
+            Result relationships = tx.execute( format( QUERY_RELS, REL_INDEX_NAME, "*:*" ) );
+            assertFalse( relationships.hasNext() );
             tx.commit();
         }
     }
@@ -1021,14 +981,19 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
         try ( Transaction tx = db.beginTx() )
         {
             createSimpleNodesIndex( tx );
+            createSimpleRelationshipIndex( tx );
             tx.commit();
         }
         long nodeId;
+        long relId;
         try ( Transaction tx = db.beginTx() )
         {
             Node node = tx.createNode( LABEL );
             node.setProperty( PROP, 42 );
             nodeId = node.getId();
+            Relationship rel = node.createRelationshipTo( node, REL );
+            relId = rel.getId();
+            rel.setProperty( PROP, 42 );
             tx.commit();
         }
 
@@ -1038,10 +1003,13 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
         {
             Node node = tx.getNodeById( nodeId );
             node.setProperty( PROP, "bla bla" );
+            Relationship rel = tx.getRelationshipById( relId );
+            rel.setProperty( PROP, "bla bla" );
             tx.commit();
         }
 
-        assertQueryFindsIdsInOrder( db, true, "nodes", "bla", nodeId );
+        assertQueryFindsIdsInOrder( db, true, NODE_INDEX_NAME, "bla", nodeId );
+        assertQueryFindsIdsInOrder( db, false, REL_INDEX_NAME, "bla", relId );
     }
 
     @Test
@@ -1049,36 +1017,45 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
     {
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( NODE_CREATE, "nodes", asStrList( LABEL.name() ), asStrList( "prop1", "prop2" ) ) ).close();
+            tx.execute( format( NODE_CREATE, NODE_INDEX_NAME, asStrList( LABEL.name() ), asStrList( "prop1", "prop2" ) ) ).close();
+            tx.execute( format( RELATIONSHIP_CREATE, REL_INDEX_NAME, asStrList( REL.name() ), asStrList( "prop1", "prop2" ) ) ).close();
             tx.commit();
         }
         long nodeId;
+        long relId;
         try ( Transaction tx = db.beginTx() )
         {
             Node node = tx.createNode( LABEL );
             nodeId = node.getId();
             node.setProperty( "prop1", "foo" );
             node.setProperty( "prop2", "bar" );
+            Relationship rel = node.createRelationshipTo( node, REL );
+            relId = rel.getId();
+            rel.setProperty( "prop1", "foo" );
+            rel.setProperty( "prop2", "bar" );
             tx.commit();
         }
 
         awaitIndexesOnline();
 
+        assertQueryFindsIdsInOrder( db, true, NODE_INDEX_NAME, "foo", nodeId );
+        assertQueryFindsIdsInOrder( db, true, NODE_INDEX_NAME, "bar", nodeId );
+        assertQueryFindsIdsInOrder( db, false, REL_INDEX_NAME, "foo", relId );
+        assertQueryFindsIdsInOrder( db, false, REL_INDEX_NAME, "bar", relId );
+
         try ( Transaction tx = db.beginTx() )
         {
             Node node = tx.getNodeById( nodeId );
             node.setProperty( "prop2", 42 );
+            Relationship rel = tx.getRelationshipById( relId );
+            rel.setProperty( "prop2", 42 );
             tx.commit();
         }
 
-        assertQueryFindsIdsInOrder( db, true, "nodes", "foo", nodeId );
-        try ( Transaction tx = db.beginTx() )
-        {
-            Result result = tx.execute( format( QUERY_NODES, "nodes", "bar" ) );
-            assertFalse( result.hasNext() );
-            result.close();
-            tx.commit();
-        }
+        assertQueryFindsIdsInOrder( db, true, NODE_INDEX_NAME, "foo", nodeId );
+        assertQueryFindsIdsInOrder( db, true, NODE_INDEX_NAME, "bar" );
+        assertQueryFindsIdsInOrder( db, false, REL_INDEX_NAME, "foo", relId );
+        assertQueryFindsIdsInOrder( db, false, REL_INDEX_NAME, "bar" );
     }
 
     @Test
@@ -1086,30 +1063,76 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
     {
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( NODE_CREATE, "nodes", asStrList( LABEL.name() ), asStrList( "prop1", "prop2" ) ) ).close();
+            tx.execute( format( NODE_CREATE, NODE_INDEX_NAME, asStrList( LABEL.name() ), asStrList( "prop1", "prop2" ) ) ).close();
+            tx.execute( format( RELATIONSHIP_CREATE, REL_INDEX_NAME, asStrList( REL.name() ), asStrList( "prop1", "prop2" ) ) ).close();
             tx.commit();
         }
         long nodeId;
+        long relId;
         try ( Transaction tx = db.beginTx() )
         {
             Node node = tx.createNode( LABEL );
             nodeId = node.getId();
             node.setProperty( "prop1", "foo" );
             node.setProperty( "prop2", 42 );
+            Relationship rel = node.createRelationshipTo( node, REL );
+            relId = rel.getId();
+            rel.setProperty( "prop1", "foo" );
+            rel.setProperty( "prop2", 42 );
             tx.commit();
         }
 
         awaitIndexesOnline();
 
+        assertQueryFindsIdsInOrder( db, true, NODE_INDEX_NAME, "foo", nodeId );
+        assertQueryFindsIdsInOrder( db, false, REL_INDEX_NAME, "foo", relId );
+
         try ( Transaction tx = db.beginTx() )
         {
             Node node = tx.getNodeById( nodeId );
             node.setProperty( "prop2", "bar" );
+            Relationship rel = tx.getRelationshipById( relId );
+            rel.setProperty( "prop2", "bar" );
             tx.commit();
         }
 
-        assertQueryFindsIdsInOrder( db, true, "nodes", "foo", nodeId );
-        assertQueryFindsIdsInOrder( db, true, "nodes", "bar", nodeId );
+        assertQueryFindsIdsInOrder( db, true, NODE_INDEX_NAME, "foo", nodeId );
+        assertQueryFindsIdsInOrder( db, true, NODE_INDEX_NAME, "bar", nodeId );
+        assertQueryFindsIdsInOrder( db, false, REL_INDEX_NAME, "foo", relId );
+        assertQueryFindsIdsInOrder( db, false, REL_INDEX_NAME, "bar", relId );
+    }
+
+    @Test
+    void propertiesMustStayInFulltextIndexWhenSomeOfLabelsRemoved()
+    {
+        Label secondLabel = Label.label( "label2" );
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.execute( format( NODE_CREATE, NODE_INDEX_NAME, asStrList( LABEL.name(), secondLabel.name() ), asStrList( PROP ) ) ).close();
+            tx.commit();
+        }
+        long nodeId;
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = tx.createNode( LABEL, secondLabel );
+            nodeId = node.getId();
+            node.setProperty( PROP, "foo" );
+            tx.commit();
+        }
+
+        awaitIndexesOnline();
+
+        assertQueryFindsIdsInOrder( db, true, NODE_INDEX_NAME, "foo", nodeId );
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = tx.getNodeById( nodeId );
+            node.removeLabel( secondLabel );
+            tx.commit();
+        }
+
+        // The node still has one of the indexed labels so the property should still be in the index.
+        assertQueryFindsIdsInOrder( db, true, NODE_INDEX_NAME, "foo", nodeId );
     }
 
     @Test

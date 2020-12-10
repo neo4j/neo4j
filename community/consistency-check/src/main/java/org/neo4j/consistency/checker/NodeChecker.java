@@ -194,7 +194,8 @@ class NodeChecker implements Checker
                 if ( labels != null && propertyChainIsOk )
                 {
                     schemaComplianceChecker.checkContainsMandatoryProperties( nodeCursor, labels, propertyValues, reporter::forNode );
-                    // Here only the very small indexes gets checked this way, larger indexes will be checked in IndexChecker
+                    // Here only the very small indexes (or indexes that we can't read the values from, like fulltext indexes)
+                    // gets checked this way, larger indexes will be checked in IndexChecker
                     if ( context.consistencyFlags.isCheckIndexes() )
                     {
                         schemaComplianceChecker.checkCorrectlyIndexed( nodeCursor, labels, propertyValues, reporter::forNode );

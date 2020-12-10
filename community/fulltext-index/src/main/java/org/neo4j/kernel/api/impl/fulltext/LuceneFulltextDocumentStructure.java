@@ -56,11 +56,15 @@ public class LuceneFulltextDocumentStructure
         return doc;
     }
 
+    /**
+     * @return A document with the properties set, or null if no properties were
+     * relevant (= none of the properties were of type TEXT - which is the only type we support in the fulltext indexes).
+     */
     public static Document documentRepresentingProperties( long id, String[] propertyNames, Value[] values )
     {
         DocWithId document = reuseDocument( id );
-        document.setValues( propertyNames, values );
-        return document.document;
+        int setValues = document.setValues( propertyNames, values );
+        return setValues == 0 ? null : document.document;
     }
 
     private static Field encodeValueField( String propertyKey, Value value )
@@ -128,9 +132,10 @@ public class LuceneFulltextDocumentStructure
             idValueField.setLongValue( id );
         }
 
-        private void setValues( String[] names, Value[] values )
+        private int setValues( String[] names, Value[] values )
         {
             int i = 0;
+            int nbrAddedValues = 0;
             for ( String name : names )
             {
                 Value value = values[i++];
@@ -138,8 +143,10 @@ public class LuceneFulltextDocumentStructure
                 {
                     Field field = encodeValueField( name, value );
                     document.add( field );
+                    nbrAddedValues++;
                 }
             }
+            return nbrAddedValues;
         }
 
         private void removeAllValueFields()

@@ -35,6 +35,7 @@ import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.recordstorage.RecordStorageReader;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.index.IndexReader;
@@ -44,6 +45,7 @@ import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.transaction.state.storeview.DefaultNodePropertyAccessor;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
 
 import static java.lang.Math.toIntExact;
@@ -168,12 +170,28 @@ class SchemaComplianceChecker implements AutoCloseable
     {
         if ( count == 0 )
         {
-            reportSupplier.apply( entity ).notIndexed( indexRule, Values.asObjects( propertyValues ) );
+            // Fulltext indexes only index text values, so if the entity only have non-string properties it is correct to not find it in the index.
+            if ( !(indexRule.getIndexType() == IndexType.FULLTEXT && !valuesContainTextProperty( propertyValues ) ) )
+            {
+                reportSupplier.apply( entity ).notIndexed( indexRule, Values.asObjects( propertyValues ) );
+            }
         }
         else if ( count != 1 )
         {
             reportSupplier.apply( entity ).indexedMultipleTimes( indexRule, Values.asObjects( propertyValues ), count );
         }
+    }
+
+    private boolean valuesContainTextProperty( Value[] values )
+    {
+        for ( Value value : values )
+        {
+            if ( value.valueGroup() == ValueGroup.TEXT )
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     private <ENTITY extends PrimitiveRecord> void checkMandatoryProperties( ENTITY entity, IntObjectMap<Value> seenProperties, long[] entityTokenIds,

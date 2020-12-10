@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api.impl.fulltext;
 
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.Term;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -56,7 +57,7 @@ public class FulltextIndexPopulator extends LuceneIndexPopulator<DatabaseIndex<F
         {
             for ( IndexEntryUpdate<?> update : updates )
             {
-                writer.updateDocument( LuceneFulltextDocumentStructure.newTermForChangeOrRemove( update.getEntityId() ),
+                writer.updateOrDeleteDocument( LuceneFulltextDocumentStructure.newTermForChangeOrRemove( update.getEntityId() ),
                         updateAsDocument( (ValueIndexEntryUpdate<?>) update ) );
             }
         }
@@ -106,20 +107,20 @@ public class FulltextIndexPopulator extends LuceneIndexPopulator<DatabaseIndex<F
         @Override
         public void process( IndexEntryUpdate<?> update )
         {
-            assert update.indexKey().schema().equals( descriptor.schema() );
             ValueIndexEntryUpdate<?> valueUpdate = asValueUpdate( update );
             try
             {
+                long nodeId = valueUpdate.getEntityId();
+                Term term = LuceneFulltextDocumentStructure.newTermForChangeOrRemove( nodeId );
                 switch ( valueUpdate.updateMode() )
                 {
                 case ADDED:
                 case CHANGED:
-                    long nodeId = valueUpdate.getEntityId();
-                    luceneIndex.getIndexWriter().updateDocument( LuceneFulltextDocumentStructure.newTermForChangeOrRemove( nodeId ),
+                    luceneIndex.getIndexWriter().updateOrDeleteDocument( term,
                             LuceneFulltextDocumentStructure.documentRepresentingProperties( nodeId, propertyNames, valueUpdate.values() ) );
                     break;
                 case REMOVED:
-                    luceneIndex.getIndexWriter().deleteDocuments( LuceneFulltextDocumentStructure.newTermForChangeOrRemove( valueUpdate.getEntityId() ) );
+                    luceneIndex.getIndexWriter().deleteDocuments( term );
                     break;
                 default:
                     throw new UnsupportedOperationException();
