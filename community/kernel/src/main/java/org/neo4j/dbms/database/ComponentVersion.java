@@ -49,6 +49,11 @@ public interface ComponentVersion
 
     boolean runtimeSupported();
 
+    default boolean isGreaterThan( ComponentVersion other )
+    {
+        return this.getVersion() > other.getVersion();
+    }
+
     class Neo4jVersions
     {
         public static final String VERSION_35 = "Neo4j 3.5";

@@ -89,9 +89,9 @@ public interface SystemGraphComponent
         }
     }
 
-    default int getVersion( Transaction tx, String componentVersionProperty )
+    default Integer getVersionNumber( Transaction tx, String componentVersionProperty )
     {
-        int result = UNKNOWN_VERSION;
+        Integer result = null;
         ResourceIterator<Node> nodes = tx.findNodes( VERSION_LABEL );
         if ( nodes.hasNext() )
         {

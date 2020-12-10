@@ -28,7 +28,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.util.Preconditions;
 
 import static org.neo4j.dbms.database.ComponentVersion.DBMS_RUNTIME_COMPONENT;
-import static org.neo4j.dbms.database.ComponentVersion.Neo4jVersions.UNKNOWN_VERSION;
 
 public class DbmsRuntimeSystemGraphComponent extends AbstractVersionComponent<DbmsRuntimeVersion>
 {
@@ -47,10 +46,10 @@ public class DbmsRuntimeSystemGraphComponent extends AbstractVersionComponent<Db
     }
 
     @Override
-    public int getVersion( Transaction tx, String componentName )
+    public Integer getVersionNumber( Transaction tx, String componentName )
     {
-        int result = UNKNOWN_VERSION;
-        try ( ResourceIterator<Node> nodes = tx.findNodes( VERSION_LABEL ) )
+        Integer result = null;
+        try ( ResourceIterator<Node> nodes = tx.findNodes( OLD_COMPONENT_LABEL ) )
         {
             if ( nodes.hasNext() )
             {
@@ -61,7 +60,7 @@ public class DbmsRuntimeSystemGraphComponent extends AbstractVersionComponent<Db
                 }
             }
         }
-        return result != UNKNOWN_VERSION ? result : super.getVersion( tx, componentName );
+        return result != null ? result : super.getVersionNumber( tx, componentName );
     }
 
     @Override
@@ -79,14 +78,14 @@ public class DbmsRuntimeSystemGraphComponent extends AbstractVersionComponent<Db
     {
         DbmsRuntimeVersion result = null;
         try ( var tx = system.beginTx();
-            var nodes = tx.findNodes( OLD_COMPONENT_LABEL ) )
+              var nodes = tx.findNodes( OLD_COMPONENT_LABEL ) )
         {
             if ( nodes.hasNext() )
             {
                 Node versionNode = nodes.next();
                 if ( versionNode.hasProperty( OLD_PROPERTY_NAME ) )
                 {
-                    result = convertFunction.apply( (int) versionNode.getProperty( OLD_PROPERTY_NAME ) );
+                    result = convertToVersion.apply( (int) versionNode.getProperty( OLD_PROPERTY_NAME ) );
                 }
                 Preconditions.checkState( !nodes.hasNext(), "More than one version node in system database" );
             }

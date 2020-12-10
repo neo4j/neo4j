@@ -29,7 +29,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.util.Preconditions;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
-import static org.neo4j.dbms.database.ComponentVersion.Neo4jVersions.UNKNOWN_VERSION;
 
 /**
  * These components only care about the version number
@@ -38,7 +37,7 @@ public abstract class AbstractVersionComponent<T extends ComponentVersion> exten
 {
     private final String componentName;
     private final T latestVersion;
-    protected final Function<Integer,T> convertFunction;
+    protected final Function<Integer,T> convertToVersion;
     protected volatile T currentVersion;
 
     public AbstractVersionComponent( String componentName, T latestVersion, Config config, Function<Integer, T> convertFunction )
@@ -46,7 +45,7 @@ public abstract class AbstractVersionComponent<T extends ComponentVersion> exten
         super( config );
         this.componentName = componentName;
         this.latestVersion = latestVersion;
-        this.convertFunction = convertFunction;
+        this.convertToVersion = convertFunction;
     }
 
     abstract T getFallbackVersion();
@@ -60,21 +59,34 @@ public abstract class AbstractVersionComponent<T extends ComponentVersion> exten
     @Override
     public Status detect( Transaction tx )
     {
-        int version = getVersion( tx, componentName );
-        if ( version == UNKNOWN_VERSION )
+        try
         {
-            return Status.UNINITIALIZED;
+            Integer versionNumber = getVersionNumber( tx, componentName );
+            if ( versionNumber == null )
+            {
+                return Status.UNINITIALIZED;
+            }
+            else
+            {
+                T version = convertToVersion.apply( getVersionNumber( tx, componentName ) );
+                if ( latestVersion.isGreaterThan( version ) )
+                {
+                    return Status.REQUIRES_UPGRADE;
+                }
+                else if ( latestVersion.equals( version ) )
+                {
+                    return Status.CURRENT;
+                }
+                else
+                {
+                    return Status.UNSUPPORTED_FUTURE;
+                }
+            }
         }
-        else if ( version < latestVersion.getVersion() )
-        {
-            return Status.REQUIRES_UPGRADE;
-        }
-        else if ( version > latestVersion.getVersion() )
+        catch ( IllegalArgumentException e )
         {
             return Status.UNSUPPORTED_FUTURE;
         }
-
-        return Status.CURRENT;
     }
 
     @Override
@@ -146,7 +158,7 @@ public abstract class AbstractVersionComponent<T extends ComponentVersion> exten
                 Node versionNode = nodes.next();
                 if ( versionNode.hasProperty( componentName ) )
                 {
-                    result = convertFunction.apply( (int) versionNode.getProperty( componentName ) );
+                    result = convertToVersion.apply( (int) versionNode.getProperty( componentName ) );
                 }
                 Preconditions.checkState( !nodes.hasNext(), "More than one version node in system database" );
             }

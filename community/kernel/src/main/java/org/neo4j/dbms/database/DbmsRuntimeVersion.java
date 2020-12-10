@@ -93,4 +93,14 @@ public enum DbmsRuntimeVersion implements ComponentVersion
         }
         throw new IllegalArgumentException( "Unrecognised DBMS runtime version number: " + versionNumber );
     }
+
+    @Override
+    public boolean isGreaterThan( ComponentVersion other )
+    {
+        if ( !(other instanceof DbmsRuntimeVersion) )
+        {
+            throw new IllegalArgumentException( "Comparison to different Version type" );
+        }
+        return this.getVersion() > other.getVersion();
+    }
 }

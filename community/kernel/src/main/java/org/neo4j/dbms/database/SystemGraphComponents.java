@@ -25,6 +25,8 @@ import java.util.List;
 import java.util.function.Consumer;
 
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.util.Preconditions;
@@ -83,9 +85,10 @@ public class SystemGraphComponents
                 "Cannot initialize system graph on database '" + system.databaseName() + "'" );
 
         boolean newlyCreated;
-        try ( Transaction tx = system.beginTx() )
+        try ( Transaction tx = system.beginTx();
+              ResourceIterator<Node> nodes = tx.findNodes( VERSION_LABEL ) )
         {
-            newlyCreated = !tx.findNodes( VERSION_LABEL ).hasNext();
+            newlyCreated = !nodes.hasNext();
         }
 
         Exception failure = null;
