@@ -296,7 +296,7 @@ object CardinalityCostModel {
   /**
    * Given an incomingLimitSelectivity, calculate how this selectivity applies to the LHS and RHS of the plan.
    */
-  private def childrenLimitSelectivities(plan: LogicalPlan, incomingLimitSelectivity: Selectivity, cardinalities: Cardinalities): (Selectivity, Selectivity) = plan match {
+  def childrenLimitSelectivities(plan: LogicalPlan, incomingLimitSelectivity: Selectivity, cardinalities: Cardinalities): (Selectivity, Selectivity) = plan match {
     case _: CartesianProduct =>
       val sqrt = Selectivity.of(math.sqrt(incomingLimitSelectivity.factor)).getOrElse(Selectivity.ONE)
       (sqrt, sqrt)

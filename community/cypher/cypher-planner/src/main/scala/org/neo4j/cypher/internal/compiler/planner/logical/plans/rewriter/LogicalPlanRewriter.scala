@@ -67,7 +67,8 @@ case object PlanRewriter extends LogicalPlanRewriter with StepSequencer.Step wit
     skipInPartialSort,
     simplifySelections,
     limitNestedPlanExpressions(context.logicalPlanIdGen)
-  ))
+  )) andThen
+    useEffectiveOutputCardinality(cardinalities, otherAttributes.withAlso(solveds, providedOrders))
 
   override def preConditions: Set[StepSequencer.Condition] = Set(
     // The rewriters operate on the LogicalPlan
