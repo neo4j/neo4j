@@ -71,7 +71,13 @@ final class ThreadPoolManager
     private synchronized ThreadPool createThreadPool( Group group, ThreadPool.ThreadPoolParameters parameters )
     {
         assertNotShutDown();
-        return new ThreadPool( group, topLevelGroup, requireNonNullElseGet( parameters, ThreadPool.ThreadPoolParameters::new ) );
+        ThreadPool.ThreadPoolParameters effectiveParameters = requireNonNullElseGet( parameters, () ->
+        {
+            ThreadPool.ThreadPoolParameters newParameters = new ThreadPool.ThreadPoolParameters();
+            group.defaultParallelism().ifPresent( parallelism -> newParameters.desiredParallelism = parallelism  );
+            return newParameters;
+        } );
+        return new ThreadPool( group, topLevelGroup, effectiveParameters );
     }
 
     private void assertNotShutDown()

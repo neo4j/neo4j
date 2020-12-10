@@ -26,6 +26,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ForkJoinTask;
+import java.util.concurrent.FutureTask;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.RejectedExecutionHandler;
@@ -237,6 +238,10 @@ interface ExecutorServiceFactory
         @Override
         public void execute( Runnable runnable )
         {
+            if ( runnable instanceof FutureTask )
+            {
+                ((FutureTask<?>) runnable).cancel( false );
+            }
         }
     }
 
