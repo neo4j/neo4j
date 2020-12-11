@@ -262,17 +262,17 @@ class MemoryRecommendationsCommand extends AbstractCommand
         print( "# involves a full GC, which is desirable to avoid." );
         print( "#" );
         print( "# Based on the above, the following memory settings are recommended:" );
-        print( initial_heap_size, heap );
-        print( max_heap_size, heap );
-        print( pagecache_memory, pagecache );
+        printSetting( initial_heap_size, heap );
+        printSetting( max_heap_size, heap );
+        printSetting( pagecache_memory, pagecache );
         if ( offHeapMemory != 0 )
         {
-            print( tx_state_max_off_heap_memory, txState );
+            printSetting( tx_state_max_off_heap_memory, txState );
         }
         print( "#" );
         print( "# It is also recommended turning out-of-memory errors into full crashes," );
         print( "# instead of allowing a partially crashed database to continue running:" );
-        print( additional_jvm + "-XX:+ExitOnOutOfMemoryError" );
+        printSetting( additional_jvm, "-XX:+ExitOnOutOfMemoryError" );
         print( "#" );
         print( "# The numbers below have been derived based on your current databases located at: '" + databasesRoot + "'." );
         print( "# They can be used as an input into more detailed memory analysis." );
@@ -280,7 +280,7 @@ class MemoryRecommendationsCommand extends AbstractCommand
         print( "# Total size of data and native indexes in all databases: " + bytesToString( pageCacheSize ) );
     }
 
-    private void print( Setting<?> setting, String value )
+    private void printSetting( Setting<?> setting, String value )
     {
         if ( !dockerOutput )
         {
