@@ -23,9 +23,13 @@ import org.apache.commons.lang3.mutable.MutableLong;
 import org.junit.jupiter.api.Test;
 
 import java.util.Optional;
+import java.util.function.Consumer;
 
+import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.graphdb.TransientFailureException;
+import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -35,6 +39,8 @@ import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.TransactionalContextFactory;
 import org.neo4j.token.TokenHolders;
 
+import static java.util.Collections.emptyMap;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -155,5 +161,45 @@ class TransactionImplTest
 
         // should all invoke the callback
         assertEquals( 3, calls.longValue() );
+    }
+
+    @Test
+    void testFindNodesValidation()
+    {
+        checkForIAE( tx -> tx.findNodes( null ), "Label" );
+
+        checkForIAE( tx -> tx.findNodes( null, "key", "value" ), "Label" );
+        checkForIAE( tx -> tx.findNodes( Label.label( "test" ), null, null ), "Property key" );
+        checkForIAE( tx -> tx.findNodes( Label.label( "test" ), "key", null ), "property value" );
+
+        checkForIAE( tx -> tx.findNodes( null, "key", "template", null ), "Label" );
+        checkForIAE( tx -> tx.findNodes( Label.label( "test" ), null, "template", null ), "Property key" );
+        checkForIAE( tx -> tx.findNodes( Label.label( "test" ), "key", null, null ), "Template" );
+
+        checkForIAE( tx -> tx.findNodes( null, "key", "value", "key", "value" ), "Label" );
+        checkForIAE( tx -> tx.findNodes( Label.label( "test" ), null, "value", "key", "value" ), "Property key" );
+        checkForIAE( tx -> tx.findNodes( Label.label( "test" ), "key", null, "key", "value" ), "property value" );
+        checkForIAE( tx -> tx.findNodes( Label.label( "test" ), "key", "value", null, "value" ), "Property key" );
+        checkForIAE( tx -> tx.findNodes( Label.label( "test" ), "key", "value", "key", null ), "property value" );
+
+        checkForIAE( tx -> tx.findNodes( null, "key", "value", "key", "value", "key", "value" ), "Label" );
+        checkForIAE( tx -> tx.findNodes( Label.label( "test" ), null, "value", "key", "value", "key", "value" ), "Property key" );
+        checkForIAE( tx -> tx.findNodes( Label.label( "test" ), "key", null, "key", "value", "key", "value" ), "property value" );
+        checkForIAE( tx -> tx.findNodes( Label.label( "test" ), "key", "value", "key", "value", null, "value" ), "Property key" );
+        checkForIAE( tx -> tx.findNodes( Label.label( "test" ), "key", "value", "key", "value", "key", null ), "property value" );
+
+        checkForIAE( tx -> tx.findNodes( null, emptyMap() ), "Label" );
+        checkForIAE( tx -> tx.findNodes( Label.label( "test" ), null), "Property values" );
+    }
+
+    private void checkForIAE( Consumer<Transaction> consumer, String message )
+    {
+        KernelTransaction kernelTransaction = mock( KernelTransaction.class );
+        when( kernelTransaction.tokenRead() ).thenReturn( mock( TokenRead.class ) );
+
+        try ( TransactionImpl tx = new TransactionImpl( tokenHolders, contextFactory, availabilityGuard, engine, kernelTransaction, null, null ) )
+        {
+            assertThatThrownBy( () -> consumer.accept( tx ) ).isInstanceOf( IllegalArgumentException.class ).hasMessageContaining( message );
+        }
     }
 }

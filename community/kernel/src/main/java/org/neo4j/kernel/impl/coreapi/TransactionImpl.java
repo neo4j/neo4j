@@ -102,6 +102,7 @@ import static java.util.Collections.emptyMap;
 import static org.neo4j.internal.helpers.collection.Iterators.emptyResourceIterator;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.Terminated;
+import static org.neo4j.util.Preconditions.checkArgument;
 import static org.neo4j.values.storable.Values.utf8Value;
 
 /**
@@ -332,23 +333,29 @@ public class TransactionImpl extends EntityValidationTransactionImpl
     @Override
     public ResourceIterator<Node> findNodes( final Label myLabel )
     {
+        checkLabel( myLabel );
         return allNodesWithLabel( myLabel );
     }
 
     @Override
     public ResourceIterator<Node> findNodes( final Label myLabel, final String key, final Object value )
     {
+        checkLabel( myLabel );
+        checkPropertyKey( key );
         KernelTransaction transaction = kernelTransaction();
         TokenRead tokenRead = transaction.tokenRead();
         int labelId = tokenRead.nodeLabel( myLabel.name() );
         int propertyId = tokenRead.propertyKey( key );
-        return nodesByLabelAndProperty( transaction, labelId, IndexQuery.exact( propertyId, Values.of( value ) ) );
+        return nodesByLabelAndProperty( transaction, labelId, IndexQuery.exact( propertyId, Values.of( value, false ) ) );
     }
 
     @Override
     public ResourceIterator<Node> findNodes(
             final Label myLabel, final String key, final String value, final StringSearchMode searchMode )
     {
+        checkLabel( myLabel );
+        checkPropertyKey( key );
+        checkArgument( value != null, "Template must not be null" );
         KernelTransaction transaction = kernelTransaction();
         TokenRead tokenRead = transaction.tokenRead();
         int labelId = tokenRead.nodeLabel( myLabel.name() );
@@ -378,29 +385,38 @@ public class TransactionImpl extends EntityValidationTransactionImpl
     public ResourceIterator<Node> findNodes( Label label, String key1, Object value1, String key2, Object value2,
             String key3, Object value3 )
     {
+        checkLabel( label );
+        checkPropertyKey( key1 );
+        checkPropertyKey( key2 );
+        checkPropertyKey( key3 );
         KernelTransaction transaction = kernelTransaction();
         TokenRead tokenRead = transaction.tokenRead();
         int labelId = tokenRead.nodeLabel( label.name() );
         return nodesByLabelAndProperties( transaction, labelId,
-                IndexQuery.exact( tokenRead.propertyKey( key1 ), Values.of( value1 ) ),
-                IndexQuery.exact( tokenRead.propertyKey( key2 ), Values.of( value2 ) ),
-                IndexQuery.exact( tokenRead.propertyKey( key3 ), Values.of( value3 ) ) );
+                                          IndexQuery.exact( tokenRead.propertyKey( key1 ), Values.of( value1, false ) ),
+                                          IndexQuery.exact( tokenRead.propertyKey( key2 ), Values.of( value2, false ) ),
+                                          IndexQuery.exact( tokenRead.propertyKey( key3 ), Values.of( value3, false ) ) );
     }
 
     @Override
     public ResourceIterator<Node> findNodes( Label label, String key1, Object value1, String key2, Object value2 )
     {
+        checkLabel( label );
+        checkPropertyKey( key1 );
+        checkPropertyKey( key2 );
         KernelTransaction transaction = kernelTransaction();
         TokenRead tokenRead = transaction.tokenRead();
         int labelId = tokenRead.nodeLabel( label.name() );
         return nodesByLabelAndProperties( transaction, labelId,
-                IndexQuery.exact( tokenRead.propertyKey( key1 ), Values.of( value1 ) ),
-                IndexQuery.exact( tokenRead.propertyKey( key2 ), Values.of( value2 ) ) );
+                                          IndexQuery.exact( tokenRead.propertyKey( key1 ), Values.of( value1, false ) ),
+                                          IndexQuery.exact( tokenRead.propertyKey( key2 ), Values.of( value2, false ) ) );
     }
 
     @Override
     public ResourceIterator<Node> findNodes( Label label, Map<String,Object> propertyValues )
     {
+        checkLabel( label );
+        checkArgument( propertyValues != null, "Property values can not be null" );
         KernelTransaction transaction = kernelTransaction();
         TokenRead tokenRead = transaction.tokenRead();
         int labelId = tokenRead.nodeLabel( label.name() );
@@ -408,7 +424,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl
         int i = 0;
         for ( Map.Entry<String,Object> entry : propertyValues.entrySet() )
         {
-            queries[i++] = IndexQuery.exact( tokenRead.propertyKey( entry.getKey() ), Values.of( entry.getValue() ) );
+            queries[i++] = IndexQuery.exact( tokenRead.propertyKey( entry.getKey() ), Values.of( entry.getValue(), false ) );
         }
         return nodesByLabelAndProperties( transaction, labelId, queries );
     }
@@ -926,5 +942,15 @@ public class TransactionImpl extends EntityValidationTransactionImpl
     private interface TransactionalOperation
     {
         void perform( KernelTransaction transaction ) throws Exception;
+    }
+
+    private static void checkPropertyKey( String key )
+    {
+        checkArgument( key != null, "Property key can not be null" );
+    }
+
+    private static void checkLabel( Label label )
+    {
+        checkArgument( label != null, "Label can not be null" );
     }
 }
