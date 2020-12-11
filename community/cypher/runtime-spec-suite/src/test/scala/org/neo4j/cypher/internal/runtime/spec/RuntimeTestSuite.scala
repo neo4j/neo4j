@@ -305,7 +305,7 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
       this
     }
 
-    def withLockedNodes(nodeIds: Seq[Long]) = {
+    def withLockedNodes(nodeIds: Set[Long]) = {
       maybeLockedNodes = Some(new LockNodesMatcher(nodeIds))
       this
     }
@@ -347,7 +347,10 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
     }
   }
 
-  class LockNodesMatcher(expectedLocked: Seq[Long]) extends Matcher[Unit] {
+  /*
+   * locks.accept() does not keep the order of when the locks was taken, therefor we don't assert on the order of the locks.
+   */
+  class LockNodesMatcher(expectedLocked: Set[Long]) extends Matcher[Unit] {
      override def apply(left: Unit): MatchResult = {
       val locksList = new util.ArrayList[Long]
       runtimeTestSupport.locks.accept(
@@ -355,7 +358,7 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
           locksList.add(resourceId)
       )
 
-      val actualLocked = locksList.asScala.toSeq
+      val actualLocked = locksList.asScala.toSet
       MatchResult(
         matches = actualLocked == expectedLocked,
         rawFailureMessage = s"expected nodesLocked=$expectedLocked but was $actualLocked",
