@@ -63,6 +63,7 @@ import static org.neo4j.commandline.dbms.MemoryRecommendationsCommand.recommendO
 import static org.neo4j.commandline.dbms.MemoryRecommendationsCommand.recommendPageCacheMemory;
 import static org.neo4j.commandline.dbms.MemoryRecommendationsCommand.recommendTxStateMemory;
 import static org.neo4j.configuration.Config.DEFAULT_CONFIG_FILE_NAME;
+import static org.neo4j.configuration.ExternalSettings.additional_jvm;
 import static org.neo4j.configuration.ExternalSettings.initial_heap_size;
 import static org.neo4j.configuration.ExternalSettings.max_heap_size;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
@@ -229,6 +230,7 @@ class MemoryRecommendationsCommandTest
         verify( output ).println( max_heap_size.name() + "=" + heap );
         verify( output ).println( pagecache_memory.name() + "=" + pagecache );
         verify( output ).println( tx_state_max_off_heap_memory.name() + "=" + offHeap );
+        verify( output ).println( additional_jvm.name() + "=" + "-XX:+ExitOnOutOfMemoryError" );
     }
 
     @Test
@@ -255,6 +257,7 @@ class MemoryRecommendationsCommandTest
         verify( output ).println( "EXPORT NEO4J_dbms_memory_heap_max__size='" + heap + "'" );
         verify( output ).println( "EXPORT NEO4J_dbms_memory_pagecache_size='" + pagecache + "'" );
         verify( output ).println( "EXPORT NEO4J_dbms_memory_off__heap_max__size='" + offHeap + "'" );
+        verify( output ).println( "EXPORT NEO4J_dbms_jvm_additional='" + "-XX:+ExitOnOutOfMemoryError" + "'" );
     }
 
     @Test
