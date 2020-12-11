@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
+import org.neo4j.cypher.internal.runtime.spec.RowCount
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.exceptions.ParameterWrongTypeException
 import org.neo4j.graphdb.Direction.BOTH
@@ -925,5 +926,209 @@ abstract class OptionalExpandIntoTestBase[CONTEXT <: RuntimeContext](
 
     // then
     runtimeResult should beColumns("res").withSingleRow(null)
+  }
+
+  test("should handle multiple optional expands when first predicate fails") {
+    // given
+    val nodeLabel = label("M")
+    val nodes = given {
+      val nodes = nodeGraph(sizeHint, "N")
+      val yNode = tx.createNode(nodeLabel)
+      nodes.foreach(n => {
+        n.createRelationshipTo(yNode, RelationshipType.withName("A"))
+        n.createRelationshipTo(yNode, RelationshipType.withName("A"))
+        n.createRelationshipTo(yNode, RelationshipType.withName("B"))
+        n.createRelationshipTo(yNode, RelationshipType.withName("B"))
+        n.createRelationshipTo(yNode, RelationshipType.withName("B"))
+      })
+      nodes
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nonFuseable()
+      .optionalExpandInto("(x)-[r2:B]->(y)", Some(s"y:M"))
+      .optionalExpandInto("(x)-[r1:A]->(y)", Some("y:NOT_THERE"))//this predicate will always fail
+      .cartesianProduct()
+      .|.nodeByLabelScan("y", "M")
+      .nodeByLabelScan("x", "N")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("x").withRows(singleColumn(nodes.flatMap(n => Seq.fill(3)(n))))
+  }
+
+  test("should handle multiple optional expands when second predicate fails") {
+    // given
+    val nodeLabel = label("M")
+    val nodes = given {
+      val nodes = nodeGraph(sizeHint, "N")
+      val yNode = tx.createNode(nodeLabel)
+      nodes.foreach(n => {
+        n.createRelationshipTo(yNode, RelationshipType.withName("A"))
+        n.createRelationshipTo(yNode, RelationshipType.withName("A"))
+        n.createRelationshipTo(yNode, RelationshipType.withName("B"))
+        n.createRelationshipTo(yNode, RelationshipType.withName("B"))
+        n.createRelationshipTo(yNode, RelationshipType.withName("B"))
+      })
+      nodes
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nonFuseable()
+      .optionalExpandInto("(x)-[r2:B]->(y)", Some("y:NOT_THERE"))//this predicate will always fail
+      .optionalExpandInto("(x)-[r1:A]->(y)", Some(s"y:${nodeLabel.name()}"))
+      .cartesianProduct()
+      .|.nodeByLabelScan("y", "M")
+      .nodeByLabelScan("x", "N")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("x").withRows(singleColumn(nodes.flatMap(n => Seq.fill(2)(n))))
+  }
+
+  test("should handle multiple optional expands when first predicate fails with limit") {
+    // given
+    val nodeLabel = label("M")
+    given {
+      val nodes = nodeGraph(sizeHint, "N")
+      val yNode = tx.createNode(nodeLabel)
+      nodes.foreach(n => {
+        n.createRelationshipTo(yNode, RelationshipType.withName("A"))
+        n.createRelationshipTo(yNode, RelationshipType.withName("A"))
+        n.createRelationshipTo(yNode, RelationshipType.withName("B"))
+        n.createRelationshipTo(yNode, RelationshipType.withName("B"))
+        n.createRelationshipTo(yNode, RelationshipType.withName("B"))
+      })
+      nodes
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nonFuseable()
+      .limit(10)
+      .optionalExpandInto("(x)-[r2:B]->(y)", Some(s"y:${nodeLabel.name()}"))
+      .optionalExpandInto("(x)-[r1:A]->(y)", Some("y:NOT_THERE"))//this predicate will always fail
+      .cartesianProduct()
+      .|.nodeByLabelScan("y", "M")
+      .nodeByLabelScan("x", "N")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("x").withRows(RowCount(10))
+  }
+
+  test("should handle multiple optional expands when second predicate fails with limit") {
+    // given
+    val nodeLabel = label("M")
+    given {
+      val nodes = nodeGraph(sizeHint, "N")
+      val yNode = tx.createNode(nodeLabel)
+      nodes.foreach(n => {
+        n.createRelationshipTo(yNode, RelationshipType.withName("A"))
+        n.createRelationshipTo(yNode, RelationshipType.withName("A"))
+        n.createRelationshipTo(yNode, RelationshipType.withName("B"))
+        n.createRelationshipTo(yNode, RelationshipType.withName("B"))
+        n.createRelationshipTo(yNode, RelationshipType.withName("B"))
+      })
+      nodes
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nonFuseable()
+      .limit(10)
+      .optionalExpandInto("(x)-[r2:B]->(y)", Some("y:NOT_THERE"))//this predicate will always fail
+      .optionalExpandInto("(x)-[r1:A]->(y)", Some(s"y:${nodeLabel.name()}"))
+      .cartesianProduct()
+      .|.nodeByLabelScan("y", "M")
+      .nodeByLabelScan("x", "N")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("x").withRows(RowCount(10))
+  }
+
+  test("should handle multiple optional expands when first predicate fails on the RHS of Apply") {
+    // given
+    val nodeLabel = label("M")
+    val nodes = given {
+      val nodes = nodeGraph(sizeHint, "N")
+      val yNode = tx.createNode(nodeLabel)
+      nodes.foreach(n => {
+        n.createRelationshipTo(yNode, RelationshipType.withName("A"))
+        n.createRelationshipTo(yNode, RelationshipType.withName("A"))
+        n.createRelationshipTo(yNode, RelationshipType.withName("B"))
+        n.createRelationshipTo(yNode, RelationshipType.withName("B"))
+        n.createRelationshipTo(yNode, RelationshipType.withName("B"))
+      })
+      nodes
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nonFuseable()
+      .apply()
+      .|.optionalExpandInto("(x)-[r2:B]->(y)", Some(s"y:${nodeLabel.name()}"))
+      .|.optionalExpandInto("(x)-[r1:A]->(y)", Some("y:NOT_THERE")) //this predicate will always fail
+      .|.cartesianProduct()
+      .|.|.nodeByLabelScan("y", "M")
+      .|.nodeByLabelScan("x", "N")
+      .input(variables = Seq("i"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(Seq.fill(10)(Array[Any](42)):_*))
+
+    // then
+    runtimeResult should beColumns("x").withRows(singleColumn(nodes.flatMap(n => Seq.fill(30)(n))))
+  }
+
+  test("should handle multiple optional expands when second predicate fails on the RHS of an Apply") {
+    // given
+    val nodeLabel = label("M")
+    val nodes = given {
+      val nodes = nodeGraph(sizeHint, "N")
+      val yNode = tx.createNode(nodeLabel)
+      nodes.foreach(n => {
+        n.createRelationshipTo(yNode, RelationshipType.withName("A"))
+        n.createRelationshipTo(yNode, RelationshipType.withName("A"))
+        n.createRelationshipTo(yNode, RelationshipType.withName("B"))
+        n.createRelationshipTo(yNode, RelationshipType.withName("B"))
+        n.createRelationshipTo(yNode, RelationshipType.withName("B"))
+      })
+      nodes
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nonFuseable()
+      .apply()
+      .|.optionalExpandInto("(x)-[r2:B]->(y)", Some("y:NOT_THERE"))//this predicate will always fail
+      .|.optionalExpandInto("(x)-[r1:A]->(y)", Some(s"y:${nodeLabel.name()}"))
+      .|.cartesianProduct()
+      .|.|.nodeByLabelScan("y", "M")
+      .|.nodeByLabelScan("x", "N")
+      .input(variables = Seq("i"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(Seq.fill(10)(Array[Any](42)):_*))
+
+    // then
+    runtimeResult should beColumns("x").withRows(singleColumn(nodes.flatMap(n => Seq.fill(20)(n))))
   }
 }
