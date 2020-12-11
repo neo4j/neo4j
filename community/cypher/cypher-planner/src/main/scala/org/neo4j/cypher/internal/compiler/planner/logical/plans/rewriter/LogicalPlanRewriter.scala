@@ -66,7 +66,7 @@ case object PlanRewriter extends LogicalPlanRewriter with StepSequencer.Step wit
     useTop,
     skipInPartialSort,
     simplifySelections,
-    limitNestedPlanExpressions(context.logicalPlanIdGen)
+    limitNestedPlanExpressions(cardinalities, otherAttributes.withAlso(solveds, providedOrders))
   )) andThen
     useEffectiveOutputCardinality(cardinalities, otherAttributes.withAlso(solveds, providedOrders))
 

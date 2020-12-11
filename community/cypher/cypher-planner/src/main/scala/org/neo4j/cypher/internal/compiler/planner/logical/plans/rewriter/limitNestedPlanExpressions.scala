@@ -29,32 +29,35 @@ import org.neo4j.cypher.internal.expressions.Namespace
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.functions.Head
 import org.neo4j.cypher.internal.logical.plans.Limit
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NestedPlanCollectExpression
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
+import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.Rewriter
-import org.neo4j.cypher.internal.util.attribution.IdGen
+import org.neo4j.cypher.internal.util.attribution.Attributes
 import org.neo4j.cypher.internal.util.bottomUp
 
 /**
  * Places a Limit inside of NestedPlanExpressions, if the NestedPlanExpressions is inside an expression that does not need the whole list as a result.
  * These expressions are `head`, `ContainerIndex`, and `ListSlice`.
  */
-case class limitNestedPlanExpressions(logicalPlanIdGen: IdGen) extends Rewriter {
+case class limitNestedPlanExpressions(cardinalities: Cardinalities, otherAttributes: Attributes[LogicalPlan]) extends Rewriter {
   override def apply(input: AnyRef): AnyRef = instance.apply(input)
 
   private val instance: Rewriter = bottomUp(Rewriter.lift {
     case fi@FunctionInvocation(Namespace(List()), FunctionName(Head.name), _, IndexedSeq(npe@NestedPlanCollectExpression(plan, _, _))) if !plan.isInstanceOf[Limit] =>
-      fi.copy(args = IndexedSeq(npe.copy(
-        planLimitOnTopOf(plan, SignedDecimalIntegerLiteral("1")(npe.position))(logicalPlanIdGen)
-      )(npe.position)))(fi.position)
+      val newPlan = planLimitOnTopOf(plan, SignedDecimalIntegerLiteral("1")(npe.position))(otherAttributes.copy(plan.id))
+      cardinalities.set(newPlan.id, Cardinality.SINGLE)
+      fi.copy(args = IndexedSeq(npe.copy(newPlan)(npe.position)))(fi.position)
 
     case ci@ContainerIndex(npe@NestedPlanCollectExpression(plan, _, _), index) if !plan.isInstanceOf[Limit] =>
-      ci.copy(expr = npe.copy(
-        planLimitOnTopOf(plan, Add(SignedDecimalIntegerLiteral("1")(npe.position), index)(npe.position))(logicalPlanIdGen)
-      )(npe.position))(ci.position)
+      val newPlan = planLimitOnTopOf(plan, Add(SignedDecimalIntegerLiteral("1")(npe.position), index)(npe.position))(otherAttributes.copy(plan.id))
+      cardinalities.set(newPlan.id, Cardinality.SINGLE)
+      ci.copy(expr = npe.copy(newPlan)(npe.position))(ci.position)
 
     case ls@ListSlice(npe@NestedPlanCollectExpression(plan, _, _), _, Some(to)) if !plan.isInstanceOf[Limit] =>
-      ls.copy(list = npe.copy(
-        planLimitOnTopOf(plan, Add(SignedDecimalIntegerLiteral("1")(npe.position), to)(npe.position))(logicalPlanIdGen)
-      )(npe.position))(ls.position)
+      val newPlan = planLimitOnTopOf(plan, Add(SignedDecimalIntegerLiteral("1")(npe.position), to)(npe.position))(otherAttributes.copy(plan.id))
+      cardinalities.set(newPlan.id, Cardinality.SINGLE)
+      ls.copy(list = npe.copy(newPlan)(npe.position))(ls.position)
   })
 }

@@ -29,10 +29,11 @@ import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.Limit
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NestedPlanExpression
+import org.neo4j.cypher.internal.util.attribution.Attributes
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class LimitNestedPlanExpressionsTest extends CypherFunSuite with LogicalPlanningTestSupport {
-  private val rewriter = limitNestedPlanExpressions(idGen)
+  private val rewriter = limitNestedPlanExpressions(new StubCardinalities, Attributes[LogicalPlan](idGen))
 
   private val aLit: StringLiteral = StringLiteral("a")(pos)
 
