@@ -115,6 +115,12 @@ public abstract class ForkedProcessorStep<T> extends AbstractStep<T>
     }
 
     @Override
+    public int maxProcessors()
+    {
+        return maxProcessors;
+    }
+
+    @Override
     public void start( int orderingGuarantees )
     {
         super.start( orderingGuarantees );

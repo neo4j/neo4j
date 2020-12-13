@@ -157,6 +157,12 @@ public abstract class ProcessorStep<T> extends AbstractStep<T>
         return executor.processors( delta );
     }
 
+    @Override
+    public int maxProcessors()
+    {
+        return maxProcessors;
+    }
+
     @SuppressWarnings( "unchecked" )
     private AsyncApply sendDownstream( long ticket, Object batch, AsyncApply downstreamAsync )
     {
