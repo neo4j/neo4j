@@ -51,11 +51,11 @@ public class StageExecutionTest
 
         // THEN
         Pair<Step<?>,Float> fastest = ordered.next();
-        assertEquals( 1f / 2f, fastest.other().floatValue(), 0f );
+        assertEquals( 1f / 2f, fastest.other(), 0f );
         Pair<Step<?>,Float> faster = ordered.next();
-        assertEquals( 1f / 3f, faster.other().floatValue(), 0f );
+        assertEquals( 1f / 3f, faster.other(), 0f );
         Pair<Step<?>,Float> fast = ordered.next();
-        assertEquals( 1f, fast.other().floatValue(), 0f );
+        assertEquals( 1f, fast.other(), 0f );
         assertFalse( ordered.hasNext() );
     }
 
@@ -75,13 +75,13 @@ public class StageExecutionTest
 
         // THEN
         Pair<Step<?>,Float> slowest = ordered.next();
-        assertEquals( 3f, slowest.other().floatValue(), 0f );
+        assertEquals( 3f, slowest.other(), 0f );
         Pair<Step<?>,Float> slower = ordered.next();
-        assertEquals( 2f, slower.other().floatValue(), 0f );
+        assertEquals( 2f, slower.other(), 0f );
         Pair<Step<?>,Float> slow = ordered.next();
-        assertEquals( 1f, slow.other().floatValue(), 0f );
+        assertEquals( 1f, slow.other(), 0f );
         Pair<Step<?>,Float> alsoSlow = ordered.next();
-        assertEquals( 1f, alsoSlow.other().floatValue(), 0f );
+        assertEquals( 1f, alsoSlow.other(), 0f );
         assertFalse( ordered.hasNext() );
     }
 }

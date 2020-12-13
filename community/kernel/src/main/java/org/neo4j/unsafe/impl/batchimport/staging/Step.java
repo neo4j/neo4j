@@ -20,6 +20,7 @@
 package org.neo4j.unsafe.impl.batchimport.staging;
 
 import org.neo4j.unsafe.impl.batchimport.Parallelizable;
+import org.neo4j.unsafe.impl.batchimport.stats.Key;
 import org.neo4j.unsafe.impl.batchimport.stats.StepStats;
 
 /**
@@ -70,6 +71,25 @@ public interface Step<T> extends Parallelizable, AutoCloseable, Panicable
      * @return statistics about this step at this point in time.
      */
     StepStats stats();
+
+    /**
+     * Convenience method for getting a long value of a particular stat.
+     *
+     * @param key key to get stat for.
+     * @return long stat for the given {@code key}.
+     */
+    default long longStat( Key key )
+    {
+        return stats().stat( key ).asLong();
+    }
+
+    /**
+     * @return max number of processors assignable to this step.
+     */
+    default int maxProcessors()
+    {
+        return 1;
+    }
 
     /**
      * Called by upstream to let this step know that it will not send any more batches.

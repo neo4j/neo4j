@@ -20,7 +20,9 @@
 package org.neo4j.unsafe.impl.batchimport.staging;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.StreamSupport;
 
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
@@ -29,6 +31,7 @@ import org.neo4j.unsafe.impl.batchimport.stats.Keys;
 import static java.lang.Integer.min;
 import static java.lang.Math.max;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.neo4j.unsafe.impl.batchimport.stats.Keys.done_batches;
 
 /**
  * Monitors {@link StageExecution executions} and makes changes as the execution goes:
@@ -71,18 +74,21 @@ public class DynamicProcessorAssigner extends ExecutionMonitor.Adapter
             if ( permits > 0 )
             {
                 // Be swift at assigning processors to slow steps, i.e. potentially multiple per round
-                assignProcessorsToPotentialBottleNeck( execution, permits );
+                permits -= assignProcessors( execution, permits );
             }
             // Be a little more conservative removing processors from too fast steps
-            removeProcessorFromPotentialIdleStep( execution );
+            if ( permits == 0 )
+            {
+                moveProcessorFromOverlyAssigned( execution );
+            }
         }
     }
 
-    private void assignProcessorsToPotentialBottleNeck( StageExecution execution, int permits )
+    private int assignProcessors( StageExecution execution, int permits )
     {
         Pair<Step<?>,Float> bottleNeck = execution.stepsOrderedBy( Keys.avg_processing_time, false ).iterator().next();
         Step<?> bottleNeckStep = bottleNeck.first();
-        long doneBatches = batches( bottleNeckStep );
+        long doneBatches = bottleNeckStep.longStat( done_batches );
         if ( bottleNeck.other() > 1.0f &&
              batchesPassedSinceLastChange( bottleNeckStep, doneBatches ) >= config.movingAverageSize() )
         {
@@ -95,15 +101,22 @@ public class DynamicProcessorAssigner extends ExecutionMonitor.Adapter
             {
                 lastChangedProcessors.put( bottleNeckStep, doneBatches );
             }
+            return after - before;
         }
+        return 0;
     }
 
-    private void removeProcessorFromPotentialIdleStep( StageExecution execution )
+    private void moveProcessorFromOverlyAssigned( StageExecution execution )
     {
-        for ( Pair<Step<?>,Float> fast : execution.stepsOrderedBy( Keys.avg_processing_time, true ) )
+        List<Pair<Step<?>,Float>> steps = execution.stepsOrderedBy( Keys.avg_processing_time, true );
+        for ( int i = 0; i < steps.size() - 1; i++ )
         {
-            int numberOfProcessors = fast.first().processors( 0 );
-            if ( numberOfProcessors == 1 )
+            Pair<Step<?>,Float> faster = steps.get( i );
+            Step<?> fasterStep = faster.first();
+            Pair<Step<?>,Float> slower = steps.get( i + 1 );
+            Step<?> slowerStep = slower.first();
+            int numberOfProcessors = faster.first().processors( 0 );
+            if ( numberOfProcessors == 1 || slowerStep.processors( 0 ) == slowerStep.maxProcessors() )
             {
                 continue;
             }
@@ -111,18 +124,19 @@ public class DynamicProcessorAssigner extends ExecutionMonitor.Adapter
             // Translate the factor compared to the next (slower) step and see if this step would still
             // be faster if we decremented the processor count, with a slight conservative margin as well
             // (0.8 instead of 1.0 so that we don't decrement and immediately become the bottleneck ourselves).
-            float factorWithDecrementedProcessorCount =
-                    fast.other() * numberOfProcessors / (numberOfProcessors - 1);
+            float factorWithDecrementedProcessorCount = faster.other() * numberOfProcessors / (numberOfProcessors - 1);
             if ( factorWithDecrementedProcessorCount < 0.8f )
             {
-                Step<?> fastestStep = fast.first();
-                long doneBatches = batches( fastestStep );
-                if ( batchesPassedSinceLastChange( fastestStep, doneBatches ) >= config.movingAverageSize() )
+                long doneBatches = fasterStep.longStat( done_batches );
+                if ( batchesPassedSinceLastChange( fasterStep, doneBatches ) >= config.movingAverageSize() )
                 {
-                    int before = fastestStep.processors( 0 );
-                    if ( fastestStep.processors( -1 ) < before )
+                    if ( fasterStep.processors( -1 ) < numberOfProcessors )
                     {
-                        lastChangedProcessors.put( fastestStep, doneBatches );
+                        // OK, we pulled one from the faster step which had unnecessarily many processors.
+                        lastChangedProcessors.put( fasterStep, doneBatches );
+                        // Now give that one to the slower step
+                        slowerStep.processors( 1 );
+                        lastChangedProcessors.put( slowerStep, doneBatches );
                         return;
                     }
                 }
@@ -130,34 +144,9 @@ public class DynamicProcessorAssigner extends ExecutionMonitor.Adapter
         }
     }
 
-    private long avg( Step<?> step )
-    {
-        return step.stats().stat( Keys.avg_processing_time ).asLong();
-    }
-
-    private long batches( Step<?> step )
-    {
-        return step.stats().stat( Keys.done_batches ).asLong();
-    }
-
     private int countActiveProcessors( StageExecution execution )
     {
-        float processors = 0;
-        if ( execution.stillExecuting() )
-        {
-            long highestAverage = avg( execution.stepsOrderedBy(
-                    Keys.avg_processing_time, false ).iterator().next().first() );
-            for ( Step<?> step : execution.steps() )
-            {
-                // Calculate how active each step is so that a step that is very cheap
-                // and idles a lot counts for less than 1 processor, so that bottlenecks can
-                // "steal" some of its processing power.
-                long avg = avg( step );
-                float factor = (float)avg / (float)highestAverage;
-                processors += factor * step.processors( 0 );
-            }
-        }
-        return Math.round( processors );
+        return execution.stillExecuting() ? StreamSupport.stream( execution.steps().spliterator(), false ).mapToInt( step -> step.processors( 0 ) ).sum() : 0;
     }
 
     private long batchesPassedSinceLastChange( Step<?> step, long doneBatches )

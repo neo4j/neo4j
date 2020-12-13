@@ -81,9 +81,7 @@ public class ControlledStep<T> implements Step<T>, StatsProvider
 
     public ControlledStep<T> setProcessors( int numberOfProcessors )
     {
-        // We don't have to assert max processors here since importer will not count every processor
-        // equally. A step being very idle (due to being very very fast) counts as almost nothing.
-        processors( numberOfProcessors );
+        this.numberOfProcessors = numberOfProcessors;
         return this;
     }
 
@@ -99,6 +97,12 @@ public class ControlledStep<T> implements Step<T>, StatsProvider
             numberOfProcessors = max( 1, numberOfProcessors + delta );
         }
         return numberOfProcessors;
+    }
+
+    @Override
+    public int maxProcessors()
+    {
+        return maxProcessors;
     }
 
     @Override

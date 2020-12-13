@@ -44,6 +44,7 @@ import org.neo4j.unsafe.impl.batchimport.staging.Step;
 import org.neo4j.unsafe.impl.batchimport.stats.Key;
 import org.neo4j.unsafe.impl.batchimport.stats.Keys;
 import org.neo4j.unsafe.impl.batchimport.stats.Stat;
+import org.neo4j.unsafe.impl.batchimport.stats.Stats;
 import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
 import org.neo4j.unsafe.impl.batchimport.stats.StepStats;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStores;
@@ -51,7 +52,6 @@ import org.neo4j.unsafe.impl.batchimport.store.io.IoMonitor;
 
 import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;
-import static org.neo4j.unsafe.impl.batchimport.stats.Stats.longStat;
 
 /**
  * Imports data from {@link Input} into a store. Only linkage between property records is done, not between nodes/relationships
@@ -277,11 +277,11 @@ public class DataImporter
         {
             if ( key == Keys.done_batches )
             {
-                return longStat( progress.sum() / batchSize );
+                return Stats.longStat( progress.sum() / batchSize );
             }
             if ( key == Keys.avg_processing_time )
             {
-                return longStat( 10 );
+                return Stats.longStat( 10 );
             }
             return null;
         }

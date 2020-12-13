@@ -21,13 +21,11 @@ package org.neo4j.unsafe.impl.batchimport.staging;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Supplier;
 
 import org.neo4j.helpers.collection.Pair;
-import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
 import org.neo4j.unsafe.impl.batchimport.stats.Key;
 import org.neo4j.unsafe.impl.batchimport.stats.Stat;
@@ -116,41 +114,22 @@ public class StageExecution implements StageControl, AutoCloseable
      * {@code 1.0} signals them being close to equal, and a value of for example {@code 0.5} signals that
      * the value of the current step is half that of the next step.
      */
-    public Iterable<Pair<Step<?>,Float>> stepsOrderedBy( final Key stat, final boolean trueForAscending )
+    public List<Pair<Step<?>,Float>> stepsOrderedBy( final Key stat, final boolean trueForAscending )
     {
         final List<Step<?>> steps = new ArrayList<>( pipeline );
         steps.sort( ( o1, o2 ) -> {
-            Long stat1 = o1.stats().stat( stat ).asLong();
-            Long stat2 = o2.stats().stat( stat ).asLong();
-            return trueForAscending ? stat1.compareTo( stat2 ) : stat2.compareTo( stat1 );
+            long stat1 = o1.longStat( stat );
+            long stat2 = o2.longStat( stat );
+            return trueForAscending ? Long.compare( stat1, stat2 ) : Long.compare( stat2, stat1 );
         } );
-
-        return () -> new PrefetchingIterator<Pair<Step<?>,Float>>()
+        List<Pair<Step<?>,Float>> result = new ArrayList<>();
+        for ( int i = 0, numSteps = steps.size(); i < numSteps - 1; i++ )
         {
-            private final Iterator<Step<?>> source = steps.iterator();
-            private Step<?> next = source.hasNext() ? source.next() : null;
-
-            @Override
-            protected Pair<Step<?>,Float> fetchNextOrNull()
-            {
-                if ( next == null )
-                {
-                    return null;
-                }
-
-                Step<?> current = next;
-                next = source.hasNext() ? source.next() : null;
-                float factor = next != null
-                        ? (float) stat( current, stat ) / (float) stat( next, stat )
-                        : 1.0f;
-                return Pair.of( current, factor );
-            }
-
-            private long stat( Step<?> step, Key stat12 )
-            {
-                return step.stats().stat( stat12 ).asLong();
-            }
-        };
+            Step<?> current = steps.get( i );
+            result.add( Pair.of( current, (float) current.longStat( stat ) / (float) steps.get( i + 1 ).longStat( stat ) ) );
+        }
+        result.add( Pair.of( steps.get( steps.size() - 1 ), 1.0f ) );
+        return result;
     }
 
     public int size()
