@@ -251,4 +251,11 @@ public class ExperimentalFullCheckIntegrationTest extends FullCheckIntegrationTe
     {
         super.shouldReportOrphanedNodeDynamicLabelAsNodeInconsistency();
     }
+
+    @Disabled( "New checker aborts on the first unhandled issue" )
+    @Test
+    public void shouldAbortCheckerWithManyUnhandledErrors() throws Exception
+    {
+        super.shouldAbortCheckerWithManyUnhandledErrors();
+    }
 }

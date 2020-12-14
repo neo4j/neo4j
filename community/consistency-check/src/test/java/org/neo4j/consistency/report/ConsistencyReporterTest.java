@@ -71,6 +71,7 @@ import org.neo4j.test.InMemoryTokens;
 
 import static java.lang.String.format;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -81,6 +82,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.common.EntityType.NODE;
+import static org.neo4j.consistency.report.ConsistencyReporter.MAX_UNKNOWN_ERRORS;
 import static org.neo4j.consistency.report.ConsistencyReporter.NO_MONITOR;
 import static org.neo4j.internal.counts.CountsKey.nodeKey;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
@@ -198,6 +200,29 @@ class ConsistencyReporterTest
             String error = loggedError.get();
             assertThat( error ).contains( "at " );
             assertThat( error ).contains( testInfo.getTestMethod().orElseThrow().getName() );
+        }
+
+        @Test
+        public void shouldThrowExceptionWhenReachedMaximumNumberOfUnknownErrors()
+        {
+            //Given
+            ConsistencyReport.Reporter reporter =
+                    new ConsistencyReporter( mock( RecordAccess.class ), mock( InconsistencyReport.class ), PageCacheTracer.NULL );
+            RecordCheck<NodeRecord, NodeConsistencyReport> throwingChecker = ( record, engine, records, cursorTracer ) ->
+            {
+                throw new RuntimeException( "Unknown error" );
+            };
+
+            //When
+            for ( int i = 0; i < MAX_UNKNOWN_ERRORS - 1; i++ )
+            {
+                reporter.forNode( new NodeRecord( i ), throwingChecker, NULL );
+            }
+
+            //Then
+            assertThatThrownBy( () -> reporter.forNode( new NodeRecord( MAX_UNKNOWN_ERRORS ), throwingChecker, NULL ) )
+                    .isInstanceOf( IllegalStateException.class )
+                    .hasMessageContaining( "Encountered " + MAX_UNKNOWN_ERRORS + " unknown errors, aborting." );
         }
     }
 
