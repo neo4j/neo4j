@@ -20,8 +20,11 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
+import org.neo4j.cypher.internal.ir.CreateNode
 import org.neo4j.cypher.internal.ir.NoHeaders
+import org.neo4j.cypher.internal.logical.plans.Create
 import org.neo4j.cypher.internal.logical.plans.Eager
+import org.neo4j.cypher.internal.logical.plans.ExhaustiveLimit
 import org.neo4j.cypher.internal.logical.plans.Limit
 import org.neo4j.cypher.internal.logical.plans.LoadCSV
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
@@ -116,6 +119,17 @@ class cleanUpEagerTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val topPlan = Projection(loadCSV, Map.empty)
 
     rewrite(topPlan) should equal(topPlan)
+  }
+
+  test("should use exhaustive limit when moving eager on top of limit when there are updates") {
+    val leaf = Create(newMockedLogicalPlan(), nodes = Seq(CreateNode("n", Seq.empty, None)), relationships = Seq.empty)
+    rewrite(
+      Projection(
+        Limit(
+          Eager(leaf), literalInt(12)), Map.empty)) should equal(
+      Projection(
+        Eager(
+          ExhaustiveLimit(leaf, literalInt(12))), Map.empty))
   }
 
   private def rewrite(p: LogicalPlan): LogicalPlan =

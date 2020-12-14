@@ -35,6 +35,23 @@ Feature: ReturnAcceptance
     And the side effects should be:
       | +nodes      | 1 |
 
+  Scenario: LIMIT in projection should not stop side effects
+    Given an empty graph
+    When executing query:
+      """
+      UNWIND range(1, 10) AS i
+      CREATE (n)
+      RETURN i
+      LIMIT 3
+      """
+    Then the result should be, in any order:
+      | i |
+      | 1 |
+      | 2 |
+      | 3 |
+    And the side effects should be:
+      | +nodes      | 10 |
+
   Scenario: Accessing a list with null should return null
     Given any graph
     When executing query:
