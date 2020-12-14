@@ -79,6 +79,7 @@ import org.neo4j.cypher.internal.logical.plans.NodeIndexScan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.NodeUniqueIndexSeek
 import org.neo4j.cypher.internal.logical.plans.NonFuseable
+import org.neo4j.cypher.internal.logical.plans.NonPipelined
 import org.neo4j.cypher.internal.logical.plans.Optional
 import org.neo4j.cypher.internal.logical.plans.OptionalExpand
 import org.neo4j.cypher.internal.logical.plans.OrderedAggregation
@@ -180,7 +181,6 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.NodeIndexScanPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.NodeIndexSeekPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.NodeLeftOuterHashJoinPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.NodeRightOuterHashJoinPipe
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.NonFuseablePipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.OptionalExpandAllPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.OptionalExpandIntoPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.OptionalPipe
@@ -215,6 +215,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.SetRelationshipProper
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.ShortestPathPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.SkipPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.SortPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.TestPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.Top1Pipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.Top1WithTiesPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.TopNPipe
@@ -339,7 +340,10 @@ case class InterpretedPipeMapper(readOnly: Boolean,
         EmptyResultPipe(source)(id = id)
 
       case NonFuseable(_) =>
-        NonFuseablePipe(source)(id = id)
+        TestPipe(source)(id = id)
+
+      case NonPipelined(_) =>
+        TestPipe(source)(id = id)
 
       case Selection(predicate, _) =>
         val predicateExpression =

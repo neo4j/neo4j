@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.util.attribution.Id
 /**
  * Dummy pipe that does nothing. Intended for test-use only.
  */
-case class NonFuseablePipe(source: Pipe)(val id: Id = Id.INVALID_ID) extends PipeWithSource(source) {
+case class TestPipe(source: Pipe)(val id: Id = Id.INVALID_ID) extends PipeWithSource(source) {
 
   protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = input
 }
