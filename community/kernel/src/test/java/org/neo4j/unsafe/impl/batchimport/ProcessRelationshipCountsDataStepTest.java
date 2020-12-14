@@ -46,7 +46,7 @@ public class ProcessRelationshipCountsDataStepTest
         ProcessRelationshipCountsDataStep step = instantiateStep( 10, 10, 10_000, 4, mebiBytes( 10 ) );
 
         // then
-        assertEquals( 0, step.getMaxProcessors() );
+        assertEquals( 0, step.maxProcessors() );
     }
 
     @Test
@@ -56,7 +56,7 @@ public class ProcessRelationshipCountsDataStepTest
         ProcessRelationshipCountsDataStep step = instantiateStep( 1, 1, 10_000, 64, tebiBytes( 10 ) );
 
         // then
-        assertEquals( 0, step.getMaxProcessors() );
+        assertEquals( 0, step.maxProcessors() );
     }
 
     @Test
@@ -66,7 +66,7 @@ public class ProcessRelationshipCountsDataStepTest
         ProcessRelationshipCountsDataStep step = instantiateStep( 100, 220, mebiBytes( 1 ), 4, mebiBytes( 2 ) );
 
         // then
-        assertEquals( 2, step.getMaxProcessors() );
+        assertEquals( 2, step.maxProcessors() );
     }
 
     @Test
@@ -76,7 +76,7 @@ public class ProcessRelationshipCountsDataStepTest
         ProcessRelationshipCountsDataStep step = instantiateStep( 1_000, 1_000, mebiBytes( 1 ), 4, mebiBytes( 2 ) );
 
         // then
-        assertEquals( 1, step.getMaxProcessors() );
+        assertEquals( 1, step.maxProcessors() );
     }
 
     private ProcessRelationshipCountsDataStep instantiateStep( int highLabelId, int highRelationshipTypeId, long labelCacheSize, int maxProcessors,

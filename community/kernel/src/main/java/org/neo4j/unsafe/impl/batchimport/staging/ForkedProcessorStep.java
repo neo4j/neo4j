@@ -60,7 +60,10 @@ public abstract class ForkedProcessorStep<T> extends AbstractStep<T>
     protected ForkedProcessorStep( StageControl control, String name, Configuration config, StatsProvider... statsProviders )
     {
         super( control, name, config, statsProviders );
-        this.maxProcessors = config.maxNumberOfProcessors();
+        // Limit max processors to some extent because adding processors to a forked processor step doesn't scale linearly,
+        // at least not given that all known implementations do semi-cheap work. Adding more will on the contrary add more
+        // "wasted" CPU cycles potentially cause scheduling problems which will affect processing times negatively instead.
+        this.maxProcessors = max( 1, (int) (config.maxNumberOfProcessors() * 0.7D) );
         this.forkedProcessors = new Object[this.maxProcessors];
         stripingLock = new StampedLock();
 
