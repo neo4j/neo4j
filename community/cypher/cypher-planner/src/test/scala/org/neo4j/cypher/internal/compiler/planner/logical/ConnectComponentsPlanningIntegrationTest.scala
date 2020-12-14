@@ -536,7 +536,7 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
     val volcanoPlan = volcano.plan(query)
     val batchedPlan = batched.plan(query)
 
-    // In Volcano we want to connect the components beforedoing the expensive optional match
+    // In Volcano we want to connect the components before doing the expensive optional match
     volcanoPlan shouldEqual volcano.planBuilder()
       .produceResults("n")
       .optionalExpandAll("(n)-[r1]-(x)")
@@ -573,6 +573,36 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
     val plan = cfg.plan(
       """MATCH (n:N)
         |OPTIONAL MATCH (n)-[r1]->(x:X)
+        |OPTIONAL MATCH (n)-[r2]->(y:Y)
+        |RETURN n
+        |""".stripMargin)
+
+    plan shouldEqual cfg.planBuilder()
+                        .produceResults("n")
+                        .optionalExpandAll("(n)-[r1]->(x)", Some("x:X"))
+                        .optionalExpandAll("(n)-[r2]->(y)", Some("y:Y"))
+                        .nodeByLabelScan("n", "N")
+                        .build()
+  }
+
+  test("expensive optional match is solved after cheap optional match, when separated by WITH") {
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(10000)
+      .setAllRelationshipsCardinality(1000)
+      .setLabelCardinality("N", 10)
+      .setLabelCardinality("X", 1000)
+      .setLabelCardinality("Y", 1000)
+      .setRelationshipCardinality("(:N)-[]->()", 1000)
+      .setRelationshipCardinality("()-[]->(:X)", 1000)
+      .setRelationshipCardinality("()-[]->(:Y)", 1000)
+      .setRelationshipCardinality("(:N)-[]->(:X)", 1000) // Cardinality is increased a lot by first optional match
+      .setRelationshipCardinality("(:N)-[]->(:Y)", 10) // Cardinality is not increased by second optional match
+      .build()
+
+    val plan = cfg.plan(
+      """MATCH (n:N)
+        |OPTIONAL MATCH (n)-[r1]->(x:X)
+        |WITH n, x
         |OPTIONAL MATCH (n)-[r2]->(y:Y)
         |RETURN n
         |""".stripMargin)

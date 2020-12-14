@@ -53,13 +53,27 @@ import scala.collection.mutable.ArrayBuffer
 
 object StatementConverters {
 
-  def toPlannerQueryBuilder(q: SingleQuery, semanticTable: SemanticTable): PlannerQueryBuilder = {
+  /**
+   * Convert an AST SingleQuery into an IR SinglePlannerQuery
+   */
+  def toPlannerQuery(q: SingleQuery, semanticTable: SemanticTable): SinglePlannerQuery = {
     val importedVariables: Set[String] = q.importWith.map((wth: With) =>
       wth.returnItems.items.map(_.name).toSet
     ).getOrElse(Set.empty)
 
-    flattenCreates(q.clauses).foldLeft(PlannerQueryBuilder(semanticTable, importedVariables)) {
-      case (acc, clause) => addToLogicalPlanInput(acc, clause)
+    val builder = PlannerQueryBuilder(semanticTable, importedVariables)
+    addClausesToPlannerQueryBuilder(q.clauses, builder).build()
+  }
+
+  /**
+   * Add all given clauses to a PlannerQueryBuilder and return the updated builder.
+   */
+  def addClausesToPlannerQueryBuilder(clauses: Seq[Clause], builder: PlannerQueryBuilder): PlannerQueryBuilder = {
+    val flattenedClauses = flattenCreates(clauses)
+    val slidingClauses = (flattenedClauses :+ null).sliding(2)
+    slidingClauses.foldLeft(builder) {
+      case (acc, Seq(clause, nextClause)) if nextClause != null => addToLogicalPlanInput(acc, clause, Some(nextClause))
+      case (acc, Seq(clause, _*)) => addToLogicalPlanInput(acc, clause, None)
     }
   }
 
@@ -91,12 +105,11 @@ object StatementConverters {
 
     queryPart match {
       case singleQuery: SingleQuery =>
-        val builder = toPlannerQueryBuilder(singleQuery, semanticTable)
-        builder.build()
+        toPlannerQuery(singleQuery, semanticTable)
 
       case unionQuery: ast.ProjectingUnion =>
         val part: PlannerQueryPart = toPlannerQueryPart(unionQuery.part, semanticTable)
-        val query: SinglePlannerQuery = toPlannerQueryBuilder(unionQuery.query, semanticTable).build()
+        val query: SinglePlannerQuery = toPlannerQuery(unionQuery.query, semanticTable)
 
         val distinct = unionQuery match {
           case _: ProjectingUnionAll => false

@@ -121,10 +121,17 @@ import scala.collection.mutable.ArrayBuffer
 
 object ClauseConverters {
 
-  def addToLogicalPlanInput(acc: PlannerQueryBuilder, clause: Clause): PlannerQueryBuilder = clause match {
+  /**
+   * Adds a clause to a PlannerQueryBuilder
+   * @param acc the PlannerQueryBuilder
+   * @param clause the clause to add.
+   * @param nextClause the next clause, if there is any
+   * @return the updated PlannerQueryBuilder
+   */
+  def addToLogicalPlanInput(acc: PlannerQueryBuilder, clause: Clause, nextClause: Option[Clause]): PlannerQueryBuilder = clause match {
     case c: Return => addReturnToLogicalPlanInput(acc, c)
     case c: Match => addMatchToLogicalPlanInput(acc, c)
-    case c: With => addWithToLogicalPlanInput(acc, c)
+    case c: With => addWithToLogicalPlanInput(acc, c, nextClause)
     case c: Unwind => addUnwindToLogicalPlanInput(acc, c)
     case c: ResolvedCall => addCallToLogicalPlanInput(acc, c)
     case c: Create => addCreateToLogicalPlanInput(acc, c)
@@ -567,17 +574,25 @@ object ClauseConverters {
   }
 
   private def addWithToLogicalPlanInput(builder: PlannerQueryBuilder,
-                                        clause: With): PlannerQueryBuilder = clause match {
+                                        clause: With,
+                                        nextClause: Option[Clause]): PlannerQueryBuilder = clause match {
 
     /*
-    When encountering a WITH that is not an event horizon, and we have no optional matches in the current QueryGraph,
+    When encountering a WITH that is not an event horizon
     we simply continue building on the current PlannerQuery. Our ASTRewriters rewrite queries in such a way that
     a lot of queries have these WITH clauses.
 
     Handles: ... WITH * [WHERE <predicate>] ...
      */
     case With(false, ri, None, None, None, where)
-      if !(builder.currentQueryGraph.hasOptionalPatterns || builder.currentQueryGraph.containsUpdates)
+      if
+      // If we have OPTIONAL MATCHes, we can only keep building the same PlannerQuery, if the next clause is also an OPTIONAL MATCH
+      // and the WITH clause has no WHERE sub-clause.
+      (!builder.currentQueryGraph.hasOptionalPatterns || (where.isEmpty && (nextClause match {
+        case Some(m:Match) if m.optional => true
+        case _ => false
+      })))
+        && !builder.currentQueryGraph.containsUpdates
         && ri.items.forall(item => !containsAggregate(item.expression))
         && builder.currentQueryGraph.shortestPathPatterns.isEmpty
         && ri.items.forall {
@@ -647,11 +662,7 @@ object ClauseConverters {
         .addArgumentIds(foreachVariable.name +: currentlyAvailableVariables.toIndexedSeq))
       .withHorizon(projectionToInnerUpdates)
 
-    val innerPlannerQuery =
-      StatementConverters.flattenCreates(clause.updates)
-        .foldLeft(innerBuilder) {
-          case (acc, innerClause) => addToLogicalPlanInput(acc, innerClause)
-        }.build()
+    val innerPlannerQuery = StatementConverters.addClausesToPlannerQueryBuilder(clause.updates, innerBuilder).build()
 
     val foreachPattern = ForeachPattern(
       variable = clause.variable.name,

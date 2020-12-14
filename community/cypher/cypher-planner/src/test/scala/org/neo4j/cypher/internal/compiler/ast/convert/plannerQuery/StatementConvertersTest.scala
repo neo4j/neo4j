@@ -32,7 +32,6 @@ import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.PathExpression
 import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
-import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.RelationshipsPattern
@@ -376,7 +375,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
   test("match (a), (n)-[r:Type]-(c) where b:A return a,r") {
     val query = buildSinglePlannerQuery("match (a), (n)-[r:Type]-(c) where n:A return a,r")
     query.queryGraph.patternRelationships should equal(Set(
-      PatternRelationship("r", ("n", "c"), BOTH, Seq(relType("Type")), SimplePatternLength)))
+      PatternRelationship("r", ("n", "c"), BOTH, Seq(relTypeName("Type")), SimplePatternLength)))
     query.queryGraph.patternNodes should equal(Set("a", "n", "c"))
     query.queryGraph.selections should equal(Selections(Set(
       Predicate(Set("n"), hasLabels("n", "A"))
@@ -390,7 +389,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
   test("match (a)-[r:Type|Foo]-(b) return a,r") {
     val query = buildSinglePlannerQuery("match (a)-[r:Type|Foo]-(b) return a,r")
     query.queryGraph.patternRelationships should equal(Set(
-      PatternRelationship("r", ("a", "b"), BOTH, Seq(relType("Type"), relType("Foo")), SimplePatternLength)))
+      PatternRelationship("r", ("a", "b"), BOTH, Seq(relTypeName("Type"), relTypeName("Foo")), SimplePatternLength)))
     query.queryGraph.patternNodes should equal(Set("a", "b"))
     query.queryGraph.selections should equal(Selections())
     query.horizon should equal(RegularQueryProjection(Map(
@@ -402,7 +401,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
   test("match (a)-[r:Type*]-(b) return a,r") {
     val query = buildSinglePlannerQuery("match (a)-[r:Type*]-(b) return a,r")
     query.queryGraph.patternRelationships should equal(Set(
-      PatternRelationship("r", ("a", "b"), BOTH, Seq(relType("Type")), VarPatternLength(1, None))))
+      PatternRelationship("r", ("a", "b"), BOTH, Seq(relTypeName("Type")), VarPatternLength(1, None))))
     query.queryGraph.patternNodes should equal(Set("a", "b"))
     query.queryGraph.selections should equal(Selections())
     query.horizon should equal(RegularQueryProjection(Map(
@@ -414,8 +413,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
   test("match (a)-[r1:CONTAINS*0..1]->(b)-[r2:FRIEND*0..1]->(c) return a,b,c") {
     val query = buildSinglePlannerQuery("match (a)-[r1:CONTAINS*0..1]->(b)-[r2:FRIEND*0..1]->(c) return a,b,c")
     query.queryGraph.patternRelationships should equal(Set(
-      PatternRelationship("r1", ("a", "b"), OUTGOING, Seq(relType("CONTAINS")), VarPatternLength(0, Some(1))),
-      PatternRelationship("r2", ("b", "c"), OUTGOING, Seq(relType("FRIEND")), VarPatternLength(0, Some(1)))))
+      PatternRelationship("r1", ("a", "b"), OUTGOING, Seq(relTypeName("CONTAINS")), VarPatternLength(0, Some(1))),
+      PatternRelationship("r2", ("b", "c"), OUTGOING, Seq(relTypeName("FRIEND")), VarPatternLength(0, Some(1)))))
     query.queryGraph.patternNodes should equal(Set("a", "b", "c"))
     query.queryGraph.selections should equal(Selections())
     query.horizon should equal(RegularQueryProjection(Map(
@@ -428,7 +427,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
   test("match (a)-[r:Type*3..]-(b) return a,r") {
     val query = buildSinglePlannerQuery("match (a)-[r:Type*3..]-(b) return a,r")
     query.queryGraph.patternRelationships should equal(Set(
-      PatternRelationship("r", ("a", "b"), BOTH, Seq(relType("Type")), VarPatternLength(3, None))))
+      PatternRelationship("r", ("a", "b"), BOTH, Seq(relTypeName("Type")), VarPatternLength(3, None))))
     query.queryGraph.patternNodes should equal(Set("a", "b"))
     query.queryGraph.selections should equal(Selections())
     query.horizon should equal(RegularQueryProjection(Map(
@@ -440,7 +439,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
   test("match (a)-[r:Type*5]-(b) return a,r") {
     val query = buildSinglePlannerQuery("match (a)-[r:Type*5]-(b) return a,r")
     query.queryGraph.patternRelationships should equal(Set(
-      PatternRelationship("r", ("a", "b"), BOTH, Seq(relType("Type")), VarPatternLength.fixed(5))))
+      PatternRelationship("r", ("a", "b"), BOTH, Seq(relTypeName("Type")), VarPatternLength.fixed(5))))
     query.queryGraph.patternNodes should equal(Set("a", "b"))
     query.queryGraph.selections should equal(Selections())
     query.horizon should equal(RegularQueryProjection(Map(
@@ -1096,5 +1095,72 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     optionalMatch.argumentIds should equal(Set("a", "p"))
   }
 
-  def relType(name: String): RelTypeName = RelTypeName(name)_
+  test("WITH-separated OPTIONAL MATCHes should be built into the same SinglePlannerQuery") {
+    val query = buildSinglePlannerQuery(
+      """MATCH (a)
+        |OPTIONAL MATCH (a)-[r]-(b)
+        |WITH a, b
+        |OPTIONAL MATCH (a)-[s]-(c)
+        |WITH *
+        |OPTIONAL MATCH (c)-[t]-(d)
+        |WITH a, b, c, d
+        |MATCH (e) // This cannot be merged with the previous SingePlannerQuery any more
+        |RETURN *
+        |""".stripMargin)
+
+    query should equal(RegularSinglePlannerQuery(
+      QueryGraph(
+        patternNodes = Set("a"),
+        optionalMatches = IndexedSeq(
+          QueryGraph(argumentIds = Set("a"), patternNodes = Set("a", "b"), patternRelationships = Set(PatternRelationship("r", ("a", "b"), BOTH, Seq.empty, SimplePatternLength))),
+          QueryGraph(argumentIds = Set("a"), patternNodes = Set("a", "c"), patternRelationships = Set(PatternRelationship("s", ("a", "c"), BOTH, Seq.empty, SimplePatternLength))),
+          QueryGraph(argumentIds = Set("c"), patternNodes = Set("c", "d"), patternRelationships = Set(PatternRelationship("t", ("c", "d"), BOTH, Seq.empty, SimplePatternLength))),
+        )
+      ),
+      horizon = RegularQueryProjection(Map("a" -> varFor("a"), "b" -> varFor("b"), "c" -> varFor("c"), "d" -> varFor("d"))),
+      tail = Some(
+        RegularSinglePlannerQuery(
+          QueryGraph(
+            argumentIds = Set("a", "b", "c", "d"),
+            patternNodes = Set("e"),
+          ),
+          horizon = RegularQueryProjection(Map("a" -> varFor("a"), "b" -> varFor("b"), "c" -> varFor("c"), "d" -> varFor("d"), "e" -> varFor("e")))
+        )
+      )
+    ))
+  }
+
+  test("WITH/WHERE-separated OPTIONAL MATCHes should not be built into the same SinglePlannerQuery") {
+    val query = buildSinglePlannerQuery(
+      """MATCH (a)
+        |OPTIONAL MATCH (a)-[r]-(b)
+        |WITH a, b WHERE a.prop > b.prop // WHERE clauses prevents the building into the same SinglePlannerQuery
+        |OPTIONAL MATCH (a)-[s]-(c)
+        |RETURN a, b, c
+        |""".stripMargin)
+
+    query should equal(RegularSinglePlannerQuery(
+      QueryGraph(
+        patternNodes = Set("a"),
+        optionalMatches = IndexedSeq(
+          QueryGraph(argumentIds = Set("a"), patternNodes = Set("a", "b"), patternRelationships = Set(PatternRelationship("r", ("a", "b"), BOTH, Seq.empty, SimplePatternLength))),
+        )
+      ),
+      horizon = RegularQueryProjection(
+        Map("a" -> varFor("a"), "b" -> varFor("b")),
+        selections = Selections.from(greaterThan(prop("a", "prop"), prop("b", "prop")))
+      ),
+      tail = Some(
+        RegularSinglePlannerQuery(
+          QueryGraph(
+            argumentIds = Set("a", "b"),
+            optionalMatches = IndexedSeq(
+              QueryGraph(argumentIds = Set("a"), patternNodes = Set("a", "c"), patternRelationships = Set(PatternRelationship("s", ("a", "c"), BOTH, Seq.empty, SimplePatternLength))),
+            )
+          ),
+          horizon = RegularQueryProjection(Map("a" -> varFor("a"), "b" -> varFor("b"), "c" -> varFor("c")))
+        )
+      )
+    ))
+  }
 }
