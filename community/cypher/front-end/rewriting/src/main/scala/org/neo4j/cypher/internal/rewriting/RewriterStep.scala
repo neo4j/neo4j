@@ -57,8 +57,6 @@ case class ValidatingRewriter(inner: Rewriter, step: Step) extends Rewriter {
 }
 
 object RewriterStep {
-  implicit def namedProductRewriter(p: Product with Rewriter): ApplyRewriter = ApplyRewriter(p.productPrefix, p)
-
   def validatingRewriter(inner: Rewriter, step: Step): Rewriter = {
     if (AssertionRunner.isAssertionsEnabled) {
       ValidatingRewriter(inner, step)
@@ -67,9 +65,6 @@ object RewriterStep {
     }
   }
 }
-
-sealed trait RewriterStep
-final case class ApplyRewriter(name: String, rewriter: Rewriter) extends RewriterStep
 
 trait ValidatingCondition extends (Any => Seq[String]) with StepSequencer.Condition {
    def name: String

@@ -28,11 +28,11 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
-import org.neo4j.cypher.internal.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.attribution.Attributes
 import org.neo4j.cypher.internal.util.helpers.fixedPoint
+import org.neo4j.cypher.internal.util.inSequence
 
 /*
  * Rewriters that live here are required to adhere to the contract of
@@ -48,7 +48,7 @@ case object PlanRewriter extends LogicalPlanRewriter {
                         solveds: Solveds,
                         cardinalities: Cardinalities,
                         providedOrders: ProvidedOrders,
-                        otherAttributes: Attributes[LogicalPlan]) = fixedPoint(RewriterStepSequencer.newPlain("LogicalPlanRewriter")(
+                        otherAttributes: Attributes[LogicalPlan]): Rewriter = fixedPoint(inSequence(
     fuseSelections,
     unnestApply(solveds, otherAttributes.withAlso(cardinalities, providedOrders)),
     unnestCartesianProduct,
@@ -62,7 +62,7 @@ case object PlanRewriter extends LogicalPlanRewriter {
     skipInPartialSort,
     simplifySelections,
     limitNestedPlanExpressions(context.logicalPlanIdGen)
-  ).rewriter)
+  ))
 }
 
 trait LogicalPlanRewriter extends Phase[PlannerContext, LogicalPlanState, LogicalPlanState] {

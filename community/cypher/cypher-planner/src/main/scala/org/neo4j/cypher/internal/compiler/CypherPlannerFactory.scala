@@ -27,7 +27,6 @@ import org.neo4j.cypher.internal.compiler.planner.logical.CachedMetricsFactory
 import org.neo4j.cypher.internal.compiler.planner.logical.SimpleMetricsFactory
 import org.neo4j.cypher.internal.frontend.phases.Monitors
 import org.neo4j.cypher.internal.frontend.phases.Transformer
-import org.neo4j.cypher.internal.rewriting.RewriterStepSequencer
 
 class CypherPlannerFactory[C <: PlannerContext, T <: Transformer[C, LogicalPlanState, LogicalPlanState]] {
 
