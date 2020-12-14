@@ -123,7 +123,10 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.spy;
 import static org.neo4j.consistency.ConsistencyCheckService.defaultConsistencyCheckThreadsNumber;
 import static org.neo4j.consistency.checking.RecordCheckTestBase.inUse;
 import static org.neo4j.consistency.checking.RecordCheckTestBase.notInUse;
@@ -2119,6 +2122,41 @@ public class FullCheckIntegrationTest
             relationshipRecord.setNextProp( propertyRecordId );
             tx.create( relationshipRecord );
         } );
+    }
+
+    @Test
+    protected void shouldAbortCheckerWithManyUnhandledErrors() throws Exception
+    {
+        //Given
+        int maxUnknownErrors = 1000; //Matches the constant in ConsistencyReporter but can not be accessed due to visibility and public api changes
+        fixture.apply( new GraphStoreFixture.Transaction()
+        {
+            @Override
+            protected void transactionData( TransactionDataBuilder tx, IdGenerator next )
+            {
+                for ( int i = 0; i < maxUnknownErrors; i++ )
+                {
+                    NodeRecord node = new NodeRecord( next.node() );
+                    node.setInUse( true );
+                    tx.create( node );
+                }
+            }
+        } );
+
+        //When
+        //A mockito dance to make high-id of the node store return an incorrect value, causing "unknown" errors in the checker
+        DirectStoreAccess directStoreAccess = fixture.readOnlyDirectStoreAccess();
+        DirectStoreAccess dsaSpy = spy( directStoreAccess );
+        StoreAccess saSpy = spy( directStoreAccess.nativeStores() );
+        RecordStore<NodeRecord> nsSpy = spy( directStoreAccess.nativeStores().getNodeStore() );
+        doReturn( 1L ).doCallRealMethod().when( nsSpy ).getHighId();
+        doReturn( nsSpy ).when( saSpy ).getNodeStore();
+        doReturn( saSpy ).when( dsaSpy ).nativeStores();
+
+        //Then
+        ConsistencyCheckIncompleteException exception = assertThrows( ConsistencyCheckIncompleteException.class,
+                () -> check( fixture.getInstantiatedPageCache(), dsaSpy, fixture.counts() ) );
+        assertThat( exception.getCause().getCause() ).hasMessageContaining( "Encountered " + maxUnknownErrors + " unknown errors, aborting." );
     }
 
     @Test

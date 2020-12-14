@@ -25,6 +25,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.annotations.documented.DocumentedUtils;
 import org.neo4j.annotations.documented.Warning;
@@ -88,10 +89,13 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
     private static final ProxyFactory<RelationshipGroupConsistencyReport> RELATIONSHIP_GROUP_REPORT = create( RelationshipGroupConsistencyReport.class );
     private static final ProxyFactory<CountsConsistencyReport> COUNTS_REPORT = create( CountsConsistencyReport.class );
 
+    static final int MAX_UNKNOWN_ERRORS = 1000;
+
     private final RecordAccess records;
     private final InconsistencyReport report;
     private final Monitor monitor;
     private final PageCacheTracer pageCacheTracer;
+    private final AtomicInteger unknownErrorCounter = new AtomicInteger( 0 );
 
     public interface Monitor
     {
@@ -129,6 +133,10 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
             // can only see that something went wrong, not at all what.
             handler.report.error( type, record, "Failed to check record: " + stringify( e ),
                     new Object[0] );
+            if ( unknownErrorCounter.incrementAndGet() >= MAX_UNKNOWN_ERRORS )
+            {
+                throw new IllegalStateException( "Encountered " + unknownErrorCounter.get() + " unknown errors, aborting.", e );
+            }
         }
     }
 
