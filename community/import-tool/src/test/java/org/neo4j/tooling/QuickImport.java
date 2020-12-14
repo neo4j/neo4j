@@ -21,6 +21,7 @@ package org.neo4j.tooling;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.csv.reader.CharSeeker;
@@ -38,6 +39,8 @@ import org.neo4j.internal.batchimport.input.IdType;
 import org.neo4j.internal.batchimport.input.Input;
 import org.neo4j.internal.batchimport.input.csv.DataFactories;
 import org.neo4j.internal.batchimport.input.csv.Header;
+import org.neo4j.internal.batchimport.staging.ExecutionMonitor;
+import org.neo4j.internal.batchimport.staging.SpectrumExecutionMonitor;
 import org.neo4j.internal.helpers.Args;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -164,9 +167,11 @@ public class QuickImport
             {
                 System.out.println( "Seed " + randomSeed );
                 final JobScheduler jobScheduler = life.add( createScheduler() );
+                boolean verbose = args.getBoolean( "v" );
+                ExecutionMonitor monitor = verbose ? new SpectrumExecutionMonitor( 2, TimeUnit.SECONDS, System.out, 100 ) : defaultVisible();
                 consumer = BatchImporterFactory.withHighestPriority().instantiate(
                         DatabaseLayout.ofFlat( dir ), fileSystem, null, PageCacheTracer.NULL, importConfig, new SimpleLogService( logging, logging ),
-                        defaultVisible(), EMPTY, dbConfig, RecordFormatSelector.selectForConfig( dbConfig, logging ), NO_MONITOR, jobScheduler,
+                        monitor, EMPTY, dbConfig, RecordFormatSelector.selectForConfig( dbConfig, logging ), NO_MONITOR, jobScheduler,
                         Collector.EMPTY, TransactionLogInitializer.getLogFilesInitializer(), INSTANCE );
             }
             consumer.doImport( input );
