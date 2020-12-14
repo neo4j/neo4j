@@ -77,6 +77,8 @@ import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
@@ -86,6 +88,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.hamcrest.MockitoHamcrest.argThat;
 import static org.neo4j.common.TokenNameLookup.idTokenNameLookup;
+import static org.neo4j.consistency.report.ConsistencyReporter.MAX_UNKNOWN_ERRORS;
 import static org.neo4j.consistency.report.ConsistencyReporter.NO_MONITOR;
 import static org.neo4j.internal.counts.CountsKey.nodeKey;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
@@ -207,6 +210,27 @@ public class ConsistencyReporterTest
             String error = loggedError.get();
             assertThat( error, containsString( "at " ) );
             assertThat( error, containsString( testName.getMethodName() ) );
+        }
+
+        @Test
+        public void shouldThrowExceptionWhenReachedMaximumNumberOfUnknownErrors()
+        {
+            //Given
+            ConsistencyReport.Reporter reporter = new ConsistencyReporter( mock( RecordAccess.class ), mock( InconsistencyReport.class) );
+            RecordCheck<NodeRecord, NodeConsistencyReport> throwingChecker = ( record, engine, records ) ->
+            {
+                throw new RuntimeException( "Unknown error" );
+            };
+
+            //When
+            for ( int i = 0; i < MAX_UNKNOWN_ERRORS - 1; i++ )
+            {
+                reporter.forNode( new NodeRecord( i ), throwingChecker );
+            }
+
+            //Then
+            Exception e = assertThrows( IllegalStateException.class, () -> reporter.forNode( new NodeRecord( MAX_UNKNOWN_ERRORS ), throwingChecker ) );
+            assertEquals( e.getMessage(), "Encountered " + MAX_UNKNOWN_ERRORS + " unknown errors, aborting." );
         }
     }
 
