@@ -51,6 +51,7 @@ import org.neo4j.cypher.internal.runtime.spec.tests.ExpandIntoWithOtherOperators
 import org.neo4j.cypher.internal.runtime.spec.tests.ExpressionTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.ExpressionWithTxStateChangesTests
 import org.neo4j.cypher.internal.runtime.spec.tests.FilterTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.ForeachApplyTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.FullSupportMemoryManagementTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.FullSupportProfileMemoryTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.InputTestBase
@@ -232,6 +233,5 @@ class InterpretedAssertSameNodeTest extends AssertSameNodeTestBase(COMMUNITY.EDI
 class InterpretedCreateTest extends CreateTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedLenientCreateRelationshipTest extends LenientCreateRelationshipTestBase(COMMUNITY.EDITION, InterpretedRuntime)
 class InterpretedSetPropertyTest extends SetPropertyTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
-
-
 class InterpretedLockNodesTest extends LockNodesTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
+class InterpretedForEachApplyTest extends ForeachApplyTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
