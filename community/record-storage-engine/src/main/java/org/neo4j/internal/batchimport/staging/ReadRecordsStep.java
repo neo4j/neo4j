@@ -28,6 +28,8 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 
+import static java.lang.Integer.min;
+
 /**
  * Reads records from a {@link RecordStore} and sends batches of those records downstream.
  * A {@link PageCursor} is used during the life cycle of this {@link Step}, e.g. between
@@ -51,7 +53,12 @@ public class ReadRecordsStep<RECORD extends AbstractBaseRecord> extends Processo
     public ReadRecordsStep( StageControl control, Configuration config, boolean inRecordWritingStage,
             RecordStore<RECORD> store, RecordDataAssembler<RECORD> converter, boolean prefetch, PageCacheTracer pageCacheTracer )
     {
-        super( control, ">", config, parallelReading( config, inRecordWritingStage ) ? 0 : 1, pageCacheTracer );
+        super( control, ">", config, parallelReading( config, inRecordWritingStage )
+                                     // Limit reader (I/O) threads to 12, it's a high degree of concurrency and assigning more
+                                     // will likely not make things faster, rather the other way around and it's difficult for
+                                     // the processor assigner to proficiently understand that dynamic
+                                     ? min( 12, config.maxNumberOfProcessors() )
+                                     : 1, pageCacheTracer );
         this.store = store;
         this.assembler = converter;
         this.batchSize = config.batchSize();
