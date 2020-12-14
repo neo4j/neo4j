@@ -53,13 +53,13 @@ class ForkedProcessorStepTest
     {
         // GIVEN
         StageControl control = mock( StageControl.class );
-        int processors = 10;
+        int maxProcessors = 10;
 
         int batches = 10;
-        BatchProcessor step = new BatchProcessor( control, processors );
+        BatchProcessor step = new BatchProcessor( control, maxProcessors );
         TrackingStep downstream = new TrackingStep();
         step.setDownstream( downstream );
-        step.processors( processors - step.processors( 0 ) );
+        int processors = step.processors( maxProcessors - step.processors( 0 ) );
 
         // WHEN
         step.start( 0 );
