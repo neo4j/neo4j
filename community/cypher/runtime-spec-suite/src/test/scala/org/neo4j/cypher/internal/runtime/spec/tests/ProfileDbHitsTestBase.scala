@@ -34,6 +34,8 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
                                                                  runtime: CypherRuntime[CONTEXT],
                                                                  val sizeHint: Int,
                                                                  costOfGetPropertyChain: Long, // the reported dbHits for getting the property chain
+                                                                 val costOfPropertyToken: Long, // the reported dbHits for looking up a property token
+                                                                 val costOfSetProperty: Long, // the reported dbHits for setting a property token
                                                                  costOfPropertyJumpedOverInChain: Long, // the reported dbHits for a property in the chain that needs to be traversed in order to read another property in the chain
                                                                  val costOfProperty: Long, // the reported dbHits for a single property lookup, after getting the property chain and getting to the right position
                                                                  val costOfPropertyToken: Long, // the reported dbHits for a single property lookup, after getting the property chain and getting to the right position
@@ -638,7 +640,6 @@ trait NestedPlanDbHitsTestBase[CONTEXT <: RuntimeContext] {
     result.runtimeResult.queryProfile().operatorProfile(1).dbHits() should (be (size * size) or be (size * (size + 1))) // projection w. nested plan expression
   }
 }
-
 
 trait WriteOperatorsDbHitsTestBase[CONTEXT <: RuntimeContext] {
   self: ProfileDbHitsTestBase[CONTEXT] =>

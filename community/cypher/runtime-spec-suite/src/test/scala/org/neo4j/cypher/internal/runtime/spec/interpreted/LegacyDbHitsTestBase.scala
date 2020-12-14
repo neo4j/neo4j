@@ -37,6 +37,8 @@ abstract class LegacyDbHitsTestBase[CONTEXT <: RuntimeContext](edition: Edition[
                                 runtime,
                                 sizeHint,
                                 costOfLabelLookup = 1,
+                                costOfSetProperty = 1,
+                                costOfPropertyToken = 1,
                                 costOfGetPropertyChain = 0,
                                 costOfPropertyJumpedOverInChain = 0,
                                 costOfProperty = 1,
