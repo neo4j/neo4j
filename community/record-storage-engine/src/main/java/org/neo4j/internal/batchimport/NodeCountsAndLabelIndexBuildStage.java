@@ -32,6 +32,7 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.NodeStore;
 
 import static org.neo4j.internal.batchimport.RecordIdIterator.allIn;
+import static org.neo4j.internal.batchimport.RecordIdIterator.withProgressReport;
 
 /**
  * Counts nodes and their labels and also builds {@link LabelScanStore label index} while doing so.
@@ -45,10 +46,10 @@ public class NodeCountsAndLabelIndexBuildStage extends Stage
             LabelScanStore labelIndex, PageCacheTracer pageCacheTracer, StatsProvider... additionalStatsProviders )
     {
         super( NAME, null, config, Step.ORDER_SEND_DOWNSTREAM | Step.RECYCLE_BATCHES );
-        add( new BatchFeedStep( control(), config, allIn( nodeStore, config ), nodeStore.getRecordSize() ) );
+        add( new BatchFeedStep( control(), config, withProgressReport( allIn( nodeStore, config ), progressReporter ), nodeStore.getRecordSize() ) );
         add( new ReadRecordsStep<>( control(), config, false, nodeStore, pageCacheTracer ) );
         add( new LabelIndexWriterStep( control(), config, labelIndex, nodeStore, pageCacheTracer ) );
         add( new RecordProcessorStep<>( control(), "COUNT", config, () -> new NodeCountsProcessor(
-                nodeStore, cache, highLabelId, countsUpdater, progressReporter ), true, 0, pageCacheTracer, additionalStatsProviders ) );
+                nodeStore, cache, highLabelId, countsUpdater ), true, 0, pageCacheTracer, additionalStatsProviders ) );
     }
 }

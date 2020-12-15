@@ -19,7 +19,6 @@
  */
 package org.neo4j.internal.batchimport;
 
-import org.neo4j.common.ProgressReporter;
 import org.neo4j.counts.CountsAccessor;
 import org.neo4j.internal.batchimport.cache.GatheringMemoryStatsVisitor;
 import org.neo4j.internal.batchimport.cache.NodeLabelsCache;
@@ -41,7 +40,7 @@ public class ProcessRelationshipCountsDataStep extends RecordProcessorStep<Relat
     public ProcessRelationshipCountsDataStep( StageControl control, NodeLabelsCache cache, Configuration config, int
             highLabelId, int highRelationshipTypeId,
             CountsAccessor.Updater countsUpdater, NumberArrayFactory cacheFactory,
-            ProgressReporter progressReporter, PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker )
+            PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker )
     {
         super( control, "COUNT", config,
                 () -> new RelationshipCountsProcessor( cache, highLabelId, highRelationshipTypeId, countsUpdater, cacheFactory, memoryTracker ), true,

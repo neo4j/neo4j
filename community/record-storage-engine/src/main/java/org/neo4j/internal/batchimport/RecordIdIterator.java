@@ -21,6 +21,8 @@ package org.neo4j.internal.batchimport;
 
 import org.eclipse.collections.api.iterator.LongIterator;
 
+import org.neo4j.collection.PrimitiveLongCollections.PrimitiveLongRangeIterator;
+import org.neo4j.common.ProgressReporter;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 
@@ -39,7 +41,7 @@ public interface RecordIdIterator
     /**
      * @return next batch of ids as {@link LongIterator}, or {@code null} if there are no more ids to return.
      */
-    LongIterator nextBatch();
+    PrimitiveLongRangeIterator nextBatch();
 
     static RecordIdIterator backwards( long lowIncluded, long highExcluded, Configuration config )
     {
@@ -62,6 +64,19 @@ public interface RecordIdIterator
         return backwards( store.getNumberOfReservedLowIds(), store.getHighId(), config );
     }
 
+    static RecordIdIterator withProgressReport( RecordIdIterator actual, ProgressReporter progressReporter )
+    {
+        return () ->
+        {
+            PrimitiveLongRangeIterator range = actual.nextBatch();
+            if ( range != null )
+            {
+                progressReporter.progress( Math.abs( range.end() - range.start() ) + 1 /*since both are inclusive*/ );
+            }
+            return range;
+        };
+    }
+
     class Forwards implements RecordIdIterator
     {
         private final long lowIncluded;
@@ -78,7 +93,7 @@ public interface RecordIdIterator
         }
 
         @Override
-        public LongIterator nextBatch()
+        public PrimitiveLongRangeIterator nextBatch()
         {
             if ( startId >= highExcluded )
             {
@@ -86,7 +101,7 @@ public interface RecordIdIterator
             }
 
             long endId = min( highExcluded, findRoofId( startId ) );
-            final LongIterator result = range( startId, endId - 1 /*excluded*/ );
+            final PrimitiveLongRangeIterator result = range( startId, endId - 1 /*excluded*/ );
             startId = endId;
             return result;
         }
@@ -120,7 +135,7 @@ public interface RecordIdIterator
         }
 
         @Override
-        public LongIterator nextBatch()
+        public PrimitiveLongRangeIterator nextBatch()
         {
             if ( endId <= lowIncluded )
             {
@@ -128,7 +143,7 @@ public interface RecordIdIterator
             }
 
             long startId = findFloorId( endId );
-            final LongIterator result = range( startId, endId - 1 /*excluded*/ );
+            final PrimitiveLongRangeIterator result = range( startId, endId - 1 /*excluded*/ );
             endId = max( lowIncluded, startId );
             return result;
         }

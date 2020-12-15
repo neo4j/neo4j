@@ -21,7 +21,6 @@ package org.neo4j.internal.batchimport;
 
 import org.junit.jupiter.api.Test;
 
-import org.neo4j.common.ProgressReporter;
 import org.neo4j.counts.CountsAccessor;
 import org.neo4j.internal.batchimport.cache.MemoryStatsVisitor;
 import org.neo4j.internal.batchimport.cache.NodeLabelsCache;
@@ -90,7 +89,7 @@ class ProcessRelationshipCountsDataStepTest
         when( config.maxNumberOfProcessors() ).thenReturn( maxProcessors );
         when( config.maxMemoryUsage() ).thenReturn( maxMemory );
         return new ProcessRelationshipCountsDataStep( control, cache, config, highLabelId, highRelationshipTypeId,
-            mock( CountsAccessor.Updater.class ), NumberArrayFactory.OFF_HEAP, ProgressReporter.SILENT, PageCacheTracer.NULL, INSTANCE );
+            mock( CountsAccessor.Updater.class ), NumberArrayFactory.OFF_HEAP, PageCacheTracer.NULL, INSTANCE );
     }
 
     private NodeLabelsCache nodeLabelsCache( long sizeInBytes )

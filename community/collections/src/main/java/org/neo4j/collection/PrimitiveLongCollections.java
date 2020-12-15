@@ -137,7 +137,7 @@ public final class PrimitiveLongCollections
     }
 
     // Range
-    public static LongIterator range( long start, long end )
+    public static PrimitiveLongRangeIterator range( long start, long end )
     {
         return new PrimitiveLongRangeIterator( start, end );
     }
@@ -459,13 +459,25 @@ public final class PrimitiveLongCollections
 
     public static class PrimitiveLongRangeIterator extends AbstractPrimitiveLongBaseIterator
     {
-        private long current;
+        private final long start;
         private final long end;
+        private long current;
 
-        PrimitiveLongRangeIterator( long start, long end )
+        public PrimitiveLongRangeIterator( long start, long end )
         {
+            this.start = start;
             this.current = start;
             this.end = end;
+        }
+
+        public long start()
+        {
+            return start;
+        }
+
+        public long end()
+        {
+            return end;
         }
 
         @Override
@@ -479,6 +491,12 @@ public final class PrimitiveLongCollections
             {
                 current++;
             }
+        }
+
+        @Override
+        public String toString()
+        {
+            return "Range[" + start + "-" + end + "]";
         }
     }
 

@@ -19,7 +19,6 @@
  */
 package org.neo4j.internal.batchimport;
 
-import org.neo4j.common.ProgressReporter;
 import org.neo4j.counts.CountsAccessor;
 import org.neo4j.internal.batchimport.cache.NodeLabelsCache;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
@@ -37,14 +36,12 @@ public class NodeCountsProcessor implements RecordProcessor<NodeRecord>
 {
     private final NodeStore nodeStore;
     private final long[] labelCounts;
-    private final ProgressReporter progressReporter;
     private final NodeLabelsCache cache;
     private final CountsAccessor.Updater counts;
     private final int anyLabel;
     private final NodeLabelsCache.Client cacheClient;
 
-    NodeCountsProcessor( NodeStore nodeStore, NodeLabelsCache cache, int highLabelId,
-            CountsAccessor.Updater counts, ProgressReporter progressReporter )
+    NodeCountsProcessor( NodeStore nodeStore, NodeLabelsCache cache, int highLabelId, CountsAccessor.Updater counts )
     {
         this.nodeStore = nodeStore;
         this.cache = cache;
@@ -52,7 +49,6 @@ public class NodeCountsProcessor implements RecordProcessor<NodeRecord>
         this.counts = counts;
         // Instantiate with high id + 1 since we need that extra slot for the ANY count
         this.labelCounts = new long[highLabelId + 1];
-        this.progressReporter = progressReporter;
         this.cacheClient = cache.newClient();
     }
 
@@ -69,7 +65,6 @@ public class NodeCountsProcessor implements RecordProcessor<NodeRecord>
             cache.put( cacheClient, node.getId(), labels );
         }
         labelCounts[anyLabel]++;
-        progressReporter.progress( 1 );
 
         // No need to update the store, we're just reading things here
         return false;

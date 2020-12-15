@@ -32,6 +32,9 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.memory.MemoryTracker;
 
+import static org.neo4j.internal.batchimport.RecordIdIterator.allIn;
+import static org.neo4j.internal.batchimport.RecordIdIterator.withProgressReport;
+
 /**
  * Reads all records from {@link RelationshipStore} and process the counts in them. Uses a {@link NodeLabelsCache}
  * previously populated by f.ex {@link NodeCountsStage}.
@@ -46,11 +49,11 @@ public class RelationshipCountsAndTypeIndexBuildStage extends Stage
             MemoryTracker memoryTracker )
     {
         super( NAME, null, config, Step.RECYCLE_BATCHES );
-        add( new BatchFeedStep( control(), config, RecordIdIterator.allIn( relationshipStore, config ),
+        add( new BatchFeedStep( control(), config, withProgressReport( allIn( relationshipStore, config ), progressReporter ),
                 relationshipStore.getRecordSize() ) );
         add( new ReadRecordsStep<>( control(), config, false, relationshipStore, pageCacheTracer ) );
         add( new RelationshipTypeIndexWriterStep( control(), config, relationshipTypeIndex, pageCacheTracer ) );
         add( new ProcessRelationshipCountsDataStep( control(), cache, config,
-                highLabelId, highRelationshipTypeId, countsUpdater, cacheFactory, progressReporter, pageCacheTracer, memoryTracker ) );
+                highLabelId, highRelationshipTypeId, countsUpdater, cacheFactory, pageCacheTracer, memoryTracker ) );
     }
 }
