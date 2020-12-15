@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RecordingRuntimeResult
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
+import org.neo4j.exceptions.InvalidArgumentException
 import org.neo4j.graphdb.RelationshipType
 import org.neo4j.internal.helpers.collection.Iterables
 
@@ -123,6 +124,28 @@ abstract class SetPropertyTestBase[CONTEXT <: RuntimeContext](
     val property = Iterables.single(tx.getAllPropertyKeys)
     runtimeResult should beColumns("p").withSingleRow(1).withStatistics(propertiesSet = 1)
     property shouldBe "prop"
+  }
+
+  test("should throw on none node or relationship entity") {
+    // given a single node
+    given {
+      nodePropertyGraph(1, { case i => Map("prop" -> "1") })
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("p1")
+      .setProperty("p1", "prop", "1")
+      .projection("n.prop as p1")
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    // then
+
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    assertThrows[InvalidArgumentException]({
+      consume(runtimeResult)
+    })
   }
 
   test("should set property on multiple nodes") {
