@@ -16,7 +16,10 @@
  */
 package org.neo4j.cypher.internal.frontend.phases
 
+import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
+import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransformerFactory
 import org.neo4j.cypher.internal.rewriting.AstRewritingMonitor
+import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
 import org.neo4j.cypher.internal.rewriting.rewriters.deMorganRewriter
 import org.neo4j.cypher.internal.rewriting.rewriters.distributeLawsRewriter
 import org.neo4j.cypher.internal.rewriting.rewriters.flattenBooleanOperators
@@ -27,7 +30,9 @@ import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.inSequence
 
-case object CNFNormalizer extends StatementRewriter {
+case object BooleanPredicatesInCNF extends StepSequencer.Condition
+
+case object CNFNormalizer extends StatementRewriter with StepSequencer.Step with PlanPipelineTransformerFactory {
 
   override def description: String = "normalize boolean predicates into conjunctive normal form"
 
@@ -44,5 +49,18 @@ case object CNFNormalizer extends StatementRewriter {
     )
   }
 
-  override def postConditions: Set[StepSequencer.Condition] = Set.empty
+  override def preConditions: Set[StepSequencer.Condition] = Set(
+    // transitiveClosure does not work correctly if And has been rewritten to Ands, so this rewriter needs to go after.
+    TransitiveClosureAppliedToWhereClauses
+  ) ++ flattenBooleanOperators.preConditions ++ normalizeSargablePredicates.preConditions
+
+  override def postConditions: Set[StepSequencer.Condition] = Set(BooleanPredicatesInCNF) ++ flattenBooleanOperators.postConditions ++ normalizeSargablePredicates.postConditions
+
+  override def invalidatedConditions: Set[StepSequencer.Condition] =
+    normalizeSargablePredicates.invalidatedConditions ++
+      flattenBooleanOperators.invalidatedConditions ++
+      SemanticInfoAvailable // Introduces new AST nodes
+
+  override def getTransformer(pushdownPropertyReads: Boolean,
+                              semanticFeatures: Seq[SemanticFeature]): Transformer[BaseContext, BaseState, BaseState] = this
 }

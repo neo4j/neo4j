@@ -42,6 +42,9 @@ import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.ShortestPaths
 import org.neo4j.cypher.internal.expressions.SingleRelationshipPathStep
 import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
+import org.neo4j.cypher.internal.rewriting.conditions.containsNamedPathOnlyForShortestPath
+import org.neo4j.cypher.internal.rewriting.conditions.containsNoReturnAll
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
@@ -49,11 +52,12 @@ import org.neo4j.cypher.internal.util.Foldable.TraverseChildrenNewAccForSiblings
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Ref
 import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.topDown
 
 import scala.annotation.tailrec
 
-case object projectNamedPaths extends Rewriter {
+case object projectNamedPaths extends Rewriter with StepSequencer.Step {
 
   case class Projectibles(paths: Map[Variable, PathExpression] = Map.empty,
                           protectedVariables: Set[Ref[LogicalVariable]] = Set.empty,
@@ -210,4 +214,15 @@ case object projectNamedPaths extends Rewriter {
       }
     }
   }
+
+  override def preConditions: Set[StepSequencer.Condition] = Set(
+    // This rewriter needs to know the expanded return items
+    containsNoReturnAll
+  )
+
+  override def postConditions: Set[StepSequencer.Condition] = Set(
+    containsNamedPathOnlyForShortestPath
+  )
+
+  override def invalidatedConditions: Set[StepSequencer.Condition] = SemanticInfoAvailable // Introduces new AST nodes
 }

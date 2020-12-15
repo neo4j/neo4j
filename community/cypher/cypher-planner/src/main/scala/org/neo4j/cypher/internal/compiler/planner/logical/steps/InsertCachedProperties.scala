@@ -19,9 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
+import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
+import org.neo4j.cypher.internal.compiler.phases.CompilationContains
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.SingleAndedPropertyInequalitiesRemoved
 import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.CachedProperty
 import org.neo4j.cypher.internal.expressions.EntityType
@@ -32,6 +35,7 @@ import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RELATIONSHIP_TYPE
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.frontend.phases.Transformer
+import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransformerFactory
 import org.neo4j.cypher.internal.logical.plans.CanGetValue
 import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
 import org.neo4j.cypher.internal.logical.plans.GetValue
@@ -43,13 +47,13 @@ import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.attribution.SameId
 import org.neo4j.cypher.internal.util.bottomUp
-import org.neo4j.cypher.internal.util.symbols.CTNode
-import org.neo4j.cypher.internal.util.symbols.CTRelationship
-import org.neo4j.cypher.internal.util.symbols.TypeSpec
 
 import scala.collection.mutable
+
+case object PropertiesAreCached extends StepSequencer.Condition
 
 /**
  * A logical plan rewriter that also changes the semantic table (thus a Transformer).
@@ -236,4 +240,25 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean) extends Transf
 
   def property(entity: String, propName: String): Property =
     Property(Variable(entity)(InputPosition.NONE), PropertyKeyName(propName)(InputPosition.NONE))(InputPosition.NONE)
+}
+
+object InsertCachedProperties extends StepSequencer.Step with PlanPipelineTransformerFactory {
+  override def preConditions: Set[StepSequencer.Condition] = Set(
+    // This rewriter operates on the LogicalPlan
+    CompilationContains[LogicalPlan],
+    // AndedPropertyInequalities contain the same property twice, which would mess up our counts.
+    SingleAndedPropertyInequalitiesRemoved
+  )
+
+  override def postConditions: Set[StepSequencer.Condition] = Set(
+    PropertiesAreCached
+  )
+
+  override def invalidatedConditions: Set[StepSequencer.Condition] = Set(
+    // Rewriting logical plans introduces new IDs
+    PlanIDsAreCompressed
+  )
+
+  override def getTransformer(pushdownPropertyReads: Boolean,
+                              semanticFeatures: Seq[SemanticFeature]): Transformer[PlannerContext, LogicalPlanState, LogicalPlanState] = InsertCachedProperties(pushdownPropertyReads)
 }

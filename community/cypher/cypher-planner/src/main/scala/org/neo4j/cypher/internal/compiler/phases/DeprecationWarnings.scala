@@ -36,7 +36,7 @@ import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.exceptions.InternalException
 
-object ProcedureDeprecationWarnings extends VisitorPhase[BaseContext, BaseState] {
+case object ProcedureDeprecationWarnings extends VisitorPhase[BaseContext, BaseState] {
   override def visit(value: BaseState, context: BaseContext): Unit = {
     val warnings = findDeprecations(value.statement())
 
@@ -56,7 +56,7 @@ object ProcedureDeprecationWarnings extends VisitorPhase[BaseContext, BaseState]
   override def description = "find calls to deprecated procedures and generate warnings for them"
 }
 
-object ProcedureWarnings extends VisitorPhase[BaseContext, BaseState] {
+case object ProcedureWarnings extends VisitorPhase[BaseContext, BaseState] {
   override def visit(value: BaseState, context: BaseContext): Unit = {
     val warnings = findWarnings(value.statement())
 

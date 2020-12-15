@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
+import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.phases.CompilationContains
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
@@ -31,7 +32,9 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.devNullListener
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.verifyBestPlan
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
 import org.neo4j.cypher.internal.frontend.phases.Phase
-import org.neo4j.cypher.internal.ir.PeriodicCommit
+import org.neo4j.cypher.internal.frontend.phases.TokensResolved
+import org.neo4j.cypher.internal.frontend.phases.Transformer
+import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransformerFactory
 import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.ir.PlannerQueryPart
 import org.neo4j.cypher.internal.ir.QueryProjection
@@ -41,16 +44,14 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.util.Selectivity
+import org.neo4j.cypher.internal.util.StepSequencer
 
 case object QueryPlanner
-  extends Phase[PlannerContext, LogicalPlanState, LogicalPlanState] {
-
+  extends Phase[PlannerContext, LogicalPlanState, LogicalPlanState] with StepSequencer.Step with PlanPipelineTransformerFactory {
 
   override def phase = LOGICAL_PLANNING
 
   override def description = "using cost estimates, plan the query to a logical plan"
-
-  override def postConditions = Set(CompilationContains[LogicalPlan])
 
   override def process(from: LogicalPlanState, context: PlannerContext): LogicalPlanState = {
     val costComparisonsAsRows = context.debugOptions.reportCostComparisonsAsRowsEnabled
@@ -119,8 +120,21 @@ case object QueryPlanner
     verifyBestPlan(plan = planWithProduceResults, expected = query.query, context = context)
     planWithProduceResults
   }
-}
 
+  override def preConditions: Set[StepSequencer.Condition] = Set(
+    // This works on the IR
+    CompilationContains[UnionQuery],
+    UnnecessaryOptionalMatchesRemoved,
+    TokensResolved
+  )
+
+  override def postConditions = Set(CompilationContains[LogicalPlan])
+
+  override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
+
+  override def getTransformer(pushdownPropertyReads: Boolean, semanticFeatures: Seq[SemanticFeature]): Transformer[PlannerContext, LogicalPlanState, LogicalPlanState] = this
+
+}
 /**
  * Combines multiple PlannerQuery plans together with Union
  */

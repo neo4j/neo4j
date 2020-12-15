@@ -21,16 +21,21 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.In
 import org.neo4j.cypher.internal.expressions.ListLiteral
 import org.neo4j.cypher.internal.expressions.Ors
+import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
 import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.bottomUp
 
 import scala.collection.immutable.Iterable
+
+case object EqualityRewrittenToIn extends StepSequencer.Condition
+case object InPredicatesCollapsed extends StepSequencer.Condition
 
 /*
 This class merges multiple IN predicates into larger ones.
 These can later be turned into index lookups or node-by-id ops
  */
-case object collapseMultipleInPredicates extends Rewriter {
+case object collapseMultipleInPredicates extends Rewriter with StepSequencer.Step {
 
   override def apply(that: AnyRef) = instance(that)
 
@@ -64,4 +69,10 @@ case object collapseMultipleInPredicates extends Rewriter {
         case l => Ors(l)(predicate.position)
       }
   })
+
+  override def preConditions: Set[StepSequencer.Condition] = Set(EqualityRewrittenToIn)
+
+  override def postConditions: Set[StepSequencer.Condition] = Set(InPredicatesCollapsed)
+
+  override def invalidatedConditions: Set[StepSequencer.Condition] = SemanticInfoAvailable // Introduces new AST nodes
 }

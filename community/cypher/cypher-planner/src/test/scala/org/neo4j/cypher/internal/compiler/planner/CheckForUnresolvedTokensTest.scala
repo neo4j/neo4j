@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner
 
+import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.MissingLabelNotification
@@ -27,6 +28,7 @@ import org.neo4j.cypher.internal.compiler.MissingRelTypeNotification
 import org.neo4j.cypher.internal.compiler.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.test_helpers.ContextHelper
+import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.InternalNotification
@@ -193,12 +195,15 @@ class CheckForUnresolvedTokensTest extends CypherFunSuite with AstRewritingTestS
 
   private def checkForTokens(ast: Query, semanticTable: SemanticTable): Set[InternalNotification] = {
     val notificationLogger = new RecordingNotificationLogger
+    val plannerQuery = mock[PlannerQuery]
+    when(plannerQuery.readOnly).thenReturn(true)
     val compilationState = LogicalPlanState(queryText = "apa",
       startPosition = None,
       plannerName = IDPPlannerName,
       newStubbedPlanningAttributes,
       maybeStatement = Some(ast),
-      maybeSemanticTable = Some(semanticTable))
+      maybeSemanticTable = Some(semanticTable),
+      maybeQuery = Some(plannerQuery))
     val context = ContextHelper.create(notificationLogger = notificationLogger)
     CheckForUnresolvedTokens.transform(compilationState, context)
     notificationLogger.notifications

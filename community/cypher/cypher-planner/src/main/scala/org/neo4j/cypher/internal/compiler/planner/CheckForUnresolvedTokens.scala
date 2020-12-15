@@ -19,9 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.planner
 
+import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.compiler.MissingLabelNotification
 import org.neo4j.cypher.internal.compiler.MissingPropertyNameNotification
 import org.neo4j.cypher.internal.compiler.MissingRelTypeNotification
+import org.neo4j.cypher.internal.compiler.phases.CompilationContains
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.Property
@@ -29,16 +31,22 @@ import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.frontend.phases.BaseContext
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
+import org.neo4j.cypher.internal.frontend.phases.TokensResolved
 import org.neo4j.cypher.internal.frontend.phases.VisitorPhase
+import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransformerFactory
+import org.neo4j.cypher.internal.ir.UnionQuery
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.InternalNotification
+import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.values.storable.DurationFields
 import org.neo4j.values.storable.PointFields
 import org.neo4j.values.storable.TemporalValue.TemporalFields
 
 import scala.collection.JavaConverters.asScalaSetConverter
 
-object CheckForUnresolvedTokens extends VisitorPhase[BaseContext, LogicalPlanState] {
+case object NotificationsForUnresolvedTokensGenerated extends StepSequencer.Condition
+
+case object CheckForUnresolvedTokens extends VisitorPhase[BaseContext, LogicalPlanState] with StepSequencer.Step with PlanPipelineTransformerFactory {
 
   private val specialPropertyKey: Set[String] =
     (TemporalFields.allFields().asScala ++
@@ -46,26 +54,40 @@ object CheckForUnresolvedTokens extends VisitorPhase[BaseContext, LogicalPlanSta
       PointFields.values().map(_.propertyKey)).map(_.toLowerCase).toSet
 
   override def visit(value: LogicalPlanState, context: BaseContext): Unit = {
-    val table = value.semanticTable()
-    def isEmptyLabel(label: String) = !table.resolvedLabelNames.contains(label)
-    def isEmptyRelType(relType: String) = !table.resolvedRelTypeNames.contains(relType)
-    def isEmptyPropertyName(name: String) = !table.resolvedPropertyKeyNames.contains(name)
+    if(value.query.readOnly) {
+      val table = value.semanticTable()
+      def isEmptyLabel(label: String) = !table.resolvedLabelNames.contains(label)
+      def isEmptyRelType(relType: String) = !table.resolvedRelTypeNames.contains(relType)
+      def isEmptyPropertyName(name: String) = !table.resolvedPropertyKeyNames.contains(name)
 
-    val notifications = value.statement().treeFold(Seq.empty[InternalNotification]) {
-      case label@LabelName(name) if isEmptyLabel(name) => acc =>
-        TraverseChildren(acc :+ MissingLabelNotification(label.position, name))
+      val notifications = value.statement().treeFold(Seq.empty[InternalNotification]) {
+        case label@LabelName(name) if isEmptyLabel(name) => acc =>
+          TraverseChildren(acc :+ MissingLabelNotification(label.position, name))
 
-      case rel@RelTypeName(name) if isEmptyRelType(name) => acc =>
-        TraverseChildren(acc :+ MissingRelTypeNotification(rel.position, name))
+        case rel@RelTypeName(name) if isEmptyRelType(name) => acc =>
+          TraverseChildren(acc :+ MissingRelTypeNotification(rel.position, name))
 
-      case Property(_, prop@PropertyKeyName(name)) if !specialPropertyKey(name.toLowerCase) && isEmptyPropertyName(name) => acc =>
-        TraverseChildren(acc :+ MissingPropertyNameNotification(prop.position, name))
+        case Property(_, prop@PropertyKeyName(name)) if !specialPropertyKey(name.toLowerCase) && isEmptyPropertyName(name) => acc =>
+          TraverseChildren(acc :+ MissingPropertyNameNotification(prop.position, name))
+      }
+
+      notifications foreach context.notificationLogger.log
     }
-
-    notifications foreach context.notificationLogger.log
   }
 
   override def phase = LOGICAL_PLANNING
 
   override def description = "find labels, relationships types and property keys that do not exist in the db and issue warnings"
+
+  override def preConditions: Set[StepSequencer.Condition] = Set(
+    TokensResolved,
+    CompilationContains[UnionQuery]
+  )
+
+  override def postConditions: Set[StepSequencer.Condition] = Set(NotificationsForUnresolvedTokensGenerated)
+
+  override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
+
+  override def getTransformer(pushdownPropertyReads: Boolean,
+                              semanticFeatures: Seq[SemanticFeature]): VisitorPhase[BaseContext, LogicalPlanState] = this
 }

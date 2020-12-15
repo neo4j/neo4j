@@ -16,11 +16,12 @@
  */
 package org.neo4j.cypher.internal.frontend.phases
 
-import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
+import org.neo4j.cypher.internal.util.Rewriter
 
 trait StatementRewriter extends Phase[BaseContext, BaseState, BaseState] {
+  self: Product =>
   override def phase: CompilationPhase = AST_REWRITE
 
   def instance(context: BaseContext): Rewriter

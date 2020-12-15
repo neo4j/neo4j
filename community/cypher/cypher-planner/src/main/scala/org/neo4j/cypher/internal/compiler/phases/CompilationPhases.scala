@@ -48,20 +48,24 @@ import org.neo4j.cypher.internal.frontend.phases.ObfuscationMetadataCollection
 import org.neo4j.cypher.internal.frontend.phases.Parsing
 import org.neo4j.cypher.internal.frontend.phases.PreparatoryRewriting
 import org.neo4j.cypher.internal.frontend.phases.SemanticAnalysis
+import org.neo4j.cypher.internal.frontend.phases.StatementCondition
 import org.neo4j.cypher.internal.frontend.phases.SyntaxAdditionsErrors
 import org.neo4j.cypher.internal.frontend.phases.SyntaxDeprecationWarnings
 import org.neo4j.cypher.internal.frontend.phases.Transformer
+import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransformerFactory
 import org.neo4j.cypher.internal.frontend.phases.isolateAggregation
 import org.neo4j.cypher.internal.frontend.phases.rewriteEqualityToInPredicate
 import org.neo4j.cypher.internal.frontend.phases.transitiveClosure
-import org.neo4j.cypher.internal.ir.UnionQuery
-import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.ProcedureSignatureResolver
 import org.neo4j.cypher.internal.rewriting.Additions
 import org.neo4j.cypher.internal.rewriting.Deprecations
+import org.neo4j.cypher.internal.rewriting.ListStepAccumulator
+import org.neo4j.cypher.internal.rewriting.conditions.containsNoReturnAll
 import org.neo4j.cypher.internal.rewriting.rewriters.IfNoParameter
 import org.neo4j.cypher.internal.rewriting.rewriters.InnerVariableNamer
 import org.neo4j.cypher.internal.rewriting.rewriters.LiteralExtractionStrategy
+import org.neo4j.cypher.internal.util.StepSequencer
+import org.neo4j.cypher.internal.util.StepSequencer.AccumulatedSteps
 import org.neo4j.cypher.internal.util.symbols.CypherType
 
 object CompilationPhases {
@@ -70,6 +74,24 @@ object CompilationPhases {
     MultipleDatabases,
     CorrelatedSubQueries,
   )
+
+  private val AccumulatedSteps(orderedPlanPipelineSteps, _) = StepSequencer(ListStepAccumulator[StepSequencer.Step with PlanPipelineTransformerFactory]()).orderSteps(Set(
+    SemanticAnalysis,
+    Namespacer,
+    isolateAggregation,
+    transitiveClosure,
+    rewriteEqualityToInPredicate,
+    CNFNormalizer,
+    LateAstRewriting,
+    ResolveTokens,
+    CreatePlannerQuery,
+    OptionalMatchRemover,
+    QueryPlanner,
+    PlanRewriter,
+    InsertCachedProperties,
+    CompressPlanIDs,
+    CheckForUnresolvedTokens,
+  ), initialConditions = Set(StatementCondition(containsNoReturnAll)))
 
   case class ParsingConfig(
                             innerVariableNamer: InnerVariableNamer,
@@ -146,26 +168,9 @@ object CompilationPhases {
   ): Transformer[PlannerContext, BaseState, LogicalPlanState] =
     SchemaCommandPlanBuilder andThen
       If((s: LogicalPlanState) => s.maybeLogicalPlan.isEmpty)(
-        SemanticAnalysis(warn = false, semanticFeatures: _*) andThen
-          Namespacer andThen
-          isolateAggregation andThen
-          SemanticAnalysis(warn = false, semanticFeatures: _*) andThen
-          Namespacer andThen
-          transitiveClosure andThen
-          rewriteEqualityToInPredicate andThen
-          CNFNormalizer andThen
-          LateAstRewriting andThen
-          SemanticAnalysis(warn = false, semanticFeatures: _*) andThen
-          ResolveTokens andThen
-          CreatePlannerQuery.adds(CompilationContains[UnionQuery]) andThen
-          OptionalMatchRemover andThen
-          QueryPlanner.adds(CompilationContains[LogicalPlan]) andThen
-          PlanRewriter andThen
-          InsertCachedProperties(pushdownPropertyReads) andThen
-          CompressPlanIDs andThen
-          If((s: LogicalPlanState) => s.query.readOnly)(
-            CheckForUnresolvedTokens
-          )
+        Chainer.chainTransformers(
+          orderedPlanPipelineSteps.map(_.getTransformer(pushdownPropertyReads, semanticFeatures))
+        ).asInstanceOf[Transformer[PlannerContext, BaseState, LogicalPlanState]]
       )
 
   // Alternative Phase 3

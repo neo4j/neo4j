@@ -25,6 +25,8 @@ import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.functions.Exists
 import org.neo4j.cypher.internal.expressions.functions.Size
+import org.neo4j.cypher.internal.rewriting.conditions.PatternExpressionAreWrappedInExists
+import org.neo4j.cypher.internal.rewriting.conditions.PatternExpressionsHaveSemanticInfo
 import org.neo4j.cypher.internal.rewriting.rewriters.factories.ASTRewriterFactory
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.Rewriter
@@ -34,8 +36,7 @@ import org.neo4j.cypher.internal.util.bottomUp
 import org.neo4j.cypher.internal.util.symbols
 import org.neo4j.cypher.internal.util.symbols.CypherType
 
-case object PatternExpressionsHaveSemanticInfo extends Condition
-case object PatternExpressionAreWrappedInExists extends Condition
+
 
 /**
  * Adds an exist around any pattern expression that is expected to produce a boolean e.g.

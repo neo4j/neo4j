@@ -25,8 +25,8 @@ import org.neo4j.cypher.internal.util.StepSequencer
 A phase is a leaf component of the tree structure that is the compilation pipe line.
 It passes through the compilation state, and might add values to it
  */
-trait Phase[-C <: BaseContext, FROM, TO] extends Transformer[C, FROM, TO] {
-  self =>
+trait Phase[-C <: BaseContext, FROM, +TO] extends Transformer[C, FROM, TO] {
+  self: Product =>
 
   def phase: CompilationPhase
 
@@ -41,13 +41,15 @@ trait Phase[-C <: BaseContext, FROM, TO] extends Transformer[C, FROM, TO] {
 
   def postConditions: Set[StepSequencer.Condition]
 
-  def name: String = getClass.getSimpleName
+  def name: String = productPrefix
 }
 
 /*
 A visitor is a phase that does not change the compilation state. All it's behaviour is side effects
  */
 trait VisitorPhase[-C <: BaseContext, STATE] extends Phase[C, STATE, STATE] {
+  self: Product =>
+
   override def process(from: STATE, context: C): STATE = {
     visit(from, context)
     from

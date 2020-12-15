@@ -22,7 +22,7 @@ import org.neo4j.cypher.internal.macros.AssertMacros.checkOnlyWhenAssertionsAreE
 import org.neo4j.cypher.internal.rewriting.ValidatingCondition
 import org.neo4j.cypher.internal.util.StepSequencer
 
-trait Transformer[-C <: BaseContext, -FROM, TO] {
+trait Transformer[-C <: BaseContext, -FROM, +TO] {
   def transform(from: FROM, context: C): TO
 
   def andThen[D <: C, TO2](other: Transformer[D, TO, TO2]): Transformer[D, FROM, TO2] =
@@ -42,7 +42,7 @@ object Transformer {
 
   /**
    * Transformer that can be inserted when debugging, to help detect
-   * what part of the compilation that introduces an ast issue.
+   * what part of the compilation introduces an ast issue.
    */
   def printAst(tag: String): Transformer[BaseContext, BaseState, BaseState] = new Transformer[BaseContext, BaseState, BaseState] {
     override def transform(from: BaseState, context: BaseContext): BaseState = {
@@ -96,18 +96,4 @@ case class If[-C <: BaseContext, FROM, STATE <: FROM](f: STATE => Boolean)(thenT
   }
 
   override def name: String = s"if(<f>) ${thenT.name}"
-}
-
-object Do {
-  def apply[C <: BaseContext, STATE](voidFunction: C => Unit) = new Do[C, STATE, STATE]((from, context) => {
-    voidFunction(context)
-    from
-  })
-}
-
-case class Do[-C <: BaseContext, FROM, TO](f: (FROM, C) => TO) extends Transformer[C, FROM, TO] {
-  override def transform(from: FROM, context: C): TO =
-    f(from, context)
-
-  override def name: String = "do <f>"
 }

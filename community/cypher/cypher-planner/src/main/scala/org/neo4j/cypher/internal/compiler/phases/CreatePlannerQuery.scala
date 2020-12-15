@@ -21,22 +21,31 @@ package org.neo4j.cypher.internal.compiler.phases
 
 import org.neo4j.cypher.internal.ast.AdministrationCommand
 import org.neo4j.cypher.internal.ast.Query
+import org.neo4j.cypher.internal.ast.UnionAll
+import org.neo4j.cypher.internal.ast.UnionDistinct
+import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery.StatementConverters.toPlannerQuery
+import org.neo4j.cypher.internal.frontend.phases.AmbiguousNamesDisambiguated
 import org.neo4j.cypher.internal.frontend.phases.BaseContext
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
 import org.neo4j.cypher.internal.frontend.phases.Phase
+import org.neo4j.cypher.internal.frontend.phases.StatementCondition
+import org.neo4j.cypher.internal.frontend.phases.Transformer
+import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransformerFactory
 import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.ir.UnionQuery
+import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
+import org.neo4j.cypher.internal.rewriting.conditions.containsNamedPathOnlyForShortestPath
+import org.neo4j.cypher.internal.rewriting.conditions.containsNoNodesOfType
+import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.exceptions.DatabaseAdministrationException
 import org.neo4j.exceptions.InternalException
 
-object CreatePlannerQuery extends Phase[BaseContext, BaseState, LogicalPlanState] {
+case object CreatePlannerQuery extends Phase[BaseContext, BaseState, LogicalPlanState] with StepSequencer.Step with PlanPipelineTransformerFactory {
   override def phase = LOGICAL_PLANNING
 
   override def description = "from the normalized ast, create the corresponding PlannerQuery"
-
-  override def postConditions = Set(CompilationContains[UnionQuery])
 
   override def process(from: BaseState, context: BaseContext): LogicalPlanState = from.statement() match {
     case query: Query =>
@@ -48,4 +57,19 @@ object CreatePlannerQuery extends Phase[BaseContext, BaseState, LogicalPlanState
 
     case x => throw new InternalException(s"Expected a Query and not `$x`")
   }
+
+  override def preConditions: Set[StepSequencer.Condition] = Set(
+    // We would get MatchErrors if the first 3 conditions would not be met.
+    StatementCondition(containsNamedPathOnlyForShortestPath),
+    StatementCondition(containsNoNodesOfType[UnionAll]),
+    StatementCondition(containsNoNodesOfType[UnionDistinct]),
+    // The PlannerQuery we create should already contain disambiguated names
+    AmbiguousNamesDisambiguated,
+  ) ++ SemanticInfoAvailable // We look up semantic info during PlannerQuery building
+
+  override def postConditions = Set(CompilationContains[UnionQuery])
+
+  override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
+
+  override def getTransformer(pushdownPropertyReads: Boolean, semanticFeatures: Seq[SemanticFeature]): Transformer[BaseContext, BaseState, LogicalPlanState] = this
 }

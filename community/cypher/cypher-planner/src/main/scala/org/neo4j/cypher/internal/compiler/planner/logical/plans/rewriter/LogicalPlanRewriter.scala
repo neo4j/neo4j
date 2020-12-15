@@ -19,11 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 
+import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
+import org.neo4j.cypher.internal.compiler.phases.CompilationContains
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.PlanIDsAreCompressed
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
 import org.neo4j.cypher.internal.frontend.phases.Phase
+import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransformerFactory
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
@@ -34,15 +38,16 @@ import org.neo4j.cypher.internal.util.attribution.Attributes
 import org.neo4j.cypher.internal.util.helpers.fixedPoint
 import org.neo4j.cypher.internal.util.inSequence
 
+case object LogicalPlanRewritten extends StepSequencer.Condition
+case object SingleAndedPropertyInequalitiesRemoved extends StepSequencer.Condition
+
 /*
  * Rewriters that live here are required to adhere to the contract of
  * receiving a valid plan and producing a valid plan. It should be possible
  * to disable any and all of these rewriters, and still produce correct behavior.
  */
-case object PlanRewriter extends LogicalPlanRewriter {
+case object PlanRewriter extends LogicalPlanRewriter with StepSequencer.Step with PlanPipelineTransformerFactory {
   override def description: String = "optimize logical plans using heuristic rewriting"
-
-  override def postConditions: Set[StepSequencer.Condition] = Set.empty
 
   override def instance(context: PlannerContext,
                         solveds: Solveds,
@@ -63,9 +68,30 @@ case object PlanRewriter extends LogicalPlanRewriter {
     simplifySelections,
     limitNestedPlanExpressions(context.logicalPlanIdGen)
   ))
+
+  override def preConditions: Set[StepSequencer.Condition] = Set(
+    // The rewriters operate on the LogicalPlan
+    CompilationContains[LogicalPlan]
+  )
+
+  override def postConditions: Set[StepSequencer.Condition] = Set(
+    LogicalPlanRewritten,
+    // The belongs to simplifyPredicates
+    SingleAndedPropertyInequalitiesRemoved
+  )
+
+  override def invalidatedConditions: Set[StepSequencer.Condition] = Set(
+    // Rewriting logical plans introduces new IDs
+    PlanIDsAreCompressed
+  )
+
+  override def getTransformer(pushdownPropertyReads: Boolean,
+                              semanticFeatures: Seq[SemanticFeature]): LogicalPlanRewriter = this
 }
 
 trait LogicalPlanRewriter extends Phase[PlannerContext, LogicalPlanState, LogicalPlanState] {
+  self: Product =>
+
   override def phase: CompilationPhase = LOGICAL_PLANNING
 
   def instance(context: PlannerContext,

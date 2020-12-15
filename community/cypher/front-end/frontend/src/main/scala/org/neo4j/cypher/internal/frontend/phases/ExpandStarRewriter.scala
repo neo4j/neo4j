@@ -21,7 +21,7 @@ import org.neo4j.cypher.internal.rewriting.conditions.containsNoReturnAll
 import org.neo4j.cypher.internal.rewriting.rewriters.expandStar
 import org.neo4j.cypher.internal.util.StepSequencer
 
-object ExpandStarRewriter extends Phase[BaseContext, BaseState, BaseState] {
+case object ExpandStarRewriter extends Phase[BaseContext, BaseState, BaseState] {
 
   def phase: CompilationPhaseTracer.CompilationPhase = AST_REWRITE
 

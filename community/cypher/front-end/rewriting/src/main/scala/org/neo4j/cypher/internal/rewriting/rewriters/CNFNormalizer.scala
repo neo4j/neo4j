@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.expressions.Ors
 import org.neo4j.cypher.internal.expressions.True
 import org.neo4j.cypher.internal.expressions.Xor
 import org.neo4j.cypher.internal.rewriting.AstRewritingMonitor
+import org.neo4j.cypher.internal.rewriting.conditions.PatternExpressionsHaveSemanticInfo
 import org.neo4j.cypher.internal.rewriting.rewriters.factories.ASTRewriterFactory
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
@@ -38,6 +39,8 @@ import org.neo4j.cypher.internal.util.helpers.fixedPoint
 import org.neo4j.cypher.internal.util.inSequence
 import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.cypher.internal.util.topDown
+
+case object AndRewrittenToAnds extends StepSequencer.Condition
 
 case class deMorganRewriter()(implicit monitor: AstRewritingMonitor) extends Rewriter {
 
@@ -84,7 +87,7 @@ case class distributeLawsRewriter()(implicit monitor: AstRewritingMonitor) exten
   private val instance: Rewriter = repeatWithSizeLimit(bottomUp(step))(monitor)
 }
 
-object flattenBooleanOperators extends Rewriter {
+case object flattenBooleanOperators extends Rewriter with StepSequencer.Step {
   def apply(that: AnyRef): AnyRef = instance.apply(that)
 
   private val firstStep: Rewriter = Rewriter.lift {
@@ -104,6 +107,12 @@ object flattenBooleanOperators extends Rewriter {
   }
 
   private val instance = inSequence(bottomUp(firstStep), fixedPoint(bottomUp(secondStep)))
+
+  override def preConditions: Set[StepSequencer.Condition] = Set.empty
+
+  override def postConditions: Set[StepSequencer.Condition] = Set(AndRewrittenToAnds)
+
+  override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
 }
 
 object simplifyPredicates extends Rewriter {

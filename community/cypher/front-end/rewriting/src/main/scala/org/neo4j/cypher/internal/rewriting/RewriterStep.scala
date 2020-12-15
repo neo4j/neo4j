@@ -67,5 +67,6 @@ object RewriterStep {
 }
 
 trait ValidatingCondition extends (Any => Seq[String]) with StepSequencer.Condition {
-   def name: String
+  def name: String
+  override def toString(): String = name
 }

@@ -17,20 +17,30 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.ast.conditions
+package org.neo4j.cypher.internal.compiler.phases
 
-import org.neo4j.cypher.internal.expressions.NamedPatternPart
-import org.neo4j.cypher.internal.expressions.ShortestPaths
 import org.neo4j.cypher.internal.rewriting.ValidatingCondition
-import org.neo4j.cypher.internal.rewriting.conditions.containsNoMatchingNodes
+import org.neo4j.cypher.internal.util.StepSequencer
 
-case object containsNamedPathOnlyForShortestPath extends ValidatingCondition {
-  private val matcher = containsNoMatchingNodes({
-    case namedPart@NamedPatternPart(_, part) if !part.isInstanceOf[ShortestPaths] =>
-      namedPart.toString
-  })
-
-  def apply(that: Any) = matcher(that)
+case class LogicalPlanCondition(inner: ValidatingCondition) extends ValidatingCondition {
+  override def apply(state: Any): Seq[String] = state match {
+    case s: LogicalPlanState => inner(s.logicalPlan)
+    case x => throw new IllegalStateException(s"Unknown state: $x")
+  }
 
   override def name: String = productPrefix
 }
+
+object LogicalPlanCondition {
+  /**
+   * Conditions that during Rewriting check the LogicalPlan need to be checked on the LogicalPlan only.
+   * When checking these same conditions during higher-level phases, we need to wrap ValidatingCondition in LogicalPlanCondition.
+   */
+  def wrap(condition: StepSequencer.Condition): StepSequencer.Condition = {
+    condition match {
+      case vc: ValidatingCondition => LogicalPlanCondition(vc)
+      case _ => condition
+    }
+  }
+}
+

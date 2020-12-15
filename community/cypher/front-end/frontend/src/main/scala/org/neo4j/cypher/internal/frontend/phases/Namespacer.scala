@@ -23,13 +23,15 @@ import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.UnionAll
 import org.neo4j.cypher.internal.ast.UnionDistinct
 import org.neo4j.cypher.internal.ast.semantics.Scope
-import org.neo4j.cypher.internal.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.ast.semantics.SymbolUse
 import org.neo4j.cypher.internal.expressions.ExpressionWithOuterScope
 import org.neo4j.cypher.internal.expressions.ProcedureOutput
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
+import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransformerFactory
+import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
 import org.neo4j.cypher.internal.rewriting.conditions.containsNoNodesOfType
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.Ref
@@ -38,7 +40,9 @@ import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.bottomUp
 import org.neo4j.cypher.internal.util.inSequence
 
-object Namespacer extends Phase[BaseContext, BaseState, BaseState] {
+case object AmbiguousNamesDisambiguated extends StepSequencer.Condition
+
+case object Namespacer extends Phase[BaseContext, BaseState, BaseState] with StepSequencer.Step with PlanPipelineTransformerFactory {
   type VariableRenamings = Map[Ref[Variable], Variable]
 
   override def phase: CompilationPhase = AST_REWRITE
@@ -47,7 +51,7 @@ object Namespacer extends Phase[BaseContext, BaseState, BaseState] {
 
   override def process(from: BaseState, ignored: BaseContext): BaseState = {
     val withProjectedUnions = from.statement().endoRewrite(projectUnions)
-    val table = SemanticTable(types = from.semantics().typeTable, recordedScopes = from.semantics().recordedScopes.mapValues(_.scope))
+    val table = from.semanticTable()
 
     val ambiguousNames = shadowedNames(from.semantics().scopeTree)
     val variableDefinitions: Map[SymbolUse, SymbolUse] = from.semantics().scopeTree.allVariableDefinitions
@@ -62,10 +66,6 @@ object Namespacer extends Phase[BaseContext, BaseState, BaseState] {
       from.withStatement(newStatement).withSemanticTable(newSemanticTable)
     }
   }
-
-  override def postConditions: Set[StepSequencer.Condition] = Set(
-    StatementCondition(containsNoNodesOfType[UnionAll]),
-    StatementCondition(containsNoNodesOfType[UnionDistinct]))
 
   private def shadowedNames(scopeTree: Scope): Set[String] = {
     val definitions = scopeTree.allSymbolDefinitions
@@ -124,4 +124,16 @@ object Namespacer extends Phase[BaseContext, BaseState, BaseState] {
         e.withOuterScope(newOuterScope)
     }))
 
+  override def preConditions: Set[StepSequencer.Condition] = SemanticInfoAvailable
+
+  override def postConditions: Set[StepSequencer.Condition] = Set(
+    StatementCondition(containsNoNodesOfType[UnionAll]),
+    StatementCondition(containsNoNodesOfType[UnionDistinct]),
+    AmbiguousNamesDisambiguated
+  )
+
+  override def invalidatedConditions: Set[StepSequencer.Condition] = SemanticInfoAvailable // Introduces new AST nodes
+
+  override def getTransformer(pushdownPropertyReads: Boolean,
+                              semanticFeatures: Seq[SemanticFeature]): Transformer[BaseContext, BaseState, BaseState] = this
 }
