@@ -19,19 +19,20 @@
  */
 package org.neo4j.internal.batchimport;
 
-import org.neo4j.internal.batchimport.staging.BatchSender;
-import org.neo4j.internal.batchimport.staging.ProcessorStep;
-import org.neo4j.internal.batchimport.staging.StageControl;
-import org.neo4j.internal.batchimport.staging.Step;
-import org.neo4j.internal.batchimport.stats.StatsProvider;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.function.Supplier;
 
+import org.neo4j.internal.batchimport.staging.BatchSender;
+import org.neo4j.internal.batchimport.staging.ProcessorStep;
+import org.neo4j.internal.batchimport.staging.StageControl;
+import org.neo4j.internal.batchimport.staging.Step;
+import org.neo4j.internal.batchimport.stats.StatsProvider;
+import org.neo4j.io.IOUtils;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 
 /**
@@ -42,7 +43,7 @@ public class RecordProcessorStep<T extends AbstractBaseRecord> extends Processor
     private final Supplier<RecordProcessor<T>> processorFactory;
     private final boolean endOfLine;
     private final List<RecordProcessor<T>> allProcessors = Collections.synchronizedList( new ArrayList<>() );
-    private final ThreadLocal<RecordProcessor<T>> threadProcessors = new ThreadLocal<RecordProcessor<T>>()
+    private final ThreadLocal<RecordProcessor<T>> threadProcessors = new ThreadLocal<>()
     {
         @Override
         protected RecordProcessor<T> initialValue()
@@ -100,5 +101,12 @@ public class RecordProcessorStep<T extends AbstractBaseRecord> extends Processor
             }
             first.done();
         }
+    }
+
+    @Override
+    public void close() throws Exception
+    {
+        super.close();
+        IOUtils.closeAll( allProcessors );
     }
 }
