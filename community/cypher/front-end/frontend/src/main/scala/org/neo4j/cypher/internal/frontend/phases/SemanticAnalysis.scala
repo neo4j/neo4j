@@ -42,7 +42,14 @@ case class SemanticAnalysis(warn: Boolean, features: SemanticFeature*)
 
     context.errorHandler(errors)
 
-    val table = SemanticTable(types = state.typeTable, recordedScopes = state.recordedScopes.mapValues(_.scope))
+    val table = from.maybeSemanticTable match {
+      case Some(existingTable) =>
+      // We might already have a SemanticTable from a previous run, and that might already have tokens.
+      // We don't want to lose these
+        existingTable.copy(types = state.typeTable, recordedScopes = state.recordedScopes.mapValues(_.scope))
+      case None => SemanticTable(types = state.typeTable, recordedScopes = state.recordedScopes.mapValues(_.scope))
+    }
+
     val rewrittenStatement = if (errors.isEmpty) {
       // Some expressions record some semantic information in themselves.
       // This is done by the recordScopes rewriter.
