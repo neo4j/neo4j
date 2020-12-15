@@ -19,7 +19,6 @@
  */
 package org.neo4j.internal.index.label;
 
-import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Iterator;
@@ -78,13 +77,13 @@ public final class EmptyingRelationshipTypeScanStore implements RelationshipType
     @Override
     public TokenScanWriter newWriter( PageCursorTracer cursorTracer )
     {
-        return EmptyTokenScanWriter.INSTANCE;
+        return TokenScanWriter.EMPTY_WRITER;
     }
 
     @Override
     public TokenScanWriter newBulkAppendWriter( PageCursorTracer cursorTracer )
     {
-        return EmptyTokenScanWriter.INSTANCE;
+        return TokenScanWriter.EMPTY_WRITER;
     }
 
     @Override
@@ -205,21 +204,6 @@ public final class EmptyingRelationshipTypeScanStore implements RelationshipType
         public Iterator<EntityTokenRange> iterator()
         {
             return Collections.emptyIterator();
-        }
-    }
-
-    private static class EmptyTokenScanWriter implements TokenScanWriter
-    {
-        static final TokenScanWriter INSTANCE = new EmptyTokenScanWriter();
-
-        @Override
-        public void write( EntityTokenUpdate update ) throws IOException
-        {   // no-op
-        }
-
-        @Override
-        public void close() throws IOException
-        {   // no-op
         }
     }
 
