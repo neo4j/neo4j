@@ -39,4 +39,17 @@ public interface TokenScanWriter extends Closeable
      */
     @Override
     void close() throws IOException;
+
+    TokenScanWriter EMPTY_WRITER = new TokenScanWriter()
+    {
+        @Override
+        public void write( EntityTokenUpdate update )
+        {   // no-op
+        }
+
+        @Override
+        public void close()
+        {   // no-op
+        }
+    };
 }
