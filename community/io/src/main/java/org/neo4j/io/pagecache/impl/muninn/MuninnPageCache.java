@@ -60,6 +60,7 @@ import org.neo4j.time.Clocks;
 import org.neo4j.time.SystemNanoClock;
 
 import static java.lang.String.format;
+import static java.util.Objects.requireNonNull;
 import static org.neo4j.internal.helpers.Numbers.isPowerOfTwo;
 import static org.neo4j.io.pagecache.buffer.IOBufferFactory.DISABLED_BUFFER_FACTORY;
 import static org.neo4j.scheduler.Group.FILE_IO_HELPER;
@@ -345,6 +346,7 @@ public class MuninnPageCache implements PageCache
     {
         verifyHacks();
         verifyCachePageSizeIsPowerOfTwo( configuration.pageSize );
+        requireNonNull( jobScheduler );
         int maxPages = calculatePageCount( configuration.memoryAllocator, configuration.pageSize );
 
         // Expose the total number of pages
