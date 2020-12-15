@@ -23,6 +23,14 @@ public interface PhaseTracker
 {
     void enterPhase( Phase phase );
 
+    /**
+     * Method for when time has been kept externally and merely reported to this tracker.
+     *
+     * @param phase which {@link Phase} to register the time for.
+     * @param millis time to register.
+     */
+    void registerTime( Phase phase, long millis );
+
     void stop();
 
     PhaseTracker nullInstance = new NullPhaseTracker();
@@ -43,6 +51,11 @@ public interface PhaseTracker
     {
         @Override
         public void enterPhase( Phase phase )
+        {
+        }
+
+        @Override
+        public void registerTime( Phase phase, long millis )
         {
         }
 

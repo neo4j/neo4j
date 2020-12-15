@@ -27,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.internal.helpers.TimeUtil;
 import org.neo4j.logging.Log;
 import org.neo4j.util.FeatureToggles;
+import org.neo4j.util.Preconditions;
 import org.neo4j.util.VisibleForTesting;
 
 public class LoggingPhaseTracker implements PhaseTracker
@@ -38,7 +39,7 @@ public class LoggingPhaseTracker implements PhaseTracker
     private final Log log;
     private final Clock clock;
 
-    private EnumMap<Phase,Logger> times = new EnumMap<>( Phase.class );
+    private final EnumMap<Phase,Logger> times = new EnumMap<>( Phase.class );
     private Phase currentPhase;
     private long timeEnterPhase;
     private boolean stopped;
@@ -90,6 +91,13 @@ public class LoggingPhaseTracker implements PhaseTracker
     }
 
     @Override
+    public void registerTime( Phase phase, long millis )
+    {
+        Preconditions.checkState( !stopped, "Trying to report a new phase after phase tracker has been stopped." );
+        logTime( phase, millis );
+    }
+
+    @Override
     public void stop()
     {
         stopped = true;
@@ -108,9 +116,9 @@ public class LoggingPhaseTracker implements PhaseTracker
         log.info( MESSAGE_PREFIX + mainReportString( "Final" ) );
     }
 
-    private void periodReport( long millisSinceLastPerioReport )
+    private void periodReport( long millisSinceLastPeriodReport )
     {
-        String periodReportString = periodReportString( millisSinceLastPerioReport );
+        String periodReportString = periodReportString( millisSinceLastPeriodReport );
         String mainReportString = mainReportString( "Total" );
         log.debug( MESSAGE_PREFIX + mainReportString + ", " + periodReportString );
     }
@@ -150,14 +158,18 @@ public class LoggingPhaseTracker implements PhaseTracker
         long now = clock.millis();
         if ( currentPhase != null )
         {
-            Logger logger = times.get( currentPhase );
-            long timeMillis = now - timeEnterPhase;
-            logger.log( timeMillis );
+            logTime( currentPhase, now - timeEnterPhase );
         }
         return now;
     }
 
-    public class Logger extends Counter
+    private void logTime( Phase phase, long timeMillis )
+    {
+        Logger logger = times.get( phase );
+        logger.log( timeMillis );
+    }
+
+    public static class Logger extends Counter
     {
         final Counter periodCounter;
 
