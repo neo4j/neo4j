@@ -42,7 +42,6 @@ import org.neo4j.bolt.transport.configuration.ServerConfigurationProvider;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
-import org.neo4j.configuration.connectors.BoltConnectorInternalSettings;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.configuration.helpers.PortBindException;
 import org.neo4j.configuration.helpers.SocketAddress;
@@ -233,7 +232,6 @@ public class NettyServer extends LifecycleAdapter
     {
         portRegister.deregister( BoltConnector.NAME );
         portRegister.deregister( BoltConnector.INTERNAL_NAME );
-        portRegister.deregister( BoltConnectorInternalSettings.LOOPBACK_NAME );
     }
 
     private void closeChannels()

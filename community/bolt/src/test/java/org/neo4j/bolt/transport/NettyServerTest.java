@@ -30,7 +30,6 @@ import java.nio.channels.ServerSocketChannel;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.connectors.BoltConnector;
-import org.neo4j.configuration.connectors.BoltConnectorInternalSettings;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.configuration.helpers.PortBindException;
 import org.neo4j.internal.helpers.NamedThreadFactory;
@@ -81,40 +80,8 @@ class NettyServerTest
         var address = new InetSocketAddress( "localhost", port );
 
         // When
-        server = new NettyServer( newThreadFactory(), protocolOnAddress( address ), protocolOnAddress( address ), new ConnectorPortRegister(),
+        server = new NettyServer( newThreadFactory(), protocolOnAddress( address ), protocolOnAddress( address ), null, new ConnectorPortRegister(),
                                   NullLogService.getInstance(), Config.defaults() );
-
-        // Then
-        assertThrows( PortBindException.class, server::start );
-    }
-
-    @Test
-    void shouldGivePortConflictErrorWithLoopbackPortNumberInIt()
-    {
-        // Given a setup with matching port numbers for loopback and external bolt
-        var port = 16000;
-        var address = new InetSocketAddress( "localhost", 0 );
-        var conflicting = new InetSocketAddress( "localhost", port );
-
-        // When
-        server = new NettyServer( newThreadFactory(), protocolOnAddress( conflicting ), protocolOnAddress( address ), protocolOnAddress( conflicting ),
-                new ConnectorPortRegister(), NullLogService.getInstance(), Config.defaults() );
-
-        // Then
-        assertThrows( PortBindException.class, server::start );
-    }
-
-    @Test
-    void shouldGivePortConflictErrorWithLoopbackAndInternalPortNumberInIt()
-    {
-        // Given a setup with matching port numbers for internal and loopback bolt
-        var port = 16000;
-        var address = new InetSocketAddress( "localhost", 0 );
-        var conflicting = new InetSocketAddress( "localhost", port );
-
-        // When
-        server = new NettyServer( newThreadFactory(), protocolOnAddress( address ), protocolOnAddress( conflicting ), protocolOnAddress( conflicting ),
-                new ConnectorPortRegister(), NullLogService.getInstance(), Config.defaults() );
 
         // Then
         assertThrows( PortBindException.class, server::start );
@@ -149,11 +116,11 @@ class NettyServerTest
 
         var external = new InetSocketAddress( "localhost", 0 );
         var internal = new InetSocketAddress( "localhost", 0 );
-        var loopback = new InetSocketAddress( "localhost", 0 );
-        server = new NettyServer( newThreadFactory(), protocolOnAddress( external ), protocolOnAddress( loopback ), protocolOnAddress( internal ),
+        server = new NettyServer( newThreadFactory(), protocolOnAddress( external ), protocolOnAddress( internal ), null,
                 portRegister, NullLogService.getInstance(), Config.defaults() );
 
         assertNull( portRegister.getLocalAddress( BoltConnector.NAME ) );
+        assertNull( portRegister.getLocalAddress( BoltConnector.INTERNAL_NAME ) );
 
         server.init();
         server.start();
@@ -169,7 +136,6 @@ class NettyServerTest
         server.shutdown();
         assertNull( portRegister.getLocalAddress( BoltConnector.NAME ) );
         assertNull( portRegister.getLocalAddress( BoltConnector.INTERNAL_NAME ) );
-        assertNull( portRegister.getLocalAddress( BoltConnectorInternalSettings.LOOPBACK_NAME ) );
     }
 
     private static NettyServer.ProtocolInitializer protocolOnAddress( SocketAddress address )
