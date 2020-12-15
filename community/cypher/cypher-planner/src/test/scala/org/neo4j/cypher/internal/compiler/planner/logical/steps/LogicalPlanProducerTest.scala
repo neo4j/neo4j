@@ -494,33 +494,15 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
     )
   }
 
-  test("ForPatternExpressionSolver.planApply fail when rhs contains update") {
-    shouldFailAssertion(ctx =>
-      ctx.producer.ForPatternExpressionSolver.planApply(ctx.lhs, ctx.rhsWithUpdate, ctx.context)
-    )
-  }
-
   test("ForPatternExpressionSolver.planApply should retain provided order when rhs contains no update") {
     shouldRetainProvidedOrder(ctx =>
       ctx.producer.ForPatternExpressionSolver.planApply(ctx.lhs, ctx.rhsWithoutUpdate, ctx.context)
     )
   }
 
-  test("ForPatternExpressionSolver.planRollup should fail when rhs contains update") {
-    shouldFailAssertion(ctx =>
-      ctx.producer.ForPatternExpressionSolver.planRollup(ctx.lhs, ctx.rhsWithUpdate, "x", "y", Set(), ctx.context)
-    )
-  }
-
   test("ForPatternExpressionSolver.planRollup should retain provided order when rhs contains no update") {
     shouldRetainProvidedOrder(ctx =>
       ctx.producer.ForPatternExpressionSolver.planRollup(ctx.lhs, ctx.rhsWithoutUpdate, "x", "y", Set(), ctx.context)
-    )
-  }
-
-  test("TriadicSelection should fail when rhs contains update") {
-    shouldFailAssertion(ctx =>
-      ctx.producer.planTriadicSelection(positivePredicate = true, ctx.lhs, "a", "b", "c", ctx.rhsWithUpdate, varFor("x"), ctx.context)
     )
   }
 
@@ -566,12 +548,6 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
     )
   }
 
-  test("InputApply should fail when rhs contains update") {
-    shouldFailAssertion(ctx =>
-      ctx.producer.planInputApply(ctx.lhs, ctx.rhsWithUpdate, Seq("x"), ctx.context)
-    )
-  }
-
   test("InputApply should retain provided order when rhs contains no update") {
     shouldRetainProvidedOrder(ctx =>
       ctx.producer.planInputApply(ctx.lhs, ctx.rhsWithoutUpdate, Seq("x"), ctx.context)
@@ -590,21 +566,9 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
     )
   }
 
-  test("SemiApply should fail when rhs contains update") {
-    shouldFailAssertion(ctx =>
-      ctx.producer.planSemiApply(ctx.lhs, ctx.rhsWithUpdate, varFor("x"), ctx.context)
-    )
-  }
-
   test("SemiApply should retain provided order when rhs contains no update") {
     shouldRetainProvidedOrder(ctx =>
       ctx.producer.planSemiApply(ctx.lhs, ctx.rhsWithoutUpdate, varFor("x"), ctx.context)
-    )
-  }
-
-  test("AntiSemiApply should fail when rhs contains update") {
-    shouldFailAssertion(ctx =>
-      ctx.producer.planAntiSemiApply(ctx.lhs, ctx.rhsWithUpdate, varFor("x"), ctx.context)
     )
   }
 
@@ -614,21 +578,9 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
     )
   }
 
-  test("LetSemiApply should fail when rhs contains update") {
-    shouldFailAssertion(ctx =>
-      ctx.producer.planLetSemiApply(ctx.lhs, ctx.rhsWithUpdate, "x", ctx.context)
-    )
-  }
-
   test("LetSemiApply should retain provided order when rhs contains no update") {
     shouldRetainProvidedOrder(ctx =>
       ctx.producer.planLetSemiApply(ctx.lhs, ctx.rhsWithoutUpdate, "x", ctx.context)
-    )
-  }
-
-  test("LetAntiSemiApply should fail when rhs contains update") {
-    shouldFailAssertion(ctx =>
-      ctx.producer.planLetAntiSemiApply(ctx.lhs, ctx.rhsWithUpdate, "x", ctx.context)
     )
   }
 
@@ -638,21 +590,9 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
     )
   }
 
-  test("SelectOrSemiApply should fail when rhs contains update") {
-    shouldFailAssertion(ctx =>
-      ctx.producer.planSelectOrSemiApply(ctx.lhs, ctx.rhsWithUpdate, varFor("x"), InterestingOrder.empty, ctx.context)
-    )
-  }
-
   test("SelectOrSemiApply should retain provided order when rhs contains no update") {
     shouldRetainProvidedOrder(ctx =>
       ctx.producer.planSelectOrSemiApply(ctx.lhs, ctx.rhsWithoutUpdate, varFor("x"), InterestingOrder.empty, ctx.context)
-    )
-  }
-
-  test("SelectOrAntiSemiApply should fail when rhs contains update") {
-    shouldFailAssertion(ctx =>
-      ctx.producer.planSelectOrAntiSemiApply(ctx.lhs, ctx.rhsWithUpdate, varFor("x"), InterestingOrder.empty, ctx.context)
     )
   }
 
@@ -662,21 +602,9 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
     )
   }
 
-  test("LetSelectOrSemiApply should fail when rhs contains update") {
-    shouldFailAssertion(ctx =>
-      ctx.producer.planLetSelectOrSemiApply(ctx.lhs, ctx.rhsWithUpdate, "x", varFor("x"), InterestingOrder.empty, ctx.context)
-    )
-  }
-
   test("LetSelectOrSemiApply should retain provided order when rhs contains no update") {
     shouldRetainProvidedOrder(ctx =>
       ctx.producer.planLetSelectOrSemiApply(ctx.lhs, ctx.rhsWithoutUpdate, "x", varFor("x"), InterestingOrder.empty, ctx.context)
-    )
-  }
-
-  test("LetSelectOrAntiSemiApply should fail when rhs contains update") {
-    shouldFailAssertion(ctx =>
-      ctx.producer.planLetSelectOrAntiSemiApply(ctx.lhs, ctx.rhsWithUpdate, "x", varFor("x"), InterestingOrder.empty, ctx.context)
     )
   }
 
@@ -686,21 +614,9 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
     )
   }
 
-  test("SemiApplyInHorizon should fail when rhs contains update") {
-    shouldFailAssertion(ctx =>
-      ctx.producer.planSemiApplyInHorizon(ctx.lhs, ctx.rhsWithUpdate, ExistsSubClause(Pattern(Seq(EveryPath(nodePat("x"))))(pos), None)(pos, Set.empty), ctx.context)
-    )
-  }
-
   test("SemiApplyInHorizon should retain provided order when rhs contains no update") {
     shouldRetainProvidedOrder(ctx =>
       ctx.producer.planSemiApplyInHorizon(ctx.lhs, ctx.rhsWithoutUpdate, ExistsSubClause(Pattern(Seq(EveryPath(nodePat("x"))))(pos), None)(pos, Set.empty), ctx.context)
-    )
-  }
-
-  test("AntiSemiApplyInHorizon should fail when rhs contains update") {
-    shouldFailAssertion(ctx =>
-      ctx.producer.planAntiSemiApplyInHorizon(ctx.lhs, ctx.rhsWithUpdate, ExistsSubClause(Pattern(Seq(EveryPath(nodePat("x"))))(pos), None)(pos, Set.empty), ctx.context)
     )
   }
 
@@ -730,12 +646,6 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       val result = getPlan(context, createPlan)
       val lhsOrder = context.planningAttributes.providedOrders.get(result.lhs.get.id)
       context.planningAttributes.providedOrders.get(result.id) should be(lhsOrder)
-    }
-  }
-
-  private def shouldFailAssertion(createPlan: PlanCreationContext => LogicalPlan) = {
-    new given().withLogicalPlanningContext { (_, context) =>
-      intercept[AssertionError](getPlan(context, createPlan))
     }
   }
 
