@@ -575,59 +575,77 @@ object ClauseConverters {
 
   private def addWithToLogicalPlanInput(builder: PlannerQueryBuilder,
                                         clause: With,
-                                        nextClause: Option[Clause]): PlannerQueryBuilder = clause match {
-
-    /*
-    When encountering a WITH that is not an event horizon
-    we simply continue building on the current PlannerQuery. Our ASTRewriters rewrite queries in such a way that
-    a lot of queries have these WITH clauses.
-
-    Handles: ... WITH * [WHERE <predicate>] ...
+                                        nextClause: Option[Clause]): PlannerQueryBuilder = {
+    /**
+     * If we have OPTIONAL MATCHes, we can only keep building the same PlannerQuery, if the next clause is also an OPTIONAL MATCH
+     * and the WITH clause has no WHERE sub-clause.
      */
-    case With(false, ri, None, None, None, where)
-      if
-      // If we have OPTIONAL MATCHes, we can only keep building the same PlannerQuery, if the next clause is also an OPTIONAL MATCH
-      // and the WITH clause has no WHERE sub-clause.
-      (!builder.currentQueryGraph.hasOptionalPatterns || (where.isEmpty && (nextClause match {
+    def optionalMatchesOK(where: Option[Where]): Boolean = {
+      !builder.currentQueryGraph.hasOptionalPatterns || (where.isEmpty && (nextClause match {
         case Some(m:Match) if m.optional => true
         case _ => false
-      })))
-        && !builder.currentQueryGraph.containsUpdates
-        && ri.items.forall(item => !containsAggregate(item.expression))
-        && builder.currentQueryGraph.shortestPathPatterns.isEmpty
-        && ri.items.forall {
-        case item: AliasedReturnItem => item.expression == item.variable
-        case _ => throw new InternalException("This should have been rewritten to an AliasedReturnItem.")
-      } && builder.readOnly =>
-      val selections = asSelections(where)
-      builder.
-        amendQueryGraph(_.addSelections(selections))
-
-    /*
-    When encountering a WITH that is an event horizon, we introduce the horizon and start a new empty QueryGraph.
-
-    Handles all other WITH clauses
+      }))
+    }
+    /**
+     * If there are updates, we need to keep the order between read and write parts correct.
      */
-    case With(distinct, projection, orderBy, skip, limit, where) =>
-      val selections = asSelections(where)
-      val returnItems = asReturnItems(builder.currentQueryGraph, projection)
+    def noUpdates: Boolean = !builder.currentQueryGraph.containsUpdates && builder.readOnly
+    def noShortestPaths: Boolean = builder.currentQueryGraph.shortestPathPatterns.isEmpty
+    /**
+     * If there are projections or aggregations, we have to continue in a new PlannerQuery.
+     */
+    def returnItemsOK(ri: ReturnItems): Boolean = {
+      ri.items.forall {
+        case item: AliasedReturnItem => !containsAggregate(item.expression) && item.expression == item.variable
+        case _ => throw new InternalException("This should have been rewritten to an AliasedReturnItem.")
+      }
+    }
 
-      val queryPagination = QueryPagination().withLimit(limit).withSkip(skip)
 
-      val queryProjection =
-        asQueryProjection(distinct, returnItems).
-          withPagination(queryPagination).
-          withSelection(selections)
+    clause match {
 
-      val requiredOrder = findRequiredOrder(queryProjection, orderBy)
+      /*
+      When encountering a WITH that is not an event horizon
+      we simply continue building on the current PlannerQuery. Our ASTRewriters rewrite queries in such a way that
+      a lot of queries have these WITH clauses.
 
-      builder.
-        withHorizon(queryProjection).
-        withInterestingOrder(requiredOrder).
-        withTail(RegularSinglePlannerQuery(QueryGraph()))
+      Handles: ... WITH * [WHERE <predicate>] ...
+       */
+      case With(false, ri, None, None, None, where)
+        if optionalMatchesOK(where)
+          && noUpdates
+          && returnItemsOK(ri)
+          && noShortestPaths =>
+        val selections = asSelections(where)
+        builder.
+          amendQueryGraph(_.addSelections(selections))
 
-    case _ =>
-      throw new InternalException("AST needs to be rewritten before it can be used for planning. Got: " + clause)
+      /*
+      When encountering a WITH that is an event horizon, we introduce the horizon and start a new empty QueryGraph.
+
+      Handles all other WITH clauses
+       */
+      case With(distinct, projection, orderBy, skip, limit, where) =>
+        val selections = asSelections(where)
+        val returnItems = asReturnItems(builder.currentQueryGraph, projection)
+
+        val queryPagination = QueryPagination().withLimit(limit).withSkip(skip)
+
+        val queryProjection =
+          asQueryProjection(distinct, returnItems).
+            withPagination(queryPagination).
+            withSelection(selections)
+
+        val requiredOrder = findRequiredOrder(queryProjection, orderBy)
+
+        builder.
+          withHorizon(queryProjection).
+          withInterestingOrder(requiredOrder).
+          withTail(RegularSinglePlannerQuery(QueryGraph()))
+
+      case _ =>
+        throw new InternalException("AST needs to be rewritten before it can be used for planning. Got: " + clause)
+    }
   }
 
   private def addUnwindToLogicalPlanInput(builder: PlannerQueryBuilder, clause: Unwind): PlannerQueryBuilder =
