@@ -112,13 +112,6 @@ class StepSequencerTest extends CypherFunSuite {
     an[IllegalArgumentException] should be thrownBy sequencer.orderSteps(steps.toSet)
   }
 
-  test("fails if an invalidated condition is neither introduced nor initial") {
-    val steps = Seq(
-      new TestStep("0", Set(), Set(condB), Set(condA)),
-    )
-    an[IllegalArgumentException] should be thrownBy sequencer.orderSteps(steps.toSet)
-  }
-
   test("fails if there is a step that introduces an initial condition") {
     val steps = Seq(
       new TestStep("0", Set(), Set(condB), Set()),

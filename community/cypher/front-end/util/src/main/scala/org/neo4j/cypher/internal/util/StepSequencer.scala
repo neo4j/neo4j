@@ -85,8 +85,8 @@ case class StepSequencer[S <: Step, ACC](stepAccumulator: StepAccumulator[S, ACC
     steps.foreach { step =>
       // (a)-->(b) means a invalidates b's work
       step.invalidatedConditions.foreach { condition =>
-        introducingSteps.getOrElse(condition, throw new IllegalArgumentException(s"There is no step introducing $condition. That is not allowed.")).
-          foreach(graphWithDisabling.connect(step, _))
+        introducingSteps.get(condition)
+          .foreach(_.foreach(graphWithDisabling.connect(step, _)))
       }
     }
     StepSequencer.topologicalSort(graphWithDisabling, None, (_: S, _: mutable.Set[S]) => ())
@@ -111,8 +111,12 @@ case class StepSequencer[S <: Step, ACC](stepAccumulator: StepAccumulator[S, ACC
       }
     }
 
+    val introducingStepsNotByInitial = introducingSteps.collect {
+      case (c, Right(step)) => c -> step
+    }
+
     // Sort steps topologically
-    val AccumulatedSteps(sortedSteps, postConditions) = StepSequencer.sort(graph, introducingSteps, steps.toSeq, initialConditions)
+    val AccumulatedSteps(sortedSteps, postConditions) = StepSequencer.sort(graph, introducingStepsNotByInitial, steps.toSeq, initialConditions)
 
     // Put steps together
     AccumulatedSteps(sortedSteps.foldLeft(stepAccumulator.empty)(stepAccumulator.addNext), postConditions)
@@ -262,13 +266,13 @@ object StepSequencer {
    * @param initialConditions all initially holding conditions
    */
   private def sort[S <: Step](graph: MutableDirectedGraph[S],
-                              introducingSteps: Map[Condition, Either[ByInitialCondition.type, S]],
+                              introducingSteps: Map[Condition, S],
                               allSteps: Seq[S],
                               initialConditions: Set[Condition]): AccumulatedSteps[Seq[S]] = {
     val allPostConditions: Set[Condition] = allSteps.flatMap(_.postConditions)(collection.breakOut)
 
     val numberOfTimesEachStepIsInvalidated = allSteps
-      .flatMap(_.invalidatedConditions.collect { case s if introducingSteps(s).isRight => introducingSteps(s).right.get })
+      .flatMap(_.invalidatedConditions.collect { case s if introducingSteps.contains(s) => introducingSteps(s) })
       .groupBy(identity)
       .mapValues(_.size)
       .withDefaultValue(0)
@@ -286,7 +290,7 @@ object StepSequencer {
         // We need to reinsert parts of the graph for the work that n is undoing.
         val cannotStartFrom = mutable.Set.empty[S]
         val stepsThatHaveTheirWorkUndone = nextStep.invalidatedConditions.collect {
-          case s if introducingSteps(s).isRight => introducingSteps(s).right.get
+          case s if introducingSteps.contains(s) => introducingSteps(s)
         }
         for (r <- stepsThatHaveTheirWorkUndone) {
           // Go through the original outgoing edges of r and restore them
