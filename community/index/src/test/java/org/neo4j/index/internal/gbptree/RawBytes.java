@@ -24,18 +24,18 @@ import java.util.StringJoiner;
 
 import static org.apache.commons.lang3.ArrayUtils.EMPTY_BYTE_ARRAY;
 
-class RawBytes
+public class RawBytes
 {
     static RawBytes EMPTY_BYTES = new RawBytes( EMPTY_BYTE_ARRAY );
 
     byte[] bytes;
 
-    RawBytes()
+    public RawBytes()
     {
         this( EMPTY_BYTE_ARRAY );
     }
 
-    RawBytes( byte[] byteArray )
+    public RawBytes( byte[] byteArray )
     {
         bytes = byteArray;
     }

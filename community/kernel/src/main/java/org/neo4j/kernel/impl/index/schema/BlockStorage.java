@@ -51,7 +51,7 @@ import static org.neo4j.kernel.impl.index.schema.BlockStorage.Cancellation.NOT_C
  * 2. MERGE: By calling {@link #merge(int, Cancellation)} (after {@link #doneAdding()} has been called) the multiple Blocks are merge joined into a new file
  * resulting in larger blocks of sorted entries. Those larger blocks are then merge joined back to the original file. Merging continues in this ping pong
  * fashion until there is only a single large block in the resulting file. The entries are now ready to be read in sorted order,
- * call {@link #reader()}.
+ * call {@link #reader(boolean)}.
  */
 class BlockStorage<KEY, VALUE> implements Closeable
 {
@@ -175,7 +175,7 @@ class BlockStorage<KEY, VALUE> implements Closeable
             {
                 // Perform one complete merge iteration, merging all blocks from source into target.
                 // After this step, target will contain fewer blocks than source, but may need another merge iteration.
-                try ( BlockReader<KEY,VALUE> reader = reader( sourceFile );
+                try ( BlockReader<KEY,VALUE> reader = reader( sourceFile, false );
                       StoreChannel targetChannel = fs.write( targetFile ) )
                 {
                     long blocksMergedSoFar = 0;
@@ -364,14 +364,14 @@ class BlockStorage<KEY, VALUE> implements Closeable
         fs.deleteFile( blockFile );
     }
 
-    BlockReader<KEY,VALUE> reader() throws IOException
+    BlockReader<KEY,VALUE> reader( boolean produceNewKeyAndValueInstances ) throws IOException
     {
-        return reader( blockFile );
+        return reader( blockFile, produceNewKeyAndValueInstances );
     }
 
-    private BlockReader<KEY,VALUE> reader( Path file ) throws IOException
+    private BlockReader<KEY,VALUE> reader( Path file, boolean produceNewKeyAndValueInstances ) throws IOException
     {
-        return new BlockReader<>( fs, file, layout );
+        return new BlockReader<>( fs, file, layout, produceNewKeyAndValueInstances );
     }
 
     public interface Monitor

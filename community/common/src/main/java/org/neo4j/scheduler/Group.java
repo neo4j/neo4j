@@ -53,7 +53,14 @@ public enum Group
     TRANSACTION_TIMEOUT_MONITOR( "TransactionTimeoutMonitor" ),
     /** Background index population. */
     INDEX_POPULATION( "IndexPopulationMain" ),
-    /** Background index population work. */
+    /**
+     * Background index population work.
+     * Threads in this group are used both for reading from store and generating index update for index population
+     * as well as other tasks for completing an index after the store scan.
+     * As it stands this group should not have a limit on its own because of how tasks are scheduled during population
+     * and is instead effectively limited by number of ongoing index populations times number of workers per index population,
+     * i.e. settings unsupported.dbms.index_population.parallelism * unsupported.dbms.index_population.workers
+     */
     INDEX_POPULATION_WORK( "IndexPopulationWork", ExecutorServiceFactory.cached() ),
     /** Background index sampling */
     INDEX_SAMPLING( "IndexSampling" ),

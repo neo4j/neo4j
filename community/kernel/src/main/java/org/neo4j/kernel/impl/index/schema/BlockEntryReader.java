@@ -34,19 +34,25 @@ public class BlockEntryReader<KEY,VALUE> implements BlockEntryCursor<KEY,VALUE>
     private final long blockSize;
     private final long entryCount;
     private final PageCursor pageCursor;
-    private final KEY key;
-    private final VALUE value;
+    private final boolean produceNewKeyAndValueInstances;
     private final Layout<KEY,VALUE> layout;
+    private KEY key;
+    private VALUE value;
     private long readEntries;
 
-    BlockEntryReader( PageCursor pageCursor, Layout<KEY,VALUE> layout )
+    /**
+     * @param produceNewKeyAndValueInstances whether or not to let each {@link #next()} instantiate new KEY and VALUE instances.
+     * If {@code false} the single KEY and VALUE instances will be reused and its data overwritten with each invokation to {@link #next()}.
+     */
+    BlockEntryReader( PageCursor pageCursor, Layout<KEY,VALUE> layout, boolean produceNewKeyAndValueInstances )
     {
         this.pageCursor = pageCursor;
         this.blockSize = pageCursor.getLong();
         this.entryCount = pageCursor.getLong();
         this.layout = layout;
-        this.key = layout.newKey();
-        this.value = layout.newValue();
+        this.key = produceNewKeyAndValueInstances ? null : layout.newKey();
+        this.value = produceNewKeyAndValueInstances ? null : layout.newValue();
+        this.produceNewKeyAndValueInstances = produceNewKeyAndValueInstances;
     }
 
     @Override
@@ -55,6 +61,11 @@ public class BlockEntryReader<KEY,VALUE> implements BlockEntryCursor<KEY,VALUE>
         if ( readEntries >= entryCount )
         {
             return false;
+        }
+        if ( produceNewKeyAndValueInstances )
+        {
+            key = layout.newKey();
+            value = layout.newValue();
         }
         BlockEntry.read( pageCursor, layout, key, value );
         readEntries++;

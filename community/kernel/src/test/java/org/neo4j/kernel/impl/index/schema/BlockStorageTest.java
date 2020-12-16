@@ -421,7 +421,7 @@ class BlockStorageTest
             Iterable<List<BlockEntry<MutableLong,MutableLong>>> expectedBlocks )
             throws IOException
     {
-        try ( BlockReader<MutableLong,MutableLong> reader = storage.reader() )
+        try ( BlockReader<MutableLong,MutableLong> reader = storage.reader( false ) )
         {
             for ( List<BlockEntry<MutableLong,MutableLong>> expectedBlock : expectedBlocks )
             {

@@ -260,7 +260,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
                   var indexKeyStorage = new IndexKeyStorage<>( fileSystem, duplicatesFile, allocator, readBufferSize, layout, memoryTracker ) )
             {
                 RecordingConflictDetector<KEY,VALUE> recordingConflictDetector = new RecordingConflictDetector<>( !descriptor.isUnique(), indexKeyStorage );
-                writeScanUpdatesToTree( recordingConflictDetector, allocator, readBufferSize, cursorTracer );
+                writeScanUpdatesToTree( populationWorkScheduler, recordingConflictDetector, allocator, readBufferSize, cursorTracer );
 
                 // Apply the external updates
                 phaseTracker.enterPhase( PhaseTracker.Phase.APPLY_EXTERNAL );
@@ -306,7 +306,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
         }
     }
 
-    private void mergeScanUpdates(  PopulationWorkScheduler populationWorkScheduler ) throws InterruptedException, ExecutionException, IOException
+    private void mergeScanUpdates( PopulationWorkScheduler populationWorkScheduler ) throws InterruptedException, ExecutionException, IOException
     {
         List<JobHandle<?>> mergeFutures = new ArrayList<>();
         for ( ThreadLocalBlockStorage part : allScanUpdates )
@@ -396,35 +396,33 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
         }
     }
 
-    private void writeScanUpdatesToTree( RecordingConflictDetector<KEY,VALUE> recordingConflictDetector, Allocator allocator, int bufferSize,
-            PageCursorTracer cursorTracer ) throws IOException, IndexEntryConflictException
+    private void writeScanUpdatesToTree( PopulationWorkScheduler populationWorkScheduler, RecordingConflictDetector<KEY,VALUE> recordingConflictDetector,
+            Allocator allocator, int bufferSize, PageCursorTracer cursorTracer ) throws IOException, IndexEntryConflictException
     {
-        try ( MergingBlockEntryReader<KEY,VALUE> allEntries = new MergingBlockEntryReader<>( layout );
-              var singleBlockScopedBuffer = allocator.allocate( (int) kibiBytes( 8 ), memoryTracker );
-              var readBuffers = new CompositeBuffer() )
+        if ( allScanUpdates.isEmpty() )
         {
+            return;
+        }
+
+        // Merge the (sorted) scan updates from all the different threads in pairs until only one stream remain,
+        // and direct that stream towards the tree writer (which itself is only single threaded)
+        try ( var readBuffers = new CompositeBuffer();
+              var singleBlockScopedBuffer = allocator.allocate( (int) kibiBytes( 8 ), memoryTracker ) )
+        {
+            // Get the initial list of parts
+            List<BlockEntryCursor<KEY,VALUE>> parts = new ArrayList<>();
             for ( ThreadLocalBlockStorage part : allScanUpdates )
             {
                 var readScopedBuffer = allocator.allocate( bufferSize, memoryTracker );
                 readBuffers.addBuffer( readScopedBuffer );
-                try ( BlockReader<KEY,VALUE> reader = part.blockStorage.reader() )
-                {
-                    BlockEntryReader<KEY,VALUE> singleMergedBlock = reader.nextBlock( readScopedBuffer );
-                    if ( singleMergedBlock != null )
-                    {
-                        allEntries.addSource( singleMergedBlock );
-                        // Pass in some sort of ByteBuffer here. The point is that there should be no more data to read,
-                        // if there is then it's due to a bug in the code and must be fixed.
-                        if ( reader.nextBlock( singleBlockScopedBuffer ) != null )
-                        {
-                            throw new IllegalStateException( "Final BlockStorage had multiple blocks" );
-                        }
-                    }
-                }
+                var reader = part.blockStorage.reader( true );
+                parts.add( reader.nextBlock( readScopedBuffer ) );
+                Preconditions.checkState( reader.nextBlock( singleBlockScopedBuffer ) == null, "Final BlockStorage had multiple blocks" );
             }
 
-            int asMuchAsPossibleToTheLeft = 1;
-            try ( Writer<KEY,VALUE> writer = tree.writer( asMuchAsPossibleToTheLeft, cursorTracer ) )
+            try ( var merger = new PartMerger<>( populationWorkScheduler, parts, layout, cancellation, PartMerger.DEFAULT_BATCH_SIZE );
+                  var allEntries = merger.startMerge();
+                  var writer = tree.writer( 1, cursorTracer ) )
             {
                 while ( allEntries.next() && !cancellation.cancelled() )
                 {

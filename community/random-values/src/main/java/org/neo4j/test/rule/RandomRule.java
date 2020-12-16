@@ -128,9 +128,10 @@ public class RandomRule implements TestRule
     // Methods from Random
     // ============================
 
-    public void nextBytes( byte[] bytes )
+    public byte[] nextBytes( byte[] bytes )
     {
         random.nextBytes( bytes );
+        return bytes;
     }
 
     public boolean nextBoolean()

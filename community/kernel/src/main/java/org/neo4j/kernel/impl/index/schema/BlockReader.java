@@ -41,12 +41,14 @@ public class BlockReader<KEY,VALUE> implements Closeable
     private final FileSystemAbstraction fs;
     private final Path path;
     private final Layout<KEY,VALUE> layout;
+    private final boolean produceNewKeyAndValueInstances;
 
-    BlockReader( FileSystemAbstraction fs, Path path, Layout<KEY,VALUE> layout ) throws IOException
+    BlockReader( FileSystemAbstraction fs, Path path, Layout<KEY,VALUE> layout, boolean produceNewKeyAndValueInstances ) throws IOException
     {
         this.fs = fs;
         this.path = path;
         this.layout = layout;
+        this.produceNewKeyAndValueInstances = produceNewKeyAndValueInstances;
         this.channel = fs.read( path );
     }
 
@@ -60,7 +62,7 @@ public class BlockReader<KEY,VALUE> implements Closeable
         StoreChannel blockChannel = fs.read( path );
         blockChannel.position( position );
         PageCursor pageCursor = new ReadableChannelPageCursor( new ReadAheadChannel<>( blockChannel, blockBuffer.getBuffer() ) );
-        BlockEntryReader<KEY,VALUE> blockEntryReader = new BlockEntryReader<>( pageCursor, layout );
+        BlockEntryReader<KEY,VALUE> blockEntryReader = new BlockEntryReader<>( pageCursor, layout, produceNewKeyAndValueInstances );
         long blockSize = blockEntryReader.blockSize();
         channel.position( position + blockSize );
         return blockEntryReader;

@@ -55,7 +55,7 @@ public class SimpleByteArrayLayout extends TestLayout<RawBytes,RawBytes>
      * This should be default constructor unless you want to exactly control entry size from outside
      * or you want entries to vary vastly in size.
      */
-    SimpleByteArrayLayout()
+    public SimpleByteArrayLayout()
     {
         this( true, DEFAULT_LARGE_ENTRY_SIZE, NO_LARGE_ENTRIES_MODULO );
     }
@@ -67,7 +67,7 @@ public class SimpleByteArrayLayout extends TestLayout<RawBytes,RawBytes>
      *
      * @param useFirstLongAsSeed False if keys and values should be compared byte by byte.
      */
-    SimpleByteArrayLayout( boolean useFirstLongAsSeed )
+    public SimpleByteArrayLayout( boolean useFirstLongAsSeed )
     {
         this( useFirstLongAsSeed, DEFAULT_LARGE_ENTRY_SIZE, NO_LARGE_ENTRIES_MODULO );
     }
@@ -86,7 +86,7 @@ public class SimpleByteArrayLayout extends TestLayout<RawBytes,RawBytes>
      * @param largeEntryModulo Control to what degree large values should be used,
      * (seed % largeEntryModulo == 0) will generate a large value. 0=never use large values.
      */
-    SimpleByteArrayLayout( int largeEntriesSize, long largeEntryModulo )
+    public SimpleByteArrayLayout( int largeEntriesSize, long largeEntryModulo )
     {
         this( true, largeEntriesSize, largeEntryModulo );
     }

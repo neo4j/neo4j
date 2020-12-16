@@ -33,4 +33,35 @@ public interface BlockEntryCursor<KEY,VALUE> extends Closeable
     KEY key();
 
     VALUE value();
+
+    BlockEntryCursor EMPTY = new BlockEntryCursor()
+    {
+        @Override
+        public boolean next()
+        {
+            return false;
+        }
+
+        @Override
+        public Object key()
+        {
+            throw new IllegalStateException();
+        }
+
+        @Override
+        public Object value()
+        {
+            throw new IllegalStateException();
+        }
+
+        @Override
+        public void close()
+        {
+        }
+    };
+
+    static <KEY,VALUE> BlockEntryCursor<KEY,VALUE> empty()
+    {
+        return EMPTY;
+    }
 }
