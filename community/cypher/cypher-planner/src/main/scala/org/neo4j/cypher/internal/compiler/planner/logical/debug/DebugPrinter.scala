@@ -35,6 +35,7 @@ import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.Compilat
 import org.neo4j.cypher.internal.frontend.phases.Phase
 import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.LogicalPlanToPlanBuilderString
 import org.neo4j.cypher.internal.logical.plans.ProduceResult
 import org.neo4j.cypher.internal.logical.plans.UnwindCollection
 import org.neo4j.cypher.internal.util.InputPosition
@@ -55,17 +56,19 @@ object DebugPrinter extends Phase[PlannerContext, LogicalPlanState, LogicalPlanS
       from.semantics().toString
     else if (context.debugOptions.logicalPlanEnabled)
       from.logicalPlan.toString
+    else if (context.debugOptions.logicalPlanBuilderEnabled)
+      LogicalPlanToPlanBuilderString(from.logicalPlan)
     else
-      """Output options are: queryGraph, ast, semanticstate, logicalplan"""
+      """Output options are: queryGraph, ast, semanticstate, logicalplan, logicalplanbuilder"""
 
     // We need to do this, otherwise the produced graph statistics won't work for creating an executable plan
     context.planContext.statistics.nodesAllCardinality()
 
-    val (plan, newStatement) = stringToLogicalPlan(string)
-    from.copy(maybePeriodicCommit = Some(None), maybeLogicalPlan = Some(plan), maybeStatement = Some(newStatement))
+    val (plan, newStatement, newReturnColumnts) = stringToLogicalPlan(string)
+    from.copy(maybePeriodicCommit = Some(None), maybeLogicalPlan = Some(plan), maybeStatement = Some(newStatement), maybeReturnColumns = Some(newReturnColumnts))
   }
 
-  private def stringToLogicalPlan(string: String): (LogicalPlan, Statement) = {
+  private def stringToLogicalPlan(string: String): (LogicalPlan, Statement, Seq[String]) = {
     implicit val idGen = new SequentialIdGen()
     val pos = InputPosition(0, 0, 0)
     val stringValues = string.split(System.lineSeparator()).map(s => StringLiteral(s)(pos))
@@ -77,8 +80,9 @@ object DebugPrinter extends Phase[PlannerContext, LogicalPlanState, LogicalPlanS
     val returnItem = AliasedReturnItem(variable, variable)(pos)
     val returnClause = Return(distinct = false, ReturnItems(includeExisting = false, Seq(returnItem))(pos), None, None, None, Set.empty)(pos)
     val newStatement = Query(None, SingleQuery(Seq(returnClause))(pos))(pos)
+    val newReturnColumns = Seq("col")
 
-    (logicalPlan, newStatement)
+    (logicalPlan, newStatement, newReturnColumns)
   }
 
   override def postConditions: Set[StepSequencer.Condition] = Set.empty

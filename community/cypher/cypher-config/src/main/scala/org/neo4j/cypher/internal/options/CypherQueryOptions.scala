@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.options
 import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.cypher.internal.config.CypherConfiguration
-import org.neo4j.cypher.internal.options.CypherExecutionMode.profile.modeName
 import org.neo4j.cypher.internal.options.CypherQueryOptions.ILLEGAL_EXPRESSION_ENGINE_RUNTIME_COMBINATIONS
 import org.neo4j.cypher.internal.options.CypherQueryOptions.ILLEGAL_INTERPRETED_PIPES_FALLBACK_RUNTIME_COMBINATIONS
 import org.neo4j.cypher.internal.options.CypherQueryOptions.ILLEGAL_OPERATOR_ENGINE_RUNTIME_COMBINATIONS
@@ -353,6 +352,7 @@ case object CypherDebugOption extends CypherOptionCompanion[CypherDebugOption](
   case object logicalPlan extends CypherDebugOption("logicalplan")
   case object fabricLogPlan extends CypherDebugOption("fabriclogplan")
   case object fabricLogRecords extends CypherDebugOption("fabriclogrecords")
+  case object logicalPlanBuilder extends CypherDebugOption("logicalplanbuilder")
 
   def values: Set[CypherDebugOption] = Set(
     tostring,
@@ -368,7 +368,8 @@ case object CypherDebugOption extends CypherOptionCompanion[CypherDebugOption](
     semanticState,
     logicalPlan,
     fabricLogPlan,
-    fabricLogRecords
+    fabricLogRecords,
+    logicalPlanBuilder
   )
 
   implicit val hasDefault: OptionDefault[CypherDebugOption] = OptionDefault.create(default)
@@ -412,4 +413,5 @@ case class CypherDebugOptions(enabledOptions: Set[CypherDebugOption]) {
   val logicalPlanEnabled: Boolean = isEnabled(CypherDebugOption.logicalPlan)
   val fabricLogPlanEnabled: Boolean = isEnabled(CypherDebugOption.fabricLogPlan)
   val fabricLogRecordsEnabled: Boolean = isEnabled(CypherDebugOption.fabricLogRecords)
+  val logicalPlanBuilderEnabled: Boolean = isEnabled(CypherDebugOption.logicalPlanBuilder)
 }
