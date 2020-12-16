@@ -37,6 +37,7 @@ import org.neo4j.cypher.internal.logical.plans.IndexOrderDescending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlanToPlanBuilderString
+import org.neo4j.cypher.internal.logical.plans.Prober
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.TestName
 
@@ -592,6 +593,13 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
     new TestPlanBuilder()
       .produceResults("x", "y")
       .nonFuseable()
+      .argument()
+      .build())
+
+  testPlan("prober",
+    new TestPlanBuilder()
+      .produceResults("x", "y")
+      .prober(Prober.NoopProbe)
       .argument()
       .build())
 

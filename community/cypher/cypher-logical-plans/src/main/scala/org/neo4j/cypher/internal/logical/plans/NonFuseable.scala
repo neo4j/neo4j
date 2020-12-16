@@ -56,5 +56,9 @@ object Prober {
      */
     def onRow(row: AnyRef): Unit
   }
+
+  object NoopProbe extends Probe {
+    override def onRow(row: AnyRef): Unit = {}
+  }
 }
 

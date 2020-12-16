@@ -321,6 +321,7 @@ object LogicalPlanToPlanBuilderString {
       case AssertSameNode(idName, _, _) =>
         wrapInQuotations(idName)
       case LockNodes(_, nodesToLock) => wrapInQuotationsAndMkString(nodesToLock)
+      case Prober(_, _) => "Prober.NoopProbe" // We do not preserve the object reference through the string transformation
     }
     val plansWithContent2: PartialFunction[LogicalPlan, String] = {
       case MultiNodeIndexSeek(indexSeekLeafPlans: Seq[IndexSeekLeafPlan]) =>
