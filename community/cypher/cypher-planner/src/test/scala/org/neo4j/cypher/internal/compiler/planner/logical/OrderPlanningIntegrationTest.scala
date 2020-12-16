@@ -1677,4 +1677,29 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
 
     plan shouldEqual expectedPlan
   }
+
+  test("should consider interesting order for query part even when there is a required order from tail") {
+    val query =
+      """MATCH (n:N)
+        |WHERE exists(n.prop)
+        |WITH DISTINCT n.prop AS prop, n.otherProp AS other
+        |RETURN prop, other
+        |ORDER BY other""".stripMargin
+
+    val plan = plannerBuilder()
+      .setAllNodesCardinality(10000)
+      .setLabelCardinality("N", 1000)
+      .addIndex("N", Seq("prop"), existsSelectivity = 0.9, uniqueSelectivity = 0.9, withValues = true, providesOrder = IndexOrderCapability.ASC)
+      .build()
+      .plan(query)
+      .stripProduceResults
+
+    val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
+      .sort(Seq(Ascending("other")))
+      .orderedDistinct(Seq("cache[n.prop]"), "cache[n.prop] AS prop", "n.otherProp AS other")
+      .nodeIndexOperator("n:N(prop)", getValue = GetValue, indexOrder = IndexOrderAscending)
+      .build()
+
+    plan shouldEqual expectedPlan
+  }
 }

@@ -198,7 +198,12 @@ case object planMatch extends MatchPlanner {
     }
     else {
       val orderToReport = query.interestingOrder
-      val orderToSolve = query.findFirstRequiredOrder getOrElse orderToReport
+      val orderToSolve = query.findFirstRequiredOrder.fold(orderToReport) { order =>
+        // merge interesting order candidates
+        val existing = order.interestingOrderCandidates.toSet
+        val extraCandidates = orderToReport.interestingOrderCandidates.filterNot(existing.contains)
+        order.copy(interestingOrderCandidates = order.interestingOrderCandidates ++ extraCandidates)
+      }
       val mutatingDependencies = query.queryGraph.mutatingPatterns.flatMap(_.dependencies)
       if (hasDependencies(orderToReport, mutatingDependencies) || hasDependencies(orderToSolve, mutatingDependencies))
         InterestingOrderConfig(orderToReport.asInteresting)
