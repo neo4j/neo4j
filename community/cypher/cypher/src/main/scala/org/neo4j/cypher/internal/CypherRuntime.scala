@@ -134,6 +134,14 @@ trait RuntimeContextManager[+CONTEXT <: RuntimeContext] {
    */
   @throws[RuntimeResourceLeakException]
   def assertAllReleased(): Unit
+
+  /**
+   * Wait until all query workers have completed ongoing work according to current demand and settled down in an idle state
+   *
+   * @param timeoutMs Timeout in ms
+   * @return true if all workers settled in an idle state, or false if the timeout occurred
+   */
+  def waitForWorkersToIdle(timeoutMs: Int): Boolean
 }
 
 /**

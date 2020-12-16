@@ -54,4 +54,6 @@ case class CommunityRuntimeContextManager(log: Log, config: CypherRuntimeConfigu
   // As we rely completely on transaction bound resources in community,
   // there is no need for further assertions here.
   override def assertAllReleased(): Unit = {}
+
+  override def waitForWorkersToIdle(timeoutMs: Int): Boolean = true
 }

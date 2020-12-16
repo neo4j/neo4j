@@ -328,6 +328,10 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
     if (readOnly) txBoundQueryContext
     else new UpdateCountingQueryContext(txBoundQueryContext)
   }
+
+  def waitForWorkersToIdle(timeoutMs: Int): Unit = {
+    runtimeContextManager.waitForWorkersToIdle(timeoutMs)
+  }
 }
 
 //=============================================================================
