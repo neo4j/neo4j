@@ -185,16 +185,13 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
     plans - p1 - p2 + PlannedComponent(bestQG, bestPlan)
   }
 
-  private def theSortedComponent(components: Set[PlannedComponent]): Option[PlannedComponent] = {
+  private def theSortedComponent(components: Set[PlannedComponent], kit: QueryPlannerKit): Option[PlannedComponent] = {
     val allSorted = components.collect {
       case pc@PlannedComponent(_, BestResults(_, Some(_))) => pc
     }
 
-    if (allSorted.size > 1) {
-      throw new IllegalStateException(s"There can be no more than 1 sorted component. Got: $components")
-    }
-
-    allSorted.headOption
+    // we might get multiple sorted components when there is an order by literal for example
+    kit.pickBest[PlannedComponent](_.plan.result, allSorted, "best sorted component")
   }
 
   /**
@@ -208,7 +205,7 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
                                                context: LogicalPlanningContext,
                                                kit: QueryPlannerKit,
                                                considerSelections: Boolean): PlannedComponent = {
-    val maybeSortedComponent = theSortedComponent(plans)
+    val maybeSortedComponent = theSortedComponent(plans, kit)
 
     def sortCriteria(c: Component): (Cost, Cardinality) = {
       val cardinality = context.planningAttributes.cardinalities(c.plan.id)
