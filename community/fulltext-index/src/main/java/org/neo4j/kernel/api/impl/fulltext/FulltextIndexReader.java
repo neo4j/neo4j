@@ -173,6 +173,12 @@ public class FulltextIndexReader implements IndexReader
         return false;
     }
 
+    /**
+     * When matching entities in the fulltext index there are some special cases that makes it hard to check that entities
+     * actually have the expected property values. To match we use the entityId and only take entries that doesn't contain any
+     * unexpected properties. But we don't check that expected properties are present, see
+     * {@link LuceneFulltextDocumentStructure#newCountEntityEntriesQuery} for more details.
+     */
     @Override
     public long countIndexedEntities( long entityId, PageCursorTracer cursorTracer, int[] propertyKeyIds, Value... propertyValues )
     {

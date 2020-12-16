@@ -89,19 +89,18 @@ public class LuceneFulltextDocumentStructure
         {
             String propertyKey = propertyKeys[i];
             Value value = propertyValues[i];
-            if ( value.valueGroup() == ValueGroup.TEXT )
-            {
-                Query valueQuery = new ConstantScoreQuery(
-                        new TermQuery( new Term( propertyKey, value.asObject().toString() ) ) );
-                builder.add( valueQuery, BooleanClause.Occur.SHOULD );
-            }
-            else if ( value.valueGroup() == ValueGroup.NO_VALUE )
+            // Only match on entries that doesn't contain fields we don't expect
+            if ( value.valueGroup() != ValueGroup.TEXT )
             {
                 Query valueQuery = new ConstantScoreQuery(
                         new WildcardQuery( new Term( propertyKey, "*" ) ) );
                 builder.add( valueQuery, BooleanClause.Occur.MUST_NOT );
             }
-
+            // Why don't we match on the TEXT values that actually should be in the index?
+            // 1. The analyzer used for our index can have split the property value into several terms so we cannot
+            //    check that the exact property value exist in the index.
+            // 2. There are some characters that analyzers will skip completely and if we have a property value with
+            //    only such characters there will be no reference to the field at all, so we cannot use a wildcard query either.
         }
         return builder.build();
     }
