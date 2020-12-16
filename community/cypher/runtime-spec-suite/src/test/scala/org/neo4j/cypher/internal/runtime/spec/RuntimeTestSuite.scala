@@ -104,6 +104,7 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
   val ANY_VALUE_ORDERING: Ordering[AnyValue] = Ordering.comparatorToOrdering(AnyValues.COMPARATOR)
   val logProvider: AssertableLogProvider = new AssertableLogProvider()
   val debugOptions: CypherDebugOptions = CypherDebugOptions.default
+  val isParallel = runtime.name.toLowerCase == "parallel"
 
   override protected def beforeEach(): Unit = {
     DebugLog.beginTime()

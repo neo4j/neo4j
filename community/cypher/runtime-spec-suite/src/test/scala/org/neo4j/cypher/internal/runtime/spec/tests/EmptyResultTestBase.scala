@@ -245,7 +245,7 @@ abstract class EmptyResultTestBase[CONTEXT <: RuntimeContext](
 
     val result = execute(logicalQuery, runtime, inputStream, TestSubscriber.concurrent)
 
-    result.request(Long.MaxValue)
+    result.request(1)
     result.await() shouldBe false
 
     inputStream.hasMore shouldBe false
@@ -263,7 +263,7 @@ abstract class EmptyResultTestBase[CONTEXT <: RuntimeContext](
 
     val result = execute(logicalQuery, runtime, inputStream, TestSubscriber.concurrent)
 
-    result.request(Long.MaxValue)
+    result.request(1)
     result.await() shouldBe false
 
     inputStream.hasMore shouldBe false

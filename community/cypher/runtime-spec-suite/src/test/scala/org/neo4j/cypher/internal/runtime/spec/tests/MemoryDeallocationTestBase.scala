@@ -140,8 +140,6 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should deallocate memory between eager") {
-    assume(runtimeUsed != Pipelined) // Pipelined does not yet support eager
-
     // given
     val logicalQuery1 = new LogicalQueryBuilder(this)
       .produceResults("x")
@@ -161,7 +159,7 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
     val nRows = sizeHint
 
     // then
-    compareMemoryUsageWithInputRows(logicalQuery1, logicalQuery2, nRows)
+    compareMemoryUsageWithInputRows(logicalQuery1, logicalQuery2, nRows, 0.01) // Pipelined is not exact
   }
 
   test("should deallocate memory between sort") {
