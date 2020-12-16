@@ -55,10 +55,10 @@ class FusionIndexReader extends FusionIndexBase<IndexReader> implements IndexRea
     }
 
     @Override
-    public long countIndexedNodes( long nodeId, PageCursorTracer cursorTracer, int[] propertyKeyIds, Value... propertyValues )
+    public long countIndexedEntities( long entityId, PageCursorTracer cursorTracer, int[] propertyKeyIds, Value... propertyValues )
     {
         final IndexReader indexReader = instanceSelector.select( slotSelector.selectSlot( propertyValues, CATEGORY_OF ) );
-        return indexReader.countIndexedNodes( nodeId, cursorTracer, propertyKeyIds, propertyValues );
+        return indexReader.countIndexedEntities( entityId, cursorTracer, propertyKeyIds, propertyValues );
     }
 
     @Override

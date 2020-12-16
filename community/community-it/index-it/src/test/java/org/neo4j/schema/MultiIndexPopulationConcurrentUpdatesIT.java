@@ -184,13 +184,13 @@ public class MultiIndexPopulationConcurrentUpdatesIT
             Integer colorLabelId = labelsNameIdMap.get( COLOR_LABEL );
             try ( IndexReader indexReader = getIndexReader( propertyId, countryLabelId ) )
             {
-                assertThat( indexReader.countIndexedNodes( 0, NULL, new int[]{propertyId}, Values.of( "Sweden" ) ) )
+                assertThat( indexReader.countIndexedEntities( 0, NULL, new int[]{propertyId}, Values.of( "Sweden" ) ) )
                         .as( "Should be removed by concurrent remove." ).isEqualTo( 0 );
             }
 
             try ( IndexReader indexReader = getIndexReader( propertyId, colorLabelId ) )
             {
-                assertThat( indexReader.countIndexedNodes( 3, NULL, new int[]{propertyId}, Values.of( "green" ) ) )
+                assertThat( indexReader.countIndexedEntities( 3, NULL, new int[]{propertyId}, Values.of( "green" ) ) )
                         .as( "Should be removed by concurrent remove." ).isEqualTo( 0 );
             }
         }
@@ -215,13 +215,13 @@ public class MultiIndexPopulationConcurrentUpdatesIT
             Integer carLabelId = labelsNameIdMap.get( CAR_LABEL );
             try ( IndexReader indexReader = getIndexReader( propertyId, countryLabelId ) )
             {
-                assertThat( indexReader.countIndexedNodes( otherNodes[0].getId(), NULL, new int[]{propertyId}, Values.of( "Denmark" ) ) )
+                assertThat( indexReader.countIndexedEntities( otherNodes[0].getId(), NULL, new int[]{propertyId}, Values.of( "Denmark" ) ) )
                         .as( "Should be added by concurrent add." ).isEqualTo( 1 );
             }
 
             try ( IndexReader indexReader = getIndexReader( propertyId, carLabelId ) )
             {
-                assertThat( indexReader.countIndexedNodes( otherNodes[1].getId(), NULL, new int[]{propertyId}, Values.of( "BMW" ) ) )
+                assertThat( indexReader.countIndexedEntities( otherNodes[1].getId(), NULL, new int[]{propertyId}, Values.of( "BMW" ) ) )
                         .as( "Should be added by concurrent add." ).isEqualTo( 1 );
             }
         }
@@ -246,18 +246,18 @@ public class MultiIndexPopulationConcurrentUpdatesIT
             Integer carLabelId = labelsNameIdMap.get( CAR_LABEL );
             try ( IndexReader indexReader = getIndexReader( propertyId, colorLabelId ) )
             {
-                assertThat( indexReader.countIndexedNodes( color2.getId(), NULL, new int[]{propertyId}, Values.of( "green" ) ) )
+                assertThat( indexReader.countIndexedEntities( color2.getId(), NULL, new int[]{propertyId}, Values.of( "green" ) ) )
                         .as( format( "Should be deleted by concurrent change. Reader is: %s, ", indexReader ) ).isEqualTo( 0 );
             }
             try ( IndexReader indexReader = getIndexReader( propertyId, colorLabelId ) )
             {
-                assertThat( indexReader.countIndexedNodes( color2.getId(), NULL, new int[]{propertyId}, Values.of( "pink" ) ) )
+                assertThat( indexReader.countIndexedEntities( color2.getId(), NULL, new int[]{propertyId}, Values.of( "pink" ) ) )
                         .as( "Should be updated by concurrent change." ).isEqualTo( 1 );
             }
 
             try ( IndexReader indexReader = getIndexReader( propertyId, carLabelId ) )
             {
-                assertThat( indexReader.countIndexedNodes( car2.getId(), NULL, new int[]{propertyId}, Values.of( "SAAB" ) ) )
+                assertThat( indexReader.countIndexedEntities( car2.getId(), NULL, new int[]{propertyId}, Values.of( "SAAB" ) ) )
                         .as( "Should be added by concurrent change." ).isEqualTo( 1 );
             }
         }

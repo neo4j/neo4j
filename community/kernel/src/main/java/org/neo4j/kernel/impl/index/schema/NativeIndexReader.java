@@ -89,12 +89,12 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>, VALUE extends 
     }
 
     @Override
-    public long countIndexedNodes( long nodeId, PageCursorTracer cursorTracer, int[] propertyKeyIds, Value... propertyValues )
+    public long countIndexedEntities( long entityId, PageCursorTracer cursorTracer, int[] propertyKeyIds, Value... propertyValues )
     {
         KEY treeKeyFrom = layout.newKey();
         KEY treeKeyTo = layout.newKey();
-        treeKeyFrom.initialize( nodeId );
-        treeKeyTo.initialize( nodeId );
+        treeKeyFrom.initialize( entityId );
+        treeKeyTo.initialize( entityId );
         for ( int i = 0; i < propertyValues.length; i++ )
         {
             treeKeyFrom.initFromValue( i, propertyValues[i], NEUTRAL );
@@ -105,7 +105,7 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>, VALUE extends 
             long count = 0;
             while ( seeker.next() )
             {
-                if ( seeker.key().getEntityId() == nodeId )
+                if ( seeker.key().getEntityId() == entityId )
                 {
                     count++;
                 }

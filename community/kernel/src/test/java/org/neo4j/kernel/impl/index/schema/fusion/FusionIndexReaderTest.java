@@ -190,13 +190,13 @@ abstract class FusionIndexReaderTest
 
     private void verifyCountIndexedNodesWithCorrectReader( IndexReader correct, Value... nativeValue )
     {
-        fusionIndexReader.countIndexedNodes( 0, NULL, new int[] {PROP_KEY}, nativeValue );
-        verify( correct ).countIndexedNodes( 0, NULL, new int[] {PROP_KEY}, nativeValue );
+        fusionIndexReader.countIndexedEntities( 0, NULL, new int[] {PROP_KEY}, nativeValue );
+        verify( correct ).countIndexedEntities( 0, NULL, new int[] {PROP_KEY}, nativeValue );
         for ( IndexReader reader : aliveReaders )
         {
             if ( reader != correct )
             {
-                verify( reader, never() ).countIndexedNodes( 0, NULL, new int[] {PROP_KEY}, nativeValue );
+                verify( reader, never() ).countIndexedEntities( 0, NULL, new int[] {PROP_KEY}, nativeValue );
             }
         }
     }

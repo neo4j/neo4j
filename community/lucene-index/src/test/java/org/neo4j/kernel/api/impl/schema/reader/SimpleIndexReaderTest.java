@@ -136,7 +136,7 @@ class SimpleIndexReaderTest
     {
         IndexReader simpleIndexReader = getUniqueSimpleReader();
 
-        simpleIndexReader.countIndexedNodes( 2, NULL, new int[] {3}, Values.of( "testValue" ) );
+        simpleIndexReader.countIndexedEntities( 2, NULL, new int[] {3}, Values.of( "testValue" ) );
 
         verify( indexSearcher ).search( any( BooleanQuery.class ), any( TotalHitCountCollector.class ) );
     }

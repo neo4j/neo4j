@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.index.schema.tracking;
 
+import java.util.concurrent.atomic.AtomicLong;
+
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.QueryContext;
@@ -28,8 +30,6 @@ import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexSampler;
 import org.neo4j.values.storable.Value;
-
-import java.util.concurrent.atomic.AtomicLong;
 
 public class TrackingIndexReader implements IndexReader
 {
@@ -43,9 +43,9 @@ public class TrackingIndexReader implements IndexReader
     }
 
     @Override
-    public long countIndexedNodes( long nodeId, PageCursorTracer cursorTracer, int[] propertyKeyIds, Value... propertyValues )
+    public long countIndexedEntities( long entityId, PageCursorTracer cursorTracer, int[] propertyKeyIds, Value... propertyValues )
     {
-        return delegate.countIndexedNodes( nodeId, cursorTracer, propertyKeyIds, propertyValues );
+        return delegate.countIndexedEntities( entityId, cursorTracer, propertyKeyIds, propertyValues );
     }
 
     @Override

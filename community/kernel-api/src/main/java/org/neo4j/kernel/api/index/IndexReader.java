@@ -33,13 +33,13 @@ import org.neo4j.values.storable.Value;
 public interface IndexReader extends Resource
 {
     /**
-     * @param nodeId node id to match.
+     * @param entityId entity id to match.
      * @param cursorTracer underlying page cursor tracer
      * @param propertyKeyIds the property key ids that correspond to each of the property values.
      * @param propertyValues property values to match.
-     * @return number of index entries for the given {@code nodeId} and {@code propertyValues}.
+     * @return number of index entries for the given {@code entityId} and {@code propertyValues}.
      */
-    long countIndexedNodes( long nodeId, PageCursorTracer cursorTracer, int[] propertyKeyIds, Value... propertyValues );
+    long countIndexedEntities( long entityId, PageCursorTracer cursorTracer, int[] propertyKeyIds, Value... propertyValues );
 
     IndexSampler createSampler();
 
@@ -66,7 +66,7 @@ public interface IndexReader extends Resource
     {
         // Used for checking index correctness
         @Override
-        public long countIndexedNodes( long nodeId, PageCursorTracer cursorTracer, int[] propertyKeyIds, Value... propertyValues )
+        public long countIndexedEntities( long entityId, PageCursorTracer cursorTracer, int[] propertyKeyIds, Value... propertyValues )
         {
             return 0;
         }
@@ -99,7 +99,7 @@ public interface IndexReader extends Resource
     class Adaptor implements IndexReader
     {
         @Override
-        public long countIndexedNodes( long nodeId, PageCursorTracer cursorTracer, int[] propertyKeyIds, Value... propertyValues )
+        public long countIndexedEntities( long entityId, PageCursorTracer cursorTracer, int[] propertyKeyIds, Value... propertyValues )
         {
             return 0;
         }

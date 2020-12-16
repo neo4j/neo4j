@@ -25,6 +25,10 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TotalHitCountCollector;
+
+import java.io.IOException;
+import java.util.Arrays;
+
 import org.neo4j.internal.helpers.TaskControl;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexQuery.IndexQueryType;
@@ -45,9 +49,6 @@ import org.neo4j.kernel.api.index.IndexSampler;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
-
-import java.io.IOException;
-import java.util.Arrays;
 
 import static java.lang.String.format;
 import static org.neo4j.internal.kernel.api.IndexQuery.IndexQueryType.exact;
@@ -176,17 +177,17 @@ public class SimpleIndexReader extends AbstractIndexReader
     }
 
     @Override
-    public long countIndexedNodes( long nodeId, PageCursorTracer cursorTracer, int[] propertyKeyIds, Value... propertyValues )
+    public long countIndexedEntities( long entityId, PageCursorTracer cursorTracer, int[] propertyKeyIds, Value... propertyValues )
     {
-        Query nodeIdQuery = new TermQuery( LuceneDocumentStructure.newTermForChangeOrRemove( nodeId ) );
+        Query entityIdQuery = new TermQuery( LuceneDocumentStructure.newTermForChangeOrRemove( entityId ) );
         Query valueQuery = LuceneDocumentStructure.newSeekQuery( propertyValues );
-        BooleanQuery.Builder nodeIdAndValueQuery = new BooleanQuery.Builder();
-        nodeIdAndValueQuery.add( nodeIdQuery, BooleanClause.Occur.MUST );
-        nodeIdAndValueQuery.add( valueQuery, BooleanClause.Occur.MUST );
+        BooleanQuery.Builder entityIdAndValueQuery = new BooleanQuery.Builder();
+        entityIdAndValueQuery.add( entityIdQuery, BooleanClause.Occur.MUST );
+        entityIdAndValueQuery.add( valueQuery, BooleanClause.Occur.MUST );
         try
         {
             TotalHitCountCollector collector = new TotalHitCountCollector();
-            getIndexSearcher().search( nodeIdAndValueQuery.build(), collector );
+            getIndexSearcher().search( entityIdAndValueQuery.build(), collector );
             // A <label,propertyKeyId,nodeId> tuple should only match at most a single propertyValue
             return collector.getTotalHits();
         }

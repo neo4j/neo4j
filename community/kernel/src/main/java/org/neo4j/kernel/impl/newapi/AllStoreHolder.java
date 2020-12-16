@@ -738,7 +738,7 @@ public class AllStoreHolder extends Read
         ktx.assertOpen();
         assertValidIndex( index );
         IndexReader reader = indexReaderCache.getOrCreate( index );
-        return reader.countIndexedNodes( nodeId, cursorTracer, new int[] {propertyKeyId}, value );
+        return reader.countIndexedEntities( nodeId, cursorTracer, new int[] {propertyKeyId}, value );
     }
 
     @Override

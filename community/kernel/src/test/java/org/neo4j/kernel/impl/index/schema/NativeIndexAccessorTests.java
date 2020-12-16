@@ -233,7 +233,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
         {
             // when
             ValueIndexEntryUpdate<IndexDescriptor> update = valueCreatorUtil.randomUpdateGenerator( random ).next();
-            long count = reader.countIndexedNodes( 123, NULL, valueCreatorUtil.indexDescriptor.schema().getPropertyIds(), update.values()[0] );
+            long count = reader.countIndexedEntities( 123, NULL, valueCreatorUtil.indexDescriptor.schema().getPropertyIds(), update.values()[0] );
 
             // then
             assertEquals( 0, count );
@@ -252,7 +252,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
         {
             for ( ValueIndexEntryUpdate<IndexDescriptor> update : updates )
             {
-                long count = reader.countIndexedNodes( update.getEntityId(), NULL,
+                long count = reader.countIndexedEntities( update.getEntityId(), NULL,
                         valueCreatorUtil.indexDescriptor.schema().getPropertyIds(), update.values() );
 
                 // then
@@ -261,7 +261,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
 
             // and when
             Iterator<ValueIndexEntryUpdate<IndexDescriptor>> generator = filter( skipExisting( updates ), valueCreatorUtil.randomUpdateGenerator( random ) );
-            long count = reader.countIndexedNodes( 123, NULL, valueCreatorUtil.indexDescriptor.schema().getPropertyIds(), generator.next().values()[0] );
+            long count = reader.countIndexedEntities( 123, NULL, valueCreatorUtil.indexDescriptor.schema().getPropertyIds(), generator.next().values()[0] );
 
             // then
             assertEquals( 0, count );
@@ -281,9 +281,9 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
         for ( ValueIndexEntryUpdate<IndexDescriptor> update : updates )
         {
             int[] propKeys = valueCreatorUtil.indexDescriptor.schema().getPropertyIds();
-            long countWithMismatchingData = reader.countIndexedNodes( update.getEntityId() + 1, NULL, propKeys, update.values() );
-            long countWithNonExistentEntityId = reader.countIndexedNodes( NON_EXISTENT_ENTITY_ID, NULL, propKeys, update.values() );
-            long countWithNonExistentValue = reader.countIndexedNodes( update.getEntityId(), NULL, propKeys, generateUniqueValue( updates ) );
+            long countWithMismatchingData = reader.countIndexedEntities( update.getEntityId() + 1, NULL, propKeys, update.values() );
+            long countWithNonExistentEntityId = reader.countIndexedEntities( NON_EXISTENT_ENTITY_ID, NULL, propKeys, update.values() );
+            long countWithNonExistentValue = reader.countIndexedEntities( update.getEntityId(), NULL, propKeys, generateUniqueValue( updates ) );
 
             // then
             assertEquals( 0, countWithMismatchingData );

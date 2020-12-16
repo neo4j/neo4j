@@ -99,7 +99,7 @@ class SchemaComplianceChecker implements AutoCloseable
             }
             else
             {
-                long count = reader.countIndexedNodes( entity.getId(), cursorTracer, schema.getPropertyIds(), valueArray );
+                long count = reader.countIndexedEntities( entity.getId(), cursorTracer, schema.getPropertyIds(), valueArray );
                 reportIncorrectIndexCount( entity, valueArray, indexRule, count, reportSupplier );
             }
         }

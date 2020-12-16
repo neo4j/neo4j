@@ -174,7 +174,7 @@ public class FulltextIndexReader implements IndexReader
     }
 
     @Override
-    public long countIndexedNodes( long nodeId, PageCursorTracer cursorTracer, int[] propertyKeyIds, Value... propertyValues )
+    public long countIndexedEntities( long entityId, PageCursorTracer cursorTracer, int[] propertyKeyIds, Value... propertyValues )
     {
         long count = 0;
         for ( SearcherReference searcher : searchers )
@@ -186,7 +186,7 @@ public class FulltextIndexReader implements IndexReader
                 {
                     propertyKeys[i] = getPropertyKeyName( propertyKeyIds[i] );
                 }
-                Query query = LuceneFulltextDocumentStructure.newCountNodeEntriesQuery( nodeId, propertyKeys, propertyValues );
+                Query query = LuceneFulltextDocumentStructure.newCountEntityEntriesQuery( entityId, propertyKeys, propertyValues );
                 TotalHitCountCollector collector = new TotalHitCountCollector();
                 searcher.getIndexSearcher().search( query, collector );
                 count += collector.getTotalHits();

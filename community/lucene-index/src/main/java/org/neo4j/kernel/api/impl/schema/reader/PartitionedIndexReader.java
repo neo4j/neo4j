@@ -114,10 +114,10 @@ public class PartitionedIndexReader extends AbstractIndexReader
     }
 
     @Override
-    public long countIndexedNodes( long nodeId, PageCursorTracer cursorTracer, int[] propertyKeyIds, Value... propertyValues )
+    public long countIndexedEntities( long entityId, PageCursorTracer cursorTracer, int[] propertyKeyIds, Value... propertyValues )
     {
         return indexReaders.parallelStream()
-                .mapToLong( reader -> reader.countIndexedNodes( nodeId, cursorTracer, propertyKeyIds, propertyValues ) )
+                .mapToLong( reader -> reader.countIndexedEntities( entityId, cursorTracer, propertyKeyIds, propertyValues ) )
                 .sum();
     }
 

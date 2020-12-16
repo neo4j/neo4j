@@ -81,7 +81,7 @@ public class LuceneFulltextDocumentStructure
         return new Term( FIELD_ENTITY_ID, "" + id );
     }
 
-    static Query newCountNodeEntriesQuery( long nodeId, String[] propertyKeys, Value... propertyValues )
+    static Query newCountEntityEntriesQuery( long nodeId, String[] propertyKeys, Value... propertyValues )
     {
         BooleanQuery.Builder builder = new BooleanQuery.Builder();
         builder.add( new TermQuery( newTermForChangeOrRemove( nodeId ) ), BooleanClause.Occur.MUST );
