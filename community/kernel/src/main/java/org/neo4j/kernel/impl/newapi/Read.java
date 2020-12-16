@@ -235,12 +235,34 @@ abstract class Read implements TxStateHolder,
             throw new IndexNotApplicableKernelException( "Node index scan can only be performed on node indexes: " + index );
         }
 
+        scanIndex( indexSession, (EntityIndexSeekClient) cursor, constraints );
+    }
+
+    @Override
+    public final void relationshipIndexScan( IndexReadSession index,
+            RelationshipValueIndexCursor cursor,
+            IndexQueryConstraints constraints ) throws KernelException
+    {
+        ktx.assertOpen();
+        DefaultIndexReadSession indexSession = (DefaultIndexReadSession) index;
+
+        if ( indexSession.reference.schema().entityType() != EntityType.RELATIONSHIP )
+        {
+            throw new IndexNotApplicableKernelException( "Relationship index scan can only be performed on relationship indexes: " + index );
+        }
+
+        scanIndex( indexSession, (EntityIndexSeekClient) cursor, constraints );
+    }
+
+    private void scanIndex( DefaultIndexReadSession indexSession,
+            EntityIndexSeekClient indexSeekClient,
+            IndexQueryConstraints constraints ) throws KernelException
+    {
         // for a scan, we simply query for existence of the first property, which covers all entries in an index
         int firstProperty = indexSession.reference.schema().getPropertyIds()[0];
 
-        DefaultNodeValueIndexCursor cursorImpl = (DefaultNodeValueIndexCursor) cursor;
-        cursorImpl.setRead( this );
-        indexSession.reader.query( this, cursorImpl, constraints, IndexQuery.exists( firstProperty ) );
+        indexSeekClient.setRead( this );
+        indexSession.reader.query( this, indexSeekClient, constraints, IndexQuery.exists( firstProperty ) );
     }
 
     @Override

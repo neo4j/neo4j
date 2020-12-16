@@ -27,19 +27,19 @@ import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 
 /**
- * This class holds functionality to match LabelSchemaDescriptors to nodes
+ * This class holds functionality to match {@link SchemaDescriptor} to entities.
  */
-public class NodeSchemaMatcher
+public class SchemaMatcher
 {
-    private NodeSchemaMatcher()
+    private SchemaMatcher()
     {
         throw new AssertionError( "no instance" );
     }
 
     /**
-     * Iterate over some schema suppliers, and invoke a callback for every supplier that matches the node. To match the
-     * node N the supplier must supply a LabelSchemaDescriptor D, such that N has values for all the properties of D.
-     * The supplied schemas are all assumed to match N on label.
+     * Iterate over some schema suppliers, and invoke a callback for every supplier that matches the entity. To match the
+     * entity E the supplier must supply a {@link SchemaDescriptor} D, such that E has values for all the properties of D.
+     * The supplied schemas are all assumed to match E on token (label or relationship).
      * <p>
      * To avoid unnecessary store lookups, this implementation only gets propertyKeyIds for the node if some
      * descriptor has a valid label.

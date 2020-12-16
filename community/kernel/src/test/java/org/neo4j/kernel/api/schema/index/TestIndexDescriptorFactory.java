@@ -48,6 +48,11 @@ public class TestIndexDescriptorFactory
         return forSchema( SchemaDescriptor.forLabel( labelId, propertyIds ) );
     }
 
+    public static IndexDescriptor forRelType( int relTypeId, int... propertyIds )
+    {
+        return forSchema( SchemaDescriptor.forRelType( relTypeId, propertyIds ) );
+    }
+
     public static IndexDescriptor uniqueForLabel( int labelId, int... propertyIds )
     {
         return uniqueForSchema( SchemaDescriptor.forLabel( labelId, propertyIds ) );

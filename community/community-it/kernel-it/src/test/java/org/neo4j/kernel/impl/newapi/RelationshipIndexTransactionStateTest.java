@@ -22,12 +22,11 @@ package org.neo4j.kernel.impl.newapi;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.graphdb.Label;
-import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReadSession;
-import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
+import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -36,31 +35,34 @@ import org.neo4j.values.storable.Values;
 
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unordered;
 
-public class NodeIndexTransactionStateTest extends IndexTransactionStateTestBase
+public class RelationshipIndexTransactionStateTest extends IndexTransactionStateTestBase
 {
-    private static final String DEFAULT_LABEL = "Node";
+    private static final String DEFAULT_REl_TYPE = "Rel";
 
     @Override
     Pair<Long,Value> entityWithProp( KernelTransaction tx, Object value ) throws Exception
     {
         Write write = tx.dataWrite();
-        long node = write.nodeCreate();
-        write.nodeAddLabel( node, tx.tokenWrite().labelGetOrCreateForName( DEFAULT_LABEL ) );
+        long sourceNode = write.nodeCreate();
+        long targetNode = write.nodeCreate();
+
+        long rel = write.relationshipCreate( sourceNode, tx.tokenWrite().relationshipTypeGetOrCreateForName( DEFAULT_REl_TYPE ), targetNode );
+
         Value val = Values.of( value );
-        write.nodeSetProperty( node, tx.tokenWrite().propertyKeyGetOrCreateForName( DEFAULT_PROPERTY_NAME ), val );
-        return Pair.of( node, val );
+        write.relationshipSetProperty( rel, tx.tokenWrite().propertyKeyGetOrCreateForName( DEFAULT_PROPERTY_NAME ), val );
+        return Pair.of( rel, val );
     }
 
     @Override
     void createIndex()
     {
-        try ( Transaction tx = graphDb.beginTx() )
+        try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
         {
-            tx.schema().indexFor( Label.label( DEFAULT_LABEL ) ).on( DEFAULT_PROPERTY_NAME ).withName( INDEX_NAME ).create();
+            tx.schema().indexFor( RelationshipType.withName( DEFAULT_REl_TYPE ) ).on( DEFAULT_PROPERTY_NAME ).withName( INDEX_NAME ).create();
             tx.commit();
         }
 
-        try ( Transaction tx = graphDb.beginTx() )
+        try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
         {
             tx.schema().awaitIndexesOnline( 2, TimeUnit.MINUTES );
         }
@@ -69,77 +71,79 @@ public class NodeIndexTransactionStateTest extends IndexTransactionStateTestBase
     @Override
     void deleteEntity( KernelTransaction tx, long entity ) throws Exception
     {
-        tx.dataWrite().nodeDelete( entity );
+        tx.dataWrite().relationshipDelete( entity );
     }
 
     @Override
     boolean entityExists( KernelTransaction tx, long entity )
     {
-        return tx.dataRead().nodeExists( entity );
+        return tx.dataRead().relationshipExists( entity );
     }
 
     @Override
     void removeProperty( KernelTransaction tx, long entity ) throws Exception
     {
         int propertyKey = tx.tokenRead().propertyKey( DEFAULT_PROPERTY_NAME );
-        tx.dataWrite().nodeRemoveProperty( entity, propertyKey );
+        tx.dataWrite().relationshipRemoveProperty( entity, propertyKey );
     }
 
     @Override
     void setProperty( KernelTransaction tx, long entity, Value value ) throws Exception
     {
         int propertyKey = tx.tokenRead().propertyKey( DEFAULT_PROPERTY_NAME );
-        tx.dataWrite().nodeSetProperty( entity, propertyKey, value );
+        tx.dataWrite().relationshipSetProperty( entity, propertyKey, value );
     }
 
     @Override
     void assertEntityAndValueForSeek( Set<Pair<Long,Value>> expected, KernelTransaction tx, IndexDescriptor index, boolean needsValues,
             Object anotherValueFoundByQuery, IndexQuery... queries ) throws Exception
     {
-        try ( NodeValueIndexCursor nodes = tx.cursors().allocateNodeValueIndexCursor( tx.pageCursorTracer(), tx.memoryTracker() ) )
+        try ( RelationshipValueIndexCursor relationships = tx.cursors().allocateRelationshipValueIndexCursor( tx.pageCursorTracer(), tx.memoryTracker() ) )
         {
             IndexReadSession indexSession = tx.dataRead().indexReadSession( index );
-            tx.dataRead().nodeIndexSeek( indexSession, nodes, unordered( needsValues ), queries );
-            assertEntityAndValue( expected, tx, needsValues, anotherValueFoundByQuery, new NodeCursorAdapter( nodes ) );
+            tx.dataRead().relationshipIndexSeek( indexSession, relationships, unordered( needsValues ), queries );
+            assertEntityAndValue( expected, tx, needsValues, anotherValueFoundByQuery, new RelationshipCursorAdapter( relationships ) );
         }
     }
 
+    @Override
     void assertEntityAndValueForScan( Set<Pair<Long,Value>> expected, KernelTransaction tx, IndexDescriptor index, boolean needsValues,
             Object anotherValueFoundByQuery ) throws Exception
     {
         IndexReadSession indexSession = tx.dataRead().indexReadSession( index );
-        try ( NodeValueIndexCursor nodes = tx.cursors().allocateNodeValueIndexCursor( tx.pageCursorTracer(), tx.memoryTracker() ) )
+        try ( RelationshipValueIndexCursor relationships = tx.cursors().allocateRelationshipValueIndexCursor( tx.pageCursorTracer(), tx.memoryTracker() ) )
         {
-            tx.dataRead().nodeIndexScan( indexSession, nodes, unordered( needsValues ) );
-            assertEntityAndValue( expected, tx, needsValues, anotherValueFoundByQuery, new NodeCursorAdapter( nodes ) );
+            tx.dataRead().relationshipIndexScan( indexSession, relationships, unordered( needsValues ) );
+            assertEntityAndValue( expected, tx, needsValues, anotherValueFoundByQuery, new RelationshipCursorAdapter( relationships ) );
         }
     }
 
-    private static class NodeCursorAdapter implements EntityValueIndexCursor
+    private static class RelationshipCursorAdapter implements EntityValueIndexCursor
     {
-        private final NodeValueIndexCursor nodes;
 
-        NodeCursorAdapter( NodeValueIndexCursor nodes )
+        private final RelationshipValueIndexCursor relationships;
+
+        private RelationshipCursorAdapter( RelationshipValueIndexCursor relationships )
         {
-            this.nodes = nodes;
+            this.relationships = relationships;
         }
 
         @Override
         public boolean next()
         {
-            return nodes.next();
+            return relationships.next();
         }
 
         @Override
         public Value propertyValue( int offset )
         {
-            return nodes.propertyValue( offset );
+            return relationships.propertyValue( offset );
         }
 
         @Override
         public long entityReference()
         {
-            return nodes.nodeReference();
+            return relationships.relationshipReference();
         }
     }
 }

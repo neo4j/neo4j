@@ -765,19 +765,19 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
-    public void indexDoUpdateEntry( SchemaDescriptor descriptor, long nodeId,
+    public void indexDoUpdateEntry( SchemaDescriptor descriptor, long entityIdId,
             ValueTuple propertiesBefore, ValueTuple propertiesAfter )
     {
         Map<ValueTuple, MutableLongDiffSets> updates = getOrCreateIndexUpdatesByDescriptor( descriptor );
         if ( propertiesBefore != null )
         {
             MutableLongDiffSets before = getOrCreateIndexUpdatesForSeek( updates, propertiesBefore );
-            before.remove( nodeId );
+            before.remove( entityIdId );
         }
         if ( propertiesAfter != null )
         {
             MutableLongDiffSets after = getOrCreateIndexUpdatesForSeek( updates, propertiesAfter );
-            after.add( nodeId );
+            after.add( entityIdId );
         }
     }
 

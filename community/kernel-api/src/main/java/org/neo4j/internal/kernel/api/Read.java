@@ -99,6 +99,16 @@ public interface Read
     void nodeIndexScan( IndexReadSession index, NodeValueIndexCursor cursor, IndexQueryConstraints constraints ) throws KernelException;
 
     /**
+     * Scan all values in an index.
+     *
+     * @param index {@link IndexReadSession} index read session to query.
+     * @param cursor the cursor to use for consuming the results.
+     * @param constraints The requested constraints on the query result, such as the {@link IndexOrder}, or whether the index should fetch property values
+     * together with relationship ids for index queries. The constraints must be satisfiable given the capabilities of the index.
+     */
+    void relationshipIndexScan( IndexReadSession index, RelationshipValueIndexCursor cursor, IndexQueryConstraints constraints ) throws KernelException;
+
+    /**
      * Scan all nodes with a label.
      *
      * @param label the label

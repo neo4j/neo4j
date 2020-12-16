@@ -26,8 +26,10 @@ import org.eclipse.collections.impl.factory.primitive.IntObjectMaps;
 import java.util.Arrays;
 import java.util.Collection;
 
+import org.neo4j.common.EntityType;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
+import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -37,6 +39,7 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueTuple;
 
 import static org.neo4j.common.EntityType.NODE;
+import static org.neo4j.common.EntityType.RELATIONSHIP;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_PROPERTY_KEY;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 
@@ -88,7 +91,8 @@ public class IndexTxStateUpdater
             {
                 MemoryTracker memoryTracker = read.txState().memoryTracker();
                 int[] indexPropertyIds = index.schema().getPropertyIds();
-                Value[] values = getValueTuple( node, propertyCursor, NO_SUCH_PROPERTY_KEY, NO_VALUE, indexPropertyIds, materializedProperties, memoryTracker );
+                Value[] values = getValueTuple( new NodeCursorWrapper( node ), propertyCursor, NO_SUCH_PROPERTY_KEY, NO_VALUE, indexPropertyIds,
+                        materializedProperties, memoryTracker );
                 ValueTuple valueTuple = ValueTuple.of( values );
                 memoryTracker.allocateHeap( valueTuple.getShallowSize() );
                 switch ( changeType )
@@ -107,6 +111,41 @@ public class IndexTxStateUpdater
         }
     }
 
+    void onPropertyAdd( NodeCursor node, PropertyCursor propertyCursor, long[] labels, int propertyKeyId, int[] existingPropertyKeyIds, Value value )
+    {
+        onPropertyAdd( new NodeCursorWrapper( node ), propertyCursor, labels, propertyKeyId, existingPropertyKeyIds, value );
+    }
+
+    void onPropertyRemove( NodeCursor node, PropertyCursor propertyCursor, long[] labels, int propertyKeyId, int[] existingPropertyKeyIds, Value value )
+    {
+        onPropertyRemove( new NodeCursorWrapper( node ), propertyCursor, labels, propertyKeyId, existingPropertyKeyIds, value );
+    }
+
+    void onPropertyChange( NodeCursor node, PropertyCursor propertyCursor, long[] labels, int propertyKeyId, int[] existingPropertyKeyIds, Value beforeValue,
+            Value afterValue )
+    {
+        onPropertyChange( new NodeCursorWrapper( node ), propertyCursor, labels, propertyKeyId, existingPropertyKeyIds, beforeValue, afterValue );
+    }
+
+    void onPropertyAdd( RelationshipScanCursor relationship, PropertyCursor propertyCursor, int type, int propertyKeyId, int[] existingPropertyKeyIds,
+            Value value )
+    {
+        onPropertyAdd( new RelationshipCursorWrapper( relationship ), propertyCursor, new long[]{type}, propertyKeyId, existingPropertyKeyIds, value );
+    }
+
+    void onPropertyRemove( RelationshipScanCursor relationship, PropertyCursor propertyCursor, int type, int propertyKeyId, int[] existingPropertyKeyIds,
+            Value value )
+    {
+        onPropertyRemove( new RelationshipCursorWrapper( relationship ), propertyCursor, new long[]{type}, propertyKeyId, existingPropertyKeyIds, value );
+    }
+
+    void onPropertyChange( RelationshipScanCursor relationship, PropertyCursor propertyCursor, int type, int propertyKeyId, int[] existingPropertyKeyIds,
+            Value beforeValue, Value afterValue )
+    {
+        onPropertyChange( new RelationshipCursorWrapper( relationship ), propertyCursor, new long[]{type}, propertyKeyId, existingPropertyKeyIds, beforeValue,
+                afterValue );
+    }
+
     private boolean noSchemaChangedInTx()
     {
         return !(read.txState().hasChanges() && !read.txState().hasDataChanges());
@@ -114,81 +153,83 @@ public class IndexTxStateUpdater
 
     //PROPERTY CHANGES
 
-    void onPropertyAdd( NodeCursor node, PropertyCursor propertyCursor, long[] labels, int propertyKeyId, int[] existingPropertyKeyIds, Value value )
+    private void onPropertyAdd( EntityCursor entity, PropertyCursor propertyCursor, long[] tokens, int propertyKeyId, int[] existingPropertyKeyIds,
+            Value value )
     {
         assert noSchemaChangedInTx();
-        Collection<IndexDescriptor> indexes = storageReader.indexesGetRelated( labels, propertyKeyId, NODE );
+        Collection<IndexDescriptor> indexes = storageReader.indexesGetRelated( tokens, propertyKeyId, entity.entityType() );
         if ( !indexes.isEmpty() )
         {
             MutableIntObjectMap<Value> materializedProperties = IntObjectMaps.mutable.empty();
-            NodeSchemaMatcher.onMatchingSchema( indexes.iterator(), propertyKeyId, existingPropertyKeyIds,
+            SchemaMatcher.onMatchingSchema( indexes.iterator(), propertyKeyId, existingPropertyKeyIds,
                     index ->
                     {
                         MemoryTracker memoryTracker = read.txState().memoryTracker();
                         SchemaDescriptor schema = index.schema();
-                        Value[] values = getValueTuple( node, propertyCursor, propertyKeyId, value, schema.getPropertyIds(), materializedProperties,
+                        Value[] values = getValueTuple( entity, propertyCursor, propertyKeyId, value, schema.getPropertyIds(), materializedProperties,
                                                         memoryTracker );
-                        indexingService.validateBeforeCommit( index, values, node.nodeReference() );
+                        indexingService.validateBeforeCommit( index, values, entity.reference() );
                         ValueTuple valueTuple = ValueTuple.of( values );
                         memoryTracker.allocateHeap( valueTuple.getShallowSize() );
-                        read.txState().indexDoUpdateEntry( schema, node.nodeReference(), null, valueTuple );
+                        read.txState().indexDoUpdateEntry( schema, entity.reference(), null, valueTuple );
                     } );
         }
     }
 
-    void onPropertyRemove( NodeCursor node, PropertyCursor propertyCursor, long[] labels, int propertyKeyId, int[] existingPropertyKeyIds, Value value )
+    private void onPropertyRemove( EntityCursor entity, PropertyCursor propertyCursor, long[] tokens, int propertyKeyId, int[] existingPropertyKeyIds,
+            Value value )
     {
         assert noSchemaChangedInTx();
-        Collection<IndexDescriptor> indexes = storageReader.indexesGetRelated( labels, propertyKeyId, NODE );
+        Collection<IndexDescriptor> indexes = storageReader.indexesGetRelated( tokens, propertyKeyId, entity.entityType() );
         if ( !indexes.isEmpty() )
         {
             MutableIntObjectMap<Value> materializedProperties = IntObjectMaps.mutable.empty();
-            NodeSchemaMatcher.onMatchingSchema( indexes.iterator(), propertyKeyId, existingPropertyKeyIds,
+            SchemaMatcher.onMatchingSchema( indexes.iterator(), propertyKeyId, existingPropertyKeyIds,
                     index ->
                     {
                         MemoryTracker memoryTracker = read.txState().memoryTracker();
                         SchemaDescriptor schema = index.schema();
-                        Value[] values = getValueTuple( node, propertyCursor, propertyKeyId, value, schema.getPropertyIds(), materializedProperties,
+                        Value[] values = getValueTuple( entity, propertyCursor, propertyKeyId, value, schema.getPropertyIds(), materializedProperties,
                                                         memoryTracker );
                         ValueTuple valueTuple = ValueTuple.of( values );
                         memoryTracker.allocateHeap( valueTuple.getShallowSize() );
-                        read.txState().indexDoUpdateEntry( schema, node.nodeReference(), valueTuple, null );
+                        read.txState().indexDoUpdateEntry( schema, entity.reference(), valueTuple, null );
                     } );
         }
     }
 
-    void onPropertyChange( NodeCursor node, PropertyCursor propertyCursor, long[] labels, int propertyKeyId, int[] existingPropertyKeyIds,
+    private void onPropertyChange( EntityCursor entity, PropertyCursor propertyCursor, long[] tokens, int propertyKeyId, int[] existingPropertyKeyIds,
             Value beforeValue, Value afterValue )
     {
         assert noSchemaChangedInTx();
-        Collection<IndexDescriptor> indexes = storageReader.indexesGetRelated( labels, propertyKeyId, NODE );
+        Collection<IndexDescriptor> indexes = storageReader.indexesGetRelated( tokens, propertyKeyId, entity.entityType() );
         if ( !indexes.isEmpty() )
         {
             MutableIntObjectMap<Value> materializedProperties = IntObjectMaps.mutable.empty();
-            NodeSchemaMatcher.onMatchingSchema( indexes.iterator(), propertyKeyId, existingPropertyKeyIds,
+            SchemaMatcher.onMatchingSchema( indexes.iterator(), propertyKeyId, existingPropertyKeyIds,
                     index ->
                     {
                         MemoryTracker memoryTracker = read.txState().memoryTracker();
                         SchemaDescriptor schema = index.schema();
                         int[] propertyIds = schema.getPropertyIds();
                         Value[] valuesAfter =
-                                getValueTuple( node, propertyCursor, propertyKeyId, afterValue, propertyIds, materializedProperties, memoryTracker );
+                                getValueTuple( entity, propertyCursor, propertyKeyId, afterValue, propertyIds, materializedProperties, memoryTracker );
 
                         // The valuesBefore tuple is just like valuesAfter, except is has the afterValue instead of the beforeValue
                         Value[] valuesBefore = Arrays.copyOf( valuesAfter, valuesAfter.length );
                         int k = ArrayUtils.indexOf( propertyIds, propertyKeyId );
                         valuesBefore[k] = beforeValue;
 
-                        indexingService.validateBeforeCommit( index, valuesAfter, node.nodeReference() );
+                        indexingService.validateBeforeCommit( index, valuesAfter, entity.reference() );
                         ValueTuple valuesTupleBefore = ValueTuple.of( valuesBefore );
                         ValueTuple valuesTupleAfter = ValueTuple.of( valuesAfter );
                         memoryTracker.allocateHeap( valuesTupleBefore.getShallowSize() * 2 ); // They are copies and same shallow size
-                        read.txState().indexDoUpdateEntry( schema, node.nodeReference(), valuesTupleBefore, valuesTupleAfter );
+                        read.txState().indexDoUpdateEntry( schema, entity.reference(), valuesTupleBefore, valuesTupleAfter );
                     } );
         }
     }
 
-    private Value[] getValueTuple( NodeCursor node, PropertyCursor propertyCursor, int changedPropertyKeyId, Value changedValue, int[] indexPropertyIds,
+    private Value[] getValueTuple( EntityCursor entity, PropertyCursor propertyCursor, int changedPropertyKeyId, Value changedValue, int[] indexPropertyIds,
             MutableIntObjectMap<Value> materializedValues, MemoryTracker memoryTracker )
     {
         Value[] values = new Value[indexPropertyIds.length];
@@ -205,11 +246,11 @@ public class IndexTxStateUpdater
             }
         }
 
-        // If we couldn't get all values that we wanted we need to load from the node. While we're loading values
+        // If we couldn't get all values that we wanted we need to load from the entity. While we're loading values
         // we'll place those values in the map so that other index updates from this change can just used them.
         if ( missing > 0 )
         {
-            node.properties( propertyCursor );
+            entity.properties( propertyCursor );
             while ( missing > 0 && propertyCursor.next() )
             {
                 int k = ArrayUtils.indexOf( indexPropertyIds, propertyCursor.propertyKey() );
@@ -229,5 +270,75 @@ public class IndexTxStateUpdater
         }
 
         return values;
+    }
+
+    /**
+     * A common interface for operations needed from both node and relationship cursors.
+     */
+    private interface EntityCursor
+    {
+        long reference();
+
+        void properties( PropertyCursor cursor );
+
+        EntityType entityType();
+    }
+
+    private static class NodeCursorWrapper implements EntityCursor
+    {
+
+        private final NodeCursor node;
+
+        private NodeCursorWrapper( NodeCursor node )
+        {
+            this.node = node;
+        }
+
+        @Override
+        public long reference()
+        {
+            return node.nodeReference();
+        }
+
+        @Override
+        public void properties( PropertyCursor cursor )
+        {
+            node.properties( cursor );
+        }
+
+        @Override
+        public EntityType entityType()
+        {
+            return NODE;
+        }
+    }
+
+    private static class RelationshipCursorWrapper implements EntityCursor
+    {
+
+        private final RelationshipScanCursor relationship;
+
+        private RelationshipCursorWrapper( RelationshipScanCursor relationship )
+        {
+            this.relationship = relationship;
+        }
+
+        @Override
+        public long reference()
+        {
+            return relationship.relationshipReference();
+        }
+
+        @Override
+        public void properties( PropertyCursor cursor )
+        {
+            relationship.properties( cursor );
+        }
+
+        @Override
+        public EntityType entityType()
+        {
+            return RELATIONSHIP;
+        }
     }
 }

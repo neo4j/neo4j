@@ -114,6 +114,7 @@ import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static java.lang.String.format;
 import static org.neo4j.common.EntityType.NODE;
+import static org.neo4j.common.EntityType.RELATIONSHIP;
 import static org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException.Phase.VALIDATION;
 import static org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException.OperationContext.CONSTRAINT_CREATION;
 import static org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException.OperationContext.INDEX_CREATION;
@@ -311,7 +312,7 @@ public class Operations implements Write, SchemaWrite
     {
         // Load the property key id list for this node. We may need it for constraint validation if there are any related constraints,
         // but regardless we need it for tx state updating
-        int[] existingPropertyKeyIds = loadSortedPropertyKeyList();
+        int[] existingPropertyKeyIds = loadSortedNodePropertyKeyList();
 
         //Check so that we are not breaking uniqueness constraints
         //We do this by checking if there is an existing node in the index that
@@ -335,9 +336,20 @@ public class Operations implements Write, SchemaWrite
         updater.onLabelChange( nodeLabel, existingPropertyKeyIds, nodeCursor, propertyCursor, ADDED_LABEL );
     }
 
-    private int[] loadSortedPropertyKeyList()
+    private int[] loadSortedNodePropertyKeyList()
     {
         nodeCursor.properties( propertyCursor );
+        return doLoadSortedPropertyKeyList();
+    }
+
+    private int[] loadSortedRelationshipPropertyKeyList()
+    {
+        relationshipCursor.properties( propertyCursor );
+        return doLoadSortedPropertyKeyList();
+    }
+
+    private int[] doLoadSortedPropertyKeyList()
+    {
         if ( !propertyCursor.next() )
         {
             return EMPTY_INT_ARRAY;
@@ -401,13 +413,23 @@ public class Operations implements Write, SchemaWrite
     }
 
     /**
-     * Assuming that the nodeCursor have been initialized to the node that labels are retrieved from
+     * Assuming that the nodeCursor has been initialized to the node that labels are retrieved from
      */
     private long[] acquireSharedNodeLabelLocks()
     {
         long[] labels = nodeCursor.labels().all();
         ktx.statementLocks().optimistic().acquireShared( ktx.lockTracer(), ResourceTypes.LABEL, labels );
         return labels;
+    }
+
+    /**
+     * Assuming that the relationshipCursor has been initialized to the relationship that the type is retrieved from
+     */
+    private int acquireSharedRelationshipTypeLock()
+    {
+        int relType = relationshipCursor.type();
+        ktx.statementLocks().optimistic().acquireShared( ktx.lockTracer(), ResourceTypes.RELATIONSHIP_TYPE, relType );
+        return relType;
     }
 
     private boolean relationshipDelete( long relationship, boolean lock )
@@ -461,7 +483,7 @@ public class Operations implements Write, SchemaWrite
         allStoreHolder.singleRelationship( relationship, relationshipCursor );
         if ( !relationshipCursor.next() )
         {
-            throw new EntityNotFoundException( EntityType.RELATIONSHIP, relationship );
+            throw new EntityNotFoundException( RELATIONSHIP, relationship );
         }
     }
 
@@ -584,7 +606,7 @@ public class Operations implements Write, SchemaWrite
         ktx.txState().nodeDoRemoveLabel( labelId, node );
         if ( storageReader.hasRelatedSchema( labelId, NODE ) )
         {
-            updater.onLabelChange( labelId, loadSortedPropertyKeyList(), nodeCursor, propertyCursor, REMOVED_LABEL );
+            updater.onLabelChange( labelId, loadSortedNodePropertyKeyList(), nodeCursor, propertyCursor, REMOVED_LABEL );
         }
         return true;
     }
@@ -603,7 +625,7 @@ public class Operations implements Write, SchemaWrite
         boolean hasRelatedSchema = storageReader.hasRelatedSchema( labels, propertyKey, NODE );
         if ( hasRelatedSchema )
         {
-            existingPropertyKeyIds = loadSortedPropertyKeyList();
+            existingPropertyKeyIds = loadSortedNodePropertyKeyList();
         }
 
         if ( !existingValue.equals( value ) )
@@ -611,7 +633,7 @@ public class Operations implements Write, SchemaWrite
             assertAllowsSetProperty( labels, propertyKey );
             // The value changed and there may be relevant constraints to check so let's check those now.
             Collection<IndexBackedConstraintDescriptor> uniquenessConstraints = storageReader.uniquenessConstraintsGetRelated( labels, propertyKey, NODE );
-            NodeSchemaMatcher.onMatchingSchema( uniquenessConstraints.iterator(), propertyKey, existingPropertyKeyIds, constraint ->
+            SchemaMatcher.onMatchingSchema( uniquenessConstraints.iterator(), propertyKey, existingPropertyKeyIds, constraint ->
                     validateNoExistingNodeWithExactValues( constraint, getAllPropertyValues( constraint.schema(), propertyKey, value ), node ) );
         }
 
@@ -658,7 +680,7 @@ public class Operations implements Write, SchemaWrite
             ktx.txState().nodeDoRemoveProperty( node, propertyKey );
             if ( storageReader.hasRelatedSchema( labels, propertyKey, NODE ) )
             {
-                updater.onPropertyRemove( nodeCursor, propertyCursor, labels, propertyKey, loadSortedPropertyKeyList(), existingValue );
+                updater.onPropertyRemove( nodeCursor, propertyCursor, labels, propertyKey, loadSortedNodePropertyKeyList(), existingValue );
             }
         }
 
@@ -672,11 +694,22 @@ public class Operations implements Write, SchemaWrite
         acquireExclusiveRelationshipLock( relationship );
         ktx.assertOpen();
         singleRelationship( relationship );
+        int type = acquireSharedRelationshipTypeLock();
         Value existingValue = readRelationshipProperty( propertyKey );
+        int[] existingPropertyKeyIds = null;
+        boolean hasRelatedSchema = storageReader.hasRelatedSchema( new long[]{type}, propertyKey, RELATIONSHIP );
+        if ( hasRelatedSchema )
+        {
+            existingPropertyKeyIds = loadSortedRelationshipPropertyKeyList();
+        }
         if ( existingValue == NO_VALUE )
         {
             assertAllowsSetProperty( relationshipCursor.type(), propertyKey );
             ktx.txState().relationshipDoReplaceProperty( relationship, propertyKey, NO_VALUE, value );
+            if ( hasRelatedSchema )
+            {
+                updater.onPropertyAdd( relationshipCursor, propertyCursor, type, propertyKey, existingPropertyKeyIds, value );
+            }
             return NO_VALUE;
         }
         else
@@ -685,6 +718,10 @@ public class Operations implements Write, SchemaWrite
             {
                 assertAllowsSetProperty( relationshipCursor.type(), propertyKey );
                 ktx.txState().relationshipDoReplaceProperty( relationship, propertyKey, existingValue, value );
+                if ( hasRelatedSchema )
+                {
+                    updater.onPropertyChange( relationshipCursor, propertyCursor, type, propertyKey, existingPropertyKeyIds, existingValue, value );
+                }
             }
 
             return existingValue;
@@ -701,8 +738,13 @@ public class Operations implements Write, SchemaWrite
 
         if ( existingValue != NO_VALUE )
         {
+            int type = acquireSharedRelationshipTypeLock();
             assertAllowsSetProperty( relationshipCursor.type(), propertyKey );
             ktx.txState().relationshipDoRemoveProperty( relationship, propertyKey );
+            if ( storageReader.hasRelatedSchema( new long[]{type}, propertyKey, RELATIONSHIP ) )
+            {
+                updater.onPropertyRemove( relationshipCursor, propertyCursor, type, propertyKey, loadSortedRelationshipPropertyKeyList(), existingValue );
+            }
         }
 
         return existingValue;

@@ -216,14 +216,14 @@ public class SchemaCache
         return schemaCacheState.getUniquenessConstraintsRelatedTo( entityType, changedLabels, unchangedLabels, properties, propertyListIsComplete );
     }
 
-    boolean hasRelatedSchema( long[] labels, int propertyKey, EntityType entityType )
+    boolean hasRelatedSchema( long[] tokes, int propertyKey, EntityType entityType )
     {
-        return schemaCacheState.hasRelatedSchema( labels, propertyKey, entityType );
+        return schemaCacheState.hasRelatedSchema( tokes, propertyKey, entityType );
     }
 
-    boolean hasRelatedSchema( int label, EntityType entityType )
+    boolean hasRelatedSchema( int token, EntityType entityType )
     {
-        return schemaCacheState.hasRelatedSchema( label, entityType );
+        return schemaCacheState.hasRelatedSchema( token, entityType );
     }
 
     public SchemaCache snapshot()
@@ -468,16 +468,16 @@ public class SchemaCache
             return descriptors;
         }
 
-        boolean hasRelatedSchema( long[] labels, int propertyKey, EntityType entityType )
+        boolean hasRelatedSchema( long[] tokes, int propertyKey, EntityType entityType )
         {
-            return selectIndexSetByEntityType( entityType ).has( labels, propertyKey ) ||
-                    selectUniquenessConstraintSetByEntityType( entityType ).has( labels, propertyKey );
+            return selectIndexSetByEntityType( entityType ).has( tokes, propertyKey ) ||
+                    selectUniquenessConstraintSetByEntityType( entityType ).has( tokes, propertyKey );
         }
 
-        boolean hasRelatedSchema( int label, EntityType entityType )
+        boolean hasRelatedSchema( int token, EntityType entityType )
         {
-            return selectIndexSetByEntityType( entityType ).has( label ) ||
-                    selectUniquenessConstraintSetByEntityType( entityType ).has( label );
+            return selectIndexSetByEntityType( entityType ).has( token ) ||
+                    selectUniquenessConstraintSetByEntityType( entityType ).has( token );
         }
 
         private SchemaDescriptorLookupSet<IndexDescriptor> selectIndexSetByEntityType( EntityType entityType )
