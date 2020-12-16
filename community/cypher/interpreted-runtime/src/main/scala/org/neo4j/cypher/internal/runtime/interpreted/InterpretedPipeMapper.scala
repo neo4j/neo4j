@@ -86,6 +86,7 @@ import org.neo4j.cypher.internal.logical.plans.OrderedAggregation
 import org.neo4j.cypher.internal.logical.plans.OrderedDistinct
 import org.neo4j.cypher.internal.logical.plans.PartialSort
 import org.neo4j.cypher.internal.logical.plans.PartialTop
+import org.neo4j.cypher.internal.logical.plans.Prober
 import org.neo4j.cypher.internal.logical.plans.ProcedureCall
 import org.neo4j.cypher.internal.logical.plans.ProduceResult
 import org.neo4j.cypher.internal.logical.plans.ProjectEndpoints
@@ -191,6 +192,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.PartialTop1Pipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.PartialTopNPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.PipeMapper
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.ProberPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.ProcedureCallPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.ProcedureCallRowProcessing
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.ProduceResultsPipe
@@ -344,6 +346,9 @@ case class InterpretedPipeMapper(readOnly: Boolean,
 
       case NonPipelined(_) =>
         TestPipe(source)(id = id)
+
+      case Prober(_, probe) =>
+        ProberPipe(source, probe)(id = id)
 
       case Selection(predicate, _) =>
         val predicateExpression =

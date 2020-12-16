@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.logical.plans
 
+import org.neo4j.cypher.internal.logical.plans.Prober.Probe
 import org.neo4j.cypher.internal.util.attribution.IdGen
 
 /**
@@ -32,5 +33,28 @@ case class NonFuseable(source: LogicalPlan)(implicit idGen: IdGen) extends Logic
   val availableSymbols: Set[String] = source.availableSymbols
 }
 
+/**
+ * NOTE: This plan is only for testing. Otherwise we would call it Peeker
+ */
+case class Prober(source: LogicalPlan, probe: Probe)(implicit idGen: IdGen) extends LogicalPlan(idGen) with LazyLogicalPlan {
 
+  val lhs: Option[LogicalPlan] = Some(source)
+  def rhs: Option[LogicalPlan] = None
+
+  val availableSymbols: Set[String] = source.availableSymbols
+}
+
+object Prober {
+  trait Probe {
+    /**
+     * Called on each row that passes through this operator.
+     *
+     * NOTE: The row object is transient and any data that needs to be stored
+     * should be copied before the call returns.
+     *
+     * @param row a CypherRow representation
+     */
+    def onRow(row: AnyRef): Unit
+  }
+}
 

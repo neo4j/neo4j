@@ -117,6 +117,7 @@ import org.neo4j.cypher.internal.logical.plans.PartialSort
 import org.neo4j.cypher.internal.logical.plans.PartialTop
 import org.neo4j.cypher.internal.logical.plans.PointDistanceRange
 import org.neo4j.cypher.internal.logical.plans.PointDistanceSeekRangeWrapper
+import org.neo4j.cypher.internal.logical.plans.Prober
 import org.neo4j.cypher.internal.logical.plans.ProcedureCall
 import org.neo4j.cypher.internal.logical.plans.ProcedureSignature
 import org.neo4j.cypher.internal.logical.plans.ProduceResult
@@ -787,6 +788,9 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
 
   def nonFuseable(): IMPL =
     appendAtCurrentIndent(UnaryOperator(lp => NonFuseable(lp)(_)))
+
+  def prober(probe: Prober.Probe): IMPL =
+    appendAtCurrentIndent(UnaryOperator(lp => Prober(lp, probe)(_)))
 
   def cacheProperties(properties: String*): IMPL = {
     cacheProperties(properties.map(Parser.parseExpression(_).asInstanceOf[LogicalProperty]).toSet)
