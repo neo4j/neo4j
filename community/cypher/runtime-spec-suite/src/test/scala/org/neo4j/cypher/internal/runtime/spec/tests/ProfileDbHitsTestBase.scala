@@ -35,7 +35,8 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
                                                                  val sizeHint: Int,
                                                                  costOfGetPropertyChain: Long, // the reported dbHits for getting the property chain
                                                                  costOfPropertyJumpedOverInChain: Long, // the reported dbHits for a property in the chain that needs to be traversed in order to read another property in the chain
-                                                                 costOfProperty: Long, // the reported dbHits for a single property lookup, after getting the property chain and getting to the right position
+                                                                 val costOfProperty: Long, // the reported dbHits for a single property lookup, after getting the property chain and getting to the right position
+                                                                 val costOfPropertyToken: Long, // the reported dbHits for a single property lookup, after getting the property chain and getting to the right position
                                                                  costOfLabelLookup: Long, // the reported dbHits for finding the id of a label
                                                                  costOfExpandGetRelCursor: Long, // the reported dbHits for obtaining a relationship cursor for expanding
                                                                  costOfExpandOneRel: Long, // the reported dbHits for expanding one relationship
@@ -635,5 +636,37 @@ trait NestedPlanDbHitsTestBase[CONTEXT <: RuntimeContext] {
 
     // then
     result.runtimeResult.queryProfile().operatorProfile(1).dbHits() should (be (size * size) or be (size * (size + 1))) // projection w. nested plan expression
+  }
+}
+
+
+trait WriteOperatorsDbHitsTestBase[CONTEXT <: RuntimeContext] {
+  self: ProfileDbHitsTestBase[CONTEXT] =>
+
+
+  test("should profile rows correctly") {
+    // given
+    given {
+      bipartiteGraph(sizeHint, "A", "B", "R")
+    }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .setProperty("x", "prop", "1")
+      .nodeByLabelScan("x", "A")
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    val produceResultProfile = queryProfile.operatorProfile(0)
+    val setPropertyProfile = queryProfile.operatorProfile(1)
+
+    setPropertyProfile.rows() shouldBe sizeHint
+    setPropertyProfile.dbHits() shouldBe 3 * costOfPropertyToken /*LazyPropertyKey: look up - create property token - look up*/ + sizeHint * costOfProperty
+    produceResultProfile.rows() shouldBe sizeHint
+    produceResultProfile.dbHits() shouldBe sizeHint * (costOfProperty + costOfProperty)
   }
 }
