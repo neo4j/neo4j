@@ -33,7 +33,7 @@ case class PartialSort(source: LogicalPlan,
                        alreadySortedPrefix: Seq[ColumnOrder],
                        stillToSortSuffix: Seq[ColumnOrder],
                        skipSortingPrefixLength: Option[Expression] = None)
-                      (implicit idGen: IdGen) extends LogicalPlan(idGen) with EagerLogicalPlan {
+                      (implicit idGen: IdGen) extends LogicalPlan(idGen) with LazyLogicalPlan {
 
   val lhs = Some(source)
   val rhs = None

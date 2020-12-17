@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
 /*
  * Only produce the first 'count' rows from source.
  */
-case class Limit(source: LogicalPlan, count: Expression)(implicit idGen: IdGen) extends LogicalPlan(idGen) with LazyLogicalPlan {
+case class Limit(source: LogicalPlan, count: Expression)(implicit idGen: IdGen) extends LogicalPlan(idGen) with LazyLogicalPlan with LimitingLogicalPlan {
   val lhs = Some(source)
   val rhs = None
 

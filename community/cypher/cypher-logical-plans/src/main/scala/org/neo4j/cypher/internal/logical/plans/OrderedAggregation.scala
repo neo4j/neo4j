@@ -32,7 +32,7 @@ case class OrderedAggregation(source: LogicalPlan,
                               override val aggregationExpressions: Map[String, Expression],
                               orderToLeverage: Seq[Expression])
                              (implicit idGen: IdGen)
-  extends LogicalPlan(idGen) with EagerLogicalPlan with AggregatingPlan with ProjectingPlan {
+  extends LogicalPlan(idGen) with LazyLogicalPlan with AggregatingPlan with ProjectingPlan {
 
   override val projectExpressions: Map[String, Expression] = groupingExpressions
 

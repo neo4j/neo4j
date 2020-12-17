@@ -23,13 +23,35 @@ import org.neo4j.cypher.internal.ir.EagerMode
 import org.neo4j.cypher.internal.ir.LazyMode
 import org.neo4j.cypher.internal.ir.StrictnessMode
 
+/**
+ * A plan that which limits selectivity on child plans.
+ */
+trait LimitingLogicalPlan {
+  self: LazyLogicalPlan =>
+
+  val source: LogicalPlan
+}
+
+/**
+ * A plan that eventually exhausts all input from LHS.
+ */
+trait ExhaustiveLogicalPlan {
+  self: LogicalPlan =>
+}
+
+/**
+ * A plan that does not necessarily consume all input from LHS.
+ */
 trait LazyLogicalPlan {
   self: LogicalPlan =>
 
   override def strictness: StrictnessMode = LazyMode
 }
 
-trait EagerLogicalPlan {
+/**
+ * A plan that exhausts all input from LHS before producing it's first output.
+ */
+trait EagerLogicalPlan extends ExhaustiveLogicalPlan {
   self: LogicalPlan =>
 
   override def strictness: StrictnessMode = EagerMode
