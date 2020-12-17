@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.index.schema;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
@@ -56,20 +57,22 @@ class PartMerger<KEY,VALUE> implements AutoCloseable
     private final Layout<KEY,VALUE> layout;
     private final BlockStorage.Cancellation cancellation;
     private final int batchSize;
+    private final Comparator<KEY> samplingComparator;
     private final List<BlockEntryStreamMerger<KEY,VALUE>> allMergers = new ArrayList<>();
     private final List<JobHandle<Void>> mergeHandles = new ArrayList<>();
 
     PartMerger( PopulationWorkScheduler populationWorkScheduler, List<BlockEntryCursor<KEY,VALUE>> parts,
-            Layout<KEY,VALUE> layout, BlockStorage.Cancellation cancellation, int batchSize )
+            Layout<KEY,VALUE> layout, Comparator<KEY> samplingComparator, BlockStorage.Cancellation cancellation, int batchSize )
     {
         this.populationWorkScheduler = populationWorkScheduler;
         this.parts = parts;
         this.layout = layout;
         this.cancellation = cancellation;
         this.batchSize = batchSize;
+        this.samplingComparator = samplingComparator;
     }
 
-    BlockEntryCursor<KEY,VALUE> startMerge()
+    BlockEntryStreamMerger<KEY,VALUE> startMerge()
     {
         List<BlockEntryCursor<KEY,VALUE>> remainingParts = new ArrayList<>( parts );
         while ( remainingParts.size() > MERGE_FACTOR )
@@ -82,7 +85,7 @@ class PartMerger<KEY,VALUE> implements AutoCloseable
                 current.add( remainingPart );
                 if ( current.size() == MERGE_FACTOR )
                 {
-                    BlockEntryStreamMerger<KEY,VALUE> merger = new BlockEntryStreamMerger<>( current, layout, cancellation, batchSize, QUEUE_SIZE );
+                    BlockEntryStreamMerger<KEY,VALUE> merger = new BlockEntryStreamMerger<>( current, layout, null, cancellation, batchSize, QUEUE_SIZE );
                     allMergers.add( merger );
                     levelParts.add( merger );
                     current = new ArrayList<>();
@@ -92,7 +95,8 @@ class PartMerger<KEY,VALUE> implements AutoCloseable
             remainingParts = levelParts;
         }
 
-        BlockEntryStreamMerger<KEY,VALUE> merger = new BlockEntryStreamMerger<>( remainingParts, layout, cancellation, batchSize, QUEUE_SIZE );
+        BlockEntryStreamMerger<KEY,VALUE> merger =
+                new BlockEntryStreamMerger<>( remainingParts, layout, samplingComparator, cancellation, batchSize, QUEUE_SIZE );
         allMergers.add( merger );
         allMergers.forEach( merge -> mergeHandles.add(
                 populationWorkScheduler.schedule( indexName -> "Part merger while writing scan update for " + indexName, merge ) ) );

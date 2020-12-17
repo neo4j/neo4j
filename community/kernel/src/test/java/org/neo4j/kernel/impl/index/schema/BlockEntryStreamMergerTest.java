@@ -25,12 +25,14 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.TreeSet;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.RawBytes;
 import org.neo4j.index.internal.gbptree.SimpleByteArrayLayout;
+import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.OtherThreadExtension;
 import org.neo4j.test.extension.RandomExtension;
@@ -58,18 +60,41 @@ class BlockEntryStreamMergerTest
     private final List<BlockEntry<RawBytes,RawBytes>> allData = new ArrayList<>();
 
     @Test
-    void shouldMergePartsIntoOne() throws Exception
+    void shouldMergePartsIntoOneWithoutSampling() throws Exception
     {
         // given
         List<BlockEntryCursor<RawBytes,RawBytes>> parts = buildParts( random, layout, allData );
 
         // when
-        try ( BlockEntryStreamMerger<RawBytes,RawBytes> merger = new BlockEntryStreamMerger<>( parts, layout, NOT_CANCELLABLE, BATCH_SIZE, QUEUE_SIZE ) )
+        try ( BlockEntryStreamMerger<RawBytes,RawBytes> merger = new BlockEntryStreamMerger<>( parts, layout, null, NOT_CANCELLABLE, BATCH_SIZE,
+                QUEUE_SIZE ) )
         {
             t2.execute( merger );
 
             // then
             assertMergedPartStream( allData, merger );
+        }
+    }
+
+    @Test
+    void shouldMergePartsIntoOneWithSampling() throws Exception
+    {
+        // given
+        List<BlockEntryCursor<RawBytes,RawBytes>> parts = buildParts( random, layout, allData );
+
+        // when
+        try ( BlockEntryStreamMerger<RawBytes,RawBytes> merger = new BlockEntryStreamMerger<>( parts, layout, layout, NOT_CANCELLABLE, BATCH_SIZE,
+                QUEUE_SIZE ) )
+        {
+            Future<Void> t2Future = t2.execute( merger );
+
+            // then
+            assertMergedPartStream( allData, merger );
+            t2Future.get();
+            IndexSample sample = merger.buildIndexSample();
+            assertThat( sample.sampleSize() ).isEqualTo( allData.size() );
+            assertThat( sample.indexSize() ).isEqualTo( allData.size() );
+            assertThat( sample.uniqueValues() ).isEqualTo( countUniqueKeys( allData ) );
         }
     }
 
@@ -80,7 +105,7 @@ class BlockEntryStreamMergerTest
         List<BlockEntryCursor<RawBytes,RawBytes>> parts = buildParts( random, layout, allData, 4, rng -> QUEUE_SIZE * BATCH_SIZE );
 
         // when
-        try ( BlockEntryStreamMerger<RawBytes,RawBytes> merger = new BlockEntryStreamMerger<>( parts, layout, NOT_CANCELLABLE, BATCH_SIZE, QUEUE_SIZE ) )
+        try ( BlockEntryStreamMerger<RawBytes,RawBytes> merger = new BlockEntryStreamMerger<>( parts, layout, null, NOT_CANCELLABLE, BATCH_SIZE, QUEUE_SIZE ) )
         {
             // start the merge and wait for it to fill up the queue to the brim before halting it
             Future<Void> invocation = t2.execute( merger );
@@ -101,7 +126,7 @@ class BlockEntryStreamMergerTest
 
         // when
         AtomicBoolean cancelled = new AtomicBoolean();
-        try ( BlockEntryStreamMerger<RawBytes,RawBytes> merger = new BlockEntryStreamMerger<>( parts, layout, cancelled::get, BATCH_SIZE, QUEUE_SIZE ) )
+        try ( BlockEntryStreamMerger<RawBytes,RawBytes> merger = new BlockEntryStreamMerger<>( parts, layout, null, cancelled::get, BATCH_SIZE, QUEUE_SIZE ) )
         {
             // start the merge and wait for it to fill up the queue to the brim before halting it
             Future<Void> invocation = t2.execute( merger );
@@ -121,7 +146,7 @@ class BlockEntryStreamMergerTest
         List<BlockEntryCursor<RawBytes,RawBytes>> parts = buildParts( random, layout, allData, 4, rng -> QUEUE_SIZE * BATCH_SIZE );
 
         // when
-        try ( BlockEntryStreamMerger<RawBytes,RawBytes> merger = new BlockEntryStreamMerger<>( parts, layout, NOT_CANCELLABLE, BATCH_SIZE, QUEUE_SIZE ) )
+        try ( BlockEntryStreamMerger<RawBytes,RawBytes> merger = new BlockEntryStreamMerger<>( parts, layout, null, NOT_CANCELLABLE, BATCH_SIZE, QUEUE_SIZE ) )
         {
             Future<Boolean> firstRead = t2.execute( merger::next );
             t2.get().waitUntilWaiting( wait -> wait.isAt( BlockEntryStreamMerger.class, "next" ) );
@@ -139,7 +164,7 @@ class BlockEntryStreamMergerTest
         List<BlockEntryCursor<RawBytes,RawBytes>> parts = buildParts( random, layout, allData, 4, rng -> QUEUE_SIZE * BATCH_SIZE );
 
         // when
-        try ( BlockEntryStreamMerger<RawBytes,RawBytes> merger = new BlockEntryStreamMerger<>( parts, layout, NOT_CANCELLABLE, BATCH_SIZE, QUEUE_SIZE ) )
+        try ( BlockEntryStreamMerger<RawBytes,RawBytes> merger = new BlockEntryStreamMerger<>( parts, layout, null, NOT_CANCELLABLE, BATCH_SIZE, QUEUE_SIZE ) )
         {
             Future<Boolean> firstRead = t2.execute( merger::next );
             t2.get().waitUntilWaiting( wait -> wait.isAt( BlockEntryStreamMerger.class, "next" ) );
@@ -158,5 +183,12 @@ class BlockEntryStreamMergerTest
             numMergedEntries++;
         }
         return numMergedEntries;
+    }
+
+    private long countUniqueKeys( List<BlockEntry<RawBytes,RawBytes>> entries )
+    {
+        TreeSet<RawBytes> set = new TreeSet<>( layout );
+        entries.forEach( e -> set.add( e.key() ) );
+        return set.size();
     }
 }

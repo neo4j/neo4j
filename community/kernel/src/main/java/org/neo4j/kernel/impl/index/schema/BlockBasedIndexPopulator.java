@@ -25,6 +25,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
@@ -260,7 +261,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
                   var indexKeyStorage = new IndexKeyStorage<>( fileSystem, duplicatesFile, allocator, readBufferSize, layout, memoryTracker ) )
             {
                 RecordingConflictDetector<KEY,VALUE> recordingConflictDetector = new RecordingConflictDetector<>( !descriptor.isUnique(), indexKeyStorage );
-                writeScanUpdatesToTree( populationWorkScheduler, recordingConflictDetector, allocator, readBufferSize, cursorTracer );
+                nonUniqueIndexSample = writeScanUpdatesToTree( populationWorkScheduler, recordingConflictDetector, allocator, readBufferSize, cursorTracer );
 
                 // Apply the external updates
                 phaseTracker.enterPhase( PhaseTracker.Phase.APPLY_EXTERNAL );
@@ -273,10 +274,6 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
                     {
                         verifyUniqueKeys( allConflictingKeys, cursorTracer );
                     }
-                }
-                else
-                {
-                    nonUniqueIndexSample = buildNonUniqueIndexSample( cursorTracer );
                 }
             }
 
@@ -361,6 +358,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
                     throw new IllegalArgumentException( "Unknown update mode " + updates.updateMode() );
                 }
                 numberOfAppliedExternalUpdates.incrementAndGet();
+                numberOfIndexUpdatesSinceSample.incrementAndGet();
             }
         }
     }
@@ -396,12 +394,12 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
         }
     }
 
-    private void writeScanUpdatesToTree( PopulationWorkScheduler populationWorkScheduler, RecordingConflictDetector<KEY,VALUE> recordingConflictDetector,
+    private IndexSample writeScanUpdatesToTree( PopulationWorkScheduler populationWorkScheduler, RecordingConflictDetector<KEY,VALUE> recordingConflictDetector,
             Allocator allocator, int bufferSize, PageCursorTracer cursorTracer ) throws IOException, IndexEntryConflictException
     {
         if ( allScanUpdates.isEmpty() )
         {
-            return;
+            return new IndexSample( 0, 0, 0 );
         }
 
         // Merge the (sorted) scan updates from all the different threads in pairs until only one stream remain,
@@ -424,7 +422,8 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
                 }
             }
 
-            try ( var merger = new PartMerger<>( populationWorkScheduler, parts, layout, cancellation, PartMerger.DEFAULT_BATCH_SIZE );
+            Comparator<KEY> samplingComparator = descriptor.isUnique() ? null : layout::compareValue;
+            try ( var merger = new PartMerger<>( populationWorkScheduler, parts, layout, samplingComparator, cancellation, PartMerger.DEFAULT_BATCH_SIZE );
                   var allEntries = merger.startMerge();
                   var writer = tree.writer( 1, cursorTracer ) )
             {
@@ -433,6 +432,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
                     writeToTree( writer, recordingConflictDetector, allEntries.key(), allEntries.value() );
                     numberOfAppliedScanUpdates.incrementAndGet();
                 }
+                return descriptor.isUnique() ? null : allEntries.buildIndexSample();
             }
         }
     }
@@ -632,17 +632,13 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
     }
 
     @Override
-    public IndexSample sample( PageCursorTracer cursorTracer )
+    IndexSample buildNonUniqueIndexSample( PageCursorTracer cursorTracer )
     {
-        if ( !descriptor.isUnique() )
-        {
-            return new IndexSample(
-                    nonUniqueIndexSample.indexSize(),
-                    nonUniqueIndexSample.uniqueValues(),
-                    nonUniqueIndexSample.sampleSize(),
-                    numberOfIndexUpdatesSinceSample.get() );
-        }
-        return super.sample( cursorTracer );
+        return new IndexSample(
+                nonUniqueIndexSample.indexSize(),
+                nonUniqueIndexSample.uniqueValues(),
+                nonUniqueIndexSample.sampleSize(),
+                numberOfIndexUpdatesSinceSample.get() );
     }
 
     /**

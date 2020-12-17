@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.index.schema;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Iterator;
 
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -57,16 +56,6 @@ abstract class NativeNonUniqueIndexPopulatorTest<KEY extends NativeIndexKey<KEY>
     }
 
     private static final IndexDescriptor nonUniqueDescriptor = TestIndexDescriptorFactory.forLabel( 42, 666 );
-
-    private static Value[] asValues( ValueIndexEntryUpdate<IndexDescriptor>[] updates )
-    {
-        Value[] values = new Value[updates.length];
-        for ( int i = 0; i < updates.length; i++ )
-        {
-            values[i] = updates[i].values()[0];
-        }
-        return values;
-    }
 
     @Override
     NativeIndexPopulator<KEY,VALUE> createPopulator( PageCache pageCache ) throws IOException
@@ -161,11 +150,10 @@ abstract class NativeNonUniqueIndexPopulatorTest<KEY extends NativeIndexKey<KEY>
             IndexSample sample = populator.sample( NULL );
 
             // THEN
-            Value[] allValues = Arrays.copyOf( updates, updates.length + scanUpdates.length );
-            System.arraycopy( asValues( scanUpdates ), 0, allValues, updates.length, scanUpdates.length );
-            assertEquals( updates.length + scanUpdates.length, sample.sampleSize() );
-            assertEquals( countUniqueValues( allValues ), sample.uniqueValues() );
-            assertEquals( updates.length + scanUpdates.length, sample.indexSize() );
+            assertEquals( scanUpdates.length, sample.sampleSize() );
+            assertEquals( countUniqueValues( scanUpdates ), sample.uniqueValues() );
+            assertEquals( scanUpdates.length, sample.indexSize() );
+            assertEquals( updates.length, sample.updates() );
         }
         finally
         {

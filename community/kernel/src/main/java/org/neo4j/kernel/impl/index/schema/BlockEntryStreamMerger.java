@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.index.schema;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Callable;
@@ -28,6 +29,8 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.io.IOUtils;
+import org.neo4j.kernel.api.index.IndexSample;
+import org.neo4j.util.Preconditions;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
@@ -47,18 +50,23 @@ class BlockEntryStreamMerger<KEY,VALUE> implements BlockEntryCursor<KEY,VALUE>, 
     private final BlockStorage.Cancellation cancellation;
     private final ArrayBlockingQueue<BlockEntryCursor<KEY,VALUE>> mergedOutput;
     private final int batchSize;
+    private final Comparator<KEY> samplingComparator;
+    private KEY prevKey;
+    private long sampledValues;
+    private long uniqueValues;
     private volatile boolean halted;
     // This cursor will be used by the single thread reading from this merged stream
     private BlockEntryCursor<KEY,VALUE> currentOutput;
 
-    BlockEntryStreamMerger( List<BlockEntryCursor<KEY,VALUE>> input, Layout<KEY,VALUE> layout, BlockStorage.Cancellation cancellation, int batchSize,
-            int queueSize )
+    BlockEntryStreamMerger( List<BlockEntryCursor<KEY,VALUE>> input, Layout<KEY,VALUE> layout, Comparator<KEY> samplingComparator,
+            BlockStorage.Cancellation cancellation, int batchSize, int queueSize )
     {
         this.input = input;
         this.layout = layout;
         this.cancellation = cancellation;
         this.batchSize = batchSize;
         this.mergedOutput = new ArrayBlockingQueue<>( queueSize );
+        this.samplingComparator = samplingComparator;
     }
 
     @Override
@@ -74,13 +82,13 @@ class BlockEntryStreamMerger<KEY,VALUE> implements BlockEntryCursor<KEY,VALUE>, 
                 merged.add( new BlockEntry<>( mergingReader.key(), mergingReader.value() ) );
                 if ( merged.size() == batchSize )
                 {
-                    offer( new ListBasedBlockEntryCursor<>( merged ) );
+                    offer( merged );
                     merged = new ArrayList<>( batchSize );
                 }
             }
             if ( !merged.isEmpty() )
             {
-                offer( new ListBasedBlockEntryCursor<>( merged ) );
+                offer( merged );
             }
             return null;
         }
@@ -133,8 +141,14 @@ class BlockEntryStreamMerger<KEY,VALUE> implements BlockEntryCursor<KEY,VALUE>, 
         return !halted && !cancellation.cancelled();
     }
 
-    private void offer( BlockEntryCursor<KEY,VALUE> batch )
+    private void offer( List<BlockEntry<KEY,VALUE>> entries )
     {
+        if ( samplingComparator != null )
+        {
+            includeInSample( entries );
+        }
+
+        ListBasedBlockEntryCursor<KEY,VALUE> batch = new ListBasedBlockEntryCursor<>( entries );
         try
         {
             while ( alive() && !mergedOutput.offer( batch, 10, MILLISECONDS ) )
@@ -152,6 +166,26 @@ class BlockEntryStreamMerger<KEY,VALUE> implements BlockEntryCursor<KEY,VALUE>, 
     void halt()
     {
         halted = true;
+    }
+
+    private void includeInSample( List<BlockEntry<KEY,VALUE>> entries )
+    {
+        for ( BlockEntry<KEY,VALUE> entry : entries )
+        {
+            KEY key = entry.key();
+            if ( prevKey == null || samplingComparator.compare( key, prevKey ) != 0 )
+            {
+                prevKey = key;
+                uniqueValues++;
+            }
+            sampledValues++;
+        }
+    }
+
+    IndexSample buildIndexSample()
+    {
+        Preconditions.checkState( samplingComparator != null, "I haven't been sampling at all" );
+        return new IndexSample( sampledValues, uniqueValues, sampledValues );
     }
 
     private BlockEntryCursor<KEY,VALUE> nextOutputBatchOrNull()

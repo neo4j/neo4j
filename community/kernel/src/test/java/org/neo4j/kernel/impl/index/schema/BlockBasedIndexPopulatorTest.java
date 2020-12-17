@@ -630,6 +630,39 @@ class BlockBasedIndexPopulatorTest
         }
     }
 
+    @Test
+    void shouldCountExternalUpdatesAsSampleUpdates() throws IOException, IndexEntryConflictException
+    {
+        // given
+        BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR );
+        try
+        {
+            populator.add( List.of( add( 0 ), add( 1 ) ), NULL );
+            try ( IndexUpdater updater = populator.newPopulatingUpdater( NULL ) )
+            {
+                updater.process( add( 10 ) );
+                updater.process( add( 11 ) );
+                updater.process( add( 12 ) );
+            }
+
+            // when
+            populator.scanCompleted( nullInstance, populationWorkScheduler, NULL );
+
+            try ( IndexUpdater updater = populator.newPopulatingUpdater( NULL ) )
+            {
+                updater.process( remove( 10 ) );
+            }
+
+            // then
+            IndexSample sample = populator.sample( NULL );
+            assertThat( sample.updates() ).isEqualTo( 4 );
+        }
+        finally
+        {
+            populator.close( true, NULL );
+        }
+    }
+
     private Seeker<GenericKey,NativeIndexValue> seek( GBPTree<GenericKey,NativeIndexValue> tree, Layout<GenericKey,NativeIndexValue> layout ) throws IOException
     {
         GenericKey low = layout.newKey();
@@ -702,6 +735,11 @@ class BlockBasedIndexPopulatorTest
     private static IndexEntryUpdate<IndexDescriptor> add( int i )
     {
         return IndexEntryUpdate.add( i, INDEX_DESCRIPTOR, stringValue( "Value" + i ) );
+    }
+
+    private static IndexEntryUpdate<IndexDescriptor> remove( int i )
+    {
+        return IndexEntryUpdate.remove( i, INDEX_DESCRIPTOR, stringValue( "Value" + i ) );
     }
 
     private static class TrappingMonitor extends BlockStorage.Monitor.Adapter

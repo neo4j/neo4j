@@ -212,9 +212,9 @@ class IndexPopulationJobTest
         assertTrue( populator.resultSampled );
         assertTrue( populator.closeCall );
 
-        assertThat( pageCacheTracer.pins() ).isEqualTo( 19 );
-        assertThat( pageCacheTracer.unpins() ).isEqualTo( 19 );
-        assertThat( pageCacheTracer.hits() ).isEqualTo( 18 );
+        assertThat( pageCacheTracer.pins() ).isEqualTo( 18 );
+        assertThat( pageCacheTracer.unpins() ).isEqualTo( 18 );
+        assertThat( pageCacheTracer.hits() ).isEqualTo( 17 );
         assertThat( pageCacheTracer.faults() ).isEqualTo( 1 );
     }
 
@@ -265,9 +265,9 @@ class IndexPopulationJobTest
         assertTrue( populator.resultSampled );
         assertTrue( populator.closeCall );
 
-        assertThat( pageCacheTracer.pins() ).isEqualTo( 18 );
-        assertThat( pageCacheTracer.unpins() ).isEqualTo( 18 );
-        assertThat( pageCacheTracer.hits() ).isEqualTo( 17 );
+        assertThat( pageCacheTracer.pins() ).isEqualTo( 17 );
+        assertThat( pageCacheTracer.unpins() ).isEqualTo( 17 );
+        assertThat( pageCacheTracer.hits() ).isEqualTo( 16 );
         assertThat( pageCacheTracer.faults() ).isEqualTo( 1 );
     }
 

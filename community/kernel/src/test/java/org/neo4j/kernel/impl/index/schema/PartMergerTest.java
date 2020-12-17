@@ -26,7 +26,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.Callable;
 
@@ -35,7 +34,6 @@ import org.neo4j.index.internal.gbptree.RawBytes;
 import org.neo4j.index.internal.gbptree.SimpleByteArrayLayout;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexPopulator.PopulationWorkScheduler;
-import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobScheduler;
@@ -87,7 +85,7 @@ class PartMergerTest
         Layout<RawBytes,RawBytes> layout = new SimpleByteArrayLayout();
         List<BlockEntry<RawBytes,RawBytes>> allData = new ArrayList<>();
         List<BlockEntryCursor<RawBytes,RawBytes>> parts = buildParts( random, layout, allData );
-        PartMerger<RawBytes,RawBytes> merger = new PartMerger<>( populationWorkScheduler, parts, layout, NOT_CANCELLABLE, 10 );
+        PartMerger<RawBytes,RawBytes> merger = new PartMerger<>( populationWorkScheduler, parts, layout, null, NOT_CANCELLABLE, 10 );
 
         // when
         try ( BlockEntryCursor<RawBytes,RawBytes> stream = merger.startMerge() )
@@ -101,11 +99,11 @@ class PartMergerTest
     void shouldMergeZeroParts() throws IOException
     {
         // given
-        IndexLayout<GenericKey,NativeIndexValue> layout = new GenericLayout( 1, new IndexSpecificSpaceFillingCurveSettings( new HashMap<>() ) );
-        PartMerger<GenericKey,NativeIndexValue> merger = new PartMerger<>( populationWorkScheduler, emptyList(), layout, NOT_CANCELLABLE, 10 );
+        Layout<RawBytes,RawBytes> layout = new SimpleByteArrayLayout();
+        PartMerger<RawBytes,RawBytes> merger = new PartMerger<>( populationWorkScheduler, emptyList(), layout, null, NOT_CANCELLABLE, 10 );
 
         // when
-        try ( BlockEntryCursor<GenericKey,NativeIndexValue> stream = merger.startMerge() )
+        try ( BlockEntryCursor<RawBytes,RawBytes> stream = merger.startMerge() )
         {
             // then
             assertThat( stream.next() ).isFalse();
