@@ -1,8 +1,8 @@
 <project default="build">
   <target name="build" depends="extract-shell-zip,flatten-browser" />
 
-  <property name="shell.dir" location="../../../../cypher-shell"/>
-  <property name="shell.zip" location="${shell.dir}/cypher-shell.zip"/>
+  <property name="shell.dir" location="../../community/cypher-shell/cypher-shell/target"/>
+  <property name="shell.zip" location="${shell.dir}/cypher-shell-${project.version}.zip"/>
   <!-- Extract zip file -->
 
   <target name="find-shell-zip" description="See if shell zip file exists">
