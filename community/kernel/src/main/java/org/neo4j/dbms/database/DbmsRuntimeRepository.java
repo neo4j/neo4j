@@ -26,9 +26,6 @@ import static org.neo4j.kernel.database.DatabaseIdRepository.NAMED_SYSTEM_DATABA
 
 public abstract class DbmsRuntimeRepository
 {
-    public static final DbmsRuntimeVersion LATEST_VERSION = DbmsRuntimeVersion.V4_3;
-    public static final DbmsRuntimeVersion PREVIOUS_VERSION = DbmsRuntimeVersion.V4_1;
-
     private final DatabaseManager<?> databaseManager;
     final DbmsRuntimeSystemGraphComponent component;
 

@@ -29,8 +29,6 @@ import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.coreapi.TransactionImpl;
 
-import static org.neo4j.dbms.database.ComponentVersion.Neo4jVersions.UNKNOWN_VERSION;
-
 /**
  * The system database is used to store information of interest to many parts of the DBMS. Each sub-graph can be thought of as being of primary interest to (or
  * managed by) a particular component of the DBMS. For example, the security sub-graph composed of User, Role, Privilege and various other related nodes and

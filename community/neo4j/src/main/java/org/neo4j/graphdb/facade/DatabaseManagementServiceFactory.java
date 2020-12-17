@@ -138,8 +138,8 @@ public class DatabaseManagementServiceFactory
 
         setupProcedures( globalModule, edition, databaseManager );
 
-        edition.registerSystemGraphComponents( globalModule.getSystemGraphComponents(), globalModule, databaseManager );
-        globalLife.add( edition.createSystemGraphInitializer( globalModule, databaseManager ) );
+        edition.registerSystemGraphComponents( globalModule.getSystemGraphComponents(), globalModule );
+        globalLife.add( edition.createSystemGraphInitializer( globalModule ) );
 
         var dbmsRuntimeSystemGraphComponent = new DbmsRuntimeSystemGraphComponent( globalModule.getGlobalConfig() );
         globalModule.getSystemGraphComponents().register( dbmsRuntimeSystemGraphComponent );

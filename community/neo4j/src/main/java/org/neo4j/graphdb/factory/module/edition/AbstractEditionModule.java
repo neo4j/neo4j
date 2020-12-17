@@ -116,10 +116,9 @@ public abstract class AbstractEditionModule
 
     public abstract <DB extends DatabaseContext> DatabaseManager<DB> createDatabaseManager( GlobalModule globalModule );
 
-    public abstract SystemGraphInitializer createSystemGraphInitializer( GlobalModule globalModule, DatabaseManager<?> databaseManager );
+    public abstract SystemGraphInitializer createSystemGraphInitializer( GlobalModule globalModule );
 
-    public abstract void registerSystemGraphComponents( SystemGraphComponents systemGraphComponents, GlobalModule globalModule,
-                                                        DatabaseManager<?> databaseManager );
+    public abstract void registerSystemGraphComponents( SystemGraphComponents systemGraphComponents, GlobalModule globalModule );
 
     public abstract void createSecurityModule( GlobalModule globalModule );
 

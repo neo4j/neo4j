@@ -240,7 +240,7 @@ public class CommunityEditionModule extends StandaloneEditionModule
     }
 
     @Override
-    public SystemGraphInitializer createSystemGraphInitializer( GlobalModule globalModule, DatabaseManager<?> databaseManager )
+    public SystemGraphInitializer createSystemGraphInitializer( GlobalModule globalModule )
     {
         DependencyResolver globalDependencies = globalModule.getGlobalDependencies();
         Supplier<GraphDatabaseService> systemSupplier = systemSupplier( globalDependencies );
@@ -252,8 +252,7 @@ public class CommunityEditionModule extends StandaloneEditionModule
     }
 
     @Override
-    public void registerSystemGraphComponents( SystemGraphComponents systemGraphComponents, GlobalModule globalModule,
-                                               DatabaseManager<?> databaseManager )
+    public void registerSystemGraphComponents( SystemGraphComponents systemGraphComponents, GlobalModule globalModule )
     {
         var systemGraphComponent = new DefaultSystemGraphComponent( globalModule.getGlobalConfig() );
         systemGraphComponents.register( systemGraphComponent );
