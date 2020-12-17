@@ -399,3 +399,48 @@ Feature: MatchAcceptance
     Then the result should be, in any order:
       | x |
     And no side effects
+
+  Scenario Outline: Fail to match <prop> properties as nodes
+    Given an empty graph
+    And having executed:
+      """
+      CREATE (:A{prop: <prop> })
+      """
+    When executing query:
+      """
+      MATCH(a:A) WITH a.prop as prop
+      MATCH (b:B) <-- ( prop )
+      RETURN b
+      """
+    Then a SyntaxError should be raised at compile time: VariableTypeConflict
+
+    Examples:
+      | prop                                                                     |
+      | 1                                                                        |
+      | 1.2                                                                      |
+      | "string"                                                                 |
+      | false                                                                    |
+      | [ 1, 2, 3 ]                                                              |
+      | [ 1.0, 2.0, 3.0 ]                                                        |
+      | duration("1D")                                                           |
+      | [ localdatetime('2015185T19:32:24'), localdatetime('2016185T19:32:24') ] |
+      | [ 1.0, 2]                                                                |
+
+  Scenario: Expand on a node stored in a map
+    Given an empty graph
+    And having executed:
+      """
+      CREATE (b:Book)-[:HOLDS]->(p:Page)-[:HOLDS]->(pg:Paragraph{words:'blah'})
+      """
+    When executing query:
+      """
+      MATCH (a:Page)
+      WITH {k:a} AS map
+      WITH map.k as nd
+      MATCH (para)<-[:HOLDS]-(nd)
+      RETURN para.words
+      """
+    Then the result should be, in any order:
+      | para.words |
+      | 'blah'     |
+    And no side effects

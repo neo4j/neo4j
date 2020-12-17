@@ -17,14 +17,15 @@
 package org.neo4j.cypher.internal.ast.semantics
 
 import org.neo4j.cypher.internal.ast.StatementHelper.RichStatement
-import org.neo4j.cypher.internal.ast.semantics.ScopeTestHelper.allSymbol
 import org.neo4j.cypher.internal.ast.semantics.ScopeTestHelper.intCollectionCollectionSymbol
 import org.neo4j.cypher.internal.ast.semantics.ScopeTestHelper.intCollectionSymbol
 import org.neo4j.cypher.internal.ast.semantics.ScopeTestHelper.intSymbol
 import org.neo4j.cypher.internal.ast.semantics.ScopeTestHelper.nodeSymbol
 import org.neo4j.cypher.internal.ast.semantics.ScopeTestHelper.pathCollectionSymbol
 import org.neo4j.cypher.internal.ast.semantics.ScopeTestHelper.scope
+import org.neo4j.cypher.internal.ast.semantics.ScopeTestHelper.typedSymbol
 import org.neo4j.cypher.internal.parser.ParserFixture.parse
+import org.neo4j.cypher.internal.util.symbols.StorableType
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 /*
@@ -206,9 +207,9 @@ class ScopeTreeTest extends CypherFunSuite {
         scope(nodeSymbol("liker", 7, 19, 38))()
       ),
       scope(pathCollectionSymbol("isNew", 54, 65), nodeSymbol("liker", 83, 19, 7, 28))(
-        scope(allSymbol("freshId", 97, 116), pathCollectionSymbol("isNew", 54, 65, 74))()
+        scope(typedSymbol("freshId", StorableType.storableType, 97, 116), pathCollectionSymbol("isNew", 54, 65, 74))()
       ),
-      scope(allSymbol("freshId", 97), pathCollectionSymbol("isNew", 54, 65, 74, 133))(),
+      scope(typedSymbol("freshId", StorableType.storableType, 97), pathCollectionSymbol("isNew", 54, 65, 74, 133))(),
       scope(pathCollectionSymbol("isNew", 54, 74, 65, 142, 133))()
     ))
   }

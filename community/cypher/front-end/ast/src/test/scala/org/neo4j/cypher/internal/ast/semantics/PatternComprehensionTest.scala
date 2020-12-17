@@ -26,10 +26,10 @@ import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.RelationshipsPattern
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.StringLiteral
-import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTBoolean
 import org.neo4j.cypher.internal.util.symbols.CTList
 import org.neo4j.cypher.internal.util.symbols.CTString
+import org.neo4j.cypher.internal.util.symbols.StorableType
 
 class PatternComprehensionTest extends SemanticFunSuite {
 
@@ -47,7 +47,7 @@ class PatternComprehensionTest extends SemanticFunSuite {
     val result = SemanticExpressionCheck.simple(expression)(SemanticState.clean)
 
     result.errors shouldBe empty
-    types(expression)(result.state) should equal(CTList(CTAny).covariant)
+    types(expression)(result.state) should equal(StorableType.storableType.wrapInList)
   }
 
   test("pattern comprehension with literal string projection has correct type") {

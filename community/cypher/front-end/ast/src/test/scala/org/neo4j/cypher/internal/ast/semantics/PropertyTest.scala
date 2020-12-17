@@ -18,24 +18,35 @@ package org.neo4j.cypher.internal.ast.semantics
 
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTDate
+import org.neo4j.cypher.internal.util.symbols.CTDateTime
+import org.neo4j.cypher.internal.util.symbols.CTDuration
 import org.neo4j.cypher.internal.util.symbols.CTInteger
+import org.neo4j.cypher.internal.util.symbols.CTLocalDateTime
+import org.neo4j.cypher.internal.util.symbols.CTLocalTime
 import org.neo4j.cypher.internal.util.symbols.CTMap
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTPoint
 import org.neo4j.cypher.internal.util.symbols.CTRelationship
+import org.neo4j.cypher.internal.util.symbols.CTTime
+import org.neo4j.cypher.internal.util.symbols.StorableType
 
 class PropertyTest extends SemanticFunSuite {
 
-  test("accepts property access on a map") {
-    val mapExpr: Variable = variable("map")
-    val propertyKey: PropertyKeyName = propertyKeyName("prop")
+  Seq(CTMap, CTPoint, CTDate, CTTime, CTLocalTime, CTLocalDateTime, CTDateTime, CTDuration).foreach { cypherType =>
+    test(s"accepts property access on a $cypherType") {
+      val mapExpr: Variable = variable("map")
+      val propertyKey: PropertyKeyName = propertyKeyName("prop")
 
-    val beforeState = SemanticState.clean.newChildScope.declareVariable(mapExpr, CTMap).right.get
+      val beforeState = SemanticState.clean.newChildScope.declareVariable(mapExpr, cypherType).right.get
 
-    val result = SemanticExpressionCheck.simple(property(mapExpr, propertyKey))(beforeState)
+      val propExpr = property(mapExpr, propertyKey)
+      val result = SemanticExpressionCheck.simple(propExpr)(beforeState)
 
-    result.errors shouldBe empty
+      result.errors shouldBe empty
+      types(propExpr)(result.state) should equal(CTAny.covariant)
+    }
   }
 
   test("accepts property access on a node") {
@@ -44,9 +55,11 @@ class PropertyTest extends SemanticFunSuite {
 
     val beforeState = SemanticState.clean.newChildScope.declareVariable(mapExpr, CTNode).right.get
 
+    val propExpr = property(mapExpr, propertyKey)
     val result = SemanticExpressionCheck.simple(property(mapExpr, propertyKey))(beforeState)
 
     result.errors shouldBe empty
+    types(propExpr)(result.state) should equal(StorableType.storableType)
   }
 
   test("accepts property access on a relationship") {
@@ -55,31 +68,11 @@ class PropertyTest extends SemanticFunSuite {
 
     val beforeState = SemanticState.clean.newChildScope.declareVariable(mapExpr, CTRelationship).right.get
 
-    val result = SemanticExpressionCheck.simple(property(mapExpr, propertyKey))(beforeState)
+    val propExpr = property(mapExpr, propertyKey)
+    val result = SemanticExpressionCheck.simple(propExpr)(beforeState)
 
     result.errors shouldBe empty
-  }
-
-  test("accepts property access on a Point") {
-    val mapExpr: Variable = variable("map")
-    val propertyKey: PropertyKeyName = propertyKeyName("prop")
-
-    val beforeState = SemanticState.clean.newChildScope.declareVariable(mapExpr, CTPoint).right.get
-
-    val result = SemanticExpressionCheck.simple(property(mapExpr, propertyKey))(beforeState)
-
-    result.errors shouldBe empty
-  }
-
-  test("accepts property access on an Date") {
-    val mapExpr: Variable = variable("map")
-    val propertyKey: PropertyKeyName = propertyKeyName("prop")
-
-    val beforeState = SemanticState.clean.newChildScope.declareVariable(mapExpr, CTDate).right.get
-
-    val result = SemanticExpressionCheck.simple(property(mapExpr, propertyKey))(beforeState)
-
-    result.errors shouldBe empty
+    types(propExpr)(result.state) should equal(StorableType.storableType)
   }
 
   test("refuses property access on an Integer") {
