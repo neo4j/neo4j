@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.Prober
 import org.neo4j.cypher.internal.runtime.BufferInputStream
@@ -477,6 +478,201 @@ abstract class EagerTestBase[CONTEXT <: RuntimeContext](
     val result = execute(logicalQuery, runtime, inputStream, subscriber)
 
     assertPerArgumentEager(result, subscriber, inputStream, probe, rowsPerArgument/2, nBatches, batchSize)
+  }
+
+  test("eager with empty result") {
+    val nBatches = Math.max(sizeHint / 10, 2)
+    val batchSize = 10
+    val inputStream = inputColumns(nBatches, batchSize, identity).stream()
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults()
+      .eager()
+      .emptyResult()
+      .eager()
+      .input(variables = Seq("x"))
+      .build()
+
+    val result = execute(logicalQuery, runtime, inputStream)
+    consume(result)
+    result should beColumns().withNoRows()
+  }
+
+  test("eager with create and empty result") {
+    assume(!isParallel)
+
+    val nBatches = Math.max(sizeHint / 10, 2)
+    val batchSize = 10
+    val inputStream = inputColumns(nBatches, batchSize, identity).stream()
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults()
+      .eager()
+      .emptyResult()
+      .eager()
+      .create(createNode("n"))
+      .eager()
+      .input(variables = Seq("x"))
+      .build()
+
+    val result = execute(logicalQuery, runtime, inputStream)
+    consume(result)
+    result should beColumns().withNoRows().withStatistics(nodesCreated = nBatches * batchSize)
+  }
+
+  //----------------------------------------------------------------------------
+  // Tests with varying number of input rows
+  //----------------------------------------------------------------------------
+
+  List(0, 1, sizeHint/2).foreach { nInputRows =>
+    val expected: Array[Array[Long]] = (0L until nInputRows).map(Array(_)).toArray
+
+    test(s"two top-level eagers with $nInputRows input rows") {
+      val inputStream = inputColumns(1, nInputRows, Values.longValue(_)).stream()
+
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("x")
+        .eager()
+        .eager()
+        .input(variables = Seq("x"))
+        .build()
+
+      val result = execute(logicalQuery, runtime, inputStream)
+      consume(result)
+      result should beColumns("x").withRows(expected)
+    }
+
+    test(s"three top-level eagers with $nInputRows input rows") {
+      val inputStream = inputColumns(1, nInputRows, Values.longValue(_)).stream()
+
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("x")
+        .eager()
+        .eager()
+        .eager()
+        .input(variables = Seq("x"))
+        .build()
+
+      val result = execute(logicalQuery, runtime, inputStream)
+      consume(result)
+      result should beColumns("x").withRows(expected)
+    }
+
+    test(s"two eagers on rhs of apply with $nInputRows input rows") {
+      val inputStream = inputColumns(1, nInputRows, Values.longValue(_)).stream()
+
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("x")
+        .apply()
+        .|.eager()
+        .|.eager()
+        .|.argument()
+        .input(variables = Seq("x"))
+        .build()
+
+      val result = execute(logicalQuery, runtime, inputStream)
+      consume(result)
+      result should beColumns("x").withRows(expected)
+    }
+
+    test(s"eager on rhs of apply and eager on top with $nInputRows input rows") {
+      val inputStream = inputColumns(1, nInputRows, Values.longValue(_)).stream()
+
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("x")
+        .eager()
+        .apply()
+        .|.eager()
+        .|.argument()
+        .input(variables = Seq("x"))
+        .build()
+
+      val result = execute(logicalQuery, runtime, inputStream)
+      consume(result)
+      result should beColumns("x").withRows(expected)
+    }
+
+    test(s"eager on rhs of apply and two eager on top with $nInputRows input rows") {
+      val inputStream = inputColumns(1, nInputRows, Values.longValue(_)).stream()
+
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("x")
+        .eager()
+        .eager()
+        .apply()
+        .|.eager()
+        .|.argument()
+        .input(variables = Seq("x"))
+        .build()
+
+      val result = execute(logicalQuery, runtime, inputStream)
+      consume(result)
+      result should beColumns("x").withRows(expected)
+    }
+
+    test(s"eager + eager on rhs of apply + eager on top with $nInputRows input rows") {
+      val inputStream = inputColumns(1, nInputRows, Values.longValue(_)).stream()
+
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("x")
+        .eager()
+        .apply()
+        .|.eager()
+        .|.argument()
+        .eager()
+        .input(variables = Seq("x"))
+        .build()
+
+      val result = execute(logicalQuery, runtime, inputStream)
+      consume(result)
+      result should beColumns("x").withRows(expected)
+    }
+
+    test(s"eager + nested eager on rhs of apply + eager on top with $nInputRows input rows") {
+      val inputStream = inputColumns(1, nInputRows, Values.longValue(_)).stream()
+
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("x")
+        .eager()
+        .apply()
+        .|.apply()
+        .|.|.eager()
+        .|.|.argument()
+        .|.eager()
+        .|.argument()
+        .eager()
+        .input(variables = Seq("x"))
+        .build()
+
+      val result = execute(logicalQuery, runtime, inputStream)
+      consume(result)
+      result should beColumns("x").withRows(expected)
+    }
+
+    test(s"eager with middle operator + nested eager on rhs of apply + eager on top with $nInputRows input rows") {
+      val inputStream = inputColumns(1, nInputRows, Values.longValue(_)).stream()
+
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("x")
+        .projection("x AS x")
+        .eager()
+        .apply()
+        .|.apply()
+        .|.|.projection("x AS x")
+        .|.|.eager()
+        .|.|.argument()
+        .|.projection("x AS x")
+        .|.eager()
+        .|.argument()
+        .projection("x AS x")
+        .eager()
+        .input(variables = Seq("x"))
+        .build()
+
+      val result = execute(logicalQuery, runtime, inputStream)
+      consume(result)
+      result should beColumns("x").withRows(expected)
+    }
   }
 
   private def recordingProbe(variablesToRecord: String*): Prober.Probe with RecordingRowsProbe = {
