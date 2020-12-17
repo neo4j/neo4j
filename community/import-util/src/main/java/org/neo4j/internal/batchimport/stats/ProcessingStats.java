@@ -29,14 +29,15 @@ public class ProcessingStats extends GenericStatsProvider
 {
     public ProcessingStats(
             long receivedBatches, long doneBatches,
-            long totalProcessingTime, long average,
+            long totalProcessingTime, long averageProcessing, long totalProcessingWallClockTime,
             long upstreamIdleTime, long downstreamIdleTime )
     {
         add( Keys.received_batches, Stats.longStat( receivedBatches ) );
         add( Keys.done_batches, Stats.longStat( doneBatches ) );
         add( Keys.total_processing_time, Stats.longStat( totalProcessingTime ) );
+        add( Keys.total_processing_wall_clock_time, Stats.longStat( totalProcessingWallClockTime ) );
         add( Keys.upstream_idle_time, Stats.longStat( upstreamIdleTime ) );
         add( Keys.downstream_idle_time, Stats.longStat( downstreamIdleTime ) );
-        add( Keys.avg_processing_time, Stats.longStat( average ) );
+        add( Keys.avg_processing_time, Stats.longStat( averageProcessing ) );
     }
 }
