@@ -19,7 +19,6 @@
  */
 package org.neo4j.internal.kernel.api.helpers;
 
-import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.IndexReadSession;
