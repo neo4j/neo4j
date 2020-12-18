@@ -50,10 +50,7 @@ case object rewriteEqualityToInPredicate extends StatementRewriter with StepSequ
       In(prop, ListLiteral(Seq(idValueExpr))(idValueExpr.position))(predicate.position)
   })
 
-  override def preConditions: Set[StepSequencer.Condition] = Set(
-    // transitiveClosure does not work correctly if Equals has been rewritten to In, so this rewriter needs to go after.
-    TransitiveClosureAppliedToWhereClauses
-  )
+  override def preConditions: Set[StepSequencer.Condition] = Set.empty
 
   override def postConditions: Set[StepSequencer.Condition] = Set(EqualityRewrittenToIn)
 

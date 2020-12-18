@@ -49,10 +49,8 @@ case object CNFNormalizer extends StatementRewriter with StepSequencer.Step with
     )
   }
 
-  override def preConditions: Set[StepSequencer.Condition] = Set(
-    // transitiveClosure does not work correctly if And has been rewritten to Ands, so this rewriter needs to go after.
-    TransitiveClosureAppliedToWhereClauses
-  ) ++ flattenBooleanOperators.preConditions ++ normalizeSargablePredicates.preConditions
+  override def preConditions: Set[StepSequencer.Condition] =
+    flattenBooleanOperators.preConditions ++ normalizeSargablePredicates.preConditions
 
   override def postConditions: Set[StepSequencer.Condition] = Set(BooleanPredicatesInCNF) ++ flattenBooleanOperators.postConditions ++ normalizeSargablePredicates.postConditions
 

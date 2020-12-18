@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.expressions.Or
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransformerFactory
 import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
+import org.neo4j.cypher.internal.rewriting.rewriters.AndRewrittenToAnds
 import org.neo4j.cypher.internal.rewriting.rewriters.EqualityRewrittenToIn
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
@@ -118,11 +119,10 @@ case object transitiveClosure extends StatementRewriter with StepSequencer.Step 
   }
 
   override def preConditions: Set[StepSequencer.Condition] = Set(
-    //!EqualityRewrittenToIn,
-    //!AndRewrittenToAnds
-    // Only matching on Equals and And, this rewriter does not work correctly if these have already been rewritten to In and Ands.
-    // There is currently no way of specifying negated conditions.
-    // Instead, this is modelled with preConditions in the other direction.
+    // This rewriter matches on Equals, so it must run before that is rewritten to In
+    !EqualityRewrittenToIn,
+    // This rewriter matches on And, so it must run before that is rewritten to Ands
+    !AndRewrittenToAnds
   )
 
   override def postConditions: Set[StepSequencer.Condition] = Set(TransitiveClosureAppliedToWhereClauses)
