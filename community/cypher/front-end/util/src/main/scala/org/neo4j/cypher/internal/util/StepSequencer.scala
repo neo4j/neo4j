@@ -20,6 +20,7 @@ import org.neo4j.cypher.internal.util.StepSequencer.AccumulatedSteps
 import org.neo4j.cypher.internal.util.StepSequencer.ByInitialCondition
 import org.neo4j.cypher.internal.util.StepSequencer.Condition
 import org.neo4j.cypher.internal.util.StepSequencer.MutableDirectedGraph
+import org.neo4j.cypher.internal.util.StepSequencer.NegatedCondition
 import org.neo4j.cypher.internal.util.StepSequencer.Step
 import org.neo4j.cypher.internal.util.StepSequencer.StepAccumulator
 
@@ -47,12 +48,19 @@ case class StepSequencer[S <: Step, ACC](stepAccumulator: StepAccumulator[S, ACC
    *                          of the returned sequence.
    */
   def orderSteps(steps: Set[S], initialConditions: Set[Condition] = Set.empty): AccumulatedSteps[ACC] = {
+    // Abort if there is a negated initial condition
+    initialConditions.foreach {
+      case n: NegatedCondition => throw new IllegalArgumentException(s"Initial conditions cannot be negated: $n.")
+      case _ => // OK
+    }
+
     // For each post-condition, find the step that introduces it
     val introducingSteps: Map[Condition, Either[StepSequencer.ByInitialCondition.type, S]] = {
       val is = for {
         step <- steps.toSeq
         _ = { if (step.postConditions.isEmpty) throw new IllegalArgumentException(s"Step $step has no post-conditions. That is not allowed.") }
         postCondition <- step.postConditions
+        _ = { if (postCondition.isInstanceOf[NegatedCondition]) throw new IllegalArgumentException(s"Step $step has a negated post-condition: $postCondition. That is not allowed.") }
         _ = { if (initialConditions.contains(postCondition)) throw new IllegalArgumentException(s"Step $step introduces $postCondition, which is an initial condition. That is currently not allowed.") }
       } yield postCondition -> Right(step)
 
@@ -71,6 +79,7 @@ case class StepSequencer[S <: Step, ACC](stepAccumulator: StepAccumulator[S, ACC
       val is = for {
         step <- steps.toSeq
         invalidatedCondition <- step.invalidatedConditions
+        _ = { if (invalidatedCondition.isInstanceOf[NegatedCondition]) throw new IllegalArgumentException(s"Step $step has an negated invalidated condition: $invalidatedCondition. That is not allowed.") }
       } yield invalidatedCondition -> step
       is.groupBy(_._1)
         .mapValues(_.map(_._2).toSet)
@@ -97,17 +106,25 @@ case class StepSequencer[S <: Step, ACC](stepAccumulator: StepAccumulator[S, ACC
     steps.foreach(graph.add)
     steps.foreach { step =>
       // (a)-->(b) means a needs to happen before b
-      step.preConditions.foreach { condition =>
-        introducingSteps
-          .getOrElse(condition, throw new IllegalArgumentException(s"There is no step introducing $condition. That is not allowed.")) match {
-          case Left(ByInitialCondition) =>
-            // Initial conditions cannot be re-enabled by any step.
-            // Therefore, there is hard requirement that a step that has an initial condition as a pre-condition runs before any steps that invalidate it.
-            invalidingSteps(condition).foreach(graph.connect(step, _))
-          case Right(introducingStep) =>
-            // The introducing step needs to happen before the one that has it as a pre-condition.
-            graph.connect(introducingStep, step)
-        }
+      step.preConditions.foreach {
+        case n@NegatedCondition(inner) =>
+        // For a negated precondition it is OK if there is no step that introduces it.
+          introducingSteps.get(inner).foreach {
+            case Left(ByInitialCondition) => throw new IllegalArgumentException(s"$step has $n as a pre-condition, but $inner is an initial condition. That is currently not allowed.")
+            case Right(introducingStep) =>
+              // The step with the negated pre-condition needs to happen before the introducing step.
+              graph.connect(step, introducingStep)
+          }
+        case condition =>
+          introducingSteps.getOrElse(condition, throw new IllegalArgumentException(s"There is no step introducing $condition. That is not allowed.")) match {
+            case Left(ByInitialCondition) =>
+              // Initial conditions cannot be re-enabled by any step.
+              // Therefore, there is hard requirement that a step that has an initial condition as a pre-condition runs before any steps that invalidate it.
+              invalidingSteps(condition).foreach(graph.connect(step, _))
+            case Right(introducingStep) =>
+              // The introducing step needs to happen before the one that has it as a pre-condition.
+              graph.connect(introducingStep, step)
+          }
       }
     }
 
@@ -127,7 +144,14 @@ object StepSequencer {
 
   private case object ByInitialCondition
 
-  trait Condition
+  trait Condition {
+    def unary_!(): Condition = NegatedCondition(this)
+  }
+
+  private case class NegatedCondition(inner: Condition) extends Condition {
+    override def toString: String = s"!$inner"
+    override def unary_!(): Condition = inner
+  }
 
   trait Step {
     /**

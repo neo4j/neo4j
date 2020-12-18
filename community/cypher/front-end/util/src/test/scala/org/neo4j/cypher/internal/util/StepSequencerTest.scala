@@ -119,6 +119,27 @@ class StepSequencerTest extends CypherFunSuite {
     an[IllegalArgumentException] should be thrownBy sequencer.orderSteps(steps.toSet, initialConditions = Set(condB))
   }
 
+  test("fails if there is a step that introduces a negated condition") {
+    val steps = Seq(
+      new TestStep("0", Set(), Set(!condB), Set()),
+    )
+    an[IllegalArgumentException] should be thrownBy sequencer.orderSteps(steps.toSet, initialConditions = Set(condB))
+  }
+
+  test("fails if there is a step that invalidates a negated condition") {
+    val steps = Seq(
+      new TestStep("0", Set(), Set(condA), Set(!condB)),
+    )
+    an[IllegalArgumentException] should be thrownBy sequencer.orderSteps(steps.toSet, initialConditions = Set(condB))
+  }
+
+  test("fails if a negated condition is given as an initial condition") {
+    val steps = Seq(
+      new TestStep("0", Set(), Set(condA), Set()),
+    )
+    an[IllegalArgumentException] should be thrownBy sequencer.orderSteps(steps.toSet, initialConditions = Set(!condB))
+  }
+
   test("orders steps correctly if they have strong ordering requirements") {
     val steps = Seq(
       new TestStep("0", Set(), Set(condA), Set()),
@@ -363,6 +384,28 @@ class StepSequencerTest extends CypherFunSuite {
       steps(1),
       steps(0),
     ))
+    postConditions should equal(steps.flatMap(_.postConditions).toSet)
+  }
+
+  test("should order step with negated precondition before step that introduces that condition") {
+    val steps = Seq(
+      new TestStep("0", Set(), Set(condA), Set()),
+      new TestStep("1", Set(!condA), Set(condB), Set()),
+    )
+    val AccumulatedSteps(orderedSteps, postConditions) = sequencer.orderSteps(steps.toSet)
+    orderedSteps should equal(Seq(
+      steps(1),
+      steps(0),
+    ))
+    postConditions should equal(steps.flatMap(_.postConditions).toSet)
+  }
+
+  test("should allow step with negated precondition if no step introduces that condition") {
+    val steps = Seq(
+      new TestStep("0", Set(), Set(condA), Set()),
+      new TestStep("1", Set(!condC), Set(condB), Set()),
+    )
+    val AccumulatedSteps(orderedSteps, postConditions) = sequencer.orderSteps(steps.toSet)
     postConditions should equal(steps.flatMap(_.postConditions).toSet)
   }
 
