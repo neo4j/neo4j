@@ -145,7 +145,8 @@ public class SystemGraphCredential implements Credential
             String algorithm = matcher.group( 1 );
             String hash = matcher.group( 2 );
             String salt = matcher.group( 3 );
-            int iterations = matcher.groupCount() == 4 ? Integer.parseInt( matcher.group( 4 ) ) : 1;
+            String iterationGroup = matcher.group( 4 );
+            int iterations = iterationGroup != null ? Integer.parseInt( iterationGroup ) : 1;
             String version = SecureHasherConfigurations.getVersionForConfiguration( algorithm, iterations );
 
             return String.join( CREDENTIAL_SEPARATOR, version, hash, salt );
