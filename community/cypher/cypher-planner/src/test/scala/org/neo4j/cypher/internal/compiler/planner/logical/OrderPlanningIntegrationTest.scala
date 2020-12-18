@@ -29,8 +29,8 @@ import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.Qu
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfiguration
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder
 import org.neo4j.cypher.internal.expressions.Expression
-import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.IsNotNull
+import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.logical.plans.Aggregation
 import org.neo4j.cypher.internal.logical.plans.Ascending
@@ -276,11 +276,11 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
 
     val aAt7 = "  a@7"
     val aAt43 = "  a@43"
-    val labelScan = NodeByLabelScan(aAt7, labelName("A"), Set.empty, IndexOrderNone)
+    val labelScan = NodeByLabelScan(aAt7, labelName("A"), Set.empty, IndexOrderAscending)
     val ageProperty = prop(aAt43, "age")
     val nameProperty = prop(aAt7, "name")
 
-    val distinct = Distinct(labelScan, Map("name" -> nameProperty, aAt43 -> varFor(aAt7)))
+    val distinct = OrderedDistinct(labelScan, Map("name" -> nameProperty, aAt43 -> varFor(aAt7)), Seq(varFor(aAt7)))
     val projection = Projection(distinct, Map(s"$aAt43.age" -> ageProperty))
     val sort = Sort(projection, Seq(Ascending(s"$aAt43.age")))
 
@@ -320,13 +320,13 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
 
     val aAt7 = "  a@7"
     val aAt34 = "  a@34"
-    val labelScan = NodeByLabelScan(aAt7, labelName("A"), Set.empty, IndexOrderNone)
+    val labelScan = NodeByLabelScan(aAt7, labelName("A"), Set.empty, IndexOrderAscending)
     val ageProperty = prop(aAt7, "age")
     val nameProperty = prop(aAt7, "name")
     val fooProperty = prop(aAt34, "foo")
     val ageSum = sum(ageProperty)
 
-    val aggregation = Aggregation(labelScan, Map("name" -> nameProperty, aAt34 -> varFor(aAt7)), Map("age" -> ageSum))
+    val aggregation = OrderedAggregation(labelScan, Map("name" -> nameProperty, aAt34 -> varFor(aAt7)), Map("age" -> ageSum), Seq(varFor(aAt7)))
     val projection = Projection(aggregation, Map(s"$aAt34.foo" -> fooProperty))
     val sort = Sort(projection, Seq(Ascending(s"$aAt34.foo")))
 
@@ -1539,4 +1539,25 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
     }
   }
 
+  test(s"Should use OrderedDistinct on node variable") {
+    val plan = new given().getLogicalPlanFor("MATCH (a:A) RETURN DISTINCT a")._2
+
+    val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
+      .orderedDistinct(Seq("a"), "a AS a")
+      .nodeByLabelScan("a", "A", indexOrder = IndexOrderAscending)
+      .build()
+
+    plan shouldEqual expectedPlan
+  }
+
+  test(s"Should use OrderedAggregation on node variable") {
+    val plan = new given().getLogicalPlanFor("MATCH (a:A) RETURN a, count(*) AS c")._2
+
+    val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
+      .orderedAggregation(Seq("a AS a"), Seq("count(*) AS c"), Seq("a"))
+      .nodeByLabelScan("a", "A", indexOrder = IndexOrderAscending)
+      .build()
+
+    plan shouldEqual expectedPlan
+  }
 }

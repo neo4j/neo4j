@@ -75,6 +75,17 @@ class InterestingOrderStatementConvertersTest extends CypherFunSuite with Logica
     )
   }
 
+  test(s"Extracts interesting node order from DISTINCT") {
+    val result = buildSinglePlannerQuery("MATCH (n) RETURN DISTINCT n")
+    result.interestingOrder shouldBe InterestingOrder(
+      RequiredOrderCandidate(Seq.empty),
+      Seq(
+        InterestingOrderCandidate.asc(varFor("n")),
+        InterestingOrderCandidate.desc(varFor("n")),
+      )
+    )
+  }
+
   test("Extracts required order from aggregation") {
     val result = buildSinglePlannerQuery("MATCH (n) RETURN n.prop, count(*) ORDER BY n.prop")
 
@@ -96,6 +107,17 @@ class InterestingOrderStatementConvertersTest extends CypherFunSuite with Logica
         InterestingOrderCandidate.desc(prop("n", "prop")),
         InterestingOrderCandidate.asc(prop("n", "foo")),
         InterestingOrderCandidate.desc(prop("n", "foo")),
+      )
+    )
+  }
+
+  test(s"Extracts interesting node order from aggregation") {
+    val result = buildSinglePlannerQuery("MATCH (n) RETURN n, count(*)")
+    result.interestingOrder shouldBe InterestingOrder(
+      RequiredOrderCandidate(Seq.empty),
+      Seq(
+        InterestingOrderCandidate.asc(varFor("n")),
+        InterestingOrderCandidate.desc(varFor("n")),
       )
     )
   }

@@ -236,13 +236,14 @@ object ClauseConverters {
   }
 
   private def interestingOrderCandidatesForGroupingExpressions(groupingExpressions: Map[String, Expression]): Seq[InterestingOrderCandidate] = {
-    val props = groupingExpressions.values.collect {
+    val propsAndVars = groupingExpressions.values.collect {
       case e: Property => e
+      case v: Variable => v
     }.toSeq
 
     val orderings = Seq(Asc(_, Map.empty), Desc(_, Map.empty))
     for {
-      prop <- props
+      prop <- propsAndVars
       indexOrder <- orderings
     } yield InterestingOrderCandidate(Seq(indexOrder(prop)))
   }
