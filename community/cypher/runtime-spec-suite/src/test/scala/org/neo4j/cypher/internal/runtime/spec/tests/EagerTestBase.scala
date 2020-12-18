@@ -328,7 +328,7 @@ abstract class EagerTestBase[CONTEXT <: RuntimeContext](
     assertPerArgumentEager(result, subscriber, inputStream, probe, rowsPerArgument, nBatches, batchSize)
   }
 
-  test("two chained eagers on rhs of apply") {
+  test("two chained eagers with middle operators on rhs of apply") {
     val nBatches = Math.max(sizeHint / 10, 2)
     val batchSize = 10
     val inputStream = inputColumns(nBatches, batchSize, Values.longValue(_)).stream()
@@ -355,7 +355,7 @@ abstract class EagerTestBase[CONTEXT <: RuntimeContext](
     assertPerArgumentEager(result, subscriber, inputStream, probe, rowsPerArgument, nBatches, batchSize)
   }
 
-  test("two chained eagers with middle operators on rhs of apply") {
+  test("two chained eagers on rhs of apply") {
     val nBatches = Math.max(sizeHint / 10, 2)
     val batchSize = 10
     val inputStream = inputColumns(nBatches, batchSize, Values.longValue(_)).stream()
@@ -677,9 +677,9 @@ abstract class EagerTestBase[CONTEXT <: RuntimeContext](
 
   private def recordingProbe(variablesToRecord: String*): Prober.Probe with RecordingRowsProbe = {
     if (isParallel)
-      RecordingProbe(variablesToRecord: _*)
-    else
       ThreadSafeRecordingProbe(variablesToRecord: _*)
+    else
+      RecordingProbe(variablesToRecord: _*)
   }
 
   private def assertRows(expected: GenTraversable[_], actual: Seq[_], hasLimit: Boolean = false): Any = {
