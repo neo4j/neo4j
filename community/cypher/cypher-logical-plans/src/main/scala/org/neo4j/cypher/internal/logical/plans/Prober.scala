@@ -19,16 +19,37 @@
  */
 package org.neo4j.cypher.internal.logical.plans
 
+import org.neo4j.cypher.internal.logical.plans.Prober.Probe
 import org.neo4j.cypher.internal.util.attribution.IdGen
 
 /**
+ * Install a probe to observe data flowing through the query
+ *
  * NOTE: This plan is only for testing
  */
-case class NonFuseable(source: LogicalPlan)(implicit idGen: IdGen) extends LogicalPlan(idGen) with LazyLogicalPlan {
+case class Prober(source: LogicalPlan, probe: Probe)(implicit idGen: IdGen) extends LogicalPlan(idGen) with LazyLogicalPlan {
 
   val lhs: Option[LogicalPlan] = Some(source)
   def rhs: Option[LogicalPlan] = None
 
   val availableSymbols: Set[String] = source.availableSymbols
+}
+
+object Prober {
+  trait Probe {
+    /**
+     * Called on each row that passes through this operator.
+     *
+     * NOTE: The row object is transient and any data that needs to be stored
+     * should be copied before the call returns.
+     *
+     * @param row a CypherRow representation
+     */
+    def onRow(row: AnyRef): Unit
+  }
+
+  object NoopProbe extends Probe {
+    override def onRow(row: AnyRef): Unit = {}
+  }
 }
 
