@@ -48,13 +48,14 @@ import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.CartesianProduct
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipTypeScan
-import org.neo4j.cypher.internal.logical.plans.EagerLogicalPlan
 import org.neo4j.cypher.internal.logical.plans.ExhaustiveLimit
+import org.neo4j.cypher.internal.logical.plans.ExhaustiveLogicalPlan
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.ExpandInto
 import org.neo4j.cypher.internal.logical.plans.FindShortestPaths
 import org.neo4j.cypher.internal.logical.plans.LeftOuterHashJoin
 import org.neo4j.cypher.internal.logical.plans.Limit
+import org.neo4j.cypher.internal.logical.plans.LimitingLogicalPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NodeByIdSeek
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
@@ -165,16 +166,16 @@ case class CardinalityCostModel(executionModel: ExecutionModel) extends CostMode
     val lhsCost = plan.lhs.map(p => calculateCost(p, lhsLimitSelectivity, strictness, cardinalities, providedOrders, semanticTable, rootPlan)) getOrElse Cost.ZERO
     val rhsCost = plan.rhs.map(p => calculateCost(p, rhsLimitSelectivity, strictness, cardinalities, providedOrders, semanticTable, rootPlan)) getOrElse Cost.ZERO
 
-    val effectiveCardinalitiess = EffectiveCardinalities(
+    val effectiveCardinalities = EffectiveCardinalities(
       cardinalityForPlan(plan, cardinalities) * lhsLimitSelectivity,
       plan.lhs.map(p => cardinalities.get(p.id) * lhsLimitSelectivity) getOrElse Cardinality.EMPTY,
       plan.rhs.map(p => cardinalities.get(p.id) * rhsLimitSelectivity) getOrElse Cardinality.EMPTY
     )
 
-    val cost = combinedCostForPlan(plan, effectiveCardinalitiess, cardinalities, providedOrders, lhsCost, rhsCost, semanticTable, rootPlan)
+    val cost = combinedCostForPlan(plan, effectiveCardinalities, cardinalities, providedOrders, lhsCost, rhsCost, semanticTable, rootPlan)
 
     strictness match {
-      case Some(LazyMode) if !LazyMode(plan) => cost * EAGERNESS_MULTIPLIER
+      case Some(LazyMode) if plan.strictness != LazyMode => cost * EAGERNESS_MULTIPLIER
       case _ => cost
     }
   }
@@ -295,6 +296,7 @@ object CardinalityCostModel {
 
   /**
    * Given an incomingLimitSelectivity, calculate how this selectivity applies to the LHS and RHS of the plan.
+   *
    */
   def childrenLimitSelectivities(plan: LogicalPlan, incomingLimitSelectivity: Selectivity, cardinalities: Cardinalities): (Selectivity, Selectivity) = plan match {
     case _: CartesianProduct =>
@@ -302,16 +304,16 @@ object CardinalityCostModel {
       (sqrt, sqrt)
 
     //NOTE: we don't match on ExhaustiveLimit here since that doesn't affect the cardinality of earlier plans
-    case limit: Limit =>
-      val sourceCardinality = cardinalities.get(limit.source.id)
-      val limitCardinality = cardinalities.get(limit.id)
-      val s = (limitCardinality / sourceCardinality) getOrElse Selectivity.ONE
+    case p: LimitingLogicalPlan =>
+      val sourceCardinality = cardinalities.get(p.source.id)
+      val thisCardinality = cardinalities.get(p.id) * incomingLimitSelectivity
+      val s = (thisCardinality / sourceCardinality) getOrElse Selectivity.ONE
       (s, s)
 
     case HashJoin() =>
       (Selectivity.ONE, incomingLimitSelectivity)
 
-    case _: EagerLogicalPlan =>
+    case _: ExhaustiveLogicalPlan =>
       (Selectivity.ONE, Selectivity.ONE)
 
     case _ =>

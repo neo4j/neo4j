@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.P
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.ir.LazyMode
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
+import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
@@ -141,6 +142,21 @@ class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSu
 
     costFor(shallowPlan, QueryGraphSolverInput.empty, shallowPlanBuilder.getSemanticTable, shallowPlanBuilder.cardinalities, shallowPlanBuilder.providedOrders) should
       equal(costFor(deepPlan, QueryGraphSolverInput.empty, deepPlanBuilder.getSemanticTable, deepPlanBuilder.cardinalities, deepPlanBuilder.providedOrders))
+  }
+
+  test("limit should retain its cardinality") {
+    val builder = new LogicalPlanBuilder(wholePlan = false)
+    val plan = builder
+      .limit(10).withCardinality(10)
+      .allNodeScan("n").withCardinality(100)
+      .build()
+
+    val withoutLimit = QueryGraphSolverInput.empty
+
+    val costLimit = Cost(DEFAULT_COST_PER_ROW.cost * 10)
+    val costTot = costLimit + Cost(10 * 1.2)
+
+    costFor(plan, withoutLimit, builder.getSemanticTable, builder.cardinalities, builder.providedOrders) shouldBe costTot
   }
 
   test("lazy plans should be cheaper when limit selectivity is < 1.0") {
@@ -294,5 +310,21 @@ class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSu
     val expectedCost = Cardinality(cardinality) * (DEFAULT_COST_PER_ROW + CostPerRow(LABEL_CHECK_DB_HITS) * 3)
 
     costFor(plan, QueryGraphSolverInput.empty, builder.getSemanticTable, builder.cardinalities, builder.providedOrders) shouldBe expectedCost
+  }
+
+  test("sort should cost the same regardless of limit selectivity") {
+    val builder = new LogicalPlanBuilder(wholePlan = false)
+    val plan = builder
+      .sort(Seq(Ascending("n"))).withCardinality(100)
+      .allNodeScan("n").withCardinality(100)
+      .build()
+    val semanticTable = SemanticTable().addNode(varFor("n"))
+    val withoutLimit = QueryGraphSolverInput.empty
+    val withLimit = QueryGraphSolverInput.empty.withLimitSelectivity(Selectivity.of(0.5).get)
+    val unlimited = costFor(plan, withLimit, semanticTable, builder.cardinalities, builder.providedOrders)
+    val limited = costFor(plan, withoutLimit, semanticTable, builder.cardinalities, builder.providedOrders)
+    println(unlimited)
+    println(limited)
+    unlimited should equal(limited)
   }
 }
