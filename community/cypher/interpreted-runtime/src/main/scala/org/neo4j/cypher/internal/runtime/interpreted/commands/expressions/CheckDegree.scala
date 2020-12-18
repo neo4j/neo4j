@@ -78,7 +78,7 @@ case class HasDegreeLessThan(node: Expression, typ: Option[KeyToken], direction:
 }
 
 case class HasDegreeLessThanOrEqual(node: Expression, typ: Option[KeyToken], direction: SemanticDirection, maxDegree: Expression) extends CheckDegree(node, typ, direction, maxDegree) {
-  override protected def computePredicate(state: QueryState, node: Long, max: Int): Boolean = getDegree(max + 1, state, node) < max
+  override protected def computePredicate(state: QueryState, node: Long, max: Int): Boolean = getDegree(max + 1, state, node) <= max
   override def rewrite(f: Expression => Expression): Expression = f(HasDegreeLessThanOrEqual(node.rewrite(f), typ, direction, maxDegree))
 
 }
