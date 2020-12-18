@@ -107,6 +107,32 @@ class UserSerializationTest
         }
     }
 
+    @Test
+    void shouldMaskAndUnmaskSerializedCredentialsMissingIterations() throws Exception
+    {
+        // Given
+        List<User> users = asList(
+                new User.Builder( "Mike", LegacyCredential.forPassword( UTF8.encode( "1234321" ) ) ).build(),
+                new User.Builder( "Steve", LegacyCredential.forPassword( UTF8.encode( "1234321" ) ) ).build(),
+                new User.Builder( "steve.stevesson@WINDOMAIN", LegacyCredential.forPassword( UTF8.encode( "1234321" ) ) ).build(),
+                new User.Builder( "Bob", LegacyCredential.forPassword( UTF8.encode( "0987654" ) ) ).build()
+        );
+
+        for ( User user : users )
+        {
+            String serialized = user.credentials().serialize();
+            // Newer versions of the LegacyCredentials add the iteration count, but there might still exist old serializations in the graph
+            // that are missing this field, so we remove that field in this test to simulate that.
+            String serializedWithoutIterations = serialized.substring( 0, serialized.lastIndexOf( "," ) );
+
+            // When
+            String masked = SystemGraphCredential.maskSerialized(serializedWithoutIterations);
+
+            // Then (now all serialized credentials will include iteration count)
+            assertThat( serialized ).isEqualTo( SystemGraphCredential.serialize( masked.getBytes() ) );
+        }
+    }
+
     /**
      * This is a future-proofing test. If you come here because you've made changes to the serialization format,
      * this is your reminder to make sure to build this is in a backwards compatible way.
