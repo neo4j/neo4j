@@ -29,6 +29,8 @@ import org.neo4j.exceptions.InvalidArgumentException
 import org.neo4j.graphdb.RelationshipType
 import org.neo4j.internal.helpers.collection.Iterables
 
+import scala.collection.JavaConverters.iterableAsScalaIterableConverter
+
 abstract class SetPropertyTestBase[CONTEXT <: RuntimeContext](
                                                                edition: Edition[CONTEXT],
                                                                runtime: CypherRuntime[CONTEXT],
@@ -124,6 +126,29 @@ abstract class SetPropertyTestBase[CONTEXT <: RuntimeContext](
     val property = Iterables.single(tx.getAllPropertyKeys)
     runtimeResult should beColumns("p").withSingleRow(1).withStatistics(propertiesSet = 1)
     property shouldBe "prop"
+  }
+
+  test("should set and remove already existing node property") {
+    // given a single node
+    given {
+      nodePropertyGraph(1, { case _ => Map("prop" -> 0) })
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("p")
+      .projection("n.prop as p")
+      .setProperty("n", "prop", "null")
+      .setProperty("n", "propOther", "n.prop + 1")
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    val properties = tx.getAllPropertyKeys.asScala.toList
+    runtimeResult should beColumns("p").withSingleRow(null).withStatistics(propertiesSet = 2)
+    properties shouldBe Seq("prop", "propOther")
   }
 
   test("should throw on none node or relationship entity") {
