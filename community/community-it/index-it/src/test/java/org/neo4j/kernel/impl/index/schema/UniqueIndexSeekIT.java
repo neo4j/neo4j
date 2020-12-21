@@ -78,7 +78,6 @@ class UniqueIndexSeekIT
         Config config = dependencyResolver.resolveDependency( Config.class );
         try
         {
-
             Label label = label( "spaceship" );
             String nameProperty = "name";
             createUniqueConstraint( database, label, nameProperty );
@@ -137,14 +136,14 @@ class UniqueIndexSeekIT
 
     private static void generateRandomData( GraphDatabaseAPI database, Label label, String nameProperty )
     {
-        for ( int i = 0; i < 1000; i++ )
+        try ( Transaction transaction = database.beginTx() )
         {
-            try ( Transaction transaction = database.beginTx() )
+            for ( int i = 0; i < 1000; i++ )
             {
                 Node node = transaction.createNode( label );
                 node.setProperty( nameProperty, "PlanetExpress" + i );
-                transaction.commit();
             }
+            transaction.commit();
         }
     }
 
