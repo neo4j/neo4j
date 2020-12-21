@@ -25,6 +25,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.index.schema.LayoutTestUtil;
 import org.neo4j.test.rule.RandomRule;
 
+import static java.lang.String.format;
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10;
 
 public class GenericStringLengthIndexValidationIT extends StringLengthIndexValidationIT
@@ -48,9 +49,9 @@ public class GenericStringLengthIndexValidationIT extends StringLengthIndexValid
     }
 
     @Override
-    protected String expectedPopulationFailureCauseMessage()
+    protected String expectedPopulationFailureCauseMessage( long entityId )
     {
-        return "Property value is too large to index, please see index documentation for limitations. Index: Index( id=1, name='index_71616483', " +
-                "type='GENERAL BTREE', schema=(:LABEL_ONE {largeString}), indexProvider='native-btree-1.0' ), entity id: ";
+        return format( "Property value is too large to index, please see index documentation for limitations. Index: Index( id=1, name='index_71616483', " +
+                "type='GENERAL BTREE', schema=(:LABEL_ONE {largeString}), indexProvider='native-btree-1.0' ), entity id: %d", entityId );
     }
 }

@@ -77,7 +77,7 @@ public abstract class StringLengthIndexValidationIT
 
     protected abstract GraphDatabaseSettings.SchemaIndex getSchemaIndex();
 
-    protected abstract String expectedPopulationFailureCauseMessage();
+    protected abstract String expectedPopulationFailureCauseMessage( long entityId );
 
     @ExtensionCallback
     void configure( TestDatabaseManagementServiceBuilder builder )
@@ -154,7 +154,7 @@ public abstract class StringLengthIndexValidationIT
     {
         // Write
         String propValue = getString( random, singleKeySizeLimit + 1 );
-        createNode( propValue );
+        long nodeId = createNode( propValue );
 
         // Create index should be fine
         try ( Transaction tx = db.beginTx() )
@@ -162,8 +162,8 @@ public abstract class StringLengthIndexValidationIT
             tx.schema().indexFor( LABEL_ONE ).on( propKey ).create();
             tx.commit();
         }
-        assertIndexFailToComeOnline();
-        assertIndexInFailedState();
+        assertIndexFailToComeOnline( nodeId );
+        assertIndexInFailedState( nodeId );
     }
 
     @Test
@@ -225,16 +225,16 @@ public abstract class StringLengthIndexValidationIT
 
         // External update to index while population has not yet finished
         String propValue = getString( random, singleKeySizeLimit + 1 );
-        createNode( propValue );
+        long nodeId = createNode( propValue );
 
         // Continue index population
         populationScanFinished.release();
 
-        assertIndexFailToComeOnline();
-        assertIndexInFailedState();
+        assertIndexFailToComeOnline( nodeId );
+        assertIndexInFailedState( nodeId );
     }
 
-    public void assertIndexFailToComeOnline()
+    public void assertIndexFailToComeOnline( long entityId )
     {
         // Waiting for it to come online should fail
         try ( Transaction tx = db.beginTx() )
@@ -250,11 +250,11 @@ public abstract class StringLengthIndexValidationIT
                                     "(Index( id=1, name='index_71616483', type='GENERAL BTREE', schema=(:LABEL_ONE {largeString}), indexProvider='%s' )) " +
                                     "entered a FAILED state.",
                             schemaIndex.providerName() ),
-                    expectedPopulationFailureCauseMessage() );
+                    expectedPopulationFailureCauseMessage( entityId ) );
         }
     }
 
-    public void assertIndexInFailedState()
+    public void assertIndexInFailedState( long entityId )
     {
         // Index should be in failed state
         try ( Transaction tx = db.beginTx() )
@@ -263,7 +263,7 @@ public abstract class StringLengthIndexValidationIT
             assertTrue( iterator.hasNext() );
             IndexDefinition next = iterator.next();
             assertEquals( Schema.IndexState.FAILED, tx.schema().getIndexState( next ), "state is FAILED" );
-            assertThat( tx.schema().getIndexFailure( next ) ).contains( expectedPopulationFailureCauseMessage() );
+            assertThat( tx.schema().getIndexFailure( next ) ).contains( expectedPopulationFailureCauseMessage( entityId ) );
             tx.commit();
         }
     }
