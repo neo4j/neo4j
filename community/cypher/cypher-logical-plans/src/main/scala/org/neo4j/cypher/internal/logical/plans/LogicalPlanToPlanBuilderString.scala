@@ -221,6 +221,8 @@ object LogicalPlanToPlanBuilderString {
         val siStr = sortItemsStr(sortItems)
         val lStr = integerString(limit)
         s""" $siStr, $lStr """.trim
+      case Top1WithTies(_, sortItems) =>
+        sortItemsStr(sortItems)
       case PartialSort(_, alreadySortedPrefix, stillToSortSuffix, skipSortingPrefixLength) =>
         val asStr = sortItemsStr(alreadySortedPrefix)
         val stsStr = sortItemsStr(stillToSortSuffix)

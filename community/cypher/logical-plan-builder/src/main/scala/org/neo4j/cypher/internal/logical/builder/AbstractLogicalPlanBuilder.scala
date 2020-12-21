@@ -145,6 +145,7 @@ import org.neo4j.cypher.internal.logical.plans.SingleSeekableArg
 import org.neo4j.cypher.internal.logical.plans.Skip
 import org.neo4j.cypher.internal.logical.plans.Sort
 import org.neo4j.cypher.internal.logical.plans.Top
+import org.neo4j.cypher.internal.logical.plans.Top1WithTies
 import org.neo4j.cypher.internal.logical.plans.TriadicBuild
 import org.neo4j.cypher.internal.logical.plans.TriadicFilter
 import org.neo4j.cypher.internal.logical.plans.TriadicSelection
@@ -474,6 +475,11 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
 
   def top(sortItems: Seq[ColumnOrder], limitExpr: Expression): IMPL = {
     appendAtCurrentIndent(UnaryOperator(lp => Top(lp, sortItems, limitExpr)(_)))
+    self
+  }
+
+  def top1WithTies(sortItems: Seq[ColumnOrder]): IMPL = {
+    appendAtCurrentIndent(UnaryOperator(lp => Top1WithTies(lp, sortItems)(_)))
     self
   }
 

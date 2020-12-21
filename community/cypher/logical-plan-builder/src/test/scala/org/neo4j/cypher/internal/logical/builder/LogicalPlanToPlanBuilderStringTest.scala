@@ -465,6 +465,14 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
       .argument()
       .build())
 
+  testPlan("top1WithTies",
+    new TestPlanBuilder()
+      .produceResults("x", "y")
+      .top1WithTies(Seq(Ascending("xxx"), Descending("y")))
+      .top1WithTies(Seq(Ascending("x"), Ascending("y")))
+      .argument()
+      .build())
+
   testPlan("partialTop",
     new TestPlanBuilder()
       .produceResults("x", "y")
