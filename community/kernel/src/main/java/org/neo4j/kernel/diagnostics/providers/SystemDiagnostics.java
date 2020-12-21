@@ -57,6 +57,7 @@ import org.neo4j.internal.nativeimpl.NativeAccess;
 import org.neo4j.internal.nativeimpl.NativeAccessProvider;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.os.OsBeanUtil;
+import org.neo4j.util.VisibleForTesting;
 
 import static java.lang.String.format;
 import static java.net.NetworkInterface.getNetworkInterfaces;
@@ -340,11 +341,22 @@ public enum SystemDiagnostics implements DiagnosticsProvider
         return name;
     }
 
-    private static String canonicalize( String path )
+    @VisibleForTesting
+    static String canonicalize( String path )
     {
         try
         {
-            return FileUtils.getCanonicalFile( Path.of( path ) ).toAbsolutePath().toString();
+            boolean hasWildcard = path.endsWith( "*" );
+            if ( hasWildcard )
+            {
+                path = path.substring( 0, path.length() - 1 );
+            }
+            String result = FileUtils.getCanonicalFile( Path.of( path ) ).toAbsolutePath().toString();
+            if ( hasWildcard )
+            {
+                result += File.separator + "*";
+            }
+            return result;
         }
         catch ( UncheckedIOException e )
         {
