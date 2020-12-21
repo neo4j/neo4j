@@ -82,9 +82,9 @@ class NeoStoresIT
         var cursorTracer = new DefaultPageCacheTracer().createPageCursorTracer( "tracePageCacheAccessOnHighIdScan" );
         propertyStore.scanForHighId( cursorTracer );
 
-        assertEquals( 6, cursorTracer.hits() );
-        assertEquals( 6, cursorTracer.pins() );
-        assertEquals( 6, cursorTracer.unpins() );
+        assertEquals( 1, cursorTracer.hits() );
+        assertEquals( 1, cursorTracer.pins() );
+        assertEquals( 1, cursorTracer.unpins() );
     }
 
     @Test
