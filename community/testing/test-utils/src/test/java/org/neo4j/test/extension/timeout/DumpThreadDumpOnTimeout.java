@@ -20,23 +20,111 @@
 package org.neo4j.test.extension.timeout;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.Timeout;
+import org.opentest4j.AssertionFailedError;
 
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import static java.lang.Thread.sleep;
 import static java.time.Duration.ofMillis;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-@ExtendWith( VerboseExceptionExtension.class )
 class DumpThreadDumpOnTimeout
 {
     @Test
-    void dumpThreads()
+    void dumpOnTimeoutPreemptively()
     {
         assertTimeoutPreemptively( ofMillis( 10 ), () ->
         {
             sleep( TimeUnit.MINUTES.toMillis( 1 ) );
         } );
+    }
+
+    @Test
+    @Timeout( value = 10, unit = TimeUnit.MILLISECONDS )
+    void dumpOnTimeoutAnnotation() throws InterruptedException
+    {
+        sleep( TimeUnit.MINUTES.toMillis( 1 ) );
+    }
+
+    @Test
+    void dumpOnTimeoutException() throws TimeoutException
+    {
+        throw new TimeoutException();
+    }
+
+    @Test
+    void dumpOnAssertionFailedErrorWithMessage()
+    {
+        throw new AssertionFailedError( "foo() timed out after 20 minutes" ); //mimic what is thrown by the default timeout
+    }
+
+    @Test
+    void dumpOnCauseTimeout()
+    {
+        throw new RuntimeException( new TimeoutException() );
+    }
+
+    @Test
+    void dumpOnSuppressedTimeout()
+    {
+        RuntimeException exception = new RuntimeException();
+        exception.addSuppressed( new TimeoutException() );
+        throw exception;
+    }
+
+    @Test
+    void dumpOnDeepCauseTimeout()
+    {
+        RuntimeException exception = new RuntimeException( new TimeoutException() );
+        for ( int i = 0; i < 10; i++ )
+        {
+            exception = new RuntimeException( exception );
+        }
+        throw exception;
+    }
+
+    @Test
+    void dumpOnDeepSuppressedTimeout()
+    {
+        RuntimeException exception = new RuntimeException();
+        exception.addSuppressed( new TimeoutException() );
+        for ( int i = 0; i < 10; i++ )
+        {
+            exception = new RuntimeException( exception );
+        }
+        throw exception;
+    }
+
+    @Test
+    void doNotDumpOnAssume()
+    {
+        assumeTrue( false );
+    }
+
+    @Test
+    void doNotDumpOnAssert()
+    {
+        assertThat( "foo" ).isEqualTo( "bar" );
+    }
+
+    @Test
+    void doNotDumpOnException()
+    {
+        throw new RuntimeException( "foo" );
+    }
+
+    @Test
+    void doNotDumpOnDeepException()
+    {
+        RuntimeException exception = new RuntimeException();
+        for ( int i = 0; i < 10; i++ )
+        {
+            exception = new RuntimeException( exception );
+        }
+        throw exception;
     }
 }

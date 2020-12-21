@@ -47,7 +47,6 @@ import org.neo4j.io.pagecache.tracing.linear.LinearTracers;
 import org.neo4j.resources.Profiler;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.ProfilerExtension;
-import org.neo4j.test.extension.timeout.VerboseExceptionExtension;
 
 import static java.time.Duration.ofMillis;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -61,7 +60,7 @@ import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.io.pagecache.tracing.linear.LinearHistoryTracerFactory.pageCacheTracer;
 
-@ExtendWith( {VerboseExceptionExtension.class, ProfilerExtension.class} )
+@ExtendWith( ProfilerExtension.class )
 public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTestSupport<T>
 {
     @Inject
