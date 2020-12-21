@@ -59,7 +59,7 @@ import scala.collection.mutable.ArrayBuffer
 object CodeGeneration {
 
   // Use these options for Debugging. They will print generated code to stdout
-  private val DEBUG_PRINT_SOURCE = false
+  private val DEBUG_PRINT_SOURCE = true
   private val DEBUG_PRINT_BYTECODE = false
 
   final val GENERATE_JAVA_SOURCE_DEBUG_OPTION = CypherDebugOption.generateJavaSource.name
