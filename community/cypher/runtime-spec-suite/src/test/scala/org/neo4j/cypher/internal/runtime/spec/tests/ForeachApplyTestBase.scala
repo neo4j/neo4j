@@ -279,4 +279,31 @@ abstract class ForeachApplyTestBase[CONTEXT <: RuntimeContext](
       .withRows(singleColumn(1 to size))
       .withStatistics(nodesCreated = 3 * size, labelsAdded = 3 * size, propertiesSet = 3 * size)
   }
+
+  test("foreachApply where some lists are null") {
+    // given
+    val lhsRows = inputValues(
+      Array(java.util.List.of(1,2,3)),
+      Array(null),
+      Array(java.util.List.of(1,2)),
+      Array(null),
+      Array(java.util.List.of(1,2,3)))
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .foreachApply("i", "x")
+      .|.create(createNodeWithProperties("n", Seq("L"), mapOf("prop"-> varFor("i"))))
+      .|.argument("x")
+      .input(variables = Seq("x"))
+      .build(readOnly = false)
+
+    val runtimeResult = execute(logicalQuery, runtime, lhsRows)
+    consume(runtimeResult)
+
+    // then
+    runtimeResult should beColumns("x")
+      .withRows(lhsRows.flatten)
+      .withStatistics(nodesCreated = 8, labelsAdded = 8, propertiesSet = 8)
+  }
 }
