@@ -160,7 +160,7 @@ public class StringLengthIndexValidationIT
     {
         // Write
         String propValue = getString( keySizeLimit + 1 );
-        createNode( propValue );
+        long nodeId = createNode( propValue );
 
         // Create index should be fine
         try ( Transaction tx = db.beginTx() )
@@ -168,7 +168,7 @@ public class StringLengthIndexValidationIT
             db.schema().indexFor( LABEL_ONE ).on( propKey ).create();
             tx.success();
         }
-        assertIndexFailToComeOnline();
+        assertIndexFailToComeOnline( nodeId );
         assertIndexInFailedState();
     }
 
@@ -221,16 +221,16 @@ public class StringLengthIndexValidationIT
 
         // External update to index while population has not yet finished
         String propValue = getString( keySizeLimit + 1 );
-        createNode( propValue );
+        long nodeId = createNode( propValue );
 
         // Continue index population
         populationScanFinished.release();
 
-        assertIndexFailToComeOnline();
+        assertIndexFailToComeOnline( nodeId );
         assertIndexInFailedState();
     }
 
-    public void assertIndexFailToComeOnline()
+    public void assertIndexFailToComeOnline( long nodeId )
     {
         // Waiting for it to come online should fail
         try ( Transaction tx = db.beginTx() )
@@ -245,7 +245,8 @@ public class StringLengthIndexValidationIT
                             format( "Index IndexDefinition[label:LABEL_ONE on:largeString] " +
                                     "(IndexRule[id=1, descriptor=Index( GENERAL, :label[0](property[0]) ), provider={key=%s, version=%s}]) " +
                                     "entered a FAILED state.", schemaIndex.providerKey(), schemaIndex.providerVersion() ) ),
-                    containsString( "Failed while trying to write to index, targetIndex=Index( GENERAL, :LABEL_ONE(largeString) ), nodeId=0" )
+                    containsString(
+                            format( "Failed while trying to write to index, targetIndex=Index( GENERAL, :LABEL_ONE(largeString) ), nodeId=%d", nodeId ) )
             ) );
         }
     }
