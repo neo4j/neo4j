@@ -411,6 +411,31 @@ class SchemaCheckerTest extends CheckerTestBase
     }
 
     @Test
+    void shouldReportWhenConstraintIndexHasNoConstraintOwnerReference() throws Exception
+    {
+        // given
+        try ( AutoCloseable ignored = tx() )
+        {
+            IndexDescriptor index = IndexPrototype.uniqueForSchema( SchemaDescriptor.forLabel( label1, propertyKey1 ) )
+                    .withName( NAME )
+                    .withIndexProvider( DESCRIPTOR )
+                    .materialise( schemaStore.nextId() );
+            UniquenessConstraintDescriptor uniquenessConstraint = ConstraintDescriptorFactory.uniqueForLabel( label1, propertyKey1 )
+                    .withId( schemaStore.nextId() )
+                    .withName( NAME )
+                    .withOwnedIndexId( index.getId() );
+            schemaStorage.writeSchemaRule( index );
+            schemaStorage.writeSchemaRule( uniquenessConstraint );
+        }
+
+        // when
+        check();
+
+        // then
+        expect( SchemaConsistencyReport.class, report -> report.constraintIndexRuleNotReferencingBack( any() ) );
+    }
+
+    @Test
     void shouldReportLabelTokenDynamicRecordNotInUse() throws Exception
     {
         testDynamicLabelTokenChainInconsistency( record -> first( record.getNameRecords() ).setInUse( false ),

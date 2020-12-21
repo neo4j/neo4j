@@ -27,6 +27,7 @@ import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.OptionalLong;
 import java.util.function.Function;
 
 import org.neo4j.consistency.RecordType;
@@ -192,7 +193,8 @@ class SchemaChecker
                             else
                             {
                                 // if someone points to here, it must be our owner
-                                if ( obligation.getId() != rule.getOwningConstraintId().getAsLong() )
+                                OptionalLong owningConstraintId = rule.getOwningConstraintId();
+                                if ( owningConstraintId.isEmpty() || obligation.getId() != owningConstraintId.getAsLong() )
                                 {
                                     reporter.forSchema( record ).constraintIndexRuleNotReferencingBack( obligation );
                                 }
