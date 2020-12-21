@@ -24,10 +24,9 @@ import org.junit.jupiter.api.Test;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.neo4j.internal.helpers.TaskControl;
+import org.neo4j.kernel.api.impl.schema.TaskCoordinator.Task;
 import org.neo4j.test.Barrier;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -40,11 +39,11 @@ class TaskCoordinatorTest
     void shouldCancelAllTasksWithOneCall()
     {
         // given
-        TaskCoordinator coordinator = new TaskCoordinator( 1, TimeUnit.MILLISECONDS );
+        TaskCoordinator coordinator = new TaskCoordinator();
 
-        try ( TaskControl task1 = coordinator.newInstance();
-              TaskControl task2 = coordinator.newInstance();
-              TaskControl task3 = coordinator.newInstance() )
+        try ( Task task1 = coordinator.newTask();
+              Task task2 = coordinator.newTask();
+              Task task3 = coordinator.newTask() )
         {
             assertFalse( task1.cancellationRequested() );
             assertFalse( task2.cancellationRequested() );
@@ -64,7 +63,7 @@ class TaskCoordinatorTest
     void shouldAwaitCompletionOfAllTasks() throws Exception
     {
         // given
-        final TaskCoordinator coordinator = new TaskCoordinator( 1, TimeUnit.MILLISECONDS );
+        final TaskCoordinator coordinator = new TaskCoordinator();
         final AtomicReference<String> state = new AtomicReference<>();
         final List<String> states = new ArrayList<>();
         final Barrier.Control phaseA = new Barrier.Control();
@@ -96,8 +95,8 @@ class TaskCoordinatorTest
         }.start();
 
         // when
-        try ( TaskControl task1 = coordinator.newInstance();
-              TaskControl task2 = coordinator.newInstance() )
+        try ( Task task1 = coordinator.newTask();
+              Task task2 = coordinator.newTask() )
         {
             phaseA.await();
             state.set( "B" );

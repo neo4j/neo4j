@@ -21,7 +21,6 @@ package org.neo4j.kernel.api.impl.schema;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -48,7 +47,7 @@ class LuceneSchemaIndex extends AbstractLuceneIndex<IndexReader>
 
     private final IndexSamplingConfig samplingConfig;
 
-    private final TaskCoordinator taskCoordinator = new TaskCoordinator( 10, TimeUnit.MILLISECONDS );
+    private final TaskCoordinator taskCoordinator = new TaskCoordinator();
 
     LuceneSchemaIndex( PartitionedIndexStorage indexStorage, IndexDescriptor descriptor,
             IndexSamplingConfig samplingConfig, IndexPartitionFactory partitionFactory )

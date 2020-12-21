@@ -25,7 +25,10 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TotalHitCountCollector;
-import org.neo4j.internal.helpers.TaskControl;
+
+import java.io.IOException;
+import java.util.Arrays;
+
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexQuery.IndexQueryType;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
@@ -45,9 +48,6 @@ import org.neo4j.kernel.api.index.IndexSampler;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
-
-import java.io.IOException;
-import java.util.Arrays;
 
 import static java.lang.String.format;
 import static org.neo4j.internal.kernel.api.IndexQuery.IndexQueryType.exact;
@@ -80,14 +80,13 @@ public class SimpleIndexReader extends AbstractIndexReader
     @Override
     public IndexSampler createSampler()
     {
-        TaskControl taskControl = taskCoordinator.newInstance();
         if ( descriptor.isUnique() )
         {
-            return new UniqueLuceneIndexSampler( getIndexSearcher(), taskControl );
+            return new UniqueLuceneIndexSampler( getIndexSearcher(), taskCoordinator );
         }
         else
         {
-            return new NonUniqueLuceneIndexSampler( getIndexSearcher(), taskControl, samplingConfig );
+            return new NonUniqueLuceneIndexSampler( getIndexSearcher(), taskCoordinator, samplingConfig );
         }
     }
 

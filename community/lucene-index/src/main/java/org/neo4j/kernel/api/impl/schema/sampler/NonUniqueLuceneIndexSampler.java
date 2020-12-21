@@ -31,10 +31,10 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.neo4j.internal.helpers.TaskControl;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
+import org.neo4j.kernel.api.impl.schema.TaskCoordinator;
 import org.neo4j.kernel.api.impl.schema.populator.DefaultNonUniqueIndexSampler;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.NonUniqueIndexSampler;
@@ -49,10 +49,10 @@ public class NonUniqueLuceneIndexSampler extends LuceneIndexSampler
     private final IndexSearcher indexSearcher;
     private final IndexSamplingConfig indexSamplingConfig;
 
-    public NonUniqueLuceneIndexSampler( IndexSearcher indexSearcher, TaskControl taskControl,
+    public NonUniqueLuceneIndexSampler( IndexSearcher indexSearcher, TaskCoordinator taskCoordinator,
             IndexSamplingConfig indexSamplingConfig )
     {
-        super( taskControl );
+        super( taskCoordinator );
         this.indexSearcher = indexSearcher;
         this.indexSamplingConfig = indexSamplingConfig;
     }
@@ -60,35 +60,38 @@ public class NonUniqueLuceneIndexSampler extends LuceneIndexSampler
     @Override
     public IndexSample sampleIndex( PageCursorTracer cursorTracer ) throws IndexNotFoundKernelException
     {
-        NonUniqueIndexSampler sampler = new DefaultNonUniqueIndexSampler( indexSamplingConfig.sampleSizeLimit() );
-        IndexReader indexReader = indexSearcher.getIndexReader();
-        for ( LeafReaderContext readerContext : indexReader.leaves() )
+        try ( TaskCoordinator.Task task = newTask() )
         {
-            try
+            NonUniqueIndexSampler sampler = new DefaultNonUniqueIndexSampler( indexSamplingConfig.sampleSizeLimit() );
+            IndexReader indexReader = indexSearcher.getIndexReader();
+            for ( LeafReaderContext readerContext : indexReader.leaves() )
             {
-                Set<String> fieldNames = getFieldNamesToSample( readerContext );
-                for ( String fieldName : fieldNames )
+                try
                 {
-                    Terms terms = readerContext.reader().terms( fieldName );
-                    if ( terms != null )
+                    Set<String> fieldNames = getFieldNamesToSample( readerContext );
+                    for ( String fieldName : fieldNames )
                     {
-                        TermsEnum termsEnum = terms.iterator();
-                        BytesRef termsRef;
-                        while ( (termsRef = termsEnum.next()) != null )
+                        Terms terms = readerContext.reader().terms( fieldName );
+                        if ( terms != null )
                         {
-                            sampler.include( termsRef.utf8ToString(), termsEnum.docFreq() );
-                            checkCancellation();
+                            TermsEnum termsEnum = terms.iterator();
+                            BytesRef termsRef;
+                            while ( (termsRef = termsEnum.next()) != null )
+                            {
+                                sampler.include( termsRef.utf8ToString(), termsEnum.docFreq() );
+                                checkCancellation( task );
+                            }
                         }
                     }
                 }
+                catch ( IOException e )
+                {
+                    throw new RuntimeException( e );
+                }
             }
-            catch ( IOException e )
-            {
-                throw new RuntimeException( e );
-            }
-        }
 
-        return sampler.sample( indexReader.numDocs(), cursorTracer );
+            return sampler.sample( indexReader.numDocs(), cursorTracer );
+        }
     }
 
     private static Set<String> getFieldNamesToSample( LeafReaderContext readerContext )
