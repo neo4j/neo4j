@@ -76,15 +76,19 @@ abstract class AbstractSetPropertyOperation extends SetOperation {
 
     val queryContext = state.query
     val maybePropertyKey = propertyKey.id(queryContext) // if the key was already looked up
-    val propertyId = if (maybePropertyKey == LazyPropertyKey.UNKNOWN) {
-      queryContext.getOrCreatePropertyKeyId(propertyKey.name)
-    } else maybePropertyKey
-
     val value = makeValueNeoSafe(expression(context, state))
 
     if (value eq Values.NO_VALUE) {
-      ops.removeProperty(itemId, propertyId)
+      val optPropertyKeyId = queryContext.getOptPropertyKeyId(propertyKey.name)
+      if (optPropertyKeyId.isDefined) {
+        ops.removeProperty(itemId, optPropertyKeyId.get)
+      } else {
+        false
+      }
     } else {
+      val propertyId = if (maybePropertyKey == LazyPropertyKey.UNKNOWN) {
+        queryContext.getOrCreatePropertyKeyId(propertyKey.name)
+      } else maybePropertyKey
       ops.setProperty(itemId, propertyId, value)
       true
     }

@@ -31,7 +31,7 @@ import org.neo4j.internal.helpers.collection.Iterables
 
 import scala.collection.JavaConverters.iterableAsScalaIterableConverter
 
-abstract class SetPropertyTestBase[CONTEXT <: RuntimeContext](
+abstract class SetPropertiesFromMapTestBase[CONTEXT <: RuntimeContext](
                                                                edition: Edition[CONTEXT],
                                                                runtime: CypherRuntime[CONTEXT],
                                                                sizeHint: Int
@@ -47,7 +47,7 @@ abstract class SetPropertyTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("p")
       .projection("n.prop as p")
-      .setProperty("n", "prop", "1")
+      .setPropertiesFromMap("n","{prop: 1}", removeOtherProps = true)
       .allNodeScan("n")
       .build(readOnly = false)
 
@@ -62,14 +62,14 @@ abstract class SetPropertyTestBase[CONTEXT <: RuntimeContext](
   test("should remove node property") {
     // given a single node
     given {
-      nodePropertyGraph(1, { case i: Int => Map("prop" -> i)})
+      nodePropertyGraph(1, { case _: Int => Map("prop" -> 0) })
     }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("p")
       .projection("n.prop as p")
-      .setProperty("n", "prop", "null")
+      .setPropertiesFromMap("n", "{prop: null}", removeOtherProps = true)
       .allNodeScan("n")
       .build(readOnly = false)
 
@@ -83,15 +83,16 @@ abstract class SetPropertyTestBase[CONTEXT <: RuntimeContext](
 
   test("should set relationship property") {
     // given a single node
-    val (_, relationships) = given {
-      circleGraph(sizeHint)
+    val relationship = given {
+      val nodes = nodeGraph(2)
+       nodes.head.createRelationshipTo(nodes(1), RelationshipType.withName("R"))
     }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r", "p")
       .projection("r.prop as p")
-      .setProperty("r", "prop", "id(r)")
+      .setPropertiesFromMap("r","{prop: id(r)}", removeOtherProps = true)
       .expandAll("(n)-[r]->()")
       .allNodeScan("n")
       .build(readOnly = false)
@@ -101,8 +102,8 @@ abstract class SetPropertyTestBase[CONTEXT <: RuntimeContext](
     consume(runtimeResult)
     val property = Iterables.single(tx.getAllPropertyKeys)
     runtimeResult should beColumns("r", "p")
-      .withRows(relationships.map(r => Array(r, r.getId)))
-      .withStatistics(propertiesSet = sizeHint)
+      .withRows(Seq(Array(relationship, relationship.getId)))
+      .withStatistics(propertiesSet = 1)
     property shouldBe "prop"
   }
 
@@ -116,7 +117,7 @@ abstract class SetPropertyTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("p")
       .projection("n.prop as p")
-      .setProperty("n", "prop", "1")
+      .setPropertiesFromMap("n","{prop: 1}", removeOtherProps = true)
       .allNodeScan("n")
       .build(readOnly = false)
 
@@ -136,10 +137,10 @@ abstract class SetPropertyTestBase[CONTEXT <: RuntimeContext](
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("p")
-      .projection("n.prop as p")
-      .setProperty("n", "prop", "null")
-      .setProperty("n", "propOther", "n.prop + 1")
+      .produceResults("p", "otherP")
+      .projection("n.prop as p", "n.propOther as otherP")
+      .setPropertiesFromMap("n","{prop: null}", removeOtherProps = false)
+      .setPropertiesFromMap("n","{propOther: n.prop + 1}", removeOtherProps = false)
       .allNodeScan("n")
       .build(readOnly = false)
 
@@ -147,26 +148,70 @@ abstract class SetPropertyTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
     consume(runtimeResult)
     val properties = tx.getAllPropertyKeys.asScala.toList
-    runtimeResult should beColumns("p").withSingleRow(null).withStatistics(propertiesSet = 2)
+    runtimeResult should beColumns("p", "otherP").withSingleRow(null, 1).withStatistics(propertiesSet = 2)
     properties shouldBe Seq("prop", "propOther")
   }
 
-  test("should throw on none node or relationship entity") {
+  test("should set and remove other node properties") {
     // given a single node
     given {
-      nodePropertyGraph(1, { case i => Map("prop" -> "1") })
+      nodePropertyGraph(1, { case _ => Map("prop" -> 0) })
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("p", "otherP")
+      .projection("n.prop as p", "n.propOther as otherP")
+      .setPropertiesFromMap("n","{prop: 1}", removeOtherProps = true)
+      .setPropertiesFromMap("n","{propOther: n.prop + 1}", removeOtherProps = false)
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    val properties = tx.getAllPropertyKeys.asScala.toList
+    runtimeResult should beColumns("p", "otherP").withSingleRow(1, null).withStatistics(propertiesSet = 3)
+    properties shouldBe Seq("prop", "propOther")
+  }
+
+  test("should set and remove multiple properties") {
+    // given a single node
+    given {
+      nodePropertyGraph(1, { case _ => Map("prop" -> 0) })
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("p1", "p2", "p3")
+      .projection("n.prop as p1", "n.propCopy as p2", "n.newProp as p3")
+      .setPropertiesFromMap("n","{propCopy: n.prop, newProp: 1}", removeOtherProps = true)
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    val properties = tx.getAllPropertyKeys.asScala.toList
+    runtimeResult should beColumns("p1", "p2", "p3").withSingleRow(null, 0, 1).withStatistics(propertiesSet = 3)
+    properties shouldBe Seq("prop", "propCopy", "newProp")
+  }
+
+  test("should throw on non node or relationship entity") {
+    // given a single node
+    given {
+      nodePropertyGraph(1, { case _ => Map("prop" -> "1") })
     }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("p1")
-      .setProperty("p1", "prop", "1")
+      .setPropertiesFromMap("p1","{propCopy: n.prop}", removeOtherProps = true)
       .projection("n.prop as p1")
       .allNodeScan("n")
       .build(readOnly = false)
 
     // then
-
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
     assertThrows[InvalidArgumentException]({
       consume(runtimeResult)
@@ -183,7 +228,7 @@ abstract class SetPropertyTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("p")
       .projection("n.prop as p")
-      .setProperty("n", "prop", "oldP + 1")
+      .setPropertiesFromMap("n", "{prop: oldP + 1}", removeOtherProps = true)
       .filter("oldP < 5")
       .projection("n.prop as oldP")
       .allNodeScan("n")
@@ -210,7 +255,7 @@ abstract class SetPropertyTestBase[CONTEXT <: RuntimeContext](
       .produceResults("p")
       .apply()
       .|.projection("n.prop as p")
-      .|.setProperty("n", "prop", "oldP + 1")
+      .|.setPropertiesFromMap("n", "{prop: oldP + 1}", removeOtherProps = true)
       .|.filter("oldP < 5")
       .|.argument("oldP")
       .projection("n.prop as oldP")
@@ -237,7 +282,7 @@ abstract class SetPropertyTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("p")
       .projection("n.prop as p")
-      .setProperty("n", "prop", "oldP + 1")
+      .setPropertiesFromMap("n", "{prop: oldP + 1}", removeOtherProps = true)
       .limit(3)
       .filter("oldP < 5")
       .projection("n.prop as oldP")
@@ -264,9 +309,9 @@ abstract class SetPropertyTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("p")
       .projection("n.prop as p")
-      .setProperty("n", "prop", "oldP + 2")
+      .setPropertiesFromMap("n", "{prop: oldP + 2}", removeOtherProps = true)
       .apply()
-      .|.setProperty("n", "prop", "oldP + 1")
+      .|.setPropertiesFromMap("n", "{prop: oldP + 1}", removeOtherProps = true)
       .|.filter("oldP < 5")
       .|.argument("oldP")
       .projection("n.prop as oldP")
@@ -293,9 +338,9 @@ abstract class SetPropertyTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("p")
       .projection("cache[n.prop] as p")
-      .setProperty("n", "prop", "2")
+      .setPropertiesFromMap("n", "{prop: 2}", removeOtherProps = true)
       .cacheProperties("n.prop")
-      .setProperty("n", "prop", "1")
+      .setPropertiesFromMap("n", "{prop: 1}", removeOtherProps = true)
       .allNodeScan("n")
       .build(readOnly = false)
 
@@ -317,7 +362,7 @@ abstract class SetPropertyTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("p")
       .projection("n.prop as p")
-      .setProperty("n", "prop", "null")
+      .setPropertiesFromMap("n", "{prop: null}", removeOtherProps = true)
       .allNodeScan("n")
       .build(readOnly = false)
 
@@ -338,7 +383,7 @@ abstract class SetPropertyTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("p")
       .projection("n.prop as p")
-      .setProperty("n", "prop", "3")
+      .setPropertiesFromMap("n", "{prop: 3}", removeOtherProps = true)
       .input(nodes = Seq("n"))
       .build(readOnly = false)
 
@@ -362,7 +407,7 @@ abstract class SetPropertyTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("p")
       .projection("n.prop as p")
-      .setProperty("n", "prop", "sin(null)")
+      .setPropertiesFromMap("n", "{prop: sin(null)}", removeOtherProps = true)
       .allNodeScan("n")
       .build(readOnly = false)
 
@@ -376,14 +421,14 @@ abstract class SetPropertyTestBase[CONTEXT <: RuntimeContext](
   test("should count node property updates even if values are not changed") {
     // given single node
     val n = given {
-      nodePropertyGraph(1, { case i => Map("prop" -> 100)})
+      nodePropertyGraph(1, { case _ => Map("prop" -> 100)})
     }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("p")
       .projection("n.prop as p")
-      .setProperty("n", "prop", "100")
+      .setPropertiesFromMap("n", "{prop: 100}", removeOtherProps = true )
       .allNodeScan("n")
       .build(readOnly = false)
 
@@ -406,7 +451,7 @@ abstract class SetPropertyTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("p")
       .projection("r.prop as p")
-      .setProperty("r", "prop", "null")
+      .setPropertiesFromMap("r", "{prop: null}", removeOtherProps = true)
       .directedRelationshipByIdSeek("r", "x", "y", Set.empty, r.getId)
       .build(readOnly = false)
 
@@ -428,7 +473,7 @@ abstract class SetPropertyTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("p")
       .projection("r.prop as p")
-      .setProperty("r", "prop", "3")
+      .setPropertiesFromMap("r", "{prop: 3}", removeOtherProps = true)
       .input(relationships = Seq("r"))
       .build(readOnly = false)
 
@@ -453,7 +498,7 @@ abstract class SetPropertyTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("p")
       .projection("r.prop as p")
-      .setProperty("r", "prop", "sin(null)")
+      .setPropertiesFromMap("r", "{prop: sin(null)}", removeOtherProps = true)
       .directedRelationshipByIdSeek("r", "x", "y", Set.empty, r.getId)
       .build(readOnly = false)
 
@@ -477,7 +522,7 @@ abstract class SetPropertyTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("p")
       .projection("r.prop as p")
-      .setProperty("r", "prop", "100")
+      .setPropertiesFromMap("r", "{prop: 100}", removeOtherProps = true)
       .directedRelationshipByIdSeek("r", "x", "y", Set.empty, r.getId)
       .build(readOnly = false)
 

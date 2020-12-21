@@ -138,6 +138,7 @@ import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.SemiApply
 import org.neo4j.cypher.internal.logical.plans.SetNodePropertiesFromMap
 import org.neo4j.cypher.internal.logical.plans.SetNodeProperty
+import org.neo4j.cypher.internal.logical.plans.SetPropertiesFromMap
 import org.neo4j.cypher.internal.logical.plans.SetProperty
 import org.neo4j.cypher.internal.logical.plans.SetRelationshipPropertiesFromMap
 import org.neo4j.cypher.internal.logical.plans.SetRelationshipProperty
@@ -816,6 +817,10 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
 
   def setRelationshipProperty(relationship: String, propertyKey: String, value: String): IMPL = {
     appendAtCurrentIndent(UnaryOperator(source => SetRelationshipProperty(source, relationship, PropertyKeyName(propertyKey)(pos), Parser.parseExpression(value))(_)))
+  }
+
+  def setPropertiesFromMap(entity: String, map: String, removeOtherProps: Boolean): IMPL = {
+    appendAtCurrentIndent(UnaryOperator(source => SetPropertiesFromMap(source, Parser.parseExpression(entity), Parser.parseExpression(map), removeOtherProps)(_)))
   }
 
   def setNodePropertiesFromMap(node: String, map: String, removeOtherProps: Boolean): IMPL = {

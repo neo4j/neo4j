@@ -262,6 +262,8 @@ object LogicalPlanToPlanBuilderString {
         wrapInQuotationsAndMkString(Seq(idName, propertyKey.name, expressionStringifier(value)))
       case SetRelationshipProperty(_, idName, propertyKey, value) =>
         wrapInQuotationsAndMkString(Seq(idName, propertyKey.name, expressionStringifier(value)))
+      case SetPropertiesFromMap(_, idName, expression, removeOtherProps) =>
+        s""" ${wrapInQuotationsAndMkString(Seq(expressionStringifier(idName), expressionStringifier(expression)))}, $removeOtherProps """.trim
       case SetNodePropertiesFromMap(_, idName, expression, removeOtherProps) =>
         s""" ${wrapInQuotationsAndMkString(Seq(idName, expressionStringifier(expression)))}, $removeOtherProps """.trim
       case SetRelationshipPropertiesFromMap(_, idName, expression, removeOtherProps) =>
