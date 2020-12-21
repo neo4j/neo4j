@@ -100,26 +100,40 @@ abstract class AbstractIndexSeekLeafPlanner(restrictions: LeafPlanRestrictions) 
                               qg: QueryGraph,
                               interestingOrderConfig: InterestingOrderConfig,
                               context: LogicalPlanningContext): Set[LeafPlansForVariable] = {
-    implicit val labelPredicateMap: Map[String, Set[HasLabels]] = qg.selections.labelPredicates
+    implicit val allLabelPredicatesMap: Map[String, Set[HasLabels]] = qg.selections.labelPredicates
     implicit val semanticTable: SemanticTable = context.semanticTable
-    if (labelPredicateMap.isEmpty)
-      Set.empty
-    else {
-      val arguments: Set[LogicalVariable] = qg.argumentIds.map(n => Variable(n)(null))
-      val indexCompatibles: Set[IndexCompatiblePredicate] = predicates.collect(
+    val arguments: Set[LogicalVariable] = qg.argumentIds.map(n => Variable(n)(null))
+
+    // Find plans solving given property predicates together with any label predicates from QG
+    val resultFromPropertyPredicates = if (allLabelPredicatesMap.isEmpty) Set.empty[LeafPlansForVariable] else {
+      val compatiblePropertyPredicates: Set[IndexCompatiblePredicate] = predicates.collect(
         asIndexCompatiblePredicate(qg.argumentIds, arguments, qg.hints))
-      val result = indexCompatibles.map(_.name).flatMap { name =>
-        val labelPredicates = labelPredicateMap.getOrElse(name, Set.empty)
-        val nodePredicates = indexCompatibles.filter(p => p.name == name)
+      compatiblePropertyPredicates.map(_.name).flatMap { name =>
+        val labelPredicates = allLabelPredicatesMap.getOrElse(name, Set.empty)
+        val nodePredicates = compatiblePropertyPredicates.filter(p => p.name == name)
         maybeLeafPlans(name, producePlansForSpecificVariable(name, nodePredicates, labelPredicates, qg.hints, qg.argumentIds, context, interestingOrderConfig))
       }
-
-      if (result.isEmpty) {
-        val seekableIdentifiers: Set[Variable] = findNonSeekableIdentifiers(qg.selections.flatPredicates, context)
-        DynamicPropertyNotifier.process(seekableIdentifiers, IndexLookupUnfulfillableNotification, qg, context)
-      }
-      result
     }
+
+    // Find plans solving given label predicates together with any property predicates from QG
+    lazy val allIndexCompatibles: Set[IndexCompatiblePredicate] = qg.selections.flatPredicates.toSet.collect(
+      asIndexCompatiblePredicate(qg.argumentIds, arguments, qg.hints))
+    val resultFromLabelPredicates = {
+      val candidateLabelPredicates = predicates.collect { case p@HasLabels(v: LogicalVariable, _) => IndexCandidateHasLabelsPredicate(v.name, p) }
+      candidateLabelPredicates.flatMap { candidate =>
+        val name = candidate.name
+        val labelPredicates = Set(candidate.hasLabels)
+        val nodePredicates = allIndexCompatibles.filter(p => p.name == name)
+        maybeLeafPlans(name, producePlansForSpecificVariable(name, nodePredicates, labelPredicates, qg.hints, qg.argumentIds, context, interestingOrderConfig))
+      }
+    }
+
+    val result = resultFromPropertyPredicates ++ resultFromLabelPredicates
+    if (result.isEmpty) {
+      val seekableIdentifiers: Set[Variable] = findNonSeekableIdentifiers(qg.selections.flatPredicates, context)
+      DynamicPropertyNotifier.process(seekableIdentifiers, IndexLookupUnfulfillableNotification, qg, context)
+    }
+    result
   }
 
   override def apply(qg: QueryGraph, interestingOrderConfig: InterestingOrderConfig, context: LogicalPlanningContext): Seq[LogicalPlan] = {
@@ -359,6 +373,8 @@ abstract class AbstractIndexSeekLeafPlanner(restrictions: LeafPlanRestrictions) 
   }
 
   /**
+   * A property predicate that is a candidate for being solved by an index
+   *
    * @param propertyType
    *                     We need to ask the index whether it supports getting values for that type
    * @param exactPredicate
@@ -390,6 +406,14 @@ abstract class AbstractIndexSeekLeafPlanner(restrictions: LeafPlanRestrictions) 
       case _ => false
     }
   }
+
+  /**
+   * A label predicate that is a candidate for being solved by an index
+   *
+   * @param name      Variable name
+   * @param hasLabels Original expression
+   */
+  private case class IndexCandidateHasLabelsPredicate(name: String, hasLabels: HasLabels)
 
   sealed trait ExactPredicate
   case object SingleExactPredicate extends ExactPredicate
