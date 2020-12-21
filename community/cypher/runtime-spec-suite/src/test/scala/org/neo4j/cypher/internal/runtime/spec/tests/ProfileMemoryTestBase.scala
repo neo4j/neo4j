@@ -196,6 +196,22 @@ abstract class ProfileMemoryTestBase[CONTEXT <: RuntimeContext](edition: Edition
     assertOnMemory(logicalQuery, NO_INPUT, 3, 1)
   }
 
+  test("should profile memory of top1WithTies") {
+    given {
+      nodeGraph(SIZE)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .top1WithTies(Seq(Ascending("x")))
+      .allNodeScan("x")
+      .build()
+
+    // then
+    assertOnMemory(logicalQuery, NO_INPUT, 3, 1)
+  }
+
   test("should profile memory of partial top n, where n < max array size") {
     val input = for (i <- 0 to SIZE) yield Array[Any](1, i)
 
