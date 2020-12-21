@@ -265,7 +265,6 @@ abstract class EagerTestBase[CONTEXT <: RuntimeContext](
     assertPerArgumentEager(result, subscriber, inputStream, probe, rowsPerArgument, nBatches, batchSize)
   }
 
-  // TODO: Investigate why this is slow in parallel
   test("single top-level eager on top of apply") {
     val nBatches = Math.max(sizeHint / 10, 2)
     val batchSize = 10
@@ -513,7 +512,7 @@ abstract class EagerTestBase[CONTEXT <: RuntimeContext](
       .create(createNode("n"))
       .eager()
       .input(variables = Seq("x"))
-      .build()
+      .build(readOnly = false)
 
     val result = execute(logicalQuery, runtime, inputStream)
     consume(result)
@@ -675,14 +674,14 @@ abstract class EagerTestBase[CONTEXT <: RuntimeContext](
     }
   }
 
-  private def recordingProbe(variablesToRecord: String*): Prober.Probe with RecordingRowsProbe = {
+  protected def recordingProbe(variablesToRecord: String*): Prober.Probe with RecordingRowsProbe = {
     if (isParallel)
       ThreadSafeRecordingProbe(variablesToRecord: _*)
     else
       RecordingProbe(variablesToRecord: _*)
   }
 
-  private def assertRows(expected: GenTraversable[_], actual: Seq[_], hasLimit: Boolean = false): Any = {
+  protected def assertRows(expected: GenTraversable[_], actual: Seq[_], hasLimit: Boolean = false): Any = {
     if (isParallel) {
       if (hasLimit)
         actual.size shouldEqual expected.size
@@ -693,14 +692,14 @@ abstract class EagerTestBase[CONTEXT <: RuntimeContext](
     }
   }
 
-  private def assertPerArgumentEager(result: RuntimeResult,
-                                     subscriber: TestSubscriber,
-                                     inputStream: BufferInputStream,
-                                     probe: RecordingRowsProbe,
-                                     rowsPerArgument: Int,
-                                     nBatches: Int,
-                                     batchSize: Int,
-                                     limit: Option[Int] = None): Unit = {
+  protected def assertPerArgumentEager(result: RuntimeResult,
+                                       subscriber: TestSubscriber,
+                                       inputStream: BufferInputStream,
+                                       probe: RecordingRowsProbe,
+                                       rowsPerArgument: Int,
+                                       nBatches: Int,
+                                       batchSize: Int,
+                                       limit: Option[Int] = None): Unit = {
     // Pull one row
     result.request(1)
     result.await() shouldBe true
