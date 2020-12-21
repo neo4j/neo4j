@@ -21,15 +21,16 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import java.util.Comparator
 
+import org.neo4j.collection.trackable.HeapTrackingCollections
 import org.neo4j.cypher.internal.collection.DefaultComparatorTopTable
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.util.attribution.Id
+import org.neo4j.memory.MemoryTracker
 
 import scala.collection.JavaConverters.asScalaIteratorConverter
-import scala.collection.mutable
 
 /*
  * TopPipe is used when a query does a ORDER BY ... LIMIT query. Instead of ordering the whole result set and then
@@ -99,9 +100,10 @@ case class Top1WithTiesPipe(source: Pipe, comparator: Comparator[ReadableRow])
     if (input.isEmpty)
       ClosingIterator.empty
     else {
+      val scopedMemoryTracker = state.memoryTracker.memoryTrackerForOperator(id.x).getScopedMemoryTracker
       val first = input.next()
       var best = first
-      val matchingRows = init(best)
+      val matchingRows = init(best, scopedMemoryTracker)
 
       while (input.hasNext) {
         val ctx = input.next()
@@ -109,21 +111,21 @@ case class Top1WithTiesPipe(source: Pipe, comparator: Comparator[ReadableRow])
         if (comparison < 0) { // Found a new best
           best = ctx
           matchingRows.clear()
-          matchingRows += ctx
+          matchingRows.add(ctx)
         }
 
         if (comparison == 0) { // Found a tie
-          matchingRows += ctx
+          matchingRows.add(ctx)
         }
       }
-      ClosingIterator(matchingRows.result().iterator)
+      ClosingIterator(matchingRows.iterator.asScala)
     }
   }
 
   @inline
-  private def init(first: CypherRow): mutable.Builder[CypherRow, Vector[CypherRow]] = {
-    val builder = Vector.newBuilder[CypherRow]
-    builder += first
-    builder
+  private def init(first: CypherRow, memoryTracker: MemoryTracker) = {
+    val list = HeapTrackingCollections.newArrayList[CypherRow](memoryTracker)
+    list.add(first)
+    list
   }
 }
