@@ -56,7 +56,6 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.util.concurrent.Runnables;
 
-import static java.lang.Math.max;
 import static java.lang.String.format;
 import static java.nio.file.StandardOpenOption.CREATE;
 import static org.neo4j.internal.helpers.Exceptions.throwIfUnchecked;
@@ -634,52 +633,38 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
      */
     protected long scanForHighId( PageCursorTracer cursorTracer )
     {
-        try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_READ_LOCK, cursorTracer ) )
+        try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_READ_LOCK | PF_READ_AHEAD, cursorTracer ) )
         {
             int recordsPerPage = getRecordsPerPage();
             int recordSize = getRecordSize();
-            long highestId = getNumberOfReservedLowIds();
-            boolean found;
-            /*
-             * We do this in chunks of pages instead of one page at a time, the performance impact is significant.
-             * We first pre-fetch a large chunk sequentially, which is then scanned backwards for used records.
-             */
-            final long chunkSizeInPages = 256; // 2MiB (8192 bytes/page * 256 pages/chunk)
 
-            long chunkEndId = pagedFile.getLastPageId();
-            while ( chunkEndId >= 0 )
+            // Scan pages backwards in the chunk using page cache prefetch (PF_READ_AHEAD)
+            for ( long currentId = pagedFile.getLastPageId(); currentId >= 0 && cursor.next( currentId ); currentId-- )
             {
-                // Do pre-fetch of the chunk
-                long chunkStartId = max( chunkEndId - chunkSizeInPages, 0 );
-                preFetchChunk( cursor, chunkStartId, chunkEndId );
-
-                // Scan pages backwards in the chunk
-                for ( long currentId = chunkEndId; currentId >= chunkStartId && cursor.next( currentId ); currentId-- )
+                long highestId = 0;
+                boolean found;
+                do
                 {
-                    do
+                    found = false;
+                    long basePageId = cursor.getCurrentPageId() * recordsPerPage;
+                    for ( int record = 0; record < recordsPerPage; record++ )
                     {
-                        found = false;
-                        long basePageId = cursor.getCurrentPageId() * recordsPerPage;
-                        for ( int record = 0; record < recordsPerPage; record++ )
+                        cursor.setOffset( record * recordSize );
+                        if ( isInUse( cursor ) )
                         {
-                            cursor.setOffset( record * recordSize );
-                            if ( isInUse( cursor ) )
-                            {
-                                // We've found the highest id in use
-                                highestId = basePageId + record + 1;
-                                found = true;
-                            }
+                            // We've found the highest id in use
+                            highestId = basePageId + record + 1;
+                            found = true;
                         }
                     }
-                    while ( cursor.shouldRetry() );
-
-                    checkIdScanCursorBounds( cursor );
-                    if ( found )
-                    {
-                        return highestId;
-                    }
                 }
-                chunkEndId = chunkStartId - 1;
+                while ( cursor.shouldRetry() );
+
+                checkIdScanCursorBounds( cursor );
+                if ( found )
+                {
+                    return highestId;
+                }
             }
 
             return getNumberOfReservedLowIds();
@@ -687,21 +672,6 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         catch ( IOException e )
         {
             throw new UnderlyingStorageException( "Unable to find high id by scanning backwards " + getStorageFile(), e );
-        }
-    }
-
-    /**
-     * Do a pre-fetch of pages in sequential order on the range [{@code pageIdStart},{@code pageIdEnd}].
-     *
-     * @param cursor Cursor to pre-fetch on.
-     * @param pageIdStart Page id to start pre-fetching from.
-     * @param pageIdEnd Page id to end pre-fetching on, inclusive {@code pageIdEnd}.
-     */
-    private static void preFetchChunk( PageCursor cursor, long pageIdStart, long pageIdEnd ) throws IOException
-    {
-        for ( long currentPageId = pageIdStart; currentPageId <= pageIdEnd; currentPageId++ )
-        {
-            cursor.next( currentPageId );
         }
     }
 
